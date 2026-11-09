@@ -1080,6 +1080,21 @@ function mobileGemItemIdV1(familyId, grade) {
 function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
+var GEM_ROLL_MIN_PERCENT_V1 = 80;
+var GEM_ROLL_MAX_PERCENT_V1 = 120;
+var GEM_ROLL_STEP_PERCENT_V1 = 5;
+function normalizeGemRollPercentV1(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= GEM_ROLL_MIN_PERCENT_V1 && value <= GEM_ROLL_MAX_PERCENT_V1 && (value - GEM_ROLL_MIN_PERCENT_V1) % GEM_ROLL_STEP_PERCENT_V1 === 0 ? value : void 0;
+}
+function gemRollPercentFromUnitV1(randomRoll) {
+  if (!Number.isFinite(randomRoll) || randomRoll < 0 || randomRoll >= 1) throw new Error("invalid_gem_roll");
+  return GEM_ROLL_MIN_PERCENT_V1 + Math.floor(randomRoll * 9) * GEM_ROLL_STEP_PERCENT_V1;
+}
+function gemRolledValueV1(familyId, grade, rollPercent = 100) {
+  const family = mobileGemFamilyV1(familyId);
+  if (!family) return 0;
+  return family.values[grade] * (normalizeGemRollPercentV1(rollPercent) ?? 100) / 100;
+}
 
 // ../apps/mobile/src/content/items.ts
 init_progression();
@@ -42653,6 +42668,7 @@ var timerRange = {
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
@@ -42763,12 +42779,14 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
+  const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
+  const craftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
     skillId,
     level,
-    xp: q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0),
+    xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
     seconds: clamp2(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
@@ -48591,11 +48609,11 @@ function activeRegionId(state) {
   return [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId)?.zoneId;
 }
 function activityCanAdvanceWeeklyOrder(state, orderId) {
-  const activity = state.activity, order2 = state.account.weeklyOrders?.orders.find((row) => row.id === orderId);
-  if (!activity || !order2) return false;
-  if (order2.kind === "hunt") return activity.kind === "combat" && order2.targetId === activity.targetId;
-  if (order2.kind === "profession") return activity.kind !== "combat" && activity.kind !== "exploration" && order2.targetId === activity.targetId;
-  if (order2.kind === "regional") return order2.targetId === activeRegionId(state) && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
+  const activity = state.activity, order = state.account.weeklyOrders?.orders.find((row) => row.id === orderId);
+  if (!activity || !order) return false;
+  if (order.kind === "hunt") return activity.kind === "combat" && order.targetId === activity.targetId;
+  if (order.kind === "profession") return activity.kind !== "combat" && activity.kind !== "exploration" && order.targetId === activity.targetId;
+  if (order.kind === "regional") return order.targetId === activeRegionId(state) && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
   return false;
 }
 function activityCanAdvanceCondition(state, condition) {
@@ -49457,7 +49475,7 @@ function normalizeCraftedGearInstances(raw2) {
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
-        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
+        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, statGemRollPercent: normalizeGemRollPercentV1(enhancement.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(enhancement.effectGemRollPercent), gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
       }];
     } catch {
       return [];
@@ -49658,7 +49676,7 @@ function equippedCanonicalSocketsV1(state) {
     const selectedEffect = valid(raw2?.effectGemId, "effect") ?? ids2.find((id) => valid(id, "effect"));
     const statGemId = canonicalGemMetaV1(selectedStat ?? "") ? selectedStat : void 0;
     const effectGemId = canonicalGemMetaV1(selectedEffect ?? "") ? selectedEffect : void 0;
-    return [{ equipmentItemId, statGemId, effectGemId }];
+    return [{ equipmentItemId, statGemId, effectGemId, statGemRollPercent: normalizeGemRollPercentV1(raw2?.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(raw2?.effectGemRollPercent) }];
   });
 }
 function equippedCanonicalGemIdsV1(state) {
@@ -49858,7 +49876,13 @@ function normalizeEnhancementGemSlots(raw2) {
     if (kind === "effect" && !effectGemId) effectGemId = gem2.id;
   }
   const gemIds = [statGemId, effectGemId].filter((id) => Boolean(id));
-  return { statGemId, effectGemId, gemIds };
+  return {
+    statGemId,
+    effectGemId,
+    gemIds,
+    statGemRollPercent: statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
+    effectGemRollPercent: effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
+  };
 }
 function equippedCraftedInstance(state, itemId) {
   const slot = Object.entries(state.character?.equipment ?? {}).find(([, value]) => value === itemId)?.[0];
@@ -49943,7 +49967,7 @@ function attemptEquipmentUpgrade(state, itemId, roll = Math.random()) {
   next = setEnhancement(next, itemId, { ...prior, rank, failures: success ? 0 : prior.failures + 1 });
   return { state: next, result: { success, oldRank: prior.rank, newRank: rank, successChance: quote.successChance, downgraded: !success && rank < prior.rank } };
 }
-function socketGem(state, itemId, gemId) {
+function socketGem(state, itemId, gemId, randomRoll = Math.random()) {
   requireEquipped(state, itemId);
   const gem2 = safeGem(gemId);
   if (!gem2) throw new Error("That item is not a gem");
@@ -49953,8 +49977,16 @@ function socketGem(state, itemId, gemId) {
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (kind === "stat" && enhancement.statGemId) throw new Error("The Stat Gem socket is already filled");
   if (kind === "effect" && enhancement.effectGemId) throw new Error("The Effect Gem socket is already filled");
+  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
   let next = consumeAcross(state, gemId, 1);
-  next = setEnhancement(next, itemId, { ...enhancement, statGemId: kind === "stat" ? gemId : enhancement.statGemId, effectGemId: kind === "effect" ? gemId : enhancement.effectGemId, gemIds: [] });
+  next = setEnhancement(next, itemId, {
+    ...enhancement,
+    statGemId: kind === "stat" ? gemId : enhancement.statGemId,
+    effectGemId: kind === "effect" ? gemId : enhancement.effectGemId,
+    statGemRollPercent: kind === "stat" ? rollPercent : enhancement.statGemRollPercent,
+    effectGemRollPercent: kind === "effect" ? rollPercent : enhancement.effectGemRollPercent,
+    gemIds: []
+  });
   return next;
 }
 function addInventory(state, itemId) {
@@ -49975,26 +50007,53 @@ function unsocketGem(state, itemId, index) {
   let next = { ...state, character: { ...state.character, gold: state.character.gold - fee.gold } };
   if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
   next = addInventory(next, gemId);
-  next = setEnhancement(next, itemId, { ...enhancement, statGemId: index === 0 ? void 0 : enhancement.statGemId, effectGemId: index === 1 ? void 0 : enhancement.effectGemId, gemIds: [] });
+  next = setEnhancement(next, itemId, {
+    ...enhancement,
+    statGemId: index === 0 ? void 0 : enhancement.statGemId,
+    effectGemId: index === 1 ? void 0 : enhancement.effectGemId,
+    statGemRollPercent: index === 0 ? void 0 : enhancement.statGemRollPercent,
+    effectGemRollPercent: index === 1 ? void 0 : enhancement.effectGemRollPercent,
+    gemIds: []
+  });
   return next;
 }
-function replaceGem(state, itemId, gemId) {
+function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   requireEquipped(state, itemId);
   const gem2 = safeGem(gemId);
   if (!gem2) throw new Error("That item is not a gem");
   const kind = gemSocketKind(gemId), enhancement = gearEnhancement(state, itemId), currentId = kind === "stat" ? enhancement.statGemId : enhancement.effectGemId;
-  if (!currentId) return socketGem(state, itemId, gemId);
-  if (currentId === gemId) throw new Error("That gem is already socketed here");
+  if (!currentId) return socketGem(state, itemId, gemId, randomRoll);
+  if (currentId === gemId) {
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta) throw new Error("Only graded gems can be rerolled");
+    const candidate = gemRollPercentFromUnitV1(randomRoll);
+    const previous = kind === "stat" ? enhancement.statGemRollPercent : enhancement.effectGemRollPercent;
+    const best = Math.max(previous ?? 100, candidate);
+    const next2 = consumeAcross(state, gemId, 1);
+    return setEnhancement(next2, itemId, {
+      ...enhancement,
+      statGemRollPercent: kind === "stat" ? best : enhancement.statGemRollPercent,
+      effectGemRollPercent: kind === "effect" ? best : enhancement.effectGemRollPercent
+    });
+  }
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (combinedQuantity(state, gemId) < 1) throw new Error("You do not own this gem");
   const fee = gemUnsocketCostForStateV1(state, currentId);
   if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
   if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
+  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
   let next = consumeAcross(state, gemId, 1);
   next = { ...next, character: { ...next.character, gold: next.character.gold - fee.gold } };
   if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
   next = addInventory(next, currentId);
-  next = setEnhancement(next, itemId, { ...enhancement, statGemId: kind === "stat" ? gemId : enhancement.statGemId, effectGemId: kind === "effect" ? gemId : enhancement.effectGemId, gemIds: [] });
+  next = setEnhancement(next, itemId, {
+    ...enhancement,
+    statGemId: kind === "stat" ? gemId : enhancement.statGemId,
+    effectGemId: kind === "effect" ? gemId : enhancement.effectGemId,
+    statGemRollPercent: kind === "stat" ? rollPercent : enhancement.statGemRollPercent,
+    effectGemRollPercent: kind === "effect" ? rollPercent : enhancement.effectGemRollPercent,
+    gemIds: []
+  });
   return next;
 }
 function gearStatsAtRank(itemId, rank) {
@@ -50031,7 +50090,7 @@ function equippedCanonicalStatGemBonusesV1(state) {
   if (!state.character) return { statPercent, statPercentagePoints };
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const gemId = gearEnhancement(state, itemId).statGemId;
+    const enhancement = gearEnhancement(state, itemId), gemId = enhancement.statGemId;
     if (!gemId) continue;
     const meta = canonicalGemMetaV1(gemId);
     if (!meta || meta.kind !== "stat") continue;
@@ -50039,7 +50098,7 @@ function equippedCanonicalStatGemBonusesV1(state) {
     const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
     if (!key || !family || family.kind !== "stat") continue;
     const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
-    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+    target2[key] = (target2[key] ?? 0) + gemRolledValueV1(meta.familyId, meta.grade, enhancement.statGemRollPercent);
   }
   return { statPercent, statPercentagePoints };
 }
@@ -50061,10 +50120,10 @@ function equippedEffectGemBonuses(state) {
   if (!state.character) return result;
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const gemId = gearEnhancement(state, itemId).effectGemId;
+    const enhancement = gearEnhancement(state, itemId), gemId = enhancement.effectGemId;
     if (!gemId) continue;
-    const gem2 = itemDef(gemId);
-    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, gem2.gemEffectValue ?? 0);
+    const gem2 = itemDef(gemId), meta = canonicalGemMetaV1(gemId);
+    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, meta ? gemRolledValueV1(meta.familyId, meta.grade, enhancement.effectGemRollPercent) : gem2.gemEffectValue ?? 0);
   }
   result.combat_speed = Math.min(0.1, result.combat_speed);
   result.boss_power = Math.min(0.15, result.boss_power);
@@ -50389,22 +50448,22 @@ function applyWeeklyOrderProgress(state, event) {
   if (!event.eventId || !event.characterId || !Number.isSafeInteger(event.amount) || event.amount <= 0) throw new Error("invalid_weekly_order_event");
   if (event.completedAtMs < state.startsAtMs || event.completedAtMs >= state.endsAtMs) return { eventId: event.eventId, updated: [] };
   const updated = [];
-  for (const order2 of state.orders) {
-    if (order2.kind !== event.kind || order2.targetId !== event.targetId || order2.progress >= order2.target) continue;
-    const before = order2.progress, after = Math.min(order2.target, before + event.amount);
-    order2.progress = after;
-    if (after >= order2.target && !order2.completedAtMs) order2.completedAtMs = event.completedAtMs;
-    updated.push({ orderId: order2.id, before, after, completed: after >= order2.target });
+  for (const order of state.orders) {
+    if (order.kind !== event.kind || order.targetId !== event.targetId || order.progress >= order.target) continue;
+    const before = order.progress, after = Math.min(order.target, before + event.amount);
+    order.progress = after;
+    if (after >= order.target && !order.completedAtMs) order.completedAtMs = event.completedAtMs;
+    updated.push({ orderId: order.id, before, after, completed: after >= order.target });
   }
   return { eventId: event.eventId, updated };
 }
 function claimWeeklyOrder(state, orderId) {
-  const order2 = state.orders.find((o) => o.id === orderId);
-  if (!order2) throw new Error("weekly_order_not_found");
-  if (order2.progress < order2.target) throw new Error("weekly_order_incomplete");
-  if (order2.claimed) throw new Error("weekly_order_already_claimed");
-  order2.claimed = true;
-  return { claimKey: `${state.weekKey}:order:${order2.id}`, reward: { ...order2.reward }, orderId: order2.id, weekKey: state.weekKey };
+  const order = state.orders.find((o) => o.id === orderId);
+  if (!order) throw new Error("weekly_order_not_found");
+  if (order.progress < order.target) throw new Error("weekly_order_incomplete");
+  if (order.claimed) throw new Error("weekly_order_already_claimed");
+  order.claimed = true;
+  return { claimKey: `${state.weekKey}:order:${order.id}`, reward: { ...order.reward }, orderId: order.id, weekKey: state.weekKey };
 }
 function claimWeeklyCompletion(state, policy = DEFAULT_WEEKLY_ORDER_POLICY) {
   if (!state.orders.length || state.orders.some((o) => o.progress < o.target)) throw new Error("weekly_orders_incomplete");
@@ -50855,7 +50914,7 @@ function ensureWeeklyOrders(state, accountId, nowMs) {
   const window = weeklyOrderWindow(nowMs), existing = state.account.weeklyOrders, candidates = weeklyOrderCandidatesFromCurrentContent(state);
   if (existing?.schemaVersion === 41 && existing.accountId === accountId && existing.weekKey === window.weekKey) {
     const bossCandidate = candidates.find((candidate) => candidate.kind === "hunt" && candidate.boss && candidate.monsterId === "FALLEN_KNIGHT" && candidate.available && candidate.source.available);
-    if (bossCandidate && !existing.orders.some((order2) => order2.kind === "hunt" && order2.targetId === "FALLEN_KNIGHT")) {
+    if (bossCandidate && !existing.orders.some((order) => order.kind === "hunt" && order.targetId === "FALLEN_KNIGHT")) {
       const bonusPolicy = { ...DEFAULT_WEEKLY_ORDER_POLICY, huntSlots: 1, professionSlots: 0, regionalSlots: 0 };
       const bonus = generateWeeklyOrders(accountId, nowMs, [bossCandidate], bonusPolicy).orders[0];
       if (bonus) existing.orders.push({ ...bonus, slot: existing.orders.length });
@@ -50894,7 +50953,7 @@ function cleanWeeklyOrderCharacter(character, activeOrderIds) {
 function reconcileWeeklyOrderRollover(input, nowMs = Date.now()) {
   const board = weeklyOrderBoardForState(input, nowMs), previousWeekKey = input.account.weeklyOrders?.weekKey;
   if (previousWeekKey === board.weekKey) return { state: input, changed: false, previousWeekKey, weekKey: board.weekKey, removedGoals: 0, removedRules: 0, removedConditions: 0 };
-  const activeOrderIds = new Set(board.orders.map((order2) => order2.id));
+  const activeOrderIds = new Set(board.orders.map((order) => order.id));
   let removedGoals = 0, removedRules = 0, removedConditions = 0;
   const active2 = input.character ? cleanWeeklyOrderCharacter(input.character, activeOrderIds) : void 0;
   if (active2) {
@@ -51021,13 +51080,13 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
     const regionId = trustedEventRegionId(event);
     if (regionId) applyWeeklyOrderProgress(weekly, { eventId: `${options.eventId}:regional:${regionId}:${event.kind}:${event.contentId}`, characterId: state.character?.id ?? "unknown", kind: "regional", targetId: regionId, amount: units, completedAtMs: nowMs });
   }
-  for (const order2 of weekly.orders) {
-    if (order2.progress >= order2.target && !wasComplete.has(order2.id)) {
-      weeklyCompleted.push(order2.id);
+  for (const order of weekly.orders) {
+    if (order.progress >= order.target && !wasComplete.has(order.id)) {
+      weeklyCompleted.push(order.id);
       metrics["weekly_orders.completed"] = (metrics["weekly_orders.completed"] ?? 0) + 1;
     }
-    if (order2.progress >= order2.target && !order2.claimed) {
-      const claim = claimWeeklyOrder(weekly, order2.id);
+    if (order.progress >= order.target && !order.claimed) {
+      const claim = claimWeeklyOrder(weekly, order.id);
       if (!pendingKeys.has(claim.claimKey)) {
         pending.push({ claimKey: claim.claimKey, rewardRef: claim.reward.rewardRef, label: claim.reward.label, weekKey: claim.weekKey, orderId: claim.orderId });
         pendingKeys.add(claim.claimKey);
@@ -52359,12 +52418,12 @@ function projectedIdleContext(state, reward2, settleAtMs) {
   const monsterKills = { ...state.character?.monsterMasteryPoints ?? {} };
   if (activity.kind === "combat") monsterKills[activity.targetId] = (monsterKills[activity.targetId] ?? 0) + reward2.kills;
   const weeklyOrderProgress = {}, activityRegionId = zoneIdForTarget(activity.targetId);
-  for (const order2 of state.account.weeklyOrders?.orders ?? []) {
-    let progress = order2.progress;
-    const expectedKind = activity.kind === "combat" ? "hunt" : "profession", direct = order2.kind === expectedKind && order2.targetId === activity.targetId;
-    const regional2 = order2.kind === "regional" && order2.targetId === activityRegionId && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
-    if (direct || regional2) progress = Math.min(order2.target, progress + reward2.kills);
-    weeklyOrderProgress[order2.id] = progress;
+  for (const order of state.account.weeklyOrders?.orders ?? []) {
+    let progress = order.progress;
+    const expectedKind = activity.kind === "combat" ? "hunt" : "profession", direct = order.kind === expectedKind && order.targetId === activity.targetId;
+    const regional2 = order.kind === "regional" && order.targetId === activityRegionId && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
+    if (direct || regional2) progress = Math.min(order.target, progress + reward2.kills);
+    weeklyOrderProgress[order.id] = progress;
   }
   const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward2.foodConsumed ?? 0));
   const routed = routeRewards(state, reward2.items, settleAtMs);
@@ -53581,8 +53640,8 @@ function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
   const active2 = queue.filter((job) => isActive(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
   let waiting = queue.filter((job) => isWaiting(job, nowMs));
   if (waitingOrder) {
-    const order2 = new Map(waitingOrder.map((id, index) => [id, index]));
-    waiting = waiting.slice().sort((a, b) => (order2.get(a.id) ?? 999) - (order2.get(b.id) ?? 999));
+    const order = new Map(waitingOrder.map((id, index) => [id, index]));
+    waiting = waiting.slice().sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
   }
   const activeEnds = active2.map((job) => job.completesAtMs).sort((a, b) => a - b);
   const slotTimes = activeEnds.length >= capacity ? activeEnds.slice(activeEnds.length - capacity) : [...activeEnds, ...Array(Math.max(0, capacity - activeEnds.length)).fill(nowMs)];
@@ -56960,12 +57019,16 @@ function executeGameCommand(previous, value, now, options = {}) {
       upgrade = result.result;
       break;
     }
-    case "socket":
-      state = socketGem(state, text(a, "id"), text(a, "gemId"));
+    case "socket": {
+      if (options.randomRoll === void 0) throw new Error("trusted_random_required");
+      state = socketGem(state, text(a, "id"), text(a, "gemId"), options.randomRoll);
       break;
-    case "replace_socket":
-      state = replaceGem(state, text(a, "id"), text(a, "gemId"));
+    }
+    case "replace_socket": {
+      if (options.randomRoll === void 0) throw new Error("trusted_random_required");
+      state = replaceGem(state, text(a, "id"), text(a, "gemId"), options.randomRoll);
       break;
+    }
     case "unsocket":
       state = unsocketGem(state, text(a, "id"), integer(a, "index", 0, 1));
       break;
@@ -57708,6 +57771,9 @@ async function resolveRegionalCombatV1(deps, input) {
 import { createHash as createHash2 } from "node:crypto";
 
 // src/server/equipment/gems/gem-runtime-v1.ts
+function effectiveRollPercent(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 80 && value <= 120 && (value - 80) % 5 === 0 ? value : 100;
+}
 function summarizeGemLoadoutV1(entries) {
   const statPercent = {}, statPercentagePoints = {}, groups = /* @__PURE__ */ new Map();
   for (const entry2 of entries) {
@@ -57715,7 +57781,7 @@ function summarizeGemLoadoutV1(entries) {
       const d = findStatGem(entry2.sockets.stat.familyId);
       if (!d) throw new Error("unknown_stat_gem");
       const target2 = d.unit === "percent" ? statPercent : statPercentagePoints;
-      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade];
+      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade] * effectiveRollPercent(entry2.sockets.stat.rollPercent) / 100;
     }
     if (entry2.sockets.effect) {
       const g = entry2.sockets.effect;
@@ -57723,13 +57789,13 @@ function summarizeGemLoadoutV1(entries) {
       if (!d) throw new Error("unknown_effect_gem");
       const grades = groups.get(g.familyId) ?? [];
       if (grades.length >= d.maxEquippedCopies) throw new Error("effect_gem_resonance_cap");
-      grades.push(g.grade);
+      grades.push(g);
       groups.set(g.familyId, grades);
     }
   }
   const effects = [...groups.entries()].map(([familyId, grades]) => {
     const d = findEffectGem(familyId);
-    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s, g) => s + d.values[g], 0).toFixed(6)), grades: [...grades].sort() };
+    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s, g) => s + d.values[g.grade] * effectiveRollPercent(g.rollPercent) / 100, 0).toFixed(6)), grades: grades.map((g) => g.grade).sort() };
   });
   return { statPercent, statPercentagePoints, effects };
 }

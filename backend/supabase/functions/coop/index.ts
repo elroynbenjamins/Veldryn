@@ -42447,6 +42447,7 @@ var timerRange = {
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
@@ -42557,12 +42558,14 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
+  const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
+  const craftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
     skillId,
     level,
-    xp: q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0),
+    xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
     seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
@@ -42934,6 +42937,17 @@ function mobileGemFamilyV1(familyId) {
 }
 function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
+}
+var GEM_ROLL_MIN_PERCENT_V1 = 80;
+var GEM_ROLL_MAX_PERCENT_V1 = 120;
+var GEM_ROLL_STEP_PERCENT_V1 = 5;
+function normalizeGemRollPercentV1(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= GEM_ROLL_MIN_PERCENT_V1 && value <= GEM_ROLL_MAX_PERCENT_V1 && (value - GEM_ROLL_MIN_PERCENT_V1) % GEM_ROLL_STEP_PERCENT_V1 === 0 ? value : void 0;
+}
+function gemRolledValueV1(familyId, grade, rollPercent = 100) {
+  const family = mobileGemFamilyV1(familyId);
+  if (!family) return 0;
+  return family.values[grade] * (normalizeGemRollPercentV1(rollPercent) ?? 100) / 100;
 }
 
 // ../apps/mobile/src/content/items.ts
@@ -45997,7 +46011,7 @@ function normalizeCraftedGearInstances(raw2) {
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
-        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
+        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, statGemRollPercent: normalizeGemRollPercentV1(enhancement.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(enhancement.effectGemRollPercent), gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
       }];
     } catch {
       return [];
@@ -46059,7 +46073,7 @@ function equippedCanonicalSocketsV1(state) {
     const selectedEffect = valid(raw2?.effectGemId, "effect") ?? ids2.find((id) => valid(id, "effect"));
     const statGemId = canonicalGemMetaV1(selectedStat ?? "") ? selectedStat : void 0;
     const effectGemId = canonicalGemMetaV1(selectedEffect ?? "") ? selectedEffect : void 0;
-    return [{ equipmentItemId, statGemId, effectGemId }];
+    return [{ equipmentItemId, statGemId, effectGemId, statGemRollPercent: normalizeGemRollPercentV1(raw2?.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(raw2?.effectGemRollPercent) }];
   });
 }
 function equippedCanonicalGemIdsV1(state) {
@@ -46108,7 +46122,13 @@ function normalizeEnhancementGemSlots(raw2) {
     if (kind === "effect" && !effectGemId) effectGemId = gem2.id;
   }
   const gemIds = [statGemId, effectGemId].filter((id) => Boolean(id));
-  return { statGemId, effectGemId, gemIds };
+  return {
+    statGemId,
+    effectGemId,
+    gemIds,
+    statGemRollPercent: statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
+    effectGemRollPercent: effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
+  };
 }
 function equippedCraftedInstance(state, itemId) {
   const slot = Object.entries(state.character?.equipment ?? {}).find(([, value]) => value === itemId)?.[0];
@@ -46153,7 +46173,7 @@ function equippedCanonicalStatGemBonusesV1(state) {
   if (!state.character) return { statPercent, statPercentagePoints };
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const gemId = gearEnhancement(state, itemId).statGemId;
+    const enhancement = gearEnhancement(state, itemId), gemId = enhancement.statGemId;
     if (!gemId) continue;
     const meta = canonicalGemMetaV1(gemId);
     if (!meta || meta.kind !== "stat") continue;
@@ -46161,7 +46181,7 @@ function equippedCanonicalStatGemBonusesV1(state) {
     const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
     if (!key || !family || family.kind !== "stat") continue;
     const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
-    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+    target2[key] = (target2[key] ?? 0) + gemRolledValueV1(meta.familyId, meta.grade, enhancement.statGemRollPercent);
   }
   return { statPercent, statPercentagePoints };
 }
@@ -46568,6 +46588,9 @@ function findEffectGem(familyId) {
 }
 
 // src/server/equipment/gems/gem-runtime-v1.ts
+function effectiveRollPercent(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 80 && value <= 120 && (value - 80) % 5 === 0 ? value : 100;
+}
 function summarizeGemLoadoutV1(entries) {
   const statPercent = {}, statPercentagePoints = {}, groups = /* @__PURE__ */ new Map();
   for (const entry2 of entries) {
@@ -46575,7 +46598,7 @@ function summarizeGemLoadoutV1(entries) {
       const d = findStatGem(entry2.sockets.stat.familyId);
       if (!d) throw new Error("unknown_stat_gem");
       const target2 = d.unit === "percent" ? statPercent : statPercentagePoints;
-      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade];
+      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade] * effectiveRollPercent(entry2.sockets.stat.rollPercent) / 100;
     }
     if (entry2.sockets.effect) {
       const g = entry2.sockets.effect;
@@ -46583,13 +46606,13 @@ function summarizeGemLoadoutV1(entries) {
       if (!d) throw new Error("unknown_effect_gem");
       const grades = groups.get(g.familyId) ?? [];
       if (grades.length >= d.maxEquippedCopies) throw new Error("effect_gem_resonance_cap");
-      grades.push(g.grade);
+      grades.push(g);
       groups.set(g.familyId, grades);
     }
   }
   const effects = [...groups.entries()].map(([familyId, grades]) => {
     const d = findEffectGem(familyId);
-    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s2, g) => s2 + d.values[g], 0).toFixed(6)), grades: [...grades].sort() };
+    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s2, g) => s2 + d.values[g.grade] * effectiveRollPercent(g.rollPercent) / 100, 0).toFixed(6)), grades: grades.map((g) => g.grade).sort() };
   });
   return { statPercent, statPercentagePoints, effects };
 }

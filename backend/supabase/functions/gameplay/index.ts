@@ -49382,22 +49382,17 @@ var forgeRarityRolls = [
   { rarity: "uncommon", chance: CRAFTED_UNCOMMON_CHANCE },
   { rarity: "common", chance: CRAFTED_COMMON_CHANCE }
 ];
-var order = ["common", "uncommon", "rare", "epic", "legendary", "mythic"];
-function higherRarity(a, b) {
-  return order.indexOf(a) >= order.indexOf(b) ? a : b;
-}
 function craftedGearRarity(itemId, roll) {
   if (!Number.isFinite(roll) || roll < 0 || roll >= 1) throw new Error("Invalid crafted rarity roll");
   const item = itemDef(itemId);
   if (item.type !== "gear") throw new Error("Crafted rarity only applies to equipment");
-  const base = itemRarity(item);
   const sample = Math.floor(roll * 1e6);
   let cutoff = 0;
   for (const outcome of forgeRarityRolls) {
     cutoff += Math.round(outcome.chance * 1e6);
-    if (sample < cutoff) return higherRarity(base, outcome.rarity);
+    if (sample < cutoff) return outcome.rarity;
   }
-  return base;
+  return "common";
 }
 function craftedRarityStatMultiplier(itemId, rarity) {
   const base = itemRarity(itemDef(itemId));
@@ -49539,7 +49534,7 @@ function craftClaimSubRoll(trustedRoll, jobId) {
   return deterministicCraftRarityRoll(`${trustedRoll.toFixed(12)}:${jobId}`);
 }
 function craftedInstanceResult(state, instance) {
-  const copies = craftedInstancesForItem(state, instance.itemId, instance.ownerCharacterId), baseRarity = itemRarity(itemDef(instance.itemId));
+  const copies = craftedInstancesForItem(state, instance.itemId, instance.ownerCharacterId), baseRarity = "common";
   return {
     instanceId: instance.id,
     itemId: instance.itemId,

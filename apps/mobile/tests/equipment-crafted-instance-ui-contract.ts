@@ -17,7 +17,7 @@ const forgeFeedback=read('src/components/ForgeResultFeedback.tsx');
 const save=read('src/core/save-normalization.ts');
 
 ok(rarity.includes('CRAFTED_MYTHIC_CHANCE=.001')&&rarity.includes('CRAFTED_EPIC_CHANCE=.006'),'Forge quality odds must remain exactly 0.10% Mythic / 0.60% Epic');
-ok(rarity.includes('return base'),'Missed Forge quality proc must preserve authored rarity');
+ok(rarity.includes("return 'common'")&&rarity.includes('forgeRarityRolls'),'Forge rarity rolls follow the shared per-tier table and retain common fallback');
 ok(instances.includes("acquireSource:'craft'"),'Crafted equipment must persist acquisition provenance');
 ok(instances.includes('sourceReceiptKey:args.jobId'),'Forge job receipt must make settlement idempotent');
 ok(instances.includes('bestCraftedInstanceForItem'),'Duplicate copies need a deterministic best-copy compatibility bridge');

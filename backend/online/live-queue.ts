@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import type {CoopRunRequest} from '../src/shared/coop-types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {coopRequiredLevel,highestEligibleCoopTier,readinessEligibleCoopTier} from '../src/server/coop/config';
+import {coopRequiredLevel,highestEligibleCoopTier,newDungeonTierAllowed,readinessEligibleCoopTier} from '../src/server/coop/config';
 import {defeatedDungeonChapterBoss,publishedRegularDungeon,regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {resolveAndFreezeLoadout} from '../src/server/coop/loadout-snapshots';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
@@ -34,6 +34,7 @@ export class OnlineLiveQueue {
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
   if(entryError)throw new GameplayError(entryError);
+  if(!newDungeonTierAllowed(request.tier))throw new GameplayError('invalid_dungeon_tier');
   const maximumTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maximumTier||request.tier>maximumTier||request.tier<1)throw new GameplayError('dungeon_level_requirement');
   const selectedTier=request.tier;
   const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,selectedTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});

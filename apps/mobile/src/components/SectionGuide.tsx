@@ -71,10 +71,10 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
         <Text style={[styles.closeText,{color:C.muted}]}>×</Text>
        </Pressable>
       </View>
-      <ScrollView style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+      <ScrollView style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
        <Text style={[styles.dialogBody,{color:C.muted}]}>{t(guide.body)}</Text>
        {selectedTopic?<View style={styles.topicArea}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicTabs} accessibilityRole="tablist" nestedScrollEnabled>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.topicTabs} accessibilityRole="tablist" nestedScrollEnabled>
          {topics.map((topic,index)=><Pressable key={topic.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}}
           onPress={()=>setTopicIndex(index)} style={[styles.topicTab,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
           <Text style={[styles.topicTabLabel,{color:topicIndex===index?C.text:C.muted}]}>{t(topic.title)}</Text>

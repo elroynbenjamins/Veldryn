@@ -1,9 +1,11 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {gearEnhancement,replaceGem,socketGem} from '../src/core/equipment-enhancement';
+import {equippedCanonicalStatGemBonusesV1,gearEnhancement,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
 import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostV1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
+import {gemRollPercentFromUnitV1,gemRolledValueV1,gemValueRangeV1} from '../src/content/gems-v1';
+import {executeGameCommand} from '../src/core/game-commands';
 import {totalXpAtLevel} from '../src/core/progression';
 import {RECIPES} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
@@ -106,5 +108,35 @@ ok(gemPouch(cacheState).stacks.some(row=>row.itemId==='raw_gem:effect_bulwark:g3
 const cacheDustAfter=cacheState.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0)+cacheState.bank.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 ok(cacheDustAfter===cacheDustBefore+31,'Resonance Cache should settle its pre-rolled Gem Dust');
 let doubleClaimBlocked=false;try{claimResonanceCacheV1(cacheState,'effect_mercy',cacheNow)}catch{doubleClaimBlocked=true}ok(doubleClaimBlocked,'Resonance Cache must be single-claim per UTC week');
+
+// Grindstone-style values: trusted roll, durable socket state, best-of reapply,
+// backward-compatible gems, and gameplay modifiers share one authored value.
+const might='gem:stat_might:g1';
+const range=gemValueRangeV1('stat_might',1);
+ok(Math.abs(range.min-.0032)<1e-10&&Math.abs(range.max-.0048)<1e-10,'Cut Might Gem rolls from +0.32% to +0.48% Power');
+ok(gemRollPercentFromUnitV1(0)===80&&gemRollPercentFromUnitV1(.999999)===120&&gemRollPercentFromUnitV1(.5)===100,'Nine roll outcomes cover minimum, midpoint and maximum inclusively');
+ok(Math.abs(gemRolledValueV1('stat_might',1,120)-.0048)<1e-10,'Rolled power uses the actual grade value and multiplier');
+let rollState=createCharacter(newGame(1),'IRONWARDEN','Roll Tester','male');
+rollState={...rollState,character:{...rollState.character!,equipment:{...rollState.character!.equipment,weapon:'basic_sword'},gold:10000,gearEnhancements:{}},inventory:{...rollState.inventory,stacks:[{itemId:might,quantity:5}]}};
+const minSocket=socketGem(rollState,'basic_sword',might,0);
+ok(gearEnhancement(minSocket,'basic_sword').statGemRollPercent===80,'First socket persists its own actual minimum roll');
+ok(Math.abs((equippedCanonicalStatGemBonusesV1(minSocket).statPercent.power??0)-.0032)<1e-10,'Combat stats use the saved roll, not the old fixed grade value');
+const improved=replaceGem(minSocket,'basic_sword',might,.999999);
+ok(gearEnhancement(improved,'basic_sword').statGemRollPercent===120,'A duplicate gem reroll can improve a low roll');
+ok(gemStorageQuantity(improved,might)===3,'A reroll consumes exactly one duplicate without returning the previously socketed gem');
+const noDowngrade=replaceGem(improved,'basic_sword',might,0);
+ok(gearEnhancement(noDowngrade,'basic_sword').statGemRollPercent===120,'Bad rerolls consume the copy but never lower a high roll');
+ok(gemStorageQuantity(noDowngrade,might)===2,'Failed improvement still spends exactly one gem');
+const removed=unsocketGem(noDowngrade,'basic_sword',0);
+ok(gearEnhancement(removed,'basic_sword').statGemRollPercent===undefined,'Extraction removes the socket roll along with its gem');
+ok(gemStorageQuantity(removed,might)===3,'Extracted gem returns as an unrolled stackable copy');
+const legacyState={...rollState,character:{...rollState.character!,gearEnhancements:{basic_sword:{rank:0,failures:0,statGemId:might,gemIds:[]}}}};
+ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.power??0)-.004)<1e-10,'Older socketed gems preserve their original midpoint value');
+let untrusted=false;try{executeGameCommand(rollState,{type:'socket',args:{id:'basic_sword',gemId:might}},1000)}catch(error){untrusted=String(error).includes('trusted_random_required')}
+ok(untrusted,'Online authoritative socket commands must reject a missing server random roll');
+const serverSocket=executeGameCommand(rollState,{type:'socket',args:{id:'basic_sword',gemId:might}},1000,{randomRoll:1/9-1e-9}).state;
+ok(gearEnhancement(serverSocket,'basic_sword').statGemRollPercent===80,'Trusted server command snapshots the exact roll');
+const serverImprove=executeGameCommand(serverSocket,{type:'replace_socket',args:{id:'basic_sword',gemId:might}},1000,{randomRoll:.999999}).state;
+ok(gearEnhancement(serverImprove,'basic_sword').statGemRollPercent===120,'Authoritative duplicate-gem command honors best-of improvement');
 
 console.log('PASS: Enchanting refinement, research, extraction expertise, catalyst synthesis, Resonance Cache and shared forge queue');

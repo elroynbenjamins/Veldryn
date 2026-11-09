@@ -1,6 +1,7 @@
 import {deepEqual,equal} from './assertions';
 import {GUILD_TUTORIAL_STEPS,advanceGuildTutorial,createGuildTutorialStore,normalizeGuildTutorialProgress} from '../src/core/guild-tutorial';
 import {guildTutorialText} from '../src/i18n/guild-tutorial';
+import {guildGuideLibraryText} from '../src/i18n/guild-guide-library';
 import {guildDetailedGuide} from '../src/core/guild-detailed-guides';
 
 async function testGuildTour(){
@@ -31,6 +32,10 @@ async function testGuildTour(){
  }
  equal(guildDetailedGuide('Manage')?.topics.some(topic=>topic.body.includes('disbanding permanently')),true,'leadership guide warns about permanent Guild disbanding');
  equal(guildDetailedGuide('Appearance')?.topics.some(topic=>topic.body.includes('permanently retires')),true,'appearance guide warns about irreversible tag changes');
+ equal(guildDetailedGuide('Home')?.topics.length,3,'Guild Guide library includes home and replay instructions');
+ equal(guildDetailedGuide('Chat')?.topics.length,2,'Guild Chat has lightweight reference topics');
+ equal(guildGuideLibraryText('nl','Guild Guide'),'Gildegids','Guild Guide Home shortcut is localized');
+ equal(guildGuideLibraryText('tr','Browse guides'),'Rehberlere göz at','Guide Library supports Turkish navigation');
 
  deepEqual(normalizeGuildTutorialProgress({step:500,status:'active'}),{step:4,status:'active'},'tour step is bounded');
  deepEqual(advanceGuildTutorial({step:3,status:'active'}),{step:4,status:'active'},'next step is the Hall');

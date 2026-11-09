@@ -50,6 +50,9 @@ export const COOP_ROGUELITE_CONFIG = Object.freeze({
 } as const);
 
 export type CoopTier=1|2|3|4|5;
+/** New regular dungeon runs offer three difficulties. Legacy tiers 4/5 stay readable and resolvable for saved runs. */
+export const NEW_DUNGEON_TIERS=[1,2,3] as const;
+export function newDungeonTierAllowed(value:unknown):value is 1|2|3{return value===1||value===2||value===3;}
 export function coopRequiredLevel(baseMinimumLevel:number,tier:CoopTier):number{
   if(!Number.isInteger(baseMinimumLevel)||baseMinimumLevel<1)throw new Error('invalid_expedition_minimum_level');
   return rebaseLegacyCombatLevel(baseMinimumLevel+COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
@@ -57,7 +60,7 @@ export function coopRequiredLevel(baseMinimumLevel:number,tier:CoopTier):number{
 
 export function highestEligibleCoopTier(baseMinimumLevel:number,characterLevel:number):CoopTier|undefined{
   if(!Number.isInteger(characterLevel)||characterLevel<1)throw new Error('invalid_character_level');
-  for(const tier of [5,4,3,2,1] as CoopTier[])if(characterLevel>=coopRequiredLevel(baseMinimumLevel,tier))return tier;
+  for(const tier of [...NEW_DUNGEON_TIERS].reverse())if(characterLevel>=coopRequiredLevel(baseMinimumLevel,tier))return tier;
   return undefined;
 }
 
@@ -68,7 +71,7 @@ export function readinessEligibleCoopTier(baseMinimumLevel:number,characterLevel
  if(!Number.isFinite(normalizedScore)||normalizedScore<COOP_ROGUELITE_CONFIG.normalizedReadinessFloor)return undefined;
  const eligible=highestEligibleCoopTier(baseMinimumLevel,characterLevel);
  if(!eligible)return undefined;
- for(const tier of [5,4,3,2,1] as CoopTier[]){
+ for(const tier of [...NEW_DUNGEON_TIERS].reverse()){
   if(tier<=eligible&&normalizedScore>=COOP_ROGUELITE_CONFIG.normalizedReadinessFloor*EXPEDITION.difficultyIndex[tier])return tier;
  }
  return 1;

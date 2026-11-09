@@ -91,6 +91,8 @@ const COMBAT_SPEED_MAX=1.3;
 export const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
+// Give combat 30% more passive Exploration XP. Store tenths to avoid losing bonuses on frequent claims.
+const COMBAT_PASSIVE_EXPLORATION_XP_TENTHS=13;
 /** Ordinary regional combat should consume some food for a reasonably prepared player. */
 export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfields:1.00,Silverbrook:1.04,'Ironwood Forest':1.08,'Old Mines':1.12,"King's Road":1.16,Sunscar:1.20,Frostmarch:1.25,Ashlands:1.30};
 /** Starter hunts resolve much faster than late hunts. These ordinary-hunt
@@ -702,11 +704,15 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
   const explorationSkill=state.skills.find(skill=>skill.skillId==='exploration');
   const explorationRaw=sim.kills*Math.max(1,Math.ceil(m.level/12));
-  const explorationXp=Math.min(Math.max(0,totalXpAtLevel(100)-(explorationSkill?.xp??0)),explorationRaw);
+  const explorationRemainderKey='combat:passive-exploration-xp-tenths';
+  const explorationTenths=explorationRaw*COMBAT_PASSIVE_EXPLORATION_XP_TENTHS+Math.max(0,Math.floor(state.rewardRemainders?.[explorationRemainderKey]??0));
+  const explorationCap=Math.max(0,totalXpAtLevel(100)-(explorationSkill?.xp??0));
+  const explorationXp=Math.min(explorationCap,Math.floor(explorationTenths/10));
+  const explorationRemainder=explorationXp>=explorationCap?0:explorationTenths%10;
   let momentumXp=0;
   for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
   const momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
@@ -987,7 +993,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,settledAtMs);
     const exploredRouteIds=state.activity.kind==='exploration'&&reward.kills>0?[...new Set([...(state.exploredRouteIds??[]),state.activity.targetId])]:(state.exploredRouteIds??[]);
-    const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],exploredRouteIds,outOfCombatSinceMs:idleWindow.shouldStop?settledAtMs:undefined,activity:idleWindow.shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction}} as GameState;
+    const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders??state.rewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],exploredRouteIds,outOfCombatSinceMs:idleWindow.shouldStop?settledAtMs:undefined,activity:idleWindow.shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction}} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,supply);
     const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
     const eventApplied=refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[]));
@@ -1013,7 +1019,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.explorationXp??0));
     return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
   });
-  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,combatEnemyHp:reward.nextCombatEnemyHp,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders??state.rewardRemainders,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,combatEnemyHp:reward.nextCombatEnemyHp,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   let next=commitDailySupplyTimedBoost(nextBase,supply);
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&(reward.preparationEncounters??reward.kills)>0){let prep=next.character.preparation;for(let i=0;i<(reward.preparationEncounters??reward.kills);i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}

@@ -1,6 +1,7 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,refreshQuests,startCombat,startExploration} from '../src/core/game';
 // previewActivityReward and startExploration are used in the partial-progress assertion below.
 import {EXPLORATION_ROUTES} from '../src/content/exploration';
+import {MONSTERS} from '../src/content/monsters';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
@@ -38,9 +39,22 @@ combat=startCombat(combat,'MOSS_RAT',1000);
 const combatPreview=previewActivityReward(combat,61_000);
 ok((combatPreview.explorationXp??0)>0,'Normal combat should grant a small amount of passive Exploration XP');
 ok((combatPreview.explorationXp??0)<combatPreview.xp,'Passive Exploration XP should remain secondary to normal combat XP');
+const mossRat=MONSTERS.find(row=>row.id==='MOSS_RAT')!;
+const normalPassiveXp=combatPreview.kills*Math.max(1,Math.ceil(mossRat.level/12));
+ok(combatPreview.explorationXp===Math.floor(normalPassiveXp*13/10),'Combat should give exactly 30% extra passive Exploration XP, rounded only after total kills');
 const explorationBefore=combat.skills.find(row=>row.skillId==='exploration')!.xp;
 const combatClaim=claimActivity(combat,61_000);
 ok(combatClaim.state.skills.find(row=>row.skillId==='exploration')!.xp===explorationBefore+(combatClaim.reward.explorationXp??0),'Combat Exploration XP must settle into the Exploration skill');
+
+// Fractional Exploration XP carries across claims, rather than being lost on short hunts.
+let splitCombat=createCharacter(newGame(1_000),'IRONWARDEN','Split Explorer');
+splitCombat=startCombat(splitCombat,'MOSS_RAT',1_000);
+const firstClaim=claimActivity(splitCombat,31_000);
+const secondClaim=claimActivity(firstClaim.state,61_000);
+const splitKills=firstClaim.reward.kills+secondClaim.reward.kills;
+const splitExplorationXp=(firstClaim.reward.explorationXp??0)+(secondClaim.reward.explorationXp??0);
+ok(splitExplorationXp===Math.floor(splitKills*13/10),'Claim frequency must not reduce the 30% passive combat Exploration XP bonus');
+ok(secondClaim.state.skills.find(row=>row.skillId==='exploration')!.xp===splitExplorationXp,'Both combat claims must settle all earned passive Exploration XP');
 
 const frostRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_FROSTMARCH')!,ashRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_ASHLANDS')!;
 ok(frostRoute.seconds===240&&ashRoute.seconds===288,'Exploration routes should stay 20% faster so later-region discovery does not become an unnecessary wait');

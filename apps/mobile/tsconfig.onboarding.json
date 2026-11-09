@@ -11,6 +11,7 @@
     "src/core/**/*.ts",
     "src/content/**/*.ts",
     "tests/onboarding-guide-v1.ts",
+    "tests/guild-tour-v2.ts",
     "tests/first-session-tutorial.ts",
     "tests/character-creation-onboarding.ts",
     "tests/assertions.ts",

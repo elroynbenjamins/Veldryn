@@ -25,11 +25,18 @@ async function main(){
  const entry=await handler(request('entry')),projection=await entry.json();
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
- assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
- assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_003','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'],'Only Sunscar and later regular dungeons are listed');
+ assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[2].available,false);
+ for(const dungeon of projection.dungeons){
+  assert.deepEqual(dungeon.difficulties,[1,2,3],'Only the three published tiers are offered');
+  assert.deepEqual(Object.keys(dungeon.expectedMarksByTier),['1','2','3'],'Reward previews must only include selectable tiers');
+  assert.deepEqual(dungeon.itemDropRates,[],'No permanent item drop rates may be invented before server settlement supports them');
+ }
+ const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_004');
+ assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Mirage Well tier rewards must use canonical mark multipliers');
+ assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_003','EXP_004','EXP_005','EXP_006'],'Only released Sunscar and Frostmarch regular dungeons are listed');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.minLevel,25,'Mirage Well is the first dungeon at current Level 25');
- assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_007')?.available,false,'Ashlands dungeons must remain unavailable');
- assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_008')?.lockedReason,'In Development','Ashlands dungeon cards must identify the development state');
+ assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_007'),'Unreleased Ashlands dungeons are omitted from entry');
+ assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_008'),'Unreleased Ashlands dungeons stay out of the playable catalog');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
  assert.equal(suncrest.status,'available');assert.equal(suncrest.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(starfall.status,'preview');
  assert.equal(calls.length,4);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);

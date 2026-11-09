@@ -28,4 +28,8 @@ assert(browse.includes('estimatedMinutes??{min:6,max:8}')&&details.includes("mod
 assert(details.includes('rewardBudget.weeklyRemaining===0')&&details.includes('rewardBudget.charges===0'),'Dungeon reward preview must distinguish the exhausted weekly cap from empty charges');
 assert(run.includes("run.phase==='failed'")&&run.includes('No failed-run reward receipt yet.'),'Failed runs must not imply a consolation reward is always being prepared');
 assert(textCatalog.includes('Weekly enhanced reward limit reached.')&&textCatalog.includes('No failed-run reward receipt yet.'),'Dungeon eligibility guidance must be localized');
+assert(threeTier.includes('NEW_DUNGEON_TIERS=[1,2,3]')&&entry.includes('const tiers=[...NEW_DUNGEON_TIERS]'),'Server only publishes three active dungeon tiers');
+assert(details.includes("dungeonRewardText(language,'guaranteed')")&&details.includes("dungeonRewardText(language,'potential')")&&details.includes('potentialDrops.map('),'Selected-dungeon difficulty screen must show guaranteed and possible reward rows');
+assert(preview.includes("SETTLED_GEM_DUNGEONS")&&preview.includes('No verified item-drop rates are published'),'No fabricated odds may appear for EXP dungeons without active settlement');
+assert(rewardI18n.includes('nl')&&rewardI18n.includes('ru')&&rewardI18n.includes('tr'),'Dungeon reward preview includes all supported translations');
 console.log('PASS dungeon reward previews, weekly charge safety, cap reasons, receipt clarity and Live parity UI');

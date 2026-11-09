@@ -26,8 +26,17 @@ async function main(){
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
  assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
- assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_003','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'],'Only Sunscar and later regular dungeons are listed');
+ assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_004','EXP_003','EXP_005','EXP_006','EXP_007','EXP_008'],'Only Sunscar and later regular dungeons are listed');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.minLevel,25,'Mirage Well is the first dungeon at current Level 25');
+ assert.ok(projection.dungeons.every((row:{difficulties:number[]})=>JSON.stringify(row.difficulties)==='[1,2,3]'),'Every new regular dungeon offers only three tiers');
+ const first=projection.dungeons[0];
+ assert.deepEqual(Object.keys(first.expectedMarksByTier),['1','2','3'],'Only three Mark estimates are advertised');
+ assert.equal(first.expectedMarksByTier[1],80,'Mirage Well Normal clear estimate uses server Marks');
+ assert.equal(first.expectedMarksByTier[2],88,'Mirage Well Veteran clear estimate uses tier multiplier');
+ assert.equal(first.expectedMarksByTier[3],100,'Mirage Well Heroic clear estimate uses tier multiplier');
+ assert.deepEqual(first.rewardPreview.guaranteedOnClear,['Expedition Marks']);
+ assert.deepEqual(first.rewardPreview.potentialDrops,[],'No COP gem-drop odds are borrowed for the different EXP source');
+ assert.match(first.rewardPreview.dropNotice,/No verified item-drop rates/);
  assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_007')?.available,false,'Ashlands dungeons must remain unavailable');
  assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_008')?.lockedReason,'In Development','Ashlands dungeon cards must identify the development state');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');

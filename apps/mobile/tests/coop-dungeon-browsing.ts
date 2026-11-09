@@ -7,9 +7,15 @@ const rootbound=presentCoopDungeon({id:'EXP_001',name:'Rootbound Vault',minLevel
 validateCoopDungeonView(rootbound);
 equal([rootbound.id,rootbound.name,rootbound.minLevel,rootbound.recommendedLevel],['EXP_001','Rootbound Vault',15,25],'canonical EXP_001 changed');
 equal(rootbound.heroArtId,'rootbound_hero','Rootbound hero art mapping changed');
+equal(rootbound.difficulties,[1,2,3],'legacy source must not expose tiers 4 and 5 for new selection');
 equal(rootbound.estimatedMinutes,{min:6,max:8},'launch duration target changed');equal(rootbound.tierMinLevels,{1:15,2:20,3:25,4:30,5:35},'tier requirements changed');
 equal(coopTierEligibility(rootbound,3,25),{eligible:true,requiredLevel:25},'eligible tier should open');equal(coopTierEligibility(rootbound,4,25),{eligible:false,requiredLevel:30},'under-level tier should fail closed');
 equal(highestEligibleCoopTier(rootbound,25),3,'live auto tier should choose the highest eligible tier');equal(highestEligibleCoopTier(rootbound,14),undefined,'live auto tier should fail closed below dungeon minimum');
+equal(highestEligibleCoopTier(rootbound,99),3,'live auto tier never selects retired tier 4/5');
+const rates=presentCoopDungeon({id:'EXP_004',name:'Mirage Well',region:'Sunscar',minLevel:25,syncLevel:45,available:true,difficulties:[1,2,3,4,5],recommendedLiveTier:5,rewardPreview:{guaranteedOnClear:['Expedition Marks'],potentialDrops:[],dropNotice:'No verified item-drop rates are published for this dungeon yet.'}});
+equal(rates.recommendedLiveTier,undefined,'stale Live tier 5 must not appear in a new dungeon choice');
+equal(rates.rewardPreview?.potentialDrops,[],'unpublished drop rates remain empty, never invented');
+validateCoopDungeonView(rates);
 const unknown=presentCoopDungeon({id:'EXP_UNKNOWN',name:'A deliberately very long authoritative expedition title that must remain live text',minLevel:1,syncLevel:1,available:true,enabledRoomTypes:['battle','forge' as unknown as CoopRoomType],difficulties:[1]});
 equal(unknown.artId,undefined,'unknown art must use fallback');equal(unknown.enabledRoomTypes,['battle'],'unsupported rooms must be hidden');
 const locked=presentCoopDungeon({id:'EXP_LOCKED',name:'Locked',minLevel:50,syncLevel:60,available:false,lockedReason:'Requires level 50',difficulties:[1]});validateCoopDungeonView(locked);

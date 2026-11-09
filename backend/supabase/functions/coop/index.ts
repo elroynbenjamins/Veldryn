@@ -844,6 +844,29 @@ var ROOTBOUND_COOP_BALANCE_V2 = Object.freeze({
   lateDepthAttackMultiplier: 1
 });
 
+// src/server/coop/dungeon-entry-policy.ts
+var DUNGEON_UNLOCK_LEVEL = 25;
+var DUNGEON_CHAPTER_ONE_BOSS = "FALLEN_KNIGHT";
+function publishedRegularDungeon(def) {
+  return def.coopImplemented && def.region !== "Asterfall";
+}
+function defeatedDungeonChapterBoss(state) {
+  return Array.isArray(state?.defeatedBossIds) && state.defeatedBossIds.includes(DUNGEON_CHAPTER_ONE_BOSS);
+}
+function regularDungeonEntryError(def, state, characterLevel) {
+  if (!publishedRegularDungeon(def)) return "dungeon_unavailable";
+  if (!Number.isInteger(characterLevel) || characterLevel < Math.max(DUNGEON_UNLOCK_LEVEL, rebaseLegacyCombatLevel(def.minLevel))) return "dungeon_level_requirement";
+  if (!defeatedDungeonChapterBoss(state)) return "chapter_one_required";
+  return void 0;
+}
+function regularDungeonLockedReason(def, state, characterLevel) {
+  const error = regularDungeonEntryError(def, state, characterLevel);
+  if (!error) return void 0;
+  if (error === "dungeon_unavailable") return def.region === "Ashlands" ? "In Development" : "Not yet available";
+  if (error === "dungeon_level_requirement") return `Requires level ${Math.max(DUNGEON_UNLOCK_LEVEL, rebaseLegacyCombatLevel(def.minLevel))}`;
+  return "Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.";
+}
+
 // online/coop-loadout.ts
 import { createHash } from "node:crypto";
 
@@ -47809,7 +47832,7 @@ function coopEntryHandler(services) {
         gameVersion: loaded.version,
         liveRecruitment,
         ...rewardBudget ? { rewardBudget } : {},
-        dungeons: Object.values(EXPEDITIONS).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: def.coopImplemented && character.level >= rebasedCombatLevelFromLegacyLevel(def.minLevel), lockedReason: !def.coopImplemented ? def.region === "Ashlands" ? "In Development" : "Not yet available" : character.level < rebasedCombatLevelFromLegacyLevel(def.minLevel) ? `Requires level ${rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : void 0, difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
+        dungeons: Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level) && prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level), lockedReason: regularDungeonLockedReason(def, gameState, character.level), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
           const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= rebasedCombatLevelFromLegacyLevel(def.minLevel), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
           return { ...def, minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
@@ -49612,10 +49635,12 @@ var OnlineQModeRuntime = class {
     const hash = digest(request), prior = await this.receipt(accountId, "qmode_start_v1", accountId, request.requestId, hash);
     if (prior) return prior.response;
     const definition = EXPEDITIONS[request.dungeonId];
-    if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+    if (!definition) throw new GameplayError("dungeon_unavailable");
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
+    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
+    if (entryError) throw new GameplayError(entryError);
     const minimum = coopRequiredLevel(definition.minLevel, request.tier), sync = definition.recommendedLevel;
     const freeze = (source) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: minimum, syncLevel: sync, repository: { getOwnedLoadout: () => source } });
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned");
@@ -49772,7 +49797,10 @@ var OnlineLiveReady = class {
   services;
   async match(accountId) {
     const pool = await this.services.rpc("online_live_candidates_server_v1", { p_account_id: accountId });
-    const candidate = chooseBoundedCoopMatch(pool.tickets, pool.serverNow, 8, pool.requiredTicketIds, (roster) => !(pool.blockedPairs ?? []).some((pair) => roster.some((row) => row.accountId === pair.blocker) && roster.some((row) => row.accountId === pair.blocked)));
+    const candidate = chooseBoundedCoopMatch(pool.tickets.filter((ticket) => {
+      const def = EXPEDITIONS[ticket.expeditionId];
+      return !!def && publishedRegularDungeon(def);
+    }), pool.serverNow, 8, pool.requiredTicketIds, (roster) => !(pool.blockedPairs ?? []).some((pair) => roster.some((row) => row.accountId === pair.blocker) && roster.some((row) => row.accountId === pair.blocked)));
     if (!candidate) return;
     try {
       await this.services.rpc("open_online_live_ready_server_v1", { p_account_id: accountId, p_ticket_ids: candidate.ticketIds, p_check_id: this.services.randomId(), p_refill_id: pool.refillId });
@@ -49797,8 +49825,12 @@ var OnlineLiveReady = class {
       if (request.accept) {
         const source = await this.services.rpc("online_live_ready_sources_server_v1", { p_account_id: accountId, p_check_id: checkId });
         const definition = EXPEDITIONS[source.dungeonId];
-        if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+        if (!definition) throw new GameplayError("dungeon_unavailable");
         const records = source.members.map((member) => deriveOnlineCoopLoadout(member.accountId, member.state, member.version));
+        source.members.forEach((member, index) => {
+          const issue = regularDungeonEntryError(definition, member.state, records[index].characterLevel);
+          if (issue) throw new GameplayError(issue);
+        });
         frozen = freezeCoopRosterAtCommit({
           minLevel: coopRequiredLevel(definition.minLevel, source.tier),
           syncLevel: definition.recommendedLevel,
@@ -49832,7 +49864,7 @@ var OnlineLiveQueue = class {
     const prior = await replay();
     if (prior) return prior.response;
     const definition = EXPEDITIONS[request.dungeonId];
-    if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+    if (!definition) throw new GameplayError("dungeon_unavailable");
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
@@ -49842,6 +49874,8 @@ var OnlineLiveQueue = class {
       throw new GameplayError("stale_game_version", 409);
     }
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
+    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
+    if (entryError) throw new GameplayError(entryError);
     const maximumTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
     if (!maximumTier || request.tier > maximumTier || request.tier < 1) throw new GameplayError("dungeon_level_requirement");
     const selectedTier = request.tier;
@@ -49877,8 +49911,9 @@ var OnlineLiveQueue = class {
     }
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
-    const eligible = Object.values(EXPEDITIONS).filter((definition2) => definition2.coopImplemented && highestEligibleCoopTier(definition2.minLevel, record.characterLevel) !== void 0).sort((a, b) => b.minLevel - a.minLevel || a.id.localeCompare(b.id));
+    const eligible = Object.values(EXPEDITIONS).filter((definition2) => publishedRegularDungeon(definition2) && highestEligibleCoopTier(definition2.minLevel, record.characterLevel) !== void 0).sort((a, b) => b.minLevel - a.minLevel || a.id.localeCompare(b.id));
     if (!eligible.length) throw new GameplayError("dungeon_level_requirement");
+    if (!defeatedDungeonChapterBoss(game.state)) throw new GameplayError("chapter_one_required");
     const demand = await this.services.rpc("online_live_quick_match_demand_server_v1", { p_account_id: accountId });
     const dungeonId = chooseQuickMatchExpedition(demand.demands, eligible.map((definition2) => definition2.id), readiness.role, demand.serverNow);
     const definition = dungeonId ? EXPEDITIONS[dungeonId] : void 0;
@@ -50122,8 +50157,12 @@ var OnlineLiveRematch = class {
     if (body.accept) {
       const source = await this.services.rpc("online_live_rematch_sources_server_v1", { p_account_id: accountId, p_run_id: runId });
       const definition = EXPEDITIONS[source.dungeonId];
-      if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+      if (!definition) throw new GameplayError("dungeon_unavailable");
       const records = source.members.map((member) => deriveOnlineCoopLoadout(member.accountId, member.state, member.version));
+      source.members.forEach((member, index) => {
+        const issue = regularDungeonEntryError(definition, member.state, records[index].characterLevel);
+        if (issue) throw new GameplayError(issue);
+      });
       frozen = freezeCoopRosterAtCommit({
         minLevel: coopRequiredLevel(definition.minLevel, source.tier),
         syncLevel: definition.recommendedLevel,
@@ -50150,18 +50189,24 @@ var OnlineCoopLfg = class {
     this.services = services;
   }
   services;
-  browse(accountId) {
-    return this.services.rpc("browse_online_coop_lfg_server_v1", { p_account_id: accountId });
+  async browse(accountId) {
+    const posts = await this.services.rpc("browse_online_coop_lfg_server_v1", { p_account_id: accountId });
+    return posts.filter((post) => {
+      const definition = EXPEDITIONS[post.dungeonId];
+      return !!definition && publishedRegularDungeon(definition);
+    });
   }
   async publish(accountId, request) {
     if (!/^[a-zA-Z0-9_-]{8,128}$/.test(request.requestId) || typeof request.dungeonId !== "string") throw new GameplayError("invalid_request");
     const note = (request.note ?? "").trim();
     if (note.length > 140) throw new GameplayError("invalid_note");
     const definition = EXPEDITIONS[request.dungeonId];
-    if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+    if (!definition) throw new GameplayError("dungeon_unavailable");
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
+    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
+    if (entryError) throw new GameplayError(entryError);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
     const maxTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
     if (!maxTier) throw new GameplayError("dungeon_level_requirement");

@@ -12,7 +12,8 @@ async function request(name:string,args:Record<string,unknown>={}):Promise<Playe
  if(!supabase)throw new Error('Online services are not configured.');
  const {data,error}=await supabase.rpc(name,args);
  if(error)throw new Error(error.code==='PGRST202'?'Player badges are not available on this server yet.':error.message);
- const owned=(Array.isArray(data?.ownedExtras)?data.ownedExtras:[]).filter(isCollectiblePlayerBadgeId);
+ const providedExtras:unknown[]=Array.isArray(data?.ownedExtras)?(data.ownedExtras as unknown[]):[];
+ const owned:CollectiblePlayerBadgeId[]=providedExtras.filter(isCollectiblePlayerBadgeId);
  return {
   identity:normalizePlayerBadges(data?.identity),
   showSupporter:data?.showSupporter===true,

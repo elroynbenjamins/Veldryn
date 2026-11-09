@@ -90,13 +90,14 @@ assert.equal(cache.state.artifacts.length,1);
 // not actual player completion data.
 function sunscarPublishedClearRate(disableModifiers=false):number{
  const {createCharacter,newGame}=require('../../../apps/mobile/src/core/game') as typeof import('../../../apps/mobile/src/core/game');
+ const {legacyCharacterTotalXpAtLevel}=require('../../../apps/mobile/src/core/progression') as typeof import('../../../apps/mobile/src/core/progression');
  const {noviceItemId,noviceSetFor}=require('../../../apps/mobile/src/content/novice-sets') as typeof import('../../../apps/mobile/src/content/novice-sets');
  const {deriveOnlineCoopLoadout}=require('../coop-loadout') as typeof import('../coop-loadout');
  const {resolveAndFreezeLoadout}=require('../../src/server/coop/loadout-snapshots') as typeof import('../../src/server/coop/loadout-snapshots');
  const {MemoryQModeRunRepository,QModeService}=require('../../src/server/coop/qmode') as typeof import('../../src/server/coop/qmode');
  const roster=(['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const).map((classId,index)=>{
   const state=createCharacter(newGame(0),classId,'Balance Test');
-  state.character!.id=`character-${index}`;state.character!.level=100;
+  state.character!.id=`character-${index}`;state.character!.xp=legacyCharacterTotalXpAtLevel(100);state.character!.level=100;
   state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
   const record=deriveOnlineCoopLoadout(`account-${index}`,state,1);
   return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:45,repository:{getOwnedLoadout:()=>record}});

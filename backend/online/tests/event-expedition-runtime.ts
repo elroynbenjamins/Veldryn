@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {characterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import type {ClassId,GameState} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {OnlineEventExpeditionRuntime,projectOnlineEventRun} from '../event-expedition-runtime';
@@ -10,7 +11,7 @@ import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode,event
 import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
- const state=createCharacter(newGame(0),classId,name);state.character!.level=level;state.character!.id=characterId;
+ const state=createCharacter(newGame(0),classId,name);state.character!.xp=characterTotalXpAtLevel(level);state.character!.level=level;state.character!.id=characterId;
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  return state;
 }

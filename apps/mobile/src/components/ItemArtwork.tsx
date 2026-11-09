@@ -15,6 +15,6 @@ export function ItemArtwork({itemId,size=40}:{itemId:string;size?:number}){
  if(hasResourceArtwork(itemId))return <ResourceArtwork itemId={itemId} size={size} framed={false}/>;
  const item=itemDef(itemId);
  if(item.type==='tool'&&hasGatheringToolArtwork(itemId))return <GatheringToolArtwork itemId={itemId} size={size} framed={false}/>;
- if(item.type==='gear'&&hasEquipmentArtwork(item))return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{width:48,height:48,transform:[{scale:size/48}]}}><EquipmentArtwork item={item} compact framed={false}/></View></View>;
+ if(item.type==='gear'&&hasEquipmentArtwork(item))return <View style={{width:size,height:size,overflow:'hidden',alignItems:'center',justifyContent:'center'}}><View style={{width:48,height:48,transform:[{scale:size/48}]}}><EquipmentArtwork item={item} compact framed={false}/></View></View>;
  return <UiIcon name="inventory" size={size}/>;
 }

@@ -54,12 +54,12 @@ export class OnlineLiveQueue {
   if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
-  const eligible=Object.values(EXPEDITIONS).filter(definition=>definition.coopImplemented&&game.state!.character!.level>=definition.minLevel).sort((a,b)=>b.minLevel-a.minLevel||a.id.localeCompare(b.id));
+  const eligible=Object.values(EXPEDITIONS).filter(definition=>definition.coopImplemented&&highestEligibleCoopTier(definition.minLevel,record.characterLevel)!==undefined).sort((a,b)=>b.minLevel-a.minLevel||a.id.localeCompare(b.id));
   if(!eligible.length)throw new GameplayError('dungeon_level_requirement');
   const demand=await this.services.rpc<{serverNow:number;demands:CoopQuickMatchDemand[]}>('online_live_quick_match_demand_server_v1',{p_account_id:accountId});
   const dungeonId=chooseQuickMatchExpedition(demand.demands,eligible.map(definition=>definition.id),readiness.role,demand.serverNow);
   const definition=dungeonId?EXPEDITIONS[dungeonId]:undefined;if(!definition)throw new GameplayError('dungeon_unavailable');
-  const autoTier=readinessEligibleCoopTier(definition.minLevel,game.state.character.level,readiness.normalizedScore);
+  const autoTier=readinessEligibleCoopTier(definition.minLevel,record.characterLevel,readiness.normalizedScore);
   if(!autoTier)throw new GameplayError('role_not_ready');
   const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,autoTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
   return this.services.rpc('join_online_live_queue_server_v1',{

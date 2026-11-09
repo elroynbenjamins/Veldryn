@@ -14,10 +14,11 @@ ok(!forge.includes('‹  {gl(\'Skills\')}'),'Forge header must not show a redund
 ok(!unlocks.includes('Back to Account'),'New Unlocks must not display an in-page back button');
 ok(!settings.includes('Back to settings'),'Mobile Settings should navigate with a category strip, not a back arrow');
 ok(settings.includes("t(language,'settings.title')")&&settings.includes("const sections:SettingsSection[]=['account','gameplay','chat','display','data']")&&settings.includes("onPress={()=>setSection(value)}")&&!settings.includes("onPress={()=>setSection('store')}"),'Mobile Settings must keep its category tabs without duplicating Account Store');
-ok(app.includes("tab==='Store'&&<StoreScreen")&&!app.includes("setSettingsSection('store')"),'Account Store opens a dedicated route with ordinary Back navigation');
+ok(app.includes("tab==='Store'&&<StoreScreen")&&!app.includes("setSettingsSection('store')"),'Account Store opens a dedicated route without a redundant global Back bar');
 ok(app.includes("if(destination==='Skills'&&selectedSkill)")&&app.includes('setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);'),'Re-selecting the Skills tab must restore the skill hub');
 ok(app.includes("if(tab==='Skills'&&selectedSkill&&!skillsOpenedAsLink)"),'Android back-navigation for Skills should remain available');
-ok(app.includes("&&tab!=='Companions'&&<View style={[s.backBar"),'Companion root, training, sanctuary, trials, expeditions and codex must not render the redundant global Back bar');
+ok(!app.includes('s.backBar')&&!app.includes('s.backButton')&&!app.includes('s.backTitle'),'All secondary screens, including Store and Codex, omit the redundant global Back/title bar');
+ok(app.includes('<PrimaryNavigation destinations={primaryTabs}')&&app.includes('backSwipe.panHandlers'),'Bottom tabs and edge-swipe Back navigation remain available');
 ok(companionPanel.includes("const sections=['Collection','Training','Sanctuary','Trials','Expeditions']")&&companionPanel.includes('accessibilityRole="tablist"'),'The Companion internal tab navigation must remain available');
 ok(companionScreen.includes('<CombatCompanionPanel state={state}')&&app.includes("BackHandler.addEventListener('hardwareBackPress',goBack)"),'Removing the visible Back bar must preserve Companion content and Android hardware Back behavior');
 console.log('PASS: back-button cleanup retains skill/settings navigation and Android Back.');

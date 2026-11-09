@@ -18,14 +18,15 @@ import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
+export type MoreDestination='Dungeon'|'Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
-  {label:'PLAY & PROGRESSION',items:['Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
+  {label:'PLAY & PROGRESSION',items:['Dungeon','Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Party','Recruitment','Friends','Guild','Arena','Rankings']},
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
+  if(id==='Dungeon')return 'Dungeon';
   if(id==='Activity'||id==='Profile'||id==='NewUnlocks'||id==='AccountBonuses')return 'Character';
   if(id==='DailySupplies'||id==='RewardsInbox'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
@@ -45,6 +46,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   switch(id){
+    case 'Dungeon':return {title:a('Dungeons'),description:a('Browse dungeons, prepare Echoes and join expeditions')};
     case 'Home':return {title:a("Home"),description:a("Current activity and account overview")};
     case 'Party':return {title:a("Party"),description:a("Your team, weekly contracts, invites and chat")};
     case 'Recruitment':return {title:a("Recruitment"),description:a("Find Parties, players and Guilds")};
@@ -79,7 +81,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
   const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});
   const className=CLASSES.find(row=>row.id===character?.classId)?.name??character?.classId??'';
-  const quickAccess:readonly MoreDestination[]=['Activity','ResourceCodex','Store','Settings'];
+  const quickAccess:readonly MoreDestination[]=['Dungeon','ResourceCodex','Store','Settings'];
   const toggleSection=(label:string)=>setCollapsed(current=>({...current,[label]:!current[label]}));
   const lockedReason=(id:MoreDestination)=>(lockedDestinations[id]?a(lockedDestinations[id]!):undefined)??(id==='Companions'&&!companionUnlocked?a("Complete Into Ironwood (Level 10)."):'');
   const attentionLabel=(id:MoreDestination)=>{

@@ -71,7 +71,7 @@ export function combinedGemQuantityV1(state:GameState,itemId:string){return gemS
  * Preserve legacy gemIds fallbacks for older saves, without double-counting a
  * named slot.
  */
-function equippedCanonicalSocketsV1(state:GameState){
+export function equippedCanonicalSocketsV1(state:GameState){
  if(!state.character)return [] as Array<{equipmentItemId:string;statGemId?:string;effectGemId?:string;statGemRollPercent?:number;effectGemRollPercent?:number}>;
  const instances=craftedGearInstances(state);
  return Object.entries(state.character.equipment).flatMap(([key,equipmentItemId])=>{

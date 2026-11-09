@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {coopRequiredLevel} from '../src/server/coop/config';
+import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {MemoryQModeRunRepository,QModeService,type QModeRun} from '../src/server/coop/qmode';
 import {projectQModeRun} from '../src/server/coop/qmode-public-projection';
 import {resolveAndFreezeLoadout,type AuthoritativeLoadoutRecord} from '../src/server/coop/loadout-snapshots';
@@ -41,9 +42,11 @@ export class OnlineQModeRuntime{
  async start(accountId:string,request:CoopRunRequest){
   if(request.mode!=='qmode')throw new GameplayError('invalid_mode');
   const hash=digest(request),prior=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(prior)return prior.response;
-  const definition=EXPEDITIONS[request.dungeonId];if(!definition?.coopImplemented)throw new GameplayError('dungeon_unavailable');
+  const definition=EXPEDITIONS[request.dungeonId];if(!definition)throw new GameplayError('dungeon_unavailable');
   const game=await this.services.rpc<Game>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
+  const entryError=regularDungeonEntryError(definition,game.state,game.state.character.level);
+  if(entryError)throw new GameplayError(entryError);
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   const minimum=coopRequiredLevel(definition.minLevel,request.tier),sync=definition.recommendedLevel;
   const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});

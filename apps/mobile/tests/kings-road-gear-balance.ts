@@ -2,7 +2,7 @@ import {CLASSES} from '../src/content/classes';
 import {MONSTERS,ADVANCED_REGION_MONSTER_MULTIPLIER} from '../src/content/monsters';
 import {NOVICE_RECIPES} from '../src/content/novice-sets';
 import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
-import {V33_EQUIPMENT_RECIPES,TIER_CHARACTER_LEVEL_FLOOR} from '../src/content/equipment-recipes-v33';
+import {V33_EQUIPMENT_RECIPES,TIER_CHARACTER_LEVEL_FLOOR,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {combatSustainProjection,effectiveStats,startCombat,previewActivityReward} from '../src/core/game';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
@@ -40,8 +40,9 @@ for(const recipe of V33_EQUIPMENT_RECIPES.filter(r=>r.v33EquipmentTier==='T1'||r
   const slot=itemById.get(recipe.output.itemId)?.slot;
   check(!!slot,recipe.id+' has an equipment slot');
   const xpBase=recipe.v33EquipmentTier==='T1'?165:290;
-  const oldXp=Math.max(1,Math.round(xpBase*slotXpWeight[slot!]));
-  near(recipe.xp,recipe.v33EquipmentTier==='T2'?Math.round(oldXp*1.25):oldXp,recipe.id+' boosted XP');
+  const tierBaseXp=Math.max(1,Math.round(xpBase*slotXpWeight[slot!]));
+  const expectedXp=recipe.v33EquipmentTier==='T2'?Math.round(tierBaseXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):tierBaseXp;
+  near(recipe.xp,expectedXp,recipe.id+' boosted XP');
 }
 check(NOVICE_RECIPES.every(r=>r.xp>=50),'novice Smithing/Tailoring crafts award boosted XP');
 near(RECIPES.find(r=>r.id==='SMELT_COPPER_INGOT')!.xp,100,'starter Smithing training XP');

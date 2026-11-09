@@ -43,9 +43,10 @@ async function testGuildTour(){
  equal(guildDetailedGuide('Hall/Shop')?.topics.some(topic=>topic.body.includes('Guild Home')),true,'Token Shop guide directs daily claims to Guild Home');
  for(const section of ['Roster','Manage','Appearance']){
   const guide=guildDetailedGuide(section);
-  equal(guide?.topics.length,section==='Roster'?2:3,section+' has contextual role guidance');
+  equal(guide?.topics.length,3,section+' has contextual role guidance');
   equal(guide?.topics.every(topic=>topic.title.length>0&&topic.body.length>70),true,section+' has actionable help');
  }
+ equal(guildDetailedGuide('Roster')?.topics.some(topic=>topic.body.includes('Ordinary members and Officers can leave')),true,'members can find leaving instructions without leadership access');
  equal(guildDetailedGuide('Manage')?.topics.some(topic=>topic.body.includes('disbanding permanently')),true,'leadership guide warns about permanent Guild disbanding');
  equal(guildDetailedGuide('Appearance')?.topics.some(topic=>topic.body.includes('permanently retires')),true,'appearance guide warns about irreversible tag changes');
  equal(guildDetailedGuide('Home')?.topics.length,3,'Guild Guide library includes home and replay instructions');

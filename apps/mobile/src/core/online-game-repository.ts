@@ -36,9 +36,11 @@ export class OnlineGameRepository implements GameRepository{
   let recovered:ExecutedOnlineCommand|undefined;
   if(previous){
    recovered=await this.sendPending(previous);
-   // A second tap on Claim is a request to recover the original claim, not
-   // permission to settle the same rewards a second time.
-   if(!command||(command.type==='claim'&&previous.command.type==='claim'))return recovered;
+   // Repeating a command while its acknowledgement is uncertain means
+   // "recover that command", not "perform the purchase/sale/claim twice".
+   // Match the full validated payload, not merely its command type.
+   if(!command||JSON.stringify(command)===JSON.stringify(previous.command)||
+    (command.type==='claim'&&previous.command.type==='claim'))return recovered;
   }
   if(!command)throw new Error('No pending action.');
   if(!this.snapshot)await this.refresh();

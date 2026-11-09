@@ -21,7 +21,8 @@ assert(storeScreen.includes('<GooglePlayCommercePanel')&&storeScreen.includes('o
 assert(storeScreen.includes('showPromoCode?<View'),'Redeem code remains progressively disclosed');
 assert(app.includes("tab==='Store'&&<StoreScreen")&&!app.includes("setSettingsSection('store')"),'Account Store shortcut opens a dedicated route');
 assert(app.includes('onSectionChange={setSettingsSection}'),'Settings selection is kept in sync with navigation');
-assert(app.includes("&&tab!=='Settings'&&"),'App no longer adds a duplicate Settings back bar');
+assert(!app.includes('s.backBar')&&!app.includes('s.backButton')&&!app.includes('s.backTitle'),'Settings, Store, Codex and all detail routes omit the redundant global Back/title bar');
+assert(app.includes('BackHandler.addEventListener(\'hardwareBackPress\',goBack)')&&app.includes('<PrimaryNavigation destinations={primaryTabs}'),'Removing the strip preserves Android Back and bottom navigation');
 assert(!src.includes("accessibilityLabel={a('Back to settings')}"),'Settings no longer renders its own redundant back row');
 assert(!gameplay.includes('chatDockLines')&&!gameplay.includes('ChatEmotePicker'),'Chat settings are separate');
 assert(!gameplay.includes('Number display')&&display.includes('Number display'),'Number formatting moved into Display');

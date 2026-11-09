@@ -6,7 +6,7 @@ import type {GameCommand} from '../core/game-commands';
 import type {GameState} from '../core/types';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {assertCompanionIdle,companionView,recommendedCompanionMissionTeam} from '../core/companion-runtime';
-import {COMPANION_MISSIONS} from '../../../../backend/src/server/companions/content';
+import {COMPANION_MISSIONS,companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {activeCompanionMissions,companionExpeditionPenCapacity,companionMissionRequirementSatisfied,validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
 import type {CompanionMissionDefinition,CompanionMissionRequirement} from '../../../../backend/src/server/companions/domain';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
@@ -42,7 +42,7 @@ function missionRequirements(req:CompanionMissionRequirement,t:ReturnType<typeof
  if(req.type==='min_team_power')return t('Power')+' '+fmt(req.value)+'+';
  if(req.type==='tag_count')return req.count+'× '+label(req.tag);
  if(req.type==='companion_id')return COMBAT_COMPANIONS.find(d=>d.id===req.companionId)?.name??req.companionId;
- return label(String(req.type));
+ return '';
 }
 export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>}){
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
@@ -75,7 +75,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
   if(row.minimumLevel&&!row.requirements?.some(req=>req.type==='min_level'&&req.value>=row.minimumLevel!))checks.push({text:t('All')+'× '+t('Level {level}+',{level:row.minimumLevel}),met:ids.length>0&&ids.every(id=>(view.owned[id]?.level??0)>=row.minimumLevel!)});
   if(row.minimumBondLevel&&!row.requirements?.some(req=>req.type==='min_bond'&&req.value>=row.minimumBondLevel!))checks.push({text:t('All')+'× '+t('Bond {level}+',{level:row.minimumBondLevel}),met:ids.length>0&&ids.every(id=>(view.owned[id]?.bondLevel??0)>=row.minimumBondLevel!)});
   if(row.requiredRarities?.length)checks.push({text:row.requiredRarities.map(id=>label(id)).join(' / '),met:ids.length>0&&ids.every(id=>!!COMBAT_COMPANIONS.find(c=>c.id===id&&row.requiredRarities?.includes(c.rarity)))});
-  if(row.requiredOriginId)checks.push({text:label(row.requiredOriginId),met:ids.length>0&&ids.every(id=>COMBAT_COMPANIONS.find(c=>c.id===id)?.originId===row.requiredOriginId)});
+  if(row.requiredOriginId)checks.push({text:label(row.requiredOriginId),met:ids.length>0&&ids.every(id=>companionServerDefinition(id)?.originId===row.requiredOriginId)});
   for(const [role,count] of Object.entries(row.requiredRoles??{})){
    if(count&&!row.requirements?.some(req=>req.type==='role_count'&&req.role===role&&req.count>=count)){
     const req:CompanionMissionRequirement={type:'role_count',role:role as 'tank'|'damage'|'support',count};

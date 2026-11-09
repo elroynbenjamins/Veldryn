@@ -13,6 +13,8 @@ export function ProfileShowcaseSection({title,entries,emptyLabel,subtitle}:{titl
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const slots:Array<ProfileShowcaseEntry|undefined>=[entries[0],entries[1],entries[2]];
+ const localizedEmpty=emptyLabel?profileText(language,emptyLabel):profileT(language,'Nothing featured yet');
+ const localizedSubtitle=subtitle?profileText(language,subtitle):profileT(language,'Selected by player');
  const toneStyles=(tone:ProfilePrestigeTone|undefined)=>{
   if(tone==='prestige')return {slot:s.prestige,bar:s.barPrestige,badge:s.badgePrestige,badgeText:s.badgeTextPrestige};
   if(tone==='elite')return {slot:s.elite,bar:s.barElite,badge:s.badgeElite,badgeText:s.badgeTextElite};
@@ -22,11 +24,11 @@ export function ProfileShowcaseSection({title,entries,emptyLabel,subtitle}:{titl
   return {slot:undefined,bar:s.barStandard,badge:s.badgeStandard,badgeText:s.badgeTextStandard};
  };
  return <View style={s.block}>
-  <View style={s.head}><View style={s.headCopy}><Text style={s.title}>{title}</Text><Text style={s.subtitle}>{subtitle??profileT(language,'Selected by player')}</Text></View><View style={s.countPill}><Text style={s.count}>{Math.min(3,entries.length)}/3</Text></View></View>
+  <View style={s.head}><View style={s.headCopy}><Text style={s.title}>{title}</Text><Text style={s.subtitle}>{localizedSubtitle}</Text></View><View style={s.countPill}><Text style={s.count}>{Math.min(3,entries.length)}/3</Text></View></View>
   {!entries.length
-   ?<View style={s.emptySummary}><View style={s.emptyIcon}><Text style={s.emptyMark}>◇</Text></View><View style={s.emptyCopy}><Text style={s.emptyTitle}>{profileT(language,"No selections yet")}</Text><Text style={[s.emptyText,s.emptySummaryText]}>{profileT(language,'{label} · choose up to 3 from Customize Profile.',{label:emptyLabel??profileT(language,'Nothing featured yet')})}</Text></View></View>
+   ?<View style={s.emptySummary}><View style={s.emptyIcon}><Text style={s.emptyMark}>◇</Text></View><View style={s.emptyCopy}><Text style={s.emptyTitle}>{profileT(language,"No selections yet")}</Text><Text style={[s.emptyText,s.emptySummaryText]}>{profileT(language,'{label} · choose up to 3 from Customize Profile.',{label:localizedEmpty})}</Text></View></View>
    :<View style={s.grid}>{slots.map((entry,index)=>{
-    if(!entry)return <View key={'empty-'+index} style={[s.slot,s.emptySlot]}><Text style={s.slotNumber}>{profileT(language,'SLOT {number}',{number:index+1})}</Text><Text style={s.openLabel}>{profileT(language,"OPEN")}</Text><Text style={s.emptyText}>{emptyLabel??profileT(language,'Nothing featured yet')}</Text></View>;
+    if(!entry)return <View key={'empty-'+index} style={[s.slot,s.emptySlot]}><Text style={s.slotNumber}>{profileT(language,'SLOT {number}',{number:index+1})}</Text><Text style={s.openLabel}>{profileT(language,"OPEN")}</Text><Text style={s.emptyText}>{localizedEmpty}</Text></View>;
     const tone=toneStyles(entry.prestige);
     return <View key={entry.key} style={[s.slot,tone.slot]}>
      <View style={[s.topBar,tone.bar]}/>

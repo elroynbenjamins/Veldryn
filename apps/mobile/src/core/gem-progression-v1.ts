@@ -10,6 +10,28 @@ import type {GearSlot} from './types';
 // New gem refining and combining fees are 20% higher. Previously queued jobs
 // keep their original reserved Gold snapshots for cancellation/refunds.
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
+/** Grindstone-style socket rolls: nine equally likely outcomes, 80–120% of
+ * the existing per-grade values. Existing socketed gems retain 100%.
+ */
+export const GEM_ROLL_MIN_PERCENT_V1=80;
+export const GEM_ROLL_MAX_PERCENT_V1=120;
+export const GEM_ROLL_STEP_PERCENT_V1=5;
+export function normalizeGemRollPercentV1(value:unknown):number|undefined{
+ return typeof value==='number'&&Number.isInteger(value)
+   &&value>=GEM_ROLL_MIN_PERCENT_V1&&value<=GEM_ROLL_MAX_PERCENT_V1
+   &&(value-GEM_ROLL_MIN_PERCENT_V1)%GEM_ROLL_STEP_PERCENT_V1===0?value:undefined;
+}
+export function gemRollPercentFromUnitV1(randomRoll:number):number{
+ if(!Number.isFinite(randomRoll)||randomRoll<0||randomRoll>=1)throw new Error('invalid_gem_roll');
+ return GEM_ROLL_MIN_PERCENT_V1+Math.floor(randomRoll*9)*GEM_ROLL_STEP_PERCENT_V1;
+}
+export function gemRolledValueV1(familyId:string,grade:MobileGemGradeV1,rollPercent=100):number{
+ const family=mobileGemFamilyV1(familyId);if(!family)return 0;
+ return family.values[grade]*(normalizeGemRollPercentV1(rollPercent)??100)/100;
+}
+export function gemValueRangeV1(familyId:string,grade:MobileGemGradeV1){
+ return {min:gemRolledValueV1(familyId,grade,GEM_ROLL_MIN_PERCENT_V1),max:gemRolledValueV1(familyId,grade,GEM_ROLL_MAX_PERCENT_V1)};
+}
 export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
  1:{to:2,copies:3,dust:0,gold:1800,seconds:5*60,level:8,xp:140},
  2:{to:3,copies:3,dust:5,gold:6000,seconds:15*60,level:20,xp:420},
@@ -72,7 +94,7 @@ export function combinedGemQuantityV1(state:GameState,itemId:string){return gemS
  * named slot.
  */
 function equippedCanonicalSocketsV1(state:GameState){
- if(!state.character)return [] as Array<{equipmentItemId:string;statGemId?:string;effectGemId?:string}>;
+ if(!state.character)return [] as Array<{equipmentItemId:string;statGemId?:string;effectGemId?:string;statGemRollPercent?:number;effectGemRollPercent?:number}>;
  const instances=craftedGearInstances(state);
  return Object.entries(state.character.equipment).flatMap(([key,equipmentItemId])=>{
   if(!equipmentItemId)return [];
@@ -93,7 +115,7 @@ function equippedCanonicalSocketsV1(state:GameState){
   const selectedEffect=valid(raw?.effectGemId,'effect')??ids.find(id=>valid(id,'effect'));
   const statGemId=canonicalGemMetaV1(selectedStat??'')?selectedStat:undefined;
   const effectGemId=canonicalGemMetaV1(selectedEffect??'')?selectedEffect:undefined;
-  return [{equipmentItemId,statGemId,effectGemId}];
+  return [{equipmentItemId,statGemId,effectGemId,statGemRollPercent:normalizeGemRollPercentV1(raw?.statGemRollPercent),effectGemRollPercent:normalizeGemRollPercentV1(raw?.effectGemRollPercent)}];
  });
 }
 export function equippedCanonicalGemIdsV1(state:GameState){
@@ -110,11 +132,12 @@ export function assertEffectGemEquipAllowedV1(state:GameState,equipmentItemId:st
  if(copies>=GEM_EFFECT_RESONANCE_CAP_V1)throw new Error('This Effect Gem family is already at Resonance III (3/3)');
 }
 function resonanceFromSocketsV1(sockets:ReturnType<typeof equippedCanonicalSocketsV1>,familyId:string){
- const grades=sockets.flatMap(row=>{
+ const matches=sockets.flatMap(row=>{
   const meta=canonicalGemMetaV1(row.effectGemId??'');
-  return meta?.familyId===familyId?[meta.grade]:[];
+  return meta?.familyId===familyId?[{grade:meta.grade,rollPercent:row.effectGemRollPercent??100}]:[];
  });
- const family=mobileGemFamilyV1(familyId),totalValue=family?grades.reduce((sum,grade)=>sum+family.values[grade],0):0;
+ const grades=matches.map(row=>row.grade);
+ const totalValue=matches.reduce((sum,row)=>sum+gemRolledValueV1(familyId,row.grade,row.rollPercent),0);
  return {familyId,copies:grades.length,resonance:Math.min(3,grades.length) as 0|1|2|3,grades,totalValue};
 }
 
@@ -267,8 +290,15 @@ export function claimResonanceCacheV1(state:GameState,familyId:string,nowMs:numb
  return {...next,account:{...next.account,resonanceCache:{...raw,claimed:true}}} as GameState;
 }
 
-export function formatGemValueV1(familyId:string,grade:MobileGemGradeV1){
+export function formatGemValueV1(familyId:string,grade:MobileGemGradeV1,rollPercent=100){
  const family=mobileGemFamilyV1(familyId);if(!family)return '';
- const value=family.values[grade]*100,formatted=String(Number(value.toFixed(3))),label=family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
+ const value=gemRolledValueV1(familyId,grade,rollPercent)*100,formatted=String(Number(value.toFixed(3))),label=family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
  return family.unit==='percentage_point'?'+'+formatted+' pp '+label:family.kind==='stat'?'+'+formatted+'% '+label:formatted+'% effect value';
+}
+export function formatGemRollRangeV1(familyId:string,grade:MobileGemGradeV1){
+ const family=mobileGemFamilyV1(familyId);if(!family)return '';
+ const {min,max}=gemValueRangeV1(familyId,grade),fmt=(value:number)=>String(Number((value*100).toFixed(3)));
+ const unit=family.unit==='percentage_point'?' pp':'%';
+ const label=family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
+ return '+'+fmt(min)+'–'+fmt(max)+unit+(family.kind==='stat'?' '+label:' effect strength');
 }

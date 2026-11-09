@@ -15,13 +15,13 @@ import {GameButton} from './GameButton';
 
 import {ActionFeedback} from './ActionFeedback';
 import {enhancementFeedback,enhancementPityBonusPct,type EnhancementFeedbackResult} from '../core/visual-feedback';
-import {canonicalGemMetaV1,effectFamilyCopiesV1,formatGemValueV1,gemUnsocketCostForStateV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
+import {canonicalGemMetaV1,effectFamilyCopiesV1,formatGemRollRangeV1,formatGemValueV1,gemUnsocketCostForStateV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,mobileGemFamilyV1} from '../content/gems-v1';
 import {GemArtwork} from './GemArtwork';
 import {ItemArtwork} from './ItemArtwork';
 
 type Action=()=>Promise<void>|void;
-type PendingGemAction={kind:'replace';gemId:string;currentGemId:string}|{kind:'extract';index:number;currentGemId:string};
+type PendingGemAction={kind:'replace'|'reroll';gemId:string;currentGemId:string}|{kind:'extract';index:number;currentGemId:string};
 function CostRow({label,owned,needed}:{label:string;owned:number;needed:number}){
  const {gt,gl,language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),enough=owned>=needed;return <View style={s.costRow}><Text style={s.costLabel}>{label}</Text><Text style={[s.costValue,!enough&&s.missing]}>{owned.toLocaleString()} / {needed.toLocaleString()}</Text><Text accessibilityLabel={enough?gt("Available"):gt("Missing")} style={[s.costMark,enough?s.ready:s.missing]}>{enough?'✓':'!'}</Text></View>}
 function StatPreview({label,current,next}:{label:string;current:number;next:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),format=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1);if(!current&&!next)return null;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.statCurrent}>{format(current)}</Text><Text style={s.arrow}>›</Text><Text style={s.statNext}>{format(next)}</Text></View>}
@@ -46,13 +46,16 @@ function UpgradeResultMoment({feedback,itemId,state,reduceMotion}:{feedback:Enha
   </Animated.View>;
 }
 
-function gemResultDetail(state:GameState,gemId:string,previewItemId?:string){
+function gemResultDetail(state:GameState,gemId:string,previewItemId?:string,installed=false){
   const gem=itemDef(gemId),meta=canonicalGemMetaV1(gem.id);
   if(meta){
     const family=mobileGemFamilyV1(meta.familyId);
-    return gemSocketKind(gem.id)==='stat'
-      ?`${GEM_GRADE_LABEL_V1[meta.grade]} · ${formatGemValueV1(meta.familyId,meta.grade)} · ${family?.description??'Stat Gem'}`
-      :`${Number(((family?.values[meta.grade]??0)*100).toFixed(3))}% · ${gemEffectDescription(gem.id)} · Resonance ${previewItemId?Math.min(3,effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1):resonanceForFamilyV1(state,meta.familyId).resonance}/III`;
+    const enhancement=installed&&previewItemId?gearEnhancement(state,previewItemId):undefined;
+    const roll=enhancement?(meta.kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent):undefined;
+    const value=installed?formatGemValueV1(meta.familyId,meta.grade,roll):formatGemRollRangeV1(meta.familyId,meta.grade);
+    return meta.kind==='stat'
+      ?`${GEM_GRADE_LABEL_V1[meta.grade]} · ${value}`
+      :`${value} · ${gemEffectDescription(gem.id)} · Resonance ${previewItemId?Math.min(3,effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1):resonanceForFamilyV1(state,meta.familyId).resonance}/III`;
   }
   return gemSocketKind(gem.id)==='stat'&&gem.gemStat?`+${Number(((gem.gemPercent??0)*100).toFixed(3))}% ${gem.gemStat}`:gemEffectDescription(gem.id);
 }
@@ -119,8 +122,8 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
     ...(quote.cores>0?[{id:'TEMPERING_CORE',name:gt("Tempering Cores"),owned:cores,needed:quote.cores}]:[]),
     ...quote.materials.map(material=>({id:material.itemId,name:itemDef(material.itemId).name,owned:combinedQuantity(state,material.itemId),needed:material.quantity}))];
   const primaryGemAction=()=>{
-    if(!selectedGem||selectedBlocked||busy||selectedGem.id===equippedGemId)return;
-    if(equippedGemId){setPendingGemAction({kind:'replace',gemId:selectedGem.id,currentGemId:equippedGemId});return;}
+    if(!selectedGem||selectedBlocked||busy)return;
+    if(equippedGemId){setPendingGemAction({kind:selectedGem.id===equippedGemId?'reroll':'replace',gemId:selectedGem.id,currentGemId:equippedGemId});return;}
     void run(async()=>{await onSocket(selectedGem.id);setGemPickerOpen(false);setSelectedGemId(null)});
   };
   return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={gt("Close equipment enhancement")} surfaceStyle={[s.card,{borderColor:rarity.color}]}>
@@ -203,7 +206,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           return <View key={slot.kind} style={s.compactSocket}>
             <Pressable accessibilityRole="button" style={s.compactSocketSelect} onPress={()=>openGemSelection(slot.kind)} disabled={busy}>
               {gem?<GemArtwork itemId={gem.id} size={46} framed={false}/>:<View style={s.compactEmptyGem}><Text style={s.compactEmptyMark}>+</Text></View>}
-              <View style={s.flex}><Text style={s.slotEyebrow}>{slot.label}</Text><Text numberOfLines={1} style={s.socketTitle}>{gem?.name??gt("Empty socket")}</Text><Text numberOfLines={2} style={s.compactCandidateMeta}>{gem?gemResultDetail(state,gem.id):slot.kind==='stat'?gt("Adds a stat bonus"):gt("Adds a combat effect")}</Text></View>
+              <View style={s.flex}><Text style={s.slotEyebrow}>{slot.label}</Text><Text numberOfLines={1} style={s.socketTitle}>{gem?.name??gt("Empty socket")}</Text><Text numberOfLines={2} style={s.compactCandidateMeta}>{gem?gemResultDetail(state,gem.id,itemId,true):slot.kind==='stat'?gt("Adds a stat bonus"):gt("Adds a combat effect")}</Text></View>
             </Pressable>
             <GameButton compact title={gem?gt("Change"):gt("Add gem")} disabled={busy} onPress={()=>openGemSelection(slot.kind)}/>
             {gem?<Pressable accessibilityRole="button" onPress={()=>{openGemSelection(slot.kind);setPendingGemAction({kind:'extract',index:slot.index,currentGemId:gem.id})}} style={s.compactExtract}><Text style={s.compactExtractText}>{gt("Extract")}</Text></Pressable>:null}
@@ -219,7 +222,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
     </View>:null}
     {tab==='gems'&&gemPickerOpen&&pendingGemAction?(()=>{const pending=pendingGemAction;const fee=gemUnsocketCostForStateV1(state,pending.currentGemId);const affordable=gold>=fee.gold&&combinedQuantity(state,'GEM_DUST')>=fee.dust;return <View style={s.actionFooter}><View style={s.gemConfirmActions}><View style={s.flex}><GameButton title={gt("Cancel")} tone="secondary" disabled={busy} onPress={()=>setPendingGemAction(null)}/></View><View style={s.flex}><GameButton title={pending.kind==='replace'?gt("Confirm replacement"):gt("Confirm extraction")} loading={busy} disabled={!affordable||busy} onPress={()=>void run(async()=>{await(pending.kind==='replace'?onReplace(pending.gemId):onUnsocket(pending.index));setPendingGemAction(null);setGemPickerOpen(false);setSelectedGemId(null)})}/></View></View></View>})():null}
     {tab==='gems'&&gemPickerOpen&&!pendingGemAction?<View style={s.actionFooter}>
-      <GameButton title={equippedGemId?gt("Replace gem"):gt("Socket gem")} disabled={!selectedGem||selectedBlocked||selectedGem.id===equippedGemId||busy} loading={busy} onPress={primaryGemAction}/>
+      <GameButton title={equippedGemId?(selectedGem?.id===equippedGemId?'Improve roll':gt("Replace gem")):gt("Socket gem")} disabled={!selectedGem||selectedBlocked||busy} loading={busy} onPress={primaryGemAction}/>
     </View>:null}
   </GameModalSurface>;
 }

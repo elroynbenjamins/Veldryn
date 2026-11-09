@@ -13,7 +13,7 @@ import {GuildTutorial} from '../components/GuildTutorial';
 import {GuildGuideLibrary} from '../components/GuildGuideLibrary';
 import {GUILD_TUTORIAL_STEPS,type GuildTutorialDestination} from '../core/guild-tutorial';
 import {guildHallSectionGuide} from '../core/guild-hall-guide';
-import {guildDetailedGuide} from '../core/guild-detailed-guides';
+import {localizedGuildDetailedGuide} from '../i18n/guild-detailed-guide-locales';
 import {guildTutorialText} from '../i18n/guild-tutorial';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {GameButton} from '../components/GameButton';
@@ -112,7 +112,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   const guildGuide=onlineSection==='Activities'?(activityView==='Quests'
    ?{title:'Guild Quests',body:'Complete shared weekly objectives to support Guild Activity.',detail:'Only verified activities matching the current quest objectives count toward progress.'}
    :{title:'Muster & Rally',body:'Track your daily effort and weekly Guild Rally progress.',detail:'Qualifying activity earns daily points and Rally Marks. The full guide explains thresholds and milestones.'}):onlineSection==='Progress'?(progressTab==='Projects'?{title:'Guild Projects',body:'Work together on weekly Guild Projects and claim earned rewards.',detail:'Combat, gathering, and crafting can contribute to active projects.'}:{title:'Guild Skills',body:'Review permanent Guild bonuses and their upgrade requirements.',detail:'Guild Skills use server-verified points, materials and officer permissions.'}):onlineSection==='Hall'?guildHallSectionGuide(language,hallSection):onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
-   const headerGuide=online&&(['Activities','Progress','PvE','Roster','Hall','Manage','Appearance'] as const).some(value=>value===onlineSection)?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={guildDetailedGuide(guideSection)??guildGuide} placement="header" translate={value=>guildTutorialText(language,value)}/>:null;
+   const headerGuide=online&&(['Activities','Progress','PvE','Roster','Hall','Manage','Appearance'] as const).some(value=>value===onlineSection)?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={localizedGuildDetailedGuide(language,guideSection)??guildGuide} placement="header" translate={value=>guildTutorialText(language,value)}/>:null;
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
    void myGuild().then(membership=>{setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})

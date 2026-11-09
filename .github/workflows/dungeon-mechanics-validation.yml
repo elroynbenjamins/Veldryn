@@ -49,3 +49,6 @@ jobs:
       - name: Validate new dungeon unlocks, three tiers and authored drops
         run: pnpm test:coop-live-social
         working-directory: backend
+      - name: Validate released dungeon catalog, Chapter I locks and reward preview projection
+        run: node dist/online/backend/online/tests/coop-entry.js
+        working-directory: backend

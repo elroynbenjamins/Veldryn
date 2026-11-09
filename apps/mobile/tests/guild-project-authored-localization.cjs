@@ -46,6 +46,7 @@ for(const file of ['OnlineGuildProjectsPanel.tsx','GuildProjectsPanel.tsx']){
 }
 const posting=fs.readFileSync(path.resolve(__dirname,'../src/components/OnlineGuildProjectsPanel.tsx'),'utf8');
 assert.ok(posting.includes('guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)'),'Active and completed online projects must use their verified template id');
-assert.ok(posting.includes("title={ui('View member contributions')}")&&posting.includes('title={authored.name} description={authored.description}'),'Contribution sheet must receive the authored localized title and description');
+const contributions=fs.readFileSync(path.resolve(__dirname,'../src/components/GuildProjectContributionsPanel.tsx'),'utf8');
+assert.ok(posting.includes('<GuildProjectContributionsPanel projects={active}/>')&&contributions.includes('guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)'),'Inline Guild contribution panel must localize selected project names and descriptions');
 assert.ok(posting.includes('project.templateId')&&posting.includes('project.status'),'No change to project mechanics');
 console.log('PASS: 14 authored Guild Project title/description pairs in 8 languages (196 non-English translations), exact server/SQL matching, fallback and both board surfaces');

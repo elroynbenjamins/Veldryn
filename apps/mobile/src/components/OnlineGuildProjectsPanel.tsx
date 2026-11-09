@@ -19,7 +19,7 @@ import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,voteOnlineGuild
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {guildProjectArtwork} from '../theme/guild-remaster-art';
-import {GuildProjectContributionsModal} from './GuildProjectContributionsModal';
+import {GuildProjectContributionsPanel} from './GuildProjectContributionsPanel';
 
 function progressPercent(project:OnlineGuildProjectSummary){
  if(project.kind==='development'){
@@ -120,6 +120,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      onNavigateActivity={onNavigateActivity}
    />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text></View>}
   </QuestBoard>
+  {active.length?<GuildProjectContributionsPanel projects={active}/>:null}
   {pendingDonation?<Panel>
    <Text style={s.sectionTitle}>{ui('Saved Guild donation')}</Text>
    <Text style={s.copy}>{ui('Retry the saved request before donating anything else.')}</Text>
@@ -150,6 +151,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
     {completed.map(project=><GuildProjectPosting key={project.id} project={project} compact
      busy={!!busy} onClaim={()=>void act('claim',project.id)}
     />)}
+    {completed.length?<GuildProjectContributionsPanel projects={completed} embedded/>:null}
     <GuildActivityFeedPanel entries={snapshot.activity}/>
    </View>:null}
   </Panel>:null}
@@ -191,7 +193,6 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
 }){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,project.templateId,project.name,project.description);
- const [showContributions,setShowContributions]=useState(false);
  const pct=progressPercent(project);
  const weekly=project.launchWeekly===true;
  const qualifying=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
@@ -221,10 +222,6 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
    <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text></View>
    {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
    {weekly&&project.status==='active'?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
-  </View>
-  <View style={s.contributionAction}>
-   <View style={s.flex}><GameButton compact tone="secondary" title={ui('View member contributions')} onPress={()=>setShowContributions(true)}/></View>
-   <Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text>
   </View>
   {!compact?<View style={s.personal}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Your contribution')}</Text>
@@ -262,7 +259,6 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
   </View>:null}
   {readyToClaim?<GameButton title={ui(busy?'Claiming…':project.rewardDestination==='guild_bank'?'Claim Guild Bank Gold':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&compact?<Text style={s.meta}>{rewardStatus}</Text>:null}
-  {showContributions?<GuildProjectContributionsModal project={project} title={authored.name} description={authored.description} onClose={()=>setShowContributions(false)}/>:null}
 
  </View>;
 }
@@ -280,7 +276,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  percent:{fontSize:28,lineHeight:33,fontWeight:'900',color:C.accent},
  progressNumbers:{alignItems:'flex-end'},progressAmount:{fontSize:13,lineHeight:19,fontWeight:'800',color:C.text},
  track:{height:10,overflow:'hidden',backgroundColor:C.panel2,borderRadius:5,borderWidth:1,borderColor:C.line},
- fill:{height:'100%',backgroundColor:C.good},contributionAction:{flexDirection:'row',alignItems:'center',gap:9},
+ fill:{height:'100%',backgroundColor:C.good},
  personal:{gap:8,padding:10,borderWidth:1,borderRadius:9,borderColor:C.good,backgroundColor:C.goodSurface},
  personalPoints:{fontSize:21,lineHeight:27,fontWeight:'800',color:C.text},
  smallTrack:{height:6,overflow:'hidden',backgroundColor:C.panel2,borderRadius:3},

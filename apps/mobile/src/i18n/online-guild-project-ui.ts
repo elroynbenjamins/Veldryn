@@ -5,6 +5,7 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Fixed active Online Guild Projects UI; numbers and server-authored project text remain authoritative. */
 export const onlineGuildProjectUiRows={
+  "Member contributions": ["Mitgliederbeiträge","Aportes de miembros","Bijdragen van leden","Contributi dei membri","Contributions des membres","Вклад участников","Üye katkıları"],
   "View member contributions": ["Mitgliederbeiträge ansehen","Ver aportes de los miembros","Bekijk ledenbijdragen","Vedi contributi dei membri","Voir les contributions des membres","Вклад участников","Üye katkılarını görüntüle"],
   "Top 5 contributors": ["Top 5 Mitwirkende","5 principales colaboradores","Top 5 bijdragers","Primi 5 contributori","Top 5 des contributeurs","Топ-5 участников","En çok katkı yapan 5 üye"],
   "Show {count} more members": ["{count} weitere Mitglieder anzeigen","Mostrar {count} miembros más","Toon nog {count} leden","Mostra altri {count} membri","Afficher {count} membres de plus","Показать ещё {count} участников","{count} üye daha göster"],

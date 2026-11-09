@@ -164,7 +164,8 @@ export function craftClaimSubRoll(trustedRoll:number,jobId:string){
 }
 
 export function craftedInstanceResult(state:GameState,instance:CraftedGearInstance){
-  const copies=craftedInstancesForItem(state,instance.itemId,instance.ownerCharacterId),baseRarity=itemRarity(itemDef(instance.itemId));
+  // Timed Forge uses a Common rarity baseline at every equipment tier.
+  const copies=craftedInstancesForItem(state,instance.itemId,instance.ownerCharacterId),baseRarity:'common'='common';
   return {
     instanceId:instance.id,itemId:instance.itemId,rarity:instance.rarity,quality:instance.quality,baseRarity,
     qualityProc:instance.rarity!==baseRarity,duplicateCount:Math.max(0,copies.length-1),

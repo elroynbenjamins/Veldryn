@@ -5,13 +5,17 @@ export interface EnhancementSnapshot {
  gemIds:readonly string[];
  statGemId?:string;
  effectGemId?:string;
+ statGemRollPercent?:number;
+ effectGemRollPercent?:number;
 }
 export type EnhancementFeedbackKind='upgrade_success'|'upgrade_failure'|'sockets';
 export interface EnhancementSocketChange{
- action:'socketed'|'replaced'|'extracted';
+ action:'socketed'|'replaced'|'extracted'|'improved';
  socketKind:'stat'|'effect';
  previousGemId?:string;
  gemId?:string;
+ previousRollPercent?:number;
+ rollPercent?:number;
 }
 export interface EnhancementFeedbackResult{
  kind:EnhancementFeedbackKind;
@@ -27,9 +31,16 @@ export interface EnhancementFeedbackResult{
 }
 export function enhancementPityBonusPct(failures:number){return Math.min(10,Math.max(0,Math.floor(failures))*2);}
 function socketChange(before:EnhancementSnapshot,after:EnhancementSnapshot):EnhancementSocketChange|undefined{
- const slots=[['stat',before.statGemId,after.statGemId],['effect',before.effectGemId,after.effectGemId]] as const;
- for(const [socketKind,previousGemId,gemId] of slots){
-  if(previousGemId===gemId)continue;
+ const slots=[
+  {kind:'stat' as const,old:before.statGemId,next:after.statGemId,oldRoll:before.statGemRollPercent,newRoll:after.statGemRollPercent},
+  {kind:'effect' as const,old:before.effectGemId,next:after.effectGemId,oldRoll:before.effectGemRollPercent,newRoll:after.effectGemRollPercent},
+ ];
+ for(const {kind:socketKind,old:previousGemId,next:gemId,oldRoll,newRoll} of slots){
+  if(previousGemId===gemId){
+   if(gemId&&newRoll!==undefined&&newRoll>(oldRoll??100))
+     return {action:'improved',socketKind,previousGemId,gemId,previousRollPercent:oldRoll??100,rollPercent:newRoll};
+   continue;
+  }
   if(!previousGemId&&gemId)return {action:'socketed',socketKind,gemId};
   if(previousGemId&&!gemId)return {action:'extracted',socketKind,previousGemId};
   if(previousGemId&&gemId)return {action:'replaced',socketKind,previousGemId,gemId};
@@ -44,7 +55,7 @@ export function enhancementFeedback(before:EnhancementSnapshot,after:Enhancement
  if(after.failures>before.failures)return {kind:'upgrade_failure',message:'Rank protected. Your next attempt has a higher success chance.',tone:'warning',...base};
  const changed=socketChange(before,after);
  if(changed){
-  const slot=changed.socketKind==='stat'?'Stat Gem':'Effect Gem',message=changed.action==='socketed'?`${slot} socketed.`:changed.action==='replaced'?`${slot} replaced safely.`:`${slot} extracted safely.`;
+  const slot=changed.socketKind==='stat'?'Stat Gem':'Effect Gem',message=changed.action==='socketed'?`${slot} socketed.`:changed.action==='replaced'?`${slot} replaced safely.`:changed.action==='improved'?`${slot} roll improved.`:`${slot} extracted safely.`;
   return {kind:'sockets',message,tone:'success',socketChange:changed,...base};
  }
  if(before.gemIds.join('|')!==after.gemIds.join('|'))return {kind:'sockets',message:'Gem sockets updated.',tone:'success',...base};

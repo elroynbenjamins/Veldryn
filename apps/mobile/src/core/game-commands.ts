@@ -374,8 +374,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now);break;
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
-  case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
-  case 'replace_socket':state=replaceGem(state,text(a,'id'),text(a,'gemId'));break;
+  case 'socket':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');state=socketGem(state,text(a,'id'),text(a,'gemId'),options.randomRoll);break;}
+  case 'replace_socket':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');state=replaceGem(state,text(a,'id'),text(a,'gemId'),options.randomRoll);break;}
   case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1));break;
   case 'gem_combine':{
    const familyId=text(a,'familyId',80),grade=integer(a,'grade',1,4) as 1|2|3|4;

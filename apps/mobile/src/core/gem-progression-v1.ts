@@ -1,6 +1,6 @@
 import {skillAffinityModifiers} from './class-skill-affinities';
 import {itemDef} from '../content/items';
-import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
+import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1,normalizeGemRollPercentV1,gemRolledValueV1,gemValueRangeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
@@ -71,8 +71,8 @@ export function combinedGemQuantityV1(state:GameState,itemId:string){return gemS
  * Preserve legacy gemIds fallbacks for older saves, without double-counting a
  * named slot.
  */
-function equippedCanonicalSocketsV1(state:GameState){
- if(!state.character)return [] as Array<{equipmentItemId:string;statGemId?:string;effectGemId?:string}>;
+export function equippedCanonicalSocketsV1(state:GameState){
+ if(!state.character)return [] as Array<{equipmentItemId:string;statGemId?:string;effectGemId?:string;statGemRollPercent?:number;effectGemRollPercent?:number}>;
  const instances=craftedGearInstances(state);
  return Object.entries(state.character.equipment).flatMap(([key,equipmentItemId])=>{
   if(!equipmentItemId)return [];
@@ -93,7 +93,7 @@ function equippedCanonicalSocketsV1(state:GameState){
   const selectedEffect=valid(raw?.effectGemId,'effect')??ids.find(id=>valid(id,'effect'));
   const statGemId=canonicalGemMetaV1(selectedStat??'')?selectedStat:undefined;
   const effectGemId=canonicalGemMetaV1(selectedEffect??'')?selectedEffect:undefined;
-  return [{equipmentItemId,statGemId,effectGemId}];
+  return [{equipmentItemId,statGemId,effectGemId,statGemRollPercent:normalizeGemRollPercentV1(raw?.statGemRollPercent),effectGemRollPercent:normalizeGemRollPercentV1(raw?.effectGemRollPercent)}];
  });
 }
 export function equippedCanonicalGemIdsV1(state:GameState){
@@ -110,11 +110,12 @@ export function assertEffectGemEquipAllowedV1(state:GameState,equipmentItemId:st
  if(copies>=GEM_EFFECT_RESONANCE_CAP_V1)throw new Error('This Effect Gem family is already at Resonance III (3/3)');
 }
 function resonanceFromSocketsV1(sockets:ReturnType<typeof equippedCanonicalSocketsV1>,familyId:string){
- const grades=sockets.flatMap(row=>{
+ const matches=sockets.flatMap(row=>{
   const meta=canonicalGemMetaV1(row.effectGemId??'');
-  return meta?.familyId===familyId?[meta.grade]:[];
+  return meta?.familyId===familyId?[{grade:meta.grade,rollPercent:row.effectGemRollPercent??100}]:[];
  });
- const family=mobileGemFamilyV1(familyId),totalValue=family?grades.reduce((sum,grade)=>sum+family.values[grade],0):0;
+ const grades=matches.map(row=>row.grade);
+ const totalValue=matches.reduce((sum,row)=>sum+gemRolledValueV1(familyId,row.grade,row.rollPercent),0);
  return {familyId,copies:grades.length,resonance:Math.min(3,grades.length) as 0|1|2|3,grades,totalValue};
 }
 
@@ -267,8 +268,15 @@ export function claimResonanceCacheV1(state:GameState,familyId:string,nowMs:numb
  return {...next,account:{...next.account,resonanceCache:{...raw,claimed:true}}} as GameState;
 }
 
-export function formatGemValueV1(familyId:string,grade:MobileGemGradeV1){
+export function formatGemValueV1(familyId:string,grade:MobileGemGradeV1,rollPercent=100){
  const family=mobileGemFamilyV1(familyId);if(!family)return '';
- const value=family.values[grade]*100,formatted=String(Number(value.toFixed(3))),label=family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
+ const value=gemRolledValueV1(familyId,grade,rollPercent)*100,formatted=String(Number(value.toFixed(3))),label=family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
  return family.unit==='percentage_point'?'+'+formatted+' pp '+label:family.kind==='stat'?'+'+formatted+'% '+label:formatted+'% effect value';
+}
+export function formatGemRollRangeV1(familyId:string,grade:MobileGemGradeV1){
+ const family=mobileGemFamilyV1(familyId);if(!family)return '';
+ const {min,max}=gemValueRangeV1(familyId,grade),fmt=(value:number)=>String(Number((value*100).toFixed(3)));
+ const unit=family.unit==='percentage_point'?' pp':'%';
+ const label=family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
+ return '+'+fmt(min)+'–'+fmt(max)+unit+(family.kind==='stat'?' '+label:' effect strength');
 }

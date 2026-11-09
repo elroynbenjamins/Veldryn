@@ -4,7 +4,7 @@ import {itemDef} from '../../apps/mobile/src/content/items';
 import {noviceItemId,noviceSetFor} from '../../apps/mobile/src/content/novice-sets';
 import {createCharacter,effectiveStats,newGame} from '../../apps/mobile/src/core/game';
 import {activeEquipmentBuildStats} from '../../apps/mobile/src/core/equipment-set-runtime';
-import {canonicalGemMetaV1,equippedCanonicalGemIdsV1} from '../../apps/mobile/src/core/gem-progression-v1';
+import {canonicalGemMetaV1,equippedCanonicalSocketsV1} from '../../apps/mobile/src/core/gem-progression-v1';
 import {summarizeGemLoadoutV1} from '../src/server/equipment/gems/gem-runtime-v1';
 import type {GameState,ClassId} from '../../apps/mobile/src/core/types';
 import {rebaseCombatCharacter,legacyCharacterLevelFromXp} from '../../apps/mobile/src/core/progression';
@@ -39,10 +39,16 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  const bonus=activeEquipmentBuildStats(state);
  // These gems come from the server-loaded character's *equipped* sockets,
  // including unique forged copies. Never accept client-supplied gem effects.
- const sockets=equippedCanonicalGemIdsV1(state).map((gemId,index)=>{
-  const meta=canonicalGemMetaV1(gemId);
+ const equippedGemEntries=equippedCanonicalSocketsV1(state).flatMap(row=>[
+  ...(row.statGemId?[{id:row.statGemId,rollPercent:row.statGemRollPercent}]:[]),
+  ...(row.effectGemId?[{id:row.effectGemId,rollPercent:row.effectGemRollPercent}]:[]),
+ ]);
+ const sockets=equippedGemEntries.map(({id,rollPercent},index)=>{
+  const meta=canonicalGemMetaV1(id);
   if(!meta)throw new Error('invalid_equipped_gem');
-  const gem={familyId:meta.familyId,grade:meta.grade};
+  // Omit absent legacy roll keys to keep existing published snapshot hashes
+  // stable; runtime treats their original gem strength as exactly 100%.
+  const gem={familyId:meta.familyId,grade:meta.grade,...(rollPercent===undefined?{}:{rollPercent})};
   return {equipmentItemId:'equipped_'+index,sockets:meta.kind==='stat'?{stat:gem}:{effect:gem}};
  });
  const effectGems=summarizeGemLoadoutV1(sockets).effects;

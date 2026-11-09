@@ -2,6 +2,7 @@ import type {CraftedGearInstance,GameState,GearEnhancementState,GearSlot,ItemSta
 import {craftedGearRarity,craftedRarityStatMultiplier,deterministicCraftRarityRoll} from './crafted-gear-rarity';
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
+import {normalizeGemRollPercentV1} from '../content/gems-v1';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 /** Existing Forge records have no quality roll. Show them at the neutral midpoint without rewriting their receipts or treating them as safe auto-sale candidates. */
@@ -67,7 +68,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
           statRoll:clampStatRoll(row.statRoll),
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
-          enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},
+          enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,statGemRollPercent:normalizeGemRollPercentV1(enhancement.statGemRollPercent),effectGemRollPercent:normalizeGemRollPercentV1(enhancement.effectGemRollPercent),gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},
         }];
       }catch{return []}
     }); // Never silently discard existing equipment while loading an older or oversized save.

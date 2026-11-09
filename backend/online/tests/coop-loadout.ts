@@ -65,6 +65,15 @@ assert.equal(gemmed.stats.effectGems?.length,1,'Equipped forged Effect Gem must 
 assert.equal(gemmed.stats.effectGems?.[0]?.familyId,'effect_predator');
 assert.equal(gemmed.stats.effectGems?.[0]?.resonance,1);
 assert.ok((gemmed.stats.effectGems?.[0]?.totalValue??0)>0);
+const baselinePredator=gemmed.stats.effectGems?.[0]?.totalValue??0;
+const highRollInstance:CraftedGearInstance={...gemmedInstance,enhancement:{...gemmedInstance.enhancement,statGemRollPercent:120,effectGemRollPercent:120}};
+equipped.account.craftedGearInstances=[highRollInstance];
+const highRoll=deriveOnlineCoopLoadout('owner',equipped,8);
+assert.ok(highRoll.stats.accuracy>gemmed.stats.accuracy,'A saved Stat Gem roll improves dungeon accuracy, not just local combat');
+assert.ok(Math.abs((highRoll.stats.effectGems?.[0]?.totalValue??0)-baselinePredator*1.2)<1e-6,'A saved 120% Effect Gem roll reaches the dungeon loadout');
+assert.notEqual(onlineCoopLoadoutHash(highRoll),onlineCoopLoadoutHash(gemmed),'Rolled gem improvements must alter the authoritative dungeon snapshot hash');
+equipped.account.craftedGearInstances=[gemmedInstance];
+
 assert.notEqual(onlineCoopLoadoutHash(gemmed),onlineCoopLoadoutHash(plain),'Publication hash must change when a forged gem changes');
 const frozenGems=resolveAndFreezeLoadout({
  accountId:'owner',characterId:gemmed.characterId,loadoutId:'current',expectedRevision:8,

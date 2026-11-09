@@ -1080,6 +1080,21 @@ function mobileGemItemIdV1(familyId, grade) {
 function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
+var GEM_ROLL_MIN_PERCENT_V1 = 80;
+var GEM_ROLL_MAX_PERCENT_V1 = 120;
+var GEM_ROLL_STEP_PERCENT_V1 = 5;
+function normalizeGemRollPercentV1(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= GEM_ROLL_MIN_PERCENT_V1 && value <= GEM_ROLL_MAX_PERCENT_V1 && (value - GEM_ROLL_MIN_PERCENT_V1) % GEM_ROLL_STEP_PERCENT_V1 === 0 ? value : void 0;
+}
+function gemRollPercentFromUnitV1(randomRoll) {
+  if (!Number.isFinite(randomRoll) || randomRoll < 0 || randomRoll >= 1) throw new Error("invalid_gem_roll");
+  return GEM_ROLL_MIN_PERCENT_V1 + Math.floor(randomRoll * 9) * GEM_ROLL_STEP_PERCENT_V1;
+}
+function gemRolledValueV1(familyId, grade, rollPercent = 100) {
+  const family = mobileGemFamilyV1(familyId);
+  if (!family) return 0;
+  return family.values[grade] * (normalizeGemRollPercentV1(rollPercent) ?? 100) / 100;
+}
 
 // ../apps/mobile/src/content/items.ts
 init_progression();
@@ -49460,7 +49475,7 @@ function normalizeCraftedGearInstances(raw2) {
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
-        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
+        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, statGemRollPercent: normalizeGemRollPercentV1(enhancement.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(enhancement.effectGemRollPercent), gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
       }];
     } catch {
       return [];
@@ -49661,11 +49676,8 @@ function equippedCanonicalSocketsV1(state) {
     const selectedEffect = valid(raw2?.effectGemId, "effect") ?? ids2.find((id) => valid(id, "effect"));
     const statGemId = canonicalGemMetaV1(selectedStat ?? "") ? selectedStat : void 0;
     const effectGemId = canonicalGemMetaV1(selectedEffect ?? "") ? selectedEffect : void 0;
-    return [{ equipmentItemId, statGemId, effectGemId }];
+    return [{ equipmentItemId, statGemId, effectGemId, statGemRollPercent: normalizeGemRollPercentV1(raw2?.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(raw2?.effectGemRollPercent) }];
   });
-}
-function equippedCanonicalGemIdsV1(state) {
-  return equippedCanonicalSocketsV1(state).flatMap((row) => [row.statGemId, row.effectGemId].filter((id) => Boolean(id)));
 }
 function effectFamilyCopiesV1(state, familyId, excludeEquipmentItemId) {
   return equippedCanonicalSocketsV1(state).filter((row) => row.equipmentItemId !== excludeEquipmentItemId && canonicalGemMetaV1(row.effectGemId ?? "")?.familyId === familyId).length;
@@ -49861,7 +49873,13 @@ function normalizeEnhancementGemSlots(raw2) {
     if (kind === "effect" && !effectGemId) effectGemId = gem2.id;
   }
   const gemIds = [statGemId, effectGemId].filter((id) => Boolean(id));
-  return { statGemId, effectGemId, gemIds };
+  return {
+    statGemId,
+    effectGemId,
+    gemIds,
+    statGemRollPercent: statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
+    effectGemRollPercent: effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
+  };
 }
 function equippedCraftedInstance(state, itemId) {
   const slot = Object.entries(state.character?.equipment ?? {}).find(([, value]) => value === itemId)?.[0];
@@ -49946,7 +49964,7 @@ function attemptEquipmentUpgrade(state, itemId, roll = Math.random()) {
   next = setEnhancement(next, itemId, { ...prior, rank, failures: success ? 0 : prior.failures + 1 });
   return { state: next, result: { success, oldRank: prior.rank, newRank: rank, successChance: quote.successChance, downgraded: !success && rank < prior.rank } };
 }
-function socketGem(state, itemId, gemId) {
+function socketGem(state, itemId, gemId, randomRoll = Math.random()) {
   requireEquipped(state, itemId);
   const gem2 = safeGem(gemId);
   if (!gem2) throw new Error("That item is not a gem");
@@ -49956,8 +49974,16 @@ function socketGem(state, itemId, gemId) {
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (kind === "stat" && enhancement.statGemId) throw new Error("The Stat Gem socket is already filled");
   if (kind === "effect" && enhancement.effectGemId) throw new Error("The Effect Gem socket is already filled");
+  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
   let next = consumeAcross(state, gemId, 1);
-  next = setEnhancement(next, itemId, { ...enhancement, statGemId: kind === "stat" ? gemId : enhancement.statGemId, effectGemId: kind === "effect" ? gemId : enhancement.effectGemId, gemIds: [] });
+  next = setEnhancement(next, itemId, {
+    ...enhancement,
+    statGemId: kind === "stat" ? gemId : enhancement.statGemId,
+    effectGemId: kind === "effect" ? gemId : enhancement.effectGemId,
+    statGemRollPercent: kind === "stat" ? rollPercent : enhancement.statGemRollPercent,
+    effectGemRollPercent: kind === "effect" ? rollPercent : enhancement.effectGemRollPercent,
+    gemIds: []
+  });
   return next;
 }
 function addInventory(state, itemId) {
@@ -49978,26 +50004,53 @@ function unsocketGem(state, itemId, index) {
   let next = { ...state, character: { ...state.character, gold: state.character.gold - fee.gold } };
   if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
   next = addInventory(next, gemId);
-  next = setEnhancement(next, itemId, { ...enhancement, statGemId: index === 0 ? void 0 : enhancement.statGemId, effectGemId: index === 1 ? void 0 : enhancement.effectGemId, gemIds: [] });
+  next = setEnhancement(next, itemId, {
+    ...enhancement,
+    statGemId: index === 0 ? void 0 : enhancement.statGemId,
+    effectGemId: index === 1 ? void 0 : enhancement.effectGemId,
+    statGemRollPercent: index === 0 ? void 0 : enhancement.statGemRollPercent,
+    effectGemRollPercent: index === 1 ? void 0 : enhancement.effectGemRollPercent,
+    gemIds: []
+  });
   return next;
 }
-function replaceGem(state, itemId, gemId) {
+function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   requireEquipped(state, itemId);
   const gem2 = safeGem(gemId);
   if (!gem2) throw new Error("That item is not a gem");
   const kind = gemSocketKind(gemId), enhancement = gearEnhancement(state, itemId), currentId = kind === "stat" ? enhancement.statGemId : enhancement.effectGemId;
-  if (!currentId) return socketGem(state, itemId, gemId);
-  if (currentId === gemId) throw new Error("That gem is already socketed here");
+  if (!currentId) return socketGem(state, itemId, gemId, randomRoll);
+  if (currentId === gemId) {
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta) throw new Error("Only graded gems can be rerolled");
+    const candidate = gemRollPercentFromUnitV1(randomRoll);
+    const previous = kind === "stat" ? enhancement.statGemRollPercent : enhancement.effectGemRollPercent;
+    const best = Math.max(previous ?? 100, candidate);
+    const next2 = consumeAcross(state, gemId, 1);
+    return setEnhancement(next2, itemId, {
+      ...enhancement,
+      statGemRollPercent: kind === "stat" ? best : enhancement.statGemRollPercent,
+      effectGemRollPercent: kind === "effect" ? best : enhancement.effectGemRollPercent
+    });
+  }
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (combinedQuantity(state, gemId) < 1) throw new Error("You do not own this gem");
   const fee = gemUnsocketCostForStateV1(state, currentId);
   if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
   if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
+  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
   let next = consumeAcross(state, gemId, 1);
   next = { ...next, character: { ...next.character, gold: next.character.gold - fee.gold } };
   if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
   next = addInventory(next, currentId);
-  next = setEnhancement(next, itemId, { ...enhancement, statGemId: kind === "stat" ? gemId : enhancement.statGemId, effectGemId: kind === "effect" ? gemId : enhancement.effectGemId, gemIds: [] });
+  next = setEnhancement(next, itemId, {
+    ...enhancement,
+    statGemId: kind === "stat" ? gemId : enhancement.statGemId,
+    effectGemId: kind === "effect" ? gemId : enhancement.effectGemId,
+    statGemRollPercent: kind === "stat" ? rollPercent : enhancement.statGemRollPercent,
+    effectGemRollPercent: kind === "effect" ? rollPercent : enhancement.effectGemRollPercent,
+    gemIds: []
+  });
   return next;
 }
 function gearStatsAtRank(itemId, rank) {
@@ -50034,7 +50087,7 @@ function equippedCanonicalStatGemBonusesV1(state) {
   if (!state.character) return { statPercent, statPercentagePoints };
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const gemId = gearEnhancement(state, itemId).statGemId;
+    const enhancement = gearEnhancement(state, itemId), gemId = enhancement.statGemId;
     if (!gemId) continue;
     const meta = canonicalGemMetaV1(gemId);
     if (!meta || meta.kind !== "stat") continue;
@@ -50042,7 +50095,7 @@ function equippedCanonicalStatGemBonusesV1(state) {
     const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
     if (!key || !family || family.kind !== "stat") continue;
     const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
-    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+    target2[key] = (target2[key] ?? 0) + gemRolledValueV1(meta.familyId, meta.grade, enhancement.statGemRollPercent);
   }
   return { statPercent, statPercentagePoints };
 }
@@ -50064,10 +50117,10 @@ function equippedEffectGemBonuses(state) {
   if (!state.character) return result;
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const gemId = gearEnhancement(state, itemId).effectGemId;
+    const enhancement = gearEnhancement(state, itemId), gemId = enhancement.effectGemId;
     if (!gemId) continue;
-    const gem2 = itemDef(gemId);
-    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, gem2.gemEffectValue ?? 0);
+    const gem2 = itemDef(gemId), meta = canonicalGemMetaV1(gemId);
+    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, meta ? gemRolledValueV1(meta.familyId, meta.grade, enhancement.effectGemRollPercent) : gem2.gemEffectValue ?? 0);
   }
   result.combat_speed = Math.min(0.1, result.combat_speed);
   result.boss_power = Math.min(0.15, result.boss_power);
@@ -56963,12 +57016,16 @@ function executeGameCommand(previous, value, now, options = {}) {
       upgrade = result.result;
       break;
     }
-    case "socket":
-      state = socketGem(state, text(a, "id"), text(a, "gemId"));
+    case "socket": {
+      if (options.randomRoll === void 0) throw new Error("trusted_random_required");
+      state = socketGem(state, text(a, "id"), text(a, "gemId"), options.randomRoll);
       break;
-    case "replace_socket":
-      state = replaceGem(state, text(a, "id"), text(a, "gemId"));
+    }
+    case "replace_socket": {
+      if (options.randomRoll === void 0) throw new Error("trusted_random_required");
+      state = replaceGem(state, text(a, "id"), text(a, "gemId"), options.randomRoll);
       break;
+    }
     case "unsocket":
       state = unsocketGem(state, text(a, "id"), integer(a, "index", 0, 1));
       break;
@@ -57711,6 +57768,9 @@ async function resolveRegionalCombatV1(deps, input) {
 import { createHash as createHash2 } from "node:crypto";
 
 // src/server/equipment/gems/gem-runtime-v1.ts
+function effectiveRollPercent(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 80 && value <= 120 && (value - 80) % 5 === 0 ? value : 100;
+}
 function summarizeGemLoadoutV1(entries) {
   const statPercent = {}, statPercentagePoints = {}, groups = /* @__PURE__ */ new Map();
   for (const entry2 of entries) {
@@ -57718,7 +57778,7 @@ function summarizeGemLoadoutV1(entries) {
       const d = findStatGem(entry2.sockets.stat.familyId);
       if (!d) throw new Error("unknown_stat_gem");
       const target2 = d.unit === "percent" ? statPercent : statPercentagePoints;
-      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade];
+      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade] * effectiveRollPercent(entry2.sockets.stat.rollPercent) / 100;
     }
     if (entry2.sockets.effect) {
       const g = entry2.sockets.effect;
@@ -57726,13 +57786,13 @@ function summarizeGemLoadoutV1(entries) {
       if (!d) throw new Error("unknown_effect_gem");
       const grades = groups.get(g.familyId) ?? [];
       if (grades.length >= d.maxEquippedCopies) throw new Error("effect_gem_resonance_cap");
-      grades.push(g.grade);
+      grades.push(g);
       groups.set(g.familyId, grades);
     }
   }
   const effects = [...groups.entries()].map(([familyId, grades]) => {
     const d = findEffectGem(familyId);
-    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s, g) => s + d.values[g], 0).toFixed(6)), grades: [...grades].sort() };
+    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s, g) => s + d.values[g.grade] * effectiveRollPercent(g.rollPercent) / 100, 0).toFixed(6)), grades: grades.map((g) => g.grade).sort() };
   });
   return { statPercent, statPercentagePoints, effects };
 }
@@ -57848,10 +57908,14 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   const role = deriveRole(character.classId);
   const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), combatScalingLevel = legacyCharacterLevelFromXp(character.xp), levelScale = combatScalingLevel / 25;
   const bonus = activeEquipmentBuildStats(state);
-  const sockets = equippedCanonicalGemIdsV1(state).map((gemId, index) => {
-    const meta = canonicalGemMetaV1(gemId);
+  const equippedGemEntries = equippedCanonicalSocketsV1(state).flatMap((row) => [
+    ...row.statGemId ? [{ id: row.statGemId, rollPercent: row.statGemRollPercent }] : [],
+    ...row.effectGemId ? [{ id: row.effectGemId, rollPercent: row.effectGemRollPercent }] : []
+  ]);
+  const sockets = equippedGemEntries.map(({ id, rollPercent }, index) => {
+    const meta = canonicalGemMetaV1(id);
     if (!meta) throw new Error("invalid_equipped_gem");
-    const gem2 = { familyId: meta.familyId, grade: meta.grade };
+    const gem2 = { familyId: meta.familyId, grade: meta.grade, ...rollPercent === void 0 ? {} : { rollPercent } };
     return { equipmentItemId: "equipped_" + index, sockets: meta.kind === "stat" ? { stat: gem2 } : { effect: gem2 } };
   });
   const effectGems = summarizeGemLoadoutV1(sockets).effects;

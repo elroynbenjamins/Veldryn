@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {gemPouch,gemPouchUpgradePreview} from '../core/gem-pouch';
-import {availableGemRefinementsV1,canonicalGemMetaV1} from '../core/gem-progression-v1';
+import {availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import type {GameCommand} from '../core/game-commands';
@@ -38,6 +38,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const selectedRaw=selectedStack?parseMobileRawGemItemIdV1(selectedStack.itemId):undefined;
   const grade=selectedMeta?.grade??selectedRaw?.grade;
   const family=mobileGemFamilyV1(selectedMeta?.familyId??selectedRaw?.familyId??'');
+  const rollRange=family&&grade?formatGemRollRangeV1(family.familyId,grade):undefined;
   const refinement=selectedRaw?availableGemRefinementsV1(state).find(row=>row.recipe.familyId===selectedRaw.familyId&&row.recipe.grade===selectedRaw.grade):undefined;
   const selectedRarity=selectedItem?rarityMeta(grade?GEM_GRADE_RARITY_V1[grade]:itemRarity(selectedItem)):undefined;
   const favorite=!!selectedStack&&!!state.settings.favoriteItemIds?.includes(selectedStack.itemId),locked=!!selectedStack&&!!state.settings.lockedItemIds?.includes(selectedStack.itemId);
@@ -69,9 +70,26 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
             <Text style={s.meta}>{p('{count} in Gem Pouch · Account-wide',{count:selectedStack.quantity})}</Text>
           </View>
         </View>
+        {rollRange?<View style={s.rollPanel}>
+          <Text style={s.rollEyebrow}>{p(selectedRaw?'AFTER REFINING':'POSSIBLE SOCKET ROLL')}</Text>
+          <Text style={s.rollValue}>{rollRange}</Text>
+          <Text style={s.meta}>{p(selectedRaw?'Refine this gem before it can be socketed.':'One of nine equally likely rolls. Higher rolls give stronger bonuses.')}</Text>
+          {family?<View style={s.gradeProgress}>
+            {([1,2,3,4,5] as const).map(g=><View key={g} style={[s.gradeRow,grade===g&&s.gradeRowActive]}>
+              <Text style={[s.gradeLabel,grade===g&&{color:C.accent}]}>{'G'+g}</Text>
+              <Text style={[s.gradeBonus,grade===g&&{color:C.good}]}>{formatGemRollRangeV1(family.familyId,g)}</Text>
+              {grade===g?<Text style={s.gradeMark}>●</Text>:null}
+            </View>)}
+          </View>:null}
+        </View>:null}
         <View style={s.detail}>
           <Text style={s.itemName}>{p('What it does')}</Text>
           <Text style={s.meta}>{family?.description??selectedItem.passive??p('Gem material.')}</Text>
+          {selectedMeta?.kind==='effect'&&family?<View style={s.resonanceInfo}>
+            <Text style={s.itemName}>{p('Resonance bonuses')}</Text>
+            {family.resonance2?<Text style={s.meta}>{'2/3 · '+family.resonance2}</Text>:null}
+            {family.resonance3?<Text style={s.meta}>{'3/3 · '+family.resonance3}</Text>:null}
+          </View>:null}
           {selectedRaw?<Text style={s.meta}>{p('Unrefined gems are materials, not socketable. Refine them using Enchanting first.')}</Text>:null}
           {protectedGem?<Text style={[s.meta,{color:C.warning}]}>{p('★ Protected: remove Favorite and Lock before selling or dismantling.')}</Text>:null}
         </View>
@@ -111,6 +129,12 @@ function styles(C:ThemeColors){return StyleSheet.create({
  gemHero:{flexDirection:'row',alignItems:'center',gap:spacing.md},
  largeArt:{width:84,height:84,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:12,backgroundColor:C.panel2},
  gemGrade:{...typography.caption,fontWeight:'900'},detail:{padding:spacing.md,gap:spacing.xs,borderRadius:10,backgroundColor:C.panel2},
+ rollPanel:{gap:6,padding:spacing.md,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.panelRaised},
+ rollEyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.4},
+ rollValue:{fontSize:20,lineHeight:25,color:C.good,fontWeight:'900'},
+ gradeProgress:{gap:3,marginTop:3},gradeRow:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:8,paddingVertical:5,borderRadius:7},gradeRowActive:{backgroundColor:C.selection},
+ gradeLabel:{width:25,...typography.caption,color:C.muted,fontWeight:'800'},gradeBonus:{flex:1,...typography.caption,color:C.text},gradeMark:{fontSize:10,color:C.accent},
+ resonanceInfo:{gap:5,marginTop:7},
  actionTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.6},
  refinement:{gap:spacing.sm,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:6},itemName:{...typography.bodyStrong,color:C.text},

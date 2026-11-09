@@ -3,6 +3,29 @@ export type GuildGuideTopic={id:string;title:string;body:string};
 export type GuildDetailedGuide={title:string;body:string;detail?:string;topics:readonly GuildGuideTopic[]};
 
 export const GUILD_DETAILED_GUIDES:Readonly<Record<string,GuildDetailedGuide>>={
+ 'Roster':{
+  title:'Guild Members',body:'Browse your Guild roster, see roles and use the actions available to your membership.',
+  topics:[
+   {id:'members',title:'Find your Guildmates',body:'The Members list shows the current roster, Guild roles and join information. Search or filter by role, then open a member for their details. You do not need leadership permissions to browse.'},
+   {id:'roles',title:'Roles and member requests',body:'Leaders and Officers can review membership requests and invitations from the Requests section and perform permitted roster actions. Ordinary members can view the Guild but cannot manage applications or another member’s role. Changes are validated by the server.'},
+  ],
+ },
+ 'Manage':{
+  title:'Manage your Guild',body:'Coordinate recruitment, membership and permanent Guild decisions with your leadership team.',
+  topics:[
+   {id:'recruitment',title:'Applications and invitations',body:'Use Members and Requests to review pending applications, send or cancel invitations and view available Guild capacity. Access depends on your Guild role. Recruitment posts are managed separately from Guild Chat and cannot bypass membership permissions.'},
+   {id:'roles',title:'Guild roles and permissions',body:'Leaders and Officers can perform only the actions available to their role. Select a member to view their role and permitted options. Promotion, removal and leadership transfer require deliberate confirmation; server permissions remain authoritative.'},
+   {id:'safety',title:'Leadership safety and departure',body:'Membership shows the leader activity warning and the inactivity threshold for a possible succession. A Guild Leader can transfer leadership to another member. Leaving removes your access to shared Guild benefits; disbanding permanently closes the Guild for everyone. Review the in-app confirmations before any destructive action.'},
+  ],
+ },
+ 'Appearance':{
+  title:'Guild Appearance',body:'Customize your Guild identity using the visual options your Guild has earned.',
+  topics:[
+   {id:'identity',title:'Tag, colors and motto',body:'The Guild tag is a three-character identity. Changing it permanently retires the old tag and it cannot be reclaimed. Guild tag colors, name colors and motto have their own controls and permissions. The tag change is a separate action from saving other appearance changes.'},
+   {id:'visuals',title:'Banners, backgrounds and borders',body:'Review the live Guild preview as you select banners, profile borders, card backgrounds and name styles. Options may require Guild levels, achievements or finished Guild Construction; unavailable or unfinished artwork is not selectable.'},
+   {id:'saving',title:'Unlocks and saving safely',body:'Only Guild Leaders and Officers can edit appearance. Some colors become editable after the required Hall upgrade, and some visuals require specific Guild achievements. Use Save Guild Appearance to apply regular visual changes, watch the Unsaved indicator and confirm any permanent tag change separately.'},
+  ],
+ },
  'Activities/Muster':{
   title:'Muster & Rally',body:'Your daily activity builds Rally Marks and helps unlock Guild-wide weekly benefits.',
   topics:[

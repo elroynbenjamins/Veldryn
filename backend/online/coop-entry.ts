@@ -5,7 +5,7 @@ import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {baseMarks} from '../src/server/expeditions/rewards';
 import {recommendedDungeonPower} from '../src/server/coop/dungeon-power';
 import {eventExpeditionPreviews} from '../src/server/expeditions/content/event-expeditions';
-import {coopRequiredLevel,readinessEligibleCoopTier,type CoopTier} from '../src/server/coop/config';
+import {coopRequiredLevel,readinessEligibleCoopTier,PUBLISHED_COOP_TIERS,type CoopTier} from '../src/server/coop/config';
 import {publishedRegularDungeon,regularDungeonEntryError,regularDungeonLockedReason} from '../src/server/coop/dungeon-entry-policy';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
@@ -14,7 +14,7 @@ type Services=Pick<GameplayServices,'authenticate'|'rpc'>;
 interface Loaded {state:GameState|null;version:number;serverNow:number;liveEvent?:GameState['account']['liveEvent'];}
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers});
-const tiers:CoopTier[]=[1,2,3,4,5];
+const tiers:CoopTier[]=[...PUBLISHED_COOP_TIERS];
 
 /** Authenticated entry/consent boundary. Stats, roles, owner identity and clocks
  * always come from the existing authoritative game, never request payloads. */

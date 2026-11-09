@@ -167,10 +167,10 @@ var init_faith = __esm({
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
-  const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= 1e3 && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
+  const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
   return { xp, selectedBlessingId: selected2 && selected2.level <= levelFromXp(xp) ? selected2.id : void 0, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
 }
-var MAX_XP, faithLevel, selectedFaithBlessing;
+var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -178,6 +178,7 @@ var init_faith2 = __esm({
     init_faith();
     init_progression();
     MAX_XP = totalXpAtLevel(100);
+    MAX_FAITH_PRACTICES = 1e3;
     faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s2) => s2.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s2) => s2.skillId === "faith")?.xp ?? 0));
     selectedFaithBlessing = (state) => {
       const raw2 = state.character?.faith, blessing = faithBlessingDef(raw2?.selectedBlessingId);

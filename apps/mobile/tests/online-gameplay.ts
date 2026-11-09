@@ -54,6 +54,64 @@ async function main(){
  const snapshot:OnlineSnapshot={accountId:'alice',state,version:0,serverNow:now};
  const repo=new OnlineGameRepository('alice',{read:async()=>snapshot,send:async request=>{attempts++;if(attempts===1)throw new Error('connection_lost');ok(request.requestId==='key-1','retry keeps request identity');return {...snapshot,version:1};}},{read:async()=>pending,write:async value=>{pending=value;}},()=>`key-${++keys}`);
  await repo.load();try{await repo.execute({type:'claim'})}catch{}ok(await repo.hasPending(),'uncertain request retained');await repo.execute();ok(!await repo.hasPending()&&keys===1,'retry once and clear');
+
+ // Timeout after an unknown commit: the next Claim replays exactly the same receipt.
+ let claimPending:PendingGameCommand|null=null,claimSends=0,claimKeys=0;
+ const claimRecovery=new OnlineGameRepository('alice',{
+  read:async()=>snapshot,send:async request=>{
+   claimSends++;ok(request.requestId==='retry-1','claim retry reuses the same request ID');
+   if(claimSends===1)throw new Error('request_timeout');
+   return {...snapshot,version:1,serverNow:now+claimSends,reward:claim.reward};
+  },
+ },{read:async()=>claimPending,write:async value=>{claimPending=value;}},()=>`retry-${++claimKeys}`);
+ await claimRecovery.load();
+ try{await claimRecovery.execute({type:'claim'})}catch{}
+ ok(await claimRecovery.hasPending(),'timeout preserves the original claim');
+ const recoveredClaim=await claimRecovery.execute({type:'claim'});
+ ok(claimSends===2&&claimKeys===1,'second Claim replays rather than double-submits');
+ ok(recoveredClaim.executedCommand.type==='claim'&&recoveredClaim.reward?.xp===claim.reward?.xp,'replay preserves original rewards');
+ ok(!await claimRecovery.hasPending(),'confirmed claim clears the durable retry');
+
+ // Reconcile a different pending command before submitting the new request.
+ let mixedPending:PendingGameCommand|null=null,mixedKeys=0,mixedSends=0;
+ const requestIds:string[]=[];
+ const followup=new OnlineGameRepository('alice',{
+  read:async()=>({...snapshot,version:5}),send:async request=>{
+   mixedSends++;requestIds.push(request.requestId);
+   if(mixedSends===1)throw new Error('service_unavailable');
+   return {...snapshot,version:mixedSends===2?6:7,serverNow:now+mixedSends,reward:mixedSends===2?claim.reward:undefined};
+  },
+ },{read:async()=>mixedPending,write:async value=>{mixedPending=value;}},()=>`mixed-${++mixedKeys}`);
+ await followup.load();
+ try{await followup.execute({type:'stop'})}catch{}
+ const continued=await followup.execute({type:'claim'});
+ ok(mixedSends===3&&mixedKeys===2,'retry resolves before a distinct command is generated');
+ ok(requestIds[0]===requestIds[1]&&requestIds[1]!==requestIds[2],'replayed/new request IDs cannot collide');
+ ok(continued.executedCommand.type==='claim'&&continued.recovered?.executedCommand.type==='stop','new response retains its predecessor');
+ ok(continued.recovered?.reward?.xp===claim.reward?.xp,'earlier reward remains visible to client');
+ ok(!await followup.hasPending(),'both verified commands clear retry storage');
+
+ // A second failure cannot create a new command or throw away the local receipt.
+ let stuckPending:PendingGameCommand|null=null,blockedSends=0,blockedKeys=0;
+ const blocked=new OnlineGameRepository('alice',{
+  read:async()=>snapshot,send:async()=>{blockedSends++;throw new Error('service_unavailable');},
+ },{read:async()=>stuckPending,write:async value=>{stuckPending=value;}},()=>`blocked-${++blockedKeys}`);
+ await blocked.load();
+ try{await blocked.execute({type:'stop'})}catch{}
+ try{await blocked.execute({type:'claim'})}catch{}
+ ok(blockedSends===2&&blockedKeys===1&&await blocked.hasPending(),'a repeated outage cannot replace a pending command');
+
+ // The server might return the old receipt after a foreground refresh.
+ const newest:OnlineSnapshot={...snapshot,version:20,serverNow:now+100};
+ let oldPending:PendingGameCommand|null={requestId:'committed-claim',expectedVersion:18,command:{type:'claim'}};
+ const alreadyApplied=new OnlineGameRepository('alice',{
+  read:async()=>newest,send:async()=>({...snapshot,version:19,serverNow:now+50,reward:claim.reward}),
+ },{read:async()=>oldPending,write:async value=>{oldPending=value;}},()=> 'unused-key');
+ await alreadyApplied.load();
+ const reconciled=await alreadyApplied.execute();
+ ok(reconciled.version===20&&reconciled.reward?.xp===claim.reward?.xp,'newer state preserves original replayed reward');
+ ok(!await alreadyApplied.hasPending(),'confirmed replay clears local pending record');
+
  const stale=new OnlineGameRepository('alice',{read:async()=>snapshot,send:async()=>{throw new OnlineCommandError('stale_state',true);}},{read:async()=>pending,write:async value=>{pending=value;}},()=>`key-${++keys}`);
  await stale.load();try{await stale.execute({type:'claim'})}catch{}ok(!await stale.hasPending(),'definitive stale failure cleared');
  let releaseRead:(value:OnlineSnapshot)=>void=()=>{};

@@ -200,7 +200,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     return()=>{stopped=true;if(retryTimer!==undefined)clearTimeout(retryTimer);};
   },[terminalRunId,foreground,entrySource.kind]);
   useEffect(()=>{if(!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun)return;const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{if(showLive){onClose();return true}if(eventRun){setEventRun(undefined);return true}if(run){setRun(undefined);return true}if(showLoadouts){setShowLoadouts(false);setNotice('');return true}if(selectedEvent){setSelectedEvent(undefined);setNotice('');return true}if(selected){setSelected(undefined);setNotice('');return true}return false});return()=>subscription.remove()},[showLive,showLoadouts,selected,selectedEvent,run,eventRun,onClose]);
-  const dungeons=useMemo(()=>(entry?.dungeons??[]).map(presentCoopDungeon),[entry]);
+  const dungeons=useMemo(()=>(entry?.dungeons??[]).filter(source=>source.region!=='Asterfall'&&source.id!=='EXP_001'&&source.id!=='EXP_002').map(presentCoopDungeon),[entry]);
   const activeEventExpeditions=useMemo(()=>(entry?.eventExpeditions??[]).filter(expedition=>expedition.status==='available'),[entry]);
   useEffect(()=>{
     if(initialDungeonHandled.current||!initialDungeonId||!entry)return;

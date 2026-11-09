@@ -1,5 +1,5 @@
 import type {Language} from './languages';
-import {guildDetailedGuide,type GuildDetailedGuide} from '../core/guild-detailed-guides';
+import {GUILD_DETAILED_GUIDES,guildDetailedGuide,type GuildDetailedGuide} from '../core/guild-detailed-guides';
 import {guildGuideSectionTitle} from './guild-guide-library';
 import {guildGuideDe} from './guild-guide-content-de';
 import {guildGuideEs} from './guild-guide-content-es';
@@ -34,7 +34,6 @@ export function guildDetailedGuideLocaleCoverage(language:Language):{sections:nu
  const table=TABLES[language];
  const sections=Object.keys(table??{}).length;
  const topics=Object.values(table??{}).reduce((sum,entry)=>sum+entry[1].length,0);
- const {GUILD_DETAILED_GUIDES}=require('../core/guild-detailed-guides') as typeof import('../core/guild-detailed-guides');
  const sourceSections=Object.keys(GUILD_DETAILED_GUIDES);
  return {sections,topics,complete:!!table&&sections===sourceSections.length&&sourceSections.every(id=>table[id]?.[1].length===GUILD_DETAILED_GUIDES[id].topics.length)};
 }

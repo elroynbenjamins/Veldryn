@@ -36,15 +36,27 @@ ok(modal.includes('gt("Replace gem?")')&&modal.includes('gt("Extract gem?")')&&m
 ok(modal.includes('gemUnsocketCostForStateV1')&&modal.includes('fee.gold')&&modal.includes('fee.dust')&&modal.includes('Gem Dust'),'gem confirmation must show the precise extraction/replacement cost');
 ok(modal.includes('canAffordFee')&&modal.includes('disabled={!affordable||busy}'),'unaffordable gem extraction/replacement must not be submitted');
 ok(modal.includes('setPendingGemAction(null);setGemPickerOpen(false)'),'successful gem replacement/extraction should dismiss both confirmation and picker');
-ok(modal.includes('gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id,itemId)'),'replacement confirmation must compare current and projected new effects before spending');
-ok(modal.includes("setPendingGemAction({kind:'replace'"),'replacement buttons must stage confirmation instead of spending immediately');
+ok(modal.includes('gemResultDetail(state,current.id,itemId,true)} → {gemResultDetail(state,next.id,itemId)'),'replacement confirmation must compare current and projected new effects before spending');
+ok(modal.includes("selectedGem.id===equippedGemId?'reroll':'replace'"),'replacement and duplicate reroll actions must stage confirmation before spending');
 ok(modal.includes("setPendingGemAction({kind:'extract'"),'extraction buttons must stage confirmation instead of spending immediately');
 ok(modal.includes('onSocket(selectedGem.id)')&&modal.includes('setGemPickerOpen(false)'),'socketing from an empty slot should use the focused picker then close on success');
 ok(modal.includes('style={s.compactSocketSelect}')&&modal.includes('compactExtract'),'socket selection must remain distinct from the extract action');
-ok(modal.includes('selectedGem.id===equippedGemId')&&modal.includes('disabled={!selectedGem'),'already equipped gem variants must be blocked in the picker footer');
+ok(modal.includes('selectedGem.id===equippedGemId')&&modal.includes('Improve roll')&&modal.includes('disabled={!selectedGem'),'an identical owned gem must be selectable for best-of reroll');
 ok(modal.includes('showAllCandidates'),'players must be able to expand the owned gem shortlist');
 ok(modal.includes('reduceMotion'),'gem result motion must respect Reduce Motion');
 
 ok(modal.includes('effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1'),'projected Effect Gem Resonance must account for the prospective socket change');
-ok(modal.includes('family?.values[meta.grade]'),'Effect Gem strength must use actual grade values rather than a generic description');
+ok(modal.includes('formatGemRollRangeV1(meta.familyId,meta.grade)'),'Effect Gem candidates must display authoritative possible roll values');
+const improve=enhancementFeedback(
+ {itemId:'GEAR',rank:4,failures:0,gemIds:['gem:stat_might:g1'],statGemId:'gem:stat_might:g1',statGemRollPercent:80},
+ {itemId:'GEAR',rank:4,failures:0,gemIds:['gem:stat_might:g1'],statGemId:'gem:stat_might:g1',statGemRollPercent:120},
+);
+equal(improve?.socketChange?.action,'improved','a confirmed better reroll must have a distinct visible outcome');
+equal(improve?.socketChange?.rollPercent,120,'the improved roll value must reach the feedback presentation');
+const noImprovement=enhancementFeedback(
+ {itemId:'GEAR',rank:4,failures:0,gemIds:['gem:stat_might:g1'],statGemId:'gem:stat_might:g1',statGemRollPercent:120},
+ {itemId:'GEAR',rank:4,failures:0,gemIds:['gem:stat_might:g1'],statGemId:'gem:stat_might:g1',statGemRollPercent:120},
+);
+equal(noImprovement,null,'an unchanged roll must never be reported as an improvement');
+ok(modal.includes('GEM IMPROVED')&&modal.includes('setRerollNotice'),'successful and unsuccessful improvements need truthful feedback');
 console.log('PASS gem socket UX distinguishes committed changes, accurate grade values and paid replacement/extraction');

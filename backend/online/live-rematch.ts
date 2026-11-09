@@ -1,6 +1,6 @@
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {freezeCoopRosterAtCommit} from '../src/server/coop/loadout-snapshots';
-import {coopRequiredLevel,type CoopTier} from '../src/server/coop/config';
+import {coopRequiredLevel,newDungeonTierAllowed,type CoopTier} from '../src/server/coop/config';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {deriveOnlineCoopLoadout} from './coop-loadout';
@@ -47,6 +47,8 @@ export class OnlineLiveRematch {
    const source=await this.services.rpc<RematchSources>('online_live_rematch_sources_server_v1',{p_account_id:accountId,p_run_id:runId});
    const definition=EXPEDITIONS[source.dungeonId];
    if(!definition)throw new GameplayError('dungeon_unavailable');
+   // Legacy Tier 4/5 runs still finish; fresh rematches use the three-tier ladder.
+   if(!newDungeonTierAllowed(source.tier))throw new GameplayError('invalid_dungeon_tier');
    const records=source.members.map(member=>deriveOnlineCoopLoadout(member.accountId,member.state,member.version));
    source.members.forEach((member,index)=>{const issue=regularDungeonEntryError(definition,member.state,records[index].characterLevel);if(issue)throw new GameplayError(issue);});
    frozen=freezeCoopRosterAtCommit({

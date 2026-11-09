@@ -6,6 +6,7 @@ import {createSectionGuideStore} from '../core/section-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {accountText} from '../i18n/account';
+import {guildGuideSectionTitle} from '../i18n/guild-guide-library';
 import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
@@ -32,6 +33,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
  const seen=saved.seen.includes(section);
  const topics=guide.topics??[];
  const selectedTopic=topics[Math.min(topicIndex,Math.max(0,topics.length-1))];
+ const displayTitle=area==='guild'?guildGuideSectionTitle(language,section,t(guide.title)):t(guide.title);
  const expanded=!seen||open?.identity===identity&&open?.section===section;
  const close=()=>{
   setOpen(null);setMore(false);setTopicIndex(0);
@@ -63,7 +65,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
        {area==='guild'?<View style={[styles.guideIcon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={22}/></View>:null}
        <View style={styles.copy}>
         <Text style={[styles.dialogEyebrow,{color:C.accent}]}>{t('SECTION GUIDE')}</Text>
-        <Text accessibilityRole="header" style={[styles.dialogTitle,{color:C.text}]}>{t(guide.title)}</Text>
+        <Text accessibilityRole="header" style={[styles.dialogTitle,{color:C.text}]}>{displayTitle}</Text>
        </View>
        <Pressable accessibilityRole="button" accessibilityLabel={t('Close guide')} onPress={close} style={[styles.closeButton,{borderColor:C.line}]}>
         <Text style={[styles.closeText,{color:C.muted}]}>×</Text>
@@ -104,7 +106,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
  </View>;
  return <View style={[styles.card,{borderColor:C.selectionLine,backgroundColor:C.panel}]}>
   <View style={styles.top}>
-   <View style={styles.copy}><Text accessibilityRole="header" style={[styles.title,{color:C.text}]}>{t(guide.title)}</Text></View>
+   <View style={styles.copy}><Text accessibilityRole="header" style={[styles.title,{color:C.text}]}>{displayTitle}</Text></View>
    <Pressable accessibilityRole="button" accessibilityLabel={t('Got it')} onPress={close} style={[styles.done,{backgroundColor:C.selection}]}>
     <Text style={[styles.action,{color:C.accent}]}>{t('Got it')} ✓</Text>
    </Pressable>

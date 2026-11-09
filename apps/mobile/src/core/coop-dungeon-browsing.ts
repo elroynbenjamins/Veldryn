@@ -60,6 +60,7 @@ export function presentCoopDungeon(source:CoopDungeonProjection):CoopDungeonView
   const art=artById[source.id],enabledRoomTypes=(source.enabledRoomTypes??[]).filter(room=>supportedRooms.has(room));
   return {...source,artId:art?.card,heroArtId:art?.hero??art?.card,available:source.available??!source.lockedReason,
     description:source.description?.trim()||'Authoritative description unavailable.',recommendedLevel:source.recommendedLevel??source.syncLevel,
+    recommendedLiveTier:source.recommendedLiveTier&&source.recommendedLiveTier<=3?source.recommendedLiveTier:undefined,
     enabledRoomTypes,difficulties:[...new Set(source.difficulties??[])].filter((tier):tier is 1|2|3=>tier===1||tier===2||tier===3),preBossRoomMin:source.preBossRoomMin??5,preBossRoomMax:source.preBossRoomMax??5,
     recommendedPower:source.recommendedPower??Math.round(700+source.minLevel*520),estimatedMinutes:source.estimatedMinutes??{min:6,max:8},tierMinLevels:{1:source.tierMinLevels?.[1]??source.minLevel,2:source.tierMinLevels?.[2]??source.minLevel+5,3:source.tierMinLevels?.[3]??source.minLevel+10,4:source.tierMinLevels?.[4]??source.minLevel+15,5:source.tierMinLevels?.[5]??source.minLevel+20}};
 }

@@ -1,5 +1,9 @@
 // Regression coverage: live hit replay may animate deterministically, but only authoritative claims settle rewards.
 import {assert} from './test-assert';
+import {liveHuntNarration} from '../src/core/combat-narration';
+import {BATTLE_MESSAGES} from '../src/i18n/battle';
+import {MONSTERS} from '../src/content/monsters';
+import type {ClassId} from '../src/core/types';
 import {huntHitEvents,huntHitsBetween,huntEnemyHpAt} from '../src/core/combat-hit-timeline';
 import {activeCombatHitProjection,activeCombatRuntimeProjection,claimActivity,createCharacter,effectiveStats,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import type {ActiveCombatHitCursor} from '../src/core/game';
@@ -63,6 +67,36 @@ for(let tick=0;tick<=halfSecondSteps;tick++){
 }
 assert.equal(liveState.character!.preparation!.remainingEncounters,3,'read-only live replay must not spend actual potion charges');
 assert.equal(liveState.character!.currentHp,state.character!.currentHp,'read-only live replay must not mutate player HP');
+// Narration is presentation only: it must match real hit events and never
+// invent a crit, a percentage, or a permanent explanatory message.
+const revenant=MONSTERS.find(row=>row.id==='OATHGLASS_REVENANT')!;
+const formatDamage=(damage:number)=>Math.round(damage).toString();
+const classes:ClassId[]=['IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','STONECALLER'];
+const linesFor=(classId:ClassId,nowMs:number,monster=revenant,lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean},stoppedReason='')=>
+ liveHuntNarration({classId,monster,nowMs,startedAtMs:T,lastHit,stoppedReason,damageText:formatDamage});
+const prepared=classes.map(classId=>linesFor(classId,T));
+assert.equal(new Set(prepared.map(row=>row.key)).size,classes.length,'every class needs its own combat preparation');
+assert.equal(linesFor('WAYFINDER',T).key,'You draw your bow and take aim.','Wayfinder should visibly prepare a shot');
+assert.equal(linesFor('WAYFINDER',T+4800).key,'Echo energy coils around the revenant.','enemy cue must match Revenant encounter identity');
+assert.equal(linesFor('WAYFINDER',T+9600).key,'You watch for an opening.','idle narration should cycle without inventing a hit');
+assert.equal(linesFor('WAYFINDER',T+4800,MONSTERS.find(row=>row.id==='VENOM_WEAVER')!).key,'The foe coils for a venomous strike.','Venom encounter needs its own cue');
+const recent={atMs:T+20000,actor:'player' as const,damage:42,critical:false};
+const landed=classes.map(classId=>linesFor(classId,T+20500,revenant,recent));
+assert.equal(new Set(landed.map(row=>row.key)).size,classes.length,'every class needs distinctive actual-hit text');
+assert.ok(landed.every(row=>row.hit&&!row.critical&&row.params?.amount==='42'),'player hit narration must use recorded damage');
+const crit=linesFor('WAYFINDER',T+20500,revenant,{...recent,critical:true});
+assert.ok(crit.hit&&crit.critical&&crit.key==='Arrow hits · {amount}','critical emphasis must depend on recorded hit');
+const taken=linesFor('WAYFINDER',T+20500,revenant,{...recent,actor:'enemy',damage:17});
+assert.equal(taken.key,'You stagger from the impact · {amount}');
+assert.ok(taken.hit&&!taken.critical&&taken.params?.amount==='17','ordinary enemy hit must not imply a critical hit');
+const recovery=linesFor('WAYFINDER',T+24500,revenant,{...recent,actor:'enemy',damage:17});
+assert.equal(recovery.key,'You regain your footing.','after an ordinary blow the player should recover');
+const critRecovery=linesFor('WAYFINDER',T+24500,revenant,{...recent,actor:'enemy',damage:17,critical:true});
+assert.equal(critRecovery.key,'You rise after the critical hit.','critical recovery must require a real enemy crit flag');
+assert.equal(linesFor('WAYFINDER',T+22000,revenant,recent,'Too injured').key,'Combat stopped','stopped battle should not narrate further attacks');
+for(const row of [...prepared,...landed,taken,recovery,critRecovery,crit,...MONSTERS.map(monster=>linesFor('WAYFINDER',T+4800,monster))]){
+ assert.ok(Object.prototype.hasOwnProperty.call(BATTLE_MESSAGES,row.key),'narration must have standard battle translations: '+row.key);
+}
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const homeStage=fs.readFileSync('src/components/BattleStage.tsx','utf8');
 assert.ok(homeStage.includes('activeCombatHitProjection('),'Home encounter preview must use actual hunt events');
@@ -71,4 +105,7 @@ assert.ok(homeStage.includes('current={fight?.enemyHp??'),'Home must display pro
 const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
 assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
+assert.ok(combatTab.includes('liveHuntNarration('),'Combat tab must show event-driven class and encounter narration');
+assert.ok(!combatTab.includes("tr('Progress · {percent}%"),'Live combat must not show a progress percentage');
+assert.ok(!combatTab.includes('Damage updates on hit. Rewards are granted on defeat.'),'Static live combat instruction must be removed');
 console.log('PASS real hunt hits, partial HP persistence, incremental replay, UI synchronization and split-claim parity');

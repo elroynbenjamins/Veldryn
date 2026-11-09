@@ -47611,6 +47611,32 @@ function guildSkillProfessionMultipliers(effects) {
   };
 }
 
+// ../apps/mobile/src/content/exploration.ts
+init_progression();
+var EXPLORATION_ROUTES = [
+  { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
+  { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
+  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 3 },
+  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 4 },
+  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 5 },
+  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", areaId: "ZONE_006", name: "Chart Saffron Gate", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 8 },
+  { id: "SCOUT_SUNSCAR_SCORCHWIND", zoneId: "SUNSCAR", areaId: "ZONE_007", name: "Survey Scorchwind Flats", seconds: 180, xp: 290, unlockMonsterId: "DUNE_ORACLE", prerequisiteRouteId: "SCOUT_SUNSCAR", requiredLevel: 31, requiredExplorationLevel: 9 },
+  { id: "SCOUT_SUNSCAR_MIRAGE", zoneId: "SUNSCAR", areaId: "ZONE_008", name: "Trace Mirage Basin", seconds: 192, xp: 340, unlockMonsterId: "GLASSBOUND_SENTINEL", prerequisiteRouteId: "SCOUT_SUNSCAR_SCORCHWIND", requiredLevel: 36, requiredExplorationLevel: 10 },
+  { id: "SCOUT_SUNSCAR_CROWN", zoneId: "SUNSCAR", areaId: "ZONE_010", name: "Chart Tyrant's Crown", seconds: 204, xp: 390, prerequisiteRouteId: "SCOUT_SUNSCAR_MIRAGE", requiredLevel: 41, requiredExplorationLevel: 11 },
+  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 480, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 12 },
+  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 16 }
+].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
+var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
+function unmetScoutingPrerequisite(route, completed = []) {
+  return route.prerequisiteRouteId && !completed.includes(route.prerequisiteRouteId) ? explorationRoute(route.prerequisiteRouteId) : void 0;
+}
+function explorationGatheringSpeedBonus(level) {
+  return Math.min(10, Math.max(0, Math.floor(level / 10))) / 100;
+}
+function explorationScoutingSpeedMultiplier(level) {
+  return 1 + 2 * Math.min(10, Math.max(0, Math.floor(level / 10))) / 100;
+}
+
 // ../apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
@@ -47750,6 +47776,8 @@ function characterPermanentMultipliers(state) {
   let result = { ...BASE };
   const c = state.character;
   if (!c) return result;
+  const explorationLevel = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
+  result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + explorationGatheringSpeedBonus(explorationLevel) });
   const blessing = selectedFaithBlessing(state);
   if (blessing) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
@@ -48013,20 +48041,6 @@ var MINING_ESSENCE_BY_ZONE = {
   GREENFIELDS: { itemId: ASTERFALL_MINERAL_ESSENCE_ID, baseChance: 0.02 },
   OLD_MINES: { itemId: ASTERFALL_MINERAL_ESSENCE_ID, baseChance: 0.02 }
 };
-
-// ../apps/mobile/src/content/exploration.ts
-init_progression();
-var EXPLORATION_ROUTES = [
-  { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
-  { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
-  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 2 },
-  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 3 },
-  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 4 },
-  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 6 },
-  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 430, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 9 },
-  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 14 }
-].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
-var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 
 // ../apps/mobile/src/content/quests.ts
 init_progression();
@@ -48421,6 +48435,8 @@ function activityQueueSchedulingIssue(state, activity) {
     const route = EXPLORATION_ROUTES.find((row) => row.id === activity.targetId);
     if ((state.character?.level ?? 1) < route.requiredLevel) return `Reach character level ${route.requiredLevel} before queuing ${route.name}.`;
     if ((state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1) < route.requiredExplorationLevel) return `Requires Exploration level ${route.requiredExplorationLevel} before queuing ${route.name}.`;
+    const prerequisite2 = unmetScoutingPrerequisite(route, state.exploredRouteIds);
+    if (prerequisite2) return `Complete ${prerequisite2.name} before queuing ${route.name}.`;
   }
   return void 0;
 }
@@ -48562,6 +48578,8 @@ function queuedActivityReadiness(state, activity, allowAutoTravel = true) {
     if (state.character.level < route.requiredLevel) return { ready: false, blocker: `Reach character level ${route.requiredLevel} for ${route.name}.` };
     const level2 = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
     if (level2 < route.requiredExplorationLevel) return { ready: false, blocker: `Requires Exploration level ${route.requiredExplorationLevel} for ${route.name}.` };
+    const prerequisite2 = unmetScoutingPrerequisite(route, state.exploredRouteIds);
+    if (prerequisite2) return { ready: false, blocker: `Complete ${prerequisite2.name} before scouting ${route.name}.` };
     return { ready: true, blocker: void 0 };
   }
   if (activity.kind === "alchemy") {
@@ -52222,7 +52240,8 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
       const route = explorationRoute(state.activity.targetId);
       if (!route) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
       const candy = eventCandyWindow(state, "skill");
-      const routeSeconds = route.seconds / mealSpeedFactor(state.character, "noncombat");
+      const explorationLevel = state.skills.find((skill3) => skill3.skillId === "exploration")?.level ?? 1;
+      const routeSeconds = route.seconds / (mealSpeedFactor(state.character, "noncombat") * explorationScoutingSpeedMultiplier(explorationLevel));
       const bankedSeconds = (state.activity.progressFraction ?? 0) * routeSeconds;
       const totalSeconds = bankedSeconds + elapsed;
       const actions2 = Math.floor(totalSeconds / routeSeconds);
@@ -52932,11 +52951,15 @@ function startHerbalism(state, targetId, nowMs) {
 function startExploration(state, routeId, nowMs) {
   const route = explorationRoute(routeId);
   if (!route) throw new Error("Unknown exploration route");
+  const zone = WORLD_ZONES.find((item) => item.id === route.zoneId);
+  if (!zone || worldZoneInDevelopment(zone)) throw new Error("This scouting region is still in development");
   state = finishClassDrills(state, nowMs);
   if (!state.character || state.character.level < route.requiredLevel) throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);
   const exploration = state.skills.find((skill2) => skill2.skillId === "exploration");
   if (!exploration || exploration.level < route.requiredExplorationLevel) throw new Error(`Reach Exploration level ${route.requiredExplorationLevel} to scout this route`);
-  if (route.zoneId !== currentRegionId(state)) throw new Error(`Travel to ${route.zoneId} before exploring`);
+  const prerequisite2 = unmetScoutingPrerequisite(route, state.exploredRouteIds);
+  if (prerequisite2) throw new Error(`Complete ${prerequisite2.name} before scouting ${route.name}`);
+  if (route.zoneId !== currentRegionId(state)) throw new Error(`Travel to ${zone.name} before exploring`);
   if (state.activity) {
     state = claimActivity(state, nowMs).state;
     state = stopActivity(state, nowMs);

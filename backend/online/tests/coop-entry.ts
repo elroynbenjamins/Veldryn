@@ -7,6 +7,7 @@ import {GameplayError} from '../gameplay';
 
 async function main(){
  const state=createCharacter(newGame(1000),'IRONWARDEN','Entry Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
+ state.defeatedBossIds.push('FALLEN_KNIGHT');
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let publicationError:string|undefined;
  const handler=coopEntryHandler({authenticate:async token=>token==='valid'?'owned-account':null,rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
@@ -25,6 +26,8 @@ async function main(){
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
  assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
+ assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_003','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'],'Only Sunscar and later regular dungeons are listed');
+ assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.minLevel,25,'Mirage Well is the first dungeon at current Level 25');
  assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_007')?.available,false,'Ashlands dungeons must remain unavailable');
  assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_008')?.lockedReason,'In Development','Ashlands dungeon cards must identify the development state');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
@@ -54,6 +57,11 @@ async function main(){
  assert.ok(browsingProjection.dungeons.length>0);
  assert.deepEqual(browsingProjection.loadouts,[]);
  state.character!.equippedCombatCompanionId=previousCompanion;
+ state.defeatedBossIds=state.defeatedBossIds.filter(id=>id!=='FALLEN_KNIGHT');
+ const beforeBoss=await (await handler(request('entry'))).json();
+ assert.ok(beforeBoss.dungeons.every((dungeon:{available:boolean})=>!dungeon.available),'Chapter I boss is mandatory even at Level 30+');
+ assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.lockedReason,'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.');
+
  console.log('PASS co-op entry authentication, authoritative projection, consent validation and transactional replay boundary');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

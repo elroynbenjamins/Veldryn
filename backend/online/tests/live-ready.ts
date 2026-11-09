@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
@@ -9,7 +10,7 @@ import {coopHandler} from '../coop';
 
 async function main(){
  const members=(['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const).map((classId,index)=>{
-  const accountId=`00000000-0000-4000-8000-00000000000${index+1}`,state=createCharacter(newGame(0),classId,'Ready Test');state.character!.level=25;
+  const accountId=`00000000-0000-4000-8000-00000000000${index+1}`,state=createCharacter(newGame(0),classId,'Ready Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.defeatedBossIds.push('FALLEN_KNIGHT');
   state.character!.id='ready-character-'+index;
   state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
   const record=deriveOnlineCoopLoadout(accountId,state,1),snapshot=resolveAndFreezeLoadout({accountId,characterId:state.character!.id,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>record}});
@@ -31,7 +32,7 @@ async function main(){
    if(name==='read_online_coop_receipt_server_v1')return prior as T;
    if(name==='online_live_ready_sources_server_v1'){
     if(sourceFailsAfterCommit){prior={requestHash:'[1,true]',response:{status:'committed'}};throw new Error('ready_check_closed');}
-    return {dungeonId:'EXP_001',tier:1,members} as T;
+    return {dungeonId:'EXP_004',tier:1,members} as T;
    }
    if(name==='respond_online_live_ready_server_v1')return {status:'open'} as T;
    if(name==='online_live_committed_sources_server_v1')return {runId} as T;

@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {highestEligibleCoopTier} from '../src/server/coop/config';
-import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
+import {publishedRegularDungeon,regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 
@@ -15,7 +15,7 @@ export interface CoopLiveLfgCloseRequest{requestId:string;}
 
 export class OnlineCoopLfg{
  constructor(private readonly services:Services){}
- browse(accountId:string){return this.services.rpc<CoopLiveLfgPost[]>('browse_online_coop_lfg_server_v1',{p_account_id:accountId});}
+ async browse(accountId:string){const posts=await this.services.rpc<CoopLiveLfgPost[]>('browse_online_coop_lfg_server_v1',{p_account_id:accountId});return posts.filter(post=>{const definition=EXPEDITIONS[post.dungeonId];return !!definition&&publishedRegularDungeon(definition);});}
  async publish(accountId:string,request:CoopLiveLfgPublishRequest){
   if(!/^[a-zA-Z0-9_-]{8,128}$/.test(request.requestId)||typeof request.dungeonId!=='string')throw new GameplayError('invalid_request');
   const note=(request.note??'').trim();if(note.length>140)throw new GameplayError('invalid_note');

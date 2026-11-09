@@ -201,6 +201,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand}:{state:GameState;now:n
   {facilityCost?<><Text style={hubStyles.modalTheme}>Next Training Ground upgrade</Text>
    <Text style={hubStyles.modalCopy}>{facilityCost.gold.toLocaleString(language)} Gold · {facilityCost.companionEssence.toLocaleString(language)} Companion Essence{facilityCost.materialId?' · '+facilityCost.materialQuantity+' '+facilityCost.materialId.replace(/_/g,' '):''}</Text>
    <Text style={hubStyles.modalCopy}>Next level: {COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[Math.min(3,facilityLevel+1)]} XP/day · {trainingUpgradeReady?'Materials ready':'Collect the listed materials first'}</Text>
+   <GameButton title="Upgrade Training Ground" disabled={!trainingUpgradeReady} onPress={()=>void onCommand({type:'companion_upgrade',args:{id:'trainingGround'}})}/>
   </>:<Text style={hubStyles.modalTheme}>{facilityLevel===3?'Training Ground fully upgraded':'Build a Training Ground in your Sanctuary'}</Text>}
   <View style={hubStyles.modalStat}><Text style={hubStyles.modalLabel}>READY XP PER COMPANION</Text><Text style={hubStyles.modalValue}>{trainingDaysReady*facilityXpPerDay}</Text></View>
   <GameButton title="Claim Companion Training" disabled={!trainingClaimReady} onPress={()=>void onCommand({type:'companion_training'})}/>

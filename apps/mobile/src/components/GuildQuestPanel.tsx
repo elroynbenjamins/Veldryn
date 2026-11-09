@@ -51,7 +51,6 @@ export function GuildQuestBoard({quests}:{quests:OnlineGuildQuest[]}){
   {transition?<ActivityTransition quest={transition}/>:null}
   {!quests.length?<Text style={s.copy}>{ui('No quests available. Check back later.')}</Text>:null}
   {ordered.map(q=><Quest key={`${q.boardSlot}:${q.questKey}`} quest={q}/>)}
-  {quests.length?<Text style={s.foot}>{ui('5 quests per week · No rerolls.')}</Text>:null}
  </QuestBoard>;
 }
 function ActivityTransition({quest:q}:{quest:OnlineGuildQuest}){

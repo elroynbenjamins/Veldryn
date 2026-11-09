@@ -15,6 +15,15 @@ async function testGuildTour(){
  }
  equal(guildDetailedGuide('Hall/Legacy'),undefined,'other screens retain lightweight section help');
  equal(guildDetailedGuide('Hall/Bank')?.topics.some(topic=>topic.body.includes('cannot be withdrawn')),true,'bank guide explains permanent deposits');
+ for(const section of ['Activities/Muster','Activities/Quests','PvE','Hall/Shop']){
+  const guide=guildDetailedGuide(section);
+  equal(guide?.topics.length,3,section+' covers all essential tutorial topics');
+  equal(guide?.topics.every(topic=>topic.title.length>0&&topic.body.length>90),true,section+' provides practical details');
+  equal(new Set(guide?.topics.map(topic=>topic.id)).size,3,section+' has stable topic identifiers');
+ }
+ equal(guildDetailedGuide('Activities/Muster')?.topics.some(topic=>topic.body.includes('25 points')),true,'Muster explains the daily Rally threshold');
+ equal(guildDetailedGuide('PvE')?.topics.some(topic=>topic.body.includes('three minutes')),true,'Raid guide explains asynchronous attempts');
+ equal(guildDetailedGuide('Hall/Shop')?.topics.some(topic=>topic.body.includes('Guild Home')),true,'Token Shop guide directs daily claims to Guild Home');
 
  deepEqual(normalizeGuildTutorialProgress({step:500,status:'active'}),{step:4,status:'active'},'tour step is bounded');
  deepEqual(advanceGuildTutorial({step:3,status:'active'}),{step:4,status:'active'},'next step is the Hall');

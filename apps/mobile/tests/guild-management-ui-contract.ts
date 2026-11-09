@@ -45,11 +45,11 @@ ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild scr
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
 ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(onlineManagement'),'Roster tab must render authoritative Guild management');
 ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes('cloneElement(onlineHall')&&hall.includes("['Overview','Construction','Bank','Shop','Legacy']")&&hall.includes("section==='Shop'")&&!hall.includes("section==='Skills'?"),'Guild Hall must expose Shop directly without duplicating the Skills screen');
-ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must preserve Muster and a dedicated PvE destination");
+ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?(isValidElement")&&screen.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineCustomize}'),'Manage must preserve member Guild appearance customization');
 ok(!screen.includes('{onlineDirectory}')&&!screen.includes('Directory & Creation'),'Joined members must not be offered guild creation inside Guild management');
 ok(screen.includes('title={st("Guild Appearance")}'),'Manage must keep a clear identity hierarchy');
-ok(screen.includes("guildMembership==='none'")&&screen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must only see the dedicated recruitment flow');
+ok(screen.includes("guildMembership==='none'")&&screen.includes('<GuildDiscoveryFlow onJoined=')&&screen.includes('setGuildTourJustJoined(true)')&&screen.includes('reloadGuildMembership()'),'Nonmembers must only see the dedicated recruitment flow');
 ok(screen.includes('myGuild()')&&screen.includes("guildMembership==='loading'"),'Guild membership must be checked before mounting member-only screens');
 ok(discovery.includes("searchOnlineGuilds(search,filter)")&&discovery.includes('Search Guild name or TAG'),'Discovery must search server-side by name or TAG');
 ok(discovery.includes('Create Guild')&&discovery.includes('guildTagAvailability')&&discovery.includes('requestGuildMembership'),'Discovery must support live guild creation and recruitment');

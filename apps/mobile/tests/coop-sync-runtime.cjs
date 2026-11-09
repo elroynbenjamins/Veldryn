@@ -19,10 +19,18 @@ const fakeClient={
  }),
  removeChannel:async()=>{removed++;},
 };
+// The hook formats rejected values through the shared co-op helper. It has no
+// dependencies of its own, so load the real module instead of doubling it.
+const coopErrorModule={exports:{}};
+vm.runInNewContext(
+ ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/online/coop-error-message.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,
+ {exports:coopErrorModule.exports,module:coopErrorModule,Error,console},
+ {filename:'coop-error-message.js'});
+
 const context={
  exports:{},console,Promise,Error,
  setTimeout:schedule,clearTimeout:id=>timers.delete(id),
- require:name=>name==='react'?React:name==='./supabase'?{supabase:fakeClient}:
+ require:name=>name==='react'?React:name==='./supabase'?{supabase:fakeClient}:name==='./coop-error-message'?coopErrorModule.exports:
   name==='../core/coop-sync-policy'?{
     coopSyncIntervalMs:(mode,urgency,connected)=>urgency==='decision'?(connected?3500:2000):urgency==='combat'?(connected?6000:2500):connected?(mode==='live'?12000:20000):mode==='live'?4000:6000,
   }:(()=>{throw Error('Unexpected dependency: '+name)})(),

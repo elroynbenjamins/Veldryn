@@ -1,4 +1,6 @@
 import {versionedFetch as fetch} from './versioned-fetch';
+import {coopErrorMessage} from './coop-error-message';
+export {coopErrorMessage};
 import {supabase,supabasePublicEndpoint} from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
@@ -29,16 +31,6 @@ export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:bo
 export interface CoopChatMessage {id:string;senderName:string;body:string;createdAt:number;}
 export interface CoopChatResponse {sent:boolean;messageId?:string;messages:CoopChatMessage[];}
 export interface CoopLiveRematchState {status:'open'|'committed'|'declined'|'expired';readyCheckId?:string|null;runId?:string|null;closesAtMs?:number|null;serverNow:number;members:Array<{accountId:string;characterId:string;role:'tank'|'damage'|'support';self:boolean;accepted:boolean}>;}
-/** Never render an unstructured rejected value as "[object Object]" in a dungeon notice. */
-export function coopErrorMessage(error:unknown,fallback='Dungeons are temporarily unavailable. Try again.'){
- if(error instanceof Error&&error.message.trim())return error.message;
- if(typeof error==='string'&&error.trim())return error;
- if(error&&typeof error==='object'){
-  const row=error as Record<string,unknown>;
-  for(const key of ['message','error','code']){const value=row[key];if(typeof value==='string'&&value.trim())return value;}
- }
- return fallback;
-}
 async function request<T>(path:string,method='GET',body?:unknown,expectedAccount?:string):Promise<T>{
  if(!supabase||!apiBase||!coopOnlineConfigured)throw new Error('Co-op server is not configured.');
  const session=(await supabase.auth.getSession()).data.session;if(!session)throw new Error('Sign in to use co-op expeditions.');

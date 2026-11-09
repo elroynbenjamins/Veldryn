@@ -40,6 +40,7 @@ async function main(){
   './versioned-fetch':{versionedFetch:async()=>new Response(JSON.stringify({error:'app_update_required'}),{status:426})},
   './supabase':{supabase:{auth:{getSession:async()=>({data:{session}})}}},
   '@react-native-async-storage/async-storage':mocks['@react-native-async-storage/async-storage'],
+  './coop-error-message':load('src/online/coop-error-message.ts',{}),
   '../core/online-snapshot-cache':{peekOnlineSnapshot:()=>null},
   '../core/session-pending-store':{SessionPendingStore:class{constructor(storage){this.storage=storage;}read(){return this.storage.read();}write(value){return this.storage.write(value);}}},
  };

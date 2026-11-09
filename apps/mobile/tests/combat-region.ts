@@ -82,7 +82,10 @@ const ashPreview=regionTravelPreview(preservedAsh,'ASHLANDS');
 ok(ashPreview.enemies.length===0&&ashPreview.drops.length===0&&ashPreview.activities.length>0,'Ashlands preview shows planned themes, not obtainable loot');
 const ashSummary=regionActivitySummary(preservedAsh,'ASHLANDS');
 ok(!ashSummary.unlocked&&ashSummary.combatReady===0&&ashSummary.gatheringReady===0,'Ashlands must have no playable activities');
-ok(nextRegionUnlock(15)?.id==='FROSTMARCH'&&nextRegionUnlock(50)===undefined,'Development regions must be excluded from the next level unlock');
+const frostmarchZone=WORLD_ZONES.find(zone=>zone.id==='FROSTMARCH')!,ashlandsZone=WORLD_ZONES.find(zone=>zone.id==='ASHLANDS')!;
+// Read the thresholds off the table so the combat-level rebase cannot drift this.
+ok(nextRegionUnlock(frostmarchZone.minLevel-1)?.id==='FROSTMARCH','The last released region must still be offered as the next unlock');
+ok(nextRegionUnlock(ashlandsZone.minLevel-1)===undefined,'Development regions must be excluded from the next level unlock');
 const greenfieldsSummary=regionActivitySummary(beginner,'GREENFIELDS');
 ok(greenfieldsSummary.unlocked,'Current starter region must report as unlocked');
 ok(greenfieldsSummary.combatTotal>0&&greenfieldsSummary.gatheringTotal>0,'Region summary must expose real authored combat and gathering counts');

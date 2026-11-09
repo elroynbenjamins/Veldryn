@@ -1,7 +1,7 @@
 import {useEffect} from 'react';
 import {coopSyncIntervalMs,type CoopSyncMode,type CoopSyncUrgency} from '../core/coop-sync-policy';
 import {supabase} from './supabase';
-import {coopErrorMessage} from './coop-client';
+import {coopErrorMessage} from './coop-error-message';
 
 /**
  * One single-flight refresh loop per visible run, with realtime as the fast path.

@@ -1,4 +1,5 @@
 import type {QuestActDef} from '../content/quests';
+import {withRebasedLevels} from './quest-level-copy';
 
 /** Act III authored copy. English + DE/ES/NL/IT/FR/RU/TR; keep monster names, quest IDs, counts and rewards authoritative. */
 type EightLanguages=readonly [string,string,string,string,string,string,string,string];
@@ -27,7 +28,7 @@ export const chapterThreeActCopy={
     ]
   }
 } as const satisfies Partial<Record<QuestActDef['act'],Record<'name'|'subtitle',EightLanguages>>>;
-export const chapterThreeQuestCopy={
+const authoredChapterThreeQuestCopy={
   "QST_011": {
     "name": [
       "Place Among Guilds",
@@ -189,3 +190,4 @@ export const chapterThreeQuestCopy={
     ]
   }
 } as const satisfies Record<string,Record<StoryField,EightLanguages>>;
+export const chapterThreeQuestCopy=withRebasedLevels(authoredChapterThreeQuestCopy);

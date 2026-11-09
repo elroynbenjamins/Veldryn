@@ -1,4 +1,5 @@
 import type {QuestActDef} from '../content/quests';
+import {withRebasedLevels} from './quest-level-copy';
 
 /** Act II authored copy. English + DE/ES/NL/IT/FR/RU/TR; game content IDs and names stay authoritative. */
 type EightLanguages=readonly [string,string,string,string,string,string,string,string];
@@ -27,7 +28,7 @@ export const chapterTwoActCopy={
     ]
   }
 } as const satisfies Partial<Record<QuestActDef['act'],Record<'name'|'subtitle',EightLanguages>>>;
-export const chapterTwoQuestCopy={
+const authoredChapterTwoQuestCopy={
   "QST_006": {
     "name": [
       "Thorn Beneath",
@@ -189,3 +190,4 @@ export const chapterTwoQuestCopy={
     ]
   }
 } as const satisfies Record<string,Record<StoryField,EightLanguages>>;
+export const chapterTwoQuestCopy=withRebasedLevels(authoredChapterTwoQuestCopy);

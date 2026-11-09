@@ -2,6 +2,7 @@ import type {Language} from './languages';
 import type {QuestActDef,QuestDef} from '../content/quests';
 import {chapterTwoActCopy,chapterTwoQuestCopy} from './quest-story-act-two';
 import {chapterThreeActCopy,chapterThreeQuestCopy} from './quest-story-act-three';
+import {withRebasedLevels} from './quest-level-copy';
 
 /** Reviewed Chapter I source copy. IDs and exact English wording must both match.
  * Monster and region names stay untouched; unknown or revised text falls back verbatim.
@@ -34,7 +35,7 @@ export const chapterOneActCopy={
   ]
 }
 } as const satisfies Partial<Record<QuestActDef['act'],Record<'name'|'subtitle',EightLanguages>>>;
-export const chapterOneQuestCopy={
+const authoredChapterOneQuestCopy={
   "QST_001": {
     "name": [
       "A Name in the Ledger",
@@ -196,6 +197,7 @@ export const chapterOneQuestCopy={
     ]
   }
 } as const satisfies Record<string,Record<StoryField,EightLanguages>>;
+export const chapterOneQuestCopy=withRebasedLevels(authoredChapterOneQuestCopy);
 
 const localizedActCopy={1:chapterOneActCopy[1],2:chapterTwoActCopy[2],3:chapterThreeActCopy[3]} as const;
 const localizedQuestCopy:Record<string,Record<StoryField,EightLanguages>>={...chapterOneQuestCopy,...chapterTwoQuestCopy,...chapterThreeQuestCopy};

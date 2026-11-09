@@ -51,22 +51,26 @@ ok(commonOutcomes.every((row,index)=>Math.abs(row.statMultiplier-expectedRarityS
   'Displayed rarity effects must use the actual stat multipliers, including Mythic 2×');
 
 
-const t9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9')!;
-ok(itemRarity(itemDef(t9.output.itemId))==='mythic','T9 authored rarity should be Mythic');
-ok(craftedGearRarity(t9.output.itemId,.5)==='mythic','Missed quality roll must never downgrade an authored Mythic item');
-ok(craftedGearRarity(t9.output.itemId,.002)==='mythic','Epic proc must not downgrade authored Mythic');
-const mythicOutcomes=craftedGearRarityOutcomes(t9.output.itemId);
-ok(mythicOutcomes.length===1&&mythicOutcomes[0].rarity==='mythic'&&mythicOutcomes[0].chance===1&&mythicOutcomes[0].statMultiplier===1,
-  'Mythic-base Forge recipes must show 100% Mythic at 1.00× their own baseline, not misleading Epic roll odds');
-const epicBaseRecipe=V33_EQUIPMENT_RECIPES.find(row=>itemRarity(itemDef(row.output.itemId))==='epic');
-if(epicBaseRecipe){
-  const epicOutcomes=craftedGearRarityOutcomes(epicBaseRecipe.output.itemId);
-  ok(epicOutcomes.map(row=>row.rarity).join(',')==='epic,legendary,mythic',
-    'Epic-base recipes must include Legendary and Mythic, but never downgrade to Rare');
-  ok(Math.abs(epicOutcomes[0].chance-.997)<1e-12&&Math.abs(epicOutcomes[1].chance-.002)<1e-12&&Math.abs(epicOutcomes[2].chance-.001)<1e-12,
-    'Epic-base recipes must show 99.70% Epic, 0.20% Legendary and 0.10% Mythic');
+const tiers=['T1','T2','T3','T4','T5','T6','T7','T8','T9'] as const;
+const sampleRolls=[0,.000999,.001,.002999,.003,.008999,.009,.038999,.039,.108999,.109,.5,.999999];
+for(const tier of tiers){
+  const tierRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===tier);
+  ok(tierRecipe, 'Missing Forge recipe fixture for '+tier);
+  const itemId=tierRecipe!.output.itemId;
+  const tierOutcomes=craftedGearRarityOutcomes(itemId);
+  ok(tierOutcomes.map(row=>row.rarity).join(',')==='common,uncommon,rare,epic,legendary,mythic',
+    'All equipment tiers must expose all six Forge rarities: '+tier);
+  ok(tierOutcomes.every((row,index)=>Math.abs(row.chance-expectedRarityChances[index])<1e-12),
+    'Forge rarity percentages must match T1 for '+tier);
+  for(const roll of sampleRolls){
+    ok(craftedGearRarity(itemId,roll)===craftedGearRarity(recipe.output.itemId,roll),
+      'Forge rarity result must match T1 at tier '+tier+' and roll '+roll);
+  }
 }
-
+const t9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9')!;
+ok(itemRarity(itemDef(t9.output.itemId))==='mythic','T9 authored tier metadata remains Mythic');
+ok(craftedGearRarity(t9.output.itemId,.5)==='common','T9 normal Forge roll must no longer be guaranteed Mythic');
+ok(craftedGearRarity(t9.output.itemId,.0005)==='mythic','T9 Mythic Forge chance must be the same 0.10% as T1');
 
 let state=createCharacter(newGame(0),recipe.classId,'Instance Crafter','male');
 state={...state,character:{...state.character!,level:recipe.characterLevel,gold:500000,equipmentPouch:{capacity:30,stacks:Array.from({length:30},()=>({itemId:V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!.output.itemId,quantity:1}))}},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(10,recipe.level),xp:50000}:row),inventory:{...state.inventory,capacity:80,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*4}))},bank:{...state.bank,capacity:200,stacks:[]}};

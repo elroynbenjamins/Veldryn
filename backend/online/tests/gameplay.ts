@@ -59,7 +59,7 @@ async function main(){
   const previous=tonicItems.get(input.itemId);
   tonicItems.set(input.itemId,{itemId:input.itemId,quantity:Math.max(previous?.quantity??0,input.quantity)});
  }
-  state={...state!,character:{...state!.character!,level:30,xp:legacyCharacterTotalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...tonicItems.values()]}};
+  state={...state!,character:{...state!.character!,level:30,xp:legacyCharacterTotalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(8),level:8}:skill),inventory:{...state!.inventory,stacks:[...tonicItems.values()]}};
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;
  const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);

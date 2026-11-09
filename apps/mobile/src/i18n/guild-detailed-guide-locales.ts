@@ -37,3 +37,11 @@ export function guildDetailedGuideLocaleCoverage(language:Language):{sections:nu
  const sourceSections=Object.keys(GUILD_DETAILED_GUIDES);
  return {sections,topics,complete:!!table&&sections===sourceSections.length&&sourceSections.every(id=>table[id]?.[1].length===GUILD_DETAILED_GUIDES[id].topics.length)};
 }
+
+/** Short close confirmation for embedded Guild Chat help. */
+export function guildGuideDoneText(language:Language):string{
+ const labels:Partial<Record<Language,string>>={
+  de:'Verstanden',es:'Entendido',nl:'Begrepen',it:'Capito',fr:'Compris',ru:'Понятно',tr:'Anladım',
+ };
+ return labels[language]??'Got it';
+}

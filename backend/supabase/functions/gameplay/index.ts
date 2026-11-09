@@ -49679,9 +49679,6 @@ function equippedCanonicalSocketsV1(state) {
     return [{ equipmentItemId, statGemId, effectGemId, statGemRollPercent: normalizeGemRollPercentV1(raw2?.statGemRollPercent), effectGemRollPercent: normalizeGemRollPercentV1(raw2?.effectGemRollPercent) }];
   });
 }
-function equippedCanonicalGemIdsV1(state) {
-  return equippedCanonicalSocketsV1(state).flatMap((row) => [row.statGemId, row.effectGemId].filter((id) => Boolean(id)));
-}
 function effectFamilyCopiesV1(state, familyId, excludeEquipmentItemId) {
   return equippedCanonicalSocketsV1(state).filter((row) => row.equipmentItemId !== excludeEquipmentItemId && canonicalGemMetaV1(row.effectGemId ?? "")?.familyId === familyId).length;
 }
@@ -57911,10 +57908,14 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   const role = deriveRole(character.classId);
   const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), combatScalingLevel = legacyCharacterLevelFromXp(character.xp), levelScale = combatScalingLevel / 25;
   const bonus = activeEquipmentBuildStats(state);
-  const sockets = equippedCanonicalGemIdsV1(state).map((gemId, index) => {
-    const meta = canonicalGemMetaV1(gemId);
+  const equippedGemEntries = equippedCanonicalSocketsV1(state).flatMap((row) => [
+    ...row.statGemId ? [{ id: row.statGemId, rollPercent: row.statGemRollPercent }] : [],
+    ...row.effectGemId ? [{ id: row.effectGemId, rollPercent: row.effectGemRollPercent }] : []
+  ]);
+  const sockets = equippedGemEntries.map(({ id, rollPercent }, index) => {
+    const meta = canonicalGemMetaV1(id);
     if (!meta) throw new Error("invalid_equipped_gem");
-    const gem2 = { familyId: meta.familyId, grade: meta.grade };
+    const gem2 = { familyId: meta.familyId, grade: meta.grade, ...rollPercent === void 0 ? {} : { rollPercent } };
     return { equipmentItemId: "equipped_" + index, sockets: meta.kind === "stat" ? { stat: gem2 } : { effect: gem2 } };
   });
   const effectGems = summarizeGemLoadoutV1(sockets).effects;

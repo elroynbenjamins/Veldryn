@@ -33,7 +33,7 @@ ok(panel.includes("rosterView==='today'")&&panel.includes("rosterView==='week'")
 ok(panel.includes("st('RALLY MARK')")&&panel.includes("st('{points} TO MARK'")&&panel.includes("st('NO POINTS')"),'Muster must distinguish members with a mark, with partial progress, and without recorded points');
 ok(panel.includes("st('GOAL MET')")&&panel.includes("st('{days} DAYS TO GO'")&&panel.includes("member.qualifyingDays"),'Muster must explain each member’s weekly Rally-day progress');
 ok(panel.includes("state.rallyMarkThreshold-member.todayPoints")&&panel.includes("state.personalWeeklyGoal-member.qualifyingDays"),'Remaining day/point requirements must reflect authoritative server thresholds');
-ok(panel.includes('A check-in alone is not enough.')&&panel.includes('Verified Guild boss and project contributions add more.'),'Muster must accurately distinguish attendance from qualifying verified contribution');
+ok(panel.includes('A check-in alone is not enough.')&&detailedGuide.includes('Verified combat, skilling, Guild Project and Guild Boss contributions'),'Muster must distinguish attendance from verified activities in contextual help');
 ok(panel.includes('No daily streak required.'),'Muster must explicitly avoid punitive consecutive streaks');
 ok(detailedGuide.includes('35%, 70% and 100%'),'Rally tier milestones must remain in detailed Guild help');
 ok(detailedGuide.includes('Rally resets on Monday at 00:00 UTC.')&&detailedGuide.includes('one Rally Mark to the Guild'),'Muster guide must explain UTC reset and qualifying Rally Marks');

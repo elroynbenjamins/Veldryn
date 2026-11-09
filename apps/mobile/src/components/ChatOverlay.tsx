@@ -7,7 +7,7 @@ import {onlineConfigured} from '../online/supabase';
 import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GuildChat} from './GuildChat';
-import {localizedGuildDetailedGuide} from '../i18n/guild-detailed-guide-locales';
+import {guildGuideDoneText,localizedGuildDetailedGuide} from '../i18n/guild-detailed-guide-locales';
 import {OnlineWorldChat} from './OnlineWorldChat';
 import {WorldChat} from './WorldChat';
 import {OnlinePartyChat} from './OnlinePartyChat';
@@ -154,10 +154,10 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
       </View>
       {channel==='guild'&&guildHelpOpen?<View style={{paddingHorizontal:11,paddingVertical:8,gap:5,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8,maxHeight:180,flexShrink:1}}>
        <Text accessibilityRole="header" style={{color:C.text,fontSize:13,fontWeight:'800'}}>{guildChatHelp?.title??st('Guild')}</Text>
-       <ScrollView style={{flexShrink:1,minHeight:0}} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+       <ScrollView style={{flexShrink:1,minHeight:0}} nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <Text style={{color:C.muted,fontSize:12,lineHeight:18}}>{guildChatHelp?.topics[0]?.body??''}</Text>
        </ScrollView>
-       <Pressable accessibilityRole="button" accessibilityLabel={st('Got it')} onPress={()=>setGuildHelpOpen(false)} style={{minHeight:44,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{st('Got it')}</Text></Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel={guildGuideDoneText(state.settings.language)} onPress={()=>setGuildHelpOpen(false)} style={{minHeight:44,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{guildGuideDoneText(state.settings.language)}</Text></Pressable>
       </View>:null}
       <View style={s.content} accessibilityElementsHidden={languageMenuOpen} importantForAccessibility={languageMenuOpen?'no-hide-descendants':'auto'}>
        <View style={[s.channelPanel,channel!=='world'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>

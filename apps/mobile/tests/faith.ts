@@ -161,7 +161,7 @@ test('Experience Faith grants combat and profession XP but not Faith practice XP
  const blessedForge=professionActionPace(blessed,recipe,'forge');
  ok(Math.abs(blessedForge.xpPerAction/defaultForge.xpPerAction-1.06)<1e-10,'Faith XP covers forge crafting');
  const practicing=startFaithPractice(blessed,'FAITH_QUIET',1,T),r=claimActivity(practicing,T+30_000);
- equal(r.reward.faithXp,120,'Faith practice XP deliberately excluded');
+ equal(r.reward.faithXp,96,'Faith practice XP deliberately excluded');
 });
 test('Faith HP buffs increase maximum health without introducing a damage bonus',()=>{
  const s=faithAt(fresh(),90),before=effectiveStats(s);

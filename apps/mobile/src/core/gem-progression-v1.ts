@@ -1,6 +1,6 @@
 import {skillAffinityModifiers} from './class-skill-affinities';
 import {itemDef} from '../content/items';
-import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
+import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1,normalizeGemRollPercentV1,gemRolledValueV1,gemValueRangeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
@@ -10,28 +10,6 @@ import type {GearSlot} from './types';
 // New gem refining and combining fees are 20% higher. Previously queued jobs
 // keep their original reserved Gold snapshots for cancellation/refunds.
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
-/** Grindstone-style socket rolls: nine equally likely outcomes, 80–120% of
- * the existing per-grade values. Existing socketed gems retain 100%.
- */
-export const GEM_ROLL_MIN_PERCENT_V1=80;
-export const GEM_ROLL_MAX_PERCENT_V1=120;
-export const GEM_ROLL_STEP_PERCENT_V1=5;
-export function normalizeGemRollPercentV1(value:unknown):number|undefined{
- return typeof value==='number'&&Number.isInteger(value)
-   &&value>=GEM_ROLL_MIN_PERCENT_V1&&value<=GEM_ROLL_MAX_PERCENT_V1
-   &&(value-GEM_ROLL_MIN_PERCENT_V1)%GEM_ROLL_STEP_PERCENT_V1===0?value:undefined;
-}
-export function gemRollPercentFromUnitV1(randomRoll:number):number{
- if(!Number.isFinite(randomRoll)||randomRoll<0||randomRoll>=1)throw new Error('invalid_gem_roll');
- return GEM_ROLL_MIN_PERCENT_V1+Math.floor(randomRoll*9)*GEM_ROLL_STEP_PERCENT_V1;
-}
-export function gemRolledValueV1(familyId:string,grade:MobileGemGradeV1,rollPercent=100):number{
- const family=mobileGemFamilyV1(familyId);if(!family)return 0;
- return family.values[grade]*(normalizeGemRollPercentV1(rollPercent)??100)/100;
-}
-export function gemValueRangeV1(familyId:string,grade:MobileGemGradeV1){
- return {min:gemRolledValueV1(familyId,grade,GEM_ROLL_MIN_PERCENT_V1),max:gemRolledValueV1(familyId,grade,GEM_ROLL_MAX_PERCENT_V1)};
-}
 export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
  1:{to:2,copies:3,dust:0,gold:1800,seconds:5*60,level:8,xp:140},
  2:{to:3,copies:3,dust:5,gold:6000,seconds:15*60,level:20,xp:420},

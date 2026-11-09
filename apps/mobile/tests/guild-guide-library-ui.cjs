@@ -20,6 +20,10 @@ assert.match(library,/style={s.libraryScroll}/,'Guide Library is scrollable on s
 assert.match(library,/group\.leadership\|\|leadership/,'Leadership guide groups are role-gated');
 assert.match(library,/accessibilityViewIsModal/,'Guide Library uses modal accessibility semantics');
 assert.match(library,/accessibilityRole="tab"/,'Guide topic choices are accessible');
-assert.match(library,/guildDetailedGuide\(section\)/,'Library reuses source-authoritative guide content');
+assert.match(library,/localizedGuildDetailedGuide\(language,section\)/,'Library resolves translated detail content');
+assert.match(library,/localizedGuildDetailedGuide\(language,id\)/,'Library tiles also resolve translated summaries');
+assert.match(screen,/localizedGuildDetailedGuide\(language,guideSection\)/,'Section question-mark help uses the same translation resolver');
+assert.match(sectionHelp,/style={styles.dialogScroll}/,'Section help retains responsive scrolling and pinned confirmation');
+assert.match(library,/style={s.topicScroll}/,'Guide Library topic details scroll within small screen modal');
 assert.match(overlay,/channel==='guild'&&guildHelpOpen/,'Guild Chat help is only shown in Guild Chat');
 console.log('PASS Guild Guide library navigation, role gating and Chat guidance UI contracts');

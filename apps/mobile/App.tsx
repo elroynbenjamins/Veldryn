@@ -580,10 +580,15 @@ function VeldrynApp(){
   }
   async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false,silentFailure=false){if(welcomeBack)setOfflineSettling(true);try{
     const before=stateRef.current,result=await online.execute(command);
+    setOnlineActionError('');
     queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
     if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
-    if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack,...(welcomeBack&&before?{welcomeReport:buildWelcomeBackFromStates(before,result.state,feedback.collected.reward,feedback.collected.activity)}:{})});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
+    const recoveredFeedback=result.recovered?commandProgressFeedback(result.recovered.executedCommand,before,result.recovered):null;
+    // A previous claim may have been committed while its response was lost.
+    // Prefer its recovered reward receipt over an incidental later settlement.
+    if(recoveredFeedback?.collected)setCollected({...recoveredFeedback.collected,welcomeBack:false});
+    else if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack,...(welcomeBack&&before?{welcomeReport:buildWelcomeBackFromStates(before,result.state,feedback.collected.reward,feedback.collected.activity)}:{})});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
     return result;
   }catch(error){
     const message=error instanceof Error?error.message:'Please retry.';

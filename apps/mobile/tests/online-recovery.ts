@@ -19,21 +19,26 @@ async function main(){
  await first.load();
  await rejects(()=>first.execute({type:'claim'}),'Lost response must remain retryable');
  ok(await first.hasPending(),'Uncertain action must survive in persistent storage');
- await rejects(()=>first.execute({type:'stop'}),'A new action must not overwrite an uncertain claim');
  const restarted=new OnlineGameRepository(snapshot.accountId,transport,store,()=>`request-${++keys}`);
  await restarted.load();
- const retried=await restarted.execute();
- ok(retried.version===1&&applied===1&&keys===1&&!await restarted.hasPending(),'Restart retries the same receipt without duplicate rewards');
+ const resumed=await restarted.execute({type:'stop'});
+ ok(resumed.version===2&&resumed.recovered?.version===1&&applied===2&&keys===2&&!await restarted.hasPending(),'Restart replays old claim once before sending the distinct Stop action');
+ ok(resumed.recovered?.executedCommand.type==='claim'&&resumed.executedCommand.type==='stop','Recovered and newly requested commands remain distinguishable');
 
  let release:(value:OnlineSnapshot)=>void=()=>{},signalSent:()=>void=()=>{},sent=0;
  const requestSent=new Promise<void>(resolve=>{signalSent=resolve;});
- const slow=new OnlineGameRepository(snapshot.accountId,{read:async()=>snapshot,send:()=>{sent++;return new Promise(resolve=>{release=resolve;signalSent();});}},store,()=>`request-${++keys}`);
+ const slow=new OnlineGameRepository(snapshot.accountId,{read:async()=>snapshot,send:()=>{
+  sent++;
+  if(sent===1)return new Promise(resolve=>{release=resolve;signalSent();});
+  return Promise.resolve({...snapshot,version:2,serverNow:2100});
+ }},store,()=>`request-${++keys}`);
  await slow.load();
  const saving=slow.execute({type:'claim'});
- await rejects(()=>slow.execute({type:'claim'}),'Double tap must not create a second request');
+ const queued=slow.execute({type:'claim'});
  await requestSent;
- release({...snapshot,version:1,serverNow:2000});await saving;
- ok(sent===1&&!await slow.hasPending(),'Only one double-tapped action reaches transport');
+ ok(sent===1,'The queued caller cannot race the first in-flight save');
+ release({...snapshot,version:1,serverNow:2000});await saving;await queued;
+ ok(sent===2&&!await slow.hasPending(),'Repository serializes distinct callers; hook-level busy guard prevents UI double taps');
 
  let sends=0;
  const diskFailure=new OnlineGameRepository(snapshot.accountId,{read:async()=>snapshot,send:async()=>{sends++;return snapshot;}},{read:async()=>null,write:async()=>{throw new Error('disk_full');}},()=> 'unsaved-request');
@@ -51,6 +56,6 @@ async function main(){
  await mismatch.load();
  await rejects(()=>mismatch.execute({type:'claim'}),'Another account response must not replace current progress');
  ok(mismatch.snapshot?.accountId===snapshot.accountId&&await mismatch.hasPending(),'Account mismatch keeps current state and retry identity');
- console.log('PASS: restart after lost response, duplicate taps, durable retry writes, cleanup failure and account isolation (mock transport)');
+ console.log('PASS: restart replay before next command, serialized saves, durable retry writes, cleanup failure and account isolation (mock transport)');
 }
 void main().catch(error=>{console.error(error);throw error;});

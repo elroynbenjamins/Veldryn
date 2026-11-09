@@ -14,8 +14,8 @@ async function testGuildTour(){
  equal(guildTutorialText('ru','Skip tour'),'Пропустить обучение','Russian Skip tour control is translated');
  equal(guildTutorialText('tr','Start guild guide'),'Lonca rehberini başlat','Turkish Start tour control is translated');
  for(const lang of ['de','es','nl','it','fr','ru','tr'] as const){
-  const hallTip=guildTutorialText(lang,GUILD_TUTORIAL_STEPS[4].tip);
-  equal(hallTip.includes('Guild Bank')||hallTip.includes('Bank')||hallTip.includes('banco')||hallTip.includes('banca')||hallTip.includes('banque')||hallTip.includes('банк')||hallTip.includes('Bankası')||hallTip.includes('gildebank'),true,lang+' Hall tour tip mentions the Guild Bank');
+  const hallTip=guildTutorialText(lang,GUILD_TUTORIAL_STEPS[4].tip).toLocaleLowerCase();
+  equal(['bank','banco','banca','banque','банк'].some(term=>hallTip.includes(term)),true,lang+' Hall tour tip mentions the Guild Bank');
  }
  for(const section of Object.keys(GUILD_DETAILED_GUIDES)){
   for(const lang of ['de','es','nl','it','fr','ru','tr'] as const){

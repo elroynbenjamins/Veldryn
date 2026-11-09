@@ -1,18 +1,20 @@
-# Veldryn — Tier 1–4 equipment generation guide
+# Veldryn — Tier 1–6 equipment generation guide
 
-> The filename is retained for compatibility. This is the authoritative guide for all Tier 1–4 equipment regeneration.
+> The filename is retained for compatibility. This is the authoritative guide for Tier 1–6 equipment generation and regeneration.
 
 ## Goal
 
-Regenerate any Tier 1, 2, 3, or 4 equipment sheet as one coherent Veldryn family. A higher tier must read as the same class and named set made from rarer materials, never as artwork from a different renderer or game.
+Generate or regenerate any Tier 1–6 equipment sheet as one coherent Veldryn family. A higher tier must read as the same class and named set made from rarer materials, never as artwork from a different renderer or game. T5 and T6 must also make their Sunscar resources recognizable at inventory size.
 
-For an existing set, use its approved matching-class sheets and its catalog metadata as mandatory references. When regenerating Tier 1, preserve the intent of approved Tier 1 sheets for that class. For Tier 2, use that class's Tier 1 language as the baseline. For Tier 3 and Tier 4, use the matching class's approved T1/T2 sheets as the visual authority; do not copy the current T3/T4 rendering style when it is being replaced.
+For an existing set, use its approved matching-class sheets and its catalog metadata as mandatory references. When regenerating Tier 1, preserve the intent of approved Tier 1 sheets for that class. For Tier 2, use that class's Tier 1 language as the baseline. For Tier 3–6, use the matching class's approved T1/T2 sheets as the visual authority; do not copy the current higher-tier rendering style when it is being replaced. For T5/T6, also consult the set's `Notes` and the corresponding recipes before choosing the visible resource cues.
 
 Example Ironwarden references:
 
 - `apps/mobile/assets/equipment-t1-ironwarden/T1_001-oathbound-rampart-icon-sheet-legfix.webp`
 - `apps/mobile/assets/equipment-t2-ironwarden/T2_001-ironbark-bulwark-icon-sheet-legfix.webp`
 - `apps/mobile/src/content/equipment_catalog_t1_t9_v33.json`
+- `backend/data/equipment_exact_recipes_v33.json`
+- `backend/src/server/equipment/equipment-resource-map-v25.ts`
 
 ## Non-negotiable visual rules
 
@@ -32,9 +34,31 @@ Example Ironwarden references:
 | T1 | Basic issue gear: plain iron, hide, simple cloth, weathered wood, utilitarian fastenings, and at most a tiny painted class-color trim. No repeated heraldry, glowing rune, decorative inlay, or premium metalwork. | The cleanest, most functional version of the class language; it must visibly read as a beginner's first usable set. |
 | T2 | Better-fitted practical gear: improved steel/leather, clearer stitching or edging, one developed class/set motif, and the first modest use of heraldry or enamel. | Roughly 10% richer than T1; still deliberately simple. |
 | T3 | Refined steel/iron, modest heraldic inlay, and one brighter class-color or pale-metal accent. | Roughly 15–20% richer than T2; retain the chunky painted read. |
-| T4 | Region-inflected material such as rootbound bronze, frostiron, oathglass, or lanternsteel plus one legible regional motif. | Roughly 25–30% richer than T2; never add noisy ornament, realism, or VFX. |
+| T4 | Region-inflected material such as ancient timber, oathsilver, oathglass, or lanternsteel plus one legible regional motif. | Roughly 25–30% richer than T2; never add noisy ornament, realism, or VFX. |
+| T5 | Early Sunscar caravan craft: visibly worked Dunewood, warm Sunstone alloy, woven Saffron Reed, or a restrained Glasswind/Mirage cue selected from the set's source and recipe. | Resource shape and surface matter more than extra trim. Keep the T1/T2 painted scale and one dominant material read per piece. |
+| T6 | Later Sunscar craft: substantial cut Amberglass, Glassfin lining, Mirage Bloom, Royal Chitin, or bound Astral Script according to the set's source and recipe. | Richer construction and stronger material contrast than T5, but still broad and legible at 32–64 px; no all-over gem plating or VFX. |
 
 T4 feels valuable through material selection, a stronger central emblem, and slightly richer trim—not through a new camera, contrast curve, texture renderer, or a pile of tiny details.
+
+## T5/T6 resource identity
+
+Use the **actual set name, region source, and recipe** to select a primary visible resource for each sheet. A recipe ingredient does not have to appear literally on every piece, but the sheet must clearly show where its main gathered or processed material went. Make the material visible on the helmet/chest and at least one of weapon, offhand, or cape, then echo it more quietly on smaller slots. Preserve the class silhouette and accent; the resource is construction, not a new class color or a generic colored glow.
+
+| Tier | Resource or processed form | Visible construction cue |
+| --- | --- | --- |
+| T5 | Dunewood / Dunewood Plank | Sandy, honey-brown wood grain and layered cut planks on shield faces, bow limbs, staff shafts, rigid armor inserts, or caravan braces. Do not turn metal armor entirely into wood. |
+| T5 | Sunstone Ore / Sunstone Alloy | Warm ochre-bronze forged edges, rivets, plates, or weapon heads with a restrained mineral-gold center. It must read as worked metal, not a glowing yellow recolor. |
+| T5 | Saffron Reed / Saffron Scale Lining | Coarse golden straw weave, wrapped grips, scale-like stitched lining, or reed-bound cloth hems. Keep the weave broad enough to survive at 40 px. |
+| T5 | Glasswind Frame / Scorchwind Temper | Sparse translucent sand-glass ribs or heat-tempered edges on the alternate route. Keep them structural; no floating shards, full glass armor, or heat haze. |
+| T6 | Amberglass / Cut Amberglass / Astral Amber Matrix | Chunky honey-amber translucent facets set into a metal or wood frame, with painted internal depth. Use a few large facets, not tiny jeweled confetti or a full amber silhouette. |
+| T6 | Glassfin / Glassfin Ascendant Lining | Pearly, pale aqua overlapping scale or fin-shaped lining on collars, bracers, shield backs, cape borders, or focus housings. It must read as a crafted flexible component, not generic blue glow. |
+| T6 | Mirage Bloom / Mirage Stabilizer | Petal-shaped fabric joins, carved bloom relief, or a small iridescent inlay in bloom and illusion sets. The flower form remains readable without particle effects. |
+| T6 | Royal Chitin / Royal Chitin Plate / Ascendant Chitin Frame | Segmented ivory-sand or bronze-brown shell plates and raised ridges on royal-hunt sets. Show fastening and overlap; avoid making every class into the same insect suit. |
+| T6 | Astral Script / Bound Astral Script / Tyrant Sigil | One or two broad engraved glyph bands or a single seal where the recipe calls for them. They are physical etching or inlay, never text overlays or emissive runes. |
+
+The catalog's **Foundation** and **Alternate** sets are sidegrades, not a simple visual rarity ladder. On T5 Foundation sheets, emphasize caravan materials such as Dunewood, Sunstone, and reed work. On T5 Alternate sheets, let the named Mirage, Oasis, Glasswind, or shard source shape a different material treatment; preserve the recipe's common Sunscar construction. On T6 Foundation sheets, emphasize Amberglass Crossing craft and Glassfin details. On T6 Alternate sheets, choose the catalog's Bloom, royal hunt, chitin, or astral source as the distinguishing motif. Do not apply all T5 or T6 resources to every set.
+
+Before generating a sheet, write a one-line material plan: **`[SET ID] [SET NAME]: primary [CANONICAL RESOURCE / PROCESSED FORM] visible on [TWO OR THREE LARGE SLOTS]; secondary [RESOURCE] visible on [ONE OR TWO SMALLER SLOTS]; source motif [CATALOG SOURCE]`**. Verify the named resources against the T5/T6 recipe and resource map. This prevents a set named for Dunewood, Amberglass, Glassfin, Mirage Bloom, or Royal Chitin from looking like generic steel with an unrelated colored trim.
 
 ## Class identity contract
 
@@ -91,9 +115,9 @@ Artwork must be clean at inventory scale without inflating the mobile bundle. Ge
 
 Replace every bracketed value for every named set:
 
-> Transparent two-row equipment icon sheet for Veldryn, matching the supplied approved **[REFERENCE TIER] [CLASS]** equipment sheets exactly in painterly mobile-RPG style, silhouette weight, soft upper-left studio lighting, cell rhythm, and inventory readability. Create the Tier **[1 OR 2 OR 3 OR 4]** **[SET NAME]** set: helmet, chest, gloves, legs, boots, weapon, offhand, cape, amulet, ring, in that exact left-to-right order across two rows. Class contract: **[CLASS ACCENT COLOR]** as a restrained accent; **[CLASS CONSTRUCTION/MOTIF]**; unique set motif **[SET-SPECIFIC EMBLEM OR MATERIAL STORY]**. Required weapon identity: **[UNIQUE NAMED WEAPON SHAPE]**. Required offhand/sidearm identity: **[UNIQUE NAMED OFFHAND SHAPE]**. Required helmet identity: **[UNIQUE HELMET PROFILE]**. Material direction: **[TIER MATERIAL AND SINGLE REGIONAL MOTIF]**. Make all ten pieces clean isolated high-detail painted fantasy icons with broad readable forms, restrained age and wear, subtle hand-painted texture, and no silhouette reuse from another set. Keep 10–12% transparent safe padding inside every cell; no item, glow, shadow, chain, cape, or weapon tip crosses a cell boundary. Fully transparent background, real alpha, no text, UI, labels, scene, card, pedestal, cast shadow, character body, photorealism, hard outlines, glossy 3D render, excessive filigree, duplicated items, or clipping.
+> Transparent two-row equipment icon sheet for Veldryn, matching the supplied approved **[REFERENCE TIER] [CLASS]** equipment sheets exactly in painterly mobile-RPG style, silhouette weight, soft upper-left studio lighting, cell rhythm, and inventory readability. Create the Tier **[1–6]** **[SET ID] [SET NAME]** set: helmet, chest, gloves, legs, boots, weapon, offhand, cape, amulet, ring, in that exact left-to-right order across two rows. Class contract: **[CLASS ACCENT COLOR]** as a restrained accent; **[CLASS CONSTRUCTION/MOTIF]**; unique set motif **[SET-SPECIFIC EMBLEM OR MATERIAL STORY]**. Required weapon identity: **[UNIQUE NAMED WEAPON SHAPE]**. Required offhand/sidearm identity: **[UNIQUE NAMED OFFHAND SHAPE]**. Required helmet identity: **[UNIQUE HELMET PROFILE]**. Material direction: **[TIER MATERIAL AND SINGLE REGIONAL MOTIF]**. For T5/T6, show **[PRIMARY RECIPE RESOURCE / PROCESSED FORM]** as **[VISIBLE SHAPE AND SURFACE]** on **[TWO OR THREE LARGE SLOTS]**, and **[SECONDARY RECIPE RESOURCE]** on **[OTHER SLOTS]**; match **[CATALOG REGION SOURCE]**. Make all ten pieces clean isolated high-detail painted fantasy icons with broad readable forms, restrained age and wear, subtle hand-painted texture, and no silhouette reuse from another set. Keep 10–12% transparent safe padding inside every cell; no item, glow, shadow, chain, cape, or weapon tip crosses a cell boundary. Fully transparent background, real alpha, no text, UI, labels, scene, card, pedestal, cast shadow, character body, photorealism, hard outlines, glossy 3D render, excessive filigree, duplicated items, or clipping.
 
-For T1, use unmistakably basic starter materials, simple construction, and only a minimal class-color trim—no repeated rune/emblem program or polished ceremonial finish. For T2, enhance fit and craft and introduce the first modest set motif without changing the class language. For T3, use refined practical material and one heraldic motif. For T4, increase material rarity and trim while staying in the same painted T1/T2 illustration family.
+For T1, use unmistakably basic starter materials, simple construction, and only a minimal class-color trim—no repeated rune/emblem program or polished ceremonial finish. For T2, enhance fit and craft and introduce the first modest set motif without changing the class language. For T3, use refined practical material and one heraldic motif. For T4, increase material rarity and trim while staying in the same painted T1/T2 illustration family. For T5/T6, increase the visible identity of the actual Sunscar resources and their construction, while retaining that same painted family and cell-safe scale.
 
 ## Negative prompt / rejection criteria
 
@@ -108,7 +132,8 @@ Reject and regenerate when the result contains any of the following:
 - background pixels, floor shadows, UI tiles, text, extra gear, missing slots, duplicate items, or a character/mannequin;
 - a weapon tip, chain, cape, ring, glow, or shadow crossing a cell boundary or being cropped;
 - magical particles or VFX that obscure item silhouettes;
-- T2–T4 looking like a different game's assets instead of a crafted material evolution of its parent.
+- T2–T6 looking like a different game's assets instead of a crafted material evolution of its parent;
+- T5/T6 where the chosen primary resource cannot be identified on the larger pieces at 40 px, or where an unlisted material/glow replaces the set's catalog source.
 
 ## Acceptance check
 
@@ -123,3 +148,4 @@ Before wiring a new sheet:
 7. Confirm tier value comes from material and one clear motif, not extra visual noise.
 8. Confirm the shipped RGBA WebP meets the 250 KB target (or documents why it cannot), retains real alpha, and contains no redundant density variants.
 9. Run the equipment artwork wiring tests before connecting the asset.
+10. For T5/T6, compare the one-line material plan with the catalog and recipe, then identify the primary resource by sight on at least two large slots at 40 px. Check that the secondary cue supports the set without obscuring the class silhouette or crowding the cell.

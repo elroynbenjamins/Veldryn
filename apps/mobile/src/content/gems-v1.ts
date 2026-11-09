@@ -82,3 +82,26 @@ export function mobileGemItemIdV1(familyId:string,grade:MobileGemGradeV1){return
 export function mobileRawGemItemIdV1(familyId:string,grade:MobileGemGradeV1){return `raw_gem:${familyId}:g${grade}`;}
 export function parseMobileRawGemItemIdV1(itemId:string){const match=/^raw_gem:(stat_[a-z_]+|effect_[a-z_]+):g([1-5])$/.exec(itemId);if(!match)return undefined;const familyId=match[1],grade=Number(match[2]) as MobileGemGradeV1;return mobileGemFamilyV1(familyId)?{familyId,grade}:undefined;}
 export function mobileGemRecipeIdV1(familyId:string){return `recipe_gem_${familyId.replace(/^effect_|^stat_/,'')}`;}
+
+/** Grindstone-style socket rolls: nine equally likely outcomes, 80–120% of
+ * the existing per-grade values. Existing socketed gems retain 100%.
+ */
+export const GEM_ROLL_MIN_PERCENT_V1=80;
+export const GEM_ROLL_MAX_PERCENT_V1=120;
+export const GEM_ROLL_STEP_PERCENT_V1=5;
+export function normalizeGemRollPercentV1(value:unknown):number|undefined{
+ return typeof value==='number'&&Number.isInteger(value)
+   &&value>=GEM_ROLL_MIN_PERCENT_V1&&value<=GEM_ROLL_MAX_PERCENT_V1
+   &&(value-GEM_ROLL_MIN_PERCENT_V1)%GEM_ROLL_STEP_PERCENT_V1===0?value:undefined;
+}
+export function gemRollPercentFromUnitV1(randomRoll:number):number{
+ if(!Number.isFinite(randomRoll)||randomRoll<0||randomRoll>=1)throw new Error('invalid_gem_roll');
+ return GEM_ROLL_MIN_PERCENT_V1+Math.floor(randomRoll*9)*GEM_ROLL_STEP_PERCENT_V1;
+}
+export function gemRolledValueV1(familyId:string,grade:MobileGemGradeV1,rollPercent=100):number{
+ const family=mobileGemFamilyV1(familyId);if(!family)return 0;
+ return family.values[grade]*(normalizeGemRollPercentV1(rollPercent)??100)/100;
+}
+export function gemValueRangeV1(familyId:string,grade:MobileGemGradeV1){
+ return {min:gemRolledValueV1(familyId,grade,GEM_ROLL_MIN_PERCENT_V1),max:gemRolledValueV1(familyId,grade,GEM_ROLL_MAX_PERCENT_V1)};
+}

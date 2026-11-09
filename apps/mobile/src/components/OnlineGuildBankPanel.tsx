@@ -235,7 +235,6 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   </View>
   {view==='inventory'?<View style={s.section}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Guild materials')}</Text><Text style={s.meta}>{ui('Tap to inspect')}</Text></View>
-   <Text style={s.help}>{ui('Needed now can be funded. Upcoming resources unlock with later construction; Covered resources need no more donations.')}</Text>
    <TextInput value={search} onChangeText={setSearch} placeholder={ui("Search materials")}
     placeholderTextColor={C.muted} accessibilityLabel={ui("Search Guild Bank materials")}
     autoCorrect={false} returnKeyType="search" style={s.search}/>
@@ -249,7 +248,6 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Guild supply requirements')}</Text><Text style={s.meta}>{ui('{count} needed now',{count:currentIds.length})}</Text></View>
    <GameButton compact tone="secondary" title={ui(skillLoading?'Refreshing Guild Skill needs…':'Refresh requirements')} disabled={skillLoading}
     onPress={()=>{setSkillRefresh(v=>v+1);void onReload()}}/>
-   <Text style={s.help}>{ui('Construction and released Guild Skills draw from the same Bank. Donate supplies first; spending is done in the relevant Guild screen.')}</Text>
    <Text style={s.groupLabel}>{ui('NEEDED NOW')}</Text>
    {currentIds.length?currentIds.map(id=>neededRow(id,false)):
     <Text style={s.help}>{ui('No current construction or released Guild Skill requirements need more materials.')}</Text>}

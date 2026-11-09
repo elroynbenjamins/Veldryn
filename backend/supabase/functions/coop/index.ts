@@ -42455,6 +42455,10 @@ var tailoringPathMaterial = {
 function q(base, multiplier) {
   return Math.max(1, Math.round(base * multiplier));
 }
+var T3_T4_DUNEWOOD_REDUCTION_FACTOR = 0.8;
+function reducedSunscarDunewood(base, multiplier) {
+  return Math.max(1, Math.round(q(base, multiplier) * 3 * T3_T4_DUNEWOOD_REDUCTION_FACTOR));
+}
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -42475,10 +42479,10 @@ function ingredients(tier, path, multiplier, skillId) {
       // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
       // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
       case "T3":
-        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(18, multiplier) }, { itemId: "DUNEWOOD", quantity: q(10, multiplier) * 3 }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
+        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(18, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(10, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
       // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
       case "T4":
-        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "DUNEWOOD", quantity: q(7, multiplier) * 3 }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
+        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(7, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
       case "T5":
         return [{ itemId: "SUNSCALE", quantity: q(25, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }];
       case "T6":
@@ -42500,9 +42504,9 @@ function ingredients(tier, path, multiplier, skillId) {
     case "T2":
       return [{ itemId: "IRONWOOD_LOG", quantity: q(34, multiplier) }, { itemId: pathItem ?? "WOLF_PELT", quantity: q(10, multiplier) }];
     case "T3":
-      return mergeInputs([{ itemId: "DUNEWOOD", quantity: q(22, multiplier) * 3 }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
+      return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
-      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: q(8, multiplier) * 3 }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
     case "T5":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":

@@ -6,6 +6,7 @@ import {accountEntitlementBenefits} from './account-entitlements';
 import {collectionBonusBreakdown} from './collectibles';
 import {activeMealBonus} from './meal-buffs';
 import {guildSkillProfessionMultipliers} from './guild-skill-effects';
+import {explorationGatheringSpeedBonus} from '../content/exploration';
 
 export interface PermanentMultipliers {
   attackMultiplier: number;
@@ -140,6 +141,11 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
   let result={...BASE};
   const c=state.character;
   if(!c)return result;
+
+  // Exploration levels grant modest, permanent Trailcraft efficiency to
+  // mining, woodcutting, fishing and herbalism (not crafting or combat).
+  const explorationLevel=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
+  result=merge(result,{...BASE,gatheringSpeedMultiplier:1+explorationGatheringSpeedBonus(explorationLevel)});
 
   const blessing=selectedFaithBlessing(state);
   if(blessing){

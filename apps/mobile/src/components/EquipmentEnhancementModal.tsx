@@ -49,7 +49,6 @@ function UpgradeResultMoment({feedback,itemId,state,reduceMotion}:{feedback:Enha
 function gemResultDetail(state:GameState,gemId:string,previewItemId?:string,installed=false){
   const gem=itemDef(gemId),meta=canonicalGemMetaV1(gem.id);
   if(meta){
-    const family=mobileGemFamilyV1(meta.familyId);
     const enhancement=installed&&previewItemId?gearEnhancement(state,previewItemId):undefined;
     const roll=enhancement?(meta.kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent):undefined;
     const value=installed?formatGemValueV1(meta.familyId,meta.grade,roll):formatGemRollRangeV1(meta.familyId,meta.grade);

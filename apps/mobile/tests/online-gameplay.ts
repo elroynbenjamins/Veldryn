@@ -79,6 +79,24 @@ async function main(){
  ok(recoveredClaim.executedCommand.type==='claim'&&recoveredClaim.reward?.xp===claim.reward?.xp,'replay preserves original rewards');
  ok(!await restartedClaim.hasPending(),'confirmed claim clears the durable retry after restart');
 
+ // The same safety also applies to repeat purchase/sell taps: the second
+ // identical action recovers the first one rather than charging twice.
+ let salePending:PendingGameCommand|null=null,saleSends=0,saleKeys=0;
+ const saleCommand={type:'sell' as const,args:{id:'TRAVEL_RATION',quantity:1}};
+ const saleRecovery=new OnlineGameRepository('alice',{
+  read:async()=>snapshot,send:async request=>{
+   saleSends++;
+   if(saleSends===1)throw new Error('connection_lost');
+   ok(request.requestId==='sale-1','repeat Sell must reuse the original idempotency key');
+   return {...snapshot,version:1,serverNow:now+2};
+  },
+ },{read:async()=>salePending,write:async value=>{salePending=value;}},()=>`sale-${++saleKeys}`);
+ await saleRecovery.load();
+ try{await saleRecovery.execute(saleCommand)}catch{}
+ const recoveredSale=await saleRecovery.execute(saleCommand);
+ ok(saleSends===2&&saleKeys===1&&recoveredSale.executedCommand.type==='sell'&&!await saleRecovery.hasPending(),'repeat Sell resolves one sale rather than performing two');
+
+
  // Reconcile a different pending command before submitting the new request.
  let mixedPending:PendingGameCommand|null=null,mixedKeys=0,mixedSends=0;
  const requestIds:string[]=[];

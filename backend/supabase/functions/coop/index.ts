@@ -42423,7 +42423,7 @@ var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
   T3: { itemId: "SUNSCAR_DUNE_BINDER", quantity: 1 },
-  T4: { itemId: "GLASSBOUND_BINDER", quantity: 2 },
+  T4: { itemId: "GLASSBOUND_BINDER", quantity: 1 },
   T5: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 },
   T6: { itemId: "SUNFUSED_FIXATIVE", quantity: 2 },
   T7: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 },
@@ -42478,7 +42478,7 @@ function ingredients(tier, path, multiplier, skillId) {
         return mergeInputs([{ itemId: "SUNSCALE", quantity: q(18, multiplier) }, { itemId: "DUNEWOOD", quantity: q(10, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
       // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
       case "T4":
-        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "GLASSBOUND_CORE", quantity: q(1, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
+        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "DUNEWOOD", quantity: q(7, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
       case "T5":
         return [{ itemId: "SUNSCALE", quantity: q(25, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }];
       case "T6":
@@ -42502,7 +42502,7 @@ function ingredients(tier, path, multiplier, skillId) {
     case "T3":
       return mergeInputs([{ itemId: "DUNEWOOD", quantity: q(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
-      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "GLASSBOUND_CORE", quantity: q(1, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: q(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
     case "T5":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":

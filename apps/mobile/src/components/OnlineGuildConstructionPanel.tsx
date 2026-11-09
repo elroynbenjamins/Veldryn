@@ -93,9 +93,7 @@ export function OnlineGuildConstructionPanel({
  return <Panel>
   <Text style={s.kicker}>{ui('GUILD CONSTRUCTION')}</Text>
   <Text style={s.title}>{ui('Build something together')}</Text>
-  <Text style={s.copy}>{ui('Choose a building to view upgrades and costs.')}</Text>
   <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={ui('View {title} upgrades',{title:ui(building.title)})} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{ui(building.title)}</Text></Pressable>)}</View>
-  <Text style={s.note}>{ui('Deposit materials in the Guild Bank to fund upgrades.')}</Text>
   {snapshot.unavailableSections?.includes('constructionCosts')
    ?<Text style={s.error}>{ui('Current Guild Construction prices are unavailable. Refresh before funding.')}</Text>
    :null}

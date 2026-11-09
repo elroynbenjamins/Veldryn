@@ -60,6 +60,12 @@ assert(expedition.includes('visible={confirmOpen}')&&expedition.includes('disabl
 assert(expedition.includes('pendingClaim.current=id')&&expedition.includes('rewardSnapshot'),'Claim dialog must show the claimed server reward instead of a predicted reward');
 assert(expedition.includes('visible={teamPickerOpen}')&&expedition.includes('visible={foodOpen}'),'Team and supplies must have dedicated modals');
 assert(expedition.includes('validateCompanionMissionTeam('),'Mission team rules must remain authoritative');
+assert(expedition.includes('companionMissionRequirementSatisfied(req,ids,view.owned)'),'Individual mission requirements use the same rules as server dispatch');
+assert(expedition.includes('requirementChecks(mission,safeTeam)')&&expedition.includes('t(\'Entry requirements\')'),'Mandatory roles, pen tier, level and affinity must be visible during team preparation');
+assert(expedition.includes('bonusChecks.map((req,index)')&&expedition.includes('Optional bonus requirements'),'Bonus requirements must show separate progress and not block dispatch');
+assert(expedition.includes('Grades C–S are rewards, not entry requirements.'),'Do not mislabel expedition performance grades as starting requirements');
+assert(expedition.includes('(row.requirements??[]).slice(0,3)'),'Mission board must preview its most important actual requirements');
+assert(expedition.indexOf("t('Entry requirements')")<expedition.indexOf("t('Prepare Team')"),'Mandatory requirements must appear before the team picker');
 assert(expedition.includes('companionStaminaSelectionTotal(foodSelection)'),'Stamina must use real food selection');
 assert(expedition.includes("type:'companion_assignment_start'"),'Starting expeditions must still send the real command');
 assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');

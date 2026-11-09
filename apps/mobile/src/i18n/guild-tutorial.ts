@@ -56,6 +56,8 @@ const rows:Record<string,readonly string[]>={
  'Less detail':['Weniger Details','Menos detalles','Minder uitleg','Meno dettagli','Moins de détails'],
  'Pause guide':['Guide pausieren','Pausar guía','Gids pauzeren','Pausa guida','Mettre en pause'],
  'Resume guild guide':['Gilden-Guide fortsetzen','Reanudar guía','Gildegids hervatten','Riprendi guida','Reprendre le guide'],
+ 'Start guild guide':['Gilden-Guide starten','Iniciar guía del gremio','Gildegids starten','Avvia la guida della gilda','Commencer la visite de guilde'],
+ 'Skip tour':['Tour überspringen','Omitir recorrido','Rondleiding overslaan','Salta la visita','Passer la visite'],
  'Replay guild guide':['Gilden-Guide wiederholen','Repetir guía','Gildegids herhalen','Ripeti guida','Revoir le guide'],
  'Continue guide':['Guide fortsetzen','Continuar guía','Verder met gids','Continua guida','Continuer le guide'],
  'Finish guide':['Guide beenden','Terminar guía','Gids afronden','Termina guida','Terminer le guide'],
@@ -79,7 +81,9 @@ export function guildTutorialText(language:Language,source:string){
  if(rows[source])return rows[source][index];
  for(let i=0;i<GUILD_TUTORIAL_STEPS.length;i++){
   const step=GUILD_TUTORIAL_STEPS[i],field=[step.title,step.body,step.tip,step.action].indexOf(source);
-  if(field>=0)return steps[language]?.[i]?.[field]??source;
+  // The welcome tour now visits five destinations; reuse their existing seven-step translations.
+  const originalStepIndex=([0,2,4,5,6] as const)[i];
+  if(field>=0)return steps[language]?.[originalStepIndex]?.[field]??source;
  }
  return source;
 }

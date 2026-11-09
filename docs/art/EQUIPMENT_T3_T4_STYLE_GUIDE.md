@@ -75,6 +75,18 @@ Match the existing target sheet dimensions, two-row cell rhythm, front/three-qua
 - Keep thin objects, amulets, rings, horns, weapon tips, cape corners, and shield edges fully intact; do not clip them to make scale fit.
 - Use real alpha, with no black/white matte fringe. Check the result on both dark and light backgrounds.
 
+## Mobile asset-size budget and optimization
+
+Artwork must be clean at inventory scale without inflating the mobile bundle. Generate at the target sheet dimensions used by the app; do not retain an oversized source canvas in `apps/mobile/assets` merely to preserve detail that will never be displayed.
+
+- Export the shipping sheet as lossily optimized **RGBA WebP**. Preserve alpha; do not convert transparent sheets to JPEG or flatten them onto a background.
+- Target **250 KB or less per 10-icon sheet**. A sheet above **350 KB** needs a visible-quality justification; a sheet above **500 KB** must be reworked or explicitly approved before wiring it in.
+- Prefer reducing imperceptible texture noise, tiny particles, and unused transparent canvas before lowering the quality of the item silhouette, class accent, or readable material edges.
+- Remove opaque pixels and semi-transparent haze outside the item bounds. Transparent padding is required, but hidden matte pixels, oversized empty canvas, and full-sheet glow are not.
+- Keep only the optimized shipping WebP in the mobile asset folder. Store high-resolution source artwork outside the application bundle.
+- Do not create @2x/@3x duplicates for these fixed sheets unless the asset loader is deliberately changed to select them; duplicate static files directly increase the app size.
+- Check the final encoded file size, dimensions, alpha, and small-size readability after optimization. Never judge size from the uncompressed working image alone.
+
 ## Prompt template
 
 Replace every bracketed value for every named set:
@@ -108,4 +120,5 @@ Before wiring a new sheet:
 5. Confirm the deepest shadows, outline weight, cloth treatment, and light direction match the approved reference family.
 6. Inspect alpha bounds on dark and light backgrounds: no matte fringe, crossed boundaries, cropped tips, cut cape corners, or cell contamination.
 7. Confirm tier value comes from material and one clear motif, not extra visual noise.
-8. Export optimized RGBA WebP and run the equipment artwork wiring tests before connecting the asset.
+8. Confirm the shipped RGBA WebP meets the 250 KB target (or documents why it cannot), retains real alpha, and contains no redundant density variants.
+9. Run the equipment artwork wiring tests before connecting the asset.

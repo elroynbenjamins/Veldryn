@@ -4,6 +4,7 @@ import type {GameState} from '../core/types';
 import type {MonsterDef} from '../content/monsters';
 import {combatBaselineProjection} from '../core/balance-projection';
 import {activeCombatHitProjection,combatSustainProjection} from '../core/game';
+import {liveHuntNarration} from '../core/combat-narration';
 import {itemDef} from '../content/items';
 import {formatGameNumber} from '../core/number-format';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -39,6 +40,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const damageText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
+ const narration=fight&&state.character?liveHuntNarration({classId:state.character.classId,monster,nowMs:clock,startedAtMs:state.activity?.startedAtMs??clock,lastHit:fight.lastHit,stoppedReason:fight.stoppedReason,damageText}):undefined;
  return <View style={{borderWidth:1,borderColor:C.line,borderRadius:16,overflow:'hidden',backgroundColor:C.panel}}>
   <View style={{height:196,justifyContent:'flex-end'}}>
    {regionId==='IRONWOOD'?<Image source={require('../../assets/combat-scenes/ironwood-clearing-v1.jpg')} resizeMode="cover" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>:<RegionArtwork regionId={regionId}/>}
@@ -51,10 +53,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
    </View>
   </View>
   {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
-   <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
-    <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':'Live combat')}</Text>
-    <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{tr('Progress · {percent}%',{percent:Math.round(fight.progressFraction*100)})}</Text>
-   </View>
+   <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':'Live combat')}</Text>
    {([
      {label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good},
      {label:monster.name,hp:fight.enemyHp,max:fight.enemyMaxHp,color:C.bad},
@@ -67,9 +66,9 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
      <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
     </View>
    </View>)}
-   <Text accessibilityLiveRegion="polite" style={{fontFamily:font,fontSize:12,fontWeight:'700',color:lastHit?.actor==='enemy'?C.bad:C.accent}}>
-    {fight.stoppedReason?tr('Combat stopped'):lastHit?`${tr(lastHit.actor==='player'?'Hit · {amount}':'Damage taken · {amount}',{amount:damageText(lastHit.damage)})}${lastHit.critical?` · ${tr('CRITICAL!')}`:''}`:tr('Damage updates on hit. Rewards are granted on defeat.')}
-   </Text>
+   {narration?<Text accessibilityLiveRegion={narration.hit?'polite':'none'} numberOfLines={2} style={{fontFamily:font,fontSize:12,lineHeight:17,fontWeight:narration.hit?'700':'600',color:narration.tone==='danger'?C.bad:narration.tone==='accent'?C.accent:C.muted}}>
+    {tr(narration.key,narration.params)}{narration.critical&&fight.lastHit?.actor==='player'?` · ${tr('CRITICAL!')}`:''}
+   </Text>:null}
   </View>:null}
   {!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
    <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:6}}>{[[pace.killsPerHour,'kills/hr'],[pace.xpPerHour,'XP/hr'],[pace.goldPerHour,'Gold/hr']].map(([value,label],index)=><Text key={label} style={{fontFamily:font,color:C.text,fontWeight:'600',fontSize:13}}>{index?'·  ':''}~{number(value as number)} {label}</Text>)}</View>

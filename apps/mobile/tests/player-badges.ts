@@ -1,4 +1,4 @@
-import {normalizePlayerBadges,playerBadgeIds,type PlayerBadgeIdentity} from '../src/core/player-badges';
+import {COLLECTIBLE_PLAYER_BADGE_IDS,normalizePlayerBadges,playerBadgeIds,validatedFeaturedBadges,type PlayerBadgeIdentity} from '../src/core/player-badges';
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 const now=1000;
 const snapshot=(staff:PlayerBadgeIdentity['staff'],supporter:boolean):PlayerBadgeIdentity=>({staff,supporter,validUntilMs:2000});
@@ -7,6 +7,11 @@ ok(playerBadgeIds(snapshot('moderator',false),now).join(',')==='moderator','hidd
 ok(playerBadgeIds(snapshot(null,true),now).join(',')==='supporter','Supporter is not a staff role');
 ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no badge');
 ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
+ok(playerBadgeIds({...snapshot(null,false),extras:['founder','beta_tester']},now).join(',')==='founder,beta_tester','two earned badges visible');
+ok(playerBadgeIds({...snapshot('admin',true),extras:['founder','beta_tester']},now).join(',')==='admin,founder','staff identity is prioritized and compact display capped at two');
+ok(playerBadgeIds({...snapshot(null,true),extras:['veteran','guild_leader']},now).join(',')==='veteran,guild_leader','featured earned badges outrank optional supporter badge');
+ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:true,extras:['admin','founder','founder','event_champion','veteran'],validUntilMs:2000}),now).join(',')==='founder,event_champion','arbitrary server fields cannot spoof staff badges or exceed two collectibles');
+ok(validatedFeaturedBadges(['beta_tester','founder','beta_tester','admin'],['founder']).join(',')==='founder','featured selections are checked against owned badge catalog');
 ok(playerBadgeIds(normalizePlayerBadges({staff:'owner',supporter:'true',validUntilMs:2000}),now).length===0,'unknown roles and loose booleans are rejected');
 for(const value of [null,[],{staff:'admin'},{staff:'admin',validUntilMs:NaN},{validUntilMs:Infinity},{validUntilMs:'2000'}])ok(!normalizePlayerBadges(value),'malformed snapshots are rejected');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
@@ -20,5 +25,11 @@ for(const path of ['OnlineWorldChat','OnlinePartyChat','GuildChat','ChatDock','P
 for(const path of ['FriendsScreen','RankingsScreen'])ok(read(`src/screens/${path}.tsx`).includes('badges='),'badge projection reaches '+path);
 ok(read('src/components/ProfileEditor.tsx').includes('<PlayerBadgeSettings/>'),'profile exposes the visibility preference');
 ok(read('src/online/social.ts').includes("rpc('guild_identities_v2'"),'chat and social identities load server badges');
-for(const id of ['supporter','admin','moderator'])ok(read('src/components/PlayerBadges.tsx').includes(`player-badges-v1/${id}.webp`),'generated asset wired for '+id);
+for(const id of ['supporter','admin','moderator',...COLLECTIBLE_PLAYER_BADGE_IDS])ok(read('src/components/PlayerBadges.tsx').includes(`player-badges-v1/${id}.webp`),'generated asset wired for '+id);
+const collectibleSql=read('../../backend/supabase/migrations/20261109222500_collectible_player_badges_v1.sql');
+ok(collectibleSql.includes('private.player_collectible_badges_v1')&&collectibleSql.includes('enable row level security'),'earned badge catalog is private and RLS protected');
+ok(collectibleSql.includes("created_at<=now()-interval '90 days'")&&collectibleSql.includes("role='leader'"),'veteran and guild leader unlock from trusted server tables');
+ok(collectibleSql.includes('v_uid uuid:=auth.uid()')&&collectibleSql.includes('BADGE_NOT_OWNED'),'featured badges are authorized against caller ownership');
+ok(!collectibleSql.includes('raw_user_meta_data')&&!collectibleSql.includes('user_metadata'),'collectible badges never trust user metadata');
+ok(read('src/components/PlayerBadgeSettings.tsx').includes('COLLECTIBLE_PLAYER_BADGE_IDS')&&read('src/online/player-badges.ts').includes('update_player_featured_badges_v1'),'collection browsing and saved selection wired');
 console.log('PASS: player badge validation, expiration, identity wiring and server authority contracts');

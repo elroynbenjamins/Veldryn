@@ -38,6 +38,8 @@ async function main(){
  assert.equal(calls.length,0);
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_005'}))).status,400);
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_001'}))).status,400,'Retired Asterfall dungeons cannot be joined');
+ assert.equal((await handler(request('queue',{...body,requestId:'tier4-start-001',tier:4}))).status,400,'New Live queue must reject retired Tier 4');
+ assert.equal((await handler(request('queue',{...body,requestId:'tier5-start-001',tier:5}))).status,400,'New Live queue must reject retired Tier 5');
  assert.equal((await handler(request('queue',{...body,characterId:'other'}))).status,403);
  assert.equal((await handler(request('queue',{...body,loadoutRevision:6}))).status,409);
  const quick={requestId:'quick-start-001',characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};

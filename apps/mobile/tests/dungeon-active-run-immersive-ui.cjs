@@ -10,22 +10,22 @@ const shell=read('components/coop/CoopVisualKit.tsx');
 const run=read('components/coop/CoopRunOverview.tsx');
 const browser=read('components/coop/CoopDungeonBrowser.tsx');
 
-// World overview remains navigable before entering a run.
-assert(world.includes("if(topTab==='dungeon'&&dungeonContent)"),'Dungeon browser remains on the World tab');
-assert(world.includes('!dungeonFlowActive&&<View'),'World tabs are hidden only during an active dungeon flow');
-assert(world.includes('accessibilityRole="tablist"'),'Region/Dungeon tabs still exist outside active runs');
+// World remains independent of all dungeon browsing and run states.
+assert(world.includes('<WorldChapterNavigator'),'World retains region and exploration navigation');
+assert(!world.includes('dungeonContent')&&!world.includes('topTab')&&!world.includes('onCoop'),'World does not embed dungeon entry or a World/Dungeon switcher');
+assert((app.match(/<CoopExpeditionScreen /g)||[]).length===1,'Dungeons mount as exactly one standalone screen');
+assert(app.includes("if(destination==='Dungeon'){setTab('Coop');return;}"),'Account Dungeon button routes to standalone dungeon screen');
 
 // Both standard and seasonal runs report the same immersive state.
 assert(screen.includes('const isActiveRun=Boolean(run||eventRun)'),'Q-Mode, Live and event runs share active-flow detection');
 assert(screen.includes('onRunActiveChange?.(isActiveRun)'),'Run phase controls the parent chrome');
 assert(screen.includes('return ()=>onRunActiveChange?.(false)'),'Chrome resets when the dungeon unmounts');
-assert((app.match(/onRunActiveChange={setDungeonFlowActive}/g)||[]).length===2,'Both World-embedded and direct Dungeon entry use the same flag');
+assert((app.match(/onRunActiveChange={setDungeonFlowActive}/g)||[]).length===1,'Only the standalone dungeon screen changes immersive mode');
 
-// No redundant World navigation, top bar, section tutorial or edge-swipe back
+// No redundant top bar, section tutorial or edge-swipe back
 // above the Q-Mode/Live status banner.
-assert(app.includes("dungeonFlowActive&&(tab==='World'||tab==='Coop')"),'Only dungeon routes become immersive');
+assert(app.includes("dungeonFlowActive&&tab==='Coop'"),'Only the standalone dungeon route becomes immersive');
 assert(app.includes('{!immersiveDungeonFlow&&<GameTopBar'),'Active runs hide the global character and activity HUD');
-assert(app.includes('dungeonFlowActive={immersiveDungeonFlow}'),'World wrapper hides its region switcher');
 assert(app.includes('{!immersiveDungeonFlow&&mainTabGuide'),'World guidance does not take up room during a run');
 assert(app.includes('{...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}'),'Back-edge gesture does not interrupt room selection');
 
@@ -40,4 +40,4 @@ assert(shell.indexOf('{banner?<View style={s.banner}>')<shell.indexOf('<ScrollVi
 assert(run.indexOf('<DungeonRouteChoices')<run.indexOf('Party & formation'),'Room choices stay ahead of optional details');
 assert(run.includes('Return to dungeon list'),'Completed run still has an explicit exit');
 assert(browser.includes('onBack={onBack} backLabel={a("Back")}'),'Normal browser retains its navigation');
-console.log('PASS immersive active Dungeon layout in World and direct entry, with a safe exit');
+console.log('PASS standalone Account Dungeon screen, immersive run and safe exit; no World dungeon tabs');

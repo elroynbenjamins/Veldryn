@@ -10,7 +10,7 @@ export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;c
 export type GemStat = 'attack'|'defense'|'hp';
 export type GemSocketKind='stat'|'effect';
 export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery';
-export interface GearEnhancementState { rank:number; failures:number; statGemId?:string; effectGemId?:string; /** Legacy/read-model compatibility; normalized from named slots. */ gemIds:string[]; }
+export interface GearEnhancementState { rank:number; failures:number; statGemId?:string; effectGemId?:string; /** Socketed gem roll, expressed as an integer 80–120% of the canonical grade value. Missing on older saves means 100%. */ statGemRollPercent?:number;effectGemRollPercent?:number; /** Legacy/read-model compatibility; normalized from named slots. */ gemIds:string[]; }
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'processing' | 'faith' | 'training' | 'exploration';
 export type CombatTacticId='assault'|'balanced'|'guarded';
 export interface ActivityQueueGoal {kind:'duration_seconds'|'item_quantity'|'skill_level'|'session_kills';value:number;}

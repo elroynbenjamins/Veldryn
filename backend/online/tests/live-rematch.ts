@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {OnlineLiveRematch,type LiveRematchState} from '../live-rematch';
 import {coopHandler} from '../coop';
@@ -8,7 +9,7 @@ async function main(){
  const classes=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const;
  const members=classes.map((classId,index)=>{
   const accountId=`00000000-0000-4000-8000-00000000000${index+1}`;
-  const state=createCharacter(newGame(0),classId,'Rematch Test');state.character!.level=25;
+  const state=createCharacter(newGame(0),classId,'Rematch Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.defeatedBossIds.push('FALLEN_KNIGHT');
   state.character!.id=`rematch-character-${index}`;
   state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
   return {accountId,characterId:state.character!.id,loadoutId:'current',loadoutRevision:1,version:1,state};
@@ -28,7 +29,7 @@ async function main(){
    if(name==='online_live_rematch_state_server_v1')return current as T;
    if(name==='online_live_rematch_sources_server_v1'){
     if(errorOnSources)throw new Error('rematch_roster_unavailable');
-    return {dungeonId:'EXP_001',tier:1,members} as T;
+    return {dungeonId:'EXP_004',tier:1,members} as T;
    }
    if(name==='online_live_rematch_respond_server_v1')return current as T;
    throw new Error('unexpected_rpc:'+name);

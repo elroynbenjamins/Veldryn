@@ -1,14 +1,30 @@
 import {deepEqual,equal} from './assertions';
 import {GUILD_TUTORIAL_STEPS,advanceGuildTutorial,createGuildTutorialStore,normalizeGuildTutorialProgress} from '../src/core/guild-tutorial';
 import {guildTutorialText} from '../src/i18n/guild-tutorial';
-import {guildGuideLibraryText} from '../src/i18n/guild-guide-library';
-import {guildDetailedGuide} from '../src/core/guild-detailed-guides';
+import {guildGuideLibraryText,guildGuideSectionTitle} from '../src/i18n/guild-guide-library';
+import {GUILD_DETAILED_GUIDES,guildDetailedGuide} from '../src/core/guild-detailed-guides';
 
 async function testGuildTour(){
  deepEqual(GUILD_TUTORIAL_STEPS.map(step=>step.destination),['Home','Muster','Projects','PvE','Hall'],'new Guild tour has five reachable destinations');
  deepEqual(normalizeGuildTutorialProgress(null),{step:0,status:'new'},'existing Guild members are not interrupted on first app update');
  equal(guildTutorialText('nl',GUILD_TUTORIAL_STEPS[1].title),'Je dagelijkse spel telt mee','compact tour retains the translated Muster step');
  equal(guildTutorialText('nl','Guild Quests'),'Gildequests','new Guild Quest help is localized');
+ equal(guildTutorialText('ru',GUILD_TUTORIAL_STEPS[1].title),'Ваши ежедневные действия важны','Russian Muster text maps to the correct five-stop tour step');
+ equal(guildTutorialText('tr',GUILD_TUTORIAL_STEPS[4].title),'Artık hazırsın','Turkish Hall text maps to the correct five-stop tour step');
+ equal(guildTutorialText('ru','Skip tour'),'Пропустить обучение','Russian Skip tour control is translated');
+ equal(guildTutorialText('tr','Start guild guide'),'Lonca rehberini başlat','Turkish Start tour control is translated');
+ for(const lang of ['de','es','nl','it','fr','ru','tr'] as const){
+  const hallTip=guildTutorialText(lang,GUILD_TUTORIAL_STEPS[4].tip);
+  equal(hallTip.includes('Guild Bank')||hallTip.includes('Bank')||hallTip.includes('banco')||hallTip.includes('banca')||hallTip.includes('banque')||hallTip.includes('банк')||hallTip.includes('Bankası')||hallTip.includes('gildebank'),true,lang+' Hall tour tip mentions the Guild Bank');
+ }
+ for(const section of Object.keys(GUILD_DETAILED_GUIDES)){
+  for(const lang of ['de','es','nl','it','fr','ru','tr'] as const){
+   const label=guildGuideSectionTitle(lang,section,GUILD_DETAILED_GUIDES[section].title);
+   equal(label.length>4,true,lang+' Guild Guide section '+section+' has a localized title');
+  }
+ }
+ equal(guildGuideSectionTitle('nl','Hall/Bank','Guild Bank'),'Gildebank','Dutch Guild Bank title is consistent across Help and Library');
+ equal(guildGuideSectionTitle('en','Hall/Bank','Guild Bank'),'Guild Bank','English Guild title uses source copy');
  for(const section of ['Progress/Projects','Progress/Skills','Hall/Bank','Hall/Construction']){
   const guide=guildDetailedGuide(section);
   equal(guide?.topics.length,3,section+' has three expanded help topics');

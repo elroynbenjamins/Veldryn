@@ -29,11 +29,11 @@ export class OnlineLiveQueue {
   if(!definition)throw new GameplayError('dungeon_unavailable');
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
-  const entryError=regularDungeonEntryError(definition,game.state,game.state.character.level);
-  if(entryError)throw new GameplayError(entryError);
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
   if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
+  if(entryError)throw new GameplayError(entryError);
   const maximumTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maximumTier||request.tier>maximumTier||request.tier<1)throw new GameplayError('dungeon_level_requirement');
   const selectedTier=request.tier;
   const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,selectedTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});

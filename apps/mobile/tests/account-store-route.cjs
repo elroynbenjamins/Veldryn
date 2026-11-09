@@ -15,7 +15,9 @@ for(const p of ['App.tsx','src/screens/MoreScreen.tsx','src/screens/SettingsScre
  assert.deepEqual(tree.parseDiagnostics.map(e=>ts.flattenDiagnosticMessageText(e.messageText,' ')),[],p+' parses');
 }
 assert(account.includes("'ResourceCodex','Store','Settings'"),'Account retains Store as a real destination');
-assert(account.includes("['Activity','ResourceCodex','Store','Settings']"),'Account quick access retains Store');
+assert(account.includes("['Dungeon','ResourceCodex','Store','Settings']"),'Account quick access shows Dungeons and retains Store');
+assert(account.includes("items:['Dungeon','Home','Quests'"),'Dungeon has its own progression tile');
+assert(app.includes("tab!=='Store'&&<View style={[s.backBar"),'Store omits the redundant global Back / Store bar');
 assert(app.includes("|'Store';"),'Store is included in the route union');
 assert(app.includes("case 'Store':return appText(language,'Store')"),'Store has a route title');
 assert(app.includes("tab==='Store'&&<StoreScreen"),'Store renders as its own route');

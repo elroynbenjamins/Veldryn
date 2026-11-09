@@ -262,7 +262,7 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
   </View>:null}
   {readyToClaim?<GameButton title={ui(busy?'Claiming…':project.rewardDestination==='guild_bank'?'Claim Guild Bank Gold':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&compact?<Text style={s.meta}>{rewardStatus}</Text>:null}
-  {showContributions?<GuildProjectContributionsModal project={project} title={authored.name} onClose={()=>setShowContributions(false)}/>:null}
+  {showContributions?<GuildProjectContributionsModal project={project} title={authored.name} description={authored.description} onClose={()=>setShowContributions(false)}/>:null}
 
  </View>;
 }

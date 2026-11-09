@@ -22,9 +22,9 @@ export class OnlineCoopLfg{
   const definition=EXPEDITIONS[request.dungeonId];if(!definition)throw new GameplayError('dungeon_unavailable');
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
-  const entryError=regularDungeonEntryError(definition,game.state,game.state.character.level);
-  if(entryError)throw new GameplayError(entryError);
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
+  if(entryError)throw new GameplayError(entryError);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
   const maxTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maxTier)throw new GameplayError('dungeon_level_requirement');
   const hash=createHash('sha256').update(JSON.stringify({dungeonId:definition.id,note})).digest('hex');

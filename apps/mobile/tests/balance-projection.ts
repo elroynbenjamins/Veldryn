@@ -149,7 +149,7 @@ ok(exploreLevel?.label==='Exploration','Active Exploration must resolve the Expl
 const faithState={...activityBase,activity:{kind:'faith',targetId:'FAITH_QUIET',startedAtMs:1,lastClaimAtMs:1} as any};
 close(activityCycleSeconds(faithState),30,.001,'Faith Home cycle must use the authored practice duration');
 const faithRate=activityRate(faithState),faithLevel=activeActivityLevelPace(faithState,faithRate.xpPerHour);
-close(faithRate.xpPerHour,14400,.001,'Quiet Prayer Home rate must match 120 XP per 30-second practice');
+close(faithRate.xpPerHour,11520,.001,'Quiet Prayer Home rate must match 96 XP per 30-second practice');
 ok(faithLevel?.label==='Faith','Active Faith must resolve the Faith skill level bar');
 
 const alchemyState={...activityBase,activity:{kind:'alchemy',targetId:'TEST_BREW',startedAtMs:1,lastClaimAtMs:1,brew:{version:1,recipeId:'TEST_BREW',totalBatches:5,remainingBatches:5,inputsPerBatch:[],goldPerBatch:0,outputPerBatch:{itemId:'COPPER_INGOT',quantity:1},cycleSeconds:45,xpPerBatch:150}} as any};

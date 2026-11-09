@@ -45,9 +45,9 @@ export class OnlineQModeRuntime{
   const definition=EXPEDITIONS[request.dungeonId];if(!definition)throw new GameplayError('dungeon_unavailable');
   const game=await this.services.rpc<Game>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
-  const entryError=regularDungeonEntryError(definition,game.state,game.state.character.level);
-  if(entryError)throw new GameplayError(entryError);
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
+  if(entryError)throw new GameplayError(entryError);
   const minimum=coopRequiredLevel(definition.minLevel,request.tier),sync=definition.recommendedLevel;
   const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned');

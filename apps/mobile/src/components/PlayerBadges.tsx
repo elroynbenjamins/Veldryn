@@ -3,7 +3,18 @@ import {Image,Platform,StyleSheet,Text,View} from 'react-native';
 import {PLAYER_BADGE_LABELS,playerBadgeIds,type PlayerBadgeIdentity,type PlayerBadgeId} from '../core/player-badges';
 import {useGameTheme} from '../theme/ThemeContext';
 
-const artwork={admin:require('../../assets/player-badges-v1/admin.webp'),moderator:require('../../assets/player-badges-v1/moderator.webp'),supporter:require('../../assets/player-badges-v1/supporter.webp')};
+// Static require paths allow Metro to bundle artwork offline. These badges are never remotely downloaded.
+const artwork:Record<PlayerBadgeId,number>={
+ admin:require('../../assets/player-badges-v1/admin.webp'),
+ moderator:require('../../assets/player-badges-v1/moderator.webp'),
+ supporter:require('../../assets/player-badges-v1/supporter.webp'),
+ founder:require('../../assets/player-badges-v1/founder.webp'),
+ beta_tester:require('../../assets/player-badges-v1/beta_tester.webp'),
+ veteran:require('../../assets/player-badges-v1/veteran.webp'),
+ guild_leader:require('../../assets/player-badges-v1/guild_leader.webp'),
+ community_champion:require('../../assets/player-badges-v1/community_champion.webp'),
+ event_champion:require('../../assets/player-badges-v1/event_champion.webp'),
+};
 export function PlayerBadge({id,size=20,showLabel=false}:{id:PlayerBadgeId;size?:number;showLabel?:boolean}){
  const C=useGameTheme(),label=PLAYER_BADGE_LABELS[id];
  return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}><Image accessible={false} source={artwork[id]} resizeMode="contain" style={{width:size,height:size}}/>{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</View>;

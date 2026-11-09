@@ -77,5 +77,6 @@ assert(skills.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[facilityLevel]')
 assert(skills.includes('trainingDaysReady*facilityXpPerDay')&&skills.includes('idleCompanions.length'),'Companion training claim must show accrued XP and eligible companions');
 assert(skills.includes("type:'companion_training'")&&skills.includes('disabled={!trainingClaimReady}'),'Skills hub uses an existing authenticated companion training claim with readiness gating');
 assert(skills.includes("companionSanctuaryUpgradeCost(state,'trainingGround')"),'Training Ground upgrade costs must use live game rules');
+assert(skills.includes("type:'companion_upgrade',args:{id:'trainingGround'}")&&skills.includes('disabled={!trainingUpgradeReady}'),'Facility upgrade must call existing validated server command and respect resources');
 assert(skills.includes('not a separate XP-based skill'),'Players must be told that the Training Ground is not an independently levelable character skill');
 console.log('PASS Companion layout refinement and resource icon UX');

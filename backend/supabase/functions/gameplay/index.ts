@@ -51755,6 +51755,7 @@ var COMBAT_SPEED_MAX = 1.3;
 var COMBAT_TIME_SCALE = 1.16;
 var COMBAT_EXPECTED_SCALE = 1.3;
 var COMBAT_MONSTER_DAMAGE_SCALE = 1.13;
+var COMBAT_PASSIVE_EXPLORATION_XP_TENTHS = 13;
 var REGIONAL_COMBAT_PRESSURE = { Greenfields: 1, Silverbrook: 1.04, "Ironwood Forest": 1.08, "Old Mines": 1.12, "King's Road": 1.16, Sunscar: 1.2, Frostmarch: 1.25, Ashlands: 1.3 };
 var REGIONAL_HUNT_DAMAGE_TUNING = { Greenfields: 0.36, Silverbrook: 0.25, "Ironwood Forest": 0.4, "Old Mines": 0.55, "King's Road": 0.42, Ashlands: 0.4 };
 var REGIONAL_MONSTER_PRESSURE_MULTIPLIER = { entry: 0.92, standard: 1, hard: 1.1 };
@@ -52313,7 +52314,11 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
   const explorationSkill = state.skills.find((skill2) => skill2.skillId === "exploration");
   const explorationRaw = sim.kills * Math.max(1, Math.ceil(m.level / 12));
-  const explorationXp = Math.min(Math.max(0, totalXpAtLevel(100) - (explorationSkill?.xp ?? 0)), explorationRaw);
+  const explorationRemainderKey = "combat:passive-exploration-xp-tenths";
+  const explorationTenths = explorationRaw * COMBAT_PASSIVE_EXPLORATION_XP_TENTHS + Math.max(0, Math.floor(state.rewardRemainders?.[explorationRemainderKey] ?? 0));
+  const explorationCap = Math.max(0, totalXpAtLevel(100) - (explorationSkill?.xp ?? 0));
+  const explorationXp = Math.min(explorationCap, Math.floor(explorationTenths / 10));
+  const explorationRemainder = explorationXp >= explorationCap ? 0 : explorationTenths % 10;
   let momentumXp = 0;
   for (let start = 0; start < sim.completed.length; ) {
     let end = start + 1;
@@ -52322,7 +52327,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward2 = { combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward2 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward2, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
@@ -52611,7 +52616,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const skills2 = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward2.xp, level: levelFromXp(x.xp + reward2.xp) } : x);
     const routed2 = routeRewards(state, reward2.items, settledAtMs);
     const exploredRouteIds = state.activity.kind === "exploration" && reward2.kills > 0 ? [.../* @__PURE__ */ new Set([...state.exploredRouteIds ?? [], state.activity.targetId])] : state.exploredRouteIds ?? [];
-    const nextBase2 = { ...state, skills: skills2, ...routed2, rewardRemainders: reward2.nextRewardRemainders, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...reward2.explorationDiscoveries ?? []])], exploredRouteIds, outOfCombatSinceMs: idleWindow.shouldStop ? settledAtMs : void 0, activity: idleWindow.shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction } };
+    const nextBase2 = { ...state, skills: skills2, ...routed2, rewardRemainders: reward2.nextRewardRemainders ?? state.rewardRemainders, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...reward2.explorationDiscoveries ?? []])], exploredRouteIds, outOfCombatSinceMs: idleWindow.shouldStop ? settledAtMs : void 0, activity: idleWindow.shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction } };
     const next2 = commitDailySupplyTimedBoost(nextBase2, supply);
     const progression = applyTrustedLongTermProgression(next2, [{ kind: "gathering", contentId: state.activity.targetId, units: reward2.kills, startedAtMs: state.activity.lastClaimAtMs }], reward2, settledAtMs, { accountId: longTermAccountScope(state), eventId: `activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
     const eventApplied = refreshQuests(applyEventDiscoveries(applyEventDrops(progression, reward2.eventDrops ?? []), reward2.eventDiscoveries ?? []));
@@ -52640,7 +52645,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward2.explorationXp ?? 0));
     return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
   });
-  const nextBase = { ...state, skills, ...routed, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, combatEnemyHp: reward2.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
+  const nextBase = { ...state, skills, ...routed, rewardRemainders: reward2.nextRewardRemainders ?? state.rewardRemainders, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, combatEnemyHp: reward2.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
   let next = commitDailySupplyTimedBoost(nextBase, supply);
   next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward2.masteryMaterialRemainders };
   if (next.character.preparation && (reward2.preparationEncounters ?? reward2.kills) > 0) {

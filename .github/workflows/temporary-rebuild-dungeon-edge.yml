@@ -1,0 +1,42 @@
+name: Temporary dungeon Edge bundle regeneration
+on:
+  push:
+    branches:
+      - feat/dungeons-sunscar-chapter-one-level25-20261109
+    paths:
+      - '.github/workflows/temporary-rebuild-dungeon-edge.yml'
+      - 'backend/online/**'
+      - 'backend/src/server/coop/dungeon-entry-policy.ts'
+      - 'backend/package.json'
+permissions:
+  contents: write
+jobs:
+  build-and-commit:
+    if: github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Generate deterministic co-op Edge bundle
+        run: pnpm --dir backend build:online
+      - name: Commit generated bundle to feature branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/coop/index.ts backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(coop): regenerate authoritative Edge bundle for Sunscar dungeon gate'
+            git push origin HEAD:${{ github.ref_name }}
+          fi

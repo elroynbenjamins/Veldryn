@@ -71,7 +71,7 @@ ok(sunscarRoutes.length===4,'Sunscar needs one scouting route per playable area'
 ok(sunscarRoutes.map(route=>route.areaId).join(',')===regionAreas('SUNSCAR').map(area=>area.id).join(','),'Each survey must target the correct Sunscar area');
 ok(sunscarRoutes[0].id==='SCOUT_SUNSCAR'&&sunscarRoutes[0].unlockZoneId==='FROSTMARCH','Keep the original first Sunscar survey and Frostmarch discovery');
 ok(sunscarRoutes.every((route,index)=>route.requiredLevel===regionAreas('SUNSCAR')[index].minLevel),'Sunscar character levels match playable area level gates');
-ok(sunscarRoutes.map(route=>route.requiredExplorationLevel).join(',')==='8,10,12,14','Sunscar Exploration requirements increase gradually from 8 to 14');
+ok(sunscarRoutes.map(route=>route.requiredExplorationLevel).join(',')==='8,9,10,11','Sunscar Exploration requirements increase gradually from 8 to 11');
 ok(sunscarRoutes.slice(1).every((route,index)=>route.prerequisiteRouteId===sunscarRoutes[index].id),'Additional surveys require the prior survey');
 ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_IRONWOOD')?.requiredExplorationLevel===3,'Ironwood now requires Exploration level 3');
 ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_OLD_MINES')?.requiredExplorationLevel===4,'Old Mines now requires Exploration level 4');

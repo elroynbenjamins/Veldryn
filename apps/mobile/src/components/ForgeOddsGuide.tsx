@@ -162,7 +162,6 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       </View>
     </View>
     <Text style={[s.explain,{color:C.muted}]}>{gt('Rarity and quality both affect stats.')}</Text>
-    <Text style={[s.explain,{color:C.muted}]}>{gt('All equipment tiers use the same rarity chances.')}</Text>
     <Text style={[s.legacy,{color:C.muted}]}>{gt('Rarity and quality roll on claim.')}</Text>
     <Text style={[s.legacy,{color:C.muted}]}>{gt('Older gear defaults to Q50.')}</Text>
    </View>:null}

@@ -40,7 +40,7 @@ const keys=[
   "Master a profession action at R50",
   "Selected R50 profession records"
 ];
-const tokens=text=>[...text.matchAll(/\\{([a-zA-Z][a-zA-Z0-9_]*)\\}/g)].map(row=>row[1]).sort();
+const tokens=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(row=>row[1]).sort();
 for(const key of keys){
  assert.ok(Object.hasOwn(profile.profileTranslationRows,key),'Missing profile catalog key: '+key);
  const original=tokens(key);

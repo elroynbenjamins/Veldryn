@@ -7,6 +7,31 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  // Character, Combat Power and profile UI: complete visible labels and explanatory copy.
+  "Character": ["Charakter","Personaje","Personage","Personaggio","Personnage"],
+  "Edit profile": ["Profil bearbeiten","Editar perfil","Profiel bewerken","Modifica profilo","Modifier le profil"],
+  "Combat Power": ["Kampfkraft","Poder de combate","Gevechtskracht","Potenza di combattimento","Puissance de combat"],
+  "Show breakdown": ["Aufschlüsselung anzeigen","Mostrar desglose","Uitsplitsing tonen","Mostra dettagli","Afficher le détail"],
+  "Hide breakdown": ["Aufschlüsselung ausblenden","Ocultar desglose","Uitsplitsing verbergen","Nascondi dettagli","Masquer le détail"],
+  "Combat Power breakdown": ["Kampfkraft im Detail","Desglose del poder de combate","Uitsplitsing gevechtskracht","Dettaglio potenza di combattimento","Détail de la puissance de combat"],
+  "All stats": ["Alle Werte","Todas las estadísticas","Alle statistieken","Tutte le statistiche","Toutes les statistiques"],
+  "Class base": ["Klassenbasis","Base de clase","Klassebasis","Base della classe","Base de classe"],
+  "Gear, sets & gems": ["Ausrüstung, Sets & Edelsteine","Equipo, conjuntos y gemas","Uitrusting, sets en edelstenen","Equipaggiamento, set e gemme","Équipement, ensembles et gemmes"],
+  "Other character bonuses": ["Weitere Charakterboni","Otras bonificaciones de personaje","Overige personagebonussen","Altri bonus del personaggio","Autres bonus du personnage"],
+  "Combat companion": ["Kampfgefährte","Compañero de combate","Gevechtsmetgezel","Compagno da combattimento","Compagnon de combat"],
+  "Level {level} base stats": ["Basiswerte auf Stufe {level}","Estadísticas base de nivel {level}","Basiswaarden op niveau {level}","Statistiche base al livello {level}","Stats de base au niveau {level}"],
+  "Equipped stat gains and build effects": ["Werte und Effekte durch angelegte Ausrüstung","Mejoras de estadísticas y efectos del equipo","Statbonussen en effecten van je uitrusting","Bonus alle statistiche ed effetti dell'equipaggiamento","Gains de stats et effets de l'équipement"],
+  "Class training, Faith, preparation and permanent boosts": ["Klassentraining, Glaube, Vorbereitung und dauerhafte Boni","Entrenamiento de clase, Fe, preparación y mejoras permanentes","Klasseopleiding, Geloof, voorbereiding en permanente bonussen","Addestramento di classe, Fede, preparazione e bonus permanenti","Entraînement de classe, Foi, préparation et bonus permanents"],
+  "No combat companion equipped": ["Kein Kampfgefährte ausgerüstet","No hay compañero de combate equipado","Geen gevechtsmetgezel uitgerust","Nessun compagno da combattimento equipaggiato","Aucun compagnon de combat équipé"],
+  "{name} · Lv. {level} · Bond {bond}": ["{name} · St. {level} · Bindung {bond}","{name} · Nv. {level} · Vínculo {bond}","{name} · Nv. {level} · Band {bond}","{name} · Liv. {level} · Legame {bond}","{name} · Niv. {level} · Lien {bond}"],
+  "Combat Power is a comparison score from your live stats and equipped build. Encounter mechanics, target traits, and temporary effects can still change actual results.": ["Die Kampfkraft ist ein Vergleichswert aus deinen aktuellen Werten und deiner Ausrüstung. Kampfmechaniken, Gegnereigenschaften und vorübergehende Effekte können das tatsächliche Ergebnis verändern.","El poder de combate es una puntuación comparativa basada en tus estadísticas actuales y equipo. Las mecánicas del encuentro, las características del objetivo y los efectos temporales pueden cambiar el resultado real.","Gevechtskracht is een vergelijkingsscore op basis van je huidige statistieken en uitrusting. Gevechtsmechanieken, eigenschappen van vijanden en tijdelijke effecten kunnen de werkelijke uitkomst veranderen.","La potenza di combattimento confronta le statistiche attuali e l'equipaggiamento. Le meccaniche dello scontro, i tratti del bersaglio e gli effetti temporanei possono modificare i risultati reali.","La puissance de combat est un score comparatif basé sur vos stats actuelles et votre équipement. Les mécaniques de combat, les caractéristiques de la cible et les effets temporaires peuvent modifier les résultats réels."],
+  "Compare & Swap": ["Vergleichen & wechseln","Comparar y cambiar","Vergelijken en wisselen","Confronta e cambia","Comparer et changer"],
+  "crafted": ["hergestellt","fabricadas","gemaakt","creati","fabriqués"],
+  "Choose an equipped slot to compare its rarity and stats with gear you own.": ["Wähle einen ausgerüsteten Platz, um Seltenheit und Werte mit deinem anderen Besitz zu vergleichen.","Elige una ranura equipada para comparar su rareza y estadísticas con otros objetos que tienes.","Kies een uitgerust vak om de zeldzaamheid en statistieken te vergelijken met je andere uitrusting.","Scegli uno slot equipaggiato per confrontarne rarità e statistiche con gli oggetti che possiedi.","Choisissez un emplacement équipé pour comparer sa rareté et ses stats à celles de vos autres objets."],
+  "Companions": ["Gefährten","Compañeros","Metgezellen","Compagni","Compagnons"],
+  "No Combat Companion": ["Kein Kampfgefährte","Sin compañero de combate","Geen gevechtsmetgezel","Nessun compagno da combattimento","Aucun compagnon de combat"],
+  "Manage": ["Verwalten","Gestionar","Beheren","Gestisci","Gérer"],
+  "Icon · background · border · title · Pet": ["Icon · Hintergrund · Rahmen · Titel · Haustier","Icono · fondo · borde · título · mascota","Icoon · achtergrond · rand · titel · huisdier","Icona · sfondo · bordo · titolo · pet","Icône · fond · bordure · titre · familier"],
   "NEXT ACTION": ["NÄCHSTER SCHRITT","SIGUIENTE PASO","VOLGENDE STAP","PROSSIMA AZIONE","PROCHAINE ÉTAPE"],
   "Equip an item in this slot to improve your build.": ["Rüste diesen Platz mit einem Gegenstand aus, um deinen Build zu verbessern.","Equipa un objeto en esta ranura para mejorar tu equipo.","Rust dit vak uit met een voorwerp om je uitrusting te verbeteren.","Equipaggia un oggetto in questo slot per migliorare la tua build.","Équipez un objet dans cet emplacement pour améliorer votre équipement."],
   "The next enhancement is ready.": ["Die nächste Verbesserung ist bereit.","La siguiente mejora está lista.","De volgende verbetering is gereed.","Il prossimo potenziamento è pronto.","La prochaine amélioration est prête."],
@@ -786,6 +811,9 @@ export const profileT = createTranslator(profileCatalogs);
 /** Only use with authored content fields; proper names and unknown content pass through. */
 export function profileText(language:Language,source:string):string{
   if(language==='en')return source;
+  // Preserve capitalization-specific variants such as Character vs CHARACTER.
+  // The old lowercase-only lookup could accidentally select an all-caps badge.
+  if(Object.prototype.hasOwnProperty.call(profileTranslationRows,source))return profileT(language,source as ProfileKey);
   const key=profileKeyByLowerCase.get(source.toLowerCase());
   return key?profileT(language,key):source;
 }

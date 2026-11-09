@@ -3,6 +3,38 @@ export type GuildGuideTopic={id:string;title:string;body:string};
 export type GuildDetailedGuide={title:string;body:string;detail?:string;topics:readonly GuildGuideTopic[]};
 
 export const GUILD_DETAILED_GUIDES:Readonly<Record<string,GuildDetailedGuide>>={
+ 'Activities/Muster':{
+  title:'Muster & Rally',body:'Your daily activity builds Rally Marks and helps unlock Guild-wide weekly benefits.',
+  topics:[
+   {id:'daily',title:'Daily points and Rally Marks',body:'Your first authenticated check-in adds 5 points. Verified combat, skilling, Guild Project and Guild Boss contributions can add points. Earn 25 points in one UTC day to contribute one Rally Mark to the Guild. The daily points cap is 100; extra points can still count toward your weekly contribution.'},
+   {id:'weekly',title:'Your week and the Guild Rally',body:'Earn a Rally Mark on four qualifying days to reach your personal weekly goal. The days do not need to be consecutive. The Guild Rally target scales with membership, aiming for roughly 60% of members qualifying on four days. Rally tiers unlock at 35%, 70% and 100% of the shared target; they improve Hall Progress from completed Guild Projects. Rally resets on Monday at 00:00 UTC.'},
+   {id:'activity',title:'Guild Activity and bonuses',body:'Guild Quests, Muster and completed Projects increase Guild Activity. Higher milestones grant gathering, production, skill experience, mastery experience and rare-material bonuses. Activity can decay without continued participation, but up to 10% reserve above 100% helps absorb future decay. Inspect the live milestone panel for your current bonuses.'},
+  ],
+ },
+ 'Activities/Quests':{
+  title:'Guild Quests',body:'Complete shared weekly objectives to build Guild Activity and unlock better Guild benefits.',
+  topics:[
+   {id:'weekly',title:'Shared weekly quest board',body:'The Guild has five weekly quests with different categories, rarities and estimated effort. There are no rerolls. Every member helps the same shared objective; the board shows how much progress remains and when the current quests expire.'},
+   {id:'verified',title:'Which contributions count?',body:'Only server-verified activities matching a quest objective advance that quest. Combat, skilling and crafting objectives can have different requirements and daily contribution caps. Check your individual recorded progress and expand Objective breakdown when an activity does not seem to count.'},
+   {id:'activity',title:'Guild Activity rewards',body:'Completing a shared quest increases the Guild Activity meter; its milestones grant passive Guild bonuses. This is separate from personal Guild Token claims and project completion rewards. The board shows the Activity earned for each completed quest.'},
+  ],
+ },
+ 'PvE':{
+  title:'The Raid Gate',body:'Join asynchronous Guild Boss encounters, contribute with your battle party and claim eligible milestone rewards.',
+  topics:[
+   {id:'attempts',title:'How boss attempts work',body:'Choose an active Weekly Boss or Event Boss and review your battle party before starting. An attempt lasts three minutes and is resolved by the server. You do not need to remain online with other members. The card shows your remaining attempts, Guild boss HP, your contribution and the encounter deadline.'},
+   {id:'roles',title:'Boss roles and encounter rotation',body:'Guild Bosses can emphasize different roles. A role-focused encounter may count 65% general combat contribution and 35% role-focused performance, so Tank, Damage and Support strengths matter. The current encounter card explains its exact mechanic and difficulty bracket. The roster is fixed for an encounter; members who joined afterward can participate in the next one.'},
+   {id:'claims',title:'Milestones and claims',body:'As Guild progress reaches milestones, shared rewards such as Gold, materials and Guild XP are added to the Guild Bank once. Eligible contributors may also receive personal or event rewards. Check the required contribution and claim buttons: you can still qualify while an encounter remains open even if the boss is defeated, and unclaimed rewards have their own deadlines.'},
+  ],
+ },
+ 'Hall/Shop':{
+  title:'Guild Token Shop',body:'Earn Guild Tokens through participation and unlock permanent account rewards.',
+  topics:[
+   {id:'earn',title:'Earning Guild Tokens',body:'Daily participation and Activity claims are available on Guild Home. Additional weekly rewards can come from attendance, Guild Project contribution and Guild Bosses. Ordinary token earnings count toward the weekly cap shown next to your balance. Some event milestone bonuses are outside that cap.'},
+   {id:'unlocks',title:'Levels, quality and reward ownership',body:'Browse categories and inspect a reward to see its price, Guild Level and unlock conditions. Guild Hall Construction can improve which shop offers are available; it does not give away cosmetics for free. Purchased rewards are permanent account unlocks rather than character-only items.'},
+   {id:'changing',title:'Changing Guilds and claiming rewards',body:'Your Guild Token balance and previously purchased account rewards remain yours when changing Guilds. Claim ready rewards before their individual eligibility windows close, and check the weekly cap before claiming ordinary rewards. Guild Tokens are separate from Quartermaster Guild Marks.'},
+  ],
+ },
  'Progress/Projects':{
   title:'Guild Projects',body:'Complete shared weekly projects, qualify for rewards and vote on the next Guild challenge.',
   topics:[

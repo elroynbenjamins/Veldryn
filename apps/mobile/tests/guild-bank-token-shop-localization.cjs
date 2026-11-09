@@ -17,7 +17,7 @@ assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z]\w*)\}/g)].map(m=>m[1]).sort();
 for(const [name,rows,translate,expected] of [
  ['Guild Bank',guildBankUiRows,guildBankUiText,100],
- ['Guild Token Shop',guildTokenShopUiRows,guildTokenShopUiText,89],
+ ['Guild Token Shop',guildTokenShopUiRows,guildTokenShopUiText,90],
 ]){
  assert.equal(Object.keys(rows).length,expected,name+': reviewed key count changed');
  for(const [english,translations] of Object.entries(rows)){

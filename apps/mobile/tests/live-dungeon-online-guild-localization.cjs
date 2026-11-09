@@ -50,13 +50,16 @@ const queue=file('LiveDungeonQueuePanel.tsx');
 const ready=file('LiveDungeonReadyCheck.tsx');
 const run=file('LiveDungeonRunPanel.tsx');
 const guild=file('OnlineGuildProjectsPanel.tsx');
+const contributions=file('GuildProjectContributionsPanel.tsx');
 for(const [source,checks] of [
  [queue,["liveDungeonRoleText(language,queue.role)","ui('Team: 1 Tank · 2 Damage · 1 Support. Loadout locks at ready check.')","{queue.contentName}","formatWait(queue.waitSeconds)"]],
  [ready,["ui('READY CHECK · {seconds}s'","ui('{ready}/4 ready'","liveDungeonRoleText(language,m.role)","{m.displayName}","readyCount(check)"]],
  [run,["ui('LIVE EXPEDITION · NODE {current}/{total}'","ui('CHOOSE NEXT ROUTE · {seconds}s'","liveDungeonRiskText(language,o.risk)","ui('Route option {name}, {risk}, {votes} votes'","{o.rewardHint}","{o.name}","{run.connectionWarning}","{run.bossName}"]],
- [guild,["guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description)","guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)","ui('Project contributions: {name}'","ui('Voting closes {date}'","guildFlowFocusText(language,project.focus)","project.rewardDestination==='guild_bank'","300 effort for Guild Bank reward · Claim within 7 days.","300 effort for 500 Gold · Claim within 7 days.","{member.displayName}","{goal.label}","project.personalRewardThreshold>0","claimOpen"]]
+ [guild,["guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description)","guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)","ui('Voting closes {date}'","guildFlowFocusText(language,project.focus)","project.rewardDestination==='guild_bank'","project.personalRewardThreshold>0","claimOpen"]],
+ [contributions,["ui('Member contributions')","ui('Top 5 contributors')","ui('{count} members'","guildFlowFocusText(language,project.focus)","guildProjectAuthoredCopy(language,row.templateId,row.name,row.description)","{member.displayName}","{goal.label}","300 effort for Guild Bank reward · Claim within 7 days.","300 effort for 500 Gold · Claim within 7 days."]],
 ])for(const marker of checks)assert.ok(source.includes(marker),'Missing localized wiring or original server fields: '+marker);
 assert.ok(!run.includes('Run state is checkpointed between nodes so a server restart'),'The verbose internal-server note should be replaced with concise localized copy');
 assert.ok(!guild.includes('Project contributions: ${authored.name}'),'Accessibility label should no longer hardcode English.');
+assert.ok(!contributions.includes('Project contributions: ${'),'The contributions panel must localize its labels, never interpolate English.');
 assert.ok(guild.includes('Date.now()<claimDeadline')&&guild.includes("project.status==='completed'"),'Claim eligibility rules must remain intact');
 console.log('PASS: 14 Live Dungeon and at least 129 Online Guild Project keys in seven target languages, with strict interpolation and preserved gameplay/identity fields');

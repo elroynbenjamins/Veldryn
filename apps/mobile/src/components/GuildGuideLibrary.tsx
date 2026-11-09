@@ -39,7 +39,7 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={t('Close Guild Guide')} onPress={onClose} style={[s.close,{borderColor:C.line}]}><Text style={[s.closeText,{color:C.text}]}>×</Text></Pressable>
     </View>
-    {!guide?<ScrollView style={s.libraryScroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+    {!guide?<ScrollView style={s.libraryScroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      <Text style={[s.intro,{color:C.muted}]}>{t('Choose a Guild topic to learn more.')}</Text>
      {GROUPS.filter(group=>!group.leadership||leadership).map(group=><View key={group.id} style={s.group}>
       <Text style={[s.groupTitle,{color:C.accent}]}>{t(group.id)}</Text>
@@ -56,13 +56,13 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
     </ScrollView>:<View style={s.detail}>
      <Pressable accessibilityRole="button" accessibilityLabel={t('All guides')} onPress={back} style={s.back}><Text style={[s.backText,{color:C.accent}]}>‹ {t('All guides')}</Text></Pressable>
      <Text style={[s.intro,{color:C.muted}]}>{guide.body}</Text>
-     <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={s.topicRow}>
+     <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={s.topicRow} showsVerticalScrollIndicator={false}>
       {guide.topics.map((item,index)=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}} onPress={()=>setTopicIndex(index)}
        style={[s.topicButton,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
        <Text style={[s.topicLabel,{color:topicIndex===index?C.text:C.muted}]}>{item.title}</Text>
       </Pressable>)}
      </ScrollView>
-     <ScrollView style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false}>
+     <ScrollView style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       {topic?<><Text accessibilityRole="header" style={[s.topicHeading,{color:C.text}]}>{topic.title}</Text><Text style={[s.topicText,{color:C.muted}]}>{topic.body}</Text></>:null}
      </ScrollView>
     </View>}

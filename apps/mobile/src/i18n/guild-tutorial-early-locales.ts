@@ -2,6 +2,9 @@ import type {Language} from './languages';
 import {GUILD_TUTORIAL_STEPS} from '../core/guild-tutorial';
 
 /** Legacy seven-stop translation catalog, mapped onto the current five-stop tour. */
+/** The walkthrough kept its original seven translated rows after the Chat and
+ * Quests stops were retired, so live step i reads row GUILD_TUTORIAL_LEGACY_STEP_INDEX[i]. */
+export const GUILD_TUTORIAL_LEGACY_STEP_INDEX=[0,2,4,5,6] as const;
 export const guildTutorialEarlySteps=[
   [
     [
@@ -215,7 +218,7 @@ export function guildTutorialEarlyText(language:Language,source:string):string|u
  for(let i=0;i<GUILD_TUTORIAL_STEPS.length;i++){
   const step=GUILD_TUTORIAL_STEPS[i];
   const field=[step.title,step.body,step.tip,step.action].indexOf(source);
-  const legacyStepIndex=([0,2,4,5,6] as const)[i];
+  const legacyStepIndex=GUILD_TUTORIAL_LEGACY_STEP_INDEX[i];
   if(field>=0)return guildTutorialEarlySteps[legacyStepIndex]?.[column]?.[field]??source;
  }
  return undefined;

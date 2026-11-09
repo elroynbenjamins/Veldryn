@@ -947,12 +947,12 @@ export const socialTranslationRows = {
     "Adunata e raduno",
     "Appel et rassemblement"
   ],
-  "Daily participation rolls into the shared weekly Rally without adding another currency.": [
-    "Tägliche Teilnahme zählt zur gemeinsamen wöchentlichen Versammlung, ohne eine weitere Währung.",
-    "La participación diaria cuenta para la movilización semanal compartida sin añadir otra moneda.",
-    "Dagelijkse deelname telt mee voor de gezamenlijke wekelijkse samenkomst zonder extra valuta.",
-    "La partecipazione giornaliera contribuisce al raduno settimanale senza aggiungere altre valute.",
-    "La participation quotidienne contribue au rassemblement hebdomadaire commun sans ajouter de monnaie."
+  "Your daily progress and weekly Guild Rally.": [
+    "Dein täglicher Fortschritt und die wöchentliche Gildenversammlung.",
+    "Tu progreso diario y la movilización semanal del gremio.",
+    "Je dagelijkse voortgang en de wekelijkse gildesamenkomst.",
+    "I tuoi progressi giornalieri e il raduno settimanale della gilda.",
+    "Ta progression quotidienne et le rassemblement hebdomadaire de guilde."
   ],
   "INTENTIONAL PROGRESSION": [
     "GEZIELTER FORTSCHRITT",
@@ -6935,6 +6935,7 @@ export const socialTranslationRows = {
  "Invited": ["Eingeladen","Invitado","Uitgenodigd","Invitato","Invité"],
  "Invite": ["Einladen","Invitar","Uitnodigen","Invita","Inviter"],
  "Done": ["Fertig","Listo","Klaar","Fatto","Terminé"],
+ "Got it": ["Verstanden","Entendido","Begrepen","Ho capito","Compris"],
  "Join a Guild to take part in daily Muster and the shared weekly Rally.": ["Tritt einer Gilde bei, um am täglichen Appell und der Wochen-Rallye teilzunehmen.","Únete a un gremio para participar en la reunión diaria y la carrera semanal.","Word lid van een gilde om mee te doen aan de dagelijkse opkomst en wekelijkse rally.","Unisciti a una gilda per partecipare all'appello giornaliero e alla sfida settimanale.","Rejoins une guilde pour participer au rassemblement quotidien et au rallye hebdomadaire."],
  "Check in by playing. Combat and Skilling add progress automatically.": ["Spiele mit, um teilzunehmen. Kampf und Fertigkeiten zählen automatisch.","Participa jugando. El combate y las habilidades suman progreso automáticamente.","Speel mee om deel te nemen. Gevechten en vaardigheden tellen automatisch mee.","Partecipa giocando. Combattimento e abilità fanno progredire automaticamente.","Joue pour participer. Combat et compétences comptent automatiquement."],
  "{current}/{max} contribution": ["{current}/{max} Beitrag","{current}/{max} contribución","{current}/{max} bijdrage","{current}/{max} contributo","{current}/{max} contribution"],

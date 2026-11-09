@@ -19,7 +19,7 @@ import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,voteOnlineGuild
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {guildProjectArtwork} from '../theme/guild-remaster-art';
-import {guildUpgradeComponentArtwork} from '../theme/guild-upgrade-component-art';
+import {GuildProjectContributionsModal} from './GuildProjectContributionsModal';
 
 function progressPercent(project:OnlineGuildProjectSummary){
  if(project.kind==='development'){
@@ -43,7 +43,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  const st=useSocialText(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
- const [expanded,setExpanded]=useState<string|null>(null),[showHistory,setShowHistory]=useState(false),[busy,setBusy]=useState('');
+ const [showHistory,setShowHistory]=useState(false),[busy,setBusy]=useState('');
  const [pendingDonation,setPendingDonation]=useState<PendingGuildProjectSupplyDonation|null>(null);
  const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
  const load=(force=false):Promise<void>=>{
@@ -118,8 +118,6 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      donationBlocked={!!pendingDonation}
      onClaim={()=>void act('claim',project.id)}
      onNavigateActivity={onNavigateActivity}
-     expanded={expanded===project.id}
-     onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
    />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text></View>}
   </QuestBoard>
   {pendingDonation?<Panel>
@@ -151,8 +149,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
    {showHistory?<View style={s.history}>
     {completed.map(project=><GuildProjectPosting key={project.id} project={project} compact
      busy={!!busy} onClaim={()=>void act('claim',project.id)}
-     expanded={expanded===project.id}
-     onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}/>)}
+    />)}
     <GuildActivityFeedPanel entries={snapshot.activity}/>
    </View>:null}
   </Panel>:null}
@@ -182,7 +179,7 @@ function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCand
  </View>;
 }
 
-export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,onDonate,supplyInventory=[],donationBlocked=false,busy}:{
+export function GuildProjectPosting({project,compact=false,onClaim,onNavigateActivity,onDonate,supplyInventory=[],donationBlocked=false,busy}:{
  onClaim:()=>void;
  onNavigateActivity?:(activity:Activity)=>void;
  onDonate?:(itemId:string,quantity:number)=>void;
@@ -190,12 +187,11 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  donationBlocked?:boolean;
  busy:boolean;
  project:OnlineGuildProjectSummary;
- expanded:boolean;
  compact?:boolean;
- onToggle:()=>void;
 }){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,project.templateId,project.name,project.description);
+ const [showContributions,setShowContributions]=useState(false);
  const pct=progressPercent(project);
  const weekly=project.launchWeekly===true;
  const qualifying=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
@@ -214,8 +210,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
   :project.personalRewardThreshold>0?ui('{count} personal effort short of reward eligibility',{count:personalShortfall.toLocaleString()})
   :ui('Not eligible for this reward');
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
-  <Pressable accessibilityRole="button" accessibilityLabel={ui('Project contributions: {name}',{name:authored.name})} accessibilityHint={ui('Show or hide contributions from Guild members')} accessibilityState={{expanded}}
-   onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
+  <View style={s.projectPress}>
    <View style={s.sectionHead}>
     {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id={project.focus==='combat'?'combat':project.focus==='skilling'?'herbalism':'smithing'} size={42}/>}
     <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{weekly?(ui(project.slotIndex===2?"Guild's Choice":'Standard weekly')+(project.difficulty?' · '+ui(project.difficulty==='easy'?'Easy':project.difficulty==='medium'?'Medium':'Hard'):'')+' · '):''}{guildFlowFocusText(language,project.focus)}{weekly?'':' · '+ui(project.kind==='development'?'Development':'Event')}</Text></View>
@@ -223,10 +218,14 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    </View>
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
-   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text><Text style={s.expandHint}>{ui(expanded?'Hide contribution ▴':'Contribution ▾')}</Text></View>
+   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text></View>
    {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
    {weekly&&project.status==='active'?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
-  </Pressable>
+  </View>
+  <View style={s.contributionAction}>
+   <View style={s.flex}><GameButton compact tone="secondary" title={ui('View member contributions')} onPress={()=>setShowContributions(true)}/></View>
+   <Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text>
+  </View>
   {!compact?<View style={s.personal}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Your contribution')}</Text>
     {qualifying&&project.personalRewardThreshold>0?<StatusPill label={ui("QUALIFIED")} tone="good"/>:null}
@@ -263,24 +262,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
   </View>:null}
   {readyToClaim?<GameButton title={ui(busy?'Claiming…':project.rewardDestination==='guild_bank'?'Claim Guild Bank Gold':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&compact?<Text style={s.meta}>{rewardStatus}</Text>:null}
-  {expanded?<View style={s.details}>
-   <Text style={s.copy}>{authored.description}</Text>
-   {project.kind!=='development'?<View style={s.breakdown}>
-    <Text style={s.meta}>{ui('Combat: {count}',{count:project.combatPoints.toLocaleString()})}</Text><Text style={s.meta}>{ui('Skilling: {count}',{count:project.skillingPoints.toLocaleString()})}</Text>
-   </View>:null}
-   {project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>
-    {guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.resourceIcon} resizeMode="contain" accessible={false}/>:null}
-    <Text style={[s.copy,s.flex]}>{goal.label}</Text><Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
-   </View>)}
-   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui(project.projectMode==='donation'?'Donate eligible supplies · Each member may cover up to 50% · Claim within 7 days.':project.rewardDestination==='guild_bank'?'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for Guild Bank reward · Claim within 7 days.':'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
-   <View style={s.contributionHead}><Text style={s.sectionTitle}>{ui('Member contribution')}</Text><Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text></View>
-   {project.memberContributions.map((member,index)=>{
-    const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):'',member.donationPoints?ui('Donate {count}',{count:member.donationPoints.toLocaleString()}):''].filter(Boolean).join(' · ');
-    return <View key={member.accountId} style={s.member}><Text style={s.memberRank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{sources||ui('No effort yet')}{member.meaningful?' · '+ui('Counts toward contributor minimum'):member.points>0?' · '+ui('Below contributor minimum'):''}</Text></View><Text style={s.memberPoints}>{ui('{count} effort',{count:member.points.toLocaleString()})}</Text></View>;
-   })}
-   {!project.memberContributions.length?<Text style={s.meta}>{ui('No Guild members found.')}</Text>:null}
-   {project.endsAt?<Text style={s.meta}>{ui('Ends {date}',{date:new Date(project.endsAt).toLocaleString(language)})}</Text>:null}
-  </View>:null}
+  {showContributions?<GuildProjectContributionsModal project={project} title={authored.name} onClose={()=>setShowContributions(false)}/>:null}
 
  </View>;
 }
@@ -298,7 +280,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  percent:{fontSize:28,lineHeight:33,fontWeight:'900',color:C.accent},
  progressNumbers:{alignItems:'flex-end'},progressAmount:{fontSize:13,lineHeight:19,fontWeight:'800',color:C.text},
  track:{height:10,overflow:'hidden',backgroundColor:C.panel2,borderRadius:5,borderWidth:1,borderColor:C.line},
- fill:{height:'100%',backgroundColor:C.good},expandHint:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.info},
+ fill:{height:'100%',backgroundColor:C.good},contributionAction:{flexDirection:'row',alignItems:'center',gap:9},
  personal:{gap:8,padding:10,borderWidth:1,borderRadius:9,borderColor:C.good,backgroundColor:C.goodSurface},
  personalPoints:{fontSize:21,lineHeight:27,fontWeight:'800',color:C.text},
  smallTrack:{height:6,overflow:'hidden',backgroundColor:C.panel2,borderRadius:3},
@@ -310,12 +292,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  activityName:{fontSize:12,lineHeight:16,fontWeight:'800',color:C.text},
  activityRule:{fontSize:10,lineHeight:14,textAlign:'center',color:C.muted},
  disabled:{opacity:.6},pressed:{opacity:.74},
- details:{gap:9,borderTopWidth:1,borderTopColor:C.line,paddingTop:11},
- contributionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},
- member:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},memberRank:{width:25,fontSize:11,lineHeight:16,fontWeight:'800',color:C.muted},memberName:{fontSize:12,lineHeight:17,fontWeight:'800',color:C.text},memberPoints:{fontSize:12,lineHeight:17,fontWeight:'900',color:C.accent},
- breakdown:{flexDirection:'row',justifyContent:'space-between',flexWrap:'wrap',gap:7},detailsRules:{padding:9,borderRadius:7,backgroundColor:C.panel2},
- resource:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},
- resourceIcon:{width:28,height:28},resourceAmount:{fontSize:11,color:C.accent,fontWeight:'800'},
  candidate:{gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
  candidateSelected:{borderColor:C.accent,backgroundColor:C.panelRaised},tier:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.accent},
  actions:{flexDirection:'row',gap:8},accordion:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8},

@@ -33,10 +33,10 @@ function missionRequirements(req:CompanionMissionRequirement,t:ReturnType<typeof
  if(req.type==='affinity_count')return (req.count??1)+'× '+label(String(req.affinity))+' Affinity';
  if(req.type==='affinity_diversity')return (req.count??2)+'+ '+t('different Affinities');
  if(req.type==='affinity_unique')return t('All Affinities unique');
- if(req.type==='min_level')return (req.count??t('All'))+'× '+t('Level {level}+',{level:req.value});
- if(req.type==='min_bond')return (req.count??t('All'))+'× '+t('Bond {level}+',{level:req.value});
- if(req.type==='min_ascension')return (req.count??t('All'))+'× '+t('Ascension')+' '+req.tier+'+';
- if(req.type==='min_rarity')return (req.count??t('All'))+'× '+label(String(req.rarity))+'+';
+ if(req.type==='min_level')return (req.count===undefined?t('All')+' ':req.count+'× ')+t('Level {level}+',{level:req.value});
+ if(req.type==='min_bond')return (req.count===undefined?t('All')+' ':req.count+'× ')+t('Bond {level}+',{level:req.value});
+ if(req.type==='min_ascension')return (req.count===undefined?t('All')+' ':req.count+'× ')+t('Ascension')+' '+req.tier+'+';
+ if(req.type==='min_rarity')return (req.count===undefined?t('All')+' ':req.count+'× ')+label(String(req.rarity))+'+';
  if(req.type==='max_rarity')return label(String(req.rarity))+' '+t('or lower');
  if(req.type==='origin_count')return (req.count??1)+'× '+({REG_001:'Asterfall',REG_SUNSCAR:'Sunscar',REG_FROSTMARCH:'Frostmarch',REG_ASHLANDS:'Ashlands'} as Record<string,string>)[req.originId];
  if(req.type==='min_team_power')return t('Power')+' '+fmt(req.value)+'+';

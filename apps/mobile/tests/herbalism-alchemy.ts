@@ -72,6 +72,9 @@ test('Ironwood Binding Resin resolves canonical and legacy item-ID aliases witho
  const id='BREW_IRONWOOD_BINDING_RESIN',recipe=alchemyRecipeDef(id)!;
  ok(!!recipe&&recipe.output.itemId==='IRONWOOD_BINDING_RESIN','Ironwood resin is an Alchemy recipe');
  equal(alchemyRecipeDef('IRONWOOD_BINDING_RESIN')?.id,id,'item-ID shortcut resolves canonical brew');
+ equal(recipe.inputs,[{itemId:'IRONWOOD_LOG',quantity:6},{itemId:'THORN_SAP',quantity:6},{itemId:'IRONWOOD_FANG',quantity:2}],'T2 resin uses six logs, six sap and two Ironwood Wolf fangs');
+ equal(recipe.output,{itemId:'IRONWOOD_BINDING_RESIN',quantity:1},'one resin per brew');
+ equal(recipe.xp,200,'T2 resin grants 200 base Alchemy XP');
  let state=skilled(fresh(),'alchemy',8);
  state.character!.gold=1000;
  state.inventory.stacks=recipe.inputs.map(input=>({...input}));
@@ -100,7 +103,7 @@ test('combat tonic premium balance preserves base infusion economics and old pai
    goldPerBatch:Math.ceil(current.gold/5),outputPerBatch:{...current.output},cycleSeconds:current.seconds,xpPerBatch:current.xp/3};
   equal(normalizeAlchemyBatch(legacy,id).inputsPerBatch,legacy.inputsPerBatch,id+' old escrow is preserved');
  }
- equal(alchemyRecipeDef('BREW_IRONWOOD_BINDING_RESIN')!.xp,180,'Ironwood binding XP is not tripled');
+ equal(alchemyRecipeDef('BREW_IRONWOOD_BINDING_RESIN')!.xp,200,'Ironwood binding XP remains at its own 200 XP rate (not healing-potion tripled)');
 });
 test('T1/T2/T3 potions include Damage, Defense, Support and Healing with shared level unlocks',()=>{
  const tiers=[1,2,3] as const;

@@ -215,7 +215,7 @@ var init_faith = __esm({
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
-  const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= 1e3 && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
+  const practice = tier && Number.isSafeInteger(p.remaining) && p.remaining > 0 && p.remaining <= MAX_FAITH_PRACTICES && Number.isSafeInteger(p.lastClaimAtMs) && p.lastClaimAtMs >= 0 && Number.isSafeInteger(p.progressMs) && p.progressMs >= 0 && p.progressMs < tier.seconds * 1e3 ? { tierId: tier.id, remaining: p.remaining, lastClaimAtMs: p.lastClaimAtMs, progressMs: p.progressMs } : void 0;
   return { xp, selectedBlessingId: selected2 && selected2.level <= levelFromXp(xp) ? selected2.id : void 0, favoriteBlessingIds: Array.isArray(raw2?.favoriteBlessingIds) ? [...new Set(raw2.favoriteBlessingIds.filter((id) => typeof id === "string" && faithBlessingDef(id)))] : [], hideWeakerBlessings: raw2?.hideWeakerBlessings !== false, practice };
 }
 function updateFaithPreference(state, kind, id, enabled) {
@@ -247,7 +247,7 @@ function reserveFaithPractice(state, tierId, count, now) {
   if (faith.practice) throw new Error("Stop the current practice first.");
   if (!tier || tier.level > faithLevel(state)) throw new Error("Faith tier is locked.");
   if (faith.xp >= MAX_XP) throw new Error("Faith is mastered.");
-  if (!Number.isSafeInteger(count) || count < 1 || count > 1e3) throw new Error("Choose 1\u20131000 practices.");
+  if (!Number.isSafeInteger(count) || count < 1 || count > MAX_FAITH_PRACTICES) throw new Error("Choose 1\u20131000 practices.");
   const cost = tier.water * count;
   if (holyWaterAvailable(state) < cost) throw new Error("Not enough Holy Water in Inventory and Bank.");
   const inv = Math.min(cost, state.inventory.stacks.filter((s) => s.itemId === HOLY_WATER_ID).reduce((n, s) => n + s.quantity, 0));
@@ -271,7 +271,12 @@ function cancelFaithPractice(state) {
   if (!state.character || !p || !tier) return { state, refund: 0 };
   return { state: { ...state, character: { ...state.character, faith: { ...faith, practice: void 0 } } }, refund: p.remaining * tier.water };
 }
-var MAX_XP, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
+function affordableFaithPracticeCount(state, tierId) {
+  const tier = FAITH_TIERS.find((row) => row.id === tierId);
+  if (!tier || tier.level > faithLevel(state) || faithLevel(state) >= 100) return 0;
+  return Math.min(MAX_FAITH_PRACTICES, Math.floor(holyWaterAvailable(state) / tier.water));
+}
+var MAX_XP, MAX_FAITH_PRACTICES, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
@@ -279,6 +284,7 @@ var init_faith2 = __esm({
     init_faith();
     init_progression();
     MAX_XP = totalXpAtLevel(100);
+    MAX_FAITH_PRACTICES = 1e3;
     faithLevel = (state) => levelFromXp(Array.isArray(state) ? state.find((s) => s.skillId === "faith")?.xp ?? 0 : Math.max(normalizeFaith(state.character?.faith).xp, state.skills.find((s) => s.skillId === "faith")?.xp ?? 0));
     selectedFaithBlessing = (state) => {
       const raw2 = state.character?.faith, blessing = faithBlessingDef(raw2?.selectedBlessingId);
@@ -289,7 +295,7 @@ var init_faith2 = __esm({
       const tier = FAITH_TIERS.find((t) => t.id === tierId);
       const level = faithLevel(state);
       const cost = (tier?.water ?? 0) * count;
-      return { ready: !!tier && tier.level <= level && count >= 1 && count <= 1e3 && holyWaterAvailable(state) >= cost, reason: !tier ? "Unknown tier" : tier.level > level ? "Faith tier is locked." : holyWaterAvailable(state) < cost ? "Not enough Holy Water." : "Ready" };
+      return { ready: !!tier && tier.level <= level && count >= 1 && count <= MAX_FAITH_PRACTICES && holyWaterAvailable(state) >= cost, reason: !tier ? "Unknown tier" : tier.level > level ? "Faith tier is locked." : holyWaterAvailable(state) < cost ? "Not enough Holy Water." : "Ready" };
     };
   }
 });
@@ -56565,9 +56571,11 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = "Herbalism method set to " + method;
       break;
     }
-    case "faith_practice":
-      state = reserveFaithPractice(state, text(a, "tierId"), 1, now);
+    case "faith_practice": {
+      const tierId = text(a, "tierId");
+      state = reserveFaithPractice(state, tierId, Math.max(1, affordableFaithPracticeCount(state, tierId)), now);
       break;
+    }
     case "faith_blessing": {
       state = updateFaithPreference(state, "blessing", text(a, "id"));
       if (state.character) state.character.currentHp = Math.min(state.character.currentHp, effectiveStats(state).hp);

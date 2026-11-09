@@ -1,0 +1,35 @@
+name: One-off Exploration Edge bundle sync
+on:
+  push:
+    branches:
+      - feature/exploration-sunscar-surveys-trailcraft-20261109
+    paths:
+      - '.github/workflows/one-off-exploration-bundle-sync.yml'
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/exploration-sunscar-surveys-trailcraft-20261109
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Regenerate canonical gameplay and co-op Edge bundles
+        run: pnpm --dir backend build:online
+      - name: Commit rebuilt Edge bundles to the feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git diff --cached --quiet || (git commit -m "Build: sync generated gameplay and co-op Edge bundles" && git push origin HEAD:feature/exploration-sunscar-surveys-trailcraft-20261109)

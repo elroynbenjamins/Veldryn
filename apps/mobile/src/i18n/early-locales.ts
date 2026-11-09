@@ -2,6 +2,18 @@ import type {Language} from './languages';
 
 // Starter-only RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  // Profile showcase empty states and selection guidance.
+  "Choose an earned achievement": ["Выберите полученное достижение","Kazanılmış bir başarı seçin"],
+  "Choose a personal record": ["Выберите личный рекорд","Bir kişisel rekor seçin"],
+  "Choose a collectible": ["Выберите коллекционный предмет","Bir koleksiyon eşyası seçin"],
+  "Master a profession action at R50": ["Достигните мастерства R50 в одном из ремёсел","Bir meslek eyleminde R50 ustalığına ulaşın"],
+  "Selected R50 profession records": ["Выбранные рекорды мастерства R50","Seçilen R50 meslek kayıtları"],
+  "Selected by player": ["Выбрано игроком","Oyuncunun seçimleri"],
+  "No selections yet": ["Пока ничего не выбрано","Henüz seçim yapılmadı"],
+  "{label} · choose up to 3 from Customize Profile.": ["{label} · выберите до 3 в настройках профиля.","{label} · Profil Özelleştirme bölümünden en fazla 3 tane seçin."],
+  "Nothing featured yet": ["Пока ничего не показано","Henüz öne çıkarılan yok"],
+  "SLOT {number}": ["ЯЧЕЙКА {number}","YUVA {number}"],
+  "OPEN": ["СВОБОДНО","BOŞ"],
   // Character and Combat Power details for Russian and Turkish.
   "Edit profile": ["Изменить профиль","Profili düzenle"],
   "Combat Power": ["Боевая мощь","Savaş gücü"],

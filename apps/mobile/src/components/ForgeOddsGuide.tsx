@@ -29,7 +29,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
  const stacked=width<320||fontScale>=1.45;
  const item=itemDef(itemId);
  if(item.type!=='gear')return null;
- // A higher authored base rarity absorbs every lower result; never show impossible odds.
+ // Forge rarity rolls have the same six outcomes regardless of the recipe's tier.
  const outcomes=craftedGearRarityOutcomes(item.id);
  const chosen=outcomes.find(row=>row.rarity===selectedRarity)??outcomes[0];
  const chosenMeta=rarityMeta(chosen.rarity);
@@ -162,7 +162,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       </View>
     </View>
     <Text style={[s.explain,{color:C.muted}]}>{gt('Rarity and quality both affect stats.')}</Text>
-    <Text style={[s.explain,{color:C.muted}]}>{gt('Odds depend on the recipe.')}</Text>
+    <Text style={[s.explain,{color:C.muted}]}>{gt('All equipment tiers use the same rarity chances.')}</Text>
     <Text style={[s.legacy,{color:C.muted}]}>{gt('Rarity and quality roll on claim.')}</Text>
     <Text style={[s.legacy,{color:C.muted}]}>{gt('Older gear defaults to Q50.')}</Text>
    </View>:null}

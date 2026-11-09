@@ -1,5 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import type {ClassId} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
@@ -14,7 +15,7 @@ assert.ok(dungeon);
 const roster=classes.map((classId,index)=>{
  const state=createCharacter(newGame(0),classId,'Pressure Baseline');
  state.character!.id='pressure-'+index;
- state.character!.level=100;
+ state.character!.level=100;state.character!.xp=legacyCharacterTotalXpAtLevel(100);
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  const record=deriveOnlineCoopLoadout('pressure-account-'+index,state,1);
  return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:dungeon.recommendedLevel,repository:{getOwnedLoadout:()=>record}});

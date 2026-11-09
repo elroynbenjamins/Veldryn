@@ -31,6 +31,10 @@ export interface CoopChatResponse {sent:boolean;messageId?:string;messages:CoopC
 export interface CoopLiveRematchState {status:'open'|'committed'|'declined'|'expired';readyCheckId?:string|null;runId?:string|null;closesAtMs?:number|null;serverNow:number;members:Array<{accountId:string;characterId:string;role:'tank'|'damage'|'support';self:boolean;accepted:boolean}>;}
 /** Never render an unstructured rejected value as "[object Object]" in a dungeon notice. */
 export function coopErrorMessage(error:unknown,fallback='Dungeons are temporarily unavailable. Try again.'){
+ const message=error instanceof Error?error.message:typeof error==='string'?error:undefined;
+ if(message==='chapter_one_required')return 'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.';
+ if(message==='dungeon_level_requirement')return 'Requires the dungeon level (25+ for Sunscar) and suitable equipment.';
+ if(message==='dungeon_unavailable')return 'This dungeon is no longer open for new runs.';
  if(error instanceof Error&&error.message.trim())return error.message;
  if(typeof error==='string'&&error.trim())return error;
  if(error&&typeof error==='object'){

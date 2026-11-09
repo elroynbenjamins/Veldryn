@@ -2,6 +2,7 @@ import type {GameState} from '../../apps/mobile/src/core/types';
 import {freezeCoopRosterAtCommit} from '../src/server/coop/loadout-snapshots';
 import {coopRequiredLevel,type CoopTier} from '../src/server/coop/config';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
+import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {deriveOnlineCoopLoadout} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 import {OnlineLiveRuntime} from './live-runtime';
@@ -45,8 +46,9 @@ export class OnlineLiveRematch {
   if(body.accept){
    const source=await this.services.rpc<RematchSources>('online_live_rematch_sources_server_v1',{p_account_id:accountId,p_run_id:runId});
    const definition=EXPEDITIONS[source.dungeonId];
-   if(!definition?.coopImplemented)throw new GameplayError('dungeon_unavailable');
+   if(!definition)throw new GameplayError('dungeon_unavailable');
    const records=source.members.map(member=>deriveOnlineCoopLoadout(member.accountId,member.state,member.version));
+   source.members.forEach((member,index)=>{const issue=regularDungeonEntryError(definition,member.state,records[index].characterLevel);if(issue)throw new GameplayError(issue);});
    frozen=freezeCoopRosterAtCommit({
     minLevel:coopRequiredLevel(definition.minLevel,source.tier),syncLevel:definition.recommendedLevel,
     selections:source.members.map(member=>({accountId:member.accountId,characterId:member.characterId,loadoutId:member.loadoutId,expectedRevision:member.loadoutRevision})),

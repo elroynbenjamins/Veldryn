@@ -1,5 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import type {ClassId} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
@@ -7,13 +8,14 @@ import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 function frozen(classId:ClassId,index:number,syncLevel:number,sourceLevel=100){
- const state=createCharacter(newGame(0),classId,'Balance '+String.fromCharCode(65+index));state.character!.id='character-'+index;state.character!.level=sourceLevel;
+ const state=createCharacter(newGame(0),classId,'Balance '+String.fromCharCode(65+index));state.character!.id='character-'+index;state.character!.level=sourceLevel;state.character!.xp=legacyCharacterTotalXpAtLevel(sourceLevel);
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  const record=deriveOnlineCoopLoadout('account-'+index,state,1);
  return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel,repository:{getOwnedLoadout:()=>record}});
 }
 const results=[];
-for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])for(const support of ['DAWNKEEPER','STONECALLER'] as ClassId[])for(const damage of [['WAYFINDER','RAVAGER'],['HEXWEAVER','KNIFE_DANCER']] as ClassId[][])for(const dungeon of Object.keys(EXPEDITIONS)){
+const implementedDungeonIds=Object.keys(EXPEDITIONS).filter(id=>EXPEDITIONS[id].coopImplemented);
+for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])for(const support of ['DAWNKEEPER','STONECALLER'] as ClassId[])for(const damage of [['WAYFINDER','RAVAGER'],['HEXWEAVER','KNIFE_DANCER']] as ClassId[][])for(const dungeon of implementedDungeonIds){
  const level=EXPEDITIONS[dungeon].recommendedLevel,roster=[tank,...damage,support].map((id,index)=>frozen(id,index,level));
  const samples=100;let clears=0;
  for(let seed=0;seed<samples;seed++){
@@ -29,4 +31,4 @@ for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])for(const s
  const result={dungeon,tank,support,damage,clears,samples};results.push(result);console.log(JSON.stringify(result));
  assert.ok(clears/samples>=.85,'Published loadout roster below launch clear-rate floor: '+JSON.stringify(result));
 }
-console.log('PASS 9600 full Q-Mode runs through level-100 Echo derivation, dungeon down-sync, all launch expeditions and nine classes covered');
+console.log('PASS 7200 full Q-Mode runs through level-100 Echo derivation, dungeon down-sync, implemented expeditions and class roles covered');

@@ -40,11 +40,11 @@ async function main(){
  assert.equal(projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_007'||dungeon.id==='EXP_008'),false,'Unreleased Ashlands dungeons must not appear as playable choices');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
  assert.equal(suncrest.status,'preview','Active event expedition still requires its own minimum combat level');assert.equal(suncrest.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(starfall.status,'preview');
- assert.equal(calls.length,4);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);
+ assert.equal(calls.length,5);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);
  for(const extra of [{accountId:'someone-else'},{stats:{attackPower:999999}},{role:'damage'},{now:999999}]){
   assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:true,...extra}))).status,400);
  }
- assert.equal(calls.length,4);
+ assert.equal(calls.length,5);
  assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:'true'}))).status,400);
  assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:false}))).status,200);
  const write=calls[calls.length-1];assert.equal(write.name,'publish_online_coop_loadout_server_v1');

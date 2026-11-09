@@ -67,10 +67,17 @@ async function main(){
  await claimRecovery.load();
  try{await claimRecovery.execute({type:'claim'})}catch{}
  ok(await claimRecovery.hasPending(),'timeout preserves the original claim');
- const recoveredClaim=await claimRecovery.execute({type:'claim'});
+ // Simulate an Android process restart: a new repository reads the same durable receipt.
+ const restartedClaim=new OnlineGameRepository('alice',{
+  read:async()=>snapshot,send:async request=>{
+   claimSends++;ok(request.requestId==='retry-1','app restart preserves the idempotency key');
+   return {...snapshot,version:1,serverNow:now+claimSends,reward:claim.reward};
+  },
+ },{read:async()=>claimPending,write:async value=>{claimPending=value;}},()=>`retry-${++claimKeys}`);
+ const recoveredClaim=await restartedClaim.execute({type:'claim'});
  ok(claimSends===2&&claimKeys===1,'second Claim replays rather than double-submits');
  ok(recoveredClaim.executedCommand.type==='claim'&&recoveredClaim.reward?.xp===claim.reward?.xp,'replay preserves original rewards');
- ok(!await claimRecovery.hasPending(),'confirmed claim clears the durable retry');
+ ok(!await restartedClaim.hasPending(),'confirmed claim clears the durable retry after restart');
 
  // Reconcile a different pending command before submitting the new request.
  let mixedPending:PendingGameCommand|null=null,mixedKeys=0,mixedSends=0;

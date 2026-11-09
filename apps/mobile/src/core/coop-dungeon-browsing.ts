@@ -2,6 +2,10 @@ import type {CoopUiAssetId} from './coop-ui-contract';
 
 export type CoopRoomType='battle'|'elite'|'event'|'shrine'|'camp'|'treasure'|'merchant'|'echo'|'risk'|'boss';
 export type CoopTier=1|2|3|4|5;
+/** New regular dungeons use only three tiers; saved older runs may still have tier 4 or 5. */
+export const REGULAR_DUNGEON_TIERS=[1,2,3] as const;
+export interface CoopPotentialDrop{label:string;chancePercent:number;pityAt?:number;detail?:string;}
+export interface CoopDungeonRewardPreview{guaranteedOnClear?:readonly string[];potentialDrops?:readonly CoopPotentialDrop[];dropNotice?:string;}
 
 export interface CoopDungeonProjection{
   id:string;
@@ -21,6 +25,8 @@ export interface CoopDungeonProjection{
   preBossRoomMax?:number;
   rewardBudgetState?:string;
   expectedMarksByTier?:Partial<Record<CoopTier,number>>;
+  /** Read-only server-authored drop preview; absent rates are never guessed. */
+  rewardPreview?:CoopDungeonRewardPreview;
   /** Server-owned verified gear recommendation for automatic Live tier. */
   recommendedLiveTier?:CoopTier;
   estimatedMinutes?:{min:number;max:number};
@@ -54,7 +60,7 @@ export function presentCoopDungeon(source:CoopDungeonProjection):CoopDungeonView
   const art=artById[source.id],enabledRoomTypes=(source.enabledRoomTypes??[]).filter(room=>supportedRooms.has(room));
   return {...source,artId:art?.card,heroArtId:art?.hero??art?.card,available:source.available??!source.lockedReason,
     description:source.description?.trim()||'Authoritative description unavailable.',recommendedLevel:source.recommendedLevel??source.syncLevel,
-    enabledRoomTypes,difficulties:[...new Set(source.difficulties??[])],preBossRoomMin:source.preBossRoomMin??5,preBossRoomMax:source.preBossRoomMax??5,
+    enabledRoomTypes,difficulties:[...new Set(source.difficulties??[])].filter((tier):tier is 1|2|3=>tier===1||tier===2||tier===3),preBossRoomMin:source.preBossRoomMin??5,preBossRoomMax:source.preBossRoomMax??5,
     recommendedPower:source.recommendedPower??Math.round(700+source.minLevel*520),estimatedMinutes:source.estimatedMinutes??{min:6,max:8},tierMinLevels:{1:source.tierMinLevels?.[1]??source.minLevel,2:source.tierMinLevels?.[2]??source.minLevel+5,3:source.tierMinLevels?.[3]??source.minLevel+10,4:source.tierMinLevels?.[4]??source.minLevel+15,5:source.tierMinLevels?.[5]??source.minLevel+20}};
 }
 
@@ -84,5 +90,6 @@ export function validateCoopDungeonView(view:CoopDungeonView):void{
   if(view.preBossRoomMin!==5||view.preBossRoomMax!==5)throw new Error('invalid_route_room_range');
   if(view.estimatedMinutes.min!==6||view.estimatedMinutes.max!==8)throw new Error('invalid_run_duration_target');
   if(view.difficulties.some(tier=>view.tierMinLevels[tier]<view.minLevel))throw new Error('invalid_tier_level_requirement');
-  if(view.difficulties.some(tier=>tier<1||tier>5))throw new Error('invalid_difficulty');
+  if(view.difficulties.some(tier=>tier<1||tier>3))throw new Error('invalid_difficulty');
+  if(view.rewardPreview?.potentialDrops?.some(drop=>!Number.isFinite(drop.chancePercent)||drop.chancePercent<0||drop.chancePercent>100))throw new Error('invalid_dungeon_drop_rate');
 }

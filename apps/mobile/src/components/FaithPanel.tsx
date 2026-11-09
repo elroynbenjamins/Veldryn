@@ -4,7 +4,7 @@ import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {FAITH_TIERS,FAITH_BLESSINGS,FAITH_BLESSING_GROUPS,faithBlessingEffectLabel} from '../content/faith';
-import {blessingRows,faithLevel,faithPracticeAvailability,holyWaterAvailable,normalizeFaith} from '../core/faith';
+import {affordableFaithPracticeCount,blessingRows,faithLevel,faithPracticeAvailability,holyWaterAvailable,normalizeFaith} from '../core/faith';
 import {progressWithinLevel} from '../core/progression';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
@@ -33,8 +33,8 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
   </Panel>
   <View style={s.practiceList}>
    <Text style={s.practiceInstruction}>{gt("Tap a resource to begin practicing.")}</Text>
-   {FAITH_TIERS.map(tier=>{const locked=tier.level>level,availability=faithPracticeAvailability(state,tier.id,1),selectedTier=activeTierId===tier.id,disabled=busy||active||locked||!availability.ready||level>=100;return <Pressable key={tier.id} accessibilityRole="button" accessibilityLabel={active&&selectedTier?`${tier.name} practice in progress`:locked?`${tier.name} requires Faith level ${tier.level}`:availability.ready?`Practice ${tier.name}`:`Need ${tier.water} Holy Water for ${tier.name}`} accessibilityState={{disabled,selected:selectedTier}} disabled={disabled} onPress={()=>void run({type:'faith_practice',args:{tierId:tier.id,count:1}})} style={({pressed})=>[s.practiceCard,selectedTier&&s.practiceCardActive,(locked||!availability.ready)&&s.practiceCardLocked,pressed&&!disabled&&s.pressed]}>
-    <View style={s.flex}><View style={s.inline}><Text style={s.practiceName}>{tier.name}</Text>{selectedTier?<Text style={s.activeTag}>{gt("ACTIVE")}</Text>:locked?<Text style={s.lockTag}>LV {tier.level}</Text>:null}</View><Text style={selectedTier?s.practiceActiveMeta:s.practiceMeta}>{selectedTier?gt("Practice in progress"):locked?`Unlocks at Faith level ${tier.level}`:`Have: ${water.toLocaleString()}/${tier.water.toLocaleString()} Holy Water · ${tier.seconds}s`}</Text></View><Text style={s.practiceXp}>+{tier.xp.toLocaleString()} XP</Text>
+   {FAITH_TIERS.map(tier=>{const locked=tier.level>level,availability=faithPracticeAvailability(state,tier.id,1),planned=affordableFaithPracticeCount(state,tier.id),selectedTier=activeTierId===tier.id,disabled=busy||active||locked||!availability.ready||level>=100;return <Pressable key={tier.id} accessibilityRole="button" accessibilityLabel={active&&selectedTier?`${tier.name} practice in progress`:locked?`${tier.name} requires Faith level ${tier.level}`:availability.ready?`Practice ${tier.name} for up to ${planned} rounds`:`Need ${tier.water} Holy Water for ${tier.name}`} accessibilityState={{disabled,selected:selectedTier}} disabled={disabled} onPress={()=>void run({type:'faith_practice',args:{tierId:tier.id,count:1}})} style={({pressed})=>[s.practiceCard,selectedTier&&s.practiceCardActive,(locked||!availability.ready)&&s.practiceCardLocked,pressed&&!disabled&&s.pressed]}>
+    <View style={s.flex}><View style={s.inline}><Text style={s.practiceName}>{tier.name}</Text>{selectedTier?<Text style={s.activeTag}>{gt("ACTIVE")}</Text>:locked?<Text style={s.lockTag}>LV {tier.level}</Text>:null}</View><Text style={selectedTier?s.practiceActiveMeta:s.practiceMeta}>{selectedTier?gt("Practice in progress"):locked?`Unlocks at Faith level ${tier.level}`:`${planned.toLocaleString()} practices · ${tier.water} Holy Water each · ${tier.seconds}s each`}</Text></View><Text style={s.practiceXp}>+{tier.xp.toLocaleString()} XP</Text>
    </Pressable>})}
   </View>
   <Panel>

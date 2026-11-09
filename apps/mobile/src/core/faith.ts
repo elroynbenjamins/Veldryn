@@ -5,10 +5,11 @@ import type {GameState,RewardBundle,ItemStack} from './types';
 export interface FaithPractice{tierId:string;remaining:number;lastClaimAtMs:number;progressMs:number;}
 export interface CharacterFaith{xp:number;selectedBlessingId?:string;favoriteBlessingIds:string[];hideWeakerBlessings:boolean;practice?:FaithPractice;}
 const MAX_XP=totalXpAtLevel(100);
+export const MAX_FAITH_PRACTICES=1000;
 export function normalizeFaith(raw:any):CharacterFaith{
  const xp=typeof raw?.xp==='number'&&Number.isFinite(raw.xp)?Math.max(0,Math.min(MAX_XP,Math.floor(raw.xp))):0;
  const selected=faithBlessingDef(raw?.selectedBlessingId),p=raw?.practice,tier=FAITH_TIERS.find(t=>t.id===p?.tierId);
- const practice=tier&&Number.isSafeInteger(p.remaining)&&p.remaining>0&&p.remaining<=1000&&Number.isSafeInteger(p.lastClaimAtMs)&&p.lastClaimAtMs>=0&&Number.isSafeInteger(p.progressMs)&&p.progressMs>=0&&p.progressMs<tier.seconds*1000?{tierId:tier.id,remaining:p.remaining,lastClaimAtMs:p.lastClaimAtMs,progressMs:p.progressMs}:undefined;
+ const practice=tier&&Number.isSafeInteger(p.remaining)&&p.remaining>0&&p.remaining<=MAX_FAITH_PRACTICES&&Number.isSafeInteger(p.lastClaimAtMs)&&p.lastClaimAtMs>=0&&Number.isSafeInteger(p.progressMs)&&p.progressMs>=0&&p.progressMs<tier.seconds*1000?{tierId:tier.id,remaining:p.remaining,lastClaimAtMs:p.lastClaimAtMs,progressMs:p.progressMs}:undefined;
  return {xp,selectedBlessingId:selected&&selected.level<=levelFromXp(xp)?selected.id:undefined,favoriteBlessingIds:Array.isArray(raw?.favoriteBlessingIds)?[...new Set<string>(raw.favoriteBlessingIds.filter((id:unknown)=>typeof id==='string'&&faithBlessingDef(id)))]:[],hideWeakerBlessings:raw?.hideWeakerBlessings!==false,practice};
 }
 export const faithLevel=(state:GameState|any[])=>levelFromXp(Array.isArray(state)?(state.find((s:any)=>s.skillId==='faith')?.xp??0):Math.max(normalizeFaith(state.character?.faith).xp,state.skills.find(s=>s.skillId==='faith')?.xp??0));
@@ -37,7 +38,7 @@ export function reserveFaithPractice(state:GameState,tierId:string,count:number,
  if(faith.practice)throw new Error('Stop the current practice first.');
  if(!tier||tier.level>faithLevel(state))throw new Error('Faith tier is locked.');
  if(faith.xp>=MAX_XP)throw new Error('Faith is mastered.');
- if(!Number.isSafeInteger(count)||count<1||count>1000)throw new Error('Choose 1–1000 practices.');
+ if(!Number.isSafeInteger(count)||count<1||count>MAX_FAITH_PRACTICES)throw new Error('Choose 1–1000 practices.');
  const cost=tier.water*count;if(holyWaterAvailable(state)<cost)throw new Error('Not enough Holy Water in Inventory and Bank.');
  const inv=Math.min(cost,state.inventory.stacks.filter(s=>s.itemId===HOLY_WATER_ID).reduce((n,s)=>n+s.quantity,0));
  return {...state,inventory:{...state.inventory,stacks:removeWater(state.inventory.stacks,inv)},bank:{...state.bank,stacks:removeWater(state.bank.stacks,cost-inv)},activity:{kind:'faith',targetId:tierId,startedAtMs:now,lastClaimAtMs:now,faithPractice:{tierId,remainingPractices:count,lastClaimAtMs:now,progressFraction:0}},character:{...state.character,classTraining:undefined,faith}};
@@ -60,7 +61,13 @@ export function cancelFaithPractice(state:GameState):{state:GameState;refund:num
  if(!state.character||!p||!tier)return {state,refund:0};
  return {state:{...state,character:{...state.character,faith:{...faith,practice:undefined}}},refund:p.remaining*tier.water};
 }
-export const faithPracticeAvailability=(state:GameState,tierId:string,count:number)=>{const tier=FAITH_TIERS.find(t=>t.id===tierId);const level=faithLevel(state);const cost=(tier?.water??0)*count;return {ready:!!tier&&tier.level<=level&&count>=1&&count<=1000&&holyWaterAvailable(state)>=cost,reason:!tier?'Unknown tier':tier.level>level?'Faith tier is locked.':holyWaterAvailable(state)<cost?'Not enough Holy Water.':'Ready'};};
+/** One tap reserves every currently affordable practice, up to the safe session cap. */
+export function affordableFaithPracticeCount(state:GameState,tierId:string):number{
+ const tier=FAITH_TIERS.find(row=>row.id===tierId);
+ if(!tier||tier.level>faithLevel(state)||faithLevel(state)>=100)return 0;
+ return Math.min(MAX_FAITH_PRACTICES,Math.floor(holyWaterAvailable(state)/tier.water));
+}
+export const faithPracticeAvailability=(state:GameState,tierId:string,count:number)=>{const tier=FAITH_TIERS.find(t=>t.id===tierId);const level=faithLevel(state);const cost=(tier?.water??0)*count;return {ready:!!tier&&tier.level<=level&&count>=1&&count<=MAX_FAITH_PRACTICES&&holyWaterAvailable(state)>=cost,reason:!tier?'Unknown tier':tier.level>level?'Faith tier is locked.':holyWaterAvailable(state)<cost?'Not enough Holy Water.':'Ready'};};
 export const startFaithPractice=reserveFaithPractice;
 export const previewFaithReward=(state:GameState,elapsedSeconds:number):RewardBundle=>settleFaithPractice(state,(state.activity?.lastClaimAtMs??0)+elapsedSeconds*1000,elapsedSeconds).reward;
 export const faithPracticeRefund=(p:any)=>{const tier=FAITH_TIERS.find(t=>t.id===p?.tierId);return tier&&Number.isSafeInteger(p?.remainingPractices??p?.remaining)?tier.water*(p.remainingPractices??p.remaining):0;};

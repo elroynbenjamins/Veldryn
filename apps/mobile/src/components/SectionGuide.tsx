@@ -58,7 +58,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    <Modal transparent visible={visible} statusBarTranslucent animationType="fade" onRequestClose={close}>
     <View style={styles.shade}>
      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={close}/>
-     <View accessibilityViewIsModal style={[styles.dialog,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
+     <View accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.dialog,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
       <View style={styles.dialogHeading}>
        {area==='guild'?<View style={[styles.guideIcon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={22}/></View>:null}
        <View style={styles.copy}>
@@ -69,23 +69,25 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
         <Text style={[styles.closeText,{color:C.muted}]}>×</Text>
        </Pressable>
       </View>
-      <Text style={[styles.dialogBody,{color:C.muted}]}>{t(guide.body)}</Text>
-      {selectedTopic?<View style={styles.topicArea}>
-       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicTabs} accessibilityRole="tablist">
-        {topics.map((topic,index)=><Pressable key={topic.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}}
-         onPress={()=>setTopicIndex(index)} style={[styles.topicTab,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
-         <Text style={[styles.topicTabLabel,{color:topicIndex===index?C.text:C.muted}]}>{t(topic.title)}</Text>
-        </Pressable>)}
-       </ScrollView>
-       <ScrollView style={styles.topicScroll} contentContainerStyle={styles.topicContent} showsVerticalScrollIndicator={false}>
-        <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
-        <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
-       </ScrollView>
-      </View>:null}
-      {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(value=>!value)} style={styles.detailButton}>
-       <Text style={[styles.detailToggle,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
-      </Pressable>:null}
-      {more&&guide.detail?<Text style={[styles.dialogDetail,{color:C.info}]}>{t(guide.detail)}</Text>:null}
+      <ScrollView style={styles.dialogScroll} contentContainerStyle={styles.dialogScrollContent} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+       <Text style={[styles.dialogBody,{color:C.muted}]}>{t(guide.body)}</Text>
+       {selectedTopic?<View style={styles.topicArea}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicTabs} accessibilityRole="tablist" nestedScrollEnabled>
+         {topics.map((topic,index)=><Pressable key={topic.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}}
+          onPress={()=>setTopicIndex(index)} style={[styles.topicTab,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
+          <Text style={[styles.topicTabLabel,{color:topicIndex===index?C.text:C.muted}]}>{t(topic.title)}</Text>
+         </Pressable>)}
+        </ScrollView>
+        <View style={styles.topicContent}>
+         <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
+         <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
+        </View>
+       </View>:null}
+       {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(value=>!value)} style={styles.detailButton}>
+        <Text style={[styles.detailToggle,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
+       </Pressable>:null}
+       {more&&guide.detail?<Text style={[styles.dialogDetail,{color:C.info}]}>{t(guide.detail)}</Text>:null}
+      </ScrollView>
       <Pressable accessibilityRole="button" accessibilityLabel={t('Got it')} onPress={close} style={({pressed})=>[styles.confirmButton,{backgroundColor:C.selection,borderColor:C.selectionLine},pressed&&styles.pressed]}>
        <Text style={[styles.confirmText,{color:C.text}]}>{t('Got it')} ✓</Text>
       </Pressable>
@@ -134,15 +136,16 @@ const styles=StyleSheet.create({
  newDot:{position:'absolute',top:5,right:5,width:6,height:6,borderRadius:3},
  pressed:{opacity:.78},
  shade:{flex:1,justifyContent:'center',padding:22,backgroundColor:'rgba(0,0,0,0.76)'},
- dialog:{width:'100%',maxWidth:430,maxHeight:'87%',alignSelf:'center',borderWidth:1,borderRadius:16,padding:18,gap:12},
+ dialog:{width:'100%',maxWidth:430,maxHeight:'91%',minHeight:0,alignSelf:'center',borderWidth:1,borderRadius:16,padding:14,gap:10},
+ dialogScroll:{flexShrink:1,minHeight:0},
+ dialogScrollContent:{gap:10,paddingBottom:6},
  dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:12},
  guideIcon:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
- topicArea:{gap:9,flexShrink:1,minHeight:0},
+ topicArea:{gap:9,minHeight:0},
  topicTabs:{gap:6,paddingVertical:2},
  topicTab:{minHeight:42,justifyContent:'center',paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderRadius:9},
  topicTabLabel:{fontSize:12,fontWeight:'800'},
- topicScroll:{maxHeight:240,flexShrink:1},
- topicContent:{gap:6,paddingBottom:4},
+  topicContent:{gap:6,paddingBottom:4},
  topicHeading:{fontSize:14,fontWeight:'800',lineHeight:20},
  topicBody:{fontSize:13,lineHeight:20},
  dialogEyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1,marginBottom:5},

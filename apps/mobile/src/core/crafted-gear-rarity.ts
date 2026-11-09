@@ -21,33 +21,28 @@ const forgeRarityRolls:ReadonlyArray<{rarity:ItemRarity;chance:number}>=[
 const order:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
 export function higherRarity(a:ItemRarity,b:ItemRarity){return order.indexOf(a)>=order.indexOf(b)?a:b;}
 
-/** Rolls may upgrade, but never downgrade, the recipe's authored base rarity. */
+/** Every equipment tier uses the same Forge roll table. Tier identity controls gear stats, not rarity odds. */
 export function craftedGearRarity(itemId:string,roll:number):ItemRarity{
   if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Crafted rarity only applies to equipment');
-  const base=itemRarity(item);
   // Integer buckets avoid floating-point drift at exact rarity cutoffs (e.g. 0.009).
   const sample=Math.floor(roll*1_000_000);
   let cutoff=0;
   for(const outcome of forgeRarityRolls){
     cutoff+=Math.round(outcome.chance*1_000_000);
-    if(sample<cutoff)return higherRarity(base,outcome.rarity);
+    if(sample<cutoff)return outcome.rarity;
   }
-  return base; // Floating point rounding fallback at the upper endpoint.
+  return 'common'; // Floating point rounding fallback at the upper endpoint.
 }
 
-/** Final rarity odds for a specific Forge recipe, folding lower rolls into its base rarity. */
+/** Rarity odds for timed Forge are identical for every tier and recipe. */
 export function craftedGearRarityOutcomes(itemId:string):Array<{rarity:ItemRarity;chance:number;statMultiplier:number}>{
   const item=itemDef(itemId);
   if(item.type!=='gear')throw new Error('Forge rarity odds require equipment');
-  const base=itemRarity(item),chances=new Map<ItemRarity,number>();
-  for(const outcome of forgeRarityRolls){
-    const rarity=higherRarity(base,outcome.rarity);
-    chances.set(rarity,(chances.get(rarity)??0)+outcome.chance);
-  }
-  return order.filter(rarity=>(chances.get(rarity)??0)>0).map(rarity=>({
-    rarity,chance:chances.get(rarity)!,statMultiplier:craftedRarityStatMultiplier(itemId,rarity),
-  }));
+  return order.map(rarity=>{
+    const chance=forgeRarityRolls.find(outcome=>outcome.rarity===rarity)!.chance;
+    return {rarity,chance,statMultiplier:craftedRarityStatMultiplier(itemId,rarity)};
+  });
 }
 
 export function craftedRarityStatMultiplier(itemId:string,rarity:ItemRarity){

@@ -25,8 +25,8 @@ async function main(){
  const entry=await handler(request('entry')),projection=await entry.json();
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
- assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
- assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_004','EXP_003','EXP_005','EXP_006','EXP_007','EXP_008'],'Only Sunscar and later regular dungeons are listed');
+ assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[3].available,false);
+ assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_004','EXP_003','EXP_005','EXP_006'],'Only released Sunscar and Frostmarch dungeons are listed');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.minLevel,25,'Mirage Well is the first dungeon at current Level 25');
  assert.ok(projection.dungeons.every((row:{difficulties:number[]})=>JSON.stringify(row.difficulties)==='[1,2,3]'),'Every new regular dungeon offers only three tiers');
  const first=projection.dungeons[0];
@@ -37,8 +37,7 @@ async function main(){
  assert.deepEqual(first.rewardPreview.guaranteedOnClear,['Expedition Marks']);
  assert.deepEqual(first.rewardPreview.potentialDrops,[],'No COP gem-drop odds are borrowed for the different EXP source');
  assert.match(first.rewardPreview.dropNotice,/No verified item-drop rates/);
- assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_007')?.available,false,'Ashlands dungeons must remain unavailable');
- assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_008')?.lockedReason,'In Development','Ashlands dungeon cards must identify the development state');
+ assert.equal(projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_007'||dungeon.id==='EXP_008'),false,'Unreleased Ashlands dungeons must not appear as playable choices');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
  assert.equal(suncrest.status,'available');assert.equal(suncrest.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(starfall.status,'preview');
  assert.equal(calls.length,4);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);

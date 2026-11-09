@@ -55,7 +55,7 @@ for(const [tier,infusionId] of Object.entries(infusionByTier))ok(V33_EQUIPMENT_R
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
 ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');
-const combatFedV33Materials=['MOSS_FIBER','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','AMBERGLASS','ASTRAL_SCRIPT','GLASSBOUND_CORE','RIMEGLASS','CHOIR_BLOOM'];
+const combatFedV33Materials=['MOSS_FIBER','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','AMBERGLASS','ASTRAL_SCRIPT','RIMEGLASS','CHOIR_BLOOM'];
 for(const itemId of combatFedV33Materials){
   ok(isV33EquipmentCraftingMaterial(itemId),itemId+' must feed at least one V33 equipment recipe');
   ok(MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId===itemId)),itemId+' must retain a combat source for Equipment 2.0');
@@ -97,10 +97,20 @@ ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accident
 const t3=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3');
 const t4=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T4');
 const t3Materials=new Set(['DUNEWOOD','SUNSTONE_ORE','SUNSCALE','AMBERGLASS','ASTRAL_SCRIPT','SUNSCAR_DUNE_BINDER']);
-const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_CORE','GLASSBOUND_BINDER']);
+const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_BINDER']);
 ok(t3.every(recipe=>recipe.inputs.every(input=>t3Materials.has(input.itemId))),'T3 gear must use early-Sunscar sources only, without Asterfall solvent');
 ok(t4.every(recipe=>recipe.inputs.every(input=>t4Materials.has(input.itemId))),'T4 gear must not require Oathglass, King\'s Road drops, or Asterfall ingots');
-ok(t4.every(recipe=>recipe.inputs.some(input=>input.itemId==='GLASSBOUND_CORE')&&recipe.inputs.some(input=>input.itemId==='GLASSBOUND_BINDER')),'Every T4 piece must need the late-Sunscar monster core and binder');
+ok(t4.length===180,'Nine classes × two paths × ten slots must retain all 180 T4 equipment recipes');
+ok(t4.every(recipe=>recipe.inputs.some(input=>input.itemId==='DUNEWOOD')&&recipe.inputs.some(input=>input.itemId==='GLASSBOUND_BINDER'&&input.quantity===1)&&!recipe.inputs.some(input=>input.itemId==='GLASSBOUND_CORE')),'Each T4 piece must use one Glassbound Binder and ordinary regional timber, never duplicate the rare Core directly');
+for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
+  for(const path of ['Foundation','Alternate']){
+    const set=t4.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
+    ok(set.length===10&&set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='GLASSBOUND_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T4 set must cost precisely ten Glassbound Binders');
+  }
+}
+const binderRoutes=RECIPES.filter(recipe=>recipe.output.itemId==='GLASSBOUND_BINDER');
+ok(binderRoutes.length>=2&&binderRoutes.every(recipe=>recipe.inputs.filter(input=>input.itemId==='GLASSBOUND_CORE').reduce((sum,input)=>sum+input.quantity,0)===1),'Every standard/legacy Glassbound Binder recipe must require exactly one late-Sunscar Core');
+ok(!isV33EquipmentCraftingMaterial('GLASSBOUND_CORE'),'Glassbound Core must be consumed in Alchemy rather than mislabelled as a direct gear-assembly input');
 ok(t3.every(recipe=>!recipe.inputs.some(input=>input.itemId==='GLASSBOUND_CORE')),'T3 gear must remain accessible before Glassbound Sentinel');
 const t5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='smithing')!;
 ok(t5.inputs.some(row=>row.itemId==='SUNSTONE_INGOT')&&t5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 must use processed Sunscar materials');

@@ -40,7 +40,8 @@ for(const recipe of V33_EQUIPMENT_RECIPES.filter(r=>r.v33EquipmentTier==='T1'||r
   const slot=itemById.get(recipe.output.itemId)?.slot;
   check(!!slot,recipe.id+' has an equipment slot');
   const xpBase=recipe.v33EquipmentTier==='T1'?165:290;
-  near(recipe.xp,Math.max(1,Math.round(xpBase*slotXpWeight[slot!])),recipe.id+' boosted XP');
+  const oldXp=Math.max(1,Math.round(xpBase*slotXpWeight[slot!]));
+  near(recipe.xp,recipe.v33EquipmentTier==='T2'?Math.round(oldXp*1.25):oldXp,recipe.id+' boosted XP');
 }
 check(NOVICE_RECIPES.every(r=>r.xp>=50),'novice Smithing/Tailoring crafts award boosted XP');
 near(RECIPES.find(r=>r.id==='SMELT_COPPER_INGOT')!.xp,100,'starter Smithing training XP');

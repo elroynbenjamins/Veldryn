@@ -4,6 +4,9 @@ import {
   characterTotalXpAtLevel,
   classCombatSkillLevelFromXp,
   classCombatSkillTotalXpAtLevel,
+  classCombatSkillProgressWithinLevel,
+  classCombatSkillXpForNextLevel,
+  progressWithinLevel,
   totalXpAtLevel,
   legacyCharacterTotalXpAtLevel,
   rebasedCombatLevelFromLegacyLevel,
@@ -31,6 +34,17 @@ assert.equal(rebasedCombatLevelFromLegacyLevel(50),37);
 assert.equal(rebasedCombatLevelFromLegacyLevel(32),25,'legacy level 32 should become the intended level 25');
 assert.equal(classCombatSkillLevelFromXp(totalXpAtLevel(50)),24,'legacy class combat level 50 should become level 24');
 assert.equal(classCombatSkillTotalXpAtLevel(24),818574,'class combat level 24 threshold must be stable');
+// A class-skill bar must use the 2.09 curve, not the faster 1.42 profession
+// curve: using profession progress used to leave class skills visibly at 100%.
+const classLevel24Start=classCombatSkillTotalXpAtLevel(24);
+const halfwayClassLevel24Xp=classLevel24Start+Math.floor(classCombatSkillXpForNextLevel(24)/2);
+const classLevel24Progress=classCombatSkillProgressWithinLevel(halfwayClassLevel24Xp,24);
+assert.equal(classLevel24Progress.current,Math.floor(classCombatSkillXpForNextLevel(24)/2));
+assert.equal(classLevel24Progress.need,classCombatSkillXpForNextLevel(24));
+assert.ok(classLevel24Progress.current<classLevel24Progress.need,'nonmax class combat skill remains under 100%');
+assert.ok(progressWithinLevel(halfwayClassLevel24Xp,24).current>=progressWithinLevel(halfwayClassLevel24Xp,24).need,'profession thresholds would incorrectly max the class skill progress display');
+assert.equal(classCombatSkillProgressWithinLevel(classCombatSkillTotalXpAtLevel(25),25).current,0,'class skill bar resets to zero at exact level-up');
+
 for(const [previous,next] of [[60,44],[70,50],[80,57],[90,64],[100,70]] as const){
  assert.equal(rebasedCombatLevelFromLegacyLevel(previous),next,`legacy Combat level ${previous} must rebase across the full 1–100 curve`);
  assert.equal(characterLevelFromXp(legacyCharacterTotalXpAtLevel(previous)),next,'stored Combat XP remains the sole level source');

@@ -40,6 +40,7 @@ function resourceLabel(snapshot:Record<string,unknown>|null,resourceId:string,ki
 }
 
 const projectReads=new ShortLivedReadCache<OnlineGuildProjectsSnapshot>(20_000);
+const voteReminderReads=new ShortLivedReadCache<boolean>(120_000);
 export async function loadOnlineGuildProjectsV18(force=false):Promise<OnlineGuildProjectsSnapshot|null>{
  // Check the current authoritative membership on every visit/read, including
  // cache hits. A stale guild projection must not outlive access revocation.
@@ -131,6 +132,19 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  return{guildId:membership.guild_id,projects,candidates,choiceAvailable:!candidateResult.error,activity,supplyInventory};
 }
 
-export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();return data as string;}
+/** One lightweight, viewer-scoped ballot read for the Guild Home vote reminder.
+ * It reuses the protected member-only ballot RPC; no new polling worker is needed. */
+export async function guildChoiceVoteReminder(force=false):Promise<boolean>{
+ const membership=await myGuild();
+ if(!membership){voteReminderReads.clear();return false;}
+ return voteReminderReads.read(membership.account_id+':'+membership.guild_id,async()=>{
+  const {data,error}=await client().rpc('guild_project_choice_ballot_v1');
+  if(error)throw error;
+  const candidates=Array.isArray(data)?data as Array<{myVote?:boolean}>:[];
+  return candidates.length>0&&!candidates.some(row=>row.myVote===true);
+ },force);
+}
+
+export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();voteReminderReads.clear();return data as string;}
 
 export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;projectReads.clear();return data;}

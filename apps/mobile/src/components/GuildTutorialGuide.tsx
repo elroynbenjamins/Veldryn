@@ -26,7 +26,7 @@ export function GuildTutorialGuide({progress,role,home,reduceMotion=false,destin
    Animated.timing(pulse,{toValue:0,duration:900,easing:Easing.inOut(Easing.quad),useNativeDriver:true}),
   ]));animation.start();return()=>animation.stop();
  },[pulse,reduceMotion,active,progress.step,exploring]);
- if(!active)return home?<GameButton compact title={t(progress.status==='complete'?'Replay guild guide':'Resume guild guide')} tone="secondary" onPress={()=>{const next={step:progress.status==='complete'?0:progress.step,status:'active' as const};onProgress(next);onNavigate(GUILD_TUTORIAL_STEPS[next.step].destination);onReveal();}}/>:null;
+ if(!active)return home?<GameButton compact title={t(progress.status==='complete'?'Replay guild guide':progress.status==='new'?'Start guild guide':'Resume guild guide')} tone="secondary" onPress={()=>{const next={step:progress.status==='complete'?0:progress.step,status:'active' as const};onProgress(next);onNavigate(GUILD_TUTORIAL_STEPS[next.step].destination);onReveal();}}/>:null;
  const atTarget=destination===undefined||destination===step.destination;
  const open=()=>{setExploring(true);setDetails(false);onNavigate(step.destination);};
  const next=()=>{const updated=advanceGuildTutorial(progress);onProgress(updated);onNavigate(updated.status==='complete'?'Home':GUILD_TUTORIAL_STEPS[updated.step].destination);onReveal();};
@@ -48,6 +48,7 @@ export function GuildTutorialGuide({progress,role,home,reduceMotion=false,destin
    {exploring?minor('Read tip again',()=>{setExploring(false);onReveal();}):minor(details?'Less detail':'More detail',()=>setDetails(value=>!value))}
    {progress.step>0&&minor('Previous tip',()=>{onProgress({...progress,step:progress.step-1});onNavigate(GUILD_TUTORIAL_STEPS[progress.step-1].destination);onReveal();})}
    {minor('Pause guide',()=>onProgress({...progress,status:'paused'}))}
+   {minor('Skip tour',()=>{onProgress({...progress,status:'complete'});onNavigate('Home');onReveal();})}
   </View>
  </View>;
 }

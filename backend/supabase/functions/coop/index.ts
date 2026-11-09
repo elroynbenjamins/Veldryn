@@ -778,13 +778,16 @@ function eventExpeditionPreviews(nowMs) {
 }
 
 // src/server/coop/config.ts
+var LEGACY_EXPONENT = 1.42;
+var CHARACTER_EXPONENT = 1.65;
+var XP_SCALE = 8;
 function rebaseLegacyCombatLevel(level) {
   const bounded = Math.max(1, Math.min(100, Math.floor(Number.isFinite(level) ? level : 1)));
   let earned = 0;
-  for (let previous = 1; previous < bounded; previous++) earned += Math.floor(90 * Math.pow(previous, 1.42) + previous * 35) * 8;
+  for (let previous = 1; previous < bounded; previous++) earned += Math.floor(90 * Math.pow(previous, LEGACY_EXPONENT) + previous * 35) * XP_SCALE;
   let current = 1, spent = 0;
   while (current < 100) {
-    const need = Math.floor(90 * Math.pow(current, 2.09) + current * 35) * 8;
+    const need = Math.floor(90 * Math.pow(current, CHARACTER_EXPONENT) + current * 35) * XP_SCALE;
     if (spent + need > earned) return current;
     spent += need;
     current++;
@@ -49859,13 +49862,13 @@ var OnlineLiveQueue = class {
     }
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
-    const eligible = Object.values(EXPEDITIONS).filter((definition2) => definition2.coopImplemented && game.state.character.level >= definition2.minLevel).sort((a, b) => b.minLevel - a.minLevel || a.id.localeCompare(b.id));
+    const eligible = Object.values(EXPEDITIONS).filter((definition2) => definition2.coopImplemented && highestEligibleCoopTier(definition2.minLevel, record.characterLevel) !== void 0).sort((a, b) => b.minLevel - a.minLevel || a.id.localeCompare(b.id));
     if (!eligible.length) throw new GameplayError("dungeon_level_requirement");
     const demand = await this.services.rpc("online_live_quick_match_demand_server_v1", { p_account_id: accountId });
     const dungeonId = chooseQuickMatchExpedition(demand.demands, eligible.map((definition2) => definition2.id), readiness.role, demand.serverNow);
     const definition = dungeonId ? EXPEDITIONS[dungeonId] : void 0;
     if (!definition) throw new GameplayError("dungeon_unavailable");
-    const autoTier = readinessEligibleCoopTier(definition.minLevel, game.state.character.level, readiness.normalizedScore);
+    const autoTier = readinessEligibleCoopTier(definition.minLevel, record.characterLevel, readiness.normalizedScore);
     if (!autoTier) throw new GameplayError("role_not_ready");
     const snapshot = resolveAndFreezeLoadout({ accountId, characterId: request.characterId, loadoutId: "current", expectedRevision: game.version, minLevel: coopRequiredLevel(definition.minLevel, autoTier), syncLevel: definition.recommendedLevel, repository: { getOwnedLoadout: () => record } });
     return this.services.rpc("join_online_live_queue_server_v1", {

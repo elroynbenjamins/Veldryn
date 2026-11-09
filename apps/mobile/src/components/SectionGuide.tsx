@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useEffect,useState,type ReactNode} from 'react';
-import {Modal,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ThemedIcon} from './ThemedNavigationIcon';
 import {createSectionGuideStore} from '../core/section-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
@@ -8,7 +9,7 @@ import {accountText} from '../i18n/account';
 import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
-type GuideText={title:string;body:string;detail?:string};
+type GuideText={title:string;body:string;detail?:string;topics?:readonly {id:string;title:string;body:string}[]};
 type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean;placement?:'card'|'header';header?:ReactNode};
 /** One unobtrusive tip on first entry to each tab. Tabs and actions remain usable. */
 export function SectionGuide({scope,area,section,guide,translate,showReplay=true,placement='card',header}:Props){
@@ -18,6 +19,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
  const [saved,setSaved]=useState<{identity:string;seen:string[]}|null>(null);
  const [open,setOpen]=useState<{identity:string;section:string}|null>(null);
  const [more,setMore]=useState(false);
+ const [topicIndex,setTopicIndex]=useState(0);
  useEffect(()=>{
   let active=true;
   setSaved(null);
@@ -25,12 +27,14 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
   void store.load(scope,area).then(seen=>{if(active)setSaved({identity,seen})});
   return()=>{active=false;};
  },[scope,area,identity]);
- useEffect(()=>{setOpen(null);setMore(false)},[section]);
+ useEffect(()=>{setOpen(null);setMore(false);setTopicIndex(0)},[section]);
  if(!scope||!section||saved?.identity!==identity)return header??null;
  const seen=saved.seen.includes(section);
+ const topics=guide.topics??[];
+ const selectedTopic=topics[Math.min(topicIndex,Math.max(0,topics.length-1))];
  const expanded=!seen||open?.identity===identity&&open?.section===section;
  const close=()=>{
-  setOpen(null);setMore(false);
+  setOpen(null);setMore(false);setTopicIndex(0);
   if(!seen){
    setSaved(prev=>prev?.identity===identity?{...prev,seen:[...new Set([...prev.seen,section])]}:prev);
    void store.complete(scope,area,section);
@@ -44,7 +48,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
     accessibilityHint={t('Open help for the current Guild section')}
     accessibilityState={{expanded:visible}}
     hitSlop={4}
-    onPress={()=>{setOpen({identity,section});setMore(false)}}
+    onPress={()=>{setOpen({identity,section});setMore(false);setTopicIndex(0)}}
     style={({pressed})=>[styles.headerTrigger,{borderColor:seen?C.line:C.selectionLine,backgroundColor:C.panel},pressed&&styles.pressed]}>
     <Text style={[styles.headerQuestion,{color:C.muted}]}>?</Text>
     {!seen?<View accessible={false} style={[styles.newDot,{backgroundColor:C.accent}]}/>:null}
@@ -56,6 +60,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={close}/>
      <View accessibilityViewIsModal style={[styles.dialog,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
       <View style={styles.dialogHeading}>
+       {area==='guild'?<View style={[styles.guideIcon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={22}/></View>:null}
        <View style={styles.copy}>
         <Text style={[styles.dialogEyebrow,{color:C.accent}]}>{t('SECTION GUIDE')}</Text>
         <Text accessibilityRole="header" style={[styles.dialogTitle,{color:C.text}]}>{t(guide.title)}</Text>
@@ -65,6 +70,18 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
        </Pressable>
       </View>
       <Text style={[styles.dialogBody,{color:C.muted}]}>{t(guide.body)}</Text>
+      {selectedTopic?<View style={styles.topicArea}>
+       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicTabs} accessibilityRole="tablist">
+        {topics.map((topic,index)=><Pressable key={topic.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}}
+         onPress={()=>setTopicIndex(index)} style={[styles.topicTab,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
+         <Text style={[styles.topicTabLabel,{color:topicIndex===index?C.text:C.muted}]}>{t(topic.title)}</Text>
+        </Pressable>)}
+       </ScrollView>
+       <ScrollView style={styles.topicScroll} contentContainerStyle={styles.topicContent} showsVerticalScrollIndicator={false}>
+        <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
+        <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
+       </ScrollView>
+      </View>:null}
       {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(value=>!value)} style={styles.detailButton}>
        <Text style={[styles.detailToggle,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
       </Pressable>:null}
@@ -79,7 +96,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
  }
  if(!expanded&&!showReplay)return null;
  if(!expanded)return <View style={styles.reopenRow}>
-  <Pressable accessibilityRole="button" accessibilityLabel={t('Show guide for this tab')} onPress={()=>{setOpen({identity,section});setMore(false)}} style={[styles.reopen,{borderColor:C.line,backgroundColor:C.panel}]}>
+  <Pressable accessibilityRole="button" accessibilityLabel={t('Show guide for this tab')} onPress={()=>{setOpen({identity,section});setMore(false);setTopicIndex(0)}} style={[styles.reopen,{borderColor:C.line,backgroundColor:C.panel}]}>
    <Text style={[styles.question,{color:C.muted}]}>?</Text>
   </Pressable>
  </View>;
@@ -119,6 +136,15 @@ const styles=StyleSheet.create({
  shade:{flex:1,justifyContent:'center',padding:22,backgroundColor:'rgba(0,0,0,0.76)'},
  dialog:{width:'100%',maxWidth:430,maxHeight:'87%',alignSelf:'center',borderWidth:1,borderRadius:16,padding:18,gap:12},
  dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:12},
+ guideIcon:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
+ topicArea:{gap:9,flexShrink:1,minHeight:0},
+ topicTabs:{gap:6,paddingVertical:2},
+ topicTab:{minHeight:42,justifyContent:'center',paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderRadius:9},
+ topicTabLabel:{fontSize:12,fontWeight:'800'},
+ topicScroll:{maxHeight:240,flexShrink:1},
+ topicContent:{gap:6,paddingBottom:4},
+ topicHeading:{fontSize:14,fontWeight:'800',lineHeight:20},
+ topicBody:{fontSize:13,lineHeight:20},
  dialogEyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1,marginBottom:5},
  dialogTitle:{fontSize:19,lineHeight:25,fontWeight:'900'},
  dialogBody:{fontSize:14,lineHeight:21},

@@ -1,0 +1,17 @@
+const fs=require('node:fs');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+const read=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+const screen=read('src/screens/GuildScreen.tsx');
+const actions=read('src/components/GuildHomeActions.tsx');
+const library=read('src/components/GuildGuideLibrary.tsx');
+const overlay=read('src/components/ChatOverlay.tsx');
+assert.match(screen,/<GuildGuideLibrary visible={guideLibraryOpen}/,'Guide Library is mounted for online Guild members');
+assert.match(screen,/onGuide={\(\)=>setGuideLibraryOpen\(true\)}/,'Home entry actually opens the Guide Library');
+assert.match(actions,/accessibilityLabel={guideLabel} onPress={onGuide}/,'Home entry is actionable and accessible');
+assert.match(library,/group\.leadership\|\|leadership/,'Leadership guide groups are role-gated');
+assert.match(library,/accessibilityViewIsModal/,'Guide Library uses modal accessibility semantics');
+assert.match(library,/accessibilityRole="tab"/,'Guide topic choices are accessible');
+assert.match(library,/guildDetailedGuide\(section\)/,'Library reuses source-authoritative guide content');
+assert.match(overlay,/channel==='guild'&&guildHelpOpen/,'Guild Chat help is only shown in Guild Chat');
+console.log('PASS Guild Guide library navigation, role gating and Chat guidance UI contracts');

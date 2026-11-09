@@ -9,6 +9,7 @@ const navigation=read('src/components/GuildNavigation.tsx');
 const chat=read('src/components/GuildChat.tsx');
 const composer=read('src/components/ChatComposer.tsx');
 const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
+const contributionPanel=read('src/components/GuildProjectContributionsPanel.tsx');
 const projectSupplies=read('src/components/GuildProjectSupplyDonationPanel.tsx');
 const progress=read('src/components/GuildProgressPanel.tsx');
 const skillPaths=read('src/components/GuildSpecializationPaths.tsx');
@@ -26,7 +27,7 @@ const detail=read('src/components/GuildProjectDetailPanel.tsx');
 const decrees=read('src/components/GuildDecreePanel.tsx');
 const hub=read('src/components/GuildHubPanel.tsx');
 
-for(const [name,source] of [['GuildChat',chat],['OnlineGuildProjectsPanel',onlineProjects],['GuildActivityFeedPanel',activity],['GuildProjectsPanel',projects],['GuildProjectDetailPanel',detail],['GuildDecreePanel',decrees],['GuildHubPanel',hub]] as const){
+for(const [name,source] of [['GuildChat',chat],['OnlineGuildProjectsPanel',onlineProjects],['GuildProjectContributionsPanel',contributionPanel],['GuildActivityFeedPanel',activity],['GuildProjectsPanel',projects],['GuildProjectDetailPanel',detail],['GuildDecreePanel',decrees],['GuildHubPanel',hub]] as const){
  ok(source.includes('useGameTheme'),name+' must use the active UI theme');
  ok(source.includes('ThemeColors'),name+' must build theme-aware styling');
  ok(!source.includes("import {C,")&&!source.includes("import {C}"),name+' must not regress to the static Veldryn palette');
@@ -70,13 +71,15 @@ ok(onlineProjects.includes('<StatusPill label={ui("SHARED")} tone="good"/>'),'Li
 ok(onlineProjects.includes('Your contribution'),'Live Projects must surface personal contribution');
 ok(onlineProjects.includes('const personalShortfall=')&&onlineProjects.includes('personal effort short of reward eligibility')&&onlineProjects.includes('Reward claim period ended'),'Live Projects must explain personal reward shortfall and claim expiry separately');
 ok(onlineProjects.includes('const contributorsMissing=')&&onlineProjects.includes('more qualifying contributors needed to complete this project'),'Project cards must explain the missing meaningful contributor requirement');
-ok(onlineProjects.includes('Counts toward contributor minimum')&&onlineProjects.includes('Below contributor minimum'),'Expanded member contribution rows must explain meaningful contributor status');
+ok(contributionPanel.includes('Counts toward contributor minimum')&&contributionPanel.includes('Below contributor minimum'),'Inline member rows must explain meaningful contributor status');
 ok(projectSupplies.includes('quantityProblem')&&projectSupplies.includes('That exceeds the remaining {count} supply needed.')&&projectSupplies.includes('You only have {count} eligible items available.'),'Project supply donations must explain why invalid amounts cannot be submitted');
 ok(projectSupplies.includes('All supply goals are complete.')&&projectSupplies.includes('personal limit'),'Donation UI must distinguish complete goals from stock limits and retain server authority');
 ok(onlineProjects.includes("ui('{count}/{minimum} contributors'"),'Live Projects must surface anti-leech contributor progress');
-ok(onlineProjects.includes("ui('Member contribution')")&&onlineProjects.includes("ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()})"),'Live Projects must expose per-member gathering contribution');
-ok(onlineProjects.includes("'Contribution ▾'")&&projectClient.includes("db.rpc('guild_roster'"),'Project contribution affordance must load the Guild member roster');
-ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
+ok(contributionPanel.includes("ui('Member contributions')")&&contributionPanel.includes("ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()})"),'Inline contribution panel must expose per-member gathering contribution');
+ok(onlineProjects.includes('<GuildProjectContributionsPanel projects={active}/>')&&!onlineProjects.includes('View member contributions')&&!onlineProjects.includes('GuildProjectContributionsModal')&&projectClient.includes("db.rpc('guild_roster'"),'Project contributions must be visible directly below Weekly Projects with live roster data, without a launch button');
+ok(contributionPanel.includes('const TOP_COUNT=5')&&contributionPanel.includes('members.slice(0,TOP_COUNT)')&&contributionPanel.includes('Show {count} more members')&&contributionPanel.includes('<IdentityArtwork'),'Inline contributor rankings must show the top five with avatars and allow expanding the remaining members');
+ok(contributionPanel.includes('<Panel style={s.panel}>')&&!contributionPanel.includes('<GameModalSurface')&&contributionPanel.includes("project.resourceGoals.map")&&contributionPanel.includes('projects.length>1'),'Contribution panel must be inline, preserve optional project details and handle multiple active projects');
+ok(onlineProjects.includes('<GuildProjectContributionsPanel projects={completed} embedded/>')&&onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
 ok(onlineProjects.includes("project.status==='completed'"),'Live Project cards must distinguish completed state');
 ok(projectTransport.includes("v_role not in('leader','guild_master','co_leader','officer','quartermaster')"),'Server must enforce start-project role permissions');
 ok(projectTransport.includes("v_slot_cap:=case when v_level<5 then 0 when v_level<10 then 1 else 2 end"),'Server must enforce the launch-era Guild Project slot cap');

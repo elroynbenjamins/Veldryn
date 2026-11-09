@@ -23,6 +23,7 @@ const context={
  exports:{},console,Promise,Error,
  setTimeout:schedule,clearTimeout:id=>timers.delete(id),
  require:name=>name==='react'?React:name==='./supabase'?{supabase:fakeClient}:
+  name==='./coop-client'?{coopErrorMessage:reason=>reason instanceof Error?reason.message:String(reason)}:
   name==='../core/coop-sync-policy'?{
     coopSyncIntervalMs:(mode,urgency,connected)=>urgency==='decision'?(connected?3500:2000):urgency==='combat'?(connected?6000:2500):connected?(mode==='live'?12000:20000):mode==='live'?4000:6000,
   }:(()=>{throw Error('Unexpected dependency: '+name)})(),

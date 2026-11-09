@@ -5,6 +5,15 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Fixed active Online Guild Projects UI; numbers and server-authored project text remain authoritative. */
 export const onlineGuildProjectUiRows={
+  "Voting closes Monday at 00:00 UTC": ["Abstimmung endet Montag um 00:00 UTC","La votación termina el lunes a las 00:00 UTC","Stemmen sluit maandag om 00:00 UTC","Il voto termina lunedì alle 00:00 UTC","Le vote se termine lundi à 00:00 UTC","Голосование до понедельника, 00:00 UTC","Oylama pazartesi 00:00 UTC'de kapanır"],
+  "Voting opens Thursday.": ["Abstimmung beginnt am Donnerstag.","La votación comienza el jueves.","Stemmen opent donderdag.","Il voto inizia giovedì.","Le vote ouvre jeudi.","Голосование открывается в четверг.","Oylama perşembe günü açılır."],
+  "VOTE": ["ABSTIMMEN","VOTAR","STEM","VOTA","VOTER","ГОЛОС","OY VER"],
+  "Member contributions": ["Mitgliederbeiträge","Aportes de miembros","Bijdragen van leden","Contributi dei membri","Contributions des membres","Вклад участников","Üye katkıları"],
+  "View member contributions": ["Mitgliederbeiträge ansehen","Ver aportes de los miembros","Bekijk ledenbijdragen","Vedi contributi dei membri","Voir les contributions des membres","Вклад участников","Üye katkılarını görüntüle"],
+  "Top 5 contributors": ["Top 5 Mitwirkende","5 principales colaboradores","Top 5 bijdragers","Primi 5 contributori","Top 5 des contributeurs","Топ-5 участников","En çok katkı yapan 5 üye"],
+  "Show {count} more members": ["{count} weitere Mitglieder anzeigen","Mostrar {count} miembros más","Toon nog {count} leden","Mostra altri {count} membri","Afficher {count} membres de plus","Показать ещё {count} участников","{count} üye daha göster"],
+  "Show top 5 only": ["Nur Top 5 anzeigen","Mostrar solo los 5 primeros","Toon alleen top 5","Mostra solo i primi 5","Afficher seulement le top 5","Показать только топ-5","Yalnızca ilk 5 üyeyi göster"],
+  "Project details": ["Projektdetails","Detalles del proyecto","Projectdetails","Dettagli del progetto","Détails du projet","Детали проекта","Proje ayrıntıları"],
   "Reward claim timing unavailable": ["Abholfrist nicht verfügbar","Plazo de cobro no disponible","Claimtermijn niet beschikbaar","Scadenza ricompensa non disponibile","Délai de récupération indisponible","Срок получения награды недоступен","Ödül alma süresi bilinmiyor"],
   "Ready to claim": ["Bereit zum Abholen","Listo para reclamar","Klaar om te claimen","Pronto per il riscatto","Prêt à récupérer","Можно получить","Alınmaya hazır"],
   "{count} personal effort short of reward eligibility": ["Noch {count} persönliche Einsatzpunkte bis zur Belohnung","Faltan {count} puntos personales para la recompensa","Nog {count} eigen inzetpunten nodig voor beloning","Mancano {count} punti personali alla ricompensa","Encore {count} points personnels avant la récompense","До награды не хватает {count} личных очков","Ödül için {count} kişisel çaba daha gerekli"],

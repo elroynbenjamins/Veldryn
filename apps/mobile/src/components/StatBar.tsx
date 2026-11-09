@@ -9,7 +9,9 @@ export function StatBar({label,current,max,reduceMotion=true,rounded=false}:{lab
  const fill=useRef(new Animated.Value(progress)).current;
  useEffect(()=>{fill.stopAnimation();if(reduceMotion){fill.setValue(progress);return;}const animation=Animated.timing(fill,{toValue:progress,duration:220,useNativeDriver:false});animation.start();return()=>animation.stop();},[fill,progress,reduceMotion]);
  const description=`${Math.floor(value)} / ${Math.floor(total)}`;
- return <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{min:0,max:100,now:Math.round(progress*100),text:description}}>
+ // An incomplete XP bar must not round to 100% for accessibility readers.
+ const percentage=progress>=1?100:Math.min(99,Math.floor(progress*100));
+ return <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{min:0,max:100,now:percentage,text:description}}>
   <View style={s.row}><Text style={s.label}>{label}</Text><Text style={s.value}>{description}</Text></View>
   <View style={[s.track,rounded&&{height:7,borderRadius:99,borderWidth:1,borderColor:C.lineStrong}]} ><Animated.View style={[s.fill,rounded&&{backgroundColor:C.good,borderRadius:99},{width:fill.interpolate({inputRange:[0,1],outputRange:['0%','100%'],extrapolate:'clamp'})}]}/></View>
  </View>;

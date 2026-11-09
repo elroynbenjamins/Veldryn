@@ -132,13 +132,13 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
    </View>
   </Panel>:null}
   {snapshot.choiceAvailable?<Panel>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Vote for next week's project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Vote for next week's project")}</Text><View style={s.actions}>{snapshot.candidates.length>0&&!snapshot.candidates.some(candidate=>candidate.myVote)?<StatusPill label={ui("VOTE")} tone="info"/>:null}<Text style={s.meta}>{ui("One vote per member")}</Text></View></View>
    {snapshot.candidates.length?<>
     <Text style={s.meta}>{ui('Voting closes {date}',{date:new Date(snapshot.candidates[0].expiresAt).toLocaleString()})}</Text>
     {snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy}
      onVote={()=>void act('vote',candidate.id)}/>)}
     <Text style={s.meta}>{ui('If nobody votes, the Medium project starts automatically.')}</Text>
-   </>:<Text style={s.copy}>{ui('Voting opens Thursday at Guild Level 3.')}</Text>}
+   </>:<Text style={s.copy}>{ui('Voting opens Thursday.')}</Text>}
   </Panel>:null}
   {completed.length||snapshot.activity.length?<Panel>
    <Pressable accessibilityRole="button" accessibilityLabel={ui("Recent Guild progress")} accessibilityState={{expanded:showHistory}}

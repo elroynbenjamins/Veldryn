@@ -1,6 +1,8 @@
 import type {ReactNode} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {guildGuideLibraryText} from '../i18n/guild-guide-library';
 import {ThemedIcon} from './ThemedNavigationIcon';
 
 /** Guild Home is a dashboard, not a second copy of every Guild section.
@@ -9,7 +11,7 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
  activity:ReactNode;board?:ReactNode;summary?:ReactNode;chatUnread?:number;canManage?:boolean;
  onQuests:()=>void;onShop:()=>void;onPve:()=>void;onRoster:()=>void;onHall:()=>void;onChat:()=>void;onManage:()=>void;onGuide?:()=>void;
 }){
- const C=useGameTheme();
+ const C=useGameTheme(),language=useGameLanguage(),guideLabel=guildGuideLibraryText(language,'Guild Guide');
  const quickLinks=[
   {title:chatUnread>0?`Chat · ${chatUnread>99?'99+':chatUnread}`:'Chat',action:onChat},
   {title:'Members',action:onRoster},
@@ -29,8 +31,8 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
   {summary}
   {board?<View style={s.section}><View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
    <Text style={[s.kicker,{color:C.muted}]}>GUILD NOTICE</Text>
-   {onGuide?<Pressable accessibilityRole="button" accessibilityLabel="Guild Guide" onPress={onGuide} style={{minHeight:44,justifyContent:'center',paddingHorizontal:8}}>
-    <Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>Guild Guide ›</Text>
+   {onGuide?<Pressable accessibilityRole="button" accessibilityLabel={guideLabel} onPress={onGuide} style={{minHeight:44,justifyContent:'center',paddingHorizontal:8}}>
+    <Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{guideLabel} ›</Text>
    </Pressable>:null}
   </View>{board}</View>:null}
   <View style={s.section}>{activity}</View>

@@ -179,7 +179,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
        <GuildSectionHeader label={st('Guild')} title={socialLabel(language,'Guild Activity Board')} copy="Shared objectives and daily participation." action={headerGuide}/>
       <BoardTabs compact label="Guild activity boards" items={[{id:'Quests',label:'Quests'},{id:'Muster',label:'Muster'}] as const} value={activityView} onChange={setActivityView}/>
       {activityView==='Quests'?<><GuildActivitySummaryPanel compact/><GuildQuestPanel/></>:null}
-      {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={st("Your daily progress and weekly Guild Rally.")}/><OnlineGuildMusterPanel/></>:null}
+      {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={guildTutorialText(language,'Track your daily effort and weekly Guild Rally progress.')}/><OnlineGuildMusterPanel/></>:null}
     </View>:null}
     {onlineSection==='Progress'?<GuildProgressPanel headerHelp={headerGuide} tab={progressTab} onChange={setProgressTab} projects={onlineProjects} onViewBank={()=>{setHallSection('Bank');setOnlineSection('Hall');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
     {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide}):onlinePve):null}

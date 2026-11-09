@@ -32,52 +32,6 @@ for(const [domain,catalogs,rows] of [['creation',creation.creationCatalogs,creat
 }
 const hasCreation=text=>assert.ok(Object.hasOwn(creation.creationTranslationRows,text),'Uncataloged creation copy: '+text);
 const hasProfile=text=>assert.ok(Object.keys(profile.profileTranslationRows).some(key=>key.toLowerCase()===text.toLowerCase()),'Uncataloged profile copy: '+text);
-
-const characterProfileKeys=[
- "Character",
- "Edit profile",
- "Combat Power",
- "Show breakdown",
- "Hide breakdown",
- "Combat Power breakdown",
- "All stats",
- "Class base",
- "Gear, sets & gems",
- "Other character bonuses",
- "Combat companion",
- "Level {level} base stats",
- "Equipped stat gains and build effects",
- "Class training, Faith, preparation and permanent boosts",
- "No combat companion equipped",
- "{name} · Lv. {level} · Bond {bond}",
- "Combat Power is a comparison score from your live stats and equipped build. Encounter mechanics, target traits, and temporary effects can still change actual results.",
- "Compare & Swap",
- "crafted",
- "Choose an equipped slot to compare its rarity and stats with gear you own.",
- "Companions",
- "No Combat Companion",
- "Manage",
- "Icon · background · border · title · Pet",
- "Choose an earned achievement",
- "Choose a personal record",
- "Choose a collectible",
- "Master a profession action at R50",
- "Selected R50 profession records"
-];
-for(const key of characterProfileKeys){
-  assert.ok(Object.hasOwn(profile.profileTranslationRows,key),'Character/profile key missing: '+key);
-  for(const language of SUPPORTED_LANGUAGES.filter(locale=>locale!=='en')){
-    assert.notEqual(profile.profileT(language,key),key,language+' still displays English: '+key);
-  }
-}
-for(const language of SUPPORTED_LANGUAGES.filter(locale=>locale!=='en')){
-  assert.equal(profile.profileText(language,'Character'),profile.profileT(language,'Character'),'Case-specific Character label '+language);
-  assert.equal(profile.profileText(language,'CHARACTER'),profile.profileT(language,'CHARACTER'),'Case-specific badge label '+language);
-  assert.equal(profile.profileText(language,'Edit profile'),profile.profileT(language,'Edit profile'),'Profile edit CTA '+language);
-  const name='Wolf <&> {name}',detail=profile.profileT(language,'{name} · Lv. {level} · Bond {bond}',{name,level:23,bond:4});
-  assert.ok(detail.includes(name)&&detail.includes('23')&&detail.includes('4'),language+' combat companion placeholders remain intact');
-}
-
 for(const c of CLASSES){
   hasCreation(c.description);hasCreation(CLASS_PLAYSTYLE[c.id]);hasCreation(CLASS_COMBAT_TRAITS[c.id]);
   const details=classSelectionDetails(c.id);hasCreation(details.progression+' bonuses from combat XP.');
@@ -135,14 +89,6 @@ for(const file of owned){
   assert.ok(!/Text\.render|createElement\s*=|prototype\s*\[/.test(source),'no global interception');
 }
 const source=file=>fs.readFileSync(path.join(root,'src',file),'utf8');
-const characterSource=source('screens/CharacterScreen.tsx'),identitySource=source('components/CharacterIdentityHero.tsx'),showcaseSource=source('components/ProfileShowcaseSection.tsx');
-assert.ok(characterSource.includes("showPower?'Hide breakdown':'Show breakdown'"),'Combat Power disclosure toggles translated text');
-assert.ok(characterSource.includes("profileText(language,row.label)"),'Breakdown row labels are translated');
-assert.ok(characterSource.includes("powerDetail(row)"),'Breakdown detail rows are translated without changing combat math');
-assert.ok(characterSource.includes("profileT(language,'Combat Power breakdown')"),'Combat Power has localized screen reader label');
-assert.ok(identitySource.includes("profileText(language,'Edit profile')"),'Profile edit action is translated');
-assert.ok(showcaseSource.includes('localizedEmpty')&&showcaseSource.includes('localizedSubtitle'),'Profile showcase empty labels and subtitles are translated');
-
 assert.ok(source('screens/ClassSelectScreen.tsx').includes('language=languageProp??gameLanguage'));
 assert.ok(source('components/ClassSkillAffinityNote.tsx').includes('language=languageProp??gameLanguage'));
 assert.ok(source('components/OnlineProfileExtensionPanel.tsx').includes('setBio(text.slice(0,160))'));

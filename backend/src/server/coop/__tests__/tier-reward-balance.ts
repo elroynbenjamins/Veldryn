@@ -23,7 +23,7 @@ tiers.forEach((tier,i)=>{
 });
 assert.deepEqual(coopTierEnemyMultipliers(1),{attack:1,hp:1,defense:1});
 assert.equal(readinessEligibleCoopTier(15,rebaseLegacyCombatLevel(25),.8),1,'Minimal gear must not be auto-queued at the highest unlocked tier');
-assert.equal(readinessEligibleCoopTier(15,rebaseLegacyCombatLevel(35),1.05),5,'Strong verified gear may enter higher auto tiers');
+assert.equal(readinessEligibleCoopTier(15,rebaseLegacyCombatLevel(35),1.05),3,'Strong verified gear can auto-queue at Heroic but not retired Tier 4/5');
 assert.equal(readinessEligibleCoopTier(15,rebaseLegacyCombatLevel(20),1.5),2,'Character level remains an upper bound');
 assert.equal(readinessEligibleCoopTier(15,25,.79),undefined,'Invalid role readiness cannot auto-queue');
 const roster=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(className=>launchPlayer(className,25));

@@ -65,6 +65,8 @@ export function rebaseCombatGameState(state:GameState):GameState{
   if(character===state.character&&(!otherCharacters||otherCharacters.every((entry,index)=>entry===state.otherCharacters?.[index])))return state;
   return {...state,character,otherCharacters};
 }
+/** Class combat disciplines use a separate, steeper curve from profession XP. */
+export function classCombatSkillProgressWithinLevel(totalXp:number,level:number){const floor=classCombatSkillTotalXpAtLevel(level);return{current:Math.max(0,totalXp-floor),need:classCombatSkillXpForNextLevel(level)};}
 export function progressWithinLevel(totalXp:number,level:number){const floor=totalXpAtLevel(level);return{current:Math.max(0,totalXp-floor),need:skillXpForNextLevel(level)};}
 export function characterProgressWithinLevel(totalXp:number,level:number){const floor=characterTotalXpAtLevel(level);return{current:Math.max(0,totalXp-floor),need:characterXpForNextLevel(level)};}
 export const XP_SCALING={skill:SKILL_XP_SCALE,character:CHARACTER_XP_SCALE};

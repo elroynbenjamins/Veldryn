@@ -25,8 +25,8 @@ function sourceSummary(member:OnlineGuildProjectMemberContribution,ui:ReturnType
 }
 
 /** Member rankings and the former inline project details in one compact, scrollable sheet. */
-export function GuildProjectContributionsModal({project,title,onClose}:{
- project:OnlineGuildProjectSummary;title:string;onClose:()=>void;
+export function GuildProjectContributionsModal({project,title,description,onClose}:{
+ project:OnlineGuildProjectSummary;title:string;description:string;onClose:()=>void;
 }){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAll,setShowAll]=useState(false);
@@ -68,7 +68,7 @@ export function GuildProjectContributionsModal({project,title,onClose}:{
     onPress={()=>setShowAll(value=>!value)}/>:null}
    <View style={s.details}>
     <Text style={s.sectionTitle}>{ui('Project details')}</Text>
-    <Text style={s.description}>{project.description}</Text>
+    <Text style={s.description}>{description}</Text>
     {project.kind!=='development'?<View style={s.breakdown}>
      <Text style={s.muted}>{ui('Combat: {count}',{count:project.combatPoints.toLocaleString()})}</Text>
      <Text style={s.muted}>{ui('Skilling: {count}',{count:project.skillingPoints.toLocaleString()})}</Text>

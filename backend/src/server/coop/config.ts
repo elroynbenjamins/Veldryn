@@ -1,14 +1,25 @@
 import {EXPEDITION} from '../expeditions/constants';
 /** Server-only mirror of the published Combat XP rebasing curve.
  * Kept inside backend/src to avoid importing mobile files into the backend
- * rootDir-only build. Online parity tests compare both implementations. */
+ * rootDir-only build. Online parity tests compare both implementations.
+ *
+ * These three numbers are the whole mirror, and they must stay equal to
+ * apps/mobile/src/core/progression.ts:
+ *   LEGACY_EXPONENT   <- baseXpForNextLevel, scaled by CHARACTER_XP_SCALE
+ *   CHARACTER_EXPONENT <- CHARACTER_XP_EXPONENT, the combat curve players are on
+ *   XP_SCALE          <- CHARACTER_XP_SCALE
+ * CLASS_COMBAT_XP_EXPONENT (2.09) is a different, steeper curve used only by
+ * class combat disciplines. It must never appear here: reading a character
+ * level off it under-levels every player and closes co-op gates the client
+ * has already opened. */
+const LEGACY_EXPONENT=1.42,CHARACTER_EXPONENT=1.65,XP_SCALE=8;
 export function rebaseLegacyCombatLevel(level:number):number {
   const bounded=Math.max(1,Math.min(100,Math.floor(Number.isFinite(level)?level:1)));
   let earned=0;
-  for(let previous=1;previous<bounded;previous++)earned+=Math.floor(90*Math.pow(previous,1.42)+previous*35)*8;
+  for(let previous=1;previous<bounded;previous++)earned+=Math.floor(90*Math.pow(previous,LEGACY_EXPONENT)+previous*35)*XP_SCALE;
   let current=1,spent=0;
   while(current<100){
-    const need=Math.floor(90*Math.pow(current,2.09)+current*35)*8;
+    const need=Math.floor(90*Math.pow(current,CHARACTER_EXPONENT)+current*35)*XP_SCALE;
     if(spent+need>earned)return current;
     spent+=need;
     current++;

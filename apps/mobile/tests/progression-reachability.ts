@@ -58,7 +58,8 @@ for(const recipe of gearInTier('T2')){
 for(const recipe of gearInTier('T1'))ok(recipe.inputs.some(row=>row.itemId==='VERDANT_BINDING_RESIN'),'T1 gear must continue using Verdant resin');
 const ironwoodResin=RECIPES.find(row=>row.id==='BREW_IRONWOOD_BINDING_RESIN')!;
 ok(!!ironwoodResin&&ironwoodResin.level<=8,'T2 resin must unlock by Alchemy 8');
-ok(ironwoodResin.inputs.length>=3&&ironwoodResin.inputs.every(input=>['IRONWOOD_LOG','THORN_SAP','WOLF_PELT'].includes(input.itemId)),'T2 resin must use exclusively obtainable Ironwood materials');
+ok(ironwoodResin.inputs.length===3&&ironwoodResin.inputs.every(input=>['IRONWOOD_LOG','THORN_SAP','IRONWOOD_FANG'].includes(input.itemId)),'T2 resin must use exclusively obtainable Ironwood materials');
+ok(ironwoodResin.inputs.find(input=>input.itemId==='IRONWOOD_LOG')?.quantity===6&&ironwoodResin.inputs.find(input=>input.itemId==='THORN_SAP')?.quantity===6&&ironwoodResin.inputs.find(input=>input.itemId==='IRONWOOD_FANG')?.quantity===2,'T2 resin must consume 6 logs, 6 sap and 2 Ironwood Fangs');
 const materialDropLevels=(id:string)=>MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===id)).map(monster=>monster.level);
 for(const [id,lower,higher] of [['MOSS_FIBER',1,8],['WISP_DUST',2,5],['BOAR_HIDE',4,7],['WOLF_PELT',7,14],['IRONWOOD_FANG',7,14],['THORN_SAP',8,10],['TROLL_HIDE',14,22]] as const){
  const levels=materialDropLevels(id);

@@ -1,12 +1,21 @@
 import {deepEqual,equal} from './assertions';
 import {GUILD_TUTORIAL_STEPS,advanceGuildTutorial,createGuildTutorialStore,normalizeGuildTutorialProgress} from '../src/core/guild-tutorial';
 import {guildTutorialText} from '../src/i18n/guild-tutorial';
+import {guildDetailedGuide} from '../src/core/guild-detailed-guides';
 
 async function testGuildTour(){
  deepEqual(GUILD_TUTORIAL_STEPS.map(step=>step.destination),['Home','Muster','Projects','PvE','Hall'],'new Guild tour has five reachable destinations');
  deepEqual(normalizeGuildTutorialProgress(null),{step:0,status:'new'},'existing Guild members are not interrupted on first app update');
  equal(guildTutorialText('nl',GUILD_TUTORIAL_STEPS[1].title),'Je dagelijkse spel telt mee','compact tour retains the translated Muster step');
  equal(guildTutorialText('nl','Guild Quests'),'Gildequests','new Guild Quest help is localized');
+ for(const section of ['Progress/Projects','Progress/Skills','Hall/Bank','Hall/Construction']){
+  const guide=guildDetailedGuide(section);
+  equal(guide?.topics.length,3,section+' has three expanded help topics');
+  equal(guide?.topics.every(topic=>topic.title.length>0&&topic.body.length>50),true,section+' topics contain practical explanations');
+ }
+ equal(guildDetailedGuide('Hall/Legacy'),undefined,'other screens retain lightweight section help');
+ equal(guildDetailedGuide('Hall/Bank')?.topics.some(topic=>topic.body.includes('cannot be withdrawn')),true,'bank guide explains permanent deposits');
+
  deepEqual(normalizeGuildTutorialProgress({step:500,status:'active'}),{step:4,status:'active'},'tour step is bounded');
  deepEqual(advanceGuildTutorial({step:3,status:'active'}),{step:4,status:'active'},'next step is the Hall');
  deepEqual(advanceGuildTutorial({step:4,status:'active'}),{step:4,status:'complete'},'last step finishes the tour');

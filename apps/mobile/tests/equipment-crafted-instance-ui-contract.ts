@@ -17,7 +17,7 @@ const forgeFeedback=read('src/components/ForgeResultFeedback.tsx');
 const save=read('src/core/save-normalization.ts');
 
 ok(rarity.includes('CRAFTED_MYTHIC_CHANCE=.001')&&rarity.includes('CRAFTED_EPIC_CHANCE=.006'),'Forge quality odds must remain exactly 0.10% Mythic / 0.60% Epic');
-ok(rarity.includes("return 'common'")&&rarity.includes('forgeRarityRolls'),'Forge rarity rolls follow the shared per-tier table and retain common fallback');
+ok(rarity.includes('forgeRarityRolls')&&rarity.includes("return 'common'"),'Forge rarity rolls must use the same explicit outcomes and Common fallback for every equipment tier');
 ok(instances.includes("acquireSource:'craft'"),'Crafted equipment must persist acquisition provenance');
 ok(instances.includes('sourceReceiptKey:args.jobId'),'Forge job receipt must make settlement idempotent');
 ok(instances.includes('bestCraftedInstanceForItem'),'Duplicate copies need a deterministic best-copy compatibility bridge');
@@ -60,8 +60,8 @@ ok(oddsGuide.includes('craftedGearQualityMultiplier(quality)')&&oddsGuide.includ
  'Preview must multiply actual rarity and quality effects, never add them');
 ok(oddsGuide.includes('craftedGearQualityChanceAtLeast(quality)')&&oddsGuide.includes('onAccessibilityAction'),
  'Quality control must expose real weighted chances and accessible adjustments');
-ok(oddsGuide.includes("gt('Rarity and quality roll on claim.')")&&oddsGuide.includes("gt('Odds depend on the recipe.')"),
- 'Rarity/quality preview must explain recipe-dependent odds and claim-time randomness without a purchasing action');
+ok(oddsGuide.includes("gt('Rarity and quality roll on claim.')")&&oddsGuide.includes("gt('Rarity and quality both affect stats.')"),
+ 'Rarity/quality preview must explain claim-time randomness and real stat effects without misleading tier-based rarity odds');
 
 ok(oddsGuide.includes('style={s.chanceGrid}')&&oddsGuide.includes('s.chanceTile')&&oddsGuide.includes("const stacked=width<320||fontScale>=1.45"),
  'Forge odds must use space-efficient two-column tiles that expand for accessibility or narrow screens');

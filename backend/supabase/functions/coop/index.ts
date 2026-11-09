@@ -778,13 +778,16 @@ function eventExpeditionPreviews(nowMs) {
 }
 
 // src/server/coop/config.ts
+var LEGACY_EXPONENT = 1.42;
+var CHARACTER_EXPONENT = 1.65;
+var XP_SCALE = 8;
 function rebaseLegacyCombatLevel(level) {
   const bounded = Math.max(1, Math.min(100, Math.floor(Number.isFinite(level) ? level : 1)));
   let earned = 0;
-  for (let previous = 1; previous < bounded; previous++) earned += Math.floor(90 * Math.pow(previous, 1.42) + previous * 35) * 8;
+  for (let previous = 1; previous < bounded; previous++) earned += Math.floor(90 * Math.pow(previous, LEGACY_EXPONENT) + previous * 35) * XP_SCALE;
   let current = 1, spent = 0;
   while (current < 100) {
-    const need = Math.floor(90 * Math.pow(current, 2.09) + current * 35) * 8;
+    const need = Math.floor(90 * Math.pow(current, CHARACTER_EXPONENT) + current * 35) * XP_SCALE;
     if (spent + need > earned) return current;
     spent += need;
     current++;

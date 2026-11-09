@@ -1,5 +1,5 @@
 import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
-import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
@@ -20,6 +20,7 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
 ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a recipe');
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
+ok(T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER===1.25,'T2–T4 equipment forge XP must be increased by exactly 25%');
 ok(T3_T4_DUNEWOOD_REDUCTION_FACTOR===0.8,'T3/T4 assembly Dunewood must be 20% below the recently tripled cost');
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
 const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
@@ -30,7 +31,10 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const highSunscar=recipe.v33EquipmentTier==='T3'||recipe.v33EquipmentTier==='T4';
   ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3)*(highSunscar?2:1),recipe.id+' must use the existing forge baseline plus exactly 2× Gold for T3/T4 only');
   const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
-  ok(recipe.xp===baselineXp+(highSunscar?20:0),recipe.id+' must add exactly 20 XP on T3/T4 only');
+  const previousXp=baselineXp+(highSunscar?20:0);
+  const boostedTier=['T2','T3','T4'].includes(recipe.v33EquipmentTier);
+  ok(recipe.xp===(boostedTier?Math.round(previousXp*1.25):previousXp),recipe.id+' must apply 25% more equipment crafting XP only to T2–T4, retaining the T3/T4 +20 baseline');
+  ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
 for(const recipe of NOVICE_RECIPES){
@@ -215,4 +219,4 @@ ok(readyPath.canCraftNow&&readyPath.blockers.length===0,'Recipe planner should b
 const crafted=craftRecipe(state,t1.id,1000);
 ok(crafted.inventory.stacks.some(row=>row.itemId==='T1P_001'&&row.quantity===1),'Authoritative craft path must actually create the V33 equipment piece');
 
-console.log('PASS: all V33 and novice equipment recipes charge 20% above the triple-Gold forge baseline, with paced, sourceable, actionable V33 crafting');
+console.log('PASS: V33 equipment T2–T4 grants 25% more crafting XP; other tiers and existing Gold/material balance remain unchanged');

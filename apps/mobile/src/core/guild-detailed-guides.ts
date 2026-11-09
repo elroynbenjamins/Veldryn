@@ -23,6 +23,7 @@ export const GUILD_DETAILED_GUIDES:Readonly<Record<string,GuildDetailedGuide>>={
   topics:[
    {id:'members',title:'Find your Guildmates',body:'The Members list shows the current roster, Guild roles and join information. Search or filter by role, then open a member for their details. You do not need leadership permissions to browse.'},
    {id:'roles',title:'Roles and member requests',body:'Leaders and Officers can review membership requests and invitations from the Requests section and perform permitted roster actions. Ordinary members can view the Guild but cannot manage applications or another member’s role. Changes are validated by the server.'},
+   {id:'membership',title:'Membership and leaving',body:'The Membership tab shows the current leadership safety status and departure controls. Ordinary members and Officers can leave after confirming; leaving removes Guild access until joining another Guild, but account-wide purchased rewards remain theirs. Leaders must arrange a leadership transfer or choose the separate permanent Guild disband action with its own confirmation.'},
   ],
  },
  'Manage':{

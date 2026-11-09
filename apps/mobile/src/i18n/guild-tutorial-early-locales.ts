@@ -1,7 +1,7 @@
 import type {Language} from './languages';
 import {GUILD_TUTORIAL_STEPS} from '../core/guild-tutorial';
 
-/** Seven current guild walkthrough steps, preserving their existing navigation. */
+/** Legacy seven-stop translation catalog, mapped onto the current five-stop tour. */
 export const guildTutorialEarlySteps=[
   [
     [
@@ -91,13 +91,13 @@ export const guildTutorialEarlySteps=[
     [
       "Теперь вы готовы участвовать",
       "Зал показывает здания и постоянные бонусы. Начните с объявлений, полезного занятия и проверки прогресса.",
-      "Зал → Магазин использует жетоны гильдии. Строительство открывает бонусы и товары, но не бесплатную косметику. В банк можно жертвовать только на активные проекты. Обучение можно повторить с Главной гильдии.",
+      "Зал → Магазин использует жетоны гильдии. Строительство открывает бонусы и товары, но не бесплатную косметику. Взносы в банк идут на доступные улучшения строительства и навыков гильдии, их нельзя забрать обратно. Обучение можно повторить с Главной гильдии.",
       "Изучить зал гильдии"
     ],
     [
       "Artık hazırsın",
       "Salon, tesisleri ve kalıcı bonusları gösterir. Önce duyuruları oku, yararlı bir etkinlik yap ve ilerlemeyi kontrol et.",
-      "Salon → Mağaza Lonca Jetonları kullanır. İnşaat avantaj ve mağaza erişimi açar, ücretsiz kozmetik vermez. Banka yalnızca etkin projeler için bağış yapılır. Rehberi Lonca Ana Sayfasından yineleyebilirsin.",
+      "Salon → Mağaza Lonca Jetonları kullanır. İnşaat avantaj ve mağaza erişimi açar, ücretsiz kozmetik vermez. Lonca Bankasındaki bağışlar açık İnşaat ve Lonca Yeteneklerini finanse eder, geri alınamaz. Rehberi Lonca Ana Sayfasından yineleyebilirsin.",
       "Lonca Salonunu keşfet"
     ]
   ]
@@ -131,6 +131,14 @@ export const guildTutorialEarlyRows={
   "Resume guild guide": [
     "Продолжить обучение гильдии",
     "Lonca rehberine devam et"
+  ],
+  "Start guild guide": [
+    "Начать обучение гильдии",
+    "Lonca rehberini başlat"
+  ],
+  "Skip tour": [
+    "Пропустить обучение",
+    "Rehberi atla"
   ],
   "Replay guild guide": [
     "Пройти обучение заново",
@@ -207,7 +215,8 @@ export function guildTutorialEarlyText(language:Language,source:string):string|u
  for(let i=0;i<GUILD_TUTORIAL_STEPS.length;i++){
   const step=GUILD_TUTORIAL_STEPS[i];
   const field=[step.title,step.body,step.tip,step.action].indexOf(source);
-  if(field>=0)return guildTutorialEarlySteps[i]?.[column]?.[field]??source;
+  const legacyStepIndex=([0,2,4,5,6] as const)[i];
+  if(field>=0)return guildTutorialEarlySteps[legacyStepIndex]?.[column]?.[field]??source;
  }
  return undefined;
 }

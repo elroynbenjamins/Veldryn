@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {guildDetailedGuide} from '../core/guild-detailed-guides';
-import {guildGuideLibraryText,type GuildGuideLibraryLabel} from '../i18n/guild-guide-library';
+import {guildGuideLibraryText,guildGuideSectionTitle,type GuildGuideLibraryLabel} from '../i18n/guild-guide-library';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ThemedIcon} from './ThemedNavigationIcon';
@@ -35,20 +35,20 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
      <View style={[s.icon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={23}/></View>
      <View style={s.flex}>
       <Text style={[s.eyebrow,{color:C.accent}]}>{t('Guild Guide').toUpperCase()}</Text>
-      <Text accessibilityRole="header" style={[s.title,{color:C.text}]}>{guide?.title??t('Browse guides')}</Text>
+      <Text accessibilityRole="header" style={[s.title,{color:C.text}]}>{guide&&section?guildGuideSectionTitle(language,section,guide.title):t('Browse guides')}</Text>
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={t('Close Guild Guide')} onPress={onClose} style={[s.close,{borderColor:C.line}]}><Text style={[s.closeText,{color:C.text}]}>×</Text></Pressable>
     </View>
-    {!guide?<ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+    {!guide?<ScrollView style={s.libraryScroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
      <Text style={[s.intro,{color:C.muted}]}>{t('Choose a Guild topic to learn more.')}</Text>
      {GROUPS.filter(group=>!group.leadership||leadership).map(group=><View key={group.id} style={s.group}>
       <Text style={[s.groupTitle,{color:C.accent}]}>{t(group.id)}</Text>
       <View style={s.tiles}>{group.sections.map(id=>{
        const item=guildDetailedGuide(id);
        if(!item)return null;
-       return <Pressable key={id} accessibilityRole="button" accessibilityLabel={item.title} onPress={()=>choose(id)}
+       return <Pressable key={id} accessibilityRole="button" accessibilityLabel={guildGuideSectionTitle(language,id,item.title)} onPress={()=>choose(id)}
         style={({pressed})=>[s.tile,{backgroundColor:C.panel2,borderColor:C.line},pressed&&s.pressed]}>
-        <Text style={[s.tileTitle,{color:C.text}]}>{item.title}</Text>
+        <Text style={[s.tileTitle,{color:C.text}]}>{guildGuideSectionTitle(language,id,item.title)}</Text>
         <Text numberOfLines={2} style={[s.tileDescription,{color:C.muted}]}>{item.body}</Text>
        </Pressable>;
       })}</View>
@@ -62,7 +62,7 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
        <Text style={[s.topicLabel,{color:topicIndex===index?C.text:C.muted}]}>{item.title}</Text>
       </Pressable>)}
      </ScrollView>
-     <ScrollView contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false}>
+     <ScrollView style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false}>
       {topic?<><Text accessibilityRole="header" style={[s.topicHeading,{color:C.text}]}>{topic.title}</Text><Text style={[s.topicText,{color:C.muted}]}>{topic.body}</Text></>:null}
      </ScrollView>
     </View>}
@@ -72,14 +72,15 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
 }
 const s=StyleSheet.create({
  shade:{flex:1,justifyContent:'center',paddingHorizontal:14,paddingVertical:25,backgroundColor:'rgba(0,0,0,0.78)'},
- modal:{maxHeight:'92%',width:'100%',maxWidth:480,alignSelf:'center',gap:10,padding:13,borderWidth:1,borderRadius:16,overflow:'hidden'},
+ modal:{maxHeight:'92%',minHeight:0,width:'100%',maxWidth:480,alignSelf:'center',gap:10,padding:13,borderWidth:1,borderRadius:16,overflow:'hidden'},
+ libraryScroll:{flexShrink:1,minHeight:0},
  header:{flexDirection:'row',alignItems:'center',gap:9},flex:{flex:1,minWidth:0},icon:{width:42,height:42,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
  eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:.7},title:{fontSize:18,lineHeight:24,fontWeight:'800'},
- close:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},closeText:{fontSize:22,lineHeight:27},
+ close:{width:44,height:44,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},closeText:{fontSize:22,lineHeight:27},
  body:{gap:13,paddingBottom:12},intro:{fontSize:12.5,lineHeight:19},group:{gap:7},groupTitle:{fontSize:11,fontWeight:'900',letterSpacing:.6},
  tiles:{flexDirection:'row',flexWrap:'wrap',gap:7},tile:{width:'48%',minWidth:130,flexGrow:1,gap:4,padding:10,minHeight:83,borderWidth:1,borderRadius:10,justifyContent:'center'},
  tileTitle:{fontSize:13,fontWeight:'800'},tileDescription:{fontSize:11,lineHeight:16},pressed:{opacity:.8},
- detail:{minHeight:190,maxHeight:'80%',gap:10},back:{minHeight:36,alignSelf:'flex-start',justifyContent:'center'},backText:{fontSize:12,fontWeight:'800'},
- topicRow:{gap:6,paddingVertical:2},topicButton:{minHeight:42,maxWidth:190,paddingHorizontal:10,paddingVertical:7,justifyContent:'center',borderWidth:1,borderRadius:9},
- topicLabel:{fontSize:12,fontWeight:'800'},topicBody:{gap:8,paddingBottom:8},topicHeading:{fontSize:15,lineHeight:21,fontWeight:'800'},topicText:{fontSize:13,lineHeight:21},
+ detail:{minHeight:190,maxHeight:'80%',flexShrink:1,gap:10},back:{minHeight:44,alignSelf:'flex-start',justifyContent:'center'},backText:{fontSize:12,fontWeight:'800'},
+ topicRow:{gap:6,paddingVertical:2},topicButton:{minHeight:44,maxWidth:190,paddingHorizontal:10,paddingVertical:7,justifyContent:'center',borderWidth:1,borderRadius:9},
+ topicLabel:{fontSize:12,fontWeight:'800'},topicScroll:{flexShrink:1,minHeight:0},topicBody:{gap:8,paddingBottom:8},topicHeading:{fontSize:15,lineHeight:21,fontWeight:'800'},topicText:{fontSize:13,lineHeight:21},
 });

@@ -811,6 +811,9 @@ export const profileT = createTranslator(profileCatalogs);
 /** Only use with authored content fields; proper names and unknown content pass through. */
 export function profileText(language:Language,source:string):string{
   if(language==='en')return source;
+  // Preserve capitalization-specific variants such as Character vs CHARACTER.
+  // The old lowercase-only lookup could accidentally select an all-caps badge.
+  if(Object.prototype.hasOwnProperty.call(profileTranslationRows,source))return profileT(language,source as ProfileKey);
   const key=profileKeyByLowerCase.get(source.toLowerCase());
   return key?profileT(language,key):source;
 }

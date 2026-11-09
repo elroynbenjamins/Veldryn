@@ -26,6 +26,13 @@ async function main(){
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
  assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
+ for(const dungeon of projection.dungeons){
+  assert.deepEqual(dungeon.difficulties,[1,2,3],'Only the three published tiers are offered');
+  assert.deepEqual(Object.keys(dungeon.expectedMarksByTier),['1','2','3'],'Reward previews must only include selectable tiers');
+  assert.deepEqual(dungeon.itemDropRates,[],'No permanent item drop rates may be invented before server settlement supports them');
+ }
+ const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_004');
+ assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Mirage Well tier rewards must use canonical mark multipliers');
  assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_003','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'],'Only Sunscar and later regular dungeons are listed');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.minLevel,25,'Mirage Well is the first dungeon at current Level 25');
  assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_007')?.available,false,'Ashlands dungeons must remain unavailable');

@@ -61,6 +61,29 @@ test('Holy Water source strength scales with regional Faith progression',()=>{
 });
 test('practice reserves Inventory before Bank and grants no free XP at start',()=>{let s=water(fresh(),1);s.bank.stacks=[{itemId:HOLY_WATER_ID,quantity:9}];const n=startFaithPractice(s,'FAITH_QUIET',5,T);equal(qty(n,HOLY_WATER_ID),5,'five reserved');equal(n.activity!.kind,'faith','activity');equal(n.skills,s.skills,'no xp');equal(n.activity!.faithPractice!.remainingPractices,5,'five');});
 test('practice tiers are level gated and finite',()=>{const s=water(fresh(),100);equal(faithPracticeAvailability(s,'FAITH_CANDLE',1).ready,false,'locked');equal(faithPracticeAvailability(faithAt(s,10),'FAITH_CANDLE',1).ready,true,'unlocked');throws(()=>startFaithPractice(s,'FAITH_QUIET',1001,T),'1–1000');});
+test('one Faith tap reserves affordable repeating practices even from older count-one clients',()=>{
+ const started=executeGameCommand(water(fresh(),5),{type:'faith_practice',args:{tierId:'FAITH_QUIET',count:1}},T+1000).state;
+ equal(started.activity!.faithPractice!.remainingPractices,5,'all five practices reserved on one tap');
+ equal(qty(started,HOLY_WATER_ID),0,'water reserved up front');
+ const claimed=executeGameCommand(started,{type:'claim'},T+61_000);
+ equal(claimed.reward!.faithActions,2,'two cycles complete while one activity keeps running');
+ equal(claimed.state.activity!.faithPractice!.remainingPractices,3,'remaining cycles persist after claim');
+ const stopped=executeGameCommand(claimed.state,{type:'stop'},T+62_000).state;
+ equal(qty(stopped,HOLY_WATER_ID),3,'unfinished sessions refunded after stopping');
+});
+test('continuous Faith respects higher-tier costs, Bank water and the 1000-cycle safety cap',()=>{
+ let s=faithAt(water(fresh(),6),10);
+ s={...s,bank:{...s.bank,stacks:[{itemId:HOLY_WATER_ID,quantity:4}]}};
+ const started=executeGameCommand(s,{type:'faith_practice',args:{tierId:'FAITH_CANDLE',count:1}},T+1000).state;
+ equal(started.activity!.faithPractice!.remainingPractices,5,'10 water gives 5 candle practices');
+ equal(qty(started,HOLY_WATER_ID),0,'Inventory and Bank both reserved');
+ const capped=executeGameCommand(water(fresh(),1002),{type:'faith_practice',args:{tierId:'FAITH_QUIET',count:1}},T+1000).state;
+ equal(capped.activity!.faithPractice!.remainingPractices,1000,'session bounded');
+ equal(qty(capped,HOLY_WATER_ID),2,'extra water remains available');
+ const finished=executeGameCommand(started,{type:'claim'},T+151_000);
+ equal(finished.reward!.faithActions,5,'all available repetitions are claimed together');
+ equal(finished.state.activity,null,'activity ends after reserved water is exhausted');
+});
 test('partial practice consumes no water and awards no XP',()=>{const s=startFaithPractice(water(fresh(),10),'FAITH_QUIET',10,T);const r=previewActivityReward(s,T+29_999);equal(r.faithActions,0,'none');equal(r.xp,0,'xp');equal(r.holyWaterConsumed,0,'water');});
 test('Faith progress survives frequent claims and the activity bar receives its updated fraction',()=>{
  let s=startFaithPractice(water(fresh(),3),'FAITH_QUIET',3,T);

@@ -49806,6 +49806,25 @@ var SUCCESS_BY_TARGET = [0, 0.95, 0.82, 0.67, 0.52];
 var DUST_BY_TARGET = [0, 6, 14, 28, 48];
 var CORE_BY_TARGET = [0, 0, 1, 2, 4];
 var RARITY_COST = { common: 1, uncommon: 1.2, rare: 1.6, epic: 2.2, legendary: 3.2, mythic: 4.5 };
+var UPGRADE_TIER_GOLD_MULTIPLIER = Object.freeze({
+  T1: 1,
+  T2: 1.25,
+  T3: 1.5,
+  T4: 1.85,
+  T5: 2.25,
+  T6: 2.75,
+  T7: 3.3,
+  T8: 4,
+  T9: 5
+});
+var FIRST_ENCHANT_GOLD_SURCHARGE = 200;
+function upgradeGoldCost(itemId, targetRank, rarity) {
+  if (!Number.isInteger(targetRank) || targetRank < 1 || targetRank > MAX_UPGRADE_RANK) return 0;
+  const tier = v33EquipmentRecipeForItem(itemId)?.v33EquipmentTier ?? "T1";
+  const tierMultiplier = UPGRADE_TIER_GOLD_MULTIPLIER[tier] ?? 1;
+  const rarityBase = Math.ceil(150 * targetRank * targetRank * RARITY_COST[rarity] / 10) * 10;
+  return Math.ceil(rarityBase * tierMultiplier / 10) * 10 + (targetRank === 1 ? FIRST_ENCHANT_GOLD_SURCHARGE : 0);
+}
 function safeGem(id) {
   if (typeof id !== "string" || !id) return void 0;
   try {
@@ -49873,7 +49892,7 @@ function upgradeQuote(state, itemId) {
   const current = gearEnhancement(state, itemId), targetRank = current.rank + 1;
   if (targetRank > MAX_UPGRADE_RANK) return { currentRank: current.rank, targetRank, successChance: 0, dust: 0, cores: 0, gold: 0, materials: [], maxed: true };
   const rarity = equippedCraftedInstance(state, itemId)?.rarity ?? effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
-  return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: Math.ceil(150 * targetRank * targetRank * RARITY_COST[rarity] / 10) * 10, materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
+  return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: upgradeGoldCost(itemId, targetRank, rarity), materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
 }
 function qty(stacks, id) {
   return stacks.find((s) => s.itemId === id)?.quantity ?? 0;

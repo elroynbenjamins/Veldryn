@@ -46037,6 +46037,17 @@ function equippedCanonicalGemIdsV1(state) {
 // ../apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 4;
 var UPGRADE_STAT_PER_RANK = 0.04;
+var UPGRADE_TIER_GOLD_MULTIPLIER = Object.freeze({
+  T1: 1,
+  T2: 1.25,
+  T3: 1.5,
+  T4: 1.85,
+  T5: 2.25,
+  T6: 2.75,
+  T7: 3.3,
+  T8: 4,
+  T9: 5
+});
 function safeGem(id) {
   if (typeof id !== "string" || !id) return void 0;
   try {

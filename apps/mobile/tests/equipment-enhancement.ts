@@ -1,6 +1,6 @@
 import {createCharacter,effectiveStats,equipItem,newGame,previewActivityReward,salvageItem,sellItem,sellBankItem,startCombat} from '../src/core/game';
 import {equipmentSalvageReward} from '../src/core/equipment-salvage';
-import {attemptEquipmentUpgrade,equippedEffectGemBonuses,enhancedGearStats,enhancedGearStatsAtRank,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,equippedEffectGemBonuses,enhancedGearStats,enhancedGearStatsAtRank,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote,upgradeGoldCost,UPGRADE_TIER_GOLD_MULTIPLIER,FIRST_ENCHANT_GOLD_SURCHARGE} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
@@ -12,6 +12,32 @@ function ok(condition:unknown,message:string){if(!condition)throw new Error(mess
 
 const ringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!;
 const ringId=ringRecipe.output.itemId;
+// Every tier should charge progressively more Gold, while every rarity retains
+// its original price spread. Values below are Gold per attempt at +1/+2/+3/+4.
+const expectedCommonGold:Record<string,number[]>={
+ T1:[350,600,1350,2400],T2:[390,750,1690,3000],T3:[430,900,2030,3600],
+ T4:[480,1110,2500,4440],T5:[540,1350,3040,5400],T6:[620,1650,3720,6600],
+ T7:[700,1980,4460,7920],T8:[800,2400,5400,9600],T9:[950,3000,6750,12000],
+};
+const expectedRareGold:Record<string,number[]>={
+ T1:[440,960,2160,3840],T2:[500,1200,2700,4800],T3:[560,1440,3240,5760],
+ T4:[650,1780,4000,7110],T5:[740,2160,4860,8640],T6:[860,2640,5940,10560],
+ T7:[1000,3170,7130,12680],T8:[1160,3840,8640,15360],T9:[1400,4800,10800,19200],
+};
+ok(FIRST_ENCHANT_GOLD_SURCHARGE===200,'The first enchantment adds exactly 200 Gold at all tiers');
+const allTiers=Object.keys(expectedCommonGold);
+ok(allTiers.length===9&&allTiers.every(tier=>UPGRADE_TIER_GOLD_MULTIPLIER[tier]>0),'All nine tiers have Gold multipliers');
+for(const tier of allTiers){
+ const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===tier)!;
+ ok(!!recipe,'Equipment recipe exists for '+tier);
+ for(const rank of [1,2,3,4]){
+  ok(upgradeGoldCost(recipe.output.itemId,rank,'common')===expectedCommonGold[tier][rank-1],tier+' common +'+rank+' gold');
+  ok(upgradeGoldCost(recipe.output.itemId,rank,'rare')===expectedRareGold[tier][rank-1],tier+' rare +'+rank+' gold');
+ }
+}
+ok(upgradeGoldCost(ringId,0,'common')===0&&upgradeGoldCost(ringId,5,'common')===0,'Out-of-range enchant ranks have no Gold charge');
+ok(allTiers.every((tier,i)=>i===0||UPGRADE_TIER_GOLD_MULTIPLIER[tier]>=UPGRADE_TIER_GOLD_MULTIPLIER[allTiers[i-1]]),'Tier multipliers do not regress');
+
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
 state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...ringRecipe.inputs.map(input=>({itemId:input.itemId,quantity:999})),{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'ASTERFALL_MINERAL_ESSENCE',quantity:999},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}};
 ok(gemSocketCapacity(ringId)===2,'Every equipment piece should expose one Stat and one Effect socket');
@@ -48,7 +74,9 @@ ok(Math.abs(enhancedGearStats(premiumState,ringId).defense-premiumOne.defense)<1
   'Premium gear preview must match the current equipped stat source');
 
 const before=effectiveStats(state);
+const firstGold=state.character!.gold,firstQuote=upgradeQuote(state,ringId);
 const upgraded=attemptEquipmentUpgrade(state,ringId,.1).state;
+ok(upgraded.character!.gold===firstGold-firstQuote.gold,'A successful enchant spends exactly its previewed Gold');
 ok(gearEnhancement(upgraded,ringId).rank===1,'Successful upgrade should increase rank');
 ok(effectiveStats(upgraded).defense>before.defense,'Upgrade should increase effective defense');
 
@@ -78,7 +106,9 @@ ok(legacy.statGemId==='WARD_SHARD'&&legacy.effectGemId==='SWIFT_SIGIL','Legacy a
 
 const second=attemptEquipmentUpgrade(upgraded,ringId,.1).state;
 ok(gearEnhancement(second,ringId).rank===2,'Second regional improvement should increase rank');
+const failQuote=upgradeQuote(second,ringId),failGold=second.character!.gold;
 const failed=attemptEquipmentUpgrade(second,ringId,.99);
+ok(failed.state.character!.gold===failGold-failQuote.gold,'A failed enchant spends the same quoted Gold');
 ok(!failed.result.success&&!failed.result.downgraded&&failed.result.newRank===2,'Failure should preserve the current regional improvement rank');
 ok(gearEnhancement(failed.state,ringId).failures===1,'Failure should increment pity');
 ok(Math.abs(upgradeQuote(failed.state,ringId).successChance-.69)<.000001,'Pity should add two percentage points to the same target rank');

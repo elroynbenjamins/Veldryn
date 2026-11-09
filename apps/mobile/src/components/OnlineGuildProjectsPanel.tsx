@@ -255,7 +255,6 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
     <Text style={s.activityName}>{ui(a.title)}</Text>
     <Text numberOfLines={2} style={s.activityRule}>{ui(a.rule)}</Text>
    </Pressable>)}</View>
-   <Text style={s.meta}>{ui('Combat/Gathering: 20 effort/min · Crafting: 5/item.')}</Text>
   </View>:null}
   {readyToClaim?<GameButton title={ui(busy?'Claiming…':project.rewardDestination==='guild_bank'?'Claim Guild Bank Gold':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&compact?<Text style={s.meta}>{rewardStatus}</Text>:null}

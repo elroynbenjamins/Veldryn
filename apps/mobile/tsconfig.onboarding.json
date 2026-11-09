@@ -5,6 +5,7 @@
     "moduleResolution": "Node16",
     "jsx": "react-jsx",
     "outDir": ".onboarding-build",
+    "rootDir": "../..",
     "noEmit": false
   },
   "include": [

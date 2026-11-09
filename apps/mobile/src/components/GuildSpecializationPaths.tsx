@@ -118,7 +118,6 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
    </View>:known?<Text style={[s.warning,{color:C.good}]}>Maximum rank reached.</Text>:<Text style={s.copy}>Live skill ranks and bank materials are unavailable in this preview.</Text>}
    {onViewBank?<GameButton compact title="Open Guild Bank" tone="secondary" onPress={onViewBank}/>:null}
   </View>
-  <Text style={s.footer}>Permanent bonuses · Officer/Leader approval · Shared Guild Bank resources and Gold</Text>
 
   <Modal visible={review} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
    <View style={s.modalShade}>

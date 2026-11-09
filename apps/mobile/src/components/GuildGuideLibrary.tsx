@@ -29,8 +29,8 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
  const back=()=>{setSection(null);setTopicIndex(0)};
  return <Modal visible={visible} animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
   <View style={s.shade}>
-   <Pressable accessibilityRole="button" accessibilityLabel={t('Close Guild Guide')} onPress={onClose} style={StyleSheet.absoluteFill}/>
-   <View accessibilityViewIsModal style={[s.modal,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
+   <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>
+   <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={[s.modal,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
     <View style={s.header}>
      <View style={[s.icon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={23}/></View>
      <View style={s.flex}>

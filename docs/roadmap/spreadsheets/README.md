@@ -7,8 +7,9 @@ This directory is the version-controlled home for Veldryn's **roadmap and detail
 | Feature | Version | File | Editable Drive copy |
 | --- | --- | --- | --- |
 | Guild Expeditions / Guild PvE, with World Boss reference | v3, 2026-11-09 | [PvE design workbook](./Veldryn_PvE_Master_Design_v3_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/1ATx1WV6n9IaSQrI-omI4crbMyrZ_-1Vc/edit?usp=drivesdk&ouid=103493422424761722541&rtpof=true&sd=true) |
+| World Bosses (dedicated detailed mechanics) | v1, 2026-11-09 | [World Boss design spreadsheet (CSV)](./world-bosses-design-v1.csv) | Local eight-sheet Excel workbook created; not yet in Drive |
 
-The repository copy is stored as an **exact base64 backup** of the Excel workbook because the currently connected GitHub file-writing interface only supports UTF-8 text files. It has not been converted to CSV or otherwise altered.
+The PvE master workbook repository copy is stored as an **exact base64 backup** of its Excel workbook because the currently connected GitHub file-writing interface only supports UTF-8 text files. That PvE master file has not been converted to CSV or otherwise altered. The dedicated World Boss v1 design is additionally available as a standard CSV that opens directly in spreadsheet software.
 
 **Restore the real .xlsx file:**
 

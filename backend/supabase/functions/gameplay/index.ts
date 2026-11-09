@@ -48594,11 +48594,11 @@ function activeRegionId(state) {
   return [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId)?.zoneId;
 }
 function activityCanAdvanceWeeklyOrder(state, orderId) {
-  const activity = state.activity, order2 = state.account.weeklyOrders?.orders.find((row) => row.id === orderId);
-  if (!activity || !order2) return false;
-  if (order2.kind === "hunt") return activity.kind === "combat" && order2.targetId === activity.targetId;
-  if (order2.kind === "profession") return activity.kind !== "combat" && activity.kind !== "exploration" && order2.targetId === activity.targetId;
-  if (order2.kind === "regional") return order2.targetId === activeRegionId(state) && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
+  const activity = state.activity, order = state.account.weeklyOrders?.orders.find((row) => row.id === orderId);
+  if (!activity || !order) return false;
+  if (order.kind === "hunt") return activity.kind === "combat" && order.targetId === activity.targetId;
+  if (order.kind === "profession") return activity.kind !== "combat" && activity.kind !== "exploration" && order.targetId === activity.targetId;
+  if (order.kind === "regional") return order.targetId === activeRegionId(state) && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
   return false;
 }
 function activityCanAdvanceCondition(state, condition) {
@@ -50392,22 +50392,22 @@ function applyWeeklyOrderProgress(state, event) {
   if (!event.eventId || !event.characterId || !Number.isSafeInteger(event.amount) || event.amount <= 0) throw new Error("invalid_weekly_order_event");
   if (event.completedAtMs < state.startsAtMs || event.completedAtMs >= state.endsAtMs) return { eventId: event.eventId, updated: [] };
   const updated = [];
-  for (const order2 of state.orders) {
-    if (order2.kind !== event.kind || order2.targetId !== event.targetId || order2.progress >= order2.target) continue;
-    const before = order2.progress, after = Math.min(order2.target, before + event.amount);
-    order2.progress = after;
-    if (after >= order2.target && !order2.completedAtMs) order2.completedAtMs = event.completedAtMs;
-    updated.push({ orderId: order2.id, before, after, completed: after >= order2.target });
+  for (const order of state.orders) {
+    if (order.kind !== event.kind || order.targetId !== event.targetId || order.progress >= order.target) continue;
+    const before = order.progress, after = Math.min(order.target, before + event.amount);
+    order.progress = after;
+    if (after >= order.target && !order.completedAtMs) order.completedAtMs = event.completedAtMs;
+    updated.push({ orderId: order.id, before, after, completed: after >= order.target });
   }
   return { eventId: event.eventId, updated };
 }
 function claimWeeklyOrder(state, orderId) {
-  const order2 = state.orders.find((o) => o.id === orderId);
-  if (!order2) throw new Error("weekly_order_not_found");
-  if (order2.progress < order2.target) throw new Error("weekly_order_incomplete");
-  if (order2.claimed) throw new Error("weekly_order_already_claimed");
-  order2.claimed = true;
-  return { claimKey: `${state.weekKey}:order:${order2.id}`, reward: { ...order2.reward }, orderId: order2.id, weekKey: state.weekKey };
+  const order = state.orders.find((o) => o.id === orderId);
+  if (!order) throw new Error("weekly_order_not_found");
+  if (order.progress < order.target) throw new Error("weekly_order_incomplete");
+  if (order.claimed) throw new Error("weekly_order_already_claimed");
+  order.claimed = true;
+  return { claimKey: `${state.weekKey}:order:${order.id}`, reward: { ...order.reward }, orderId: order.id, weekKey: state.weekKey };
 }
 function claimWeeklyCompletion(state, policy = DEFAULT_WEEKLY_ORDER_POLICY) {
   if (!state.orders.length || state.orders.some((o) => o.progress < o.target)) throw new Error("weekly_orders_incomplete");
@@ -50858,7 +50858,7 @@ function ensureWeeklyOrders(state, accountId, nowMs) {
   const window = weeklyOrderWindow(nowMs), existing = state.account.weeklyOrders, candidates = weeklyOrderCandidatesFromCurrentContent(state);
   if (existing?.schemaVersion === 41 && existing.accountId === accountId && existing.weekKey === window.weekKey) {
     const bossCandidate = candidates.find((candidate) => candidate.kind === "hunt" && candidate.boss && candidate.monsterId === "FALLEN_KNIGHT" && candidate.available && candidate.source.available);
-    if (bossCandidate && !existing.orders.some((order2) => order2.kind === "hunt" && order2.targetId === "FALLEN_KNIGHT")) {
+    if (bossCandidate && !existing.orders.some((order) => order.kind === "hunt" && order.targetId === "FALLEN_KNIGHT")) {
       const bonusPolicy = { ...DEFAULT_WEEKLY_ORDER_POLICY, huntSlots: 1, professionSlots: 0, regionalSlots: 0 };
       const bonus = generateWeeklyOrders(accountId, nowMs, [bossCandidate], bonusPolicy).orders[0];
       if (bonus) existing.orders.push({ ...bonus, slot: existing.orders.length });
@@ -50897,7 +50897,7 @@ function cleanWeeklyOrderCharacter(character, activeOrderIds) {
 function reconcileWeeklyOrderRollover(input, nowMs = Date.now()) {
   const board = weeklyOrderBoardForState(input, nowMs), previousWeekKey = input.account.weeklyOrders?.weekKey;
   if (previousWeekKey === board.weekKey) return { state: input, changed: false, previousWeekKey, weekKey: board.weekKey, removedGoals: 0, removedRules: 0, removedConditions: 0 };
-  const activeOrderIds = new Set(board.orders.map((order2) => order2.id));
+  const activeOrderIds = new Set(board.orders.map((order) => order.id));
   let removedGoals = 0, removedRules = 0, removedConditions = 0;
   const active2 = input.character ? cleanWeeklyOrderCharacter(input.character, activeOrderIds) : void 0;
   if (active2) {
@@ -51024,13 +51024,13 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
     const regionId = trustedEventRegionId(event);
     if (regionId) applyWeeklyOrderProgress(weekly, { eventId: `${options.eventId}:regional:${regionId}:${event.kind}:${event.contentId}`, characterId: state.character?.id ?? "unknown", kind: "regional", targetId: regionId, amount: units, completedAtMs: nowMs });
   }
-  for (const order2 of weekly.orders) {
-    if (order2.progress >= order2.target && !wasComplete.has(order2.id)) {
-      weeklyCompleted.push(order2.id);
+  for (const order of weekly.orders) {
+    if (order.progress >= order.target && !wasComplete.has(order.id)) {
+      weeklyCompleted.push(order.id);
       metrics["weekly_orders.completed"] = (metrics["weekly_orders.completed"] ?? 0) + 1;
     }
-    if (order2.progress >= order2.target && !order2.claimed) {
-      const claim = claimWeeklyOrder(weekly, order2.id);
+    if (order.progress >= order.target && !order.claimed) {
+      const claim = claimWeeklyOrder(weekly, order.id);
       if (!pendingKeys.has(claim.claimKey)) {
         pending.push({ claimKey: claim.claimKey, rewardRef: claim.reward.rewardRef, label: claim.reward.label, weekKey: claim.weekKey, orderId: claim.orderId });
         pendingKeys.add(claim.claimKey);
@@ -52362,12 +52362,12 @@ function projectedIdleContext(state, reward2, settleAtMs) {
   const monsterKills = { ...state.character?.monsterMasteryPoints ?? {} };
   if (activity.kind === "combat") monsterKills[activity.targetId] = (monsterKills[activity.targetId] ?? 0) + reward2.kills;
   const weeklyOrderProgress = {}, activityRegionId = zoneIdForTarget(activity.targetId);
-  for (const order2 of state.account.weeklyOrders?.orders ?? []) {
-    let progress = order2.progress;
-    const expectedKind = activity.kind === "combat" ? "hunt" : "profession", direct = order2.kind === expectedKind && order2.targetId === activity.targetId;
-    const regional2 = order2.kind === "regional" && order2.targetId === activityRegionId && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
-    if (direct || regional2) progress = Math.min(order2.target, progress + reward2.kills);
-    weeklyOrderProgress[order2.id] = progress;
+  for (const order of state.account.weeklyOrders?.orders ?? []) {
+    let progress = order.progress;
+    const expectedKind = activity.kind === "combat" ? "hunt" : "profession", direct = order.kind === expectedKind && order.targetId === activity.targetId;
+    const regional2 = order.kind === "regional" && order.targetId === activityRegionId && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
+    if (direct || regional2) progress = Math.min(order.target, progress + reward2.kills);
+    weeklyOrderProgress[order.id] = progress;
   }
   const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward2.foodConsumed ?? 0));
   const routed = routeRewards(state, reward2.items, settleAtMs);
@@ -53584,8 +53584,8 @@ function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
   const active2 = queue.filter((job) => isActive(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
   let waiting = queue.filter((job) => isWaiting(job, nowMs));
   if (waitingOrder) {
-    const order2 = new Map(waitingOrder.map((id, index) => [id, index]));
-    waiting = waiting.slice().sort((a, b) => (order2.get(a.id) ?? 999) - (order2.get(b.id) ?? 999));
+    const order = new Map(waitingOrder.map((id, index) => [id, index]));
+    waiting = waiting.slice().sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
   }
   const activeEnds = active2.map((job) => job.completesAtMs).sort((a, b) => a - b);
   const slotTimes = activeEnds.length >= capacity ? activeEnds.slice(activeEnds.length - capacity) : [...activeEnds, ...Array(Math.max(0, capacity - activeEnds.length)).fill(nowMs)];

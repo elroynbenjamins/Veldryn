@@ -9,7 +9,8 @@ import {cloneElement,isValidElement,useEffect,useRef,useState,type ReactNode,typ
 import {ActivityIndicator,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
 import {SectionGuide} from '../components/SectionGuide';
-import {GUILD_TUTORIAL_STEPS} from '../core/guild-tutorial';
+import {GuildTutorial} from '../components/GuildTutorial';
+import {GUILD_TUTORIAL_STEPS,type GuildTutorialDestination} from '../core/guild-tutorial';
 import {guildHallSectionGuide} from '../core/guild-hall-guide';
 import {guildTutorialText} from '../i18n/guild-tutorial';
 import {useAuthSession} from '../online/AuthSessionProvider';
@@ -95,13 +96,16 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    onNavigationChange?.({section:safeSection,activityView,hallSection,progressTab});
   },[online,onlineSection,activityView,hallSection,progressTab,onNavigationChange]);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
+  const [guildTourJustJoined,setGuildTourJustJoined]=useState(false);
   const [guildRole,setGuildRole]=useState<GuildManagementRole|null>(null);
   const canCustomize=canManageGuild(guildRole);
   const [guildLoadError,setGuildLoadError]=useState('');
-  const guideIndex=onlineSection==='Progress'?4:onlineSection==='Activities'?(activityView==='Muster'?2:3):onlineSection==='PvE'?5:onlineSection==='Hall'?6:onlineSection==='Chat'?1:0;
+  const guideIndex=onlineSection==='Progress'?2:onlineSection==='Activities'?1:onlineSection==='PvE'?3:onlineSection==='Hall'?4:0;
   const guideStep=GUILD_TUTORIAL_STEPS[guideIndex];
   const guideSection=onlineSection==='Progress'?`Progress/${progressTab}`:onlineSection==='Activities'?`Activities/${activityView}`:onlineSection==='Hall'&&hallSection!=='Overview'?`Hall/${hallSection}`:onlineSection;
-  const guildGuide=onlineSection==='Progress'?(progressTab==='Projects'?{title:'Guild Projects',body:'Work together on weekly Guild Projects and claim earned rewards.',detail:'Combat, gathering, and crafting can contribute to active projects.'}:{title:'Guild Skills',body:'Review permanent Guild bonuses and their upgrade requirements.',detail:'Guild Skills use server-verified points, materials and officer permissions.'}):onlineSection==='Hall'?guildHallSectionGuide(language,hallSection):onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
+  const guildGuide=onlineSection==='Activities'?(activityView==='Quests'
+   ?{title:'Guild Quests',body:'Complete shared weekly objectives to support Guild Activity.',detail:'Only verified activities matching the current quest objectives count toward progress.'}
+   :{title:'Muster & Rally',body:'Track your daily effort and weekly Guild Rally progress.',detail:'Qualifying activity earns daily points and Rally Marks. The full guide explains thresholds and milestones.'}):onlineSection==='Progress'?(progressTab==='Projects'?{title:'Guild Projects',body:'Work together on weekly Guild Projects and claim earned rewards.',detail:'Combat, gathering, and crafting can contribute to active projects.'}:{title:'Guild Skills',body:'Review permanent Guild bonuses and their upgrade requirements.',detail:'Guild Skills use server-verified points, materials and officer permissions.'}):onlineSection==='Hall'?guildHallSectionGuide(language,hallSection):onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
    const headerGuide=online&&(['Activities','Progress','Roster','Hall','Manage','Appearance'] as const).some(value=>value===onlineSection)?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={guildGuide} placement="header" translate={value=>guildTutorialText(language,value)}/>:null;
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
@@ -119,8 +123,24 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   useEffect(()=>{if(!canCustomize&&(onlineSection==='Manage'||onlineSection==='Appearance'))setOnlineSection('Home')},[canCustomize,onlineSection]);
   if(online&&guildMembership==='loading')return <Panel><Text style={s.title}>Guild</Text><ActivityIndicator color={C.accent}/></Panel>;
   if(online&&guildMembership==='error')return <Panel><Text style={s.title}>Unable to open Guilds</Text><Text style={s.sub}>{guildLoadError}</Text><GameButton title="Retry" onPress={reloadGuildMembership}/></Panel>;
-  if(online&&guildMembership==='none')return <GuildDiscoveryFlow onJoined={reloadGuildMembership}/>;
+  if(online&&guildMembership==='none')return <GuildDiscoveryFlow onJoined={()=>{setGuildTourJustJoined(true);setOnlineSection('Home');reloadGuildMembership()}}/>;
+  const tutorialDestination:GuildTutorialDestination|null=onlineSection==='Home'?'Home'
+   :onlineSection==='Activities'&&activityView==='Muster'?'Muster'
+   :onlineSection==='Progress'&&progressTab==='Projects'?'Projects'
+   :onlineSection==='PvE'?'PvE'
+   :onlineSection==='Hall'&&hallSection==='Overview'?'Hall':null;
+  const navigateGuildTutorial=(destination:GuildTutorialDestination)=>{
+   if(destination==='Muster'){setActivityView('Muster');setOnlineSection('Activities')}
+   else if(destination==='Projects'){setProgressTab('Projects');setOnlineSection('Progress')}
+   else if(destination==='PvE')setOnlineSection('PvE');
+   else if(destination==='Hall'){setHallSection('Overview');setOnlineSection('Hall')}
+   else setOnlineSection('Home');
+   guildScroll.current?.scrollTo({y:0,animated:false});
+  };
   if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} onChange={next=>{setOnlineSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}}/><ScrollView ref={guildScroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    <GuildTutorial role={guildRole} autoStart={guildTourJustJoined} home={onlineSection==='Home'}
+      destination={tutorialDestination} onNavigate={navigateGuildTutorial}
+      onReveal={()=>guildScroll.current?.scrollTo({y:0,animated:false})}/>
     {(['Roster','Manage','Appearance','Future'] as const).some(section=>section===onlineSection)?<GameButton compact tone="secondary" title="← Guild Home" onPress={()=>{setOnlineSection('Home');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
     {(['Roster','Manage'] as const).some(section=>section===onlineSection)?<GuildSectionHeader label={st('Guild')} title={socialLabel(language,onlineSection==='Roster'?'Guild Roster':'Manage Guild')} copy={socialLabel(language,onlineSection==='Roster'?'Roster, activity and membership.':'Guild identity and recruitment.')} action={headerGuide}/>:null}
 

@@ -50,12 +50,20 @@ const steps:Partial<Record<Language,readonly (readonly [string,string,string,str
 };
 const rows:Record<string,readonly string[]>={
  'YOUR GUILD GUIDE':['DEIN GILDEN-GUIDE','TU GUÍA DEL GREMIO','JE GILDEGIDS','LA GUIDA DELLA GILDA','VOTRE GUIDE DE GUILDE'],
+ 'Guild Quests':['Gildenquests','Misiones del gremio','Gildequests','Missioni della gilda','Quêtes de guilde'],
+ 'Complete shared weekly objectives to support Guild Activity.':['Erfülle gemeinsame Wochenziele, um die Gildenaktivität zu stärken.','Completa objetivos semanales compartidos para aumentar la actividad del gremio.','Voltooi gezamenlijke weekdoelen om de gildeactiviteit te verhogen.','Completa obiettivi settimanali condivisi per aumentare l’attività della gilda.','Terminez des objectifs hebdomadaires communs pour renforcer l’activité de guilde.'],
+ 'Only verified activities matching the current quest objectives count toward progress.':['Nur bestätigte Aktivitäten, die zu den Questzielen passen, zählen zum Fortschritt.','Solo cuentan las actividades verificadas que coinciden con los objetivos de la misión.','Alleen geverifieerde activiteiten die bij de questdoelen passen, tellen mee.','Contano solo le attività verificate che corrispondono agli obiettivi della missione.','Seules les activités vérifiées correspondant aux objectifs de quête comptent.'],
+ 'Muster & Rally':['Muster & Rallye','Muster y Rally','Muster & Rally','Muster e Rally','Muster et Rally'],
+ 'Track your daily effort and weekly Guild Rally progress.':['Verfolge deinen täglichen Einsatz und den Fortschritt der wöchentlichen Gilden-Rallye.','Consulta tu esfuerzo diario y el progreso semanal del Rally del gremio.','Bekijk je dagelijkse inzet en de voortgang van de wekelijkse Gilderally.','Segui i tuoi progressi giornalieri e quelli del Rally settimanale della gilda.','Suivez votre contribution quotidienne et le Rally hebdomadaire de la guilde.'],
+ 'Qualifying activity earns daily points and Rally Marks. The full guide explains thresholds and milestones.':['Geeignete Aktivitäten bringen Tagespunkte und Rallye-Marken. Der ausführliche Guide erklärt Schwellen und Meilensteine.','Las actividades válidas dan puntos diarios y marcas de Rally. La guía completa explica los requisitos y las metas.','Geldige activiteiten leveren dagpunten en Rallymarkeringen op. De uitgebreide gids legt drempels en mijlpalen uit.','Le attività valide danno punti giornalieri e marchi Rally. La guida completa spiega soglie e traguardi.','Les activités éligibles donnent des points quotidiens et des marques de Rally. Le guide détaille les seuils et les étapes.'],
  'Guild guide progress':['Guide-Fortschritt','Progreso de la guía','Voortgang van de gids','Avanzamento della guida','Progression du guide'],
  'Previous tip':['Voriger Tipp','Consejo anterior','Vorige tip','Consiglio precedente','Conseil précédent'],
  'More detail':['Mehr Details','Más detalles','Meer uitleg','Altri dettagli','Plus de détails'],
  'Less detail':['Weniger Details','Menos detalles','Minder uitleg','Meno dettagli','Moins de détails'],
  'Pause guide':['Guide pausieren','Pausar guía','Gids pauzeren','Pausa guida','Mettre en pause'],
  'Resume guild guide':['Gilden-Guide fortsetzen','Reanudar guía','Gildegids hervatten','Riprendi guida','Reprendre le guide'],
+ 'Start guild guide':['Gilden-Guide starten','Iniciar guía del gremio','Gildegids starten','Avvia la guida della gilda','Commencer la visite de guilde'],
+ 'Skip tour':['Tour überspringen','Omitir recorrido','Rondleiding overslaan','Salta la visita','Passer la visite'],
  'Replay guild guide':['Gilden-Guide wiederholen','Repetir guía','Gildegids herhalen','Ripeti guida','Revoir le guide'],
  'Continue guide':['Guide fortsetzen','Continuar guía','Verder met gids','Continua guida','Continuer le guide'],
  'Finish guide':['Guide beenden','Terminar guía','Gids afronden','Termina guida','Terminer le guide'],
@@ -79,7 +87,9 @@ export function guildTutorialText(language:Language,source:string){
  if(rows[source])return rows[source][index];
  for(let i=0;i<GUILD_TUTORIAL_STEPS.length;i++){
   const step=GUILD_TUTORIAL_STEPS[i],field=[step.title,step.body,step.tip,step.action].indexOf(source);
-  if(field>=0)return steps[language]?.[i]?.[field]??source;
+  // The welcome tour now visits five destinations; reuse their existing seven-step translations.
+  const originalStepIndex=([0,2,4,5,6] as const)[i];
+  if(field>=0)return steps[language]?.[originalStepIndex]?.[field]??source;
  }
  return source;
 }

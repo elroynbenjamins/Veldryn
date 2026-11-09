@@ -47,9 +47,11 @@ async function commandBusy(){
  request=deferred();let failure;await act(async()=>{failure=latest.execute({type:'claim'}).catch(error=>error)});
  await act(async()=>{request.reject(Error('offline'));await failure});assert.equal(latest.busy,false);assert.equal(latest.error,'offline');
  repo.hasPending=async()=>true;
- await act(async()=>{await assert.rejects(latest.execute({type:'claim'}),/pending_action/)});
- assert.equal(calls,2,'A stored retry receipt prevents a fresh gameplay command from reaching transport');
- assert.equal(latest.pending,true,'A stored retry receipt immediately exposes the retry state');
+ repo.execute=async()=>{calls++;return {...snapshot,executedCommand:{type:'claim'}}};
+ await act(async()=>{await latest.execute({type:'claim'})});
+ assert.equal(calls,3,'The hook delegates pending recovery to the idempotent repository rather than rejecting a new tap');
+ assert.equal(latest.pending,false,'Successful recovery clears the player-facing pending state');
+ assert.equal(latest.error,'','Successful recovery clears the previous network error');
  await act(async()=>renderer.unmount());
 }
 function wiring(){

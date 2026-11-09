@@ -5,7 +5,7 @@ export interface OnlineSnapshot {accountId:string;state:GameState;version:number
 /** Local command context for presentation, including a retry loaded from storage.
  * It is never sent to the server, persisted in a save, or added to a receipt.
  */
-export interface ExecutedOnlineCommand extends OnlineSnapshot {executedCommand:GameCommand}
+export interface ExecutedOnlineCommand extends OnlineSnapshot {executedCommand:GameCommand;recovered?:ExecutedOnlineCommand}
 export interface PendingGameCommand {requestId:string;expectedVersion:number;command:GameCommand}
 export interface OnlineTransport {read():Promise<OnlineSnapshot>;send(command:PendingGameCommand):Promise<OnlineSnapshot>}
 export interface PendingStore {read():Promise<PendingGameCommand|null>;write(value:PendingGameCommand|null):Promise<void>}
@@ -30,19 +30,34 @@ export class OnlineGameRepository implements GameRepository{
   return next;
  }
  private async executeQueued(command?:GameCommand):Promise<ExecutedOnlineCommand>{
-  try{
-   let request=await this.pending.read();
-   // A caller may retry an uncertain request without supplying a new command.
-   // Never let a fresh action implicitly replace or race that durable receipt.
-   if(request&&command)throw new OnlineCommandError('pending_action');
-   if(!request){if(!command)throw new Error('No pending action.');if(!this.snapshot)await this.refresh();request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};await this.pending.write(request);}
-   return await this.sendPending(request);
-  }catch(error){throw error;}
+  // A timed-out response is not proof that the gameplay command failed.
+  // Replay the durable request ID first, so server receipts stay idempotent.
+  const previous=await this.pending.read();
+  let recovered:ExecutedOnlineCommand|undefined;
+  if(previous){
+   recovered=await this.sendPending(previous);
+   // Repeating a command while its acknowledgement is uncertain means
+   // "recover that command", not "perform the purchase/sale/claim twice".
+   // Match the full validated payload, not merely its command type.
+   if(!command||JSON.stringify(command)===JSON.stringify(previous.command)||
+    (command.type==='claim'&&previous.command.type==='claim'))return recovered;
+  }
+  if(!command)throw new Error('No pending action.');
+  if(!this.snapshot)await this.refresh();
+  const request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};
+  await this.pending.write(request);
+  const completed=await this.sendPending(request);
+  return recovered?{...completed,recovered}:completed;
  }
+
  private async sendPending(request:PendingGameCommand):Promise<ExecutedOnlineCommand>{
    try{const result=await this.transport.send(request);if(result.accountId!==this.accountId)throw new Error('account_mismatch');await this.pending.write(null);
     const confirmed=this.snapshot&&result.version<this.snapshot.version?await this.refresh():this.accept(result);
-    return {...confirmed,executedCommand:request.command};
+    // A recovered receipt can be older than a foreground snapshot. Keep its
+    // original reward and command result for presentation, but not its stale state.
+    return {...confirmed,reward:result.reward,activity:result.activity,message:result.message,
+     won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,
+     forgeResults:result.forgeResults,executedCommand:request.command};
    }catch(error){if(error instanceof OnlineCommandError&&error.definitive){await this.pending.write(null);await this.refresh();}throw error;}
   }
 }

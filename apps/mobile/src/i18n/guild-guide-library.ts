@@ -18,6 +18,26 @@ export const libraryLabels={
  'Leadership':['Gildenleitung','Liderazgo','Leiding','Comando','Direction','Руководство','Liderlik'],
  'Topic':['Thema','Tema','Onderwerp','Argomento','Sujet','Тема','Konu'],
 } as const;
+// The Guide Library and the section ? buttons share the same translated names.
+export const guildGuideTitles:Readonly<Record<string,readonly string[]>>={
+ 'Home':['Gildenstart','Inicio del gremio','Gildehome','Home della gilda','Accueil de guilde','Главная гильдии','Lonca Ana Sayfası'],
+ 'Activities/Muster':['Muster & Rallye','Muster y Rally','Muster & Rally','Muster e Rally','Muster et Rally','Сбор и ралли','Toplanma ve Ralli'],
+ 'Activities/Quests':['Gildenquests','Misiones del gremio','Gildequests','Missioni della gilda','Quêtes de guilde','Задания гильдии','Lonca Görevleri'],
+ 'PvE':['Raid-Tor','Puerta de incursiones','Raidpoort','Portale incursioni','Portail des raids','Врата рейдов','Baskın Kapısı'],
+ 'Progress/Projects':['Gildenprojekte','Proyectos del gremio','Gildeprojecten','Progetti di gilda','Projets de guilde','Проекты гильдии','Lonca Projeleri'],
+ 'Progress/Skills':['Gildenfähigkeiten','Habilidades del gremio','Gildevaardigheden','Abilità della gilda','Compétences de guilde','Навыки гильдии','Lonca Yetenekleri'],
+ 'Hall/Bank':['Gildenbank','Banco del gremio','Gildebank','Banca della gilda','Banque de guilde','Банк гильдии','Lonca Bankası'],
+ 'Hall/Construction':['Gildenbau','Construcción del gremio','Gildebouw','Costruzione della gilda','Construction de guilde','Строительство гильдии','Lonca İnşaatı'],
+ 'Hall/Shop':['Gildentoken-Shop','Tienda de fichas del gremio','Gildetokenwinkel','Negozio gettoni di gilda','Boutique de jetons de guilde','Магазин жетонов гильдии','Lonca Jeton Mağazası'],
+ 'Roster':['Gildenmitglieder','Miembros del gremio','Gildeleden','Membri della gilda','Membres de la guilde','Участники гильдии','Lonca Üyeleri'],
+ 'Chat':['Gildenchat','Chat del gremio','Gildechat','Chat della gilda','Discussion de guilde','Чат гильдии','Lonca Sohbeti'],
+ 'Manage':['Gilde verwalten','Gestionar gremio','Gilde beheren','Gestisci la gilda','Gérer la guilde','Управление гильдией','Loncayı Yönet'],
+ 'Appearance':['Gildendesign','Apariencia del gremio','Gilde-uiterlijk','Aspetto della gilda','Apparence de guilde','Оформление гильдии','Lonca Görünümü'],
+};
+export function guildGuideSectionTitle(language:Language,section:string,fallback:string):string{
+ const index=languages.indexOf(language as typeof languages[number]);
+ return index<0?fallback:guildGuideTitles[section]?.[index]??fallback;
+}
 export type GuildGuideLibraryLabel=keyof typeof libraryLabels;
 export function guildGuideLibraryText(language:Language,key:GuildGuideLibraryLabel):string{
  const index=languages.indexOf(language as typeof languages[number]);

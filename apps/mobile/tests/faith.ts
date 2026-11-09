@@ -49,6 +49,12 @@ test('Activity names use authored catalog names instead of raw IDs across all sk
  equal(activityTargetLabel({kind:'faith',targetId:'FAITH_UNKNOWN_MODE'}),'Faith Unknown Mode','unknown saved ID is readable');
 });
 
+test('Faith practice XP uses the 20% lower rewards at every tier without changing costs or duration',()=>{
+ const expected=[96,208,448,960,2048,4352],waterCosts=[1,2,4,8,16,32];
+ equal(FAITH_TIERS.map(tier=>tier.xp),expected,'all six practice XP awards');
+ equal(FAITH_TIERS.map(tier=>tier.water),waterCosts,'Holy Water costs unchanged');
+ ok(FAITH_TIERS.every(tier=>tier.seconds===30),'30-second practice duration unchanged');
+});
 test('Faith catalog has escalating water tiers and ordered blessings',()=>{equal(FAITH_TIERS.length,6,'tiers');equal(FAITH_BLESSINGS.length,18,'blessings');for(let i=1;i<FAITH_TIERS.length;i++){ok(FAITH_TIERS[i].level>FAITH_TIERS[i-1].level,'tier level');ok(FAITH_TIERS[i].water>FAITH_TIERS[i-1].water,'water');ok(FAITH_TIERS[i].xp/FAITH_TIERS[i].water>=FAITH_TIERS[i-1].xp/FAITH_TIERS[i-1].water,'efficiency');}});
 test('Holy Water has authored enemy sources and cannot be sold',()=>{const s=water(fresh(),2);for(const source of HOLY_WATER_SOURCES){const monster=MONSTERS.find(x=>x.id===source.monsterId)!;ok(!!monster,'monster');ok(monster.drops.some(x=>x.itemId===HOLY_WATER_ID),'drop wired');}throws(()=>sellItem(s,HOLY_WATER_ID,1),'cannot be sold');equal(qty(s,HOLY_WATER_ID),2,'unchanged');});
 test('Holy Water source strength scales with regional Faith progression',()=>{
@@ -105,7 +111,7 @@ test('legacy Faith reservations use the authored 30-second cycle, not a fixed 60
  equal(claimed.reward.faithActions,1,'half-cycle plus 15 seconds completes exactly one practice');
  equal(claimed.state.activity!.faithPractice!.remainingPractices,1,'remaining reservation is preserved');
 });
-test('completed practices consume reserved water and award Faith XP only',()=>{const s=startFaithPractice(water(fresh(),4),'FAITH_QUIET',4,T);const r=claimActivity(s,T+60_000);equal(r.reward.faithActions,2,'rites');equal(r.reward.holyWaterConsumed,2,'water');equal(r.reward.xp,240,'faith xp');equal(r.state.character!.xp,0,'no combat');equal(r.state.skills.find(x=>x.skillId==='faith')!.xp,240,'skill');equal(qty(r.state,HOLY_WATER_ID),0,'remaining two stay escrowed');});
+test('completed practices consume reserved water and award Faith XP only',()=>{const s=startFaithPractice(water(fresh(),4),'FAITH_QUIET',4,T);const r=claimActivity(s,T+60_000);equal(r.reward.faithActions,2,'rites');equal(r.reward.holyWaterConsumed,2,'water');equal(r.reward.xp,192,'faith xp');equal(r.state.character!.xp,0,'no combat');equal(r.state.skills.find(x=>x.skillId==='faith')!.xp,192,'skill');equal(qty(r.state,HOLY_WATER_ID),0,'remaining two stay escrowed');});
 test('stopping returns unfinished and partial-practice water exactly once',()=>{const s=startFaithPractice(water(fresh(),5),'FAITH_QUIET',5,T);const settled=claimActivity(s,T+75_000).state;const stopped=stopActivity(settled);equal(qty(stopped,HOLY_WATER_ID),3,'three unfinished returned');equal(stopActivity(stopped),stopped,'no second');});
 test('account transition settles another activity before reserving Faith water',()=>{let s=water(fresh(),10);s=startCombat(s,'MOSS_RAT',T);const n=transitionAccountFaithPractice(s,T+60_000,'FAITH_QUIET',2).state;equal(n.activity!.kind,'faith','switched');equal(n.activity!.faithPractice!.remainingPractices,2,'reservation');});
 test('blessings unlock from authoritative Faith XP and only one can be active',()=>{let s=faithAt(fresh(),10);throws(()=>selectFaithBlessing(s,'SUNFIRE_VOW'),'40');s=selectFaithBlessing(s,'WARD_OF_STONE');equal(s.character!.faith!.selectedBlessingId,'WARD_OF_STONE','first');s=selectFaithBlessing(s,'EMBER_VOW');equal(s.character!.faith!.selectedBlessingId,'EMBER_VOW','replaced');});

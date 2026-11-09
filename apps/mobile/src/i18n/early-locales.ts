@@ -2,6 +2,29 @@ import type {Language} from './languages';
 
 // Starter-only RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  // Character and Combat Power details for Russian and Turkish.
+  "Edit profile": ["Изменить профиль","Profili düzenle"],
+  "Combat Power": ["Боевая мощь","Savaş gücü"],
+  "Show breakdown": ["Показать подробности","Ayrıntıları göster"],
+  "Hide breakdown": ["Скрыть подробности","Ayrıntıları gizle"],
+  "Combat Power breakdown": ["Подробности боевой мощи","Savaş gücü ayrıntıları"],
+  "All stats": ["Все характеристики","Tüm özellikler"],
+  "Class base": ["Основа класса","Sınıf temeli"],
+  "Gear, sets & gems": ["Снаряжение, комплекты и самоцветы","Ekipman, setler ve taşlar"],
+  "Other character bonuses": ["Другие бонусы персонажа","Diğer karakter bonusları"],
+  "Combat companion": ["Боевой спутник","Savaş yoldaşı"],
+  "Level {level} base stats": ["Базовые характеристики ур. {level}","Seviye {level} temel özellikleri"],
+  "Equipped stat gains and build effects": ["Бонусы характеристик и эффекты снаряжения","Kuşanılan ekipmanın özellik ve yapı etkileri"],
+  "Class training, Faith, preparation and permanent boosts": ["Тренировка класса, Вера, подготовка и постоянные бонусы","Sınıf eğitimi, İnanç, hazırlık ve kalıcı güçlendirmeler"],
+  "No combat companion equipped": ["Боевой спутник не назначен","Savaş yoldaşı kuşanılmamış"],
+  "{name} · Lv. {level} · Bond {bond}": ["{name} · Ур. {level} · Связь {bond}","{name} · Sv. {level} · Bağ {bond}"],
+  "Combat Power is a comparison score from your live stats and equipped build. Encounter mechanics, target traits, and temporary effects can still change actual results.": ["Боевая мощь — сравнительная оценка ваших текущих характеристик и снаряжения. Механики боя, свойства врага и временные эффекты могут изменить реальный результат.","Savaş gücü, mevcut özellikleriniz ve ekipmanınıza dayalı karşılaştırmalı bir puandır. Karşılaşma mekanikleri, hedef özellikleri ve geçici etkiler gerçek sonucu değiştirebilir."],
+  "Compare & Swap": ["Сравнить и заменить","Karşılaştır ve değiştir"],
+  "crafted": ["создано","üretildi"],
+  "Choose an equipped slot to compare its rarity and stats with gear you own.": ["Выберите ячейку с экипировкой, чтобы сравнить редкость и характеристики с другими предметами.","Kuşanılmış bir yuvayı seçerek nadirliğini ve özelliklerini sahip olduğunuz ekipmanlarla karşılaştırın."],
+  "No Combat Companion": ["Нет боевого спутника","Savaş yoldaşı yok"],
+  "Manage": ["Управлять","Yönet"],
+  "Icon · background · border · title · Pet": ["Значок · фон · рамка · титул · питомец","Simge · arka plan · çerçeve · unvan · evcil hayvan"],
   "Home": [
     "Главная",
     "Ana Sayfa"

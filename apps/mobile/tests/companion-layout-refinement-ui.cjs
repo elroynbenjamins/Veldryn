@@ -8,6 +8,7 @@ const training=read('CompanionTrainingV50Panel.tsx');
 const expedition=read('CompanionExpeditionsV50Panel.tsx');
 const upgrade=read('CompanionUpgradePresentation.tsx');
 const resource=read('ResourceIcon.tsx');
+const skills=fs.readFileSync(path.join(root,'src/screens/SkillsScreen.tsx'),'utf8');
 
 // The everyday roster starts with owned companions; discovery remains available.
 assert(panel.includes("useState<CollectionFilter>('Owned')"),'Roster must default to owned companions');
@@ -69,4 +70,13 @@ assert(expedition.indexOf("t('Entry requirements')")<expedition.indexOf("t('Prep
 assert(expedition.includes('companionStaminaSelectionTotal(foodSelection)'),'Stamina must use real food selection');
 assert(expedition.includes("type:'companion_assignment_start'"),'Starting expeditions must still send the real command');
 assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');
+// The Skills hub Companion tile is a Sanctuary facility, not a fake levelable skill.
+assert(skills.includes("level:facilityLevel,kind:'Sanctuary facility'"),'Companion skill tile must describe the actual Training Ground facility level, including level zero');
+assert(skills.includes("Math.min(1,card.level/3)")&&skills.includes("'Facility Lv '+card.level+'/3'"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
+assert(skills.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[facilityLevel]'),'Training XP/day must follow the authoritative Sanctuary values');
+assert(skills.includes('trainingDaysReady*facilityXpPerDay')&&skills.includes('idleCompanions.length'),'Companion training claim must show accrued XP and eligible companions');
+assert(skills.includes("type:'companion_training'")&&skills.includes('disabled={!trainingClaimReady}'),'Skills hub uses an existing authenticated companion training claim with readiness gating');
+assert(skills.includes("companionSanctuaryUpgradeCost(state,'trainingGround')"),'Training Ground upgrade costs must use live game rules');
+assert(skills.includes("type:'companion_upgrade',args:{id:'trainingGround'}")&&skills.includes('disabled={!trainingUpgradeReady}'),'Facility upgrade must call existing validated server command and respect resources');
+assert(skills.includes('not a separate XP-based skill'),'Players must be told that the Training Ground is not an independently levelable character skill');
 console.log('PASS Companion layout refinement and resource icon UX');

@@ -996,6 +996,11 @@ export const companionTranslationRows={
  "No available Tank / Damage / Support trio currently meets the monthly Affinity rule.": ["Kein verfügbares Tank-/Schaden-/Unterstützungsteam erfüllt derzeit die monatliche Affinitätsregel.","Ningún trío disponible de tanque, daño y apoyo cumple la regla mensual de afinidad.","Geen beschikbaar tank-, schade- en ondersteuningstrio voldoet aan de maandelijkse affiniteitsregel.","Nessun trio disponibile di difensore, attaccante e supporto soddisfa la regola affinità mensile.","Aucun trio disponible de tank, attaquant et soutien ne remplit la règle mensuelle d'affinité."],
  "{seconds}s interruptible cast": ["{seconds}s unterbrechbares Wirken","Lanzamiento interrumpible de {seconds}s","{seconds}s onderbreekbare uitvoering","Lancio interrompibile di {seconds}s","Incantation interruptible de {seconds}s"],
 
+ // Expedition requirement clarity. Hard requirements are distinct from optional grade bonuses.
+ "Entry requirements":["Startbedingungen","Requisitos de entrada","Toegangsvereisten","Requisiti d'accesso","Conditions d'accès"],
+ "{value0}/{value1} met":["{value0}/{value1} erfüllt","{value0}/{value1} cumplidos","{value0}/{value1} voldaan","{value0}/{value1} soddisfatti","{value0}/{value1} remplies"],
+ "Optional bonus requirements":["Optionale Bonusbedingungen","Requisitos de bonificación opcionales","Optionele bonusvereisten","Requisiti bonus facoltativi","Conditions bonus facultatives"],
+ "Grades C–S are rewards, not entry requirements.":["Die Ränge C–S bestimmen die Belohnung, nicht den Zugang.","Los grados C–S afectan a las recompensas, no al acceso.","Rangen C–S bepalen de beloning, niet de toegang.","I gradi C–S influiscono sui premi, non sull'accesso.","Les rangs C–S déterminent les récompenses, pas l'accès."],
  // Compact expedition board and reward presentation.
  "different Affinities":["verschiedene Affinitäten","afinidades distintas","verschillende affiniteiten","affinità diverse","affinités différentes"],
  "Ascension":["Aufstieg","Ascensión","Ascensie","Ascensione","Ascension"],

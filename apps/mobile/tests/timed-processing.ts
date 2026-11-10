@@ -33,6 +33,18 @@ const cooked=claimActivity(cooking,now+36_000);
 equal(qty(cooked.state,'COOKED_SILVERFIN'),5,'completed Cooking batch produces edible fish');
 equal(cooked.state.skills.find(row=>row.skillId==='cooking')?.xp,100,'non-affinity Cooking retains base XP');
 
+// A meal tap must work while Fishing is active: the server settles Fishing
+// and begins Cooking in the same command without a separate Stop action.
+let fishingToCooking=createCharacter(newGame(now),'IRONWARDEN','Fish to Cook');
+fishingToCooking={...fishingToCooking,character:{...fishingToCooking.character!,gold:10000},inventory:{...fishingToCooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}]}};
+fishingToCooking=executeGameCommand(fishingToCooking,{type:'start',args:{kind:'gathering',id:'MEADOW_PERCH_POOL'}},now).state;
+equal(fishingToCooking.activity?.kind,'fishing','a Fishing session is active before selecting a meal');
+const cookingAfterFishing=executeGameCommand(fishingToCooking,{type:'processing_start',args:{id:'COOK_SILVERFIN'}},now+60_000).state;
+equal(cookingAfterFishing.activity?.kind,'processing','one Cooking action replaces the Fishing session');
+equal(cookingAfterFishing.activity?.targetId,'COOK_SILVERFIN','the selected meal begins immediately');
+equal(cookingAfterFishing.activity?.processing?.remainingBatches,1,'Cooking reserves its affordable meal batch');
+ok(qty(cookingAfterFishing,'MEADOW_PERCH')>0,'earned Fishing resources are settled before the activity switch');
+
 let stackedFish=createCharacter(newGame(now),'IRONWARDEN','Stacked Fish');
 stackedFish={...stackedFish,character:{...stackedFish.character!,gold:10000},
   inventory:{...stackedFish.inventory,stacks:[{itemId:'SILVERFIN',quantity:6},{itemId:'GREENWOOD_LOG',quantity:1}]},

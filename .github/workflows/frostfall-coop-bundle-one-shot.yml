@@ -1,0 +1,47 @@
+name: Frostfall one-shot co-op bundle rebuild
+
+on:
+  push:
+    branches:
+      - feature/frostfall-five-tiers-guild-l10
+    paths:
+      - '.github/workflows/frostfall-coop-bundle-one-shot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.ref == 'refs/heads/feature/frostfall-five-tiers-guild-l10'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned server dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Regenerate canonical Edge bundles (no deployment)
+        run: node tools/build-online.mjs
+      - name: Commit generated bundles only to this feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "feature/frostfall-five-tiers-guild-l10"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/coop/index.ts backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build(frostfall): refresh canonical co-op Edge bundle"
+            git push origin HEAD:refs/heads/feature/frostfall-five-tiers-guild-l10
+          fi

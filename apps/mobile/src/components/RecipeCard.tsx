@@ -19,7 +19,6 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ItemArtwork} from './ItemArtwork';
 import {IngredientList} from './IngredientList';
 import {GameButton} from './GameButton';
-import {UiIcon} from './UiIcon';
 import {DisclosureMark} from './DisclosureControl';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {equipmentCraftDurationSeconds,equipmentCraftQueueModel,timedEquipmentRecipe} from '../core/equipment-crafting-queue';

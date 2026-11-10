@@ -19,6 +19,18 @@ const counters:readonly CounterProfile[]=[
  {id:'finisher',companionIds:['UNIT_007','UNIT_013','UNIT_020'],description:'Finisher: +3% owner Attack and +6% companion strike against self-healing enemies.',applies:t=>t.has('sustain')},
 ];
 
+/** Server-authored, advisory only: a route may draw any of these encounters.
+ * The actual bonus is determined again from the selected room at fight time. */
+export function dungeonCompanionCounterOptions(enemies:readonly CombatantDefinition[]):DungeonCompanionCounterId[]{
+ const traits=dungeonEncounterTraits(enemies);
+ return counters.filter(profile=>profile.applies(traits)).map(profile=>profile.id);
+}
+
+/** Shares the exact matcher with the server runtime and the read-only picker. */
+export function dungeonCompanionOpportunity(companionId:string,possible:readonly DungeonCompanionCounterId[]):DungeonCompanionCounterId|undefined{
+ return counters.find(profile=>profile.companionIds.includes(companionId)&&possible.includes(profile.id))?.id;
+}
+
 /** Read server-authored enemy tags and actual, unsuppressed skills after room tuning. */
 export function dungeonEncounterTraits(enemies:readonly CombatantDefinition[]):ReadonlySet<string>{
  const traits=new Set<string>();

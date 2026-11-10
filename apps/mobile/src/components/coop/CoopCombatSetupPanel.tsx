@@ -9,8 +9,8 @@ import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 
-/** Read-only: no consumable is spent or equipped from a matchmaking screen. */
-export function CoopCombatSetupPanel({state,compact=false}:{state:GameState;compact?:boolean}){
+/** Consumables are display-only. A companion change uses the game's trusted command path. */
+export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion}:{state:GameState;compact?:boolean;onChooseCompanion?:()=>void}){
  const {colors:C,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
  const setup=useMemo(()=>coopCombatSetup(state),[state]);
@@ -24,8 +24,8 @@ export function CoopCombatSetupPanel({state,compact=false}:{state:GameState;comp
   </View>
   <View style={s.twoColumns}>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Companion')+': '+(setup.companion?.name??st('None equipped'))}
-    accessibilityState={{expanded:expanded==='companion'}} accessibilityHint={st('Tap to view companion')}
-    onPress={()=>toggle('companion')} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
+    accessibilityState={{expanded:expanded==='companion'}} accessibilityHint={onChooseCompanion?st('Choose dungeon companion'):st('Tap to view companion')}
+    onPress={onChooseCompanion??(()=>toggle('companion'))} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
     <View style={s.itemTop}>
      <View style={s.artFrame}>
       {art?<Image source={art} resizeMode="contain" style={s.art}/>:<UiIcon name="companions" size={30}/>}

@@ -46920,6 +46920,689 @@ function assessOnlineCoopLoadout(record, syncLevel = 25) {
   return { normalized, readiness };
 }
 
+// src/server/expeditions/content/coop-route-content.ts
+var ROOTBOUND = {
+  battle: ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"],
+  elite: ["ROOT_ELITE_BRAMBLE", "ROOT_ELITE_WARDEN", "ROOT_ELITE_MYCELIUM"],
+  event: ["ROOT_EVENT_WHISPER", "ROOT_EVENT_SPORES", "ROOT_EVENT_MEMORY"],
+  forge: ["ROOT_FORGE_THORNS", "ROOT_FORGE_BARK", "ROOT_FORGE_SAP"],
+  shrine: ["ROOT_SHRINE_WARD", "ROOT_SHRINE_GROWTH", "ROOT_SHRINE_ECHO"],
+  camp: ["ROOT_CAMP_SPRING", "ROOT_CAMP_CLEARING", "ROOT_CAMP_HEARTH"],
+  treasure: ["ROOT_CACHE_BURIED", "ROOT_CACHE_GROVE", "ROOT_CACHE_WARDEN"],
+  echo: ["ROOT_ECHO_OATH", "ROOT_ECHO_LOST", "ROOT_ECHO_TRIAL"],
+  risk: ["ROOT_RISK_OVERGROWTH", "ROOT_RISK_BLIGHT", "ROOT_RISK_HUNGER"],
+  merchant: ["ROOT_MERCHANT_MOSS", "ROOT_MERCHANT_RELICS", "ROOT_MERCHANT_SALVES"],
+  secret: ["ROOT_SECRET_ROOTWAY", "ROOT_SECRET_HOLLOW", "ROOT_SECRET_ALTAR"]
+};
+function themed(prefix) {
+  const ids2 = (kind) => [1, 2, 3].map((index) => `${prefix}_${kind}_${String(index).padStart(2, "0")}`);
+  return { battle: ids2("BATTLE"), elite: ids2("ELITE"), event: ids2("EVENT"), forge: ids2("FORGE"), shrine: ids2("SHRINE"), camp: ids2("CAMP"), treasure: ids2("TREASURE"), echo: ids2("ECHO"), risk: ids2("RISK"), merchant: ids2("MERCHANT"), secret: ids2("SECRET") };
+}
+var COOP_ROUTE_CONTENT = Object.freeze({
+  EXP_001: ROOTBOUND,
+  EXP_002: themed("LANTERN"),
+  EXP_003: themed("SUN_OBS"),
+  EXP_004: themed("SUN_MIRAGE"),
+  EXP_005: themed("FROST_LAKE"),
+  EXP_006: themed("FROST_CHOIR"),
+  EXP_007: themed("ASH_FEN"),
+  EXP_008: themed("ASH_CRUCIBLE")
+});
+function coopContentPool(expeditionId, kind) {
+  const pool = COOP_ROUTE_CONTENT[expeditionId]?.[kind];
+  if (!pool || pool.length < 3 || new Set(pool).size !== pool.length) throw new Error("invalid_expedition_content_pool");
+  return pool;
+}
+
+// src/server/combat/pve-encounter-identity.ts
+var ARCHETYPE_LABEL = Object.freeze({
+  bruiser: "Bruiser",
+  assassin: "Assassin",
+  caster: "Caster",
+  swarm: "Swarm",
+  guardian: "Guardian",
+  hexer: "Hexer",
+  executioner: "Executioner",
+  support: "Support"
+});
+var MECHANICS = Object.freeze({
+  heavy_hit: { id: "heavy_hit", label: "Heavy Hit", description: "Strong focused attacks create tank pressure." },
+  focus: { id: "focus", label: "Focus", description: "Can pressure a non-tank party member." },
+  interrupt: { id: "interrupt", label: "Interrupt", description: "Dangerous casts can be interrupted." },
+  aoe: { id: "aoe", label: "Party Damage", description: "Can damage multiple party members at once." },
+  dot: { id: "dot", label: "DoT", description: "Applies damage over time." },
+  vulnerability: { id: "vulnerability", label: "Vulnerability", description: "Applies increased damage taken." },
+  healing_reduction: { id: "healing_reduction", label: "Heal Cut", description: "Reduces healing received for a short time." },
+  barrier: { id: "barrier", label: "Barrier", description: "Can create a protective barrier." },
+  enrage: { id: "enrage", label: "Enrage", description: "Temporarily increases offensive pressure." },
+  execute: { id: "execute", label: "Execute", description: "Deals increased damage to low-health targets." },
+  sustain: { id: "sustain", label: "Sustain", description: "Can restore health or prolong the fight." }
+});
+var archetypeTag = (value) => `pve:archetype:${value}`;
+var mechanicTag = (value) => `pve:mechanic:${value}`;
+function withPveIdentity(definition, archetype, mechanics) {
+  const existing = (definition.tags ?? []).filter((tag) => !tag.startsWith("pve:archetype:") && !tag.startsWith("pve:mechanic:"));
+  return { ...definition, tags: [...existing, archetypeTag(archetype), ...[...new Set(mechanics)].map(mechanicTag)] };
+}
+function pveHeavyStrike(id, name, damageType, coeff, cooldownMs = 6800, castTimeMs = 700) {
+  return { id, name, cooldownMs, castTimeMs, target: "current_target", priority: 78, effects: [{ kind: "damage", coeff, damageType }] };
+}
+function pveFocusStrike(id, name, damageType, coeff, cooldownMs = 7e3) {
+  return { id, name, cooldownMs, castTimeMs: 500, target: "random_enemy", priority: 92, effects: [{ kind: "damage", coeff, damageType, executeBelowHpPct: 0.35, executeBonus: 0.22 }] };
+}
+function pveInterruptibleWave(id, name, damageType, coeff, cooldownMs = 9800, castTimeMs = 1300) {
+  return { id, name, cooldownMs, castTimeMs, target: "all_enemies", priority: 95, interruptible: true, effects: [{ kind: "damage", coeff, damageType }] };
+}
+function pveHex(id, name, damageType, coeff = 0.62, cooldownMs = 7600) {
+  return { id, name, cooldownMs, castTimeMs: 800, target: "current_target", priority: 92, effects: [{ kind: "damage", coeff, damageType }, { kind: "debuff", tag: "damage_taken", value: 0.07, durationMs: 6e3 }] };
+}
+function pveDotWave(id, name, damageType, coeff = 0.5, cooldownMs = 9800) {
+  return { id, name, cooldownMs, castTimeMs: 1300, target: "all_enemies", priority: 94, interruptible: true, effects: [{ kind: "damage", coeff, damageType }, { kind: "dot", coeff: 0.1, damageType, durationMs: 6e3, tickMs: 2e3 }] };
+}
+function pveBarrier(id, name, flat, cooldownMs = 12e3) {
+  return { id, name, cooldownMs, castTimeMs: 0, target: "self", priority: 88, effects: [{ kind: "shield", flat }] };
+}
+function pveEnrage(id, name, value = 0.1, cooldownMs = 16e3) {
+  return { id, name, cooldownMs, castTimeMs: 0, target: "self", priority: 70, effects: [{ kind: "buff", tag: "damage_done", value, durationMs: 7e3 }] };
+}
+function pveExecuteStrike(id, name, damageType, coeff, cooldownMs = 7200) {
+  return { id, name, cooldownMs, castTimeMs: 650, target: "current_target", priority: 90, effects: [{ kind: "damage", coeff, damageType, executeBelowHpPct: 0.35, executeBonus: 0.3 }] };
+}
+function pveAllyMend(id, name, flat, cooldownMs = 9e3) {
+  return { id, name, cooldownMs, castTimeMs: 850, target: "lowest_hp_ally", priority: 96, aiCondition: "ally_below_80", effects: [{ kind: "heal", flat }] };
+}
+function pveSupportRally(id, name, value = 0.06, cooldownMs = 14500) {
+  return { id, name, cooldownMs, castTimeMs: 0, target: "all_allies", priority: 72, effects: [{ kind: "buff", tag: "damage_done", value, durationMs: 6e3 }] };
+}
+function pveHealingPressure(id, name, damageType, coeff = 0.52, cooldownMs = 8200) {
+  return { id, name, cooldownMs, castTimeMs: 750, target: "current_target", priority: 93, effects: [{ kind: "damage", coeff, damageType }, { kind: "debuff", tag: "healing_received", value: -0.25, durationMs: 6e3 }] };
+}
+function parseArchetype(tags) {
+  const value = tags.find((tag) => tag.startsWith("pve:archetype:"))?.slice("pve:archetype:".length);
+  return value && value in ARCHETYPE_LABEL ? value : void 0;
+}
+function parseMechanics(tags) {
+  return [...new Set(tags.filter((tag) => tag.startsWith("pve:mechanic:")).map((tag) => tag.slice("pve:mechanic:".length)).filter((value) => value in MECHANICS))];
+}
+function pveEncounterPreview(definitions2) {
+  const enemies = definitions2.filter((definition) => definition.team === "enemies");
+  if (!enemies.length) return void 0;
+  const archetypes = [...new Set(enemies.map((enemy4) => parseArchetype(enemy4.tags ?? [])).filter((value) => Boolean(value)))].slice(0, 2);
+  const mechanicIds = [...new Set(enemies.flatMap((enemy4) => parseMechanics(enemy4.tags ?? [])))].slice(0, 4);
+  if (!archetypes.length && !mechanicIds.length) return void 0;
+  const mechanics = mechanicIds.map((id) => MECHANICS[id]);
+  const labels2 = [...archetypes.map((id) => ARCHETYPE_LABEL[id]), ...mechanics.slice(0, 2).map((item) => item.label)];
+  return { archetypes: archetypes.map((id) => ({ id, label: ARCHETYPE_LABEL[id] })), mechanics, summary: labels2.join(" \xB7 ") };
+}
+function pveBossTelegraph(definitions2) {
+  const boss4 = definitions2.find((definition) => definition.team === "enemies" && definition.boss);
+  if (!boss4) return void 0;
+  const readable = (value) => value.replace(/[_:-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return {
+    bossName: boss4.name,
+    phases: (boss4.phases ?? []).map((phase2) => ({ id: phase2.id, label: phase2.name?.trim() || readable(phase2.id), hpPct: Math.round(phase2.hpPct * 100), objectiveSensitive: false })),
+    castAbilities: boss4.abilities.filter((ability3) => ability3.castTimeMs > 0 || ability3.interruptible === true).map((ability3) => ({ id: ability3.id, label: ability3.name, castMs: ability3.castTimeMs, cooldownMs: ability3.cooldownMs, interruptible: ability3.interruptible === true, objectiveSensitive: false })),
+    suppressedAbilities: []
+  };
+}
+
+// src/server/combat/content/asterfall-encounters.ts
+var s = (maxHp, attackPower, defense, accuracy = 650, evasion = 120) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.04, critMultiplier: 1.5, haste: 0 });
+var enemy = (id, name, hp, ap, def, abilityCoeff = 1) => withPveIdentity({
+  id,
+  name,
+  team: "enemies",
+  role: "enemy",
+  level: 25,
+  stats: s(hp, ap, def),
+  basicAttackMs: 2800,
+  basicAttackCoeff: 0.72,
+  abilities: [{ id: `${id}_HEAVY`, name: "Heavy Strike", cooldownMs: 7e3, castTimeMs: 700, target: "current_target", priority: 70, effects: [{ kind: "damage", coeff: abilityCoeff, damageType: "physical" }] }]
+}, "bruiser", ["heavy_hit"]);
+function variedEnemy(base, archetype, damageType = "nature") {
+  if (archetype === "bruiser") return base;
+  const { id, name, stats: stats6 } = base;
+  let abilities, mechanics;
+  switch (archetype) {
+    case "assassin":
+      abilities = [pveFocusStrike(`${id}_HUNT`, `${name} Hunt`, damageType, 0.75, 9e3)];
+      mechanics = ["focus", "execute"];
+      break;
+    case "caster":
+      abilities = [pveInterruptibleWave(`${id}_WAVE`, `${name} Wave`, damageType, 0.37, 11500, 1350)];
+      mechanics = ["interrupt", "aoe"];
+      break;
+    case "guardian":
+      abilities = [pveHeavyStrike(`${id}_CRUSH`, `${name} Crush`, damageType, 0.78, 7800), pveBarrier(`${id}_WARD`, `${name} Ward`, Math.round(stats6.maxHp * 0.07), 14500)];
+      mechanics = ["heavy_hit", "barrier"];
+      break;
+    case "hexer":
+      abilities = [pveHex(`${id}_HEX`, `${name} Hex`, damageType, 0.46, 10500)];
+      mechanics = ["vulnerability"];
+      break;
+    case "swarm":
+      abilities = [pveDotWave(`${id}_SPORES`, `${name} Spores`, damageType, 0.19, 14500)];
+      mechanics = ["interrupt", "aoe", "dot"];
+      break;
+    case "executioner":
+      abilities = [pveExecuteStrike(`${id}_EXECUTE`, `${name} Execute`, damageType, 0.77, 9e3)];
+      mechanics = ["execute"];
+      break;
+  }
+  return withPveIdentity({ ...base, abilities }, archetype, mechanics);
+}
+function rootWarden() {
+  const base = enemy("ROOT_WARDEN", "Runebound Bulwark", 13500, 430, 900, 1.25);
+  return withPveIdentity({ ...base, boss: false, abilities: [...base.abilities, pveBarrier("ROOT_WARDEN_WARD", "Root Ward", 1250, 12e3)] }, "guardian", ["heavy_hit", "barrier"]);
+}
+function rootBrambleElite() {
+  const base = enemy("ROOT_ELITE_BRAMBLE", "Bramble Reaver", 13200, 430, 850, 1.1);
+  return withPveIdentity({ ...base, abilities: [
+    pveFocusStrike("ROOT_ELITE_BRAMBLE_HUNT", "Bramble Hunt", "nature", 0.91, 7900),
+    pveDotWave("ROOT_ELITE_BRAMBLE_TANGLE", "Tangled Thorns", "nature", 0.3, 11900)
+  ] }, "assassin", ["focus", "aoe", "dot"]);
+}
+function rootMyceliumElite() {
+  const base = enemy("ROOT_ELITE_MYCELIUM", "Mycelial Oracle", 12500, 400, 810, 1);
+  return withPveIdentity({ ...base, abilities: [
+    pveAllyMend("ROOT_ELITE_MYCELIUM_MEND", "Fungal Renewal", 850, 11e3),
+    pveDotWave("ROOT_ELITE_MYCELIUM_SPORES", "Spore Tempest", "nature", 0.29, 12300)
+  ] }, "support", ["sustain", "aoe", "dot"]);
+}
+function lanternCantor() {
+  const base = enemy("LANTERN_ELITE_03", "Mourning Cantor", 12800, 440, 790, 1.1);
+  return withPveIdentity({ ...base, abilities: [
+    pveHex("LANTERN_ELITE_03_HEX", "Mourning Verse", "shadow", 0.62, 9500),
+    pveDotWave("LANTERN_ELITE_03_DIRGE", "Shadow Dirge", "shadow", 0.29, 13100)
+  ] }, "hexer", ["vulnerability", "dot", "aoe"]);
+}
+function lanternPilgrim() {
+  return withPveIdentity({
+    id: "LANTERN_PILGRIM_1",
+    name: "Drowned Pilgrim",
+    team: "enemies",
+    role: "enemy",
+    level: 25,
+    stats: s(5600, 320, 620),
+    basicAttackMs: 3e3,
+    basicAttackCoeff: 0.58,
+    abilities: [pveAllyMend("LANTERN_PILGRIM_MEND", "Drowned Benediction", 850, 9e3), pveSupportRally("LANTERN_PILGRIM_RALLY", "Lantern Litany", 0.05, 14500)]
+  }, "support", ["sustain"]);
+}
+function bellSentinel(id = "BELL_SENTINEL", name = "Bell Sentinel", hp = 12800, ap = 450, def = 840) {
+  const base = enemy(id, name, hp, ap, def, 1.15);
+  return withPveIdentity({ ...base, abilities: [{ id: `${id}_TOLL`, name: "Sentinel Toll", cooldownMs: 8e3, castTimeMs: 1100, target: "all_enemies", priority: 90, interruptible: true, effects: [{ kind: "damage", coeff: 0.62, damageType: "shadow" }] }] }, "caster", ["interrupt", "aoe"]);
+}
+var rootBoss = () => withPveIdentity(rootboundHeartBoss(), "bruiser", ["heavy_hit", "aoe", "interrupt", "dot", "enrage"]);
+var bellBoss = () => withPveIdentity(bellWardenBoss(), "caster", ["interrupt", "aoe", "vulnerability"]);
+var ASTERFALL_ENCOUNTERS = {
+  ROOTBOUND_BATTLE_01: () => [enemy("ROOT_HUSK_1", "Briar Husk", 5200, 330, 620), variedEnemy(enemy("ROOT_HUSK_2", "Sporeling", 5200, 330, 620), "swarm")],
+  ROOTBOUND_ELITE_01: () => [rootWarden()],
+  ROOTBOUND_BOSS: () => [rootBoss()],
+  LANTERN_BATTLE_01: () => [enemy("LANTERN_WRETCH_1", "Lantern Wretch", 4800, 350, 560), variedEnemy(enemy("LANTERN_WRETCH_2", "Lantern Wretch", 4800, 350, 560), "caster", "shadow")],
+  LANTERN_ELITE_01: () => [bellSentinel()],
+  LANTERN_BOSS: () => [bellBoss()]
+};
+var rootBattleIds = ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"];
+var rootBattleArchetypes = [
+  ["assassin", "swarm"],
+  // scouts and sporelings: priority targets + spreading spores
+  ["guardian", "hexer"],
+  // a warded guardian protects a thorn hexer
+  ["hexer", "bruiser"],
+  // strangling vines weaken the tank
+  ["assassin", "executioner"],
+  // stalkers pressure vulnerable party members
+  ["guardian", "bruiser"]
+  // a shielded sentinel backs up the frontline
+];
+for (const [index, id] of rootBattleIds.entries()) {
+  ASTERFALL_ENCOUNTERS[id] = () => [
+    variedEnemy(enemy(`${id}_A`, ["Briar Scout", "Root Guardian", "Strangling Vine", "Moss Stalker", "Grove Sentinel"][index], 4800 + index * 350, 310 + index * 14, 560 + index * 35, 0.95 + index * 0.04), rootBattleArchetypes[index][0]),
+    variedEnemy(enemy(`${id}_B`, ["Sporeling", "Thornling", "Sap Husk", "Briar Hound", "Rootbound Husk"][index], 4100 + index * 300, 300 + index * 12, 520 + index * 30, 0.92 + index * 0.04), rootBattleArchetypes[index][1])
+  ];
+}
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_BRAMBLE = () => [rootBrambleElite()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_WARDEN = () => [rootWarden()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_MYCELIUM = () => [rootMyceliumElite()];
+ASTERFALL_ENCOUNTERS.BOSS_EXP_ROOT = () => [rootBoss()];
+ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02 = () => [variedEnemy(enemy("LANTERN_SHADE_1", "Banner Shade", 5e3, 360, 590, 1.02), "hexer", "shadow"), variedEnemy(enemy("LANTERN_SHADE_2", "Echo Bat", 4300, 340, 520, 0.94), "assassin", "physical")];
+ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03 = () => [lanternPilgrim(), enemy("LANTERN_PILGRIM_2", "Lantern Wretch", 4700, 355, 570, 1)];
+ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02 = () => [bellSentinel("LANTERN_KNIGHT", "Fallen Lantern Knight", 13200, 460, 880)];
+ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [lanternCantor()];
+ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL = () => [bellBoss()];
+
+// src/server/combat/content/sunscar-encounters.ts
+var stats3 = (maxHp, attackPower, defense, accuracy = 910, evasion = 220) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
+var strike = (id, name, coeff, damageType, target2 = "current_target", castTimeMs = 650) => ({ id, name, cooldownMs: target2 === "all_enemies" ? 9500 : 6800, castTimeMs, target: target2, priority: target2 === "all_enemies" ? 90 : 70, interruptible: castTimeMs > 900, effects: [{ kind: "damage", coeff, damageType }] });
+var enemy2 = (id, name, hp, ap, def, ability3, archetype = "bruiser", mechanics = ["heavy_hit"]) => withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities: [ability3] }, archetype, mechanics);
+var pairs = [
+  ["SUN_OBS_BATTLE_01", "Sunstone Custodian", "Amberglass Scribe", "fire", 0],
+  ["SUN_OBS_BATTLE_02", "Orrery Scarab", "Solar Watcher", "arcane", 1],
+  ["SUN_OBS_BATTLE_03", "Dustbound Scholar", "Heliolith Drone", "fire", 2],
+  ["SUN_MIRAGE_BATTLE_01", "Mirage Jackal", "Glassscale Stalker", "physical", 0],
+  ["SUN_MIRAGE_BATTLE_02", "Dune Phantom", "Well Guardian", "arcane", 1],
+  ["SUN_MIRAGE_BATTLE_03", "Sunscored Prowler", "Amberglass Asp", "fire", 2]
+];
+var SUNSCAR_ENCOUNTERS = {};
+for (const [id, first, second, type, index] of pairs) SUNSCAR_ENCOUNTERS[id] = () => [
+  enemy2(`${id}_A`, first, 8300 + index * 450, 3100 + index * 50, 980 + index * 45, strike(`${id}_A_SWEEP`, "Scouring Wave", 0.92 + index * 0.025, type, "all_enemies", 1050), "caster", ["interrupt", "aoe"]),
+  enemy2(`${id}_B`, second, 7500 + index * 400, 2900 + index * 45, 920 + index * 40, strike(`${id}_B_STRIKE`, "Scouring Hit", 0.96 + index * 0.03, type), "bruiser", ["heavy_hit"])
+];
+function eliteIdentity(name) {
+  if (name === "Orrery Warden" || name === "Glasshide Warder" || name === "Wellbound Colossus") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
+  if (name === "Solar Archivist") return { archetype: "caster", mechanics: ["interrupt", "aoe"] };
+  if (name === "Dune Sphinx") return { archetype: "hexer", mechanics: ["vulnerability", "dot"] };
+  if (name === "Veiled Huntmaster") return { archetype: "assassin", mechanics: ["focus", "execute"] };
+  return { archetype: "bruiser", mechanics: ["heavy_hit"] };
+}
+function elite(id, name, type, index) {
+  const hp = 22e3 + index * 1200, ap = 3400 + index * 75, def = 1420 + index * 70, identity = eliteIdentity(name);
+  let abilities = [strike(`${id}_BURST`, "Focused Burst", 1.22 + index * 0.04, type, "all_enemies", 1150)];
+  if (identity.archetype === "guardian") abilities = [strike(`${id}_STRIKE`, "Sentinel Crush", 1.05 + index * 0.04, type), pveBarrier(`${id}_WARD`, "Amberglass Ward", 1800 + index * 180, 12500)];
+  if (identity.archetype === "hexer") abilities = [pveHex(`${id}_HEX`, "Mirage Hex", type, 0.7, 7200), pveInterruptibleWave(`${id}_BURST`, "Sphinx Riddleburst", type, 0.55, 10500, 1300)];
+  if (identity.archetype === "assassin") abilities = [pveFocusStrike(`${id}_HUNT`, "Marked Quarry", type, 1.05, 7e3)];
+  return [withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities }, identity.archetype, identity.mechanics)];
+}
+for (const [prefix, names, type] of [
+  ["SUN_OBS", ["Orrery Warden", "Solar Archivist", "Glasshide Warder"], "arcane"],
+  ["SUN_MIRAGE", ["Dune Sphinx", "Veiled Huntmaster", "Wellbound Colossus"], "fire"]
+]) names.forEach((name, index) => {
+  SUNSCAR_ENCOUNTERS[`${prefix}_ELITE_0${index + 1}`] = () => elite(`${prefix}_ELITE_${index + 1}`, name, type, index);
+});
+function boss(id, name, type, attackPower = 3900) {
+  const hex = name === "The Veiled Sphinx", archetype = hex ? "hexer" : "guardian", mechanics = hex ? ["vulnerability", "interrupt", "aoe", "focus"] : ["heavy_hit", "interrupt", "aoe", "barrier"];
+  const lance = hex ? pveFocusStrike(`${id}_LANCE`, "Sphinx Pursuit", type, 1.13, 7e3) : strike(`${id}_LANCE`, "Solar Lance", 1.38, type);
+  const abilities = [lance, { ...strike(`${id}_NOVA`, "Radiant Collapse", 1, type, "all_enemies", 1450), cooldownMs: 10500, interruptible: true }];
+  if (hex) abilities.push(pveHex(`${id}_HEX`, "Veiled Verdict", type, 0.53, 9e3));
+  else abilities.push(pveBarrier(`${id}_WARD`, "Amberglass Ward", 5200, 16e3));
+  const definition = { id, name, team: "enemies", role: "enemy", level: 45, boss: true, stats: stats3(68e3, attackPower, 1650, 940, 180), basicAttackMs: 2600, basicAttackCoeff: 0.78, abilities, phases: [{ id: `${id}_PHASE_50`, hpPct: 0.5, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.62, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.06, durationMs: 7e3 }] }] };
+  return [withPveIdentity(definition, archetype, mechanics)];
+}
+SUNSCAR_ENCOUNTERS.BOSS_EXP_SOLAR = () => boss("BOSS_EXP_SOLAR", "The Buried Heliarch", "fire", 4e3);
+SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX = () => boss("BOSS_EXP_SPHINX", "The Veiled Sphinx", "arcane", 3635);
+
+// src/server/combat/content/regional-encounters.ts
+var stats4 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
+function normalIdentity(name) {
+  if (["Glacier Stalker", "Icefang Hound", "Glassbone Hound"].includes(name)) return { archetype: "assassin", mechanics: ["focus", "execute"] };
+  if (["Choir Wisp", "Ember Wraith", "Crucible Imp"].includes(name)) return { archetype: "caster", mechanics: ["interrupt", "aoe"] };
+  if (["Rime Cantor", "Bellbound Shade", "Charred Adept"].includes(name)) return { archetype: "hexer", mechanics: ["vulnerability", "healing_reduction"] };
+  if (["Frozen Pilgrim", "Glacial Acolyte", "Molten Pilgrim"].includes(name)) return { archetype: "support", mechanics: ["sustain"] };
+  if (["Choir Sentinel", "Cinderbound Guard", "Ashen Colossus"].includes(name)) return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
+  if (["Cinder Mireling"].includes(name)) return { archetype: "swarm", mechanics: ["aoe", "dot"] };
+  if (["Fen Reaver", "Prime Scoria"].includes(name)) return { archetype: "executioner", mechanics: ["heavy_hit", "execute"] };
+  return { archetype: "bruiser", mechanics: ["heavy_hit"] };
+}
+function normalAbilities(id, name, type, index, identity) {
+  const coeff = 0.96 + index * 0.025;
+  switch (identity.archetype) {
+    case "assassin":
+      return [pveFocusStrike(`${id}_HUNT`, `${name} Hunt`, type, coeff, 7200)];
+    case "caster":
+      return [pveInterruptibleWave(`${id}_CAST`, `${name} Channel`, type, 0.46 + index * 0.02, 9800, 1200)];
+    case "hexer":
+      return [pveHex(`${id}_HEX`, `${name} Hex`, type, 0.58 + index * 0.02, 7600), pveHealingPressure(`${id}_MEND_BREAK`, `${name} Withering Rite`, type, 0.42 + index * 0.015, 9e3)];
+    case "support":
+      return [pveAllyMend(`${id}_MEND`, `${name} Mend`, 900 + index * 120, 9200), pveSupportRally(`${id}_RALLY`, `${name} Rally`, 0.05, 14500)];
+    case "guardian":
+      return [pveHeavyStrike(`${id}_CRUSH`, `${name} Crush`, type, 0.92 + index * 0.025, 7200, 700), pveBarrier(`${id}_WARD`, `${name} Ward`, 700 + index * 120, 13500)];
+    case "swarm":
+      return [pveDotWave(`${id}_SWARM`, `${name} Swarm`, type, 0.38 + index * 0.02, 10500)];
+    case "executioner":
+      return [pveExecuteStrike(`${id}_EXECUTE`, `${name} Execute`, type, coeff, 7600)];
+    case "bruiser":
+    default:
+      return [pveHeavyStrike(`${id}_STRIKE`, `${name} Strike`, type, coeff, 6800, 700)];
+  }
+}
+var enemy3 = (id, name, level, hp, attackPower, defense, type, index) => {
+  const identity = normalIdentity(name);
+  return withPveIdentity({ id, name, team: "enemies", role: "enemy", level, stats: stats4(hp, attackPower, defense, level), basicAttackMs: 2750, basicAttackCoeff: 0.74, abilities: normalAbilities(id, name, type, index, identity) }, identity.archetype, identity.mechanics);
+};
+function battle(prefix, level, index, type, names, baseHp, baseAttack, baseDefense) {
+  return [
+    enemy3(`${prefix}_A`, names[0], level, baseHp + index * 650, baseAttack + index * 80, baseDefense + index * 55, type, index),
+    enemy3(`${prefix}_B`, names[1], level, baseHp - 700 + index * 550, baseAttack - 70 + index * 65, baseDefense - 45 + index * 45, type, index)
+  ];
+}
+function eliteIdentity2(name) {
+  if (name === "Rimeplate Guard" || name === "Forgeplate Custodian") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
+  if (name === "Choirbreaker" || name === "Cinder Channeler") return { archetype: "caster", mechanics: ["interrupt", "aoe", "dot"] };
+  if (name === "Blackglass Devourer") return { archetype: "executioner", mechanics: ["heavy_hit", "execute"] };
+  if (name === "Rimehorn Alpha") return { archetype: "bruiser", mechanics: ["heavy_hit", "enrage"] };
+  return { archetype: "bruiser", mechanics: ["heavy_hit"] };
+}
+function elite2(id, name, level, type, index, baseHp, baseAttack, baseDefense) {
+  const hp = baseHp + index * 1700, attackPower = baseAttack + index * 120, defense = baseDefense + index * 95, identity = eliteIdentity2(name);
+  let abilities = [pveHeavyStrike(`${id}_BLAST`, `${name} Smash`, type, 1.25 + index * 0.04, 7200, 700)];
+  if (identity.archetype === "guardian") {
+    const crush = name === "Rimeplate Guard" ? "Permafrost Crush" : "Crucible Crush", ward2 = name === "Rimeplate Guard" ? "Icebound Ward" : "Furnace Ward";
+    abilities = [pveHeavyStrike(`${id}_CRUSH`, crush, type, 1.18 + index * 0.04, 7200, 700), pveBarrier(`${id}_WARD`, ward2, 2400 + index * 220, 13e3)];
+  }
+  if (identity.archetype === "caster") abilities = [pveDotWave(`${id}_BLAST`, name === "Choirbreaker" ? "Shattering Chorus" : "Fenfire Deluge", type, 0.82 + index * 0.03, 9800)];
+  if (identity.archetype === "executioner") abilities = [pveExecuteStrike(`${id}_EXECUTE`, "Blackglass Devour", type, 1.25 + index * 0.04, 7200)];
+  if (name === "Rimehorn Alpha") abilities = [pveHeavyStrike(`${id}_BLAST`, "Rimehorn Charge", type, 1.22, 7e3, 650), pveEnrage(`${id}_RAGE`, "Alpha Fury", 0.08, 15e3)];
+  return [withPveIdentity({ id, name, team: "enemies", role: "enemy", level, stats: stats4(hp, attackPower, defense, level), basicAttackMs: 2750, basicAttackCoeff: 0.74, abilities }, identity.archetype, identity.mechanics)];
+}
+function bossIdentity(name) {
+  if (name === "The Frozen Cantor") return { archetype: "caster", mechanics: ["interrupt", "aoe", "dot", "healing_reduction"] };
+  if (name === "The Blackglass Fen Prime") return { archetype: "executioner", mechanics: ["heavy_hit", "execute", "vulnerability", "aoe"] };
+  if (name === "The Crucible Prime") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier", "aoe", "enrage"] };
+  return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "interrupt", "enrage"] };
+}
+function boss2(id, name, level, type, baseHp, baseAttack, baseDefense) {
+  const identity = bossIdentity(name);
+  let abilities, phases;
+  if (name === "The Bellbeast of Shiverlake") {
+    abilities = [
+      pveHeavyStrike(`${id}_CHARGE`, "Shiverlake Charge", type, 1.4, 6800, 700),
+      pveInterruptibleWave(`${id}_QUAKE`, "Bellquake", type, 1, 10800, 1450),
+      pveEnrage(`${id}_FURY`, "Rimehorn Frenzy", 0.08, 17e3)
+    ];
+    phases = [
+      { id: `${id}_PHASE_65`, name: "Cracked Bell", hpPct: 0.65, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.46, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.04, durationMs: 5500 }] },
+      { id: `${id}_PHASE_30`, name: "Winter Stampede", hpPct: 0.3, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.14, durationMs: 3e4 }] }
+    ];
+  } else if (name === "The Frozen Cantor") {
+    abilities = [
+      pveHex(`${id}_VERSE`, "Dissonant Verse", type, 0.8, 7200),
+      pveHealingPressure(`${id}_WITHER`, "Withering Refrain", type, 0.5, 9e3),
+      pveDotWave(`${id}_TEMPEST`, "Choir Tempest", type, 0.78, 10800)
+    ];
+    phases = [
+      { id: `${id}_PHASE_60`, name: "First Refrain", hpPct: 0.6, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.44, damageType: type }, { kind: "dot", coeff: 0.08, damageType: type, durationMs: 6e3, tickMs: 2e3 }] },
+      { id: `${id}_PHASE_30`, name: "Final Refrain", hpPct: 0.3, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.56, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.08, durationMs: 8e3 }] }
+    ];
+  } else if (name === "The Blackglass Fen Prime") {
+    abilities = [
+      pveExecuteStrike(`${id}_EXECUTE`, "Blackglass Execution", type, 1.35, 7e3),
+      pveInterruptibleWave(`${id}_SHATTER`, "Fen Shatter", type, 1, 10800, 1450),
+      pveHex(`${id}_BRAND`, "Glassbrand", type, 0.56, 9e3)
+    ];
+    phases = [
+      { id: `${id}_PHASE_55`, name: "Cracking Shell", hpPct: 0.55, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.52, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.06, durationMs: 7500 }] },
+      { id: `${id}_PHASE_25`, name: "Devour the Weak", hpPct: 0.25, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.12, durationMs: 3e4 }] }
+    ];
+  } else {
+    abilities = [
+      pveHeavyStrike(`${id}_HAMMER`, "Crucible Hammer", type, 1.35, 7e3, 700),
+      pveInterruptibleWave(`${id}_COLLAPSE`, "Furnace Collapse", type, 1, 10800, 1450),
+      pveBarrier(`${id}_WARD`, "Molten Aegis", 7200, 16500),
+      pveEnrage(`${id}_HEAT`, "Crucible Heat", 0.07, 18e3)
+    ];
+    phases = [
+      { id: `${id}_PHASE_60`, name: "Tempered Shell", hpPct: 0.6, target: "self", effects: [{ kind: "shield", flat: 6500 }] },
+      { id: `${id}_PHASE_30`, name: "Overheat", hpPct: 0.3, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.15, durationMs: 3e4 }] }
+    ];
+  }
+  const definition = { id, name, team: "enemies", role: "enemy", level, boss: true, stats: stats4(baseHp, baseAttack, baseDefense, level), basicAttackMs: 2650, basicAttackCoeff: 0.8, abilities, phases };
+  return [withPveIdentity(definition, identity.archetype, identity.mechanics)];
+}
+var FROSTMARCH_ENCOUNTERS = {};
+var frostBattleNames = [[["Rimewolf", "Shiverling"]], [["Glacier Stalker", "Frostbound Scout"]], [["Lake Warden", "Icefang Hound"]]];
+for (const [index, id] of ["FROST_LAKE_BATTLE_01", "FROST_LAKE_BATTLE_02", "FROST_LAKE_BATTLE_03"].entries()) FROSTMARCH_ENCOUNTERS[id] = () => battle(id, 70, index, "ice", frostBattleNames[index][0], 13500, 5e3, 1450);
+var frostChoirNames = [[["Choir Wisp", "Rime Cantor"]], [["Frozen Pilgrim", "Bellbound Shade"]], [["Choir Sentinel", "Glacial Acolyte"]]];
+for (const [index, id] of ["FROST_CHOIR_BATTLE_01", "FROST_CHOIR_BATTLE_02", "FROST_CHOIR_BATTLE_03"].entries()) FROSTMARCH_ENCOUNTERS[id] = () => battle(id, 70, index, "ice", frostChoirNames[index][0], 13900, 5100, 1500);
+for (const [index, name] of ["Rimehorn Alpha", "Choirbreaker", "Rimeplate Guard"].entries()) {
+  FROSTMARCH_ENCOUNTERS[`FROST_LAKE_ELITE_0${index + 1}`] = () => elite2(`FROST_LAKE_ELITE_${index + 1}`, name, 70, "ice", index, 35e3, 5600, 2100);
+  FROSTMARCH_ENCOUNTERS[`FROST_CHOIR_ELITE_0${index + 1}`] = () => elite2(`FROST_CHOIR_ELITE_${index + 1}`, name, 70, "ice", index, 35800, 5700, 2150);
+}
+FROSTMARCH_ENCOUNTERS.BOSS_EXP_BELLBEAST = () => boss2("BOSS_EXP_BELLBEAST", "The Bellbeast of Shiverlake", 70, "ice", 112e3, 6500, 2500);
+FROSTMARCH_ENCOUNTERS.BOSS_EXP_CANTOR = () => boss2("BOSS_EXP_CANTOR", "The Frozen Cantor", 70, "ice", 116e3, 6650, 2550);
+var ASHLANDS_ENCOUNTERS = {};
+var ashBattleNames = [[["Cinder Mireling", "Blackglass Beetle"]], [["Ember Wraith", "Ashen Marauder"]], [["Fen Reaver", "Glassbone Hound"]], [["Crucible Imp", "Charred Adept"]], [["Molten Pilgrim", "Cinderbound Guard"]], [["Prime Scoria", "Ashen Colossus"]]];
+var ashIds = ["ASH_FEN_BATTLE_01", "ASH_FEN_BATTLE_02", "ASH_FEN_BATTLE_03", "ASH_CRUCIBLE_BATTLE_01", "ASH_CRUCIBLE_BATTLE_02", "ASH_CRUCIBLE_BATTLE_03"];
+for (const [index, id] of ashIds.entries()) ASHLANDS_ENCOUNTERS[id] = () => battle(id, 94, index % 3, "fire", ashBattleNames[index][0], 15500, 6300, 1850);
+for (const [index, name] of ["Cinder Channeler", "Blackglass Devourer", "Forgeplate Custodian"].entries()) {
+  ASHLANDS_ENCOUNTERS[`ASH_FEN_ELITE_0${index + 1}`] = () => elite2(`ASH_FEN_ELITE_${index + 1}`, name, 94, "fire", index, 39e3, 7e3, 2500);
+  ASHLANDS_ENCOUNTERS[`ASH_CRUCIBLE_ELITE_0${index + 1}`] = () => elite2(`ASH_CRUCIBLE_ELITE_${index + 1}`, name, 94, "fire", index, 41e3, 7200, 2550);
+}
+ASHLANDS_ENCOUNTERS.BOSS_EXP_FEN = () => boss2("BOSS_EXP_FEN", "The Blackglass Fen Prime", 94, "fire", 125e3, 8200, 2900);
+ASHLANDS_ENCOUNTERS.BOSS_EXP_PRIME = () => boss2("BOSS_EXP_PRIME", "The Crucible Prime", 94, "fire", 132e3, 8400, 2950);
+
+// src/server/combat/content/event-encounters.ts
+var stats5 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
+function archetypeFor(name) {
+  const exact = {
+    "Veilshade Stalker": "assassin",
+    "Lantern-Eater": "executioner",
+    "Hollow Warden": "guardian",
+    "Ledger Hexer": "hexer",
+    "Iron Tollkeeper": "guardian",
+    "Bellfrost Spirit": "caster",
+    "Giftwork Colossus": "guardian",
+    "Briarling Swarm": "swarm",
+    "Pollenmaw": "hexer",
+    "Solar Reef Warden": "guardian",
+    "Meteoric Sentinel": "guardian",
+    "Yearshade Archivist": "hexer",
+    "Dawnless Warden": "guardian",
+    "Sorrowbound Shade": "assassin",
+    "Shoreline Colossus": "bruiser"
+  };
+  return exact[name] ?? "bruiser";
+}
+function mechanicsFor(archetype) {
+  switch (archetype) {
+    case "assassin":
+      return ["focus", "execute"];
+    case "caster":
+      return ["interrupt", "aoe"];
+    case "swarm":
+      return ["aoe", "dot"];
+    case "guardian":
+      return ["heavy_hit", "barrier"];
+    case "hexer":
+      return ["vulnerability", "healing_reduction", "dot"];
+    case "executioner":
+      return ["heavy_hit", "execute"];
+    case "support":
+      return ["sustain"];
+    case "bruiser":
+    default:
+      return ["heavy_hit"];
+  }
+}
+function primaryAbilities(id, name, archetype, scale, damageType, strikeName) {
+  switch (archetype) {
+    case "assassin":
+      return [pveFocusStrike(`${id}_A_HIT`, strikeName, damageType, 0.96, 6800)];
+    case "caster":
+      return [pveInterruptibleWave(`${id}_A_HIT`, strikeName, damageType, 0.68, 9e3, 1200)];
+    case "swarm":
+      return [pveDotWave(`${id}_A_HIT`, strikeName, damageType, 0.48, 8500)];
+    case "guardian":
+      return [pveHeavyStrike(`${id}_A_HIT`, strikeName, damageType, 0.9, 7e3, 650), pveBarrier(`${id}_A_WARD`, `${name} Ward`, 700 * scale, 12e3)];
+    case "hexer":
+      return [pveHex(`${id}_A_HIT`, strikeName, damageType, 0.62, 7200), pveHealingPressure(`${id}_A_WITHER`, `${name} Healing Seal`, damageType, 0.4, 9200), pveDotWave(`${id}_A_CURSE`, `${name} Curse`, damageType, 0.38, 11e3)];
+    case "executioner":
+      return [pveExecuteStrike(`${id}_A_HIT`, strikeName, damageType, 1.02, 7e3)];
+    case "support":
+      return [pveHeavyStrike(`${id}_A_HIT`, strikeName, damageType, 0.72, 7600, 650), pveEnrage(`${id}_A_RALLY`, `${name} Rally`, 0.08, 15e3)];
+    case "bruiser":
+    default:
+      return [pveHeavyStrike(`${id}_A_HIT`, strikeName, damageType, 1.02, 6800, 700)];
+  }
+}
+var encounter = (id, name, level, scale, damageType, strikeName = "Event Strike", waveName = "Event Wave") => {
+  const archetype = archetypeFor(name), primary = withPveIdentity({ id: `${id}_A`, name, team: "enemies", role: "enemy", level, stats: stats5(6500 * scale, 2800 * scale, 850 * scale, level), basicAttackMs: 2750, basicAttackCoeff: 0.74, abilities: primaryAbilities(id, name, archetype, scale, damageType, strikeName) }, archetype, mechanicsFor(archetype));
+  const echo = withPveIdentity({ id: `${id}_B`, name: `${name} Echo`, team: "enemies", role: "enemy", level, stats: stats5(5800 * scale, 2600 * scale, 780 * scale, level), basicAttackMs: 2900, basicAttackCoeff: 0.72, abilities: [pveInterruptibleWave(`${id}_B_WAVE`, waveName, damageType, 0.72, 9600, 1100)] }, "caster", ["interrupt", "aoe"]);
+  return [primary, echo];
+};
+function bossIdentity2(name) {
+  if (name === "The Hollow Regent") return { archetype: "hexer", mechanics: ["focus", "execute", "interrupt", "dot"] };
+  if (name === "The Coinbound Captain") return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "interrupt", "enrage"] };
+  if (name === "The Rimebell Colossus") return { archetype: "guardian", mechanics: ["heavy_hit", "aoe", "interrupt", "barrier"] };
+  if (name === "The Constellation Eater" || name === "The Last Hour") return { archetype: "caster", mechanics: ["interrupt", "aoe", "vulnerability"] };
+  if (name === "The Thornheart Ancient") return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "enrage"] };
+  return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "interrupt", "vulnerability"] };
+}
+var boss3 = (id, name, level, scale, damageType, lanceName = "Event Lance", novaName = "Event Nova") => {
+  const identity = bossIdentity2(name);
+  let lance = pveHeavyStrike(`${id}_LANCE`, lanceName, damageType, 1.4, 6800, 700);
+  let nova = pveInterruptibleWave(`${id}_NOVA`, novaName, damageType, 1.05, 10800, 1450);
+  const extras = [];
+  let phases = [{ id: `${id}_PHASE_50`, name: "Pressure Break", hpPct: 0.5, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.65, damageType }, { kind: "debuff", tag: "damage_taken", value: 0.06, durationMs: 7500 }] }];
+  if (name === "The Hollow Regent") {
+    lance = pveFocusStrike(`${id}_LANCE`, lanceName, damageType, 1.12, 7e3);
+    nova = pveDotWave(`${id}_NOVA`, novaName, damageType, 0.82, 10800);
+    phases = [
+      { id: `${id}_PHASE_LANTERNS_DIM`, name: "Lanterns Dim", hpPct: 0.7, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.38, damageType: "shadow" }, { kind: "dot", coeff: 0.08, damageType: "shadow", durationMs: 6e3, tickMs: 2e3 }] },
+      { id: `${id}_PHASE_REGENTS_DECREE`, name: "Regent's Decree", hpPct: 0.35, target: "random_enemy", effects: [{ kind: "damage", coeff: 0.72, damageType: "shadow", executeBelowHpPct: 0.35, executeBonus: 0.25 }] }
+    ];
+  }
+  if (name === "The Coinbound Captain") {
+    extras.push(pveEnrage(`${id}_RALLY`, "Gilded Rally", 0.08, 16e3));
+    phases = [
+      { id: `${id}_PHASE_TOLL_DUE`, name: "Toll Is Due", hpPct: 0.7, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.42, damageType: "physical" }, { kind: "debuff", tag: "damage_taken", value: 0.05, durationMs: 6500 }] },
+      { id: `${id}_PHASE_CAPTAINS_SHARE`, name: "Captain's Share", hpPct: 0.35, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.12, durationMs: 3e4 }, { kind: "buff", tag: "crit", value: 0.06, durationMs: 3e4 }] }
+    ];
+  }
+  if (name === "The Rimebell Colossus") {
+    extras.push(pveBarrier(`${id}_WARD`, "Rimebell Ward", 3200 * scale, 15e3));
+    phases = [
+      { id: `${id}_PHASE_FROZEN_CARAPACE`, name: "Frozen Carapace", hpPct: 0.65, target: "self", effects: [{ kind: "shield", flat: 4200 * scale }] },
+      { id: `${id}_PHASE_LAST_TOLL`, name: "Last Toll", hpPct: 0.3, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.62, damageType: "ice" }] }
+    ];
+  }
+  const definition = { id, name, team: "enemies", role: "enemy", level, boss: true, stats: stats5(58e3 * scale, 3700 * scale, 1500 * scale, level), basicAttackMs: 2650, basicAttackCoeff: 0.8, abilities: [lance, nova, ...extras], phases };
+  return [withPveIdentity(definition, identity.archetype, identity.mechanics)];
+};
+var EVENT_ENCOUNTERS = {
+  EVENT_SUNCREST_BATTLE_01: () => encounter("EVENT_SUNCREST_BATTLE_01", "Suncrest Corsair", 45, 1, "fire"),
+  EVENT_SUNCREST_BATTLE_02: () => encounter("EVENT_SUNCREST_BATTLE_02", "Shoreline Colossus", 45, 1.04, "fire"),
+  EVENT_SUNCREST_BATTLE_03: () => encounter("EVENT_SUNCREST_BATTLE_03", "Solar Reef Warden", 45, 1.08, "fire"),
+  EVENT_STARFALL_BATTLE_01: () => encounter("EVENT_STARFALL_BATTLE_01", "Astral Marauder", 70, 1.18, "arcane"),
+  EVENT_STARFALL_BATTLE_02: () => encounter("EVENT_STARFALL_BATTLE_02", "Meteoric Sentinel", 70, 1.23, "arcane"),
+  EVENT_STARFALL_BATTLE_03: () => encounter("EVENT_STARFALL_BATTLE_03", "Riftbound Herald", 70, 1.28, "arcane"),
+  EVENT_SUNCREST_BOSS: () => boss3("EVENT_SUNCREST_BOSS", "Aureon, First Champion", 45, 1, "fire", "Champion's Lance", "Solar Nova"),
+  EVENT_STARFALL_BOSS: () => boss3("EVENT_STARFALL_BOSS", "The Constellation Eater", 70, 1.18, "arcane", "Astral Lance", "Constellation Nova"),
+  EVENT_TURNING_BATTLE_01: () => encounter("EVENT_TURNING_BATTLE_01", "Yearshade Archivist", 50, 1.12, "arcane"),
+  EVENT_TURNING_BATTLE_02: () => encounter("EVENT_TURNING_BATTLE_02", "Hourglass Golem", 50, 1.16, "arcane"),
+  EVENT_TURNING_BATTLE_03: () => encounter("EVENT_TURNING_BATTLE_03", "Dawnless Warden", 50, 1.2, "arcane"),
+  EVENT_HEARTBOND_BATTLE_01: () => encounter("EVENT_HEARTBOND_BATTLE_01", "Vowbreaker Brigand", 30, 0.92, "fire"),
+  EVENT_HEARTBOND_BATTLE_02: () => encounter("EVENT_HEARTBOND_BATTLE_02", "Thorned Effigy", 30, 0.96, "arcane"),
+  EVENT_HEARTBOND_BATTLE_03: () => encounter("EVENT_HEARTBOND_BATTLE_03", "Sorrowbound Shade", 30, 1, "arcane"),
+  EVENT_BLOOMWAKE_BATTLE_01: () => encounter("EVENT_BLOOMWAKE_BATTLE_01", "Briarling Swarm", 30, 0.95, "fire"),
+  EVENT_BLOOMWAKE_BATTLE_02: () => encounter("EVENT_BLOOMWAKE_BATTLE_02", "Pollenmaw", 30, 1, "arcane"),
+  EVENT_BLOOMWAKE_BATTLE_03: () => encounter("EVENT_BLOOMWAKE_BATTLE_03", "Rootbound Stag", 30, 1.05, "arcane"),
+  EVENT_TURNING_BOSS: () => boss3("EVENT_TURNING_BOSS", "The Last Hour", 50, 1.12, "arcane", "Chronicle Rend", "Last Hour Nova"),
+  EVENT_HEARTBOND_BOSS: () => boss3("EVENT_HEARTBOND_BOSS", "The Severed Vow", 30, 0.95, "arcane", "Vow Sever", "Heartbreak Nova"),
+  EVENT_BLOOMWAKE_BOSS: () => boss3("EVENT_BLOOMWAKE_BOSS", "The Thornheart Ancient", 30, 1, "arcane", "Thornheart Slam", "Verdant Cataclysm"),
+  EVENT_VEILBREAK_BATTLE_01: () => encounter("EVENT_VEILBREAK_BATTLE_01", "Veilshade Stalker", 35, 1.02, "shadow", "Gloam Rend", "Veil Pulse"),
+  EVENT_VEILBREAK_BATTLE_02: () => encounter("EVENT_VEILBREAK_BATTLE_02", "Lantern-Eater", 35, 1.06, "shadow", "Snuffing Bite", "Blackout Wave"),
+  EVENT_VEILBREAK_BATTLE_03: () => encounter("EVENT_VEILBREAK_BATTLE_03", "Hollow Warden", 35, 1.1, "arcane", "Wardbreaker", "Hollow Toll"),
+  EVENT_MERCHANT_BATTLE_01: () => encounter("EVENT_MERCHANT_BATTLE_01", "Road Reaver", 35, 1, "physical", "Tollblade", "Ambush Cry"),
+  EVENT_MERCHANT_BATTLE_02: () => encounter("EVENT_MERCHANT_BATTLE_02", "Ledger Hexer", 35, 1.04, "arcane", "Debt Mark", "Compound Curse"),
+  EVENT_MERCHANT_BATTLE_03: () => encounter("EVENT_MERCHANT_BATTLE_03", "Iron Tollkeeper", 35, 1.08, "physical", "Gatehammer", "Lockdown Sweep"),
+  EVENT_FROSTFALL_BATTLE_01: () => encounter("EVENT_FROSTFALL_BATTLE_01", "Rimefang Marauder", 35, 1.02, "ice", "Rimefang", "Snowblind Howl"),
+  EVENT_FROSTFALL_BATTLE_02: () => encounter("EVENT_FROSTFALL_BATTLE_02", "Bellfrost Spirit", 35, 1.06, "ice", "Chime Shard", "Winter Peal"),
+  EVENT_FROSTFALL_BATTLE_03: () => encounter("EVENT_FROSTFALL_BATTLE_03", "Giftwork Colossus", 35, 1.1, "ice", "Wrapped Fist", "Toybox Avalanche"),
+  EVENT_VEILBREAK_BOSS: () => boss3("EVENT_VEILBREAK_BOSS", "The Hollow Regent", 35, 1.14, "shadow", "Regent\u2019s Grasp", "Lantern Extinction"),
+  EVENT_MERCHANT_BOSS: () => boss3("EVENT_MERCHANT_BOSS", "The Coinbound Captain", 35, 1.03, "physical", "Golden Cleaver", "Caravan Breaker"),
+  EVENT_FROSTFALL_BOSS: () => boss3("EVENT_FROSTFALL_BOSS", "The Rimebell Colossus", 35, 1.07, "ice", "Rimebell Hammer", "Aurora Shatter")
+};
+
+// src/server/combat/content/expedition-encounters.ts
+var EXPEDITION_ENCOUNTERS = Object.freeze({ ...ASTERFALL_ENCOUNTERS, ...SUNSCAR_ENCOUNTERS, ...FROSTMARCH_ENCOUNTERS, ...ASHLANDS_ENCOUNTERS, ...EVENT_ENCOUNTERS });
+
+// src/server/coop/dungeon-companion-counters.ts
+var counters = [
+  { id: "spellbreak", companionIds: ["UNIT_005"], description: "Lantern Wisp interrupts dangerous casts instead of casting its usual healing assist.", applies: (t) => t.has("interruptible_cast") },
+  { id: "armor_break", companionIds: ["UNIT_010", "UNIT_021", "GUILD_UNIT_002"], description: "Armor breaker: +3.5% owner Attack and +6% companion strike against guardians or barriers.", applies: (t) => t.has("guardian") || t.has("barrier") },
+  { id: "swarm_hunt", companionIds: ["UNIT_017", "UNIT_023"], description: "Swarm hunter: +2.5 percentage points owner Haste and +6% companion strike against swarms.", applies: (t) => t.has("swarm") },
+  { id: "bulwark", companionIds: ["UNIT_002", "UNIT_015", "UNIT_019", "UNIT_022"], description: "Bulwark: +4% owner Defense and +6% companion shielding against heavy pressure.", applies: (t) => t.has("heavy_hit") || t.has("focus") || t.has("execute") },
+  { id: "recovery", companionIds: ["UNIT_003", "UNIT_014", "UNIT_018", "UNIT_024"], description: "Recovery: +4% owner Healing Power and +6% companion heals against sustained pressure.", applies: (t) => t.has("dot") || t.has("healing_reduction") },
+  { id: "finisher", companionIds: ["UNIT_007", "UNIT_013", "UNIT_020"], description: "Finisher: +3% owner Attack and +6% companion strike against self-healing enemies.", applies: (t) => t.has("sustain") }
+];
+function dungeonCompanionCounterOptions(enemies) {
+  const traits = dungeonEncounterTraits(enemies);
+  return counters.filter((profile) => profile.applies(traits)).map((profile) => profile.id);
+}
+function dungeonEncounterTraits(enemies) {
+  const traits = /* @__PURE__ */ new Set();
+  for (const enemy4 of enemies) {
+    if (enemy4.team !== "enemies") continue;
+    for (const tag of enemy4.tags ?? []) {
+      if (tag.startsWith("pve:archetype:")) traits.add(tag.slice("pve:archetype:".length));
+      if (tag.startsWith("pve:mechanic:")) traits.add(tag.slice("pve:mechanic:".length));
+    }
+    for (const ability3 of enemy4.abilities) {
+      if (ability3.interruptible && ability3.castTimeMs >= 800 && ability3.effects.some((effect2) => effect2.kind === "damage" || effect2.kind === "dot")) traits.add("interruptible_cast");
+      if (ability3.effects.some((effect2) => effect2.kind === "shield")) traits.add("barrier");
+      if (ability3.effects.some((effect2) => effect2.kind === "dot")) traits.add("dot");
+      if (ability3.effects.some((effect2) => effect2.kind === "heal")) traits.add("sustain");
+    }
+  }
+  return traits;
+}
+function companionAssist(player2) {
+  const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length);
+  if (!companionId) return void 0;
+  const ability3 = player2.abilities.find((item) => item.tags?.includes("combat_companion") && item.id === `${player2.id}:${companionId}:assist`);
+  return ability3 ? { id: companionId, ability: ability3 } : void 0;
+}
+function scaleAssist(ability3, kind) {
+  return { ...ability3, effects: ability3.effects.map((effect2) => effect2.kind === kind ? {
+    ...effect2,
+    ...effect2.coeff === void 0 ? {} : { coeff: effect2.coeff * 1.06 },
+    ...effect2.flat === void 0 ? {} : { flat: effect2.flat * 1.06 }
+  } : effect2) };
+}
+function applyDungeonCompanionCounters(players, enemies, inactivePlayerIds = /* @__PURE__ */ new Set()) {
+  const traits = dungeonEncounterTraits(enemies), matchups = [];
+  const adjusted = players.map((player2) => {
+    if (inactivePlayerIds.has(player2.id)) return player2;
+    const assist = companionAssist(player2);
+    if (!assist) return player2;
+    const counter = counters.find((entry2) => entry2.companionIds.includes(assist.id) && entry2.applies(traits));
+    if (!counter) return player2;
+    let ability3 = assist.ability, stats6 = player2.stats;
+    switch (counter.id) {
+      case "spellbreak":
+        ability3 = { ...ability3, target: "interruptible_casting_enemy", aiCondition: "target_casting", priority: 96, effects: [{ kind: "interrupt", tag: "companion_spellbreak" }] };
+        break;
+      case "armor_break":
+        stats6 = { ...stats6, attackPower: stats6.attackPower * 1.035 };
+        ability3 = scaleAssist(ability3, "damage");
+        break;
+      case "swarm_hunt":
+        stats6 = { ...stats6, haste: Math.min(0.75, stats6.haste + 0.025) };
+        ability3 = scaleAssist(ability3, "damage");
+        break;
+      case "bulwark":
+        stats6 = { ...stats6, defense: stats6.defense * 1.04 };
+        ability3 = scaleAssist(ability3, "shield");
+        break;
+      case "recovery":
+        stats6 = { ...stats6, healingPower: stats6.healingPower * 1.04 };
+        ability3 = scaleAssist(ability3, "heal");
+        break;
+      case "finisher":
+        stats6 = { ...stats6, attackPower: stats6.attackPower * 1.03 };
+        ability3 = scaleAssist(ability3, "damage");
+        break;
+    }
+    matchups.push({ playerId: player2.id, companionId: assist.id, id: counter.id, description: counter.description });
+    return { ...player2, stats: stats6, abilities: player2.abilities.map((item) => item === assist.ability ? ability3 : item) };
+  });
+  return { players: adjusted, matchups };
+}
+
+// src/server/coop/dungeon-companion-preview.ts
+function possibleDungeonCompanionCounters(dungeonId) {
+  const route = COOP_ROUTE_CONTENT[dungeonId], dungeon = EXPEDITIONS[dungeonId];
+  if (!route || !dungeon) return [];
+  const result = /* @__PURE__ */ new Set();
+  for (const id of [...route.battle, ...route.elite, dungeon.bossId]) {
+    const encounter2 = EXPEDITION_ENCOUNTERS[id]?.();
+    if (!encounter2) continue;
+    for (const counter of dungeonCompanionCounterOptions(encounter2)) result.add(counter);
+  }
+  return [...result];
+}
+
 // ../apps/mobile/src/core/game-commands.ts
 init_faith2();
 
@@ -47904,7 +48587,7 @@ function coopEntryHandler(services) {
         gameVersion: loaded.version,
         liveRecruitment,
         ...rewardBudget ? { rewardBudget } : {},
-        dungeons: Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level) && prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), itemDropRates: [], syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level), lockedReason: regularDungeonLockedReason(def, gameState, character.level), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
+        dungeons: Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level) && prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), itemDropRates: [], companionCounterIds: possibleDungeonCompanionCounters(def.id), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level), lockedReason: regularDungeonLockedReason(def, gameState, character.level), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
           const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= rebasedCombatLevelFromLegacyLevel(def.minLevel), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
           return { ...def, minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
@@ -47981,559 +48664,6 @@ function deterministicShuffle(secret, values, ...parts) {
 
 // src/server/combat/expedition-combat-service.ts
 import { createHash as createHash2 } from "node:crypto";
-
-// src/server/combat/pve-encounter-identity.ts
-var ARCHETYPE_LABEL = Object.freeze({
-  bruiser: "Bruiser",
-  assassin: "Assassin",
-  caster: "Caster",
-  swarm: "Swarm",
-  guardian: "Guardian",
-  hexer: "Hexer",
-  executioner: "Executioner",
-  support: "Support"
-});
-var MECHANICS = Object.freeze({
-  heavy_hit: { id: "heavy_hit", label: "Heavy Hit", description: "Strong focused attacks create tank pressure." },
-  focus: { id: "focus", label: "Focus", description: "Can pressure a non-tank party member." },
-  interrupt: { id: "interrupt", label: "Interrupt", description: "Dangerous casts can be interrupted." },
-  aoe: { id: "aoe", label: "Party Damage", description: "Can damage multiple party members at once." },
-  dot: { id: "dot", label: "DoT", description: "Applies damage over time." },
-  vulnerability: { id: "vulnerability", label: "Vulnerability", description: "Applies increased damage taken." },
-  healing_reduction: { id: "healing_reduction", label: "Heal Cut", description: "Reduces healing received for a short time." },
-  barrier: { id: "barrier", label: "Barrier", description: "Can create a protective barrier." },
-  enrage: { id: "enrage", label: "Enrage", description: "Temporarily increases offensive pressure." },
-  execute: { id: "execute", label: "Execute", description: "Deals increased damage to low-health targets." },
-  sustain: { id: "sustain", label: "Sustain", description: "Can restore health or prolong the fight." }
-});
-var archetypeTag = (value) => `pve:archetype:${value}`;
-var mechanicTag = (value) => `pve:mechanic:${value}`;
-function withPveIdentity(definition, archetype, mechanics) {
-  const existing = (definition.tags ?? []).filter((tag) => !tag.startsWith("pve:archetype:") && !tag.startsWith("pve:mechanic:"));
-  return { ...definition, tags: [...existing, archetypeTag(archetype), ...[...new Set(mechanics)].map(mechanicTag)] };
-}
-function pveHeavyStrike(id, name, damageType, coeff, cooldownMs = 6800, castTimeMs = 700) {
-  return { id, name, cooldownMs, castTimeMs, target: "current_target", priority: 78, effects: [{ kind: "damage", coeff, damageType }] };
-}
-function pveFocusStrike(id, name, damageType, coeff, cooldownMs = 7e3) {
-  return { id, name, cooldownMs, castTimeMs: 500, target: "random_enemy", priority: 92, effects: [{ kind: "damage", coeff, damageType, executeBelowHpPct: 0.35, executeBonus: 0.22 }] };
-}
-function pveInterruptibleWave(id, name, damageType, coeff, cooldownMs = 9800, castTimeMs = 1300) {
-  return { id, name, cooldownMs, castTimeMs, target: "all_enemies", priority: 95, interruptible: true, effects: [{ kind: "damage", coeff, damageType }] };
-}
-function pveHex(id, name, damageType, coeff = 0.62, cooldownMs = 7600) {
-  return { id, name, cooldownMs, castTimeMs: 800, target: "current_target", priority: 92, effects: [{ kind: "damage", coeff, damageType }, { kind: "debuff", tag: "damage_taken", value: 0.07, durationMs: 6e3 }] };
-}
-function pveDotWave(id, name, damageType, coeff = 0.5, cooldownMs = 9800) {
-  return { id, name, cooldownMs, castTimeMs: 1300, target: "all_enemies", priority: 94, interruptible: true, effects: [{ kind: "damage", coeff, damageType }, { kind: "dot", coeff: 0.1, damageType, durationMs: 6e3, tickMs: 2e3 }] };
-}
-function pveBarrier(id, name, flat, cooldownMs = 12e3) {
-  return { id, name, cooldownMs, castTimeMs: 0, target: "self", priority: 88, effects: [{ kind: "shield", flat }] };
-}
-function pveEnrage(id, name, value = 0.1, cooldownMs = 16e3) {
-  return { id, name, cooldownMs, castTimeMs: 0, target: "self", priority: 70, effects: [{ kind: "buff", tag: "damage_done", value, durationMs: 7e3 }] };
-}
-function pveExecuteStrike(id, name, damageType, coeff, cooldownMs = 7200) {
-  return { id, name, cooldownMs, castTimeMs: 650, target: "current_target", priority: 90, effects: [{ kind: "damage", coeff, damageType, executeBelowHpPct: 0.35, executeBonus: 0.3 }] };
-}
-function pveAllyMend(id, name, flat, cooldownMs = 9e3) {
-  return { id, name, cooldownMs, castTimeMs: 850, target: "lowest_hp_ally", priority: 96, aiCondition: "ally_below_80", effects: [{ kind: "heal", flat }] };
-}
-function pveSupportRally(id, name, value = 0.06, cooldownMs = 14500) {
-  return { id, name, cooldownMs, castTimeMs: 0, target: "all_allies", priority: 72, effects: [{ kind: "buff", tag: "damage_done", value, durationMs: 6e3 }] };
-}
-function pveHealingPressure(id, name, damageType, coeff = 0.52, cooldownMs = 8200) {
-  return { id, name, cooldownMs, castTimeMs: 750, target: "current_target", priority: 93, effects: [{ kind: "damage", coeff, damageType }, { kind: "debuff", tag: "healing_received", value: -0.25, durationMs: 6e3 }] };
-}
-function parseArchetype(tags) {
-  const value = tags.find((tag) => tag.startsWith("pve:archetype:"))?.slice("pve:archetype:".length);
-  return value && value in ARCHETYPE_LABEL ? value : void 0;
-}
-function parseMechanics(tags) {
-  return [...new Set(tags.filter((tag) => tag.startsWith("pve:mechanic:")).map((tag) => tag.slice("pve:mechanic:".length)).filter((value) => value in MECHANICS))];
-}
-function pveEncounterPreview(definitions2) {
-  const enemies = definitions2.filter((definition) => definition.team === "enemies");
-  if (!enemies.length) return void 0;
-  const archetypes = [...new Set(enemies.map((enemy4) => parseArchetype(enemy4.tags ?? [])).filter((value) => Boolean(value)))].slice(0, 2);
-  const mechanicIds = [...new Set(enemies.flatMap((enemy4) => parseMechanics(enemy4.tags ?? [])))].slice(0, 4);
-  if (!archetypes.length && !mechanicIds.length) return void 0;
-  const mechanics = mechanicIds.map((id) => MECHANICS[id]);
-  const labels2 = [...archetypes.map((id) => ARCHETYPE_LABEL[id]), ...mechanics.slice(0, 2).map((item) => item.label)];
-  return { archetypes: archetypes.map((id) => ({ id, label: ARCHETYPE_LABEL[id] })), mechanics, summary: labels2.join(" \xB7 ") };
-}
-function pveBossTelegraph(definitions2) {
-  const boss4 = definitions2.find((definition) => definition.team === "enemies" && definition.boss);
-  if (!boss4) return void 0;
-  const readable = (value) => value.replace(/[_:-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-  return {
-    bossName: boss4.name,
-    phases: (boss4.phases ?? []).map((phase2) => ({ id: phase2.id, label: phase2.name?.trim() || readable(phase2.id), hpPct: Math.round(phase2.hpPct * 100), objectiveSensitive: false })),
-    castAbilities: boss4.abilities.filter((ability3) => ability3.castTimeMs > 0 || ability3.interruptible === true).map((ability3) => ({ id: ability3.id, label: ability3.name, castMs: ability3.castTimeMs, cooldownMs: ability3.cooldownMs, interruptible: ability3.interruptible === true, objectiveSensitive: false })),
-    suppressedAbilities: []
-  };
-}
-
-// src/server/combat/content/asterfall-encounters.ts
-var s = (maxHp, attackPower, defense, accuracy = 650, evasion = 120) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.04, critMultiplier: 1.5, haste: 0 });
-var enemy = (id, name, hp, ap, def, abilityCoeff = 1) => withPveIdentity({
-  id,
-  name,
-  team: "enemies",
-  role: "enemy",
-  level: 25,
-  stats: s(hp, ap, def),
-  basicAttackMs: 2800,
-  basicAttackCoeff: 0.72,
-  abilities: [{ id: `${id}_HEAVY`, name: "Heavy Strike", cooldownMs: 7e3, castTimeMs: 700, target: "current_target", priority: 70, effects: [{ kind: "damage", coeff: abilityCoeff, damageType: "physical" }] }]
-}, "bruiser", ["heavy_hit"]);
-function variedEnemy(base, archetype, damageType = "nature") {
-  if (archetype === "bruiser") return base;
-  const { id, name, stats: stats6 } = base;
-  let abilities, mechanics;
-  switch (archetype) {
-    case "assassin":
-      abilities = [pveFocusStrike(`${id}_HUNT`, `${name} Hunt`, damageType, 0.75, 9e3)];
-      mechanics = ["focus", "execute"];
-      break;
-    case "caster":
-      abilities = [pveInterruptibleWave(`${id}_WAVE`, `${name} Wave`, damageType, 0.37, 11500, 1350)];
-      mechanics = ["interrupt", "aoe"];
-      break;
-    case "guardian":
-      abilities = [pveHeavyStrike(`${id}_CRUSH`, `${name} Crush`, damageType, 0.78, 7800), pveBarrier(`${id}_WARD`, `${name} Ward`, Math.round(stats6.maxHp * 0.07), 14500)];
-      mechanics = ["heavy_hit", "barrier"];
-      break;
-    case "hexer":
-      abilities = [pveHex(`${id}_HEX`, `${name} Hex`, damageType, 0.46, 10500)];
-      mechanics = ["vulnerability"];
-      break;
-    case "swarm":
-      abilities = [pveDotWave(`${id}_SPORES`, `${name} Spores`, damageType, 0.19, 14500)];
-      mechanics = ["interrupt", "aoe", "dot"];
-      break;
-    case "executioner":
-      abilities = [pveExecuteStrike(`${id}_EXECUTE`, `${name} Execute`, damageType, 0.77, 9e3)];
-      mechanics = ["execute"];
-      break;
-  }
-  return withPveIdentity({ ...base, abilities }, archetype, mechanics);
-}
-function rootWarden() {
-  const base = enemy("ROOT_WARDEN", "Runebound Bulwark", 13500, 430, 900, 1.25);
-  return withPveIdentity({ ...base, boss: false, abilities: [...base.abilities, pveBarrier("ROOT_WARDEN_WARD", "Root Ward", 1250, 12e3)] }, "guardian", ["heavy_hit", "barrier"]);
-}
-function rootBrambleElite() {
-  const base = enemy("ROOT_ELITE_BRAMBLE", "Bramble Reaver", 13200, 430, 850, 1.1);
-  return withPveIdentity({ ...base, abilities: [
-    pveFocusStrike("ROOT_ELITE_BRAMBLE_HUNT", "Bramble Hunt", "nature", 0.91, 7900),
-    pveDotWave("ROOT_ELITE_BRAMBLE_TANGLE", "Tangled Thorns", "nature", 0.3, 11900)
-  ] }, "assassin", ["focus", "aoe", "dot"]);
-}
-function rootMyceliumElite() {
-  const base = enemy("ROOT_ELITE_MYCELIUM", "Mycelial Oracle", 12500, 400, 810, 1);
-  return withPveIdentity({ ...base, abilities: [
-    pveAllyMend("ROOT_ELITE_MYCELIUM_MEND", "Fungal Renewal", 850, 11e3),
-    pveDotWave("ROOT_ELITE_MYCELIUM_SPORES", "Spore Tempest", "nature", 0.29, 12300)
-  ] }, "support", ["sustain", "aoe", "dot"]);
-}
-function lanternCantor() {
-  const base = enemy("LANTERN_ELITE_03", "Mourning Cantor", 12800, 440, 790, 1.1);
-  return withPveIdentity({ ...base, abilities: [
-    pveHex("LANTERN_ELITE_03_HEX", "Mourning Verse", "shadow", 0.62, 9500),
-    pveDotWave("LANTERN_ELITE_03_DIRGE", "Shadow Dirge", "shadow", 0.29, 13100)
-  ] }, "hexer", ["vulnerability", "dot", "aoe"]);
-}
-function lanternPilgrim() {
-  return withPveIdentity({
-    id: "LANTERN_PILGRIM_1",
-    name: "Drowned Pilgrim",
-    team: "enemies",
-    role: "enemy",
-    level: 25,
-    stats: s(5600, 320, 620),
-    basicAttackMs: 3e3,
-    basicAttackCoeff: 0.58,
-    abilities: [pveAllyMend("LANTERN_PILGRIM_MEND", "Drowned Benediction", 850, 9e3), pveSupportRally("LANTERN_PILGRIM_RALLY", "Lantern Litany", 0.05, 14500)]
-  }, "support", ["sustain"]);
-}
-function bellSentinel(id = "BELL_SENTINEL", name = "Bell Sentinel", hp = 12800, ap = 450, def = 840) {
-  const base = enemy(id, name, hp, ap, def, 1.15);
-  return withPveIdentity({ ...base, abilities: [{ id: `${id}_TOLL`, name: "Sentinel Toll", cooldownMs: 8e3, castTimeMs: 1100, target: "all_enemies", priority: 90, interruptible: true, effects: [{ kind: "damage", coeff: 0.62, damageType: "shadow" }] }] }, "caster", ["interrupt", "aoe"]);
-}
-var rootBoss = () => withPveIdentity(rootboundHeartBoss(), "bruiser", ["heavy_hit", "aoe", "interrupt", "dot", "enrage"]);
-var bellBoss = () => withPveIdentity(bellWardenBoss(), "caster", ["interrupt", "aoe", "vulnerability"]);
-var ASTERFALL_ENCOUNTERS = {
-  ROOTBOUND_BATTLE_01: () => [enemy("ROOT_HUSK_1", "Briar Husk", 5200, 330, 620), variedEnemy(enemy("ROOT_HUSK_2", "Sporeling", 5200, 330, 620), "swarm")],
-  ROOTBOUND_ELITE_01: () => [rootWarden()],
-  ROOTBOUND_BOSS: () => [rootBoss()],
-  LANTERN_BATTLE_01: () => [enemy("LANTERN_WRETCH_1", "Lantern Wretch", 4800, 350, 560), variedEnemy(enemy("LANTERN_WRETCH_2", "Lantern Wretch", 4800, 350, 560), "caster", "shadow")],
-  LANTERN_ELITE_01: () => [bellSentinel()],
-  LANTERN_BOSS: () => [bellBoss()]
-};
-var rootBattleIds = ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"];
-var rootBattleArchetypes = [
-  ["assassin", "swarm"],
-  // scouts and sporelings: priority targets + spreading spores
-  ["guardian", "hexer"],
-  // a warded guardian protects a thorn hexer
-  ["hexer", "bruiser"],
-  // strangling vines weaken the tank
-  ["assassin", "executioner"],
-  // stalkers pressure vulnerable party members
-  ["guardian", "bruiser"]
-  // a shielded sentinel backs up the frontline
-];
-for (const [index, id] of rootBattleIds.entries()) {
-  ASTERFALL_ENCOUNTERS[id] = () => [
-    variedEnemy(enemy(`${id}_A`, ["Briar Scout", "Root Guardian", "Strangling Vine", "Moss Stalker", "Grove Sentinel"][index], 4800 + index * 350, 310 + index * 14, 560 + index * 35, 0.95 + index * 0.04), rootBattleArchetypes[index][0]),
-    variedEnemy(enemy(`${id}_B`, ["Sporeling", "Thornling", "Sap Husk", "Briar Hound", "Rootbound Husk"][index], 4100 + index * 300, 300 + index * 12, 520 + index * 30, 0.92 + index * 0.04), rootBattleArchetypes[index][1])
-  ];
-}
-ASTERFALL_ENCOUNTERS.ROOT_ELITE_BRAMBLE = () => [rootBrambleElite()];
-ASTERFALL_ENCOUNTERS.ROOT_ELITE_WARDEN = () => [rootWarden()];
-ASTERFALL_ENCOUNTERS.ROOT_ELITE_MYCELIUM = () => [rootMyceliumElite()];
-ASTERFALL_ENCOUNTERS.BOSS_EXP_ROOT = () => [rootBoss()];
-ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02 = () => [variedEnemy(enemy("LANTERN_SHADE_1", "Banner Shade", 5e3, 360, 590, 1.02), "hexer", "shadow"), variedEnemy(enemy("LANTERN_SHADE_2", "Echo Bat", 4300, 340, 520, 0.94), "assassin", "physical")];
-ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03 = () => [lanternPilgrim(), enemy("LANTERN_PILGRIM_2", "Lantern Wretch", 4700, 355, 570, 1)];
-ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02 = () => [bellSentinel("LANTERN_KNIGHT", "Fallen Lantern Knight", 13200, 460, 880)];
-ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [lanternCantor()];
-ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL = () => [bellBoss()];
-
-// src/server/combat/content/sunscar-encounters.ts
-var stats3 = (maxHp, attackPower, defense, accuracy = 910, evasion = 220) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
-var strike = (id, name, coeff, damageType, target2 = "current_target", castTimeMs = 650) => ({ id, name, cooldownMs: target2 === "all_enemies" ? 9500 : 6800, castTimeMs, target: target2, priority: target2 === "all_enemies" ? 90 : 70, interruptible: castTimeMs > 900, effects: [{ kind: "damage", coeff, damageType }] });
-var enemy2 = (id, name, hp, ap, def, ability3, archetype = "bruiser", mechanics = ["heavy_hit"]) => withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities: [ability3] }, archetype, mechanics);
-var pairs = [
-  ["SUN_OBS_BATTLE_01", "Sunstone Custodian", "Amberglass Scribe", "fire", 0],
-  ["SUN_OBS_BATTLE_02", "Orrery Scarab", "Solar Watcher", "arcane", 1],
-  ["SUN_OBS_BATTLE_03", "Dustbound Scholar", "Heliolith Drone", "fire", 2],
-  ["SUN_MIRAGE_BATTLE_01", "Mirage Jackal", "Glassscale Stalker", "physical", 0],
-  ["SUN_MIRAGE_BATTLE_02", "Dune Phantom", "Well Guardian", "arcane", 1],
-  ["SUN_MIRAGE_BATTLE_03", "Sunscored Prowler", "Amberglass Asp", "fire", 2]
-];
-var SUNSCAR_ENCOUNTERS = {};
-for (const [id, first, second, type, index] of pairs) SUNSCAR_ENCOUNTERS[id] = () => [
-  enemy2(`${id}_A`, first, 8300 + index * 450, 3100 + index * 50, 980 + index * 45, strike(`${id}_A_SWEEP`, "Scouring Wave", 0.92 + index * 0.025, type, "all_enemies", 1050), "caster", ["interrupt", "aoe"]),
-  enemy2(`${id}_B`, second, 7500 + index * 400, 2900 + index * 45, 920 + index * 40, strike(`${id}_B_STRIKE`, "Scouring Hit", 0.96 + index * 0.03, type), "bruiser", ["heavy_hit"])
-];
-function eliteIdentity(name) {
-  if (name === "Orrery Warden" || name === "Glasshide Warder" || name === "Wellbound Colossus") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
-  if (name === "Solar Archivist") return { archetype: "caster", mechanics: ["interrupt", "aoe"] };
-  if (name === "Dune Sphinx") return { archetype: "hexer", mechanics: ["vulnerability", "dot"] };
-  if (name === "Veiled Huntmaster") return { archetype: "assassin", mechanics: ["focus", "execute"] };
-  return { archetype: "bruiser", mechanics: ["heavy_hit"] };
-}
-function elite(id, name, type, index) {
-  const hp = 22e3 + index * 1200, ap = 3400 + index * 75, def = 1420 + index * 70, identity = eliteIdentity(name);
-  let abilities = [strike(`${id}_BURST`, "Focused Burst", 1.22 + index * 0.04, type, "all_enemies", 1150)];
-  if (identity.archetype === "guardian") abilities = [strike(`${id}_STRIKE`, "Sentinel Crush", 1.05 + index * 0.04, type), pveBarrier(`${id}_WARD`, "Amberglass Ward", 1800 + index * 180, 12500)];
-  if (identity.archetype === "hexer") abilities = [pveHex(`${id}_HEX`, "Mirage Hex", type, 0.7, 7200), pveInterruptibleWave(`${id}_BURST`, "Sphinx Riddleburst", type, 0.55, 10500, 1300)];
-  if (identity.archetype === "assassin") abilities = [pveFocusStrike(`${id}_HUNT`, "Marked Quarry", type, 1.05, 7e3)];
-  return [withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities }, identity.archetype, identity.mechanics)];
-}
-for (const [prefix, names, type] of [
-  ["SUN_OBS", ["Orrery Warden", "Solar Archivist", "Glasshide Warder"], "arcane"],
-  ["SUN_MIRAGE", ["Dune Sphinx", "Veiled Huntmaster", "Wellbound Colossus"], "fire"]
-]) names.forEach((name, index) => {
-  SUNSCAR_ENCOUNTERS[`${prefix}_ELITE_0${index + 1}`] = () => elite(`${prefix}_ELITE_${index + 1}`, name, type, index);
-});
-function boss(id, name, type, attackPower = 3900) {
-  const hex = name === "The Veiled Sphinx", archetype = hex ? "hexer" : "guardian", mechanics = hex ? ["vulnerability", "interrupt", "aoe", "focus"] : ["heavy_hit", "interrupt", "aoe", "barrier"];
-  const lance = hex ? pveFocusStrike(`${id}_LANCE`, "Sphinx Pursuit", type, 1.13, 7e3) : strike(`${id}_LANCE`, "Solar Lance", 1.38, type);
-  const abilities = [lance, { ...strike(`${id}_NOVA`, "Radiant Collapse", 1, type, "all_enemies", 1450), cooldownMs: 10500, interruptible: true }];
-  if (hex) abilities.push(pveHex(`${id}_HEX`, "Veiled Verdict", type, 0.53, 9e3));
-  else abilities.push(pveBarrier(`${id}_WARD`, "Amberglass Ward", 5200, 16e3));
-  const definition = { id, name, team: "enemies", role: "enemy", level: 45, boss: true, stats: stats3(68e3, attackPower, 1650, 940, 180), basicAttackMs: 2600, basicAttackCoeff: 0.78, abilities, phases: [{ id: `${id}_PHASE_50`, hpPct: 0.5, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.62, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.06, durationMs: 7e3 }] }] };
-  return [withPveIdentity(definition, archetype, mechanics)];
-}
-SUNSCAR_ENCOUNTERS.BOSS_EXP_SOLAR = () => boss("BOSS_EXP_SOLAR", "The Buried Heliarch", "fire", 4e3);
-SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX = () => boss("BOSS_EXP_SPHINX", "The Veiled Sphinx", "arcane", 3635);
-
-// src/server/combat/content/regional-encounters.ts
-var stats4 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
-function normalIdentity(name) {
-  if (["Glacier Stalker", "Icefang Hound", "Glassbone Hound"].includes(name)) return { archetype: "assassin", mechanics: ["focus", "execute"] };
-  if (["Choir Wisp", "Ember Wraith", "Crucible Imp"].includes(name)) return { archetype: "caster", mechanics: ["interrupt", "aoe"] };
-  if (["Rime Cantor", "Bellbound Shade", "Charred Adept"].includes(name)) return { archetype: "hexer", mechanics: ["vulnerability", "healing_reduction"] };
-  if (["Frozen Pilgrim", "Glacial Acolyte", "Molten Pilgrim"].includes(name)) return { archetype: "support", mechanics: ["sustain"] };
-  if (["Choir Sentinel", "Cinderbound Guard", "Ashen Colossus"].includes(name)) return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
-  if (["Cinder Mireling"].includes(name)) return { archetype: "swarm", mechanics: ["aoe", "dot"] };
-  if (["Fen Reaver", "Prime Scoria"].includes(name)) return { archetype: "executioner", mechanics: ["heavy_hit", "execute"] };
-  return { archetype: "bruiser", mechanics: ["heavy_hit"] };
-}
-function normalAbilities(id, name, type, index, identity) {
-  const coeff = 0.96 + index * 0.025;
-  switch (identity.archetype) {
-    case "assassin":
-      return [pveFocusStrike(`${id}_HUNT`, `${name} Hunt`, type, coeff, 7200)];
-    case "caster":
-      return [pveInterruptibleWave(`${id}_CAST`, `${name} Channel`, type, 0.46 + index * 0.02, 9800, 1200)];
-    case "hexer":
-      return [pveHex(`${id}_HEX`, `${name} Hex`, type, 0.58 + index * 0.02, 7600), pveHealingPressure(`${id}_MEND_BREAK`, `${name} Withering Rite`, type, 0.42 + index * 0.015, 9e3)];
-    case "support":
-      return [pveAllyMend(`${id}_MEND`, `${name} Mend`, 900 + index * 120, 9200), pveSupportRally(`${id}_RALLY`, `${name} Rally`, 0.05, 14500)];
-    case "guardian":
-      return [pveHeavyStrike(`${id}_CRUSH`, `${name} Crush`, type, 0.92 + index * 0.025, 7200, 700), pveBarrier(`${id}_WARD`, `${name} Ward`, 700 + index * 120, 13500)];
-    case "swarm":
-      return [pveDotWave(`${id}_SWARM`, `${name} Swarm`, type, 0.38 + index * 0.02, 10500)];
-    case "executioner":
-      return [pveExecuteStrike(`${id}_EXECUTE`, `${name} Execute`, type, coeff, 7600)];
-    case "bruiser":
-    default:
-      return [pveHeavyStrike(`${id}_STRIKE`, `${name} Strike`, type, coeff, 6800, 700)];
-  }
-}
-var enemy3 = (id, name, level, hp, attackPower, defense, type, index) => {
-  const identity = normalIdentity(name);
-  return withPveIdentity({ id, name, team: "enemies", role: "enemy", level, stats: stats4(hp, attackPower, defense, level), basicAttackMs: 2750, basicAttackCoeff: 0.74, abilities: normalAbilities(id, name, type, index, identity) }, identity.archetype, identity.mechanics);
-};
-function battle(prefix, level, index, type, names, baseHp, baseAttack, baseDefense) {
-  return [
-    enemy3(`${prefix}_A`, names[0], level, baseHp + index * 650, baseAttack + index * 80, baseDefense + index * 55, type, index),
-    enemy3(`${prefix}_B`, names[1], level, baseHp - 700 + index * 550, baseAttack - 70 + index * 65, baseDefense - 45 + index * 45, type, index)
-  ];
-}
-function eliteIdentity2(name) {
-  if (name === "Rimeplate Guard" || name === "Forgeplate Custodian") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
-  if (name === "Choirbreaker" || name === "Cinder Channeler") return { archetype: "caster", mechanics: ["interrupt", "aoe", "dot"] };
-  if (name === "Blackglass Devourer") return { archetype: "executioner", mechanics: ["heavy_hit", "execute"] };
-  if (name === "Rimehorn Alpha") return { archetype: "bruiser", mechanics: ["heavy_hit", "enrage"] };
-  return { archetype: "bruiser", mechanics: ["heavy_hit"] };
-}
-function elite2(id, name, level, type, index, baseHp, baseAttack, baseDefense) {
-  const hp = baseHp + index * 1700, attackPower = baseAttack + index * 120, defense = baseDefense + index * 95, identity = eliteIdentity2(name);
-  let abilities = [pveHeavyStrike(`${id}_BLAST`, `${name} Smash`, type, 1.25 + index * 0.04, 7200, 700)];
-  if (identity.archetype === "guardian") {
-    const crush = name === "Rimeplate Guard" ? "Permafrost Crush" : "Crucible Crush", ward2 = name === "Rimeplate Guard" ? "Icebound Ward" : "Furnace Ward";
-    abilities = [pveHeavyStrike(`${id}_CRUSH`, crush, type, 1.18 + index * 0.04, 7200, 700), pveBarrier(`${id}_WARD`, ward2, 2400 + index * 220, 13e3)];
-  }
-  if (identity.archetype === "caster") abilities = [pveDotWave(`${id}_BLAST`, name === "Choirbreaker" ? "Shattering Chorus" : "Fenfire Deluge", type, 0.82 + index * 0.03, 9800)];
-  if (identity.archetype === "executioner") abilities = [pveExecuteStrike(`${id}_EXECUTE`, "Blackglass Devour", type, 1.25 + index * 0.04, 7200)];
-  if (name === "Rimehorn Alpha") abilities = [pveHeavyStrike(`${id}_BLAST`, "Rimehorn Charge", type, 1.22, 7e3, 650), pveEnrage(`${id}_RAGE`, "Alpha Fury", 0.08, 15e3)];
-  return [withPveIdentity({ id, name, team: "enemies", role: "enemy", level, stats: stats4(hp, attackPower, defense, level), basicAttackMs: 2750, basicAttackCoeff: 0.74, abilities }, identity.archetype, identity.mechanics)];
-}
-function bossIdentity(name) {
-  if (name === "The Frozen Cantor") return { archetype: "caster", mechanics: ["interrupt", "aoe", "dot", "healing_reduction"] };
-  if (name === "The Blackglass Fen Prime") return { archetype: "executioner", mechanics: ["heavy_hit", "execute", "vulnerability", "aoe"] };
-  if (name === "The Crucible Prime") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier", "aoe", "enrage"] };
-  return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "interrupt", "enrage"] };
-}
-function boss2(id, name, level, type, baseHp, baseAttack, baseDefense) {
-  const identity = bossIdentity(name);
-  let abilities, phases;
-  if (name === "The Bellbeast of Shiverlake") {
-    abilities = [
-      pveHeavyStrike(`${id}_CHARGE`, "Shiverlake Charge", type, 1.4, 6800, 700),
-      pveInterruptibleWave(`${id}_QUAKE`, "Bellquake", type, 1, 10800, 1450),
-      pveEnrage(`${id}_FURY`, "Rimehorn Frenzy", 0.08, 17e3)
-    ];
-    phases = [
-      { id: `${id}_PHASE_65`, name: "Cracked Bell", hpPct: 0.65, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.46, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.04, durationMs: 5500 }] },
-      { id: `${id}_PHASE_30`, name: "Winter Stampede", hpPct: 0.3, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.14, durationMs: 3e4 }] }
-    ];
-  } else if (name === "The Frozen Cantor") {
-    abilities = [
-      pveHex(`${id}_VERSE`, "Dissonant Verse", type, 0.8, 7200),
-      pveHealingPressure(`${id}_WITHER`, "Withering Refrain", type, 0.5, 9e3),
-      pveDotWave(`${id}_TEMPEST`, "Choir Tempest", type, 0.78, 10800)
-    ];
-    phases = [
-      { id: `${id}_PHASE_60`, name: "First Refrain", hpPct: 0.6, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.44, damageType: type }, { kind: "dot", coeff: 0.08, damageType: type, durationMs: 6e3, tickMs: 2e3 }] },
-      { id: `${id}_PHASE_30`, name: "Final Refrain", hpPct: 0.3, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.56, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.08, durationMs: 8e3 }] }
-    ];
-  } else if (name === "The Blackglass Fen Prime") {
-    abilities = [
-      pveExecuteStrike(`${id}_EXECUTE`, "Blackglass Execution", type, 1.35, 7e3),
-      pveInterruptibleWave(`${id}_SHATTER`, "Fen Shatter", type, 1, 10800, 1450),
-      pveHex(`${id}_BRAND`, "Glassbrand", type, 0.56, 9e3)
-    ];
-    phases = [
-      { id: `${id}_PHASE_55`, name: "Cracking Shell", hpPct: 0.55, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.52, damageType: type }, { kind: "debuff", tag: "damage_taken", value: 0.06, durationMs: 7500 }] },
-      { id: `${id}_PHASE_25`, name: "Devour the Weak", hpPct: 0.25, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.12, durationMs: 3e4 }] }
-    ];
-  } else {
-    abilities = [
-      pveHeavyStrike(`${id}_HAMMER`, "Crucible Hammer", type, 1.35, 7e3, 700),
-      pveInterruptibleWave(`${id}_COLLAPSE`, "Furnace Collapse", type, 1, 10800, 1450),
-      pveBarrier(`${id}_WARD`, "Molten Aegis", 7200, 16500),
-      pveEnrage(`${id}_HEAT`, "Crucible Heat", 0.07, 18e3)
-    ];
-    phases = [
-      { id: `${id}_PHASE_60`, name: "Tempered Shell", hpPct: 0.6, target: "self", effects: [{ kind: "shield", flat: 6500 }] },
-      { id: `${id}_PHASE_30`, name: "Overheat", hpPct: 0.3, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.15, durationMs: 3e4 }] }
-    ];
-  }
-  const definition = { id, name, team: "enemies", role: "enemy", level, boss: true, stats: stats4(baseHp, baseAttack, baseDefense, level), basicAttackMs: 2650, basicAttackCoeff: 0.8, abilities, phases };
-  return [withPveIdentity(definition, identity.archetype, identity.mechanics)];
-}
-var FROSTMARCH_ENCOUNTERS = {};
-var frostBattleNames = [[["Rimewolf", "Shiverling"]], [["Glacier Stalker", "Frostbound Scout"]], [["Lake Warden", "Icefang Hound"]]];
-for (const [index, id] of ["FROST_LAKE_BATTLE_01", "FROST_LAKE_BATTLE_02", "FROST_LAKE_BATTLE_03"].entries()) FROSTMARCH_ENCOUNTERS[id] = () => battle(id, 70, index, "ice", frostBattleNames[index][0], 13500, 5e3, 1450);
-var frostChoirNames = [[["Choir Wisp", "Rime Cantor"]], [["Frozen Pilgrim", "Bellbound Shade"]], [["Choir Sentinel", "Glacial Acolyte"]]];
-for (const [index, id] of ["FROST_CHOIR_BATTLE_01", "FROST_CHOIR_BATTLE_02", "FROST_CHOIR_BATTLE_03"].entries()) FROSTMARCH_ENCOUNTERS[id] = () => battle(id, 70, index, "ice", frostChoirNames[index][0], 13900, 5100, 1500);
-for (const [index, name] of ["Rimehorn Alpha", "Choirbreaker", "Rimeplate Guard"].entries()) {
-  FROSTMARCH_ENCOUNTERS[`FROST_LAKE_ELITE_0${index + 1}`] = () => elite2(`FROST_LAKE_ELITE_${index + 1}`, name, 70, "ice", index, 35e3, 5600, 2100);
-  FROSTMARCH_ENCOUNTERS[`FROST_CHOIR_ELITE_0${index + 1}`] = () => elite2(`FROST_CHOIR_ELITE_${index + 1}`, name, 70, "ice", index, 35800, 5700, 2150);
-}
-FROSTMARCH_ENCOUNTERS.BOSS_EXP_BELLBEAST = () => boss2("BOSS_EXP_BELLBEAST", "The Bellbeast of Shiverlake", 70, "ice", 112e3, 6500, 2500);
-FROSTMARCH_ENCOUNTERS.BOSS_EXP_CANTOR = () => boss2("BOSS_EXP_CANTOR", "The Frozen Cantor", 70, "ice", 116e3, 6650, 2550);
-var ASHLANDS_ENCOUNTERS = {};
-var ashBattleNames = [[["Cinder Mireling", "Blackglass Beetle"]], [["Ember Wraith", "Ashen Marauder"]], [["Fen Reaver", "Glassbone Hound"]], [["Crucible Imp", "Charred Adept"]], [["Molten Pilgrim", "Cinderbound Guard"]], [["Prime Scoria", "Ashen Colossus"]]];
-var ashIds = ["ASH_FEN_BATTLE_01", "ASH_FEN_BATTLE_02", "ASH_FEN_BATTLE_03", "ASH_CRUCIBLE_BATTLE_01", "ASH_CRUCIBLE_BATTLE_02", "ASH_CRUCIBLE_BATTLE_03"];
-for (const [index, id] of ashIds.entries()) ASHLANDS_ENCOUNTERS[id] = () => battle(id, 94, index % 3, "fire", ashBattleNames[index][0], 15500, 6300, 1850);
-for (const [index, name] of ["Cinder Channeler", "Blackglass Devourer", "Forgeplate Custodian"].entries()) {
-  ASHLANDS_ENCOUNTERS[`ASH_FEN_ELITE_0${index + 1}`] = () => elite2(`ASH_FEN_ELITE_${index + 1}`, name, 94, "fire", index, 39e3, 7e3, 2500);
-  ASHLANDS_ENCOUNTERS[`ASH_CRUCIBLE_ELITE_0${index + 1}`] = () => elite2(`ASH_CRUCIBLE_ELITE_${index + 1}`, name, 94, "fire", index, 41e3, 7200, 2550);
-}
-ASHLANDS_ENCOUNTERS.BOSS_EXP_FEN = () => boss2("BOSS_EXP_FEN", "The Blackglass Fen Prime", 94, "fire", 125e3, 8200, 2900);
-ASHLANDS_ENCOUNTERS.BOSS_EXP_PRIME = () => boss2("BOSS_EXP_PRIME", "The Crucible Prime", 94, "fire", 132e3, 8400, 2950);
-
-// src/server/combat/content/event-encounters.ts
-var stats5 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
-function archetypeFor(name) {
-  const exact = {
-    "Veilshade Stalker": "assassin",
-    "Lantern-Eater": "executioner",
-    "Hollow Warden": "guardian",
-    "Ledger Hexer": "hexer",
-    "Iron Tollkeeper": "guardian",
-    "Bellfrost Spirit": "caster",
-    "Giftwork Colossus": "guardian",
-    "Briarling Swarm": "swarm",
-    "Pollenmaw": "hexer",
-    "Solar Reef Warden": "guardian",
-    "Meteoric Sentinel": "guardian",
-    "Yearshade Archivist": "hexer",
-    "Dawnless Warden": "guardian",
-    "Sorrowbound Shade": "assassin",
-    "Shoreline Colossus": "bruiser"
-  };
-  return exact[name] ?? "bruiser";
-}
-function mechanicsFor(archetype) {
-  switch (archetype) {
-    case "assassin":
-      return ["focus", "execute"];
-    case "caster":
-      return ["interrupt", "aoe"];
-    case "swarm":
-      return ["aoe", "dot"];
-    case "guardian":
-      return ["heavy_hit", "barrier"];
-    case "hexer":
-      return ["vulnerability", "healing_reduction", "dot"];
-    case "executioner":
-      return ["heavy_hit", "execute"];
-    case "support":
-      return ["sustain"];
-    case "bruiser":
-    default:
-      return ["heavy_hit"];
-  }
-}
-function primaryAbilities(id, name, archetype, scale, damageType, strikeName) {
-  switch (archetype) {
-    case "assassin":
-      return [pveFocusStrike(`${id}_A_HIT`, strikeName, damageType, 0.96, 6800)];
-    case "caster":
-      return [pveInterruptibleWave(`${id}_A_HIT`, strikeName, damageType, 0.68, 9e3, 1200)];
-    case "swarm":
-      return [pveDotWave(`${id}_A_HIT`, strikeName, damageType, 0.48, 8500)];
-    case "guardian":
-      return [pveHeavyStrike(`${id}_A_HIT`, strikeName, damageType, 0.9, 7e3, 650), pveBarrier(`${id}_A_WARD`, `${name} Ward`, 700 * scale, 12e3)];
-    case "hexer":
-      return [pveHex(`${id}_A_HIT`, strikeName, damageType, 0.62, 7200), pveHealingPressure(`${id}_A_WITHER`, `${name} Healing Seal`, damageType, 0.4, 9200), pveDotWave(`${id}_A_CURSE`, `${name} Curse`, damageType, 0.38, 11e3)];
-    case "executioner":
-      return [pveExecuteStrike(`${id}_A_HIT`, strikeName, damageType, 1.02, 7e3)];
-    case "support":
-      return [pveHeavyStrike(`${id}_A_HIT`, strikeName, damageType, 0.72, 7600, 650), pveEnrage(`${id}_A_RALLY`, `${name} Rally`, 0.08, 15e3)];
-    case "bruiser":
-    default:
-      return [pveHeavyStrike(`${id}_A_HIT`, strikeName, damageType, 1.02, 6800, 700)];
-  }
-}
-var encounter = (id, name, level, scale, damageType, strikeName = "Event Strike", waveName = "Event Wave") => {
-  const archetype = archetypeFor(name), primary = withPveIdentity({ id: `${id}_A`, name, team: "enemies", role: "enemy", level, stats: stats5(6500 * scale, 2800 * scale, 850 * scale, level), basicAttackMs: 2750, basicAttackCoeff: 0.74, abilities: primaryAbilities(id, name, archetype, scale, damageType, strikeName) }, archetype, mechanicsFor(archetype));
-  const echo = withPveIdentity({ id: `${id}_B`, name: `${name} Echo`, team: "enemies", role: "enemy", level, stats: stats5(5800 * scale, 2600 * scale, 780 * scale, level), basicAttackMs: 2900, basicAttackCoeff: 0.72, abilities: [pveInterruptibleWave(`${id}_B_WAVE`, waveName, damageType, 0.72, 9600, 1100)] }, "caster", ["interrupt", "aoe"]);
-  return [primary, echo];
-};
-function bossIdentity2(name) {
-  if (name === "The Hollow Regent") return { archetype: "hexer", mechanics: ["focus", "execute", "interrupt", "dot"] };
-  if (name === "The Coinbound Captain") return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "interrupt", "enrage"] };
-  if (name === "The Rimebell Colossus") return { archetype: "guardian", mechanics: ["heavy_hit", "aoe", "interrupt", "barrier"] };
-  if (name === "The Constellation Eater" || name === "The Last Hour") return { archetype: "caster", mechanics: ["interrupt", "aoe", "vulnerability"] };
-  if (name === "The Thornheart Ancient") return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "enrage"] };
-  return { archetype: "bruiser", mechanics: ["heavy_hit", "aoe", "interrupt", "vulnerability"] };
-}
-var boss3 = (id, name, level, scale, damageType, lanceName = "Event Lance", novaName = "Event Nova") => {
-  const identity = bossIdentity2(name);
-  let lance = pveHeavyStrike(`${id}_LANCE`, lanceName, damageType, 1.4, 6800, 700);
-  let nova = pveInterruptibleWave(`${id}_NOVA`, novaName, damageType, 1.05, 10800, 1450);
-  const extras = [];
-  let phases = [{ id: `${id}_PHASE_50`, name: "Pressure Break", hpPct: 0.5, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.65, damageType }, { kind: "debuff", tag: "damage_taken", value: 0.06, durationMs: 7500 }] }];
-  if (name === "The Hollow Regent") {
-    lance = pveFocusStrike(`${id}_LANCE`, lanceName, damageType, 1.12, 7e3);
-    nova = pveDotWave(`${id}_NOVA`, novaName, damageType, 0.82, 10800);
-    phases = [
-      { id: `${id}_PHASE_LANTERNS_DIM`, name: "Lanterns Dim", hpPct: 0.7, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.38, damageType: "shadow" }, { kind: "dot", coeff: 0.08, damageType: "shadow", durationMs: 6e3, tickMs: 2e3 }] },
-      { id: `${id}_PHASE_REGENTS_DECREE`, name: "Regent's Decree", hpPct: 0.35, target: "random_enemy", effects: [{ kind: "damage", coeff: 0.72, damageType: "shadow", executeBelowHpPct: 0.35, executeBonus: 0.25 }] }
-    ];
-  }
-  if (name === "The Coinbound Captain") {
-    extras.push(pveEnrage(`${id}_RALLY`, "Gilded Rally", 0.08, 16e3));
-    phases = [
-      { id: `${id}_PHASE_TOLL_DUE`, name: "Toll Is Due", hpPct: 0.7, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.42, damageType: "physical" }, { kind: "debuff", tag: "damage_taken", value: 0.05, durationMs: 6500 }] },
-      { id: `${id}_PHASE_CAPTAINS_SHARE`, name: "Captain's Share", hpPct: 0.35, target: "self", effects: [{ kind: "buff", tag: "damage_done", value: 0.12, durationMs: 3e4 }, { kind: "buff", tag: "crit", value: 0.06, durationMs: 3e4 }] }
-    ];
-  }
-  if (name === "The Rimebell Colossus") {
-    extras.push(pveBarrier(`${id}_WARD`, "Rimebell Ward", 3200 * scale, 15e3));
-    phases = [
-      { id: `${id}_PHASE_FROZEN_CARAPACE`, name: "Frozen Carapace", hpPct: 0.65, target: "self", effects: [{ kind: "shield", flat: 4200 * scale }] },
-      { id: `${id}_PHASE_LAST_TOLL`, name: "Last Toll", hpPct: 0.3, target: "all_enemies", effects: [{ kind: "damage", coeff: 0.62, damageType: "ice" }] }
-    ];
-  }
-  const definition = { id, name, team: "enemies", role: "enemy", level, boss: true, stats: stats5(58e3 * scale, 3700 * scale, 1500 * scale, level), basicAttackMs: 2650, basicAttackCoeff: 0.8, abilities: [lance, nova, ...extras], phases };
-  return [withPveIdentity(definition, identity.archetype, identity.mechanics)];
-};
-var EVENT_ENCOUNTERS = {
-  EVENT_SUNCREST_BATTLE_01: () => encounter("EVENT_SUNCREST_BATTLE_01", "Suncrest Corsair", 45, 1, "fire"),
-  EVENT_SUNCREST_BATTLE_02: () => encounter("EVENT_SUNCREST_BATTLE_02", "Shoreline Colossus", 45, 1.04, "fire"),
-  EVENT_SUNCREST_BATTLE_03: () => encounter("EVENT_SUNCREST_BATTLE_03", "Solar Reef Warden", 45, 1.08, "fire"),
-  EVENT_STARFALL_BATTLE_01: () => encounter("EVENT_STARFALL_BATTLE_01", "Astral Marauder", 70, 1.18, "arcane"),
-  EVENT_STARFALL_BATTLE_02: () => encounter("EVENT_STARFALL_BATTLE_02", "Meteoric Sentinel", 70, 1.23, "arcane"),
-  EVENT_STARFALL_BATTLE_03: () => encounter("EVENT_STARFALL_BATTLE_03", "Riftbound Herald", 70, 1.28, "arcane"),
-  EVENT_SUNCREST_BOSS: () => boss3("EVENT_SUNCREST_BOSS", "Aureon, First Champion", 45, 1, "fire", "Champion's Lance", "Solar Nova"),
-  EVENT_STARFALL_BOSS: () => boss3("EVENT_STARFALL_BOSS", "The Constellation Eater", 70, 1.18, "arcane", "Astral Lance", "Constellation Nova"),
-  EVENT_TURNING_BATTLE_01: () => encounter("EVENT_TURNING_BATTLE_01", "Yearshade Archivist", 50, 1.12, "arcane"),
-  EVENT_TURNING_BATTLE_02: () => encounter("EVENT_TURNING_BATTLE_02", "Hourglass Golem", 50, 1.16, "arcane"),
-  EVENT_TURNING_BATTLE_03: () => encounter("EVENT_TURNING_BATTLE_03", "Dawnless Warden", 50, 1.2, "arcane"),
-  EVENT_HEARTBOND_BATTLE_01: () => encounter("EVENT_HEARTBOND_BATTLE_01", "Vowbreaker Brigand", 30, 0.92, "fire"),
-  EVENT_HEARTBOND_BATTLE_02: () => encounter("EVENT_HEARTBOND_BATTLE_02", "Thorned Effigy", 30, 0.96, "arcane"),
-  EVENT_HEARTBOND_BATTLE_03: () => encounter("EVENT_HEARTBOND_BATTLE_03", "Sorrowbound Shade", 30, 1, "arcane"),
-  EVENT_BLOOMWAKE_BATTLE_01: () => encounter("EVENT_BLOOMWAKE_BATTLE_01", "Briarling Swarm", 30, 0.95, "fire"),
-  EVENT_BLOOMWAKE_BATTLE_02: () => encounter("EVENT_BLOOMWAKE_BATTLE_02", "Pollenmaw", 30, 1, "arcane"),
-  EVENT_BLOOMWAKE_BATTLE_03: () => encounter("EVENT_BLOOMWAKE_BATTLE_03", "Rootbound Stag", 30, 1.05, "arcane"),
-  EVENT_TURNING_BOSS: () => boss3("EVENT_TURNING_BOSS", "The Last Hour", 50, 1.12, "arcane", "Chronicle Rend", "Last Hour Nova"),
-  EVENT_HEARTBOND_BOSS: () => boss3("EVENT_HEARTBOND_BOSS", "The Severed Vow", 30, 0.95, "arcane", "Vow Sever", "Heartbreak Nova"),
-  EVENT_BLOOMWAKE_BOSS: () => boss3("EVENT_BLOOMWAKE_BOSS", "The Thornheart Ancient", 30, 1, "arcane", "Thornheart Slam", "Verdant Cataclysm"),
-  EVENT_VEILBREAK_BATTLE_01: () => encounter("EVENT_VEILBREAK_BATTLE_01", "Veilshade Stalker", 35, 1.02, "shadow", "Gloam Rend", "Veil Pulse"),
-  EVENT_VEILBREAK_BATTLE_02: () => encounter("EVENT_VEILBREAK_BATTLE_02", "Lantern-Eater", 35, 1.06, "shadow", "Snuffing Bite", "Blackout Wave"),
-  EVENT_VEILBREAK_BATTLE_03: () => encounter("EVENT_VEILBREAK_BATTLE_03", "Hollow Warden", 35, 1.1, "arcane", "Wardbreaker", "Hollow Toll"),
-  EVENT_MERCHANT_BATTLE_01: () => encounter("EVENT_MERCHANT_BATTLE_01", "Road Reaver", 35, 1, "physical", "Tollblade", "Ambush Cry"),
-  EVENT_MERCHANT_BATTLE_02: () => encounter("EVENT_MERCHANT_BATTLE_02", "Ledger Hexer", 35, 1.04, "arcane", "Debt Mark", "Compound Curse"),
-  EVENT_MERCHANT_BATTLE_03: () => encounter("EVENT_MERCHANT_BATTLE_03", "Iron Tollkeeper", 35, 1.08, "physical", "Gatehammer", "Lockdown Sweep"),
-  EVENT_FROSTFALL_BATTLE_01: () => encounter("EVENT_FROSTFALL_BATTLE_01", "Rimefang Marauder", 35, 1.02, "ice", "Rimefang", "Snowblind Howl"),
-  EVENT_FROSTFALL_BATTLE_02: () => encounter("EVENT_FROSTFALL_BATTLE_02", "Bellfrost Spirit", 35, 1.06, "ice", "Chime Shard", "Winter Peal"),
-  EVENT_FROSTFALL_BATTLE_03: () => encounter("EVENT_FROSTFALL_BATTLE_03", "Giftwork Colossus", 35, 1.1, "ice", "Wrapped Fist", "Toybox Avalanche"),
-  EVENT_VEILBREAK_BOSS: () => boss3("EVENT_VEILBREAK_BOSS", "The Hollow Regent", 35, 1.14, "shadow", "Regent\u2019s Grasp", "Lantern Extinction"),
-  EVENT_MERCHANT_BOSS: () => boss3("EVENT_MERCHANT_BOSS", "The Coinbound Captain", 35, 1.03, "physical", "Golden Cleaver", "Caravan Breaker"),
-  EVENT_FROSTFALL_BOSS: () => boss3("EVENT_FROSTFALL_BOSS", "The Rimebell Colossus", 35, 1.07, "ice", "Rimebell Hammer", "Aurora Shatter")
-};
-
-// src/server/combat/content/expedition-encounters.ts
-var EXPEDITION_ENCOUNTERS = Object.freeze({ ...ASTERFALL_ENCOUNTERS, ...SUNSCAR_ENCOUNTERS, ...FROSTMARCH_ENCOUNTERS, ...ASHLANDS_ENCOUNTERS, ...EVENT_ENCOUNTERS });
 
 // src/server/combat/pve-simulation-telemetry.ts
 var rounded = (value, digits = 4) => Number(value.toFixed(digits));
@@ -48704,85 +48834,6 @@ function applyCoopRoomModifier(enemy4, id, index, eliteAbilities = false) {
       break;
   }
   return { ...enemy4, stats: stats6, basicAttackMs, abilities };
-}
-
-// src/server/coop/dungeon-companion-counters.ts
-var counters = [
-  { id: "spellbreak", companionIds: ["UNIT_005"], description: "Lantern Wisp interrupts dangerous casts instead of casting its usual healing assist.", applies: (t) => t.has("interruptible_cast") },
-  { id: "armor_break", companionIds: ["UNIT_010", "UNIT_021", "GUILD_UNIT_002"], description: "Armor breaker: +3.5% owner Attack and +6% companion strike against guardians or barriers.", applies: (t) => t.has("guardian") || t.has("barrier") },
-  { id: "swarm_hunt", companionIds: ["UNIT_017", "UNIT_023"], description: "Swarm hunter: +2.5 percentage points owner Haste and +6% companion strike against swarms.", applies: (t) => t.has("swarm") },
-  { id: "bulwark", companionIds: ["UNIT_002", "UNIT_015", "UNIT_019", "UNIT_022"], description: "Bulwark: +4% owner Defense and +6% companion shielding against heavy pressure.", applies: (t) => t.has("heavy_hit") || t.has("focus") || t.has("execute") },
-  { id: "recovery", companionIds: ["UNIT_003", "UNIT_014", "UNIT_018", "UNIT_024"], description: "Recovery: +4% owner Healing Power and +6% companion heals against sustained pressure.", applies: (t) => t.has("dot") || t.has("healing_reduction") },
-  { id: "finisher", companionIds: ["UNIT_007", "UNIT_013", "UNIT_020"], description: "Finisher: +3% owner Attack and +6% companion strike against self-healing enemies.", applies: (t) => t.has("sustain") }
-];
-function dungeonEncounterTraits(enemies) {
-  const traits = /* @__PURE__ */ new Set();
-  for (const enemy4 of enemies) {
-    if (enemy4.team !== "enemies") continue;
-    for (const tag of enemy4.tags ?? []) {
-      if (tag.startsWith("pve:archetype:")) traits.add(tag.slice("pve:archetype:".length));
-      if (tag.startsWith("pve:mechanic:")) traits.add(tag.slice("pve:mechanic:".length));
-    }
-    for (const ability3 of enemy4.abilities) {
-      if (ability3.interruptible && ability3.castTimeMs >= 800 && ability3.effects.some((effect2) => effect2.kind === "damage" || effect2.kind === "dot")) traits.add("interruptible_cast");
-      if (ability3.effects.some((effect2) => effect2.kind === "shield")) traits.add("barrier");
-      if (ability3.effects.some((effect2) => effect2.kind === "dot")) traits.add("dot");
-      if (ability3.effects.some((effect2) => effect2.kind === "heal")) traits.add("sustain");
-    }
-  }
-  return traits;
-}
-function companionAssist(player2) {
-  const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length);
-  if (!companionId) return void 0;
-  const ability3 = player2.abilities.find((item) => item.tags?.includes("combat_companion") && item.id === `${player2.id}:${companionId}:assist`);
-  return ability3 ? { id: companionId, ability: ability3 } : void 0;
-}
-function scaleAssist(ability3, kind) {
-  return { ...ability3, effects: ability3.effects.map((effect2) => effect2.kind === kind ? {
-    ...effect2,
-    ...effect2.coeff === void 0 ? {} : { coeff: effect2.coeff * 1.06 },
-    ...effect2.flat === void 0 ? {} : { flat: effect2.flat * 1.06 }
-  } : effect2) };
-}
-function applyDungeonCompanionCounters(players, enemies, inactivePlayerIds = /* @__PURE__ */ new Set()) {
-  const traits = dungeonEncounterTraits(enemies), matchups = [];
-  const adjusted = players.map((player2) => {
-    if (inactivePlayerIds.has(player2.id)) return player2;
-    const assist = companionAssist(player2);
-    if (!assist) return player2;
-    const counter = counters.find((entry2) => entry2.companionIds.includes(assist.id) && entry2.applies(traits));
-    if (!counter) return player2;
-    let ability3 = assist.ability, stats6 = player2.stats;
-    switch (counter.id) {
-      case "spellbreak":
-        ability3 = { ...ability3, target: "interruptible_casting_enemy", aiCondition: "target_casting", priority: 96, effects: [{ kind: "interrupt", tag: "companion_spellbreak" }] };
-        break;
-      case "armor_break":
-        stats6 = { ...stats6, attackPower: stats6.attackPower * 1.035 };
-        ability3 = scaleAssist(ability3, "damage");
-        break;
-      case "swarm_hunt":
-        stats6 = { ...stats6, haste: Math.min(0.75, stats6.haste + 0.025) };
-        ability3 = scaleAssist(ability3, "damage");
-        break;
-      case "bulwark":
-        stats6 = { ...stats6, defense: stats6.defense * 1.04 };
-        ability3 = scaleAssist(ability3, "shield");
-        break;
-      case "recovery":
-        stats6 = { ...stats6, healingPower: stats6.healingPower * 1.04 };
-        ability3 = scaleAssist(ability3, "heal");
-        break;
-      case "finisher":
-        stats6 = { ...stats6, attackPower: stats6.attackPower * 1.03 };
-        ability3 = scaleAssist(ability3, "damage");
-        break;
-    }
-    matchups.push({ playerId: player2.id, companionId: assist.id, id: counter.id, description: counter.description });
-    return { ...player2, stats: stats6, abilities: player2.abilities.map((item) => item === assist.ability ? ability3 : item) };
-  });
-  return { players: adjusted, matchups };
 }
 
 // src/server/combat/expedition-combat-service.ts
@@ -49123,40 +49174,6 @@ function validatePreBossNodeCount(count) {
   if (!Number.isInteger(count) || count < COOP_ROGUELITE_CONFIG.preBossNodeMin || count > COOP_ROGUELITE_CONFIG.preBossNodeMax) {
     throw new Error("invalid_coop_route_length");
   }
-}
-
-// src/server/expeditions/content/coop-route-content.ts
-var ROOTBOUND = {
-  battle: ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"],
-  elite: ["ROOT_ELITE_BRAMBLE", "ROOT_ELITE_WARDEN", "ROOT_ELITE_MYCELIUM"],
-  event: ["ROOT_EVENT_WHISPER", "ROOT_EVENT_SPORES", "ROOT_EVENT_MEMORY"],
-  forge: ["ROOT_FORGE_THORNS", "ROOT_FORGE_BARK", "ROOT_FORGE_SAP"],
-  shrine: ["ROOT_SHRINE_WARD", "ROOT_SHRINE_GROWTH", "ROOT_SHRINE_ECHO"],
-  camp: ["ROOT_CAMP_SPRING", "ROOT_CAMP_CLEARING", "ROOT_CAMP_HEARTH"],
-  treasure: ["ROOT_CACHE_BURIED", "ROOT_CACHE_GROVE", "ROOT_CACHE_WARDEN"],
-  echo: ["ROOT_ECHO_OATH", "ROOT_ECHO_LOST", "ROOT_ECHO_TRIAL"],
-  risk: ["ROOT_RISK_OVERGROWTH", "ROOT_RISK_BLIGHT", "ROOT_RISK_HUNGER"],
-  merchant: ["ROOT_MERCHANT_MOSS", "ROOT_MERCHANT_RELICS", "ROOT_MERCHANT_SALVES"],
-  secret: ["ROOT_SECRET_ROOTWAY", "ROOT_SECRET_HOLLOW", "ROOT_SECRET_ALTAR"]
-};
-function themed(prefix) {
-  const ids2 = (kind) => [1, 2, 3].map((index) => `${prefix}_${kind}_${String(index).padStart(2, "0")}`);
-  return { battle: ids2("BATTLE"), elite: ids2("ELITE"), event: ids2("EVENT"), forge: ids2("FORGE"), shrine: ids2("SHRINE"), camp: ids2("CAMP"), treasure: ids2("TREASURE"), echo: ids2("ECHO"), risk: ids2("RISK"), merchant: ids2("MERCHANT"), secret: ids2("SECRET") };
-}
-var COOP_ROUTE_CONTENT = Object.freeze({
-  EXP_001: ROOTBOUND,
-  EXP_002: themed("LANTERN"),
-  EXP_003: themed("SUN_OBS"),
-  EXP_004: themed("SUN_MIRAGE"),
-  EXP_005: themed("FROST_LAKE"),
-  EXP_006: themed("FROST_CHOIR"),
-  EXP_007: themed("ASH_FEN"),
-  EXP_008: themed("ASH_CRUCIBLE")
-});
-function coopContentPool(expeditionId, kind) {
-  const pool = COOP_ROUTE_CONTENT[expeditionId]?.[kind];
-  if (!pool || pool.length < 3 || new Set(pool).size !== pool.length) throw new Error("invalid_expedition_content_pool");
-  return pool;
 }
 
 // src/server/expeditions/route-generation.ts

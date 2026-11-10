@@ -3,6 +3,9 @@ import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {CharacterPortrait} from '../CharacterVisual';
 import {CoopCombatSetupPanel} from './CoopCombatSetupPanel';
+import {CoopDungeonCompanionSelector,dungeonCompanionCounterLabel} from './CoopDungeonCompanionSelector';
+import {dungeonCompanionOpportunity,type DungeonCompanionCounterId} from '../../../../../backend/src/server/coop/dungeon-companion-counters';
+import {useSocialText} from '../../i18n/social';
 import type {GameState} from '../../core/types';
 import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopEffectiveStats,type CoopLoadoutIntent,type CoopLoadoutProjection} from '../../core/coop-loadout-presentation';
 import type {CoopMode} from '../../core/coop-presentation';
@@ -10,7 +13,7 @@ import {clt,t,type CoopLoadoutMessageKey,type Language} from '../../i18n';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {ExpeditionScreenShell,FantasyPanel,PrimaryAction,RoleBadge,StateChip} from './CoopVisualKit';
 
-type Props={state:GameState;language:Language;dungeonId:string;dungeonName:string;tier:1|2|3|4|5;mode:CoopMode;loadouts:CoopLoadoutProjection[];onBack:()=>void;onIntent:(intent:CoopLoadoutIntent)=>void;onRefresh:()=>void;refreshing?:boolean;notice?:string};
+type Props={state:GameState;language:Language;dungeonId:string;dungeonName:string;tier:1|2|3|4|5;mode:CoopMode;loadouts:CoopLoadoutProjection[];possibleCounterIds?:readonly DungeonCompanionCounterId[];onBack:()=>void;onIntent:(intent:CoopLoadoutIntent)=>void;onRefresh:()=>void;onEquipCompanion?:(id:string|null)=>Promise<void>;refreshing?:boolean;notice?:string};
 const statRows:Array<[keyof CoopEffectiveStats,CoopLoadoutMessageKey]>=[['maxHp','hp'],['attackPower','attack'],['healingPower','healing'],['defense','defense']];
 function status(loadout:ReturnType<typeof presentCoopLoadout>,language:Language){
   if(loadout.status==='pending')return {label:clt(language,'pending'),tone:'warning' as const};
@@ -19,16 +22,21 @@ function status(loadout:ReturnType<typeof presentCoopLoadout>,language:Language)
   if(loadout.selectable)return {label:clt(language,'ready'),tone:'success' as const};
   return {label:clt(language,'ineligible'),tone:'danger' as const};
 }
-export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,mode,loadouts,onBack,onIntent,onRefresh,refreshing=false,notice}:Props){
- const {styles:s}=useCoopStyles(makeStyles);
+export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,mode,loadouts,possibleCounterIds=[],onBack,onIntent,onRefresh,onEquipCompanion,refreshing=false,notice}:Props){
+ const {styles:s}=useCoopStyles(makeStyles),st=useSocialText();
   const views=useMemo(()=>loadouts.map(loadout=>presentCoopLoadout(loadout,state.character!.id)),[loadouts,state.character]);
   const [selectedId,setSelectedId]=useState(views.find(loadout=>loadout.selectable)?.id??views[0]?.id);
-  const [showDetails,setShowDetails]=useState(false);
+  const [showDetails,setShowDetails]=useState(false),[showCompanions,setShowCompanions]=useState(false);
+  const matchup=state.character?.equippedCombatCompanionId?dungeonCompanionOpportunity(state.character.equippedCombatCompanionId,possibleCounterIds):undefined;
   const selected=views.find(loadout=>loadout.id===selectedId)??views[0];
   const cta=mode==='live'?clt(language,'liveCta'):clt(language,'qmodeCta');
-  return <ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent(buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected})):onRefresh()}/></View>}>
+  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent(buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected})):onRefresh()}/></View>}>
     <FantasyPanel variant="selected"><View style={s.hero}><CharacterPortrait state={state} compact style={s.portrait}/><View style={s.heroCopy}><Text style={s.character}>{state.character!.name}</Text><Text style={s.copy}>{mode==='live'?`${dungeonName} · ${clt(language,'liveAuto')} · ${clt(language,'level')} ${tier}`:`${dungeonName} · ${clt(language,'level')} ${tier}`}</Text>{selected?<RoleBadge role={selected.role} label={t(language,`coopUi.${selected.role}`)}/>:null}</View></View></FantasyPanel>
-    <CoopCombatSetupPanel state={state}/>
+    <CoopCombatSetupPanel state={state} onChooseCompanion={onEquipCompanion?()=>setShowCompanions(true):undefined}/>
+    {onEquipCompanion?<FantasyPanel><Text style={s.section}>{st('Companion matchup')}</Text>
+      <Text style={s.copy}>{matchup?dungeonCompanionCounterLabel(matchup,st):st('No special encounter counter selected. Every legal companion still assists.')}</Text>
+      <Text style={s.copy}>{possibleCounterIds.length?st('Matchups are possible, not guaranteed. Rooms are randomized.'):st('Your companion choice can still provide damage, shielding or recovery.')}</Text>
+    </FantasyPanel>:null}
     {!views.length?<FantasyPanel variant="danger"><Text style={s.copy}>{clt(language,'empty')}</Text></FantasyPanel>:null}
     {views.length>1&&views.map(loadout=>{const stateLabel=status(loadout,language),wrongCharacter=loadout.characterId!==state.character!.id;return <Pressable key={loadout.id} accessibilityRole="button" accessibilityState={{selected:selected?.id===loadout.id,disabled:wrongCharacter}} disabled={wrongCharacter} onPress={()=>{setSelectedId(loadout.id);setShowDetails(false)}} style={({pressed})=>pressed&&s.pressed}><FantasyPanel variant={selected?.id===loadout.id?'selected':loadout.selectable?'default':'disabled'}><View style={s.cardHead}><View style={s.grow}><Text style={s.loadout}>{loadout.name}</Text><Text style={s.copy}>{loadout.className} · {loadout.characterName}</Text></View><StateChip label={stateLabel.label} tone={stateLabel.tone}/></View></FantasyPanel></Pressable>})}
     {selected?<>
@@ -37,7 +45,7 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
       {showDetails&&selected.effectiveStats&&selected.beforeStats?<FantasyPanel><View style={s.statHeader}><Text style={s.statLabel}/><Text style={s.statValue}>{clt(language,'before')}</Text><Text style={s.statValue}>{clt(language,'effective')}</Text></View><View style={s.statHeader}><Text style={s.statLabel}>{clt(language,'level')}</Text><Text style={s.statValue}>{selected.level}</Text><Text style={s.statValue}>{selected.effectiveLevel}</Text></View>{statRows.map(([key,label])=><View key={key} style={s.statHeader}><Text style={s.statLabel}>{clt(language,label)}</Text><Text style={s.statValue}>{Math.round(selected.beforeStats![key])}</Text><Text style={s.statValue}>{Math.round(selected.effectiveStats![key])}</Text></View>)}</FantasyPanel>:null}
       {showDetails?<><Summary title={clt(language,'skills')} values={selected.skills} empty={clt(language,'noSummary')}/><Summary title={clt(language,'equipment')} values={selected.equipment} empty={clt(language,'noSummary')}/></>:null}
     </>:null}
-  </ExpeditionScreenShell>;
+  </ExpeditionScreenShell>{onEquipCompanion?<CoopDungeonCompanionSelector state={state} visible={showCompanions} busy={refreshing} possibleCounterIds={possibleCounterIds} onSelect={onEquipCompanion} onClose={()=>setShowCompanions(false)}/>:null}</>;
 }
 function Summary({title,values,empty}:{title:string;values:string[];empty:string}){
  const {styles:s}=useCoopStyles(makeStyles);return <FantasyPanel><Text style={s.section}>{title}</Text><Text style={s.copy}>{values.length?values.join(' · '):empty}</Text></FantasyPanel>}

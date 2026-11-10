@@ -30,6 +30,7 @@ async function main(){
   assert.deepEqual(dungeon.difficulties,[1,2,3],'Only the three published tiers are offered');
   assert.deepEqual(Object.keys(dungeon.expectedMarksByTier),['1','2','3'],'Reward previews must only include selectable tiers');
   assert.deepEqual(dungeon.itemDropRates,[],'No permanent item drop rates may be invented before server settlement supports them');
+  assert.ok(Array.isArray(dungeon.companionCounterIds)&&dungeon.companionCounterIds.length>0,'Possible companion counters must come from the server-published encounter catalog');
  }
  const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_004');
  assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Mirage Well tier rewards must use canonical mark multipliers');

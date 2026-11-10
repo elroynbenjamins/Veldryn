@@ -7,14 +7,13 @@ import {Panel} from './Panel';
 const HERO = require('../../assets/profile-backgrounds/bg_frostfall.webp');
 const SNOWBELL_PUP = require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png');
 const FROSTFALL_BADGE = require('../../assets/events/frostfall/badge.png');
-const FROSTBELL_TOKEN = require('../../assets/events/frostfall/currency_frostbell_token.png');
 
 type RevealId = 'activity' | 'pet' | 'shop' | 'mystery';
 
 const DETAILS: Record<RevealId, string> = {
   activity: 'Keep the winter roads safe, gather provisions, and craft festival gifts. Seasonal activities open when Frostfall begins.',
   pet: 'Snowbell Pup is a seasonal pet reward on the Frostfall reputation trail. Earn event progress once Frostfall is live.',
-  shop: 'Spend Frostbell Tokens and Aurora Chimes on seasonal collectibles and useful event supplies when the event opens.',
+  shop: 'Frostbell Tokens and Aurora Chimes can be exchanged for winter collectibles and supplies when the event opens. The shop remains closed during the preview.',
   mystery: 'A rare winter visitor remains a secret until Frostfall begins.',
 };
 
@@ -28,7 +27,7 @@ export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs
   const tiles: {id: RevealId; icon: string; label: string; sub: string; unlocked: boolean}[] = [
     {id: 'activity', icon: '❄', label: 'Winter Activities', sub: 'Seasonal challenges', unlocked: true},
     {id: 'pet', icon: '✦', label: secondReveal ? 'Snowbell Pup' : 'Hidden Reward', sub: secondReveal ? 'Seasonal pet' : 'Reveals 7 days before', unlocked: secondReveal},
-    {id: 'shop', icon: '◆', label: secondReveal ? 'Frostfall Shop' : 'Hidden Feature', sub: secondReveal ? 'Winter collectibles' : 'Reveals 7 days before', unlocked: secondReveal},
+    {id: 'shop', icon: '✧', label: secondReveal ? 'Frostfall Shop' : 'Hidden Feature', sub: secondReveal ? 'Seasonal collectibles' : 'Reveals 7 days before', unlocked: secondReveal},
     {id: 'mystery', icon: '?', label: 'Winter Mystery', sub: 'Reveals at launch', unlocked: false},
   ];
 
@@ -65,7 +64,6 @@ export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs
         style={({pressed}) => [s.tile, {backgroundColor: C.panel, borderColor: selected === tile.id ? C.accent : C.line}, pressed && s.pressed]}>
         <View style={[s.symbol, {backgroundColor: tile.unlocked ? C.accentSurface : C.panel2}]}>
           {tile.id === 'pet' && tile.unlocked ? <Image source={SNOWBELL_PUP} resizeMode="contain" style={s.symbolImage}/> :
-           tile.id === 'shop' && tile.unlocked ? <Image source={FROSTBELL_TOKEN} resizeMode="contain" style={s.symbolImage}/> :
            <Text style={[s.symbolText, {color: tile.unlocked ? C.accent : C.muted}]}>{tile.unlocked ? tile.icon : '◇'}</Text>}
         </View>
         <Text style={[s.tileName, {color: tile.unlocked ? C.text : C.muted}]}>{tile.label}</Text>

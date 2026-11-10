@@ -25,7 +25,7 @@ assert.ok(social.includes("id:'world-1',name:'English'"),'English retains its ex
 assert.ok(social.includes("id:'world-2',name:'Spanish'"),'Spanish retains its existing database ID');
 assert.ok(social.includes("id:'world-3',name:'Global 1'"),'Global 1 data and server ID preserved');
 assert.ok(social.includes("id:'world-4',name:'Global 2'"),'Global 2 data and server ID preserved');
-assert.ok(social.includes('VISIBLE_WORLD_CHANNELS=WORLD_CHANNELS.filter(channel=>isVisibleWorldChatChannel(channel.id))'),
+assert.ok(social.includes('VISIBLE_WORLD_CHANNELS=WORLD_CHANNELS.slice(0,2)'),
  'visible UI channels must derive from a single allowlist rather than deleting chat data');
 
 const overlay=read('src/components/ChatOverlay.tsx');

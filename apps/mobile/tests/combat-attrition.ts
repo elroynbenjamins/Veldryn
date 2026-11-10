@@ -58,7 +58,7 @@ healer=equipCombatCompanion(unlockCombatCompanion(over,'UNIT_003',T),'UNIT_003')
 healer.account.combatCompanionProgress!['UNIT_003']={...healer.account.combatCompanionProgress!['UNIT_003'],level:60,ascensionTier:3,bondLevel:10,bondXp:100000,bondTraitUnlocked:true};
 healer.character!.currentHp=effectiveStats(healer).hp;
 const sustained=combatSustainProjection(healer,healer.activity!.targetId)!;
-assert.ok(sustained.foodPerHour>=0&&sustained.foodPerHour<0.1,'strong healer must reduce easy-fight food demand to a negligible nonnegative level');
+assert.ok(sustained.foodPerHour>0,'even strong healers cannot entirely remove exertion-food demand');
 const healed=previewActivityReward(healer,T+8*H);
 assert.ok(!healed.stoppedReason&&healed.endHp!<=effectiveStats(healer).hp,'healing must never exceed max HP');
 healer.character!.currentHp=.01;

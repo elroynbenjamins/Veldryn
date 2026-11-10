@@ -1,13 +1,14 @@
 name: Rebuild shared gameplay Edge bundles
 
-# Reusable manual maintenance workflow. The push trigger runs only when this
-# workflow file is introduced or edited, not on every gameplay code change.
+# Rebuild the canonical server game engines when shared Exploration rules change.
+# Other gameplay modifications can still request the workflow manually.
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
       - '.github/workflows/rebuild-shared-gameplay-bundles.yml'
+      - 'apps/mobile/src/content/exploration.ts'
 
 permissions:
   contents: write
@@ -37,8 +38,8 @@ jobs:
         run: |
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
-      - name: Verify the two-path equipment balancing regression
-        run: node tools/run-mobile-tests.mjs equipment-two-path-balance
+      - name: Verify the two-path equipment and Exploration balance regressions
+        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance
       - name: Rebuild canonical generated bundles and commit them on top of current main
         shell: bash
         run: |
@@ -56,7 +57,7 @@ jobs:
               echo 'Gameplay and co-op generated bundles are already in sync.'
               exit 0
             fi
-            git commit -m 'build(edge): sync canonical gameplay and coop bundles for equipment paths'
+            git commit -m 'build(edge): sync canonical gameplay and co-op bundles after Exploration rebalance'
             if git push origin HEAD:main; then
               echo 'Generated Edge bundles committed to main.'
               exit 0

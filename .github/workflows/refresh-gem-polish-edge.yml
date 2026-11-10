@@ -31,5 +31,6 @@ jobs:
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if ! git diff --cached --quiet; then
             git commit -m "build: refresh gameplay and co-op bundles for polished gem rolls"
+            git pull --rebase origin polish/grindstone-gems-20261110
             git push origin HEAD:polish/grindstone-gems-20261110
           fi

@@ -7,7 +7,7 @@ for(const language of SUPPORTED_LANGUAGES){
  for(const key of englishKeys){
   const translation=locale[key as keyof typeof locale];
   if(!translation?.trim())throw new Error(`Missing Frostfall preview translation: ${language}.${key}`);
-  const placeholders=(value:string)=>[...value.matchAll(/\\{([a-z]+)\\}/g)].map(m=>m[1]).sort().join(',');
+  const placeholders=(value:string)=>[...value.matchAll(/\{([a-z]+)\}/g)].map(m=>m[1]).sort().join(',');
   if(placeholders(translation)!==placeholders(FROSTFALL_PREVIEW_COPY.en[key as keyof typeof FROSTFALL_PREVIEW_COPY.en]))throw new Error(`Placeholder mismatch: ${language}.${key}`);
  }
  const countdown=frostfallPreviewText(language,'unlockIn',{time:'3d 2h'});

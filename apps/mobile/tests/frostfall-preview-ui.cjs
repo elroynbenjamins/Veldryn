@@ -24,6 +24,7 @@ assert.match(preview, /hero: \{minHeight: 184/, 'hero must grow for accessibilit
 assert.doesNotMatch(calendar, /setInterval\(/, 'calendar must reuse the Event Hub clock rather than polling twice');
 assert.match(eventScreen, /AnnualEventCalendarPanel state=\{state\} nowMs=\{now\}/, 'Event Hub must pass its shared clock');
 assert.match(eventScreen, /showFrostfallPreview=\{!frostfallTeaser\}/, 'upcoming Frostfall must show one teaser, not duplicate cards');
+assert.match(calendar, /const distinctFeatured=featured\?\.row&&\(!frostfallWindow\|\|annualEventSeriesId/, 'selecting Frostfall must not duplicate the hero');
 assert.doesNotMatch(preview, /currency_frostbell_token\.png/, 'do not reintroduce an Android-incompatible tiny currency asset');
 
 const arts = [...preview.matchAll(/require\(['"]([^'"]+\/assets\/[^'"]+)['"]\)/g)].map(match => match[1]);

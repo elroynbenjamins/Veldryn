@@ -51,8 +51,8 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
     <ImageBackground source={HERO} resizeMode="cover" imageStyle={s.heroImage} style={s.hero}>
       <View style={s.shade}/>
       <View style={s.heroContent}>
-        <View style={s.heroTop}><Image source={FROSTFALL_BADGE} resizeMode="contain" accessibilityLabel={t('kicker')} style={s.heroBadge}/><Text style={s.heroKicker}>{t('kicker')}</Text></View>
-        <Text style={s.heroTitle}>FROSTFALL</Text>
+        <View style={s.heroTop}><Image source={FROSTFALL_BADGE} accessible={false} resizeMode="contain" style={s.heroBadge}/><Text style={s.heroKicker}>{t('kicker')}</Text></View>
+        <Text accessibilityRole="header" style={s.heroTitle}>FROSTFALL</Text>
         <Text style={s.heroText}>{t('tagline')}</Text>
       </View>
     </ImageBackground>
@@ -77,7 +77,7 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
         onPress={() => setSelected(tile.id === selected ? null : tile.id)}
         style={({pressed}) => [s.tile, stacked && s.tileStack, {backgroundColor: C.panel, borderColor: selected === tile.id ? C.accent : C.line}, pressed && s.pressed]}>
         <View style={[s.symbol, {backgroundColor: tile.unlocked ? C.accentSurface : C.panel2}]}>
-          {tile.id === 'pet' && tile.unlocked ? <Image source={SNOWBELL_PUP} resizeMode="contain" style={s.symbolImage}/> :
+          {tile.id === 'pet' && tile.unlocked ? <Image source={SNOWBELL_PUP} accessible={false} resizeMode="contain" style={s.symbolImage}/> :
            <Text style={[s.symbolText, {color: tile.unlocked ? C.accent : C.muted}]}>{tile.unlocked ? tile.icon : '◇'}</Text>}
         </View>
         <View style={s.tileCopy}><Text style={[s.tileName, {color: tile.unlocked ? C.text : C.muted}]}>{tile.label}</Text>
@@ -91,7 +91,7 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
     <Panel>
       <View style={s.spotlight}>
         <View style={[s.spotlightArt, {backgroundColor: C.panel2, borderColor: C.line}]}>
-          {secondReveal ? <Image source={SNOWBELL_PUP} resizeMode="contain" style={s.rewardImage}/> : <Text style={[s.question, {color: C.accent}]}>?</Text>}
+          {secondReveal ? <Image source={SNOWBELL_PUP} accessible={false} resizeMode="contain" style={s.rewardImage}/> : <Text style={[s.question, {color: C.accent}]}>?</Text>}
         </View>
         <View style={s.flex}>
           <Text style={[s.eyebrow, {color: C.accent}]}>{t('featured')}</Text>

@@ -108,6 +108,10 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
   &&project.personalPoints>=project.personalRewardThreshold&&!!project.endsAt&&Date.now()<Date.parse(project.endsAt)+7*86400000);
  const recentCompleted=completed.filter(project=>!claimableCompleted.some(ready=>ready.id===project.id)).slice(0,4);
  return <View style={s.root}>
+  <View style={s.sectionHead}>
+   <View style={s.flex}><Text style={s.kicker}>{ui("GUILD COOPERATION")}</Text><Text accessibilityRole="header" style={s.title}>{ui("Weekly Projects")}</Text></View>
+   <StatusPill label={ui("SHARED")} tone="good"/>
+  </View>
   {pendingDonation?<Panel>
    <Text style={s.sectionTitle}>{ui('Saved Guild donation')}</Text>
    <Text style={s.copy}>{ui('Retry the saved request before donating anything else.')}</Text>
@@ -132,10 +136,6 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
    </>:<Text style={s.copy}>{ui('Voting opens Thursday.')}</Text>}
   </Panel>:null}
   <QuestBoard>
-   <View style={s.sectionHead}>
-    <View style={s.flex}><Text style={s.kicker}>{ui("GUILD COOPERATION")}</Text><Text style={s.title}>{ui("Weekly Projects")}</Text></View>
-    <StatusPill label={ui("SHARED")} tone="good"/>
-   </View>
    <Text style={s.meta}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text>
    {active.length?active.map(project=><GuildProjectPosting
      key={project.id} project={project} busy={!!busy}

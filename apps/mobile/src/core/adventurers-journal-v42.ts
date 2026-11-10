@@ -10,6 +10,7 @@ const TIERS:JournalAchievementTier[]=['novice','adventurer','veteran','master','
 const ladder=(category:JournalAchievementCategory,key:string,name:string,metricKey:string,targets:number[],descriptions:string[],title?:JournalTitleDefinition)=>targets.map((target,index):JournalAchievementDefinition=>({id:`${key}_${TIERS[index]}`,category,tier:TIERS[index],title:`${name} — ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`,description:descriptions[index],metricKey,target,...(index===4&&title?{rewardTitleId:title.id}:{})}));
 
 export const JOURNAL_TITLES_V42:JournalTitleDefinition[]=[
+ {id:'oathbreaker',name:'Oathbreaker',description:'Complete Beyond the Green and break the Fallen Knight’s oath.',sourceAchievementId:'quest:QST_015'},
  {id:'the_unbroken',name:'The Unbroken',description:'A title earned through exceptional lifetime combat experience.',sourceAchievementId:'combatant_grandmaster'},
  {id:'master_of_many',name:'Master of Many',description:'For accounts that grow across many skills and characters.',sourceAchievementId:'well_rounded_grandmaster'},
  {id:'grandmaster_artisan',name:'Grandmaster Artisan',description:'A title for enduring mastery of Veldryn’s professions.',sourceAchievementId:'artisan_grandmaster'},

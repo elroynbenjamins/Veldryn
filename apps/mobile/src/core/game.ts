@@ -514,7 +514,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  // Even a one-shot fight expends energy. Food still matters in starter areas
  // for overgeared players; fatigue is attributed to the fight, never search.
  const fatigue=runtime.huntOptions?Math.max(floor,Math.min(stats.hp*.0006,m.hp*.02)*runtime.gearAttritionMultiplier):0;
- const huntPlan=runtime.huntOptions?regionalHuntPlan(runtime.huntOptions):undefined;
+ const huntPlan=runtime.huntOptions&&(enemyAttackCount===undefined||fightSeconds===undefined)?regionalHuntPlan(runtime.huntOptions):undefined;
  const attackCount=enemyAttackCount??huntPlan?.enemyAttackCount??1;
  // The time spent exposed to enemy attacks, not the old fixed kill cycle,
  // determines enemy pressure. Weak gear leaves the character vulnerable longer.
@@ -528,11 +528,26 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
 }
 
+/** Stable forecasting uses a sample of real deterministic encounters so a
+ * single random crit or miss cannot misrepresent eight hours of food demand. */
+function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnType<typeof combatRuntimeDetails>){
+ if(!runtime.huntOptions)return undefined;
+ const count=48;
+ let seconds=0,damage=0,healing=0,onKillHealing=0;
+ for(let index=0;index<count;index++){
+   const plan=regionalHuntPlan({...runtime.huntOptions,seed:regionalHuntSeed(state,monsterId,index)});
+   const exchange=combatEncounterDamage({...runtime,killCycleSeconds:plan.cycleSeconds},false,plan.enemyAttackCount,plan.fightSeconds);
+   seconds+=plan.cycleSeconds;damage+=exchange.damage;healing+=exchange.healing;onKillHealing+=exchange.onKillHealing;
+ }
+ const killCycleSeconds=seconds/count;
+ return {killCycleSeconds,damage:damage/count,healing:healing/count,onKillHealing:onKillHealing/count,net:(damage-healing)/count};
+}
 export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
  if(!state.character)return undefined;
  const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
- const exchange=combatEncounterDamage(runtime),damagePerKill=exchange.damage;
- const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
+ const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
+ const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
+ const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
  const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
@@ -541,7 +556,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const netHpLossPerHour=netDamagePerKill*killsPerHour;
  const foodPerHour=healingPerFood>0?Math.max(0,netHpLossPerHour)/healingPerFood:netDamagePerKill>0?Infinity:0;
  const target=REGIONAL_FOOD_SUSTAIN_TARGETS[runtime.m.zone];
- return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,xpPerHour,goldPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,netHpLossPerHour,estimatedUnfedHours:netHpLossPerHour>0?Math.max(0,Math.min(runtime.stats.hp,state.character.currentHp))/netHpLossPerHour:Infinity,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
+ return {monsterId,region:runtime.m.zone,killCycleSeconds,killsPerHour,xpPerHour,goldPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,netHpLossPerHour,estimatedUnfedHours:netHpLossPerHour>0?Math.max(0,Math.min(runtime.stats.hp,state.character.currentHp))/netHpLossPerHour:Infinity,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
 }
 
 export function activeCombatRuntimeProjection(state:GameState){

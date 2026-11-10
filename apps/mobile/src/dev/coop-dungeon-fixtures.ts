@@ -7,7 +7,7 @@ import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopEventExpeditionPreview} from '../core/coop-event-expeditions';
 
 const rooms:CoopRoomType[]=['battle','elite','event','camp','treasure','echo','merchant','risk','boss'];
-const difficulties:CoopTier[]=[1,2,3,4,5];
+const difficulties:CoopTier[]=[1,2,3];
 const definitions:Array<{id:string;name:string;region:string;min:number;recommended:number;implemented:boolean;description:CoopMessageKey}>=[
   {id:'EXP_001',name:'Rootbound Vault',region:'Asterfall',min:15,recommended:25,implemented:true,description:'fixture.rootbound'},
   {id:'EXP_002',name:'Lanternwatch Descent',region:'Asterfall',min:18,recommended:25,implemented:true,description:'fixture.lantern'},
@@ -26,7 +26,7 @@ export function createCoopDungeonFixtureSource(language:Language,character?:Char
   const characterLevel=character?.level??25;
   const dungeons:CoopDungeonProjection[]=definitions.map(definition=>({
     id:definition.id,name:definition.name,region:definition.region,description:ct(language,definition.description),minLevel:definition.min,recommendedLevel:definition.recommended,syncLevel:definition.recommended,
-    available:definition.implemented&&characterLevel>=definition.min,lockedReason:!definition.implemented?ct(language,'browse.inDevelopment'):characterLevel<definition.min?ct(language,'browse.requiresLevel',{level:definition.min}):undefined,enabledRoomTypes:rooms,difficulties,preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8},tierMinLevels:{1:definition.min,2:definition.min+5,3:definition.min+10,4:definition.min+15,5:definition.min+20},rewardBudgetState:coopPolicyText(language,'rewardCadence'),
+    available:definition.implemented&&characterLevel>=definition.min,lockedReason:!definition.implemented?ct(language,'browse.inDevelopment'):characterLevel<definition.min?ct(language,'browse.requiresLevel',{level:definition.min}):undefined,enabledRoomTypes:rooms,difficulties,preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8},tierMinLevels:{1:definition.min,2:definition.min+5,3:definition.min+10},rewardBudgetState:coopPolicyText(language,'rewardCadence'),
   }));
   const role=character?roles[character.classId]:'damage',characterId=character?.id??'fixture-character',level=characterLevel;
   const before={maxHp:character?.hp??3400,attackPower:character?.attack??625,healingPower:role==='support'?650:120,defense:character?.defense??750};

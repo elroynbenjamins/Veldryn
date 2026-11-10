@@ -89,3 +89,6 @@ apps/mobile/.web-scratch/
 apps/mobile/art-review/
 review-screens/
 sites/
+
+# Local scratch review renders and browser profiles (never committed).
+work/

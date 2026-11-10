@@ -20,7 +20,7 @@ for(const piece of catalog.pieces){
 }
 
 ok(source.includes('catalog.pieces as Array<Record<string,string|number>>'),'Equipment art IDs must be derived from the live catalogue, not a hand-maintained piece list');
-ok(sheetSetIds.length===80,'All 80 authored equipment sprite sheets must remain registered');
+ok(sheetSetIds.length===82,'All 82 authored equipment sprite sheets must remain registered');
 for(const setId of sheetSetIds){
   ok(catalog.sets.some(set=>set['Set ID']===setId),'Artwork sheet references unknown set '+setId);
   ok((piecesBySet.get(setId)?.length??0)===10,'Artwork set '+setId+' must resolve all ten current catalogue pieces');
@@ -43,7 +43,7 @@ function imageSize(file:string){
   return null;
 }
 const sheetPaths=[...source.matchAll(/require\('\.\.\/\.\.\/(assets\/[^']+)'\)/g)].map(match=>match[1]);
-ok(sheetPaths.length===80,'every registered sheet must resolve to an asset path');
+ok(sheetPaths.length===82,'every registered sheet must resolve to an asset path');
 for(const sheetPath of sheetPaths){
   const size=imageSize(sheetPath);
   ok(!!size,'Equipment sheet '+sheetPath+' must be a readable png or webp');

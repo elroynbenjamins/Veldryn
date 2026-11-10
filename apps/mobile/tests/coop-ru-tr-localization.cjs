@@ -28,7 +28,7 @@ const assertCatalog=(name,rows,expectedCount,englishValue,translatedValue)=>{
 };
 assertCatalog('Co-op expedition browser',coopEarlyRows,COOP_MESSAGE_COUNT,key=>ct('en',key),(lang,key)=>ct(lang,key));
 assertCatalog('Co-op loadout',coopLoadoutEarlyRows,COOP_LOADOUT_MESSAGE_COUNT,key=>clt('en',key),(lang,key)=>clt(lang,key));
-assert.equal(Object.keys(dungeonPreparationEarlyRows).length,30,'All 30 preparation labels must be covered');
+assert.equal(Object.keys(dungeonPreparationEarlyRows).length,33,'All 33 preparation labels must be covered');
 for(const [key,values] of Object.entries(dungeonPreparationEarlyRows)){
  for(const [index,language] of ['ru','tr'].entries()){
   assert.ok(values[index].trim(),language+' empty preparation string: '+key);

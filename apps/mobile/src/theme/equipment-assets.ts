@@ -73,6 +73,8 @@ export const equipmentSheetBySet:Record<string,ImageSourcePropType>={
   T4_024:require('../../assets/equipment-t4-dawnkeeper/T4_024-pilgrim-ward-icon-sheet.webp'),
   T4_025:require('../../assets/equipment-t4-stonecaller/T4_025-runebound-earthsong-icon-sheet.webp'),
   T4_027:require('../../assets/equipment-t4-stonecaller/T4_027-echo-procession-chorus-icon-sheet.webp'),
+  T5_004:require('../../assets/equipment-t5-bastion/T5_004-caravan-citadel-icon-sheet.webp'),
+  T5_006:require('../../assets/equipment-t5-bastion/T5_006-oasis-gate-icon-sheet.webp'),
   T5_001:require('../../assets/equipment-t5-ironwarden/T5_001-dunewood-rampart-icon-sheet.webp'),
   T5_003:require('../../assets/equipment-t5-ironwarden/T5_003-mirage-reprisal-icon-sheet.webp'),
   T5_007:require('../../assets/equipment-t5-dreadguard/T5_007-jackalblood-covenant-icon-sheet.webp'),

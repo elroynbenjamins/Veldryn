@@ -43882,7 +43882,7 @@ var WORLD_ZONES = [
 // ../apps/mobile/src/content/skills.ts
 init_progression();
 var GATHERING = [
-  // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
+  // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at rebased Character Level 13.
   { id: "GREENFIELDS_COPPER_OUTCROP", skillId: "mining", name: "Copper Outcrop", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
@@ -45209,7 +45209,7 @@ function validateProgressionSnapshot(companionId, input) {
 // ../apps/mobile/src/core/feature-unlocks.ts
 init_progression();
 var GUILD_UNLOCK_LEVEL = 7;
-var PARTY_UNLOCK_LEVEL = rebasedCombatLevelFromLegacyLevel(20);
+var PARTY_UNLOCK_LEVEL = 10;
 var EARLY_FEATURE_UNLOCKS = {
   dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
   events: { questId: "", title: "Events", requirement: "Available from the start", description: "All players can enter live events and earn their general rewards from level 1. Individual event activities may have their own requirements." },
@@ -45221,7 +45221,7 @@ var EARLY_FEATURE_UNLOCKS = {
   contracts: { questId: "QST_005", title: "Contract Board", requirement: "Complete Into Ironwood", description: "Weekly and cooperative contract planning unlocks with deeper regional progression." },
   masteryHall: { questId: "QST_005", title: "Mastery Hall", requirement: "Complete Into Ironwood", description: "Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful." },
   guild: { questId: "QST_005", title: "Guilds", requirement: `Reach Level ${GUILD_UNLOCK_LEVEL}`, description: `Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find, join or create a Guild before deeper regional progression.` },
-  party: { questId: "QST_011", title: "Parties", requirement: `Reach Level ${PARTY_UNLOCK_LEVEL}`, description: `Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.` },
+  party: { questId: "", title: "Parties", requirement: `Reach Level ${PARTY_UNLOCK_LEVEL}`, description: `Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.` },
   rankings: { questId: "QST_011", title: "Rankings", requirement: `Reach Level ${rebasedCombatLevelFromLegacyLevel(20)} and complete Place Among Guilds`, description: `Prestige rankings unlock later at Level ${rebasedCombatLevelFromLegacyLevel(20)}, after the player has had time to establish their character and social identity.` }
 };
 
@@ -46920,6 +46920,11 @@ init_faith2();
 
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
+
+// ../apps/mobile/src/core/profile-unlocks.ts
+init_progression();
+var PROFILE_BACKGROUNDS = [{ id: "asterfall-night", name: "Asterfall Night", requiredLevel: 1 }, { id: "ironwood-dawn", name: "Ironwood Dawn", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "silverbrook-mist", name: "Silverbrook Mist", requiredLevel: rebasedCombatLevelFromLegacyLevel(20) }, { id: "oathglass-hall", name: "Oathglass Hall", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }];
+var PROFILE_TITLES = [{ id: "new-adventurer", name: "New Adventurer", requiredLevel: 1 }, { id: "pathfinder", name: "Pathfinder", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "oathbound", name: "Oathbound", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }, { id: "bloomwarden", name: "Bloomwarden", requiredGuild: true }];
 
 // ../apps/mobile/src/core/inventory-bulk.ts
 init_faith();

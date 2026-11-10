@@ -129,6 +129,31 @@ begin
  return result;
 end $$;
 
+create or replace function public.ensure_guild_pve_v1(p_guild uuid,p_now timestamptz)
+returns void language plpgsql security definer set search_path=public as $
+declare v_start timestamptz:=date_trunc('week',p_now at time zone 'UTC') at time zone 'UTC';e record;
+begin
+ perform public.create_guild_pve_encounter_v2(
+  p_guild,'weekly:'||to_char(v_start at time zone 'UTC','YYYY-MM-DD'),'weekly',
+  public.guild_pve_weekly_boss_name_v1(v_start),v_start,v_start+interval '7 days',v_start+interval '14 days'
+ );
+ for e in select * from public.visible_live_events() where starts_at<=p_now and ends_at>p_now loop
+  perform public.create_guild_pve_encounter_v2(p_guild,'event:'||e.event_id||':'||extract(epoch from e.starts_at)::text,'event',e.name,e.starts_at,e.ends_at,greatest(e.ends_at,coalesce(e.claim_ends_at,e.ends_at+interval '3 days')),e.event_id);
+  -- Seasonal raids allow late guild joiners to participate from their join time.
+  -- Weekly raid roster brackets remain frozen at their original creation.
+  insert into public.guild_pve_roster_v2(encounter_id,account_id,eligible_since)
+  select raid.id,m.account_id,greatest(raid.starts_at,m.joined_at)
+  from public.guild_pve_encounters_v1 raid
+  join public.guild_members m on m.guild_id=raid.guild_id
+  where raid.guild_id=p_guild and raid.kind='event' and raid.event_id=e.event_id and raid.starts_at=e.starts_at
+   and m.joined_at<raid.ends_at
+  on conflict(encounter_id,account_id) do nothing;
+ end loop;
+end $;
+
+revoke all on function public.ensure_guild_pve_v1(uuid,timestamptz) from public,anon,authenticated;
+grant execute on function public.ensure_guild_pve_v1(uuid,timestamptz) to service_role;
+
 revoke all on function public.start_online_event_expedition_server_v1(uuid,bigint,text,text,uuid,text,jsonb,jsonb,jsonb,text) from public,anon,authenticated;
 
 grant execute on function public.start_online_event_expedition_server_v1(uuid,bigint,text,text,uuid,text,jsonb,jsonb,jsonb,text) to service_role;

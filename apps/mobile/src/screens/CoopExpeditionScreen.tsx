@@ -219,7 +219,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     return()=>{stopped=true;if(retryTimer!==undefined)clearTimeout(retryTimer);};
   },[terminalRunId,foreground,entrySource.kind]);
   useEffect(()=>{if(!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun)return;const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{if(showLive){onClose();return true}if(eventRun){setEventRun(undefined);return true}if(run){setRun(undefined);return true}if(showLoadouts){setShowLoadouts(false);setNotice('');return true}if(selectedEvent){setSelectedEvent(undefined);setNotice('');return true}if(selected){setSelected(undefined);setNotice('');return true}return false});return()=>subscription.remove()},[showLive,showLoadouts,selected,selectedEvent,run,eventRun,onClose]);
-  const cachedDungeons=cachedBrowse?.characterId===characterId?cachedBrowse.dungeons:undefined;
+  const cachedDungeons=cachedBrowse&&cachedBrowse.characterId===characterId?cachedBrowse.dungeons:undefined;
   const dungeons=useMemo(()=>(entry?.dungeons??cachedDungeons??[]).map(presentCoopDungeon),[entry,cachedDungeons]);
   useEffect(()=>{
     if(!entry)return;

@@ -46001,9 +46001,8 @@ var CRAFTED_RARE_CHANCE = 0.03;
 var CRAFTED_UNCOMMON_CHANCE = 0.07;
 var CRAFTED_COMMON_CHANCE = 1 - (CRAFTED_MYTHIC_CHANCE + CRAFTED_LEGENDARY_CHANCE + CRAFTED_EPIC_CHANCE + CRAFTED_RARE_CHANCE + CRAFTED_UNCOMMON_CHANCE);
 function craftedRarityStatMultiplier(itemId, rarity) {
-  const base = itemRarity(itemDef(itemId));
-  const baseMultiplier = rarityMeta(base).statMultiplier || 1;
-  return Math.max(1, rarityMeta(rarity).statMultiplier / baseMultiplier);
+  if (itemDef(itemId).type !== "gear") throw new Error("Forged rarity requires equipment");
+  return rarityMeta(rarity).statMultiplier;
 }
 
 // ../apps/mobile/src/core/crafted-gear-instances.ts
@@ -46172,8 +46171,10 @@ function gearStatsAtRank(itemId, rank) {
   const item = itemDef(itemId), m = 1 + Math.max(0, Math.min(MAX_UPGRADE_RANK, rank)) * UPGRADE_STAT_PER_RANK, scale = (value) => value * m;
   return { hp: scale(item.hp ?? 0), attack: scale(item.attack ?? 0), defense: scale(item.defense ?? 0) };
 }
-function enhancedGearStatsAtRank(state, itemId, rank) {
-  const instance = equippedCraftedInstance(state, itemId), stats6 = gearStatsAtRank(itemId, rank);
+function enhancedGearStatsAtRank(state, itemId, rank, instanceId) {
+  const instance = instanceId ? craftedGearInstances(state).find((row) => row.id === instanceId && row.itemId === itemId) : equippedCraftedInstance(state, itemId);
+  if (instanceId && !instance) throw new Error("Unknown equipment copy");
+  const stats6 = gearStatsAtRank(itemId, rank);
   const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId);
   const quality = instance?.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality);
   const m = craftedRarityStatMultiplier(itemId, rarity) * quality, scale = (value) => value * m;

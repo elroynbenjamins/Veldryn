@@ -37,13 +37,13 @@ function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemIn
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{itemDetailContent(language,item.type,gl).toLocaleUpperCase(language)}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions,quickActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
+export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[gearOpen,setGearOpen]=useState(false),[actionsOpen,setActionsOpen]=useState(false);
-  useEffect(()=>{setGearOpen(false);setActionsOpen(false)},[itemId]);
-  const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId]);
+  useEffect(()=>{setGearOpen(false);setActionsOpen(false)},[itemId,instanceId]);
+  const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source]);
   const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
   const item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
@@ -58,7 +58,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions,quickA
         <View style={s.hero}>
           <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt itemId={itemId} model={model}/></View>
           <View style={s.heroCopy}>
-            <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
+            <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
             <Text numberOfLines={2} style={s.owned}>{gl('Carried')} {formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)} · {gt('Bank')} {formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}{model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' '+gt('Gems'):''}</Text>
           </View>

@@ -49475,9 +49475,8 @@ function craftedGearRarity(itemId, roll) {
   return "common";
 }
 function craftedRarityStatMultiplier(itemId, rarity) {
-  const base = itemRarity(itemDef(itemId));
-  const baseMultiplier = rarityMeta(base).statMultiplier || 1;
-  return Math.max(1, rarityMeta(rarity).statMultiplier / baseMultiplier);
+  if (itemDef(itemId).type !== "gear") throw new Error("Forged rarity requires equipment");
+  return rarityMeta(rarity).statMultiplier;
 }
 function deterministicCraftRarityRoll(seed) {
   let hash3 = 2166136261;
@@ -49974,12 +49973,15 @@ function upgradeMaterialCosts(itemId, targetRank) {
   const ratio = targetRank === 1 ? 0.12 : targetRank === 2 ? 0.18 : targetRank === 3 ? 0.27 : targetRank === 4 ? 0.38 : 0;
   return recipe2.inputs.map((input) => ({ itemId: input.itemId === "VERDANT_BINDING_RESIN" || input.itemId === "IRONWOOD_BINDING_RESIN" ? ASTERFALL_MINERAL_ESSENCE_ID : input.itemId, quantity: Math.max(1, Math.ceil(input.quantity * ratio)) }));
 }
-function upgradeQuote(state, itemId) {
+function upgradeQuote(state, itemId, instanceId) {
   const item = itemDef(itemId);
   if (item.type !== "gear") throw new Error("Only equipment can be upgraded");
-  const current = gearEnhancement(state, itemId), targetRank = current.rank + 1;
+  const instance = instanceId ? craftedGearInstances(state).find((row) => row.id === instanceId && row.itemId === itemId) : equippedCraftedInstance(state, itemId);
+  if (instanceId && !instance) throw new Error("Unknown equipment copy");
+  const current = instance ? { ...normalizeEnhancementGemSlots(instance.enhancement), rank: Math.max(0, Math.min(MAX_UPGRADE_RANK, instance.enhancement.rank)), failures: instance.enhancement.failures } : gearEnhancement(state, itemId);
+  const targetRank = current.rank + 1;
   if (targetRank > MAX_UPGRADE_RANK) return { currentRank: current.rank, targetRank, successChance: 0, dust: 0, cores: 0, gold: 0, materials: [], maxed: true };
-  const rarity = equippedCraftedInstance(state, itemId)?.rarity ?? effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
+  const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
   return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: upgradeGoldCost(itemId, targetRank, rarity), materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
 }
 function qty(stacks, id) {
@@ -50120,8 +50122,10 @@ function gearStatsAtRank(itemId, rank) {
   const item = itemDef(itemId), m = 1 + Math.max(0, Math.min(MAX_UPGRADE_RANK, rank)) * UPGRADE_STAT_PER_RANK, scale = (value) => value * m;
   return { hp: scale(item.hp ?? 0), attack: scale(item.attack ?? 0), defense: scale(item.defense ?? 0) };
 }
-function enhancedGearStatsAtRank(state, itemId, rank) {
-  const instance = equippedCraftedInstance(state, itemId), stats4 = gearStatsAtRank(itemId, rank);
+function enhancedGearStatsAtRank(state, itemId, rank, instanceId) {
+  const instance = instanceId ? craftedGearInstances(state).find((row) => row.id === instanceId && row.itemId === itemId) : equippedCraftedInstance(state, itemId);
+  if (instanceId && !instance) throw new Error("Unknown equipment copy");
+  const stats4 = gearStatsAtRank(itemId, rank);
   const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId);
   const quality = instance?.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality);
   const m = craftedRarityStatMultiplier(itemId, rarity) * quality, scale = (value) => value * m;

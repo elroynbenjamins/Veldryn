@@ -39,7 +39,7 @@ ok(quickInspect.includes('prioritizeItemSources(model.sources)')&&quickInspect.i
  'Quick Inspect promotes accessible sources and crafting uses');
 ok(quickInspect.includes('setUseLimits(previous=>')&&quickInspect.includes('Math.min(uses.length,useLimit+4)'),
  'Long crafting-use catalogues expand four rows at a time');
-ok(quickInspect.includes('const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId])'),
+ok(quickInspect.includes('const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source])'),
  'Item inspection model is memoized across disclosure-only renders');
 
 ok(queue.includes('<Text style={s.name}>{label}</Text>')&&queue.includes('<Text style={readiness.ready?s.readyMeta:s.blockedMeta}>'),'Queue activity names, goals and blocking reasons must wrap rather than truncate');

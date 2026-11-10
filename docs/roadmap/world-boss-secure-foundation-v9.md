@@ -61,6 +61,12 @@ The draft creates no event rows, scheduler, user-visible functions, rewards, or 
 4. Create a real migration in the approved Supabase workflow, **deploy to staging only after security review**, then run concurrent reservations/finalizations from separate server processes with crash/retry cases. Keep the server feature flag **OFF**.
 5. Add idempotent War Camp and Sigil entitlements only after combat/impact rewards are fair. No leaderboard or public World Boss activation before later explicit approval.
 
-### Status note
+### Verified CI result
 
-All new GitHub files are committed. **CI status must be verified from an observed run**. Success of the in-memory emulator is not evidence of a production PostgreSQL transaction.
+**GitHub Actions Mobile Core run [42826494757](https://github.com/elroynbenjamins/Veldryn/actions/runs/42826494757)** finished **successfully** on commit `102a7dcf438f9a289c67a57ccaa884698cd1ddc9`. All **343 Mobile Core checks passed**, including the v9 trusted roster converter, entropy/digest receipt integration, 24-account last-HP race, three-attempt limit and 18 duplicate submissions. This run's overall workflow was **green**, including Companion validation. Earlier failed runs were corrected by replacing Node-only hashing and fixing a negative-test loader assertion.
+
+Verified V9 test output:
+- `WB_VERIFIED_ROSTER_V9`: authentic server-snapshot converter exercised with **zero** live database reads, three borrowed Echoes, and a three-NPC fallback
+- `WB_ATOMIC_EMULATOR_V9`: 24 concurrent accounts, 23 residual echoes, 3 accepted / 9 refused same-account attempts, 18 duplicate submissions, **zero** over-credited HP, **zero** database transactions and **zero** minted Sigils
+
+**Important:** A green test-only concurrency emulator is **not** evidence of a production PostgreSQL transaction. The SQL proposal remains unexecuted and must pass standalone staging/security/SQL testing before migration approval.

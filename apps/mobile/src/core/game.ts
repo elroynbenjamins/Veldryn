@@ -54,6 +54,7 @@ import {previewAlchemyReward,alchemyRefund,startAlchemyUntilLimited,preparationE
 import {previewProcessingReward,processingRefund,startProcessingUntilLimited} from './processing';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
+import {newJournalState} from './adventurers-journal-v42';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
 import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drops';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
@@ -922,7 +923,14 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
   // -> Overflow settlement as other gameplay rewards. Never lose a finale cape
   // when ordinary Inventory is full, and don't grant a second copy on retries.
   const routed=routeRewards(state,d.rewardItemId?[{itemId:d.rewardItemId,quantity:d.rewardItemQty??1}]:[],nowMs);
-  const next={...state,...routed,character:{...state.character,...(routed.character??{}),gold:state.character.gold+d.rewardGold},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;
+  // Story titles are permanent account unlocks, never an item or a free-text
+  // profile change. The player chooses when to equip the title in Customize.
+  const account={...state.account,...routed.account};
+  if(d.rewardTitleId){
+    const journal=account.journalState??newJournalState(longTermAccountScope(state));
+    account.journalState={...journal,unlockedTitles:{...journal.unlockedTitles,[d.rewardTitleId]:journal.unlockedTitles[d.rewardTitleId]??nowMs}};
+  }
+  const next={...state,...routed,account,character:{...state.character,...(routed.character??{}),gold:state.character.gold+d.rewardGold},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next),nowMs),nowMs)
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */

@@ -77,4 +77,4 @@ ok(sql.includes('BADGE_NOT_OWNED')&&sql.includes('auth.uid()')&&sql.includes('up
 ok(!sql.includes('raw_user_meta_data')&&!sql.includes('user_metadata'),'Supporter tier cannot be forged in user metadata');
 ok(!sql.includes('grant execute on function public.update_player_equipped_badge_v2(text) to anon'),'badge mutation requires authenticated identity');
 ok(sql.includes("cardinality(p_badge_ids)>2")&&sql.includes("p_badge_ids[1]"),'legacy 2-badge clients get one stored badge');
-console.log('PASS: one elective badge, automatic staff, supporter 1/3/6 tiers, artwork, new tab, authenticated tenure and old-client compatibility');
+console.log('PASS: one elective badge, automatic staff, supporter 0/3/6/12 tiers, artwork, new tab, authenticated tenure and old-client compatibility');

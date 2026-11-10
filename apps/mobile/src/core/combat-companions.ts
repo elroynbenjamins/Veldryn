@@ -1,5 +1,6 @@
 import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,combatCompanionDef} from '../content/combat-companions';
 import {normalizeClassSkills} from './class-skills';
+import {companionMasteryBonuses} from './companion-mastery';
 import {normalizeMonsterMastery} from './monster-mastery';
 import {companionHousingLevelCap,companionHousingTier} from './companion-housing';
 import type {CombatCompanionRole,CompanionAscensionCost,CompanionBondSource,CompanionCombatContribution,CompanionDefinition,CompanionEffectKind,CompanionLevelCost,CompanionSanctuaryState,CompanionSanctuaryUpgrade,OwnedCompanionProgress,VeldrynClassId} from './combat-companion-types';
@@ -19,6 +20,7 @@ interface HostAccount{
   starterFollowupCombatCompanionId?:string;
   starterThirdCombatCompanionId?:string;
   companionEssence?:number;
+  companionMasteryXp?:number;
   bondstones?:number;
   companionSanctuary?:CompanionSanctuaryState;
   companionAssignments?:Array<{companionIds:string[];status:string}>;
@@ -367,7 +369,7 @@ export function companionCombatContribution(state:CombatCompanionStateHost):Comp
   if(clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)||(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)))return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:0};
   const def=combatCompanionDef(id)!,p=progressFor(clean,id),rarity=COMPANION_RARITY_CONFIG[def.rarity];
   // Rarity target is deliberately applied exactly once here. Level/Bond only move toward that budget.
-  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,contribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance);
+  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,baseContribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance),contribution=baseContribution*(1+companionMasteryBonuses(clean.account.companionMasteryXp).assistPct);
   const effects=[def.activeAbility.effect.kind,def.passiveAbility.kind,...(p.bondTraitUnlocked?[def.bondTrait.effect.kind]:[])] as const;
   const has=(...kinds:CompanionEffectKind[])=>effects.some(kind=>kinds.includes(kind));
   const restorative=has('heal');

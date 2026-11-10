@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY} from '../content/combat-companions';
@@ -64,6 +65,8 @@ export interface CompanionAccountState {
   starterFollowupCombatCompanionId?:string;
   starterThirdCombatCompanionId?:string;
   companionEssence?:number;bondstones?:number;
+  /** Account-wide Companion Mastery XP, derived level (1–100). */
+  companionMasteryXp?:number;
   companionSanctuary?:CompanionSanctuaryState;
   companionAssignments?:CompanionAssignment[];
   companionTrialProgress?:CompanionTrialProgress;
@@ -103,7 +106,7 @@ export function awardCompanionRematchBondstone(state:GameState,nowMs:number){
 export const companionCombatExecutor:CompanionCombatExecutor={simulate:input=>simulateCombat(input)};
 export function companionOwned(state:GameState):Record<string,OwnedCompanionSnapshot>{
   return Object.fromEntries((state.account.unlockedCombatCompanionIds??[]).flatMap(id=>{
-    const p=state.account.combatCompanionProgress?.[id];return p?[[id,{...p,companionId:id}]]:[];
+    const p=state.account.combatCompanionProgress?.[id];return p?[[id,{...p,companionId:id,masteryStatMultiplier:companionMasteryStatMultiplier(state.account.companionMasteryXp)}]]:[];
   }));
 }
 export function companionEconomy(state:GameState):CompanionEconomyState {
@@ -137,12 +140,13 @@ function companionMetricMany(state:GameState,entries:Record<string,number>):Game
   let next=state;for(const [key,value] of Object.entries(entries))if(value)next=companionMetric(next,key,value);return next;
 }
 function setOwned(state:GameState,owned:Record<string,OwnedCompanionSnapshot>):GameState {
-  return {...state,account:{...state.account,unlockedCombatCompanionIds:Object.keys(owned),combatCompanionProgress:Object.fromEntries(Object.entries(owned).map(([id,p])=>[id,{...state.account.combatCompanionProgress?.[id],...p}]))}};
+  return {...state,account:{...state.account,unlockedCombatCompanionIds:Object.keys(owned),combatCompanionProgress:Object.fromEntries(Object.entries(owned).map(([id,p])=>{const {masteryStatMultiplier:_transient,...saved}=p;return [id,{...state.account.combatCompanionProgress?.[id],...saved}];}))}};
 }
 function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number):GameState {
   const owned=companionOwned(state);let essence=state.account.companionEssence??0,overflow=state.account.companionOverflow;
   const earnedBond=Math.round(bond*(1+(state.account.companionSanctuary?.bondHallLevel??0)*.05));
-  for(const id of ids){if(!owned[id])continue;const r=awardCompanionXpServer({progress:owned[id],amount:xp,companionEssence:essence,overflow,serverNowMs:now});essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,earnedBond);}
+  const earnedXp=companionMasteryCompanionXp(xp,state.account.companionMasteryXp);
+  for(const id of ids){if(!owned[id])continue;const r=awardCompanionXpServer({progress:owned[id],amount:earnedXp,companionEssence:essence,overflow,serverNowMs:now});essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,earnedBond);}
   return {...setOwned(state,owned),account:{...setOwned(state,owned).account,companionEssence:essence,companionOverflow:overflow}};
 }
 export function awardCompanionCandyXp(state:GameState,companionId:string,xp:number,now:number):GameState{
@@ -248,6 +252,8 @@ export function claimCompanionTraining(input:GameState,now:number):GameState{
  const days=Math.min(7,Math.floor(Math.max(0,now-last)/day));if(days<1)return state;
  const available=Object.keys(companionOwned(state)).filter(id=>{try{assertCompanionIdle(state,id);return true;}catch{return false;}});
  state=awardUse(state,available,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[level as 1|2|3]*days,0,now);
+ // One award per elapsed, claimed day. Repeated calls cannot mint XP without new time.
+ if(available.length)state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('training',{days,eligible:available.length}))};
  return {...state,account:{...state.account,companionSanctuary:{...sanctuary,lastTrainingClaimAtMs:now-Math.max(0,now-last)%day}}};
 }
 function stringArg(a:Record<string,unknown>,key:string){const v=a[key];if(typeof v!=='string'||!v||v.length>120)throw new Error(`Invalid ${key}.`);return v;}
@@ -331,7 +337,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state.account.companionTrialProgress=r.progress;state=reward(state,r.reward);
       state=companionMetricMany(state,{[`companions.trial.floor.${floor}.attempts`]:1,[`companions.trial.floor.${floor}.${r.result.victory?'wins':'losses'}`]:1,[`companions.trial.floor.${floor}.duration_ms_total`]:r.result.durationMs,[`companions.trial.floor.${floor}.team_power_total`]:power,'companions.trial.attempts':1,[r.result.victory?'companions.trial.wins':'companions.trial.losses']:1});
       if(floor%5===0)state=companionMetric(state,`companions.trial.boss.${floor}.${r.result.victory?'wins':'losses'}`);
-      if(r.result.victory){state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
+      if(r.result.victory){state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('trial',{floor,firstClear:r.firstClear,boss:floor%5===0}))};state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
       state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now,mode:'trial',battleId:`trial:${sequence}:${now}`,runId:run.runId,floor,playback:companionBattlePlayback(r.result)};break;
     }
@@ -350,7 +356,9 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       const missionDef=companionMission(assignment.missionId),unlockProgress={...(state.account.companionUnlockProgress??{})};
       if(missionDef?.originId){const missionKey=`COMPANION_MISSIONS:${missionDef.originId}`;unlockProgress[missionKey]=(unlockProgress[missionKey]??0)+1;if(r.assignment.performanceGrade==='S'){const gradeKey=`COMPANION_S_GRADE:${missionDef.originId}`;unlockProgress[gradeKey]=(unlockProgress[gradeKey]??0)+1;}}
       state.account.companionUnlockProgress=unlockProgress;
-      state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;
+      state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);
+      state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('expedition',{hours:Math.max(0,(Date.parse(assignment.endsAt)-Date.parse(assignment.startedAt))/3600000),grade:r.assignment.performanceGrade}))};
+      state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;
       state=companionMetricMany(state,{[`companions.expedition.${assignment.missionId}.claims`]:1,[`companions.expedition.${assignment.missionId}.grade.${r.assignment.performanceGrade??'C'}`]:1,[`companions.expedition.${assignment.missionId}.essence_earned`]:r.reward.companionEssence,[`companions.expedition.${assignment.missionId}.bondstones_earned`]:r.reward.bondstones,[`companions.expedition.${assignment.missionId}.bonus_rewards`]:r.reward.bonusRewardGranted?1:0});
       break;
     }

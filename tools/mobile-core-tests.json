@@ -6,6 +6,7 @@
   ".core-build/apps/mobile/tests/recipe-codex.js",
   ".core-build/apps/mobile/tests/unlock-inbox.js",
   ".core-build/apps/mobile/tests/companion-training-roster.js",
+  ".core-build/apps/mobile/tests/companion-mastery.js",
   "tests/online-loading-interactions.cjs",
   ".core-build/apps/mobile/tests/coop-sync-policy.js",
   "tests/coop-sync-runtime.cjs",

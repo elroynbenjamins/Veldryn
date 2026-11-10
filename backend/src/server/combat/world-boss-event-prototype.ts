@@ -29,6 +29,10 @@ export interface WorldBossAttemptPrototype {
   characterId:string;
   atUtcMs:number;
   order:WorldBossOrder;
+  /** Internal-only: unpredictable, server-generated and durably reserved with requestId. */
+  serverSeed?:string;
+  /** Binding hash of the resolved server-owned loadout and Echo composition. */
+  snapshotDigest?:string;
   /** Server-resolved squad: initiating character in slot 0, followed by three Echoes. */
   squad:readonly WorldBossSnapshotPrototype[];
 }
@@ -37,6 +41,7 @@ export interface WorldBossAttemptReceiptPrototype {
   ordinal:number;atUtcMs:number;phase:WorldBossPhase;
   boss:WorldBossId;order:WorldBossOrder;engineVersion:string;seed:string;
   snapshotIds:readonly string[];
+  snapshotDigest?:string;
   completedRounds:number;survived:boolean;
   rawCombatDamage:number;localGuardDamage:number;
   hpBefore:number;hpAfter:number;worldHpCredited:number;residualEcho:boolean;
@@ -63,6 +68,9 @@ const positiveWhole=(v:number)=>Number.isSafeInteger(v)&&v>=0;
 const amount=(v:number)=>Math.max(0,Math.floor(v));
 const nonempty=(s:string)=>typeof s==='string'&&s.trim().length>0&&s.length<=160;
 const receiptKey=(account:string,request:string)=>JSON.stringify([account,request]);
+const committedSeed=(eventId:string,command:WorldBossAttemptPrototype)=>[
+ WORLD_BOSS_EVENT_PROTOTYPE_VERSION,eventId,command.accountId,command.serverSeed??command.requestId,
+].join(':');
 
 export function createWorldBossEventPrototype(input:{
  eventId:string;boss:WorldBossId;startsAtUtcMs:number;endsAtUtcMs:number;maxHp:number;
@@ -109,6 +117,8 @@ function assertEventHealth(state:WorldBossEventPrototype):void {
 function sameCommand(receipt:WorldBossAttemptReceiptPrototype, command:WorldBossAttemptPrototype):boolean {
  return receipt.accountId===command.accountId&&receipt.characterId===command.characterId&&
   receipt.atUtcMs===command.atUtcMs&&receipt.order===command.order&&
+  receipt.seed===committedSeed(receipt.eventId,command)&&
+  receipt.snapshotDigest===command.snapshotDigest&&
   receipt.snapshotIds.length===command.squad.length&&
   receipt.snapshotIds.every((id,i)=>id===command.squad[i].snapshotId);
 }
@@ -139,7 +149,11 @@ export function applyWorldBossAttemptPrototype(
  if(used>=WORLD_BOSS_MAX_ATTEMPTS)throw Error('world_boss_attempt_limit');
  validateResolvedSquad(command);
  const phase=worldBossPhaseAtStart(event);
- const seed=[WORLD_BOSS_EVENT_PROTOTYPE_VERSION,event.eventId,command.accountId,command.requestId].join(':');
+ if(command.serverSeed!==undefined&&(!/^[A-Za-z0-9:_-]{24,512}$/.test(command.serverSeed)))
+  throw Error('world_boss_invalid_server_seed');
+ if(command.snapshotDigest!==undefined&&!/^[a-f0-9]{64}$/.test(command.snapshotDigest))
+  throw Error('world_boss_invalid_snapshot_digest');
+ const seed=committedSeed(event.eventId,command);
  // Pure local simulation first. Any exception means zero new attempts or world HP mutation.
  // No caller-supplied combat damage is accepted.
  const battle=simulateWorldBossRounds({
@@ -159,7 +173,7 @@ export function applyWorldBossAttemptPrototype(
   eventId:event.eventId,requestId:command.requestId,accountId:command.accountId,
   characterId:command.characterId,ordinal:used+1,atUtcMs:command.atUtcMs,
   phase,boss:event.boss,order:command.order,engineVersion:WORLD_BOSS_EVENT_PROTOTYPE_VERSION,
-  seed,snapshotIds:command.squad.map(x=>x.snapshotId),
+  seed,snapshotIds:command.squad.map(x=>x.snapshotId),snapshotDigest:command.snapshotDigest,
   completedRounds:battle.roundsCompleted,survived:battle.survived,
   rawCombatDamage:battle.bossHpDamage,localGuardDamage:battle.localGuardDamage,
   hpBefore:originalHp,hpAfter:after,worldHpCredited,residualEcho,

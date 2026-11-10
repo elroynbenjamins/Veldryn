@@ -100,13 +100,27 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/mobile
           command: pages deploy .browser-review-dist --project-name=veldryn-review --branch=main
+      - name: Verify hosted review returns a live HTML page
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$DEPLOYMENT_URL" ]]; then
+            echo '::error::Cloudflare did not return the deployed preview URL.'
+            exit 1
+          fi
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 2 --output /tmp/veldryn-review.html "$DEPLOYMENT_URL"
+          test -s /tmp/veldryn-review.html
+          grep -q -E '_expo|expo' /tmp/veldryn-review.html
+          echo "Verified HTML response at $DEPLOYMENT_URL"
       - name: Report verified deployment destination
         shell: bash
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
           echo '## Veldryn screen review' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Sandbox route catalogue: 51 entry points, with further in-screen tabs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Sandbox route catalogue: 63 entry points, with further in-screen tabs.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public review project: https://veldryn-review.pages.dev' >> "$GITHUB_STEP_SUMMARY"
           echo "Deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
           echo 'No production account, save, guild reward, billing or matchmaking connections.' >> "$GITHUB_STEP_SUMMARY"

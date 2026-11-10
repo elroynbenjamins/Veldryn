@@ -528,11 +528,14 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const exchange=combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
+ const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
+ const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
+ const goldPerHour=killsPerHour*runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const netHpLossPerHour=netDamagePerKill*killsPerHour;
  const foodPerHour=healingPerFood>0?Math.max(0,netHpLossPerHour)/healingPerFood:netDamagePerKill>0?Infinity:0;
  const target=REGIONAL_FOOD_SUSTAIN_TARGETS[runtime.m.zone];
- return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,netHpLossPerHour,estimatedUnfedHours:netHpLossPerHour>0?Math.max(0,Math.min(runtime.stats.hp,state.character.currentHp))/netHpLossPerHour:Infinity,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
+ return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,xpPerHour,goldPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,netHpLossPerHour,estimatedUnfedHours:netHpLossPerHour>0?Math.max(0,Math.min(runtime.stats.hp,state.character.currentHp))/netHpLossPerHour:Infinity,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
 }
 
 export function activeCombatRuntimeProjection(state:GameState){
@@ -644,7 +647,7 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const source=usable?previous.projected:state;
  const runtime=combatRuntimeDetails(state,original.targetId);
  if(usable&&previous.stoppedReason){
-   return {playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
+   return {searching:false,playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
      progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,cursor:previous};
  }
  const elapsed=Math.max(0,(atMs-source.activity!.lastClaimAtMs)/1000);

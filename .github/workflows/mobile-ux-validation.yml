@@ -75,3 +75,5 @@ jobs:
         run: pnpm test:gathering-drops
       - name: Run mobile core tests
         run: pnpm test:core
+      - name: Validate Frostfall 14-day preview and sealed rewards
+        run: pnpm test:frostfall-preview

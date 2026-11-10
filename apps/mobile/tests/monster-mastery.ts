@@ -14,8 +14,16 @@ const guidance4=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoin
 const completeGuidance=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:750};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(!completeGuidance.next&&completeGuidance.killsToNextMilestone===0,'Rank 30 mastery should complete the canonical milestone ladder');
 const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'MOSS_RAT').points===750,'points cap');ok(monsterMastery(master,'FIELD_WISP').damageBonus===0&&monsterMastery(master,'FALLEN_KNIGHT').damageBonus===0,'species only, excludes boss');
 ok(activityCycleSeconds(master)<activityCycleSeconds(s),'dashboard reflects mastery speed');
-const before=previewActivityReward(s,now+activityCycleSeconds(s)*1000*100+1),after=previewActivityReward(master,now+activityCycleSeconds(master)*1000*100+1);
-ok(before.kills===after.kills,'equal encounter sample');const material=before.items.find(i=>i.itemId==='MOSS_FIBER')!;ok(after.items.find(i=>i.itemId==='MOSS_FIBER')!.quantity===material.quantity+Math.floor(material.quantity*.05),'5% actual normal material yield');
+const sampleAtKills=(game:typeof s,target:number)=>{
+ let left=now,right=now+4*3600*1000;
+ for(let i=0;i<30&&right-left>1000;i++){
+  const mid=left+Math.floor((right-left)/2000)*1000;
+  if(previewActivityReward(game,mid).kills>=target)right=mid;else left=mid;
+ }
+ return previewActivityReward(game,right);
+};
+const before=sampleAtKills(s,20),after=sampleAtKills(master,20);
+ok(before.kills===20&&after.kills===20,'compare identical verified kill counts, not fixed-time random encounters');const material=before.items.find(i=>i.itemId==='MOSS_FIBER')!;ok(after.items.find(i=>i.itemId==='MOSS_FIBER')!.quantity===material.quantity+Math.floor(material.quantity*.05),'5% actual normal material yield');
 ok(before.items.every(item=>itemDef(item.itemId).type!=='gear')&&after.items.every(item=>itemDef(item.itemId).type!=='gear'),'Normal monster rewards should feed crafting rather than drop legacy finished gear');
 let forest=createCharacter(newGame(now),'WAYFINDER','Forest Test');forest.character!.level=25;forest.character!.hp=10000;forest.character!.currentHp=10000;forest.character!.monsterMasteryPoints={FOREST_TROLL:499};forest.currentRegionId='IRONWOOD';forest.unlockedMonsterIds.push('FOREST_TROLL');forest=startCombat(forest,'FOREST_TROLL',now);forest=claimActivity(forest,now+600000).state;
 ok(forest.account.unlockedCombatCompanionIds?.includes('UNIT_004'),'real Forest Troll combat unlocks Briarhorn Cub');

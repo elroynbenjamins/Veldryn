@@ -1,4 +1,5 @@
 import {random01} from './rng';
+import type {RegionalHuntPlan} from './ordinary-hunt';
 
 /** Discrete, deterministic attacks for an ordinary idle hunt.
  * Timing is derived from the existing kill cycle so XP, drops and AFK pacing
@@ -6,7 +7,7 @@ import {random01} from './rng';
  */
 export interface HuntHit {
   fraction:number;
-  actor:'player'|'enemy';
+  actor:'player'|'enemy'|'fatigue';
   damage:number;
   healing:number;
   critical:boolean;
@@ -59,6 +60,25 @@ export function huntHitEvents(input:HuntHitInput):HuntHit[]{
     hits.push({fraction:(i+.55)/enemyCount,actor:'enemy',damage:incoming/enemyCount,healing:healing/enemyCount,critical:false,index:i});
   }
   return hits.sort((a,b)=>a.fraction-b.fraction||(a.actor==='enemy'?-1:1));
+}
+/** Real per-strike settlement for ordinary launch-region hunts. Searching
+ * has no monster attacks; fatigue is charged once when the encounter ends,
+ * without fabricating a visible enemy hit. */
+export function regionalHuntHits(plan:RegionalHuntPlan,input:{monsterDamage:number;fatigueDamage:number;healingPerEncounter:number}):HuntHit[]{
+  const attacks=Math.max(1,plan.enemyAttackCount);
+  const hits:HuntHit[]=plan.strikes.map((strike,index)=>({
+    fraction:Math.min(1,strike.atSeconds/plan.cycleSeconds),
+    actor:strike.actor,
+    damage:strike.actor==='enemy'?Math.max(0,input.monsterDamage)/attacks:strike.damage,
+    healing:0,
+    critical:strike.critical,
+    index,
+  }));
+  // Fatigue lands just before the finishing blow and cannot retroactively
+  // prevent a lethal monster strike. It is not a monster attack animation.
+  const fatigueFraction=Math.max(0,1-0.00001);
+  hits.push({fraction:fatigueFraction,actor:'fatigue',damage:Math.max(0,input.fatigueDamage),healing:Math.max(0,input.healingPerEncounter),critical:false,index:hits.length});
+  return hits.sort((a,b)=>a.fraction-b.fraction||(a.actor==='fatigue'?-1:a.actor==='enemy'?-1:1));
 }
 export function huntHitsBetween(events:readonly HuntHit[],fromFraction:number,toFraction:number):HuntHit[]{
   const from=clamp(finite(fromFraction,0),0,1),to=clamp(finite(toFraction,0),0,1);

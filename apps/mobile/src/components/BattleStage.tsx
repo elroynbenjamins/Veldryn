@@ -96,7 +96,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const sparkOpacity=enemyImpact.interpolate({inputRange:[0,.08,.45,1],outputRange:[0,1,.75,0]}),sparkTravel=enemyImpact.interpolate({inputRange:[0,1],outputRange:[0,18]});
  const enemySlashOpacity=playerImpact.interpolate({inputRange:[0,.05,.30,1],outputRange:[0,.8,.45,0]});
  return <View style={s.stage}>
-  <View style={s.header}><View><Text accessibilityRole="header" style={s.title}>{tr(isLive?"Live combat":"Combat preview")}</Text></View><Text style={[s.safety,{color:view.safety==='safe'?C.good:view.safety==='dangerous'?C.warning:C.info}]}>{tr(view.safety)}</Text></View>
+  <View style={s.header}><View><Text accessibilityRole="header" style={s.title}>{tr(isLive?(fight?.searching?'Searching for an encounter...':'Live combat'):'Combat preview')}</Text></View><Text style={[s.safety,{color:view.safety==='safe'?C.good:view.safety==='dangerous'?C.warning:C.info}]}>{tr(view.safety)}</Text></View>
   <Animated.View style={[s.arena,{transform:[{translateX:shake}]}]}><RegionArtwork regionId={region?.id??'GREENFIELDS'}/><View style={s.shade}/>
    <View style={s.combatants}>
     <Animated.View style={[s.side,{transform:[{translateX:playerLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.playerLungePx]})},{scale:playerScale}]}]}>
@@ -114,7 +114,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>{tr('ENCOUNTER · {type}',{type:tr(view.encounter.archetype).toUpperCase()})}</Text><Text style={s.pressure}>{tr(view.encounter.pressure).toUpperCase()}</Text></View><Text style={s.sub}>{tr(view.encounter.summary)}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{tr(mechanic)}</Text></View>)}</View><Text style={s.tactic}>{tr('Tactic: {tactic}',{tactic:tr(view.encounter.tactic)})}</Text></View>
    <StatBar label={tr("Current health")} current={fight?.playerHp??displayStat(state.character!.currentHp)} max={fight?.playerMaxHp??displayStat(stats.hp)} reduceMotion={state.settings.reduceMotion}/>
    <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={fight?.enemyHp??displayStat(view.enemyHp)} max={fight?.enemyMaxHp??displayStat(view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
-   <Text style={s.note}>{isLive?fight?.stoppedReason?tr("Combat stopped"):tr("Damage updates on hit. Rewards are granted on defeat."):tr("HP, damage numbers and combat FX are synchronized presentation estimates. Rewards and settled health remain authoritative when you collect.")}</Text>
+   <Text style={s.note}>{isLive?fight?.stoppedReason?tr("Combat stopped"):fight?.searching?tr('Searching for an encounter...'):'':tr("HP, damage numbers and combat FX are synchronized presentation estimates. Rewards and settled health remain authoritative when you collect.")}</Text>
   </View>
  </View>;
 }

@@ -1,6 +1,7 @@
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
-import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt} from './combat-hit-timeline';
+import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
+import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
 import {professionActionPace} from './profession-action-pace';
@@ -439,6 +440,11 @@ export function regionalMonsterPressureBand(monsterId:string):RegionalMonsterPre
  return 'standard';
 }
 
+/** Stable across claims and foreground playback. Only completed kills change the encounter seed. */
+function regionalHuntSeed(state:GameState,monsterId:string,index:number){
+ const activity=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?state.activity:undefined;
+ return `${state.character!.id}:${activity?.startedAtMs??0}:${monsterId}:${(activity?.sessionKills??0)+index}`;
+}
 function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now()){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
   const m=baseMonster,stats=effectiveStats(state),modifiers=characterPermanentMultipliers(state),companion=companionCombatContribution(state);
@@ -473,12 +479,26 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // Damage tonics affect actual resolved hunt output, rather than merely changing the displayed Attack stat.
   const outgoingPreparation=c.preparation?preparationEffects(c.preparation).outgoing:1;
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
-  const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
-  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier};
+  // Early regions resolve actual landed attacks rather than scaling an
+  // authored monster timer. Crits and misses can change the number of swings;
+  // the search phase limits easy-area kill rates without artificial HP.
+  const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
+    zone:m.zone,monsterHp:m.hp,
+    playerHit:huntBasePlayerHit(Math.round(stats.attack*modifiers.combatPowerMultiplier),m.defense,
+      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation),
+    hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
+    haste:stats.haste,enemyHaste:secondary.enemy.haste,
+    tempo:style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed),
+    environmentTimeMultiplier:environment?.actionTimeMultiplier??1,
+    seed:regionalHuntSeed(state,monsterId,0),
+  }:undefined;
+  const legacyKillCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
+  const killCycleSeconds=huntOptions?regionalHuntPlan(huntOptions).cycleSeconds:legacyKillCycleSeconds;
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,legacyKillCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier,huntOptions};
 }
 
 /** Shared ordinary-hunt damage; fractional HP preserves small defensive bonuses. */
-function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,champion=false){
+function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,champion=false,enemyAttackCount?:number,fightSeconds?:number){
  const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds}=runtime;
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
@@ -491,23 +511,56 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  // Bloodrush healing. This also keeps easy-area food use meaningful while
  // letting aggressive Ravagers counter some real, above-floor enemy hits.
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
- const incoming=Math.max(floor,damage);
- const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-floor));
- const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
- return {damage:incoming,healing,onKillHealing,net:incoming-healing};
+ // Even a one-shot fight expends energy. Food still matters in starter areas
+ // for overgeared players; fatigue is attributed to the fight, never search.
+ const fatigue=runtime.huntOptions?Math.max(floor,Math.min(stats.hp*.0006,m.hp*.02)*runtime.gearAttritionMultiplier):0;
+ const huntPlan=runtime.huntOptions&&(enemyAttackCount===undefined||fightSeconds===undefined)?regionalHuntPlan(runtime.huntOptions):undefined;
+ const attackCount=enemyAttackCount??huntPlan?.enemyAttackCount??1;
+ // The time spent exposed to enemy attacks, not the old fixed kill cycle,
+ // determines enemy pressure. Weak gear leaves the character vulnerable longer.
+ const cadenceRatio=runtime.huntOptions?Math.max(.02,Math.min(1,killCycleSeconds/Math.max(1,runtime.legacyKillCycleSeconds))):1;
+ // More kills per hour must not mean proportionally more monster hits per hour.
+ // Preserve authored region pressure, with a distinct fatigue floor on weak foes.
+ // Normalize enemy pressure for shorter, damage-led launch-region encounters.
+ const combatPressure=runtime.huntOptions?(attackCount?damage*cadenceRatio*runtime.gearAttritionMultiplier*.82:0):Math.max(floor,damage);
+ const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
+ const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
+ const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
+ const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ // Healers reduce attrition, but exertion always retains a small food cost.
+ const healing=runtime.huntOptions?Math.min(rawHealing,monsterDamage+fatigue*.65):rawHealing;
+ return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
 }
 
+/** Stable forecasting uses a sample of real deterministic encounters so a
+ * single random crit or miss cannot misrepresent eight hours of food demand. */
+function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnType<typeof combatRuntimeDetails>){
+ if(!runtime.huntOptions)return undefined;
+ const count=48;
+ let seconds=0,damage=0,healing=0,onKillHealing=0;
+ for(let index=0;index<count;index++){
+   const plan=regionalHuntPlan({...runtime.huntOptions,seed:regionalHuntSeed(state,monsterId,index)});
+   const exchange=combatEncounterDamage({...runtime,killCycleSeconds:plan.cycleSeconds},false,plan.enemyAttackCount,plan.fightSeconds);
+   seconds+=plan.cycleSeconds;damage+=exchange.damage;healing+=exchange.healing;onKillHealing+=exchange.onKillHealing;
+ }
+ const killCycleSeconds=seconds/count;
+ return {killCycleSeconds,damage:damage/count,healing:healing/count,onKillHealing:onKillHealing/count,net:(damage-healing)/count};
+}
 export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
  if(!state.character)return undefined;
  const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
- const exchange=combatEncounterDamage(runtime),damagePerKill=exchange.damage;
- const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
+ const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
+ const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
+ const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
+ const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
+ const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
+ const goldPerHour=killsPerHour*runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const netHpLossPerHour=netDamagePerKill*killsPerHour;
  const foodPerHour=healingPerFood>0?Math.max(0,netHpLossPerHour)/healingPerFood:netDamagePerKill>0?Infinity:0;
  const target=REGIONAL_FOOD_SUSTAIN_TARGETS[runtime.m.zone];
- return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,netHpLossPerHour,estimatedUnfedHours:netHpLossPerHour>0?Math.max(0,Math.min(runtime.stats.hp,state.character.currentHp))/netHpLossPerHour:Infinity,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
+ return {monsterId,region:runtime.m.zone,killCycleSeconds,killsPerHour,xpPerHour,goldPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,netHpLossPerHour,estimatedUnfedHours:netHpLossPerHour>0?Math.max(0,Math.min(runtime.stats.hp,state.character.currentHp))/netHpLossPerHour:Infinity,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
 }
 
 export function activeCombatRuntimeProjection(state:GameState){
@@ -533,14 +586,23 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  const c=state.character!,activity=state.activity!,startsAtMs=activity?.lastClaimAtMs??nowMs-elapsed*1000;
  const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs),prepared=combatRuntimeDetails(state,monsterId,startsAtMs);
  const startCandy=eventCandyUtilityMultiplier(state,startsAtMs,'combat');
- const timeline=combatTimeline({startsAtMs,elapsedSeconds:elapsed,progressFraction:activity?.progressFraction??0,preparationEncounters:c.preparation?.remainingEncounters??0,cycleSeconds:plain.killCycleSeconds*startCandy,preparedCycleSeconds:prepared.killCycleSeconds*startCandy,candy:eventCandyWindow(state,'combat'),trackSegments:true});
+ const seedFor=(index:number)=>regionalHuntSeed(state,monsterId,index);
+ const dynamic=!!plain.huntOptions;
+ const timeline=combatTimeline({startsAtMs,elapsedSeconds:elapsed,progressFraction:activity?.progressFraction??0,preparationEncounters:c.preparation?.remainingEncounters??0,
+   cycleSeconds:plain.killCycleSeconds*(dynamic?1:startCandy),preparedCycleSeconds:prepared.killCycleSeconds*(dynamic?1:startCandy),
+   cycleSecondsForEncounter:dynamic?(index,isPrepared)=>regionalHuntPlan({...((isPrepared?prepared:plain).huntOptions!),seed:seedFor(index)}).cycleSeconds:undefined,
+   candy:eventCandyWindow(state,'combat'),trackSegments:true});
  const food=c.equippedFoodId?itemDef(c.equippedFoodId):undefined,threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
  let foodLeft=stackQty(state.inventory.stacks,c.equippedFoodId),foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
- const seedFor=(index:number)=>`${c.id}:${activity?.startedAtMs??startsAtMs}:${monsterId}:${(activity?.sessionKills??0)+index}`;
  const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds)=>{
+   if(runtime.huntOptions){
+     const plan=regionalHuntPlan({...runtime.huntOptions,seed:seedFor(index)});
+     const exchange=combatEncounterDamage(runtime,champion,plan.enemyAttackCount,plan.fightSeconds);
+     return regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
+   }
    const exchange=combatEncounterDamage(runtime,champion);
    return huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
  };
@@ -570,7 +632,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
          foodLeft--;foodConsumed++;
        }
      }
-     lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical};
+     if(hit.actor!=='fatigue')lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical};
      if(hp<=1){
        hp=1;stoppedReason=food&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
        qualifyingActivitySeconds=Math.max(0,(hitAtMs-startsAtMs)/1000);
@@ -610,7 +672,7 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const source=usable?previous.projected:state;
  const runtime=combatRuntimeDetails(state,original.targetId);
  if(usable&&previous.stoppedReason){
-   return {playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
+   return {searching:false,playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
      progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,cursor:previous};
  }
  const elapsed=Math.max(0,(atMs-source.activity!.lastClaimAtMs)/1000);
@@ -628,8 +690,11 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
    activity:{...source.activity!,lastClaimAtMs:atMs,progressFraction:current.nextProgressFraction,
      combatEnemyHp:current.enemyHp,sessionKills:(source.activity!.sessionKills??0)+current.kills},
  };
+ const nextRuntime=combatRuntimeDetails(projected,original.targetId);
+ const nextPlan=nextRuntime.huntOptions?regionalHuntPlan(nextRuntime.huntOptions):undefined;
+ const searching=!!nextPlan&&current.nextProgressFraction<nextPlan.searchSeconds/nextPlan.cycleSeconds;
  const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit};
- return {playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
+ return {searching,playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
    progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,cursor};
 }
 

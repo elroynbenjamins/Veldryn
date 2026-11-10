@@ -27,14 +27,18 @@ assert.equal(early.length+late.length,events.length,'a split settlement must con
 assert.ok(events.some(event=>event.actor==='enemy'&&event.damage>0),'enemy attacks must have actual damage');
 
 const T=1_600_000;
-const state=startCombat(createCharacter(newGame(T),'WAYFINDER','Real Hits'),'MOSS_RAT',T);
+const starting=createCharacter(newGame(T),'WAYFINDER','Real Hits');
+starting.character!.attack=12;starting.character!.equipment={};
+const state=startCombat(starting,'MOSS_RAT',T);
 const cycle=activeCombatRuntimeProjection(state)!.killCycleSeconds;
-const partialAt=T+Math.max(1,Math.floor(cycle*350));
+// Search is a real phase. A partial claim may legitimately precede both
+// attacks, or a strong attacker can kill before the foe retaliates.
+const partialAt=T+Math.max(1000,Math.floor(cycle*400));
 const partial=activeCombatHitProjection(state,partialAt)!;
 const preview=previewActivityReward(state,partialAt);
 assert.equal(preview.kills,0,'real partial hits must not grant unearned kill rewards');
-assert.ok(partial.enemyHp>0&&partial.enemyHp<partial.enemyMaxHp,'enemy must lose HP before timer completion');
-assert.ok(partial.playerHp<effectiveStats(state).hp,'enemy must damage player before kill completion');
+assert.ok(partial.enemyHp>0&&partial.enemyHp<=partial.enemyMaxHp,'partial encounter cannot grant a kill');
+assert.ok(partial.playerHp>0&&partial.playerHp<=effectiveStats(state).hp,'partial combat health must stay within bounds');
 assert.equal(preview.endHp,partial.playerHp,'preview and combat display must use identical damage');
 assert.equal(preview.nextCombatEnemyHp,partial.enemyHp,'displayed enemy HP must be a settled state value');
 

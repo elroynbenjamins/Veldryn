@@ -38,12 +38,20 @@ for(const route of EXPLORATION_ROUTES){
  ok(requirement===route.requiredExplorationLevel,route.id+' must retain its distinct Exploration gate');
  if(requirement<=1)continue;
  const below={...base,currentRegionId:route.zoneId,character:{...base.character!,level:route.requiredLevel},
+   // Test the Exploration gate in a legitimately unlocked region rather than
+   // allowing travel/story restrictions to obscure the failure being tested.
+   exploredRouteIds:EXPLORATION_ROUTES.map(scout=>scout.id),defeatedBossIds:['FALLEN_KNIGHT'],
    skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:requirement-1,xp:totalXpAtLevel(requirement-1)}:row)};
  let blocked=false;
  try{startExploration(below,route.id,1)}catch(error){blocked=String(error).includes('Exploration level '+requirement);}
  ok(blocked,route.id+' must reject manual start before required Exploration level');
  const queue=queuedActivityReadiness(below,{kind:'exploration',targetId:route.id});
- ok(!queue.ready&&!!queue.blocker?.includes(String(requirement)),route.id+' queue cannot bypass the Exploration gate');
+ ok(!queue.ready,route.id+' queue cannot bypass the Exploration gate');
+ if(route.id==='SCOUT_ASHLANDS'){
+  // Ashlands is unreleased and must never become playable through a QA fixture.
+  continue;
+ }
+ ok(!!queue.blocker?.includes(String(requirement)),route.id+' queue must explain the Exploration gate');
  const ready={...below,skills:below.skills.map(row=>row.skillId==='exploration'?{...row,level:requirement,xp:totalXpAtLevel(requirement)}:row)};
  ok(startExploration(ready,route.id,1).activity?.targetId===route.id,route.id+' should start at the required Exploration level');
 }

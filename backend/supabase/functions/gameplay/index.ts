@@ -52346,8 +52346,9 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
     environmentTimeMultiplier: environment?.actionTimeMultiplier ?? 1,
     seed: regionalHuntSeed(state, monsterId, 0)
   } : void 0;
-  const killCycleSeconds = huntOptions ? regionalHuntPlan(huntOptions).cycleSeconds : m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
-  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier, huntOptions };
+  const legacyKillCycleSeconds = m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
+  const killCycleSeconds = huntOptions ? regionalHuntPlan(huntOptions).cycleSeconds : legacyKillCycleSeconds;
+  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, legacyKillCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier, huntOptions };
 }
 function combatEncounterDamage(runtime, champion = false, enemyAttackCount, fightSeconds) {
   const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds } = runtime;
@@ -52358,9 +52359,10 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
   const fatigue = runtime.huntOptions ? Math.max(floor, Math.min(stats4.hp * 6e-4, m.hp * 0.02) * runtime.gearAttritionMultiplier) : 0;
   const huntPlan = runtime.huntOptions && (enemyAttackCount === void 0 || fightSeconds === void 0) ? regionalHuntPlan(runtime.huntOptions) : void 0;
   const attackCount = enemyAttackCount ?? huntPlan?.enemyAttackCount ?? 1;
-  const fightExposure = Math.max(0.35, Math.min(3, (fightSeconds ?? huntPlan?.fightSeconds ?? 10) / 10));
-  const monsterDamage = runtime.huntOptions ? attackCount ? damage * fightExposure * runtime.gearAttritionMultiplier : 0 : Math.max(floor, damage);
-  const incoming = monsterDamage + fatigue;
+  const cadenceRatio = runtime.huntOptions ? Math.max(0.02, Math.min(1, killCycleSeconds / Math.max(1, runtime.legacyKillCycleSeconds))) : 1;
+  const combatPressure = runtime.huntOptions ? attackCount ? damage * cadenceRatio * runtime.gearAttritionMultiplier : 0 : Math.max(floor, damage);
+  const incoming = runtime.huntOptions ? Math.max(fatigue, combatPressure) : combatPressure;
+  const monsterDamage = runtime.huntOptions ? Math.max(0, incoming - fatigue) : combatPressure;
   const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - Math.max(floor, fatigue)));
   const rawHealing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
   const healing = runtime.huntOptions ? Math.min(rawHealing, monsterDamage + fatigue * 0.65) : rawHealing;

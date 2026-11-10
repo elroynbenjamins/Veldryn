@@ -7,6 +7,7 @@ import {guildUpgradeComponentArtwork,guildUpgradeComponentName} from '../theme/g
 import {Panel} from './Panel';
 import {gameAlert} from '../core/game-alerts';
 import {guildConstructionBlueprint,GUILD_CONSTRUCTION_BLUEPRINTS} from '../content/guild-construction-blueprints';
+import {guildConstructionProgress} from '../core/guild-construction-progress';
 import {guildFacilityArtwork} from '../theme/guild-remaster-art';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
@@ -112,11 +113,8 @@ export function OnlineGuildConstructionPanel({
   {snapshot.constructionTemplates.filter(template=>template.id.startsWith('construction_'+selectedBuilding+'_')&&(template.enabled||snapshot.construction.some(row=>row.templateId===template.id&&row.completed))).map(template=>{
    const row=snapshot.construction.find(p=>p.templateId===template.id);
    const requirements=[...(template.gold>0?[{key:'gold',required:template.gold}]:[]),...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
-   // Weighted by units actually allocated, matching the Guild Hall's overview meter.
-  // Averaging each resource bar would overstate progress for tiny requirements.
-  const totalRequired=requirements.reduce((sum,res)=>sum+res.required,0);
-  const totalFunded=requirements.reduce((sum,res)=>sum+Math.min(res.required,Math.max(0,row?.resources[res.key]??0)),0);
-  const completion=totalRequired>0?totalFunded/totalRequired:row?.completed?1:0;
+   const {required:totalRequired,ratio}=guildConstructionProgress(requirements,row?.resources);
+  const completion=totalRequired>0?ratio:row?.completed?1:0;
    const unlocked=snapshot.guildLevel>=template.guildLevel;
    const canDonate=unlocked&&template.enabled&&!row?.completed&&!pending&&snapshot.bank!==null;
    const selectedHere=selected?.templateId===template.id;

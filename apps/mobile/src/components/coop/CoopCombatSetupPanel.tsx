@@ -24,7 +24,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion}:{st
   </View>
   <View style={s.twoColumns}>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Companion')+': '+(setup.companion?.name??st('None equipped'))}
-    accessibilityState={{expanded:expanded==='companion'}} accessibilityHint={onChooseCompanion?st('Choose your dungeon companion'):st('Tap to view companion')}
+    accessibilityState={{expanded:expanded==='companion'}} accessibilityHint={onChooseCompanion?st('Choose dungeon companion'):st('Tap to view companion')}
     onPress={onChooseCompanion??(()=>toggle('companion'))} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
     <View style={s.itemTop}>
      <View style={s.artFrame}>

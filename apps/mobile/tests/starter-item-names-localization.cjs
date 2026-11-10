@@ -27,6 +27,7 @@ assert.ok(uncovered,'an unlocalized unique item must be available for fallback c
 for(const language of ['ru','tr']){
  assert.equal(localizedItemName(language,uncovered.id),itemDef(uncovered.id).name,'non-base item names must remain canonical English '+uncovered.id);
 }
+assert.equal(localizedItemName('en','UNRELEASED_CAPE'),'UNRELEASED CAPE','unknown future reward IDs must never crash name presentation');
 const uiFiles={
  'screens/InventoryScreen.tsx':['localizedItemName(language,item.id)','localizedItemName(language,pending.item.id)','localizedItemName(language,stack.itemId)','localizedItemName(language,state.character.activeMealBuff.itemId)'],
  'components/ItemQuickInspect.tsx':['localizedItemName(language,item.id)','localizedItemName(language,ingredient.itemId)'],

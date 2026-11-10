@@ -1,5 +1,6 @@
 import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './types';
 import * as game from './game';
+import {migrateRetiredStoryRewards} from './retired-story-rewards';
 import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
 import {selectProfileIcon,canUseProfileIcon} from './profile-icons';
@@ -147,6 +148,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
+ // Reconcile retired story rewards within the same authoritative command write.
+ state=migrateRetiredStoryRewards(state,now);
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;if(result.reward.activityResults){for(const segment of result.reward.activityResults){const {activity,reward:earned}=segment;if(earned.kills>0&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind)))contributions.push({kind:activity.kind==='combat'?'combat':'gathering',contentId:activity.targetId,units:earned.kills,startedAtMs:activity.lastClaimAtMs});}}else credit(source,result.reward);};
  const settleAndStop=()=>{settle();state=game.stopActivity(state,now);};

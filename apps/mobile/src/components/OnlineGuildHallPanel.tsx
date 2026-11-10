@@ -13,6 +13,7 @@ import {guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
 import {guildConstructionBenefits} from '../content/guild-construction-benefits';
 import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
+import {guildConstructionProgress} from '../core/guild-construction-progress';
 import {loadOnlineGuildHallV44} from '../online/guild-hall-v44';
 import {loadOnlineGuildTokenShop,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {type ThemeColors} from '../theme/theme';
@@ -90,8 +91,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const nextProject=shop?.constructionTemplates.find(template=>template.id.startsWith('construction_')&&template.enabled&&template.guildLevel<=shop.guildLevel&&!shop.construction.some(row=>row.templateId===template.id&&row.completed));
  const funding=nextProject?shop?.construction.find(row=>row.templateId===nextProject.id):undefined;
  const needs=nextProject?[...(nextProject.gold>0?[{key:'gold',amount:nextProject.gold}]:[]),...nextProject.materials.map(material=>({key:material.materialKey,amount:material.amount}))]:[];
- const funded=needs.reduce((total,requirement)=>total+Math.min(requirement.amount,Math.max(0,funding?.resources[requirement.key]??0)),0);
- const required=needs.reduce((total,requirement)=>total+requirement.amount,0);
+ const {funded,required}=guildConstructionProgress(needs.map(row=>({key:row.key,required:row.amount})),funding?.resources);
  const bankBalances=new Map((shop?.bank?.balances??[]).map(item=>[item.resourceId,item.amount]));
  const benefitsList=[
   ...(benefits.canChangeGuildColors?[{name:ui('Guild color editing'),detail:ui('Only previously unlocked colors can be selected')}]:[]),

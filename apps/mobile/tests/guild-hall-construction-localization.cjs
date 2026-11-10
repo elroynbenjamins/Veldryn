@@ -10,6 +10,7 @@ require.extensions['.tsx']=require.extensions['.ts'];
 const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const {guildHallUiRows,guildHallUiText}=require('../src/i18n/guild-hall-ui.ts');
 const {guildConstructionUiRows,guildConstructionUiText}=require('../src/i18n/guild-construction-ui.ts');
+const {guildConstructionProgress}=require('../src/core/guild-construction-progress.ts');
 const locales=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=value=>[...value.matchAll(/\{(\w+)\}/g)].map(m=>m[1]).sort();
@@ -31,6 +32,10 @@ assert.equal(guildHallUiText('nl','{count} Hall Progress to Level {level}',{coun
 assert.equal(guildHallUiText('ru','Updated {date}',{date:'21:35'}),'Обновлено 21:35');
 assert.equal(guildConstructionUiText('nl','{resource} · Need {needed} · Bank {bank}',{resource:'Gold $&',needed:300,bank:50}),'Gold $& · Nodig 300 · Bank 50');
 assert.equal(guildConstructionUiText('ru','Set funding amount to {amount}',{amount:100}),'Установить количество: 100');
+// The remaining cost is material-weighted; a cheap fully-funded resource must not imply 50% completion.
+assert.deepEqual(guildConstructionProgress([{key:'gold',required:1000},{key:'wood',required:10}],{wood:10}),{required:1010,funded:10,ratio:10/1010});
+assert.deepEqual(guildConstructionProgress([{key:'gold',required:100},{key:'wood',required:10}],{gold:200,wood:-5}),{required:110,funded:100,ratio:100/110});
+assert.deepEqual(guildConstructionProgress([],{}),{required:0,funded:0,ratio:0});
 const root=path.resolve(__dirname,'../src/components');
 const hall=fs.readFileSync(path.join(root,'OnlineGuildHallPanel.tsx'),'utf8');
 const construction=fs.readFileSync(path.join(root,'OnlineGuildConstructionPanel.tsx'),'utf8');
@@ -39,4 +44,8 @@ for(const token of ["useGuildHallUiText()",'ui("Guild Hall sections")',"ui('Guil
 for(const token of ["useGuildConstructionUiText()","ui('Allocate Guild Bank materials?')","ui('Allocate {amount} {resource} to {upgrade}? This Guild Bank allocation cannot be reversed.'","ui('Discard pending donation?')",'ui("Donation amount")',"ui('Set funding amount to {amount}'","ui('Donate {resource} to {upgrade}'","donateOnlineGuildConstruction(input)","Number.isSafeInteger(donationAmount)","donationAmount<=remaining","donationAmount<=bankAmount"])assert.ok(construction.includes(token),'Construction safety or translation missing: '+token);
 for(const token of ["updatedLabel(board.updatedAt,language,ui)","ui('Updated {date}'","error||ui('Join a Guild to view its member-only Notice Board.')","{board.body}","updateGuildNoticeBoard(clean)"])assert.ok(notice.includes(token),'Notice missing: '+token);
 assert.ok(hall.includes('{trophy.label}')&&hall.includes('>{def.name}</Text>'),'Unreviewed names must remain verbatim');
+assert.ok(hall.includes('guildConstructionProgress(needs.map(')&&construction.includes('guildConstructionProgress(requirements,row?.resources)'),'Both Construction meters must use the tested calculation');
+assert.ok(hall.includes('hallTabOffsets.current[id]=nativeEvent.layout.x')&&!hall.includes('index-2)*88'),'Hall tab navigation must use measured layouts, not assumed translated widths');
+assert.ok(hall.includes("if(next==='Bank'&&!preserveBankReturn)")&&hall.includes("navigate('Bank',true)"),'Bank visits must clear stale Construction context except when returning from selected funding');
+assert.ok(construction.includes('useWindowDimensions()')&&construction.includes('compactLayout&&s.buildingWide'),'Construction tile layout must respond to narrow screens and large fonts');
 console.log('PASS: 76 Hall and 51 Construction keys in seven locales, safe placeholders and existing donation authorization');

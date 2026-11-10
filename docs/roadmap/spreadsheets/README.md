@@ -13,6 +13,8 @@
 
 **Player Market history:** [V10 starter price ranges](./player-market-price-corridors-v10.csv) and [original V10 plan](../player-market-price-ranges-v10.md) remain archived as the initial hidden pricing pass. V11 supersedes the proposed economy rules without activating trading.
 
+**World Bosses v9 CI:** **All 343 Mobile Core checks and the complete workflow passed** in [GitHub run 42826494757](https://github.com/elroynbenjamins/Veldryn/actions/runs/42826494757). This includes server-resolved roster conversion and test-only concurrent HP receipt simulations. No actual Supabase migration or runtime event has been enabled.
+
 **World Bosses v9:** Added a verified PvE snapshot adapter, portable SHA256 roster/seed receipt binding, server-only Echo loaders and an in-memory concurrent transaction emulator. Proposed a private PostgreSQL reservation/finalization design under `docs/roadmap/` only — **not a migration, no production database change or activation**. [V9 detailed plan](../world-boss-secure-foundation-v9.md). 
 
 **World Bosses T1–T4 evidence:** [36-row equipped and mixed Echo calibration results](./world-boss-equipped-calibration-v8-test-only.csv), from CI run 42822807286 (1,728 combat samples). All 341 Mobile Core checks passed; overall workflow failed afterward on separate Companion validation. **All sampled squads survived, so boss difficulty is not yet tuned.**

@@ -52374,6 +52374,16 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const startCandy = eventCandyUtilityMultiplier(state, startsAtMs, "combat");
   const seedFor = (index) => regionalHuntSeed(state, monsterId, index);
   const dynamic = !!plain.huntOptions;
+  const huntPlans = /* @__PURE__ */ new Map();
+  const planFor = (index, isPrepared) => {
+    const key = (isPrepared ? "prepared:" : "plain:") + index;
+    let plan = huntPlans.get(key);
+    if (!plan) {
+      plan = regionalHuntPlan({ ...(isPrepared ? prepared : plain).huntOptions, seed: seedFor(index) });
+      huntPlans.set(key, plan);
+    }
+    return plan;
+  };
   const timeline = combatTimeline({
     startsAtMs,
     elapsedSeconds: elapsed,
@@ -52381,7 +52391,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     preparationEncounters: c.preparation?.remainingEncounters ?? 0,
     cycleSeconds: plain.killCycleSeconds * (dynamic ? 1 : startCandy),
     preparedCycleSeconds: prepared.killCycleSeconds * (dynamic ? 1 : startCandy),
-    cycleSecondsForEncounter: dynamic ? (index, isPrepared) => regionalHuntPlan({ ...(isPrepared ? prepared : plain).huntOptions, seed: seedFor(index) }).cycleSeconds : void 0,
+    cycleSecondsForEncounter: dynamic ? (index, isPrepared) => planFor(index, isPrepared).cycleSeconds : void 0,
     candy: eventCandyWindow(state, "combat"),
     trackSegments: true
   });
@@ -52390,9 +52400,9 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const completed = [];
   let activeEncounterIndex = 0, enemyHp = activity?.combatEnemyHp;
   let lastHit;
-  const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds) => {
+  const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds, isPrepared = false) => {
     if (runtime.huntOptions) {
-      const plan = regionalHuntPlan({ ...runtime.huntOptions, seed: seedFor(index) });
+      const plan = planFor(index, isPrepared);
       const exchange2 = combatEncounterDamage(runtime, champion, plan.enemyAttackCount, plan.fightSeconds);
       return regionalHuntHits(plan, { monsterDamage: exchange2.monsterDamage, fatigueDamage: exchange2.fatigue, healingPerEncounter: exchange2.healing });
     }
@@ -52401,7 +52411,8 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   };
   if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
-    enemyHp = huntEnemyHpAt(prepared.m.hp, hitsFor(c.preparation?.remainingEncounters ? prepared : plain, 0, champion), activity?.progressFraction ?? 0);
+    const firstPrepared = !!c.preparation?.remainingEncounters;
+    enemyHp = huntEnemyHpAt(prepared.m.hp, hitsFor(firstPrepared ? prepared : plain, 0, champion, void 0, firstPrepared), activity?.progressFraction ?? 0);
   }
   enemyHp = Math.max(0, Math.min(prepared.m.hp, enemyHp));
   if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit };
@@ -52413,7 +52424,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     }
     const encounterNumber = (activity?.sessionKills ?? 0) + segment.encounterIndex;
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, encounterNumber);
-    const hits = hitsFor(runtime, segment.encounterIndex, champion, segment.prepared ? prepared.killCycleSeconds : plain.killCycleSeconds);
+    const hits = hitsFor(runtime, segment.encounterIndex, champion, segment.prepared ? prepared.killCycleSeconds : plain.killCycleSeconds, segment.prepared);
     for (const hit of huntHitsBetween(hits, segment.fromFraction, segment.toFraction)) {
       const hitAtMs = segment.startsAtMs + (hit.fraction - segment.fromFraction) * segment.cycleSeconds * 1e3;
       if (hit.actor === "player") {

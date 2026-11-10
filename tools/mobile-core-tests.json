@@ -295,6 +295,7 @@
   ".core-build/apps/mobile/tests/balance-projection-ui-contract.js",
   ".core-build/apps/mobile/tests/ui-accessibility-responsive-contract.js",
   ".core-build/apps/mobile/tests/chat-collapsed-dock-emotes-contract.js",
+  ".core-build/apps/mobile/tests/world-chat-channel-visibility.js",
   "../../tools/validate-master-roster-assets.mjs",
   "../../tools/validate-social-invitations.mjs",
   "../../tools/validate-guild-chat.mjs",

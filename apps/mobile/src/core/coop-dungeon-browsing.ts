@@ -1,4 +1,5 @@
 import type {CoopUiAssetId} from './coop-ui-contract';
+import type {DungeonCompanionCounterId} from '../../../../backend/src/server/coop/dungeon-companion-counters';
 
 export type CoopRoomType='battle'|'elite'|'event'|'shrine'|'camp'|'treasure'|'merchant'|'echo'|'risk'|'boss';
 export type CoopTier=1|2|3|4|5;
@@ -25,6 +26,8 @@ export interface CoopDungeonProjection{
   expectedMarksByTier?:Partial<Record<CoopTier,number>>;
   /** Item drop probabilities verified by the authoritative reward settlement, not inferred from room names. */
   itemDropRates?:readonly CoopDungeonItemDrop[];
+  /** Possible situational counters; room-specific advantage is not guaranteed. */
+  companionCounterIds?:readonly DungeonCompanionCounterId[];
   /** Server-owned verified gear recommendation for automatic Live tier. */
   recommendedLiveTier?:CoopTier;
   estimatedMinutes?:{min:number;max:number};

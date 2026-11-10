@@ -61,6 +61,7 @@
   "tests/guild-daily-token-verified-gameplay.cjs",
   "tests/guild-choice-weekly-release.cjs",
   "tests/guild-skill-upgrade-costs.cjs",
+  "tests/dungeon-companion-selector-ui.cjs",
   "tests/dungeon-encounter-preview-localization.cjs",
   "tests/seasonal-dungeon-localization.cjs",
   "tests/seasonal-dungeon-effects-localization.cjs",

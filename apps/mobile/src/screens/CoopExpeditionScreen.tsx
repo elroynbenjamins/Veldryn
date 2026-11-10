@@ -6,7 +6,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,BackHandler,Pressable,View,Text} from 'react-native';
 import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../components/coop/CoopDungeonBrowser';
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
-import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopLoadoutIntent} from '../core/coop-loadout-presentation';
+import {presentCoopLoadout,type CoopLoadoutIntent} from '../core/coop-loadout-presentation';
 import {CoopRunOverview,type CoopRewardDisplay} from '../components/coop/CoopRunOverview';
 import {CoopLiveRematchPanel} from '../components/coop/CoopLiveRematchPanel';
 import {CoopLiveLobby} from '../components/coop/CoopLiveLobby';
@@ -23,13 +23,14 @@ import {GameButton} from '../components/GameButton';
 import {useGameTheme} from '../theme/ThemeContext';
 import {realCoopEntrySource,type CoopEntrySource} from '../online/coop-entry-source';
 import type {GameState} from '../core/types';
+import type {GameCommand} from '../core/game-commands';
 import {clt} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {CoopChatMessage} from '../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../online/coop-profile-icons';
 import {combatPowerRating} from '../core/combat-power';
 
-export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged,onRunActiveChange}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>;onRunActiveChange?:(active:boolean)=>void}){
+export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged,onRunActiveChange,onCommand}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>;onRunActiveChange?:(active:boolean)=>void;onCommand?:(command:GameCommand)=>Promise<void>}){
  const st=useSocialText();
   const C=useGameTheme();
   const [entry,setEntry]=useState<CoopEntryData>();
@@ -221,8 +222,24 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   });
   const continueDungeon=(resolvedTier:CoopTier)=>{
     setTier(resolvedTier);
-    if(entrySource.kind!=='real'||!selected||selectableLoadouts.length!==1){setShowLoadouts(true);return;}
-    startWithLoadout(buildCoopLoadoutIntent({mode,dungeonId:selected.id,tier:resolvedTier,loadout:selectableLoadouts[0]}));
+    // Always allow a companion choice before committing a frozen dungeon loadout.
+    // Live and Echo still revalidate the selected version on the server.
+    setShowLoadouts(true);
+  };
+  const selectDungeonCompanion=async(id:string|null)=>{
+    if(entrySource.kind!=='real'||!onCommand)throw new Error('Companion selection is unavailable.');
+    if(busy)throw new Error('A dungeon action is already in progress.');
+    setBusy(true);setNotice('');
+    try{
+      await onCommand(id?{type:'companion_equip',args:{id}}:{type:'companion_unequip'});
+      // Never queue from the previously verified loadout after changing a companion.
+      setEntry(undefined);
+      await load();
+      setNotice(st('Dungeon companion updated. Verify the refreshed loadout before starting.'));
+    }catch(reason){
+      setNotice(coopErrorMessage(reason));
+      throw reason;
+    }finally{setBusy(false);}
   };
   const refreshLiveRecruitment=async()=>{const posts=await coopClient.liveRecruitment();setEntry(current=>current?{...current,liveRecruitment:posts}:current);};
   const resumeActiveRun=()=>{const projection=entry?.activeRunProjection;if(!projection){if(entry?.activeRun)setRun(entry.activeRun);return;}if(projection.mode!=='live'){setRun(entry.activeRun);return;}void action(async()=>{const value=await coopClient.run(projection.runId);if(!('team' in value))throw new Error(st("Invalid active Live run response."));acceptRun(value);});};
@@ -280,7 +297,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     const started=await coopClient.startEvent({requestId:coopRequestId(),eventExpeditionId:selectedEvent.id,characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
-  if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load()} onIntent={startWithLoadout}/></View>;
+  if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load()} onIntent={startWithLoadout} possibleCounterIds={selected.companionCounterIds} onEquipCompanion={entrySource.kind==='real'&&onCommand?selectDungeonCompanion:undefined}/></View>;
   if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} rewardBudget={entry?.rewardBudget} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={continueDungeon}/>;
   const echoTools=entrySource.kind==='real'&&entry?.gameVersion?(<View style={{paddingHorizontal:16,paddingTop:8}}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoSharing}} accessibilityLabel={st("Echo sharing")} accessibilityHint={st("Sharing an Echo lets other players recruit a snapshot of your character for 7 days.")} onPress={()=>setShowEchoSharing(value=>!value)} style={{paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>

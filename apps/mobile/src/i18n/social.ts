@@ -9,9 +9,6 @@ import {socialEarlyText} from './social-early-coverage';
 export const socialTranslationRows = {
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],
-  "Damage": ["Schaden","Daño","Schade","Danno","Dégâts"],
-  "Tank": ["Tank","Tanque","Tank","Difensore","Tank"],
-  "Support": ["Unterstützung","Apoyo","Ondersteuning","Supporto","Soutien"],
   "Damage assist": ["Schadenshilfe","Ayuda de daño","Hulp bij schade","Assistenza ai danni","Assistance offensive"],
   "Shield assist": ["Schildhilfe","Ayuda de escudo","Schildondersteuning","Assistenza con scudi","Assistance défensive"],
   "Healing assist": ["Heilhilfe","Ayuda de curación","Hulp bij genezing","Assistenza curativa","Assistance de soin"],

@@ -18,7 +18,10 @@ assert.match(potionRows,/onPress=\{\(\)=>setDetailId\(current=>current===detailK
 assert.match(potionRows,/\{isExpanded\?renderInlineDetails\(recipe\):null\}/,'Potion details should expand under the recipe');
 assert.match(source,/skillId==='alchemy'&&detailId===recipe\.id\?renderInlineDetails\(recipe\):null/,'Alchemy infusions should also expand details inline');
 assert.match(source,/GameModalSurface visible=\{skillId==='cooking'&&!!detail\}/,'Only cooking should use the old details modal');
-assert.match(source,/if\(activity\)\{setDetailId\(null\);setPendingId\(recipe\.id\);return;\}/,'Brewing must preserve the activity-switch confirmation');
+assert.doesNotMatch(source,/setPendingId|Switch activity\?/,'Recipe taps must never require a second activity-switch confirmation');
+assert.match(source,/if\(count\(recipe\)<1&&!activity\)/,'Unavailable recipes report requirements before starting when idle');
+assert.match(source,/void submit\(recipe\.id\)/,'An active gathering or crafting session must not block a direct brewing switch');
+assert.match(source,/try\{await onStart\(id\);setDetailId\(null\);\}/,'Successful recipe start closes the optional detail modal');
 assert.match(source,/key=\{recipe\.output\.itemId\}/,'Potions keep stable visual identity when ingredient source changes');
 assert.match(source,/sourceChoices/,'Alternate brewing sources are selectable inside details without duplicate recipe rows');
 assert.match(source,/goldShortfall>0/,'Alchemy distinguishes missing Gold from missing ingredients');

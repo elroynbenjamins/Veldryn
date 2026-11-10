@@ -12,6 +12,8 @@
 
 **Player Market history:** [V10 starter price ranges](./player-market-price-corridors-v10.csv) and [original V10 plan](../player-market-price-ranges-v10.md) remain archived as the initial hidden pricing pass. V11 supersedes the proposed economy rules without activating trading.
 
+**World Bosses v8 evidence:** [36-row pressure data](./world-boss-pressure-v8-test-only.csv), [54-row Tank/Support counterfactual data](./world-boss-role-counterfactual-v8-test-only.csv) (both extracted from CI run 42822128536, all 340 Core checks passed). The synthetic level-25 squads remained fully alive even with disabled recovery/interception; **boss difficulty is NOT calibrated**. A further 1,728 equipped/mixed-tier simulated-fight test has been added and awaits CI verification. No live feature activation.
+
 **World Bosses v8:** Normal boss hits during warning rounds, multi-target spores, Support-first reactions, real HP-only Tank protection, shield-owner replay attribution and a benchmark-gated, non-rewarding World Impact preview are in the disabled simulator. Added a 1,620-fight Tank/Support counterfactual suite. **No World Boss live balance, player loadouts, currency, event or database configuration is enabled.** [Pass details](../world-boss-combat-polish-v8.md).
 
 **World Bosses v7:** Test-only server-source modules now model three account-wide battle attempts, replay/idempotency, global boss HP thresholds and Residual Echo accounting, plus fair role/bracket Echo matching with NPC fallbacks. They are registered in Mobile Core CI. **This is an in-memory serial transaction model, not a safe production database settlement, and World Bosses remain disabled.** [Technical review](../world-boss-transaction-prototype-v7.md).

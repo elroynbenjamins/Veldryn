@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { launchPlayer } from '../../combat/content/launch-combat';
+import {buildExpeditionEncounter,expeditionEncounterPreview} from '../../combat/expedition-combat-service';
 import { EVENT_EXPEDITIONS,eventTierMinLevel,eventTierRewardMarks } from '../content/event-expeditions';
 import { EventExpeditionService, MemoryEventRunRepository, eventBossMechanicProjection, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
 
@@ -46,6 +47,14 @@ for(let tier=1;tier<=5;tier++){
 }
 assert.throws(()=>eventTierMinLevel(frostfall,0),/invalid_event_tier/);
 assert.throws(()=>eventTierMinLevel(frostfall,6),/invalid_event_tier/);
+const frostBase=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_01'})[0];
+const frostEntry=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_01',enemyLevel:10})[0];
+const frostVeteran=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_01',enemyLevel:30})[0];
+assert.ok(frostEntry.stats.maxHp<frostBase.stats.maxHp*.5,'Tier I must not inherit level-35 hit points');
+assert.ok(frostVeteran.stats.maxHp>frostEntry.stats.maxHp*2,'Tier V must be meaningfully tougher than Tier I');
+assert.equal(frostEntry.level,10);
+assert.equal(frostVeteran.level,30);
+assert.ok(expeditionEncounterPreview('EVENT_FROSTFALL_BATTLE_01',10),'tier encounter preview available');
 for(let tier=1;tier<=5;tier++){
  const service=new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-tier-test-'+tier);
  const run=service.start({requestId:'frost-tier-request-'+tier,runId:'frost-tier-run-'+tier,accountId:'a',eventId:frostfall.id,tier,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});

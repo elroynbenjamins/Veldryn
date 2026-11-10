@@ -1,11 +1,11 @@
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
 export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','beta_tester','veteran','guild_leader','community_champion','event_champion'] as const;
-export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m'] as const;
+export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m','supporter_12m'] as const;
 export type CollectiblePlayerBadgeId=typeof COLLECTIBLE_PLAYER_BADGE_IDS[number];
 export type SupporterBadgeId=typeof SUPPORTER_BADGE_IDS[number];
 export type EquippablePlayerBadgeId=SupporterBadgeId|CollectiblePlayerBadgeId;
 export type PlayerBadgeId='admin'|'moderator'|EquippablePlayerBadgeId;
-export type SupporterTenureTier=0|1|3|6;
+export type SupporterTenureTier=0|1|3|6|12;
 export interface PlayerBadgeIdentity{
  staff:'admin'|'moderator'|null;
  /** Active AND selected Supporter; legacy field remains for older clients. */
@@ -20,7 +20,7 @@ export interface PlayerBadgeIdentity{
 }
 export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  admin:'Admin',moderator:'Moderator',
- supporter:'Supporter',supporter_3m:'Supporter · 3 Months',supporter_6m:'Supporter · 6 Months',
+ supporter:'Supporter',supporter_3m:'Supporter · 3 Months',supporter_6m:'Supporter · 6 Months',supporter_12m:'Supporter · 12 Months',
  founder:'Founder',beta_tester:'Beta Tester',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
 };
@@ -34,8 +34,9 @@ export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
 };
 export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter:'Unlock with an active Supporter entitlement.',
- supporter_3m:'Unlock after 3 consecutive verified months of Supporter.',
- supporter_6m:'Unlock after 6 consecutive verified months of Supporter.',
+ supporter_3m:'Unlock after 3 total verified months of Supporter.',
+ supporter_6m:'Unlock after 6 total verified months of Supporter.',
+ supporter_12m:'Unlock after 12 total verified months of Supporter.',
 };
 /** One elective earned or Supporter badge; staff role is shown independently. */
 export const MAX_EQUIPPED_PLAYER_BADGES=1;
@@ -55,10 +56,10 @@ function cleanExtras(value:unknown):CollectiblePlayerBadgeId[]{
 }
 export function supporterTierMonths(value:unknown,active:boolean):SupporterTenureTier{
  if(!active)return 0;
- return value===6?6:value===3?3:1;
+ return value===12?12:value===6?6:value===3?3:1;
 }
 export function canEquipSupporterBadge(id:SupporterBadgeId,active:boolean,tier:SupporterTenureTier):boolean{
- return active && tier>=(id==='supporter_6m'?6:id==='supporter_3m'?3:1);
+ return active && tier>=(id==='supporter_12m'?12:id==='supporter_6m'?6:id==='supporter_3m'?3:1);
 }
 // Only pass trusted server identity projections here, never mutable save metadata.
 export function normalizePlayerBadges(value:unknown):PlayerBadgeIdentity|undefined{

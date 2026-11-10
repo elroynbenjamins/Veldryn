@@ -31,9 +31,10 @@ const mod=fs.readFileSync(path.join(__dirname,'../src/i18n/starter-item-names.ts
 assert.ok(mod.includes('row.en===item.name'),'source guard must remain intact');
 assert.ok(mod.includes('...alchemyItemNames'),'alchemy names must be resolved by ID');
 const screen=fs.readFileSync(path.join(__dirname,'../src/components/ConsumableWorkshop.tsx'),'utf8');
-for(const text of ["localizedItemName(language,itemId)","itemName(recipe.output.itemId)","itemName(detail.output.itemId)","itemName(selected.output.itemId)"]){
+for(const text of ["localizedItemName(language,itemId)","itemName(recipe.output.itemId)","itemName(detail.output.itemId)"]){
  assert.ok(screen.includes(text),'workshop lost localized name '+text);
 }
+assert.ok(!screen.includes('itemName(selected.output.itemId)'), 'removed activity-switch confirmation should not be referenced');
 for(const source of ["onStart(id)","alchemyAvailability(state,r.id)","processingRunCapacity(state,r.id"]){
  assert.ok(screen.includes(source),'authoritative production flow changed '+source);
 }

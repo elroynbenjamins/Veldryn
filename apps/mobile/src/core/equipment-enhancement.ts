@@ -109,11 +109,18 @@ export function upgradeMaterialCosts(itemId:string,targetRank:number):UpgradeMat
   const ratio=targetRank===1?.12:targetRank===2?.18:targetRank===3?.27:targetRank===4?.38:0;
   return recipe.inputs.map(input=>({itemId:(input.itemId==='VERDANT_BINDING_RESIN'||input.itemId==='IRONWOOD_BINDING_RESIN')?ASTERFALL_MINERAL_ESSENCE_ID:input.itemId,quantity:Math.max(1,Math.ceil(input.quantity*ratio))}));
 }
-export function upgradeQuote(state:GameState,itemId:string){
+export function upgradeQuote(state:GameState,itemId:string,instanceId?:string|null){
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Only equipment can be upgraded');
-  const current=gearEnhancement(state,itemId),targetRank=current.rank+1;
+  const instance=instanceId
+    ?craftedGearInstances(state).find(row=>row.id===instanceId&&row.itemId===itemId)
+    :equippedCraftedInstance(state,itemId);
+  if(instanceId&&!instance)throw new Error('Unknown equipment copy');
+  const current=instance
+    ?{...normalizeEnhancementGemSlots(instance.enhancement),rank:Math.max(0,Math.min(MAX_UPGRADE_RANK,instance.enhancement.rank)),failures:instance.enhancement.failures}
+    :gearEnhancement(state,itemId);
+  const targetRank=current.rank+1;
   if(targetRank>MAX_UPGRADE_RANK)return {currentRank:current.rank,targetRank,successChance:0,dust:0,cores:0,gold:0,materials:[] as UpgradeMaterialCost[],maxed:true};
-  const rarity=equippedCraftedInstance(state,itemId)?.rarity??effectiveOwnedGearRarity(state,itemId),pity=Math.min(.10,current.failures*.02);
+  const rarity=instance?.rarity??effectiveOwnedGearRarity(state,itemId),pity=Math.min(.10,current.failures*.02);
   return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:upgradeGoldCost(itemId,targetRank,rarity),materials:upgradeMaterialCosts(itemId,targetRank),maxed:false};
 }
 function qty(stacks:ItemStack[],id:string){return stacks.find(s=>s.itemId===id)?.quantity??0;}

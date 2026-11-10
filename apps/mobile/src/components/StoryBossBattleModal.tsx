@@ -42,6 +42,9 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   const bossHp=current?.bossHp??battle.bossMaxHp,playerHp=current?.playerHp??battle.playerMaxHp;
   const phase=current?.phase??1;
   const recent=visible.filter(event=>!['battle_start'].includes(event.type)).slice(-4).reverse();
+  // Follow events that have actually played; do not reveal the precomputed fight totals.
+  const potionsUsedSoFar=visible.filter(event=>event.type==='heal').length;
+  const phasesReachedSoFar=Math.min(3,1+visible.filter(event=>event.type==='phase').length);
 
   useEffect(()=>{
     if(!current||current===previous||reduceMotion)return;
@@ -118,7 +121,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
         </View>
 
         <View style={s.log}>
-          <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{battle.potionConsumed} potions used · {battle.phasesReached.length}/3 phases</Text></View>
+          <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{potionsUsedSoFar>0?`${potionsUsedSoFar} ${potionsUsedSoFar===1?'potion':'potions'} used · `:''}{phasesReachedSoFar}/3 phases</Text></View>
           {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{gl(eventText(event))}</Text></View>):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 

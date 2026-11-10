@@ -36,7 +36,7 @@ export default function GuildLayoutReview(){
  <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} style={{flex:1,minHeight:0}} contentContainerStyle={{padding:12,gap:12}}>
  {screen==='Guildless'?<GuildDiscoveryWelcome onFind={()=>setNotice('Find a Guild opened')} onCreate={()=>setNotice('Create a Guild opened')}/>:<>
  <GuildMemberIdentityCard guild={guild} role={officer?'officer':'member'} members={12} onRoster={()=>setNotice('Members opened')} onManage={officer?()=>setNotice('Management opened'):undefined}/>
- <GuildHomeActions activity={<GuildActivityMeter state={activity} compact/>} board={<Text style={{color:C.text,borderLeftWidth:2,borderColor:C.good,padding:12}}>Rally together this week.</Text>} onQuests={()=>setNotice('Quests opened')} onShop={()=>setNotice('Token shop opened')} onPve={()=>setNotice('Raid opened')} onRoster={noop} onHall={()=>setNotice('Hall opened')} onChat={()=>setScreen('Chat')} onManage={noop}/>
+ <GuildHomeActions activity={<GuildActivityMeter state={activity} compact/>} board={<Text style={{color:C.text,borderLeftWidth:2,borderColor:C.good,padding:12}}>Rally together this week.</Text>} onQuests={()=>setNotice('Quests opened')} onShop={()=>setNotice('Token shop opened')} onPve={()=>setNotice('Raid opened')} onRoster={noop} onProjects={()=>setNotice('Projects opened')} onRoadmap={()=>setNotice('Roadmap opened')} canManage={officer} onChat={()=>setScreen('Chat')} onManage={noop}/>
  </>}{notice?<Text accessibilityRole="alert" style={{color:C.good}}>{notice}</Text>:null}
  </ScrollView><PrimaryNavigation destinations={['Character','Skills','World','Inventory','More']} active="More" labelFor={id=>id} onNavigate={noop}/>
  </>}

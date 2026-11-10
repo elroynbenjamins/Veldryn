@@ -34,7 +34,7 @@ export function GuildHomeActions({activity,board,summary,voteReminder,chatUnread
   </View>
   <View accessibilityRole="group" accessibilityLabel="Guild community" style={s.section}>
    <Text style={[s.kicker,{color:C.accentSoft}]}>COMMUNITY</Text>
-   {board?<View style={s.notice}><Text style={[s.subKicker,{color:C.muted}]}>GUILD NOTICE</Text>{board}</View>:null}
+   {board?<View style={s.notice}>{board}</View>:null}
    <View style={s.communityRow}>
     <Pressable accessibilityRole="button" accessibilityLabel={chatUnread>0?'Guild Chat, '+chatUnread+' unread':'Guild Chat'} onPress={onChat} style={({pressed})=>[s.communityLink,{backgroundColor:C.panel,borderColor:C.line},pressed&&s.pressed]}>
      <ThemedIcon name="chat" size={18}/><Text numberOfLines={1} style={[s.communityTitle,{color:chatUnread>0?C.notification:C.text}]}>{chatUnread>0?'Chat · '+(chatUnread>99?'99+':chatUnread):'Chat'}</Text>
@@ -54,7 +54,7 @@ export function GuildHomeActions({activity,board,summary,voteReminder,chatUnread
 }
 const s=StyleSheet.create({
  stack:{gap:14},priority:{gap:8},section:{gap:8},notice:{gap:5},
- kicker:{fontSize:10,lineHeight:15,fontWeight:'900',letterSpacing:.75},subKicker:{fontSize:9,lineHeight:13,fontWeight:'800',letterSpacing:.6},
+ kicker:{fontSize:10,lineHeight:15,fontWeight:'900',letterSpacing:.75},
  weekGrid:{flexDirection:'row',gap:8},weekCard:{flex:1,minWidth:0,minHeight:138,gap:6,padding:11,borderWidth:1,borderRadius:12},
  weekIcon:{width:36,height:36,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:1},
  weekTitle:{fontSize:13,lineHeight:18,fontWeight:'900'},weekDetail:{fontSize:10.5,lineHeight:15,flexGrow:1},

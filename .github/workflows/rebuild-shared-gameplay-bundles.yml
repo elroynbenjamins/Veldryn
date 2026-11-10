@@ -1,0 +1,67 @@
+name: Rebuild shared gameplay Edge bundles
+
+# Reusable manual maintenance workflow. The push trigger runs only when this
+# workflow file is introduced or edited, not on every gameplay code change.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rebuild-shared-gameplay-bundles.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-shared-gameplay-bundles-main
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Verify the two-path equipment balancing regression
+        run: node tools/run-mobile-tests.mjs equipment-two-path-balance
+      - name: Rebuild canonical generated bundles and commit them on top of current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            # This checkout is a disposable CI workspace; never rewrite remote history.
+            git reset --hard origin/main
+            pnpm --dir backend build:online
+            node tools/verify-gameplay-edge.mjs
+            git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+            if git diff --cached --quiet; then
+              echo 'Gameplay and co-op generated bundles are already in sync.'
+              exit 0
+            fi
+            git commit -m 'build(edge): sync canonical gameplay and coop bundles for equipment paths'
+            if git push origin HEAD:main; then
+              echo 'Generated Edge bundles committed to main.'
+              exit 0
+            fi
+            echo "Main advanced during generated bundle push; rebuilding against latest main (attempt $attempt)."
+          done
+          echo 'Unable to push generated bundles without racing a new main commit.' >&2
+          exit 1

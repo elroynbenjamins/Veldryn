@@ -1,6 +1,6 @@
 // Regression coverage: live hit replay may animate deterministically, but only authoritative claims settle rewards.
 import {assert} from './test-assert';
-import {liveHuntNarration} from '../src/core/combat-narration';
+import {HUNT_CLASS_NARRATION,HUNT_COMMON_NARRATION,HUNT_ENCOUNTER_NARRATION,liveHuntNarration} from '../src/core/combat-narration';
 import {BATTLE_MESSAGES} from '../src/i18n/battle';
 import {MONSTERS} from '../src/content/monsters';
 import type {ClassId} from '../src/core/types';
@@ -72,8 +72,8 @@ assert.equal(liveState.character!.currentHp,state.character!.currentHp,'read-onl
 const revenant=MONSTERS.find(row=>row.id==='OATHGLASS_REVENANT')!;
 const formatDamage=(damage:number)=>Math.round(damage).toString();
 const classes:ClassId[]=['IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','STONECALLER'];
-const linesFor=(classId:ClassId,nowMs:number,monster=revenant,lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean},stoppedReason='')=>
- liveHuntNarration({classId,monster,nowMs,startedAtMs:T,lastHit,stoppedReason,damageText:formatDamage});
+const linesFor=(classId:ClassId,nowMs:number,monster=revenant,lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean},stoppedReason='',hp:Partial<{playerHp:number;playerMaxHp:number;enemyHp:number;enemyMaxHp:number}>={})=>
+ liveHuntNarration({classId,monster,nowMs,startedAtMs:T,lastHit,stoppedReason,damageText:formatDamage,...hp});
 const prepared=classes.map(classId=>linesFor(classId,T));
 assert.equal(new Set(prepared.map(row=>row.key)).size,classes.length,'every class needs its own combat preparation');
 assert.equal(linesFor('WAYFINDER',T).key,'You draw your bow and take aim.','Wayfinder should visibly prepare a shot');
@@ -85,15 +85,45 @@ const landed=classes.map(classId=>linesFor(classId,T+20500,revenant,recent));
 assert.equal(new Set(landed.map(row=>row.key)).size,classes.length,'every class needs distinctive actual-hit text');
 assert.ok(landed.every(row=>row.hit&&!row.critical&&row.params?.amount==='42'),'player hit narration must use recorded damage');
 const crit=linesFor('WAYFINDER',T+20500,revenant,{...recent,critical:true});
-assert.ok(crit.hit&&crit.critical&&crit.key==='Arrow hits · {amount}','critical emphasis must depend on recorded hit');
+assert.ok(crit.hit&&crit.critical&&new Set<string>(HUNT_CLASS_NARRATION.WAYFINDER.strike).has(crit.key),'critical emphasis must depend on recorded hit');
 const taken=linesFor('WAYFINDER',T+20500,revenant,{...recent,actor:'enemy',damage:17});
-assert.equal(taken.key,'You stagger from the impact · {amount}');
+assert.ok(new Set<string>(HUNT_COMMON_NARRATION.taken).has(taken.key),'enemy hit must use a real damage-labelled response');
 assert.ok(taken.hit&&!taken.critical&&taken.params?.amount==='17','ordinary enemy hit must not imply a critical hit');
 const recovery=linesFor('WAYFINDER',T+24500,revenant,{...recent,actor:'enemy',damage:17});
-assert.equal(recovery.key,'You regain your footing.','after an ordinary blow the player should recover');
+assert.ok(new Set<string>(HUNT_COMMON_NARRATION.recover).has(recovery.key),'after an ordinary blow the player should recover');
 const critRecovery=linesFor('WAYFINDER',T+24500,revenant,{...recent,actor:'enemy',damage:17,critical:true});
-assert.equal(critRecovery.key,'You rise after the critical hit.','critical recovery must require a real enemy crit flag');
+assert.ok(new Set<string>(HUNT_COMMON_NARRATION.critRecover).has(critRecovery.key),'critical recovery must require a real enemy crit flag');
 assert.equal(linesFor('WAYFINDER',T+22000,revenant,recent,'Too injured').key,'Combat stopped','stopped battle should not narrate further attacks');
+const cyclePrep=Array.from({length:4},(_,i)=>linesFor('WAYFINDER',T+i*14400).key);
+const cycleEnemy=Array.from({length:3},(_,i)=>linesFor('WAYFINDER',T+4800+i*14400).key);
+const cycleFocus=Array.from({length:3},(_,i)=>linesFor('WAYFINDER',T+9600+i*14400).key);
+assert.equal(new Set(cyclePrep).size,4,'class preparations must rotate through four unique lines');
+assert.equal(new Set(cycleEnemy).size,3,'encounter cues must rotate through three unique lines');
+assert.equal(new Set(cycleFocus).size,3,'neutral combat cues must rotate through three unique lines');
+const firstTick=linesFor('WAYFINDER',T+20500,revenant,recent),repeatTick=linesFor('WAYFINDER',T+21200,revenant,recent);
+assert.equal(firstTick.key,repeatTick.key,'a hit caption must stay stable across UI clock updates');
+const distinctHits=new Set(Array.from({length:40},(_,i)=>linesFor('WAYFINDER',T+20000+i*1700+300,revenant,{...recent,atMs:T+20000+i*1700}).key));
+assert.equal(distinctHits.size,3,'real Wayfinder hits must draw from all three combat variants');
+const wounded=linesFor('WAYFINDER',T+9600,revenant,undefined,'',{playerHp:20,playerMaxHp:100,enemyHp:85,enemyMaxHp:100});
+const finishing=linesFor('WAYFINDER',T+9600,revenant,undefined,'',{playerHp:100,playerMaxHp:100,enemyHp:12,enemyMaxHp:100});
+assert.ok(new Set<string>(HUNT_COMMON_NARRATION.wounded).has(wounded.key)&&wounded.tone==='danger','low real health must show wounded narration');
+assert.ok(new Set<string>(HUNT_COMMON_NARRATION.finishing).has(finishing.key),'near-dead enemies must use finishing narration');
+assert.equal(linesFor('WAYFINDER',T+1500,revenant,{...recent,atMs:T-1}).key,'You draw your bow and take aim.','stale hit from another fight must be ignored');
+assert.ok(new Set<string>(HUNT_COMMON_NARRATION.critTaken).has(linesFor('WAYFINDER',T+20500,revenant,{...recent,actor:'enemy',critical:true}).key),'real enemy critical hits must show critical damage variants');
+assert.equal(HUNT_ENCOUNTER_NARRATION.SWARM.length,3,'every enemy archetype must have multiple neutral cues');
+const everyCaption=[
+ ...Object.values(HUNT_CLASS_NARRATION).flatMap(row=>[...row.prepare,...row.strike]),
+ ...Object.values(HUNT_ENCOUNTER_NARRATION).flatMap(row=>[...row]),
+ ...Object.values(HUNT_COMMON_NARRATION).flatMap(row=>[...row]),
+];
+assert.equal(everyCaption.length,120,'the combat caption pool should include 120 authored variants');
+assert.equal(new Set(everyCaption).size,everyCaption.length,'the expanded pool must not contain duplicate captions');
+for(const key of everyCaption){
+ const translations=(BATTLE_MESSAGES as Record<string,readonly string[]>)[key];
+ assert.ok(translations?.length===5,'all narration captions need DE/ES/NL/IT/FR translations: '+key);
+ assert.ok(translations.every(text=>!!text.trim()),'every localized narration caption must be nonblank: '+key);
+}
+
 for(const row of [...prepared,...landed,taken,recovery,critRecovery,crit,...MONSTERS.map(monster=>linesFor('WAYFINDER',T+4800,monster))]){
  assert.ok(Object.prototype.hasOwnProperty.call(BATTLE_MESSAGES,row.key),'narration must have standard battle translations: '+row.key);
 }
@@ -106,6 +136,7 @@ const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
 assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
 assert.ok(combatTab.includes('liveHuntNarration('),'Combat tab must show event-driven class and encounter narration');
+assert.ok(combatTab.includes('playerHp:fight.playerHp')&&combatTab.includes('enemyHp:fight.enemyHp'),'HP-based narration must use real projected combat values');
 assert.ok(!combatTab.includes("tr('Progress · {percent}%"),'Live combat must not show a progress percentage');
 assert.ok(!combatTab.includes('Damage updates on hit. Rewards are granted on defeat.'),'Static live combat instruction must be removed');
 console.log('PASS real hunt hits, partial HP persistence, incremental replay, UI synchronization and split-claim parity');

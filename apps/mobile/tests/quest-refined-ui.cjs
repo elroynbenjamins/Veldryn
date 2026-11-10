@@ -30,6 +30,8 @@ assert.ok(screen.includes("if(sheetStage==='success')setMoment(null)")&&screen.i
   'closing the final receipt must not show another reward banner or time out prematurely');
 assert.ok(screen.includes("pendingClaim.current")&&screen.includes("if(confirmed===false)"),
   'single-flight claims must recover safely on rejection');
+assert.ok(screen.includes('storyRewardTitle(quest:QuestDef)')&&screen.includes('titleName={moment.titleName}')&&screen.includes("'titleName' in selectedRewards"),
+  'Act III permanent title must appear in quest previews and confirmed receipts');
 assert.ok(screen.includes('onClaimContract(chosenChallenge.period,chosenChallenge.id,rewardChoiceByQuest[id]??chosenChallenge.rewardOptions[0].id)'),
   'challenge claims must send their actual period, id and selected reward choice');
 assert.ok(screen.includes("p('CHOOSE ONE REWARD')")&&screen.includes('accessibilityRole="radio"')&&screen.includes('seasonalContractRewardChoices'),

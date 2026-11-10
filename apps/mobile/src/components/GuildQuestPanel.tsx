@@ -67,8 +67,13 @@ function Quest({quest:q}:{quest:OnlineGuildQuest}){
  return <QuestPosting style={q.completed?s.done:undefined}>
   <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.featured?ui('FEATURED · '):''}{q.category.toUpperCase()} · {rarity.label.toUpperCase()} · ~{duration}</Text><Text accessibilityRole="header" style={s.questTitle}>{authored.title}</Text></View><ActivityArtwork id={q.category==='Combat'?'combat':q.category==='Crafting'?'smithing':q.category==='Skilling'?'herbalism':'exploration'} size={42}/></View>
   {q.completed?<StatusPill label={st('COMPLETE')} tone="good"/>:null}
-  <Text style={s.copy}>{authored.description}</Text>
   <StatBar rounded label={ui("Shared guild progress")} current={Math.min(q.progress,q.target)} max={q.target}/>
+  <Text style={s.reward}>{ui(q.completed?'+{activity} Guild Activity secured':'+{activity} Guild Activity on completion',{activity:q.activityReward})}</Text>
+  <Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={ui("Objective breakdown · {quest}",{quest:authored.title})} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}>
+   <Text style={s.disclosureText}>{ui(expanded?'Hide quest details':'View personal objectives')}{!expanded&&hasRecordedContribution?' · '+ui('RECORDED'):''}</Text><Text style={s.disclosureText}>{expanded?'▴':'▾'}</Text>
+  </Pressable>
+  {expanded?<View style={s.questDetails}>
+   <Text style={s.copy}>{authored.description}</Text>
   <View style={s.personal}>
    <View style={s.head}><Text style={[s.personalLabel,s.flex]}>{st('YOUR CONTRIBUTION')}</Text>
     {!q.completed?<StatusPill label={hasRecordedContribution?ui('RECORDED'):ui('NOT RECORDED')} tone={hasRecordedContribution?'good':'muted'}/>:null}
@@ -77,9 +82,10 @@ function Quest({quest:q}:{quest:OnlineGuildQuest}){
    {!hasRecordedContribution&&!q.completed?<Text style={s.foot}>{ui('Only matching, verified quest objectives count. Complete the listed activity and refresh to check your progress.')}</Text>:null}
    <Text style={s.foot}>{ui(q.contributorCount===1?'{count} contributor · daily contribution capped':'{count} contributors · daily contribution capped',{count:q.contributorCount})}</Text>
   </View>
-  <Text style={s.reward}>{ui(q.completed?'+{activity} Guild Activity secured':'+{activity} Guild Activity on completion',{activity:q.activityReward})}</Text>
-  {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={ui("Objective breakdown · {quest}",{quest:authored.title})} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>{ui("Objective breakdown")}</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
+
+   {q.objectiveProgress.length?<View style={s.objectiveGroup}><Text style={s.personalLabel}>{ui('Objective breakdown')}</Text>{q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>)}</View>:null}
+  </View>:null}
  </QuestPosting>;
 }
 function objectiveLabel(key:string){return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());}
-function styles(C:ThemeColors){return StyleSheet.create({board:{borderWidth:0,padding:0,paddingTop:0,backgroundColor:'transparent',gap:10},head:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0,gap:4},title:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'700'},questTitle:{fontSize:17,lineHeight:23,color:C.text,fontWeight:'700'},copy:{fontSize:13,lineHeight:19,color:C.muted},foot:{fontSize:12,lineHeight:18,color:C.muted},category:{fontSize:11,lineHeight:15,color:C.info,fontWeight:'700',letterSpacing:.8},personal:{gap:3,paddingTop:8,borderTopWidth:1,borderTopColor:C.line},personalLabel:{fontSize:11,lineHeight:15,color:C.info,fontWeight:'700',letterSpacing:.6},reward:{fontSize:13,lineHeight:19,color:C.good,fontWeight:'600'},done:{borderColor:C.good},transition:{gap:8,padding:12,borderWidth:1,borderColor:C.info,borderRadius:10,backgroundColor:C.infoSurface},disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line,gap:10},disclosureText:{fontSize:12,lineHeight:17,color:C.info}});}
+function styles(C:ThemeColors){return StyleSheet.create({board:{borderWidth:0,padding:0,paddingTop:0,backgroundColor:'transparent',gap:10},head:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0,gap:4},title:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'700'},questTitle:{fontSize:17,lineHeight:23,color:C.text,fontWeight:'700'},copy:{fontSize:13,lineHeight:19,color:C.muted},foot:{fontSize:12,lineHeight:18,color:C.muted},category:{fontSize:11,lineHeight:15,color:C.info,fontWeight:'700',letterSpacing:.8},questDetails:{gap:8},objectiveGroup:{gap:5},personal:{gap:3,paddingTop:8,borderTopWidth:1,borderTopColor:C.line},personalLabel:{fontSize:11,lineHeight:15,color:C.info,fontWeight:'700',letterSpacing:.6},reward:{fontSize:13,lineHeight:19,color:C.good,fontWeight:'600'},done:{borderColor:C.good},transition:{gap:8,padding:12,borderWidth:1,borderColor:C.info,borderRadius:10,backgroundColor:C.infoSurface},disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line,gap:10},disclosureText:{fontSize:12,lineHeight:17,color:C.info}});}

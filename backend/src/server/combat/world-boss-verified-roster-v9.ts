@@ -93,7 +93,9 @@ function toPlayer(
  // duplicate ID collisions across different Echo owners are prohibited.
  if(usedIds.has(actor.id))throw Error('world_boss_duplicate_verified_actor');
  usedIds.add(actor.id);
- return actor;
+ // Do not retain any mutable reference to the verified loader's ability,
+ // gem or companion objects when an Echo is lent to another party.
+ return structuredClone(actor);
 }
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 

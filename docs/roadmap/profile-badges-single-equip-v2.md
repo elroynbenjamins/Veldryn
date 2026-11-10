@@ -2,6 +2,23 @@
 
 **November 10, 2026** · **Implementation: GitHub main, migration awaiting deployment** · No live Supporter entitlement or privilege is changed by this feature.
 
+## November 10 design update — four-stage star evolution (concept, not shipped)
+
+**Direction chosen for next iteration:** Keep a recognizable five-point Supporter star silhouette across all variants, with the initial badge deliberately simpler and the star itself accumulating details. Avoid a completely different shield or unrelated emblem at higher tiers.
+
+| Milestone | Proposed ID | Visual direction | Eligibility |
+| --- | --- | --- | --- |
+| Active / 0 months | `supporter` | Modest bronze-gold or muted purple five-point star; minimal rim, no wings/crown, readable at 20–38px | Active verified Supporter |
+| 3 months | `supporter_3m` | Same star, refined silver edging and subtle cyan/silver accents, small side ornaments | Three consecutive verified months |
+| 6 months | `supporter_6m` | Same star, rich gold rim and luminous gem center, slightly larger balanced side ornaments | Six consecutive verified months |
+| 12 months | `supporter_12m` | Same star, premium layered gold/celestial glow, restrained crown/rays and ornate gem details | Twelve consecutive verified months |
+
+Art rules: coherent silhouette, same footprint/anchor point, transparent pixel-art assets, no baked-in text, legible at chat size, and increasing ornament rather than simply changing hues. The player may select **any unlocked tier**, or None; there remains **one elective badge slot**. Staff badges stay independent. All Supporter tiers are cosmetic only. Tenure is based on verified *elapsed* uninterrupted active months, not advance-purchased entitlement. Do not falsely credit earlier months lacking verified payment history.
+
+**Implementation status:** This is a revised design request. The current v2 TypeScript, 3-/6-month WebP assets, and pending SQL migration below are **still three-tier implementations** and have **not** been updated for a 12-month tier. Before release, replace/refine all four art assets together and extend ID validation, UI, server-side tier calculation, RPC checks, and tests; confirm dependencies and deploy migrations in order. Do not advertise 12 months as equippable until those steps are complete.
+
+---
+
 ## Player-facing design
 
 **Customize Profile → Appearance → Badges** is a dedicated tab, separate from Name Style.

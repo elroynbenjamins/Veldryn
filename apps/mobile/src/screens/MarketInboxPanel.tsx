@@ -1,11 +1,13 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {PLAYER_MARKET_RELEASED} from '../core/release-flags';
+import {PLAYER_MARKET_RELEASED,MARKET_AUTHENTICATED_SERVICE_READY} from '../core/release-flags';
+import {itemDef} from '../content/items';
 import {
-  loadMarketInbox,claimMarketInboxDelivery,
+  loadMarketInbox,claimMarketInboxDelivery,claimMarketInboxEquipmentDelivery,
   type MarketInboxEntry,type MarketInboxDestination,type MarketInboxSnapshot,
 } from '../online/market-inbox';
 import {ResourceIcon} from '../components/ResourceIcon';
+import {ItemArtwork} from '../components/ItemArtwork';
 import {SocialActionButton} from '../components/SocialActionButton';
 import {LoadingState} from '../components/LoadingState';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -26,7 +28,7 @@ export function MarketInboxPanel({state,online,onRefresh}:{
   const [error,setError]=useState(''),[notice,setNotice]=useState('');
   const generation=useRef(0),running=useRef(false);
   const load=useCallback(async(append=false)=>{
-    if(!PLAYER_MARKET_RELEASED||!online)return;
+    if(!PLAYER_MARKET_RELEASED||!MARKET_AUTHENTICATED_SERVICE_READY||!online)return;
     const generationId=++generation.current;
     setLoading(true);
     try{
@@ -43,7 +45,17 @@ export function MarketInboxPanel({state,online,onRefresh}:{
     if(running.current||!row.deliveryId||row.kind==='sold')return;
     running.current=true;setBusy(true);setError('');setNotice('');
     try{
-      const result=await claimMarketInboxDelivery(row.kind,row.deliveryId,destination);
+      const deliveryKind=row.kind==='purchased'?'purchased':'returned';
+      // Exact Forge receipts require a target character and their own
+      // dedicated equipment-claim route. Never treat gear as a stack/gem.
+      const result=row.assetKind==='equipment'
+        ?await (async()=>{
+          if(destination==='gem_pouch'||!state.character?.id)
+            throw new Error(a('Choose a character to claim equipment.'));
+          return claimMarketInboxEquipmentDelivery(
+            deliveryKind,row.deliveryId!,destination,state.character.id);
+        })()
+        :await claimMarketInboxDelivery(deliveryKind,row.deliveryId!,destination);
       if(result.blocked||!result.claimed){
         setError(result.message||a('Make room in your inventory.'));
       }else{
@@ -54,7 +66,7 @@ export function MarketInboxPanel({state,online,onRefresh}:{
     }catch(e){setError(e instanceof Error?e.message:a('Could not claim. Your rewards remain safe.'));}
     finally{running.current=false;setBusy(false);}
   };
-  if(!PLAYER_MARKET_RELEASED)return null;
+  if(!PLAYER_MARKET_RELEASED||!MARKET_AUTHENTICATED_SERVICE_READY)return null;
   return <View style={s.root}>
     <Text style={s.subtitle}>{a('Purchases, sales and returned listings are kept here. Items stay safe until claimed.')}</Text>
     <View accessibilityRole="tablist" style={s.tabs}>
@@ -69,12 +81,16 @@ export function MarketInboxPanel({state,online,onRefresh}:{
     </View>
     {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
     {!!notice?<Text accessibilityRole="alert" style={s.success}>{notice}</Text>:null}
-    {snapshot.entries.map(row=><View style={s.entry} key={row.id}>
+    {snapshot.entries.map(row=>{
+      let itemName=row.itemId.replace(/_/g,' ');
+      let isKnown=false;
+      try{itemName=itemDef(row.itemId).name;isKnown=true;}catch{ /* Unknown catalog entries display safely. */ }
+      return <View style={s.entry} key={row.id}>
       <View style={s.entryTop}>
-        <ResourceIcon resourceId={row.itemId} size={36}/>
+        {row.assetKind==='equipment'&&isKnown?<ItemArtwork itemId={row.itemId} size={36}/>:<ResourceIcon resourceId={row.itemId} size={36}/>}
         <View style={s.flex}>
           <Text style={s.kind}>{a(row.kind==='purchased'?'Purchased':row.kind==='sold'?'Sold':'Returned')}</Text>
-          <Text numberOfLines={2} style={s.itemName}>{row.itemId.replace(/_/g,' ')} ×{row.quantity.toLocaleString()}</Text>
+          <Text numberOfLines={2} style={s.itemName}>{itemName} ×{row.quantity.toLocaleString()}</Text>
         </View>
         <Text style={s.status}>{a(row.status==='ready'?'READY':row.status==='claimed'?'CLAIMED':'PAID')}</Text>
       </View>
@@ -83,14 +99,19 @@ export function MarketInboxPanel({state,online,onRefresh}:{
         :<Text style={s.muted}>{a('Unsold items returned safely')}</Text>}
       {row.status==='ready'&&row.deliveryId?
         <View style={s.actions}>
-          <SocialActionButton primary label={a('Claim to Inventory')} disabled={busy||!online}
+          {row.assetKind==='equipment'?<SocialActionButton primary label={a('Equipment Pouch')}
+            disabled={busy||!online||!state.character?.id} busy={busy}
+            onPress={()=>void claim(row,'equipment_pouch')}/>:null}
+          <SocialActionButton primary={row.assetKind!=='equipment'} label={a('Claim to Inventory')}
+            disabled={busy||!online||row.assetKind==='equipment'&&!state.character?.id}
             busy={busy} onPress={()=>void claim(row,'inventory')}/>
-          <SocialActionButton label={a('Bank')} busy={busy} disabled={busy||!online}
+          <SocialActionButton label={a('Bank')} busy={busy}
+            disabled={busy||!online||row.assetKind==='equipment'&&!state.character?.id}
             onPress={()=>void claim(row,'bank')}/>
           {row.assetKind==='gem'?<SocialActionButton label={a('Gem Pouch')} busy={busy}
             disabled={busy||!online} onPress={()=>void claim(row,'gem_pouch')}/>:null}
         </View>:null}
-    </View>)}
+    </View>})}
     {loading?<LoadingState compact label={a('Loading market inbox…')}/>:null}
     {!loading&&!snapshot.entries.length&&!error?
       <Text style={s.empty}>{history?a('No completed market activity yet.'):a('No market deliveries waiting.')}</Text>:null}

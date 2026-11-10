@@ -1,4 +1,4 @@
-import {PLAYER_MARKET_RELEASED} from '../core/release-flags';
+import {PLAYER_MARKET_RELEASED,MARKET_AUTHENTICATED_SERVICE_READY} from '../core/release-flags';
 import {supabase} from './supabase';
 
 /** Market-related inbox data is completely separate from guild/event rewards.
@@ -7,13 +7,13 @@ import {supabase} from './supabase';
  */
 export type MarketInboxKind='purchased'|'sold'|'returned';
 export type MarketInboxStatus='ready'|'claimed'|'credited';
-export type MarketInboxDestination='inventory'|'bank'|'gem_pouch';
+export type MarketInboxDestination='inventory'|'bank'|'gem_pouch'|'equipment_pouch';
 export interface MarketInboxEntry{
   id:string;
   kind:MarketInboxKind;
   deliveryId:string|null;
   itemId:string;
-  assetKind:'resource'|'gem';
+  assetKind:'resource'|'gem'|'equipment';
   quantity:number;
   goldChange:number;
   status:MarketInboxStatus;
@@ -27,7 +27,7 @@ export interface MarketInboxSnapshot{
 }
 
 function requireMarket(){
-  if(!PLAYER_MARKET_RELEASED)throw new Error('Player Market is not released.');
+  if(!PLAYER_MARKET_RELEASED||!MARKET_AUTHENTICATED_SERVICE_READY)throw new Error('Player Market is not released.');
   if(!supabase)throw new Error('Sign in to open your market inbox.');
   return supabase;
 }
@@ -48,7 +48,7 @@ export async function claimMarketInboxDelivery(
   destination:MarketInboxDestination,
 ):Promise<{claimed:boolean;blocked?:boolean;message?:string}>{
   const client=requireMarket();
-  if(!deliveryId||!['purchased','returned'].includes(kind))
+  if(!deliveryId||!['purchased','returned'].includes(kind)||destination==='equipment_pouch')
     throw new Error('Invalid market delivery.');
   // A future authenticated server wrapper will resolve expected state
   // revision and active character atomically; the client supplies neither.
@@ -57,4 +57,24 @@ export async function claimMarketInboxDelivery(
   });
   if(error)throw new Error(error.message);
   return data as {claimed:boolean;blocked?:boolean;message?:string};
+}
+
+/** Exact Forge gear claims require a target character and a dedicated
+ * server-authoritative wrapper; ordinary stack claims cannot accept them.
+ * Service remains disabled until that wrapper has been audited and deployed.
+ */
+export async function claimMarketInboxEquipmentDelivery(
+ kind:'purchased'|'returned',deliveryId:string,
+ destination:'inventory'|'bank'|'equipment_pouch',characterId:string,
+):Promise<{claimed:boolean;blocked?:boolean;message?:string}>{
+ const client=requireMarket();
+ if(!deliveryId||!characterId||!['purchased','returned'].includes(kind)
+   ||!['inventory','bank','equipment_pouch'].includes(destination))
+   throw new Error('Invalid equipment delivery.');
+ const {data,error}=await client.rpc('market_equipment_inbox_claim_v12',{
+   p_kind:kind,p_delivery_id:deliveryId,
+   p_destination:destination,p_destination_character_id:characterId,
+ });
+ if(error)throw new Error(error.message);
+ return data as {claimed:boolean;blocked?:boolean;message?:string};
 }

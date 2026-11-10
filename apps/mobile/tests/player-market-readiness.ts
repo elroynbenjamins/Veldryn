@@ -1,3 +1,4 @@
+import {MARKET_AUTHENTICATED_SERVICE_READY,PLAYER_MARKET_RELEASED} from '../src/core/release-flags';
 import {createCharacter,newGame} from '../src/core/game';
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {marketCatalogCandidate,previewPlayerMarketListing} from '../src/core/player-market-readiness';
@@ -81,4 +82,5 @@ check(previewPlayerMarketListing(forgedStackInGemPouch,'gem_pouch',0,1).blockedB
 check(exact.character?.equipmentPouch?.stacks[0].instanceId===record.id
   &&record.quality===exact.account.craftedGearInstances?.[0]?.quality,
   'Market readiness checks must never consume or rewrite equipment');
+check(!PLAYER_MARKET_RELEASED&&!MARKET_AUTHENTICATED_SERVICE_READY,'Both release and authenticated transport must remain off');
 console.log('PASS: player market remains disabled; stack, binding and exact-copy guards are read-only');

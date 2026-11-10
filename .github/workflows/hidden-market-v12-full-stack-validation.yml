@@ -1,0 +1,47 @@
+name: Hidden Market V12 full-stack PostgreSQL validation
+
+on:
+  pull_request:
+    paths:
+      - 'backend/supabase/migrations/*market*'
+      - 'backend/supabase/tests/player_market_v12_*.sql'
+      - 'backend/supabase/tests/run_market_v12_full_stack_ci.sh'
+      - '.github/workflows/hidden-market-v12-full-stack-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-full-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: veldryn_market_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d veldryn_market_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: veldryn_market_ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Migrate entire private Market ledger in dependency order and simulate complete trades
+        run: bash backend/supabase/tests/run_market_v12_full_stack_ci.sh

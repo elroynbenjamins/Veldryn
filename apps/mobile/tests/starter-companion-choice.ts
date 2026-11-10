@@ -13,9 +13,9 @@ function unlocked(classId:'IRONWARDEN'|'DAWNKEEPER'|'WAYFINDER'){
   return reconcileCombatCompanionUnlocks(state,now);
 }
 function silverbrookReady<T extends ReturnType<typeof unlocked>>(state:T){
-  return {...state,skills:state.skills.map(skill=>skill.skillId==='fishing'?{...skill,level:16}:skill),account:{...state.account,companionUnlockProgress:{...(state.account.companionUnlockProgress??{}),'node:SILVERBROOK_SHOAL':1,'node:RIVER_EEL_POOL':1,'node:OATHSCALE_POOL':1,SILVERBROOK_NODES:1}}};
+  return {...state,skills:state.skills.map(skill=>skill.skillId==='fishing'?{...skill,level:8}:skill),account:{...state.account,companionUnlockProgress:{...(state.account.companionUnlockProgress??{}),'node:SILVERBROOK_SHOAL':1,'node:RIVER_EEL_POOL':1,SILVERBROOK_NODES:2}}};
 }
-function oldMinesReady<T extends ReturnType<typeof unlocked>>(state:T){return {...state,account:{...state.account,companionUnlockProgress:{...(state.account.companionUnlockProgress??{}),OLD_MINES_KILLS:250}}};}
+function oldMinesReady<T extends ReturnType<typeof unlocked>>(state:T){return {...state,account:{...state.account,companionUnlockProgress:{...(state.account.companionUnlockProgress??{}),OLD_MINES_KILLS:100}}};}
 
 const damage=unlocked('WAYFINDER');
 equal(damage.account.unlockedCombatCompanionIds?.length??0,0,'claiming Into Ironwood must wait for a starter choice');
@@ -45,6 +45,9 @@ legacy.account.combatCompanionProgress={UNIT_001:{level:1,xp:0,ascensionTier:0,b
 const migrated=parseSaveBackup(createSaveBackup(legacy));
 equal(migrated.account.starterCombatCompanionId,'UNIT_001','legacy automatic Ironwood Hound grants must become an implicit starter choice');
 
+const before8=silverbrookReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN'),'UNIT_001',now));
+equal(reconcileCombatCompanionUnlocks({...before8,skills:before8.skills.map(s=>s.skillId==='fishing'?{...s,level:7}:s)},now+1).account.starterFollowupCombatCompanionId,undefined,'Fishing 7 cannot award second starter');
+equal(reconcileCombatCompanionUnlocks({...before8,account:{...before8.account,companionUnlockProgress:{'node:SILVERBROOK_SHOAL':1}}},now+1).account.starterFollowupCombatCompanionId,undefined,'One fishing pool cannot award second starter');
 const damageWithSprite=reconcileCombatCompanionUnlocks(silverbrookReady(chooseStarterCombatCompanion(unlocked('WAYFINDER'),'UNIT_003',now)),now+1);
 equal(damageWithSprite.account.starterFollowupCombatCompanionId,'UNIT_002','damage class with Sprite receives the Tank starter second');
 deepEqual(damageWithSprite.account.unlockedCombatCompanionIds?.sort(),['UNIT_002','UNIT_003'],'Sprite is not duplicated for a damage class');
@@ -62,6 +65,9 @@ equal(followupReload.account.starterFollowupCombatCompanionId,'UNIT_002','resolv
 const thirdWaits=reconcileCombatCompanionUnlocks(oldMinesReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN'),'UNIT_001',now)),now+2);
 equal(thirdWaits.account.starterThirdCombatCompanionId,undefined,'third milestone waits until the second companion is recruited');
 deepEqual(thirdWaits.account.unlockedCombatCompanionIds,['UNIT_001'],'Old Mines progress cannot skip the second-companion milestone');
+const at99=oldMinesReady(damageWithSprite);
+at99.account.companionUnlockProgress={...at99.account.companionUnlockProgress,OLD_MINES_KILLS:99};
+equal(reconcileCombatCompanionUnlocks(at99,now+2).account.starterThirdCombatCompanionId,undefined,'99 kills cannot award third starter');
 const damageThird=reconcileCombatCompanionUnlocks(oldMinesReady(damageWithSprite),now+2);
 equal(damageThird.account.starterThirdCombatCompanionId,'UNIT_001','damage class receives the missing Damage starter for companion-only modes');
 deepEqual(damageThird.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_002','UNIT_003'],'damage class can collect all three starters');

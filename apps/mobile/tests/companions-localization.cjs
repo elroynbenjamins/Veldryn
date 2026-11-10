@@ -26,8 +26,8 @@ const knownGaps=require('./companions-localization-gaps.json');
 const {companionObjectiveRows,companionObjectiveText}=require('../src/i18n/companion-objectives.ts');
 const {companionGuidanceRows,companionGuidanceText}=require('../src/i18n/companion-guidance.ts');
 const {companionDynamicRows,companionDynamicText}=require('../src/i18n/companion-dynamic.ts');
-assert.equal(companionContent('de','Defeat 250 Old Mines enemies'),'Besiege 250 Gegner in den Old Mines');
-assert.equal(companionContent('es','Reach Fishing 16'),'Alcanza Pesca 16');
+assert.equal(companionContent('de','Defeat 100 Old Mines enemies'),'Besiege 100 Gegner in den Old Mines');
+assert.equal(companionContent('es','Reach Fishing 8'),'Alcanza Pesca 8');
 assert.equal(companionContent('nl','Rare discovery while mapping Silverbrook'),'Zeldzame ontdekking bij het in kaart brengen van Silverbrook');
 assert.equal(companionContent('it','vulnerability'),'vulnerabilità');
 assert.equal(companionContent('fr','below 50% HP'),'sous 50 % des PV');
@@ -54,7 +54,7 @@ const newCompanionTraining=fs.readFileSync(path.join(root,'apps/mobile/src/compo
 assert.ok(oldCompanionPanel.includes('COMPANION_BOND_ESSENCE_REWARDS')&&newCompanionTraining.includes('COMPANION_BOND_ESSENCE_REWARDS'),'Both companion flows must use the same authoritative Bond Essence reward map');
 assert.ok(!oldCompanionPanel.includes("'35 Essence + portrait'")&&!oldCompanionPanel.includes("'80 Essence + title'")&&!oldCompanionPanel.includes("'55 Essence + Bond Resonance'"),'No current Bond claim confirmation may promise obsolete portrait, title or Resonance rewards');
 
-assert.ok(!Object.values(knownGaps.untranslatedCatalogStrings).flat().includes('Defeat 250 Old Mines enemies'),'Completed companion unlock translations must not remain incorrectly marked as gaps');
+assert.ok(!Object.values(knownGaps.untranslatedCatalogStrings).flat().includes('Defeat 100 Old Mines enemies'),'Completed companion unlock translations must not remain incorrectly marked as gaps');
 
 const objectiveKeys=Object.keys(companionObjectiveRows).sort();
 assert.equal(objectiveKeys.length,42,'All 42 authored Companion objective and bonus descriptions must be translated');

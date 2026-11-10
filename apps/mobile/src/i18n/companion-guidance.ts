@@ -120,14 +120,14 @@ export const companionGuidanceRows={
     "Исследуйте места рыбалки в Silverbrook",
     "Silverbrook balıkçılık noktalarını keşfet"
   ],
-  "Fish each Silverbrook node at least once; the final pool unlocks at Fishing 16.": [
-    "Angle mindestens einmal an jedem Silverbrook-Ort; der letzte Teich öffnet sich mit Angeln 16.",
-    "Pesca una vez en cada punto de Silverbrook; el último se desbloquea en Pesca 16.",
-    "Vis eenmaal op elke plek in Silverbrook; de laatste poel ontgrendelt bij Vissen 16.",
-    "Pesca almeno una volta in ogni punto di Silverbrook; l'ultimo si sblocca con Pesca 16.",
-    "Pêchez une fois à chaque point de Silverbrook ; le dernier s'ouvre au niveau 16 de Pêche.",
-    "Порыбачьте в каждом месте Silverbrook; последний водоём откроется на Рыбалке 16.",
-    "Her Silverbrook noktasında bir kez balık tut; son havuz Balıkçılık 16'da açılır."
+  "Fish at Silverbrook Shoal and River Eel Pool once each (Fishing 8).": [
+    "Angle einmal bei Silverbrook Shoal und River Eel Pool (Angeln 8).",
+    "Pesca una vez en Silverbrook Shoal y River Eel Pool (Pesca 8).",
+    "Vis eenmaal bij Silverbrook Shoal en River Eel Pool (Vissen 8).",
+    "Pesca una volta a Silverbrook Shoal e River Eel Pool (Pesca 8).",
+    "Pêchez une fois à Silverbrook Shoal et River Eel Pool (Pêche 8).",
+    "Порыбачьте по разу в Silverbrook Shoal и River Eel Pool (Рыбалка 8).",
+    "Silverbrook Shoal ve River Eel Pool'da birer kez balık tut (Balıkçılık 8)."
   ],
   "Run Sanctuary Expeditions": [
     "Sanctuary-Expeditionen durchführen",

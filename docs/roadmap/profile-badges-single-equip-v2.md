@@ -49,7 +49,7 @@ Existing \`public.player_badge_self_v1\`, \`private.player_badges_v1\`, \`public
 
 1. Confirm **\`20261109222500_collectible_player_badges_v1.sql\`** and all its dependencies have been applied in target environment. Staging and production schema inspections on November 10 indicated the \`featured_badge_ids\` column was not yet present, so **do not blindly apply only the new migration**.
 2. Validate the v2 migration using disposable PostgreSQL tests, then staging with real existing schema and no real player purchases.
-3. Apply the migration through the normal Supabase migration workflow, **before distributing a mobile build** that calls \`update_player_equipped_badge_v2\`. The client will show an RPC-not-available error if new UI runs against the previous database.
+3. Apply the migration through the normal Supabase migration workflow **before announcing the new 3-/6-month tiers as available**. The client now has a limited compatibility fallback for base Supporter and owned collectible selections on older servers, but never simulates or fabricates premium tenure tiers; full progression and server-side single-slot enforcement require v2.
 4. Verify original/staff badge identities, current Supporter, old two-badge preference migration, locked-item rejection, 3/6-month tier thresholds, account switching and TTL expiry.
 5. Keep all existing staff privileges unchanged. Supporter badges are cosmetics only.
 

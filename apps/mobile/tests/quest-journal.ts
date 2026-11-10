@@ -2,6 +2,8 @@ import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/prog
 import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
+import {itemDef} from '../src/content/items';
+import {equipmentPouch} from '../src/core/equipment-pouch';
 import {JOURNAL_SKILL_LESSONS,journalSkillLessonProgress,journalSkillLessonSummary} from '../src/core/journal-skill-lessons';
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../src/content/equipment-recipes-v33';
 import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
@@ -39,6 +41,23 @@ ok(trailLocked.quests.find(row=>row.questId==='QST_003')?.status==='locked','Hou
 ok(journalEntries(trailLocked,'current','')[0]?.lockedHint?.includes(`level ${rebaseLevel(7)} through Combat`)===true,'Locked trail explains the combat level requirement');
 const trailReady=refreshQuests({...trailLocked,character:{...trailLocked.character!,level:rebaseLevel(7)}});
 ok(trailReady.quests.find(row=>row.questId==='QST_003')?.status==='active','Hound trail activates at the rebased character-level requirement');
+// Regression: the Act III story finale must never save an unregistered item
+// (which used to crash the reward receipt and subsequent Inventory renders).
+for(const def of QUESTS){if(def.rewardItemId)ok(!!itemDef(def.rewardItemId),`Quest ${def.id} grants a catalogued reward`)}
+const finale=QUESTS.find(def=>def.id==='QST_015')!;
+const cape=itemDef(finale.rewardItemId!);
+ok(cape.type==='gear'&&cape.slot==='cape'&&cape.requiredLevel===finale.required,'The Oathglass Cape is equippable at the finale level');
+const finaleReady={...state,character:{...state.character!,level:finale.required,gold:100},quests:state.quests.map(q=>({...q,status:q.questId===finale.id?'complete' as const:'claimed' as const}))};
+const finaleClaimed=claimQuest(finaleReady,finale.id,1000);
+ok(finaleClaimed.quests.find(q=>q.questId===finale.id)?.status==='claimed','The final chapter is claimed exactly once');
+ok(finaleClaimed.character!.gold===finaleReady.character!.gold+finale.rewardGold,'Finale gold is credited exactly once');
+ok(equipmentPouch(finaleClaimed).stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'The finale cape arrives in the Equipment Pouch');
+ok(!finaleClaimed.inventory.stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'The finale cape avoids occupying ordinary Inventory when the pouch has space');
+let duplicateFinaleBlocked=false;try{claimQuest(finaleClaimed,finale.id,1001)}catch{duplicateFinaleBlocked=true}
+ok(duplicateFinaleBlocked,'A retry after a confirmed finale claim cannot grant gold or another cape');
+const pouchFull={...finaleReady,character:{...finaleReady.character!,equipmentPouch:{capacity:30,stacks:Array.from({length:30},()=>({itemId:'basic_sword',quantity:1}))}}};
+const finaleFallback=claimQuest(pouchFull,finale.id,1001);
+ok(finaleFallback.inventory.stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'A full Equipment Pouch routes finale gear safely to Inventory');
 const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
 ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
 ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');

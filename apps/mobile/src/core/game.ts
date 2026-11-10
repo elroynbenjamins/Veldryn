@@ -567,11 +567,14 @@ export function activeCombatRuntimeProjection(state:GameState){
   if(!state.character||state.activity?.kind!=='combat')return undefined;
   const runtime=combatRuntimeDetails(state,state.activity.targetId);
   const effect=runtime.environment;
-  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
+  // A first-encounter crit/miss is not a representative hourly hunt rate.
+  // Share the same deterministic sample as food forecasting and the HUD.
+  const meanCycleSeconds=averagedRegionalHunt(state,state.activity.targetId,runtime)?.killCycleSeconds??runtime.killCycleSeconds;
+  const killsPerHour=3600/Math.max(.1,meanCycleSeconds);
   const xpPerKill=runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
   const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
   return {
-    killCycleSeconds:runtime.killCycleSeconds,
+    killCycleSeconds:meanCycleSeconds,
     killsPerHour,
     xpPerHour:killsPerHour*xpPerKill,
     goldPerHour:killsPerHour*goldPerKill,

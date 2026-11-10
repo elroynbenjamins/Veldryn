@@ -15,7 +15,7 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const {partyProgressUiRows,partyProgressUiText,partyWeeklyTierText,partyEventStatusText,partyProgressNumber}=require('../src/i18n/party-progress-ui.ts');
 const languages=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual(SUPPORTED_LANGUAGES,['en',...languages]);
-assert.equal(Object.keys(partyProgressUiRows).length,51,'Maintain 51 reviewed Party progress messages');
+assert.ok(Object.keys(partyProgressUiRows).length>=59,'Keep original Party progress messages and new contract contribution/reward copy');
 const fields=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(x=>x[1]).sort();
 for(const [source,translations] of Object.entries(partyProgressUiRows)){
  assert.equal(translations.length,7,'Missing one locale for '+source);
@@ -55,4 +55,11 @@ for(const [file,markers] of Object.entries({
  for(const marker of markers)assert.ok(source.includes(marker),file+' missing '+marker);
  assert.ok(!source.includes('.toLocaleString()'),file+' must use locale-aware number formatting');
 }
-console.log('PASS: 50 Party Weekly/Event translation templates x 7 languages, placeholders, unchanged gameplay values, locale number formats and live UI integration');
+const contribution=fs.readFileSync(path.join(root,'src/components/PartyContractContributions.tsx'),'utf8');
+assert.ok(contribution.includes('contract.memberContributions')&&contribution.includes('party.members')&&contribution.includes("accessibilityState={{expanded}}"),'Party contract contribution disclosure must use server-backed per-member points');
+assert.ok(contribution.includes('Current members only. Earlier contributions may still count toward the party total.'),'Explain historic member totals without inventing contributor points');
+const hub=fs.readFileSync(path.join(root,'src/components/PartyHubPanel.tsx'),'utf8');
+assert.ok(hub.includes('<PartyContractContributions')&&hub.includes('partyContractClaimableRewardIds(props.contracts)'),'Party weekly and legacy contracts expose compact member totals and claim counts');
+const social=fs.readFileSync(path.join(root,'src/screens/SocialScreen.tsx'),'utf8');
+assert.ok(social.includes("partyContractClaimableRewardIds(social.contracts)")&&social.includes("switchParty('Contracts')"),'Party Overview shows a direct claim-ready entry to Contracts');
+console.log('PASS: Party Weekly/Event/Contract translations and contribution/claim UI integration');

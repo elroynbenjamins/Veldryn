@@ -42,6 +42,8 @@ const base=path.resolve(__dirname,'../src/components');
 const bank=fs.readFileSync(path.join(base,'OnlineGuildBankPanel.tsx'),'utf8');
 const shop=fs.readFileSync(path.join(base,'GuildTokenShopView.tsx'),'utf8');
 assert.ok(bank.includes("state==='Upcoming'")&&bank.includes("ui('{count} needed later'")&&bank.includes("ui('✓ Covered')"),'Future construction shortages must not display as covered');
+assert.ok(bank.includes('const accessibleGrid=windowWidth<430||fontScale>=1.25')&&bank.includes('roomyGrid&&s.roomySlot'),'Bank must give material cards more space with large fonts or narrow screens');
+assert.ok(bank.includes('fontScale>=1.25?2:1')&&bank.includes('roomyGrid&&s.modalStatsWrap'),'Bank tabs and donation confirmation statistics must remain readable with large text');
 const shopController=fs.readFileSync(path.join(base,'OnlineGuildTokenShopPanel.tsx'),'utf8');
 for(const token of [
  'useGuildBankUiText()', "ui('Deposit needs confirmation')", 'ui("Retry saved deposit")',

@@ -7,7 +7,9 @@
 | Design | Status | Workbook backup in GitHub | Normal Excel file |
 | --- | --- | --- | --- |
 | **Guild PvE / Guild Expeditions** | Detailed draft v3 · 2026-11-09 | [Guild PvE XLSX backup](./Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/14iQJt2zBTN93EoXMBKr-TMNTgBBcCgha/edit?usp=drivesdk) |
-| **World Bosses** | Concept snapshot v1 · 2026-11-09 | [World Boss XLSX backup](./Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/1WH1auLjuEPnTjhTP8YBOuWtyUeV3ehO9/edit?usp=drivesdk) |
+| **World Bosses** | **Expanded draft v2 · 2026-11-10** · [design brief](../world-bosses-design-v2.md) · [133-row design register CSV](./world-bosses-design-v2.csv) | [Historical v1 XLSX backup](./Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64) | [Historical v1 workbook](https://docs.google.com/spreadsheets/d/1WH1auLjuEPnTjhTP8YBOuWtyUeV3ehO9/edit?usp=drivesdk) |
+
+**World Bosses v2:** The main active specification is now the Markdown design brief and CSV register above; a richer standalone 12-worksheet `.xlsx` was generated for this revision and made available with the design deliverables, but **the v2 Excel binary is not yet mirrored to GitHub or Google Drive**. The old v1 `.xlsx.b64` remains here as the original snapshot, not the current spec. No game code or live server was changed.
 
 The former combined PvE workbook was superseded by these two split files. The prior combined version remains available in Git history, rather than cluttering this active folder.
 

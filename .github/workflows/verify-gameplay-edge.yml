@@ -46,3 +46,7 @@ jobs:
         working-directory: backend
       - name: Verify committed Edge bundle exactly matches shared engine
         run: node tools/verify-gameplay-edge.mjs
+      - name: Verify server-owned dungeon loadouts change when equipment path changes
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/coop-loadout.js

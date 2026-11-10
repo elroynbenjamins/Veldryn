@@ -1,7 +1,8 @@
 import {useSocialText} from '../i18n/social';
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
+import {VISIBLE_WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
+import {visibleWorldChatIndex} from '../core/world-chat-visibility';
 import {useChatFeed} from '../online/useChatFeed';
 import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -12,7 +13,7 @@ import {ThemedIcon} from './ThemedNavigationIcon';
 export function ChatDock({enabled,onOpen,lines=1,selectedChannel=1,unreadCount=0,mentionCount=0,active=true}:{enabled:boolean;onOpen:()=>void;lines?:1|2|3;selectedChannel?:number;unreadCount?:number;mentionCount?:number;active?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const channelIndex=Math.max(0,Math.min(WORLD_CHANNELS.length-1,selectedChannel-1)),channelId=WORLD_CHANNELS[channelIndex].id;
+ const channelIndex=visibleWorldChatIndex(selectedChannel-1),channelId=VISIBLE_WORLD_CHANNELS[channelIndex].id;
  const {value:history}=useChatFeed<WorldMessage[]>({key:`world:${channelId}`,read:()=>worldMessages(channelId),initial:[],active:enabled&&active,channelType:'world',channelId});
  const rows=enabled?history:[];
  const shown=rows.slice(-lines),latest=shown[shown.length-1],height=lines===1?48:lines===2?68:88;

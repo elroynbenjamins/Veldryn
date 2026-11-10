@@ -68,7 +68,7 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
        {chosen.point!.sales} / {price(chosen.point!.units)}
       </Text></View>
     </View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.chartContent}>
      {bars.map(bar=>{
       const val=bar.point?.medianGold;

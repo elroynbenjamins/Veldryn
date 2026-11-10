@@ -521,7 +521,8 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const cadenceRatio=runtime.huntOptions?Math.max(.02,Math.min(1,killCycleSeconds/Math.max(1,runtime.legacyKillCycleSeconds))):1;
  // More kills per hour must not mean proportionally more monster hits per hour.
  // Preserve authored region pressure, with a distinct fatigue floor on weak foes.
- const combatPressure=runtime.huntOptions?(attackCount?damage*cadenceRatio*runtime.gearAttritionMultiplier:0):Math.max(floor,damage);
+ // Normalize enemy pressure for shorter, damage-led launch-region encounters.
+ const combatPressure=runtime.huntOptions?(attackCount?damage*cadenceRatio*runtime.gearAttritionMultiplier*.82:0):Math.max(floor,damage);
  const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
  const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));

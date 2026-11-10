@@ -13,8 +13,10 @@ import {EQUIPMENT_ITEMS_V33} from '../apps/mobile/src/content/equipment-items-v3
 import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipes-v33';
 import type {ClassId,GameState} from '../apps/mobile/src/core/types';
 import {launchPlayer} from '../backend/src/server/combat/content/launch-combat';
+import {simulateCombat} from '../backend/src/server/combat/engine';
+import type {CombatantDefinition} from '../backend/src/server/combat/types';
 import type {AuthoritativeLoadoutRecord,LoadoutRepository} from '../backend/src/server/coop/loadout-snapshots';
-import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
+import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,partyEventRosterMedianLevel,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
 import {deriveRole} from '../backend/src/server/coop/role-readiness';
 import {WEEKLY_PARTY_EVENT_FAMILIES,type WeeklyPartyDifficulty,type WeeklyPartyFamily} from '../backend/src/server/party/weekly-party-events-v2';
 
@@ -107,4 +109,57 @@ for(const tier of tiers){
  const t=results.filter(r=>r.tier===tier&&r.partySize===2&&r.difficulty==='standard');
  console.log('DUO '+tier+' '+t.map(r=>r.classId+':'+r.cleared).join(' '));
 }
+
+// Candidate pressure curves are test-only and NEVER passed to the live Day 8 resolver.
+// Copy the baseline spell kit so comparisons isolate only HP/attack/defense curves.
+const proposals=[
+ {name:'A_gradual',hpGrowth:1.35,attackGrowth:1.17,defenseGrowth:1.14},
+ {name:'B_medium',hpGrowth:1.42,attackGrowth:1.20,defenseGrowth:1.16},
+ {name:'C_steep',hpGrowth:1.50,attackGrowth:1.23,defenseGrowth:1.18},
+] as const;
+function candidateTierClear(players:CombatantDefinition[],family:WeeklyPartyFamily,
+ difficulty:WeeklyPartyDifficulty,seed:string,profile:typeof proposals[number]):number{
+ const center=partyEventRosterMedianLevel(players.map(a=>a.level)),levelScale=Math.max(.045,center/25);
+ const ds={standard:1,veteran:1.20,heroic:1.40}[difficulty];
+ let tiersCleared=0;
+ for(let tier=1;tier<=12;tier++){
+  const enemy:CombatantDefinition={id:'PARTY_EVENT_BOSS',name:family,team:'enemies',role:'enemy',boss:true,
+   level:Math.max(1,Math.min(100,center+2*(tier-1))),
+   stats:{maxHp:Math.round(players.length*5400*levelScale*Math.pow(profile.hpGrowth,tier-1)*ds),
+    attackPower:Math.round(355*levelScale*Math.pow(profile.attackGrowth,tier-1)*ds),
+    healingPower:0,defense:Math.round(520*levelScale*Math.pow(profile.defenseGrowth,tier-1)*ds),
+    accuracy:750,evasion:110,critChance:.045,critMultiplier:1.4,haste:.03},
+   basicAttackMs:2700,basicAttackCoeff:.8,
+   abilities:[
+    {id:'PE_BOSS_SLAM',name:'Overwhelming Strike',cooldownMs:6900,castTimeMs:400,target:'current_target',
+     priority:80,effects:[{kind:'damage',coeff:1.15}]},
+    {id:'PE_BOSS_PULSE',name:'Rising Threat',cooldownMs:12000,castTimeMs:900,
+     target:'all_enemies',priority:85,interruptible:true,
+     effects:[{kind:'damage',coeff:.38+Math.min(.3,.03*tier)}]}],
+   phases:[{id:'ENRAGE',hpPct:.35,target:'self',effects:[{kind:'buff',tag:'damage_done',
+     value:Math.min(.35,.07+.015*tier),durationMs:90000}]}],
+  };
+  const result=simulateCombat({seed:seed+':'+tier,players,enemies:[enemy],maxDurationMs:90000});
+  if(!result.victory)break;
+  tiersCleared++;
+ }
+ return tiersCleared;
+}
+for(const proposal of proposals){
+ for(const tier of tiers){
+  for(const size of [2,4]){
+   const clears:number[]=[];
+   for(let i=0;i<classes.length;i++){
+    const party=partyClasses(classes[i]!,size).map((id,index)=>saved(id,tier,index).actor);
+    clears.push(candidateTierClear(party,families[i%families.length]!,'standard',
+     'v3-curve:'+proposal.name+':'+tier+':'+size+':'+i,proposal));
+   }
+   console.log('EXPERIMENT '+proposal.name+' '+tier+'/'+size+'/standard mean='+
+    (clears.reduce((a,b)=>a+b,0)/clears.length).toFixed(2)+
+    ' range='+Math.min(...clears)+'-'+Math.max(...clears));
+  }
+ }
+}
+console.log('Candidate curves are experiments only. Do not switch production/hidden boss tuning without a full cross-engine snapshot and rewards review.');
+
 console.log('Model limitations: no true server equipment snapshot bridge, quality/enchant/companion/food or complete family hazards; no balance changes were applied.');

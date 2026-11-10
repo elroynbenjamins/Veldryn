@@ -8,6 +8,7 @@
     "test:google-native-auth": "node tests/google-native-nonce.cjs && node tests/auth-account-link.cjs && node tests/account-auth-refinement-ui.cjs",
     "test:online-loading": "node tests/online-loading-interactions.cjs",
     "test:event-currency-promotion": "node ../../tools/run-mobile-tests.mjs event-currency-promotion",
+    "test:frostfall-preview": "node ../../tools/run-mobile-tests.mjs frostfall-preview frostfall-preview-localization && node tests/frostfall-preview-ui.cjs && node ../../tools/validate-event-release-graph.mjs",
     "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-drop-ui-contract",
     "eas-build-post-install": "node scripts/write-build-source.mjs",
     "start": "expo start",

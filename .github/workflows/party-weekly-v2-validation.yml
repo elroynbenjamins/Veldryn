@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/party/weekly-party-events-v2.ts'
+      - 'backend/src/server/party/weekly-party-boss-v2.ts'
       - 'backend/src/server/party/weekly-party-stage-prototype-v3.ts'
       - 'backend/src/server/party/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-readiness-v3.ts'
@@ -17,6 +18,7 @@ on:
     branches: [main]
     paths:
       - 'backend/src/server/party/weekly-party-events-v2.ts'
+      - 'backend/src/server/party/weekly-party-boss-v2.ts'
       - 'backend/src/server/party/weekly-party-stage-prototype-v3.ts'
       - 'backend/src/server/party/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-readiness-v3.ts'

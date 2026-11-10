@@ -92,10 +92,11 @@ export function coopHandler(services:GameplayServices){
     let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
     if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
     const row=body as Record<string,unknown>;
-    const allowed=eventStart?['requestId','eventExpeditionId','characterId','loadoutId','loadoutRevision']:eventRun?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId']:['requestId'];
+    const allowed=eventStart?['requestId','eventExpeditionId','tier','characterId','loadoutId','loadoutRevision']:eventRun?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId']:['requestId'];
     if(Object.keys(row).some(key=>!allowed.includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId))throw new GameplayError('invalid_request');
     if(eventStart){
-     if(typeof row.eventExpeditionId!=='string'||typeof row.characterId!=='string'||typeof row.loadoutId!=='string'||typeof row.loadoutRevision!=='number'||!Number.isInteger(row.loadoutRevision))throw new GameplayError('invalid_request');
+     if(row.tier!==undefined&&(!Number.isInteger(row.tier)||Number(row.tier)<1||Number(row.tier)>5))throw new GameplayError('invalid_event_tier');
+      if(typeof row.eventExpeditionId!=='string'||typeof row.characterId!=='string'||typeof row.loadoutId!=='string'||typeof row.loadoutRevision!=='number'||!Number.isInteger(row.loadoutRevision))throw new GameplayError('invalid_request');
      return json(await eventRuntime.start(accountId,row as unknown as OnlineEventExpeditionStartRequest));
     }
     if(eventRun?.[2]==='choose')return json(await eventRuntime.choose(accountId,eventRun[1],parseCoopDecisionCommand(body)));

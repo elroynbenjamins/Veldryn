@@ -8,6 +8,8 @@ const artwork:Record<PlayerBadgeId,number>={
  admin:require('../../assets/player-badges-v1/admin.webp'),
  moderator:require('../../assets/player-badges-v1/moderator.webp'),
  supporter:require('../../assets/player-badges-v1/supporter.webp'),
+ supporter_3m:require('../../assets/player-badges-v1/supporter_3m.webp'),
+ supporter_6m:require('../../assets/player-badges-v1/supporter_6m.webp'),
  founder:require('../../assets/player-badges-v1/founder.webp'),
  beta_tester:require('../../assets/player-badges-v1/beta_tester.webp'),
  veteran:require('../../assets/player-badges-v1/veteran.webp'),

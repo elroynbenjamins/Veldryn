@@ -3,7 +3,7 @@ import {processPartyEventDayEightBosses,type DayEightBossRepository} from '../we
 import type {AuthoritativeLoadoutRecord, LoadoutRepository} from '../../coop/loadout-snapshots';
 import {
   deriveVerifiedPartyBossPreparation,deriveVerifiedPartyPhaseSupport,freezePartyEventBossLoadout,
-  resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
+  resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,partyEventRosterMedianLevel,
 } from '../weekly-party-boss-v2';
 import {buildWeeklyPartySupplyOrders,weeklyPartyBudget,type VerifiedSupplyItem} from '../weekly-party-events-v2';
 
@@ -14,6 +14,13 @@ function rejects(fn:()=>unknown,part:string) {
   try {fn();throw new Error('unexpected_success');}
   catch(e) {assert(String(e).includes(part),'expected '+part+' got '+String(e));}
 }
+assert(partyEventRosterMedianLevel([1,100])===51,
+ 'mixed-level duo uses midpoint rather than level-1 anchor');
+assert(partyEventRosterMedianLevel([1,35,65,100])===50,
+ 'four-player roster uses midpoint of middle two');
+assert(partyEventRosterMedianLevel([15,25,90])===25,'odd roster uses center level');
+rejects(()=>partyEventRosterMedianLevel([0,100]),'party_boss_invalid_level_roster');
+
 const start=Date.parse('2026-11-09T00:00:00Z');
 const end=start+7*86_400_000;
 const records=new Map<string,AuthoritativeLoadoutRecord>();

@@ -9,7 +9,6 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {OnlineGuildBankPanel} from './OnlineGuildBankPanel';
 import {StatBar} from './StatBar';
 import {guildFacilityArtwork} from '../theme/guild-remaster-art';
-import {guildTokenIcon} from '../theme/guild-token-shop-art';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
 import {guildConstructionBenefits} from '../content/guild-construction-benefits';
 import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
@@ -30,13 +29,6 @@ interface HallNavigation {
  headerHelp?:ReactNode;
 }
 const DESTINATIONS=['Overview','Construction','Bank','Shop','Legacy'] as const satisfies readonly HeadquartersSection[];
-const SHORTCUTS=[
- {id:'Construction' as const,title:'Construction',detail:'Build together',art:'workshop' as const},
- {id:'Bank' as const,title:'Guild Bank',detail:'Donate supplies',art:'banner_gallery' as const},
- {id:'Shop' as const,title:'Token Shop',detail:'Spend Guild Tokens',art:'training_room' as const},
- {id:'Legacy' as const,title:'Hall & trophies',detail:'Facilities and history',art:'trophy_room' as const},
-] as const;
-
 export function OnlineGuildHallPanel(navigation:HallNavigation){
  const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -89,6 +81,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const needs=nextProject?[...(nextProject.gold>0?[{key:'gold',amount:nextProject.gold}]:[]),...nextProject.materials.map(material=>({key:material.materialKey,amount:material.amount}))]:[];
  const funded=needs.reduce((total,requirement)=>total+Math.min(requirement.amount,Math.max(0,funding?.resources[requirement.key]??0)),0);
  const required=needs.reduce((total,requirement)=>total+requirement.amount,0);
+ const bankBalances=new Map((shop?.bank?.balances??[]).map(item=>[item.resourceId,item.amount]));
  const benefitsList=[
   ...(benefits.canChangeGuildColors?[{name:ui('Guild color editing'),detail:ui('Only previously unlocked colors can be selected')}]:[]),
   ...(benefits.smithingTailoringSpeedBps?[{name:ui('Smithing & Tailoring'),detail:ui('+{percent}% processing speed',{percent:benefits.smithingTailoringSpeedBps/100})}]:[]),
@@ -120,15 +113,21 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    {nextProject?<Panel style={s.priority}>
     <View style={s.between}><View style={s.flex}><Text style={s.priorityTitle}>{guildConstructionBlueprint(nextProject.id)?.name??ui('Guild Construction')}</Text><Text style={s.note}>{ui('Guild Lv {level} · {benefit}',{level:nextProject.guildLevel,benefit:guildConstructionBlueprint(nextProject.id)?.benefit??ui('Permanent guild upgrade')})}</Text></View><Text style={s.percent}>{required?Math.round(100*funded/required):0}%</Text></View>
     <StatBar rounded label={ui("Materials allocated")} current={funded} max={Math.max(1,required)}/>
-    <GameButton compact title={ui("Contribute materials")} onPress={()=>navigate('Construction')}/>
+    {needs.filter(req=>Math.max(0,funding?.resources[req.key]??0)<req.amount).slice(0,4).map(req=>{
+     const allocated=Math.min(req.amount,Math.max(0,funding?.resources[req.key]??0)),remaining=Math.max(0,req.amount-allocated);
+     const bank=bankBalances.get(req.key)??0;
+     const name=req.key==='gold'?ui('Gold'):req.key.toLowerCase().replace(/_/g,' ');
+     return <View key={req.key} style={s.fundingRow}><Text style={[s.note,s.flex]}>{name}</Text>
+      <Text style={s.fundingAmount}>{ui('Need {needed} · Bank {bank}',{needed:remaining.toLocaleString(),bank:bank.toLocaleString()})}</Text>
+     </View>;
+    })}
+    <GameButton compact title={ui("Open Construction")} onPress={()=>navigate('Construction')}/>
    </Panel>:!shopLoading&&shop?<Panel><Text style={s.copy}>{ui('No eligible released construction is currently waiting for supplies.')}</Text><GameButton compact tone="secondary" title={ui("View roadmap")} onPress={()=>navigate('Construction')}/></Panel>:null}
    <View style={s.heading}><Text style={s.headingText}>{ui('Active construction benefits')}</Text><Text style={s.counter}>{ui('{count} unlocked',{count:benefitsList.length})}</Text></View>
    <Panel style={s.benefitList}>
     {benefitsList.length?benefitsList.slice(0,4).map((item,index)=><View key={item.name} style={[s.benefit,index>0&&s.benefitDivider]}><Text style={s.check}>✓</Text><View style={s.flex}><Text style={s.benefitTitle}>{item.name}</Text><Text style={s.note}>{item.detail}</Text></View></View>):<Text style={s.copy}>{ui('Complete Guild Construction to unlock permanent shared bonuses.')}</Text>}
     <Text style={s.note}>{ui('Shop quality unlocked: {quality}. Construction does not award free items.',{quality:benefits.shopQuality.charAt(0).toUpperCase()+benefits.shopQuality.slice(1)})}</Text>
    </Panel>
-   <Text style={s.headingText}>{ui('Guild Hall destinations')}</Text>
-   <View style={s.shortcuts}>{SHORTCUTS.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={ui('Open {title}',{title:ui(item.title)})} onPress={()=>navigate(item.id)} style={({pressed})=>[s.shortcut,pressed&&s.pressed]}><Image source={item.id==='Shop'?guildTokenIcon:guildFacilityArtwork(item.art)} resizeMode="contain" style={s.shortcutArt} accessible={false}/><View style={s.flex}><Text style={s.shortcutTitle}>{ui(item.title)}</Text><Text style={s.note}>{ui(item.detail)}</Text></View></Pressable>)}</View>
    <View style={s.heading}><Text style={s.headingText}>{ui('Hall facilities')}</Text><GameButton compact tone="secondary" title={ui("View details")} onPress={()=>navigate('Legacy')}/></View>
    <View style={s.facilityGrid}>{GUILD_HALL_FACILITIES.slice(0,4).map(def=><View key={def.id} style={s.facilityTile}><Text style={s.tileName}>{def.name}</Text><Text style={s.tileTier}>{ui('Tier {tier}/5',{tier:state.facilities[def.id].tier})}</Text></View>)}</View>
   </View>:null}
@@ -191,10 +190,8 @@ function styles(C:ThemeColors){return StyleSheet.create({
  check:{fontSize:17,fontWeight:'900',color:C.good},
  benefitTitle:{fontSize:12,lineHeight:18,fontWeight:'800',color:C.text},
  counter:{fontSize:11,color:C.good,fontWeight:'800'},
- shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:8},
- shortcut:{width:'48%',flexGrow:1,minHeight:73,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:8,paddingVertical:10,borderRadius:10,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
- shortcutArt:{width:35,height:35},
- shortcutTitle:{fontSize:12,lineHeight:16,fontWeight:'800',color:C.text},
+ fundingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingVertical:3},
+ fundingAmount:{fontSize:11,lineHeight:16,color:C.text,fontWeight:'700'},
  facilityGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},
  facilityTile:{width:'48%',flexGrow:1,minHeight:61,padding:10,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},
  tileName:{fontSize:11,lineHeight:16,fontWeight:'700',color:C.muted},

@@ -18,6 +18,7 @@ assert.equal(marketDraftResourceMinLotV11('ASTRAL_SCRIPT'),1);
 assert.equal(marketDraftResourceMinLotV11('HOLY_WATER'),undefined);
 assert.equal(marketDraftResourceMinLotV11('NOT_A_REAL_ITEM'),undefined);
 assert.equal(marketDraftMinimumLotV11('COPPER_ORE','equipment'),undefined);
+assert.equal(marketDraftMinimumLotV11('basic_sword','equipment'),undefined,'Legacy gear must not get a market listing preview');
 assert.equal(marketDraftLotCheckV11('COPPER_ORE','resource',9).valid,false);
 assert.equal(marketDraftLotCheckV11('COPPER_ORE','resource',10).valid,true);
 assert.equal(marketDraftLotCheckV11('COPPER_ORE','resource',10).canListNow,false);
@@ -89,5 +90,10 @@ assert((settle.match(/v_gross,v_fee,v_payout,'settled'/g)??[]).length===2,'Durab
 assert((settle.match(/'sellerGoldReceived',v_payout,'feeGold',v_fee/g)??[]).length===2,'Receipts must show actual seller payout');
 assert((settle.match(/market_offer_price_valid_v10\(/g)??[]).length===2,'Revalidate live price policy before paying Gold');
 assert((settle.match(/market_listing_lot_valid_v11\(/g)??[]).length===2,'Revalidate lot size before paying Gold');
+const evidence=fs('20261110105000_market_verified_sale_review_private_v11.sql');
+assert(evidence.includes('private.market_purchase_receipts_v3')&&evidence.includes('private.market_gold_intents_v2')&&evidence.includes("g.status='settled'"),'Price-review evidence must join the actual settled receipts and Gold ledger');
+assert(evidence.includes("o.status='sold'")&&evidence.includes('limit 1000'),'Price-review evidence must only use bounded completed sales');
+assert(evidence.includes('p.result->>\'feeGold\'=g.fee_gold::text'),'Actual seller fee must match the stored Gold receipt');
+assert(evidence.includes('revoke all on function private.market_verified_completed_sales_v11'),'Never expose sale review evidence to clients');
 assert(!/trading_enabled\s*=\s*true|equipment_transfers_enabled\s*=\s*true|grant execute\b/i.test(base+'\n'+publish+'\n'+settle),'Never activate trading or grant player RPCs');
 console.log('PASS: dormant Market V11 resource lots, seller 5% tax, Gold conservation and anti-wash weekly review proposals');

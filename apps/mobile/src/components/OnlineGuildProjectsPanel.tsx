@@ -43,7 +43,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  const st=useSocialText(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
- const [showHistory,setShowHistory]=useState(false),[busy,setBusy]=useState('');
+ const [showHistory,setShowHistory]=useState(false),[expandedProjectId,setExpandedProjectId]=useState<string|null>(null),[busy,setBusy]=useState('');
  const [pendingDonation,setPendingDonation]=useState<PendingGuildProjectSupplyDonation|null>(null);
  const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
  const load=(force=false):Promise<void>=>{
@@ -103,24 +103,15 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  if(error&&!snapshot)return <Panel><Text style={s.title}>{ui("Guild Projects")}</Text><Text style={s.error}>{error}</Text><GameButton title={st("Retry")} tone="secondary" disabled={loading} loading={loading} onPress={()=>void load(true)}/></Panel>;
  if(!snapshot)return <Panel><Text style={s.title}>{ui("Guild Projects")}</Text><Text style={s.copy}>{ui("Join a Guild to view shared weekly progress.")}</Text></Panel>;
  const active=snapshot.projects.filter(row=>row.status==='active').sort((a,b)=>a.slotIndex-b.slotIndex);
- const completed=snapshot.projects.filter(row=>row.status==='completed').slice(0,4);
+ const completed=snapshot.projects.filter(row=>row.status==='completed');
+ const claimableCompleted=completed.filter(project=>project.launchWeekly&&!project.completionRewardClaimed&&project.personalRewardThreshold>0
+  &&project.personalPoints>=project.personalRewardThreshold&&!!project.endsAt&&Date.now()<Date.parse(project.endsAt)+7*86400000);
+ const recentCompleted=completed.filter(project=>!claimableCompleted.some(ready=>ready.id===project.id)).slice(0,4);
  return <View style={s.root}>
-  <QuestBoard>
-   <View style={s.sectionHead}>
-    <View style={s.flex}><Text style={s.kicker}>{ui("GUILD COOPERATION")}</Text><Text style={s.title}>{ui("Weekly Projects")}</Text></View>
-    <StatusPill label={ui("SHARED")} tone="good"/>
-   </View>
-   <Text style={s.meta}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text>
-   {active.length?active.map(project=><GuildProjectPosting
-     key={project.id} project={project} busy={!!busy}
-     supplyInventory={snapshot.supplyInventory??[]}
-     onDonate={(itemId,quantity)=>void donate({projectId:project.id,itemId,quantity})}
-     donationBlocked={!!pendingDonation}
-     onClaim={()=>void act('claim',project.id)}
-     onNavigateActivity={onNavigateActivity}
-   />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text></View>}
-  </QuestBoard>
-  {active.length?<GuildProjectContributionsPanel projects={active}/>:null}
+  <View style={s.sectionHead}>
+   <View style={s.flex}><Text style={s.kicker}>{ui("GUILD COOPERATION")}</Text><Text accessibilityRole="header" style={s.title}>{ui("Weekly Projects")}</Text></View>
+   <StatusPill label={ui("SHARED")} tone="good"/>
+  </View>
   {pendingDonation?<Panel>
    <Text style={s.sectionTitle}>{ui('Saved Guild donation')}</Text>
    <Text style={s.copy}>{ui('Retry the saved request before donating anything else.')}</Text>
@@ -131,6 +122,10 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
     <View style={s.flex}><GameButton compact disabled={!!busy} tone="secondary" title={ui('Discard retry')} onPress={discard}/></View>
    </View>
   </Panel>:null}
+  {claimableCompleted.length?<Panel>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Rewards ready to claim')}</Text><StatusPill label={ui('REWARD')} tone="good"/></View>
+   {claimableCompleted.map(project=><GuildProjectPosting key={project.id} project={project} compact busy={!!busy} onClaim={()=>void act('claim',project.id)}/>)}
+  </Panel>:null}
   {snapshot.choiceAvailable?<Panel>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Vote for next week's project")}</Text><View style={s.actions}>{snapshot.candidates.length>0&&!snapshot.candidates.some(candidate=>candidate.myVote)?<StatusPill label={ui("VOTE")} tone="info"/>:null}<Text style={s.meta}>{ui("One vote per member")}</Text></View></View>
    {snapshot.candidates.length?<>
@@ -140,18 +135,30 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
     <Text style={s.meta}>{ui('If nobody votes, the Medium project starts automatically.')}</Text>
    </>:<Text style={s.copy}>{ui('Voting opens Thursday.')}</Text>}
   </Panel>:null}
-  {completed.length||snapshot.activity.length?<Panel>
+  <QuestBoard>
+   <Text style={s.meta}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text>
+   {active.length?active.map(project=><GuildProjectPosting
+     key={project.id} project={project} busy={!!busy}
+     summaryOnly={expandedProjectId!==project.id} onToggle={()=>setExpandedProjectId(current=>current===project.id?null:project.id)}
+     supplyInventory={snapshot.supplyInventory??[]}
+     onDonate={(itemId,quantity)=>void donate({projectId:project.id,itemId,quantity})}
+     donationBlocked={!!pendingDonation}
+     onClaim={()=>void act('claim',project.id)}
+     onNavigateActivity={onNavigateActivity}
+   />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text></View>}
+  </QuestBoard>
+  {active.length?<GuildProjectContributionsPanel projects={active}/>:null}
+  {recentCompleted.length||snapshot.activity.length?<Panel>
    <Pressable accessibilityRole="button" accessibilityLabel={ui("Recent Guild progress")} accessibilityState={{expanded:showHistory}}
     onPress={()=>setShowHistory(v=>!v)} style={({pressed})=>[s.accordion,pressed&&s.pressed]}>
-    <View style={s.flex}><Text style={s.sectionTitle}>{ui("Recent Guild activity")}</Text><Text style={s.copy}>{ui("{completed} completed · {events} events",{completed:completed.length,events:snapshot.activity.length})}</Text></View>
-    {completed.some(p=>p.launchWeekly&&!p.completionRewardClaimed&&p.personalRewardThreshold>0&&p.personalPoints>=p.personalRewardThreshold&&!!p.endsAt&&Date.now()<Date.parse(p.endsAt)+7*86400000)?<StatusPill label={ui("REWARD")} tone="good"/>:null}
+    <View style={s.flex}><Text style={s.sectionTitle}>{ui("Recent Guild activity")}</Text><Text style={s.copy}>{ui("{completed} completed · {events} events",{completed:recentCompleted.length,events:snapshot.activity.length})}</Text></View>
     <Text style={s.chevron}>{showHistory?'▴':'▾'}</Text>
    </Pressable>
    {showHistory?<View style={s.history}>
-    {completed.map(project=><GuildProjectPosting key={project.id} project={project} compact
+    {recentCompleted.map(project=><GuildProjectPosting key={project.id} project={project} compact
      busy={!!busy} onClaim={()=>void act('claim',project.id)}
     />)}
-    {completed.length?<GuildProjectContributionsPanel projects={completed} embedded/>:null}
+    {recentCompleted.length?<GuildProjectContributionsPanel projects={recentCompleted} embedded/>:null}
     <GuildActivityFeedPanel entries={snapshot.activity}/>
    </View>:null}
   </Panel>:null}
@@ -181,7 +188,7 @@ function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCand
  </View>;
 }
 
-export function GuildProjectPosting({project,compact=false,onClaim,onNavigateActivity,onDonate,supplyInventory=[],donationBlocked=false,busy}:{
+export function GuildProjectPosting({project,compact=false,summaryOnly=false,onToggle,onClaim,onNavigateActivity,onDonate,supplyInventory=[],donationBlocked=false,busy}:{
  onClaim:()=>void;
  onNavigateActivity?:(activity:Activity)=>void;
  onDonate?:(itemId:string,quantity:number)=>void;
@@ -190,6 +197,8 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
  busy:boolean;
  project:OnlineGuildProjectSummary;
  compact?:boolean;
+ summaryOnly?:boolean;
+ onToggle?:()=>void;
 }){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,project.templateId,project.name,project.description);
@@ -221,9 +230,13 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
    <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text></View>
    {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
-   {weekly&&project.status==='active'?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
+   {weekly&&project.status==='active'&&!summaryOnly?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
+   {summaryOnly?<Text style={s.meta}>{ui('Your contribution')}: {project.personalPoints.toLocaleString()}{project.personalRewardThreshold>0?' / '+project.personalRewardThreshold.toLocaleString():''}</Text>:null}
+   {onToggle?<Pressable accessibilityRole="button" accessibilityState={{expanded:!summaryOnly}} onPress={onToggle} style={s.accordion}>
+    <Text style={s.expandLabel}>{ui(summaryOnly?'View project details':'Hide project details')}</Text><Text style={s.chevron}>{summaryOnly?'▾':'▴'}</Text>
+   </Pressable>:null}
   </View>
-  {!compact?<View style={s.personal}>
+  {!compact&&!summaryOnly?<View style={s.personal}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Your contribution')}</Text>
     {qualifying&&project.personalRewardThreshold>0?<StatusPill label={ui("QUALIFIED")} tone="good"/>:null}
    </View>
@@ -242,10 +255,10 @@ export function GuildProjectPosting({project,compact=false,onClaim,onNavigateAct
      </View>
     </View>:null}
   </View>:null}
-  {weekly&&project.status==='active'&&!compact&&project.resourceGoals.length>0?
+  {weekly&&project.status==='active'&&!compact&&!summaryOnly&&project.resourceGoals.length>0?
     <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory}
      busy={busy||donationBlocked||!onDonate} onDonate={(itemId,quantity)=>onDonate?.(itemId,quantity)}/>:null}
-  {weekly&&project.status==='active'&&!compact&&project.projectMode!=='donation'?<View style={s.activities}>
+  {weekly&&project.status==='active'&&!compact&&!summaryOnly&&project.projectMode!=='donation'?<View style={s.activities}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui(project.templateId==='guild_weekly_shared_effort'?'ANY ACTIVITY':'Activity requirements')} tone="info"/></View>
    <View style={s.activityGrid}>{effortActivities.filter(a=>project.focus==='combat'?a.source==='combat':project.focus==='skilling'?a.source!=='combat':true).map(a=><Pressable key={a.source}
     accessibilityRole="button" accessibilityLabel={ui('Open {title} to contribute',{title:ui(a.title)})}
@@ -290,7 +303,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  candidate:{gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
  candidateSelected:{borderColor:C.accent,backgroundColor:C.panelRaised},tier:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.accent},
  actions:{flexDirection:'row',gap:8},accordion:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8},
- chevron:{fontSize:18,fontWeight:'800',color:C.accent},history:{gap:10,paddingTop:8,borderTopWidth:1,borderTopColor:C.line},
+ expandLabel:{fontSize:12,fontWeight:'800',color:C.accent},chevron:{fontSize:18,fontWeight:'800',color:C.accent},history:{gap:10,paddingTop:8,borderTopWidth:1,borderTopColor:C.line},
  empty:{alignItems:'center',justifyContent:'center',minHeight:100,padding:13,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:9},
  emptyTitle:{fontSize:13,fontWeight:'800',color:C.text},error:{fontSize:12,lineHeight:18,color:C.bad},
 });}

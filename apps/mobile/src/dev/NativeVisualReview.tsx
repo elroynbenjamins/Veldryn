@@ -58,7 +58,7 @@ const party:PersistentPartySummary={id:'qa-party',maxMembers:4,focus:'mixed',mem
 ]};
 const post:RecruitmentCardView={id:'qa-post',postType:'party_recruiting',ownerName:'Aster Nightfall',title:'Preparing for the Fallen Knight',body:'A relaxed party for hunting, gathering, and the next Asterfall challenge.',roles:['damage','support'],focus:'mixed',activityTags:['Bosses'],playstyleTags:['Relaxed'],availabilityTags:[],guildInterestTags:[],currentObjective:'The Fallen Knight',openSpots:1,expiresAtMs:now+3600000};
 const sections=['Home','Skills','Crafting','Combat','Social','Guild','Login','Ingredients','Settings','Journal','Contracts','Challenges','Events','EventsLive','Profile','Collections','Inventory','Character'] as const;
-type Section=typeof sections[number];
+export type Section=typeof sections[number];
 const destinations=['Character','Skills','World','Inventory','More'] as const;
 export default function NativeVisualReview({initialSection}:{initialSection?:Section}={}){
  const [section,setSection]=useState<Section>(initialSection??sections.find(name=>name.toLowerCase()===process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN)??'Home'),[state,setState]=useState(fixture),[active,setActive]=useState<typeof destinations[number]>('Character');

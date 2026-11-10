@@ -16,7 +16,7 @@ function validCatalog(value:unknown):value is CoopBrowseCatalog{
    dungeon&&typeof dungeon.id==='string'&&dungeon.id.length>0&&
    typeof dungeon.name==='string'&&dungeon.name.length>0&&
    Number.isInteger(dungeon.minLevel)&&dungeon.minLevel>=1&&
-   typeof dungeon.available==='boolean');
+   (dungeon.available===undefined||typeof dungeon.available==='boolean'));
 }
 
 /** Account + character scoped, bounded, versioned, cache-first catalog.
@@ -41,6 +41,10 @@ export class CoopDungeonBrowseCache{
    const decoded:unknown=JSON.parse(raw);
    if(!decoded||typeof decoded!=='object'||(decoded as {version?:number}).version!==VERSION)return undefined;
    if(!validCatalog(decoded)||!this.validAge(decoded))return undefined;
+   // A faster server response may already have saved a newer catalog while
+   // AsyncStorage was reading. Never restore older data over it.
+   const newer=this.peek(scope);
+   if(newer)return newer;
    this.remember(scope,decoded);
    return decoded;
   }catch{return undefined;}

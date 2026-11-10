@@ -8,13 +8,14 @@ import CompanionScreenReview from './CompanionScreenReview';
 import StoreCaptureReview from './StoreCaptureReview';
 import BoardExperienceReview from './BoardExperienceReview';
 import GuildPveReview from './GuildPveReview';
+import GuildLayoutReview from './GuildLayoutReview';
 import AdditionalScreensReview,{type AdditionalReviewScreen} from './AdditionalScreensReview';
 
 type Group='Game'|'Equipment'|'Dungeon'|'Guild'|'Social'|'Account'|'QA';
 type Route={
  id:string;label:string;group:Group;
- kind:'native'|'store'|'board'|'companion'|'pve'|'extra';
- native?:NativeSection;storeScreen?:string;screen?:string;extra?:AdditionalReviewScreen;
+ kind:'native'|'store'|'board'|'companion'|'pve'|'guild-layout'|'extra';
+ native?:NativeSection;storeScreen?:string;storeSkill?:string;screen?:string;extra?:AdditionalReviewScreen;
  note?:string;
 };
 const routes:readonly Route[]=[
@@ -24,7 +25,16 @@ const routes:readonly Route[]=[
  {id:'battle',label:'Live combat artwork',group:'Game',kind:'store',storeScreen:'battle'},
  {id:'skills',label:'Skills / Mining',group:'Game',kind:'store',storeScreen:'skills'},
  {id:'skill-grid',label:'Skill selection grid',group:'Game',kind:'store',storeScreen:'skill-grid'},
- {id:'crafting',label:'Smithing / Crafting',group:'Game',kind:'store',storeScreen:'crafting'},
+ {id:'crafting',label:'Smithing / Crafting',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'smithing'},
+ {id:'woodcutting',label:'Woodcutting',group:'Game',kind:'store',storeScreen:'skills',storeSkill:'woodcutting'},
+ {id:'fishing',label:'Fishing',group:'Game',kind:'store',storeScreen:'skills',storeSkill:'fishing'},
+ {id:'herbalism',label:'Herbalism',group:'Game',kind:'store',storeScreen:'skills',storeSkill:'herbalism'},
+ {id:'exploration',label:'Exploration',group:'Game',kind:'store',storeScreen:'skills',storeSkill:'exploration'},
+ {id:'tailoring',label:'Tailoring',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'tailoring'},
+ {id:'cooking',label:'Cooking',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'cooking'},
+ {id:'alchemy',label:'Alchemy',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'alchemy'},
+ {id:'enchanting',label:'Enchanting',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'enchanting'},
+ {id:'faith',label:'Faith',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'faith'},
  {id:'quests',label:'Quest journal',group:'Game',kind:'native',native:'Journal'},
  {id:'contracts',label:'Contracts',group:'Game',kind:'native',native:'Contracts'},
  {id:'challenges',label:'Challenges',group:'Game',kind:'native',native:'Challenges'},
@@ -55,6 +65,9 @@ const routes:readonly Route[]=[
  {id:'guild-boss',label:'Guild PvE boss',group:'Guild',kind:'pve'},
  {id:'guild-identity',label:'Guild identity',group:'Guild',kind:'store',storeScreen:'guild-identity'},
  {id:'guild-recruit',label:'Guild recruitment',group:'Guild',kind:'native',native:'Guild'},
+ {id:'guild-chat',label:'Guild chat',group:'Guild',kind:'guild-layout',screen:'Chat'},
+ {id:'guild-navigation',label:'Guild navigation / Social',group:'Guild',kind:'guild-layout',screen:'Home'},
+ {id:'guild-discovery',label:'Find / Create guild',group:'Guild',kind:'guild-layout',screen:'Guildless'},
  {id:'party',label:'Party / Recruitment',group:'Social',kind:'native',native:'Social'},
  {id:'social',label:'Social preview',group:'Social',kind:'store',storeScreen:'social'},
  {id:'profile',label:'Profile customization',group:'Social',kind:'native',native:'Profile'},
@@ -76,11 +89,12 @@ const initialRoute=()=>typeof window==='undefined'?routes[0]:findRoute(new URLSe
 function updateUrl(route:Route){
  if(typeof window==='undefined')return;
  const params=new URLSearchParams(window.location.search);
- for(const key of ['view','screen','activity','storeScreen'])params.delete(key);
+ for(const key of ['view','screen','activity','storeScreen','storeSkill'])params.delete(key);
  params.set('view',route.id);
  if(route.screen)params.set('screen',route.screen);
  if(route.id==='guild-projects')params.set('activity','Projects');
  if(route.storeScreen)params.set('storeScreen',route.storeScreen);
+ if(route.storeSkill)params.set('storeSkill',route.storeSkill);
  window.history.pushState(null,'','?'+params.toString());
 }
 export default function BrowserReview(){
@@ -121,6 +135,7 @@ export default function BrowserReview(){
   case 'companion':content=<CompanionScreenReview/>;break;
   case 'board':content=<BoardExperienceReview/>;break;
   case 'pve':content=<GuildPveReview/>;break;
+  case 'guild-layout':content=<GuildLayoutReview/>;break;
   case 'extra':content=<AdditionalScreensReview screen={route.extra!}/>;break;
   default:content=<StoreCaptureReview/>;
  }

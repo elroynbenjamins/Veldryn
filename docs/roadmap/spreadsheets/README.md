@@ -8,6 +8,7 @@
 | --- | --- | --- | --- |
 | **Guild PvE / Guild Expeditions** | Detailed draft v3 · 2026-11-09 | [Guild PvE XLSX backup](./Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/14iQJt2zBTN93EoXMBKr-TMNTgBBcCgha/edit?usp=drivesdk) |
 | **World Bosses** | **Expanded draft v2 · 2026-11-10** · [design brief](../world-bosses-design-v2.md) · [133-row design register CSV](./world-bosses-design-v2.csv) | [Historical v1 XLSX backup](./Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64) | [Historical v1 workbook](https://docs.google.com/spreadsheets/d/1WH1auLjuEPnTjhTP8YBOuWtyUeV3ehO9/edit?usp=drivesdk) |
+| **Player Market price corridors** | Draft v10 · hidden pricing foundation · 2026-11-10 | [CSV: 35 resources, 9 gear tiers](./player-market-price-corridors-v10.csv) | [Design & release gates](../player-market-price-ranges-v10.md) |
 
 **World Bosses v2:** The main active specification is now the Markdown design brief and CSV register above; a richer standalone 12-worksheet `.xlsx` was generated for this revision and made available with the design deliverables, but **the v2 Excel binary is not yet mirrored to GitHub or Google Drive**. The old v1 `.xlsx.b64` remains here as the original snapshot, not the current spec. No game code or live server was changed.
 
@@ -17,7 +18,7 @@ The former combined PvE workbook was superseded by these two split files. The pr
 
 Keep exactly **one workbook per major feature/game mode** rather than expanding a massive all-in-one roadmap spreadsheet. Each workbook may have multiple tabs for concept, requirements, encounters, UI/UX, architecture, formulas, reward economy, QA, and release readiness.
 
-Suggested future standalone workbooks include Party Events, Guild PvP, Arena, Leaderboards, Player Market, World Expansion / Equipment Tier 5+, and Gameplay Refinement. Create only when the corresponding design exists; don't add empty placeholder workbooks.
+Suggested future standalone workbooks include Party Events, Guild PvP, Arena, Leaderboards, a complete Player Market workbook, World Expansion / Equipment Tier 5+, and Gameplay Refinement. The Player Market currently has a standalone versioned CSV pricing proposal, not an approved trading workbook. Create only when the corresponding design exists; don't add empty placeholder workbooks.
 
 Use `Veldryn_<Feature>_Design_vN_YYYY-MM-DD.xlsx`. Clearly mark `Draft`, `Reviewed`, `Approved`, or `Implemented` inside the workbook. Maintain the latest active version and preserve significant prior milestones through Git history.
 

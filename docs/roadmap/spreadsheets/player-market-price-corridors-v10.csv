@@ -1,0 +1,45 @@
+Scope,Asset kind,Source item ID or tier,Tier,Base min Gold,Base max Gold,Adjustments,Approval,Live trading,Notes
+ITEM_RULE,resource,COPPER_ORE,,4,24,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,GREENWOOD_LOG,,3,18,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,MOSS_FIBER,,3,18,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,BOAR_HIDE,,5,30,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,WISP_DUST,,7,42,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,MEADOW_PERCH,,3,18,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,IRONWOOD_LOG,,12,72,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,WOLF_PELT,,12,72,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,THORN_SAP,,18,108,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,IRONWOOD_FANG,,24,144,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,TROLL_HIDE,,34,204,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,ASTER_IRON_ORE,,13,78,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,COPPER_INGOT,,18,108,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,ASTER_IRON_INGOT,,45,270,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,DUNEWOOD,,40,240,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,SUNSTONE_ORE,,40,240,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,SUNSTONE_INGOT,,180,1080,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,AMBERGLASS,,125,750,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,ASTRAL_SCRIPT,,230,1380,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,GLASSBOUND_CORE,,300,1800,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,FROSTIRON,,85,510,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,FROSTIRON_INGOT,,320,1920,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,RIMEGLASS,,260,1560,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,CHOIR_BLOOM,,290,1740,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,BLACKGLASS_ORE,,140,840,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,BLACKGLASS_INGOT,,420,2520,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,CINDERWOOD_LOG,,110,660,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,BLACKGLASS_CORE,,180,1080,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,CINDER_HEART,,280,1680,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,FROZEN_HEART,,650,3900,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,REGENT_SIGIL,,570,3420,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,GEM_DUST,,12,72,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,TEMPERING_DUST,,15,90,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,TEMPERING_CORE,,130,780,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+ITEM_RULE,resource,ASTERFALL_MINERAL_ESSENCE,,55,330,Fixed per-unit starter band,DRAFT_NOT_APPROVED,OFF,Resource must pass independent tradability and escrow checks
+TIER_RULE,equipment,ALL_CRAFTED_T1,T1,600,3600,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T2,T2,1900,11400,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T3,T3,5500,33000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T4,T4,10000,60000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T5,T5,22000,132000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T6,T6,45000,270000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T7,T7,85000,510000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T8,T8,150000,900000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear
+TIER_RULE,equipment,ALL_CRAFTED_T9,T9,250000,1500000,Forge rarity * quality * enchant rank,DRAFT_NOT_APPROVED,OFF,Only exact receipted crafted gear; no legacy gear

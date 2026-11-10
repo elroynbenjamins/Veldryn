@@ -20,6 +20,7 @@ import {GameButton} from './GameButton';
 import {itemDef} from '../content/items';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentComparison} from '../core/equipment-comparison';
+import {equipmentSetDef} from '../content/equipment-sets';
 
 type Props={
  state:GameState;slot:GearSlot;
@@ -54,6 +55,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
  const comparison=selected?equipmentComparison(state,selected.projected):undefined;
  const oldId=state.character?.equipment[slot],old=oldId?itemDef(oldId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
+ const currentSet=equipmentSetDef(old?.equipmentSetId);
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const trade=selected?equipmentTradeOff(before,selected.after):undefined;
@@ -91,13 +93,14 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
     <View style={s.flex}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>
      <Text numberOfLines={2} style={[s.currentName,oldRarity&&{color:rarityNameColor(oldRarity.id,C.dark,C.text)}]}>{old?.name??gl('Empty slot')}{oldRank?' +'+oldRank:''}</Text>
-     <Text style={s.meta}>{oldRarity?.label??gl(slot)}</Text>
+     <Text style={s.meta}>{currentSet?currentSet.path+' · '+currentSet.buildFocus+' · ':''}{oldRarity?.label??gl(slot)}</Text>
     </View>
     <Text style={s.currentPower}>{gl('Power')} {displayStat(before.power)}</Text>
    </View>
    <View style={s.sectionRow}><Text style={s.heading}>{gl('AVAILABLE EQUIPMENT')}</Text><Text style={s.count}>{choices.length}</Text></View>
    {choices.length?choices.map(choice=>{
     const rarity=rarityMeta(choice.instance?.rarity??itemRarity(choice.item)),rank=gearEnhancement(choice.projected,choice.itemId).rank;
+    const candidateSet=equipmentSetDef(choice.item.equipmentSetId);
     const active=choice.key===(selected?.key);
     return <Pressable key={choice.key} accessibilityRole="button" accessibilityState={{selected:active,disabled:busy}}
      accessibilityLabel={choice.item.name+' · '+rarity.label+(choice.instance?' · Q'+craftedGearDisplayQuality(choice.instance):'')+' · '+gl('Power')+' '+delta(choice.powerDelta)}
@@ -106,7 +109,8 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
       <EquipmentArtwork item={choice.item} rarity={rarity.id} size={44} framed={false}/>
       <View style={s.flex}>
        <Text numberOfLines={1} style={[s.choiceName,{color:rarityNameColor(rarity.id,C.dark,C.text)}]}>{choice.item.name}{rank?' +'+rank:''}</Text>
-       <Text style={s.meta}>{rarity.label}{choice.instance?' · Q'+craftedGearDisplayQuality(choice.instance):''}{' · '+(choice.source==='equipment_pouch'?gl('Equipment Pouch'):gl('Inventory'))}</Text>
+       <Text numberOfLines={1} style={s.meta}>{rarity.label}{choice.instance?' · Q'+craftedGearDisplayQuality(choice.instance):''}{' · '+(choice.source==='equipment_pouch'?gl('Equipment Pouch'):gl('Inventory'))}</Text>
+       {candidateSet?<Text numberOfLines={1} style={s.meta}>{candidateSet.path+' · '+candidateSet.buildFocus}</Text>:null}
       </View>
       <View style={s.choiceEnd}><Text style={[s.choiceDelta,{color:changeColor(C,choice.powerDelta)}]}>{delta(choice.powerDelta)}</Text><Text style={s.powerLabel}>{gl('PWR')}</Text></View>
       <Text style={[s.selectDot,active&&s.selectActive]}>{active?'●':'○'}</Text>

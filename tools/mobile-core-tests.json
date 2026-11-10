@@ -79,6 +79,7 @@
   "tests/guild-hall-construction-localization.cjs",
   "tests/guild-bank-token-shop-localization.cjs",
   "tests/dungeon-dynamic-replay-localization.cjs",
+  "tests/enemy-stat-display-scale.cjs",
   "tests/equipment-metadata-localization.cjs",
   "tests/starter-item-names-localization.cjs",
   "tests/gem-pouch-ui-localization.cjs",

@@ -49877,8 +49877,8 @@ function normalizeEnhancementGemSlots(raw2) {
     statGemId,
     effectGemId,
     gemIds,
-    statGemRollPercent: statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
-    effectGemRollPercent: effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
+    statGemRollPercent: statGemId && raw2?.statGemId === statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
+    effectGemRollPercent: effectGemId && raw2?.effectGemId === effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
   };
 }
 function equippedCraftedInstance(state, itemId) {
@@ -50025,6 +50025,7 @@ function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
     if (!meta) throw new Error("Only graded gems can be rerolled");
     const candidate = gemRollPercentFromUnitV1(randomRoll);
     const previous = kind === "stat" ? enhancement.statGemRollPercent : enhancement.effectGemRollPercent;
+    if ((previous ?? 100) >= 120) throw new Error("This gem already has its maximum roll");
     const best = Math.max(previous ?? 100, candidate);
     const next2 = consumeAcross(state, gemId, 1);
     return setEnhancement(next2, itemId, {

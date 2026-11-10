@@ -54,8 +54,8 @@ export function normalizeEnhancementGemSlots(raw:Partial<GearEnhancementState>|u
   }
   const gemIds=[statGemId,effectGemId].filter((id):id is string=>Boolean(id));
   return {statGemId,effectGemId,gemIds,
-    statGemRollPercent:statGemId?normalizeGemRollPercentV1(raw?.statGemRollPercent):undefined,
-    effectGemRollPercent:effectGemId?normalizeGemRollPercentV1(raw?.effectGemRollPercent):undefined};
+    statGemRollPercent:statGemId&&raw?.statGemId===statGemId?normalizeGemRollPercentV1(raw?.statGemRollPercent):undefined,
+    effectGemRollPercent:effectGemId&&raw?.effectGemId===effectGemId?normalizeGemRollPercentV1(raw?.effectGemRollPercent):undefined};
 }
 
 export function equippedCraftedInstance(state:GameState,itemId:string){
@@ -177,6 +177,8 @@ export function replaceGem(state:GameState,itemId:string,gemId:string,randomRoll
     if(!meta)throw new Error('Only graded gems can be rerolled');
     const candidate=gemRollPercentFromUnitV1(randomRoll);
     const previous=kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent;
+    // Protect a fully perfected socket: spending another gem cannot improve it.
+    if((previous??100)>=120)throw new Error('This gem already has its maximum roll');
     const best=Math.max(previous??100,candidate);
     const next=consumeAcross(state,gemId,1);
     return setEnhancement(next,itemId,{...enhancement,

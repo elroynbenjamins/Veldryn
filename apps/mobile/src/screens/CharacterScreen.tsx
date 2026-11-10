@@ -22,6 +22,7 @@ import {ConfirmModal} from '../components/ConfirmModal';
 import {EquipmentEnhancementModal} from '../components/EquipmentEnhancementModal';
 import {GemCodexModal} from '../components/GemCodexModal';
 import {gearEnhancement} from '../core/equipment-enhancement';
+import {canonicalGemMetaV1,formatGemValueV1} from '../core/gem-progression-v1';
 import {equipmentDecisionModel,equipmentFocusModel} from '../core/equipment-decision';
 import {rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equippedCraftedGearRarity} from '../core/crafted-gear-instances';
@@ -73,6 +74,13 @@ export function CharacterScreen({state,onEquip,onEquipInstance,onEquipPouch,onUn
   const character=state.character!,classDef=CLASSES.find(item=>item.id===character.classId)!;
   const model=equipmentScreenModel(state),progress=noviceSetProgress(state);
   const selected=model.slots.find(entry=>entry.slot===selectedSlot)??model.slots[0],selectedEnhancement=selected.item?gearEnhancement(state,selected.item.id):null;
+  const equippedGemLabel=(gemId:string|undefined,kind:'stat'|'effect')=>{
+    if(!gemId)return profileT(language,'Empty');
+    const meta=canonicalGemMetaV1(gemId),name=itemDef(gemId).name;
+    if(!meta)return name;
+    const roll=kind==='stat'?selectedEnhancement?.statGemRollPercent:selectedEnhancement?.effectGemRollPercent;
+    return name+' · '+formatGemValueV1(meta.familyId,meta.grade,roll);
+  };
   const selectedDecision=selected.item?equipmentDecisionModel(state,selected.item.id):null,selectedRarity=selectedDecision?rarityMeta(selectedDecision.rarity):null;
    const equipmentFocus=equipmentFocusModel(selectedDecision);
   const activeLoadoutId=selectedLoadout??model.loadouts[0]?.id;
@@ -148,14 +156,14 @@ export function CharacterScreen({state,onEquip,onEquipInstance,onEquipPouch,onUn
       {equipmentTool==='gems'&&<View style={s.toolContent}>
         <Text style={s.toolHeading}>{profileT(language,'Gem sockets')}</Text>
         {!selected.item?<><Text style={s.toolMuted}>{profileT(language,'Select equipment to manage its gems.')}</Text><GameButton compact title={profileT(language,'Find gear')} onPress={onInventory}/></>:<>
-          <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Stat Gem')+': '+(selectedEnhancement?.statGemId?itemDef(selectedEnhancement.statGemId).name:profileT(language,'Empty'))} accessibilityHint={profileText(language,'Manage gems')} disabled={busy!==null||!selected.socketCapacity} onPress={()=>openEnhancement('gems')} style={[s.gemStatusRow,(busy!==null||!selected.socketCapacity)&&s.toolDisabled]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Stat Gem')+': '+(equippedGemLabel(selectedEnhancement?.statGemId,'stat'))} accessibilityHint={profileText(language,'Manage gems')} disabled={busy!==null||!selected.socketCapacity} onPress={()=>openEnhancement('gems')} style={[s.gemStatusRow,(busy!==null||!selected.socketCapacity)&&s.toolDisabled]}>
             <Text style={[s.gemStatusIcon,{color:selectedDecision?.sockets.statFilled?C.info:C.muted}]}>{selectedDecision?.sockets.statFilled?'◆':'◇'}</Text>
-            <View style={s.detailCopy}><Text style={s.detailName}>{profileT(language,'Stat Gem')}</Text><Text numberOfLines={1} style={s.detailStats}>{selectedEnhancement?.statGemId?itemDef(selectedEnhancement.statGemId).name:profileT(language,'Empty')}</Text></View>
+            <View style={s.detailCopy}><Text style={s.detailName}>{profileT(language,'Stat Gem')}</Text><Text numberOfLines={2} style={s.detailStats}>{equippedGemLabel(selectedEnhancement?.statGemId,'stat')}</Text></View>
             <Text style={s.gemActionMark}>›</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Effect Gem')+': '+(selectedEnhancement?.effectGemId?itemDef(selectedEnhancement.effectGemId).name:profileT(language,'Empty'))} accessibilityHint={profileText(language,'Manage gems')} disabled={busy!==null||!selected.socketCapacity} onPress={()=>openEnhancement('gems')} style={[s.gemStatusRow,(busy!==null||!selected.socketCapacity)&&s.toolDisabled]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Effect Gem')+': '+(equippedGemLabel(selectedEnhancement?.effectGemId,'effect'))} accessibilityHint={profileText(language,'Manage gems')} disabled={busy!==null||!selected.socketCapacity} onPress={()=>openEnhancement('gems')} style={[s.gemStatusRow,(busy!==null||!selected.socketCapacity)&&s.toolDisabled]}>
             <Text style={[s.gemStatusIcon,{color:selectedDecision?.sockets.effectFilled?C.special:C.muted}]}>{selectedDecision?.sockets.effectFilled?'●':'○'}</Text>
-            <View style={s.detailCopy}><Text style={s.detailName}>{profileT(language,'Effect Gem')}</Text><Text numberOfLines={1} style={s.detailStats}>{selectedEnhancement?.effectGemId?itemDef(selectedEnhancement.effectGemId).name:profileT(language,'Empty')}</Text></View>
+            <View style={s.detailCopy}><Text style={s.detailName}>{profileT(language,'Effect Gem')}</Text><Text numberOfLines={2} style={s.detailStats}>{equippedGemLabel(selectedEnhancement?.effectGemId,'effect')}</Text></View>
             <Text style={s.gemActionMark}>›</Text>
           </Pressable>
         </>}

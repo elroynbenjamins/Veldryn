@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {equippedCanonicalStatGemBonusesV1,gearEnhancement,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
+import {equippedCanonicalStatGemBonusesV1,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
 import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostV1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
@@ -121,15 +121,24 @@ rollState={...rollState,character:{...rollState.character!,equipment:{...rollSta
 const minSocket=socketGem(rollState,'basic_sword',might,0);
 ok(gearEnhancement(minSocket,'basic_sword').statGemRollPercent===80,'First socket persists its own actual minimum roll');
 ok(Math.abs((equippedCanonicalStatGemBonusesV1(minSocket).statPercent.power??0)-.0032)<1e-10,'Combat stats use the saved roll, not the old fixed grade value');
-const improved=replaceGem(minSocket,'basic_sword',might,.999999);
-ok(gearEnhancement(improved,'basic_sword').statGemRollPercent===120,'A duplicate gem reroll can improve a low roll');
+const improved=replaceGem(minSocket,'basic_sword',might,.85);
+ok(gearEnhancement(improved,'basic_sword').statGemRollPercent===115,'A duplicate gem reroll can improve a low roll');
 ok(gemStorageQuantity(improved,might)===3,'A reroll consumes exactly one duplicate without returning the previously socketed gem');
 const noDowngrade=replaceGem(improved,'basic_sword',might,0);
-ok(gearEnhancement(noDowngrade,'basic_sword').statGemRollPercent===120,'Bad rerolls consume the copy but never lower a high roll');
+ok(gearEnhancement(noDowngrade,'basic_sword').statGemRollPercent===115,'Bad rerolls consume the copy but never lower a high roll');
 ok(gemStorageQuantity(noDowngrade,might)===2,'Failed improvement still spends exactly one gem');
-const removed=unsocketGem(noDowngrade,'basic_sword',0);
+const perfected=replaceGem(noDowngrade,'basic_sword',might,.999999);
+ok(gearEnhancement(perfected,'basic_sword').statGemRollPercent===120,'A final reroll can perfect the socket');
+const countAtMax=gemStorageQuantity(perfected,might);
+let maxBlocked=false;try{replaceGem(perfected,'basic_sword',might,0)}catch(error){maxBlocked=String(error).includes('maximum roll')}
+ok(maxBlocked&&gemStorageQuantity(perfected,might)===countAtMax,'A perfected socket cannot waste another gem on a pointless reroll');
+const removed=unsocketGem(perfected,'basic_sword',0);
 ok(gearEnhancement(removed,'basic_sword').statGemRollPercent===undefined,'Extraction removes the socket roll along with its gem');
-ok(gemStorageQuantity(removed,might)===3,'Extracted gem returns as an unrolled stackable copy');
+ok(gemStorageQuantity(removed,might)===countAtMax+1,'Extracted gem returns as an unrolled stackable copy');
+const incompatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,gemIds:[might],statGemRollPercent:120});
+ok(incompatibleLegacy.statGemId===might&&incompatibleLegacy.statGemRollPercent===undefined,'A legacy gemIds fallback must not inherit a roll from an unrelated former socket');
+const compatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,statGemId:might,statGemRollPercent:110,gemIds:[]});
+ok(compatibleLegacy.statGemRollPercent===110,'A valid existing named socket retains its saved roll');
 const legacyState={...rollState,character:{...rollState.character!,gearEnhancements:{basic_sword:{rank:0,failures:0,statGemId:might,gemIds:[]}}}};
 ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.power??0)-.004)<1e-10,'Older socketed gems preserve their original midpoint value');
 let untrusted=false;try{executeGameCommand(rollState,{type:'socket',args:{id:'basic_sword',gemId:might}},1000)}catch(error){untrusted=String(error).includes('trusted_random_required')}

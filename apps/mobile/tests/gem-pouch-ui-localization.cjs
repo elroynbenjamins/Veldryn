@@ -10,7 +10,16 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(gemPouchUiRows);
-assert.equal(keys.length,48,'all fixed Gem Pouch UI labels, prompts and accessibility guidance');
+assert.ok(keys.length>=67,'original Gem Pouch templates and the complete gem-roll glossary must remain available');
+for(const key of [
+ 'POSSIBLE SOCKET ROLL','AFTER REFINING','Maximum roll','Reroll unavailable','Roll quality',
+ 'One of nine equally likely rolls. Higher rolls give stronger bonuses.',
+ 'One duplicate gem is consumed; the higher roll is kept.',
+ 'The old gem returns to storage without its socket roll.',
+ 'Returned to Gem Pouch or available storage.',
+]){
+ assert.ok(Object.hasOwn(gemPouchUiRows,key),'missing localized grindstone mechanic: '+key);
+}
 const placeholders=s=>[...s.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
  const row=gemPouchUiRows[key];
@@ -48,4 +57,4 @@ assert.ok(source.includes('protectedGem||selectedItem.value<=0'),'protected gems
 assert.ok(source.includes('onFavorite?.(selectedStack.itemId)')&&source.includes('onLock?.(selectedStack.itemId)'),'identity updates remain ID based');
 const parsed=ts.createSourceFile('GemPouchPanel.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(parsed.parseDiagnostics.length,0,'Gem Pouch JSX must parse');
-console.log('PASS: 48 Gem Pouch authored templates × 7 translations; preserved protection, gem commands and source fallback');
+console.log('PASS: '+keys.length+' Gem Pouch templates × 7 translations, including rolled-gem safety; preserved commands and fallback');

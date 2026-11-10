@@ -48,7 +48,8 @@ const collection=read('src/components/SmithingCollection.tsx');
 const oddsGuide=read('src/components/ForgeOddsGuide.tsx');
 const oddsBeforeCraft=collection.indexOf('<ForgeOddsGuide key={recipe.output.itemId} itemId={recipe.output.itemId}/>');
 const craftButton=collection.indexOf('accessibilityState={{disabled:!ready}}');
-ok(oddsBeforeCraft>0&&craftButton>oddsBeforeCraft,'Rarity and quality odds must appear immediately before the selected equipment craft action');
+ok(craftButton>collection.indexOf('style={s.itemHero}')&&craftButton<collection.indexOf('status.inputs.map(input=>')&&oddsBeforeCraft>craftButton,
+ 'Selected gear must offer a craft action before long material/rarity details while retaining the accessible odds guide below');
 ok(collection.indexOf('<ForgeOddsGuide',oddsBeforeCraft+1)===-1,'Odds guide must not be repeated under the queue');
 ok(collection.includes("type EquipmentCraftingSkill='smithing'|'tailoring'")&&read('src/screens/SkillsScreen.tsx').includes("initialSkill==='smithing'||initialSkill==='tailoring'"),
  'Smithing and Tailoring must use the same odds-bearing equipment crafting collection');

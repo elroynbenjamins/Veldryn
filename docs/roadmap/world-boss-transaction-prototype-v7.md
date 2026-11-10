@@ -10,6 +10,8 @@
 - `backend/src/server/combat/world-boss-echo-prototype.ts`: deterministic test-only Echo matcher by role, five relative power brackets, stale-snapshot filtering, selection rotation, same-owner exclusion, and marked NPC fallback.
 - `apps/mobile/tests/world-boss-echo-prototype.ts`: reproducible selection, duplicate-account prevention, stale/off-bracket filtering, low-population NPCs and event receipt integration; registered in core CI.
 
+- `apps/mobile/tests/world-boss-round-pressure-v7.ts`: 1,620 test-only fights (3 bosses × 3 phases × 4 enemy pressures × 9 class initiators × 5 seeds). Log survival, combat damage and rounds reached. These runs use `launchPlayer` fixtures, not actual equipped accounts, and **do not approve** new live difficulty values.
+
 The v7 reducer calls the existing disabled v6 14-round simulator **itself**, rather than accepting damage or an outcome sent from the mobile client. Same-seed, same-request duplicate submissions get the previous combat/replay receipt without spending another attempt. A reused request key with different parameters is rejected. One character cannot grant its account more than three attacks by switching to a second character.
 
 ### Fixed-phase and community HP rules

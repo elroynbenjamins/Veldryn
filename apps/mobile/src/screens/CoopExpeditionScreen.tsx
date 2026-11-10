@@ -23,7 +23,7 @@ import {GameButton} from '../components/GameButton';
 import {useGameTheme} from '../theme/ThemeContext';
 import {realCoopEntrySource,type CoopEntrySource} from '../online/coop-entry-source';
 import type {GameState} from '../core/types';
-import {clt} from '../i18n';
+import {clt,ct} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {CoopChatMessage} from '../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../online/coop-profile-icons';
@@ -246,7 +246,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   });
   const continueDungeon=(resolvedTier:CoopTier)=>{
     if(!entry&&entrySource.kind==='real'){
-      setNotice(st('Refreshing dungeon availability before entering.'));
+      setNotice(ct(language,'browse.loading'));
       void load(true);
       return;
     }
@@ -260,7 +260,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   function chooseDungeon(dungeon:CoopDungeonView){setSelectedEvent(undefined);setEventRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setNotice('')}
   function chooseEvent(expedition:CoopEventExpeditionPreview){setSelected(undefined);setShowLoadouts(false);setRun(undefined);setSelectedEvent(expedition);setNotice('')}
   const retry=pending?<GameButton title={st("Retry pending co-op action")} disabled={busy} onPress={()=>action(async()=>{const value=await coopClient.retryPending();if(value&&typeof value==='object'&&'eventExpeditionId' in value)acceptEventRun(value as CoopEventRunServerProjection);else if(value&&typeof value==='object'&&'team' in value)acceptRun(value as CoopQModeServerProjection);await load();})}/>:null;
-  const quickLiveMatch=()=>void action(async()=>{if(!entry)throw new Error(st('Refresh dungeon availability before matchmaking.'));const loadout=verifiedLoadout();if(!loadout)throw new Error(st("No verified Live-ready loadout is available. Refresh your co-op loadout first."));await coopClient.quickLive({requestId:coopRequestId(),characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});setShowLive(true);});
+  const quickLiveMatch=()=>void action(async()=>{const loadout=verifiedLoadout();if(!loadout)throw new Error(st("No verified Live-ready loadout is available. Refresh your co-op loadout first."));await coopClient.quickLive({requestId:coopRequestId(),characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});setShowLive(true);});
   // A repeat run is a fresh server-validated start, never a replay of results.
   // Quick Match seeks a new roster. Same-party rematches use the separate
   // unanimous server-authorized ready check after rewards are claimed.

@@ -95,7 +95,12 @@ function hollowroot(phase:Phase,players:CombatantDefinition[],pressure=1):Combat
  const avgAttack=mean(players.map(x=>x.stats.attackPower));
  const avgDefense=mean(players.map(x=>x.stats.defense));
  // A personal 70s attempt must never defeat the global/community boss locally.
- const hp=Math.max(100_000,Math.round(players.reduce((n,x)=>n+x.stats.attackPower,0)*110));
+ const squadAttack=players.reduce((n,x)=>n+x.stats.attackPower,0);
+ const hp=Math.max(100_000,Math.round(squadAttack*110));
+ // LOCAL guard has its own bounded combat budget: do NOT scale Regrowth from
+ // deliberately unkillable community-boss proxy HP. This is a calibration
+ // assumption, not the final event guard formula.
+ const localGuardBudget=Math.round(squadAttack*25);
  const ap=Math.max(80,Math.round(avgAttack*1.10*pressure));
  const stats:CombatStats={
   maxHp:hp,attackPower:ap,healingPower:0,defense:Math.round(avgDefense*.55),
@@ -124,7 +129,7 @@ function hollowroot(phase:Phase,players:CombatantDefinition[],pressure=1):Combat
   {id:'WBH_ENTANGLE',name:'Entangling Vines',target:'random_enemy',priority:95,cooldownMs:14_000,castTimeMs:1_000,interruptible:true,
    effects:[{kind:'debuff',tag:'damage_done',value:-.50,durationMs:4_000}]},
   {id:'WBH_REGROWTH',name:'Local Guard Regrowth',target:'self',priority:80,cooldownMs:18_000,castTimeMs:1_100,interruptible:true,
-   effects:[{kind:'shield',flat:Math.round(hp*.08)}]},
+   effects:[{kind:'shield',flat:Math.round(localGuardBudget*.08)}]},
   slam(1.35),
   exposure,
  ];
@@ -146,7 +151,7 @@ type Sample={
  squadDamage:number;ownDamage:number;ownEffectiveHeal:number;ownShieldsApplied:number;
  totalEffectiveHeal:number;shieldAbsorbed:number;incomingDamage:number;
  alive:number;tankAlive:boolean;supportAlive:boolean;initiatorAlive:boolean;teamSurvived:boolean;bossDefeated:boolean;
- rootSlams:number;sporeTicks:number;regrowthShields:number;interrupts:number;
+ rootSlams:number;sporeTicks:number;regrowthShields:number;localGuardApplied:number;interrupts:number;
 };
 function run(initiator:ClassId,tier:Tier,phase:Phase,seed:number,variant:Variant='normal',pressure=1){
  const bracket=BRACKETS.find(b=>b.tier===tier)!;
@@ -188,6 +193,7 @@ function run(initiator:ClassId,tier:Tier,phase:Phase,seed:number,variant:Variant
   rootSlams:count(result,'cast_complete',boss.id), // boss cast total; see signature-specific event fields below
   sporeTicks:result.events.filter(e=>e.abilityId==='WBH_SPOREBURST'&&e.type==='dot_tick').length,
   regrowthShields:result.events.filter(e=>e.abilityId==='WBH_REGROWTH'&&e.type==='shield').length,
+  localGuardApplied:result.events.filter(e=>e.abilityId==='WBH_REGROWTH'&&e.type==='shield').reduce((n,e)=>n+(e.amount??0),0),
   interrupts:count(result,'interrupt'),
  };
  a.rootSlams=result.events.filter(e=>e.abilityId==='WBH_ROOT_SLAM'&&e.type==='cast_complete').length;
@@ -227,6 +233,7 @@ for(const {tier} of BRACKETS)for(const phase of PHASES)for(const role of ['Tank'
   meanRootSlams:round(mean(xs.map(x=>x.rootSlams))),
   meanSporeTicks:round(mean(xs.map(x=>x.sporeTicks))),
   meanRegrowthCasts:round(mean(xs.map(x=>x.regrowthShields))),
+  meanLocalGuardApplied:round(mean(xs.map(x=>x.localGuardApplied))),
   meanInterrupts:round(mean(xs.map(x=>x.interrupts))),
  });
 }
@@ -299,7 +306,7 @@ console.log('WB_HOLLOWROOT_METHOD='+JSON.stringify({
  gear:'apps/mobile/src/core/regional-combat-fixtures.ts + game.ts effectiveStats',
  phaseProxy:'70s time-based fight (NOT authored 14-round schedule)',
  replicates:REPLICATES,totalRuns:samples.length+counterplay.length*3*REPLICATES+pressureResults.length*REPLICATES*2+2,
- pressureSweep:pressures,localBossHpMultiplier:110,
+ pressureSweep:pressures,localBossHpMultiplier:110,localGuardBudgetToSquadAttack:25,regrowthPctOfLocalGuard:.08,
  globalHP:false,sigils:false,accountSnapshots:false,
  limitations:['tier-relative mobile-to-engine stat adapter','fixed boss HP per bracket','no authoritative world-boss guards/weak-points','generic debuff not action-specific root','nature DoT not target %MaxHP','no war camp','no world impact grants'],
 }));

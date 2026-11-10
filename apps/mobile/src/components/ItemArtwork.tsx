@@ -13,7 +13,10 @@ export function ItemArtwork({itemId,size=40}:{itemId:string;size?:number}){
  if(hasRawGemArtworkV1(itemId))return <GemArtwork itemId={itemId} size={size} framed={false}/>;
  if(hasGemArtworkV1(itemId))return <GemArtwork itemId={itemId} size={size} framed={false}/>;
  if(hasResourceArtwork(itemId))return <ResourceArtwork itemId={itemId} size={size} framed={false}/>;
- const item=itemDef(itemId);
+ // Reward receipts and legacy saves must never crash the screen because an
+ // item ID predates the installed client catalog. Keep the source ID intact.
+ let item:ReturnType<typeof itemDef>;
+ try{item=itemDef(itemId)}catch{return <UiIcon name="inventory" size={size}/>;}
  if(item.type==='tool'&&hasGatheringToolArtwork(itemId))return <GatheringToolArtwork itemId={itemId} size={size} framed={false}/>;
  if(item.type==='gear'&&hasEquipmentArtwork(item))return <View style={{width:size,height:size,overflow:'hidden',alignItems:'center',justifyContent:'center'}}><View style={{width:48,height:48,transform:[{scale:size/48}]}}><EquipmentArtwork item={item} compact framed={false}/></View></View>;
  return <UiIcon name="inventory" size={size}/>;

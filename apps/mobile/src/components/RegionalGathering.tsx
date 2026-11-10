@@ -11,6 +11,7 @@ import type {WorkingTowardDestination} from '../core/working-toward';
 import {ZoneSceneArtwork} from './ZoneSceneArtwork';
 import {ActivityArtwork} from './ActivityArtwork';
 import {GatheringActivityList} from './GatheringActivityList';
+import {DisclosureControl} from './DisclosureControl';
 
 export function RegionalGathering({state,preferredActionId,onGather,onNavigate,onManageSkill,onBack}:{state:GameState;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onManageSkill:(skill:GatheringSkillId)=>void;onBack?:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{gt,gl}=useGameplayText();
@@ -20,7 +21,7 @@ export function RegionalGathering({state,preferredActionId,onGather,onNavigate,o
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.heading}>{onBack?<Pressable accessibilityRole="button" onPress={onBack} style={s.back}><Text style={s.backText}>‹ {gt('World')}</Text></Pressable>:null}<Text accessibilityRole="header" style={s.title}>{gt('Gathering')}</Text></View>
   <View style={s.hero}><ZoneSceneArtwork regionId={region.id}/><View style={s.shade}/><View style={s.heroCopy}><Text style={s.eyebrow}>{gt('CURRENT REGION')}</Text><Text style={s.region}>{region.name}</Text><Text style={s.heroMeta}>{ready} / {nodes.length} resources ready</Text></View></View>
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:showSkills}} onPress={()=>setShowSkills(value=>!value)} style={s.toolsToggle}><Text style={s.sectionTitle}>{gt('Skills')}</Text><Text style={s.sub}>{showSkills?'−':'+'}</Text></Pressable>
+  <DisclosureControl label={gt('Skills')} expanded={showSkills} onPress={()=>setShowSkills(value=>!value)}/>
   {showSkills&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.skills} showsVerticalScrollIndicator={false}>{skills.map(skill=><Pressable key={skill} accessibilityRole="button" accessibilityLabel={gl(skill)+' · '+gt('Skills')} onPress={()=>onManageSkill(skill as GatheringSkillId)} style={({pressed})=>[s.skill,pressed&&s.pressed]}><ActivityArtwork id={skill} size={22}/><View style={s.skillCopy}><Text style={s.skillName}>{gl(skill)}</Text><Text style={s.sub}>{gt('Level {value}',{value:level(skill)})}</Text></View><Text style={s.sub}>›</Text></Pressable>)}</ScrollView>}
   <View style={s.section}><View style={s.skillCopy}><Text style={s.sectionTitle}>Regional resources</Text><Text style={s.sub}>{gt('Tap a resource to begin gathering.')}</Text></View><Text style={s.count}>{nodes.length}</Text></View>
   {skills.map(skill=><View key={skill} style={s.skillSection}><Text style={s.skillHeading}>{gl(skill)}</Text><GatheringActivityList state={state} skillId={skill as GatheringSkillId} skillLevel={level(skill)} preferredActionId={preferredActionId} onGather={onGather} onNavigate={onNavigate} currentRegionOnly showInstruction={false}/></View>)}

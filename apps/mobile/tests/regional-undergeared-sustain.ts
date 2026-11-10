@@ -30,6 +30,7 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>row.regionName!=='Greenfie
    label+' full regional gear must beat a one-slot kit on kill speed');
   assert.ok(emptyProjection.killsPerHour<=oneProjection.killsPerHour,
    label+' empty slots must not improve kill speed');
+  if(label==="King's Road / RAVAGER")console.log('UNDERGEARED DIAGNOSTIC',label,JSON.stringify({full:fullProjection.foodPerHour,one:oneProjection.foodPerHour,empty:emptyProjection.foodPerHour,fullTime:fullProjection.killCycleSeconds,emptyTime:emptyProjection.killCycleSeconds,fullDamage:fullProjection.damagePerKill,emptyDamage:emptyProjection.damagePerKill}));
   assert.ok(emptyProjection.foodPerHour>fullProjection.foodPerHour*1.2,
    label+' minimal equipment must demand substantially more cooked food');
  }

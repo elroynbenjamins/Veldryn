@@ -53,7 +53,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
 }){
  const ui=useGuildBankUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
  // Preserve readable touch targets when accessibility fonts are significantly enlarged.
- const accessibleGrid=windowWidth<330||fontScale>=1.35;
+ const accessibleGrid=windowWidth<430||fontScale>=1.25;
+ const roomyGrid=windowWidth<350||fontScale>=1.55;
  const [selection,setSelection]=useState<string|null>(null),[quantity,setQuantity]=useState('1');
  const [view,setView]=useState<BankSection>('inventory'),[search,setSearch]=useState('');
  const [pending,setPending]=useState<PendingGuildBankDeposit|null>(null);
@@ -168,7 +169,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    accessibilityLabel={ui('{resource}, {stored} in Guild Bank. {more} more can be donated.',{resource:resourceTitle(id),stored:onHand.toLocaleString(),more:remaining.toLocaleString()})}
    accessibilityHint={ui("Opens material details and donation options")}
    disabled={depositDisabled} onPress={()=>choose(id)}
-   style={({pressed})=>[s.bankSlot,accessibleGrid&&s.accessibleSlot,state==='Covered'&&s.fundedSlot,
+   style={({pressed})=>[s.bankSlot,accessibleGrid&&s.accessibleSlot,roomyGrid&&s.roomySlot,state==='Covered'&&s.fundedSlot,
     state==='Needed now'?s.nowSlot:state==='Upcoming'?s.futureSlot:null,pressed&&s.pressed]}>
    <View style={[s.statusDot,state==='Needed now'?s.nowDot:state==='Upcoming'?s.futureDot:s.fundedDot]}/>
    <View style={s.artFrame}>
@@ -205,10 +206,10 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    </View>
    <View style={s.vaultMark}><Text style={s.vaultGlyph}>▣</Text></View>
   </View>
-  <View style={s.stats}>
-   <View style={s.stat}><Text style={s.statLabel}>{ui('STORED MATERIALS')}</Text><Text style={s.statValue}>{snapshot.bank?storedTypes:'—'}<Text style={s.statSuffix}>{' '+ui('types')}</Text></Text></View>
-   <View style={s.statDivider}/>
-   <View style={s.stat}><Text style={s.statLabel}>{ui('STILL TO DEPOSIT')}</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}>{' '+ui('units')}</Text></Text></View>
+  <View style={[s.stats,roomyGrid&&s.statsWrap]}>
+   <View style={[s.stat,roomyGrid&&s.wideStat]}><Text style={s.statLabel}>{ui('STORED MATERIALS')}</Text><Text style={s.statValue}>{snapshot.bank?storedTypes:'—'}<Text style={s.statSuffix}>{' '+ui('types')}</Text></Text></View>
+   {!roomyGrid?<View style={s.statDivider}/>:null}
+   <View style={[s.stat,roomyGrid&&s.wideStat]}><Text style={s.statLabel}>{ui('STILL TO DEPOSIT')}</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}>{' '+ui('units')}</Text></Text></View>
   </View>
   <View style={s.fundingGuide}>
    <Text style={s.guideTitle}>{ui('How Guild funding works')}</Text>
@@ -236,8 +237,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   <View style={s.tabs} accessibilityRole="tablist">
    {([{id:'inventory',label:'▦  '+ui('Inventory')},{id:'needed',label:'◎  '+ui('Needed')},{id:'activity',label:'◷  '+ui('Activity')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
     accessibilityState={{selected:view===tab.id}} onPress={()=>{setView(tab.id);setNotice('')}}
-    style={({pressed})=>[s.tab,view===tab.id&&s.activeTab,pressed&&s.pressed]}>
-    <Text numberOfLines={1} style={[s.tabText,view===tab.id&&s.activeTabText]}>{tab.label}</Text>
+    style={({pressed})=>[s.tab,fontScale>=1.25&&s.accessibleTab,view===tab.id&&s.activeTab,pressed&&s.pressed]}>
+    <Text numberOfLines={fontScale>=1.25?2:1} style={[s.tabText,view===tab.id&&s.activeTabText]}>{tab.label}</Text>
    </Pressable>)}
   </View>
   {view==='inventory'?<View style={s.section}>
@@ -308,10 +309,10 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
       <Text style={s.meta}>{ui('Only published Construction and released Skill materials can be deposited')}</Text>
      </View>
     </View>
-    <View style={s.modalStats}>
-     <View style={s.modalStat}><Text style={s.statLabel}>{ui('GUILD OWNS')}</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>{ui('YOU OWN')}</Text><Text style={s.modalNumber}>{playerState?ownedQuantity(selected).toLocaleString():'—'}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>{ui('CAN DONATE')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
+    <View style={[s.modalStats,roomyGrid&&s.modalStatsWrap]}>
+     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('GUILD OWNS')}</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
+     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('YOU OWN')}</Text><Text style={s.modalNumber}>{playerState?ownedQuantity(selected).toLocaleString():'—'}</Text></View>
+     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('CAN DONATE')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
     </View>
     <Text style={s.name}>{ui('Donation amount')}</Text>
     <TextInput value={quantity} onChangeText={setQuantity} selectTextOnFocus keyboardType="number-pad"
@@ -342,7 +343,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  vaultMark:{width:47,height:47,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.md,backgroundColor:C.panel2},
  vaultGlyph:{color:C.accent,fontSize:29,fontWeight:'800'},
  stats:{flexDirection:'row',gap:12,alignItems:'center',borderRadius:radii.md,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,padding:12},
- stat:{flex:1,minWidth:0,gap:3},statDivider:{width:1,height:38,backgroundColor:C.lineStrong},
+ stat:{flex:1,minWidth:0,gap:3},statsWrap:{flexWrap:'wrap'},wideStat:{flexBasis:'100%'},statDivider:{width:1,height:38,backgroundColor:C.lineStrong},
  statLabel:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.6},
  statValue:{fontSize:20,lineHeight:26,color:C.accent,fontWeight:'900'},
  statSuffix:{fontSize:10,color:C.muted,fontWeight:'500'},
@@ -358,14 +359,14 @@ function styles(C:ThemeColors){return StyleSheet.create({
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
  sectionTitle:{fontSize:14,fontWeight:'900',color:C.text,flexShrink:1},
  tabs:{flexDirection:'row',gap:4,padding:4,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,marginTop:13},
- tab:{flex:1,minWidth:0,minHeight:44,paddingHorizontal:3,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'transparent',borderRadius:radii.sm},
+ tab:{flex:1,minWidth:0,minHeight:44,paddingHorizontal:3,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'transparent',borderRadius:radii.sm},accessibleTab:{minHeight:58,paddingVertical:5},
  activeTab:{borderColor:C.selectionLine,backgroundColor:C.selection},
  tabText:{fontSize:11,color:C.muted,fontWeight:'800',textAlign:'center'},
  activeTabText:{color:C.text},pressed:{opacity:.75},
  search:{minHeight:44,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,backgroundColor:C.inputBg,color:C.text,paddingHorizontal:12,fontSize:13},
  bankGrid:{flexDirection:'row',flexWrap:'wrap',columnGap:6,rowGap:7},
  bankSlot:{width:'23%',flexGrow:1,maxWidth:'24%',minWidth:0,minHeight:119,gap:4,paddingHorizontal:3,paddingTop:12,paddingBottom:7,alignItems:'center',justifyContent:'space-between',position:'relative',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
- accessibleSlot:{width:'31%',maxWidth:'32%',minHeight:119},
+ accessibleSlot:{width:'31%',maxWidth:'32%',minHeight:119},roomySlot:{width:'47%',maxWidth:'49%',minHeight:134},
  fundedSlot:{opacity:.75},nowSlot:{borderColor:C.good},futureSlot:{borderColor:C.info},
  statusDot:{position:'absolute',width:6,height:6,borderRadius:4,right:6,top:6},
  nowDot:{backgroundColor:C.good},futureDot:{backgroundColor:C.info},fundedDot:{backgroundColor:C.muted},
@@ -391,8 +392,8 @@ function styles(C:ThemeColors){return StyleSheet.create({
  confirmBody:{paddingTop:8,paddingBottom:20,gap:14},
  modalSummary:{flexDirection:'row',alignItems:'center',gap:11,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,padding:10},
  modalArt:{width:59,height:59,alignItems:'center',justifyContent:'center'},
- modalStats:{flexDirection:'row',gap:6},
- modalStat:{flex:1,minWidth:0,alignItems:'center',justifyContent:'center',gap:3,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
+ modalStats:{flexDirection:'row',gap:6},modalStatsWrap:{flexWrap:'wrap'},
+ modalStat:{flex:1,minWidth:0,alignItems:'center',justifyContent:'center',gap:3,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},modalStatWide:{flexBasis:'47%',minHeight:72},
  modalNumber:{fontSize:17,fontWeight:'900',color:C.accent},
  input:{minHeight:48,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,color:C.text,backgroundColor:C.inputBg,paddingHorizontal:12,fontSize:17},
  presetRow:{flexDirection:'row',gap:6},

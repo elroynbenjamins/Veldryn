@@ -82,7 +82,7 @@ requireMatches(dbTest,[
   ['legacy protects crafting',/reserved cooking\/brewing inputs were sellable/],
 ], 'rollback test');
 assert.match(release,/export const PLAYER_MARKET_RELEASED=false;/,'market remains hidden');
-assert.match(roadmap,/return featureId!=='player_market';/,'unreleased market remains off Roadmap');
+assert.match(roadmap,/return true;/,'Player Market can be voted on in Roadmap without releasing trading');
 assert.doesNotMatch(reserve,/\bgrant execute\b/i,'never expose reserve RPCs');
 assert.doesNotMatch(cancel,/\bgrant execute\b/i,'never expose cancel RPCs');
 assert.doesNotMatch(reserve,/\bupdate\s+public\.character_wallets\b/i,'no Gold wallet mutation in reservation pass');

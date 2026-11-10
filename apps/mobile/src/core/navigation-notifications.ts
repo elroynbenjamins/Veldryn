@@ -1,6 +1,6 @@
 import type {QuickNavDestination} from './quick-navigation';
 export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
-export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready';
+export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready'|'party_contract_reward_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
 export type NavigationBadgeMap=Record<PrimaryNavigationId,NavigationBadge>;
@@ -9,6 +9,7 @@ export interface NotificationDestination{primary:PrimaryNavigationId;subroute:st
 export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDestination>={
  friend_request:{primary:'account',subroute:'social.friends.requests',mode:'count'},
  party_invite:{primary:'account',subroute:'social.party.invites',mode:'count'},
+ party_contract_reward_ready:{primary:'account',subroute:'social.party.contracts',mode:'count'},
  guild_invite:{primary:'account',subroute:'social.guild.invites',mode:'count'},
  guild_application:{primary:'account',subroute:'social.guild.applications',mode:'count'},
  chat_unread:{primary:'account',subroute:'social.chat',mode:'count'},
@@ -64,6 +65,7 @@ export function mergeRouteBadges(map:SubrouteBadgeMap,routes:string[]):Navigatio
 export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDestination>={
  friend_request:'Friends',
  party_invite:'Party',
+ party_contract_reward_ready:'Party',
  guild_invite:'Guild',
  guild_application:'Guild',
  chat_unread:'Party',

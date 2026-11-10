@@ -423,7 +423,10 @@ export const starterItemNames={
 export const allItemNames={...starterItemNames,...expandedItemNamesA,...expandedItemNamesB,...alchemyItemNames} as const;
 
 export function localizedItemName(language:Language,itemId:string):string{
- const item=itemDef(itemId);
+ // A reward from a newer server may not yet exist in this client's catalog.
+ // Presentation falls back to the raw ID; gameplay operations still validate it.
+ let item:ReturnType<typeof itemDef>;
+ try{item=itemDef(itemId)}catch{return itemId.replace(/_/g,' ');}
  const row=Object.prototype.hasOwnProperty.call(allItemNames,itemId)?allItemNames[itemId as keyof typeof allItemNames]:undefined;
  return row&&row.en===item.name?row[language]??item.name:item.name;
 }

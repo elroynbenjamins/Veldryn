@@ -38,6 +38,25 @@ for(const boss of BOSSES)for(const phase of PHASES)for(const [name] of CLASSES){
  roughly(attacks.reduce((n,e)=>n+(e.guardAbsorbed??0),0),r.localGuardDamage,'guard absorbs reconcile');
  const byPlayer=Object.values(r.participants).reduce((n,p)=>n+p.bossHpDamage,0);
  roughly(byPlayer,r.bossHpDamage,'initiator and borrowed Echo HP contributions reconcile');
+ // The replay must be sufficient to reconstruct each role's actual utility.
+ for(const [actor,metric] of Object.entries(r.participants)){
+  const healing=r.events.filter(e=>e.type==='heal'&&e.actorId===actor).reduce((n,e)=>n+(e.amount??0),0);
+  const shields=r.events.filter(e=>e.type==='mitigate'&&e.abilityId==='SHIELD_ABSORB'&&e.ownerId===actor)
+   .reduce((n,e)=>n+(e.amount??0),0);
+  const protection=r.events.filter(e=>e.type==='mitigate'&&e.abilityId==='TANK_INTERCEPT'&&e.actorId===actor)
+   .reduce((n,e)=>n+(e.amount??0),0);
+  roughly(healing,metric.effectiveHealing,'effective healing must equal actual replay heals');
+  roughly(shields,metric.shieldConsumed,'only consumed shield value earns utility credit');
+  roughly(protection,metric.tankProtection,'Tank protection cannot be invented from unused shields');
+ }
+ for(const t of r.events.filter(e=>e.type==='telegraph')){
+  const ordinary=r.events.find(e=>e.round===t.round&&e.type==='strike'&&e.actorId===boss.toUpperCase()&&e.abilityId==='BASIC');
+  assert.ok(Boolean(ordinary),'every warning round includes a distinct ordinary boss action');
+ }
+ if(boss==='hollowroot'&&phase==='exposed'){
+  const poison=r.events.filter(e=>e.type==='status_apply'&&e.abilityId==='SPOREBURST');
+  assert.ok(poison.length>=2,'sporeburst must pressure multiple surviving actors rather than just the Tank');
+ }
  const phaseScript=WORLD_BOSS_ROUND_SCRIPTS[boss][phase];
  for(const event of r.events.filter(e=>e.type==='telegraph')){
   assert.equal(phaseScript[event.round-1],event.abilityId+'_TELL','visual cues are real scripted abilities');
@@ -87,7 +106,11 @@ const interrupter:AbilityDefinition={
  target:'interruptible_casting_enemy',aiCondition:'target_casting',effects:[{kind:'interrupt'}]
 };
 const interruptSquad=squad('Hexweaver');
-const patched=interruptSquad.map(p=>p.classId==='Hexweaver'?{...p,abilities:[interrupter,...p.abilities]}:p);
+// Remove competing class interrupts from this isolated test: with Support-first
+// reactions, a Tank may validly interrupt the channel before Hexweaver does.
+const patched=interruptSquad.map(p=>p.classId==='Hexweaver'
+ ?{...p,abilities:[interrupter,...p.abilities]}
+ :{...p,abilities:p.abilities.filter(a=>!a.effects.some(e=>e.kind==='interrupt'))});
 const interrupted=simulateWorldBossRounds({seed:'interrupt-test',boss:'hollowroot',phase:'exposed',players:patched});
 assert.ok(interrupted.events.some(e=>e.type==='interrupt'&&e.abilityId==='TEST_INTERRUPT'),'channel interrupt must be ledger-backed');
 assert.ok(interrupted.events.some(e=>e.type==='interrupt'&&e.abilityId==='REGROWTH'),'an interrupted special must not apply its guard restoration');

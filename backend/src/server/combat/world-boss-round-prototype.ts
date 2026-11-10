@@ -23,6 +23,8 @@ export interface WorldBossRoleLedger {
 export interface WorldBossRoundInput {
   seed:string;boss:WorldBossId;phase:WorldBossPhase;players:readonly CombatantDefinition[];
   order?:WorldBossOrder; pressure?:number;
+  /** Offline counterfactual only. Must never be set from a client or production event. */
+  testOnlyDisableTankInterception?:boolean;
 }
 export interface WorldBossRoundResult {
   boss:WorldBossId;phase:WorldBossPhase;roundsCompleted:number;survived:boolean;bossHpDamage:number;
@@ -96,7 +98,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  const aliveTank=()=>living(players).find(p=>p.def.role==='tank');
  const targetSet=(id:string,round:number):string[]=>{
   const live=living(players);if(!live.length)return[];
-  if(['SPLINTERSTORM','BURNING_TEMPEST','SOLAR_COLLAPSE','SHARD_VOLLEY','WHITEOUT'].includes(id))return live.map(p=>p.def.id);
+  if(['SPLINTERSTORM','SPOREBURST','BURNING_TEMPEST','SOLAR_COLLAPSE','SHARD_VOLLEY','WHITEOUT'].includes(id))return live.map(p=>p.def.id);
   if(['SCORCH_MARK','VINES','FREEZING_CHAINS','FROSTBITE','HEAT_HAZE'].includes(id)){
    const back=live.filter(p=>p.def.role!=='tank');
    const pool=back.length?back:live;
@@ -113,7 +115,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  };
  const applyDamage=(round:number,actor:Player|undefined,target:Player|undefined,abilityId:string,coeff:number,kind:'player'|'boss',tags:{dot?:boolean;guardBreak?:boolean}={})=>{
   if(kind==='player'){
-   if(!actor||actor.hp<=0)return;
+   if(!actor||actor.hp<=0||!Number.isFinite(coeff)||coeff<=0)return;
    const acc=hitChance(actor.def.stats.accuracy,120,1400);
    if(noRngBelow(rng,round+':'+actor.def.id+':'+abilityId+':hit')>acc){
     emit({round,type:'miss',actorId:actor.def.id,abilityId,targetId:bossName(input.boss)});return;
@@ -140,22 +142,44 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
   let preShield=money(damageAfterMitigation(attack,coeff,mit,.95+noRngBelow(rng,round+':boss_variance')*.1,false,1));
   const blockedByDefense=money(Math.max(0,raw-preShield));
   let protectedAmount=0;
-  if(target.def.role!=='tank'&&aliveTank()){
-   // Explicit test-only Tank interception: genuinely prevents 10% of an ally's incoming damage.
-   protectedAmount=money(preShield*.10);preShield=money(preShield-protectedAmount);
-   const guardian=aliveTank()!;ledger[guardian.def.id].tankProtection=money(ledger[guardian.def.id].tankProtection+protectedAmount);
-   emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,targetId:target.def.id,amount:protectedAmount});
+  if(target.def.role!=='tank'&&aliveTank()&&!input.testOnlyDisableTankInterception){
+   // Do not award Tank Impact for shields which would have absorbed the strike
+   // anyway: measure the real HP difference after existing shield coverage.
+   const guardian=aliveTank()!;
+   const coverage=target.shields.reduce((n,s)=>n+s.amount,0);
+   const intercept=money(preShield*.10);
+   const before=Math.min(target.hp,Math.max(0,preShield-coverage));
+   const after=Math.min(target.hp,Math.max(0,preShield-intercept-coverage));
+   protectedAmount=money(Math.max(0,before-after));
+   preShield=money(preShield-intercept);
+   if(protectedAmount>0){
+    ledger[guardian.def.id].tankProtection=money(ledger[guardian.def.id].tankProtection+protectedAmount);
+    emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,targetId:target.def.id,amount:protectedAmount});
+   }
   }
-  if(order==='hold_line')preShield=money(preShield*.95);
+  let warOrderSaved=0;
+  if(order==='hold_line'){
+   const shieldCoverage=target.shields.reduce((n,x)=>n+x.amount,0);
+   const beforeHp=Math.min(target.hp,Math.max(0,preShield-shieldCoverage));
+   const reduced=money(preShield*.95);
+   const afterHp=Math.min(target.hp,Math.max(0,reduced-shieldCoverage));
+   warOrderSaved=money(Math.max(0,beforeHp-afterHp));
+   preShield=reduced;
+   if(warOrderSaved>0)emit({round,type:'mitigate',abilityId:'WAR_ORDER_HOLD_LINE',
+    actorId:players[0].def.id,targetId:target.def.id,amount:warOrderSaved,detail:'war_order_not_impact'});
+  }
   let remaining=preShield,absorbed=0;
   for(const shield of target.shields){
    if(remaining<=0)break;
    const used=money(Math.min(remaining,shield.amount));shield.amount=money(shield.amount-used);remaining=money(remaining-used);absorbed=money(absorbed+used);
    if(ledger[shield.ownerId])ledger[shield.ownerId].shieldConsumed=money(ledger[shield.ownerId].shieldConsumed+used);
+   if(used>0)emit({round,type:'mitigate',abilityId:'SHIELD_ABSORB',
+    actorId:shield.ownerId,ownerId:shield.ownerId,targetId:target.def.id,amount:used,
+    detail:'already_accounted_in_strike_absorbed'});
   }
   target.shields=target.shields.filter(s=>s.amount>0);
   const hpDamage=money(Math.min(target.hp,remaining));target.hp=money(target.hp-hpDamage);
-  emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+protectedAmount)});
+  emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+protectedAmount+warOrderSaved)});
   if(target.hp===0)emit({round,type:'down',abilityId,actorId:bossName(input.boss),targetId:target.def.id});
  };
  const applyHeal=(round:number,actor:Player,target:Player,abilityId:string,amount:number)=>{
@@ -195,6 +219,13 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  const chooseTarget=(actor:Player,ability:AbilityDefinition):Player=>{
   const live=living(players);
   if(ability.target==='self')return actor;
+  // A cleanse must select a genuinely afflicted ally before an uninjured
+  // lowest-HP ally, otherwise the skill fires but prevents no real status.
+  if(ability.effects.some(effect=>effect.kind==='cleanse')){
+   const afflicted=live.filter(p=>p.statuses.some(s=>['burn','frostbite','root','freeze','dot'].includes(s.kind)));
+   if(afflicted.length)return afflicted.sort((a,b)=>
+    a.hp/a.def.stats.maxHp-b.hp/b.def.stats.maxHp||a.def.id.localeCompare(b.def.id))[0];
+  }
   if(ability.target==='lowest_hp_ally')return live.reduce((a,b)=>a.hp/a.def.stats.maxHp<=b.hp/b.def.stats.maxHp?a:b);
   if(ability.target==='threatened_ally')return live.find(p=>pending?.targetIds.includes(p.def.id))??live.reduce((a,b)=>a.hp/a.def.stats.maxHp<=b.hp/b.def.stats.maxHp?a:b);
   return actor;
@@ -282,16 +313,25 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
    emit({round,type:'exposure',abilityId:cue,actorId:bossName(input.boss),amount:guard===0?1:0,detail:'conditional_on_guard_break'});
   }
   if(cue==='ICEBOUND_AEGIS')emit({round,type:'guard',abilityId:cue,actorId:bossName(input.boss),amount:guard,detail:'local_only'});
-  // One real ability/basic attack per player per round; always deterministic order.
-  for(const p of players)if(p.hp>0)playerTurn(round,p);
+  // Support can cleanse an already-applied control before allies take their
+  // next action. Every actor still receives at most one turn; no bonus attacks.
+  const turns=[...players].sort((a,b)=>
+   Number(b.def.role==='support')-Number(a.def.role==='support')||
+   Number(b.def.role==='tank')-Number(a.def.role==='tank')||
+   a.def.id.localeCompare(b.def.id));
+  for(const p of turns)if(p.hp>0)playerTurn(round,p);
   if(specials.has(cue)){
    if(!pending||pending.id!==cue||pending.resolvesRound!==round)throw Error('world_boss_invalid_pending_special:'+cue);
    if(!pending.cancelled)special(round,cue,pending.targetIds);
    else emit({round,type:'interrupt',abilityId:cue,actorId:bossName(input.boss),detail:'cancelled_special'});
    pending=undefined;
-  }else if(cue!=='CLOSE'&&!cue.endsWith('_TELL')&&!['HEART_EXPOSE','SOLAR_PLATE_WINDOW','AEGIS_FRACTURE','ICEBOUND_AEGIS'].includes(cue)){
+  }else if(cue!=='CLOSE'){
+   // Authored telegraphs remain one-round warnings for the SPECIAL, but do
+   // not disable the boss's ordinary attack. Distinguish BASIC visibly in
+   // replay so players never mistake it for the telegraphed spike.
    const target=aliveTank()??living(players)[0];
-   applyDamage(round,undefined,target,cue,.60,'boss');
+   const ordinary=cue.endsWith('_TELL')||['HEART_EXPOSE','SOLAR_PLATE_WINDOW','AEGIS_FRACTURE','ICEBOUND_AEGIS'].includes(cue);
+   applyDamage(round,undefined,target,ordinary?'BASIC':cue,.60,'boss');
   }
   // Status ticks are real HP/guard operations, not narrative or client-side estimates.
   for(const p of players){

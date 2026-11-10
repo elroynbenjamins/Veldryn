@@ -5,7 +5,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {combatMotionProfile} from '../core/combat-motion';
 import {combatPresentation} from '../core/combat-presentation';
 import {activeCombatHitProjection,effectiveStats} from '../core/game';
-import {displayStat} from '../core/stat-display';
+import {displayStat,displayStatPrecise} from '../core/stat-display';
 import {GameState} from '../core/types';
 import {C,radii,typography} from '../theme/theme';
 import {CharacterPortrait} from './CharacterVisual';
@@ -27,7 +27,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const fight=useMemo(()=>isLive?activeCombatHitProjection(state,effectiveNowMs,replayCursor.current):undefined,[isLive,state,effectiveNowMs]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const recentHit=!fight?.searching&&fight?.lastHit&&effectiveNowMs-fight.lastHit.atMs<2600?fight.lastHit:undefined;
- const damageValue=(value:number)=>value>0&&value<1?value.toFixed(2):String(displayStat(value));
+ const damageValue=(value:number)=>displayStatPrecise(value);
  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion);
  const playerLunge=useRef(new Animated.Value(0)).current,enemyLunge=useRef(new Animated.Value(0)).current;
  const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current;
@@ -112,8 +112,8 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
   </Animated.View>
   <View style={s.details}><Text style={s.ability}>{view.style.name}</Text><Text style={s.sub}>{tr(view.style.description)}</Text>
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>{tr('ENCOUNTER · {type}',{type:tr(view.encounter.archetype).toUpperCase()})}</Text><Text style={s.pressure}>{tr(view.encounter.pressure).toUpperCase()}</Text></View><Text style={s.sub}>{tr(view.encounter.summary)}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{tr(mechanic)}</Text></View>)}</View><Text style={s.tactic}>{tr('Tactic: {tactic}',{tactic:tr(view.encounter.tactic)})}</Text></View>
-   <StatBar label={tr("Current health")} current={fight?.playerHp??displayStat(state.character!.currentHp)} max={fight?.playerMaxHp??displayStat(stats.hp)} reduceMotion={state.settings.reduceMotion}/>
-   <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={fight?.enemyHp??displayStat(view.enemyHp)} max={fight?.enemyMaxHp??displayStat(view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
+   <StatBar label={tr("Current health")} current={displayStat(fight?.playerHp??state.character!.currentHp)} max={displayStat(fight?.playerMaxHp??stats.hp)} reduceMotion={state.settings.reduceMotion}/>
+   <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={displayStat(fight?.enemyHp??view.enemyHp)} max={displayStat(fight?.enemyMaxHp??view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
    <Text style={s.note}>{isLive?fight?.stoppedReason?tr("Combat stopped"):fight?.searching?tr('Searching for an encounter...'):'':tr("HP, damage numbers and combat FX are synchronized presentation estimates. Rewards and settled health remain authoritative when you collect.")}</Text>
   </View>
  </View>;

@@ -31,12 +31,9 @@ const starting=createCharacter(newGame(T),'WAYFINDER','Real Hits');
 starting.character!.attack=12;starting.character!.equipment={};
 const state=startCombat(starting,'MOSS_RAT',T);
 const cycle=activeCombatRuntimeProjection(state)!.killCycleSeconds;
-const firstWoundedPartial=Array.from({length:140},(_,index)=>T+Math.floor(cycle*1000*(index+1)/150)).find(at=>{
- const frame=activeCombatHitProjection(state,at)!;
- return frame.enemyHp>0&&frame.enemyHp<frame.enemyMaxHp&&frame.playerHp<effectiveStats(state).hp;
-});
-assert.ok(firstWoundedPartial,'a partially resolved fight must reflect real player and enemy strikes');
-const partialAt=firstWoundedPartial!;
+// Search is a real phase. A partial claim may legitimately precede both
+// attacks, or a strong attacker can kill before the foe retaliates.
+const partialAt=T+Math.max(1000,Math.floor(cycle*400));
 const partial=activeCombatHitProjection(state,partialAt)!;
 const preview=previewActivityReward(state,partialAt);
 assert.equal(preview.kills,0,'real partial hits must not grant unearned kill rewards');

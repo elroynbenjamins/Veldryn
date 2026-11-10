@@ -6,6 +6,7 @@ import {pveEncounterPreview,type PveEncounterPreview} from './pve-encounter-iden
 import {buildPveSimulationTelemetry,type PveSimulationTelemetry} from './pve-simulation-telemetry';
 import {pveBossTelegraph,type PveBossTelegraph} from './pve-encounter-identity';
 import {applyCoopRoomModifier} from '../expeditions/coop-room-modifiers';
+import {applyDungeonCompanionCounters,type DungeonCompanionCounter} from '../coop/dungeon-companion-counters';
 
 export interface BuildExpeditionEncounterInput {
   encounterId:string;
@@ -55,7 +56,7 @@ export interface ExpeditionCombatReplayCue{
 }
 export interface ExpeditionCombatCommitPayload {
   success:boolean;
-  resultJson:{reason:string;durationMs:number;downs:string[];playerHp:Record<string,number>;enemyHp:Record<string,number>;damage:Record<string,number>;healing:Record<string,number>;damageTaken:Record<string,number>;interrupts:Record<string,number>;eventDigest:string;eventCount:number;bossPhaseIds:string[];bossCastAbilityIds:string[];encounterIdentity?:PveEncounterPreview;pveTelemetry:PveSimulationTelemetry;replayCombatants:ExpeditionCombatReplayCombatant[];replayStatuses:ExpeditionCombatReplayStatus[];replayGemStates:ExpeditionCombatReplayGemSnapshot[];replayCues:ExpeditionCombatReplayCue[]};
+  resultJson:{reason:string;durationMs:number;downs:string[];playerHp:Record<string,number>;enemyHp:Record<string,number>;damage:Record<string,number>;healing:Record<string,number>;damageTaken:Record<string,number>;interrupts:Record<string,number>;eventDigest:string;eventCount:number;bossPhaseIds:string[];bossCastAbilityIds:string[];encounterIdentity?:PveEncounterPreview;companionCounters?:DungeonCompanionCounter[];pveTelemetry:PveSimulationTelemetry;replayCombatants:ExpeditionCombatReplayCombatant[];replayStatuses:ExpeditionCombatReplayStatus[];replayGemStates:ExpeditionCombatReplayGemSnapshot[];replayCues:ExpeditionCombatReplayCue[]};
   debugEvents?:CombatResult['events'];
   endingPlayerState:Record<string,PersistentActorState>;
 }
@@ -186,7 +187,8 @@ export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, incl
     const defensiveAbilities=player.abilities.filter(ability=>ability.effects.length>0&&ability.effects.every(effect=>effect.kind==='heal'||effect.kind==='shield'));
     return {...player,stats:{...player.stats,attackPower:player.stats.attackPower*.70,healingPower:player.stats.healingPower*.70},abilities:defensiveAbilities};
   });
-  const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000,enemyDamageProfile:input.enemyDamageProfile});
+  const matched=applyDungeonCompanionCounters(players,enemies,safetyAiIds);
+  const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players:matched.players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000,enemyDamageProfile:input.enemyDamageProfile});
   const eventDigest=createHash('sha256').update(JSON.stringify(result.events)).digest().toString('hex');
   const rec=(xs:CombatResult['players'],pick:(x:CombatResult['players'][number])=>number)=>Object.fromEntries(xs.map(x=>[x.definition.id,Number(pick(x).toFixed(2))]));
   const bossIds=new Set(result.enemies.filter(enemy=>enemy.definition.boss).map(enemy=>enemy.definition.id));
@@ -194,5 +196,5 @@ export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, incl
   const bossPhaseIds=unique(result.events.filter(event=>event.type==='phase'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const bossCastAbilityIds=unique(result.events.filter(event=>event.type==='cast_start'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const replay=publicReplay(result,input.initialPlayerState),encounterIdentity=pveEncounterPreview(enemies),pveTelemetry=buildPveSimulationTelemetry(result,input.encounterId);
-  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),damageTaken:rec(result.players,x=>x.damageTaken),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,...(safetyAiIds.size?{safetyAiPlayerIds:[...safetyAiIds],safetyAiPolicy:{outputMultiplier:.70,allowedActions:['basic_attack','basic_defensive']}}:{}),...(encounterIdentity?{encounterIdentity}:{}),pveTelemetry,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
+  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),damageTaken:rec(result.players,x=>x.damageTaken),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,...(safetyAiIds.size?{safetyAiPlayerIds:[...safetyAiIds],safetyAiPolicy:{outputMultiplier:.70,allowedActions:['basic_attack','basic_defensive']}}:{}),...(encounterIdentity?{encounterIdentity}:{}),...(matched.matchups.length?{companionCounters:matched.matchups}:{}),pveTelemetry,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
 }

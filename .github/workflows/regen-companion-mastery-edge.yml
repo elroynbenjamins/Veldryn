@@ -1,0 +1,41 @@
+name: Regenerate Companion Mastery Edge bundle (temporary)
+
+on:
+  push:
+    branches:
+      - feature/companion-mastery-v1-20261110
+    paths:
+      - '.github/workflows/regen-companion-mastery-edge.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install backend build dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Build canonical gameplay + coop Edge bundles
+        run: pnpm --dir backend build:online
+      - name: Commit regenerated bundles to the feature branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Generated Edge bundles already in sync"
+          else
+            git commit -m "build: regenerate gameplay and coop Edge bundles for Companion Mastery"
+            git push origin HEAD:refs/heads/feature/companion-mastery-v1-20261110
+          fi

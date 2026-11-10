@@ -15,6 +15,7 @@ export const socialTranslationRows = {
   "Damage assist": ["Schadenshilfe","Ayuda de daño","Hulp bij schade","Assistenza ai danni","Assistance offensive"],
   "Shield assist": ["Schildhilfe","Ayuda de escudo","Schildondersteuning","Assistenza con scudi","Assistance défensive"],
   "Healing assist": ["Heilhilfe","Ayuda de curación","Hulp bij genezing","Assistenza curativa","Assistance de soin"],
+  "This also changes your companion in normal combat.": ["Dies ändert auch deinen Gefährten im normalen Kampf.","Esto también cambia tu compañero en el combate normal.","Dit verandert ook je metgezel in gewone gevechten.","Questo cambia anche il compagno nei combattimenti normali.","Cela change aussi votre compagnon en combat normal."],
   "Change companion": ["Gefährten wechseln","Cambiar compañero","Metgezel wisselen","Cambia compagno","Changer de compagnon"],
   "Could not refresh the dungeon loadout. Refresh before starting.": ["Dungeon-Ausrüstung konnte nicht aktualisiert werden. Vor dem Start aktualisieren.","No se pudo actualizar el equipo del dungeon. Actualízalo antes de empezar.","Dungeonuitrusting kon niet worden vernieuwd. Vernieuw vóór het starten.","Impossibile aggiornare l'equipaggiamento del dungeon. Aggiorna prima di iniziare.","Impossible d'actualiser l'équipement du donjon. Actualisez avant de commencer."],
   "Strong against guardians and barriers": ["Stark gegen Wächter und Barrieren","Fuerte contra guardianes y barreras","Sterk tegen bewakers en barrières","Forte contro guardiani e barriere","Efficace contre les gardiens et les barrières"],

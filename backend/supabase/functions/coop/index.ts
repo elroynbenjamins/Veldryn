@@ -43585,6 +43585,38 @@ function characterClassEffects(c) {
   return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1 } : { attack: 1 + 0.07 * a + 0.03 * b, hp: 1, defense: 1 + 0.06 * b };
 }
 
+// ../apps/mobile/src/core/companion-mastery.ts
+var COMPANION_MASTERY_MAX_STAT_BONUS = 0.05;
+var COMPANION_MASTERY_MAX_XP_BONUS = 0.1;
+var COMPANION_MASTERY_MAX_ASSIST_BONUS = 0.05;
+function companionMasteryXpForNext(level) {
+  const safe = Math.max(1, Math.min(99, Math.floor(Number.isFinite(level) ? level : 1)));
+  return Math.floor(120 + 16 * safe + 1.75 * Math.pow(safe, 1.45));
+}
+var COMPANION_MASTERY_MAX_XP = Array.from({ length: 99 }, (_, i) => companionMasteryXpForNext(i + 1)).reduce((a, b) => a + b, 0);
+function normalizeCompanionMasteryXp(value) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(COMPANION_MASTERY_MAX_XP, Math.max(0, Math.floor(value))) : 0;
+}
+function companionMasteryProgress(value) {
+  const xp = normalizeCompanionMasteryXp(value);
+  let level = 1, spent = 0;
+  while (level < 100 && spent + companionMasteryXpForNext(level) <= xp) {
+    spent += companionMasteryXpForNext(level);
+    level++;
+  }
+  return { level, xp, current: xp - spent, need: level === 100 ? 0 : companionMasteryXpForNext(level), maxXp: COMPANION_MASTERY_MAX_XP };
+}
+function companionMasteryBonuses(value) {
+  const { level } = companionMasteryProgress(value), fraction = (level - 1) / 99;
+  return {
+    level,
+    statPct: COMPANION_MASTERY_MAX_STAT_BONUS * fraction,
+    companionXpPct: COMPANION_MASTERY_MAX_XP_BONUS * fraction,
+    assistPct: COMPANION_MASTERY_MAX_ASSIST_BONUS * fraction
+  };
+}
+var companionMasteryStatMultiplier = (value) => 1 + companionMasteryBonuses(value).statPct;
+
 // ../apps/mobile/src/content/monsters.ts
 init_progression();
 init_faith();
@@ -43815,7 +43847,7 @@ function companionCombatContribution(state) {
   if (!id) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   if (clean2.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) || (clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id))) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   const def = combatCompanionDef(id), p = progressFor(clean2, id), rarity = COMPANION_RARITY_CONFIG[def.rarity];
-  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, contribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance);
+  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, baseContribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance), contribution = baseContribution * (1 + companionMasteryBonuses(clean2.account.companionMasteryXp).assistPct);
   const effects = [def.activeAbility.effect.kind, def.passiveAbility.kind, ...p.bondTraitUnlocked ? [def.bondTrait.effect.kind] : []];
   const has3 = (...kinds) => effects.some((kind) => kinds.includes(kind));
   const restorative = has3("heal");
@@ -45130,7 +45162,7 @@ function engineEffects(def, progress, context) {
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
   const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp3(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp3(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
-  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, derived = scale * synergy * bond * ascension;
+  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery;
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
   const healingPower = standalone ? def.role === "support" ? maxHp * 2.5 : def.role === "tank" ? maxHp * 2 : attackPower * 0.35 : base.power * (def.role === "support" ? 0.9 : 0.35) * derived;
@@ -45197,7 +45229,7 @@ var EARLY_FEATURE_UNLOCKS = {
 function companionOwned(state) {
   return Object.fromEntries((state.account.unlockedCombatCompanionIds ?? []).flatMap((id) => {
     const p = state.account.combatCompanionProgress?.[id];
-    return p ? [[id, { ...p, companionId: id }]] : [];
+    return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp) }]] : [];
   }));
 }
 function assertCompanionIdle(state, id) {

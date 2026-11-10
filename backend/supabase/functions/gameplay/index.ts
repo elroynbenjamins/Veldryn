@@ -1003,6 +1003,61 @@ function settleClassDrills(state, now, capSeconds) {
   return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
 }
 
+// ../apps/mobile/src/core/companion-mastery.ts
+var COMPANION_MASTERY_MAX_STAT_BONUS = 0.05;
+var COMPANION_MASTERY_MAX_XP_BONUS = 0.1;
+var COMPANION_MASTERY_MAX_ASSIST_BONUS = 0.05;
+function companionMasteryXpForNext(level) {
+  const safe = Math.max(1, Math.min(99, Math.floor(Number.isFinite(level) ? level : 1)));
+  return Math.floor(120 + 16 * safe + 1.75 * Math.pow(safe, 1.45));
+}
+var COMPANION_MASTERY_MAX_XP = Array.from({ length: 99 }, (_, i) => companionMasteryXpForNext(i + 1)).reduce((a, b) => a + b, 0);
+function normalizeCompanionMasteryXp(value) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(COMPANION_MASTERY_MAX_XP, Math.max(0, Math.floor(value))) : 0;
+}
+function companionMasteryProgress(value) {
+  const xp = normalizeCompanionMasteryXp(value);
+  let level = 1, spent = 0;
+  while (level < 100 && spent + companionMasteryXpForNext(level) <= xp) {
+    spent += companionMasteryXpForNext(level);
+    level++;
+  }
+  return { level, xp, current: xp - spent, need: level === 100 ? 0 : companionMasteryXpForNext(level), maxXp: COMPANION_MASTERY_MAX_XP };
+}
+function companionMasteryBonuses(value) {
+  const { level } = companionMasteryProgress(value), fraction = (level - 1) / 99;
+  return {
+    level,
+    statPct: COMPANION_MASTERY_MAX_STAT_BONUS * fraction,
+    companionXpPct: COMPANION_MASTERY_MAX_XP_BONUS * fraction,
+    assistPct: COMPANION_MASTERY_MAX_ASSIST_BONUS * fraction
+  };
+}
+var companionMasteryStatMultiplier = (value) => 1 + companionMasteryBonuses(value).statPct;
+function companionMasteryCompanionXp(raw2, masteryXp) {
+  if (!Number.isFinite(raw2) || raw2 <= 0) return 0;
+  return Math.max(0, Math.floor(raw2 * (1 + companionMasteryBonuses(masteryXp).companionXpPct) + 0.5));
+}
+function awardCompanionMasteryXp(account, amount) {
+  const xp = normalizeCompanionMasteryXp(account.companionMasteryXp);
+  const gain = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  if (gain === 0 || xp === COMPANION_MASTERY_MAX_XP) return account;
+  return { ...account, companionMasteryXp: Math.min(COMPANION_MASTERY_MAX_XP, xp + gain) };
+}
+function companionMasteryAward(source, options = {}) {
+  if (source === "training") {
+    const days = Math.max(0, Math.min(7, Math.floor(options.days ?? 0)));
+    const eligible = Math.max(0, Math.min(3, Math.floor(options.eligible ?? 0)));
+    return days && eligible ? days * (12 + 6 * eligible) : 0;
+  }
+  if (source === "expedition") {
+    const hours = Math.max(0, Math.min(72, Number.isFinite(options.hours) ? options.hours : 0));
+    return Math.round(65 + hours * 15 + (options.grade === "S" ? 45 : options.grade === "A" ? 25 : options.grade === "B" ? 10 : 0));
+  }
+  const floor = Math.max(1, Math.min(30, Math.floor(options.floor ?? 1)));
+  return 35 + floor * 7 + (options.boss ? 60 : 0) + (options.firstClear ? 45 : 0);
+}
+
 // ../apps/mobile/src/content/monsters.ts
 init_progression();
 init_faith();
@@ -43703,7 +43758,7 @@ function companionCombatContribution(state) {
   if (!id) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   if (clean2.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) || (clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id))) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   const def = combatCompanionDef(id), p = progressFor(clean2, id), rarity = COMPANION_RARITY_CONFIG[def.rarity];
-  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, contribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance);
+  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, baseContribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance), contribution = baseContribution * (1 + companionMasteryBonuses(clean2.account.companionMasteryXp).assistPct);
   const effects = [def.activeAbility.effect.kind, def.passiveAbility.kind, ...p.bondTraitUnlocked ? [def.bondTrait.effect.kind] : []];
   const has3 = (...kinds) => effects.some((kind) => kinds.includes(kind));
   const restorative = has3("heal");
@@ -45515,7 +45570,7 @@ function engineEffects(def, progress, context) {
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
   const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp4(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp4(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
-  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, derived = scale * synergy * bond * ascension;
+  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery;
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
   const healingPower = standalone ? def.role === "support" ? maxHp * 2.5 : def.role === "tank" ? maxHp * 2 : attackPower * 0.35 : base.power * (def.role === "support" ? 0.9 : 0.35) * derived;
@@ -45538,7 +45593,7 @@ function individualCompanionPower(progress) {
   const activeIdentity = def.active.effectKind === "damage" ? 1 + Math.max(-5e-3, Math.min(5e-3, (def.active.baseCoeff - 1) * 0.01)) : 1 + Math.max(-5e-3, Math.min(5e-3, (22e3 - def.active.cooldownMs) / 4e5));
   const levelMultiplier = 1 + 0.3 * fraction, rarityMultiplier = 1 + (COMPANION_RARITY_TARGET[def.rarity] - 1) * fraction, ascensionMultiplier = 1 + progress.ascensionTier * 6e-3, bondMultiplier = 1 + 0.025 * Math.max(0, Math.min(9, progress.bondLevel - 1)) / 9;
   const traitMultiplier = progress.bondTraitUnlocked ? 1.01 : 1, techniqueMultiplier = progress.selectedTechniqueId ? 1.015 : 1;
-  return Math.max(1, Math.round(950 * levelMultiplier * rarityMultiplier * ascensionMultiplier * bondMultiplier * traitMultiplier * techniqueMultiplier * statIdentity * activeIdentity));
+  return Math.max(1, Math.round(950 * levelMultiplier * rarityMultiplier * ascensionMultiplier * bondMultiplier * traitMultiplier * techniqueMultiplier * statIdentity * activeIdentity * Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1))));
 }
 function companionTeamViews(ids2, owned) {
   return ids2.map((id) => {
@@ -46489,7 +46544,7 @@ var companionCombatExecutor = { simulate: (input) => simulateCombat(input) };
 function companionOwned(state) {
   return Object.fromEntries((state.account.unlockedCombatCompanionIds ?? []).flatMap((id) => {
     const p = state.account.combatCompanionProgress?.[id];
-    return p ? [[id, { ...p, companionId: id }]] : [];
+    return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp) }]] : [];
   }));
 }
 function companionEconomy(state) {
@@ -46539,15 +46594,19 @@ function companionMetricMany(state, entries) {
   return next;
 }
 function setOwned(state, owned) {
-  return { ...state, account: { ...state.account, unlockedCombatCompanionIds: Object.keys(owned), combatCompanionProgress: Object.fromEntries(Object.entries(owned).map(([id, p]) => [id, { ...state.account.combatCompanionProgress?.[id], ...p }])) } };
+  return { ...state, account: { ...state.account, unlockedCombatCompanionIds: Object.keys(owned), combatCompanionProgress: Object.fromEntries(Object.entries(owned).map(([id, p]) => {
+    const { masteryStatMultiplier: _transient, ...saved } = p;
+    return [id, { ...state.account.combatCompanionProgress?.[id], ...saved }];
+  })) } };
 }
 function awardUse(state, ids2, xp, bond, now) {
   const owned = companionOwned(state);
   let essence = state.account.companionEssence ?? 0, overflow = state.account.companionOverflow;
   const earnedBond = Math.round(bond * (1 + (state.account.companionSanctuary?.bondHallLevel ?? 0) * 0.05));
+  const earnedXp = companionMasteryCompanionXp(xp, state.account.companionMasteryXp);
   for (const id of ids2) {
     if (!owned[id]) continue;
-    const r = awardCompanionXpServer({ progress: owned[id], amount: xp, companionEssence: essence, overflow, serverNowMs: now });
+    const r = awardCompanionXpServer({ progress: owned[id], amount: earnedXp, companionEssence: essence, overflow, serverNowMs: now });
     essence = r.companionEssence;
     overflow = r.overflow;
     owned[id] = awardCompanionBondXpServer(r.progress, earnedBond);
@@ -46591,6 +46650,7 @@ function claimCompanionTraining(input, now) {
     }
   });
   state = awardUse(state, available, COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[level] * days, 0, now);
+  if (available.length) state = { ...state, account: awardCompanionMasteryXp(state.account, companionMasteryAward("training", { days, eligible: available.length })) };
   return { ...state, account: { ...state.account, companionSanctuary: { ...sanctuary, lastTrainingClaimAtMs: now - Math.max(0, now - last) % day } } };
 }
 function stringArg(a, key) {
@@ -46697,6 +46757,7 @@ function executeCompanionActivity(input, type, a, now) {
       if (floor % 5 === 0) state = companionMetric(state, `companions.trial.boss.${floor}.${r.result.victory ? "wins" : "losses"}`);
       if (r.result.victory) {
         state = awardUse(state, run.teamCompanionIds, 12 + run.currentFloor * 2, 8 + (run.currentFloor % 5 === 0 ? 18 : 0), now);
+        state = { ...state, account: awardCompanionMasteryXp(state.account, companionMasteryAward("trial", { floor, firstClear: r.firstClear, boss: floor % 5 === 0 })) };
         state.account.companionProvingGround = recordCompanionProvingGroundEvent({ state: state.account.companionProvingGround, serverNowMs: now, owned, event: { eventId: `${run.runId}:${run.currentFloor}`, type: run.currentFloor % 5 === 0 ? "trial_boss_clear" : "trial_floor_clear", companionIds: run.teamCompanionIds, trialFloor: run.currentFloor, teamPower: companionTeamPower(run.teamCompanionIds, owned), recommendedPower: companionTrialRecommendedPower(run.currentFloor), noDefeats: r.result.players?.every((p) => p.alive) } }).state;
       }
       state.account.companionBattleReadyAtMs = now + Math.max(1e3, r.result.durationMs);
@@ -46733,6 +46794,7 @@ function executeCompanionActivity(input, type, a, now) {
       }
       state.account.companionUnlockProgress = unlockProgress;
       state.account.companionAssignments = assignments.map((x) => x.assignmentId === assignment.assignmentId ? r.assignment : x);
+      state = { ...state, account: awardCompanionMasteryXp(state.account, companionMasteryAward("expedition", { hours: Math.max(0, (Date.parse(assignment.endsAt) - Date.parse(assignment.startedAt)) / 36e5), grade: r.assignment.performanceGrade })) };
       state.account.companionAssignmentBondstoneWeek = week;
       state.account.companionAssignmentBondstones = used + r.reward.bondstones;
       state = companionMetricMany(state, { [`companions.expedition.${assignment.missionId}.claims`]: 1, [`companions.expedition.${assignment.missionId}.grade.${r.assignment.performanceGrade ?? "C"}`]: 1, [`companions.expedition.${assignment.missionId}.essence_earned`]: r.reward.companionEssence, [`companions.expedition.${assignment.missionId}.bondstones_earned`]: r.reward.bondstones, [`companions.expedition.${assignment.missionId}.bonus_rewards`]: r.reward.bonusRewardGranted ? 1 : 0 });

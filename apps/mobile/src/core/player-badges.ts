@@ -65,14 +65,15 @@ export function normalizePlayerBadges(value:unknown):PlayerBadgeIdentity|undefin
  if(typeof row.validUntilMs!=='number'||!Number.isSafeInteger(row.validUntilMs)||row.validUntilMs<=0)return undefined;
  const staff=row.staff==='admin'||row.staff==='moderator'?row.staff:null;
  const supporter=row.supporter===true;
- const tier=supporterTierMonths(row.supporterTierMonths,supporter);
+ const supporterAvailable=row.supporterAvailable===true||supporter;
+ const tier=supporterTierMonths(row.supporterTierMonths,supporterAvailable);
  const extras=cleanExtras(row.extras);
  const hasEquipped=Object.prototype.hasOwnProperty.call(row,'equippedBadgeId');
  const candidate=row.equippedBadgeId;
  let equippedBadgeId:EquippablePlayerBadgeId|null|undefined;
  if(hasEquipped){
   equippedBadgeId=isEquippablePlayerBadgeId(candidate)?candidate:null;
-  if(equippedBadgeId&&isSupporterBadgeId(equippedBadgeId)&&!canEquipSupporterBadge(equippedBadgeId,supporter,tier))equippedBadgeId=null;
+  if(equippedBadgeId&&isSupporterBadgeId(equippedBadgeId)&&!canEquipSupporterBadge(equippedBadgeId,supporterAvailable,tier))equippedBadgeId=null;
   if(equippedBadgeId&&isCollectiblePlayerBadgeId(equippedBadgeId)&&!extras.includes(equippedBadgeId))equippedBadgeId=null;
  }
  return {staff,supporter,extras,validUntilMs:row.validUntilMs,supporterTierMonths:tier,

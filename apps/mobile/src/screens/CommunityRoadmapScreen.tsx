@@ -10,6 +10,7 @@ import {fetchCommunityRoadmap,toggleCommunityRoadmapVote,type CommunityRoadmapSn
 type Language=GameState['settings']['language'];
 // Stable database IDs, not localized display text. Unknown future ideas use a neutral glyph.
 const ROADMAP_GLYPHS:Record<string,keyof typeof navigationLinework>={
+ dungeons:'dungeon',
  party_events:'roadmapPartyEvents',
  guild_pvp:'roadmapGuildPvp',
  guild_pve:'roadmapGuildPve',

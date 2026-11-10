@@ -5,6 +5,8 @@
  * All states below are synthetic fixtures; results are NOT player data.
  */
 import {createCharacter,newGame} from '../apps/mobile/src/core/game';
+import {simulateCombat} from '../backend/src/server/combat/engine';
+import type {CombatantDefinition} from '../backend/src/server/combat/types';
 import {characterTotalXpAtLevel,classCombatSkillTotalXpAtLevel} from '../apps/mobile/src/core/progression';
 import {EQUIPMENT_ITEMS_V33} from '../apps/mobile/src/content/equipment-items-v33';
 import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipes-v33';
@@ -12,7 +14,7 @@ import {classCombatSkillLevelFromXp} from '../apps/mobile/src/core/progression';
 import type {ClassId,GameState,GearSlot,CraftedGearInstance} from '../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../backend/online/coop-loadout';
 import {freezeTrustedPartyEventLoadoutV4,verifyPartyEventEquippedCopyOwnershipV4} from '../backend/online/party-event-loadout-v4';
-import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
+import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,partyEventRosterMedianLevel,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
 import {WEEKLY_PARTY_EVENT_FAMILIES,type WeeklyPartyDifficulty,type WeeklyPartyFamily} from '../backend/src/server/party/weekly-party-events-v2';
 import {COMPANION_ROLE} from '../backend/src/server/companions/policy';
 import {deriveRole} from '../backend/src/server/coop/role-readiness';
@@ -221,4 +223,90 @@ for(const tier of tiers){
  const a=summary(x),b=summary(y);
  console.log('V4_DUO_STANDARD '+tier+' plain='+a.mean.toFixed(2)+' prepared='+b.mean.toFixed(2)+' tier1Plain='+a.tier1Pct.toFixed(0)+' tier1Prepared='+b.tier1Pct.toFixed(0));
 }
+
+/**
+ * Second pass: compare EXACTLY the current combat spells against three
+ * alternate boss stat-growth curves using real source-derived frozen actors.
+ * This is an isolated experiment: do not edit the hidden Day 8 boss.
+ */
+const curveCandidates=[
+ {name:'baseline',hp:1.22,attack:1.14,defense:1.11},
+ {name:'gradual',hp:1.35,attack:1.17,defense:1.14},
+ {name:'medium',hp:1.42,attack:1.20,defense:1.16},
+ {name:'steep',hp:1.50,attack:1.23,defense:1.18},
+] as const;
+function simulateCandidateCurve(frozen:readonly FrozenPartyBossLoadout[],difficulty:WeeklyPartyDifficulty,
+ family:WeeklyPartyFamily,eventId:string,seed:number,curve:typeof curveCandidates[number]):number{
+ const players=frozen.map(x=>structuredClone(x.actor));
+ const median=partyEventRosterMedianLevel(players.map(p=>p.level)),levelScale=Math.max(.045,median/25);
+ const difficultyMultiplier={standard:1,veteran:1.20,heroic:1.40}[difficulty];
+ let cleared=0;
+ for(let tier=1;tier<=12;tier++){
+  const enemy:CombatantDefinition={
+   id:'PARTY_EVENT_BOSS',name:family,team:'enemies',role:'enemy',boss:true,
+   level:Math.max(1,Math.min(100,median+2*(tier-1))),
+   stats:{
+    maxHp:Math.round(players.length*5400*levelScale*Math.pow(curve.hp,tier-1)*difficultyMultiplier),
+    attackPower:Math.round(355*levelScale*Math.pow(curve.attack,tier-1)*difficultyMultiplier),
+    healingPower:0,defense:Math.round(520*levelScale*Math.pow(curve.defense,tier-1)*difficultyMultiplier),
+    accuracy:750,evasion:110,critChance:.045,critMultiplier:1.4,haste:.03,
+   },
+   basicAttackMs:2700,basicAttackCoeff:.8,
+   abilities:[
+    {id:'PE_BOSS_SLAM',name:'Overwhelming Strike',cooldownMs:6900,castTimeMs:400,
+     target:'current_target',priority:80,effects:[{kind:'damage',coeff:1.15}]},
+    {id:'PE_BOSS_PULSE',name:'Rising Threat',cooldownMs:12000,castTimeMs:900,
+     target:'all_enemies',priority:85,interruptible:true,
+     effects:[{kind:'damage',coeff:.38+Math.min(.3,.03*tier)}]},
+   ],
+   phases:[{id:'ENRAGE',hpPct:.35,target:'self',
+    effects:[{kind:'buff',tag:'damage_done',value:Math.min(.35,.07+.015*tier),durationMs:90000}]}],
+  };
+  const result=simulateCombat({
+   seed:eventId+':'+seed+':tier:'+tier,players,enemies:[enemy],maxDurationMs:90000,
+  });
+  if(!result.victory)break;
+  cleared++;
+ }
+ return cleared;
+}
+const parityCases=[
+ {focus:'IRONWARDEN' as ClassId,tier:'T1' as Tier,profile:'plain' as Profile,size:2},
+ {focus:'STONECALLER' as ClassId,tier:'T2' as Tier,profile:'prepared' as Profile,size:4},
+ {focus:'HEXWEAVER' as ClassId,tier:'T4' as Tier,profile:'prepared' as Profile,size:3},
+];
+for(const [i,pc] of parityCases.entries()){
+ const family=families[i%families.length]!;
+ const frozen=roster(pc.focus,pc.size).map((c,index)=>get(c,pc.tier,pc.profile,index).frozen);
+ const eventId='v4-parity:'+i,seed=4720+i;
+ const expected=resolvePartyEventDayEightBoss({
+  eventId,family,difficulty:'standard',seed,
+  eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,
+  nowMs:now-1000+week+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,frozen,orders:[],
+ }).tiersCleared;
+ const actual=simulateCandidateCurve(frozen,'standard',family,eventId,seed,curveCandidates[0]!);
+ assert(expected===actual,'test-only boss spell/tuning parity: '+i+' '+expected+'/'+actual);
+}
+console.log('V4_CURVE_PARITY PASS '+parityCases.length+' varied authoritative parties');
+for(const curve of curveCandidates){
+ for(const profile of ['plain','prepared'] as const){
+  for(const tier of tiers){
+   for(const size of [2,4]){
+    const clears:number[]=[];
+    for(let i=0;i<classes.length;i++){
+     const family=families[(i+size)%families.length]!;
+     const frozen=roster(classes[i]!,size).map((id,index)=>get(id,tier,profile,index).frozen);
+     clears.push(simulateCandidateCurve(frozen,'standard',family,
+      'v4-upper-curve:'+profile+':'+tier+':'+size+':'+i,5019+i,curve));
+    }
+    const mean=clears.reduce((sum,n)=>sum+n,0)/clears.length;
+    const capCount=clears.filter(n=>n===12).length;
+    console.log('V4_CURVE,'+[curve.name,profile,tier,size,mean.toFixed(2),
+     Math.min(...clears),Math.max(...clears),capCount,clears.length].join(','));
+   }
+  }
+ }
+}
+console.log('V4_CURVES_TEST_ONLY; no change to hidden boss, settlement, player rewards or production config.');
+
 console.log('LIMITS: Synthetic saved characters, not actual players; one seed/focus/family per matrix cell; no supplies, guild buffs, prepared potion, boss family hazards, or item resource economies. No live balance changed.');

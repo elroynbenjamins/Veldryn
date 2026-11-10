@@ -103,4 +103,4 @@ async function run(){
   npcs:fallback.npcSlots,borrowedEchoes:prep.selectedRealEchoIds.length
  }));
 }
-void run().catch(err=>{console.error(err);process.exitCode=1;});
+void run().catch(err=>{console.error(err);throw err;});

@@ -21,7 +21,7 @@ const hasExactSchedule=(schedule:PublicEventSchedule|undefined):schedule is Publ
 const displayEnd=(startsAtMs:number,endsAtMs:number)=>{const end=new Date(endsAtMs);return endsAtMs>startsAtMs&&end.getUTCHours()===0&&end.getUTCMinutes()===0&&end.getUTCSeconds()===0?endsAtMs-1:endsAtMs;};
 
 
-export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}:{state:GameState;highlightEventId?:string;highlightLabel?:string}){
+export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,showFrostfallPreview=true}:{state:GameState;highlightEventId?:string;highlightLabel?:string;showFrostfallPreview?:boolean}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -49,7 +49,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}
   const timelineRows=rows.filter(row=>isVisibleMonth(selectedDate.year,monthForOrder(row.order)));
   const featured=previewFestival?{row:selected,year:selectedDate.year}:!highlightEventId?upcoming[0]:undefined;
   // Published server dates are the source of truth. A calendar planning label alone never opens the teaser.
-  const frostfallWindow=schedule.find(item=>annualEventSeriesId(item.eventId)==='EVT_ANNUAL_012'&&frostfallPreviewPhase(item.startsAtMs,previewNow)!==null);
+  const frostfallWindow=showFrostfallPreview?schedule.find(item=>annualEventSeriesId(item.eventId)==='EVT_ANNUAL_012'&&frostfallPreviewPhase(item.startsAtMs,previewNow)!==null):undefined;
   return <View style={s.hub}>
     {frostfallWindow?.startsAtMs!==undefined?<FrostfallPreview startsAtMs={frostfallWindow.startsAtMs} nowMs={previewNow}/>:null}
     {(previewFestival||!frostfallWindow)&&featured?.row&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{featured.row.name}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {featured.year}</Text><Text style={s.heroSummary}>{p(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}

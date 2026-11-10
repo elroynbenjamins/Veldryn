@@ -11,7 +11,7 @@ import {CoopRunOverview,type CoopRewardDisplay} from '../components/coop/CoopRun
 import {CoopLiveRematchPanel} from '../components/coop/CoopLiveRematchPanel';
 import {CoopLiveLobby} from '../components/coop/CoopLiveLobby';
 import {CoopLiveRecruitmentBoard} from '../components/coop/CoopLiveRecruitmentBoard';
-import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier} from '../core/coop-dungeon-browsing';
+import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier,type CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {Language} from '../i18n';
 import {coopClient,coopErrorMessage,coopLiveReadyEnabled,coopRequestId,type CoopEntryData,type CoopLiveRematchState} from '../online/coop-client';
@@ -23,7 +23,7 @@ import {GameButton} from '../components/GameButton';
 import {useGameTheme} from '../theme/ThemeContext';
 import {realCoopEntrySource,type CoopEntrySource} from '../online/coop-entry-source';
 import type {GameState} from '../core/types';
-import {clt} from '../i18n';
+import {clt,ct} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {CoopChatMessage} from '../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../online/coop-profile-icons';
@@ -33,6 +33,9 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
  const st=useSocialText();
   const C=useGameTheme();
   const [entry,setEntry]=useState<CoopEntryData>();
+  // Disk-backed browse previews only: no loadouts, rewards or running state.
+  const characterId=state.character?.id;
+  const [cachedBrowse,setCachedBrowse]=useState<{characterId:string;dungeons:CoopDungeonProjection[]}>();
   const [selected,setSelected]=useState<CoopDungeonView>();
   const [selectedEvent,setSelectedEvent]=useState<CoopEventExpeditionPreview>();
   const [mode,setMode]=useState<CoopMode>('qmode');
@@ -91,13 +94,17 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     setEventRun(current=>current?.runId===runId&&current.stateVersion<=next.stateVersion?next:current);
   },[]);
   const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(coopErrorMessage(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
-  const load=useCallback(async()=>{
+  const load=useCallback(async(force=true)=>{
     const requestId=++loadRequestId.current;
     setLoading(true);setError('');
-    try{const next=await entrySource.load();next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);if(requestId===loadRequestId.current)setEntry(next)}
-    catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason))}
+    try{
+      const next=await entrySource.load({characterId,characterLevel:state.character?.level,force});
+      next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));
+      next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);
+      if(requestId===loadRequestId.current){setEntry(next);setCachedBrowse(undefined);}
+    }catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason))}
     finally{if(requestId===loadRequestId.current)setLoading(false)}
-  },[entrySource]);
+  },[entrySource,characterId,state.character?.level]);
   // Server-owned ready checks are polled only while this modal is open.
   const enterRematch=useCallback(async(nextRunId:string)=>{
    if(rematchEntered.current===nextRunId)return;
@@ -131,7 +138,19 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     if(next.status==='committed'&&next.runId)void enterRematch(next.runId).catch(error=>setRematchError(error instanceof Error?error.message:String(error)));
    }).catch(error=>setRematchError(error instanceof Error?error.message:String(error))).finally(()=>setRematchBusy(false));
   };
-  useEffect(()=>{void load();return()=>{loadRequestId.current++}},[load]);
+  useEffect(()=>{
+    let cancelled=false;
+    setEntry(undefined);setCachedBrowse(undefined);
+    if(characterId&&entrySource.cachedDungeons){
+      void entrySource.cachedDungeons(characterId).then(catalog=>{
+        if(!cancelled&&catalog?.dungeons.length)setCachedBrowse({characterId,dungeons:catalog.dungeons});
+      }).catch(()=>{});
+    }
+    // A recent authorized in-memory response saves this GET entirely.
+    // Otherwise the saved browse catalog remains visible during the refresh.
+    void load(false);
+    return()=>{cancelled=true;loadRequestId.current++;};
+  },[load,entrySource,characterId]);
   useEffect(()=>{
     if(initialEventHandled.current||!initialEventLiveId||!entry)return;
     initialEventHandled.current=true;onInitialEventHandled?.();
@@ -200,15 +219,21 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     return()=>{stopped=true;if(retryTimer!==undefined)clearTimeout(retryTimer);};
   },[terminalRunId,foreground,entrySource.kind]);
   useEffect(()=>{if(!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun)return;const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{if(showLive){onClose();return true}if(eventRun){setEventRun(undefined);return true}if(run){setRun(undefined);return true}if(showLoadouts){setShowLoadouts(false);setNotice('');return true}if(selectedEvent){setSelectedEvent(undefined);setNotice('');return true}if(selected){setSelected(undefined);setNotice('');return true}return false});return()=>subscription.remove()},[showLive,showLoadouts,selected,selectedEvent,run,eventRun,onClose]);
-  const dungeons=useMemo(()=>(entry?.dungeons??[]).map(presentCoopDungeon),[entry]);
+  const cachedDungeons=cachedBrowse&&cachedBrowse.characterId===characterId?cachedBrowse.dungeons:undefined;
+  const dungeons=useMemo(()=>(entry?.dungeons??cachedDungeons??[]).map(presentCoopDungeon),[entry,cachedDungeons]);
+  useEffect(()=>{
+    if(!entry)return;
+    // A cached detail card must reflect the fresh server catalog once loaded.
+    setSelected(previous=>previous?dungeons.find(item=>item.id===previous.id):undefined);
+  },[entry,dungeons]);
   const activeEventExpeditions=useMemo(()=>(entry?.eventExpeditions??[]).filter(expedition=>expedition.status==='available'),[entry]);
   useEffect(()=>{
-    if(initialDungeonHandled.current||!initialDungeonId||!entry)return;
+    if(initialDungeonHandled.current||!initialDungeonId||(!entry&&!cachedDungeons?.length))return;
     initialDungeonHandled.current=true;onInitialDungeonHandled?.();
     const dungeon=dungeons.find(item=>item.id===initialDungeonId);
     if(dungeon){setSelectedEvent(undefined);setEventRun(undefined);setRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setShowLoadouts(false);setNotice('');return;}
     setNotice(st("That dungeon source is not currently available in the dungeon catalog."));
-  },[dungeons,entry,initialDungeonId,onInitialDungeonHandled]);
+  },[dungeons,entry,cachedDungeons,initialDungeonId,onInitialDungeonHandled]);
   const verifiedLoadout=()=>entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);
   const startWithLoadout=(intent:CoopLoadoutIntent)=>void action(async()=>{
     if(entrySource.kind!=='real'){setNotice(clt(language,'intentOnly'));return;}
@@ -220,6 +245,11 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     const started=await realCoopQModeSource.start(intent,coopRequestId());setLastQModeIntent(intent);setRun(started.run);
   });
   const continueDungeon=(resolvedTier:CoopTier)=>{
+    if(!entry&&entrySource.kind==='real'){
+      setNotice(ct(language,'browse.loading'));
+      void load(true);
+      return;
+    }
     setTier(resolvedTier);
     if(entrySource.kind!=='real'||!selected||selectableLoadouts.length!==1){setShowLoadouts(true);return;}
     startWithLoadout(buildCoopLoadoutIntent({mode,dungeonId:selected.id,tier:resolvedTier,loadout:selectableLoadouts[0]}));

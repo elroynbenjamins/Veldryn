@@ -63,3 +63,11 @@ export class CoopDungeonBrowseCache{
  }
  clear(){this.entries.clear();}
 }
+
+
+// Mutation receipts cannot be served out of an old entry snapshot. A monotonic
+// version lets the co-op client invalidate recent in-memory entry reads without
+// importing the entry source (which itself uses the co-op client).
+let entryMutationRevision=0;
+export function noteCoopEntryMutation(){entryMutationRevision++;}
+export function coopEntryMutationRevision(){return entryMutationRevision;}

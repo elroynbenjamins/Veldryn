@@ -492,9 +492,9 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
     environmentTimeMultiplier:environment?.actionTimeMultiplier??1,
     seed:regionalHuntSeed(state,monsterId,0),
   }:undefined;
-  const killCycleSeconds=huntOptions?regionalHuntPlan(huntOptions).cycleSeconds:
-    m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
-  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier,huntOptions};
+  const legacyKillCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
+  const killCycleSeconds=huntOptions?regionalHuntPlan(huntOptions).cycleSeconds:legacyKillCycleSeconds;
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,legacyKillCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier,huntOptions};
 }
 
 /** Shared ordinary-hunt damage; fractional HP preserves small defensive bonuses. */
@@ -518,9 +518,12 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const attackCount=enemyAttackCount??huntPlan?.enemyAttackCount??1;
  // The time spent exposed to enemy attacks, not the old fixed kill cycle,
  // determines enemy pressure. Weak gear leaves the character vulnerable longer.
- const fightExposure=Math.max(.35,Math.min(3,(fightSeconds??huntPlan?.fightSeconds??10)/10));
- const monsterDamage=runtime.huntOptions?(attackCount?damage*fightExposure*runtime.gearAttritionMultiplier:0):Math.max(floor,damage);
- const incoming=monsterDamage+fatigue;
+ const cadenceRatio=runtime.huntOptions?Math.max(.02,Math.min(1,killCycleSeconds/Math.max(1,runtime.legacyKillCycleSeconds))):1;
+ // More kills per hour must not mean proportionally more monster hits per hour.
+ // Preserve authored region pressure, with a distinct fatigue floor on weak foes.
+ const combatPressure=runtime.huntOptions?(attackCount?damage*cadenceRatio*runtime.gearAttritionMultiplier:0):Math.max(floor,damage);
+ const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
+ const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
  const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  // Healers reduce attrition, but exertion always retains a small food cost.

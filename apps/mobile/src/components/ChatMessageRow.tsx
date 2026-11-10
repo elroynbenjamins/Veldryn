@@ -23,7 +23,7 @@ export function ChatMessageRow({accountId,name,body,createdAt,guildTag,tagColorI
     {role?<View accessibilityRole="image" accessibilityLabel={roleLabel} style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text accessible={false} style={[s.roleGlyph,role==='leader'?s.roleGlyphLeader:role==='officer'?s.roleGlyphOfficer:s.roleGlyphMember]}>{role==='leader'?'✦✦✦':role==='officer'?'✦✦':'✦'}</Text></View>:null}
     {createdAt?<Text style={s.time}>{new Date(createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</Text>:null}
    </View>
-   <ChatMessageText body={body} mentionName={mentionName} style={[s.message,compact&&s.compactMessage]}/>
+   <ChatMessageText body={body} mentionName={mentionName} compact={compact} style={[s.message,compact&&s.compactMessage]}/>
   </View>
  </View>;
 }

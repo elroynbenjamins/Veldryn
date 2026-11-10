@@ -49474,9 +49474,14 @@ function craftedGearRarity(itemId, roll) {
   }
   return "common";
 }
+var CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION = 0.75;
 function craftedRarityStatMultiplier(itemId, rarity) {
-  if (itemDef(itemId).type !== "gear") throw new Error("Forged rarity requires equipment");
-  return rarityMeta(rarity).statMultiplier;
+  const item = itemDef(itemId);
+  if (item.type !== "gear") throw new Error("Forged rarity requires equipment");
+  const rolled = rarityMeta(rarity).statMultiplier;
+  const catalogBase = rarityMeta(itemRarity(item)).statMultiplier;
+  const beforeRecentBuff = Math.max(1, rolled / catalogBase);
+  return beforeRecentBuff + (rolled - beforeRecentBuff) * CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION;
 }
 function deterministicCraftRarityRoll(seed) {
   let hash3 = 2166136261;

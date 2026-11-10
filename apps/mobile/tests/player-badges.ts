@@ -64,6 +64,7 @@ for(const id of ['supporter','supporter_3m','supporter_6m','admin','moderator',.
  ok(art.includes(`player-badges-v1/${id}.webp`),'badge artwork bundled '+id);
 const provider=read('src/online/PlayerBadgeProvider.tsx'),transport=read('src/online/player-badges.ts');
 ok(provider.includes('setEquipped')&&transport.includes("request('update_player_equipped_badge_v2'"),'single badge preference is saved via authenticated server RPC');
+ok(transport.includes('missingBadgeRpc')&&transport.includes("id==='supporter_3m'||id==='supporter_6m'"),'legacy servers only fall back for basic owned badges, never unverified prestige tiers');
 
 const sql=read('../../backend/supabase/migrations/20261110153000_profile_badge_single_equip_supporter_tenure_v2.sql');
 ok(sql.includes('private.supporter_badge_progress_v2')&&sql.includes('enable row level security'),'only private account tenure ledger is created');

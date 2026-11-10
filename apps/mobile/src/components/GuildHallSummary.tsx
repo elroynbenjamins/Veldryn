@@ -64,7 +64,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
 
- const claims=readyClaims(shop);
+ const claims=readyClaims(loading?null:shop);
 
  const claim=async(row:ClaimRow)=>{
   if(claimPending.current)return;
@@ -79,11 +79,14 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
    await load();
   }finally{claimPending.current=false;if(mounted.current)setBusy('');}
  };
- const claimAll=async()=>{
+ const claimAll=async(includeDaily=false)=>{
   if(claimPending.current)return;
   claimPending.current=true;setBusy('all');setNotice('');setNoticeError(false);
   try{
    let total=0,failed=0;
+   if(includeDaily)for(const row of dailyRewards.filter(row=>row.status==='ready')){
+    try{total+=await claimOnlineGuildDailyTokens(row.kind);}catch{failed++;}
+   }
    for(const row of claims){try{total+=await row.run();}catch{failed++;}}
    setNoticeError(failed>0);
    setNotice((total?`+${total} Guild Tokens claimed`:'No rewards claimed')+(failed?` · ${failed} claim${failed===1?'':'s'} failed. Retry remaining rewards.`:''));
@@ -146,26 +149,25 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
   <Text style={s.dailyFootnote}>Complete a hunt or skilling reward, then claim · Resets at 00:00 UTC</Text>
  </View>;
 
- if(compact)return <View style={s.stack}>
-  <Panel style={s.compactPanel}>
-   <View style={s.row}>
-    <View style={s.flex}><Text style={s.kicker}>DAILY MUSTER</Text><Text style={s.compactTitle}>{checkedIn?'Checked in today':'Check-in pending'}</Text><Text style={s.compactMeta}>{muster?'Rally '+rallyPct+'% · '+muster.dailyPoints+' points today':loading?'Checking attendance…':'Muster unavailable'}</Text></View>
-    <StatusPill label={checkedIn?'DONE':'TODAY'} tone={checkedIn?'good':'warning'}/>
+ const readyDaily=dailyRewards.filter(row=>row.status==='ready');
+ const readyCount=readyDaily.length+claims.length;
+ const attendanceStatus=loading?'Checking today…':muster?checkedIn?'Checked in today':'Check-in pending':'Muster unavailable';
+ const readyNames=[...readyDaily.map(row=>row.title),...claims.map(row=>row.title)].join(' · ');
+ if(compact)return <Panel style={s.homeActionPanel}>
+  <View style={s.homeActionRow}>
+   <View style={s.flex}>
+    <Text style={s.kicker}>{readyCount>0?'YOUR GUILD ACTIONS':'YOUR GUILD TODAY'}</Text>
+    <Text style={s.homeActionTitle}>{readyCount>0?readyCount+' reward'+(readyCount===1?'':'s')+' ready':attendanceStatus}</Text>
+    <Text style={s.homeActionDetail}>{shop?shop.balance.toLocaleString()+' Guild Tokens available':loading?'Checking Guild Tokens…':'Guild Token balance unavailable'} · {attendanceStatus}</Text>
    </View>
-   <GameButton compact tone="secondary" title="View Muster & Rally" onPress={onOpenMuster}/>
-  </Panel>
-  <Panel style={s.compactPanel}>
-   <View style={s.row}><View style={s.flex}><Text style={s.kicker}>GUILD TOKENS</Text><Text style={s.compactTitle}>{shop?shop.balance.toLocaleString():'—'} <Text style={s.compactMeta}>available</Text></Text></View>
-    {claims.length>0?<StatusPill label={claims.length+' READY'} tone="good"/>:null}
-   </View>
-   {shop?<Text style={s.compactMeta}>Earned this week: {shop.earnedThisWeek} / {shop.weeklyCap}</Text>:null}
-   <GameButton compact tone="secondary" title="Guild Token Shop" onPress={onOpenShop}/>
-   {dailyActions}
-   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
-   {claims.length>1?<GameButton compact title={busyAll?'Claiming…':'Claim all '+claims.length+' rewards'} disabled={!!busy} loading={busyAll} onPress={()=>void claimAll()}/>:null}
-   {claims.slice(0,claims.length>1?0:1).map(row=><View key={row.id} style={s.compactClaim}><Text numberOfLines={2} style={[s.claimTitle,s.flex]}>{row.title} · +{row.tokens}</Text><GameButton compact title="Claim" disabled={!!busy} loading={busy===row.id} onPress={()=>void claim(row)}/></View>)}
-  </Panel>
- </View>;
+   {readyCount>1?<GameButton compact title={busyAll?'Claiming…':'Claim '+readyCount} disabled={!!busy||loading} loading={busyAll} onPress={()=>void claimAll(true)}/>
+    :readyDaily.length===1?<GameButton compact title="Claim" disabled={!!busy||loading} loading={busy==='daily:'+readyDaily[0].kind} onPress={()=>void claimDaily(readyDaily[0].kind)}/>
+    :claims.length===1?<GameButton compact title="Claim" disabled={!!busy||loading} loading={busy===claims[0].id} onPress={()=>void claim(claims[0])}/>
+    :<GameButton compact tone="secondary" title="View Muster & Rally" onPress={onOpenMuster}/>}
+  </View>
+  {readyCount>0?<Text style={s.homeRewardDetail} numberOfLines={2}>{readyNames}</Text>:null}
+  {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
+ </Panel>;
 
  return <View style={s.stack}>
   {/* CHECK-IN */}
@@ -232,6 +234,7 @@ function Metric({label,value,C,s}:{label:string;value:string;C:ThemeColors;s:Ret
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  stack:{gap:12},
+ homeActionPanel:{padding:11,gap:7},homeActionRow:{flexDirection:'row',alignItems:'center',gap:10},homeActionTitle:{fontSize:14,lineHeight:20,fontWeight:'900',color:C.text,marginTop:2},homeActionDetail:{fontSize:10.5,lineHeight:15,color:C.muted,marginTop:2},homeRewardDetail:{fontSize:11,lineHeight:16,color:C.info},
  compactPanel:{gap:7,padding:10},compactTitle:{fontSize:16,lineHeight:22,fontWeight:'800',color:C.text},compactMeta:{fontSize:11,lineHeight:16,color:C.muted,fontWeight:'600'},compactClaim:{flexDirection:'row',alignItems:'center',gap:8},
  hero:{gap:11},
  wallet:{gap:11},

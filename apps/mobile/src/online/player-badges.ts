@@ -35,4 +35,18 @@ export const updatePlayerBadgePreferences=(showSupporter:boolean)=>request('upda
 export const updateFeaturedPlayerBadges=(ids:readonly CollectiblePlayerBadgeId[])=>request('update_player_featured_badges_v1',{p_badge_ids:ids});
 
 /** Server validates ownership, Supporter tenure and account identity. */
-export const updatePlayerEquippedBadge=(id:EquippablePlayerBadgeId|null)=>request('update_player_equipped_badge_v2',{p_badge_id:id});
+const missingBadgeRpc=(error:unknown)=>error instanceof Error&&error.message==='Player badges are not available on this server yet.';
+/** Older installations may not have the v2 RPC yet.
+ * Preserve basic one-badge/Supporter behavior until the migration rolls out,
+ * but never pretend the server has verified 3-/6-month tenure.
+ */
+export async function updatePlayerEquippedBadge(id:EquippablePlayerBadgeId|null):Promise<PlayerBadgePreferences>{
+ try{return await request('update_player_equipped_badge_v2',{p_badge_id:id});}
+ catch(error){
+  if(!missingBadgeRpc(error)||id==='supporter_3m'||id==='supporter_6m')throw error;
+  if(isCollectiblePlayerBadgeId(id))return updateFeaturedPlayerBadges([id]);
+  try{await updateFeaturedPlayerBadges([]);}
+  catch(legacyError){if(!missingBadgeRpc(legacyError))throw legacyError;}
+  return updatePlayerBadgePreferences(id==='supporter');
+ }
+}

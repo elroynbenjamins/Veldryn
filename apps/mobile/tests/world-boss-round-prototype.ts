@@ -87,7 +87,11 @@ const interrupter:AbilityDefinition={
  target:'interruptible_casting_enemy',aiCondition:'target_casting',effects:[{kind:'interrupt'}]
 };
 const interruptSquad=squad('Hexweaver');
-const patched=interruptSquad.map(p=>p.classId==='Hexweaver'?{...p,abilities:[interrupter,...p.abilities]}:p);
+// Remove competing class interrupts from this isolated test: with Support-first
+// reactions, a Tank may validly interrupt the channel before Hexweaver does.
+const patched=interruptSquad.map(p=>p.classId==='Hexweaver'
+ ?{...p,abilities:[interrupter,...p.abilities]}
+ :{...p,abilities:p.abilities.filter(a=>!a.effects.some(e=>e.kind==='interrupt'))});
 const interrupted=simulateWorldBossRounds({seed:'interrupt-test',boss:'hollowroot',phase:'exposed',players:patched});
 assert.ok(interrupted.events.some(e=>e.type==='interrupt'&&e.abilityId==='TEST_INTERRUPT'),'channel interrupt must be ledger-backed');
 assert.ok(interrupted.events.some(e=>e.type==='interrupt'&&e.abilityId==='REGROWTH'),'an interrupted special must not apply its guard restoration');

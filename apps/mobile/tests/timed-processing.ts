@@ -39,7 +39,7 @@ let fishingToCooking=createCharacter(newGame(now),'IRONWARDEN','Fish to Cook');
 fishingToCooking={...fishingToCooking,character:{...fishingToCooking.character!,gold:10000},inventory:{...fishingToCooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}]}};
 fishingToCooking=executeGameCommand(fishingToCooking,{type:'start',args:{kind:'gathering',id:'MEADOW_PERCH_POOL'}},now).state;
 equal(fishingToCooking.activity?.kind,'fishing','a Fishing session is active before selecting a meal');
-const cookingAfterFishing=executeGameCommand(fishingToCooking,{type:'processing_start',args:{id:'COOK_SILVERFIN'}},now+17_000).state;
+const cookingAfterFishing=executeGameCommand(fishingToCooking,{type:'processing_start',args:{id:'COOK_SILVERFIN'}},now+60_000).state;
 equal(cookingAfterFishing.activity?.kind,'processing','one Cooking action replaces the Fishing session');
 equal(cookingAfterFishing.activity?.targetId,'COOK_SILVERFIN','the selected meal begins immediately');
 equal(cookingAfterFishing.activity?.processing?.remainingBatches,1,'Cooking reserves its affordable meal batch');

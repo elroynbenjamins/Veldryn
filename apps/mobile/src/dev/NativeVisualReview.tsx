@@ -60,8 +60,8 @@ const post:RecruitmentCardView={id:'qa-post',postType:'party_recruiting',ownerNa
 const sections=['Home','Skills','Crafting','Combat','Social','Guild','Login','Ingredients','Settings','Journal','Contracts','Challenges','Events','EventsLive','Profile','Collections','Inventory','Character'] as const;
 type Section=typeof sections[number];
 const destinations=['Character','Skills','World','Inventory','More'] as const;
-export default function NativeVisualReview(){
- const [section,setSection]=useState<Section>(sections.find(name=>name.toLowerCase()===process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN)??'Home'),[state,setState]=useState(fixture),[active,setActive]=useState<typeof destinations[number]>('Character');
+export default function NativeVisualReview({initialSection}:{initialSection?:Section}={}){
+ const [section,setSection]=useState<Section>(initialSection??sections.find(name=>name.toLowerCase()===process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN)??'Home'),[state,setState]=useState(fixture),[active,setActive]=useState<typeof destinations[number]>('Character');
  const noop=()=>{};
  return <SafeAreaProvider><SafeAreaView style={s.root}><View style={s.qa}><Text style={s.qaLabel}>NATIVE QA · MEMORY FIXTURES</Text><ScrollView horizontal contentContainerStyle={s.selector} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{sections.map(name=><Pressable key={name} accessibilityRole="button" accessibilityLabel={'QA '+name} onPress={()=>{if(name==='EventsLive')setState(s=>setLocalEventEnabled(s,true,Date.now()));setSection(name)}} style={s.pick}><Text style={{color:section===name?C.accent:C.text}}>{name}</Text></Pressable>)}</ScrollView></View>
  <View style={s.flex}>

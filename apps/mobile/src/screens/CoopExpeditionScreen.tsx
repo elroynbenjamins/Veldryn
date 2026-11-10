@@ -104,7 +104,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
       next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);
       if(requestId===loadRequestId.current){setEntry(next);setCachedBrowse(undefined);return true;}
       return false;
-    }catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason);return false;}
+    }catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason));return false;}
     finally{if(requestId===loadRequestId.current)setLoading(false)}
   },[entrySource,characterId,state.character?.level]);
   // Server-owned ready checks are polled only while this modal is open.

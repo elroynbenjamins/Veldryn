@@ -9,6 +9,7 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {OnlineGuildBankPanel} from './OnlineGuildBankPanel';
 import {StatBar} from './StatBar';
 import {guildFacilityArtwork} from '../theme/guild-remaster-art';
+import {guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
 import {guildConstructionBenefits} from '../content/guild-construction-benefits';
 import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
@@ -115,10 +116,10 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     <StatBar rounded label={ui("Materials allocated")} current={funded} max={Math.max(1,required)}/>
     {needs.filter(req=>Math.max(0,funding?.resources[req.key]??0)<req.amount).slice(0,4).map(req=>{
      const allocated=Math.min(req.amount,Math.max(0,funding?.resources[req.key]??0)),remaining=Math.max(0,req.amount-allocated);
-     const bank=bankBalances.get(req.key)??0;
-     const name=req.key==='gold'?ui('Gold'):req.key.toLowerCase().replace(/_/g,' ');
+     const bank=shop?.bank===null?'—':(bankBalances.get(req.key)??0).toLocaleString();
+     const name=req.key==='gold'?ui('Gold'):guildUpgradeComponentName(req.key)??req.key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
      return <View key={req.key} style={s.fundingRow}><Text style={[s.note,s.flex]}>{name}</Text>
-      <Text style={s.fundingAmount}>{ui('Need {needed} · Bank {bank}',{needed:remaining.toLocaleString(),bank:bank.toLocaleString()})}</Text>
+      <Text style={s.fundingAmount}>{ui('Need {needed} · Bank {bank}',{needed:remaining.toLocaleString(),bank})}</Text>
      </View>;
     })}
     <GameButton compact title={ui("Open Construction")} onPress={()=>navigate('Construction')}/>
@@ -139,6 +140,10 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    <GameButton compact tone="secondary" title={ui("Open Guild Bank")} onPress={()=>navigate('Bank')}/>
   </View>:null}
   {section==='Bank'?<View style={s.root}>
+   {returnSelection?<View style={s.bankReturn}>
+    <View style={s.flex}><Text style={s.priorityTitle}>{guildConstructionBlueprint(returnSelection.templateId)?.name??ui('Guild Construction')}</Text><Text style={s.note}>{ui('Continue funding your selected upgrade')}</Text></View>
+    <GameButton compact tone="secondary" title={ui('Back to Construction')} onPress={()=>{setBankFocus(null);navigate('Construction')}}/>
+   </View>:null}
    {shopFallback()}
    {shop?<OnlineGuildBankPanel snapshot={shop} playerState={playerState} onReload={refreshShop} focusResourceId={bankFocus}
     onFocusHandled={()=>setBankFocus(null)}
@@ -190,6 +195,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  check:{fontSize:17,fontWeight:'900',color:C.good},
  benefitTitle:{fontSize:12,lineHeight:18,fontWeight:'800',color:C.text},
  counter:{fontSize:11,color:C.good,fontWeight:'800'},
+ bankReturn:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:9,padding:10,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panelRaised},
  fundingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingVertical:3},
  fundingAmount:{fontSize:11,lineHeight:16,color:C.text,fontWeight:'700'},
  facilityGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},

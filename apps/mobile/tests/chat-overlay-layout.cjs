@@ -12,7 +12,7 @@ const GuildChat=props=>{React.useEffect(()=>{props.onTitleChange?.('[STW] Stormw
 const deps={
  react:React,'react/jsx-runtime':require('react/jsx-runtime'),
  'react-native':{AppState:{currentState:'active',addEventListener:()=>({remove(){}})},Keyboard:{dismiss:()=>{},addListener:(name,fn)=>{listeners.set(name,fn);return{remove:()=>removed.push(name)}}},Platform:{OS:'android'},View:'View',Text:'Text',Pressable:'Pressable',ScrollView:'ScrollView',Modal:'Modal',KeyboardAvoidingView:'KeyboardAvoidingView',StyleSheet:styles,useWindowDimensions:()=>({width:320,fontScale:1})},
- '../i18n/social':{useSocialText:()=>x=>x,socialLabel:(_,x)=>x},'../i18n/guild-detailed-guide-locales':{localizedGuildDetailedGuide:(_language,id)=>id==='Chat'?{title:'Guild Chat',topics:[{body:'Members-only chat for your Guild.'}]}:undefined,guildGuideDoneText:()=>'Got it'},'../theme/ThemeContext':{useGameTheme:()=>({})},'../online/supabase':{onlineConfigured:false},'../online/AuthSessionProvider':{useAuthSession:()=>({session:null})},'../online/PartySocialProvider':{usePartySocial:()=>({party:null,accountId:'self',refresh})},'react-native-safe-area-context':{useSafeAreaInsets:()=>({top:24,bottom:24})},'../online/social':{WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}]},'./GuildChat':{GuildChat}
+ '../i18n/social':{useSocialText:()=>x=>x,socialLabel:(_,x)=>x},'../i18n/guild-detailed-guide-locales':{localizedGuildDetailedGuide:(_language,id)=>id==='Chat'?{title:'Guild Chat',topics:[{body:'Members-only chat for your Guild.'}]}:undefined,guildGuideDoneText:()=>'Got it'},'../theme/ThemeContext':{useGameTheme:()=>({})},'../online/supabase':{onlineConfigured:false},'../online/AuthSessionProvider':{useAuthSession:()=>({session:null})},'../online/PartySocialProvider':{usePartySocial:()=>({party:null,accountId:'self',refresh})},'react-native-safe-area-context':{useSafeAreaInsets:()=>({top:24,bottom:24})},'../online/social':{VISIBLE_WORLD_CHANNELS:[{id:'world-1',name:'English'},{id:'world-2',name:'Spanish'}]},'../core/world-chat-visibility':{defaultVisibleWorldChatIndex:value=>value===2?1:0},'./GuildChat':{GuildChat}
 };
 for(const name of ['ChatChannelIcon','OnlineWorldChat','WorldChat','OnlinePartyChat','ChatDock','SystemNoticeLog'])deps['./'+name]={[name]:mock(name)};
 deps['./PartyChatGate']={PartyChatGate:({party,children})=>party?children:null};
@@ -34,6 +34,18 @@ vm.runInNewContext(code,sandbox);
  assert.ok(tab('World')&&tab('Guild')&&tab('System'),'three available tabs visible');
  assert.equal(tab('Party'),undefined,'Party tab hidden without membership');
  assert.equal(tab('Guild').props.accessibilityState.disabled,false);
+ const languageTrigger=renderer.root.findAllByType('Pressable').find(x=>x.props.accessibilityLabel==='World language: English');
+ assert.ok(languageTrigger,'English is the default visible World channel');
+ await act(async()=>{languageTrigger.props.onPress()});
+ const worldOptions=renderer.root.findAllByType('Pressable').filter(x=>
+  x.props.accessibilityRole==='button'&&typeof x.props.accessibilityState?.selected==='boolean');
+ assert.equal(worldOptions.length,2,'the World language picker exposes exactly English and Spanish');
+ assert.equal(renderer.root.findAllByType('Text').some(x=>x.props.children==='Global 1'||x.props.children==='Global 2'),false,
+  'legacy Global 1/2 do not appear in the World Chat picker');
+ const spanishOption=worldOptions.find(x=>x.props.children?.some?.(child=>child?.props?.children==='Spanish'));
+ assert.ok(spanishOption,'Spanish is available as the second World Chat');
+ await act(async()=>{spanishOption.props.onPress()});
+
  assert.ok(renderer.root.findAllByType('View').some(x=>x.props.accessibilityRole==='tablist'),'channel list semantics present');
  await act(async()=>{listeners.get('keyboardDidShow')({endCoordinates:{screenY:500}})});
  assert.equal(clearance(),304,'overlay keyboard reserves the measured 300px occlusion plus 4px gap');

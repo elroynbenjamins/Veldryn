@@ -1,6 +1,7 @@
 import {gameAlert} from '../core/game-alerts';
 import {canManageGuild,guildRecruitmentVisible} from '../core/social-management';
 import {useSocialText} from '../i18n/social';
+import {usePartyProgressUiText} from '../i18n/party-progress-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel,socialExpiry} from '../i18n/social';
 import {useCallback,useEffect,useRef,useState,useMemo} from 'react';
@@ -25,14 +26,14 @@ import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerS
 import {usePartySocial} from '../online/PartySocialProvider';
 import {partySocialRepository as repository,ownRecruitmentPosts,partyRankings,partyCommandKey,claimPartyContractReward,activePartyEvent,transferPartyLeadership,removePartyMember,cancelPartyInvitation,disbandParty,recruitmentMatchAlerts,ackRecruitmentMatchAlerts,type PublishRecruitmentInput,type PartyRanking,type RecruitmentMatchAlert} from '../online/party-social';
 import {myGuild,requestGuildMembership,respondPartyInvitation,sendPartyInvitation,socialInvitations,socialOutgoingInvitations,type OutgoingInvitationView,type PartyInvitationView} from '../online/social';
-import {EMPTY_RECRUITMENT_FILTERS,shouldShowPartyChat,recruitmentPostTypePresentation,recruitmentTimeLabel,normalizedPartyPreferences,partyActivityLabel,recruitmentPaceForParty,type PartyActivityLevel,type PartyLanguage,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
+import {EMPTY_RECRUITMENT_FILTERS,partyContractClaimableRewardIds,shouldShowPartyChat,recruitmentPostTypePresentation,recruitmentTimeLabel,normalizedPartyPreferences,partyActivityLabel,recruitmentPaceForParty,type PartyActivityLevel,type PartyLanguage,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
 type SocialBoard={cards:RecruitmentCardView[];own:RecruitmentCardView[]};
 const EMPTY_BOARD:SocialBoard={cards:[],own:[]};
 export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked,onTabChange,onRecruitment,onParty}:{mode?:'party'|'recruitment'|'legacy';initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void;onTabChange?:(tab:SocialHubTab)=>void;onRecruitment?:(area:'party'|'guild')=>void;onParty?:()=>void}){
- const st=useSocialText();
+ const st=useSocialText(),pt=usePartyProgressUiText();
   const language=useGameLanguage();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(mode==='party'?'party':initialTab==='guild'?'guild':'party');const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
@@ -182,9 +183,11 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
  const friendInviteSheet=<PartyFriendInviteSheet key={social.accountId+':'+(social.party?.id??'none')} visible={showFriendInvites&&!!social.party} partyId={social.party?.id} openSpots={Math.max(0,4-(social.party?.members.length??0))} pendingAccountIds={outgoingPartyInvites.map(invite=>invite.recipientAccountId)} onClose={()=>setShowFriendInvites(false)} onInvited={()=>{void load();onInvitationsChanged?.();}}/>;
  if(mode!=='legacy'){
   const recruitment=mode==='recruitment',leader=!!social.party?.members.some(member=>member.accountId===social.accountId&&member.isLeader),openSpots=Math.max(0,4-(social.party?.members.length??0));
+  const claimReadyCount=social.party?partyContractClaimableRewardIds(social.contracts).length:0;
   const switchParty=(view:'Overview'|'Contracts'|'Chat')=>{setPartyView(view);setTab(view==='Chat'?'chat':'party')};
   return <View style={s.page}>
-   {!recruitment&&!partyLocked?<View accessibilityRole="tablist" style={s.pageTabs}>{(['Overview','Contracts','Chat'] as const).map(view=><Pressable key={view} accessibilityRole="tab" accessibilityState={{selected:partyView===view,disabled:view==='Chat'&&!canUsePartyChat}} disabled={view==='Chat'&&!canUsePartyChat} onPress={()=>switchParty(view)} style={({pressed})=>[s.pageTab,partyView===view&&s.pageTabSelected,view==='Chat'&&!canUsePartyChat&&s.pageTabDisabled,pressed&&s.pressed]}><Text style={[s.pageTabLabel,partyView===view&&s.pageTabLabelSelected]}>{view}</Text></Pressable>)}</View>:null}
+   {!recruitment&&!partyLocked?<View accessibilityRole="tablist" style={s.pageTabs}>{(['Overview','Contracts','Chat'] as const).map(view=><Pressable key={view} accessibilityRole="tab" accessibilityState={{selected:partyView===view,disabled:view==='Chat'&&!canUsePartyChat}} disabled={view==='Chat'&&!canUsePartyChat} onPress={()=>switchParty(view)} style={({pressed})=>[s.pageTab,partyView===view&&s.pageTabSelected,view==='Chat'&&!canUsePartyChat&&s.pageTabDisabled,pressed&&s.pressed]}><Text style={[s.pageTabLabel,partyView===view&&s.pageTabLabelSelected]}>{view==='Contracts'&&claimReadyCount>0?view+' · '+claimReadyCount:view}</Text></Pressable>)}</View>:null}
+   {!recruitment&&partyView==='Overview'&&claimReadyCount>0?<Pressable accessibilityRole="button" onPress={()=>switchParty('Contracts')} style={s.syncRow}><Text style={{color:C.good,fontWeight:'800'}}>{pt('Party rewards ready to claim')+' · '+claimReadyCount+' ›'}</Text></Pressable>:null}
    {!recruitment&&partyView==='Chat'&&canUsePartyChat?<View style={s.chatContent}><Text accessibilityRole="header" style={s.title}>Party Chat</Text><OnlinePartyChat expanded/></View>:<ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      {social.accountId&&(backgroundError||social.error||showUpdating)?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>Could not refresh {recruitment?'Recruitment':'Party'}.</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>{void social.refresh();void load()}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>Updating…</Text></>}</View>:null}
      {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}

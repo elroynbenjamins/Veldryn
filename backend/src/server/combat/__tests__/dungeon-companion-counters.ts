@@ -81,7 +81,9 @@ assert.equal(applyDungeonCompanionCounters([wisp],[caster],new Set(['wisp'])).ma
 const noCast=enemy(['pve:archetype:caster'],[{...caster.abilities[0],interruptible:false}]);
 assert.equal(applyDungeonCompanionCounters([wisp],[noCast]).matchups.length,0,'A caster tag alone is not an interruptible target');
 
-const interruption=simulateCombat({seed:'dungeon-wisp-interrupt',players:spellbreak.players,enemies:[caster],maxDurationMs:4900});
+// Isolate the assist: Ironwarden also has a class interrupt which could race Wisp.
+const alone={...spellbreak.players[0],abilities:[castBreaker]};
+const interruption=simulateCombat({seed:'dungeon-wisp-interrupt',players:[alone],enemies:[caster],maxDurationMs:4900});
 const interrupted=interruption.events.find(e=>e.type==='interrupt'&&e.abilityId===castBreaker.id);
 assert.ok(interrupted,'Wisp must perform a real authoritative cast interrupt');
 assert.equal(interrupted!.interruptedAbilityId,'CAST_WAVE');

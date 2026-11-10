@@ -13,7 +13,13 @@ ok(MONSTER_MASTERY_MILESTONES.some(row=>row.rank===5&&row.label==='Hunter Instin
 const guidance4=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:100};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance4.rank===4&&guidance4.next?.rank===5&&guidance4.killsToNextMilestone===25,'Rank 4 guidance should point to Rank 5 combat milestone');const guidance10=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:250};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance10.dropKnowledge&&nextMasteryMilestone(10)?.rank===15,'Rank 10 should reveal drop knowledge and point to Rank 15');
 const completeGuidance=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:750};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(!completeGuidance.next&&completeGuidance.killsToNextMilestone===0,'Rank 30 mastery should complete the canonical milestone ladder');
 const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'MOSS_RAT').points===750,'points cap');ok(monsterMastery(master,'FIELD_WISP').damageBonus===0&&monsterMastery(master,'FALLEN_KNIGHT').damageBonus===0,'species only, excludes boss');
-ok(activityCycleSeconds(master)<activityCycleSeconds(s),'dashboard reflects mastery speed');
+// Early regions now resolve real landed strikes instead of dividing an authored
+// timer, so mastery damage reaches the hunt through huntBasePlayerHit. A +2% bonus
+// is too small to remove a whole strike from an early hunt, so the shown cycle can
+// legitimately stay flat; what must hold is that mastery never slows the hunt and
+// that a maxed rank still grants its damage bonus.
+ok(activityCycleSeconds(master)<=activityCycleSeconds(s),'dashboard must never slow the hunt cycle as mastery grows');
+ok(monsterMastery(master,'MOSS_RAT').damageBonus>0,'maxed mastery must still grant a damage bonus the hunt can use');
 const sampleAtKills=(game:typeof s,target:number)=>{
  let left=now,right=now+4*3600*1000;
  for(let i=0;i<30&&right-left>1000;i++){

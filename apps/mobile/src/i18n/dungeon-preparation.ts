@@ -3,6 +3,9 @@ import {earlyLocaleText} from './early-locales';
 import {dungeonPreparationEarlyText} from './dungeon-preparation-early-locales';
 import type {Language} from './languages';
 const rows:Record<string,readonly [string,string,string,string,string]>={
+ 'Choose a dungeon and plan your route.':['Wähle einen Dungeon und plane deine Route.','Elige una mazmorra y planifica tu ruta.','Kies een kerker en plan je route.','Scegli un dungeon e pianifica il percorso.','Choisissez un donjon et préparez votre parcours.'],
+ 'Ready now':['Jetzt verfügbar','Disponibles ahora','Nu beschikbaar','Disponibili ora','Disponibles maintenant'],
+ 'Clear reward':['Belohnung für Abschluss','Recompensa por victoria','Beloning bij voltooiing','Ricompensa di completamento','Récompense de victoire'],
  "NPC or Echo allies fill the missing roles":["NPCs oder Echos füllen fehlende Rollen.","Los PNJ o Ecos cubren los roles que faltan.","NPC's of Echo's vullen ontbrekende rollen.","PNG o Echi coprono i ruoli mancanti.","Des PNJ ou des Échos complètent les rôles manquants."],
  "Find an eligible party automatically":["Automatisch eine passende Gruppe finden","Encuentra un grupo apto automáticamente","Vind automatisch een geschikte groep","Trova automaticamente un gruppo idoneo","Trouver automatiquement un groupe admissible"],
  "Group finder & options":["Gruppensuche & Optionen","Buscador de grupos y opciones","Groepszoeker en opties","Ricerca gruppo e opzioni","Recherche de groupe et options"],

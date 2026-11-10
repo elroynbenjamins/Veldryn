@@ -11,8 +11,9 @@ assert(choices.includes('minHeight:62')&&choices.includes('size="node"'),'Room s
 assert(choices.includes('option.votes??0')&&choices.includes('myVotedNodeId===option.nodeId'),'Live vote counts and identity remain');
 assert(stage.includes('<BattleElapsedSeconds')&&stage.includes('elapsedClock(anchor.current.elapsedMs')&&!stage.includes('seconds(pending.wallDurationMs)'),'Combat time counts upward, without revealing expected duration');
 assert(!stage.includes('Replay combat recap')&&!stage.includes('↻ Replay encounter'),'No combat replay control');
-assert(overview.includes('enteringCombat')&&overview.includes('Preparing the encounter'),'Solo battles transition immediately before the server response');
-assert(overview.includes('<Modal visible={rewardOpen}')&&overview.includes('onPresentationComplete'),'Terminal results open the reward popup after battle presentation');
+assert(overview.includes('setEnteringCombat(true);setTheaterOpen(true)')&&overview.includes('anticipation={enteringCombat||awaitingCombatPlayback}'),'Solo battles open the combat preview before the server response');
+assert(overview.includes('setEnteringUtility({nodeId,kind:option.kind')&&overview.includes('<DungeonRoomResolution kind={enteringUtility.kind}'),'Solo utility rooms show progress immediately while the server resolves the choice');
+assert(overview.includes('<Modal visible={rewardOpen&&!theaterOpen}')&&overview.includes('onPresentationComplete'),'Terminal rewards wait until the battle theater closes');
 assert(overview.includes('rewards.map(reward=>')&&overview.includes('onClaim?.(reward.id)'),'Rewards remain individually server-claimed');
 assert(overview.includes('terminalAction.onPress')&&overview.includes('terminalAction.claimed'),'Seasonal rewards use their existing authoritative claim');
 assert(overview.includes('rewardsSecured&&onQueueAgain'),'Run-again action requires claimed rewards');

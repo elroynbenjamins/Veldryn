@@ -219,7 +219,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   <View style={s.header}><Text style={s.kicker}>{st("PARTY FORMATION")}</Text><View style={s.headerRight}>{assists?<StateChip label={st("{count} companion assists",{count:assists})} tone="success"/>:null}<Text style={s.headerElapsed}>{st("Elapsed")} · <BattleElapsedSeconds battleKey={battleClockKey} serverElapsedMs={pending?.elapsedMs} active={!complete}/></Text></View></View>
   {anticipation?<Text accessibilityLiveRegion="polite" style={s.previewHint}>{st('Opening exchange')}</Text>:null}
   <View accessibilityLabel={st('Battle arena: enemies at the top, party at the bottom')} style={[s.arena,{padding:layout.arenaPadding,minHeight:layout.mode==='compact'?420:480}]}>
-   <Image accessibilityIgnoresInvertColors source={backdrop} resizeMode="cover" style={s.arenaBackdrop}/>
+   <Image accessibilityIgnoresInvertColors source={backdrop} resizeMode="cover" fadeDuration={0} style={s.arenaBackdrop}/>
    <View pointerEvents="none" style={s.arenaShade}/>
    <Animated.View style={[s.enemyFormation,{opacity:handoffOpacity}]}>
     <Text style={s.formationHeading}>{bossEncounter?st('FINAL BOSS'):st('ENEMIES')}</Text>

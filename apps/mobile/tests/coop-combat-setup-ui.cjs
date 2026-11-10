@@ -12,7 +12,7 @@ assert.match(live,/setupState\?\.character&&!ended\?<CoopCombatSetupPanel/, 'Liv
 assert.match(lobby,/setupState=\{setupState\}/, 'queue forwards character setup');
 assert.match(screen,/setupState=\{state\}/, 'current GameState is the setup source');
 assert.match(loadout,/<CoopCombatSetupPanel state=\{state\}/, 'show setup before joining either mode');
-assert.match(setup,/accessibilityState=\{\{expanded:expanded==='companion'\}\}/, 'companion detail toggle accessible');
+assert.match(setup,/accessibilityState=\{\{expanded:!onChooseCompanion&&expanded==='companion'/, 'companion detail toggle accessible, and reports no expanded state while it acts as an explicit swap control');
 assert.match(setup,/accessibilityState=\{\{expanded:expanded==='healing'\}\}/, 'healing detail toggle accessible');
 assert.match(setup,/No potion is spent while queueing/, 'no automatic expenditure promises');
 assert.match(roster,/slot\.companionId\?<CoopPartyCompanionChip/, 'Echo assist exists only on actual snapshot');

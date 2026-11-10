@@ -4,6 +4,7 @@ import type {CoopRoomOutcomeView} from '../../core/coop-presentation';
 import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
+import {dungeonRoomPresentation} from './dungeon-room-presentation';
 
 /** A transient, non-modal result based on committed server deltas, not guesses. */
 export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView}){
@@ -27,9 +28,11 @@ export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView
  if(outcome.artifactCount>0)detail.push(st('{count} artifact gained',{count:outcome.artifactCount}));
  if(outcome.curseCount>0)detail.push(st('{count} curse gained',{count:outcome.curseCount}));
  if(outcome.resourcesDelta!==0)detail.push(st('{amount} resources',{amount:`${outcome.resourcesDelta>0?'+':''}${outcome.resourcesDelta}`}));
+ const room=dungeonRoomPresentation(outcome.kind);
+ const summary=detail.length?detail.join(' · '):st('Room cleared');
  return <View style={s.banner} accessibilityLiveRegion="polite">
   <Text style={s.mark}>✓</Text>
-  <Text style={s.text} numberOfLines={3}>{detail.length?detail.join(' · '):st('Room cleared')}</Text>
+  <Text style={s.text} numberOfLines={3}>{room?`${st(room.name)} · ${summary}`:summary}</Text>
  </View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({

@@ -3,11 +3,11 @@ const source=fs.readFileSync('src/theme/equipment-assets.ts','utf8');
 
 const expected={
   T6_001:{
-    asset:'../../assets/equipment-t6-ironwarden/T6_001-ambergate-rampart-icon-sheet.png',
+    asset:'../../assets/equipment-t6-ironwarden/T6_001-ambergate-rampart-icon-sheet.webp',
     items:['T6P_946','T6P_947','T6P_948','T6P_949','T6P_950','T6P_951','T6P_952','T6X_001','T6X_002','T6X_003'],
   },
   T6_003:{
-    asset:'../../assets/equipment-t6-ironwarden/T6_003-tyrant-reprisal-icon-sheet.png',
+    asset:'../../assets/equipment-t6-ironwarden/T6_003-tyrant-reprisal-icon-sheet.webp',
     items:['T6P_960','T6P_961','T6P_962','T6P_963','T6P_964','T6P_965','T6P_966','T6X_007','T6X_008','T6X_009'],
   },
 } as const;

@@ -2,6 +2,18 @@ import type {Language} from './languages';
 
 /** Dungeon preparation labels for Russian and Turkish, matching the five established locale keys. */
 export const dungeonPreparationEarlyRows={
+  "Choose a dungeon and plan your route.": [
+    "Выберите подземелье и спланируйте маршрут.",
+    "Bir zindan seç ve rotanı planla."
+  ],
+  "Ready now": [
+    "Доступно сейчас",
+    "Şimdi hazır"
+  ],
+  "Clear reward": [
+    "Награда за прохождение",
+    "Tamamlama ödülü"
+  ],
   "NPC or Echo allies fill the missing roles": [
     "Недостающие роли заполнят НИП или союзники-Эхо.",
     "Eksik rolleri NPC veya Yankı müttefikleri doldurur"

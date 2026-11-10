@@ -6,6 +6,7 @@ import {C,radii} from '../theme/theme';
 import {itemRarity,rarityMeta,type ItemRarity} from '../core/item-rarity';
 import {equipmentArtworkSetByItemId,equipmentSheetBySet} from '../theme/equipment-assets';
 import {hasStarterWeaponArtwork,StarterWeaponArtwork} from './StarterWeaponArtwork';
+import {EQUIPMENT_ATLAS_COLUMNS,EQUIPMENT_ATLAS_ROWS,equipmentArtworkLayout} from '../core/equipment-artwork-layout';
 
 const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'] as const;
 // Replacement atlases use one shared 5 × 2 grid: 960 × 384, or square cells.
@@ -15,7 +16,9 @@ export function equipmentSheetCellAspect(sheet:ImageSourcePropType){
   // React Native Web does not expose resolveAssetSource; fall back to the
   // authored sprite-sheet ratio when running the Expo web preview.
   const resolved=Image.resolveAssetSource?.(sheet);
-  return resolved&&(resolved.width??0)>0&&(resolved.height??0)>0?(resolved.width!/5)/(resolved.height!/2):fallbackCellAspect;
+  return resolved&&(resolved.width??0)>0&&(resolved.height??0)>0
+    ?(resolved.width!/EQUIPMENT_ATLAS_COLUMNS)/(resolved.height!/EQUIPMENT_ATLAS_ROWS)
+    :fallbackCellAspect;
 }
 
 export function hasEquipmentArtwork(item:ItemDef){
@@ -30,14 +33,11 @@ export function EquipmentArtwork({item,rarity,compact=false,framed=true,size:req
   const slotIndex=item.slot?slots.indexOf(item.slot as typeof slots[number]):-1;
   const frameStyle={width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent'};
   if(hasStarterWeaponArtwork(item.id))return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><StarterWeaponArtwork itemId={item.id} size={size}/></View>;
-  if(sheet&&slotIndex>=0){
-    const aspect=equipmentSheetCellAspect(sheet);
-    const cellWidth=aspect>=1?size:size*aspect;
-    const cellHeight=aspect>=1?size/aspect:size;
+  const crop=sheet?equipmentArtworkLayout(slotIndex,size,equipmentSheetCellAspect(sheet)):null;
+  if(sheet&&crop){
     // Crop within each source cell rather than simply nudging the atlas. The
     // latter can reveal a neighbouring icon at the top/left edge of a tile.
-    const inset=.06,inner=1-inset*2,scale=1/inner;
-    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:cellHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:cellWidth*5*scale,height:cellHeight*2*scale,left:-((slotIndex%5)+inset)*cellWidth*scale,top:-(Math.floor(slotIndex/5)+inset)*cellHeight*scale}}/></View></View>;
+    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:crop.cellWidth,height:crop.cellHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:crop.sheetWidth,height:crop.sheetHeight,left:crop.left,top:crop.top}}/></View></View>;
   }
   return <View accessibilityLabel={tr('{name} equipment marker',{name:item.name})} style={[s.frame,frameStyle]}><Text style={[s.marker,{color:meta.color}]}>◇</Text></View>;
 }

@@ -5,6 +5,7 @@ const path=require('node:path');
 
 const root=path.join(__dirname,'..');
 const assets=path.join(root,'assets','tools','individual');
+const legacyAssets=path.join(root,'assets','tools');
 const source=fs.readFileSync(path.join(root,'src','theme','gathering-tool-assets.ts'),'utf8');
 const artwork=fs.readFileSync(path.join(root,'src','components','GatheringToolArtwork.tsx'),'utf8');
 const itemArtwork=fs.readFileSync(path.join(root,'src','components','ItemArtwork.tsx'),'utf8');
@@ -25,6 +26,9 @@ for(const [id,name] of Object.entries(expected)){
   assert.equal(png[25],6,'RGBA transparent icon '+id);
 }
 assert.equal(fs.readdirSync(assets).filter(name=>name.endsWith('.png')).length,12,'no missing/duplicate images');
+for(const name of ['gathering-tools-v1.png','gathering-tools-v2.webp','gathering-tools-v3.png']){
+  assert.equal(fs.existsSync(path.join(legacyAssets,name)),false,'obsolete shared atlas removed: '+name);
+}
 assert.ok(artwork.includes('gatheringToolImages[itemId]'),'component uses direct PNG source');
 assert.ok(artwork.includes('resizeMode="contain"'),'tool icon keeps its full shape');
 assert.ok(!artwork.includes('gatheringToolArtworkLayout'),'no atlas crop geometry');

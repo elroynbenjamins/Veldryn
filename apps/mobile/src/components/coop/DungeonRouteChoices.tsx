@@ -54,7 +54,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
        <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
        {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={18}/></View>:null}
       </View>:null}
-      <Text style={s.chevron}>{'›'}</Text>
+      <Text style={s.actionCue}>{votedHere?ui('Your vote'):action} <Text style={s.chevron}>{'›'}</Text></Text>
      </View>
      {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
      {(!riskBaseline||!redundantReward||modifier)?<View style={s.tags}>
@@ -69,13 +69,13 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
 }
 function makeStyles(C:CoopColors){return StyleSheet.create({
  list:{gap:6},
- card:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:9,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.surface,overflow:'hidden'},
+ card:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
  bossCard:{borderColor:C.goldDim},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
  hiddenCard:{opacity:.6},
  pressed:{backgroundColor:C.surfaceRaised},
  content:{flex:1,minWidth:0,justifyContent:'center',gap:2},
  heading:{flexDirection:'row',alignItems:'center',gap:6,minHeight:19},
- title:{flex:1,minWidth:0,fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},
+ title:{flex:1,minWidth:0,fontSize:15,lineHeight:20,color:C.text,fontWeight:'800'},
  tags:{flexDirection:'row',alignItems:'center',gap:5},
  modifierTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
  modifierText:{fontSize:10,lineHeight:13,color:C.cyan,fontWeight:'800'},
@@ -83,9 +83,10 @@ function makeStyles(C:CoopColors){return StyleSheet.create({
  riskText:{fontSize:10,lineHeight:13,color:C.danger,fontWeight:'700'},
  rewardTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
  rewardText:{fontSize:10,lineHeight:13,color:C.gold,fontWeight:'700'},
- preview:{fontSize:11,lineHeight:15,color:C.textMuted},
+ preview:{fontSize:12,lineHeight:16,color:C.textSecondary},
  voteLine:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
  myVote:{alignItems:'center',justifyContent:'center'},
  votes:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800'},
- chevron:{fontSize:21,lineHeight:23,color:C.gold,fontWeight:'700',minWidth:12,textAlign:'center'},
+ actionCue:{fontSize:11,lineHeight:16,color:C.gold,fontWeight:'800',flexShrink:0},
+ chevron:{fontSize:16,lineHeight:18,color:C.gold,fontWeight:'700'},
  });}

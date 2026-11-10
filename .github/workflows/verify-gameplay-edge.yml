@@ -46,6 +46,8 @@ jobs:
         working-directory: backend
       - name: Verify committed Edge bundle exactly matches shared engine
         run: node tools/verify-gameplay-edge.mjs
+      - name: Install mobile dependencies used by shared equipment and theme imports
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify server-owned dungeon loadouts change when equipment path changes
         run: |
           pnpm --dir backend exec tsc -p tsconfig.online.json

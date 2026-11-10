@@ -9,6 +9,7 @@ import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme
 import {fetchRegionalCombatCadenceV1,runRegionalCombatV1,type RegionalCombatCadenceProjectionV1,type RegionalCombatResultV1} from '../online/regional-combat';
 import {regionalCombatAvailabilityV1,regionalGemIntelV1,SUNSCAR_REGIONAL_ENCOUNTERS_V1} from '../core/regional-combat-catalog-v1';
 import {itemDef} from '../content/items';
+import {displayStat} from '../core/stat-display';
 
 function cueText(cue:RegionalCombatResultV1['result']['replayCues'][number]){
  const seconds=(cue.atMs/1000).toFixed(1)+'s',ability=cue.abilityName?' · '+cue.abilityName:'';
@@ -17,9 +18,9 @@ function cueText(cue:RegionalCombatResultV1['result']['replayCues'][number]){
  if(cue.type==='interrupt')return seconds+' · Interrupt'+ability;
  if(cue.type==='down')return seconds+' · '+(cue.targetName??'Combatant')+' down';
  if(cue.type==='victory'||cue.type==='wipe'||cue.type==='timeout')return seconds+' · '+cue.type.toUpperCase();
- if(cue.type==='damage')return seconds+' · '+(cue.actorName??'Attack')+ability+' · '+Math.round(cue.amount??0).toLocaleString()+(cue.critical?' CRIT':'');
- if(cue.type==='heal')return seconds+' · '+(cue.actorName??'Heal')+ability+' · +'+Math.round(cue.amount??0).toLocaleString();
- return seconds+' · '+(cue.actorName??'Shield')+ability+' · '+Math.round(cue.amount??0).toLocaleString();
+ if(cue.type==='damage')return seconds+' · '+(cue.actorName??'Attack')+ability+' · '+displayStat(cue.amount??0).toLocaleString()+(cue.critical?' CRIT':'');
+ if(cue.type==='heal')return seconds+' · '+(cue.actorName??'Heal')+ability+' · +'+displayStat(cue.amount??0).toLocaleString();
+ return seconds+' · '+(cue.actorName??'Shield')+ability+' · '+displayStat(cue.amount??0).toLocaleString();
 }
 function compactDuration(ms:number){
  const seconds=Math.max(0,Math.ceil(ms/1000));
@@ -74,9 +75,9 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
     <View style={s.rewardIntel}><View style={s.row}><Text style={s.rewardLabel}>GEM · GRADE {gradeRoman[intel.grade]} · {chance}</Text>{intel.pityAt?<Text style={s.pityValue}>{gt("Pity").toLocaleUpperCase(language)} {intel.misses}/{intel.pityAt}</Text>:<Text style={s.pityValue}>Independent roll</Text>}</View>
     {intel.pityAt?<><View accessibilityLabel={`Gem pity ${intel.misses} of ${intel.pityAt}; guaranteed within ${intel.remaining} eligible victories`} style={s.pityTrack}><View style={[s.pityFill,{width:(Math.max(3,intel.progress*100)+'%') as any}]}/></View><Text style={s.pityMeta}>Guaranteed in ≤{intel.remaining} eligible {intel.remaining===1?'victory':'victories'}{intel.recipeChance?' · Recipe '+Math.round(intel.recipeChance*100)+'%':''}{intel.catalystChance?' · Catalyst '+Math.round(intel.catalystChance*100)+'%':''}</Text></>:<Text style={s.pityMeta}>{gl("Each victory has its own drop chance.")}</Text>}<Text style={s.pityMeta}>Cadence · {encounter.cooldownSeconds>=60?Math.round(encounter.cooldownSeconds/60)+'m':encounter.cooldownSeconds+'s'} between starts{availability.dailyRemaining!==undefined?' · '+availability.dailyRemaining+'/'+(cadenceRow?.dailyCap??encounter.dailyVictoryCap)+' boss clears remaining':''}{availability.dailyCapped&&availability.resetInMs!==undefined?' · resets in '+compactDuration(availability.resetInMs):''}</Text></View>
     {recent&&last?<View style={s.resultCard}>
-      <View style={s.row}><Text style={last.result.result.victory?s.victory:s.defeat}>{last.result.result.victory?gt("VICTORY"):gt("DEFEAT")} · {Math.max(1,Math.round(last.result.result.durationMs/1000))}s</Text><Text style={s.resultMetric}>{Math.round(last.result.result.damageDone).toLocaleString()} DMG</Text></View>
-      <View style={s.combatants}><View style={s.combatant}><Text style={s.combatantName}>{last.result.result.playerName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.playerHp/Math.max(1,last.result.result.playerMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{Math.round(last.result.result.playerHp).toLocaleString()} / {Math.round(last.result.result.playerMaxHp).toLocaleString()} HP</Text></View>
-      <View style={s.combatant}><Text style={s.combatantName}>{last.result.result.enemyName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.enemyHp/Math.max(1,last.result.result.enemyMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{Math.round(last.result.result.enemyHp).toLocaleString()} / {Math.round(last.result.result.enemyMaxHp).toLocaleString()} HP</Text></View></View>
+      <View style={s.row}><Text style={last.result.result.victory?s.victory:s.defeat}>{last.result.result.victory?gt("VICTORY"):gt("DEFEAT")} · {Math.max(1,Math.round(last.result.result.durationMs/1000))}s</Text><Text style={s.resultMetric}>{displayStat(last.result.result.damageDone).toLocaleString()} DMG</Text></View>
+      <View style={s.combatants}><View style={s.combatant}><Text style={s.combatantName}>{last.result.result.playerName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.playerHp/Math.max(1,last.result.result.playerMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{displayStat(last.result.result.playerHp).toLocaleString()} / {displayStat(last.result.result.playerMaxHp).toLocaleString()} HP</Text></View>
+      <View style={s.combatant}><Text style={s.combatantName}>{last.result.result.enemyName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.enemyHp/Math.max(1,last.result.result.enemyMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{displayStat(last.result.result.enemyHp).toLocaleString()} / {displayStat(last.result.result.enemyMaxHp).toLocaleString()} HP</Text></View></View>
       {!!last.result.result.replayCues.length&&<View style={s.timeline}><Text style={s.timelineTitle}>{gt("KEY MOMENTS")}</Text>{last.result.result.replayCues.slice(-6).map((cue,index)=><Text key={cue.atMs+':'+cue.type+':'+index} style={s.timelineRow}>{cueText(cue)}</Text>)}</View>}
       <View style={s.rewardReveal}><Text style={s.timelineTitle}>{gt("REWARD")}</Text><Text style={s.rewardResult}>{rewardText(last.result)}</Text></View>
     </View>:null}

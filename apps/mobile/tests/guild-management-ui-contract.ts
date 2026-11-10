@@ -72,10 +72,10 @@ ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberId
  'Member home must show real Guild identity, membership count and crest');
 ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
  'Member identity must use shared theme surfaces and color tokens');
-ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions')&&homeActions.includes("{title:'Members',action:onRoster}")&&homeActions.includes("{title:'Shop',action:onShop}"),
- 'Member dashboard must prioritize real Guild identity and keep tappable Hall and Roster actions in the shared home component');
-ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:140"),
- 'Guild dashboard cards must preserve readable two-column mobile geometry');
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions summary=')&&homeActions.includes('onPress={onRoster}')&&homeActions.includes("{title:'Token Shop',action:onShop}"),
+ 'Guild Home must prioritize the real Guild identity, preserve Roster access and move Shop to secondary actions');
+ok(homeActions.includes("weekGrid:{flexDirection:'row',gap:8}")&&homeActions.includes('weekCard:{flex:1,minWidth:0'),
+ 'Guild weekly cards must remain a readable, responsive two-column mobile layout');
 
 
 ok(discovery.includes("guildPolicy(selected)==='FULL'")&&discovery.includes('selected.member_count'), 'Full Guilds must be labeled correctly and cannot accept new joins');

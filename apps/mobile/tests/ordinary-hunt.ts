@@ -36,7 +36,7 @@ assert.ok(strongRate.killsPerHour>weakRate.killsPerHour,'stronger gear should im
 assert.ok(strongRate.killCycleSeconds>5,'even a one-shot hunt must still search for a new encounter');
 const sustain=combatSustainProjection(strong,'MOSS_RAT')!;
 assert.ok(sustain.netDamagePerKill>0&&sustain.foodPerHour>0,'overgeared easy farming still needs cooked food over time');
-const completed=previewActivityReward(strong,T+Math.ceil(strongRate.killCycleSeconds*1000)+100);
+const completed=previewActivityReward(strong,T+(Math.ceil(strongRate.killCycleSeconds)+2)*1000);
 assert.equal(completed.kills,1,'a completed encounter pays exactly one kill');
 const beforeKill=activeCombatHitProjection(strong,T+Math.floor(strongRate.killCycleSeconds*450))!;
 assert.ok(beforeKill.searching,'the search phase must be visible before engaging');

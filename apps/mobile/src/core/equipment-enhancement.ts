@@ -204,8 +204,14 @@ export function replaceGem(state:GameState,itemId:string,gemId:string,randomRoll
  * improvement into an accidental 25–100% jump. */
 export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value*m;return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
 /** Preview any enhancement rank using the same rarity and quality scaling as equipped gear. */
-export function enhancedGearStatsAtRank(state:GameState,itemId:string,rank:number){
-  const instance=equippedCraftedInstance(state,itemId),stats=gearStatsAtRank(itemId,rank);
+export function enhancedGearStatsAtRank(state:GameState,itemId:string,rank:number,instanceId?:string|null){
+  // Inspectors must never borrow the rarity/quality of another owned copy.
+  // Omitting instanceId preserves legacy item-ID and equipped-item behavior.
+  const instance=instanceId
+    ?craftedGearInstances(state).find(row=>row.id===instanceId&&row.itemId===itemId)
+    :equippedCraftedInstance(state,itemId);
+  if(instanceId&&!instance)throw new Error('Unknown equipment copy');
+  const stats=gearStatsAtRank(itemId,rank);
   const rarity=instance?.rarity??effectiveOwnedGearRarity(state,itemId);
   const quality=instance?.quality===undefined?1:craftedGearQualityMultiplier(instance.quality);
   const m=craftedRarityStatMultiplier(itemId,rarity)*quality,scale=(value:number)=>value*m;

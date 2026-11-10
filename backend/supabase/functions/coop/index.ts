@@ -48706,6 +48706,85 @@ function applyCoopRoomModifier(enemy4, id, index, eliteAbilities = false) {
   return { ...enemy4, stats: stats6, basicAttackMs, abilities };
 }
 
+// src/server/coop/dungeon-companion-counters.ts
+var counters = [
+  { id: "spellbreak", companionIds: ["UNIT_005"], description: "Lantern Wisp interrupts dangerous casts instead of casting its usual healing assist.", applies: (t) => t.has("interruptible_cast") },
+  { id: "armor_break", companionIds: ["UNIT_010", "UNIT_021", "GUILD_UNIT_002"], description: "Armor breaker: +3.5% owner Attack and +6% companion strike against guardians or barriers.", applies: (t) => t.has("guardian") || t.has("barrier") },
+  { id: "swarm_hunt", companionIds: ["UNIT_017", "UNIT_023"], description: "Swarm hunter: +2.5 percentage points owner Haste and +6% companion strike against swarms.", applies: (t) => t.has("swarm") },
+  { id: "bulwark", companionIds: ["UNIT_002", "UNIT_015", "UNIT_019", "UNIT_022"], description: "Bulwark: +4% owner Defense and +6% companion shielding against heavy pressure.", applies: (t) => t.has("heavy_hit") || t.has("focus") || t.has("execute") },
+  { id: "recovery", companionIds: ["UNIT_003", "UNIT_014", "UNIT_018", "UNIT_024"], description: "Recovery: +4% owner Healing Power and +6% companion heals against sustained pressure.", applies: (t) => t.has("dot") || t.has("healing_reduction") },
+  { id: "finisher", companionIds: ["UNIT_007", "UNIT_013", "UNIT_020"], description: "Finisher: +3% owner Attack and +6% companion strike against self-healing enemies.", applies: (t) => t.has("sustain") }
+];
+function dungeonEncounterTraits(enemies) {
+  const traits = /* @__PURE__ */ new Set();
+  for (const enemy4 of enemies) {
+    if (enemy4.team !== "enemies") continue;
+    for (const tag of enemy4.tags ?? []) {
+      if (tag.startsWith("pve:archetype:")) traits.add(tag.slice("pve:archetype:".length));
+      if (tag.startsWith("pve:mechanic:")) traits.add(tag.slice("pve:mechanic:".length));
+    }
+    for (const ability3 of enemy4.abilities) {
+      if (ability3.interruptible && ability3.castTimeMs >= 800 && ability3.effects.some((effect2) => effect2.kind === "damage" || effect2.kind === "dot")) traits.add("interruptible_cast");
+      if (ability3.effects.some((effect2) => effect2.kind === "shield")) traits.add("barrier");
+      if (ability3.effects.some((effect2) => effect2.kind === "dot")) traits.add("dot");
+      if (ability3.effects.some((effect2) => effect2.kind === "heal")) traits.add("sustain");
+    }
+  }
+  return traits;
+}
+function companionAssist(player2) {
+  const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length);
+  if (!companionId) return void 0;
+  const ability3 = player2.abilities.find((item) => item.tags?.includes("combat_companion") && item.id === `${player2.id}:${companionId}:assist`);
+  return ability3 ? { id: companionId, ability: ability3 } : void 0;
+}
+function scaleAssist(ability3, kind) {
+  return { ...ability3, effects: ability3.effects.map((effect2) => effect2.kind === kind ? {
+    ...effect2,
+    ...effect2.coeff === void 0 ? {} : { coeff: effect2.coeff * 1.06 },
+    ...effect2.flat === void 0 ? {} : { flat: effect2.flat * 1.06 }
+  } : effect2) };
+}
+function applyDungeonCompanionCounters(players, enemies, inactivePlayerIds = /* @__PURE__ */ new Set()) {
+  const traits = dungeonEncounterTraits(enemies), matchups = [];
+  const adjusted = players.map((player2) => {
+    if (inactivePlayerIds.has(player2.id)) return player2;
+    const assist = companionAssist(player2);
+    if (!assist) return player2;
+    const counter = counters.find((entry2) => entry2.companionIds.includes(assist.id) && entry2.applies(traits));
+    if (!counter) return player2;
+    let ability3 = assist.ability, stats6 = player2.stats;
+    switch (counter.id) {
+      case "spellbreak":
+        ability3 = { ...ability3, target: "interruptible_casting_enemy", aiCondition: "target_casting", priority: 96, effects: [{ kind: "interrupt", tag: "companion_spellbreak" }] };
+        break;
+      case "armor_break":
+        stats6 = { ...stats6, attackPower: stats6.attackPower * 1.035 };
+        ability3 = scaleAssist(ability3, "damage");
+        break;
+      case "swarm_hunt":
+        stats6 = { ...stats6, haste: Math.min(0.75, stats6.haste + 0.025) };
+        ability3 = scaleAssist(ability3, "damage");
+        break;
+      case "bulwark":
+        stats6 = { ...stats6, defense: stats6.defense * 1.04 };
+        ability3 = scaleAssist(ability3, "shield");
+        break;
+      case "recovery":
+        stats6 = { ...stats6, healingPower: stats6.healingPower * 1.04 };
+        ability3 = scaleAssist(ability3, "heal");
+        break;
+      case "finisher":
+        stats6 = { ...stats6, attackPower: stats6.attackPower * 1.03 };
+        ability3 = scaleAssist(ability3, "damage");
+        break;
+    }
+    matchups.push({ playerId: player2.id, companionId: assist.id, id: counter.id, description: counter.description });
+    return { ...player2, stats: stats6, abilities: player2.abilities.map((item) => item === assist.ability ? ability3 : item) };
+  });
+  return { players: adjusted, matchups };
+}
+
 // src/server/combat/expedition-combat-service.ts
 function expeditionEncounterPreview(encounterId) {
   const factory = EXPEDITION_ENCOUNTERS[encounterId];
@@ -48853,7 +48932,8 @@ function resolveExpeditionCombat(input, includeDebugTrace = false) {
     const defensiveAbilities = player2.abilities.filter((ability3) => ability3.effects.length > 0 && ability3.effects.every((effect2) => effect2.kind === "heal" || effect2.kind === "shield"));
     return { ...player2, stats: { ...player2.stats, attackPower: player2.stats.attackPower * 0.7, healingPower: player2.stats.healingPower * 0.7 }, abilities: defensiveAbilities };
   });
-  const result = simulateCombat({ seed: `${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`, players, enemies, initialPlayerState: input.initialPlayerState, maxDurationMs: input.maxDurationMs ?? 18e4, enemyDamageProfile: input.enemyDamageProfile });
+  const matched = applyDungeonCompanionCounters(players, enemies, safetyAiIds);
+  const result = simulateCombat({ seed: `${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`, players: matched.players, enemies, initialPlayerState: input.initialPlayerState, maxDurationMs: input.maxDurationMs ?? 18e4, enemyDamageProfile: input.enemyDamageProfile });
   const eventDigest = createHash2("sha256").update(JSON.stringify(result.events)).digest().toString("hex");
   const rec = (xs, pick) => Object.fromEntries(xs.map((x) => [x.definition.id, Number(pick(x).toFixed(2))]));
   const bossIds = new Set(result.enemies.filter((enemy4) => enemy4.definition.boss).map((enemy4) => enemy4.definition.id));
@@ -48861,7 +48941,7 @@ function resolveExpeditionCombat(input, includeDebugTrace = false) {
   const bossPhaseIds = unique(result.events.filter((event) => event.type === "phase" && event.actorId && bossIds.has(event.actorId)).map((event) => event.abilityId));
   const bossCastAbilityIds = unique(result.events.filter((event) => event.type === "cast_start" && event.actorId && bossIds.has(event.actorId)).map((event) => event.abilityId));
   const replay = publicReplay(result, input.initialPlayerState), encounterIdentity2 = pveEncounterPreview(enemies), pveTelemetry = buildPveSimulationTelemetry(result, input.encounterId);
-  return { success: result.victory, resultJson: { reason: result.reason, durationMs: result.durationMs, downs: result.players.filter((p) => p.downed).map((p) => p.definition.id), playerHp: rec(result.players, (x) => x.hp), enemyHp: rec(result.enemies, (x) => x.hp), damage: rec(result.players, (x) => x.damageDone), healing: rec(result.players, (x) => x.healingDone), damageTaken: rec(result.players, (x) => x.damageTaken), interrupts: rec(result.players, (x) => x.interrupts), eventDigest, eventCount: result.events.length, bossPhaseIds, bossCastAbilityIds, ...safetyAiIds.size ? { safetyAiPlayerIds: [...safetyAiIds], safetyAiPolicy: { outputMultiplier: 0.7, allowedActions: ["basic_attack", "basic_defensive"] } } : {}, ...encounterIdentity2 ? { encounterIdentity: encounterIdentity2 } : {}, pveTelemetry, replayCombatants: replay.combatants, replayStatuses: replay.statuses, replayGemStates: replay.gemStates, replayCues: replay.cues }, endingPlayerState: persistentPlayerState(result), ...includeDebugTrace ? { debugEvents: result.events } : {} };
+  return { success: result.victory, resultJson: { reason: result.reason, durationMs: result.durationMs, downs: result.players.filter((p) => p.downed).map((p) => p.definition.id), playerHp: rec(result.players, (x) => x.hp), enemyHp: rec(result.enemies, (x) => x.hp), damage: rec(result.players, (x) => x.damageDone), healing: rec(result.players, (x) => x.healingDone), damageTaken: rec(result.players, (x) => x.damageTaken), interrupts: rec(result.players, (x) => x.interrupts), eventDigest, eventCount: result.events.length, bossPhaseIds, bossCastAbilityIds, ...safetyAiIds.size ? { safetyAiPlayerIds: [...safetyAiIds], safetyAiPolicy: { outputMultiplier: 0.7, allowedActions: ["basic_attack", "basic_defensive"] } } : {}, ...encounterIdentity2 ? { encounterIdentity: encounterIdentity2 } : {}, ...matched.matchups.length ? { companionCounters: matched.matchups } : {}, pveTelemetry, replayCombatants: replay.combatants, replayStatuses: replay.statuses, replayGemStates: replay.gemStates, replayCues: replay.cues }, endingPlayerState: persistentPlayerState(result), ...includeDebugTrace ? { debugEvents: result.events } : {} };
 }
 
 // src/server/expeditions/tier-balance.ts

@@ -27,7 +27,7 @@ alter table private.player_badge_preferences_v1
  drop constraint if exists player_badge_one_selection_v2;
 alter table private.player_badge_preferences_v1
  add constraint player_badge_one_selection_v2 check(equipped_badge_id in
-  ('auto','none','supporter','supporter_3m','supporter_6m','supporter_12m','supporter_12m',
+  ('auto','none','supporter','supporter_3m','supporter_6m','supporter_12m',
    'founder','beta_tester','veteran','guild_leader','community_champion','event_champion'));
 
 -- Keep one preexisting earned badge rather than discarding user preferences.

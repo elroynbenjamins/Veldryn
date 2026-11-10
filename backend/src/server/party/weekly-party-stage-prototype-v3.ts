@@ -87,7 +87,7 @@ export function simulatePartyEventStagePrototype(input:PartyEventStagePreviewInp
  const selected=choices.find(c=>c.id===input.choiceId);
  const cautious=input.stage===2?input.choiceId===family.stage2[0].id:input.stage===3&&input.choiceId===family.stage3[0].id;
  // Preview only. All choices have a counter and differ modestly in pressure.
- const choiceThreatFactor=input.stage===1?1:cautious?.94:1.06;
+ const choiceThreatFactor=input.stage===1?1:(cautious?0.94:1.06);
  const variationIndex=reference.variations.indexOf(input.variation);
  const offsets=input.stage===1?[8000,21000,35000]:input.stage===2?[12000,35000,56000]:[15000,40000,66000];
  const cues=family.cues.map((text,index)=>({
@@ -116,7 +116,7 @@ export function simulatePartyEventStagePrototype(input:PartyEventStagePreviewInp
   basicAttackMs:3100,basicAttackCoeff:.65,
   abilities:[{id:'PARTY_STAGE_TELEGRAPH',name:family.threat,cooldownMs:13000,
    castTimeMs:1500,target:'all_enemies',priority:90,interruptible:true,
-   effects:[{kind:'damage',coeff:input.stage===2?.33:.41,damageType:family.damageType}]}],
+   effects:[{kind:'damage',coeff:input.stage===2?0.33:0.41,damageType:family.damageType}]}],
  };
  const prepared=actors.map(a=>applyVerifiedPartyPreparation(structuredClone(a),support.combat));
  const battle=simulateCombat({seed:'party-stage-preview:'+input.seed+':'+input.family+':'+input.variation+':'+input.stage+':'+input.choiceId,
@@ -124,7 +124,7 @@ export function simulatePartyEventStagePrototype(input:PartyEventStagePreviewInp
  const total=(field:'damageDone'|'healingDone'|'interrupts')=>battle.players.reduce((v,p)=>v+Math.max(0,p[field]),0);
  const shields=battle.events.filter(e=>e.type==='shield').reduce((s,e)=>s+Math.max(0,e.amount??0),0);
  const integrity=Math.max(0,Math.min(100,Math.round(
-  (100-45*(1-battle.enemies[0]!.hp/enemyHp)-14*(battle.reason==='wipe'?1:0))
+  (100-45*(battle.enemies[0]!.hp/enemyHp)-14*(battle.reason==='wipe'?1:0))
   *support.escortIntegrityMultiplier*support.recoveryMultiplier)));
  return {...base,estimatedObjectiveIntegrity:integrity,combatResult:{
   victory:battle.victory,reason:battle.reason,durationMs:battle.durationMs,

@@ -8,13 +8,14 @@ import CompanionScreenReview from './CompanionScreenReview';
 import StoreCaptureReview from './StoreCaptureReview';
 import BoardExperienceReview from './BoardExperienceReview';
 import GuildPveReview from './GuildPveReview';
+import FrostfallPreviewReview from './FrostfallPreviewReview';
 import GuildLayoutReview from './GuildLayoutReview';
 import AdditionalScreensReview,{type AdditionalReviewScreen} from './AdditionalScreensReview';
 
 type Group='Game'|'Equipment'|'Dungeon'|'Guild'|'Social'|'Account'|'QA';
 type Route={
  id:string;label:string;group:Group;
- kind:'native'|'store'|'board'|'companion'|'pve'|'guild-layout'|'extra';
+ kind:'native'|'store'|'board'|'companion'|'pve'|'guild-layout'|'frostfall'|'extra';
  native?:NativeSection;storeScreen?:string;storeSkill?:string;screen?:string;extra?:AdditionalReviewScreen;
  note?:string;
 };
@@ -39,6 +40,7 @@ const routes:readonly Route[]=[
  {id:'contracts',label:'Contracts',group:'Game',kind:'native',native:'Contracts'},
  {id:'challenges',label:'Challenges',group:'Game',kind:'native',native:'Challenges'},
  {id:'events',label:'Events',group:'Game',kind:'board',screen:'event'},
+ {id:'frostfall-preview',label:'Frostfall preview (two reveals)',group:'Game',kind:'frostfall'}, 
  {id:'events-live',label:'Active event preview',group:'Game',kind:'native',native:'EventsLive'},
  {id:'bestiary',label:'Bestiary',group:'Game',kind:'extra',extra:'bestiary'},
  {id:'journal',label:'Adventurer’s Journal',group:'Game',kind:'extra',extra:'journal'},
@@ -135,6 +137,7 @@ export default function BrowserReview(){
   case 'companion':content=<CompanionScreenReview/>;break;
   case 'board':content=<BoardExperienceReview/>;break;
   case 'pve':content=<GuildPveReview/>;break;
+  case 'frostfall':content=<FrostfallPreviewReview/>;break;
   case 'guild-layout':content=<GuildLayoutReview/>;break;
   case 'extra':content=<AdditionalScreensReview screen={route.extra!}/>;break;
   default:content=<StoreCaptureReview/>;

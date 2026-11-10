@@ -1,4 +1,5 @@
 import {itemDef} from '../../apps/mobile/src/content/items';
+import {V33_EQUIPMENT_RECIPES} from '../../apps/mobile/src/content/equipment-recipes-v33';
 import {marketDraftResourceIdsV10,type MarketPriceBandV10} from './market-price-bands-v10';
 
 /** Market stays unreleased. Every result is guidance, not a trade authorization. */
@@ -28,7 +29,8 @@ export function marketDraftResourceMinLotV11(itemId:string):number|undefined{
 export function marketDraftMinimumLotV11(itemId:string,kind:'resource'|'equipment'):number|undefined{
  if(kind==='resource')return marketDraftResourceMinLotV11(itemId);
  if(kind==='equipment'){
-  try{if(itemDef(itemId).type!=='gear')return undefined;}catch{return undefined;}
+  try{if(itemDef(itemId).type!=='gear'||!V33_EQUIPMENT_RECIPES.some(row=>row.output.itemId===itemId))return undefined;}
+  catch{return undefined;}
   return 1;
  }
  return undefined;
@@ -103,7 +105,7 @@ export function previewVerifiedMarketPriceReviewV11(
   distinctBuyers:new Set(rows.map(row=>row.buyerAccountId)).size,
   distinctSellers:new Set(rows.map(row=>row.sellerAccountId)).size,
  });
- if(!Number.isSafeInteger(nowMs)||nowMs<0||!Number.isSafeInteger(band.tick)||band.tick<1
+ if(trades.length>1000||!Number.isSafeInteger(nowMs)||nowMs<0||!Number.isSafeInteger(band.tick)||band.tick<1
   ||!Number.isSafeInteger(band.unitMin)||!Number.isSafeInteger(band.unitMax)
   ||band.unitMin<1||band.unitMax<band.unitMin
   ||band.unitMax>band.unitMin*6+band.tick)return fail('thin_market');

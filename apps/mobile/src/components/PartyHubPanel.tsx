@@ -27,6 +27,9 @@ import {
 import {RecruitmentFiltersPanel} from './RecruitmentFiltersPanel';
 import {partyMemberManagement} from '../core/social-management';
 import {PartyWeeklyLadder} from './PartyWeeklyLadder';
+import {PartyContractContributions} from './PartyContractContributions';
+import {partyContractClaimableRewardIds} from '../core/party-social';
+import {usePartyProgressUiText} from '../i18n/party-progress-ui';
 
 export interface PartyHubPanelProps {
   accountId: string;
@@ -73,7 +76,7 @@ export function PartyLockedNotice({level=20}:{level?:number}){
 }
 
 export function PartyHubPanel(props: PartyHubPanelProps){
- const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
+ const st=useSocialText(),pt=usePartyProgressUiText(),language=useGameLanguage(),C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
  const {height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
  const narrow=windowWidth<360||fontScale>=1.3;
  const [localFilters,setLocalFilters]=React.useState<RecruitmentClientFilters>(EMPTY_RECRUITMENT_FILTERS);
@@ -92,6 +95,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  const cards=React.useMemo(()=>filterRecruitmentCards(props.recruitment,{...filters,postTypes:[browseMode==='parties'?'party_recruiting':'looking_for_party']},props.nowMs),[props.recruitment,filters,props.nowMs,browseMode]);
  const inParty=!!props.party,canManageParty=!!props.party?.members.some(member=>member.accountId===props.accountId&&member.isLeader);
  const openSpots=props.party?partyOpenSpots(props.party):0;
+ const readyContractRewards=props.party?partyContractClaimableRewardIds(props.contracts).length:0;
  const focusedMember=selectedMember&&props.party?.members.find(member=>member.accountId===selectedMember.accountId);
  const permissions=focusedMember?partyMemberManagement(canManageParty,props.accountId,focusedMember.accountId):null;
  const title=props.party?st('My Party'):st('Find or Create a Party');
@@ -134,12 +138,13 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact tone="secondary" title="Invite friends privately" onPress={()=>props.onInviteFriends?.()}/>:null}
    </View>:null}
    {(!props.dedicated||props.activeView==='Contracts')?<View style={s.panel}>
-    <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('PARTY CONTRACTS')}</Text><Text style={s.muted}>{st('Progress and rewards')}</Text></View><Text style={s.metaCount}>{props.contracts.length}</Text></View>
+    <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('PARTY CONTRACTS')}</Text><Text style={s.muted}>{st('Progress and rewards')}</Text></View><Text style={readyContractRewards?s.good:s.metaCount}>{readyContractRewards?pt('{count} rewards ready',{count:readyContractRewards}):props.contracts.length}</Text></View>
     {props.contracts.map(contract=><View key={contract.id} style={s.contractOverview}>
       {contract.tiers?.length?<><PartyWeeklyLadder compact={!expandedContracts.includes(contract.id)} contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>
        {contract.minimumPersonalPoints!==undefined?<View style={s.contributionRow}><Text style={s.muted}>{st('Your contribution')}</Text><Text style={personalContributionEligible(contract)?s.good:s.warning}>{(contract.personalPoints??0).toLocaleString()} / {contract.minimumPersonalPoints.toLocaleString()}{personalContributionEligible(contract)?' ✓':''}</Text></View>:null}
        <GameButton compact tone="secondary" title={expandedContracts.includes(contract.id)?st('Hide reward details'):st('View reward details')} onPress={()=>setExpandedContracts(items=>items.includes(contract.id)?items.filter(id=>id!==contract.id):[...items,contract.id])}/></>:
        <ContractCard contract={contract} nowMs={props.nowMs}/>}
+      <PartyContractContributions contract={contract} party={props.party!} accountId={props.accountId}/>
       {!contract.tiers?.length?contract.rewards?.map(reward=><GameButton key={reward.id} compact title={reward.claimed?st('Reward claimed'):st('Claim {gold} Gold',{gold:reward.reward.gold})} disabled={reward.claimed||!props.onClaimReward} onPress={()=>props.onClaimReward?.(reward.id)}/>):null}
     </View>)}
     {!props.contracts.length&&<Text style={s.muted}>No active weekly contract.</Text>}

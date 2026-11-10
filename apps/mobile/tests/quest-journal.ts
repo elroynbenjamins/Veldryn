@@ -3,7 +3,7 @@ import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
 import {itemDef} from '../src/content/items';
-import {equipmentPouch} from '../src/core/equipment-pouch';
+import {JOURNAL_TITLES_V42} from '../src/core/adventurers-journal-v42';
 import {JOURNAL_SKILL_LESSONS,journalSkillLessonProgress,journalSkillLessonSummary} from '../src/core/journal-skill-lessons';
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../src/content/equipment-recipes-v33';
 import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
@@ -41,23 +41,21 @@ ok(trailLocked.quests.find(row=>row.questId==='QST_003')?.status==='locked','Hou
 ok(journalEntries(trailLocked,'current','')[0]?.lockedHint?.includes(`level ${rebaseLevel(7)} through Combat`)===true,'Locked trail explains the combat level requirement');
 const trailReady=refreshQuests({...trailLocked,character:{...trailLocked.character!,level:rebaseLevel(7)}});
 ok(trailReady.quests.find(row=>row.questId==='QST_003')?.status==='active','Hound trail activates at the rebased character-level requirement');
-// Regression: the Act III story finale must never save an unregistered item
-// (which used to crash the reward receipt and subsequent Inventory renders).
+// Act III completion pays usable resources and an account-wide title, never
+// a missing item ID or an unplanned piece of equipment.
 for(const def of QUESTS){if(def.rewardItemId)ok(!!itemDef(def.rewardItemId),`Quest ${def.id} grants a catalogued reward`)}
 const finale=QUESTS.find(def=>def.id==='QST_015')!;
-const cape=itemDef(finale.rewardItemId!);
-ok(cape.type==='gear'&&cape.slot==='cape'&&cape.requiredLevel===finale.required,'The Oathglass Cape is equippable at the finale level');
+ok(finale.rewardItemId==='OATHGLASS_SHARD'&&finale.rewardItemQty===8,'Act III rewards eight usable Oathglass Shards instead of a cape');
+ok(finale.rewardTitleId==='oathbreaker'&&JOURNAL_TITLES_V42.some(row=>row.id===finale.rewardTitleId&&row.name==='Oathbreaker'),'Act III awards the registered Oathbreaker title');
 const finaleReady={...state,character:{...state.character!,level:finale.required,gold:100},quests:state.quests.map(q=>({...q,status:q.questId===finale.id?'complete' as const:'claimed' as const}))};
 const finaleClaimed=claimQuest(finaleReady,finale.id,1000);
 ok(finaleClaimed.quests.find(q=>q.questId===finale.id)?.status==='claimed','The final chapter is claimed exactly once');
 ok(finaleClaimed.character!.gold===finaleReady.character!.gold+finale.rewardGold,'Finale gold is credited exactly once');
-ok(equipmentPouch(finaleClaimed).stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'The finale cape arrives in the Equipment Pouch');
-ok(!finaleClaimed.inventory.stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'The finale cape avoids occupying ordinary Inventory when the pouch has space');
+ok(finaleClaimed.inventory.stacks.some(row=>row.itemId==='OATHGLASS_SHARD'&&row.quantity===8),'Claiming the finale grants the resource reward');
+ok(finaleClaimed.account.journalState?.unlockedTitles.oathbreaker===1000,'The account Journal records permanent title ownership');
+ok(!finaleClaimed.inventory.stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'No cape is granted by the finale');
 let duplicateFinaleBlocked=false;try{claimQuest(finaleClaimed,finale.id,1001)}catch{duplicateFinaleBlocked=true}
-ok(duplicateFinaleBlocked,'A retry after a confirmed finale claim cannot grant gold or another cape');
-const pouchFull={...finaleReady,character:{...finaleReady.character!,equipmentPouch:{capacity:30,stacks:Array.from({length:30},()=>({itemId:'basic_sword',quantity:1}))}}};
-const finaleFallback=claimQuest(pouchFull,finale.id,1001);
-ok(finaleFallback.inventory.stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'A full Equipment Pouch routes finale gear safely to Inventory');
+ok(duplicateFinaleBlocked,'A repeated claim cannot grant more resources, gold or title unlocks');
 const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
 ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
 ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');

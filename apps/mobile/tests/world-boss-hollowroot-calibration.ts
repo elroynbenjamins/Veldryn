@@ -91,11 +91,12 @@ function equippedEnginePlayer(classId:ClassId,fixture:RegionalCombatFixtureDef):
  *  Hollowroot turn schedule. The latter needs a phase-safe round scheduler,
  *  targeting controls and a local guard ledger in a later dev pass.
  */
-function hollowroot(phase:Phase,players:CombatantDefinition[]):CombatantDefinition{
+function hollowroot(phase:Phase,players:CombatantDefinition[],pressure=1):CombatantDefinition{
  const avgAttack=mean(players.map(x=>x.stats.attackPower));
  const avgDefense=mean(players.map(x=>x.stats.defense));
- const hp=Math.max(10_000,Math.round(players.reduce((n,x)=>n+x.stats.attackPower,0)*40));
- const ap=Math.max(80,Math.round(avgAttack*1.10));
+ // A personal 70s attempt must never defeat the global/community boss locally.
+ const hp=Math.max(100_000,Math.round(players.reduce((n,x)=>n+x.stats.attackPower,0)*110));
+ const ap=Math.max(80,Math.round(avgAttack*1.10*pressure));
  const stats:CombatStats={
   maxHp:hp,attackPower:ap,healingPower:0,defense:Math.round(avgDefense*.55),
   accuracy:745,evasion:115,critChance:.05,critMultiplier:1.5,haste:.02,
@@ -144,10 +145,10 @@ type Sample={
  tier:Tier;phase:Phase;initiator:ClassId;role:Role;seed:number;variant:Variant;
  squadDamage:number;ownDamage:number;ownEffectiveHeal:number;ownShieldsApplied:number;
  totalEffectiveHeal:number;shieldAbsorbed:number;incomingDamage:number;
- alive:number;teamSurvived:boolean;bossDefeated:boolean;
+ alive:number;tankAlive:boolean;supportAlive:boolean;initiatorAlive:boolean;teamSurvived:boolean;bossDefeated:boolean;
  rootSlams:number;sporeTicks:number;regrowthShields:number;interrupts:number;
 };
-function run(initiator:ClassId,tier:Tier,phase:Phase,seed:number,variant:Variant='normal'){
+function run(initiator:ClassId,tier:Tier,phase:Phase,seed:number,variant:Variant='normal',pressure=1){
  const bracket=BRACKETS.find(b=>b.tier===tier)!;
  const teamIds=chooseSquad(initiator);
  const team=teamIds.map(id=>equippedEnginePlayer(id,bracket.fixture));
@@ -156,8 +157,8 @@ function run(initiator:ClassId,tier:Tier,phase:Phase,seed:number,variant:Variant
   if(variant==='no_tank_utility'&&p.role==='tank')return {...p,abilities:p.abilities.filter(a=>a.effects.every(e=>!['taunt','heal','shield'].includes(e.kind)))};
   return p;
  });
- const boss=hollowroot(phase,squad);
- const result=simulateCombat({seed:'worldboss-hollowroot-v4:'+tier+':'+phase+':'+initiator+':'+variant+':'+seed,players:squad,enemies:[boss],maxDurationMs:ENGINE_WINDOW_MS});
+ const boss=hollowroot(phase,squad,pressure);
+ const result=simulateCombat({seed:'worldboss-hollowroot-v4:'+tier+':'+phase+':'+initiator+':'+seed,players:squad,enemies:[boss],maxDurationMs:ENGINE_WINDOW_MS});
  const actualBossDamage=result.enemies[0].damageTaken;
  const summedEvents=result.events.filter(e=>e.targetId===boss.id&&(e.type==='damage'||e.type==='dot_tick')&&e.actorId?.startsWith('WBE_')).reduce((sum,e)=>sum+(e.amount??0),0);
  // Compare replay event amounts to actual engine state. Shields are separate, and
@@ -179,6 +180,9 @@ function run(initiator:ClassId,tier:Tier,phase:Phase,seed:number,variant:Variant
   shieldAbsorbed:result.events.filter(e=>e.actorId===boss.id).reduce((n,e)=>n+(e.absorbed??0),0),
   incomingDamage:result.events.filter(e=>e.actorId===boss.id&&(e.type==='damage'||e.type==='dot_tick')).reduce((n,e)=>n+(e.amount??0),0),
   alive:result.players.filter(p=>p.alive).length,
+  tankAlive:result.players.some(p=>p.definition.role==='tank'&&p.alive),
+  supportAlive:result.players.some(p=>p.definition.role==='support'&&p.alive),
+  initiatorAlive:result.players.some(p=>p.definition.id===actor&&p.alive),
   teamSurvived:result.players.some(p=>p.alive),
   bossDefeated:result.victory,
   rootSlams:count(result,'cast_complete',boss.id), // boss cast total; see signature-specific event fields below
@@ -218,6 +222,8 @@ for(const {tier} of BRACKETS)for(const phase of PHASES)for(const role of ['Tank'
   meanConsumedShields:round(mean(xs.map(x=>x.shieldAbsorbed))),
   meanIncomingDamage:round(mean(xs.map(x=>x.incomingDamage))),
   meanAlive:round(mean(xs.map(x=>x.alive))),
+  tankSurvivalPct:round(mean(xs.map(x=>Number(x.tankAlive)))*100),
+  initiatorSurvivalPct:round(mean(xs.map(x=>Number(x.initiatorAlive)))*100),
   meanRootSlams:round(mean(xs.map(x=>x.rootSlams))),
   meanSporeTicks:round(mean(xs.map(x=>x.sporeTicks))),
   meanRegrowthCasts:round(mean(xs.map(x=>x.regrowthShields))),
@@ -246,6 +252,38 @@ for(const tier of ['T2','T4'] as const)for(const phase of PHASES)for(const role 
   shieldUsed:round(mean(normal.map(x=>x.shieldAbsorbed))),
  });
 }
+/** Secondary stress sweep: compare identical seeds with Support utility
+ * enabled vs suppressed at 1.5×, 2×, 2.5× boss attack. These are tuning
+ * hypotheses, NOT recommendations or live boss numbers.
+ */
+const pressures=[1.5,2,2.5] as const;
+const pressureResults=[];
+for(const tier of ['T2','T4'] as const)for(const phase of PHASES)for(const pressure of pressures)
+ for(const role of ['Tank','Damage','Support'] as const){
+  const initiator=CLASSES.find(c=>c.role===role)!.id;
+  const normal=[] as Sample[],muted=[] as Sample[];
+  for(let seed=0;seed<REPLICATES;seed++){
+   normal.push(run(initiator,tier,phase,seed,'normal',pressure).sample);
+   muted.push(run(initiator,tier,phase,seed,'no_support_utility',pressure).sample);
+  }
+  pressureResults.push({
+   tier,phase,pressure,role,replicates:REPLICATES,
+   survivePct:round(mean(normal.map(x=>Number(x.teamSurvived)))*100),
+   mutedSupportSurvivePct:round(mean(muted.map(x=>Number(x.teamSurvived)))*100),
+   tankSurvivePct:round(mean(normal.map(x=>Number(x.tankAlive)))*100),
+   mutedSupportTankSurvivePct:round(mean(muted.map(x=>Number(x.tankAlive)))*100),
+   initiatorSurvivePct:round(mean(normal.map(x=>Number(x.initiatorAlive)))*100),
+   mutedSupportInitiatorSurvivePct:round(mean(muted.map(x=>Number(x.initiatorAlive)))*100),
+   meanAlive:round(mean(normal.map(x=>x.alive))),
+   mutedSupportAlive:round(mean(muted.map(x=>x.alive))),
+   meanDamage:round(mean(normal.map(x=>x.squadDamage))),
+   mutedSupportDamage:round(mean(muted.map(x=>x.squadDamage))),
+   meanHeal:round(mean(normal.map(x=>x.totalEffectiveHeal))),
+   meanIncoming:round(mean(normal.map(x=>x.incomingDamage))),
+  });
+ }
+assert.equal(pressureResults.length,54);
+
 assert.equal(samples.length,4*3*9*REPLICATES);
 assert.equal(summary.length,36);
 assert.equal(counterplay.length,18);
@@ -253,16 +291,19 @@ for(const s of samples){
  assert.ok(Number.isFinite(s.squadDamage)&&s.squadDamage>=0);
  assert.ok(s.ownDamage>=0&&s.ownEffectiveHeal>=0&&s.shieldAbsorbed>=0);
  assert.ok(s.alive>=0&&s.alive<=4);
+ assert.ok(!s.bossDefeated,'local boss HP must not be depleted by one personal proxy attempt');
 }
 console.log('WB_HOLLOWROOT_METHOD='+JSON.stringify({
  engine:'backend/src/server/combat/engine.ts simulateCombat',
  classKits:'backend/src/server/combat/content/launch-combat.ts launchPlayer',
  gear:'apps/mobile/src/core/regional-combat-fixtures.ts + game.ts effectiveStats',
  phaseProxy:'70s time-based fight (NOT authored 14-round schedule)',
- replicates:REPLICATES,totalRuns:samples.length+counterplay.length*3*REPLICATES+2,
+ replicates:REPLICATES,totalRuns:samples.length+counterplay.length*3*REPLICATES+pressureResults.length*REPLICATES*2+2,
+ pressureSweep:pressures,localBossHpMultiplier:110,
  globalHP:false,sigils:false,accountSnapshots:false,
  limitations:['tier-relative mobile-to-engine stat adapter','fixed boss HP per bracket','no authoritative world-boss guards/weak-points','generic debuff not action-specific root','nature DoT not target %MaxHP','no war camp','no world impact grants'],
 }));
 for(const row of summary)console.log('WB_HOLLOWROOT_SUMMARY='+JSON.stringify(row));
 for(const row of counterplay)console.log('WB_HOLLOWROOT_COUNTERPLAY='+JSON.stringify(row));
+for(const row of pressureResults)console.log('WB_HOLLOWROOT_PRESSURE='+JSON.stringify(row));
 console.log('PASS Hollowroot TEST-ONLY nine-class T1-T4 engine benchmark and deterministic role counterplay');

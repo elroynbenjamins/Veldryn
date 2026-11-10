@@ -48,7 +48,7 @@ for(const boss of bosses)for(const phase of phases)for(const pressure of pressur
  const mean=(values:number[])=>Math.round(values.reduce((a,b)=>a+b,0)/Math.max(1,values.length)*100)/100;
  console.log('WB_PRESSURE_V7='+JSON.stringify({
   boss,phase,pressure,fixtures:rows.length,
-  survivedPct:mean(rows.map(x=>Number(x.survived))*1e2),
+  survivedPct:mean(rows.map(x=>Number(x.survived)*100)),
   meanSquadDamage:mean(rows.map(x=>x.damage)),
   meanRounds:mean(rows.map(x=>x.rounds)),
   meanLivingActors:mean(rows.map(x=>x.meanAlive)),

@@ -24,7 +24,9 @@ const expectDenied=async(fn,code)=>{
 };
 try{
  await db.exec(fixture);
+ console.log('BADGE_SQL_FIXTURE_READY');
  await db.exec(migration);
+ console.log('BADGE_SQL_MIGRATION_PARSED');
  const rls=await first("select relrowsecurity as enabled from pg_class where oid='private.supporter_badge_progress_v2'::regclass");
  assert.equal(rls.enabled,true,'tenure table is RLS protected');
  const anonGrant=await first("select has_function_privilege('anon','public.update_player_equipped_badge_v2(text)','execute') as granted");

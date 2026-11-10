@@ -13,6 +13,11 @@ export function frostfallPreviewPhase(startsAtMs: number | undefined, nowMs: num
   return remaining <= FROSTFALL_SECOND_REVEAL_DAYS * DAY_MS ? 'reveal' : 'teaser';
 }
 
+/** Exact countdown for the second-stage reveal; avoids saying "in 7 days" all week. */
+export function frostfallSecondRevealCountdown(startsAtMs: number, nowMs: number): string {
+  return frostfallPreviewCountdown(startsAtMs - FROSTFALL_SECOND_REVEAL_DAYS * DAY_MS, nowMs);
+}
+
 export function frostfallPreviewCountdown(startsAtMs: number, nowMs: number): string {
   const minutes = Math.max(0, Math.ceil((startsAtMs - nowMs) / 60_000));
   const days = Math.floor(minutes / (24 * 60));

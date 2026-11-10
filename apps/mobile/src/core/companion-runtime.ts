@@ -65,6 +65,8 @@ export interface CompanionAccountState {
   starterFollowupCombatCompanionId?:string;
   starterThirdCombatCompanionId?:string;
   companionEssence?:number;bondstones?:number;
+  /** Account-wide Companion Mastery XP, derived level (1–100). */
+  companionMasteryXp?:number;
   companionSanctuary?:CompanionSanctuaryState;
   companionAssignments?:CompanionAssignment[];
   companionTrialProgress?:CompanionTrialProgress;

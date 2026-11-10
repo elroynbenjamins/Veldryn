@@ -90,6 +90,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  const bossDefense=players.reduce((n,p)=>n+p.def.stats.defense,0)/players.length*.55;
  const guardMax=money(squadAttack*(input.boss==='frostmarch'?3:input.boss==='sunscar'?2.2:1.8));
  let guard=input.phase==='armored'?guardMax:money(guardMax*.45),guardDamage=0,guardRestored=0,bossHpDamage=0,exposedThrough=0,roundsCompleted=0;
+ let bossVulnerability=0,bossVulnerabilityThrough=0;
  let pending:Telegraph|undefined;
  const emit=(e:WorldBossRoundEvent)=>events.push(e);
  const aliveTank=()=>living(players).find(p=>p.def.role==='tank');
@@ -121,7 +122,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
    const ap=roleAdjustedAttackPower({team:'players',role:actor.def.role,attackPower:actor.def.stats.attackPower,defense:actor.def.stats.defense,maxHp:actor.def.stats.maxHp,healingPower:actor.def.stats.healingPower});
    const damage=money(damageAfterMitigation(ap,coeff,defenseMitigation(bossDefense,1200),.95+noRngBelow(rng,round+':damage_variance')*.1,crit,actor.def.stats.critMultiplier));
    const weak=round<=exposedThrough && guard<=0;
-   const enhanced=money(damage*(weak?1.10:1));
+   const enhanced=money(damage*(weak?1.10:1)*(round<=bossVulnerabilityThrough?1+bossVulnerability:1));
    const guardCoeff=order==='break_armor'?1.05:1;
    const absorbed=money(Math.min(guard,enhanced*guardCoeff));
    guard=money(guard-absorbed);
@@ -235,7 +236,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
     for(let i=1;i<=count;i++)if(round+i<=14)target.statuses.push({kind:'hot',id:chosen.id,sourceId:actor.def.id,value:money(actor.def.stats.healingPower*(effect.coeff??0)),tickRounds:[round+i]});
    }
    if(effect.kind==='debuff'&&effect.tag==='damage_taken'){
-    actor.buffs['BOSS_EXPOSE']={value:effect.value??0,until:round+1}; // Test-only class debuff; full stat attribution still pending.
+    bossVulnerability=clamp(effect.value??0,0,.25);bossVulnerabilityThrough=round+1; // Verified damage_taken debuff; does not bypass local guard.
    }
   }
  };

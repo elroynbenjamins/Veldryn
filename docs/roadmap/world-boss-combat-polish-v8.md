@@ -53,9 +53,20 @@ Variants:
 
 Report squad damage, actors alive, real Support recovery, and Tank HP prevented for each variant. This is a **role sensitivity diagnostic, not an automatic nerf recommendation**. The existing \`CombatRng\` is cursor-based; changing an ability can shift later RNG consumption even with the same initial seed, so pairwise results are descriptive, not a controlled common-random-number experiment. That must be upgraded before using effect sizes to finalize combat balance.
 
+## 4A. Archived verified combat evidence (CI run 42822128536)
+
+The completed 2026-11-10 Mobile Core CI run archived:
+
+- [36-row v8 pressure summary](spreadsheets/world-boss-pressure-v8-test-only.csv) — 1,620 level-25 class-kit fights across boss/phase/pressure and all nine initiator classes
+- [54-row v8 role counterfactual summary](spreadsheets/world-boss-role-counterfactual-v8-test-only.csv) — 1,620 additional normal / muted Support recovery / disabled Tank interception fights
+
+**Observed warning:** These synthetic level-25 fixtures still had **all four actors surviving** even at pressure ×2.5. Turning off Support recovery or Tank interception removed real healing/protection credits, but **did not lead to deaths** in these samples. Thus current encounter pressure is still insufficient to demonstrate strategic survival stakes. **Do not copy the ×2.5 coefficient into live combat.** Next calibration must use real equipped T1–T4 brackets and mixed-power Echo squads.
+
+An additional test-only `apps/mobile/tests/world-boss-equipped-brackets-v8.ts` now prepares **1,296 matched-tier and 432 mixed-tier fights**, using the real current class/equipment `regionalCombatFixture` stats through the existing v4 relative unit adapter. It is a step toward realistic balancing, but **not** a complete secure server loadout resolver; its CI status must be verified before claiming pass.
+
 ## 5. CI and QA truthfulness
 
-Earlier v8 commit after test order correction: GitHub Actions **Mobile Core run 42821606979** passed **all 339 then-registered core checks**, including 81 role Impact smoke cases. The *overall workflow* still failed in a separate Companion stamina validation step (\`companion_stamina_required\`), unrelated to World Boss code. Later v8 mitigation and counterfactual commits need their own observed CI evidence, not an assumed pass.
+Earlier v8 commit after test order correction: GitHub Actions **Mobile Core run 42821606979** passed **all 339 then-registered core checks**, including 81 role Impact smoke cases. The *overall workflow* still failed in a separate Companion stamina validation step (\`companion_stamina_required\`), unrelated to World Boss code. The subsequent **Mobile Core run 42822128536** passed **all 340 then-registered core checks**, including v8 replay attribution, 1,620-run counterfactuals and the Impact preview. The **overall workflow still failed later** on the pre-existing Companion stamina step. The newly added equipped-bracket suite must still pass in its own newer CI run.
 
 **Release blockers remain:** current player stat snapshots and actual equipped T1–T4 classes; production-compatible ability pacing and combat; role parity using observed power brackets; actual event combat victory criteria; atomic PostgreSQL event/receipt transactions; server authentication; replay integrity/versioning; real donated War Camp resources; approved and capped Sigil rewards; load/performance tests; original matching pixel art and compact mobile UI; explicit launch approval. No Public World Boss events or shops until these pass.
 

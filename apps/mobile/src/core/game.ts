@@ -918,7 +918,11 @@ export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills
 export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):GameState{
   const q=state.quests.find(x=>x.questId===questId),d=QUESTS.find(x=>x.id===questId);
   if(!q||!d||q.status!=='complete'||!state.character)throw new Error('Quest not claimable');
-  let next={...state,character:{...state.character,gold:state.character.gold+d.rewardGold},inventory:{...state.inventory,stacks:d.rewardItemId?stackItems(state.inventory.stacks,[{itemId:d.rewardItemId,quantity:d.rewardItemQty||1}]):state.inventory.stacks},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;
+  // Route quest rewards through the same capacity-safe pouch -> Inventory -> Bank
+  // -> Overflow settlement as other gameplay rewards. Never lose a finale cape
+  // when ordinary Inventory is full, and don't grant a second copy on retries.
+  const routed=d.rewardItemId?routeRewards(state,[{itemId:d.rewardItemId,quantity:d.rewardItemQty??1}],nowMs):{};
+  const next={...state,...routed,character:{...state.character,...(routed.character??{}),gold:state.character.gold+d.rewardGold},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next),nowMs),nowMs)
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */

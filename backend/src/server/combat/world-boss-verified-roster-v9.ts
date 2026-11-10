@@ -10,7 +10,8 @@
  * authoritative server resolver. This bridge validates shapes, snapshots,
  * roles, ownership and provenance; it does NOT fetch a user's account.
  */
-import {createHash} from 'node:crypto';
+import {sha256} from '@noble/hashes/sha256';
+import {bytesToHex} from '@noble/hashes/utils';
 import {combatantFromVerifiedSnapshot,type VerifiedCombatSnapshot} from './snapshot-adapter';
 import {matchWorldBossEchoesPrototype,type WorldBossEchoCandidatePrototype,type WorldBossPowerBracket} from './world-boss-echo-prototype';
 import type {WorldBossAttemptPrototype,WorldBossSnapshotPrototype} from './world-boss-event-prototype';
@@ -97,7 +98,21 @@ function toPlayer(
  // gem or companion objects when an Echo is lent to another party.
  return structuredClone(actor);
 }
-const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
+// Mirror the portable UTF-8 conversion used by CombatRng so the code can
+// run in the existing core TypeScript validation without Node types.
+function portableUtf8(value:string):Uint8Array{
+ const bytes:number[]=[];
+ for(const character of value){
+  let n=character.codePointAt(0)!;
+  if(n>=0xd800&&n<=0xdfff)n=0xfffd;
+  if(n<0x80)bytes.push(n);
+  else if(n<0x800)bytes.push(0xc0|(n>>6),0x80|(n&63));
+  else if(n<0x10000)bytes.push(0xe0|(n>>12),0x80|((n>>6)&63),0x80|(n&63));
+  else bytes.push(0xf0|(n>>18),0x80|((n>>12)&63),0x80|((n>>6)&63),0x80|(n&63));
+ }
+ return new Uint8Array(bytes);
+}
+const digest=(value:unknown)=>bytesToHex(sha256(portableUtf8(JSON.stringify(value))));
 
 /**
  * Internal-only preparation. No call to public auth headers or client-supplied

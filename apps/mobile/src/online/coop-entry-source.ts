@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {coopClient,type CoopEntryData} from './coop-client';
 import {supabase,supabasePublicEndpoint} from './supabase';
-import {CoopDungeonBrowseCache,type CoopBrowseCatalog} from '../core/coop-dungeon-browse-cache';
+import {CoopDungeonBrowseCache,coopEntryMutationRevision,type CoopBrowseCatalog} from '../core/coop-dungeon-browse-cache';
 import {presentQModeRun} from '../core/coop-qmode';
 import {presentEventExpeditionRun} from '../core/coop-event-expeditions';
 
-export interface CoopEntryLoadOptions {characterId?:string;force?:boolean}
+export interface CoopEntryLoadOptions {characterId?:string;characterLevel?:number;force?:boolean}
 /** Fixture sources remain network/cache independent; only the real source
  * provides a read-only browse snapshot for instant warm starts. */
 export interface CoopEntrySource {
@@ -15,8 +15,8 @@ export interface CoopEntrySource {
 }
 const catalogCache=new CoopDungeonBrowseCache(AsyncStorage);
 const ENTRY_MEMORY_TTL_MS=60_000;
-const latest=new Map<string,{data:CoopEntryData;expiresAtMs:number}>();
-const inFlight=new Map<string,Promise<CoopEntryData>>();
+const latest=new Map<string,{data:CoopEntryData;expiresAtMs:number;mutationRevision:number}>();
+const inFlight=new Map<string,{task:Promise<CoopEntryData>;mutationRevision:number}>();
 const generations=new Map<string,number>();
 
 async function viewerScope(characterId?:string):Promise<string|undefined>{
@@ -32,7 +32,7 @@ function cacheableEntry(value:CoopEntryData){
 }
 function rememberEntry(key:string,data:CoopEntryData){
  latest.delete(key);
- if(cacheableEntry(data))latest.set(key,{data,expiresAtMs:Date.now()+ENTRY_MEMORY_TTL_MS});
+ if(cacheableEntry(data))latest.set(key,{data,expiresAtMs:Date.now()+ENTRY_MEMORY_TTL_MS,mutationRevision:coopEntryMutationRevision()});
  while(latest.size>4)latest.delete(latest.keys().next().value!);
 }
 function presentEntry(entry:CoopEntryData):CoopEntryData{
@@ -44,29 +44,31 @@ export const realCoopEntrySource:CoopEntrySource={
   const scope=await viewerScope(characterId);
   return scope?catalogCache.read(scope):undefined;
  },
- load:async({characterId,force=false}={})=>{
+ load:async({characterId,characterLevel,force=false}={})=>{
   const scope=await viewerScope(characterId);
-  if(!force&&scope){
-   const remembered=latest.get(scope);
-   if(remembered&&remembered.expiresAtMs>Date.now())return remembered.data;
-   const pending=inFlight.get(scope);
-   if(pending)return pending;
+  const key=scope?scope+':level:'+String(characterLevel??0):undefined;
+  const mutationRevision=coopEntryMutationRevision();
+  if(!force&&key){
+   const remembered=latest.get(key);
+   if(remembered&&remembered.expiresAtMs>Date.now()&&remembered.mutationRevision===mutationRevision)return remembered.data;
+   const pending=inFlight.get(key);
+   if(pending?.mutationRevision===mutationRevision)return pending.task;
   }
-  const generation=scope?(generations.get(scope)??0)+1:0;
-  if(scope)generations.set(scope,generation);
+  const generation=key?(generations.get(key)??0)+1:0;
+  if(key)generations.set(key,generation);
   const task=(async()=>{
    const entry=presentEntry(await coopClient.entry());
    // If a forced refresh overtook this request, its older result must not
    // replace the newer browse/catalog snapshot.
-   if(scope&&generations.get(scope)===generation&&scope===await viewerScope(characterId)){
-    rememberEntry(scope,entry);
-    void catalogCache.save(scope,entry.dungeons);
+   if(key&&generations.get(key)===generation&&mutationRevision===coopEntryMutationRevision()&&scope===await viewerScope(characterId)){
+    rememberEntry(key,entry);
+    void catalogCache.save(scope!,entry.dungeons);
    }
    return entry;
   })();
-  if(scope){
-   inFlight.set(scope,task);
-   void task.finally(()=>{if(inFlight.get(scope)===task)inFlight.delete(scope);}).catch(()=>{});
+  if(key){
+   inFlight.set(key,{task,mutationRevision});
+   void task.finally(()=>{if(inFlight.get(key)?.task===task)inFlight.delete(key);}).catch(()=>{});
   }
   return task;
  },

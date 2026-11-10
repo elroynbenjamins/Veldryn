@@ -70,6 +70,7 @@ try{
  await expectDenied(()=>equipped('admin'),'INVALID_BADGE_SELECTION');
  await expectDenied(()=>equipped('supporter_3m'),'BADGE_NOT_OWNED');
  await expectDenied(()=>equipped('supporter_6m'),'BADGE_NOT_OWNED');
+ await expectDenied(()=>equipped('supporter_12m'),'BADGE_NOT_OWNED');
 
  p=await equipped('supporter');
  assert.equal(p.identity.equippedBadgeId,'supporter');
@@ -79,14 +80,20 @@ try{
  assert.equal(p.identity.equippedBadgeId,null,'explicit None overrides legacy auto Supporter');
  assert.equal(p.identity.staff,'admin');
 
- await db.exec("update private.supporter_badge_progress_v2 set verified_since=now()-interval '4 months' where account_id='"+a+"'");
+ await db.exec("update private.supporter_badge_progress_v2 set credited_seconds=extract(epoch from ((verified_since+interval '4 months')-verified_since)),last_checkpoint_at=now() where account_id='"+a+"'");
  p=await self();assert.equal(p.supporterTierMonths,3);
  p=await equipped('supporter_3m');assert.equal(p.identity.equippedBadgeId,'supporter_3m');
  await expectDenied(()=>equipped('supporter_6m'),'BADGE_NOT_OWNED');
- await db.exec("update private.supporter_badge_progress_v2 set verified_since=now()-interval '7 months' where account_id='"+a+"'");
+ await db.exec("update private.supporter_badge_progress_v2 set credited_seconds=extract(epoch from ((verified_since+interval '7 months')-verified_since)),last_checkpoint_at=now() where account_id='"+a+"'");
  p=await equipped('supporter_6m');
  assert.equal(p.supporterTierMonths,6);
  assert.equal(p.identity.equippedBadgeId,'supporter_6m');
+
+ await expectDenied(()=>equipped('supporter_12m'),'BADGE_NOT_OWNED');
+ await db.exec("update private.supporter_badge_progress_v2 set credited_seconds=extract(epoch from ((verified_since+interval '13 months')-verified_since)),last_checkpoint_at=now() where account_id='"+a+"'");
+ p=await equipped('supporter_12m');
+ assert.equal(p.supporterTierMonths,12);
+ assert.ok(p.supporterTotalDays>=365,'cumulative covered days are visible');
 
  p=(await first("select public.update_player_featured_badges_v1(array['beta_tester','founder']) as data")).data;
  assert.equal(p.identity.equippedBadgeId,'beta_tester');
@@ -94,7 +101,7 @@ try{
  await expectDenied(()=>equipped('event_champion'),'BADGE_NOT_OWNED');
  await expectDenied(()=>equipped('moderator'),'INVALID_BADGE_SELECTION');
 
- p=await equipped('supporter_6m');
+ p=await equipped('supporter_12m');
  await db.exec("update private.account_commerce_entitlements_v1 set supporter_active=false where account_id='"+a+"'");
  p=await self();
  assert.equal(p.supporterTierMonths,0);
@@ -103,8 +110,9 @@ try{
  await expectDenied(()=>equipped('supporter'),'BADGE_NOT_OWNED');
  await db.exec("update private.account_commerce_entitlements_v1 set supporter_active=true,supporter_expires_at=now()+interval '1 month' where account_id='"+a+"'");
  p=await self();
- assert.equal(p.supporterTierMonths,1,'rejoining after lapse starts fresh verified streak');
- await expectDenied(()=>equipped('supporter_3m'),'BADGE_NOT_OWNED');
+ assert.equal(p.supporterTierMonths,12,'rejoining preserves previously earned total months');
+ assert.ok(p.supporterTotalDays>=365,'paused time does not wipe cumulative time');
+ p=await equipped('supporter_12m');assert.equal(p.identity.equippedBadgeId,'supporter_12m');
 
  await signIn(b);
  p=await self();assert.equal(p.supporterTierMonths,1,'fresh 6m paid term does not grant 6m badge');
@@ -129,7 +137,7 @@ try{
 
  await signIn('');
  await expectDenied(()=>equipped('founder'),'AUTH_REQUIRED');
- console.log('PASS: real PostgreSQL badge migration, one equipped, automatic staff, verified 3/6m tenure, paid/promo non-spoofing, expiry reset, anonymous restrictions and private RLS');
+ console.log('PASS: real PostgreSQL badge migration, one equipped, automatic staff, verified cumulative 3/6/12m tenure, paid/promo non-spoofing, lapse preservation, anonymous restrictions and private RLS');
 }catch(e){
  console.error('FAIL: badge migration PostgreSQL '+e.message);
  if(e.where)console.error(e.where);

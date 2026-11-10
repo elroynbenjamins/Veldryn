@@ -8,7 +8,7 @@ import type {CollectiblePlayerBadgeId,EquippablePlayerBadgeId,PlayerBadgeIdentit
 
 export type BadgeState=PlayerBadgePreferences&{accountId:string;loading:boolean;busy:boolean;error:string;setVisible:(visible:boolean)=>Promise<void>;setFeatured?:(ids:readonly CollectiblePlayerBadgeId[])=>Promise<void>;setEquipped:(id:EquippablePlayerBadgeId|null)=>Promise<void>;refresh:()=>Promise<void>};
 type BadgeContext=BadgeState&{remote:Map<string,PlayerBadgeIdentity|undefined>;icons:Map<string,SocialProfileIcon>;watch:(id:string)=>()=>void};
-const empty={accountId:'',showSupporter:true,supporterAvailable:false,supporterTierMonths:0 as const,equippedBadgeId:null,identity:undefined,loading:false,busy:false,error:''};
+const empty={accountId:'',showSupporter:true,supporterAvailable:false,supporterTierMonths:0 as const,supporterTotalDays:0,equippedBadgeId:null,identity:undefined,loading:false,busy:false,error:''};
 const Context=createContext<BadgeContext>({...empty,setVisible:async()=>{},setFeatured:async()=>{},setEquipped:async()=>{},refresh:async()=>{},remote:new Map(),icons:new Map(),watch:()=>()=>{}});
 export function PlayerBadgeProvider({children}:{children:ReactNode}){
  const accountId=useAuthSession().session?.user.id??'';

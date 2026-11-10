@@ -1,0 +1,39 @@
+name: Player badges validation
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/player-badges.ts'
+      - 'apps/mobile/src/online/player-badges.ts'
+      - 'apps/mobile/src/online/PlayerBadgeProvider.tsx'
+      - 'apps/mobile/src/components/PlayerBadgeSettings.tsx'
+      - 'apps/mobile/src/components/PlayerBadges.tsx'
+      - 'apps/mobile/assets/player-badges-v1/**'
+      - 'apps/mobile/tests/player-badges.ts'
+      - 'backend/supabase/migrations/**badge**'
+      - 'tools/test-player-badge-tenure-db.mjs'
+      - '.github/workflows/player-badges-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/src/**/player-badges.ts'
+      - 'apps/mobile/assets/player-badges-v1/**'
+      - 'backend/supabase/migrations/**badge**'
+      - 'tools/test-player-badge-tenure-db.mjs'
+      - '.github/workflows/player-badges-validation.yml'
+  workflow_dispatch:
+jobs:
+  badge-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Verify cumulative Supporter badge rules in disposable PostgreSQL
+        run: node tools/test-player-badge-tenure-db.mjs

@@ -133,9 +133,9 @@ export const HUNT_CLASS_NARRATION={
 } as const satisfies Record<ClassId,{prepare:readonly string[];strike:readonly string[]}>;
 export const HUNT_ENCOUNTER_NARRATION={
  "SWARM": [
-  "The swarm shifts, seeking an opening.",
-  "Several creatures press closer.",
-  "The swarm scatters, then gathers again."
+  "The foe shifts, seeking an opening.",
+  "The foe darts into a new position.",
+  "The foe moves in quick, erratic bursts."
  ],
  "ARCANE_FLICKER": [
   "Wild magic sparks around the foe.",
@@ -149,7 +149,7 @@ export const HUNT_ENCOUNTER_NARRATION={
  ],
  "VENOM_AMBUSH": [
   "The foe coils for a venomous strike.",
-  "A venomous stinger twitches.",
+  "Venom glistens as the foe shifts.",
   "The creature watches for a careless step."
  ],
  "BRAMBLE_GUARD": [
@@ -184,7 +184,7 @@ export const HUNT_ENCOUNTER_NARRATION={
  ],
  "REVENANT": [
   "Echo energy coils around the revenant.",
-  "The revenant's armour hums with echoes.",
+  "An eerie echo hums around the foe.",
   "A cold shimmer passes through the undead."
  ],
  "FALLEN_KNIGHT": [

@@ -7,6 +7,7 @@ const previewFile = path.join(mobile, 'src/components/FrostfallPreview.tsx');
 const preview = fs.readFileSync(previewFile, 'utf8');
 const calendar = fs.readFileSync(path.join(mobile, 'src/components/AnnualEventCalendarPanel.tsx'), 'utf8');
 const released = fs.readFileSync(path.join(mobile, 'src/content/live-events.ts'), 'utf8');
+const eventScreen = fs.readFileSync(path.join(mobile, 'src/screens/EventScreen.tsx'), 'utf8');
 
 assert.match(calendar, /fetchPublicEventCalendar\(/, 'calendar must use the published server schedule');
 assert.match(calendar, /frostfallPreviewPhase\(item\.startsAtMs,previewNow\)/, 'preview must be gated by schedule and clock');
@@ -17,6 +18,7 @@ assert.doesNotMatch(released, /annual-events-v2/, 'future Frostfall gameplay mus
 assert.match(preview, /disabled=\{!tile\.unlocked\}/, 'unrevealed teaser cards must not be interactive');
 assert.match(preview, /frostfallSecondRevealCountdown\(startsAtMs, nowMs\)/, 'use a changing second-reveal countdown');
 assert.match(preview, /GameThemeScope colors=\{winterColors\}/, 'Frostfall preview has a winter-scoped theme');
+assert.match(eventScreen, /showFrostfallPreview=\{!frostfallTeaser\}/, 'upcoming Frostfall must show one teaser, not duplicate cards');
 assert.doesNotMatch(preview, /currency_frostbell_token\.png/, 'do not reintroduce an Android-incompatible tiny currency asset');
 
 const arts = [...preview.matchAll(/require\(['"]([^'"]+\/assets\/[^'"]+)['"]\)/g)].map(match => match[1]);

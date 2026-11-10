@@ -15,7 +15,8 @@ import {PartyChatGate} from './PartyChatGate';
 import {usePartySocial} from '../online/PartySocialProvider';
 import {ChatDock} from './ChatDock';
 import {SystemNoticeLog} from './SystemNoticeLog';
-import {myGuild,WORLD_CHANNELS} from '../online/social';
+import {myGuild,VISIBLE_WORLD_CHANNELS} from '../online/social';
+import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuthSession} from '../online/AuthSessionProvider';
 
@@ -35,7 +36,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  const [channel,setChannel]=useState<Channel>('world');
  const [guildHelpOpen,setGuildHelpOpen]=useState(false);
  const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
- const [worldChannel,setWorldChannel]=useState(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
+ const [worldChannel,setWorldChannel]=useState(defaultVisibleWorldChatIndex(state.settings.defaultWorldChat));
  const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  const [keyboardOverlap,setKeyboardOverlap]=useState(0);
@@ -94,7 +95,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
   if(visible&&!wasVisible.current){
    selectChannel(initialChannel==='guild'&&guildAvailable?'guild':'world');
    pendingGuildChannel.current=initialChannel==='guild'&&!guildAvailable;
-   setWorldChannel(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
+   setWorldChannel(defaultVisibleWorldChatIndex(state.settings.defaultWorldChat));
   }
   wasVisible.current=visible;
  },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable]);
@@ -147,8 +148,8 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
        <Text numberOfLines={1} style={s.channelName}>{activeLabel}</Text>
        <View style={s.headerSpacer}/>
        {channel==='guild'&&<Pressable accessibilityRole="button" accessibilityLabel={guildChatHelp?.title??st('Guild')} accessibilityState={{expanded:guildHelpOpen}} onPress={()=>{Keyboard.dismiss();setGuildHelpOpen(value=>!value);}} style={[s.languageButton,{minWidth:44,minHeight:44,justifyContent:'center'}]}><Text style={s.languageText}>?</Text></Pressable>}
-       {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(value=>!value);}} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}>
-        <Text numberOfLines={1} style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text>
+       {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:VISIBLE_WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(value=>!value);}} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}>
+        <Text numberOfLines={1} style={s.languageText}>{VISIBLE_WORLD_CHANNELS[worldChannel].name}</Text>
         <DropdownChevron open={languageMenuOpen} color={C.info}/>
        </Pressable>}
       </View>
@@ -175,7 +176,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
       </View>
       {languageMenuOpen&&<Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={()=>setLanguageMenuOpen(false)} style={s.popoverDismiss}/>}
       {languageMenuOpen&&channel==='world'&&<View accessibilityViewIsModal style={s.languagePopover}>
-       <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
+       <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{VISIBLE_WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
       </View>}
      </View>
     </KeyboardAvoidingView>

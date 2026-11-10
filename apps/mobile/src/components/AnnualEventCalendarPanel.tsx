@@ -10,6 +10,7 @@ import {Panel} from './Panel';
 import {FrostfallPreview} from './FrostfallPreview';
 import {frostfallPreviewPhase} from '../content/frostfall-preview';
 import {EventIdentityBadge} from './EventIdentityBadge';
+import {DisclosureMark} from './DisclosureControl';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {fetchPublicEventCalendar,type PublicEventSchedule} from '../online/live-events';
 
@@ -60,7 +61,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.upcomingList} showsVerticalScrollIndicator={false}>{upcoming.map(({row,year})=><Pressable key={row.eventId} accessibilityRole="button" accessibilityLabel={row.name+', '+scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)+', '+year} onPress={()=>{setSelectedDate({year,month:monthForOrder(row.order)});setPreviewFestival(true)}} style={[s.upcomingCard,{borderColor:row.definition.accent}]}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={38}/><Text style={s.featureName}>{row.name}</Text><Text style={s.note}>{scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)} · {year}</Text><Text style={s.meta}>{p(hasExactSchedule(scheduleFor(row.eventId,year))?'Dates set':'Planned window')}</Text></Pressable>)}</ScrollView>
 
     </Panel>
-    <Pressable accessibilityRole="button" accessibilityState={{expanded:calendarOpen}} onPress={()=>setCalendarOpen(value=>!value)} style={s.calendarToggle}><View style={s.flex}><Text style={s.title}>{t('Festival calendar')}</Text><Text style={s.note}>{p('Browse festival months and dates')}</Text></View><Text style={s.title}>{calendarOpen?'−':'+'}</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:calendarOpen}} onPress={()=>setCalendarOpen(value=>!value)} style={s.calendarToggle}><View style={s.flex}><Text style={s.title}>{t('Festival calendar')}</Text><Text style={s.note}>{p('Browse festival months and dates')}</Text></View><DisclosureMark expanded={calendarOpen}/></Pressable>
     {calendarOpen&&<Panel>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.years} showsVerticalScrollIndicator={false}>
       {calendarYears.map(year=><View key={year} style={s.yearGroup}><Text style={[s.yearLabel,year===currentYear&&s.yearLabelCurrent]}>{year}{year===currentYear?` · ${t("CURRENT")}`:''}</Text><View style={s.months}>{MONTHS.map((label,index)=>{

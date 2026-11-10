@@ -65,7 +65,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const [category,setCategory]=useState<string>(preferred?categoryOf(preferred):groups[0]);
  const [readyOnly,setReadyOnly]=useState(false),[detailId,setDetailId]=useState<string|null>(preferred?detailKey(preferred):null);
  const [manualSourceByPotion,setManualSourceByPotion]=useState<Record<string,string>>({});
- const [pendingId,setPendingId]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const busyRef=useRef(false);
  const activity=state.activity,activeId=activity?.kind==='alchemy'?activity.targetId:activity?.kind==='processing'&&activity.processing?.skillId==='cooking'?activity.targetId:undefined;
  const skillLevel=state.skills.find(sk=>sk.skillId===skillId)?.level??1;
@@ -91,7 +91,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const recipes=skillId==='alchemy'&&category==='Potions'?potionRows.map(row=>row.recipe):visible;
  const potionOptions=new Map<string,readonly Recipe[]>(potionRows.map(row=>[row.outputId,row.options] as const));
  const missingReason=(recipe:Recipe):string=>{
-  if(recipe.level>skillLevel)return gt('Requires {skill} level {level}.',{skill:gl('alchemy'),level:recipe.level});
+  if(recipe.level>skillLevel)return gt('Requires {skill} level {level}.',{skill:gl(skillId),level:recipe.level});
   const goldShortfall=Math.max(0,recipe.gold-(state.character?.gold??0));
   if(goldShortfall>0)return gt('Need {amount} more Gold',{amount:goldShortfall});
   const missing=recipe.inputs.find(input=>state.inventory.stacks.filter(row=>row.itemId===input.itemId).reduce((total,row)=>total+row.quantity,0)
@@ -107,18 +107,20 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const submit=async(id:string)=>{
   if(busyRef.current)return;
   busyRef.current=true;setBusy(true);setError('');
-  try{await onStart(id);setPendingId(null);setDetailId(null);}
+  try{await onStart(id);setDetailId(null);}
   catch(e){setError(e instanceof Error?e.message:gt('Action failed. Please try again.'));}
   finally{busyRef.current=false;setBusy(false);}
  };
  const start=(recipe:Recipe)=>{
   if(busyRef.current||recipe.id===activeId)return;
   setError('');
-  if(activity){setDetailId(null);setPendingId(recipe.id);return;}
-  if(count(recipe)<1){if(skillId==='cooking')setDetailId(recipe.id);return;}
+  // One tap switches the running skill. The command atomically settles the old
+  // activity and returns any unused reserved batches before starting this one.
+  // An active reservation can make the local stock preview zero; let the
+  // authoritative command recheck affordability after releasing that escrow.
+  if(count(recipe)<1&&!activity){setError(missingReason(recipe));if(skillId==='cooking')setDetailId(recipe.id);return;}
   void submit(recipe.id);
  };
- const selected=all.find(r=>r.id===pendingId);
  const regionVariant=(recipe:Recipe)=>recipe.id.endsWith('_SUNSCAR')?'Sunscar':recipe.id.endsWith('_FROSTMARCH')?'Frostmarch':recipe.id.endsWith('_ASHLANDS')?'Ashlands':undefined;
  const mobile=width<360||fontScale>=1.35;
  /** Potion tiers are visual section breaks inside the existing Alchemy categories, not tabs. */
@@ -218,16 +220,9 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
         {skillId==='alchemy'&&potionDef(detail.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.')}</Text>:null}
       </ScrollView>
       <Pressable accessibilityRole="button" accessibilityState={{disabled:busy||count(detail)<1||activeId===detail.id}} disabled={busy||count(detail)<1||activeId===detail.id} onPress={()=>start(detail)} style={[s.primary,{backgroundColor:C.accent,opacity:busy||count(detail)<1?.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===detail.id?gt('Active'):skillId==='cooking'?gt('Start Cooking'):gt('Start Brewing')}</Text></Pressable>
-      {error?<Text accessibilityRole="alert" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
+      {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
     </>:null}
   </GameModalSurface>
-  {selected?<View style={[s.detail,{borderColor:C.warning,backgroundColor:C.panel2}]}>
-    <Text style={[s.title,{color:C.text}]}>{gt('Switch activity?')}</Text>
-    <Text style={[s.caption,{color:C.muted}]}>{gt('Starting a new activity settles the current one and safely refunds any unfinished reserved batches.')}</Text>
-    <Text style={[s.name,{color:C.text}]}>{itemName(selected.output.itemId)}</Text>
-    {count(selected)===0?<Text style={[s.caption,{color:C.warning}]}>{gt('Check ingredients and Gold after switching; the server will reject an unaffordable run without replacing your current activity.')}</Text>:null}
-    <View style={s.line}><Pressable accessibilityRole="button" onPress={()=>setPendingId(null)} style={[s.secondary,{borderColor:C.line}]}><Text style={[s.bold,{color:C.text}]}>{gt('Cancel')}</Text></Pressable><Pressable accessibilityRole="button" disabled={busy} onPress={()=>void submit(selected.id)} style={[s.secondary,{borderColor:C.good,backgroundColor:C.goodSurface}]}><Text style={[s.bold,{color:C.good}]}>{gt('Switch')}</Text></Pressable></View>
-  </View>:null}
   {error?<Text accessibilityRole="alert" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
   <Text style={[s.caption,{color:C.muted}]}>{gt('Tap a recipe to start continuous production. Batches are reserved up to the AFK limit, available ingredients and Gold.')}</Text>
  </View>;

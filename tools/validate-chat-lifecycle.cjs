@@ -357,7 +357,7 @@ async function sharedComposerLifecycle() {
   try {
     const sends=[];
     h.mocks.set(path.join(app,'src/online/social'),{
-      WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>[],
+      WORLD_CHANNELS:[{id:'en',name:'English'}],VISIBLE_WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>[],
       worldChatCommandKey:()=> 'world-composer-command',
       postWorldMessage:async(_channel,value)=>{sends.push(value);}
     });
@@ -440,7 +440,7 @@ async function worldDraftLifecycle() {
     h.mocks.get('react-native').Alert.alert=(...message)=>alerts.push(message);
     const rows=id=>[{id:id+':1',account_id:'other',sender_name:'Other player',body:'Existing history',created_at:'2026-10-04T22:00:00Z'}];
     h.mocks.set(path.join(app,'src/online/social'),{
-      WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],
+      WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],VISIBLE_WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],
       worldChatCommandKey:()=> 'world-draft-command',
       worldMessages:async id=>{reads++;if(failRead)throw new Error('History temporarily unavailable');return rows(id);},
       postWorldMessage:(id,body)=>{sends.push({id,body});const request=deferred();pending.push(request);return request.promise;}
@@ -503,7 +503,7 @@ async function worldRetryLifecycle() {
   try {
     const sends=[],pending=[];let nextKey=0;
     h.mocks.set(path.join(app,'src/online/social'),{
-      WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],worldMessages:async()=>[],
+      WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],VISIBLE_WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],worldMessages:async()=>[],
       worldChatCommandKey:()=>`world-command-${++nextKey}`,
       postWorldMessage:(id,body,sender,key)=>{const request=deferred();sends.push({account:h.auth.session.user.id,id,body,sender,key});pending.push(request);return request.promise;}
     });
@@ -569,7 +569,7 @@ async function staleSendScopeLifecycle() {
       h.mocks.get('react-native').Alert.alert=(...args)=>alerts.push(args);
       h.mocks.set(path.join(app,'src/online/PartySocialProvider'),{usePartySocial:()=>({party:{id:'party-a',members:[{accountId:account(),characterName:'Player'}]},accountId:account(),refresh:async()=>{}})});
       h.mocks.set(path.join(app,'src/online/social'),{
-        WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>messages,worldChatCommandKey:commandKey,postWorldMessage:send,
+        WORLD_CHANNELS:[{id:'en',name:'English'}],VISIBLE_WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>messages,worldChatCommandKey:commandKey,postWorldMessage:send,
         guildChatState:async()=>({guild:{id:'guild-a',name:'Guild'},messages}),guildRoster:async()=>[],guildChatCommandKey:commandKey,sendGuildChat:send,
       });
       h.mocks.set(path.join(app,'src/online/party-social'),{partyChatMessages:async()=>messages,partyCommandKey:commandKey,sendPartyChat:send});
@@ -666,7 +666,7 @@ async function overlayLifecycle() {
     h.mocks.set(path.join(app,'src/components/PartyChatGate'),{PartyChatGate:({children})=>children});
     const party={party:{id:'p1',members:[]},accountId:'alpha',refresh:async()=>{partyRefresh++;}};
     h.mocks.set(path.join(app,'src/online/PartySocialProvider'),{usePartySocial:()=>party});
-    h.mocks.set(path.join(app,'src/online/social'),{myGuild:async()=>{guildReads++;return{id:'g1'};},WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'},{id:'de',name:'Deutsch'},{id:'es',name:'Español'}]});
+    h.mocks.set(path.join(app,'src/online/social'),{myGuild:async()=>{guildReads++;return{id:'g1'};},WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'},{id:'de',name:'Deutsch'},{id:'es',name:'Español'}],VISIBLE_WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}]});
     const {ChatOverlay}=h.load(path.join(app,'src/components/ChatOverlay'));
     const state={createdAtMs:1,settings:{defaultWorldChat:1,language:'en'},account:{guildMember:true},character:{name:'Player'}};
     const props={state,visible:true,onOpen(){},onClose(){},onChatRead(){notices++;}};

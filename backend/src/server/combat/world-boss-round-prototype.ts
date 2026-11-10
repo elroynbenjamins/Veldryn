@@ -155,16 +155,29 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
     emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,targetId:target.def.id,amount:protectedAmount});
    }
   }
-  if(order==='hold_line')preShield=money(preShield*.95);
+  let warOrderSaved=0;
+  if(order==='hold_line'){
+   const shieldCoverage=target.shields.reduce((n,x)=>n+x.amount,0);
+   const beforeHp=Math.min(target.hp,Math.max(0,preShield-shieldCoverage));
+   const reduced=money(preShield*.95);
+   const afterHp=Math.min(target.hp,Math.max(0,reduced-shieldCoverage));
+   warOrderSaved=money(Math.max(0,beforeHp-afterHp));
+   preShield=reduced;
+   if(warOrderSaved>0)emit({round,type:'mitigate',abilityId:'WAR_ORDER_HOLD_LINE',
+    actorId:players[0].def.id,targetId:target.def.id,amount:warOrderSaved,detail:'war_order_not_impact'});
+  }
   let remaining=preShield,absorbed=0;
   for(const shield of target.shields){
    if(remaining<=0)break;
    const used=money(Math.min(remaining,shield.amount));shield.amount=money(shield.amount-used);remaining=money(remaining-used);absorbed=money(absorbed+used);
    if(ledger[shield.ownerId])ledger[shield.ownerId].shieldConsumed=money(ledger[shield.ownerId].shieldConsumed+used);
+   if(used>0)emit({round,type:'mitigate',abilityId:'SHIELD_ABSORB',
+    actorId:shield.ownerId,ownerId:shield.ownerId,targetId:target.def.id,amount:used,
+    detail:'already_accounted_in_strike_absorbed'});
   }
   target.shields=target.shields.filter(s=>s.amount>0);
   const hpDamage=money(Math.min(target.hp,remaining));target.hp=money(target.hp-hpDamage);
-  emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+protectedAmount)});
+  emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+protectedAmount+warOrderSaved)});
   if(target.hp===0)emit({round,type:'down',abilityId,actorId:bossName(input.boss),targetId:target.def.id});
  };
  const applyHeal=(round:number,actor:Player,target:Player,abilityId:string,amount:number)=>{

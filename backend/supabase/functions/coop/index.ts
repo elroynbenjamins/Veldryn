@@ -46000,9 +46000,14 @@ var CRAFTED_EPIC_CHANCE = 6e-3;
 var CRAFTED_RARE_CHANCE = 0.03;
 var CRAFTED_UNCOMMON_CHANCE = 0.07;
 var CRAFTED_COMMON_CHANCE = 1 - (CRAFTED_MYTHIC_CHANCE + CRAFTED_LEGENDARY_CHANCE + CRAFTED_EPIC_CHANCE + CRAFTED_RARE_CHANCE + CRAFTED_UNCOMMON_CHANCE);
+var CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION = 0.75;
 function craftedRarityStatMultiplier(itemId, rarity) {
-  if (itemDef(itemId).type !== "gear") throw new Error("Forged rarity requires equipment");
-  return rarityMeta(rarity).statMultiplier;
+  const item = itemDef(itemId);
+  if (item.type !== "gear") throw new Error("Forged rarity requires equipment");
+  const rolled = rarityMeta(rarity).statMultiplier;
+  const catalogBase = rarityMeta(itemRarity(item)).statMultiplier;
+  const beforeRecentBuff = Math.max(1, rolled / catalogBase);
+  return beforeRecentBuff + (rolled - beforeRecentBuff) * CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION;
 }
 
 // ../apps/mobile/src/core/crafted-gear-instances.ts

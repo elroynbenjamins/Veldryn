@@ -90,7 +90,7 @@ const identityCache=load('apps/mobile/src/online/player-identity-cache.ts',{
 });
 const socialListProjection=load('apps/mobile/src/core/social-list-projection.ts',{});
 const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./player-identity-cache':identityCache,'../core/social-list-projection':socialListProjection,'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave});
-const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./social':social,'../core/party-social':{}});
+const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./social':social,'../core/party-social':{},'../core/feature-unlocks':{PARTY_UNLOCK_LEVEL:10}});
 
 assert.equal(chatHistory.CHAT_RECENT_MESSAGE_LIMIT,25);
 const expectedIds=first=>Array.from({length:25},(_,index)=>String(first+index).padStart(3,'0'));

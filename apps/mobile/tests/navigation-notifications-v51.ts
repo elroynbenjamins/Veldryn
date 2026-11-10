@@ -32,6 +32,13 @@ equal(destinationForNotification('companion_attention').subroute,'companions','C
 equal(destinationForNotification('equipment_craft_ready').subroute,'skills.smithing.forge','Finished equipment routes to the Smithing forge');
 ok(sub['companions'].dot,'Companion subroute receives one consolidated dot');
 ok(sub['account.new-unlocks'].dot,'Profile customization attention routes to the consolidated Account new-unlocks inbox as a dot');
+const rewardAlert:NavigationNotification={key:'party-contract-claims',kind:'party_contract_reward_ready',count:2,unread:true};
+const withPartyRewards=[...notifications,rewardAlert];
+equal(destinationForNotification('party_contract_reward_ready').subroute,'social.party.contracts','Ready Party rewards deep-link to Party Contracts');
+equal(buildNavigationBadges(withPartyRewards).account.count,14,'Claim-ready Party rewards increment Account navigation count');
+equal(buildQuickNavigationBadges(withPartyRewards)['Party']?.count,8,'Ready Party rewards add to Party shortcut alongside invites and unread chat');
+equal(buildSubrouteBadges(withPartyRewards)['social.party.contracts']?.count,2,'Party Contracts subroute shows exact ready reward count');
+equal(buildQuickNavigationBadges([...notifications,{...rewardAlert,unread:false}])['Party']?.count,6,'Claim badges clear as soon as authoritative rewards are claimed');
 const quick=buildQuickNavigationBadges(notifications);
 ok(quick['Quests']?.dot,'Weekly Contract Board attention should route to Quests in quick navigation');
 ok(!quick['Events'],'Legacy Event rewards do not create top-bar shortcut attention');

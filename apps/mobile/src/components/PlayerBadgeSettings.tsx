@@ -70,15 +70,16 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
     <Text style={[s.sectionTitle,{color:C.text}]}>Supporter</Text>
     <Text style={[s.counter,{color:C.muted}]}>{badges.supporterAvailable?'ACTIVE':'NOT ACTIVE'}</Text>
    </View>
-   <Text style={[s.note,{color:C.muted}]}>Your badge grows more ornate after 3 and 6 consecutive months of verified Supporter time.</Text>
+   {badges.supporterTotalDays>0?<Text style={[s.note,{color:C.muted}]}>{`Verified Supporter time: ${badges.supporterTotalDays} days total`}</Text>:null}
+   <Text style={[s.note,{color:C.muted}]}>Your star evolves at 3, 6 and 12 total verified months of Supporter time.</Text>
    {SUPPORTER_BADGE_IDS.map((id:SupporterBadgeId)=>{
-    const required=id==='supporter_6m'?6:id==='supporter_3m'?3:1;
+    const required=id==='supporter_12m'?12:id==='supporter_6m'?6:id==='supporter_3m'?3:0;
     const unlocked=canEquipSupporterBadge(id,badges.supporterAvailable,badges.supporterTierMonths);
     return row(id,unlocked,unlocked
-     ?required===1?'Active Supporter · original badge':`Verified ${required}-month Supporter milestone`
+     ?required===0?'Active Supporter · first star':`Verified ${required}-month Supporter milestone`
      :SUPPORTER_BADGE_UNLOCK_HINTS[id]);
    })}
-   <Text style={[s.footnote,{color:C.muted}]}>Higher tiers are based on verified uninterrupted time, not on purchasing months in advance. A previous subscription cannot be backdated without proof.</Text>
+   <Text style={[s.footnote,{color:C.muted}]}>Time from separate verified subscription periods adds together. Pauses do not erase progress, and buying future months does not count early. Earlier history requires reliable billing proof.</Text>
   </View>
 
   <View style={s.section}>

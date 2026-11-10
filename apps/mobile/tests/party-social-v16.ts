@@ -14,6 +14,7 @@ import {
   type RecruitmentCardView,
   contractProgressPercent,
   contractEligibilityLabel,
+  partyContractClaimableRewardIds,
 } from '../src/core/party-social';
 function assert(value: unknown,message:string): asserts value { if(!value) throw new Error(message); }
 const party:PersistentPartySummary={id:'p',focus:'mixed',maxMembers:4,members:[{accountId:'a1',characterId:'c1',characterName:'A',className:'Wayfinder',role:'damage',isLeader:true}]};
@@ -45,4 +46,18 @@ assert(context.includes('Combat 12+')&&context.includes('Total 80+'),'Recruitmen
 const v161Contract:PartyContractView={id:'c161',name:'Mixed weekly',focus:'mixed',description:'',targetPoints:4000,totalPoints:2100,combatPoints:1200,skillingPoints:900,personalPoints:400,eligible:true,complete:false,expiresAt:'2026-09-14T00:00:00Z'};
 assert(contractProgressPercent(v161Contract)===53,'v16.1 presentation progress');
 assert(contractEligibilityLabel(v161Contract)==='Reward eligible','v16.1 eligibility label');
+const validRewardContract:PartyContractView={
+ id:'weekly-active',name:'Party week',totalPoints:4000,targetPoints:80000,
+ memberContributions:[{accountId:'a1',points:350},{accountId:'a2',points:100}],
+ tiers:[
+  {tier:'bronze',targetPoints:4000,minimumPersonalPoints:320,gold:250,cumulativeGold:250,reached:true,qualified:true,rewardId:'bronze-1',claimed:false},
+  {tier:'silver',targetPoints:16000,minimumPersonalPoints:1280,gold:500,cumulativeGold:750,reached:false,qualified:false,rewardId:'silver-1',claimed:false},
+ ],
+};
+assert(partyContractClaimableRewardIds([validRewardContract]).join(',')==='bronze-1','Only confirmed earned and personally qualified rewards notify');
+assert(partyContractClaimableRewardIds([validRewardContract,{...validRewardContract,id:'duplicate'}]).length===1,'Duplicate entitlement IDs cannot inflate notification counts');
+assert(!partyContractClaimableRewardIds([{...validRewardContract,tiers:validRewardContract.tiers!.map(t=>({...t,claimed:true}))}]).length,'Claim notification must clear after the server reports claimed');
+assert(!partyContractClaimableRewardIds([{...validRewardContract,tiers:validRewardContract.tiers!.map(t=>({...t,qualified:false}))}]).length,'Unqualified rewards never notify');
+assert(!partyContractClaimableRewardIds([{...validRewardContract,tiers:validRewardContract.tiers!.map(t=>({...t,rewardId:null}))}]).length,'No server entitlement means no speculative badge');
+assert(!partyContractClaimableRewardIds([{id:'legacy',name:'Legacy',targetPoints:10,totalPoints:10,rewards:[{id:'r1',reward:{gold:100},claimed:false}]}]).length,'Legacy incomplete or unqualified rewards do not notify');
 console.log('mobile party social v16 tests passed');

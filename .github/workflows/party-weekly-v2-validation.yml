@@ -3,11 +3,14 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/party/weekly-party-events-v2.ts'
+      - 'backend/src/server/party/weekly-party-boss-v2.ts'
       - 'backend/src/server/party/weekly-party-stage-prototype-v3.ts'
       - 'backend/src/server/party/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-stages-prototype-v3.ts'
       - 'tools/party-events-gear-calibration*'
+      - 'tools/party-events-authoritative-calibration*'
+      - 'backend/online/party-event-loadout-v4.ts'
       - 'backend/src/server/party/__tests__/weekly-party-events-v2.ts'
       - 'backend/package.json'
       - '.github/workflows/party-weekly-v2-validation.yml'
@@ -15,11 +18,14 @@ on:
     branches: [main]
     paths:
       - 'backend/src/server/party/weekly-party-events-v2.ts'
+      - 'backend/src/server/party/weekly-party-boss-v2.ts'
       - 'backend/src/server/party/weekly-party-stage-prototype-v3.ts'
       - 'backend/src/server/party/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-stages-prototype-v3.ts'
       - 'tools/party-events-gear-calibration*'
+      - 'tools/party-events-authoritative-calibration*'
+      - 'backend/online/party-event-loadout-v4.ts'
       - 'backend/src/server/party/__tests__/weekly-party-events-v2.ts'
       - 'backend/package.json'
       - '.github/workflows/party-weekly-v2-validation.yml'
@@ -45,3 +51,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:party-weekly-v2
       - run: node ../tools/party-events-gear-calibration.mjs
+      - run: node ../tools/party-events-authoritative-calibration.mjs

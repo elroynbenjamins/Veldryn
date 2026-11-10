@@ -230,7 +230,7 @@ for(const tier of tiers){
  * This is an isolated experiment: do not edit the hidden Day 8 boss.
  */
 const curveCandidates=[
- {name:'baseline',hp:1.22,attack:1.14,defense:1.11},
+ {name:'legacy_v2',hp:1.22,attack:1.14,defense:1.11},
  {name:'gradual',hp:1.35,attack:1.17,defense:1.14},
  {name:'medium',hp:1.42,attack:1.20,defense:1.16},
  {name:'steep',hp:1.50,attack:1.23,defense:1.18},
@@ -284,10 +284,10 @@ for(const [i,pc] of parityCases.entries()){
   eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,
   nowMs:now-1000+week+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,frozen,orders:[],
  }).tiersCleared;
- const actual=simulateCandidateCurve(frozen,'standard',family,eventId,seed,curveCandidates[0]!);
+ const actual=simulateCandidateCurve(frozen,'standard',family,eventId,seed,curveCandidates[2]!);
  assert(expected===actual,'test-only boss spell/tuning parity: '+i+' '+expected+'/'+actual);
 }
-console.log('V4_CURVE_PARITY PASS '+parityCases.length+' varied authoritative parties');
+console.log('V4_CURVE_PARITY PASS '+parityCases.length+' varied authoritative parties against provisional medium curve');
 for(const curve of curveCandidates){
  for(const profile of ['plain','prepared'] as const){
   for(const tier of tiers){

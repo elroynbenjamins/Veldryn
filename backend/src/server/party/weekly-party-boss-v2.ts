@@ -18,6 +18,14 @@ import type {WeeklyPartyDifficulty, WeeklyPartyFamily, WeeklyPartyPreparation, P
 export const PARTY_EVENT_BOSS_MAX_TIERS=12;
 export const PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS=60*60*1000;
 export const PARTY_EVENT_BOSS_MAX_FIGHT_MS=90_000;
+/** Provisional hidden v4 upper-tier calibration based on the real
+ * online loadout pipeline (648 scenarios plus cross-curve comparisons).
+ * Tier 1 is unaffected: each growth value is raised to (tier - 1).
+ * Recalibrate when distinct family boss hazards are implemented.
+ * The Party Events release gate remains disabled. */
+export const PARTY_EVENT_BOSS_TIER_GROWTH_V4=Object.freeze({
+ hp:1.42,attack:1.20,defense:1.16,
+});
 
 export interface FrozenPartyBossLoadout {
   accountId:string;
@@ -149,9 +157,9 @@ function tierBoss(family:WeeklyPartyFamily,partySize:number,medianLevel:number,t
   difficulty:WeeklyPartyDifficulty):CombatantDefinition {
   const difficultyScale={standard:1,veteran:1.20,heroic:1.40}[difficulty];
   const levelScale=Math.max(.045,medianLevel/25);
-  const hp=Math.round(partySize*5400*levelScale*Math.pow(1.22,tier-1)*difficultyScale);
-  const attack=Math.round(355*levelScale*Math.pow(1.14,tier-1)*difficultyScale);
-  const defense=Math.round(520*levelScale*Math.pow(1.11,tier-1)*difficultyScale);
+  const hp=Math.round(partySize*5400*levelScale*Math.pow(PARTY_EVENT_BOSS_TIER_GROWTH_V4.hp,tier-1)*difficultyScale);
+  const attack=Math.round(355*levelScale*Math.pow(PARTY_EVENT_BOSS_TIER_GROWTH_V4.attack,tier-1)*difficultyScale);
+  const defense=Math.round(520*levelScale*Math.pow(PARTY_EVENT_BOSS_TIER_GROWTH_V4.defense,tier-1)*difficultyScale);
   return {
     id:'PARTY_EVENT_BOSS',name:BOSS_NAMES[family],team:'enemies',role:'enemy',boss:true,
     level:Math.max(1,Math.min(100,medianLevel+2*(tier-1))),

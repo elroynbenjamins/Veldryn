@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install mobile TypeScript dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Install backend build dependencies
         run: pnpm --dir backend install --frozen-lockfile
       - name: Build canonical gameplay + coop Edge bundles

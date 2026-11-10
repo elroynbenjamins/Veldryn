@@ -39,9 +39,10 @@ export function regionalHuntPlan(options:RegionalHuntOptions):RegionalHuntPlan{
   const enemyInterval=round(clamp(3.5/clamp(1+options.enemyHaste,.65,2),2,5));
   const strikes:RegionalHuntStrike[]=[];
   let enemyHp=monsterHp,finishSeconds=searchSeconds+interval;
-  // Safety bound for pathological undergeared loadouts; never make a kill
-  // faster merely because this bound was reached.
-  for(let i=0;i<240;i++){
+  // A genuinely undergeared player keeps attacking for as long as needed.
+  // The bound comfortably exceeds the maximum authored early-region HP even
+  // with the minimum hit chance; there is never a fabricated killing strike.
+  for(let i=0;i<10000;i++){
     const atSeconds=round(searchSeconds+(i+1)*interval);
     const landed=random01(seed+':accuracy',i)<clamp(options.hitChance,.55,.99);
     const critical=landed&&random01(seed+':critical',i)<clamp(options.critChance,0,.65);
@@ -50,14 +51,8 @@ export function regionalHuntPlan(options:RegionalHuntOptions):RegionalHuntPlan{
     if(damage>0){strikes.push({actor:'player',atSeconds,damage,critical});enemyHp-=damage;}
     finishSeconds=atSeconds;
     if(enemyHp<=0)break;
-    if(i===239){
-      // Weak players should spend time gearing up rather than receive a
-      // fabricated lethal strike. Extend at the same real attack rate.
-      const extra=Math.ceil(enemyHp/Math.max(1,options.playerHit));
-      finishSeconds=round(atSeconds+Math.min(600,extra*interval));
-      strikes.push({actor:'player',atSeconds:finishSeconds,damage:enemyHp,critical:false});
-    }
   }
+  if(enemyHp>0)throw new Error('Ordinary hunt exceeded the safe attack count');
   for(let i=1;searchSeconds+i*enemyInterval<finishSeconds-1e-6;i++){
     strikes.push({actor:'enemy',atSeconds:round(searchSeconds+i*enemyInterval),damage:0,critical:false});
   }

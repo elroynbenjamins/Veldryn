@@ -100,9 +100,11 @@ assert.ok(rejected,'duplicate Echo or malformed role composition rejected');
 
 const baseline=simulateWorldBossRounds({seed:'warorder',boss:'sunscar',phase:'enraged',players:squad('Ironwarden')});
 const protection=simulateWorldBossRounds({seed:'warorder',boss:'sunscar',phase:'enraged',players:squad('Ironwarden'),order:'hold_line'});
-assert.ok(protection.events.reduce((n,e)=>n+(e.actorId==='SUNSCAR'?(e.amount??0):0),0)
- <=baseline.events.reduce((n,e)=>n+(e.actorId==='SUNSCAR'?(e.amount??0):0),0)+.01,
- 'Hold the Line must not add extra damage in an identical-seed scenario');
+const normalOpening=baseline.events.find(e=>e.type==='strike'&&e.actorId==='SUNSCAR'&&e.round===1);
+const protectedOpening=protection.events.find(e=>e.type==='strike'&&e.actorId==='SUNSCAR'&&e.round===1);
+assert.ok(Boolean(normalOpening&&protectedOpening),'each identical-seed opening must include the normal enemy strike');
+assert.ok((protectedOpening?.amount??Infinity)<=(normalOpening?.amount??-1),
+ 'Hold the Line must reduce the same opening strike, not compare diverging later AI outcomes');
 
 // Pressure test is an engineering counterfactual, NOT approval of ×2 live damage.
 const hard=simulateWorldBossRounds({seed:'pressure',boss:'frostmarch',phase:'enraged',players:squad('Dawnkeeper'),pressure:2});

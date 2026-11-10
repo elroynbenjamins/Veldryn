@@ -9,7 +9,7 @@ import {ItemArtwork} from './ItemArtwork';
 import {ResourceIcon} from './ResourceIcon';
 
 /** Reward preview only; claiming remains the screen's explicit action. */
-export function QuestReward({gold,xp,itemId,quantity=1,essence=0,bondstones=0,label='Rewards',rarityColor}:{gold:number;xp?:number;itemId?:string;quantity?:number;essence?:number;bondstones?:number;label?:string;rarityColor?:string}){
+export function QuestReward({gold,xp,itemId,quantity=1,essence=0,bondstones=0,titleName,label='Rewards',rarityColor}:{gold:number;xp?:number;itemId?:string;quantity?:number;essence?:number;bondstones?:number;titleName?:string;label?:string;rarityColor?:string}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const contextLanguage=useGameLanguage(),language=contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
@@ -19,6 +19,7 @@ export function QuestReward({gold,xp,itemId,quantity=1,essence=0,bondstones=0,la
     <Text style={s.label}>{p(label)}</Text>
     <View style={s.currencies}><Text style={s.gold}>{gold} {t("Gold")}</Text>{xp!==undefined&&<Text style={s.xp}>{xp} XP</Text>}</View>
     {itemId&&<View style={s.item}><View accessible={false} importantForAccessibility="no-hide-descendants"><ItemArtwork itemId={itemId} size={40}/></View><Text style={s.name}>{quantity}× {localizedItemName(language,itemId)}</Text></View>}
+    {titleName?<Text style={s.xp}>{p('Permanent title')}: {titleName}</Text>:null}
     {essence>0&&<View style={s.item}><ResourceIcon resourceId="essence" size={32}/><Text style={s.name}>{essence}× {p('Companion Essence')}</Text></View>}
     {bondstones>0&&<View style={s.item}><ResourceIcon resourceId="bondstones" size={32}/><Text style={s.name}>{bondstones}× {p('Bondstones')}</Text></View>}
   </View>;

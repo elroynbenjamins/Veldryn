@@ -6,6 +6,7 @@ const monsters=src('content/monsters.ts');
 const cards=src('components/RegionEncounterList.tsx');
 const intro=src('components/BossEncounterIntro.tsx');
 const battle=src('components/BattleStage.tsx');
+const hunting=src('components/HuntingPreview.tsx');
 const story=src('components/StoryBossBattleModal.tsx');
 const regional=src('components/RegionalCombatPanel.tsx');
 
@@ -22,6 +23,10 @@ assert.match(battle,/current=\{displayStat\(fight\?\.playerHp\?\?state\.characte
   'live player health is scaled once');
 assert.match(battle,/damageValue=\(value:number\)=>displayStatPrecise\(value\)/,
   'live hit text uses the tenfold display scale, retaining fractional precision');
+assert.match(hunting,/hpText=\(value:number\)=>number\(displayStat\(value\)\)/,
+  'active Sunscar hunting bars use cosmetic scaled HP');
+assert.match(hunting,/damageText=\(value:number\)=>displayStatPrecise\(value\)/,
+  'active hunting hit narration uses cosmetic scaled damage');
 assert.match(story,/displayStat\(battle\.bossMaxHp\)/,'Fallen Knight battle uses scaled HP');
 assert.match(story,/displayStat\(event\.amount\?\?0\)/,'Fallen Knight replay uses scaled damage and healing');
 assert.match(regional,/displayStat\(last\.result\.result\.enemyMaxHp\)/,

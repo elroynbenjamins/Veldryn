@@ -115,6 +115,16 @@ export function freezePartyEventBossLoadout(input:{
   return {...payload,snapshotHash:createHash('sha256').update(canonical(JSON.parse(JSON.stringify(payload)))).digest('hex')};
 }
 
+/** True midpoint median prevents a level-1 partner anchoring a level-100 duo.
+ * Roster levels are server-verified and are NOT derived from equipment or votes. */
+export function partyEventRosterMedianLevel(levels:readonly number[]):number {
+ if(levels.length<2||levels.length>4||levels.some(l=>!Number.isInteger(l)||l<1||l>100))
+  throw new Error('party_boss_invalid_level_roster');
+ const ordered=[...levels].sort((a,b)=>a-b);
+ return Math.round((ordered[Math.floor((ordered.length-1)/2)]!+
+  ordered[Math.floor(ordered.length/2)]!)/2);
+}
+
 const BOSS_NAMES:Record<WeeklyPartyFamily,string>={
   broken_caravan:'Roadbreaker Captain',
   nightfall_hunt:'Nightfall Alpha',
@@ -235,8 +245,8 @@ export function resolvePartyEventDayEightBoss(input:{
       throw new Error('party_boss_invalid_frozen_loadout');
   }
   const actors=input.frozen.map(x=>structuredClone(x.actor));
-  const levels=actors.map(actor=>actor.level).sort((a,b)=>a-b);
-  const medianLevel=levels[Math.floor((levels.length-1)/2)]!;
+  const levels=actors.map(actor=>actor.level);
+  const medianLevel=partyEventRosterMedianLevel(levels);
   const preparation=deriveVerifiedPartyBossPreparation(input.orders);
   const players=actors.map(actor=>applyVerifiedPartyPreparation(actor,preparation));
   const aggregate=new Map(input.frozen.map(x=>[x.characterId,{

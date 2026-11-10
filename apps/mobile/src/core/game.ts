@@ -513,12 +513,14 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
  // Even a one-shot fight expends energy. Food still matters in starter areas
  // for overgeared players; fatigue is attributed to the fight, never search.
- const fatigue=runtime.huntOptions?Math.max(floor,stats.hp*.0015*runtime.gearAttritionMultiplier):0;
+ const fatigue=runtime.huntOptions?Math.max(floor,Math.min(stats.hp*.0015,m.hp*.06)*runtime.gearAttritionMultiplier):0;
  const attackCount=enemyAttackCount??(runtime.huntOptions?regionalHuntPlan(runtime.huntOptions).enemyAttackCount:1);
  const monsterDamage=runtime.huntOptions?(attackCount?damage:0):Math.max(floor,damage);
  const incoming=monsterDamage+fatigue;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
- const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ // Healers reduce attrition, but exertion always retains a small food cost.
+ const healing=runtime.huntOptions?Math.min(rawHealing,monsterDamage+fatigue*.65):rawHealing;
  return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
 }
 

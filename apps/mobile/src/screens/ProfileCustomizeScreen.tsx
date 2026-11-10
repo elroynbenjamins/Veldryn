@@ -38,7 +38,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
   <View accessibilityRole="tablist" style={s.tabs}>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Appearance'}} onPress={()=>setSection('Appearance')} style={({pressed})=>[s.tab,section==='Appearance'&&s.tabOn,pressed&&s.pressed]}>
     <Text style={[s.tabTitle,section==='Appearance'&&s.tabTitleOn]}>{profileT(language,"Appearance")}</Text>
-    <Text style={s.tabMeta}>{profileText(language,"Icon · background · border · title · Pet")}</Text>
+    <Text style={s.tabMeta}>{profileText(language,"Icon · background · border · Pet · badges")}</Text>
    </Pressable>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Identity'}} onPress={()=>setSection('Identity')} style={({pressed})=>[s.tab,section==='Identity'&&s.tabOn,pressed&&s.pressed]}>
     <Text style={[s.tabTitle,section==='Identity'&&s.tabTitleOn]}>{profileT(language,"Identity & Showcases")}</Text>

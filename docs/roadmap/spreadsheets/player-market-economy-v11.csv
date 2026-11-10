@@ -1,0 +1,45 @@
+Rule,Item or tier,Minimum Gold,Maximum Gold,Minimum listing units,Sale fee,Calculation,Approval,Player Market availability
+RESOURCE,COPPER_ORE,4,24,10,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,GREENWOOD_LOG,3,18,10,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,MOSS_FIBER,3,18,10,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,BOAR_HIDE,5,30,10,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,WISP_DUST,7,42,10,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,MEADOW_PERCH,3,18,10,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,IRONWOOD_LOG,12,72,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,WOLF_PELT,12,72,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,THORN_SAP,18,108,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,IRONWOOD_FANG,24,144,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,TROLL_HIDE,34,204,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,ASTER_IRON_ORE,13,78,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,COPPER_INGOT,18,108,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,ASTER_IRON_INGOT,45,270,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,DUNEWOOD,40,240,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,SUNSTONE_ORE,40,240,5,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,SUNSTONE_INGOT,180,1080,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,AMBERGLASS,125,750,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,ASTRAL_SCRIPT,230,1380,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,GLASSBOUND_CORE,300,1800,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,FROSTIRON,85,510,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,FROSTIRON_INGOT,320,1920,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,RIMEGLASS,260,1560,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,CHOIR_BLOOM,290,1740,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,BLACKGLASS_ORE,140,840,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,BLACKGLASS_INGOT,420,2520,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,CINDERWOOD_LOG,110,660,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,BLACKGLASS_CORE,180,1080,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,CINDER_HEART,280,1680,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,FROZEN_HEART,650,3900,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,REGENT_SIGIL,570,3420,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,GEM_DUST,12,72,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,TEMPERING_DUST,15,90,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,TEMPERING_CORE,130,780,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+RESOURCE,ASTERFALL_MINERAL_ESSENCE,55,330,1,5% gross (ceil Gold),Fixed curated per-unit band,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T1,600,3600,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T2,1900,11400,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T3,5500,33000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T4,10000,60000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T5,22000,132000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T6,45000,270000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T7,85000,510000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T8,150000,900000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN
+GEAR_TIER,T9,250000,1500000,1,5% gross (ceil Gold),Band * rarity * quality * enchant,DRAFT_NOT_APPROVED,HIDDEN

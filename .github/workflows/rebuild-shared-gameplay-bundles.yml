@@ -9,6 +9,7 @@ on:
     paths:
       - '.github/workflows/rebuild-shared-gameplay-bundles.yml'
       - 'apps/mobile/src/content/exploration.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
 
 permissions:
   contents: write

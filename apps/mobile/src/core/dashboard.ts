@@ -8,13 +8,14 @@ import {alchemyRecipeDef} from '../content/alchemy';
 import {explorationRoute} from '../content/exploration';
 import {FAITH_TIERS} from '../content/faith';
 import {GameState} from './types';
-import {effectiveStats,GATHER_TIME_SCALE} from './game';
+import {activeCombatRuntimeProjection,effectiveStats,GATHER_TIME_SCALE} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {classCombatStyle} from './class-combat';
 import {environmentEffectForActivity} from './world-weather';
 import {gatheringPacing} from './gathering-tools';
 import {companionCombatContribution} from './combat-companions';
 import {monsterMastery} from './monster-mastery';
+import {usesDamageDrivenHunts} from './ordinary-hunt';
 import {dailySuppliesHomeSummary} from './daily-supplies-home';
 import {contractBoardSummary} from './contract-board-summary';
 import {newlyUnlockedGameGuide} from './onboarding';
@@ -100,6 +101,12 @@ export function activityCycleSeconds(state:GameState){
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
   if(!monster){const specialty=gathering?.skillId==='fishing'?modifiers.fishingSpeedMultiplier:gathering?.skillId==='herbalism'?modifiers.herbalismSpeedMultiplier:1,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.activity?.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier*(method?.actionTimeMultiplier??1))/(modifiers.gatheringSpeedMultiplier*specialty);}
+  // The old authored timer no longer describes damage-driven early hunts.
+  // Keep the existing later-region calculation until its separate balance pass.
+  if(state.activity?.kind==='combat'&&!monster.boss&&usesDamageDrivenHunts(monster.zone)){
+    const live=activeCombatRuntimeProjection(state);
+    if(live)return live.killCycleSeconds;
+  }
   const stats=effectiveStats(state),expected=monster.attack*1.2+monster.defense*.8+monster.level*2.2;
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);
@@ -112,7 +119,8 @@ export function activityRate(state:GameState){
   const route=state.activity?.kind==='exploration'?explorationRoute(target??''):undefined;
   const faith=state.activity?.kind==='faith'?FAITH_TIERS.find(row=>row.id===target):undefined;
   const multipliers=characterPermanentMultipliers(state);
-  const seconds=activityCycleSeconds(state),actions=Math.floor(3600/Math.max(.1,seconds));
+  const activeHunt=monster&&!monster.boss&&usesDamageDrivenHunts(monster.zone)?activeCombatRuntimeProjection(state):undefined;
+  const seconds=activeHunt?.killCycleSeconds??activityCycleSeconds(state),actions=Math.floor(3600/Math.max(.1,seconds));
   if(state.activity?.kind==='alchemy'&&state.activity.brew)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*state.activity.brew.xpPerBatch),goldPerHour:0};
   if(route)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*route.xp*multipliers.skillXpMultiplier),goldPerHour:0};
   if(faith)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*faith.xp),goldPerHour:0};
@@ -120,7 +128,7 @@ export function activityRate(state:GameState){
   const baseXp=monster?.xp??gathering?.xp??0,baseGold=monster?monster.gold:0,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.activity?.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;
   const xpMultiplier=(effect?.xpMultiplier??1)*(method?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
   const goldMultiplier=(effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
-  return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};
+  return {actionsPerHour:actions,xpPerHour:activeHunt?Math.floor(activeHunt.xpPerHour):Math.floor(actions*baseXp*xpMultiplier),goldPerHour:activeHunt?Math.floor(activeHunt.goldPerHour):monster?Math.floor(actions*baseGold*goldMultiplier):0};
 }
 
 

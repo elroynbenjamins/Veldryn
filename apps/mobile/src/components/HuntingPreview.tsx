@@ -24,17 +24,17 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const replayCursor=useRef<import('../core/game').ActiveCombatHitCursor|undefined>(undefined);
  const fight=useMemo(()=>active?activeCombatHitProjection(state,clock,replayCursor.current):undefined,[state,active,clock]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
- const lastHit=fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
+ const lastHit=!fight?.searching&&fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
  const playerImpact=useRef(new Animated.Value(0)).current,enemyImpact=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  const hit=fight?.lastHit;
+  const hit=fight?.searching?undefined:fight?.lastHit;
   if(!active||state.settings.reduceMotion||!hit){playerImpact.setValue(0);enemyImpact.setValue(0);return;}
   const value=hit.actor==='enemy'?playerImpact:enemyImpact;
   value.stopAnimation();value.setValue(1);
   const animation=Animated.timing(value,{toValue:0,duration:680,easing:Easing.out(Easing.quad),useNativeDriver:true});
   animation.start();
   return()=>animation.stop();
- },[active,fight?.lastHit?.atMs,fight?.lastHit?.actor,state.settings.reduceMotion,playerImpact,enemyImpact]);
+ },[active,fight?.searching,fight?.lastHit?.atMs,fight?.lastHit?.actor,state.settings.reduceMotion,playerImpact,enemyImpact]);
  const number=(value:number)=>formatGameNumber(Math.round(value),state.settings.numberMode,state.settings.language);
  const hpText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
  // Small real damage ticks must never render as a misleading zero.
@@ -46,19 +46,19 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
   <View style={{height:196,justifyContent:'flex-end'}}>
    {regionId==='IRONWOOD'?<Image source={require('../../assets/combat-scenes/ironwood-clearing-v1.jpg')} resizeMode="cover" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>:<RegionArtwork regionId={regionId}/>}
    <View style={[StyleSheet.absoluteFill,{backgroundColor:'rgba(3,7,10,.35)'}]}/>
-   <View style={{position:'absolute',top:10,left:12,right:12,alignItems:'center',gap:2}}><Text style={{fontFamily:font,color:'#ADC8BC',fontSize:10,fontWeight:'700',letterSpacing:1}}>{state.activity?.kind==='combat'&&state.activity.targetId===monster.id?progressionT(state.settings.language,'HUNTING'):tr('Combat preview')}</Text><Text style={{fontFamily:font,color:'#F0F3F4',fontSize:21,fontWeight:'700'}}>{monster.name}</Text><Text style={{fontFamily:font,color:'#BAC3CA',fontSize:12}}>{tr('Combat preview')}</Text></View>
+   <View style={{position:'absolute',top:10,left:12,right:12,alignItems:'center',gap:2}}><Text style={{fontFamily:font,color:'#ADC8BC',fontSize:10,fontWeight:'700',letterSpacing:1}}>{state.activity?.kind==='combat'&&state.activity.targetId===monster.id?progressionT(state.settings.language,'HUNTING'):tr('Combat preview')}</Text><Text style={{fontFamily:font,color:'#F0F3F4',fontSize:21,fontWeight:'700'}}>{monster.name}</Text><Text style={{fontFamily:font,color:'#BAC3CA',fontSize:12}}>{tr(active?(fight?.searching?'Searching for an encounter...':'Live combat'):'Combat preview')}</Text></View>
    <View style={{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-around',padding:10,gap:8}}>
     <View style={{flex:1,alignItems:'center',gap:5}}><Animated.View style={{borderWidth:2,borderColor:'#A5B4AA',borderRadius:50,backgroundColor:'rgba(4,9,12,.8)',padding:3,position:'relative',transform:[{translateX:enemyImpact.interpolate({inputRange:[0,1],outputRange:[0,6]})}]}}><CharacterPortrait state={state} style={{width:72,height:72}}/><Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,{borderRadius:50,backgroundColor:'#FF8995',opacity:playerImpact.interpolate({inputRange:[0,1],outputRange:[0,.35]})}]}/><Animated.View pointerEvents="none" style={{position:'absolute',top:9,left:-6,right:-6,alignItems:'center',opacity:playerImpact,transform:[{translateY:playerImpact.interpolate({inputRange:[0,1],outputRange:[-18,0]})}]}}><Text style={{fontSize:16,fontWeight:'900',color:'#FF8995',textShadowColor:'#210809',textShadowRadius:4}}>−{lastHit?.actor==='enemy'?damageText(lastHit.damage):''}</Text></Animated.View></Animated.View><Text style={{fontFamily:font,color:'#E8ECEF',fontSize:11,fontWeight:'700',marginTop:-12,paddingHorizontal:7,paddingVertical:2,borderRadius:5,borderWidth:1,borderColor:'#758D88',backgroundColor:'#111B20'}}>Lv {state.character?.level}</Text></View>
     <Text style={{color:'#C9CED2',fontWeight:'800',alignSelf:'center'}}>VS</Text>
-    <Animated.View style={{flex:1,alignItems:'center',gap:5,position:'relative',transform:[{translateX:playerImpact.interpolate({inputRange:[0,1],outputRange:[0,-6]})}]}}><MonsterPortraitFrame monster={monster} size={116} framed={false} reduceMotion={state.settings.reduceMotion}/><Animated.View pointerEvents="none" style={{position:'absolute',top:10,left:6,right:6,height:112,backgroundColor:'#FFDA8F',borderRadius:56,opacity:enemyImpact.interpolate({inputRange:[0,1],outputRange:[0,.25]})}}/><Animated.View pointerEvents="none" style={{position:'absolute',top:12,left:-4,right:-4,alignItems:'center',opacity:enemyImpact,transform:[{translateY:enemyImpact.interpolate({inputRange:[0,1],outputRange:[-20,0]})}]}}><Text style={{fontSize:17,fontWeight:'900',color:'#FFDA8F',textShadowColor:'#241306',textShadowRadius:4}}>−{lastHit?.actor==='player'?damageText(lastHit.damage):''}{lastHit?.critical?'!':''}</Text></Animated.View></Animated.View>
+    <Animated.View style={{flex:1,alignItems:'center',gap:5,position:'relative',transform:[{translateX:playerImpact.interpolate({inputRange:[0,1],outputRange:[0,-6]})}]}}><View style={{opacity:fight?.searching ? 0.18 : 1}}><MonsterPortraitFrame monster={monster} size={116} framed={false} reduceMotion={state.settings.reduceMotion}/></View>{fight?.searching?<Text style={{position:'absolute',top:28,fontSize:30,color:'#F0F3F4',fontWeight:'800'}}>?</Text>:null}<Animated.View pointerEvents="none" style={{position:'absolute',top:10,left:6,right:6,height:112,backgroundColor:'#FFDA8F',borderRadius:56,opacity:enemyImpact.interpolate({inputRange:[0,1],outputRange:[0,.25]})}}/><Animated.View pointerEvents="none" style={{position:'absolute',top:12,left:-4,right:-4,alignItems:'center',opacity:enemyImpact,transform:[{translateY:enemyImpact.interpolate({inputRange:[0,1],outputRange:[-20,0]})}]}}><Text style={{fontSize:17,fontWeight:'900',color:'#FFDA8F',textShadowColor:'#241306',textShadowRadius:4}}>−{lastHit?.actor==='player'?damageText(lastHit.damage):''}{lastHit?.critical?'!':''}</Text></Animated.View></Animated.View>
    </View>
   </View>
   {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
    <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':fight.searching?'Searching for an encounter...':'Live combat')}</Text>
-   {([
-     {label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good},
-     {label:monster.name,hp:fight.enemyHp,max:fight.enemyMaxHp,color:C.bad},
-   ]).map(row=><View key={row.label} style={{gap:3}}>
+   {(fight.searching
+      ?[{label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good}]
+      :[{label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good},{label:monster.name,hp:fight.enemyHp,max:fight.enemyMaxHp,color:C.bad}]
+   ).map(row=><View key={row.label} style={{gap:3}}>
     <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8}}>
      <Text numberOfLines={1} style={{fontFamily:font,color:C.text,fontSize:11,fontWeight:'700',flex:1}}>{row.label}</Text>
      <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{hpText(row.hp)} / {hpText(row.max)}</Text>

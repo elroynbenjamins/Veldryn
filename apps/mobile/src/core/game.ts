@@ -567,11 +567,14 @@ export function activeCombatRuntimeProjection(state:GameState){
   if(!state.character||state.activity?.kind!=='combat')return undefined;
   const runtime=combatRuntimeDetails(state,state.activity.targetId);
   const effect=runtime.environment;
-  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
+  // A first-encounter crit/miss is not a representative hourly hunt rate.
+  // Share the same deterministic sample as food forecasting and the HUD.
+  const meanCycleSeconds=averagedRegionalHunt(state,state.activity.targetId,runtime)?.killCycleSeconds??runtime.killCycleSeconds;
+  const killsPerHour=3600/Math.max(.1,meanCycleSeconds);
   const xpPerKill=runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
   const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
   return {
-    killCycleSeconds:runtime.killCycleSeconds,
+    killCycleSeconds:meanCycleSeconds,
     killsPerHour,
     xpPerHour:killsPerHour*xpPerKill,
     goldPerHour:killsPerHour*goldPerKill,
@@ -588,18 +591,30 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  const startCandy=eventCandyUtilityMultiplier(state,startsAtMs,'combat');
  const seedFor=(index:number)=>regionalHuntSeed(state,monsterId,index);
  const dynamic=!!plain.huntOptions;
+ // Build each deterministic hunt only once per settlement. The timeline,
+ // hit replay and partial-claim handling must use the same rolls.
+ const huntPlans=new Map<string,ReturnType<typeof regionalHuntPlan>>();
+ const planFor=(index:number,isPrepared:boolean)=>{
+   const key=(isPrepared?'prepared:':'plain:')+index;
+   let plan=huntPlans.get(key);
+   if(!plan){
+     plan=regionalHuntPlan({...((isPrepared?prepared:plain).huntOptions!),seed:seedFor(index)});
+     huntPlans.set(key,plan);
+   }
+   return plan;
+ };
  const timeline=combatTimeline({startsAtMs,elapsedSeconds:elapsed,progressFraction:activity?.progressFraction??0,preparationEncounters:c.preparation?.remainingEncounters??0,
    cycleSeconds:plain.killCycleSeconds*(dynamic?1:startCandy),preparedCycleSeconds:prepared.killCycleSeconds*(dynamic?1:startCandy),
-   cycleSecondsForEncounter:dynamic?(index,isPrepared)=>regionalHuntPlan({...((isPrepared?prepared:plain).huntOptions!),seed:seedFor(index)}).cycleSeconds:undefined,
+   cycleSecondsForEncounter:dynamic?(index,isPrepared)=>planFor(index,isPrepared).cycleSeconds:undefined,
    candy:eventCandyWindow(state,'combat'),trackSegments:true});
  const food=c.equippedFoodId?itemDef(c.equippedFoodId):undefined,threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
  let foodLeft=stackQty(state.inventory.stacks,c.equippedFoodId),foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
- const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds)=>{
+ const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false)=>{
    if(runtime.huntOptions){
-     const plan=regionalHuntPlan({...runtime.huntOptions,seed:seedFor(index)});
+     const plan=planFor(index,isPrepared);
      const exchange=combatEncounterDamage(runtime,champion,plan.enemyAttackCount,plan.fightSeconds);
      return regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
    }
@@ -608,7 +623,8 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
-   enemyHp=huntEnemyHpAt(prepared.m.hp,hitsFor(c.preparation?.remainingEncounters?prepared:plain,0,champion),activity?.progressFraction??0);
+   const firstPrepared=!!c.preparation?.remainingEncounters;
+   enemyHp=huntEnemyHpAt(prepared.m.hp,hitsFor(firstPrepared?prepared:plain,0,champion,undefined,firstPrepared),activity?.progressFraction??0);
  }
  enemyHp=Math.max(0,Math.min(prepared.m.hp,enemyHp));
  if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit};
@@ -618,7 +634,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    const encounterNumber=(activity?.sessionKills??0)+segment.encounterIndex;
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,encounterNumber);
    // Candy accelerates the clock, but cannot rearrange attack indices mid-fight.
-   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds);
+   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds,segment.prepared);
    for(const hit of huntHitsBetween(hits,segment.fromFraction,segment.toFraction)){
      const hitAtMs=segment.startsAtMs+(hit.fraction-segment.fromFraction)*segment.cycleSeconds*1000;
      if(hit.actor==='player'){

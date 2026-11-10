@@ -2,6 +2,7 @@ import {assert} from './test-assert';
 import {regionalHuntPlan,usesDamageDrivenHunts} from '../src/core/ordinary-hunt';
 import {regionalHuntHits,huntEnemyHpAt,huntHitsBetween} from '../src/core/combat-hit-timeline';
 import {combatTimeline} from '../src/core/combat-timing';
+import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {activeCombatHitProjection,activeCombatRuntimeProjection,combatSustainProjection,createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 
 const base={
@@ -38,6 +39,12 @@ assert.ok(strongRate.killCycleSeconds<weakRate.killCycleSeconds,'higher Attack m
 assert.ok(strongRate.killsPerHour>weakRate.killsPerHour,'stronger gear should improve farming up to the encounter-search ceiling');
 assert.ok(strongRate.killCycleSeconds>5,'even a one-shot hunt must still search for a new encounter');
 const sustain=combatSustainProjection(strong,'MOSS_RAT')!;
+assert.ok(Math.abs(sustain.killCycleSeconds-strongRate.killCycleSeconds)<.000001,'HUD combat rate and food forecast must use the same average');
+assert.ok(Math.abs(activityCycleSeconds(strong)-strongRate.killCycleSeconds)<.000001,'dashboard must no longer show the obsolete fixed combat timer');
+const dashboard=activityRate(strong);
+assert.equal(dashboard.actionsPerHour,Math.floor(strongRate.killsPerHour),'home kill rate must agree with live combat');
+assert.equal(dashboard.xpPerHour,Math.floor(strongRate.xpPerHour),'home XP rate must agree with live combat');
+assert.equal(dashboard.goldPerHour,Math.floor(strongRate.goldPerHour),'home gold rate must agree with live combat');
 assert.ok(sustain.netDamagePerKill>0&&sustain.foodPerHour>0,'overgeared easy farming still needs cooked food over time');
 const completed=previewActivityReward(strong,T+(Math.ceil(strongRate.killCycleSeconds)+2)*1000);
 assert.equal(completed.kills,1,'a completed encounter pays exactly one kill');
@@ -51,4 +58,9 @@ const first=combatTimeline({...options,elapsedSeconds:43});
 const second=combatTimeline({...options,startsAtMs:T+43_000,elapsedSeconds:67,progressFraction:first.nextProgressFraction,cycleSecondsForEncounter:(i:number)=>options.cycleSecondsForEncounter(i+first.encounters.length)});
 assert.equal(first.encounters.length+second.encounters.length,all.encounters.length,'variable-duration hunts stay identical across claims');
 assert.ok(Math.abs(second.nextProgressFraction-all.nextProgressFraction)<1e-7,'partial cycles preserve fractional progress');
-console.log('PASS damage-based launch hunts, search delay, stamina food, later-region exclusion and split claims');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const huntUi=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
+const stageUi=fs.readFileSync('src/components/BattleStage.tsx','utf8');
+assert.ok(huntUi.includes('fight.searching')&&huntUi.includes("!fight?.searching&&fight?.lastHit"),'hunting UI must hide unencountered enemy HP and stale hit effects');
+assert.ok(stageUi.includes("!fight?.searching&&fight?.lastHit"),'live combat theater must hide leftover hits while searching');
+console.log('PASS damage-based launch hunts, search-state polish, consistent HUD estimates, stamina food, later-region exclusion and split claims');

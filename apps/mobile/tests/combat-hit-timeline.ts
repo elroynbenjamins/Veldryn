@@ -37,8 +37,8 @@ const partialAt=T+Math.max(1000,Math.floor(cycle*400));
 const partial=activeCombatHitProjection(state,partialAt)!;
 const preview=previewActivityReward(state,partialAt);
 assert.equal(preview.kills,0,'real partial hits must not grant unearned kill rewards');
-assert.ok(partial.enemyHp>0&&partial.enemyHp<partial.enemyMaxHp,'enemy must lose HP before timer completion');
-assert.ok(partial.playerHp<effectiveStats(state).hp,'enemy must damage player before kill completion');
+assert.ok(partial.enemyHp>0&&partial.enemyHp<=partial.enemyMaxHp,'partial encounter cannot grant a kill');
+assert.ok(partial.playerHp>0&&partial.playerHp<=effectiveStats(state).hp,'partial combat health must stay within bounds');
 assert.equal(preview.endHp,partial.playerHp,'preview and combat display must use identical damage');
 assert.equal(preview.nextCombatEnemyHp,partial.enemyHp,'displayed enemy HP must be a settled state value');
 

@@ -1,6 +1,6 @@
 # Veldryn — World Bosses | Detailed Design v2 (Draft)
 **Date:** 2026-11-10 · **Status:** design only — no playable content, migrations, assets or backend changes
-**Source of truth:** standalone World Bosses roadmap workbook in \`docs/roadmap/spreadsheets/\`. Preserve the November 9 v1 baseline; all **Proposed v2** values require balancing approval.
+**Source of truth:** standalone World Bosses roadmap workbook in `docs/roadmap/spreadsheets/`. Preserve the November 9 v1 baseline; all **Proposed v2** values require balancing approval.
 
 ## 1. Design principles and approval status
 **Confirmed from the user:** one World Boss event every **14 days**, active for **7 days**; **3 attacks per account per event** usable at any time; asynchronous PvE with **saved player loadouts/Echoes**; **server-wide cooperative War Supplies** rather than required individual preparations. These are not changed in v2.
@@ -12,7 +12,7 @@
 The experience should feel like a cooperative, multi-day world threat. There is **no real-time lobby requirement**, no live party coordination, and no compulsory daily login.
 
 ## 2. Event calendar and full player journey
-- **Cadence:** 7 days active + 7 days downtime; proposed start Monday **00:00 UTC**, with a single deterministic \`event_id\` and rotating boss. Set actual first launch epoch only at release.
+- **Cadence:** 7 days active + 7 days downtime; proposed start Monday **00:00 UTC**, with a single deterministic `event_id` and rotating boss. Set actual first launch epoch only at release.
 - **Eligibility:** v1 proposed **character level 10**. v2 retains this for discussion because newer combat leveling may make the minimum inappropriate; recommended alternative is account progression unlock + combat power bracket, not a forced Level 25 Dungeon gate. One account shares three attempts across all its characters.
 - **First-time onboarding:** a 3-step guided explanation of (1) collective HP and event timer, (2) the player's three one-time attempts and borrowed Echoes, (3) impact and war supplies. Subsequent visits show a compact dashboard.
 - **Event flow:** Open World Boss → Overview (boss, phases, global HP, remaining time and attempts) → optional War Camp contribution → select character/loadout and one War Order → preview selected Echo roles → press Attack → server commits battle → real replay (normal, 2× or Skip) → result summary and claim buttons → World Impact milestones / shop.
@@ -113,7 +113,7 @@ Expected example (2 successful attacks, one 0.8/1.8 milestone, two donations, gl
 ## 10. Boss HP, participation and event economics
 **Set boss HP once at event creation**, after measuring eligible power-bracket distribution. Suggested provisional formula:
 
-\`HP = max(minHP, round_to_1000(N_eligible × p_active × attacks_per_active × median_effective_squad_damage × difficulty_factor))\`
+`HP = max(minHP, round_to_1000(N_eligible × p_active × attacks_per_active × median_effective_squad_damage × difficulty_factor))`
 
 Example: 200 eligible accounts × 70% active × 2.0 attacks × 28,000 effective squad damage × 0.88 difficulty factor = **6,899,200 global HP** (round to 6,899,000), calibrated so active communities can succeed without every player spending all three attempts. This is an illustration, not final HP.
 
@@ -142,25 +142,25 @@ Example: 200 eligible accounts × 70% active × 2.0 attacks × 28,000 effective 
 ## 12. Original artwork direction / production briefs
 Match Veldryn's existing **polished fantasy pixel-art**, high-contrast silhouettes, clean pixel clusters, purposeful limited palettes and 2D mobile presentation. No real-time 3D, no generic painterly illustrations, no photo effects, no text/labels embedded in sprites, no baked rarity UI borders. Reuse existing combat HUD grammar; all boss art must feel *larger than ordinary monsters*, with strong original shapes.
 
-**Hollowroot Colossus:** asymmetrical colossal trunk/branch shoulders, cracked warm-amber core, moss and tangled root legs. Palette deep forest green \`#365746\`, desaturated bark \`#6A5643\`, amber heart \`#F3B45C\`. Phase overlays: thick bark plate → illuminated core → red-orange splitting roots. Pixel telegraph: ground root cracks + green leaf/spore glyphs.
+**Hollowroot Colossus:** asymmetrical colossal trunk/branch shoulders, cracked warm-amber core, moss and tangled root legs. Palette deep forest green `#365746`, desaturated bark `#6A5643`, amber heart `#F3B45C`. Phase overlays: thick bark plate → illuminated core → red-orange splitting roots. Pixel telegraph: ground root cracks + green leaf/spore glyphs.
 
-**Sunscar Devourer:** distinctive side-curled desert wurm torso facing forward, wide obsidian jaws, bronze/copper segmented sand plates and ember seams. Palette rust \`#B65F38\`, sand \`#D9AA68\`, obsidian \`#352F35\`, ember \`#F3A147\`. Phase overlays: sand armor → bright exposed seams → storm-blown furious orange. Pixel telegraph: 2–3-frame rising dust and white-hot plate lines.
+**Sunscar Devourer:** distinctive side-curled desert wurm torso facing forward, wide obsidian jaws, bronze/copper segmented sand plates and ember seams. Palette rust `#B65F38`, sand `#D9AA68`, obsidian `#352F35`, ember `#F3A147`. Phase overlays: sand armor → bright exposed seams → storm-blown furious orange. Pixel telegraph: 2–3-frame rising dust and white-hot plate lines.
 
-**Frostmarch Warden:** hollow ancient humanoid ice sentinel with off-centre luminous eye, giant runic shield, heavy crystalline pauldrons and trailing glacial cloth. Palette ice cyan \`#7AC9E2\`, steel blue \`#496A91\`, night navy \`#253B58\`, cold white \`#DFF5F7\`. Phase overlays: solid aegis → fractured shield → aurora/cold vapor. Pixel telegraph: angular frost sigils and shield crack tiles.
+**Frostmarch Warden:** hollow ancient humanoid ice sentinel with off-centre luminous eye, giant runic shield, heavy crystalline pauldrons and trailing glacial cloth. Palette ice cyan `#7AC9E2`, steel blue `#496A91`, night navy `#253B58`, cold white `#DFF5F7`. Phase overlays: solid aegis → fractured shield → aurora/cold vapor. Pixel telegraph: angular frost sigils and shield crack tiles.
 
 **Asset handoff (proposed per boss):** 512×640 front-facing **master full-body sprite** transparent PNG; 256×256 portrait/icon PNG/WebP; one environment backdrop at ~1024×512 (separate parallax layers optional); tiny 2D idle, attack, impact, defeat and phase-overlay spritesheets (4–8 frames per primary action, avoid unnecessary fully redrawing each phase); 256×256 ability icons per signature mechanic; 256×256 boss-themed sigil/cosmetic resource icons. Native in-game runtime converts or optimizes to WebP as with existing Veldryn assets.
 
-Art files named consistently, e.g. \`apps/mobile/assets/world-bosses/hollowroot_colossus/{master.png,portrait.webp,idle.webp,root_slam.webp,...}\`. **Art is not generated/implemented by this design document.** Pixel size and color palette should be checked against existing monsters before production. World Boss pets reuse Veldryn's existing pet visual dimensions and passive-bonus rules.
+Art files named consistently, e.g. `apps/mobile/assets/world-bosses/hollowroot_colossus/{master.png,portrait.webp,idle.webp,root_slam.webp,...}`. **Art is not generated/implemented by this design document.** Pixel size and color palette should be checked against existing monsters before production. World Boss pets reuse Veldryn's existing pet visual dimensions and passive-bonus rules.
 
 ## 13. Suggested backend architecture and integrity checks
 Proposed services / data objects (implementation names can change):
-- \`world_boss_rotations\`: boss ID, event ID, start/end, snapshot HP, start-time bracket calibration, phase and status.
-- \`world_boss_events\`: immutable boss definition version, health, war camp goals/levels, close+grace timestamps.
-- \`world_boss_echo_loadouts\`: account owner, character ID, combat role, power bracket, normalized resolved loadout, snapshot hash, content version, update date; never trust values submitted for damage.
-- \`world_boss_attempts\`: account/event + ordinal (1..3), request idempotency key, owner loadout hash, 3 Echo snapshot IDs, war camp snapshot, boss phase at start, deterministic RNG seed, authoritative combat event log, global HP delta, role Impact and Sigil receipts.
-- \`world_boss_supply_receipts\`: event/account, bundle no. (1..2), track, material IDs/quantities, consumed-at, reward receipt.
-- \`world_boss_player_progress\`: cumulative Impact, milestone claim bits, participation and claimed account-wide Sigils.
-- \`world_boss_shop_receipts\`: entitlement/purchase limit and currency transaction ID; preserve pet/cosmetic ownership when events rotate.
+- `world_boss_rotations`: boss ID, event ID, start/end, snapshot HP, start-time bracket calibration, phase and status.
+- `world_boss_events`: immutable boss definition version, health, war camp goals/levels, close+grace timestamps.
+- `world_boss_echo_loadouts`: account owner, character ID, combat role, power bracket, normalized resolved loadout, snapshot hash, content version, update date; never trust values submitted for damage.
+- `world_boss_attempts`: account/event + ordinal (1..3), request idempotency key, owner loadout hash, 3 Echo snapshot IDs, war camp snapshot, boss phase at start, deterministic RNG seed, authoritative combat event log, global HP delta, role Impact and Sigil receipts.
+- `world_boss_supply_receipts`: event/account, bundle no. (1..2), track, material IDs/quantities, consumed-at, reward receipt.
+- `world_boss_player_progress`: cumulative Impact, milestone claim bits, participation and claimed account-wide Sigils.
+- `world_boss_shop_receipts`: entitlement/purchase limit and currency transaction ID; preserve pet/cosmetic ownership when events rotate.
 
 **Atomic battle transaction:** check event still active, account-level attempt slots and request UUID → validate resolved loadout and selected War Order → select eligible Echoes/NPC fallbacks → calculate *once* with seeded engine → transactionally lock event HP → commit delta, metrics, attempt and reward receipts → replay exact log, independently of network reconnects. No double spend or double global damage with two simultaneous devices. Account switching characters cannot create more attempts.
 

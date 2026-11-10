@@ -79,7 +79,7 @@ export function ProfileEditor({state,onChange,onCommand,onSaveNameStyle,active=t
  const selectedSource=tab==='Backgrounds'&&!usable?profileRewardSource(state,'background',background):tab==='Borders'&&!usable&&border?profileRewardSource(state,'border',border):undefined;
  return <Panel>
   <View style={s.editorHead}><View style={s.flex}><Text style={s.eyebrow}>{profileT(language,"PROFILE APPEARANCE")}</Text><Text style={s.heading}>{profileT(language,"Build your look")}</Text></View><View style={[s.previewState,previewing&&s.previewStateOn]}><Text style={[s.previewStateText,previewing&&s.previewStateTextOn]}>{previewing?profileT(language,"PREVIEW"):profileT(language,"EQUIPPED")}</Text></View></View>
-  <Text style={s.sub}>{profileT(language,"Preview icons, backgrounds, borders, titles, Pets and badges before applying them. Locked cosmetics can be inspected without being equipped.")}</Text>
+  <Text style={s.sub}>{profileT(language,"Preview profile icons, backgrounds, borders, titles and Pets before applying them. Locked cosmetics can be inspected without being equipped.")}</Text>
   <ProfileScenePreview state={preview} backgroundId={background}/>
   {previewing?<GameButton compact title={profileT(language,"Reset preview")} tone="secondary" onPress={resetPreview}/>:null}
   {tab==='Pets'&&<Text style={s.sub}>{profileT(language,"Cosmetic Pets are separate from Combat Companions. This gallery only shows owned Pets you can equip now; browse Collections to discover locked Pets and their sources.")}</Text>}

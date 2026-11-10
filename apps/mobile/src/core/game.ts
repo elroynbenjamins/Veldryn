@@ -498,7 +498,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
 }
 
 /** Shared ordinary-hunt damage; fractional HP preserves small defensive bonuses. */
-function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,champion=false,enemyAttackCount?:number){
+function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,champion=false,enemyAttackCount?:number,fightSeconds?:number){
  const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds}=runtime;
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
@@ -513,9 +513,13 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
  // Even a one-shot fight expends energy. Food still matters in starter areas
  // for overgeared players; fatigue is attributed to the fight, never search.
- const fatigue=runtime.huntOptions?Math.max(floor,Math.min(stats.hp*.0015,m.hp*.06)*runtime.gearAttritionMultiplier):0;
- const attackCount=enemyAttackCount??(runtime.huntOptions?regionalHuntPlan(runtime.huntOptions).enemyAttackCount:1);
- const monsterDamage=runtime.huntOptions?(attackCount?damage:0):Math.max(floor,damage);
+ const fatigue=runtime.huntOptions?Math.max(floor,Math.min(stats.hp*.0006,m.hp*.02)*runtime.gearAttritionMultiplier):0;
+ const huntPlan=runtime.huntOptions?regionalHuntPlan(runtime.huntOptions):undefined;
+ const attackCount=enemyAttackCount??huntPlan?.enemyAttackCount??1;
+ // The time spent exposed to enemy attacks, not the old fixed kill cycle,
+ // determines enemy pressure. Weak gear leaves the character vulnerable longer.
+ const fightExposure=Math.max(.35,Math.min(3,(fightSeconds??huntPlan?.fightSeconds??10)/10));
+ const monsterDamage=runtime.huntOptions?(attackCount?damage*fightExposure*runtime.gearAttritionMultiplier:0):Math.max(floor,damage);
  const incoming=monsterDamage+fatigue;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
  const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
@@ -577,7 +581,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds)=>{
    if(runtime.huntOptions){
      const plan=regionalHuntPlan({...runtime.huntOptions,seed:seedFor(index)});
-     const exchange=combatEncounterDamage(runtime,champion,plan.enemyAttackCount);
+     const exchange=combatEncounterDamage(runtime,champion,plan.enemyAttackCount,plan.fightSeconds);
      return regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
    }
    const exchange=combatEncounterDamage(runtime,champion);

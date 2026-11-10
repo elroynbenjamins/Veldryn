@@ -59,12 +59,12 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'basic_main_hand_blade',name:'Basic Main-Hand Blade',type:'gear',slot:'weapon',attack:4,readiness:1,value:10},
 {id:'basic_staff',name:'Basic Staff',type:'gear',slot:'weapon',attack:4,hp:5,readiness:1,value:10},
 
-{id:'TRAVEL_RATION',name:'Travel Ration',type:'food',heal:18,readiness:1,value:5},
-{id:'COOKED_MEADOW_PERCH',name:'Cooked Meadow Perch',type:'food',heal:24,readiness:2,value:10},
-{id:'COOKED_SILVERFIN',name:'Cooked Silverfin',type:'food',heal:26,readiness:3,value:15},
-{id:'ROASTED_ROOTSTREAM_TROUT',name:'Roasted Rootstream Trout',type:'food',heal:40,readiness:4,value:25},
-{id:'SEARED_RIVER_EEL',name:'Seared River Eel',type:'food',heal:52,readiness:5,value:34},
-{id:'IRONWOOD_STEW',name:'Ironwood Hunter Stew',type:'food',heal:90,readiness:7,value:62},
+{id:'TRAVEL_RATION',name:'Travel Ration',type:'food',heal:15,readiness:1,value:5},
+{id:'COOKED_MEADOW_PERCH',name:'Cooked Meadow Perch',type:'food',heal:20,readiness:2,value:10},
+{id:'COOKED_SILVERFIN',name:'Cooked Silverfin',type:'food',heal:22,readiness:3,value:15},
+{id:'ROASTED_ROOTSTREAM_TROUT',name:'Roasted Rootstream Trout',type:'food',heal:34,readiness:4,value:25},
+{id:'SEARED_RIVER_EEL',name:'Seared River Eel',type:'food',heal:44,readiness:5,value:34},
+{id:'IRONWOOD_STEW',name:'Ironwood Hunter Stew',type:'food',heal:77,readiness:7,value:62},
 
 {id:'COPPER_ORE',name:'Copper Ore',type:'material',value:5},
 
@@ -75,9 +75,9 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'ASTER_IRON_INGOT',name:'Aster-Iron Ingot',type:'material',value:64},
 {id:'OATHSTONE_INGOT',name:'Oathstone Ingot',type:'material',value:145},
 {id:'REINFORCED_FITTING',name:'Reinforced Fitting',type:'material',value:155},
-{id:'BAKED_CAVE_LOACH',name:'Baked Cave Loach',type:'food',heal:65,readiness:6,value:58},
-{id:'ROASTED_CROWN_CARP',name:'Roasted Crown Carp',type:'food',heal:82,readiness:8,value:82},
-{id:'ROASTED_OATHSCALE',name:'Roasted Oathscale Pike',type:'food',heal:95,readiness:8,value:90},
+{id:'BAKED_CAVE_LOACH',name:'Baked Cave Loach',type:'food',heal:55,readiness:6,value:58},
+{id:'ROASTED_CROWN_CARP',name:'Roasted Crown Carp',type:'food',heal:70,readiness:8,value:82},
+{id:'ROASTED_OATHSCALE',name:'Roasted Oathscale Pike',type:'food',heal:81,readiness:8,value:90},
 
 
 {id:'ASTER_IRON_ORE',name:'Aster-Iron Ore',type:'material',value:14},
@@ -98,11 +98,11 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'BLACKGLASS_INGOT',name:'Blackglass Ingot',type:'material',value:720,rarity:'epic'},
 {id:'SUNSTONE_INGOT',name:'Sunstone Ingot',type:'material',value:260,rarity:'rare'},
 {id:'FROSTIRON_INGOT',name:'Frostiron Ingot',type:'material',value:480,rarity:'rare'},
-{id:'GRILLED_OASIS_CARP',name:'Grilled Oasis Carp',type:'food',heal:130,readiness:10,value:145,rarity:'uncommon'},
-{id:'GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',type:'food',heal:190,readiness:12,value:230,rarity:'rare'},
-{id:'FROSTED_ICEFIN',name:'Frosted Icefin',type:'food',heal:250,readiness:14,value:340,rarity:'rare'},
-{id:'CHARRED_EMBERFIN',name:'Charred Emberfin',type:'food',heal:330,readiness:16,value:455,rarity:'rare'},
-{id:'ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',type:'food',heal:390,readiness:17,value:520,rarity:'epic'},
+{id:'GRILLED_OASIS_CARP',name:'Grilled Oasis Carp',type:'food',heal:111,readiness:10,value:145,rarity:'uncommon'},
+{id:'GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',type:'food',heal:162,readiness:12,value:230,rarity:'rare'},
+{id:'FROSTED_ICEFIN',name:'Frosted Icefin',type:'food',heal:213,readiness:14,value:340,rarity:'rare'},
+{id:'CHARRED_EMBERFIN',name:'Charred Emberfin',type:'food',heal:281,readiness:16,value:455,rarity:'rare'},
+{id:'ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',type:'food',heal:332,readiness:17,value:520,rarity:'epic'},
 {id:'OASIS_CARP',name:'Oasis Carp',type:'material',value:100,rarity:'uncommon'},
 {id:'GLASSFIN',name:'Glassfin',type:'material',value:170,rarity:'rare'},
 {id:'SCORPION_VENOM',name:'Scorpion Venom',type:'material',value:130,rarity:'rare'},
@@ -151,14 +151,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 
 ];
-/** Food sustain balance: 15% less HP from every food, including future catalog additions.
- * Applied at catalog assembly so manual eating, combat auto-eating, and previews agree.
- * Potions and non-food healing effects are intentionally unaffected. */
-export const FOOD_HEALING_MULTIPLIER = 0.85;
-export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33]
- .map(item=>item.type==='food'&&typeof item.heal==='number'
-  ?{...item,heal:Math.max(1,Math.round(item.heal*FOOD_HEALING_MULTIPLIER))}
-  :item);
+export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
 if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
 export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

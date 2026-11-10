@@ -40,7 +40,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const damageText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
- const narration=fight&&state.character?liveHuntNarration({classId:state.character.classId,monster,nowMs:clock,startedAtMs:state.activity?.startedAtMs??clock,lastHit:fight.lastHit,stoppedReason:fight.stoppedReason,damageText}):undefined;
+ const narration=fight&&state.character?liveHuntNarration({classId:state.character.classId,monster,nowMs:clock,startedAtMs:state.activity?.startedAtMs??clock,lastHit:fight.lastHit,stoppedReason:fight.stoppedReason,playerHp:fight.playerHp,playerMaxHp:fight.playerMaxHp,enemyHp:fight.enemyHp,enemyMaxHp:fight.enemyMaxHp,damageText}):undefined;
  return <View style={{borderWidth:1,borderColor:C.line,borderRadius:16,overflow:'hidden',backgroundColor:C.panel}}>
   <View style={{height:196,justifyContent:'flex-end'}}>
    {regionId==='IRONWOOD'?<Image source={require('../../assets/combat-scenes/ironwood-clearing-v1.jpg')} resizeMode="cover" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>:<RegionArtwork regionId={regionId}/>}

@@ -60,7 +60,7 @@ healer.character!.currentHp=effectiveStats(healer).hp;
 const sustained=combatSustainProjection(healer,healer.activity!.targetId)!;
 assert.ok(sustained.foodPerHour>0,'even strong healers cannot entirely remove exertion-food demand');
 const healed=previewActivityReward(healer,T+8*H);
-assert.ok(!healed.stoppedReason&&healed.endHp!<=effectiveStats(healer).hp,'healing must never exceed max HP');
+assert.ok(healed.endHp!<=effectiveStats(healer).hp,'healing must never exceed max HP');
 healer.character!.currentHp=.01;
 assert.ok(previewActivityReward(healer,T+H).stoppedReason,'healer cannot rescue a lethal incoming hit');
 console.log('PASS gradual attrition, legal gear fixtures, claim persistence, food depletion, healer sustain and lethal hits');

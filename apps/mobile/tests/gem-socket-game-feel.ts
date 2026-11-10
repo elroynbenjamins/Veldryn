@@ -30,7 +30,7 @@ equal(extracted?.socketChange?.previousGemId,'WARD_SHARD','extraction feedback m
 
 const modal=fs.readFileSync('src/components/EquipmentEnhancementModal.tsx','utf8');
 ok(modal.includes('GEM SOCKETED')&&modal.includes('GEM REPLACED')&&modal.includes('GEM EXTRACTED'),'gem actions need distinct committed result moments');
-ok(modal.includes('Returned safely to Inventory.'),'extraction result must tell the player where the gem went');
+ok(modal.includes('Returned to Gem Pouch or available storage.'),'extraction result must correctly name account-wide Gem Pouch / storage return destinations');
 ok(modal.includes('Previous gem returned safely.'),'replacement result must explain that the old gem was preserved');
 ok(modal.includes('gt("Replace gem?")')&&modal.includes('gt("Extract gem?")')&&modal.includes('pendingGemAction'),'gem replacement/extraction must require a clear confirmation step');
 ok(modal.includes('gemUnsocketCostForStateV1')&&modal.includes('fee.gold')&&modal.includes('fee.dust')&&modal.includes('Gem Dust'),'gem confirmation must show the precise extraction/replacement cost');
@@ -59,4 +59,14 @@ const noImprovement=enhancementFeedback(
 );
 equal(noImprovement,null,'an unchanged roll must never be reported as an improvement');
 ok(modal.includes('GEM IMPROVED')&&modal.includes('setRerollNotice'),'successful and unsuccessful improvements need truthful feedback');
+ok(modal.includes('GemRollQuality')&&modal.includes('gemRollTickFilled')&&modal.includes('GEM_ROLL_STEP_PERCENT_V1'),'socket cards must visualize all nine graded roll outcomes');
+ok(modal.includes('gemResultDetail(state,current.id,itemId,true)'),'committed gem results must display the equipped rolled bonus, not the unrolled candidate range');
+ok(modal.includes('selectedPerfected')&&modal.includes('GEM_ROLL_MAX_PERCENT_V1'),'perfected sockets must be disabled in the reroll picker');
+ok(modal.includes('useMemo(()=>ITEMS.filter')&&modal.includes('[state]);'),'socket candidates must refresh when account-wide Gem Pouch quantities change');
+const character=fs.readFileSync('src/screens/CharacterScreen.tsx','utf8');
+ok(character.includes('equippedGemLabel')&&character.includes('formatGemValueV1'),'character gear summary must show installed rolled values');
+const pouch=fs.readFileSync('src/components/GemPouchPanel.tsx','utf8');
+ok(pouch.includes('formatGemRollRangeV1')&&pouch.includes('gradeProgress'),'gem pouch must explain the range for each grade');
+const languages=fs.readFileSync('src/i18n/gem-pouch-ui.ts','utf8');
+ok(languages.includes('"Maximum roll"')&&languages.includes('"POSSIBLE SOCKET ROLL"')&&languages.includes('"One duplicate gem is consumed; the higher roll is kept."'),'gem roll rules and safety copy must be translated');
 console.log('PASS gem socket UX distinguishes committed changes, accurate grade values and paid replacement/extraction');

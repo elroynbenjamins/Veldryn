@@ -20,6 +20,8 @@ on:
       - 'apps/mobile/src/screens/EventScreen.tsx'
       - 'apps/mobile/src/content/frostfall-preview.ts'
       - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
+      - 'apps/mobile/tests/exploration-balance.ts'
+      - 'apps/mobile/tests/gathering-drop-ui-contract.ts'
 
 permissions:
   contents: read

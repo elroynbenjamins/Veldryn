@@ -1,5 +1,6 @@
 import {DungeonCombatReview} from './DungeonCombatReview';
 import type {LiveReadyView} from '../core/coop-live-lobby';
+import type {SkillId} from '../core/types';
 import {profileIconSource} from '../components/ProfileIcon';
 import {GameThemeProvider} from '../theme/ThemeContext';
 /** Opt-in storefront capture fixture. Real screens, memory-only sample progress.
@@ -71,6 +72,8 @@ export default function StoreCaptureReview(){
  const lobbyState=typeof window==='undefined'?'open':new URLSearchParams(window.location.search).get('lobbyState');
  const fixtureStatus=lobbyState==='refilling'||lobbyState==='committed'||lobbyState==='expired'?lobbyState:'open';
  const screen=typeof window==='undefined'?'hero':new URLSearchParams(window.location.search).get('storeScreen')??'hero';
+ const requestedSkill=typeof window==='undefined'?null:new URLSearchParams(window.location.search).get('storeSkill');
+ const selectedSkill:SkillId=(['mining','woodcutting','fishing','herbalism','exploration','smithing','tailoring','cooking','alchemy','enchanting','faith'] as string[]).includes(requestedSkill??'')?requestedSkill as SkillId:'mining';
  const requestedTheme=typeof window==='undefined'?'obsidian':new URLSearchParams(window.location.search).get('storeTheme');
  const themeId=requestedTheme==='ivory'||requestedTheme==='ember'?requestedTheme:'obsidian';
  const festival=applyEventDrops(setLocalEventEnabled(state,true,now),[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:'gathering',units:560,recordedAtMs:now},{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:'crafting',units:32,recordedAtMs:now},{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:'combat',units:1120,recordedAtMs:now}]);
@@ -89,8 +92,8 @@ export default function StoreCaptureReview(){
   {screen==='hero'&&<CharacterScreen state={state} onEquip={equipPreview} onUnequip={noop} onEquipSet={noop} onCrafting={noop} onInventory={noop} onSave={noop} onUpgrade={noop} onSocket={noop} onReplaceGem={noop} onUnsocket={noop} onGemRefine={noop} onGemCombine={noop} onGemDismantle={noop} onGemCacheClaim={noop}/>}
   {screen==='combat'&&<CombatScreen state={startCombat(state,'IRONWOOD_WOLF',now-7000)} onCommand={command} onChangeRegion={noop} onStart={noop} onQueue={noop} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onBoss={noop} initialMonsterId="IRONWOOD_WOLF"/>}
   {screen==='battle'&&<View style={{padding:12}}><BattleStage state={state} monster={MONSTERS.find(m=>m.id==='IRONWOOD_WOLF')!} elapsedSeconds={7} cycleSeconds={28}/></View>}
-  {screen==='skills'&&<SkillsScreen {...sharedSkills} state={{...state,currentRegionId:'OLD_MINES'}} initialMode="gathering" initialSkill="mining"/>}
-  {screen==='crafting'&&<SkillsScreen {...sharedSkills} initialMode="crafting" initialSkill="smithing"/>}
+  {screen==='skills'&&<SkillsScreen {...sharedSkills} state={{...state,currentRegionId:'OLD_MINES'}} initialMode="gathering" initialSkill={selectedSkill}/>}
+  {screen==='crafting'&&<SkillsScreen {...sharedSkills} initialMode={selectedSkill==='faith'?'faith':'crafting'} initialSkill={selectedSkill==='mining'?'smithing':selectedSkill}/>}
   {screen==='companions'&&<CompanionsScreen state={state} language="en" now={now} onCommand={command} onCreate={noop}/>}
   {screen==='world'&&<WorldScreen state={state} onTravel={noop} onOpenCombat={noop} onOpenSkills={noop}/>}
   {screen==='guild-identity'&&<GuildIdentityReview state={state}/>}

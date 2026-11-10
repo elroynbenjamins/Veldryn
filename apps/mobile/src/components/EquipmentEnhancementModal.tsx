@@ -16,7 +16,7 @@ import {GameButton} from './GameButton';
 import {ActionFeedback} from './ActionFeedback';
 import {enhancementFeedback,enhancementPityBonusPct,type EnhancementFeedbackResult} from '../core/visual-feedback';
 import {canonicalGemMetaV1,effectFamilyCopiesV1,formatGemRollRangeV1,formatGemValueV1,gemUnsocketCostForStateV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
-import {GEM_GRADE_LABEL_V1,GEM_ROLL_MAX_PERCENT_V1} from '../content/gems-v1';
+import {GEM_GRADE_LABEL_V1,GEM_ROLL_MIN_PERCENT_V1,GEM_ROLL_MAX_PERCENT_V1,GEM_ROLL_STEP_PERCENT_V1} from '../content/gems-v1';
 import {GemArtwork} from './GemArtwork';
 import {ItemArtwork} from './ItemArtwork';
 
@@ -57,6 +57,17 @@ function gemResultDetail(state:GameState,gemId:string,previewItemId?:string,inst
       :`${value} · ${gemEffectDescription(gem.id)} · Resonance ${previewItemId?Math.min(3,effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1):resonanceForFamilyV1(state,meta.familyId).resonance}/III`;
   }
   return gemSocketKind(gem.id)==='stat'&&gem.gemStat?`+${Number(((gem.gemPercent??0)*100).toFixed(3))}% ${gem.gemStat}`:gemEffectDescription(gem.id);
+}
+function GemRollQuality({percent}:{percent?:number}){
+ const {gt}=useGameplayText();
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const actual=percent??100,perfected=actual===GEM_ROLL_MAX_PERCENT_V1;
+ const steps=(GEM_ROLL_MAX_PERCENT_V1-GEM_ROLL_MIN_PERCENT_V1)/GEM_ROLL_STEP_PERCENT_V1+1;
+ const filled=(actual-GEM_ROLL_MIN_PERCENT_V1)/GEM_ROLL_STEP_PERCENT_V1+1;
+ return <View accessible accessibilityLabel={gt('Roll quality')+' '+actual+'%'+(perfected?' · '+gt('Maximum roll'):'')} style={s.gemRollMeter}>
+   <Text style={[s.gemRollLabel,perfected&&{color:C.good}]}>{gt('Roll quality')+' · '+actual+'%'}{percent===undefined?' · '+gt('Original bonus'):perfected?' · MAX':''}</Text>
+   <View style={s.gemRollTicks}>{Array.from({length:steps},(_,index)=><View key={index} style={[s.gemRollTick,index<filled&&s.gemRollTickFilled,perfected&&s.gemRollTickPerfect]}/>)}</View>
+ </View>;
 }
 function GemSocketResultMoment({feedback,state,itemId,reduceMotion}:{feedback:EnhancementFeedbackResult;state:GameState;itemId:string;reduceMotion:boolean}){
  const {gt,gl,language}=useGameplayText();
@@ -212,7 +223,8 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           return <View key={slot.kind} style={s.compactSocket}>
             <Pressable accessibilityRole="button" style={s.compactSocketSelect} onPress={()=>openGemSelection(slot.kind)} disabled={busy}>
               {gem?<GemArtwork itemId={gem.id} size={46} framed={false}/>:<View style={s.compactEmptyGem}><Text style={s.compactEmptyMark}>+</Text></View>}
-              <View style={s.flex}><Text style={s.slotEyebrow}>{slot.label}</Text><Text numberOfLines={1} style={s.socketTitle}>{gem?.name??gt("Empty socket")}</Text><Text numberOfLines={2} style={s.compactCandidateMeta}>{gem?gemResultDetail(state,gem.id,itemId,true):slot.kind==='stat'?gt("Adds a stat bonus"):gt("Adds a combat effect")}</Text></View>
+              <View style={s.flex}><Text style={s.slotEyebrow}>{slot.label}</Text><Text numberOfLines={1} style={s.socketTitle}>{gem?.name??gt("Empty socket")}</Text><Text numberOfLines={2} style={s.compactCandidateMeta}>{gem?gemResultDetail(state,gem.id,itemId,true):slot.kind==='stat'?gt("Adds a stat bonus"):gt("Adds a combat effect")}</Text>
+                {gem&&canonicalGemMetaV1(gem.id)?<GemRollQuality percent={slot.kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent}/>:null}</View>
             </Pressable>
             <GameButton compact title={gem?gt("Change"):gt("Add gem")} disabled={busy} onPress={()=>openGemSelection(slot.kind)}/>
             {gem?<Pressable accessibilityRole="button" onPress={()=>{openGemSelection(slot.kind);setPendingGemAction({kind:'extract',index:slot.index,currentGemId:gem.id})}} style={s.compactExtract}><Text style={s.compactExtractText}>{gt("Extract")}</Text></Pressable>:null}
@@ -256,6 +268,8 @@ compactPreview:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.line,backgr
 compactPreviewRow:{flexDirection:'row',alignItems:'center',gap:5},compactPreviewBefore:{flex:1,...typography.caption,color:C.muted},compactPreviewAfter:{flex:1,...typography.bodyStrong,color:C.good},
 compactSocket:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
 compactSocketSelect:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:spacing.sm,minHeight:58},
+gemRollMeter:{gap:4,marginTop:4},gemRollLabel:{fontSize:9,lineHeight:12,color:C.info,fontWeight:'800'},
+gemRollTicks:{flexDirection:'row',gap:3,maxWidth:164},gemRollTick:{flex:1,height:4,borderRadius:3,backgroundColor:C.line},gemRollTickFilled:{backgroundColor:C.info},gemRollTickPerfect:{backgroundColor:C.good},
 compactEmptyGem:{width:46,height:46,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderStyle:'dashed',borderColor:C.line},
 compactEmptyMark:{...typography.title,color:C.muted},compactExtract:{minHeight:touchTargetPreferred,justifyContent:'center',paddingHorizontal:spacing.sm,paddingVertical:4},compactExtractText:{...typography.caption,color:C.info},
 compactHelpRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:spacing.sm},

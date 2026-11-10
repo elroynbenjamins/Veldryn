@@ -52360,7 +52360,7 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
   const huntPlan = runtime.huntOptions && (enemyAttackCount === void 0 || fightSeconds === void 0) ? regionalHuntPlan(runtime.huntOptions) : void 0;
   const attackCount = enemyAttackCount ?? huntPlan?.enemyAttackCount ?? 1;
   const cadenceRatio = runtime.huntOptions ? Math.max(0.02, Math.min(1, killCycleSeconds / Math.max(1, runtime.legacyKillCycleSeconds))) : 1;
-  const combatPressure = runtime.huntOptions ? attackCount ? damage * cadenceRatio * runtime.gearAttritionMultiplier : 0 : Math.max(floor, damage);
+  const combatPressure = runtime.huntOptions ? attackCount ? damage * cadenceRatio * runtime.gearAttritionMultiplier * 0.82 : 0 : Math.max(floor, damage);
   const incoming = runtime.huntOptions ? Math.max(fatigue, combatPressure) : combatPressure;
   const monsterDamage = runtime.huntOptions ? Math.max(0, incoming - fatigue) : combatPressure;
   const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - Math.max(floor, fatigue)));

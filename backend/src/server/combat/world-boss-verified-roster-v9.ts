@@ -155,7 +155,8 @@ export async function prepareWorldBossRosterV9(
  });
  return {
   command:{accountId:account,characterId:request.characterId,requestId:request.requestId,
-   atUtcMs:now,order:request.order,squad:matched.squad},
+   atUtcMs:now,order:request.order,squad:matched.squad,
+   serverSeed:seed,snapshotDigest},
   serverSeed:seed,snapshotDigest,npcSlots:matched.npcSlots,
   selectedRealEchoIds:matched.selectedRealEchoIds,
   contentVersion:'v9-verified-roster-prototype',persisted:false,

@@ -1,7 +1,8 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {Image, ImageBackground, Pressable, StyleSheet, Text, View} from 'react-native';
-import {frostfallPreviewCountdown, frostfallPreviewPhase} from '../content/frostfall-preview';
-import {useGameTheme} from '../theme/ThemeContext';
+import {frostfallPreviewCountdown, frostfallPreviewPhase, frostfallSecondRevealCountdown} from '../content/frostfall-preview';
+import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
+import {eventTheme} from '../theme/event-palette';
 import {Panel} from './Panel';
 
 const HERO = require('../../assets/profile-backgrounds/bg_frostfall.webp');
@@ -18,20 +19,28 @@ const DETAILS: Record<RevealId, string> = {
 };
 
 /** Read-only teaser. It must never call live-event claim, purchase or activity commands. */
-export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs: number}) {
+export function FrostfallPreview(props: {startsAtMs: number; nowMs: number}) {
+  const base = useGameTheme();
+  const winterColors = useMemo(() => eventTheme(base, {accent: '#9be7ff', visualKey: 'frostfall'}), [base]);
+  return <GameThemeScope colors={winterColors}><FrostfallPreviewContent {...props}/></GameThemeScope>;
+}
+
+function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs: number}) {
   const C = useGameTheme();
   const phase = frostfallPreviewPhase(startsAtMs, nowMs);
   const [selected, setSelected] = useState<RevealId | null>(null);
   if (!phase) return null;
   const secondReveal = phase === 'reveal';
+  const nextReveal = frostfallSecondRevealCountdown(startsAtMs, nowMs);
+  const startDate = new Intl.DateTimeFormat('en', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC'}).format(new Date(startsAtMs));
   const tiles: {id: RevealId; icon: string; label: string; sub: string; unlocked: boolean}[] = [
     {id: 'activity', icon: '❄', label: 'Winter Activities', sub: 'Seasonal challenges', unlocked: true},
-    {id: 'pet', icon: '✦', label: secondReveal ? 'Snowbell Pup' : 'Hidden Reward', sub: secondReveal ? 'Seasonal pet' : 'Reveals 7 days before', unlocked: secondReveal},
-    {id: 'shop', icon: '✧', label: secondReveal ? 'Frostfall Shop' : 'Hidden Feature', sub: secondReveal ? 'Seasonal collectibles' : 'Reveals 7 days before', unlocked: secondReveal},
+    {id: 'pet', icon: '✦', label: secondReveal ? 'Snowbell Pup' : 'Hidden Reward', sub: secondReveal ? 'Reputation milestone' : `Unlocks in ${nextReveal}`, unlocked: secondReveal},
+    {id: 'shop', icon: '✧', label: secondReveal ? 'Frostfall Shop' : 'Hidden Feature', sub: secondReveal ? 'Seasonal collectibles' : `Unlocks in ${nextReveal}`, unlocked: secondReveal},
     {id: 'mystery', icon: '?', label: 'Winter Mystery', sub: 'Reveals at launch', unlocked: false},
   ];
 
-  return <View style={s.wrapper}>
+  return <View style={s.wrapper} accessibilityLabel="Frostfall Festival preview">
     <ImageBackground source={HERO} resizeMode="cover" imageStyle={s.heroImage} style={s.hero}>
       <View style={s.shade}/>
       <View style={s.heroContent}>
@@ -45,21 +54,21 @@ export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs
         <Text style={[s.tiny, {color: C.muted}]}>FESTIVAL BEGINS IN</Text>
         <Text accessibilityLabel={'Frostfall begins in ' + frostfallPreviewCountdown(startsAtMs, nowMs)} style={[s.time, {color: C.accent}]}>{frostfallPreviewCountdown(startsAtMs, nowMs)}</Text>
       </View>
-      <Text style={[s.date, {color: C.text}]}>{new Intl.DateTimeFormat('en', {day: 'numeric', month: 'short', timeZone: 'UTC'}).format(new Date(startsAtMs))} UTC</Text>
+      <Text style={[s.date, {color: C.text}]}>{startDate} UTC</Text>
     </View>
     <View style={s.story}>
       <Text style={[s.eyebrow, {color: C.accent}]}>{secondReveal ? 'SECOND REVEAL' : 'A FIRST GLIMPSE'}</Text>
       <Text style={[s.heading, {color: C.text}]}>{secondReveal ? 'The frost reveals its secrets' : 'Something stirs beneath the snow…'}</Text>
       <Text style={[s.description, {color: C.muted}]}>{secondReveal
         ? 'Seasonal rewards and the festival shop have been unveiled. One mystery remains until Frostfall begins.'
-        : 'Gather provisions, light the roads, and prepare for a winter celebration. More secrets arrive seven days before the festival.'}</Text>
+        : 'Winter celebrations are on the horizon. Protect the roads and prepare festive supplies. More secrets unlock one week before launch.'}</Text>
     </View>
     <View style={s.sectionHeading}>
       <Text style={[s.heading, {color: C.text}]}>What awaits?</Text>
       <Text style={[s.counter, {color: C.muted}]}>{secondReveal ? '3 of 4 revealed' : '1 of 4 revealed'}</Text>
     </View>
     <View style={s.grid}>
-      {tiles.map(tile => <Pressable key={tile.id} accessibilityRole="button" accessibilityLabel={tile.label + '. ' + tile.sub} accessibilityState={{selected: selected === tile.id}}
+      {tiles.map(tile => <Pressable key={tile.id} accessibilityRole="button" disabled={!tile.unlocked} accessibilityLabel={(tile.unlocked ? '' : 'Locked. ') + tile.label + '. ' + tile.sub} accessibilityState={{selected: selected === tile.id, disabled: !tile.unlocked}}
         onPress={() => setSelected(tile.id === selected ? null : tile.id)}
         style={({pressed}) => [s.tile, {backgroundColor: C.panel, borderColor: selected === tile.id ? C.accent : C.line}, pressed && s.pressed]}>
         <View style={[s.symbol, {backgroundColor: tile.unlocked ? C.accentSurface : C.panel2}]}>
@@ -71,15 +80,13 @@ export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs
       </Pressable>)}
     </View>
     {selected ? <Panel>
-      <Text style={[s.detailTitle, {color: C.text}]}>{tiles.find(tile => tile.id === selected)?.label}</Text>
-      <Text style={[s.description, {color: C.muted}]}>{tiles.find(tile => tile.id === selected)?.unlocked ? DETAILS[selected] : selected === 'mystery' ? DETAILS.mystery : 'This reveal opens seven days before the event begins.'}</Text>
+      <View style={s.detailHeading}><Text style={[s.detailTitle, {color: C.text}]}>{tiles.find(tile => tile.id === selected)?.label}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close detail" onPress={() => setSelected(null)} style={s.closeDetail}><Text style={[s.closeLabel, {color: C.muted}]}>✕</Text></Pressable></View>
+      <Text style={[s.description, {color: C.muted}]}>{DETAILS[selected]}</Text>
     </Panel> : null}
     <Panel>
       <View style={s.spotlight}>
         <View style={[s.spotlightArt, {backgroundColor: C.panel2, borderColor: C.line}]}>
-          <Image source={SNOWBELL_PUP} resizeMode="contain"
-            style={[s.rewardImage, !secondReveal && {tintColor: C.muted, opacity: .22}]}/>
-          {!secondReveal ? <Text style={[s.question, {color: C.accent}]}>?</Text> : null}
+          {secondReveal ? <Image source={SNOWBELL_PUP} resizeMode="contain" style={s.rewardImage}/> : <Text style={[s.question, {color: C.accent}]}>?</Text>}
         </View>
         <View style={s.flex}>
           <Text style={[s.eyebrow, {color: C.accent}]}>FEATURED WINTER COLLECTIBLE</Text>
@@ -115,14 +122,17 @@ const s = StyleSheet.create({
   sectionHeading: {flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 3},
   counter: {fontSize: 10},
   grid: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
-  tile: {width: '48%', minHeight: 114, borderWidth: 1, borderRadius: 9, padding: 10, gap: 5},
+  tile: {flexBasis: '48%', flexGrow: 1, minWidth: 0, minHeight: 114, borderWidth: 1, borderRadius: 9, padding: 10, gap: 5},
   pressed: {opacity: .75},
   symbol: {height: 36, width: 36, borderRadius: 7, alignItems: 'center', justifyContent: 'center'},
   symbolText: {fontSize: 23, fontWeight: '800'},
   symbolImage: {width: 32, height: 32},
   tileName: {fontSize: 12, fontWeight: '800'},
   tileDetail: {fontSize: 10, lineHeight: 14},
-  detailTitle: {fontSize: 13, fontWeight: '900'},
+  detailTitle: {fontSize: 13, fontWeight: '900', flexShrink: 1},
+  detailHeading: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8},
+  closeDetail: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
+  closeLabel: {fontSize: 16, fontWeight: '800'},
   spotlight: {flexDirection: 'row', gap: 12, alignItems: 'center'},
   spotlightArt: {width: 78, height: 78, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center'},
   rewardImage: {width: 70, height: 70},

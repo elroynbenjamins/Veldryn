@@ -29,14 +29,17 @@ export function verifyPartyEventEquippedCopyOwnershipV4(state:GameState):void{
  const instances=new Map((state.account.craftedGearInstances??[]).map(x=>[x.id,x]));
  for(const [slot,itemId] of Object.entries(character.equipment) as [GearSlot,string][]){
   if(!itemId)continue;
+  // Validate duplicate physical receipts before the item-slot checks, so a
+  // reused forged instance is classified as a replay instead of only as an
+  // invalid slot. Both are rejected; the more precise reason is testable.
+  const copyId=character.equipmentInstanceIds?.[slot];
+  if(copyId&&seen.has(copyId))throw new Error('party_event_duplicate_equipped_copy');
   const item=itemDef(itemId);
   if(item.type!=='gear'||item.slot!==slot||item.classRestriction&&item.classRestriction!==character.classId)
    throw new Error('party_event_illegal_equipment');
   if(item.requiredLevel!==undefined&&derivedLevel<item.requiredLevel)
    throw new Error('party_event_equipment_level_locked');
-  const copyId=character.equipmentInstanceIds?.[slot];
   if(!copyId)continue;
-  if(seen.has(copyId))throw new Error('party_event_duplicate_equipped_copy');
   seen.add(copyId);
   const copy=instances.get(copyId);
   if(!copy||copy.ownerCharacterId!==character.id||copy.itemId!==itemId)

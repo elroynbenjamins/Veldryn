@@ -43403,6 +43403,9 @@ var BASE_ITEMS = [
   { id: "EVENT_BONDBLOOM", name: "Event Bondbloom", type: "material", value: 175 },
   { id: "RUNEBOUND_CORE", name: "Runebound Core", type: "material", value: 150 },
   { id: "ECHO_BAT_WING", name: "Echo Bat Wing", type: "material", value: 80 },
+  // Retired item ID: retain this catalog entry only so historical saves that
+  // already contain OATHGLASS_CAPE remain readable. No quest or loot grants it.
+  { id: "OATHGLASS_CAPE", name: "Oathglass Cape", type: "gear", slot: "cape", attack: 2, defense: 6, hp: 18, readiness: 5, rarity: "rare", requiredLevel: 25, value: 240 },
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
 var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
@@ -48208,12 +48211,12 @@ init_progression();
 var EXPLORATION_ROUTES = [
   { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
   { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
-  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 2 },
-  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 3 },
-  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 4 },
-  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 6 },
-  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 430, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 9 },
-  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 14 }
+  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 3 },
+  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 5 },
+  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 7 },
+  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 12 },
+  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 430, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 18 },
+  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 28 }
 ].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
 var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 
@@ -48234,7 +48237,7 @@ var QUESTS = [
   { id: "QST_012", name: "Fallen Procession", description: "Defeat 8 Oathbound Squires.", kind: "kills", targetId: "OATHBOUND_SQUIRE", required: 8, rewardGold: 600, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 3, act: 3, location: "King's Road", story: "Armoured dead march in formation toward Asterfall, still obeying an order issued generations ago. Breaking the procession may reveal who\u2014or what\u2014has called the old soldiers back to duty." },
   { id: "QST_013", name: "Oathglass Road", description: "Defeat 10 Fallen Sentinels.", kind: "kills", targetId: "FALLEN_SENTINEL", required: 10, rewardGold: 750, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 5, act: 3, location: "Oathglass Causeway", story: "Fallen Sentinels guard the causeway in disciplined silence. Beyond them stands the shattered command post where the last royal defense made its final oath and where its commander never truly left." },
   { id: "QST_014", name: "Fallen Knight", description: "Defeat the Fallen Knight.", kind: "boss", targetId: "FALLEN_KNIGHT", required: 1, rewardGold: 1e3, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 5, act: 3, location: "Ruined Oathgate", story: "The echoes finally have a face. The Fallen Knight still holds the gate as though the kingdom behind him survives, bound to an oath that has outlived everyone it was meant to protect." },
-  { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
+  { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 8, rewardTitleId: "oathbreaker", act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
 ].map((quest) => {
   const required = quest.kind === "level" ? rebasedCombatLevelFromLegacyLevel(quest.required) : quest.required;
   const requiredCharacterLevel = quest.requiredCharacterLevel === void 0 ? void 0 : rebasedCombatLevelFromLegacyLevel(quest.requiredCharacterLevel);
@@ -50873,6 +50876,7 @@ function weeklyOrderCandidatesFromCurrentContent(state) {
 var TIERS = ["novice", "adventurer", "veteran", "master", "grandmaster"];
 var ladder = (category, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
 var JOURNAL_TITLES_V42 = [
+  { id: "oathbreaker", name: "Oathbreaker", description: "Complete Beyond the Green and break the Fallen Knight\u2019s oath.", sourceAchievementId: "quest:QST_015" },
   { id: "the_unbroken", name: "The Unbroken", description: "A title earned through exceptional lifetime combat experience.", sourceAchievementId: "combatant_grandmaster" },
   { id: "master_of_many", name: "Master of Many", description: "For accounts that grow across many skills and characters.", sourceAchievementId: "well_rounded_grandmaster" },
   { id: "grandmaster_artisan", name: "Grandmaster Artisan", description: "A title for enduring mastery of Veldryn\u2019s professions.", sourceAchievementId: "artisan_grandmaster" },
@@ -51297,6 +51301,10 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
     }
   }
   const journal = ensureJournal(state, options.accountId), recordUpdates = settlementRecords(journal, reward2, options.eventId, nowMs, state.character?.id), journalResult = applyJournalSnapshot(journal, { metrics: journalMetrics({ ...state, account: { ...state.account, longTermMetrics: metrics } }) }, nowMs);
+  if (state.quests.some((row) => row.questId === "QST_015" && row.status === "claimed") && journal.unlockedTitles.oathbreaker === void 0) {
+    journal.unlockedTitles.oathbreaker = nowMs;
+    journalResult.newlyUnlockedTitleIds.push("oathbreaker");
+  }
   state = { ...state, account: { ...state.account, crossSkillState: cross, collectionSetState: collections, ...rare ? { rareDiscoveryState: rare } : {}, journalState: journal, unlockedKnowledgeIds: knowledge, unlockedCollectionRewardIds: collectionRewards } };
   state = applyLocalBalanceSnapshot(state, nowMs);
   return { state, weeklyOrderCompletions: weeklyCompleted, journalAchievements: journalResult.newlyUnlockedAchievementIds, journalTitles: journalResult.newlyUnlockedTitleIds, personalRecordUpdates: recordUpdates, crossSkillUnlocks: crossResult.newlyUnlockedDiscoveryIds, collectionSetCompletions: collectionResult.newlyCompletedSetIds, rareDiscoveryGrantRefs: rareGrantRefs };
@@ -52757,7 +52765,13 @@ function refreshQuests(state, lastCombatTarget, lastKills = 0) {
 function claimQuest(state, questId, nowMs = Date.now()) {
   const q2 = state.quests.find((x) => x.questId === questId), d = QUESTS.find((x) => x.id === questId);
   if (!q2 || !d || q2.status !== "complete" || !state.character) throw new Error("Quest not claimable");
-  let next = { ...state, character: { ...state.character, gold: state.character.gold + d.rewardGold }, inventory: { ...state.inventory, stacks: d.rewardItemId ? stackItems(state.inventory.stacks, [{ itemId: d.rewardItemId, quantity: d.rewardItemQty || 1 }]) : state.inventory.stacks }, quests: state.quests.map((x) => x.questId === questId ? { ...x, status: "claimed" } : x) };
+  const routed = routeRewards(state, d.rewardItemId ? [{ itemId: d.rewardItemId, quantity: d.rewardItemQty ?? 1 }] : [], nowMs);
+  const account = { ...state.account, ...routed.account };
+  if (d.rewardTitleId) {
+    const journal = account.journalState ?? newJournalState(longTermAccountScope(state));
+    account.journalState = { ...journal, unlockedTitles: { ...journal.unlockedTitles, [d.rewardTitleId]: journal.unlockedTitles[d.rewardTitleId] ?? nowMs } };
+  }
+  const next = { ...state, ...routed, account, character: { ...state.character, ...routed.character ?? {}, gold: state.character.gold + d.rewardGold }, quests: state.quests.map((x) => x.questId === questId ? { ...x, status: "claimed" } : x) };
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next), nowMs), nowMs);
 }
 function claimSeasonalContract(state, period, contractId2, nowMs = Date.now(), choiceId) {
@@ -53446,6 +53460,69 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
   next = applyTrustedLongTermProgression(next, [{ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1, weeklyEligible: false }], void 0, nowMs, { accountId: longTermAccountScope(next), eventId: `boss-story:${state.character.id}:FALLEN_KNIGHT` }).state;
   const storyDropText = storyDrops.length ? storyDrops.map((row) => `${row.quantity}\xD7 ${itemDef(row.itemId).name}`).join(", ") : "no item drops";
   return { state: next, won: true, battle, message: `Fallen Knight defeated in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. +900 Gold, +3,000 XP, +40 Companion Essence, +1 Bondstone. Boss drops: ${storyDropText}.` };
+}
+
+// ../apps/mobile/src/core/retired-story-rewards.ts
+var RETIRED_CAPE = "OATHGLASS_CAPE";
+var FINALE_QUEST = "QST_015";
+var REPLACEMENT_SHARD = "OATHGLASS_SHARD";
+var SHARDS_PER_CAPE = 8;
+function migrateRetiredStoryRewards(input, nowMs) {
+  let found = 0;
+  const strip = (rows2) => rows2.filter((row) => {
+    if (row.itemId !== RETIRED_CAPE) return true;
+    found += Math.max(0, Number.isSafeInteger(row.quantity) ? row.quantity : 0);
+    return false;
+  });
+  const stripCharacter = (character2) => {
+    if (!character2) return null;
+    const pouch = character2.equipmentPouch;
+    const pouchStacks = pouch ? strip(pouch.stacks) : void 0;
+    const equipped = character2.equipment.cape === RETIRED_CAPE;
+    if (equipped) found += 1;
+    if (!equipped && pouchStacks?.length === pouch?.stacks.length) return character2;
+    const equipment = { ...character2.equipment };
+    const equipmentInstanceIds = { ...character2.equipmentInstanceIds };
+    if (equipped) {
+      delete equipment.cape;
+      delete equipmentInstanceIds.cape;
+    }
+    return {
+      ...character2,
+      equipment,
+      ...equipped ? { equipmentInstanceIds } : {},
+      ...pouch ? { equipmentPouch: { ...pouch, stacks: pouchStacks ?? [] } } : {}
+    };
+  };
+  const inventory = { ...input.inventory, stacks: strip(input.inventory.stacks) };
+  const bank = { ...input.bank, stacks: strip(input.bank.stacks) };
+  const overflowStacks = strip(input.overflow.stacks);
+  const overflow = {
+    ...input.overflow,
+    stacks: overflowStacks,
+    expiresAtMs: overflowStacks.length ? input.overflow.expiresAtMs : null
+  };
+  const character = stripCharacter(input.character);
+  const otherCharacters = input.otherCharacters?.map((entry2) => {
+    const inv = strip(entry2.inventory.stacks), over = strip(entry2.overflow.stacks), ch = stripCharacter(entry2.character);
+    return {
+      ...entry2,
+      inventory: { ...entry2.inventory, stacks: inv },
+      overflow: { ...entry2.overflow, stacks: over, expiresAtMs: over.length ? entry2.overflow.expiresAtMs : null },
+      character: ch
+    };
+  });
+  const claimed = input.quests.some((q2) => q2.questId === FINALE_QUEST && q2.status === "claimed") || (input.otherCharacters ?? []).some((row) => row.quests.some((q2) => q2.questId === FINALE_QUEST && q2.status === "claimed"));
+  const needsTitle = claimed && input.account.journalState?.unlockedTitles.oathbreaker === void 0;
+  if (!found && !needsTitle) return input;
+  const cleaned = { ...input, inventory, bank, overflow, character, otherCharacters };
+  const routed = routeRewards(cleaned, found ? [{ itemId: REPLACEMENT_SHARD, quantity: found * SHARDS_PER_CAPE }] : [], nowMs);
+  const account = { ...cleaned.account, ...routed.account };
+  if (needsTitle) {
+    const journal = account.journalState ?? newJournalState(account.longTermAccountScopeId ?? `local-account:${input.createdAtMs}`);
+    account.journalState = { ...journal, unlockedTitles: { ...journal.unlockedTitles, oathbreaker: nowMs } };
+  }
+  return { ...cleaned, ...routed, account };
 }
 
 // ../apps/mobile/src/core/playability.ts
@@ -56791,6 +56868,8 @@ function executeGameCommand(previous, value, now, options = {}) {
   const command = validateGameCommand(value), a = command.args ?? {}, activity = previous.activity, contributions = [];
   let state = structuredClone(previous), reward2, message, won, storyBossBattle, upgrade, forgeResults;
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
+  if (options.accountId) state.account.longTermAccountScopeId = options.accountId;
+  state = migrateRetiredStoryRewards(state, now);
   const credit = (source, earned) => {
     if (!source || earned.kills <= 0) return;
     if (source.kind === "combat") contributions.push({ kind: "combat", contentId: source.targetId, units: earned.kills, startedAtMs: Math.max(source.lastClaimAtMs, now - earned.elapsedSeconds * 1e3) });

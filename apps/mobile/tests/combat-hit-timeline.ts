@@ -29,7 +29,12 @@ assert.ok(events.some(event=>event.actor==='enemy'&&event.damage>0),'enemy attac
 const T=1_600_000;
 const state=startCombat(createCharacter(newGame(T),'WAYFINDER','Real Hits'),'MOSS_RAT',T);
 const cycle=activeCombatRuntimeProjection(state)!.killCycleSeconds;
-const partialAt=T+Math.max(1,Math.floor(cycle*350));
+const firstWoundedPartial=Array.from({length:140},(_,index)=>T+Math.floor(cycle*1000*(index+1)/150)).find(at=>{
+ const frame=activeCombatHitProjection(state,at)!;
+ return frame.enemyHp>0&&frame.enemyHp<frame.enemyMaxHp&&frame.playerHp<effectiveStats(state).hp;
+});
+assert.ok(firstWoundedPartial,'a partially resolved fight must reflect real player and enemy strikes');
+const partialAt=firstWoundedPartial!;
 const partial=activeCombatHitProjection(state,partialAt)!;
 const preview=previewActivityReward(state,partialAt);
 assert.equal(preview.kills,0,'real partial hits must not grant unearned kill rewards');

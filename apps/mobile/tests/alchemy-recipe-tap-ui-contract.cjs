@@ -13,7 +13,7 @@ assert.match(source,/manualByOutput:manualSourceByPotion,readyOnly/,'Auto select
 assert.match(source,/activeId,preferredId:preferred\?\.id/,'An already-brewing regional variant remains visible');
 
 assert.match(potionRows,/onPress=\{\(\)=>start\(recipe\)\} style=\{\(\{pressed\}\)=>\[s\.potionRowMain/,'Tapping a potion recipe should start brewing');
-assert.match(potionRows,/disabled=\{busy\|\|isActive\|\|available<1\}/,'Unavailable, active or busy recipes must not start brewing');
+assert.match(potionRows,/disabled=\{busy\|\|isActive\|\|\(available<1&&!activity\)\}/,'Busy or already-active recipes cannot restart; switching may release missing escrow');
 assert.match(potionRows,/onPress=\{\(\)=>setDetailId\(current=>current===detailKey\(recipe\)\?null:detailKey\(recipe\)\)\}/,'The lower information strip remains expanded when the auto-selected variant changes');
 assert.match(potionRows,/\{isExpanded\?renderInlineDetails\(recipe\):null\}/,'Potion details should expand under the recipe');
 assert.match(source,/skillId==='alchemy'&&detailId===recipe\.id\?renderInlineDetails\(recipe\):null/,'Alchemy infusions should also expand details inline');

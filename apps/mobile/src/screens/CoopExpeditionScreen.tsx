@@ -98,13 +98,13 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     const requestId=++loadRequestId.current;
     setLoading(true);setError('');
     try{
-      const next=await entrySource.load({characterId,force});
+      const next=await entrySource.load({characterId,characterLevel:state.character?.level,force});
       next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));
       next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);
       if(requestId===loadRequestId.current){setEntry(next);setCachedBrowse(undefined);}
     }catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason))}
     finally{if(requestId===loadRequestId.current)setLoading(false)}
-  },[entrySource,characterId]);
+  },[entrySource,characterId,state.character?.level]);
   // Server-owned ready checks are polled only while this modal is open.
   const enterRematch=useCallback(async(nextRunId:string)=>{
    if(rematchEntered.current===nextRunId)return;

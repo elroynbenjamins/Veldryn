@@ -27,7 +27,9 @@ assert.equal(early.length+late.length,events.length,'a split settlement must con
 assert.ok(events.some(event=>event.actor==='enemy'&&event.damage>0),'enemy attacks must have actual damage');
 
 const T=1_600_000;
-const state=startCombat(createCharacter(newGame(T),'WAYFINDER','Real Hits'),'MOSS_RAT',T);
+const starting=createCharacter(newGame(T),'WAYFINDER','Real Hits');
+starting.character!.attack=12;starting.character!.equipment={};
+const state=startCombat(starting,'MOSS_RAT',T);
 const cycle=activeCombatRuntimeProjection(state)!.killCycleSeconds;
 const firstWoundedPartial=Array.from({length:140},(_,index)=>T+Math.floor(cycle*1000*(index+1)/150)).find(at=>{
  const frame=activeCombatHitProjection(state,at)!;

@@ -17,6 +17,7 @@ const catalogCache=new CoopDungeonBrowseCache(AsyncStorage);
 const ENTRY_MEMORY_TTL_MS=60_000;
 const latest=new Map<string,{data:CoopEntryData;expiresAtMs:number}>();
 const inFlight=new Map<string,Promise<CoopEntryData>>();
+const generations=new Map<string,number>();
 
 async function viewerScope(characterId?:string):Promise<string|undefined>{
  if(!characterId||!supabase)return undefined;
@@ -51,11 +52,13 @@ export const realCoopEntrySource:CoopEntrySource={
    const pending=inFlight.get(scope);
    if(pending)return pending;
   }
+  const generation=scope?(generations.get(scope)??0)+1:0;
+  if(scope)generations.set(scope,generation);
   const task=(async()=>{
    const entry=presentEntry(await coopClient.entry());
-   // The request() transport independently checks that the authorization
-   // account did not change. Don't persist an old character's projection.
-   if(scope&&scope===await viewerScope(characterId)){
+   // If a forced refresh overtook this request, its older result must not
+   // replace the newer browse/catalog snapshot.
+   if(scope&&generations.get(scope)===generation&&scope===await viewerScope(characterId)){
     rememberEntry(scope,entry);
     void catalogCache.save(scope,entry.dungeons);
    }

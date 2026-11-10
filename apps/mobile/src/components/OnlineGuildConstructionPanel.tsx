@@ -93,6 +93,7 @@ export function OnlineGuildConstructionPanel({
  return <Panel>
   <Text style={s.kicker}>{ui('GUILD CONSTRUCTION')}</Text>
   <Text style={s.title}>{ui('Build something together')}</Text>
+  <Text style={s.copy}>{ui('Deposit resources into the Guild Bank, then allocate them here. Deposits and allocations cannot be reversed.')}</Text>
   <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={ui('View {title} upgrades',{title:ui(building.title)})} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{ui(building.title)}</Text></Pressable>)}</View>
   {snapshot.unavailableSections?.includes('constructionCosts')
    ?<Text style={s.error}>{ui('Current Guild Construction prices are unavailable. Refresh before funding.')}</Text>
@@ -139,6 +140,9 @@ export function OnlineGuildConstructionPanel({
        <Text style={[s.resourceName,{flex:1}]}>{resourceName(res.key)}</Text>
        <Text style={s.resourceAmount}>{amount.toLocaleString()} / {res.required.toLocaleString()}</Text>
       </View>
+      <Text style={s.resourceMeta}>{ui('Bank {bank} · Allocated {allocated} · Need {needed}',{
+       bank:(snapshot.bank?.balances.find(item=>item.resourceId===res.key)?.amount??0).toLocaleString(),
+       allocated:amount.toLocaleString(),needed:Math.max(0,res.required-amount).toLocaleString()})}</Text>
       <View style={s.track}><View style={[s.fill,{width:`${pct}%` as `${number}%`}]}/></View>
      </Pressable>;
     })}
@@ -181,7 +185,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  resource:{gap:6,padding:8,minHeight:48,borderWidth:1,borderColor:'transparent',borderRadius:8},
  materialIcon:{width:28,height:28},resourceSelected:{borderColor:C.accent},
  resourceName:{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'},
- resourceAmount:{fontSize:11,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},
+ resourceAmount:{fontSize:11,color:C.muted},resourceMeta:{fontSize:11,lineHeight:16,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},
  fill:{height:'100%',backgroundColor:C.accent},unlock:{color:C.good,fontSize:12,fontWeight:'700'},
  actions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  donationControls:{gap:8,padding:8,borderRadius:8,backgroundColor:C.panel},

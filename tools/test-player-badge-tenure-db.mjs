@@ -87,6 +87,13 @@ try{
  assert.equal(p.identity.equippedBadgeId,'veteran');
  assert.equal(p.identity.supporter,false,'a collectible does not force the Supporter icon');
  assert.equal(p.supporterAvailable,true);
+ // Old app's Show Supporter toggle still selects exactly one elective badge.
+ p=(await first('select public.update_player_badge_preferences_v1(true) as data')).data;
+ assert.equal(p.identity.equippedBadgeId,'supporter','legacy toggle on equips Supporter');
+ p=(await first('select public.update_player_badge_preferences_v1(false) as data')).data;
+ assert.equal(p.identity.equippedBadgeId,null,'legacy toggle off hides only Supporter');
+ p=await equipped('veteran');
+ assert.equal(p.identity.equippedBadgeId,'veteran');
 
  await signIn(c);
  p=await self();assert.equal(p.supporterAvailable,true);

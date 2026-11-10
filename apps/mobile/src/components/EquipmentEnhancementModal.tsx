@@ -127,8 +127,9 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
     setRerollNotice('');setActiveSocketKind(kind);setGemPickerOpen(true);setSelectedGemId(null);
     setShowAllCandidates(false);setPendingGemAction(null);
   };
-  const candidates=activeSocketKind==='stat'?statGems:effectGems;
   const equippedGemId=activeSocketKind==='stat'?socketState.statGemId:socketState.effectGemId;
+  // Prioritize the equipped family so a duplicate regrind is always easy to find.
+  const candidates=(activeSocketKind==='stat'?statGems:effectGems).slice().sort((a,b)=>Number(b.id===equippedGemId)-Number(a.id===equippedGemId));
   const selectedGem=selectedGemId?candidates.find(gem=>gem.id===selectedGemId):undefined;
   const selectedMeta=selectedGem?canonicalGemMetaV1(selectedGem.id):undefined;
   const currentRollPercent=activeSocketKind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent;
@@ -207,12 +208,12 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           {equippedGemId&&equippedGemId!==selectedGem.id?<Text style={s.rule}>{gp('The replaced gem returns to storage without its previous socket roll.')}</Text>:null}
         </View>:null}
         {pendingGemAction&&(()=>{
-          const current=itemDef(pendingGemAction.currentGemId),next=pendingGemAction.kind==='extract'?undefined:itemDef(pendingGemAction.gemId),fee=pendingGemAction.kind==='reroll'?{gold:0,dust:0}:gemUnsocketCostForStateV1(state,current.id),canAffordFee=gold>=fee.gold&&combinedQuantity(state,'GEM_DUST')>=fee.dust;
+          const current=itemDef(pendingGemAction.currentGemId),next=pendingGemAction.kind==='extract'?undefined:itemDef(pendingGemAction.gemId),fee=pendingGemAction.kind==='reroll'?{gold:0,dust:0}:gemUnsocketCostForStateV1(state,current.id),ownedNew=next?combinedQuantity(state,next.id):0,canAffordFee=gold>=fee.gold&&combinedQuantity(state,'GEM_DUST')>=fee.dust&&(!next||ownedNew>0);
           return <View style={s.gemConfirm}>
             <Text style={s.gemConfirmTitle}>{pendingGemAction.kind==='reroll'?gp('Improve gem roll?'):pendingGemAction.kind==='replace'?gt("Replace gem?"):gt("Extract gem?")}</Text>
             <View style={s.gemCompareArt}><GemArtwork itemId={current.id} size={44} framed={false}/>{next?<><Text style={s.gemCompareArrow}>→</Text><GemArtwork itemId={next.id} size={44} framed={false}/></>:null}<View style={s.flex}><Text style={s.gemConfirmText} numberOfLines={2}>{next?current.name+' → '+next.name:current.name}</Text><Text style={s.rule}>{pendingGemAction.kind==='reroll'?gp('One duplicate gem is consumed; the higher roll is kept.'):gp('The old gem returns to storage without its socket roll.')}</Text></View></View>
             {next?<Text style={s.gemConfirmCompare}>{gemResultDetail(state,current.id,itemId,true)} → {gemResultDetail(state,next.id,itemId)}</Text>:null}
-            <Text style={[s.gemConfirmCost,!canAffordFee&&s.missing]}>{gt("Cost")+' · '+(fee.gold?fee.gold.toLocaleString()+' '+gt("Gold"):gt("Free"))+(fee.dust?' + '+fee.dust+' '+gt("Gem Dust"):'')}</Text>
+            <Text style={[s.gemConfirmCost,!canAffordFee&&s.missing]}>{gt("Cost")+' · '+(next?'1× '+next.name+' + ':'')+(fee.gold?fee.gold.toLocaleString()+' '+gt("Gold"):gt("Free"))+(fee.dust?' + '+fee.dust+' '+gt("Gem Dust"):'')}</Text>
             {!canAffordFee?<Text style={s.reason}>{gt("Not enough materials for this change.")}</Text>:null}
             <Text style={s.compactHint}>{gt("Confirm below to apply this change.")}</Text>
           </View>;
@@ -239,7 +240,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
       <GameButton title={confirmRisk?gt("Confirm attempt"):feedback?.kind==='upgrade_failure'?gt("Try again · ")+totalChancePct+'%':gt("Enhance to")+' +'+quote.targetRank} loading={busy} disabled={!canUpgrade} onPress={attempt}/>
       {!canUpgrade?<Text accessibilityLiveRegion="polite" style={s.reason}>{unavailable}</Text>:<Text style={s.compactFooterHint}>{gt("Rank protected on failure")}</Text>}
     </View>:null}
-    {tab==='gems'&&gemPickerOpen&&pendingGemAction?(()=>{const pending=pendingGemAction;const fee=pending.kind==='reroll'?{gold:0,dust:0}:gemUnsocketCostForStateV1(state,pending.currentGemId);const affordable=gold>=fee.gold&&combinedQuantity(state,'GEM_DUST')>=fee.dust;return <View style={s.actionFooter}><View style={s.gemConfirmActions}><View style={s.flex}><GameButton title={gt("Cancel")} tone="secondary" disabled={busy} onPress={()=>setPendingGemAction(null)}/></View><View style={s.flex}><GameButton title={pending.kind==='reroll'?gp('Confirm reroll'):pending.kind==='replace'?gt("Confirm replacement"):gt("Confirm extraction")} loading={busy} disabled={!affordable||busy} onPress={()=>void run(async()=>{await(pending.kind==='extract'?onUnsocket(pending.index):onReplace(pending.gemId));if(pending.kind==='reroll')setRerollNotice(gp('Gem consumed. Your best roll was kept.'));setPendingGemAction(null);setGemPickerOpen(false);setSelectedGemId(null)})}/></View></View></View>})():null}
+    {tab==='gems'&&gemPickerOpen&&pendingGemAction?(()=>{const pending=pendingGemAction;const fee=pending.kind==='reroll'?{gold:0,dust:0}:gemUnsocketCostForStateV1(state,pending.currentGemId);const affordable=gold>=fee.gold&&combinedQuantity(state,'GEM_DUST')>=fee.dust&&(pending.kind==='extract'||combinedQuantity(state,pending.gemId)>0);return <View style={s.actionFooter}><View style={s.gemConfirmActions}><View style={s.flex}><GameButton title={gt("Cancel")} tone="secondary" disabled={busy} onPress={()=>setPendingGemAction(null)}/></View><View style={s.flex}><GameButton title={pending.kind==='reroll'?gp('Confirm reroll'):pending.kind==='replace'?gt("Confirm replacement"):gt("Confirm extraction")} loading={busy} disabled={!affordable||busy} onPress={()=>void run(async()=>{await(pending.kind==='extract'?onUnsocket(pending.index):onReplace(pending.gemId));if(pending.kind==='reroll')setRerollNotice(gp('Gem consumed. Your best roll was kept.'));setPendingGemAction(null);setGemPickerOpen(false);setSelectedGemId(null)})}/></View></View></View>})():null}
     {tab==='gems'&&gemPickerOpen&&!pendingGemAction?<View style={s.actionFooter}>
       <GameButton title={selectedPerfected?gp('Maximum roll'):equippedGemId?(selectedGem?.id===equippedGemId?gp('Improve roll'):gt("Replace gem")):gt("Socket gem")} disabled={!selectedGem||selectedBlocked||busy} loading={busy} onPress={primaryGemAction}/>
     </View>:null}

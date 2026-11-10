@@ -75,7 +75,7 @@ const GUILD_BANK_RESOURCES=[
 ] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
 export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
- const st=useSocialText(),projectUi=useOnlineGuildProjectUiText();
+ const st=useSocialText();
   const language=useGameLanguage();
   const guildScroll=useRef<ElementRef<typeof ScrollView>>(null);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -162,18 +162,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     {(['Roster','Manage'] as const).some(section=>section===onlineSection)?<GuildSectionHeader label={st('Guild')} title={socialLabel(language,onlineSection==='Roster'?'Guild Roster':'Manage Guild')} copy={socialLabel(language,onlineSection==='Roster'?'Roster, activity and membership.':'Guild identity and recruitment.')} action={headerGuide}/>:null}
 
 
-    {onlineSection==='Home'&&weeklyVotePending?<Pressable accessibilityRole="button"
-      accessibilityLabel={projectUi("Vote for next week's project")}
-      onPress={()=>{setProgressTab('Projects');setOnlineSection('Progress');guildScroll.current?.scrollTo({y:0,animated:false})}}
-      style={({pressed})=>[s.weeklyVoteReminder,pressed&&s.pressed]}>
-      <View style={s.weeklyVoteReminderDot}/>
-      <View style={{flex:1,minWidth:0}}>
-       <Text style={s.weeklyVoteReminderTitle}>{projectUi("Vote for next week's project")}</Text>
-       <Text style={s.weeklyVoteReminderMeta}>{projectUi('Voting closes Monday at 00:00 UTC')}</Text>
-      </View>
-      <Text style={s.weeklyVoteReminderArrow}>›</Text>
-     </Pressable>:null}
-    {onlineSection==='Home'?<GuildOnlineHome onNavigateMuster={()=>{setActivityView('Muster');setOnlineSection('Activities')}} onNavigateQuests={()=>{setActivityView('Quests');setOnlineSection('Activities')}} onNavigateShop={()=>{setHallSection('Shop');setOnlineSection('Hall')}} onRewardsChanged={onTokenRewardsChanged} onGuide={()=>setGuideLibraryOpen(true)} canCustomize={canCustomize} onNavigate={next=>{if(next==='Chat'&&onOpenChat){onOpenChat();return;}if((next!=='Manage'&&next!=='Appearance')||canCustomize)setOnlineSection(next)}} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
+    {onlineSection==='Home'?<GuildOnlineHome votePending={weeklyVotePending} onNavigateProjectVote={()=>{setProgressTab('Projects');setOnlineSection('Progress');guildScroll.current?.scrollTo({y:0,animated:false})}} onNavigateMuster={()=>{setActivityView('Muster');setOnlineSection('Activities')}} onNavigateQuests={()=>{setActivityView('Quests');setOnlineSection('Activities')}} onNavigateShop={()=>{setHallSection('Shop');setOnlineSection('Hall')}} onRewardsChanged={onTokenRewardsChanged} onGuide={()=>setGuideLibraryOpen(true)} canCustomize={canCustomize} onNavigate={next=>{if(next==='Chat'&&onOpenChat){onOpenChat();return;}if((next!=='Manage'&&next!=='Appearance')||canCustomize)setOnlineSection(next)}} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
     {onlineSection==='Roster'?(isValidElement<{initialView?:'Members'|'Requests'|'Safety'}>(onlineManagement)?cloneElement(onlineManagement,{initialView:rosterSection}):onlineManagement):null}
     {onlineSection==='Activities'?<View style={s.sectionStack}>
        <GuildSectionHeader label={st('Guild')} title={socialLabel(language,'Guild Activity Board')} copy="Shared objectives and daily participation." action={headerGuide}/>
@@ -327,12 +316,18 @@ function GuildSectionHeader({label,title,copy,action}:{label:string;title:string
  return <View style={s.groupHeader}><View style={{flexDirection:'row',alignItems:'center',gap:8}}><View style={{flex:1,minWidth:0,gap:2}}><Text style={s.groupLabel}>{label}</Text><Text style={s.groupTitle}>{title}</Text><Text style={s.groupCopy}>{copy}</Text></View>{action}</View></View>;
 }
 
-export function GuildOnlineHome({onNavigate,onNavigateMuster,onNavigateQuests,onNavigateShop,onRewardsChanged,onGuide,board,chatUnread=0,canCustomize=false}:{onNavigateMuster:()=>void;onNavigateQuests?:()=>void;onNavigateShop:()=>void;onRewardsChanged?:()=>void|Promise<unknown>;onGuide?:()=>void;onNavigate:(section:OnlineGuildSection)=>void;board?:ReactNode;chatUnread?:number;canCustomize?:boolean}){
- const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+export function GuildOnlineHome({onNavigate,onNavigateMuster,onNavigateQuests,onNavigateShop,onRewardsChanged,onGuide,board,chatUnread=0,canCustomize=false,votePending=false,onNavigateProjectVote}:{onNavigateMuster:()=>void;onNavigateQuests?:()=>void;onNavigateShop:()=>void;onRewardsChanged?:()=>void|Promise<unknown>;onGuide?:()=>void;onNavigate:(section:OnlineGuildSection)=>void;board?:ReactNode;chatUnread?:number;canCustomize?:boolean;votePending?:boolean;onNavigateProjectVote?:()=>void}){
+ const projectUi=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const voteReminder=votePending&&onNavigateProjectVote?<Pressable accessibilityRole="button" accessibilityLabel={projectUi("Vote for next week's project")}
+  onPress={onNavigateProjectVote} style={({pressed})=>[s.weeklyVoteReminder,pressed&&s.pressed]}>
+  <View style={s.weeklyVoteReminderDot}/><View style={{flex:1,minWidth:0}}>
+   <Text style={s.weeklyVoteReminderTitle}>{projectUi("Vote for next week's project")}</Text>
+   <Text style={s.weeklyVoteReminderMeta}>{projectUi('Voting closes Monday at 00:00 UTC')}</Text>
+  </View><Text style={s.weeklyVoteReminderArrow}>›</Text>
+ </Pressable>:null;
  return <View style={s.homeStack}>
   <GuildMemberIdentity onRoster={()=>onNavigate('Roster')} onManage={canCustomize?()=>onNavigate('Manage'):undefined}/>
-  <GuildHomeActions summary={<GuildHallSummary compact onOpenMuster={onNavigateMuster} onOpenShop={onNavigateShop} onRewardsChanged={onRewardsChanged}/>} board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onQuests={()=>onNavigateQuests?onNavigateQuests():onNavigate('Activities')} onShop={onNavigateShop} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onHall={()=>onNavigate('Hall')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')} onGuide={onGuide}/>
-  <GameButton compact title="Roadmap & future Guild content" tone="secondary" onPress={()=>onNavigate('Future')}/>
+  <GuildHomeActions summary={<GuildHallSummary compact onOpenMuster={onNavigateMuster} onOpenShop={onNavigateShop} onRewardsChanged={onRewardsChanged}/>} voteReminder={voteReminder} board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onProjects={()=>onNavigate('Progress')} onQuests={()=>onNavigateQuests?onNavigateQuests():onNavigate('Activities')} onShop={onNavigateShop} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')} onRoadmap={()=>onNavigate('Future')} onGuide={onGuide}/>
  </View>;
 }
 

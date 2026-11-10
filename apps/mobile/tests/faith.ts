@@ -90,6 +90,16 @@ test('continuous Faith respects higher-tier costs, Bank water and the 1000-cycle
  equal(finished.reward!.faithActions,5,'all available repetitions are claimed together');
  equal(finished.state.activity,null,'activity ends after reserved water is exhausted');
 });
+test('switching Faith tiers starts immediately with refunded reserved Holy Water',()=>{
+ const ready=faithAt(water(fresh(),10),10);
+ const quiet=executeGameCommand(ready,{type:'faith_practice',args:{tierId:'FAITH_QUIET',count:1}},T+1000).state;
+ equal(qty(quiet,HOLY_WATER_ID),0,'first practice holds all water in escrow');
+ const candle=executeGameCommand(quiet,{type:'faith_practice',args:{tierId:'FAITH_CANDLE',count:1}},T+2000).state;
+ equal(candle.activity?.kind,'faith','switch keeps practicing Faith without a stop action');
+ equal(candle.activity?.targetId,'FAITH_CANDLE','tapping another Faith tier replaces the previous tier');
+ equal(candle.activity?.faithPractice?.remainingPractices,5,'refunded water funds the replacement tier');
+ equal(qty(candle,HOLY_WATER_ID),0,'no Holy Water is duplicated on switch');
+});
 test('partial practice consumes no water and awards no XP',()=>{const s=startFaithPractice(water(fresh(),10),'FAITH_QUIET',10,T);const r=previewActivityReward(s,T+29_999);equal(r.faithActions,0,'none');equal(r.xp,0,'xp');equal(r.holyWaterConsumed,0,'water');});
 test('Faith progress survives frequent claims and the activity bar receives its updated fraction',()=>{
  let s=startFaithPractice(water(fresh(),3),'FAITH_QUIET',3,T);

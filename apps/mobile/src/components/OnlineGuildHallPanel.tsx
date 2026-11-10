@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {useGuildHallUiText} from '../i18n/guild-hall-ui';
-import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
+import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type ScrollViewInstance} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
@@ -48,8 +48,11 @@ export function OnlineGuildHallPanel(navigation:HallNavigation){
 
 export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,headerHelp,playerState,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
  const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {width,fontScale}=useWindowDimensions();
+ const compactLayout=width<390||fontScale>=1.25;
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
  const hallTabsRef=useRef<ScrollViewInstance>(null);
+ const hallTabOffsets=useRef<Partial<Record<(typeof DESTINATIONS)[number],number>>>({});
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
  const [shopLoading,setShopLoading]=useState(true);
  const [shopError,setShopError]=useState('');
@@ -58,12 +61,19 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const [returnSelection,setReturnSelection]=useState<{templateId:string;resourceId:string}|undefined>(undefined);
  const requestedSection=activeSection??localSection;
  const section=requestedSection==='Skills'?'Overview':requestedSection;
- // On a narrow phone the Hall tabs scroll horizontally; always reveal the selected tab.
+ // Use measured translated tab positions rather than assuming a fixed width for each tab.
  useEffect(()=>{
   const index=DESTINATIONS.indexOf(section);
-  if(index>=0)hallTabsRef.current?.scrollTo({x:Math.max(0,index-2)*88,animated:false});
+  if(index>=0){
+   const position=hallTabOffsets.current[DESTINATIONS[index]];
+   if(position!==undefined)hallTabsRef.current?.scrollTo({x:Math.max(0,position-12),animated:false});
+  }
  },[section]);
- const navigate=(next:HeadquartersSection)=>{if(onSectionChange)onSectionChange(next);else setLocalSection(next)};
+ const navigate=(next:HeadquartersSection,preserveBankReturn=false)=>{
+  // Direct Bank visits must not display a stale Construction return shortcut.
+  if(next==='Bank'&&!preserveBankReturn){setReturnSelection(undefined);setReturnBuilding(undefined);setBankFocus(null);}
+  if(onSectionChange)onSectionChange(next);else setLocalSection(next);
+ };
  const refreshShop=useCallback(async()=>{
   setShopLoading(true);setShopError('');
   try{setShop(await loadOnlineGuildTokenShop())}
@@ -105,11 +115,11 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel={ui("Refresh Guild Hall and supplies")} disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
   </View>
   <ScrollView ref={hallTabsRef} horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel={ui("Guild Hall sections")} contentContainerStyle={s.tabs}>
-   {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{ui(id)}</Text></Pressable>)}
+   {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onLayout={({nativeEvent})=>{hallTabOffsets.current[id]=nativeEvent.layout.x;if(section===id)hallTabsRef.current?.scrollTo({x:Math.max(0,nativeEvent.layout.x-12),animated:false})}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{ui(id)}</Text></Pressable>)}
   </ScrollView>
   {section==='Overview'?<View style={s.root}>
    {renderHallProgress()}
-   <View style={s.heading}><Text style={s.headingText}>{ui('Next guild construction')}</Text><GameButton compact tone="secondary" title={ui("View all")} onPress={()=>navigate('Construction')}/></View>
+   <View style={[s.heading,compactLayout&&s.headingCompact]}><Text style={s.headingText}>{ui('Next guild construction')}</Text><GameButton compact tone="secondary" title={ui("View all")} onPress={()=>navigate('Construction')}/></View>
    {shopFallback()}
    {nextProject?<Panel style={s.priority}>
     <View style={s.between}><View style={s.flex}><Text style={s.priorityTitle}>{guildConstructionBlueprint(nextProject.id)?.name??ui('Guild Construction')}</Text><Text style={s.note}>{ui('Guild Lv {level} · {benefit}',{level:nextProject.guildLevel,benefit:guildConstructionBlueprint(nextProject.id)?.benefit??ui('Permanent guild upgrade')})}</Text></View><Text style={s.percent}>{required?Math.round(100*funded/required):0}%</Text></View>
@@ -118,7 +128,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
      const allocated=Math.min(req.amount,Math.max(0,funding?.resources[req.key]??0)),remaining=Math.max(0,req.amount-allocated);
      const bank=shop?.bank===null?'—':(bankBalances.get(req.key)??0).toLocaleString();
      const name=req.key==='gold'?ui('Gold'):guildUpgradeComponentName(req.key)??req.key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
-     return <View key={req.key} style={s.fundingRow}><Text style={[s.note,s.flex]}>{name}</Text>
+     return <View key={req.key} style={[s.fundingRow,compactLayout&&s.fundingRowCompact]}><Text style={[s.note,compactLayout?s.fundingLabelCompact:s.flex]}>{name}</Text>
       <Text style={s.fundingAmount}>{ui('Need {needed} · Bank {bank}',{needed:remaining.toLocaleString(),bank})}</Text>
      </View>;
     })}
@@ -136,7 +146,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    {shopFallback()}
    {shop?<OnlineGuildConstructionPanel snapshot={shop} onReload={refreshShop}
     initialBuilding={returnBuilding} initialSelection={returnSelection}
-    onOpenBank={(resourceId,building,selected)=>{setReturnBuilding(building);setReturnSelection(selected);setBankFocus(resourceId);navigate('Bank');}}/>:null}
+    onOpenBank={(resourceId,building,selected)=>{setReturnBuilding(building);setReturnSelection(selected);setBankFocus(resourceId);navigate('Bank',true);}}/>:null}
    <GameButton compact tone="secondary" title={ui("Open Guild Bank")} onPress={()=>navigate('Bank')}/>
   </View>:null}
   {section==='Bank'?<View style={s.root}>
@@ -177,8 +187,8 @@ function styles(C:ThemeColors){return StyleSheet.create({
  copy:{fontSize:12,lineHeight:18,color:C.muted},
  note:{fontSize:11,lineHeight:16,color:C.muted},
  error:{fontSize:12,lineHeight:18,color:C.bad},
- heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- headingText:{fontSize:15,lineHeight:21,fontWeight:'800',color:C.text},
+ heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},headingCompact:{flexWrap:'wrap'},
+ headingText:{fontSize:15,lineHeight:21,fontWeight:'800',color:C.text,flexShrink:1},
  hero:{gap:10,backgroundColor:C.panelRaised},
  priority:{gap:9},priorityTitle:{fontSize:13,lineHeight:19,fontWeight:'800',color:C.text},
  between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},
@@ -197,6 +207,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  counter:{fontSize:11,color:C.good,fontWeight:'800'},
  bankReturn:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:9,padding:10,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panelRaised},
  fundingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingVertical:3},
+  fundingRowCompact:{flexWrap:'wrap',alignItems:'flex-start',gap:2},fundingLabelCompact:{width:'100%'},
  fundingAmount:{fontSize:11,lineHeight:16,color:C.text,fontWeight:'700'},
  facilityGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},
  facilityTile:{width:'48%',flexGrow:1,minHeight:61,padding:10,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},

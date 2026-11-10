@@ -5,6 +5,7 @@ import {homeSessionSummary} from '../src/core/dashboard';
 import {executeGameCommand} from '../src/core/game-commands';
 import {eventDailyGift} from '../src/core/live-events';
 import {guildJoinResult} from '../src/core/guild-access';
+import {normalizeSave} from '../src/core/save-normalization';
 
 function claimQuest(state:any,id:string,progress:number){return {...state,quests:state.quests.map((q:any)=>q.questId===id?{...q,status:'claimed',progress}:q)}}
 function expectLocked(state:any,command:any,message:string){let actual='';try{executeGameCommand(state,command,1)}catch(error){actual=error instanceof Error?error.message:''}assert.equal(actual,message);}
@@ -63,6 +64,8 @@ const guildLowLevel={...state,character:{...state.character!,level:6}};
 assert.equal(earlyFeatureUnlocked(guildLowLevel,'guild'),false,'Guild should remain locked under character level 7');
 assert.equal(guildJoinResult(guildLowLevel).allowed,false,'Guild join helper must agree with Level 7');
 assert.equal(guildJoinResult(guildEarly).allowed,true,'Guild join helper must allow Level 7');
+assert.equal(newGame(0).account.guildMinimumLevel,7,'New accounts start with the global Level 7 Guild minimum');
+assert.equal(normalizeSave({...state,account:{...state.account,guildMinimumLevel:undefined}}).account.guildMinimumLevel,7,'Legacy accounts with no Guild minimum normalize to Level 7');
 const higherGuildMinimum={...guildEarly,account:{...guildEarly.account,guildMinimumLevel:12}};
 assert.equal(guildJoinResult(higherGuildMinimum).allowed,false,'An individual Guild may require a higher level');
 

@@ -63,7 +63,7 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
     </View>
     <Text style={s.hint}>{st('Possible advantages depend on the randomized rooms. The server checks the actual fight.')}</Text>
     {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
-    <ScrollView style={s.scroll} contentContainerStyle={s.items} keyboardShouldPersistTaps="handled">
+    <ScrollView style={s.scroll} contentContainerStyle={s.items} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      {entries.map(item=>{
       const art=companionArtSource(item.id),disabled=pending||busy||item.busy||item.forbidden||item.selected;
       const status=item.busy?st('In Trial or Expedition'):item.forbidden?st('Same role as your class'):item.selected?st('Equipped'):item.matchup?st('Possible counter'):st('Available');

@@ -151,7 +151,14 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 
 ];
-export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
+/** Food sustain balance: 15% less HP from every food, including future catalog additions.
+ * Applied at catalog assembly so manual eating, combat auto-eating, and previews agree.
+ * Potions and non-food healing effects are intentionally unaffected. */
+export const FOOD_HEALING_MULTIPLIER = 0.85;
+export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33]
+ .map(item=>item.type==='food'&&typeof item.heal==='number'
+  ?{...item,heal:Math.max(1,Math.round(item.heal*FOOD_HEALING_MULTIPLIER))}
+  :item);
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
 if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
 export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

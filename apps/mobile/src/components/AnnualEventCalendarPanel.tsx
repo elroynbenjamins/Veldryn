@@ -7,6 +7,8 @@ import type {GameState} from '../core/types';
 import {annualEventCalendar,annualCalendarMonths} from '../content/annual-event-calendar';
 import {annualEventSeriesId} from '../content/live-events';
 import {Panel} from './Panel';
+import {FrostfallPreview} from './FrostfallPreview';
+import {frostfallPreviewPhase} from '../content/frostfall-preview';
 import {EventIdentityBadge} from './EventIdentityBadge';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {fetchPublicEventCalendar,type PublicEventSchedule} from '../online/live-events';
@@ -29,6 +31,8 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}
   const scheduleLabel=(schedule:PublicEventSchedule|undefined,fallback:string)=>hasExactSchedule(schedule)?`${dateLabel.format(new Date(schedule.startsAtMs))} – ${dateLabel.format(new Date(displayEnd(schedule.startsAtMs,schedule.endsAtMs)))}`:p(fallback);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [calendarOpen,setCalendarOpen]=useState(false),[previewFestival,setPreviewFestival]=useState(false);
+  const [previewNow,setPreviewNow]=useState(Date.now());
+  useEffect(()=>{const timer=setInterval(()=>setPreviewNow(Date.now()),60_000);return()=>clearInterval(timer);},[]);
   const rows=annualEventCalendar(state);
   const currentYear=new Date().getUTCFullYear(),currentMonth=new Date().getUTCMonth()+1;
   const calendarMonths=annualCalendarMonths(),calendarYears=[...new Set(calendarMonths.map(date=>date.year))];
@@ -44,8 +48,11 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}
   const upcoming=rows.filter(row=>annualEventSeriesId(row.eventId)!==highlightSeries).map(row=>{const current=scheduleFor(row.eventId),futureExact=hasExactSchedule(current)&&current.startsAtMs>Date.now(),year=futureExact||row.order>currentMonth?currentYear:currentYear+1;return {row,year,starts:futureExact?current.startsAtMs:Date.UTC(year,row.order-1,1)};}).sort((a,b)=>a.starts-b.starts);
   const timelineRows=rows.filter(row=>isVisibleMonth(selectedDate.year,monthForOrder(row.order)));
   const featured=previewFestival?{row:selected,year:selectedDate.year}:!highlightEventId?upcoming[0]:undefined;
+  // Published server dates are the source of truth. A calendar planning label alone never opens the teaser.
+  const frostfallWindow=schedule.find(item=>annualEventSeriesId(item.eventId)==='EVT_ANNUAL_012'&&frostfallPreviewPhase(item.startsAtMs,previewNow)!==null);
   return <View style={s.hub}>
-    {featured?.row&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{featured.row.name}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {featured.year}</Text><Text style={s.heroSummary}>{p(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}
+    {frostfallWindow?.startsAtMs!==undefined?<FrostfallPreview startsAtMs={frostfallWindow.startsAtMs} nowMs={previewNow}/>:null}
+    {(previewFestival||!frostfallWindow)&&featured?.row&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{featured.row.name}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {featured.year}</Text><Text style={s.heroSummary}>{p(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}
     <Panel>
     <Text style={s.kicker}>{p('COMING EVENTS')}</Text>
 

@@ -6,6 +6,7 @@ import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
 import {itemDef} from '../../../apps/mobile/src/content/items';
+import {EQUIPMENT_SETS} from '../../../apps/mobile/src/content/equipment-sets';
 import {combatantFromVerifiedSnapshot} from '../../src/server/combat/snapshot-adapter';
 import {simulateCombat} from '../../src/server/combat/engine';
 import type {CraftedGearInstance} from '../../../apps/mobile/src/core/types';
@@ -111,3 +112,35 @@ assert.equal(deriveOnlineCoopLoadout('owner',equipped,10).stats.effectGems?.leng
 
 console.log('online co-op loadout derivation PASS: nine distinct kits, owned equipment, early-dungeon Echo down-sync, no grants, revision hashes, slot validation');
 console.log('PASS: real equipped forged Stat/Effect Gems survive dungeon freeze and change combat');
+
+/**
+ * Two genuine V33 equipment paths must produce different authoritative
+ * Dungeon snapshots. The server recalculates both from its saved game state;
+ * the client cannot substitute a guessed readiness or combat-power value.
+ */
+for(const definition of CLASSES){
+ const paths=EQUIPMENT_SETS.filter(set=>set.classId===definition.id&&set.tier==='T2');
+ const foundation=paths.find(set=>set.path==='Foundation');
+ const alternate=paths.find(set=>set.path==='Alternate');
+ assert.equal(paths.length,2,definition.id+' keeps exactly Foundation and Alternate');
+ assert.ok(foundation&&alternate,definition.id+' has both T2 equipment sets');
+ const state=createCharacter(newGame(0),definition.id,'Two-path Dungeon');
+ state.character!.level=100;
+ state.character!.xp=legacyCharacterTotalXpAtLevel(100);
+ const snapshotFor=(ids:readonly string[])=>{
+   state.character!.equipment=Object.fromEntries(ids.map(id=>[itemDef(id).slot,id]));
+   return deriveOnlineCoopLoadout('owner',state,11);
+ };
+ const f=snapshotFor(foundation!.itemIds),a=snapshotFor(alternate!.itemIds);
+ assert.equal(f.legalEquipment,true,definition.id+' Foundation equipment stays legal');
+ assert.equal(a.legalEquipment,true,definition.id+' Alternate equipment stays legal');
+ assert.ok(
+   Math.abs(f.stats.attackPower-a.stats.attackPower)>1e-6||
+   Math.abs(f.stats.defense-a.stats.defense)>1e-6||
+   Math.abs(f.stats.maxHp-a.stats.maxHp)>1e-6,
+   definition.id+' switching paths must change server-calculated dungeon combat stats',
+ );
+ assert.notEqual(onlineCoopLoadoutHash(f),onlineCoopLoadoutHash(a),
+   definition.id+' switching paths must invalidate the previous frozen snapshot');
+}
+console.log('PASS: both V33 equipment paths alter real server-owned dungeon loadouts and hashes');

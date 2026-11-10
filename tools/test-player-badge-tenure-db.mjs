@@ -10,6 +10,27 @@ const {PGlite}=await import(pathToFileURL(process.env.PGLITE_MODULE??backendRequ
 const db=new PGlite();
 const fixture=readFileSync(new URL('../backend/supabase/tests/profile_badges_tenure_fixture.sql',import.meta.url),'utf8');
 const migration=readFileSync(new URL('../backend/supabase/migrations/20261110153000_profile_badge_single_equip_supporter_tenure_v2.sql',import.meta.url),'utf8');
+/** Split on top-level semicolons, never within quoted PL/pgSQL. */
+function statements(text){
+ const out=[];let start=0,dollar=false,quote=false,lineComment=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i],next=text[i+1];
+  if(lineComment){if(ch==='\n')lineComment=false;continue;}
+  if(!dollar&&!quote&&ch==='-'&&next==='-'){lineComment=true;i++;continue;}
+  if(!quote&&ch==='$'&&next==='$'){dollar=!dollar;i++;continue;}
+  if(!dollar&&ch==="'"){
+   if(quote&&next==="'"){i++;continue;}
+   quote=!quote;continue;
+  }
+  if(!dollar&&!quote&&ch===';'){
+   const part=text.slice(start,i+1).trim();if(part)out.push(part);
+   start=i+1;
+  }
+ }
+ const rest=text.slice(start).trim();
+ if(rest&&!rest.startsWith('--'))throw Error('Unterminated statement: '+rest.slice(0,100));
+ return out;
+}
 const a='00000000-0000-4000-8000-000000000001';
 const b='00000000-0000-4000-8000-000000000002';
 const c='00000000-0000-4000-8000-000000000003';
@@ -24,7 +45,14 @@ const expectDenied=async(fn,code)=>{
 };
 try{
  await db.exec(fixture);
- await db.exec(migration);
+ console.log('BADGE_SQL_FIXTURE_READY');
+ let statementNumber=0;
+ for(const statement of statements(migration)){
+  statementNumber++;
+  try{await db.exec(statement);}
+  catch(error){console.error('BADGE_SQL_FAILED_STATEMENT_'+statementNumber+': '+statement.slice(0,180));throw error;}
+ }
+ console.log('BADGE_SQL_MIGRATION_PARSED statements='+statementNumber);
  const rls=await first("select relrowsecurity as enabled from pg_class where oid='private.supporter_badge_progress_v2'::regclass");
  assert.equal(rls.enabled,true,'tenure table is RLS protected');
  const anonGrant=await first("select has_function_privilege('anon','public.update_player_equipped_badge_v2(text)','execute') as granted");
@@ -85,6 +113,13 @@ try{
  assert.equal(p.identity.equippedBadgeId,'veteran');
  assert.equal(p.identity.supporter,false,'a collectible does not force the Supporter icon');
  assert.equal(p.supporterAvailable,true);
+ // Old app's Show Supporter toggle still selects exactly one elective badge.
+ p=(await first('select public.update_player_badge_preferences_v1(true) as data')).data;
+ assert.equal(p.identity.equippedBadgeId,'supporter','legacy toggle on equips Supporter');
+ p=(await first('select public.update_player_badge_preferences_v1(false) as data')).data;
+ assert.equal(p.identity.equippedBadgeId,null,'legacy toggle off hides only Supporter');
+ p=await equipped('veteran');
+ assert.equal(p.identity.equippedBadgeId,'veteran');
 
  await signIn(c);
  p=await self();assert.equal(p.supporterAvailable,true);

@@ -31,6 +31,8 @@ ok(!canEquipSupporterBadge('supporter_6m',true,3),'cannot claim six-month art at
 ok(supporterTierMonths(6,false)===0&&supporterTierMonths(6,true)===6,'active status gates tier presentation');
 
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,supporterAvailable:true,supporterTierMonths:6,equippedBadgeId:'founder',extras:['founder'],validUntilMs:2000}),now).join(',')==='founder','Supporter tier history does not force supporter badge to display');
+const normalized=normalizePlayerBadges({staff:null,supporter:false,supporterAvailable:true,supporterTierMonths:6,equippedBadgeId:'founder',extras:['founder'],validUntilMs:2000});
+ok(normalizePlayerBadges(normalized)?.supporterTierMonths===6,'normalization must preserve verified Supporter status while wearing a collectible');
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:true,supporterAvailable:true,supporterTierMonths:1,equippedBadgeId:'supporter_6m',extras:[],validUntilMs:2000}),now).length===0,'unearned tier cannot be spoofed by trusted-shape input');
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,supporterAvailable:false,supporterTierMonths:6,equippedBadgeId:'supporter_3m',extras:[],validUntilMs:2000}),now).length===0,'expired Supporter can no longer wear tier');
 ok(playerBadgeIds(normalizePlayerBadges({staff:'moderator',supporter:true,supporterAvailable:true,equippedBadgeId:null,validUntilMs:2000}),now).join(',')==='moderator','explicit unequip does not disable automatic staff identity');
@@ -64,6 +66,7 @@ for(const id of ['supporter','supporter_3m','supporter_6m','admin','moderator',.
  ok(art.includes(`player-badges-v1/${id}.webp`),'badge artwork bundled '+id);
 const provider=read('src/online/PlayerBadgeProvider.tsx'),transport=read('src/online/player-badges.ts');
 ok(provider.includes('setEquipped')&&transport.includes("request('update_player_equipped_badge_v2'"),'single badge preference is saved via authenticated server RPC');
+ok(transport.includes('missingBadgeRpc')&&transport.includes("id==='supporter_3m'||id==='supporter_6m'"),'legacy servers only fall back for basic owned badges, never unverified prestige tiers');
 
 const sql=read('../../backend/supabase/migrations/20261110153000_profile_badge_single_equip_supporter_tenure_v2.sql');
 ok(sql.includes('private.supporter_badge_progress_v2')&&sql.includes('enable row level security'),'only private account tenure ledger is created');

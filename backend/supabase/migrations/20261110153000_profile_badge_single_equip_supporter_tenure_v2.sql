@@ -92,7 +92,7 @@ begin
     set coverage_until=v_coverage,last_verified_at=v_now
     where account_id=p_account_id;
  end if;
-end $$;
+end; $$;
 revoke all on function private.refresh_supporter_badge_progress_v2(uuid)
  from public,anon,authenticated;
 grant execute on function private.refresh_supporter_badge_progress_v2(uuid) to service_role;
@@ -102,7 +102,7 @@ returns trigger language plpgsql security definer set search_path='' as $$
 begin
  perform private.refresh_supporter_badge_progress_v2(new.account_id);
  return new;
-end $$;
+end; $$;
 revoke all on function private.track_supporter_badge_progress_v2()
  from public,anon,authenticated;
 
@@ -120,19 +120,14 @@ create trigger track_promo_supporter_badge_v2
 
 -- A historical expiry/updated_at is not reliable proof of continuous paid
 -- tenure; seed ACTIVE users at deployment rather than backdating status.
-do $$
-declare v_account uuid;
-begin
- for v_account in
-  select distinct account_id from (
-   select account_id from private.account_commerce_entitlements_v1
-   union all
-   select account_id from private.commerce_promo_entitlements_v1
-  ) sources
- loop
-  perform private.refresh_supporter_badge_progress_v2(v_account);
- end loop;
-end $$;
+-- Use a set-based outer query instead of a one-row-at-a-time anonymous DO
+-- block. The invoked VOLATILE function locks/updates each verified account.
+select private.refresh_supporter_badge_progress_v2(account_id)
+from (
+ select account_id from private.account_commerce_entitlements_v1
+ union
+ select account_id from private.commerce_promo_entitlements_v1
+) verified_accounts;
 
 create or replace function private.supporter_badge_tier_v2(p_account_id uuid)
 returns smallint language plpgsql stable security definer set search_path='' as $$
@@ -147,7 +142,7 @@ begin
  if v_started<=now()-interval '6 months' then return 6;end if;
  if v_started<=now()-interval '3 months' then return 3;end if;
  return 1;
-end $$;
+end; $$;
 revoke all on function private.supporter_badge_tier_v2(uuid) from public,anon,authenticated;
 grant execute on function private.supporter_badge_tier_v2(uuid) to service_role;
 
@@ -212,7 +207,7 @@ begin
   'extras',to_jsonb(v_featured),
   'validUntilMs',floor(extract(epoch from v_until)*1000)::bigint
  );
-end $$;
+end; $$;
 revoke all on function private.player_badges_v1(uuid) from public,anon,authenticated;
 grant execute on function private.player_badges_v1(uuid) to service_role;
 
@@ -237,7 +232,7 @@ begin
   'ownedExtras',to_jsonb(v_owned),
   'featuredExtras',coalesce(v_identity->'extras','[]'::jsonb)
  );
-end $$;
+end; $$;
 revoke all on function public.player_badge_self_v1() from public,anon,authenticated;
 grant execute on function public.player_badge_self_v1() to authenticated;
 
@@ -272,7 +267,7 @@ begin
   featured_badge_ids=excluded.featured_badge_ids,
   show_supporter=excluded.show_supporter;
  return public.player_badge_self_v1();
-end $$;
+end; $$;
 revoke all on function public.update_player_equipped_badge_v2(text)
  from public,anon,authenticated;
 grant execute on function public.update_player_equipped_badge_v2(text) to authenticated;
@@ -294,7 +289,7 @@ begin
  then raise exception 'BADGE_NOT_OWNED';end if;
  v_choice:=coalesce(p_badge_ids[1],'none');
  return public.update_player_equipped_badge_v2(nullif(v_choice,'none'));
-end $$;
+end; $$;
 revoke all on function public.update_player_featured_badges_v1(text[])
  from public,anon,authenticated;
 grant execute on function public.update_player_featured_badges_v1(text[]) to authenticated;
@@ -311,14 +306,12 @@ begin
  on conflict(account_id) do update set
   show_supporter=excluded.show_supporter,
   equipped_badge_id=case
-   when private.player_badge_preferences_v1.equipped_badge_id like 'supporter%'
-       and not excluded.show_supporter then 'none'
-   when private.player_badge_preferences_v1.equipped_badge_id in ('auto','none')
-       and excluded.show_supporter then 'supporter'
+   when excluded.show_supporter then 'supporter'
+   when private.player_badge_preferences_v1.equipped_badge_id like 'supporter%' then 'none'
    else private.player_badge_preferences_v1.equipped_badge_id
   end;
  return public.player_badge_self_v1();
-end $$;
+end; $$;
 revoke all on function public.update_player_badge_preferences_v1(boolean)
  from public,anon,authenticated;
 grant execute on function public.update_player_badge_preferences_v1(boolean) to authenticated;

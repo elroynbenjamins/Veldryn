@@ -10,6 +10,8 @@ export interface PlayerBadgeIdentity{
  staff:'admin'|'moderator'|null;
  /** Active AND selected Supporter; legacy field remains for older clients. */
  supporter:boolean;
+ /** Server entitlement state, independent of which badge is equipped. */
+ supporterAvailable?:boolean;
  extras?:CollectiblePlayerBadgeId[];
  /** null means explicitly unequipped, undefined means a legacy badge projection. */
  equippedBadgeId?:EquippablePlayerBadgeId|null;
@@ -76,7 +78,7 @@ export function normalizePlayerBadges(value:unknown):PlayerBadgeIdentity|undefin
   if(equippedBadgeId&&isSupporterBadgeId(equippedBadgeId)&&!canEquipSupporterBadge(equippedBadgeId,supporterAvailable,tier))equippedBadgeId=null;
   if(equippedBadgeId&&isCollectiblePlayerBadgeId(equippedBadgeId)&&!extras.includes(equippedBadgeId))equippedBadgeId=null;
  }
- return {staff,supporter,extras,validUntilMs:row.validUntilMs,supporterTierMonths:tier,
+ return {staff,supporter,supporterAvailable,extras,validUntilMs:row.validUntilMs,supporterTierMonths:tier,
   ...(hasEquipped?{equippedBadgeId}:{})};
 }
 export function playerBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date.now()):PlayerBadgeId[]{

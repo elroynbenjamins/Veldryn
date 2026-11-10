@@ -7,6 +7,7 @@
   ".core-build/apps/mobile/tests/unlock-inbox.js",
   ".core-build/apps/mobile/tests/companion-training-roster.js",
   ".core-build/apps/mobile/tests/companion-mastery.js",
+  ".core-build/apps/mobile/tests/world-boss-hollowroot-calibration.js",
   "tests/online-loading-interactions.cjs",
   ".core-build/apps/mobile/tests/coop-sync-policy.js",
   "tests/coop-sync-runtime.cjs",

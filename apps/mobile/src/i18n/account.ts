@@ -4,6 +4,16 @@ import {createTranslator,interpolateTranslation} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  "Secured": ["Secured","Gesichert","Protegida","Beveiligd","Protetto","Sécurisé"],
+  "Connected services": ["Connected services","Verbundene Dienste","Servicios conectados","Verbonden diensten","Servizi collegati","Services connectés"],
+  "Google account": ["Google account","Google-Konto","Cuenta de Google","Google-account","Account Google","Compte Google"],
+  "Sign in to VELDRYN with Google.": ["Sign in to VELDRYN with Google.","Mit Google bei VELDRYN anmelden.","Inicia sesión en VELDRYN con Google.","Meld je met Google aan bij VELDRYN.","Accedi a VELDRYN con Google.","Connectez-vous à VELDRYN avec Google."],
+  "Link Google for another sign-in option.": ["Link Google for another sign-in option.","Verknüpfe Google für eine weitere Anmeldemöglichkeit.","Vincula Google para tener otra opción de acceso.","Koppel Google voor een extra aanmeldoptie.","Collega Google per un'altra opzione di accesso.","Associez Google pour une autre option de connexion."],
+  "Linked": ["Linked","Verknüpft","Vinculada","Gekoppeld","Collegato","Associé"],
+  "Google Play Games": ["Google Play Games","Google Play Spiele","Google Play Games","Google Play Games","Google Play Giochi","Google Play Jeux"],
+  "Google Play game services": ["Google Play game services","Google Play-Spieldienste","Servicios de juegos de Google Play","Google Play-gameservices","Servizi di gioco Google Play","Services de jeux Google Play"],
+  "Connected": ["Connected","Verbunden","Conectado","Verbonden","Connesso","Connecté"],
+  "Account security": ["Account security","Kontosicherheit","Seguridad de la cuenta","Accountbeveiliging","Sicurezza dell'account","Sécurité du compte"],
  "Equipment Pouch":["Equipment Pouch","Ausrüstungsbeutel","Bolsa de equipo","Uitrustingstas","Sacca equipaggiamento","Sac d’équipement"],
  "Choose a character to claim equipment.":["Choose a character to claim equipment.","Wähle einen Charakter, um Ausrüstung abzuholen.","Elige un personaje para recoger el equipo.","Kies een personage om uitrusting te claimen.","Scegli un personaggio per ritirare l'equipaggiamento.","Choisissez un personnage pour récupérer l’équipement."],
  "CLAIM BLOCKED":["CLAIM BLOCKED","EINLÖSEN BLOCKIERT","RECLAMACIÓN BLOQUEADA","CLAIM GEBLOKKEERD","RISCATTO BLOCCATO","RÉCUPÉRATION BLOQUÉE"],

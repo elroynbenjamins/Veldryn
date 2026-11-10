@@ -148,8 +148,8 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'EVENT_BONDBLOOM',name:'Event Bondbloom',type:'material',value:175},
 {id:'RUNEBOUND_CORE',name:'Runebound Core',type:'material',value:150},
 {id:'ECHO_BAT_WING',name:'Echo Bat Wing',type:'material',value:80},
-// The Act III finale grants a permanent, equippable quest cape. Its authored
-// level 25 is rebased to the same current level 20 as the finale quest.
+// Retired item ID: retain this catalog entry only so historical saves that
+// already contain OATHGLASS_CAPE remain readable. No quest or loot grants it.
 {id:'OATHGLASS_CAPE',name:'Oathglass Cape',type:'gear',slot:'cape',attack:2,defense:6,hp:18,readiness:5,rarity:'rare',requiredLevel:25,value:240},
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 

@@ -14,7 +14,7 @@ const {guildActivityUiRows,guildActivityUiText,guildMilestoneText}=require('../s
 const {socialTranslationRows}=require('../src/i18n/social.ts');
 const {EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {GUILD_ACTIVITY_MILESTONE_DEFS}=require('../src/core/guild-activity.ts');
-const expected=33,legacy=['de','es','nl','it','fr','ru','tr'],placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
+const expected=35,legacy=['de','es','nl','it','fr','ru','tr'],placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 assert.equal(Object.keys(guildActivityUiRows).length,expected,'All current authored Guild Quest/Activity labels covered');
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...legacy]);
 for(const [key,row] of Object.entries(guildActivityUiRows)){
@@ -55,4 +55,4 @@ assert.ok(board.includes("ui('Objective breakdown · {quest}'")||board.includes(
 assert.ok(board.includes('q.title')&&board.includes('q.description'),'Authoritative quest content must be preserved');
 assert.ok(meter.includes('milestone(row.name)')&&meter.includes('milestone(row.description)'),'Guild Activity milestone names/descriptions must be localized');
 assert.ok(meter.includes('ui("Guild Activity details")'),'Guild Activity accessibility label must be localized');
-console.log('PASS: 33 Guild Quest/Activity labels across seven target languages, 10 milestone strings in RU/TR and safe runtime interpolation');
+console.log('PASS: 35 Guild Quest/Activity labels across seven target languages, 10 milestone strings in RU/TR and safe runtime interpolation');

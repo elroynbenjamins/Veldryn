@@ -41,15 +41,33 @@ The reused dungeon loadout builder computes combat stat scale from **`legacyChar
 
 ## 3. Calibration matrix
 
-The planned validation matrix is **9 class focuses × 4 equipment tiers × 3 party sizes × 3 difficulty settings × 2 verified gear profiles = 648 deterministic party-boss scenarios**, with 2–4 unique account/character IDs and normal role rules. Reusing immutable per-member source snapshots reduces fixture generation and avoids test-to-test carryover.
+The implemented validation matrix is **9 class focuses × 4 equipment tiers × 3 party sizes × 3 difficulty settings × 2 verified gear profiles = 648 deterministic party-boss scenarios**, with 2–4 unique account/character IDs and normal role rules. Reusing immutable per-member source snapshots reduces fixture generation and avoids test-to-test carryover.
 
-Record per group:
+Calibration records include:
 - Mean/min/max cleared tiers; fraction clearing first tier; fraction at cap Tier 12.
 - Reward-band distributions by 2/3/4 member roster, Standard/Veteran/Heroic, and chosen focus class.
 - Source record hash, frozen actor hash, legal equipment status, Effect Gem presence, companion ability presence.
 - Differences between plain and prepared gear, particularly whether T2/T3/T4 still compress at the upper cap.
 
-**Do not publish numeric outcomes until the dedicated GitHub Actions job has run and its actual logs have been inspected.** Previous v3 values in the spreadsheet are **gear proxy results**, not v4.
+The **first successful authoritative test run** ([Actions #42843378307](https://github.com/elroynbenjamins/Veldryn/actions/runs/42843378307)) completed all **648 scenarios**. Its unchanged v2 boss gave the following average cleared tiers for **2-player Standard** parties, with all these synthetic groups clearing at least Tier 1:
+
+| Equipment tier | Plain crafted | Q85/rare/+4, Gem + companion + skills |
+| --- | ---: | ---: |
+| T1 | 6.56 / 12 | 9.22 / 12 |
+| T2 | 10.56 / 12 | 12.00 / 12 |
+| T3 | 12.00 / 12 | 12.00 / 12 |
+| T4 | 12.00 / 12 | 12.00 / 12 |
+
+The subsequent **passing** curve comparison ([Actions #42849065762](https://github.com/elroynbenjamins/Veldryn/actions/runs/42849065762)) validated three mirrored real-loadout combat scenarios against the original Day 8 code and ran **64 curve cohorts × nine focal classes**. Complete exact cohort results are versioned in [party-events-v4-real-loadout-curve-results.csv](spreadsheets/party-events-v4-real-loadout-curve-results.csv). Standard two-player means (seed variation explains small differences from the first 648 cases):
+
+| Gear profile | Old v2 growth | Gradual | Medium | Steep |
+| --- | ---: | ---: | ---: | ---: |
+| T1 plain | 6.89 | 5.22 | 4.33 | 4.11 |
+| T2 plain | 10.44 | 7.67 | 6.67 | 5.78 |
+| T3 plain | 12.00 | 9.11 | 7.56 | 7.00 |
+| T4 prepared | 12.00 | 10.33 | 9.33 | 8.22 |
+
+**Provisional hidden balance choice: Medium** — from Tier 2 onward apply +42% compounded boss HP, +20% Attack, and +16% Defense per tier. This is `1.42^(tier-1)`, `1.20^(tier-1)`, and `1.16^(tier-1)`, with **Tier 1 unchanged** and normal event difficulty multipliers still 1.00/1.20/1.40. It leaves headroom for T5+ equipment without excluding early players from the first tier. The hidden `weekly-party-boss-v2.ts` implements this draft curve, but the feature remains disabled. Later hazard mechanics, mixed-level groups, realistic inventories, skill distributions and resource preparation are outstanding release gates; this is **not final approved live balance**.
 
 ## 4. Security and determinism checks
 
@@ -61,7 +79,7 @@ Record per group:
 
 ## 5. Balance recommendation and ship gates
 
-**Do not commit a new boss curve just because v3's proxy saturated at 12/12.** Use v4 to establish the true shape of T1–T4 progression first. If later tiers still saturate, test **mid-to-late tier growth** while holding Tier 1 accessible and maintaining Tank/Support parity. Before selecting a live curve, run representative quality/rarity/gem/companion distributions, both saved loadout compositions and mixed-level parties, repeated seeds, all 12 authored event variations, verified supply bonuses and real code-level family hazards.
+**The real-source v4 test justifies a provisional hidden Medium tier-growth curve, but not a public release.** Preserve the verified easy Tier 1 and monitor class composition, party size, and role parity. Do not assume the 12 tiers' reward economy or the future family-specific mechanics are calibrated merely because a synthetic class/gear scenario passes. Before selecting a live curve, run representative quality/rarity/gem/companion distributions, both saved loadout compositions and mixed-level parties, repeated seeds, all 12 authored event variations, verified supply bonuses and real code-level family hazards.
 
 ### Still missing before Party Events could be released
 

@@ -23,6 +23,8 @@ export interface WorldBossRoleLedger {
 export interface WorldBossRoundInput {
   seed:string;boss:WorldBossId;phase:WorldBossPhase;players:readonly CombatantDefinition[];
   order?:WorldBossOrder; pressure?:number;
+  /** Offline counterfactual only. Must never be set from a client or production event. */
+  testOnlyDisableTankInterception?:boolean;
 }
 export interface WorldBossRoundResult {
   boss:WorldBossId;phase:WorldBossPhase;roundsCompleted:number;survived:boolean;bossHpDamage:number;
@@ -140,7 +142,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
   let preShield=money(damageAfterMitigation(attack,coeff,mit,.95+noRngBelow(rng,round+':boss_variance')*.1,false,1));
   const blockedByDefense=money(Math.max(0,raw-preShield));
   let protectedAmount=0;
-  if(target.def.role!=='tank'&&aliveTank()){
+  if(target.def.role!=='tank'&&aliveTank()&&!input.testOnlyDisableTankInterception){
    // Do not award Tank Impact for shields which would have absorbed the strike
    // anyway: measure the real HP difference after existing shield coverage.
    const guardian=aliveTank()!;

@@ -4,7 +4,7 @@ import {frostfallPreviewCountdown, frostfallPreviewPhase} from '../content/frost
 import {useGameTheme} from '../theme/ThemeContext';
 import {Panel} from './Panel';
 
-const HERO = require('../../assets/card-backgrounds/frostfall_wide_v2.webp');
+const HERO = require('../../assets/profile-backgrounds/bg_frostfall.webp');
 const SNOWBELL_PUP = require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png');
 const FROSTFALL_BADGE = require('../../assets/events/frostfall/badge.png');
 const FROSTBELL_TOKEN = require('../../assets/events/frostfall/currency_frostbell_token.png');

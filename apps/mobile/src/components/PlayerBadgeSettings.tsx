@@ -1,10 +1,14 @@
 import {accountText,accountError} from '../i18n/account';
 import type {Language} from '../i18n/languages';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {Pressable,StyleSheet,Switch,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {usePlayerBadges,type BadgeState} from '../online/PlayerBadgeProvider';
 import {PlayerBadge,PlayerBadges} from './PlayerBadges';
-import {COLLECTIBLE_PLAYER_BADGE_IDS,MAX_DISPLAYED_PLAYER_BADGES,PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS} from '../core/player-badges';
+import {
+ COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,
+ SUPPORTER_BADGE_UNLOCK_HINTS,canEquipSupporterBadge,type EquippablePlayerBadgeId,
+ type SupporterBadgeId,
+} from '../core/player-badges';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
 
@@ -15,25 +19,106 @@ export function PlayerBadgeSettings(){
 export function PlayerBadgeSettingsView({language:languageOverride,badges}:{language?:Language;badges:BadgeState}){
  const contextLanguage=useGameLanguage(),language=languageOverride??contextLanguage;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
-
  const C=useGameTheme();
- if(!badges.accountId)return null;
+ const owned=badges.ownedExtras??[];
+ const equipped:EquippablePlayerBadgeId|null=badges.identity?.equippedBadgeId!==undefined
+  ?badges.identity.equippedBadgeId
+  :badges.equippedBadgeId??badges.featuredExtras?.[0]??(badges.showSupporter&&badges.supporterAvailable?'supporter':null);
+ const disabled=badges.loading||badges.busy||!!badges.error;
+ const choose=(id:EquippablePlayerBadgeId)=>{if(!disabled)void badges.setEquipped(equipped===id?null:id);};
+ const row=(id:EquippablePlayerBadgeId,unlocked:boolean,detail:string)=>{
+  const selected=equipped===id;
+  const blocked=disabled||!unlocked;
+  return <Pressable
+   key={id} accessibilityRole="button"
+   accessibilityLabel={PLAYER_BADGE_LABELS[id]}
+   accessibilityHint={unlocked?(selected?'Unequip this badge':'Equip this badge'):detail}
+   accessibilityState={{selected,disabled:blocked}}
+   disabled={blocked}
+   onPress={()=>choose(id)}
+   style={({pressed})=>[s.badgeRow,{borderColor:selected?C.accent:C.line,backgroundColor:selected?C.selection:C.panel},
+    !unlocked&&s.locked,pressed&&s.pressed]}>
+   <View style={[s.artFrame,{backgroundColor:C.bg}]}><PlayerBadge id={id} size={38}/></View>
+   <View style={s.badgeDetails}>
+    <Text numberOfLines={1} style={[s.badgeName,{color:C.text}]}>{PLAYER_BADGE_LABELS[id]}</Text>
+    <Text style={[s.badgeDetail,{color:C.muted}]}>{detail}</Text>
+   </View>
+   <Text style={[s.status,{color:selected?C.accent:unlocked?C.good:C.muted}]}>
+    {selected?'EQUIPPED':unlocked?'EQUIP':'LOCKED'}
+   </Text>
+  </Pressable>;
+ };
+ if(!badges.accountId)return <Text style={{color:C.muted}}>Sign in to choose a player badge.</Text>;
+
  return <View style={s.root}>
-  <Text style={[s.title,{color:C.text}]}>{a("Player badges")}</Text>
-  <PlayerBadges identity={badges.identity} showLabels size={28}/>
-  <View style={s.row}><Text style={[s.label,{color:C.text}]}>{a("Show Supporter badge")}</Text><Switch accessibilityLabel={a("Show Supporter badge")} value={badges.showSupporter} disabled={badges.loading||badges.busy||!!badges.error} onValueChange={value=>void badges.setVisible(value)}/></View>
-  {!badges.supporterAvailable&&!badges.loading?<Text style={[s.note,{color:C.muted}]}>{a("Requires an active Supporter subscription.")}</Text>:null}
-  <Text style={[s.title,{color:C.text}]}>Collectible badges</Text>
-  <Text style={[s.note,{color:C.muted}]}>Choose up to {MAX_DISPLAYED_PLAYER_BADGES} earned badges. Staff badges always take priority beside your name.</Text>
-  {COLLECTIBLE_PLAYER_BADGE_IDS.map(id=>{
-   const owned=badges.ownedExtras?.includes(id)===true,featured=badges.featuredExtras?.includes(id)===true;
-   const selected=badges.featuredExtras??[];
-   const blocked=!badges.setFeatured||badges.busy||badges.loading||!owned||(!featured&&selected.length>=MAX_DISPLAYED_PLAYER_BADGES);
-   return <Pressable key={id} accessibilityRole="button" accessibilityLabel={PLAYER_BADGE_LABELS[id]} accessibilityState={{selected:featured,disabled:blocked}} disabled={blocked} onPress={()=>void badges.setFeatured?.(featured?selected.filter(x=>x!==id):[...selected,id])} style={[s.collectible,{borderColor:featured?C.accent:C.line,opacity:owned?1:.55}]}>
-    <PlayerBadge id={id} size={30}/><View style={s.details}><Text style={[s.label,{color:C.text}]}>{PLAYER_BADGE_LABELS[id]}</Text><Text style={[s.note,{color:C.muted}]}>{owned?(featured?'Featured':'Earned · tap to feature'):PLAYER_BADGE_UNLOCK_HINTS[id]}</Text></View><Text style={{color:featured?C.accent:C.muted}}>{featured?'✓':owned?'+':'🔒'}</Text>
-   </Pressable>;
-  })}
-  {badges.error?<><Text accessibilityRole="alert" style={[s.note,{color:C.bad}]}>{accountError(language,badges.error,'Could not load badges.')}</Text><GameButton compact title={a("Retry badges")} tone="secondary" onPress={()=>badges.refresh()}/></>:null}
+  <View style={s.heading}>
+   <View style={s.grow}>
+    <Text style={[s.title,{color:C.text}]}>{a('Player badges')}</Text>
+    <Text style={[s.note,{color:C.muted}]}>Equip one achievement or Supporter badge. Staff badges appear automatically.</Text>
+   </View>
+  </View>
+  <View style={[s.preview,{backgroundColor:C.panel,borderColor:C.line}]}>
+   <View style={s.previewLabels}>
+    <Text style={[s.sectionEyebrow,{color:C.accent}]}>YOUR PUBLIC BADGES</Text>
+    <Text style={[s.note,{color:C.muted}]}>{equipped?PLAYER_BADGE_LABELS[equipped]:'No badge equipped'}</Text>
+   </View>
+   <PlayerBadges identity={badges.identity} size={29}/>
+  </View>
+
+  <View style={s.section}>
+   <View style={s.sectionHeading}>
+    <Text style={[s.sectionTitle,{color:C.text}]}>Supporter</Text>
+    <Text style={[s.counter,{color:C.muted}]}>{badges.supporterAvailable?'ACTIVE':'NOT ACTIVE'}</Text>
+   </View>
+   <Text style={[s.note,{color:C.muted}]}>Your badge grows more ornate after 3 and 6 consecutive months of verified Supporter time.</Text>
+   {SUPPORTER_BADGE_IDS.map((id:SupporterBadgeId)=>{
+    const required=id==='supporter_6m'?6:id==='supporter_3m'?3:1;
+    const unlocked=canEquipSupporterBadge(id,badges.supporterAvailable,badges.supporterTierMonths);
+    return row(id,unlocked,unlocked
+     ?required===1?'Active Supporter · original badge':`Verified ${required}-month Supporter milestone`
+     :SUPPORTER_BADGE_UNLOCK_HINTS[id]);
+   })}
+   <Text style={[s.footnote,{color:C.muted}]}>Higher tiers are based on verified uninterrupted time, not on purchasing months in advance. A previous subscription cannot be backdated without proof.</Text>
+  </View>
+
+  <View style={s.section}>
+   <View style={s.sectionHeading}>
+    <Text style={[s.sectionTitle,{color:C.text}]}>Earned badges</Text>
+    <Text style={[s.counter,{color:C.muted}]}>{owned.length}/{COLLECTIBLE_PLAYER_BADGE_IDS.length} UNLOCKED</Text>
+   </View>
+   {COLLECTIBLE_PLAYER_BADGE_IDS.map(id=>row(id,owned.includes(id),
+    owned.includes(id)?'Unlocked · account-wide':PLAYER_BADGE_UNLOCK_HINTS[id]))}
+  </View>
+
+  {equipped?<GameButton compact title="Unequip badge" tone="secondary" disabled={disabled} onPress={()=>void badges.setEquipped(null)}/>:null}
+  {badges.loading?<Text style={[s.note,{color:C.muted}]}>Loading earned badges…</Text>:null}
+  {badges.error?<View style={s.errors}>
+   <Text accessibilityRole="alert" style={[s.note,{color:C.bad}]}>{accountError(language,badges.error,'Could not load badges.')}</Text>
+   <GameButton compact title={a('Retry badges')} tone="secondary" onPress={()=>void badges.refresh()}/>
+  </View>:null}
  </View>;
 }
-const s=StyleSheet.create({root:{gap:10,paddingVertical:12},title:{fontSize:14,fontWeight:'700'},row:{flexDirection:'row',alignItems:'center',gap:12},label:{flex:1,fontSize:13},note:{fontSize:12,lineHeight:18},collectible:{flexDirection:'row',alignItems:'center',gap:10,minHeight:52,padding:8,borderWidth:1,borderRadius:8},details:{flex:1,gap:2}});
+const s=StyleSheet.create({
+ root:{gap:12,paddingVertical:8},
+ heading:{flexDirection:'row',gap:8,alignItems:'center'},
+ grow:{flex:1,minWidth:0},
+ title:{fontSize:17,fontWeight:'800'},
+ note:{fontSize:12,lineHeight:18},
+ preview:{minHeight:66,padding:12,borderWidth:1,borderRadius:12,flexDirection:'row',gap:8,alignItems:'center',justifyContent:'space-between'},
+ previewLabels:{flex:1,minWidth:0,gap:5},
+ sectionEyebrow:{fontSize:10,letterSpacing:.8,fontWeight:'900'},
+ section:{gap:7,marginTop:4},
+ sectionHeading:{flexDirection:'row',alignItems:'center',gap:8,justifyContent:'space-between'},
+ sectionTitle:{fontSize:14,fontWeight:'800'},
+ counter:{fontSize:10,fontWeight:'800'},
+ badgeRow:{borderWidth:1,borderRadius:10,minHeight:66,paddingHorizontal:9,paddingVertical:7,flexDirection:'row',alignItems:'center',gap:9},
+ artFrame:{width:50,height:50,borderRadius:8,justifyContent:'center',alignItems:'center'},
+ badgeDetails:{flex:1,minWidth:0,gap:3},
+ badgeName:{fontSize:12,fontWeight:'800'},
+ badgeDetail:{fontSize:11,lineHeight:15},
+ status:{fontSize:9,letterSpacing:.45,fontWeight:'900'},
+ locked:{opacity:.62},
+ pressed:{opacity:.78},
+ footnote:{fontSize:10,lineHeight:15,marginTop:3},
+ errors:{gap:6},
+});

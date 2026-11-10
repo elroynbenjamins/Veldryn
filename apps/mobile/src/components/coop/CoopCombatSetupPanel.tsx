@@ -10,7 +10,7 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 
 /** Consumables are display-only. A companion change uses the game's trusted command path. */
-export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion}:{state:GameState;compact?:boolean;onChooseCompanion?:()=>void}){
+export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,companionDisabled=false}:{state:GameState;compact?:boolean;onChooseCompanion?:()=>void;companionDisabled?:boolean}){
  const {colors:C,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
  const setup=useMemo(()=>coopCombatSetup(state),[state]);
@@ -24,7 +24,8 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion}:{st
   </View>
   <View style={s.twoColumns}>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Companion')+': '+(setup.companion?.name??st('None equipped'))}
-    accessibilityState={{expanded:expanded==='companion'}} accessibilityHint={onChooseCompanion?st('Choose dungeon companion'):st('Tap to view companion')}
+    accessibilityState={{expanded:!onChooseCompanion&&expanded==='companion',disabled:Boolean(onChooseCompanion&&companionDisabled)}} accessibilityHint={onChooseCompanion?st('Choose dungeon companion'):st('Tap to view companion')}
+    disabled={Boolean(onChooseCompanion&&companionDisabled)}
     onPress={onChooseCompanion??(()=>toggle('companion'))} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
     <View style={s.itemTop}>
      <View style={s.artFrame}>
@@ -35,7 +36,10 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion}:{st
       <Text style={s.itemName} numberOfLines={2}>{setup.companion?.name??st('None equipped')}</Text>
      </View>
     </View>
-    <Text style={[s.status,setup.companion?s.positive:s.muted]} numberOfLines={1}>{setup.companion?st('Equipped'):st('Not equipped')}</Text>
+    <View style={s.tileFooter}>
+     <Text style={[s.status,setup.companion?s.positive:s.muted]} numberOfLines={1}>{setup.companion?st('Equipped'):st('Not equipped')}</Text>
+     {onChooseCompanion?<Text style={s.change}>{st('Change companion')} ›</Text>:null}
+    </View>
    </Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Healing potion')+': '+(setup.healing?.name??st('None selected'))}
     accessibilityState={{expanded:expanded==='healing'}} accessibilityHint={st('Healing uses carried potions; food is disabled in dungeons.')}
@@ -86,7 +90,7 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  itemContent:{flex:1,minWidth:0},
  tileLabel:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.textMuted},
  itemName:{fontSize:12,lineHeight:16,fontWeight:'700',color:C.text},
- status:{fontSize:11,lineHeight:15,fontWeight:'600'},
+ status:{fontSize:11,lineHeight:15,fontWeight:'600'},tileFooter:{flexDirection:'row',gap:4,alignItems:'center',justifyContent:'space-between'},change:{fontSize:10,lineHeight:15,fontWeight:'700',color:C.cyan},
  positive:{color:C.success},muted:{color:C.textMuted},warning:{color:C.danger},
  tonicRow:{flexDirection:'row',alignItems:'center',gap:8,borderWidth:1,borderColor:C.line,borderRadius:10,paddingHorizontal:9,minHeight:46,backgroundColor:C.surfaceRaised},
  tonicIcon:{width:26,height:30,alignItems:'center',justifyContent:'center'},

@@ -42833,6 +42833,46 @@ var potionDef = (id) => POTIONS.find((p) => p.id === id);
 
 // ../apps/mobile/src/content/equipment-items-v33.ts
 init_progression();
+
+// ../apps/mobile/src/content/equipment-path-stats.ts
+var EQUIPMENT_PATH_HP_PER_POINT = 4;
+var FULL_SET_BUDGET = 73;
+var NEUTRAL_ANCHOR = 0.26;
+var ORIGINAL_FULL_SET_SHARES = {
+  attack: 21 / FULL_SET_BUDGET,
+  defense: 33 / FULL_SET_BUDGET,
+  hp: 19 / FULL_SET_BUDGET
+};
+var ALTERNATE_BUDGET_SHIFTS = {
+  IRONWARDEN: { attack: 0.035, defense: -0.022, hp: -0.013 },
+  BASTION: { attack: 0, defense: -0.035, hp: 0.035 },
+  DREADGUARD: { attack: 0.035, defense: -0.022, hp: -0.013 },
+  DAWNKEEPER: { attack: -0.035, defense: 0.022, hp: 0.013 },
+  WAYFINDER: { attack: 0.035, defense: -0.022, hp: -0.013 },
+  RAVAGER: { attack: 0.035, defense: -0.022, hp: -0.013 },
+  HEXWEAVER: { attack: 0.035, defense: -0.022, hp: -0.013 },
+  KNIFE_DANCER: { attack: 0.035, defense: -0.022, hp: -0.013 },
+  STONECALLER: { attack: -0.035, defense: 0.035, hp: 0 }
+};
+function equipmentStatsForSetPath(classId, path, base) {
+  if (path !== "Foundation" && path !== "Alternate") throw new Error("Unknown equipment set path: " + path);
+  if (!Number.isFinite(base.attack) || !Number.isFinite(base.defense) || !Number.isFinite(base.hp) || base.attack < 0 || base.defense < 0 || base.hp < 0) throw new Error("Invalid base equipment stats");
+  const shift = ALTERNATE_BUDGET_SHIFTS[classId];
+  if (!shift) throw new Error("Unknown equipment class: " + classId);
+  const budget = base.attack + base.defense + base.hp / EQUIPMENT_PATH_HP_PER_POINT;
+  const sign = path === "Alternate" ? 1 : -1;
+  const neutralAttack = (1 - NEUTRAL_ANCHOR) * base.attack + NEUTRAL_ANCHOR * budget * ORIGINAL_FULL_SET_SHARES.attack;
+  const neutralDefense = (1 - NEUTRAL_ANCHOR) * base.defense + NEUTRAL_ANCHOR * budget * ORIGINAL_FULL_SET_SHARES.defense;
+  const neutralHpBudget = (1 - NEUTRAL_ANCHOR) * (base.hp / EQUIPMENT_PATH_HP_PER_POINT) + NEUTRAL_ANCHOR * budget * ORIGINAL_FULL_SET_SHARES.hp;
+  const round = (value) => Number(value.toFixed(6));
+  return {
+    attack: round(neutralAttack + sign * budget * shift.attack),
+    defense: round(neutralDefense + sign * budget * shift.defense),
+    hp: round((neutralHpBudget + sign * budget * shift.hp) * EQUIPMENT_PATH_HP_PER_POINT)
+  };
+}
+
+// ../apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
 var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
@@ -42851,14 +42891,19 @@ var slotWeight = {
 var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece) => {
   const tier = String(piece.Tier), slot = slotByName2[String(piece.Slot)], level = Math.max(1, Number(piece["Req Level"]), TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1);
   const weight = slotWeight[slot], scale = Number(tier.slice(1));
+  const classId = classIdByName2[String(piece.Class)];
+  if (!classId || !weight) throw new Error("Invalid V33 equipment class or slot: " + String(piece["Piece ID"]));
+  const pathStats = equipmentStatsForSetPath(classId, String(piece.Path), {
+    attack: weight.attack * scale,
+    defense: weight.defense * scale,
+    hp: weight.hp * scale
+  });
   return {
     id: String(piece["Piece ID"]),
     name: String(piece["Item Name"]),
     type: "gear",
     slot,
-    attack: weight.attack * scale,
-    defense: weight.defense * scale,
-    hp: weight.hp * scale,
+    ...pathStats,
     readiness: Math.max(1, Math.ceil(level / 4)),
     value: Math.max(10, level * scale * 12),
     rarity: rarityByTier[tier] ?? "common",

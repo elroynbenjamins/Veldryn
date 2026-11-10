@@ -1,0 +1,35 @@
+name: Refresh polished gem Edge bundles
+on:
+  push:
+    branches:
+      - polish/grindstone-gems-20261110
+    paths:
+      - .github/workflows/refresh-gem-polish-edge.yml
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build:online
+      - run: node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build: refresh gameplay and co-op bundles for polished gem rolls"
+            git push origin HEAD:polish/grindstone-gems-20261110
+          fi

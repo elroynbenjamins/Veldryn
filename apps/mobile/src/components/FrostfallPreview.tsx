@@ -2,12 +2,11 @@ import {useState} from 'react';
 import {Image, ImageBackground, Pressable, StyleSheet, Text, View} from 'react-native';
 import {frostfallPreviewCountdown, frostfallPreviewPhase} from '../content/frostfall-preview';
 import {useGameTheme} from '../theme/ThemeContext';
-import {EventIdentityBadge} from './EventIdentityBadge';
 import {Panel} from './Panel';
 
 const HERO = require('../../assets/card-backgrounds/frostfall_wide_v2.webp');
 const SNOWBELL_PUP = require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png');
-const AURORA_FOX = require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_017_Aurora_Fox.png');
+const FROSTFALL_BADGE = require('../../assets/events/frostfall/badge.png');
 const FROSTBELL_TOKEN = require('../../assets/events/frostfall/currency_frostbell_token.png');
 
 type RevealId = 'activity' | 'pet' | 'shop' | 'mystery';
@@ -37,7 +36,7 @@ export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs
     <ImageBackground source={HERO} resizeMode="cover" imageStyle={s.heroImage} style={s.hero}>
       <View style={s.shade}/>
       <View style={s.heroContent}>
-        <View style={s.heroTop}><EventIdentityBadge event="Frostfall Festival" visualKey="frostfall" accent="#9be7ff" size={48}/><Text style={s.heroKicker}>WINTER FESTIVAL · COMING SOON</Text></View>
+        <View style={s.heroTop}><Image source={FROSTFALL_BADGE} resizeMode="contain" accessibilityLabel="Frostfall festival badge" style={s.heroBadge}/><Text style={s.heroKicker}>WINTER FESTIVAL · COMING SOON</Text></View>
         <Text style={s.heroTitle}>FROSTFALL</Text>
         <Text style={s.heroText}>Winter bells ring across Asterfall.</Text>
       </View>
@@ -80,7 +79,7 @@ export function FrostfallPreview({startsAtMs, nowMs}: {startsAtMs: number; nowMs
     <Panel>
       <View style={s.spotlight}>
         <View style={[s.spotlightArt, {backgroundColor: C.panel2, borderColor: C.line}]}>
-          <Image source={secondReveal ? SNOWBELL_PUP : AURORA_FOX} resizeMode="contain"
+          <Image source={SNOWBELL_PUP} resizeMode="contain"
             style={[s.rewardImage, !secondReveal && {tintColor: C.muted, opacity: .22}]}/>
           {!secondReveal ? <Text style={[s.question, {color: C.accent}]}>?</Text> : null}
         </View>
@@ -102,6 +101,7 @@ const s = StyleSheet.create({
   shade: {...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(6, 20, 35, .37)'},
   heroContent: {gap: 5, padding: 15},
   heroTop: {flexDirection: 'row', alignItems: 'center', gap: 10},
+  heroBadge: {width: 48, height: 48},
   heroKicker: {color: '#ddf4ff', fontWeight: '900', letterSpacing: 1, fontSize: 10, flexShrink: 1},
   heroTitle: {color: '#fff', fontSize: 31, lineHeight: 36, fontWeight: '900', letterSpacing: 1.5, textShadowColor: '#0a2033', textShadowRadius: 5, textShadowOffset: {width: 1, height: 2}},
   heroText: {color: '#e6f5ff', fontWeight: '600', fontSize: 12},
@@ -117,7 +117,7 @@ const s = StyleSheet.create({
   sectionHeading: {flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 3},
   counter: {fontSize: 10},
   grid: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
-  tile: {width: '48.8%', minHeight: 114, borderWidth: 1, borderRadius: 9, padding: 10, gap: 5},
+  tile: {width: '48%', minHeight: 114, borderWidth: 1, borderRadius: 9, padding: 10, gap: 5},
   pressed: {opacity: .75},
   symbol: {height: 36, width: 36, borderRadius: 7, alignItems: 'center', justifyContent: 'center'},
   symbolText: {fontSize: 23, fontWeight: '800'},

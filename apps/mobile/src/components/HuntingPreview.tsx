@@ -16,7 +16,7 @@ import {RegionArtwork} from './RegionArtwork';
 
 /** An encounter preview; reward projections are deliberately labeled as baseline estimates. */
 export function HuntingPreview({state,monster,regionId}:{state:GameState;monster:MonsterDef;regionId:string}){
- const C=useGameTheme(),sustain=monster.boss?undefined:combatSustainProjection(state,monster.id);
+ const C=useGameTheme(),sustain=useMemo(()=>monster.boss?undefined:combatSustainProjection(state,monster.id),[state,monster.id,monster.boss]);
  const pace=sustain?{killsPerHour:sustain.killsPerHour,xpPerHour:sustain.xpPerHour,goldPerHour:sustain.goldPerHour}:combatBaselineProjection(monster);
  const active=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
  const [clock,setClock]=useState(Date.now());

@@ -1,6 +1,12 @@
 name: Regenerate Companion Mastery Edge bundle (temporary)
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/regen-companion-mastery-edge.yml'
+      - 'apps/mobile/src/core/companion-mastery.ts'
   push:
     branches:
       - feature/companion-mastery-v1-20261110
@@ -16,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: feature/companion-mastery-v1-20261110
           persist-credentials: true
       - uses: pnpm/action-setup@v4
         with:

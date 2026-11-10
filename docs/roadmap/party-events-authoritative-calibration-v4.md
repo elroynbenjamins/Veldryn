@@ -35,6 +35,10 @@ The previous 324-case gear-proxy calibration multiplied combat kit stats by deri
 
 **Important modeling caveat:** Quality, rarity, maximum enhancements and G5 gems in a low gear tier are an intentionally *strong crafted test profile*, **not a typical player's expected equipment**. Real distribution and acquisition-cost calibration is still required; the presence of these items does not prove they are routinely affordable.
 
+### Important level-scale mismatch to evaluate
+
+The reused dungeon loadout builder computes combat stat scale from **`legacyCharacterLevelFromXp(character.xp)`**, while the Party Event boss currently scales from the **visible rebased character level** in its frozen actor. These are not necessarily equal after the combat XP curve change. This is a concrete possible reason T2–T4 previously saturated the 12-tier cap. The v4 runner deliberately preserves both actual code paths to expose the difference instead of silently changing one of the formulas. A future approved boss-level anchor must be validated against the visible difficulty, earned combat XP and real equipment power; **no live/hidden boss scaling has been altered here**.
+
 ## 3. Calibration matrix
 
 The planned validation matrix is **9 class focuses × 4 equipment tiers × 3 party sizes × 3 difficulty settings × 2 verified gear profiles = 648 deterministic party-boss scenarios**, with 2–4 unique account/character IDs and normal role rules. Reusing immutable per-member source snapshots reduces fixture generation and avoids test-to-test carryover.

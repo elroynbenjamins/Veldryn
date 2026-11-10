@@ -3,7 +3,7 @@
 **Date:** 10 November 2026  
 **Status:** HIDDEN / TEST-ONLY engineering prototype and calibration. **No public release, backend migration, scheduled worker, reward delivery, route, or navigation.**  
 **Predecessor:** [Party Events v2](party-events-design-v2.md), which remains the broader gameplay design.  
-**Workbook:** `docs/roadmap/spreadsheets/Veldryn_Party_Events_Design_v3_2026-11-10.xlsx.b64` (standalone 26-sheet v3 workbook, not an active data source).
+**Workbook:** [V3 standalone 26-sheet Excel workbook on Google Drive](https://docs.google.com/spreadsheets/d/1oTqg77lUqqIeDkvS25ybz40MfVMKr6G5/edit?usp=drivesdk), plus [60-row version-controlled calibration CSV](spreadsheets/party-events-v3-calibration-results.csv). The exact v3 Excel binary is not in GitHub; the prior v2 .xlsx.b64 backup is retained for version history. These are not active gameplay data.
 
 ## 1. Real implementation boundaries
 

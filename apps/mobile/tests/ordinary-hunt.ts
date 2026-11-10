@@ -27,9 +27,12 @@ for(const zone of ['Greenfields','Silverbrook','Ironwood Forest','Old Mines',"Ki
 for(const zone of ['Frostmarch','Ashlands'])assert.ok(!usesDamageDrivenHunts(zone),zone+' is intentionally unchanged');
 
 const T=1_700_000;
-const weak=startCombat(createCharacter(newGame(T),'WAYFINDER','Weak Hunter'),'MOSS_RAT',T);
-const strong=startCombat(createCharacter(newGame(T),'WAYFINDER','Strong Hunter'),'MOSS_RAT',T);
-strong.character!.attack+=400; // Representative overgeared Attack without relying on a specific item ID.
+const weakBase=createCharacter(newGame(T),'WAYFINDER','Weak Hunter');
+weakBase.character!.attack=12;weakBase.character!.equipment={};
+const strongBase=structuredClone(weakBase);
+strongBase.character!.attack+=400;
+const weak=startCombat(weakBase,'MOSS_RAT',T);
+const strong=startCombat(strongBase,'MOSS_RAT',T); // Representative overgeared Attack without relying on a specific item ID.
 const weakRate=activeCombatRuntimeProjection(weak)!,strongRate=activeCombatRuntimeProjection(strong)!;
 assert.ok(strongRate.killCycleSeconds<weakRate.killCycleSeconds,'higher Attack must shorten the actual encounter');
 assert.ok(strongRate.killsPerHour>weakRate.killsPerHour,'stronger gear should improve farming up to the encounter-search ceiling');

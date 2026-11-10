@@ -1,7 +1,7 @@
 -- Profile badge v2: one elective badge (earned OR Supporter), staff identity independent.
--- Supporter Silver / Gold unlock after 3 / 6 VERIFIED CONSECUTIVE months.
--- Existing entitlement records do not prove historical activation dates: seed
--- conservatively from deployment rather than granting tiers by future expiry.
+-- Supporter star tiers unlock at 0 / 3 / 6 / 12 TOTAL verified active months.
+-- A private cumulative ledger preserves elapsed Supporter time across lapses;
+-- historical tenure requires verifiable coverage evidence and is not inferred from expiry.
 -- This migration does NOT grant paid access, mint currency or activate features.
 begin;
 
@@ -10,13 +10,16 @@ create table if not exists private.supporter_badge_progress_v2 (
  verified_since timestamptz not null,
  coverage_until timestamptz,
  last_verified_at timestamptz not null default now(),
+ credited_seconds numeric(20,3) not null default 0 check(credited_seconds>=0),
+ last_checkpoint_at timestamptz not null default now(),
+ accruing boolean not null default false,
  check(last_verified_at>=verified_since)
 );
 alter table private.supporter_badge_progress_v2 enable row level security;
 revoke all on private.supporter_badge_progress_v2 from public,anon,authenticated;
 grant select,insert,update,delete on private.supporter_badge_progress_v2 to service_role;
 comment on table private.supporter_badge_progress_v2 is
- 'Conservative uninterrupted Supporter tenure, inferred only from verified server commerce entitlements. Never from client settings or future purchase duration.';
+ 'Cumulative actual verified active Supporter seconds across sessions, excluding inactive gaps and advance purchases. Historic backfill requires audited proof.';
 
 alter table private.player_badge_preferences_v1
  add column if not exists equipped_badge_id text not null default 'auto';
@@ -24,7 +27,7 @@ alter table private.player_badge_preferences_v1
  drop constraint if exists player_badge_one_selection_v2;
 alter table private.player_badge_preferences_v1
  add constraint player_badge_one_selection_v2 check(equipped_badge_id in
-  ('auto','none','supporter','supporter_3m','supporter_6m',
+  ('auto','none','supporter','supporter_3m','supporter_6m','supporter_12m','supporter_12m',
    'founder','beta_tester','veteran','guild_leader','community_champion','event_champion'));
 
 -- Keep one preexisting earned badge rather than discarding user preferences.
@@ -45,53 +48,54 @@ where equipped_badge_id='auto';
 create or replace function private.refresh_supporter_badge_progress_v2(p_account_id uuid)
 returns void language plpgsql security definer set search_path='' as $$
 declare
- v_paid_active boolean:=false; v_paid_exp timestamptz;
- v_promo_lifetime boolean:=false; v_promo_exp timestamptz;
- v_active boolean; v_paid_valid boolean; v_promo_valid boolean;
- v_coverage timestamptz; v_before private.supporter_badge_progress_v2%rowtype;
- v_now timestamptz:=now();
+ v_paid_active boolean:=false;v_paid_exp timestamptz;
+ v_promo_lifetime boolean:=false;v_promo_exp timestamptz;
+ v_paid_valid boolean:=false;v_promo_valid boolean:=false;v_active boolean:=false;
+ v_coverage timestamptz;v_previous private.supporter_badge_progress_v2%rowtype;
+ v_now timestamptz:=now();v_end timestamptz;v_added numeric(20,3):=0;
 begin
  if p_account_id is null then return;end if;
  select coalesce(supporter_active,false),supporter_expires_at
- into v_paid_active,v_paid_exp
- from private.account_commerce_entitlements_v1 where account_id=p_account_id;
+ into v_paid_active,v_paid_exp from private.account_commerce_entitlements_v1
+ where account_id=p_account_id;
  select coalesce(supporter_lifetime,false),supporter_expires_at
- into v_promo_lifetime,v_promo_exp
- from private.commerce_promo_entitlements_v1 where account_id=p_account_id;
+ into v_promo_lifetime,v_promo_exp from private.commerce_promo_entitlements_v1
+ where account_id=p_account_id;
  v_paid_valid:=coalesce(v_paid_active,false) and (v_paid_exp is null or v_paid_exp>v_now);
  v_promo_valid:=coalesce(v_promo_lifetime,false) or coalesce(v_promo_exp>v_now,false);
  v_active:=v_paid_valid or v_promo_valid;
+ if v_active then
+  if (v_paid_valid and v_paid_exp is null) or v_promo_lifetime then
+   v_coverage:=null;
+  else
+   v_coverage:=greatest(case when v_paid_valid then v_paid_exp end,
+     case when v_promo_valid then v_promo_exp end);
+  end if;
+ end if;
 
- if not v_active then
-  -- Revocation is immediately visible. A new verified activation cannot
-  -- inherit a previous streak by reviving a stale entitlement.
-  update private.supporter_badge_progress_v2
-    set coverage_until=v_now,last_verified_at=v_now
-    where account_id=p_account_id;
+ select * into v_previous from private.supporter_badge_progress_v2
+  where account_id=p_account_id for update;
+ if not found then
+  if v_active then
+   insert into private.supporter_badge_progress_v2
+     (account_id,verified_since,coverage_until,last_verified_at,credited_seconds,last_checkpoint_at,accruing)
+   values(p_account_id,v_now,v_coverage,v_now,0,v_now,true);
+  end if;
   return;
  end if;
- if (v_paid_valid and v_paid_exp is null) or v_promo_lifetime then
-  v_coverage:=null; -- Explicit indefinite entitlement.
- else
-  v_coverage:=greatest(
-   case when v_paid_valid then v_paid_exp end,
-   case when v_promo_valid then v_promo_exp end
-  );
+ -- Settle only time actually covered by the PREVIOUS verified entitlement.
+ -- A late renewal after expiry never credits the gap, but keeps past progress.
+ if v_previous.accruing then
+  v_end:=least(v_now,coalesce(v_previous.coverage_until,v_now));
+  v_added:=greatest(0,extract(epoch from (v_end-v_previous.last_checkpoint_at)));
  end if;
- select * into v_before from private.supporter_badge_progress_v2
- where account_id=p_account_id for update;
- if not found then
-  insert into private.supporter_badge_progress_v2(account_id,verified_since,coverage_until,last_verified_at)
-  values(p_account_id,v_now,v_coverage,v_now);
- elsif v_before.coverage_until is not null and v_before.coverage_until<=v_now then
-  update private.supporter_badge_progress_v2
-    set verified_since=v_now,coverage_until=v_coverage,last_verified_at=v_now
-    where account_id=p_account_id;
- else
-  update private.supporter_badge_progress_v2
-    set coverage_until=v_coverage,last_verified_at=v_now
-    where account_id=p_account_id;
- end if;
+ update private.supporter_badge_progress_v2
+ set credited_seconds=credited_seconds+v_added,
+     last_checkpoint_at=v_now,
+     last_verified_at=v_now,
+     coverage_until=case when v_active then v_coverage else v_now end,
+     accruing=v_active
+ where account_id=p_account_id;
 end; $$;
 revoke all on function private.refresh_supporter_badge_progress_v2(uuid)
  from public,anon,authenticated;
@@ -118,8 +122,8 @@ create trigger track_promo_supporter_badge_v2
  on private.commerce_promo_entitlements_v1
  for each row execute function private.track_supporter_badge_progress_v2();
 
--- A historical expiry/updated_at is not reliable proof of continuous paid
--- tenure; seed ACTIVE users at deployment rather than backdating status.
+-- Expiry and updated_at cannot prove elapsed historical payments. Seed current
+-- active accounts conservatively; audited historical receipts may later be imported.
 -- Use a set-based outer query instead of a one-row-at-a-time anonymous DO
 -- block. The invoked VOLATILE function locks/updates each verified account.
 select private.refresh_supporter_badge_progress_v2(account_id)
@@ -129,18 +133,40 @@ from (
  select account_id from private.commerce_promo_entitlements_v1
 ) verified_accounts;
 
+-- Effective earned time = settled verified seconds + current covered interval.
+-- Reading this function never changes state or awards future prepaid periods.
+create or replace function private.supporter_badge_total_seconds_v2(p_account_id uuid)
+returns numeric language plpgsql stable security definer set search_path='' as $$
+declare v_row private.supporter_badge_progress_v2%rowtype;v_now timestamptz:=now();
+begin
+ if p_account_id is null then return 0;end if;
+ select * into v_row from private.supporter_badge_progress_v2 where account_id=p_account_id;
+ if not found then return 0;end if;
+ if v_row.accruing then
+  return v_row.credited_seconds+greatest(0,extract(epoch from
+    (least(v_now,coalesce(v_row.coverage_until,v_now))-v_row.last_checkpoint_at)));
+ end if;
+ return v_row.credited_seconds;
+end; $$;
+revoke all on function private.supporter_badge_total_seconds_v2(uuid) from public,anon,authenticated;
+grant execute on function private.supporter_badge_total_seconds_v2(uuid) to service_role;
+
 create or replace function private.supporter_badge_tier_v2(p_account_id uuid)
 returns smallint language plpgsql stable security definer set search_path='' as $$
-declare v_active boolean:=false;v_started timestamptz;
+declare v_active boolean:=false;v_anchor timestamptz;v_seconds numeric;
 begin
  if p_account_id is null then return 0;end if;
  select supporter into v_active from private.commerce_entitlements_v1(p_account_id);
  if not coalesce(v_active,false) then return 0;end if;
- select verified_since into v_started from private.supporter_badge_progress_v2
+ select verified_since into v_anchor from private.supporter_badge_progress_v2
  where account_id=p_account_id;
- if v_started is null then return 1;end if;
- if v_started<=now()-interval '6 months' then return 6;end if;
- if v_started<=now()-interval '3 months' then return 3;end if;
+ if v_anchor is null then return 1;end if;
+ v_seconds:=private.supporter_badge_total_seconds_v2(p_account_id);
+ -- Compare accumulated duration with calendar months anchored to the first
+ -- verified entitlement. Pauses freeze progress instead of resetting it.
+ if v_seconds>=extract(epoch from ((v_anchor+interval '12 months')-v_anchor)) then return 12;end if;
+ if v_seconds>=extract(epoch from ((v_anchor+interval '6 months')-v_anchor)) then return 6;end if;
+ if v_seconds>=extract(epoch from ((v_anchor+interval '3 months')-v_anchor)) then return 3;end if;
  return 1;
 end; $$;
 revoke all on function private.supporter_badge_tier_v2(uuid) from public,anon,authenticated;
@@ -182,9 +208,9 @@ begin
  if v_choice=any(v_owned) then
   v_selected:=v_choice;
   v_featured:=array[v_selected];
- elsif v_choice in ('supporter','supporter_3m','supporter_6m')
+ elsif v_choice in ('supporter','supporter_3m','supporter_6m','supporter_12m')
    and v_supporter_active
-   and v_tier>=case v_choice when 'supporter_6m' then 6
+   and v_tier>=case v_choice when 'supporter_12m' then 12 when 'supporter_6m' then 6
       when 'supporter_3m' then 3 else 1 end then
   v_selected:=v_choice;
  end if;
@@ -228,6 +254,7 @@ begin
      where account_id=v_uid),true),
   'supporterAvailable',v_available,
   'supporterTierMonths',private.supporter_badge_tier_v2(v_uid),
+  'supporterTotalDays',floor(private.supporter_badge_total_seconds_v2(v_uid)/86400)::bigint,
   'equippedBadgeId',v_identity->'equippedBadgeId',
   'ownedExtras',to_jsonb(v_owned),
   'featuredExtras',coalesce(v_identity->'extras','[]'::jsonb)
@@ -243,14 +270,14 @@ declare
  v_tier smallint;v_owned text[];v_supporter boolean:=false;v_featured text[];
 begin
  if v_uid is null then raise exception 'AUTH_REQUIRED';end if;
- if v_choice not in ('none','supporter','supporter_3m','supporter_6m',
+ if v_choice not in ('none','supporter','supporter_3m','supporter_6m','supporter_12m',
   'founder','beta_tester','veteran','guild_leader','community_champion','event_champion')
  then raise exception 'INVALID_BADGE_SELECTION';end if;
- if v_choice in ('supporter','supporter_3m','supporter_6m') then
+ if v_choice in ('supporter','supporter_3m','supporter_6m','supporter_12m') then
   select supporter into v_supporter from private.commerce_entitlements_v1(v_uid);
   v_tier:=private.supporter_badge_tier_v2(v_uid);
   if not coalesce(v_supporter,false) or v_tier<case v_choice
-      when 'supporter_6m' then 6 when 'supporter_3m' then 3 else 1 end
+      when 'supporter_12m' then 12 when 'supporter_6m' then 6 when 'supporter_3m' then 3 else 1 end
    then raise exception 'BADGE_NOT_OWNED';end if;
  elsif v_choice<>'none' then
   v_owned:=private.player_badge_unlocks_v1(v_uid);

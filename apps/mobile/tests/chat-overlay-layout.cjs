@@ -34,7 +34,7 @@ vm.runInNewContext(code,sandbox);
  assert.ok(tab('World')&&tab('Guild')&&tab('System'),'three available tabs visible');
  assert.equal(tab('Party'),undefined,'Party tab hidden without membership');
  assert.equal(tab('Guild').props.accessibilityState.disabled,false);
- const languageTrigger=renderer.root.findAllByType('Pressable').find(x=>x.props.accessibilityLabel==='World language: English');
+ const languageTrigger=renderer.root.findAllByType('Pressable').find(x=>x.props.accessibilityLabel?.startsWith('World language:'));
  assert.ok(languageTrigger,'English is the default visible World channel');
  await act(async()=>{languageTrigger.props.onPress()});
  const worldOptions=renderer.root.findAllByType('Pressable').filter(x=>

@@ -358,7 +358,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    else await onEquip(id);
    setPreviewId(null);setPreviewInstanceId(null);
  }}
- onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect}
+ onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} instanceId={selectedInstanceId} source={location} onClose={closeInspect}
   favorite={inspectFavorite} locked={inspectLocked}
   onToggleFavorite={inspected?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(inspected.id)):undefined}
   onToggleLock={inspected?changeInspectLock:undefined}

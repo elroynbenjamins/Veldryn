@@ -67,6 +67,8 @@ The subsequent **passing** curve comparison ([Actions #42849065762](https://gith
 | T3 plain | 12.00 | 9.11 | 7.56 | 7.00 |
 | T4 prepared | 12.00 | 10.33 | 9.33 | 8.22 |
 
+**Post-tuning verification:** [Party Events CI #42849675720](https://github.com/elroynbenjamins/Veldryn/actions/runs/42849675720) passed the revised hidden boss, all 648 source-derived cases, three parity comparisons, and the 108-stage/72-combat stage preview regressions. [Exact 72 medium-curve cohort records](spreadsheets/party-events-v5-medium-authoritative-results.csv) are versioned alongside the earlier comparative CSV. On two-player Standard parties, the new mean tiers are **T1: 4.44 plain / 5.89 prepared; T2: 6.78 / 8.11; T3: 7.89 / 9.00; T4: 8.11 / 9.33**. Every sampled group cleared Tier 1. These numbers are synthetic verified-input simulations, not actual production cohorts. The final rewards economy and class composition remain unvalidated.
+
 **Provisional hidden balance choice: Medium** — from Tier 2 onward apply +42% compounded boss HP, +20% Attack, and +16% Defense per tier. This is `1.42^(tier-1)`, `1.20^(tier-1)`, and `1.16^(tier-1)`, with **Tier 1 unchanged** and normal event difficulty multipliers still 1.00/1.20/1.40. It leaves headroom for T5+ equipment without excluding early players from the first tier. The hidden `weekly-party-boss-v2.ts` implements this draft curve, but the feature remains disabled. Later hazard mechanics, mixed-level groups, realistic inventories, skill distributions and resource preparation are outstanding release gates; this is **not final approved live balance**.
 
 ## 4. Security and determinism checks

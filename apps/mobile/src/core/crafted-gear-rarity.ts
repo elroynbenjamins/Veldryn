@@ -46,9 +46,11 @@ export function craftedGearRarityOutcomes(itemId:string):Array<{rarity:ItemRarit
 }
 
 export function craftedRarityStatMultiplier(itemId:string,rarity:ItemRarity){
-  const base=itemRarity(itemDef(itemId));
-  const baseMultiplier=rarityMeta(base).statMultiplier||1;
-  return Math.max(1,rarityMeta(rarity).statMultiplier/baseMultiplier);
+  // A crafted rarity has the same meaning for every equipment tier.
+  // Item definitions already own the tier's base stat budget; do not subtract
+  // that tier's catalog rarity from the Forge roll.
+  if(itemDef(itemId).type!=='gear')throw new Error('Forged rarity requires equipment');
+  return rarityMeta(rarity).statMultiplier;
 }
 
 export function deterministicCraftRarityRoll(seed:string){

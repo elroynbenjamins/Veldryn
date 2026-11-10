@@ -42,7 +42,10 @@ export const realCoopEntrySource:CoopEntrySource={
  kind:'real',
  cachedDungeons:async characterId=>{
   const scope=await viewerScope(characterId);
-  return scope?catalogCache.read(scope):undefined;
+  if(!scope)return undefined;
+  const catalog=await catalogCache.read(scope);
+  // Don't hydrate a preview from the previous account after a sign-out.
+  return scope===await viewerScope(characterId)?catalog:undefined;
  },
  load:async({characterId,characterLevel,force=false}={})=>{
   const scope=await viewerScope(characterId);

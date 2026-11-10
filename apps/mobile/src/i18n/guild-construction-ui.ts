@@ -5,6 +5,9 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Active Guild Construction and safe donation confirmation copy, DE/ES/NL/IT/FR/RU/TR. */
 export const guildConstructionUiRows={
+ "Deposit resources into the Guild Bank, then allocate them here. Deposits and allocations cannot be reversed.": ["Zahle Ressourcen in die Gildenbank ein und weise sie dann hier zu. Einzahlungen und Zuweisungen sind endgültig.","Deposita recursos en el banco del gremio y asígnalos aquí. Los depósitos y las asignaciones son definitivos.","Stort grondstoffen in de gildebank en wijs ze hier toe. Stortingen en toewijzingen zijn definitief.","Deposita le risorse nella banca di gilda, poi assegnale qui. Depositi e assegnazioni sono definitivi.","Dépose les ressources à la banque de guilde puis attribue-les ici. Dépôts et attributions sont définitifs.","Внесите ресурсы в банк гильдии, затем выделите их здесь. Взносы и выделения необратимы.","Kaynakları Lonca Bankasına yatır, ardından burada ayır. Yatırma ve tahsis işlemleri geri alınamaz."],
+ "Bank {bank} · Allocated {allocated} · Need {needed}": ["Bank {bank} · Zugewiesen {allocated} · Fehlen {needed}","Banco {bank} · Asignados {allocated} · Faltan {needed}","Bank {bank} · Toegewezen {allocated} · Nodig {needed}","Banca {bank} · Assegnati {allocated} · Mancano {needed}","Banque {bank} · Attribués {allocated} · Manque {needed}","Банк {bank} · Выделено {allocated} · Нужно {needed}","Banka {bank} · Ayrılan {allocated} · Gereken {needed}"],
+
  "Hall": ["Halle","Salón","Hal","Sala","Hall","Зал","Salon"],
  "Forge": ["Schmiede","Forja","Smederij","Forgia","Forge","Кузница","Demirhane"],
  "Library": ["Bibliothek","Biblioteca","Bibliotheek","Biblioteca","Bibliothèque","Библиотека","Kütüphane"],

@@ -1,6 +1,7 @@
 import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase,supabasePublicEndpoint} from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {noteCoopEntryMutation} from '../core/coop-dungeon-browse-cache';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
@@ -71,7 +72,12 @@ async function journal(){
  const accountId=(await supabase?.auth.getSession())?.data.session?.user.id;if(!accountId)throw new Error('Sign in to use co-op expeditions.');
  let value=journals.get(accountId);if(!value){const key=`veldryn.coop.pending.${accountId}`;value=new CoopCommandJournal({read:async()=>{const raw=await AsyncStorage.getItem(key);return raw?JSON.parse(raw):null;},write:async command=>{if(command)await AsyncStorage.setItem(key,JSON.stringify(command));else await AsyncStorage.removeItem(key);}},command=>request(command.path,'POST',command.body,accountId));journals.set(accountId,value);}return value;
 }
-const mutate=async<T>(path:string,body:object)=>(await (await journal()).execute({path,body:body as PendingCoopCommand['body']})) as T;
+const mutate=async<T>(path:string,body:object)=>{
+ // The request may settle even when the response times out. Invalidate
+ // recent entry snapshots before submitting any gameplay mutation.
+ noteCoopEntryMutation();
+ return (await (await journal()).execute({path,body:body as PendingCoopCommand['body']})) as T;
+};
 export const coopRequestId=()=>`coop-${Date.now()}-${Math.random().toString(36).slice(2,12)}`;
 async function publicProfilePower(accountId:string):Promise<{combatPower:number}|null>{
  if(!supabase||!apiBase)throw new Error('Profile score service is not configured.');
@@ -109,8 +115,8 @@ export const coopClient={
  liveRematch:(runId:string)=>request<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`),
  respondLiveRematch:(runId:string,accept:boolean)=>mutate<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`,{requestId:coopRequestId(),accept}),
  hasPending:async()=>(await journal()).pending(),
- retryPending:async()=>(await journal()).execute(),
+ retryPending:async()=>{noteCoopEntryMutation();return (await journal()).execute();},
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},
- claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number;live_fellowship_bonus?:number;live_fellowship_applied?:boolean};},
+ claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');noteCoopEntryMutation();const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number;live_fellowship_bonus?:number;live_fellowship_applied?:boolean};},
 };

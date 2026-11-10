@@ -32,6 +32,41 @@ This is **not yet a full World Boss** and must not be used for paid rewards, lea
 4. Check the 54 `WB_HOLLOWROOT_PRESSURE=` rows at 1.5×, 2× and 2.5× calibrated boss Attack and compare the same seeded squad with/without Support. These multipliers are test hypotheses, not live values.
 5. Investigate disparities first; do **not** turn early proxy findings into real player stat nerfs. Move to a true 14-round server prototype once the current engine limitations are understood.
 
+## Verified engine results (2026-11-10)
+
+The corrected **812-run** deterministic calibration passed GitHub Mobile UX and Mobile Core tests. Evidence is archived from GitHub Actions job `129782277212` in three versioned CSVs:
+
+- [36 class-role/phase/tier summary rows](spreadsheets/world-bosses-hollowroot-engine-summary-v4.csv)
+- [18 baseline role-utility counterfactual rows](spreadsheets/world-bosses-hollowroot-engine-counterplay-v4.csv)
+- [54 controlled pressure-sweep rows](spreadsheets/world-bosses-hollowroot-engine-pressure-v4.csv)
+
+**Baseline (current proxy boss pressure ×1.0):** all sampled T1–T4 squads had at least one surviving member at 70 seconds, in every global phase. This is **too forgiving** to make Tank and Support survival contributions distinctive. All 324 samples ended with the personal *local* boss still alive, as intended: personal battles must not kill a server-wide multi-day boss.
+
+| Equipped bracket | Armored squad damage | Exposed squad damage | Enraged squad damage | Exposed temporary guard applied |
+| --- | ---: | ---: | ---: | ---: |
+| T1 | 51,456 | 52,029 | 55,554 | 4,737 |
+| T2 | 74,956 | 74,470 | 80,573 | 7,933 |
+| T3 | 96,785 | 93,674 | 102,965 | 11,861 |
+| T4 | 107,846 | 104,152 | 116,281 | 15,137 |
+
+These are **per-squad engine damage** in a **70-second proxy fight**, not live account World Impact, global boss HP damage, a 14-round authored battle, or rewards. The local guard is now decoupled from the deliberately nonkillable boss HP; initial runs had accidentally made Regrowth's shield disproportionately large.
+
+**T2 role illustration:** the initiating Tank dealt roughly 9,018 / 10,860 / 9,849 damage across Armored/Exposed/Enraged; Damage initiators dealt 27,203 / 27,131 / 28,979; Support initiators dealt 8,438 / 8,008 / 9,087, while personally providing ~2,607–3,408 effective healing. These figures **cannot** be used to award role-normalized Impact yet: prevented Tank damage and actually consumed player shields are not fully attributed to the responsible player by this prototype.
+
+### Pressure stress result — not an approved tuning value
+
+For T2 **Enraged** and a *test-only* **1.5× enemy Attack** modifier, sampled squads retained a surviving player **9/9 times** with Support abilities enabled, versus **3/9** with Support healing/shielding disabled under the same seed. All nine sampled tanks survived with Support; none survived without that utility. At T2 Enraged **2×**, all nine full squads retained a survivor while **0/9** muted-support squads did. For T4 Enraged **2×**, all nine fully equipped squads survived, while the muted-support counterparts retained a surviving player **6/9** times and none retained a living tank.
+
+This demonstrates that meaningful **support dependence emerges under higher pressure**, not that 1.5× or 2× is safe to deploy. There are only **three RNG replicates per initiating class**, multiple classes have different kits, and the fight's timeline is an approximation. Survival from a small deterministic sample must not be presented as an 80%–100% population success probability.
+
+**Recommended next balance pass:**
+
+1. Implement a **test-only 14-round deterministic scheduler** and exact round-by-round telegraph semantics for Hollowroot; preserve the 70-second proxy for regression comparison.
+2. Give **local guard** a formal cap and ledger, with shielding absorbed separately from boss HP damage. Keep community global HP exclusively in event/receipt logic.
+3. Implement real two-tick 3.5%-max-HP Sporeburst, one-action Entangling root, correct side-cleave, and role-attributed healing/mitigation/shield consumption; test that interrupt and cleanse change outcomes.
+4. Retest at mixed power brackets rather than only matched-tier Echoes, with **more seeds (≥100)** per class and stress profile. Then tune for an actual meaningful failure/danger gradient, not automatic success, and rerun the community HP and Sigil model using the measured effective squad damage.
+5. Keep all proposed multipliers and role rewards **unapproved and disabled** until their authentic mechanics and replay are consistent.
+
 ## Pass/fail release gating (next engineering pass)
 
 - Verify a server-owned **14-round scheduler** can trigger each scripted action at its exact authored round and show telegraph → impact one round apart.

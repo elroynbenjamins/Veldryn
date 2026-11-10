@@ -5,6 +5,11 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Fixed active Online Guild Projects UI; numbers and server-authored project text remain authoritative. */
 export const onlineGuildProjectUiRows={
+ "Rewards ready to claim": ["Abholbereite Belohnungen","Recompensas listas para reclamar","Beloningen klaar om te claimen","Ricompense pronte da riscattare","Récompenses prêtes à récupérer","Награды готовы к получению","Alınmaya hazır ödüller"],
+ "Top 5 contributors · Expand for details": ["Top 5 Mitwirkende · Details öffnen","5 principales colaboradores · Ver detalles","Top 5 bijdragers · Details uitklappen","Primi 5 contributori · Mostra dettagli","Top 5 des contributeurs · Voir les détails","Топ-5 участников · Подробнее","En çok katkı yapan 5 üye · Ayrıntıları aç"],
+ "View project details": ["Projektdetails anzeigen","Ver detalles del proyecto","Bekijk projectdetails","Visualizza dettagli del progetto","Voir les détails du projet","Посмотреть детали проекта","Proje ayrıntılarını gör"],
+ "Hide project details": ["Projektdetails ausblenden","Ocultar detalles del proyecto","Verberg projectdetails","Nascondi dettagli del progetto","Masquer les détails du projet","Скрыть детали проекта","Proje ayrıntılarını gizle"],
+
   "Voting closes Monday at 00:00 UTC": ["Abstimmung endet Montag um 00:00 UTC","La votación termina el lunes a las 00:00 UTC","Stemmen sluit maandag om 00:00 UTC","Il voto termina lunedì alle 00:00 UTC","Le vote se termine lundi à 00:00 UTC","Голосование до понедельника, 00:00 UTC","Oylama pazartesi 00:00 UTC'de kapanır"],
   "Voting opens Thursday.": ["Abstimmung beginnt am Donnerstag.","La votación comienza el jueves.","Stemmen opent donderdag.","Il voto inizia giovedì.","Le vote ouvre jeudi.","Голосование открывается в четверг.","Oylama perşembe günü açılır."],
   "VOTE": ["ABSTIMMEN","VOTAR","STEM","VOTA","VOTER","ГОЛОС","OY VER"],

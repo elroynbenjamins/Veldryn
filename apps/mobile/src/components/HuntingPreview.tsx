@@ -16,7 +16,8 @@ import {RegionArtwork} from './RegionArtwork';
 
 /** An encounter preview; reward projections are deliberately labeled as baseline estimates. */
 export function HuntingPreview({state,monster,regionId}:{state:GameState;monster:MonsterDef;regionId:string}){
- const C=useGameTheme(),pace=combatBaselineProjection(monster),sustain=monster.boss?undefined:combatSustainProjection(state,monster.id);
+ const C=useGameTheme(),sustain=monster.boss?undefined:combatSustainProjection(state,monster.id);
+ const pace=sustain?{killsPerHour:sustain.killsPerHour,xpPerHour:sustain.xpPerHour,goldPerHour:sustain.goldPerHour}:combatBaselineProjection(monster);
  const active=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
  const [clock,setClock]=useState(Date.now());
  useEffect(()=>{if(!active)return;setClock(Date.now());const timer=setInterval(()=>setClock(Date.now()),750);return()=>clearInterval(timer);},[active]);
@@ -40,7 +41,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const damageText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
- const narration=fight&&state.character?liveHuntNarration({classId:state.character.classId,monster,nowMs:clock,startedAtMs:state.activity?.startedAtMs??clock,lastHit:fight.lastHit,stoppedReason:fight.stoppedReason,playerHp:fight.playerHp,playerMaxHp:fight.playerMaxHp,enemyHp:fight.enemyHp,enemyMaxHp:fight.enemyMaxHp,damageText}):undefined;
+ const narration=fight&&!fight.searching&&state.character?liveHuntNarration({classId:state.character.classId,monster,nowMs:clock,startedAtMs:state.activity?.startedAtMs??clock,lastHit:fight.lastHit,stoppedReason:fight.stoppedReason,playerHp:fight.playerHp,playerMaxHp:fight.playerMaxHp,enemyHp:fight.enemyHp,enemyMaxHp:fight.enemyMaxHp,damageText}):undefined;
  return <View style={{borderWidth:1,borderColor:C.line,borderRadius:16,overflow:'hidden',backgroundColor:C.panel}}>
   <View style={{height:196,justifyContent:'flex-end'}}>
    {regionId==='IRONWOOD'?<Image source={require('../../assets/combat-scenes/ironwood-clearing-v1.jpg')} resizeMode="cover" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>:<RegionArtwork regionId={regionId}/>}
@@ -53,7 +54,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
    </View>
   </View>
   {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
-   <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':'Live combat')}</Text>
+   <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':fight.searching?'Searching for an encounter...':'Live combat')}</Text>
    {([
      {label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good},
      {label:monster.name,hp:fight.enemyHp,max:fight.enemyMaxHp,color:C.bad},
@@ -66,7 +67,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
      <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
     </View>
    </View>)}
-   {narration&&!fight.stoppedReason?<Text accessibilityLiveRegion={narration.hit?'polite':'none'} numberOfLines={2} style={{fontFamily:font,fontSize:12,lineHeight:17,fontWeight:narration.hit?'700':'600',color:narration.tone==='danger'?C.bad:narration.tone==='accent'?C.accent:C.muted}}>
+   {narration&&!fight.stoppedReason&&!fight.searching?<Text accessibilityLiveRegion={narration.hit?'polite':'none'} numberOfLines={2} style={{fontFamily:font,fontSize:12,lineHeight:17,fontWeight:narration.hit?'700':'600',color:narration.tone==='danger'?C.bad:narration.tone==='accent'?C.accent:C.muted}}>
     {tr(narration.key,narration.params)}{narration.critical&&fight.lastHit?.actor==='player'?` · ${tr('CRITICAL!')}`:''}
    </Text>:null}
   </View>:null}

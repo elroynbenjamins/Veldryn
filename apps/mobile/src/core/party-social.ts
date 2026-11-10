@@ -88,7 +88,10 @@ export interface PartyContractObjectiveView {
   pointBudget: number;
 }
 
+export interface PartyContractMemberContributionView {accountId:string;points:number}
 export interface PartyContractView {
+  /** Server-reported current member totals; absent on older read-only snapshots. */
+  memberContributions?:PartyContractMemberContributionView[];
   tiers?: PartyContractTierView[];
   id: string;
   name: string;
@@ -281,6 +284,24 @@ export function recruitmentTimeLabel(expiresAtMs: number, nowMs: number): { text
   if (hours <= 6) return { text: `${hours}h left`, urgency: 'soon' };
   if (hours < 24) return { text: `${hours}h left`, urgency: 'normal' };
   return { text: `${Math.ceil(hours / 24)}d left`, urgency: 'normal' };
+}
+
+/** Claim badges reflect only actual reward entitlement IDs. They disappear after
+ * the server confirms a claim; unqualified players never receive false alerts.
+ */
+export function partyContractClaimableRewardIds(contracts:readonly PartyContractView[]):string[]{
+ const ready=new Set<string>();
+ for(const contract of contracts){
+   for(const tier of contract.tiers??[]){
+     if(tier.rewardId&&!tier.claimed&&tier.reached&&tier.qualified)ready.add(tier.rewardId);
+   }
+   if(!contract.tiers?.length&&contract.complete&&contract.eligible){
+     for(const reward of contract.rewards??[]){
+       if(!reward.claimed&&reward.id)ready.add(reward.id);
+     }
+   }
+ }
+ return [...ready];
 }
 
 export function contractProgressRatio(contract: PartyContractView): number {

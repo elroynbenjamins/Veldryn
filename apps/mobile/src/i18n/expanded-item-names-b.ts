@@ -341,5 +341,15 @@ export const expandedItemNamesB={
     "fr": "Aile de chauve-souris de l'écho",
     "ru": "Крыло эхо-летучей мыши",
     "tr": "Yankı Yarasa Kanadı"
+  },
+  "OATHGLASS_CAPE": {
+    "en": "Oathglass Cape",
+    "de": "Eidglasumhang",
+    "es": "Capa de cristal jurado",
+    "nl": "Eedglasmantel",
+    "it": "Mantello di vetro del giuramento",
+    "fr": "Cape de verre du serment",
+    "ru": "Плащ из клятвостекла",
+    "tr": "Yemin Camı Pelerini"
   }
 } as const satisfies Record<string,Record<Language,string>>;

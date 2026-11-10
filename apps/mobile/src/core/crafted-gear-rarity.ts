@@ -45,12 +45,17 @@ export function craftedGearRarityOutcomes(itemId:string):Array<{rarity:ItemRarit
   });
 }
 
+/** Retain 75% of the recent higher-tier rarity uplift, without nerfing T1.
+ * This moderates Chapter 1/T2 and later dungeons without buffing monsters
+ * against Common-geared players. All rarity odds and quality rolls stay intact. */
+export const CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION=.75;
 export function craftedRarityStatMultiplier(itemId:string,rarity:ItemRarity){
-  // A crafted rarity has the same meaning for every equipment tier.
-  // Item definitions already own the tier's base stat budget; do not subtract
-  // that tier's catalog rarity from the Forge roll.
-  if(itemDef(itemId).type!=='gear')throw new Error('Forged rarity requires equipment');
-  return rarityMeta(rarity).statMultiplier;
+  const item=itemDef(itemId);
+  if(item.type!=='gear')throw new Error('Forged rarity requires equipment');
+  const rolled=rarityMeta(rarity).statMultiplier;
+  const catalogBase=rarityMeta(itemRarity(item)).statMultiplier;
+  const beforeRecentBuff=Math.max(1,rolled/catalogBase);
+  return beforeRecentBuff+(rolled-beforeRecentBuff)*CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION;
 }
 
 export function deterministicCraftRarityRoll(seed:string){

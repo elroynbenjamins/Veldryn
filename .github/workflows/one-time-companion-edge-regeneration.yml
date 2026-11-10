@@ -21,6 +21,9 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install mobile dependencies used by the shared engine
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
       - name: Install backend dependencies
         working-directory: backend
         run: pnpm install --frozen-lockfile

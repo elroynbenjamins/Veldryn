@@ -11,7 +11,7 @@ import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipe
 import {classCombatSkillLevelFromXp} from '../apps/mobile/src/core/progression';
 import type {ClassId,GameState,GearSlot,CraftedGearInstance} from '../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../backend/online/coop-loadout';
-import type {AuthoritativeLoadoutRecord,LoadoutRepository} from '../backend/src/server/coop/loadout-snapshots';
+import {freezeTrustedPartyEventLoadoutV4,verifyPartyEventEquippedCopyOwnershipV4} from '../backend/src/server/party/weekly-party-authoritative-loadout-v4';
 import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
 import {WEEKLY_PARTY_EVENT_FAMILIES,type WeeklyPartyDifficulty,type WeeklyPartyFamily} from '../backend/src/server/party/weekly-party-events-v2';
 import {COMPANION_ROLE} from '../backend/src/server/companions/policy';
@@ -95,11 +95,11 @@ function freezeVerified(classId:ClassId,tier:Tier,profile:Profile,index:number){
   assert((record.stats.effectGems?.length??0)>0,'real equipped predator effect gem must reach server record');
   assert(!!record.stats.combatCompanion,'owned, idle, different-role companion must reach server record');
  }
- const repository:LoadoutRepository={getOwnedLoadout:(a,c,id)=>a===accountId&&c===record.characterId&&id==='current'?record:undefined};
- const frozen=freezePartyEventBossLoadout({
-  selection:{accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:71},
-  repository,eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,nowMs:now,
- });
+ const trusted=freezeTrustedPartyEventLoadoutV4({accountId,serverLoadedState:state,
+  serverGameVersion:71,expectedGameVersion:71,characterId:record.characterId,
+  eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,nowMs:now});
+ const frozen=trusted.frozen;
+ assert(trusted.onlineLoadoutHash===onlineCoopLoadoutHash(record),'signed co-op source must match Party frozen source');
  assert(frozen.actor.id===record.characterId,'real actor id');
  assert(frozen.actor.role===deriveRole(classId),'real class role');
  if(profile==='prepared'){
@@ -130,7 +130,16 @@ const ringId=fromWrongOwner.character!.equipmentInstanceIds!.ring!;
 const ring=fromWrongOwner.account.craftedGearInstances!.find(x=>x.id===ringId)!;
 ring.ownerCharacterId='another-character';
 const wrong=deriveOnlineCoopLoadout('v4-trusted-account-0',fromWrongOwner,71);
-assert(!wrong.stats.effectGems?.length,'foreign forged gems must not credit the owner's dungeon/Party loadout');
+assert(!wrong.stats.effectGems?.length,'foreign forged gems must not credit the owner');
+let ownershipDenied=false;
+try{verifyPartyEventEquippedCopyOwnershipV4(fromWrongOwner);}catch(e){ownershipDenied=String(e).includes('party_event_equipment_copy_not_owned');}
+assert(ownershipDenied,'Party Event must reject foreign quality/rarity/enchant copies outright');
+let staleDenied=false;
+try{freezeTrustedPartyEventLoadoutV4({accountId:'v4-trusted-account-0',serverLoadedState:testCase.state,
+ serverGameVersion:71,expectedGameVersion:70,characterId:testCase.state.character!.id,
+ eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,nowMs:now});}
+catch(e){staleDenied=String(e).includes('party_event_game_version_mismatch');}
+assert(staleDenied,'stale or client-supplied revision must fail');
 const forged=structuredClone(testCase.frozen);
 forged.actor.stats.attackPower*=100;
 let denied=false;

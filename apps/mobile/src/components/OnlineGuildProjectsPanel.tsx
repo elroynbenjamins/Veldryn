@@ -43,7 +43,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  const st=useSocialText(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
- const [showHistory,setShowHistory]=useState(false),[showContributors,setShowContributors]=useState(false),[expandedProjectId,setExpandedProjectId]=useState<string|null>(null),[busy,setBusy]=useState('');
+ const [showHistory,setShowHistory]=useState(false),[expandedProjectId,setExpandedProjectId]=useState<string|null>(null),[busy,setBusy]=useState('');
  const [pendingDonation,setPendingDonation]=useState<PendingGuildProjectSupplyDonation|null>(null);
  const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
  const load=(force=false):Promise<void>=>{
@@ -147,13 +147,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      onNavigateActivity={onNavigateActivity}
    />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Standard projects start Monday; Guild\'s Choice is voted each week.')}</Text></View>}
   </QuestBoard>
-  {active.length?<Panel>
-   <Pressable accessibilityRole="button" accessibilityState={{expanded:showContributors}} onPress={()=>setShowContributors(value=>!value)} style={s.accordion}>
-    <View style={s.flex}><Text style={s.sectionTitle}>{ui('Member contributions')}</Text><Text style={s.meta}>{ui('Top 5 contributors · Expand for details')}</Text></View>
-    <Text style={s.chevron}>{showContributors?'▴':'▾'}</Text>
-   </Pressable>
-   {showContributors?<GuildProjectContributionsPanel projects={active} embedded/>:null}
-  </Panel>:null}
+  {active.length?<GuildProjectContributionsPanel projects={active}/>:null}
   {recentCompleted.length||snapshot.activity.length?<Panel>
    <Pressable accessibilityRole="button" accessibilityLabel={ui("Recent Guild progress")} accessibilityState={{expanded:showHistory}}
     onPress={()=>setShowHistory(v=>!v)} style={({pressed})=>[s.accordion,pressed&&s.pressed]}>

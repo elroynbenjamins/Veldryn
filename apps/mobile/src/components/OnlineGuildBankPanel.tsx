@@ -210,6 +210,13 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    <View style={s.statDivider}/>
    <View style={s.stat}><Text style={s.statLabel}>{ui('STILL TO DEPOSIT')}</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}>{' '+ui('units')}</Text></Text></View>
   </View>
+  <View style={s.fundingGuide}>
+   <Text style={s.guideTitle}>{ui('How Guild funding works')}</Text>
+   <Text style={s.help}>{ui('1. Deposit your resources here into shared Guild storage.')}</Text>
+   <Text style={s.help}>{ui('2. Allocate Bank resources to Construction or Guild Skills. Deposits cannot be withdrawn.')}</Text>
+   {view!=='needed'&&currentIds.length>0?<GameButton compact tone="secondary"
+    title={ui('See {count} materials needed now',{count:currentIds.length})} onPress={()=>setView('needed')}/>:null}
+  </View>
   {snapshot.bank===null?<Text accessibilityRole="alert" style={s.warning}>{ui('Bank balances are unavailable. Donations are paused until a refresh succeeds.')}</Text>:null}
   {skillLoading?<Text style={s.meta}>{ui('Checking released Guild Skill requirements…')}</Text>:null}
   {skillError?<View style={s.actions}>
@@ -345,6 +352,8 @@ function styles(C:ThemeColors){return StyleSheet.create({
  error:{fontSize:12,lineHeight:18,color:C.bad,marginTop:6},
  success:{fontSize:12,lineHeight:18,color:C.good,marginTop:6},
  name:{fontSize:13,lineHeight:18,fontWeight:'800',color:C.text},
+ fundingGuide:{gap:4,marginTop:10,padding:10,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ guideTitle:{fontSize:12,fontWeight:'900',color:C.text,marginBottom:2},
  section:{gap:10,marginTop:12},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
  sectionTitle:{fontSize:14,fontWeight:'900',color:C.text,flexShrink:1},

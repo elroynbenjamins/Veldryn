@@ -102,8 +102,9 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
       const next=await entrySource.load({characterId,characterLevel:state.character?.level,force});
       next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));
       next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);
-      if(requestId===loadRequestId.current){setEntry(next);setCachedBrowse(undefined);}
-    }catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason))}
+      if(requestId===loadRequestId.current){setEntry(next);setCachedBrowse(undefined);return true;}
+      return false;
+    }catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason);return false;}
     finally{if(requestId===loadRequestId.current)setLoading(false)}
   },[entrySource,characterId,state.character?.level]);
   // Server-owned ready checks are polled only while this modal is open.
@@ -263,8 +264,9 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
       await onCommand(id?{type:'companion_equip',args:{id}}:{type:'companion_unequip'});
       // Do not promote a previously verified loadout after the companion has changed.
       setEntry(undefined);
-      await load(true);
-      setNotice(st('Dungeon companion updated. Verify the refreshed loadout before starting.'));
+      const refreshed=await load(true);
+      // Do not reuse a verified pre-change snapshot when the refresh fails.
+      setNotice(st(refreshed?'Dungeon companion updated. Verify the refreshed loadout before starting.':'Could not refresh the dungeon loadout. Refresh before starting.'));
     }catch(reason){setNotice(coopErrorMessage(reason));throw reason;}
     finally{setBusy(false);}
   };

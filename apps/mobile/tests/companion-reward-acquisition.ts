@@ -44,6 +44,8 @@ for(const id of veilbreakIds){
  assert(restored.account.unlockedCombatCompanionIds?.includes(id),'Event companion survives backup and restore: '+id);
  assert(restored.account.combatCompanionProgress?.[id]?.level===1,'Event companion progress survives restore: '+id);
 }
+const afterEvent={...restored,account:{...restored.account,liveEvent:undefined}};
+for(const id of veilbreakIds)assert(afterEvent.account.unlockedCombatCompanionIds?.includes(id),'Event companion remains owned after the event closes: '+id);
 const catalogue=GUILD_SHOP_CATALOGUE.filter(item=>item.category==='companion').sort((a,b)=>a.guildLevel-b.guildLevel);
 assert(catalogue.length===3&&GUILD_COMBAT_COMPANIONS.length===3,'Guild catalogue and actual companion roster have three entries');
 const mapping=[['guild_companion_01','GUILD_UNIT_001',10,6000],['guild_companion_02','GUILD_UNIT_002',15,8000],['guild_companion_03','GUILD_UNIT_003',20,10000]] as const;

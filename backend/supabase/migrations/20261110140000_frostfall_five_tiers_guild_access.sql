@@ -130,7 +130,7 @@ begin
 end $$;
 
 create or replace function public.ensure_guild_pve_v1(p_guild uuid,p_now timestamptz)
-returns void language plpgsql security definer set search_path=public as $
+returns void language plpgsql security definer set search_path=public as $guild_frostfall$
 declare v_start timestamptz:=date_trunc('week',p_now at time zone 'UTC') at time zone 'UTC';e record;
 begin
  perform public.create_guild_pve_encounter_v2(
@@ -149,7 +149,7 @@ begin
    and m.joined_at<raid.ends_at
   on conflict(encounter_id,account_id) do nothing;
  end loop;
-end $;
+end $guild_frostfall$;
 
 revoke all on function public.ensure_guild_pve_v1(uuid,timestamptz) from public,anon,authenticated;
 grant execute on function public.ensure_guild_pve_v1(uuid,timestamptz) to service_role;

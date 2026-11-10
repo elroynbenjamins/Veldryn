@@ -7,6 +7,7 @@
  */
 import type {GameState,GearSlot} from '../../../../apps/mobile/src/core/types';
 import {itemDef} from '../../../../apps/mobile/src/content/items';
+import {characterLevelFromXp} from '../../../../apps/mobile/src/core/progression';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../../../online/coop-loadout';
 import {freezePartyEventBossLoadout,type FrozenPartyBossLoadout} from './weekly-party-boss-v2';
 import type {AuthoritativeLoadoutRecord,LoadoutRepository} from '../coop/loadout-snapshots';
@@ -23,6 +24,7 @@ export interface PartyEventTrustedSnapshotV4 {
 export function verifyPartyEventEquippedCopyOwnershipV4(state:GameState):void{
  const character=state.character;
  if(!character)throw new Error('party_event_character_required');
+ const derivedLevel=characterLevelFromXp(character.xp);
  const seen=new Set<string>();
  const instances=new Map((state.account.craftedGearInstances??[]).map(x=>[x.id,x]));
  for(const [slot,itemId] of Object.entries(character.equipment) as [GearSlot,string][]){
@@ -30,7 +32,7 @@ export function verifyPartyEventEquippedCopyOwnershipV4(state:GameState):void{
   const item=itemDef(itemId);
   if(item.type!=='gear'||item.slot!==slot||item.classRestriction&&item.classRestriction!==character.classId)
    throw new Error('party_event_illegal_equipment');
-  if(item.requiredLevel!==undefined&&character.level<item.requiredLevel)
+  if(item.requiredLevel!==undefined&&derivedLevel<item.requiredLevel)
    throw new Error('party_event_equipment_level_locked');
   const copyId=character.equipmentInstanceIds?.[slot];
   if(!copyId)continue;

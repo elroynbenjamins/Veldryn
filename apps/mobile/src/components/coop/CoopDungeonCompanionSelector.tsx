@@ -67,7 +67,8 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
    <View style={s.sheet}>
     <View style={s.header}>
      <View style={s.grow}><Text accessibilityRole="header" style={s.title}>{st('Choose dungeon companion')}</Text>
-      <Text style={s.hint}>{st('Your choice applies before joining. Echoes already shared will not change.')}</Text></View>
+      <Text style={s.hint}>{st('Your choice applies before joining. Echoes already shared will not change.')}</Text>
+      <Text style={s.hint}>{st('This also changes your companion in normal combat.')}</Text></View>
      <Pressable accessibilityRole="button" accessibilityLabel={st('Close')} disabled={pending||busy} onPress={dismiss} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
     </View>
     <View style={s.summary}>

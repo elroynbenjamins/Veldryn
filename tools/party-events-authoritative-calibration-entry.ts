@@ -1,0 +1,312 @@
+/**
+ * Party Events v4 — real online loadout derivation, test-only.
+ * Uses the SAME authenticated-state -> current equipment -> co-op record -> 
+ * verified frozen combatant chain as deployed dungeons. No live route or DB.
+ * All states below are synthetic fixtures; results are NOT player data.
+ */
+import {createCharacter,newGame} from '../apps/mobile/src/core/game';
+import {simulateCombat} from '../backend/src/server/combat/engine';
+import type {CombatantDefinition} from '../backend/src/server/combat/types';
+import {characterTotalXpAtLevel,classCombatSkillTotalXpAtLevel} from '../apps/mobile/src/core/progression';
+import {EQUIPMENT_ITEMS_V33} from '../apps/mobile/src/content/equipment-items-v33';
+import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipes-v33';
+import {classCombatSkillLevelFromXp} from '../apps/mobile/src/core/progression';
+import type {ClassId,GameState,GearSlot,CraftedGearInstance} from '../apps/mobile/src/core/types';
+import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../backend/online/coop-loadout';
+import {freezeTrustedPartyEventLoadoutV4,verifyPartyEventEquippedCopyOwnershipV4} from '../backend/online/party-event-loadout-v4';
+import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,partyEventRosterMedianLevel,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
+import {WEEKLY_PARTY_EVENT_FAMILIES,type WeeklyPartyDifficulty,type WeeklyPartyFamily} from '../backend/src/server/party/weekly-party-events-v2';
+import {COMPANION_ROLE} from '../backend/src/server/companions/policy';
+import {deriveRole} from '../backend/src/server/coop/role-readiness';
+
+const classes:ClassId[]=['IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','STONECALLER','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER'];
+const tiers=['T1','T2','T3','T4'] as const;
+type Tier=typeof tiers[number];
+type Profile='plain'|'prepared';
+const difficulties=['standard','veteran','heroic'] as const;
+const families=Object.keys(WEEKLY_PARTY_EVENT_FAMILIES) as WeeklyPartyFamily[];
+const now=Date.parse('2026-11-09T00:00:00.000Z')+1000;
+const week=7*86400000;
+const recipeTier=new Map(V33_EQUIPMENT_RECIPES.map(r=>[r.output.itemId,r.v33EquipmentTier]));
+function assert(value:unknown,reason:string):asserts value {if(!value)throw Error('party_v4_authoritative: '+reason);}
+function ownedGear(classId:ClassId,tier:Tier){
+ const sorted=EQUIPMENT_ITEMS_V33.filter(i=>i.classRestriction===classId&&recipeTier.get(i.id)===tier&&i.slot);
+ const bySlot=new Map<GearSlot,typeof sorted[number]>();
+ for(const item of sorted){
+  const slot=item.slot!;
+  const old=bySlot.get(slot);
+  if(!old||((item.attack??0)+(item.defense??0)+(item.hp??0))>((old.attack??0)+(old.defense??0)+(old.hp??0)))bySlot.set(slot,item);
+ }
+ assert(bySlot.size>=8,'incomplete authored '+classId+':'+tier+' slots: '+bySlot.size);
+ return [...bySlot.entries()];
+}
+function buildTrustedSyntheticState(classId:ClassId,tier:Tier,profile:Profile,memberIndex:number):GameState{
+ const state=createCharacter(newGame(0),classId,'Party Calibration');
+ const char=state.character!;
+ const chosen=ownedGear(classId,tier);
+ const level=Math.max(1,...chosen.map(([,item])=>item.requiredLevel??1));
+ char.id='v4-calibration-character-'+memberIndex;
+ char.xp=characterTotalXpAtLevel(level);
+ char.level=level;
+ const enhanced=profile==='prepared';
+ char.equipment=Object.fromEntries(chosen.map(([slot,item])=>[slot,item.id]));
+ char.equipmentInstanceIds={};
+ const instances:CraftedGearInstance[]=[];
+ for(const [slot,item] of chosen){
+  const id='v4:'+memberIndex+':'+slot+':'+item.id;
+  char.equipmentInstanceIds[slot]=id;
+  instances.push({
+   id,itemId:item.id,ownerCharacterId:char.id,
+   rarity:enhanced?'rare':'common',
+   quality:enhanced?85:50,
+   acquireSource:'craft',sourceReceiptKey:'v4-calibration-fixture:'+memberIndex+':'+slot,
+   createdAtMs:1,
+   enhancement:enhanced?{
+    rank:4,failures:0,
+    ...(slot==='ring'?{statGemId:'gem:stat_precision:g5',effectGemId:'gem:effect_predator:g5',statGemRollPercent:110,effectGemRollPercent:110}:{}),
+    gemIds:slot==='ring'?['gem:stat_precision:g5','gem:effect_predator:g5']:[],
+   }:{rank:0,failures:0,gemIds:[]},
+  });
+ }
+ state.account.craftedGearInstances=instances;
+ if(enhanced){
+  const boostedXp=classCombatSkillTotalXpAtLevel(30);
+  char.classSkills=(char.classSkills??[]).map(s=>({...s,xp:boostedXp,level:classCombatSkillLevelFromXp(boostedXp)}));
+  const role=deriveRole(classId);
+  const companionId=role==='damage'?'UNIT_002':'UNIT_001';
+  assert(COMPANION_ROLE[companionId]!==role,'companion role must differ');
+  char.equippedCombatCompanionId=companionId;
+  state.account.unlockedCombatCompanionIds=[companionId];
+  state.account.combatCompanionProgress={
+   ...state.account.combatCompanionProgress,
+   [companionId]:{level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false},
+  };
+ }
+ return state;
+}
+function freezeVerified(classId:ClassId,tier:Tier,profile:Profile,index:number){
+ const state=buildTrustedSyntheticState(classId,tier,profile,index);
+ const accountId='v4-trusted-account-'+index;
+ const initial=JSON.stringify(state);
+ const record=deriveOnlineCoopLoadout(accountId,state,71);
+ assert(JSON.stringify(state)===initial,'derived co-op record must never modify saved state');
+ assert(record.accountId===accountId && record.characterId===state.character!.id,'authoritative ownership');
+ assert(record.legalEquipment,'legal class-specific equipped kit');
+ assert(record.characterLevel===state.character!.level,'verified character level');
+ if(profile==='prepared'){
+  assert((record.stats.effectGems?.length??0)>0,'real equipped predator effect gem must reach server record');
+  assert(!!record.stats.combatCompanion,'owned, idle, different-role companion must reach server record');
+ }
+ const trusted=freezeTrustedPartyEventLoadoutV4({accountId,serverLoadedState:state,
+  serverGameVersion:71,expectedGameVersion:71,characterId:record.characterId,
+  eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,nowMs:now});
+ const frozen=trusted.frozen;
+ assert(trusted.onlineLoadoutHash===onlineCoopLoadoutHash(record),'signed co-op source must match Party frozen source');
+ assert(frozen.actor.id===record.characterId,'real actor id');
+ assert(frozen.actor.role===deriveRole(classId),'real class role');
+ if(profile==='prepared'){
+  assert((frozen.actor.effectGems?.length??0)>0,'frozen actor retains equipped Effect Gem');
+  assert(frozen.actor.abilities.some(a=>a.tags?.includes('combat_companion')),'frozen actor retains validated companion assist');
+ }
+ return {state,record,frozen,hash:onlineCoopLoadoutHash(record)};
+}
+const memo=new Map<string,ReturnType<typeof freezeVerified>>();
+function get(classId:ClassId,tier:Tier,profile:Profile,index:number){
+ const key=[classId,tier,profile,index].join(':');
+ if(!memo.has(key))memo.set(key,freezeVerified(classId,tier,profile,index));
+ return memo.get(key)!;
+}
+for(const classId of classes){
+ for(const tier of tiers){
+  const plain=get(classId,tier,'plain',0);
+  const prepared=get(classId,tier,'prepared',0);
+  assert(prepared.record.stats.attackPower>=plain.record.stats.attackPower,'better gear/class training must not lower attack '+classId+':'+tier);
+  assert(prepared.record.stats.maxHp>=plain.record.stats.maxHp,'upgraded HP must not regress');
+  assert(prepared.hash!==plain.hash,'quality, rarity, upgrades, gems, skills and companion must affect signed online record');
+  assert(prepared.frozen.snapshotHash!==plain.frozen.snapshotHash,'frozen hash changes with trusted loadout');
+ }
+}
+const testCase=get('IRONWARDEN','T2','prepared',0);
+const fromWrongOwner=structuredClone(testCase.state);
+const ringId=fromWrongOwner.character!.equipmentInstanceIds!.ring!;
+const ring=fromWrongOwner.account.craftedGearInstances!.find(x=>x.id===ringId)!;
+ring.ownerCharacterId='another-character';
+const wrong=deriveOnlineCoopLoadout('v4-trusted-account-0',fromWrongOwner,71);
+assert(!wrong.stats.effectGems?.length,'foreign forged gems must not credit the owner');
+let ownershipDenied=false;
+try{verifyPartyEventEquippedCopyOwnershipV4(fromWrongOwner);}catch(e){ownershipDenied=String(e).includes('party_event_equipment_copy_not_owned');}
+assert(ownershipDenied,'Party Event must reject foreign quality/rarity/enchant copies outright');
+const duplicateCopy=structuredClone(testCase.state);
+const equippedSlots=Object.keys(duplicateCopy.character!.equipment) as GearSlot[];
+assert(equippedSlots.length>=2,'duplicate-copy coverage needs at least two slots');
+const originalSlot=equippedSlots[0]!,otherSlot=equippedSlots[1]!;
+duplicateCopy.character!.equipment[otherSlot]=duplicateCopy.character!.equipment[originalSlot];
+duplicateCopy.character!.equipmentInstanceIds![otherSlot]=duplicateCopy.character!.equipmentInstanceIds![originalSlot];
+let duplicateDenied=false;
+try{verifyPartyEventEquippedCopyOwnershipV4(duplicateCopy);}
+catch(e){duplicateDenied=String(e).includes('party_event_duplicate_equipped_copy');}
+assert(duplicateDenied,'one forged receipt must never occupy two character slots');
+const illegallyLeveled=structuredClone(testCase.state);
+illegallyLeveled.character!.level=100; // Stale display is not authorization.
+illegallyLeveled.character!.xp=characterTotalXpAtLevel(1);
+let levelDenied=false;
+try{verifyPartyEventEquippedCopyOwnershipV4(illegallyLeveled);}
+catch(e){levelDenied=String(e).includes('party_event_equipment_level_locked');}
+assert(levelDenied,'gear requirement must use canonical XP-derived level');
+
+let staleDenied=false;
+try{freezeTrustedPartyEventLoadoutV4({accountId:'v4-trusted-account-0',serverLoadedState:testCase.state,
+ serverGameVersion:71,expectedGameVersion:70,characterId:testCase.state.character!.id,
+ eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,nowMs:now});}
+catch(e){staleDenied=String(e).includes('party_event_game_version_mismatch');}
+assert(staleDenied,'stale or client-supplied revision must fail');
+const forged=structuredClone(testCase.frozen);
+forged.actor.stats.attackPower*=100;
+let denied=false;
+try{resolvePartyEventDayEightBoss({eventId:'v4-tamper',family:'broken_caravan',difficulty:'standard',seed:1,
+ eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,
+ nowMs:now-1000+week+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
+ frozen:[forged,get('WAYFINDER','T2','plain',1).frozen],orders:[]});}
+catch(e){denied=String(e).includes('party_boss_invalid_frozen_loadout');}
+assert(denied,'tampered frozen actor must fail boss hash verification');
+function roster(focus:ClassId,size:number):ClassId[]{
+ const support:ClassId[]=['WAYFINDER','DAWNKEEPER','IRONWARDEN','RAVAGER'];
+ return [focus,...support.filter(x=>x!==focus)].slice(0,size);
+}
+const results:Array<{tier:Tier;size:number;difficulty:WeeklyPartyDifficulty;profile:Profile;
+ cleared:number;band:number;family:WeeklyPartyFamily;focus:ClassId;damage:number}>=[];
+for(const profile of ['plain','prepared'] as const){
+ for(let c=0;c<classes.length;c++){
+  for(const tier of tiers){
+   for(const size of [2,3,4]){
+    for(const difficulty of difficulties){
+     // Prepared run exercises the same full matrix, not merely one hand-picked showcase.
+     const family=families[(c+size)%families.length]!;
+     const frozen=roster(classes[c]!,size).map((classId,index)=>get(classId,tier,profile,index).frozen);
+     const result=resolvePartyEventDayEightBoss({
+      eventId:'v4:'+profile+':'+c+':'+tier+':'+size+':'+difficulty,
+      family,difficulty,seed:4700+c*31+size,
+      eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,
+      nowMs:now-1000+week+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
+      frozen,orders:[],
+     });
+     assert(result.tiers.length>=1&&result.tiers.length<=12,'bounded tier count');
+     assert(Number.isFinite(result.totalBossDamage)&&result.rewardBand>=1&&result.rewardBand<=6,'real bounded engine outputs');
+     results.push({tier,size,difficulty,profile,focus:classes[c]!,family,cleared:result.tiersCleared,band:result.rewardBand,damage:result.totalBossDamage});
+    }
+   }
+  }
+ }
+}
+function summary(rows:typeof results){
+ return {mean:rows.reduce((s,v)=>s+v.cleared,0)/Math.max(1,rows.length),
+  min:Math.min(...rows.map(x=>x.cleared)),max:Math.max(...rows.map(x=>x.cleared)),
+  tier1Pct:100*rows.filter(x=>x.cleared>=1).length/Math.max(1,rows.length)};
+}
+console.log('PARTY_V4_AUTHENTIC_DUNGEON_LOADOUTS rows='+results.length+' 9 classes x 4 tiers x 3 sizes x 3 difficulties x 2 profiles');
+console.log('Input: synthetic 10-slot owned crafted copies, Q50/common/rank0 plain vs Q85/rare/rank4/G5 Precision+Predator/level10 other-role companion/level30 class skills prepared');
+console.log('Calculations: live deriveOnlineCoopLoadout -> source verification -> Party freeze hash -> deterministic backend boss; no dungeon downsync or user player stats');
+for(const profile of ['plain','prepared'] as const){
+ for(const tier of tiers){
+  for(const size of [2,3,4]){
+   for(const difficulty of difficulties){
+    const selection=results.filter(x=>x.profile===profile&&x.tier===tier&&x.size===size&&x.difficulty===difficulty);
+    const v=summary(selection);
+    console.log('V4_METRIC,'+[profile,tier,size,difficulty,v.mean.toFixed(2),v.min,v.max,v.tier1Pct.toFixed(0)].join(','));
+   }
+  }
+ }
+}
+const byTier=(tier:Tier,profile:Profile)=>results.filter(r=>r.tier===tier&&r.profile===profile&&r.size===2&&r.difficulty==='standard');
+for(const tier of tiers){
+ const x=byTier(tier,'plain'),y=byTier(tier,'prepared');
+ const a=summary(x),b=summary(y);
+ console.log('V4_DUO_STANDARD '+tier+' plain='+a.mean.toFixed(2)+' prepared='+b.mean.toFixed(2)+' tier1Plain='+a.tier1Pct.toFixed(0)+' tier1Prepared='+b.tier1Pct.toFixed(0));
+}
+
+/**
+ * Second pass: compare EXACTLY the current combat spells against three
+ * alternate boss stat-growth curves using real source-derived frozen actors.
+ * This is an isolated experiment: do not edit the hidden Day 8 boss.
+ */
+const curveCandidates=[
+ {name:'legacy_v2',hp:1.22,attack:1.14,defense:1.11},
+ {name:'gradual',hp:1.35,attack:1.17,defense:1.14},
+ {name:'medium',hp:1.42,attack:1.20,defense:1.16},
+ {name:'steep',hp:1.50,attack:1.23,defense:1.18},
+] as const;
+function simulateCandidateCurve(frozen:readonly FrozenPartyBossLoadout[],difficulty:WeeklyPartyDifficulty,
+ family:WeeklyPartyFamily,eventId:string,seed:number,curve:typeof curveCandidates[number]):number{
+ const players=frozen.map(x=>structuredClone(x.actor));
+ const median=partyEventRosterMedianLevel(players.map(p=>p.level)),levelScale=Math.max(.045,median/25);
+ const difficultyMultiplier={standard:1,veteran:1.20,heroic:1.40}[difficulty];
+ let cleared=0;
+ for(let tier=1;tier<=12;tier++){
+  const enemy:CombatantDefinition={
+   id:'PARTY_EVENT_BOSS',name:family,team:'enemies',role:'enemy',boss:true,
+   level:Math.max(1,Math.min(100,median+2*(tier-1))),
+   stats:{
+    maxHp:Math.round(players.length*5400*levelScale*Math.pow(curve.hp,tier-1)*difficultyMultiplier),
+    attackPower:Math.round(355*levelScale*Math.pow(curve.attack,tier-1)*difficultyMultiplier),
+    healingPower:0,defense:Math.round(520*levelScale*Math.pow(curve.defense,tier-1)*difficultyMultiplier),
+    accuracy:750,evasion:110,critChance:.045,critMultiplier:1.4,haste:.03,
+   },
+   basicAttackMs:2700,basicAttackCoeff:.8,
+   abilities:[
+    {id:'PE_BOSS_SLAM',name:'Overwhelming Strike',cooldownMs:6900,castTimeMs:400,
+     target:'current_target',priority:80,effects:[{kind:'damage',coeff:1.15}]},
+    {id:'PE_BOSS_PULSE',name:'Rising Threat',cooldownMs:12000,castTimeMs:900,
+     target:'all_enemies',priority:85,interruptible:true,
+     effects:[{kind:'damage',coeff:.38+Math.min(.3,.03*tier)}]},
+   ],
+   phases:[{id:'ENRAGE',hpPct:.35,target:'self',
+    effects:[{kind:'buff',tag:'damage_done',value:Math.min(.35,.07+.015*tier),durationMs:90000}]}],
+  };
+  const result=simulateCombat({
+   seed:eventId+':'+seed+':tier:'+tier,players,enemies:[enemy],maxDurationMs:90000,
+  });
+  if(!result.victory)break;
+  cleared++;
+ }
+ return cleared;
+}
+const parityCases=[
+ {focus:'IRONWARDEN' as ClassId,tier:'T1' as Tier,profile:'plain' as Profile,size:2},
+ {focus:'STONECALLER' as ClassId,tier:'T2' as Tier,profile:'prepared' as Profile,size:4},
+ {focus:'HEXWEAVER' as ClassId,tier:'T4' as Tier,profile:'prepared' as Profile,size:3},
+];
+for(const [i,pc] of parityCases.entries()){
+ const family=families[i%families.length]!;
+ const frozen=roster(pc.focus,pc.size).map((c,index)=>get(c,pc.tier,pc.profile,index).frozen);
+ const eventId='v4-parity:'+i,seed=4720+i;
+ const expected=resolvePartyEventDayEightBoss({
+  eventId,family,difficulty:'standard',seed,
+  eventStartsAtMs:now-1000,eventEndsAtMs:now-1000+week,
+  nowMs:now-1000+week+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,frozen,orders:[],
+ }).tiersCleared;
+ const actual=simulateCandidateCurve(frozen,'standard',family,eventId,seed,curveCandidates[2]!);
+ assert(expected===actual,'test-only boss spell/tuning parity: '+i+' '+expected+'/'+actual);
+}
+console.log('V4_CURVE_PARITY PASS '+parityCases.length+' varied authoritative parties against provisional medium curve');
+for(const curve of curveCandidates){
+ for(const profile of ['plain','prepared'] as const){
+  for(const tier of tiers){
+   for(const size of [2,4]){
+    const clears:number[]=[];
+    for(let i=0;i<classes.length;i++){
+     const family=families[(i+size)%families.length]!;
+     const frozen=roster(classes[i]!,size).map((id,index)=>get(id,tier,profile,index).frozen);
+     clears.push(simulateCandidateCurve(frozen,'standard',family,
+      'v4-upper-curve:'+profile+':'+tier+':'+size+':'+i,5019+i,curve));
+    }
+    const mean=clears.reduce((sum,n)=>sum+n,0)/clears.length;
+    const capCount=clears.filter(n=>n===12).length;
+    console.log('V4_CURVE,'+[curve.name,profile,tier,size,mean.toFixed(2),
+     Math.min(...clears),Math.max(...clears),capCount,clears.length].join(','));
+   }
+  }
+ }
+}
+console.log('V4_CURVES_TEST_ONLY; no change to hidden boss, settlement, player rewards or production config.');
+
+console.log('LIMITS: Synthetic saved characters, not actual players; one seed/focus/family per matrix cell; no supplies, guild buffs, prepared potion, boss family hazards, or item resource economies. No live balance changed.');

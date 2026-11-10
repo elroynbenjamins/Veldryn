@@ -307,7 +307,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     {sheetStage==='success'&&moment!==null&&moment.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
      <Text style={[styles.successMark,{color:C.good}]}>✦ ✓</Text><Text style={[styles.featuredTitle,{color:C.text}]}>{p('Rewards secured')}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('Reward collected · the next objective is ready when unlocked.')}</Text>
-     <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} essence={moment.essence} bondstones={moment.bondstones} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>
+     <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} titleName={moment.titleName} essence={moment.essence} bondstones={moment.bondstones} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>
     </View>:sheetStage==='claiming'?<View style={[styles.featured,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <Text style={[styles.rowTitle,{color:C.text}]}>{selectedTitle}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('The server will verify your progress before granting this reward.')}</Text>
@@ -344,7 +344,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
         </Pressable>;
        })}
       </View>:null}
-      {chosenOrder?<><Text style={[styles.detailText,{color:C.text}]}>{weeklyOrderReward(language,chosenOrder)}</Text><Text style={[styles.footnote,{color:C.muted}]}>{p('Rewards process automatically once the server confirms completion; no claim button is needed.')}</Text></>:selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} essence={selectedRewards.essence} bondstones={selectedRewards.bondstones} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Reward preview')}/>:null}
+      {chosenOrder?<><Text style={[styles.detailText,{color:C.text}]}>{weeklyOrderReward(language,chosenOrder)}</Text><Text style={[styles.footnote,{color:C.muted}]}>{p('Rewards process automatically once the server confirms completion; no claim button is needed.')}</Text></>:selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} titleName={'titleName' in selectedRewards?selectedRewards.titleName:undefined} essence={selectedRewards.essence} bondstones={selectedRewards.bondstones} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Reward preview')}/>:null}
      </View>
      {selectedStatus==='claimed'?<Text style={[styles.footnote,{color:C.good}]}>{p('✓ Reward already collected')}</Text>:null}
      {selectedStatus==='processing'?<Text style={[styles.footnote,{color:C.good}]}>{p('✓ Objective complete · reward processing automatically')}</Text>:null}

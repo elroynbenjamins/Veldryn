@@ -26,9 +26,10 @@ export {};
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const home=fs.readFileSync('src/components/GuildHallSummary.tsx','utf8');
 const shop=fs.readFileSync('src/components/GuildTokenShopView.tsx','utf8');
-ok(home.includes('Guild Token Shop" onPress={onOpenShop}/>\n   {dailyActions}') &&
- home.includes('Open Guild Token Shop" onPress={onOpenShop}/>\n   {dailyActions}'),
- 'Compact and expanded Guild dashboards must show daily claim tiles directly below the Token Shop action');
+ok(home.includes("const readyDaily=dailyRewards.filter(row=>row.status==='ready')")&&home.includes('if(compact)return <Panel style={s.homeActionPanel}>')&&home.includes('claimAll(true)'),
+ 'Compact Guild Home only shows ready rewards, with one combined claim action');
+ok(home.includes('Open Guild Token Shop" onPress={onOpenShop}/>')&&home.includes('{dailyActions}'),
+ 'Expanded Guild Hall retains Token Shop navigation and daily claim tiles');
 ok(home.includes("disabled={!enabled}")&&home.includes("C.goodSurface")&&home.includes("C.badSurface"),
  'Ready / not-earned / disabled claim states must use theme colors and real disabled controls');
 ok(home.includes("guildDailyTokenClaimStatus(shop,muster,kind)!=='ready'"),

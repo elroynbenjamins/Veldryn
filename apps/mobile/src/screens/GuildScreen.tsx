@@ -327,7 +327,7 @@ export function GuildOnlineHome({onNavigate,onNavigateMuster,onNavigateQuests,on
  </Pressable>:null;
  return <View style={s.homeStack}>
   <GuildMemberIdentity onRoster={()=>onNavigate('Roster')} onManage={canCustomize?()=>onNavigate('Manage'):undefined}/>
-  <GuildHomeActions summary={<GuildHallSummary compact onOpenMuster={onNavigateMuster} onOpenShop={onNavigateShop} onRewardsChanged={onRewardsChanged}/>} voteReminder={voteReminder} board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onProjects={()=>onNavigate('Progress')} onQuests={()=>onNavigateQuests?onNavigateQuests():onNavigate('Activities')} onShop={onNavigateShop} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')} onRoadmap={()=>onNavigate('Future')} onGuide={onGuide}/>
+  <GuildHomeActions summary={<GuildHallSummary compact onOpenMuster={onNavigateMuster} onOpenShop={onNavigateShop} onRewardsChanged={onRewardsChanged}/>} voteReminder={voteReminder} board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onProjects={()=>onNavigateProjectVote?onNavigateProjectVote():onNavigate('Progress')} onQuests={()=>onNavigateQuests?onNavigateQuests():onNavigate('Activities')} onShop={onNavigateShop} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')} onRoadmap={()=>onNavigate('Future')} onGuide={onGuide}/>
  </View>;
 }
 

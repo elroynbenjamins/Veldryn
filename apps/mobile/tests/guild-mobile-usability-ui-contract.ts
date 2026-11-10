@@ -18,9 +18,10 @@ ok(navigation.includes("GuildPrimarySection='Home'|'PvE'|'Activities'|'Hall'|'Pr
 ok(navigation.includes("?value:null"),'Secondary Guild screens must not impersonate Home in the active tab');
 ok(screen.includes("setActivityView('Quests');setOnlineSection('Activities')"),'Quests shortcut must select Quests even after visiting Muster');
 ok(screen.includes('title="← Guild Home"'),'Secondary Guild screens must provide explicit return navigation');
-ok(home.indexOf('quickLinks.map')<home.indexOf('{summary}'),'Communication shortcut must precede Guild reward summary');
-ok(home.includes("flexBasis:'21%',minWidth:66"),'Four quick links must fit on a narrow phone');
-ok(screen.includes('<GuildHallSummary compact')&&summary.includes('Claim all '),'Guild Home must show claimable rewards without the full Hall card stack');
+ok(home.indexOf('{summary}{voteReminder}')<home.indexOf('THIS WEEK'),'Guild reward and vote actions must precede weekly gameplay');
+ok(home.indexOf('THIS WEEK')<home.indexOf('GUILD ACTIVITY')&&home.indexOf('GUILD ACTIVITY')<home.indexOf('COMMUNITY')&&home.indexOf('COMMUNITY')<home.indexOf('MORE'),'Weekly play, activity, community and utilities appear in logical order');
+ok(home.includes('weekGrid:')&&home.includes('minHeight:44'),'Two weekly actions and touch-friendly More links fit narrow phones');
+ok(screen.includes('<GuildHallSummary compact')&&summary.includes('claimAll(true)'),'Guild Home provides safe compact daily and weekly claims');
 ok(screen.includes('onRewardsChanged={onTokenRewardsChanged}')&&screen.includes('onRewardsChanged={onRewardsChanged}'),'Guild Home claims must refresh global rewards');
 ok(summary.includes('failed. Retry remaining rewards.'),'Bulk claims must report partial failures');
 ok(hall.includes("['Overview','Construction','Bank','Shop','Legacy']")&&!hall.includes("section==='Skills'?"),'Hall must expose Shop directly and not duplicate the Skills screen');

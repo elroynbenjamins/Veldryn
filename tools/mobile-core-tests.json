@@ -262,6 +262,7 @@
   ".core-build/apps/mobile/tests/section-guidance.js",
   ".core-build/apps/mobile/tests/guild-management-ui-contract.js",
   ".core-build/apps/mobile/tests/guild-chat-projects-ui-contract.js",
+  ".core-build/apps/mobile/tests/guild-dashboard-hierarchy.js",
   ".core-build/apps/mobile/tests/guild-notice-board-ui-contract.js",
   ".core-build/apps/mobile/tests/guild-muster-ui-contract.js",
   ".core-build/apps/mobile/tests/v52-long-term-single-path.js",

@@ -2,6 +2,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
+import {displayStat} from '../core/stat-display';
 import {WORLD_ZONES} from '../content/world-map';
 import type {GameState} from '../core/types';
 import type {FallenKnightBattleResult,StoryBossEvent} from '../core/story-boss';
@@ -69,9 +70,9 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   // Android Back and accessibility Escape cannot bypass the fight; Continue unlocks after the full timeline.
   const closeAfterBattle=()=>{if(finished)onClose();};
   const eventText=(event:StoryBossEvent)=>{
-    if(event.type==='player_hit')return `${event.critical?'CRIT · ':''}You hit for ${event.amount?.toLocaleString()??0}`;
-    if(event.type==='boss_hit')return `${event.critical?'CRIT · ':''}${event.label} hits for ${event.amount?.toLocaleString()??0}`;
-    if(event.type==='heal')return `Healing potion restores ${event.amount?.toLocaleString()??0} HP`;
+    if(event.type==='player_hit')return `${event.critical?'CRIT · ':''}You hit for ${displayStat(event.amount??0).toLocaleString()}`;
+    if(event.type==='boss_hit')return `${event.critical?'CRIT · ':''}${event.label} hits for ${displayStat(event.amount??0).toLocaleString()}`;
+    if(event.type==='heal')return `Healing potion restores ${displayStat(event.amount??0).toLocaleString()} HP`;
     if(event.type==='phase'||event.type==='telegraph')return event.label;
     if(event.type==='player_miss'||event.type==='boss_miss')return event.label;
     if(event.type==='victory'||event.type==='defeat')return event.label;
@@ -94,7 +95,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
               <View style={s.portrait}>
                 <CharacterPortrait state={state} style={{width:104,height:132}}/>
                 <Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(playerImpact)}]}/>
-                {damageEvent?.type==='boss_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:playerImpact,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>{damageEvent.critical?'CRIT ':''}−{damageEvent.amount?.toLocaleString()}</Text></Animated.View>}
+                {damageEvent?.type==='boss_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:playerImpact,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>{damageEvent.critical?'CRIT ':''}−{displayStat(damageEvent.amount??0).toLocaleString()}</Text></Animated.View>}
               </View>
               <Text numberOfLines={1} style={s.name}>{state.character?.name??gt("Adventurer")}</Text>
               <Text style={s.sub}>ACC {Math.round(battle.player.hitChance*100)}% · CRIT {Math.round(battle.player.critChance*100)}%</Text>
@@ -107,7 +108,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
                 <MonsterPortraitFrame monster={monster} size={118} active reduceMotion={reduceMotion} framed={false}/>
                 <Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/>
                 <Animated.View pointerEvents="none" style={{position:'absolute',left:38,top:38,opacity:slashOpacity,transform:[{scale:slashScale},{rotate:'-25deg'}]}}><CombatEffectShape kind="slash" color="#f4ce91"/></Animated.View>
-                {damageEvent?.type==='player_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:enemyImpact,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={damageEvent.critical?s.critDamage:s.damageDealt}>{damageEvent.critical?'CRIT ':''}−{damageEvent.amount?.toLocaleString()}</Text></Animated.View>}
+                {damageEvent?.type==='player_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:enemyImpact,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={damageEvent.critical?s.critDamage:s.damageDealt}>{damageEvent.critical?'CRIT ':''}−{displayStat(damageEvent.amount??0).toLocaleString()}</Text></Animated.View>}
               </View>
               <Text style={s.name}>Fallen Knight</Text>
               <Text style={s.sub}>ACC {Math.round(battle.boss.accuracy*100)}% · CRIT {Math.round(battle.boss.critChance*100)}%</Text>
@@ -116,8 +117,8 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
         </Animated.View>
 
         <View style={s.bars}>
-          <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>FALLEN KNIGHT</Text><Text style={s.barValue}>{Math.round(bossHp).toLocaleString()} / {battle.bossMaxHp.toLocaleString()}</Text></View><View style={s.track}><View style={[s.bossFill,{width:`${pct(bossHp,battle.bossMaxHp)}%` as `${number}%`}]}/></View></View>
-          <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>{state.character?.name?.toUpperCase()??gt("PLAYER")}</Text><Text style={s.barValue}>{Math.round(playerHp).toLocaleString()} / {battle.playerMaxHp.toLocaleString()}</Text></View><View style={s.track}><View style={[s.playerFill,{width:`${pct(playerHp,battle.playerMaxHp)}%` as `${number}%`}]}/></View></View>
+          <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>FALLEN KNIGHT</Text><Text style={s.barValue}>{displayStat(bossHp).toLocaleString()} / {displayStat(battle.bossMaxHp).toLocaleString()}</Text></View><View style={s.track}><View style={[s.bossFill,{width:`${pct(bossHp,battle.bossMaxHp)}%` as `${number}%`}]}/></View></View>
+          <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>{state.character?.name?.toUpperCase()??gt("PLAYER")}</Text><Text style={s.barValue}>{displayStat(playerHp).toLocaleString()} / {displayStat(battle.playerMaxHp).toLocaleString()}</Text></View><View style={s.track}><View style={[s.playerFill,{width:`${pct(playerHp,battle.playerMaxHp)}%` as `${number}%`}]}/></View></View>
         </View>
 
         <View style={s.log}>

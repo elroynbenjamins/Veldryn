@@ -4,6 +4,8 @@ import {createTranslator,interpolateTranslation} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+ "Equipment Pouch":["Equipment Pouch","Ausrüstungsbeutel","Bolsa de equipo","Uitrustingstas","Sacca equipaggiamento","Sac d’équipement"],
+ "Choose a character to claim equipment.":["Choose a character to claim equipment.","Wähle einen Charakter, um Ausrüstung abzuholen.","Elige un personaje para recoger el equipo.","Kies een personage om uitrusting te claimen.","Scegli un personaggio per ritirare l'equipaggiamento.","Choisissez un personnage pour récupérer l’équipement."],
  "CLAIM BLOCKED":["CLAIM BLOCKED","EINLÖSEN BLOCKIERT","RECLAMACIÓN BLOQUEADA","CLAIM GEBLOKKEERD","RISCATTO BLOCCATO","RÉCUPÉRATION BLOQUÉE"],
 
  // Community Roadmap: vote UI and major expansion descriptions.

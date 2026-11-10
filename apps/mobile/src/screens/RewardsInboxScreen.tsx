@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
-import {PLAYER_MARKET_RELEASED} from '../core/release-flags';
+import {PLAYER_MARKET_RELEASED,MARKET_AUTHENTICATED_SERVICE_READY} from '../core/release-flags';
 import {MarketInboxPanel} from './MarketInboxPanel';
 import {eventInboxRewards} from '../core/live-events';
 import {liveEventDef} from '../content/live-events';
@@ -48,7 +48,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
     {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value&&!marketTab,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setMarketTab(false);setHistory(value);setNotice('');setExpandedId(null);setBlockedClaims({});}} style={[s.tab,history===value&&!marketTab&&s.tabActive]}>
       <Text style={[s.tabText,history===value&&s.tabTextActive]}>{value?a('Claimed history'):a('Inbox')+(pending?' · '+pending:'')}</Text>
     </Pressable>)}
-    {PLAYER_MARKET_RELEASED?<Pressable accessibilityRole="tab" accessibilityLabel={a('Market')} accessibilityState={{selected:marketTab,disabled:busy}}
+    {PLAYER_MARKET_RELEASED&&MARKET_AUTHENTICATED_SERVICE_READY?<Pressable accessibilityRole="tab" accessibilityLabel={a('Market')} accessibilityState={{selected:marketTab,disabled:busy}}
       disabled={busy} onPress={()=>{setMarketTab(true);setNotice('');setExpandedId(null);}}
       style={[s.tab,marketTab&&s.tabActive]}>
       <Text style={[s.tabText,marketTab&&s.tabTextActive]}>{a('Market')}</Text>

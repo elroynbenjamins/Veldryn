@@ -11,3 +11,5 @@ export const RANKINGS_RELEASED=false;
 
 /** Internal inventory audit only; no market UI, listings or transfers are released. */
 export const PLAYER_MARKET_RELEASED=false;
+/** Independent launch prerequisite: authenticated Market Edge write/read routes are not mounted. */
+export const MARKET_AUTHENTICATED_SERVICE_READY=false;

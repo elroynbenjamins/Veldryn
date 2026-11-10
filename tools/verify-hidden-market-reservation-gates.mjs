@@ -82,6 +82,7 @@ requireMatches(dbTest,[
   ['legacy protects crafting',/reserved cooking\/brewing inputs were sellable/],
 ], 'rollback test');
 assert.match(release,/export const PLAYER_MARKET_RELEASED=false;/,'market remains hidden');
+assert.match(release,/export const MARKET_AUTHENTICATED_SERVICE_READY=false;/,'authenticated Market gateway remains unreleased');
 assert.match(roadmap,/return true;/,'Player Market can be voted on in Roadmap without releasing trading');
 assert.doesNotMatch(reserve,/\bgrant execute\b/i,'never expose reserve RPCs');
 assert.doesNotMatch(cancel,/\bgrant execute\b/i,'never expose cancel RPCs');
@@ -164,13 +165,13 @@ requireMatches(marketInboxTest,[
   ['full bank protection',/full bank lost purchase or changed Gold/],
   ['returned listing',/returned lot missing from Market Inbox/],
 ], 'market inbox staging tests');
-assert.match(rewardInboxScreen,/PLAYER_MARKET_RELEASED\?<Pressable/,
+assert.match(rewardInboxScreen,/PLAYER_MARKET_RELEASED&&MARKET_AUTHENTICATED_SERVICE_READY\?<Pressable/,
   'Market Inbox tab must remain hidden behind the release flag');
 assert.match(rewardInboxScreen,/\{marketTab\?<MarketInboxPanel/,
   'the Market Inbox panel is only mounted on its future tab');
-assert.match(marketInboxPanel,/if\(!PLAYER_MARKET_RELEASED\)return null;/,
+assert.match(marketInboxPanel,/if\(!PLAYER_MARKET_RELEASED\|\|!MARKET_AUTHENTICATED_SERVICE_READY\)return null;/,
   'Market Inbox panel must fail closed');
-assert.match(marketInboxClient,/if\(!PLAYER_MARKET_RELEASED\)throw/,
+assert.match(marketInboxClient,/if\(!PLAYER_MARKET_RELEASED\|\|!MARKET_AUTHENTICATED_SERVICE_READY\)throw/,
   'Market Inbox API calls must fail closed');
 assert.doesNotMatch(purchaseClaim,/\bgrant execute\b/i,
   'buyer claims are not exposed to clients');

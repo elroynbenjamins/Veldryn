@@ -64,7 +64,7 @@ begin
    'quantity',r.quantity,'unitGold',r.unit_price,
    'grossGold',r.gross_gold,'feeGold',r.fee_gold,
    'sellerGold',r.seller_payout_gold,
-   'settledAtMs',(pg_catalog.extract(epoch from r.sold_at)*1000)::bigint,
+   'settledAtMs',(pg_catalog.date_part('epoch',r.sold_at)*1000)::bigint,
    'status','settled') order by r.sold_at desc),'[]'::jsonb)
  into v_rows from recent r;
 

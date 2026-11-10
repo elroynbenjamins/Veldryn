@@ -9,6 +9,9 @@ on:
       - 'apps/mobile/src/screens/MarketInboxPanel.tsx'
       - 'apps/mobile/src/screens/RewardsInboxScreen.tsx'
       - 'apps/mobile/tests/player-market-readiness.ts'
+      - 'apps/mobile/src/core/market-price-history-v13.ts'
+      - 'apps/mobile/src/components/MarketPriceHistoryChart.tsx'
+      - 'apps/mobile/tests/market-price-history-v13.ts'
       - 'backend/online/market-custody-readiness.ts'
       - 'backend/online/market-equipment-proof.ts'
       - 'backend/online/tests/market-equipment-proof.ts'
@@ -46,6 +49,8 @@ jobs:
         run: pnpm typecheck
       - name: Verify read-only market eligibility and source identity
         run: node ../../tools/run-mobile-tests.mjs player-market-readiness
+      - name: Verify 7/30/90-day Market history UTC gaps and empty states
+        run: node ../../tools/run-mobile-tests.mjs market-price-history-v13
       - name: Verify server-only custody inspection
         run: pnpm --dir ../../backend test:market-readiness
       - name: Verify dormant authenticated Market boundary cannot be impersonated

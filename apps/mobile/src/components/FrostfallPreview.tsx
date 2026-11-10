@@ -3,6 +3,9 @@ import {Image, ImageBackground, Pressable, StyleSheet, Text, View, useWindowDime
 import {frostfallPreviewCountdown, frostfallPreviewPhase, frostfallSecondRevealCountdown} from '../content/frostfall-preview';
 import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
 import {eventTheme} from '../theme/event-palette';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {formatLocalizedDate} from '../i18n/translator';
+import {frostfallPreviewText,type FrostfallPreviewCopyKey} from '../i18n/frostfall-preview';
 import {Panel} from './Panel';
 
 const HERO = require('../../assets/profile-backgrounds/bg_frostfall.webp');
@@ -11,11 +14,11 @@ const FROSTFALL_BADGE = require('../../assets/events/frostfall/badge.png');
 
 type RevealId = 'activity' | 'pet' | 'shop' | 'mystery';
 
-const DETAILS: Record<RevealId, string> = {
-  activity: 'Keep the winter roads safe, gather provisions, and craft festival gifts. Seasonal activities open when Frostfall begins.',
-  pet: 'Snowbell Pup is a seasonal pet reward on the Frostfall reputation trail. Earn event progress once Frostfall is live.',
-  shop: 'Frostbell Tokens and Aurora Chimes can be exchanged for winter collectibles and supplies when the event opens. The shop remains closed during the preview.',
-  mystery: 'A rare winter visitor remains a secret until Frostfall begins.',
+const DETAILS: Record<RevealId, FrostfallPreviewCopyKey> = {
+  activity: 'detailActivity',
+  pet: 'detailPet',
+  shop: 'detailShop',
+  mystery: 'detailMystery',
 };
 
 /** Read-only teaser. It must never call live-event claim, purchase or activity commands. */
@@ -27,6 +30,8 @@ export function FrostfallPreview(props: {startsAtMs: number; nowMs: number}) {
 
 function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs: number}) {
   const C = useGameTheme();
+  const language = useGameLanguage();
+  const t = (key: FrostfallPreviewCopyKey, params?: Record<string,string|number>) => frostfallPreviewText(language,key,params);
   const {width, fontScale} = useWindowDimensions();
   const stacked = width < 385 || fontScale >= 1.2;
   const phase = frostfallPreviewPhase(startsAtMs, nowMs);
@@ -34,43 +39,41 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
   if (!phase) return null;
   const secondReveal = phase === 'reveal';
   const nextReveal = frostfallSecondRevealCountdown(startsAtMs, nowMs);
-  const startDate = new Intl.DateTimeFormat('en', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC'}).format(new Date(startsAtMs));
+  const startDate = formatLocalizedDate(language,startsAtMs,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:'UTC'});
   const tiles: {id: RevealId; icon: string; label: string; sub: string; unlocked: boolean}[] = [
-    {id: 'activity', icon: '❄', label: 'Winter Activities', sub: 'Seasonal challenges', unlocked: true},
-    {id: 'pet', icon: '✦', label: secondReveal ? 'Snowbell Pup' : 'Hidden Reward', sub: secondReveal ? 'Reputation milestone' : `Unlocks in ${nextReveal}`, unlocked: secondReveal},
-    {id: 'shop', icon: '✧', label: secondReveal ? 'Frostfall Shop' : 'Hidden Feature', sub: secondReveal ? 'Seasonal collectibles' : `Unlocks in ${nextReveal}`, unlocked: secondReveal},
-    {id: 'mystery', icon: '?', label: 'Winter Mystery', sub: 'Reveals at launch', unlocked: false},
+    {id: 'activity', icon: '❄', label: t('activity'), sub: t('activitySub'), unlocked: true},
+    {id: 'pet', icon: '✦', label: secondReveal ? t('pet') : t('hiddenReward'), sub: secondReveal ? t('milestone') : t('unlockIn',{time:nextReveal}), unlocked: secondReveal},
+    {id: 'shop', icon: '✧', label: secondReveal ? t('shop') : t('hiddenFeature'), sub: secondReveal ? t('collectibles') : t('unlockIn',{time:nextReveal}), unlocked: secondReveal},
+    {id: 'mystery', icon: '?', label: t('mystery'), sub: t('launchReveal'), unlocked: false},
   ];
 
-  return <View style={s.wrapper} accessibilityLabel="Frostfall Festival preview">
+  return <View style={s.wrapper} accessibilityLabel={t('previewOnly')}>
     <ImageBackground source={HERO} resizeMode="cover" imageStyle={s.heroImage} style={s.hero}>
       <View style={s.shade}/>
       <View style={s.heroContent}>
-        <View style={s.heroTop}><Image source={FROSTFALL_BADGE} resizeMode="contain" accessibilityLabel="Frostfall festival badge" style={s.heroBadge}/><Text style={s.heroKicker}>WINTER FESTIVAL · COMING SOON</Text></View>
+        <View style={s.heroTop}><Image source={FROSTFALL_BADGE} resizeMode="contain" accessibilityLabel={t('kicker')} style={s.heroBadge}/><Text style={s.heroKicker}>{t('kicker')}</Text></View>
         <Text style={s.heroTitle}>FROSTFALL</Text>
-        <Text style={s.heroText}>Winter bells ring across Asterfall.</Text>
+        <Text style={s.heroText}>{t('tagline')}</Text>
       </View>
     </ImageBackground>
     <View style={[s.countdown, stacked && s.countdownStack, {backgroundColor: C.accentSurface, borderColor: C.lineStrong}]}>
       <View style={s.flex}>
-        <Text style={[s.tiny, {color: C.muted}]}>FESTIVAL BEGINS IN</Text>
-        <Text accessibilityLabel={'Frostfall begins in ' + frostfallPreviewCountdown(startsAtMs, nowMs)} style={[s.time, {color: C.accent}]}>{frostfallPreviewCountdown(startsAtMs, nowMs)}</Text>
+        <Text style={[s.tiny, {color: C.muted}]}>{t('begins')}</Text>
+        <Text accessibilityLabel={t('beginsAccessibility',{time:frostfallPreviewCountdown(startsAtMs, nowMs)})} style={[s.time, {color: C.accent}]}>{frostfallPreviewCountdown(startsAtMs, nowMs)}</Text>
       </View>
       <Text style={[s.date, stacked && s.dateStack, {color: C.text}]}>{startDate} UTC</Text>
     </View>
     <View style={s.story}>
-      <Text style={[s.eyebrow, {color: C.accent}]}>{secondReveal ? 'SECOND REVEAL' : 'A FIRST GLIMPSE'}</Text>
-      <Text style={[s.heading, {color: C.text}]}>{secondReveal ? 'The frost reveals its secrets' : 'Something stirs beneath the snow…'}</Text>
-      <Text style={[s.description, {color: C.muted}]}>{secondReveal
-        ? 'Seasonal rewards and the festival shop have been unveiled. One mystery remains until Frostfall begins.'
-        : 'Winter celebrations are on the horizon. Protect the roads and prepare festive supplies. More secrets unlock one week before launch.'}</Text>
+      <Text style={[s.eyebrow, {color: C.accent}]}>{secondReveal ? t('secondKicker') : t('firstKicker')}</Text>
+      <Text style={[s.heading, {color: C.text}]}>{secondReveal ? t('secondTitle') : t('firstTitle')}</Text>
+      <Text style={[s.description, {color: C.muted}]}>{secondReveal ? t('secondCopy') : t('firstCopy')}</Text>
     </View>
     <View style={s.sectionHeading}>
-      <Text style={[s.heading, {color: C.text}]}>What awaits?</Text>
-      <Text style={[s.counter, {color: C.muted}]}>{secondReveal ? '3 of 4 revealed' : '1 of 4 revealed'}</Text>
+      <Text style={[s.heading, {color: C.text}]}>{t('awaits')}</Text>
+      <Text style={[s.counter, {color: C.muted}]}>{t('revealed',{count:secondReveal?3:1})}</Text>
     </View>
     <View style={s.grid}>
-      {tiles.map(tile => <Pressable key={tile.id} accessibilityRole="button" disabled={!tile.unlocked} accessibilityLabel={(tile.unlocked ? '' : 'Locked. ') + tile.label + '. ' + tile.sub} accessibilityState={{selected: selected === tile.id, disabled: !tile.unlocked}}
+      {tiles.map(tile => <Pressable key={tile.id} accessibilityRole="button" disabled={!tile.unlocked} accessibilityLabel={(tile.unlocked ? '' : t('locked') + ' ') + tile.label + '. ' + tile.sub} accessibilityState={{selected: selected === tile.id, disabled: !tile.unlocked}}
         onPress={() => setSelected(tile.id === selected ? null : tile.id)}
         style={({pressed}) => [s.tile, stacked && s.tileStack, {backgroundColor: C.panel, borderColor: selected === tile.id ? C.accent : C.line}, pressed && s.pressed]}>
         <View style={[s.symbol, {backgroundColor: tile.unlocked ? C.accentSurface : C.panel2}]}>
@@ -82,8 +85,8 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
       </Pressable>)}
     </View>
     {selected ? <Panel>
-      <View style={s.detailHeading}><Text style={[s.detailTitle, {color: C.text}]}>{tiles.find(tile => tile.id === selected)?.label}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close detail" onPress={() => setSelected(null)} style={s.closeDetail}><Text style={[s.closeLabel, {color: C.muted}]}>✕</Text></Pressable></View>
-      <Text style={[s.description, {color: C.muted}]}>{DETAILS[selected]}</Text>
+      <View style={s.detailHeading}><Text style={[s.detailTitle, {color: C.text}]}>{tiles.find(tile => tile.id === selected)?.label}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('closeDetail')} onPress={() => setSelected(null)} style={s.closeDetail}><Text style={[s.closeLabel, {color: C.muted}]}>✕</Text></Pressable></View>
+      <Text style={[s.description, {color: C.muted}]}>{t(DETAILS[selected])}</Text>
     </Panel> : null}
     <Panel>
       <View style={s.spotlight}>
@@ -91,13 +94,13 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
           {secondReveal ? <Image source={SNOWBELL_PUP} resizeMode="contain" style={s.rewardImage}/> : <Text style={[s.question, {color: C.accent}]}>?</Text>}
         </View>
         <View style={s.flex}>
-          <Text style={[s.eyebrow, {color: C.accent}]}>FEATURED WINTER COLLECTIBLE</Text>
-          <Text style={[s.detailTitle, {color: C.text}]}>{secondReveal ? 'Snowbell Pup' : 'A winter visitor'}</Text>
-          <Text style={[s.description, {color: C.muted}]}>{secondReveal ? 'A Frostfall pet, available through seasonal progression once the event starts.' : 'A little winter magic is on its way. Reveal coming soon.'}</Text>
+          <Text style={[s.eyebrow, {color: C.accent}]}>{t('featured')}</Text>
+          <Text style={[s.detailTitle, {color: C.text}]}>{secondReveal ? t('pet') : t('visitor')}</Text>
+          <Text style={[s.description, {color: C.muted}]}>{secondReveal ? t('petShort') : t('visitorShort')}</Text>
         </View>
       </View>
     </Panel>
-    <Text style={[s.disclaimer, {color: C.muted}]}>Preview only · No rewards, purchases or activities unlock until Frostfall begins.</Text>
+    <Text style={[s.disclaimer, {color: C.muted}]}>{t('previewOnly')}</Text>
   </View>;
 }
 

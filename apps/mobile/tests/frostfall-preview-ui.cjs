@@ -12,12 +12,13 @@ const eventScreen = fs.readFileSync(path.join(mobile, 'src/screens/EventScreen.t
 assert.match(calendar, /fetchPublicEventCalendar\(/, 'calendar must use the published server schedule');
 assert.match(calendar, /frostfallPreviewPhase\(item\.startsAtMs,previewNow\)/, 'preview must be gated by schedule and clock');
 assert.match(preview, /frostfallPreviewPhase\(startsAtMs, nowMs\)/, 'standalone preview must also enforce gating');
-assert.match(preview, /Preview only/, 'teaser must clearly identify itself as read-only');
+assert.match(preview, /t\('previewOnly'\)/, 'teaser must clearly identify itself as read-only in all languages');
 assert.doesNotMatch(preview, /event_(reward|daily|purchase|cache|weekly)|claimEvent|purchaseEventOffer|onCommand/, 'teaser cannot perform live-event commands');
 assert.doesNotMatch(released, /annual-events-v2/, 'future Frostfall gameplay must remain out of released live catalog');
 assert.match(preview, /disabled=\{!tile\.unlocked\}/, 'unrevealed teaser cards must not be interactive');
 assert.match(preview, /frostfallSecondRevealCountdown\(startsAtMs, nowMs\)/, 'use a changing second-reveal countdown');
 assert.match(preview, /GameThemeScope colors=\{winterColors\}/, 'Frostfall preview has a winter-scoped theme');
+assert.match(preview, /frostfallPreviewText\(language,key,params\)/, 'localized Frostfall copy is used');
 assert.match(preview, /stacked && s\.tileStack/, 'teaser cards must adapt for small screens and large text');
 assert.match(preview, /hero: \{minHeight: 184/, 'hero must grow for accessibility font scaling');
 assert.doesNotMatch(calendar, /setInterval\(/, 'calendar must reuse the Event Hub clock rather than polling twice');

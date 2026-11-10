@@ -120,19 +120,14 @@ create trigger track_promo_supporter_badge_v2
 
 -- A historical expiry/updated_at is not reliable proof of continuous paid
 -- tenure; seed ACTIVE users at deployment rather than backdating status.
-do $$
-declare v_account uuid;
-begin
- for v_account in
-  select distinct account_id from (
-   select account_id from private.account_commerce_entitlements_v1
-   union all
-   select account_id from private.commerce_promo_entitlements_v1
-  ) sources
- loop
-  perform private.refresh_supporter_badge_progress_v2(v_account);
- end loop;
-end; $$;
+-- Use a set-based outer query instead of a one-row-at-a-time anonymous DO
+-- block. The invoked VOLATILE function locks/updates each verified account.
+select private.refresh_supporter_badge_progress_v2(account_id)
+from (
+ select account_id from private.account_commerce_entitlements_v1
+ union
+ select account_id from private.commerce_promo_entitlements_v1
+) verified_accounts;
 
 create or replace function private.supporter_badge_tier_v2(p_account_id uuid)
 returns smallint language plpgsql stable security definer set search_path='' as $$

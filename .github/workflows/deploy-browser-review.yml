@@ -12,6 +12,14 @@ on:
       - 'apps/mobile/index.js'
       - 'apps/mobile/src/dev/**'
       - 'apps/mobile/tests/browser-review-host.cjs'
+      - 'apps/mobile/src/components/DisclosureControl.tsx'
+      - 'apps/mobile/src/components/GatheringActivityList.tsx'
+      - 'apps/mobile/src/components/GatheringToolArtwork.tsx'
+      - 'apps/mobile/src/components/AnnualEventCalendarPanel.tsx'
+      - 'apps/mobile/src/screens/SkillsScreen.tsx'
+      - 'apps/mobile/src/screens/EventScreen.tsx'
+      - 'apps/mobile/src/content/frostfall-preview.ts'
+      - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
 
 permissions:
   contents: read
@@ -50,6 +58,12 @@ jobs:
       - name: Validate production-safe review entry and navigation
         run: node tests/browser-review-host.cjs
         working-directory: apps/mobile
+      - name: Check screen layout, Exploration gates and Frostfall teaser protection
+        run: |
+          cd apps/mobile
+          node tests/skill-disclosure-layout-ui.cjs
+          pnpm test:frostfall-preview
+          node ../../tools/run-mobile-tests.mjs exploration-balance
       - name: Typecheck the mobile application
         run: pnpm --dir apps/mobile typecheck
       - name: Export sandbox-only web build
@@ -120,7 +134,7 @@ jobs:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
           echo '## Veldryn screen review' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Sandbox route catalogue: 63 entry points, with further in-screen tabs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Sandbox route catalogue: 64 entry points, with further in-screen tabs.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Public review project: https://veldryn-review.pages.dev' >> "$GITHUB_STEP_SUMMARY"
           echo "Deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
           echo 'No production account, save, guild reward, billing or matchmaking connections.' >> "$GITHUB_STEP_SUMMARY"

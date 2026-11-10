@@ -8,7 +8,7 @@ import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
 export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;areaId?:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
-// Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
+// Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at rebased Character Level 13.
 {id:'GREENFIELDS_COPPER_OUTCROP',skillId:'mining',name:'Copper Outcrop',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'COPPER_VEIN',skillId:'mining',name:'Copper Vein',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'OLD_MINES'},
 {id:'ASTER_IRON_VEIN',skillId:'mining',name:'Aster-Iron Vein',unlockLevel:8,seconds:24,xp:18,itemId:'ASTER_IRON_ORE',min:1,max:2,zoneId:'OLD_MINES'},

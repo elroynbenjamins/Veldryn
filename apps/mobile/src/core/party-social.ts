@@ -1,4 +1,5 @@
 import type {PartyContractTierView} from './party-weekly-tiers';
+import {PARTY_UNLOCK_LEVEL} from './feature-unlocks';
 export type PartyRole = 'tank' | 'damage' | 'support';
 /** Social Party preferences, independent of combat/dungeon roles. */
 export type PartyActivityLevel='casual'|'active'|'tryhard';
@@ -350,7 +351,7 @@ export function filterRecruitmentCards(cards: readonly RecruitmentCardView[], fi
 
 export const PARTY_SOCIAL_TUTORIAL_STEPS = [
   'Open Social. Party and Guild have separate tabs; Guild stays available even when Party is locked.',
-  'At Level 20 you can create or join a persistent Party. Recruitment is available inside the Party view.',
+  `At Level ${PARTY_UNLOCK_LEVEL} you can create or join a persistent Party. Recruitment is available inside the Party view.`,
   'My Party shows members and weekly progress. Claim available rewards there and expand details only if needed.',
   'Party options contain invitations and member management. Recruitment contains adverts, filters and player search.',
   'Party Chat appears only while you are a current Party member. Dungeon matchmaking is a separate group system.',

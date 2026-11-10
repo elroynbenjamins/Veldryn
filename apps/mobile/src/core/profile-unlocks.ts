@@ -1,6 +1,7 @@
 import {GameState} from './types';
-export const PROFILE_BACKGROUNDS=[{id:'asterfall-night',name:'Asterfall Night',requiredLevel:1},{id:'ironwood-dawn',name:'Ironwood Dawn',requiredLevel:10},{id:'silverbrook-mist',name:'Silverbrook Mist',requiredLevel:20},{id:'oathglass-hall',name:'Oathglass Hall',requiredLevel:25}];
-export const PROFILE_TITLES=[{id:'new-adventurer',name:'New Adventurer',requiredLevel:1},{id:'pathfinder',name:'Pathfinder',requiredLevel:10},{id:'oathbound',name:'Oathbound',requiredLevel:25},{id:'bloomwarden',name:'Bloomwarden',requiredGuild:true}];
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from './progression';
+export const PROFILE_BACKGROUNDS=[{id:'asterfall-night',name:'Asterfall Night',requiredLevel:1},{id:'ironwood-dawn',name:'Ironwood Dawn',requiredLevel:rebaseLevel(10)},{id:'silverbrook-mist',name:'Silverbrook Mist',requiredLevel:rebaseLevel(20)},{id:'oathglass-hall',name:'Oathglass Hall',requiredLevel:rebaseLevel(25)}];
+export const PROFILE_TITLES=[{id:'new-adventurer',name:'New Adventurer',requiredLevel:1},{id:'pathfinder',name:'Pathfinder',requiredLevel:rebaseLevel(10)},{id:'oathbound',name:'Oathbound',requiredLevel:rebaseLevel(25)},{id:'bloomwarden',name:'Bloomwarden',requiredGuild:true}];
 function highestAccountCharacterLevel(state:GameState){
  return Math.max(0,state.character?.level??0,...(state.otherCharacters??[]).map(entry=>entry.character.level??0));
 }

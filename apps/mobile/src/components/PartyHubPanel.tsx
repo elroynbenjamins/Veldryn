@@ -30,6 +30,7 @@ import {PartyWeeklyLadder} from './PartyWeeklyLadder';
 import {PartyContractContributions} from './PartyContractContributions';
 import {partyContractClaimableRewardIds} from '../core/party-social';
 import {usePartyProgressUiText} from '../i18n/party-progress-ui';
+import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
 
 export interface PartyHubPanelProps {
   accountId: string;
@@ -65,7 +66,7 @@ export interface PartyHubPanelProps {
 }
 
 /** A locked Party shows only the unlock message, never hidden recruitment actions. */
-export function PartyLockedNotice({level=20}:{level?:number}){
+export function PartyLockedNotice({level=PARTY_UNLOCK_LEVEL}:{level?:number}){
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]),st=useSocialText();
  return <View style={s.locked}>
    <View style={s.lockMark}><Text style={s.lockIcon}>◇</Text></View>

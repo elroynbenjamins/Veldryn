@@ -1,6 +1,6 @@
 import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
-import {EARLY_FEATURE_DESTINATION_ORDER,EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked,earlyFeatureUnlockProgress,playerFacingGameplayError} from '../src/core/feature-unlocks';
+import {EARLY_FEATURE_DESTINATION_ORDER,EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked,earlyFeatureUnlockProgress,PARTY_UNLOCK_LEVEL,playerFacingGameplayError} from '../src/core/feature-unlocks';
 import {homeSessionSummary} from '../src/core/dashboard';
 import {executeGameCommand} from '../src/core/game-commands';
 import {eventDailyGift} from '../src/core/live-events';
@@ -66,9 +66,19 @@ for(const id of ['companions','social','contracts','masteryHall','guild'] as con
 assert.equal(earlyFeatureLockReason(state,'Guild'),'');
 assert.equal(earlyFeatureUnlocked(state,'rankings'),false,'Rankings should remain a later progression unlock');
 
+// Party unlock comes from current Level 10, not the old QST_011 milestone.
+assert.equal(PARTY_UNLOCK_LEVEL,10);
+const levelNine={...state,character:{...state.character!,level:9}};
+assert.equal(earlyFeatureUnlocked(levelNine,'party'),false,'Party remains locked at Level 9');
+assert.equal(earlyFeatureUnlockProgress(levelNine,'party').status,'locked');
+const levelTen={...state,character:{...state.character!,level:10}};
+assert.equal(earlyFeatureUnlocked(levelTen,'party'),true,'Party opens at Level 10');
+assert.equal(earlyFeatureUnlockProgress(levelTen,'party').status,'claimed');
+assert.equal(earlyFeatureLockReason(levelNine,'Party'),'Reach Level 10.');
 const freshAlt=createCharacter(newGame(0),'WAYFINDER','Fresh Alt');
 const learnedAccount={...freshAlt,otherCharacters:[{character:state.character!,inventory:state.inventory,overflow:state.overflow,activity:null,skills:state.skills,quests:state.quests,currentRegionId:state.currentRegionId}]};
 for(const id of ['dailySupplies','events','pets','accountBonuses','friends','companions','social','contracts','masteryHall','guild'] as const)assert.equal(earlyFeatureUnlocked(learnedAccount,id),true,id+' should stay unlocked on a fresh alt once another character earned it');
+assert.equal(earlyFeatureUnlocked(learnedAccount,'party'),true,'Party unlock persists across character switching');
 assert.equal(earlyFeatureUnlocked(learnedAccount,'rankings'),false,'Fresh alt should not invent an account milestone that no character has earned');
 
 state=claimQuest(state,'QST_011',20);

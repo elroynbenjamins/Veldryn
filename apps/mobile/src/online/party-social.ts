@@ -17,6 +17,7 @@ import type {
   RecruitmentRoleCounts,
 } from '../core/party-social';
 import {recruitmentStructuredTags} from '../core/party-social';
+import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
 import {supabase} from './supabase';
 import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
@@ -78,7 +79,7 @@ export const PARTY_SOCIAL_SERVER_AUTHORITY_NOTE = true;
 export interface PartySocialSnapshot {party:PersistentPartySummary|null;contracts:PartyContractView[];serverTime:string}
 export interface PartyRanking {event_key:string;name:string;party_id:string;normalized_points:number;rank:number;ends_at:string}
 function client(){if(!supabase)throw new Error('Online services are not configured.');return supabase;}
-async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{const {data,error}=await client().rpc(name,args);if(error)throw new Error(error.message.includes('party_minimum_level_not_met')?"Your character doesn't meet this Party's minimum combat level.":error.message);return data as T;}
+async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{const {data,error}=await client().rpc(name,args);if(error)throw new Error(error.message.includes('party_level_10_required')?`Reach Level ${PARTY_UNLOCK_LEVEL} on any character before creating or joining a Party.`:error.message.includes('party_minimum_level_not_met')?"Your character doesn't meet this Party's minimum combat level.":error.message);return data as T;}
 export function partyCommandKey(){return `party-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
 export async function partySocialSnapshot(){
  let snapshot:PartySocialSnapshot;

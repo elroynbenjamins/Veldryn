@@ -5,7 +5,10 @@ export type EarlyFeatureId='dailySupplies'|'events'|'pets'|'accountBonuses'|'fri
 export const GUILD_UNLOCK_LEVEL=7;
 /** Guild browsing and all membership actions share the same Level 7 unlock. */
 export const GUILD_JOIN_LEVEL=GUILD_UNLOCK_LEVEL;
-export const PARTY_UNLOCK_LEVEL=rebaseLevel(20);
+/** Account-wide persistent Party unlock; once any character is Level 10 it stays available. */
+export const PARTY_UNLOCK_LEVEL=10;
+/** Independent of Parties: regular Dungeons start at Level 25. */
+export const DUNGEON_UNLOCK_LEVEL=25;
 export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Recruitment','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
@@ -19,7 +22,7 @@ export const EARLY_FEATURE_UNLOCKS={
  contracts:{questId:'QST_005',title:'Contract Board',requirement:'Complete Into Ironwood',description:'Weekly and cooperative contract planning unlocks with deeper regional progression.'},
  masteryHall:{questId:'QST_005',title:'Mastery Hall',requirement:'Complete Into Ironwood',description:'Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful.'},
  guild:{questId:'QST_005',title:'Guilds',requirement:`Reach Level ${GUILD_UNLOCK_LEVEL}`,description:`Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find, join or create a Guild before deeper regional progression.`},
- party:{questId:'QST_011',title:'Parties',requirement:`Reach Level ${PARTY_UNLOCK_LEVEL}`,description:`Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.`},
+ party:{questId:'',title:'Parties',requirement:`Reach Level ${PARTY_UNLOCK_LEVEL}`,description:`Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.`},
  rankings:{questId:'QST_011',title:'Rankings',requirement:`Reach Level ${rebaseLevel(20)} and complete Place Among Guilds`,description:`Prestige rankings unlock later at Level ${rebaseLevel(20)}, after the player has had time to establish their character and social identity.`},
 } as const;
 
@@ -63,7 +66,7 @@ export function earlyFeatureUnlocked(state:FeatureUnlockHost,id:EarlyFeatureId){
 }
 export function earlyFeatureUnlockProgress(state:GameState,id:EarlyFeatureId){
  const rule=EARLY_FEATURE_UNLOCKS[id],quest=state.quests.find(row=>row.questId===rule.questId),unlocked=earlyFeatureUnlocked(state,id);
- return {id,unlocked,questId:rule.questId,title:rule.title,requirement:rule.requirement,description:rule.description,status:id==='events'?'claimed':quest?.status??'locked',progress:id==='events'?1:quest?.progress??0};
+ return {id,unlocked,questId:rule.questId,title:rule.title,requirement:rule.requirement,description:rule.description,status:id==='events'?'claimed':id==='party'?(unlocked?'claimed':'locked'):quest?.status??'locked',progress:id==='events'||id==='party'?(unlocked?1:0):quest?.progress??0};
 }
 
 export interface EarlyFeatureUnlockMoment{
@@ -103,7 +106,7 @@ export function earlyFeatureForDestination(destination:string):EarlyFeatureId|un
  const map:Record<string,EarlyFeatureId>={
   DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
   Companions:'companions',Friends:'friends',Social:'social',Recruitment:'social',MasteryHall:'masteryHall',
-  Guild:'guild',Rankings:'rankings',
+  Guild:'guild',Party:'party',Rankings:'rankings',
  };
  return map[destination];
 }

@@ -13,7 +13,7 @@ ok(guildTitle.detail.includes('Join a guild'),'guild title explains requirement'
 
 const levelTitle=profileRewardSource(state,'title','pathfinder');
 equal(levelTitle.destination,'Character','level title routes to Character');
-ok(levelTitle.detail.includes('level 10'),'level title explains exact level');
+ok(levelTitle.detail.includes('level 8'),'level title explains exact level');
 
 const eventTitle=profileRewardSource(state,'title','title_veil_watcher');
 equal(eventTitle.destination,'Events','event title routes to Events');
@@ -32,11 +32,11 @@ const eventUnlocks=newlyUnlockedProfileRewards(state,eventUnlockState);
 equal(eventUnlocks.length,1,'new released event profile rewards are detected');
 ok(eventUnlocks.some(row=>row.kind==='title'&&row.name==='Veil Watcher'),'Veilbreak title unlock keeps its canonical reward name');
 
-state={...state,character:{...state.character!,level:9}};
-const levelUp={...state,character:{...state.character!,level:10}};
+state={...state,character:{...state.character!,level:7}};
+const levelUp={...state,character:{...state.character!,level:8}};
 const levelUnlocks=newlyUnlockedProfileRewards(state,levelUp);
 equal(levelUnlocks.length,1,'crossing a profile-title level threshold creates one notice');
-equal(levelUnlocks[0].name,'Pathfinder','level 10 unlock identifies Pathfinder');
+equal(levelUnlocks[0].name,'Pathfinder','rebased level 8 unlock identifies Pathfinder');
 
 const sameLevel={...levelUp};
 equal(newlyUnlockedProfileRewards(levelUp,sameLevel).length,0,'unchanged state does not repeat profile unlock notices');

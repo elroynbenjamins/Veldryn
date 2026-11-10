@@ -17,7 +17,7 @@ assert.ok(auth.includes("entryRecovery?<")&&auth.includes('requestPasswordRecove
 assert.ok(auth.includes("!auth.session?<")&&auth.includes('creating?')&&auth.includes('setCreating(true)')&&auth.includes('setCreating(false)'),'Sign In and Create Account tabs share the real auth state');
 assert.ok(auth.includes('signInWithPassword(email,password)')&&auth.includes('createOnlineAccount(email,password,username)'),'Password entry retains server-backed sign-in and registration');
 assert.ok(auth.includes('googleSignInConfigured')&&auth.includes('signInOrLinkGoogle()'),'Google entry is only shown when configured');
-assert.ok(auth.includes('googleAccountLinkingEnabled?<GoogleBrandButton')&&auth.includes('googleLinked?<Text'),'Unverified Google account linking is hidden by default without hiding already-linked status');
+assert.ok(auth.includes('!googleLinked&&googleAccountLinkingEnabled&&<GoogleBrandButton')&&auth.includes('googleLinked&&<View style={s.servicePill}'),'Unverified Google account linking is hidden by default without hiding already-linked status');
 assert.ok(auth.includes('googleAccountLinkingEnabled&&<><GoogleBrandButton'),'Signed-out Google login also waits for verified nonce-bound Android builds');
 const googleSignIn=read('src/online/google-signin.ts');
 assert.ok(googleSignIn.includes("process.env.EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED==='true'"),'Linking requires a deliberate release flag and stays disabled by default');
@@ -27,6 +27,9 @@ assert.ok(auth.includes('finishGuestAccount(password,accountId)')&&auth.includes
 assert.ok(auth.includes('presentation="fullscreen"')&&auth.includes('verificationPrompt.kind'),'Email verification is focused and differentiated for signup and guests');
 assert.ok(auth.includes('passwordRequirements(password)')&&auth.includes('currentAccount.current===accountId'),'Password validation and stale-account ownership checks remain intact');
 assert.ok(auth.includes("linkStep==='linked'")&&auth.includes('signInPlayGames()'),'Linked accounts keep separate Google Play Games connection');
+assert.ok(auth.includes('Connected services')&&auth.includes('Account security')&&auth.includes('s.accountIdentity'),'Linked account status, services and security are clearly grouped');
+assert.ok(auth.includes('redundantLinkSuccess')&&auth.includes('!redundantLinkSuccess'),'Reflected link success does not create duplicate green confirmation cards');
+assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');
 assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('run(signOut)'),'Anonymous sign-out still warns before losing a guest account');
 assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was removed');
 assert.ok(account.includes("classEmblemIconArtwork[character.classId]")&&account.includes("character.name")&&account.includes("character.level"),'Account hero shows actual character identity');
@@ -39,7 +42,7 @@ assert.ok(account.includes('lockedDestinations')&&account.includes('attentionPri
 assert.ok(account.includes('DiscordButton')&&account.includes('RateAppCard'),'Discord and Rate VELDRYN are preserved');
 assert.ok(app.includes('accountLinkStep(auth.session.user)')&&app.includes('character={state.character}'),'Account status and hero derive from live state');
 assert.ok(welcome.includes("backgroundColor:'rgba(7,15,28,.64)'"),'Backdrop protects text legibility on scenic art');
-for(const key of ["Recover your account","Continue your journey","Your account can be used on another device.","Account setup pending","QUICK ACCESS"]){
+for(const key of ["Recover your account","Continue your journey","Your account can be used on another device.","Account setup pending","QUICK ACCESS","Connected services","Google account","Secured","Account security"]){
  assert.ok(locale.includes(JSON.stringify(key)+':'),key+' must have a localized six-language row');
 }
 console.log('PASS Account and sign-in refinement: focused email/Google/guest flows, security stages, real state, responsive navigation and localized copy');

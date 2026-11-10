@@ -134,6 +134,24 @@ assert(!wrong.stats.effectGems?.length,'foreign forged gems must not credit the 
 let ownershipDenied=false;
 try{verifyPartyEventEquippedCopyOwnershipV4(fromWrongOwner);}catch(e){ownershipDenied=String(e).includes('party_event_equipment_copy_not_owned');}
 assert(ownershipDenied,'Party Event must reject foreign quality/rarity/enchant copies outright');
+const duplicateCopy=structuredClone(testCase.state);
+const equippedSlots=Object.keys(duplicateCopy.character!.equipment) as GearSlot[];
+assert(equippedSlots.length>=2,'duplicate-copy coverage needs at least two slots');
+const originalSlot=equippedSlots[0]!,otherSlot=equippedSlots[1]!;
+duplicateCopy.character!.equipment[otherSlot]=duplicateCopy.character!.equipment[originalSlot];
+duplicateCopy.character!.equipmentInstanceIds![otherSlot]=duplicateCopy.character!.equipmentInstanceIds![originalSlot];
+let duplicateDenied=false;
+try{verifyPartyEventEquippedCopyOwnershipV4(duplicateCopy);}
+catch(e){duplicateDenied=String(e).includes('party_event_duplicate_equipped_copy');}
+assert(duplicateDenied,'one forged receipt must never occupy two character slots');
+const illegallyLeveled=structuredClone(testCase.state);
+illegallyLeveled.character!.level=100; // Stale display is not authorization.
+illegallyLeveled.character!.xp=characterTotalXpAtLevel(1);
+let levelDenied=false;
+try{verifyPartyEventEquippedCopyOwnershipV4(illegallyLeveled);}
+catch(e){levelDenied=String(e).includes('party_event_equipment_level_locked');}
+assert(levelDenied,'gear requirement must use canonical XP-derived level');
+
 let staleDenied=false;
 try{freezeTrustedPartyEventLoadoutV4({accountId:'v4-trusted-account-0',serverLoadedState:testCase.state,
  serverGameVersion:71,expectedGameVersion:70,characterId:testCase.state.character!.id,

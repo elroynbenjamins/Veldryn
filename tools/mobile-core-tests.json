@@ -185,6 +185,7 @@
   ".core-build/apps/mobile/tests/coop-ui-contract.js",
   ".core-build/apps/mobile/tests/coop-dungeon-browsing.js",
   ".core-build/apps/mobile/tests/coop-dungeon-browse-cache.js",
+  "tests/coop-dungeon-entry-cache.cjs",
   ".core-build/apps/mobile/tests/coop-loadout-presentation.js",
   ".core-build/apps/mobile/tests/coop-shared-run.js",
   ".core-build/apps/mobile/tests/coop-qmode.js",

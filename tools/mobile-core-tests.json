@@ -138,6 +138,8 @@
   ".core-build/apps/mobile/tests/equipment-timed-crafting-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-forge-management.js",
   ".core-build/apps/mobile/tests/equipment-forge-management-ui-contract.js",
+  ".core-build/apps/mobile/tests/equipment-collection-ownership.js",
+  ".core-build/apps/mobile/tests/equipment-forge-collection-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-forge-backlog.js",
   ".core-build/apps/mobile/tests/equipment-forge-backlog-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-crafted-instance-results.js",

@@ -1,5 +1,4 @@
 import {supabase} from './supabase';
-import {isVisibleWorldChatChannel} from '../core/world-chat-visibility';
 import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
@@ -20,7 +19,7 @@ export const WORLD_CHANNELS=[
 /** Only English and Spanish are exposed by the client for now.
  * Keep the original WORLD_CHANNELS registry and existing database IDs intact.
  */
-export const VISIBLE_WORLD_CHANNELS=WORLD_CHANNELS.filter(channel=>isVisibleWorldChatChannel(channel.id));
+export const VISIBLE_WORLD_CHANNELS=WORLD_CHANNELS.slice(0,2);
 export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
 export type OnlineGuild={background_id?:GuildBackgroundId;member_count?:number;id:string;name:string;tag:string|null;tag_color_id:GuildTagColorId;level:number;member_cap:number;minimum_level:number;join_policy:'open'|'apply'|'invite';banner_id:GuildBannerId;profile_frame_id:GuildFrameId;name_color_id:GuildNameColorId;nameplate_id:GuildNameplateId;motto:string};
 export type GuildMember={account_id:string;display_name:string;role:'leader'|'officer'|'member';joined_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};

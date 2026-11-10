@@ -117,7 +117,7 @@ import {MasteryHallScreen} from './src/screens/MasteryHallScreen';
 import {AdventurersJournalScreen} from './src/screens/AdventurersJournalScreen';
 import {BestiaryScreen} from './src/screens/BestiaryScreen';
 import {WorldMilestoneFeedScreen} from './src/screens/WorldMilestoneFeedScreen';
-import {PartySocialProvider} from './src/online/PartySocialProvider';
+import {PartySocialProvider,usePartySocial} from './src/online/PartySocialProvider';
 import {AuthSessionProvider,useAuthSession} from './src/online/AuthSessionProvider';
 import {PlayerBadgeProvider} from './src/online/PlayerBadgeProvider';
 import {useOnlineGame} from './src/online/useOnlineGame';
@@ -130,6 +130,7 @@ import {fetchAppVersionGate,openStoreListing,type VersionGateResult} from './src
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
 import {actionableClaimNotifications,buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
+import {partyContractClaimableRewardIds} from './src/core/party-social';
 import {canAnnounceLiveEventStart} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
 import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,playerFacingGameplayError,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
@@ -182,7 +183,7 @@ const MAIN_TAB_GUIDANCE:Record<string,{title:string;body:string;detail:string}>=
 
 export default function App(){return <SafeAreaProvider><AuthSessionProvider><PlayerBadgeProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></PlayerBadgeProvider></AuthSessionProvider><GameAlertHost/></SafeAreaProvider>;}
 function VeldrynApp(){
-  const auth=useAuthSession(),online=useOnlineGame();
+  const auth=useAuthSession(),online=useOnlineGame(),partySocial=usePartySocial();
   const hasBlockingAlert=useSyncExternalStore(gameAlerts.subscribe,gameAlerts.getSnapshot,gameAlerts.getSnapshot).queue.length>0;
   const {width:viewportWidth}=useWindowDimensions();
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
@@ -782,6 +783,7 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
   const storyClaimCount=state.quests.filter(row=>row.status==='complete').length;
   const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
   const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Recruitment','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
+  const partyContractClaims=partySocial.accountId===auth.session?.user.id&&partySocial.party?partyContractClaimableRewardIds(partySocial.contracts).length:0;
   const navigationNotifications:NavigationNotification[]=[
     ...actionableClaimNotifications({storyRewards:storyClaimCount,overflowStacks:overflowStackCount}),
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
@@ -794,6 +796,7 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {key:'pending-guild-applications',kind:'guild_application',count:guildUnlocked?notificationCounts.guildApplications:0,unread:guildUnlocked&&notificationCounts.guildApplications>0},
     {key:'pending-guild-invites',kind:'guild_invite',count:guildUnlocked?notificationCounts.guildInvites:0,unread:guildUnlocked&&notificationCounts.guildInvites>0},
     {key:'pending-party-invites',kind:'party_invite',count:socialUnlocked?notificationCounts.partyInvites:0,unread:socialUnlocked&&notificationCounts.partyInvites>0},
+    {key:'party-contract-claims',kind:'party_contract_reward_ready',count:partyContractClaims,unread:socialUnlocked&&partyContractClaims>0},
   ];
   const primaryNavigationNotifications=navigationNotifications.filter(row=>row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete');
   const navigationBadgeModel=buildNavigationBadges(primaryNavigationNotifications);

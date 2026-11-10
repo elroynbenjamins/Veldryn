@@ -11,7 +11,7 @@ import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipe
 import {classCombatSkillLevelFromXp} from '../apps/mobile/src/core/progression';
 import type {ClassId,GameState,GearSlot,CraftedGearInstance} from '../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../backend/online/coop-loadout';
-import {freezeTrustedPartyEventLoadoutV4,verifyPartyEventEquippedCopyOwnershipV4} from '../backend/src/server/party/weekly-party-authoritative-loadout-v4';
+import {freezeTrustedPartyEventLoadoutV4,verifyPartyEventEquippedCopyOwnershipV4} from '../backend/online/party-event-loadout-v4';
 import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,type FrozenPartyBossLoadout} from '../backend/src/server/party/weekly-party-boss-v2';
 import {WEEKLY_PARTY_EVENT_FAMILIES,type WeeklyPartyDifficulty,type WeeklyPartyFamily} from '../backend/src/server/party/weekly-party-events-v2';
 import {COMPANION_ROLE} from '../backend/src/server/companions/policy';

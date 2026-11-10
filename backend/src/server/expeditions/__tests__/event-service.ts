@@ -46,6 +46,14 @@ for(let tier=1;tier<=5;tier++){
 }
 assert.throws(()=>eventTierMinLevel(frostfall,0),/invalid_event_tier/);
 assert.throws(()=>eventTierMinLevel(frostfall,6),/invalid_event_tier/);
+for(let tier=1;tier<=5;tier++){
+ const service=new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-tier-test-'+tier);
+ const run=service.start({requestId:'frost-tier-request-'+tier,runId:'frost-tier-run-'+tier,accountId:'a',eventId:frostfall.id,tier,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
+ assert.equal(run.tier,tier);
+ assert.equal(run.syncLevel,eventTierMinLevel(frostfall,tier));
+ assert.equal(run.graph.preBossNodeCount,6);
+}
+assert.throws(()=>new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-gate').start({requestId:'frost-req-level',runId:'frost-run-level',accountId:'a',eventId:frostfall.id,tier:2,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players:players.map((player,index)=>index===0?{...player,level:14}:player),nowMs:now}),/event_level_requirement/);
 const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
 const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});
 assert.equal(veil.minLevel,15);

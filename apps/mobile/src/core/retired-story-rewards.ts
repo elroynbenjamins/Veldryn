@@ -50,7 +50,7 @@ export function migrateRetiredStoryRewards(input:GameState,nowMs:number):GameSta
  if(!found&&!needsTitle)return input;
  const cleaned={...input,inventory,bank,overflow,character,otherCharacters} as GameState;
  // All existing physical copies are replaced exactly once, irrespective of storage.
- const routed=found?routeRewards(cleaned,[{itemId:REPLACEMENT_SHARD,quantity:found*SHARDS_PER_CAPE}],nowMs):{};
+ const routed=routeRewards(cleaned,found?[{itemId:REPLACEMENT_SHARD,quantity:found*SHARDS_PER_CAPE}]:[],nowMs);
  const account={...cleaned.account,...routed.account};
  if(needsTitle){
   const journal=account.journalState??newJournalState(account.longTermAccountScopeId??`local-account:${input.createdAtMs}`);

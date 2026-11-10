@@ -10,6 +10,7 @@
   ".core-build/apps/mobile/tests/world-boss-hollowroot-calibration.js",
   ".core-build/apps/mobile/tests/world-boss-round-prototype.js",
   ".core-build/apps/mobile/tests/world-boss-event-prototype.js",
+  ".core-build/apps/mobile/tests/world-boss-echo-prototype.js",
   "../../tools/validate-world-boss-rounds-v5.cjs",
   "tests/online-loading-interactions.cjs",
   ".core-build/apps/mobile/tests/coop-sync-policy.js",

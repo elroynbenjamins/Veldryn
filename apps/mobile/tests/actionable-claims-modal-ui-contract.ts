@@ -33,7 +33,7 @@ ok(inspector.includes('<GameModalSurface visible={true}')&&inspector.includes('r
  'Item Quick Inspect uses shared accessibility, safe area, keyboard and reduce-motion modal shell');
 ok(!inspector.includes('<Modal visible transparent'),
  'Do not reintroduce standalone modal that bypasses the shared sheet layout');
-ok(inspector.includes('const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId])'),
+ok(inspector.includes('const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source])'),
  'Opening expandable item sections does not recompute item inspection');
 ok(inspector.includes('prioritizeItemSources(model.sources)'),
  'Item sources stay sorted by actionable navigation readiness');

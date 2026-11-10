@@ -3,7 +3,7 @@
 **Date:** 10 November 2026  
 **Status:** HIDDEN / TEST-ONLY engineering prototype and calibration. **No public release, backend migration, scheduled worker, reward delivery, route, or navigation.**  
 **Predecessor:** [Party Events v2](party-events-design-v2.md), which remains the broader gameplay design.  
-**Workbook:** `docs/roadmap/spreadsheets/Veldryn_Party_Events_Design_v3_2026-11-10.xlsx.b64` (standalone 25-sheet v3 workbook, not an active data source).
+**Workbook:** `docs/roadmap/spreadsheets/Veldryn_Party_Events_Design_v3_2026-11-10.xlsx.b64` (standalone 26-sheet v3 workbook, not an active data source).
 
 ## 1. Real implementation boundaries
 
@@ -50,6 +50,20 @@ All 324 proxy scenarios cleared Tier 1. The testing used pre-authored class-part
 | A / Gradual | 1.35 | 1.17 | 1.14 |
 | B / Medium | 1.42 | 1.20 | 1.16 |
 | C / Steep | 1.50 | 1.23 | 1.18 |
+
+### Experimental results — Standard, no supplies (actual CI proxy runs)
+
+The candidate tests executed additional deterministic combat simulations, with the current boss unchanged. Source: [trial run #42838119775](https://github.com/elroynbenjamins/Veldryn/actions/runs/42838119775).
+
+| Gear | Current duo mean | A / Gradual | B / Medium | C / Steep |
+| --- | ---: | ---: | ---: | ---: |
+| T1 | 8.78 | 6.67 | 5.89 | 5.11 |
+| T2 | 11.78 | 8.78 | 7.78 | 6.78 |
+| T3 | 12.00 | 9.33 | 8.33 | 7.33 |
+| T4 | 12.00 | 9.56 | 8.33 | 7.33 |
+
+A similarly bounded four-player sample was also measured; see the workbook's **V3 Candidate Curves** tab. **Medium (B)** looks like the most balanced *starting hypothesis*, but the flattened T3→T4 outcomes indicate a missing authentic snapshot/gear differentiation question rather than a solved scaling curve. Do not pick or deploy B yet.
+
 
 These are **evaluation inputs only**; do not deploy any as gameplay balance until actual authoritative server snapshots, companions, gear rarity/quality, character-skill effects and phase mechanics are included.
 

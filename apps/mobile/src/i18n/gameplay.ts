@@ -897,6 +897,7 @@ const crafting={
 "Back to crafting":["Back to crafting","Zurück zur Herstellung","Volver a fabricar","Terug naar maken","Torna alla creazione","Retour à la fabrication"],
 "Manage & collect":["Manage & collect","Verwalten und abholen","Gestionar y recoger","Beheren en ophalen","Gestisci e ritira","Gérer et récupérer"],
 "Find source":["Find source","Quelle finden","Buscar fuente","Bron zoeken","Trova fonte","Trouver une source"],
+"Forge supports up to {active} active slots and {waiting} waiting jobs.":["Forge supports up to {active} active slots and {waiting} waiting jobs.","Die Schmiede bietet bis zu {active} aktive Plätze und {waiting} Wartelistenaufträge.","La forja admite hasta {active} espacios activos y {waiting} trabajos en espera.","De smederij heeft maximaal {active} actieve plekken en {waiting} wachtopdrachten.","La forgia supporta fino a {active} slot attivi e {waiting} lavori in attesa.","La forge accepte jusqu’à {active} emplacements actifs et {waiting} travaux en attente."],
 "EQUIPMENT FORGE":["EQUIPMENT FORGE","AUSRÜSTUNGSSCHMIEDE","FORJA DE EQUIPO","UITRUSTINGSSMEDERIJ","FORGIA EQUIPAGGIAMENTO","FORGE D’ÉQUIPEMENT"],
 "Crafting Queue":["Crafting Queue","Herstellungswarteschlange","Cola de fabricación","Ambachtswachtrij","Coda creazione","File de fabrication"],
 "ACTIVE":["ACTIVE","AKTIV","ACTIVO","ACTIEF","ATTIVO","ACTIF"],

@@ -3,7 +3,7 @@ import {applyProfileExtensionEdit,canPublishWorldMilestone,canViewExtendedProfil
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 equal(JOURNAL_ACHIEVEMENTS_V42.length,45,'V42 achievement ladder count includes Mastery Hall');
-equal(JOURNAL_TITLES_V42.length,9,'V42 Grandmaster title count includes Masterwork Savant');
+equal(JOURNAL_TITLES_V42.length,10,'Journal catalog includes nine Grandmaster titles and the Act III Oathbreaker title');
 const journal=newJournalState('a');
 const metrics=Object.fromEntries([...new Set(JOURNAL_ACHIEVEMENTS_V42.map(row=>row.metricKey))].map(key=>[key,Number.MAX_SAFE_INTEGER]));
 const unlocked=applyJournalSnapshot(journal,{metrics},100);

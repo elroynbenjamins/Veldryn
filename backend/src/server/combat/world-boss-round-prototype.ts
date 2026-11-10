@@ -96,7 +96,7 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  const aliveTank=()=>living(players).find(p=>p.def.role==='tank');
  const targetSet=(id:string,round:number):string[]=>{
   const live=living(players);if(!live.length)return[];
-  if(['SPLINTERSTORM','BURNING_TEMPEST','SOLAR_COLLAPSE','SHARD_VOLLEY','WHITEOUT'].includes(id))return live.map(p=>p.def.id);
+  if(['SPLINTERSTORM','SPOREBURST','BURNING_TEMPEST','SOLAR_COLLAPSE','SHARD_VOLLEY','WHITEOUT'].includes(id))return live.map(p=>p.def.id);
   if(['SCORCH_MARK','VINES','FREEZING_CHAINS','FROSTBITE','HEAT_HAZE'].includes(id)){
    const back=live.filter(p=>p.def.role!=='tank');
    const pool=back.length?back:live;
@@ -204,6 +204,13 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  const chooseTarget=(actor:Player,ability:AbilityDefinition):Player=>{
   const live=living(players);
   if(ability.target==='self')return actor;
+  // A cleanse must select a genuinely afflicted ally before an uninjured
+  // lowest-HP ally, otherwise the skill fires but prevents no real status.
+  if(ability.effects.some(effect=>effect.kind==='cleanse')){
+   const afflicted=live.filter(p=>p.statuses.some(s=>['burn','frostbite','root','freeze','dot'].includes(s.kind)));
+   if(afflicted.length)return afflicted.sort((a,b)=>
+    a.hp/a.def.stats.maxHp-b.hp/b.def.stats.maxHp||a.def.id.localeCompare(b.def.id))[0];
+  }
   if(ability.target==='lowest_hp_ally')return live.reduce((a,b)=>a.hp/a.def.stats.maxHp<=b.hp/b.def.stats.maxHp?a:b);
   if(ability.target==='threatened_ally')return live.find(p=>pending?.targetIds.includes(p.def.id))??live.reduce((a,b)=>a.hp/a.def.stats.maxHp<=b.hp/b.def.stats.maxHp?a:b);
   return actor;

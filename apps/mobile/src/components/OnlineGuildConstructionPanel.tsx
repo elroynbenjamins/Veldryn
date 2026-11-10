@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useGuildConstructionUiText} from '../i18n/guild-construction-ui';
-import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {GameButton} from './GameButton';
 import {ResourceArtwork} from './ResourceArtwork';
 import {guildUpgradeComponentArtwork,guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
@@ -40,7 +40,8 @@ export function OnlineGuildConstructionPanel({
  initialSelection?:{templateId:string;resourceId:string};
  onOpenBank?:(resourceId:string,building:string,selection:{templateId:string;resourceId:string})=>void;
 }){
- const ui=useGuildConstructionUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const ui=useGuildConstructionUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{width,fontScale}=useWindowDimensions();
+ const compactLayout=width<390||fontScale>=1.25;
  const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(initialSelection??null);
  const [selectedBuilding,setSelectedBuilding]=useState<(typeof BUILDINGS)[number]['id']>(()=>{
   const remembered=BUILDINGS.find(building=>building.id===initialBuilding);
@@ -92,9 +93,9 @@ export function OnlineGuildConstructionPanel({
  );
  return <Panel>
   <Text style={s.kicker}>{ui('GUILD CONSTRUCTION')}</Text>
-  <Text style={s.title}>{ui('Build something together')}</Text>
+  <Text accessibilityRole="header" style={s.title}>{ui('Build something together')}</Text>
   <Text style={s.copy}>{ui('Deposit resources into the Guild Bank, then allocate them here. Deposits and allocations cannot be reversed.')}</Text>
-  <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={ui('View {title} upgrades',{title:ui(building.title)})} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{ui(building.title)}</Text></Pressable>)}</View>
+  <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={ui('View {title} upgrades',{title:ui(building.title)})} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,compactLayout&&s.buildingWide,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{ui(building.title)}</Text></Pressable>)}</View>
   {snapshot.unavailableSections?.includes('constructionCosts')
    ?<Text style={s.error}>{ui('Current Guild Construction prices are unavailable. Refresh before funding.')}</Text>
    :null}
@@ -111,7 +112,11 @@ export function OnlineGuildConstructionPanel({
   {snapshot.constructionTemplates.filter(template=>template.id.startsWith('construction_'+selectedBuilding+'_')&&(template.enabled||snapshot.construction.some(row=>row.templateId===template.id&&row.completed))).map(template=>{
    const row=snapshot.construction.find(p=>p.templateId===template.id);
    const requirements=[...(template.gold>0?[{key:'gold',required:template.gold}]:[]),...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
-   const completion=requirements.length?requirements.reduce((sum,res)=>sum+Math.min(1,Math.max(0,(row?.resources[res.key]??0)/res.required)),0)/requirements.length:0;
+   // Weighted by units actually allocated, matching the Guild Hall's overview meter.
+  // Averaging each resource bar would overstate progress for tiny requirements.
+  const totalRequired=requirements.reduce((sum,res)=>sum+res.required,0);
+  const totalFunded=requirements.reduce((sum,res)=>sum+Math.min(res.required,Math.max(0,row?.resources[res.key]??0)),0);
+  const completion=totalRequired>0?totalFunded/totalRequired:row?.completed?1:0;
    const unlocked=snapshot.guildLevel>=template.guildLevel;
    const canDonate=unlocked&&template.enabled&&!row?.completed&&!pending&&snapshot.bank!==null;
    const selectedHere=selected?.templateId===template.id;
@@ -122,7 +127,7 @@ export function OnlineGuildConstructionPanel({
    const validQuantity=Number.isSafeInteger(donationAmount)&&donationAmount>0
     &&donationAmount<=remaining&&donationAmount<=bankAmount&&donationAmount<=1000000;
    return <View key={template.id} style={s.project}>
-    <View style={s.head}><View style={s.flex}>
+    <View style={[s.head,compactLayout&&s.compactHead]}><View style={s.flex}>
      <Text style={s.projectName}>{resourceName(template.id)}</Text>
      <Text style={s.projectMeta}>{ui('Guild Level {level}',{level:template.guildLevel})} · {ui(row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon')}</Text>
      {template.costMemberCount?<Text style={s.projectMeta}>{ui(template.costMemberCount===1?'Costs for {count} member':'Costs for {count} members',{count:template.costMemberCount})}</Text>:null}
@@ -135,7 +140,7 @@ export function OnlineGuildConstructionPanel({
       accessibilityLabel={ui('Donate {resource} to {upgrade}',{resource:resourceName(res.key),upgrade:resourceName(template.id)})}
       onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});const available=snapshot.bank?.balances.find(item=>item.resourceId===res.key)?.amount??0;setQuantity(String(Math.min(res.key==='gold'?1000:100,res.required-amount,available)));}}
       style={[s.resource,active&&s.resourceSelected]}>
-      <View style={s.head}>
+      <View style={[s.head,compactLayout&&s.compactHead]}>
        {res.key==='gold'?<Text style={[s.resourceName,{color:C.accent}]}>◈</Text>:guildUpgradeComponentArtwork(res.key)?<Image source={guildUpgradeComponentArtwork(res.key)} style={s.materialIcon} resizeMode="contain" accessible={false}/>:<ResourceArtwork itemId={res.key} size={28} framed/>}
        <Text style={[s.resourceName,{flex:1}]}>{resourceName(res.key)}</Text>
        <Text style={s.resourceAmount}>{amount.toLocaleString()} / {res.required.toLocaleString()}</Text>
@@ -163,13 +168,14 @@ export function OnlineGuildConstructionPanel({
    </View>;
   })}
   <Text style={s.kicker}>{ui('UPGRADE ROADMAP')}</Text>
-  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>{ui('Guild Lv {level}',{level:plan.requiredGuildLevel})}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>{ui('Coming soon')}</Text></View>)}
+  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={[s.head,compactLayout&&s.compactHead]}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>{ui('Guild Lv {level}',{level:plan.requiredGuildLevel})}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>{ui('Coming soon')}</Text></View>)}
  </Panel>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
  kicker:{fontSize:11,color:C.accent,fontWeight:'900',letterSpacing:1,marginTop:8},
  buildingGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:13},
  building:{width:'31%',flexGrow:1,minHeight:80,alignItems:'center',justifyContent:'center',gap:5,padding:6,borderWidth:1,borderRadius:9},
+  buildingWide:{width:'47%',minHeight:88},
  buildingArt:{width:38,height:38},buildingName:{fontSize:11,fontWeight:'800',textAlign:'center'},pressed:{opacity:.72},
  lockedTier:{marginTop:7,gap:6,borderColor:C.line,borderWidth:1,borderRadius:9,padding:10,backgroundColor:C.panel2},
  title:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'900',marginTop:3},
@@ -179,13 +185,13 @@ function styles(C:ThemeColors){return StyleSheet.create({
  notice:{color:C.good,fontSize:12,marginTop:8},
  pending:{padding:10,borderWidth:1,borderRadius:9,borderColor:C.warning,backgroundColor:C.panel2,gap:7,marginTop:10},
  project:{marginTop:12,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panel2,gap:8},
- head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},compactHead:{flexWrap:'wrap',alignItems:'flex-start'},
  flex:{flex:1},projectName:{fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},projectMeta:{fontSize:12,lineHeight:17,color:C.info,marginTop:3},
  percent:{fontSize:18,lineHeight:22,color:C.accent,fontWeight:'900'},
  resource:{gap:6,padding:8,minHeight:48,borderWidth:1,borderColor:'transparent',borderRadius:8},
  materialIcon:{width:28,height:28},resourceSelected:{borderColor:C.accent},
  resourceName:{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'},
- resourceAmount:{fontSize:11,color:C.muted},resourceMeta:{fontSize:11,lineHeight:16,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},
+ resourceAmount:{fontSize:11,color:C.muted,flexShrink:1},resourceMeta:{fontSize:11,lineHeight:16,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},
  fill:{height:'100%',backgroundColor:C.accent},unlock:{color:C.good,fontSize:12,fontWeight:'700'},
  actions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  donationControls:{gap:8,padding:8,borderRadius:8,backgroundColor:C.panel},

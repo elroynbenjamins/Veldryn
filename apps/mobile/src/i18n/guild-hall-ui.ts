@@ -5,6 +5,10 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Fixed Guild Hall interface wording, DE/ES/NL/IT/FR/RU/TR. Keep server-authored names verbatim. */
 export const guildHallUiRows={
+ "Gold": ["Gold","Oro","Goud","Oro","Or","Золото","Altın"],
+ "Need {needed} · Bank {bank}": ["Fehlen {needed} · Bank {bank}","Faltan {needed} · Banco {bank}","Nog nodig {needed} · Bank {bank}","Mancano {needed} · Banca {bank}","Reste {needed} · Banque {bank}","Нужно {needed} · Банк {bank}","Gereken {needed} · Banka {bank}"],
+ "Open Construction": ["Bau öffnen","Abrir Construcción","Open Bouw","Apri Costruzione","Ouvrir la construction","Открыть строительство","İnşaatı aç"],
+
  "Guild Hall": ["Gildenhalle","Salón del gremio","Gildehal","Sala della gilda","Hall de guilde","Зал гильдии","Lonca Salonu"],
  "Retry Guild Hall": ["Gildenhalle erneut laden","Reintentar salón del gremio","Gildehal opnieuw laden","Riprova sala della gilda","Réessayer le hall de guilde","Повторить загрузку зала","Lonca Salonunu yeniden dene"],
  "Join a Guild to unlock shared Hall progression.": ["Tritt einer Gilde bei, um den gemeinsamen Hallenfortschritt freizuschalten.","Únete a un gremio para desbloquear el progreso del salón.","Word lid van een gilde om de gezamenlijke halvoortgang te ontgrendelen.","Unisciti a una gilda per sbloccare la progressione della sala.","Rejoignez une guilde pour débloquer la progression du hall.","Вступите в гильдию, чтобы открыть развитие общего зала.","Ortak salon ilerlemesini açmak için bir loncaya katıl."],

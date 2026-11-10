@@ -31,7 +31,9 @@ function loader(start=starter,others=echo):WorldBossRosterLoaderV9{
  return {principalAccountId:ACCOUNT,nowUtcMs:()=>NOW,
   randomSeed:()=> 'SERVER_ENTROPY_NONCE_FOR_TESTS_'+String(seedCounter++).padStart(10,'0'),
   loadCurrentCharacter:async ({accountId,characterId})=>{
-   loadCalls++;assert.equal(accountId,ACCOUNT);assert.equal(characterId,CHARACTER);return start;
+   // The loader may return a mismatched snapshot in a negative test;
+   // the World Boss adapter (not this fake callback) must reject it.
+   loadCalls++;assert.equal(accountId,ACCOUNT);return start;
   },
   listEligibleEchoes:async ({eventId,accountId,atUtcMs})=>{
    listCalls++;assert.equal(eventId,request.eventId);

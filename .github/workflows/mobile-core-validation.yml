@@ -76,6 +76,8 @@ jobs:
           node ../../tools/test-staging-gameplay-profile.mjs
       - name: Run core tests
         run: pnpm test:core
+      - name: Validate Frostfall event teaser gating and read-only safety
+        run: pnpm test:frostfall-preview
       - name: Run onboarding lock tests
         run: pnpm test:onboarding-locks
       - name: Run co-op LFG TTL validation

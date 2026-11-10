@@ -120,7 +120,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     const enhancement=selectedCopy
       ?{...normalizeEnhancementGemSlots(selectedCopy.enhancement),rank:selectedCopy.enhancement.rank,failures:selectedCopy.enhancement.failures}
       :gearEnhancement(previewState,itemId);
-    const quote=upgradeQuote(previewState,itemId);
+    const quote=upgradeQuote(previewState,itemId,selectedCopy?.id);
     stats=selectedCopy
       ?enhancedGearStatsAtRank(state,itemId,enhancement.rank,selectedCopy.id)
       :enhancedGearStats(previewState,itemId);

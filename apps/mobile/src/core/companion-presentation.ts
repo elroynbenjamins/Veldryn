@@ -4,7 +4,7 @@ import {companionCurrentLevelCap,companionMaxLevel,companionUnlockRequirementMet
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
-import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {characterClassSkills} from './class-skills';
 import {monsterMastery} from './monster-mastery';
 
@@ -59,8 +59,9 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  }
  if(req.type==='event_challenge'&&target.startsWith('CHALLENGE_'))current=state.account.companionSpecialClears?.includes(target)?1:0;
  if(target==='SILVERBROOK_NODES'){
-   const nodes=GATHERING.filter(g=>g.zoneId==='SILVERBROOK');
-   return {current:nodes.filter(g=>state.account.companionUnlockProgress?.[`node:${g.id}`]).length,total:nodes.length,complete:companionUnlockRequirementMet(state,req)};
+   const flags=state.account.companionUnlockProgress??{};
+   const visited=SILVERBROOK_STARTER_FISHING_NODES.filter(id=>(flags[`node:${id}`]??0)>0).length;
+   return {current:(flags.SILVERBROOK_NODES??0)>=1?2:visited,total:2,complete:companionUnlockRequirementMet(state,req)};
  }
  return {current:Math.min(total,current),total,complete:companionUnlockRequirementMet(state,req)};
 }
@@ -86,7 +87,7 @@ export function companionUnlockRequirementGuidance(req:CompanionDefinition['unlo
  if(req.type==='quest')return {label:'Continue the campaign',detail:req.description};
  if(req.type==='monster_mastery')return {label:`Hunt ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Raise Monster Mastery to ${amount}.`};
  if(req.type==='skill_level')return {label:`Train ${target.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}`,detail:`Reach skill level ${amount}.`};
- if(req.type==='collection'&&target==='SILVERBROOK_NODES')return {label:'Explore Silverbrook fishing spots',detail:'Fish each Silverbrook node at least once; the final pool unlocks at Fishing 16.'};
+ if(req.type==='collection'&&target==='SILVERBROOK_NODES')return {label:'Explore Silverbrook fishing spots',detail:'Fish at Silverbrook Shoal and River Eel Pool once each (Fishing 8).'};
  if(req.type==='boss_kills')return {label:`Challenge ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Defeat it ${amount} time${amount===1?'':'s'}.`};
  if(req.type==='achievement'&&target.startsWith('COMPANION_MISSIONS:'))return {label:'Run Sanctuary Expeditions',detail:`Complete ${amount} assignments in ${target.split(':')[1].replace('REG_','').replace(/_/g,' ').toLowerCase()}.`};
  if(req.type==='achievement'&&target.startsWith('COMPANION_S_GRADE:'))return {label:'Improve Expedition teams',detail:`Earn S grade on ${amount} regional Sanctuary assignments.`};
@@ -103,6 +104,18 @@ export function companionUnlockGuidance(state:GameState,def:CompanionDefinition)
  });
  const requirement=incomplete[0].req,copy=companionUnlockRequirementGuidance(requirement);
  return {ready:false,...copy,requirement,progress};
+}
+/** Shows guaranteed starter progression separately from optional rare/elite recruits. */
+export function companionStarterMilestone(state:GameState){
+ const progress=state.account.companionUnlockProgress??{};
+ if(!state.account.starterCombatCompanionId)return {stage:'first' as const,current:0,total:1,description:'Complete Into Ironwood and choose your starter companion.'};
+ if(!state.account.starterFollowupCombatCompanionId){
+  const fishing=state.skills.find(skill=>skill.skillId==='fishing')?.level??0;
+  const visited=SILVERBROOK_STARTER_FISHING_NODES.filter(id=>(progress[`node:${id}`]??0)>0).length;
+  return {stage:'second' as const,current:Math.min(8,fishing),total:8,spotsCurrent:(progress.SILVERBROOK_NODES??0)>=1?2:visited,spotsTotal:2,description:'Reach Fishing 8 and fish both early Silverbrook pools.'};
+ }
+ if(!state.account.starterThirdCombatCompanionId)return {stage:'third' as const,current:Math.min(100,progress.OLD_MINES_KILLS??0),total:100,description:'Defeat 100 Old Mines enemies.'};
+ return {stage:'complete' as const,current:3,total:3,description:'All three starter roles recruited.'};
 }
 export function companionStarterTeamProgress(state:GameState){
  const owned=new Set(state.account.unlockedCombatCompanionIds??[]),roles=(['tank','damage','support'] as CombatCompanionRole[]).map(role=>({role,owned:COMBAT_COMPANIONS.some(def=>def.role===role&&owned.has(def.id))}));

@@ -2,7 +2,7 @@ import type {GameState} from './types';
 import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
-import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {GATHERING} from '../content/skills';
@@ -400,7 +400,8 @@ export function recordCompanionActivity(state:GameState,source:'combat'|'gatheri
   if(source==='gathering'){
     const gatheringNodes=[...GATHERING,...HERB_NODES];
     const node=gatheringNodes.find(g=>g.id===target);if(node?.zoneId==='SILVERBROOK')counters[`node:${target}`]=1;
-    const nodes=gatheringNodes.filter(g=>g.zoneId==='SILVERBROOK');if(nodes.length&&nodes.every(g=>counters[`node:${g.id}`]))counters.SILVERBROOK_NODES=1;
+    // No late Oathscale pool or unrelated herbalism is required for the second starter.
+    if(SILVERBROOK_STARTER_FISHING_NODES.every(id=>counters[`node:${id}`]))counters.SILVERBROOK_NODES=2;
   }
   if(source==='crafting')counters.EQUIPMENT_CRAFTS=(counters.EQUIPMENT_CRAFTS??0)+units;
   if(source==='boss')next.account.companionBossClears={...next.account.companionBossClears,[target]:(next.account.companionBossClears?.[target]??0)+units};

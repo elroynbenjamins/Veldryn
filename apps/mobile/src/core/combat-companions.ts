@@ -1,4 +1,4 @@
-import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,combatCompanionDef} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES,combatCompanionDef} from '../content/combat-companions';
 import {normalizeClassSkills} from './class-skills';
 import {companionMasteryBonuses} from './companion-mastery';
 import {normalizeMonsterMastery} from './monster-mastery';
@@ -221,6 +221,12 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
     const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
     const regionalNonPrestige=COMBAT_COMPANIONS.filter(def=>def.origin.id===target&&def.rarity!=='prestige');
     return regionalNonPrestige.filter(def=>owned.has(def.id)).length>=amount;
+  }
+  if(requirement.type==='collection'&&target==='SILVERBROOK_NODES'){
+    const progress=state.account.companionUnlockProgress??{};
+    // The old flag meant all Silverbrook nodes were done; honor those saves.
+    if((progress.SILVERBROOK_NODES??0)>=1)return true;
+    return SILVERBROOK_STARTER_FISHING_NODES.filter(id=>(progress[`node:${id}`]??0)>0).length>=2;
   }
   if(requirement.type==='quest')return (state.quests??[]).some(entry=>entry.questId===target&&entry.status==='claimed');
   if(requirement.type==='boss_kills')return Math.max((state.defeatedBossIds??[]).includes(target)?1:0,state.account.companionBossClears?.[target]??0)>=amount;

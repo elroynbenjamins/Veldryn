@@ -210,8 +210,10 @@ begin
   v_featured:=array[v_selected];
  elsif v_choice in ('supporter','supporter_3m','supporter_6m','supporter_12m')
    and v_supporter_active
-   and v_tier>=case v_choice when 'supporter_12m' then 12 when 'supporter_6m' then 6
-      when 'supporter_3m' then 3 else 1 end then
+   and ((v_choice='supporter' and v_tier>=1)
+     or (v_choice='supporter_3m' and v_tier>=3)
+     or (v_choice='supporter_6m' and v_tier>=6)
+     or (v_choice='supporter_12m' and v_tier>=12)) then
   v_selected:=v_choice;
  end if;
  if v_supporter_active then
@@ -276,9 +278,11 @@ begin
  if v_choice in ('supporter','supporter_3m','supporter_6m','supporter_12m') then
   select supporter into v_supporter from private.commerce_entitlements_v1(v_uid);
   v_tier:=private.supporter_badge_tier_v2(v_uid);
-  if not coalesce(v_supporter,false) or v_tier<case v_choice
-      when 'supporter_12m' then 12 when 'supporter_6m' then 6 when 'supporter_3m' then 3 else 1 end
-   then raise exception 'BADGE_NOT_OWNED';end if;
+  if not coalesce(v_supporter,false)
+     or (v_choice='supporter_3m' and v_tier<3)
+     or (v_choice='supporter_6m' and v_tier<6)
+     or (v_choice='supporter_12m' and v_tier<12)
+  then raise exception 'BADGE_NOT_OWNED';end if;
  elsif v_choice<>'none' then
   v_owned:=private.player_badge_unlocks_v1(v_uid);
   if not (v_choice=any(v_owned)) then raise exception 'BADGE_NOT_OWNED';end if;

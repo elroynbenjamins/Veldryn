@@ -14,6 +14,10 @@ assert.match(preview, /frostfallPreviewPhase\(startsAtMs, nowMs\)/, 'standalone 
 assert.match(preview, /Preview only/, 'teaser must clearly identify itself as read-only');
 assert.doesNotMatch(preview, /event_(reward|daily|purchase|cache|weekly)|claimEvent|purchaseEventOffer|onCommand/, 'teaser cannot perform live-event commands');
 assert.doesNotMatch(released, /annual-events-v2/, 'future Frostfall gameplay must remain out of released live catalog');
+assert.match(preview, /disabled=\{!tile\.unlocked\}/, 'unrevealed teaser cards must not be interactive');
+assert.match(preview, /frostfallSecondRevealCountdown\(startsAtMs, nowMs\)/, 'use a changing second-reveal countdown');
+assert.match(preview, /GameThemeScope colors=\{winterColors\}/, 'Frostfall preview has a winter-scoped theme');
+assert.doesNotMatch(preview, /currency_frostbell_token\.png/, 'do not reintroduce an Android-incompatible tiny currency asset');
 
 const arts = [...preview.matchAll(/require\(['"]([^'"]+\/assets\/[^'"]+)['"]\)/g)].map(match => match[1]);
 assert.ok(arts.length >= 3, 'real Frostfall background, badge and collectible artwork must be wired');

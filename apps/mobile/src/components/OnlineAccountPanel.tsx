@@ -42,6 +42,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
  const editingPassword=auth.recovering||changingPassword;
  const requirements=passwordRequirements(password),showPasswordRules=creating||editingPassword||linkStep==='set_password';
  const displayedNotice=auth.error||notice,displayedTone=auth.error?'error':noticeTone;
+ const redundantLinkSuccess=displayedTone==='success'&&((linkStep==='linked'&&notice==='Account linked. Your characters and progress are kept.')||(googleLinked&&notice==='Google account linked. Your characters and progress are kept.')||(playGamesConnection.status==='connected'&&notice.startsWith('Google Play Games connected')));
  useEffect(()=>{active.current=true;const subscription=AppState.addEventListener('change',next=>{if(next!=='active')setPasswordVisible(false);});return()=>{active.current=false;subscription.remove();};},[]);
  useEffect(()=>{setPassword('');setPasswordVisible(false);setChangingPassword(false);setEntryRecovery(false);setBusy(false);setNotice('');setEditingLink(false);setVerificationPrompt(null);setVerificationFeedback(null);setEmail(auth.session?pendingAccountEmail(auth.session.user):'');},[accountId]);
  // These checks do not open a Google picker. Refresh when the Account screen
@@ -86,7 +87,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
     <Text accessibilityRole="header" style={s.entryTitle}>{a(entryRecovery?"Recover your account":creating?"Begin with VELDRYN":"Continue your journey")}</Text>
     <Text style={s.entrySubtitle}>{a(entryRecovery?"Enter your account email to request a password reset.":creating?"Create an account, then choose your character.":"Sign in to your account or begin as a guest.")}</Text>
    </View>:<Text accessibilityRole="header" style={s.title}>{auth.recovering?a("Reset your password"):changingPassword?a("Change password"):a("Your account")}</Text>}
-  {!!displayedNotice&&<View accessibilityRole="alert" style={[s.noticeCard,displayedTone==='success'&&s.noticeSuccessCard,displayedTone==='info'&&s.noticeInfoCard]}><Text style={displayedTone==='success'?s.noticeLabelSuccess:displayedTone==='info'?s.noticeLabelInfo:s.noticeLabel}>{displayedTone==='success'?a("ACCOUNT UPDATED"):displayedTone==='info'?a("ACCOUNT STATUS"):a("ACCOUNT NOTICE")}</Text><Text style={s.notice}>{displayedTone==='error'?accountError(language,displayedNotice):a(displayedNotice)}</Text></View>}
+  {!!displayedNotice&&!redundantLinkSuccess&&<View accessibilityRole="alert" style={[s.noticeCard,displayedTone==='success'&&s.noticeSuccessCard,displayedTone==='info'&&s.noticeInfoCard]}><Text style={displayedTone==='success'?s.noticeLabelSuccess:displayedTone==='info'?s.noticeLabelInfo:s.noticeLabel}>{displayedTone==='success'?a("ACCOUNT UPDATED"):displayedTone==='info'?a("ACCOUNT STATUS"):a("ACCOUNT NOTICE")}</Text><Text style={s.notice}>{displayedTone==='error'?accountError(language,displayedNotice):a(displayedNotice)}</Text></View>}
   {editingPassword?<>{passwordInput}<GameButton title={a("Save new password")} disabled={busy} onPress={()=>run(savePassword)}/><GameButton title={a("Cancel")} tone="secondary" disabled={busy} onPress={cancelPassword}/></>:!auth.session?<>
    {entryRecovery?<>
     <View style={s.recoveryHeader}><Pressable accessibilityRole="button" accessibilityLabel={a("Back to sign in")} disabled={busy} onPress={()=>{setEntryRecovery(false);setShowHelp(false);setNotice('')}} style={s.backButton}><Text style={s.backText}>← {a("Back to sign in")}</Text></Pressable></View>
@@ -110,11 +111,14 @@ export function OnlineAccountPanel({state}:{state:GameState}){
    </>}
   </>:<>
    <View style={[s.accountStatus,linkStep==='linked'&&s.accountStatusLinked]}>
-     <View style={s.statusSymbol}><Text style={s.statusSymbolText}>{linkStep==='linked'?'✓':linkStep==='set_password'?'✦':linkStep==='verify_email'?'✉':'◇'}</Text></View>
-     <View style={s.statusCopy}><Text style={s.statusTitle}>{a(linkStep==='linked'?'Linked account':linkStep==='set_password'?'Email linked':linkStep==='verify_email'?'Waiting for email verification':'Guest account')}</Text>
-     <Text style={s.statusDescription}>{a(linkStep==='linked'?'Your account can be used on another device.':linkStep==='guest'?'Secure your account to protect your progress.':linkStep==='verify_email'?'Verify your email to continue linking.':'Finish securing your account with a password.')}</Text></View>
+    <View style={[s.statusSymbol,linkStep==='linked'&&s.statusSymbolLinked]}><Text style={[s.statusSymbolText,linkStep==='linked'&&s.statusSymbolTextLinked]}>{linkStep==='linked'?'✓':linkStep==='set_password'?'✦':linkStep==='verify_email'?'✉':'◇'}</Text></View>
+    <View style={s.statusCopy}>
+     <View style={s.accountHeadingRow}><Text style={s.statusTitle}>{a(linkStep==='linked'?'Linked account':linkStep==='set_password'?'Email linked':linkStep==='verify_email'?'Waiting for email verification':'Guest account')}</Text>
+      {linkStep==='linked'&&<View style={s.securedPill}><Text style={s.securedPillText}>✓ {a("Secured")}</Text></View>}</View>
+     <Text style={s.accountIdentity} selectable>{auth.session.user.email||a('guest')}</Text>
+     <Text style={s.statusDescription}>{a(linkStep==='linked'?'Your account can be used on another device.':linkStep==='guest'?'Secure your account to protect your progress.':linkStep==='verify_email'?'Verify your email to continue linking.':'Finish securing your account with a password.')}</Text>
+    </View>
    </View>
-   <Text style={s.text}>{a('Signed in as {identity}.',{identity:auth.session.user.email||a('guest')})}</Text>
    {(linkStep==='guest'||(linkStep==='verify_email'&&editingLink))&&<>
     <Text style={s.flowStep}>{a("STEP 1 OF 3 · LINK EMAIL")}</Text>
     <Text style={s.text}>{a("Add an email first. After verification, choose a password. Your characters and progress stay with this account.")}</Text>
@@ -132,28 +136,42 @@ export function OnlineAccountPanel({state}:{state:GameState}){
     <Text style={s.text}>{a("Your email is verified. Set a password to finish securing this account.")}</Text>{passwordInput}
     <GameButton title={a("Save account password")} disabled={busy||auth.refreshing} onPress={()=>run(async()=>{await finishGuestAccount(password,accountId);success('Account linked. Your characters and progress are kept.');})}/>
    </>}
-   {linkStep==='linked'&&<GameButton title={a("Change password")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>{if(running.current||!ownsView())return;setPassword('');setPasswordVisible(false);setNotice('');setChangingPassword(true);}}/>}
-   {googleLinked?<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>:googleAccountLinkingEnabled?<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} disabled={!googleSignInConfigured||googleConnection.status==='checking'} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{
-     await signInOrLinkGoogle();
-     if(!ownsView())return;
-     const status=await inspectGoogleAccountConnection(accountId);
-     setGoogleConnection(status);
-     if(status.status!=='linked')throw new Error(status.status==='error'?status.message:'Could not verify the Google account link. Please check again before signing out.');
-     success('Google account linked. Your characters and progress are kept.');
-   })}/>:null}
-   {googleAccountLinkingEnabled&&googleConnection.status==='error'&&<Text style={s.googleHint}>{a(googleConnection.message)}</Text>}
-   {playGamesConnection.status==='connected'
-    ?<Text style={s.googleLinked}>✓ {a("Google Play Games connected")}{playGamesConnection.displayName?` · ${playGamesConnection.displayName}`:''}</Text>
-    :<GoogleBrandButton title={busy?a("Connecting…"):a("Connect Google Play Games")} disabled={playGamesConnection.status!=='disconnected'} loading={busy||auth.refreshing||playGamesConnection.status==='checking'} onPress={()=>void run(async()=>{
-      const result=await signInPlayGames();
-      if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');
-      if(!ownsView())return;
-      setPlayGamesConnection({status:'connected',playerId:result.playerId,displayName:result.displayName});
+      <View style={s.servicesSection}>
+    <Text style={s.sectionEyebrow}>{a("Connected services")}</Text>
+    {(googleLinked||googleAccountLinkingEnabled)&&<View style={s.serviceCard}>
+     <View style={s.serviceRow}>
+      <View style={s.serviceMark}><Text style={s.googleMarkText}>G</Text></View>
+      <View style={s.serviceCopy}><Text style={s.serviceTitle}>{a("Google account")}</Text><Text style={s.serviceDescription}>{a(googleLinked?"Sign in to VELDRYN with Google.":"Link Google for another sign-in option.")}</Text></View>
+      {googleLinked&&<View style={s.servicePill}><Text style={s.servicePillText}>✓ {a("Linked")}</Text></View>}
+     </View>
+     {!googleLinked&&googleAccountLinkingEnabled&&<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} disabled={!googleSignInConfigured||googleConnection.status==='checking'} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{
+      await signInOrLinkGoogle();if(!ownsView())return;
+      const status=await inspectGoogleAccountConnection(accountId);setGoogleConnection(status);
+      if(status.status!=='linked')throw new Error(status.status==='error'?status.message:'Could not verify the Google account link. Please check again before signing out.');
+      success('Google account linked. Your characters and progress are kept.');
+     })}/>}
+     {googleAccountLinkingEnabled&&googleConnection.status==='error'&&<Text style={s.serviceError}>{a(googleConnection.message)}</Text>}
+    </View>}
+    <View style={s.serviceCard}>
+     <View style={s.serviceRow}>
+      <View style={s.serviceMark}><Text style={s.gamesMarkText}>✦</Text></View>
+      <View style={s.serviceCopy}><Text style={s.serviceTitle}>{a("Google Play Games")}</Text>
+       {playGamesConnection.status==='connected'&&!!playGamesConnection.displayName&&<Text style={s.serviceDescription} numberOfLines={2}>{playGamesConnection.displayName}</Text>}
+       {playGamesConnection.status!=='connected'&&<Text style={s.serviceDescription}>{a("Google Play game services")}</Text>}
+      </View>
+      {playGamesConnection.status==='connected'&&<View style={s.servicePill}><Text style={s.servicePillText}>✓ {a("Connected")}</Text></View>}
+     </View>
+     {playGamesConnection.status!=='connected'&&<GoogleBrandButton title={busy?a("Connecting…"):a("Connect Google Play Games")} disabled={playGamesConnection.status!=='disconnected'} loading={busy||auth.refreshing||playGamesConnection.status==='checking'} onPress={()=>void run(async()=>{
+      const result=await signInPlayGames();if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');
+      if(!ownsView())return;setPlayGamesConnection({status:'connected',playerId:result.playerId,displayName:result.displayName});
       success(result.displayName?`Google Play Games connected as ${result.displayName}.`:'Google Play Games connected.');
-    })}/>}
-   {(playGamesConnection.status==='unavailable'||playGamesConnection.status==='error')&&<Text style={s.googleHint}>{a(playGamesConnection.message)}</Text>}
-   <Text style={s.googleHint}>{a("Google Play Games is separate from your VELDRYN account and does not recover your VELDRYN progress.")}</Text>
-   <Text style={s.text}>{serverGameplayEnabled?a("Every successful gameplay action is saved online. Sign in on another device to continue."):a("Local save uploads do not grant online progression.")}</Text>
+     })}/>}
+     {(playGamesConnection.status==='unavailable'||playGamesConnection.status==='error')&&<Text style={s.serviceError}>{a(playGamesConnection.message)}</Text>}
+    </View>
+    <Text style={s.servicesFootnote}>{a("Google Play Games is separate from your VELDRYN account and does not recover your VELDRYN progress.")}</Text>
+   </View>
+   {linkStep==='linked'&&<View style={s.securitySection}><Text style={s.sectionEyebrow}>{a("Account security")}</Text>{linkStep==='linked'&&<GameButton title={a("Change password")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>{if(running.current||!ownsView())return;setPassword('');setPasswordVisible(false);setNotice('');setChangingPassword(true);}}/>}</View>}
+   {!serverGameplayEnabled&&<Text style={s.servicesFootnote}>{a("Local save uploads do not grant online progression.")}</Text>}
    <GameButton title={a("Sign out")} tone="secondary" loading={busy} disabled={busy} onPress={()=>{if(auth.session?.user.is_anonymous)gameAlert.alert(a("Sign out of guest account?"),a("Add an email first so you can recover this account."),[{text:a("Stay signed in")},{text:a("Sign out"),style:'destructive',onPress:()=>void run(signOut)}]);else return run(signOut);}}/>
   </>}
   {verificationPrompt&&verificationPrompt.accountId===accountId&&<GameModalSurface visible onClose={closeVerification} presentation="fullscreen" reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={false}>
@@ -179,9 +197,24 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  guestCard:{gap:8,padding:12,marginTop:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2},
  guestTitle:{fontSize:13,fontWeight:'800',color:C.text},entryHint:{fontSize:11,lineHeight:17,color:C.muted,textAlign:'center',marginTop:spacing.sm},
  recoveryHeader:{alignSelf:'flex-start'},backButton:{minHeight:44,justifyContent:'center',paddingHorizontal:2},backText:{fontSize:12,fontWeight:'800',color:C.accent},
- accountStatus:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderWidth:1,borderColor:C.warning,borderRadius:10,backgroundColor:C.warningSurface},
- accountStatusLinked:{borderColor:C.good,backgroundColor:C.goodSurface},
- statusSymbol:{width:37,height:37,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:9,borderColor:C.lineStrong,backgroundColor:C.panel},
- statusSymbolText:{fontSize:22,fontWeight:'800',color:C.accent},statusCopy:{flex:1,gap:3},statusTitle:{fontSize:14,fontWeight:'800',color:C.text},statusDescription:{fontSize:11,lineHeight:16,color:C.muted},
+ accountStatus:{flexDirection:'row',alignItems:'flex-start',gap:11,padding:14,borderWidth:1,borderColor:C.lineStrong,borderRadius:12,backgroundColor:C.panel2},
+ accountStatusLinked:{borderColor:C.lineStrong,backgroundColor:C.panel2},
+ statusSymbol:{width:36,height:36,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:10,borderColor:C.lineStrong,backgroundColor:C.panel},
+ statusSymbolLinked:{borderColor:C.good,backgroundColor:C.goodSurface},
+ statusSymbolText:{fontSize:20,fontWeight:'800',color:C.accent},statusSymbolTextLinked:{color:C.good},
+ statusCopy:{flex:1,gap:4},accountHeadingRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:8},
+ statusTitle:{fontSize:14,fontWeight:'800',color:C.text},accountIdentity:{fontSize:12,lineHeight:18,color:C.text},
+ statusDescription:{fontSize:11,lineHeight:16,color:C.muted},
+ securedPill:{borderWidth:1,borderColor:C.good,borderRadius:20,paddingHorizontal:8,paddingVertical:3},
+ securedPillText:{fontSize:10,fontWeight:'800',color:C.good},
+ servicesSection:{gap:8,marginTop:spacing.lg},sectionEyebrow:{fontSize:10,lineHeight:16,fontWeight:'900',letterSpacing:1,color:C.muted,marginBottom:2},
+ serviceCard:{gap:10,padding:12,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+ serviceRow:{flexDirection:'row',alignItems:'center',gap:10},
+ serviceMark:{width:32,height:32,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
+ googleMarkText:{fontSize:18,fontWeight:'800',color:'#4285F4'},gamesMarkText:{fontSize:19,fontWeight:'800',color:C.accent},
+ serviceCopy:{flex:1,gap:2,minWidth:0},serviceTitle:{fontSize:13,lineHeight:18,fontWeight:'800',color:C.text},
+ serviceDescription:{fontSize:11,lineHeight:16,color:C.muted},servicePill:{borderRadius:14,paddingHorizontal:7,paddingVertical:4,backgroundColor:C.goodSurface},
+ servicePillText:{fontSize:10,fontWeight:'800',color:C.good},serviceError:{color:C.bad,fontSize:11,lineHeight:16},
+ servicesFootnote:{color:C.muted,fontSize:11,lineHeight:17,marginTop:2},securitySection:{gap:8,marginTop:spacing.lg},
  flowStep:{fontSize:10,fontWeight:'900',letterSpacing:0.7,color:C.accent,marginTop:spacing.md}, 
 googleHint:{color:C.muted,fontSize:12,lineHeight:18,textAlign:'center',marginBottom:spacing.sm},googleLinked:{color:C.good,...typography.bodyStrong,marginVertical:spacing.sm},title:{color:C.text,...typography.title},label:{color:C.text,...typography.bodyStrong,marginTop:spacing.sm},helpToggle:{minHeight:48,justifyContent:'center',alignItems:'center'},helpText:{...typography.body,color:C.info},help:{gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderColor:C.line},text:{color:C.muted,fontSize:12,lineHeight:19,marginVertical:spacing.sm},guestHint:{color:C.muted,fontSize:11,lineHeight:17},passwordLabelRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},passwordLabel:{color:C.text,...typography.bodyStrong,flexShrink:1},passwordToggle:{minHeight:48,minWidth:48,maxWidth:'70%',paddingHorizontal:spacing.sm,justifyContent:'center',borderRadius:8},passwordToggleText:{color:C.info,...typography.bodyStrong,textAlign:'center',flexShrink:1},passwordInput:{marginTop:0},verificationScroll:{flexShrink:1},verificationContent:{gap:spacing.md,paddingBottom:spacing.xl,maxWidth:520,width:'100%',alignSelf:'center'},verificationEmail:{color:C.text,...typography.bodyStrong,lineHeight:22,flexShrink:1},passwordRules:{paddingHorizontal:spacing.sm,paddingBottom:spacing.sm,gap:3},passwordRulesTitle:{color:C.text,fontSize:12,fontWeight:'700',marginBottom:2},passwordRule:{color:C.muted,fontSize:12,lineHeight:18},passwordRuleMet:{color:C.good},noticeCard:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface,marginVertical:spacing.sm},noticeSuccessCard:{borderColor:C.good,backgroundColor:C.goodSurface},noticeInfoCard:{borderColor:C.info,backgroundColor:C.infoSurface},noticeLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},noticeLabelSuccess:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:1},noticeLabelInfo:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:1},notice:{color:C.text,lineHeight:21},noticeSuccess:{color:C.text},input:{minHeight:touchTargetMin,borderWidth:1,borderColor:C.lineStrong,borderRadius:9,backgroundColor:C.inputBg,color:C.text,padding:spacing.md,marginVertical:spacing.xs},row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm}});}

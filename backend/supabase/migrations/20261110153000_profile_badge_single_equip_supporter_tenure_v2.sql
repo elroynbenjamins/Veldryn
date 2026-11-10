@@ -311,10 +311,8 @@ begin
  on conflict(account_id) do update set
   show_supporter=excluded.show_supporter,
   equipped_badge_id=case
-   when private.player_badge_preferences_v1.equipped_badge_id like 'supporter%'
-       and not excluded.show_supporter then 'none'
-   when private.player_badge_preferences_v1.equipped_badge_id in ('auto','none')
-       and excluded.show_supporter then 'supporter'
+   when excluded.show_supporter then 'supporter'
+   when private.player_badge_preferences_v1.equipped_badge_id like 'supporter%' then 'none'
    else private.player_badge_preferences_v1.equipped_badge_id
   end;
  return public.player_badge_self_v1();

@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import {Image, ImageBackground, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Image, ImageBackground, Pressable, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
 import {frostfallPreviewCountdown, frostfallPreviewPhase, frostfallSecondRevealCountdown} from '../content/frostfall-preview';
 import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
 import {eventTheme} from '../theme/event-palette';
@@ -27,6 +27,8 @@ export function FrostfallPreview(props: {startsAtMs: number; nowMs: number}) {
 
 function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs: number}) {
   const C = useGameTheme();
+  const {width, fontScale} = useWindowDimensions();
+  const stacked = width < 385 || fontScale >= 1.2;
   const phase = frostfallPreviewPhase(startsAtMs, nowMs);
   const [selected, setSelected] = useState<RevealId | null>(null);
   if (!phase) return null;
@@ -49,12 +51,12 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
         <Text style={s.heroText}>Winter bells ring across Asterfall.</Text>
       </View>
     </ImageBackground>
-    <View style={[s.countdown, {backgroundColor: C.accentSurface, borderColor: C.lineStrong}]}>
+    <View style={[s.countdown, stacked && s.countdownStack, {backgroundColor: C.accentSurface, borderColor: C.lineStrong}]}>
       <View style={s.flex}>
         <Text style={[s.tiny, {color: C.muted}]}>FESTIVAL BEGINS IN</Text>
         <Text accessibilityLabel={'Frostfall begins in ' + frostfallPreviewCountdown(startsAtMs, nowMs)} style={[s.time, {color: C.accent}]}>{frostfallPreviewCountdown(startsAtMs, nowMs)}</Text>
       </View>
-      <Text style={[s.date, {color: C.text}]}>{startDate} UTC</Text>
+      <Text style={[s.date, stacked && s.dateStack, {color: C.text}]}>{startDate} UTC</Text>
     </View>
     <View style={s.story}>
       <Text style={[s.eyebrow, {color: C.accent}]}>{secondReveal ? 'SECOND REVEAL' : 'A FIRST GLIMPSE'}</Text>
@@ -70,13 +72,13 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
     <View style={s.grid}>
       {tiles.map(tile => <Pressable key={tile.id} accessibilityRole="button" disabled={!tile.unlocked} accessibilityLabel={(tile.unlocked ? '' : 'Locked. ') + tile.label + '. ' + tile.sub} accessibilityState={{selected: selected === tile.id, disabled: !tile.unlocked}}
         onPress={() => setSelected(tile.id === selected ? null : tile.id)}
-        style={({pressed}) => [s.tile, {backgroundColor: C.panel, borderColor: selected === tile.id ? C.accent : C.line}, pressed && s.pressed]}>
+        style={({pressed}) => [s.tile, stacked && s.tileStack, {backgroundColor: C.panel, borderColor: selected === tile.id ? C.accent : C.line}, pressed && s.pressed]}>
         <View style={[s.symbol, {backgroundColor: tile.unlocked ? C.accentSurface : C.panel2}]}>
           {tile.id === 'pet' && tile.unlocked ? <Image source={SNOWBELL_PUP} resizeMode="contain" style={s.symbolImage}/> :
            <Text style={[s.symbolText, {color: tile.unlocked ? C.accent : C.muted}]}>{tile.unlocked ? tile.icon : '◇'}</Text>}
         </View>
-        <Text style={[s.tileName, {color: tile.unlocked ? C.text : C.muted}]}>{tile.label}</Text>
-        <Text style={[s.tileDetail, {color: C.muted}]}>{tile.sub}</Text>
+        <View style={s.tileCopy}><Text style={[s.tileName, {color: tile.unlocked ? C.text : C.muted}]}>{tile.label}</Text>
+        <Text style={[s.tileDetail, {color: C.muted}]}>{tile.sub}</Text></View>
       </Pressable>)}
     </View>
     {selected ? <Panel>
@@ -101,7 +103,7 @@ function FrostfallPreviewContent({startsAtMs, nowMs}: {startsAtMs: number; nowMs
 
 const s = StyleSheet.create({
   wrapper: {gap: 11},
-  hero: {height: 184, borderRadius: 13, overflow: 'hidden', justifyContent: 'flex-end'},
+  hero: {minHeight: 184, borderRadius: 13, overflow: 'hidden', justifyContent: 'flex-end'},
   heroImage: {opacity: .83},
   shade: {...StyleSheet.absoluteFill, backgroundColor: 'rgba(6, 20, 35, .37)'},
   heroContent: {gap: 5, padding: 15},
@@ -111,10 +113,12 @@ const s = StyleSheet.create({
   heroTitle: {color: '#fff', fontSize: 31, lineHeight: 36, fontWeight: '900', letterSpacing: 1.5, textShadowColor: '#0a2033', textShadowRadius: 5, textShadowOffset: {width: 1, height: 2}},
   heroText: {color: '#e6f5ff', fontWeight: '600', fontSize: 12},
   countdown: {flexDirection: 'row', alignItems: 'center', borderRadius: 10, borderWidth: 1, padding: 12, gap: 10},
+  countdownStack: {flexWrap: 'wrap'},
   flex: {flex: 1, minWidth: 0},
   tiny: {fontSize: 10, fontWeight: '800', letterSpacing: .9},
   time: {fontSize: 23, fontWeight: '900', marginTop: 2},
   date: {fontSize: 11, fontWeight: '700', textAlign: 'right'},
+  dateStack: {textAlign: 'left'},
   story: {gap: 5, paddingVertical: 4},
   eyebrow: {fontSize: 9, lineHeight: 13, fontWeight: '900', letterSpacing: 1},
   heading: {fontSize: 15, lineHeight: 20, fontWeight: '800'},
@@ -123,6 +127,8 @@ const s = StyleSheet.create({
   counter: {fontSize: 10},
   grid: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
   tile: {flexBasis: '48%', flexGrow: 1, minWidth: 0, minHeight: 114, borderWidth: 1, borderRadius: 9, padding: 10, gap: 5},
+  tileStack: {flexBasis: '100%', minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 10},
+  tileCopy: {flex: 1, minWidth: 0, gap: 3},
   pressed: {opacity: .75},
   symbol: {height: 36, width: 36, borderRadius: 7, alignItems: 'center', justifyContent: 'center'},
   symbolText: {fontSize: 23, fontWeight: '800'},

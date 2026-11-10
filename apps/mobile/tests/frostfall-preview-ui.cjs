@@ -18,6 +18,10 @@ assert.doesNotMatch(released, /annual-events-v2/, 'future Frostfall gameplay mus
 assert.match(preview, /disabled=\{!tile\.unlocked\}/, 'unrevealed teaser cards must not be interactive');
 assert.match(preview, /frostfallSecondRevealCountdown\(startsAtMs, nowMs\)/, 'use a changing second-reveal countdown');
 assert.match(preview, /GameThemeScope colors=\{winterColors\}/, 'Frostfall preview has a winter-scoped theme');
+assert.match(preview, /stacked && s\.tileStack/, 'teaser cards must adapt for small screens and large text');
+assert.match(preview, /hero: \{minHeight: 184/, 'hero must grow for accessibility font scaling');
+assert.doesNotMatch(calendar, /setInterval\(/, 'calendar must reuse the Event Hub clock rather than polling twice');
+assert.match(eventScreen, /AnnualEventCalendarPanel state=\{state\} nowMs=\{now\}/, 'Event Hub must pass its shared clock');
 assert.match(eventScreen, /showFrostfallPreview=\{!frostfallTeaser\}/, 'upcoming Frostfall must show one teaser, not duplicate cards');
 assert.doesNotMatch(preview, /currency_frostbell_token\.png/, 'do not reintroduce an Android-incompatible tiny currency asset');
 

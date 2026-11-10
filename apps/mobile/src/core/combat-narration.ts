@@ -271,7 +271,7 @@ export function liveHuntNarration(input:{
  const lane=slot%3;
  if(lane===0)return {key:idleLine(classLines.prepare,round),tone:'muted',hit:false,critical:false};
  if(lane===1){
-  const cues=HUNT_ENCOUNTER_NARRATION[encounterIdentity(input.monster).id]??HUNT_COMMON_NARRATION.focus;
+  const cues=(HUNT_ENCOUNTER_NARRATION as Readonly<Record<string,readonly string[]>>)[encounterIdentity(input.monster).id]??HUNT_COMMON_NARRATION.focus;
   return {key:idleLine(cues,round),tone:'muted',hit:false,critical:false};
  }
  const hpRatio=(input.playerHp??0)/Math.max(1,input.playerMaxHp??0);

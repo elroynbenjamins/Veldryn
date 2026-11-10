@@ -108,7 +108,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   if(busyRef.current)return;
   busyRef.current=true;setBusy(true);setError('');
   try{await onStart(id);setDetailId(null);}
-  catch(e){setError(e instanceof Error?e.message:gt('Action failed. Please try again.'));}
+  catch(e){setError(e instanceof Error?e.message:gt('Action failed. Please try again.'));if(skillId==='cooking')setDetailId(id);}
   finally{busyRef.current=false;setBusy(false);}
  };
  const start=(recipe:Recipe)=>{
@@ -151,7 +151,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const renderPotionRow=(recipe:Recipe)=>{
   const available=count(recipe),isActive=activeId===recipe.id,locked=recipe.level>skillLevel,isExpanded=detailId===detailKey(recipe),reason=missingReason(recipe);
   return <View key={recipe.output.itemId} style={[s.potionRow,{borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Start Brewing'):reason)} accessibilityState={{disabled:busy||isActive||available<1}} disabled={busy||isActive||available<1} onPress={()=>start(recipe)} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Start Brewing'):reason)} accessibilityState={{disabled:busy||isActive||(available<1&&!activity)}} disabled={busy||isActive||(available<1&&!activity)} onPress={()=>start(recipe)} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
       <ItemArtwork itemId={recipe.output.itemId} size={44}/>
       <View style={s.potionRowCopy}>
         <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemName(recipe.output.itemId)}{regionVariant(recipe)?' · '+regionVariant(recipe):''}</Text>
@@ -179,6 +179,8 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   </View>:null}
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
   <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Potions'|'Infusions')}</Text></Pressable>)}</View>
+  {busy?<Text accessibilityLiveRegion="polite" style={[s.caption,{color:C.info}]}>{gt('Starting…')}</Text>:null}
+  {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
   {potionList?<View style={s.potionList}>
     <Text style={[s.caption,{color:C.muted}]}>{gt('Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.')}</Text>
     {([1,2,3] as const).map(tier=>{
@@ -195,7 +197,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   </View>:  <View style={s.grid}>{recipes.map(recipe=>{
     const available=count(recipe),isActive=activeId===recipe.id,meal=mealBonusDef(recipe.output.itemId);
     return <View key={recipe.id} style={[s.tile,{width:skillId==='alchemy'?'100%':mobile?'100%':'48.7%',borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
-     <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available?gt('Tap to start'):skillId==='alchemy'?missingReason(recipe):gt('Requirements missing'))} accessibilityState={{disabled:busy||isActive||(skillId==='alchemy'&&available<1)}} disabled={busy||isActive||(skillId==='alchemy'&&available<1)} onPress={()=>start(recipe)} style={({pressed})=>[s.tileTap,skillId==='alchemy'&&s.alchemyTileTap,pressed&&{opacity:.7}]}>
+     <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available?gt('Tap to start'):skillId==='alchemy'?missingReason(recipe):gt('Requirements missing'))} accessibilityState={{disabled:busy||isActive||(skillId==='alchemy'&&available<1&&!activity)}} disabled={busy||isActive||(skillId==='alchemy'&&available<1&&!activity)} onPress={()=>start(recipe)} style={({pressed})=>[s.tileTap,skillId==='alchemy'&&s.alchemyTileTap,pressed&&{opacity:.7}]}>
       <View style={s.line}><ItemArtwork itemId={recipe.output.itemId} size={48}/><Text style={[s.tier,{color:recipe.level>skillLevel?C.warning:C.muted}]}>{gt('Lv {level}',{level:recipe.level})}</Text></View>
       <Text style={[s.name,{color:C.text}]} numberOfLines={2}>{itemName(recipe.output.itemId)}</Text>
       <Text style={[s.caption,{color:C.muted}]} numberOfLines={2}>{benefit(recipe)}</Text>
@@ -219,11 +221,10 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
         <IngredientList inputs={detail.inputs.map(r=>({...r,inventory:state.inventory.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0),bank:state.bank.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
         {skillId==='alchemy'&&potionDef(detail.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.')}</Text>:null}
       </ScrollView>
-      <Pressable accessibilityRole="button" accessibilityState={{disabled:busy||count(detail)<1||activeId===detail.id}} disabled={busy||count(detail)<1||activeId===detail.id} onPress={()=>start(detail)} style={[s.primary,{backgroundColor:C.accent,opacity:busy||count(detail)<1?.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===detail.id?gt('Active'):skillId==='cooking'?gt('Start Cooking'):gt('Start Brewing')}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityState={{disabled:busy||(!activity&&count(detail)<1)||activeId===detail.id,busy}} disabled={busy||(!activity&&count(detail)<1)||activeId===detail.id} onPress={()=>start(detail)} style={[s.primary,{backgroundColor:C.accent,opacity:busy||(!activity&&count(detail)<1)?.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===detail.id?gt('Active'):busy?gt('Starting…'):skillId==='cooking'?gt('Start Cooking'):gt('Start Brewing')}</Text></Pressable>
       {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
     </>:null}
   </GameModalSurface>
-  {error?<Text accessibilityRole="alert" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
   <Text style={[s.caption,{color:C.muted}]}>{gt('Tap a recipe to start continuous production. Batches are reserved up to the AFK limit, available ingredients and Gold.')}</Text>
  </View>;
 }

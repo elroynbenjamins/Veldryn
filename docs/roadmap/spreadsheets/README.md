@@ -7,6 +7,7 @@
 | Design | Status | Workbook backup in GitHub | Normal Excel file |
 | --- | --- | --- | --- |
 | **Guild PvE / Guild Expeditions** | Detailed draft v3 · 2026-11-09 | [Guild PvE XLSX backup](./Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/14iQJt2zBTN93EoXMBKr-TMNTgBBcCgha/edit?usp=drivesdk) |
+| **Party Events** | **Expanded design draft v1 (no rollout)** · 2026-11-10 · [readable design brief](../party-events-design-v1.md) · 11-sheet workbook, three-week cadence, three phases, Day 8 boss, economy, rewards and release gates | [Party Events XLSX backup](./Veldryn_Party_Events_Design_v1_2026-11-10.xlsx.b64) | [Open Excel workbook in Google Drive](https://docs.google.com/spreadsheets/d/1f7v8LJQbsGotR3q3CmdJH0ow9RuFi2Km/edit?usp=drivesdk) |
 | **World Bosses** | **v8 combat + role fairness polish (hidden)** · [v8 integrity design and tests](../world-boss-combat-polish-v8.md) · **Hidden v7 attempt + Echo settlement prototypes · 2026-11-10** · [v7 transaction and matching notes](../world-boss-transaction-prototype-v7.md) · **Disabled 14-round prototype v6 · 2026-11-10** · [v6 scheduler engineering notes](../world-boss-round-scheduler-v6.md) · [v5 three-boss encounter design](../world-bosses-three-boss-contract-v5.md) · **Three-boss encounter design v5 · 2026-11-10** · [v5 engineering contract](../world-bosses-three-boss-contract-v5.md) · [Sunscar 42 rounds](./world-bosses-sunscar-rounds-v5.csv) · [Frostmarch 42 rounds](./world-bosses-frostmarch-rounds-v5.csv) · **Test-only combat calibration v4** · [Engine findings](../world-bosses-hollowroot-engine-calibration-v4.md) · [damage/survival output](./world-bosses-hollowroot-engine-summary-v4.csv) · [role-utility output](./world-bosses-hollowroot-engine-counterplay-v4.csv) · [pressure sweep](./world-bosses-hollowroot-engine-pressure-v4.csv) · **Focused draft v3** · [Hollowroot encounter + balance brief](../world-bosses-hollowroot-v3.md) · [42-round encounter CSV](./world-bosses-hollowroot-rounds-v3.csv) · [T1–T4 War Camp CSV](./world-bosses-war-supplies-v3.csv) · [population simulation CSV](./world-bosses-simulation-v3.csv) · [v2 foundation](../world-bosses-design-v2.md) | [Historical v1 XLSX backup](./Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64) | [Historical v1 workbook](https://docs.google.com/spreadsheets/d/1WH1auLjuEPnTjhTP8YBOuWtyUeV3ehO9/edit?usp=drivesdk) |
 | **Player Market economy** | Draft v11 · minimum lots, seller tax, review-only pricing · 2026-11-10 | [V11 economy rules CSV](./player-market-economy-v11.csv) | [V11 economy release plan](../player-market-economy-v11.md) |
 
@@ -26,6 +27,8 @@
 
 **World Bosses v3:** The latest focused pass is the Hollowroot brief plus three code-reviewable CSV files above. The standalone **23-sheet** `Veldryn_World_Bosses_Design_v3_2026-11-10.xlsx` (v2 foundation + v3 Hollowroot rounds, supply-time formulas, synthetic scenarios, power brackets, role fairness and QA) was exported as a conversation artifact; the v3 XLSX binary has **not been mirrored to GitHub or Drive**. Previous v2 and v1 remain archived in Git history, and the v1 `.xlsx.b64` backup still decodes normally. **All world-boss work remains design-only.**
 
+**Party Events v1:** Expanded design documentation builds on the merged-but-disabled hidden v2 backend prototype. The standalone **11-sheet** workbook includes the active/off cycle, twelve variations, supply budget formulas, special-objective proposals, boss scaling, exact provisional reward formulas, UX, server contracts and release QA. Its SHA-256 is `030e1fa0891b51f7ebce3e25c0c4c5fad5eedb26e95e49aecce71a804b2d8014` (35,322 decoded bytes). The Google Drive file is a normal `.xlsx` copy; GitHub contains an exact base64 backup. **No Party Events service, migration, scheduler, reward payout, UI or leaderboard was activated in this design pass.**
+
 The former combined PvE workbook was superseded by these two split files. The prior combined version remains available in Git history, rather than cluttering this active folder.
 
 ## Structure & naming
@@ -43,6 +46,7 @@ The connected GitHub writing interface currently accepts **UTF-8 text files**, s
 Recover a workbook on **macOS/Linux**:
 
 ```bash
+base64 --decode Veldryn_Party_Events_Design_v1_2026-11-10.xlsx.b64 > Veldryn_Party_Events_Design_v1_2026-11-10.xlsx
 base64 --decode Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx.b64 > Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx
 base64 --decode Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64 > Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx
 ```
@@ -58,6 +62,7 @@ $base='Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx'
 
 | Design | Decoded bytes | SHA-256 of XLSX |
 | --- | ---: | --- |
+| Party Events | 35,322 | `030e1fa0891b51f7ebce3e25c0c4c5fad5eedb26e95e49aecce71a804b2d8014` |
 | Guild PvE | 54,572 | `06721d7b3ebf451c8a3cf0a9c9ff7eb4d4cb30af67b2be86326de048cf6a23b3` |
 | World Bosses | 9,502 | `67d55c4acee22c4c34c01d46b9bfbd9121a5f5bf5cd0f97a38c09245d436f4a3` |
 

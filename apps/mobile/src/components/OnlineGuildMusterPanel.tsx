@@ -18,7 +18,7 @@ export function OnlineGuildMusterPanel(){
  const st=useSocialText(),language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [state,setState]=useState<OnlineGuildMusterState|null>(null),[members,setMembers]=useState<OnlineGuildMusterMember[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const [rosterView,setRosterView]=useState<'today'|'week'>('today'),[showAllMembers,setShowAllMembers]=useState(false);
+ const [rosterView,setRosterView]=useState<'today'|'week'>('today'),[showAllMembers,setShowAllMembers]=useState(false),[showActivity,setShowActivity]=useState(false);
  const load=async()=>{setLoading(true);setError('');try{const snapshot=await loadOnlineGuildMuster();setState(snapshot?.state??null);setMembers(snapshot?.members??[]);}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load Guild Muster."))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
  if(loading&&!state)return <LoadingState label={st("Loading Guild Muster…")} detail={st("Checking today’s attendance and verified Guild contribution.")}/>;
@@ -50,13 +50,12 @@ export function OnlineGuildMusterPanel(){
    <Text style={s.note}>{state.rallyMarkEarned
     ? st('Rally Mark earned today. Your extra points still add to weekly contribution.')
     : st('{points} more points needed for today’s Rally Mark. A check-in alone is not enough.',{points:remainingToday})}</Text>
-  </Panel>
-
-  <Panel>
+   <View style={s.weekSummary}>
    <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Your week")}</Text><Text style={s.meta}>{st('{current}/{max} Rally days · {points} points',{current:state.personalQualifyingDays,max:state.personalWeeklyGoal,points:state.personalWeeklyPoints})}</Text></View><StatusPill label={state.personalQualifyingDays>=state.personalWeeklyGoal?st("READY"):st('{current} OF {goal}',{current:state.personalQualifyingDays,goal:state.personalWeeklyGoal})} tone={state.personalQualifyingDays>=state.personalWeeklyGoal?'good':'info'}/></View>
    <Text style={s.copy}>{state.personalQualifyingDays>=state.personalWeeklyGoal
     ? st('You have completed your {days} Rally days this week.',{days:state.personalWeeklyGoal})
     : st('Earn a Rally Mark on {days} more days this week. No daily streak required.',{days:state.personalWeeklyGoal-state.personalQualifyingDays})}</Text>
+   </View>
   </Panel>
 
   <Panel>
@@ -103,11 +102,13 @@ export function OnlineGuildMusterPanel(){
      : null}
   </Panel>
   <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("ACTIVE GUILD")}</Text><Text style={s.sectionTitle}>{st('{percent}% Guild Activity',{percent:activityPct})}</Text></View><StatusPill label={activityPct>=100?st("MAX ACTIVITY"):nextActivity?st('{percent}% NEXT',{percent:nextActivity.threshold}):st("ACTIVE")} tone={activityPct>=60?'good':'info'}/></View>
+   <Pressable accessibilityRole="button" accessibilityState={{expanded:showActivity}} onPress={()=>setShowActivity(open=>!open)}>
+    <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("ACTIVE GUILD")}</Text><Text style={s.sectionTitle}>{st('{percent}% Guild Activity',{percent:activityPct})}</Text></View><StatusPill label={activityPct>=100?st("MAX ACTIVITY"):nextActivity?st('{percent}% NEXT',{percent:nextActivity.threshold}):st("ACTIVE")} tone={activityPct>=60?'good':'info'}/><Text style={s.activityChevron}>{showActivity?'▴':'▾'}</Text></View>
+   </Pressable>
    <Progress value={activityPct} C={C}/>
-   <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{socialLabel(language,row.name)}</Text><Text style={s.note}>{socialLabel(language,row.description)}</Text></View></View>)}</View>
+   {showActivity?<View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{socialLabel(language,row.name)}</Text><Text style={s.note}>{socialLabel(language,row.description)}</Text></View></View>)}</View>:null}
    <Text style={s.note}>{state.activityDecayMode==='protected'?st('Activity secured today.'):state.activityDecayMode==='partial'?st('More activity helps prevent a drop.'):st('Stay active to avoid losing progress.')}</Text>
-   <Text style={s.note}>{st('Bonuses: +{gather}% Gathering · +{production}% Production · +{skill}% Skill XP · +{mastery}% Mastery XP · +{rare}% Rare Materials.',{gather:state.gatheringSpeedBps/100,production:state.productionSpeedBps/100,skill:state.activitySkillXpBps/100,mastery:state.masteryXpBps/100,rare:state.rareMaterialRelativeBps/100})}</Text>
+   {showActivity?<Text style={s.note}>{st('Bonuses: +{gather}% Gathering · +{production}% Production · +{skill}% Skill XP · +{mastery}% Mastery XP · +{rare}% Rare Materials.',{gather:state.gatheringSpeedBps/100,production:state.productionSpeedBps/100,skill:state.activitySkillXpBps/100,mastery:state.masteryXpBps/100,rare:state.rareMaterialRelativeBps/100})}</Text>:null}
   </Panel>
 
   <GameButton compact title={loading?st("Refreshing…"):st("Refresh Muster")} tone="secondary" disabled={loading} onPress={()=>load()}/>
@@ -121,6 +122,7 @@ function Metric({label,value,C}:{label:string;value:string;C:ThemeColors}){const
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:10},flex:{flex:1,minWidth:0},head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sectionTitle:{...typography.title,color:C.text},copy:{fontSize:13,lineHeight:20,color:C.muted},meta:{fontSize:12,lineHeight:18,color:C.muted,fontWeight:'700'},note:{fontSize:12,lineHeight:18,color:C.muted},
  track:{height:8,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2,marginVertical:8},fill:{height:'100%',backgroundColor:C.accent},
+ weekSummary:{marginTop:12,paddingTop:12,borderTopWidth:1,borderTopColor:C.line,gap:6},activityChevron:{fontSize:17,fontWeight:'800',color:C.accent},
  metrics:{flexDirection:'row',gap:6},metric:{flex:1,minWidth:0,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,alignItems:'center'},metricValue:{fontSize:16,lineHeight:20,color:C.text,fontWeight:'900'},metricLabel:{fontSize:11,lineHeight:14,color:C.muted,fontWeight:'900',letterSpacing:.6,textAlign:'center'},
  activityMilestones:{gap:5,marginTop:7},activityMilestone:{minHeight:46,flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,opacity:.62},activityMilestoneOn:{opacity:1,borderColor:C.good,backgroundColor:C.goodSurface},activityPct:{width:40,fontSize:13,color:C.muted,fontWeight:'900'},activityPctOn:{color:C.good},activityName:{fontSize:13,color:C.text,fontWeight:'900'},member:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:7,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},rank:{width:28,fontSize:13,color:C.muted,fontWeight:'900'},memberName:{fontSize:13,color:C.text,fontWeight:'900'},memberNumbers:{alignItems:'flex-end'},memberPoints:{fontSize:13,color:C.accent,fontWeight:'900'},memberToday:{fontSize:11,color:C.muted,fontWeight:'700'},rosterControls:{flexDirection:'row',gap:6,marginTop:10},rosterTab:{flex:1,paddingVertical:8,borderWidth:1,borderRadius:radii.md,borderColor:C.line,alignItems:'center',backgroundColor:C.panel2},rosterTabActive:{borderColor:C.accent,backgroundColor:C.panel},rosterTabText:{fontSize:12,fontWeight:'800',color:C.muted},rosterTabTextActive:{color:C.text},memberStatus:{borderWidth:1,borderRadius:radii.md,paddingHorizontal:7,paddingVertical:5,maxWidth:118},memberStatusGood:{borderColor:C.good,backgroundColor:C.goodSurface},memberStatusPending:{borderColor:C.accent,backgroundColor:C.panel2},memberStatusMuted:{borderColor:C.line,backgroundColor:C.panel2},memberStatusText:{fontSize:10,fontWeight:'900',textAlign:'center'},memberStatusTextGood:{color:C.good},memberStatusTextMuted:{color:C.muted},showMore:{alignItems:'center',paddingVertical:12},showMoreText:{fontSize:13,fontWeight:'900',color:C.accent},error:{fontSize:13,color:C.bad},
 });}

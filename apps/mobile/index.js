@@ -1,6 +1,7 @@
 import {registerRootComponent} from 'expo';
+import {Platform} from 'react-native';
 // Explicit developer-only fixture entry; normal and release builds use App.
-const App=process.env.EXPO_PUBLIC_BROWSER_REVIEW==='1'
+const App=Platform.OS==='web'&&process.env.EXPO_PUBLIC_BROWSER_REVIEW==='1'
   ?require('./src/dev/BrowserReview').default
   :__DEV__&&process.env.EXPO_PUBLIC_VISUAL_QA==='1'
   ?(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='combat-art'

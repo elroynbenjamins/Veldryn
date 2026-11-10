@@ -4,6 +4,7 @@ import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
 import {itemDef} from '../src/content/items';
 import {JOURNAL_TITLES_V42} from '../src/core/adventurers-journal-v42';
+import {migrateRetiredStoryRewards} from '../src/core/retired-story-rewards';
 import {JOURNAL_SKILL_LESSONS,journalSkillLessonProgress,journalSkillLessonSummary} from '../src/core/journal-skill-lessons';
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../src/content/equipment-recipes-v33';
 import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
@@ -56,6 +57,19 @@ ok(finaleClaimed.account.journalState?.unlockedTitles.oathbreaker===1000,'The ac
 ok(!finaleClaimed.inventory.stacks.some(row=>row.itemId==='OATHGLASS_CAPE'),'No cape is granted by the finale');
 let duplicateFinaleBlocked=false;try{claimQuest(finaleClaimed,finale.id,1001)}catch{duplicateFinaleBlocked=true}
 ok(duplicateFinaleBlocked,'A repeated claim cannot grant more resources, gold or title unlocks');
+// Already-owned obsolete cape copies are retired, compensated and not
+// transferable back into the game. Repeat loads are intentionally no-ops.
+const historical={...finaleReady,
+ character:{...finaleReady.character!,equipment:{...finaleReady.character!.equipment,cape:'OATHGLASS_CAPE'},equipmentPouch:{capacity:30,stacks:[{itemId:'OATHGLASS_CAPE',quantity:1}]}},
+ inventory:{...finaleReady.inventory,stacks:[...finaleReady.inventory.stacks,{itemId:'OATHGLASS_CAPE',quantity:1}]},
+ quests:finaleReady.quests.map(q=>({...q,status:'claimed' as const}))};
+const retired=migrateRetiredStoryRewards(historical,3000);
+ok(retired.character?.equipment.cape!== 'OATHGLASS_CAPE','Historical equipped capes are removed');
+ok(!retired.character?.equipmentPouch?.stacks.some(s=>s.itemId==='OATHGLASS_CAPE'),'Historical pouch capes are removed');
+ok(!retired.inventory.stacks.some(s=>s.itemId==='OATHGLASS_CAPE'),'Historical inventory capes are removed');
+ok(retired.inventory.stacks.some(s=>s.itemId==='OATHGLASS_SHARD'&&s.quantity===24),'Three legacy capes convert into 24 Oathglass Shards');
+ok(retired.account.journalState?.unlockedTitles.oathbreaker===3000,'Previously completed Act III receives Oathbreaker retroactively');
+ok(migrateRetiredStoryRewards(retired,3001)===retired,'Retired quest reward migration is exactly once');
 const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
 ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
 ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');

@@ -437,7 +437,7 @@ export const gemPouchUiRows={
     "Démonter",
     "Разобрать",
     "Parçala"
-  ]
+  ],
   "AFTER REFINING": ["NACH VEREDLUNG","TRAS REFINAR","NA VERFIJNEN","DOPO LA RAFFINAZIONE","APRÈS RAFFINAGE","ПОСЛЕ ОЧИСТКИ","ARITMADAN SONRA"],
   "POSSIBLE SOCKET ROLL": ["MÖGLICHER FASSUNGSWERT","BONIFICACIÓN POSIBLE","MOGELIJKE ROL","BONUS POSSIBILE","BONUS POSSIBLE","ВОЗМОЖНЫЙ БОНУС","OLASI YERLEŞTİRME BONUSU"],
   "Refine this gem before it can be socketed.": ["Veredle diesen Edelstein, bevor du ihn einsetzen kannst.","Refina esta gema antes de engastarla.","Verfijn deze edelsteen voordat je hem kunt plaatsen.","Raffina questa gemma prima di inserirla.","Raffinez cette gemme avant de l'enchâsser.","Очистите камень, прежде чем вставлять его.","Bu taşı takmadan önce arıt."],

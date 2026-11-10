@@ -46123,8 +46123,8 @@ function normalizeEnhancementGemSlots(raw2) {
     statGemId,
     effectGemId,
     gemIds,
-    statGemRollPercent: statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
-    effectGemRollPercent: effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
+    statGemRollPercent: statGemId && raw2?.statGemId === statGemId ? normalizeGemRollPercentV1(raw2?.statGemRollPercent) : void 0,
+    effectGemRollPercent: effectGemId && raw2?.effectGemId === effectGemId ? normalizeGemRollPercentV1(raw2?.effectGemRollPercent) : void 0
   };
 }
 function equippedCraftedInstance(state, itemId) {

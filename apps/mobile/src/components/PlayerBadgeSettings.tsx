@@ -90,11 +90,11 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
     owned.includes(id)?'Unlocked · account-wide':PLAYER_BADGE_UNLOCK_HINTS[id]))}
   </View>
 
-  {equipped?<GameButton compact title="Unequip badge" tone="secondary" disabled={disabled} onPress={()=>void badges.setEquipped(null)}/>:null}
+  {equipped?<GameButton compact title="Unequip badge" tone="secondary" loading={badges.busy} disabled={disabled} onPress={()=>badges.setEquipped(null)}/>:null}
   {badges.loading?<Text style={[s.note,{color:C.muted}]}>Loading earned badges…</Text>:null}
   {badges.error?<View style={s.errors}>
    <Text accessibilityRole="alert" style={[s.note,{color:C.bad}]}>{accountError(language,badges.error,'Could not load badges.')}</Text>
-   <GameButton compact title={a('Retry badges')} tone="secondary" onPress={()=>void badges.refresh()}/>
+   <GameButton compact title={a('Retry badges')} tone="secondary" loading={badges.loading} onPress={()=>badges.refresh()}/>
   </View>:null}
  </View>;
 }

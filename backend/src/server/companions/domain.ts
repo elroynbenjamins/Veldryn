@@ -37,6 +37,8 @@ export interface CompanionTechniqueDefinition{
 export interface OwnedCompanionSnapshot{
   companionId:string;level:number;xp:number;ascensionTier:0|1|2|3;bondLevel:number;bondXp:number;bondTraitUnlocked:boolean;mastered?:boolean;selectedTechniqueId?:string;
   obtainedAt?:string;originalEventReleaseYear?:number;veteranCosmeticEligible?:boolean;
+  /** Runtime-only verified account mastery; never persist or accept as an entitlement. */
+  masteryStatMultiplier?:number;
 }
 export interface CompanionEconomyState{gold:number;companionEssence:number;bondstones:number;materials:Record<string,number>;}
 export interface SanctuaryProgress{trainingGroundLevel:number;essenceBasinLevel:number;bondHallLevel:number;expeditionPensLevel:number;masteryChamberLevel:number;}

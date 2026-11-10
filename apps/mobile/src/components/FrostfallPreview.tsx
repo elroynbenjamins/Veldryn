@@ -98,7 +98,7 @@ const s = StyleSheet.create({
   wrapper: {gap: 11},
   hero: {height: 184, borderRadius: 13, overflow: 'hidden', justifyContent: 'flex-end'},
   heroImage: {opacity: .83},
-  shade: {...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(6, 20, 35, .37)'},
+  shade: {...StyleSheet.absoluteFill, backgroundColor: 'rgba(6, 20, 35, .37)'},
   heroContent: {gap: 5, padding: 15},
   heroTop: {flexDirection: 'row', alignItems: 'center', gap: 10},
   heroBadge: {width: 48, height: 48},

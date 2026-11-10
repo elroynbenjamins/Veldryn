@@ -216,6 +216,7 @@
   ".core-build/apps/mobile/tests/class-skills.js",
   ".core-build/apps/mobile/tests/crafting-professions.js",
   ".core-build/apps/mobile/tests/timed-processing.js",
+  "tests/alchemy-recipe-tap-ui-contract.cjs",
   ".core-build/apps/mobile/tests/meal-buffs.js",
   ".core-build/apps/mobile/tests/balance-telemetry.js",
   ".core-build/apps/mobile/tests/regional-companion-unlocks.js",

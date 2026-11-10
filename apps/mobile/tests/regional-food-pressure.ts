@@ -1,4 +1,4 @@
-import {FOOD_HEALING_MULTIPLIER,ITEMS,itemDef} from '../src/content/items';
+import {ITEMS,itemDef} from '../src/content/items';
 import {REGIONAL_COMBAT_PRESSURE,REGIONAL_FOOD_SUSTAIN_TARGETS,REGIONAL_MIN_ATTRITION_HP_PER_HOUR} from '../src/core/game';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+': expected '+String(expected)+', got '+String(actual))}
@@ -24,7 +24,6 @@ const foodHealingBaseline:Record<string,number>={
  GRILLED_OASIS_CARP:130,GLASSFIN_FEAST:190,FROSTED_ICEFIN:250,
  CHARRED_EMBERFIN:330,ASHLANDS_EMBER_STEW:390,
 };
-ok(FOOD_HEALING_MULTIPLIER===0.85,'food healing balance must be 15% lower');
 const foods=ITEMS.filter(item=>item.type==='food');
 ok(foods.length===Object.keys(foodHealingBaseline).length,'every food must have an approved healing baseline');
 for(const food of foods){

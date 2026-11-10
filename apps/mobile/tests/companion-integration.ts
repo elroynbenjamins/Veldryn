@@ -6,13 +6,14 @@ import {companionAttentionSummary,companionAttentionLabels} from '../src/core/co
 import {buildNavigationBadges,buildQuickNavigationBadges} from '../src/core/navigation-notifications';
 import {companionAttentionText} from '../src/i18n/companions';
 import {companionAscensionReadiness} from '../src/core/companion-ascension-readiness';
+import {companionFoodNeededForStamina,companionExpeditionStaminaCost} from '../src/core/companion-provisions';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS} from '../src/content/combat-companions';
 import {companionAssignmentStatusLabel,companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
-import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
+import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques,companionMission} from '../../../backend/src/server/companions/content';
 import {companionUnlockRequirementProgress} from '../../../backend/src/server/companions/progression-v2';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -24,10 +25,11 @@ function rejects(f:()=>unknown,label:string){let caught=false;try{f();}catch{cau
 const now=Date.UTC(2026,8,13),ids=['UNIT_001','UNIT_002','UNIT_003'];
 function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
-  // MISSION_SCOUT_2H costs 50 stamina. Travel Rations provide 1.8 stamina
-  // each, so the fixture must supply the rounded-up 28-ration requirement.
-  const normalizedArgs=type==='companion_assignment_start'&&args?.food===undefined?{...args,food:[{itemId:'TRAVEL_RATION',quantity:28}]}:args;
- const prepared=type==='companion_assignment_start'?{...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks,{itemId:'TRAVEL_RATION',quantity:40}]}}:s;
+  // Match the current food healing and mission duration instead of hardcoding ration quantities.
+ const mission=type==='companion_assignment_start'?companionMission(String(args?.id??'')):undefined;
+ const rationCount=mission?companionFoodNeededForStamina('TRAVEL_RATION',companionExpeditionStaminaCost(mission.durationMs/3_600_000)):0;
+ const normalizedArgs=type==='companion_assignment_start'&&args?.food===undefined?{...args,food:[{itemId:'TRAVEL_RATION',quantity:rationCount}]}:args;
+ const prepared=type==='companion_assignment_start'?{...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks,{itemId:'TRAVEL_RATION',quantity:rationCount+12}]}}:s;
  return executeGameCommand(prepared,{type,args:normalizedArgs},time).state;
 };
 const pensInitial=companionSanctuaryUpgradeCost(fixture(),'expeditionPens');

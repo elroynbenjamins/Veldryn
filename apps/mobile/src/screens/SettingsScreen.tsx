@@ -1,4 +1,5 @@
 import {accountText,accountDuration} from '../i18n/account';
+import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {appBuildText} from '../i18n/app-build';
 import {APP_BUILD_INFO} from '../app-build';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -117,7 +118,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
         <Text style={[s.settingLabel,{color:theme.text}]}>{a("Collapsed chat preview")}</Text>
         <View style={s.choices}>{([1,2,3] as const).map(lines=><SettingChip key={lines} label={lines===1?a("1 line · compact"):a('{count} lines',{count:lines})} selected={(state.settings.chatDockLines??1)===lines} onPress={()=>update({chatDockLines:lines})}/>)}</View>
         <Text style={[s.settingLabel,{color:theme.text}]}>{a("Default World channel")}</Text>
-        <View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'},{id:3,label:'Global 1'},{id:4,label:'Global 2'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={(state.settings.defaultWorldChat??1)===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>
+        <View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={defaultVisibleWorldChatIndex(state.settings.defaultWorldChat)+1===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>
       </View>:null}
     </Panel>
     <View onLayout={event=>{emotesOffset.current=event.nativeEvent.layout.y;scrollToEmotes();}}><Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showEmotes}} onPress={()=>setShowEmotes(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>

@@ -52,8 +52,8 @@ const DIFFICULTIES: Record<WeeklyPartyDifficulty, {
   finalePowerMultiplier: number; rewardValueMultiplier: number; renown: number;
 }> = {
   standard: { requiredMinutesPerMember: 90, optionalMinutesPerMember: 45, finalePowerMultiplier: 1, rewardValueMultiplier: 1, renown: 10 },
-  veteran: { requiredMinutesPerMember: 120, optionalMinutesPerMember: 60, finalePowerMultiplier: 1.25, rewardValueMultiplier: 1.2, renown: 12 },
-  heroic: { requiredMinutesPerMember: 150, optionalMinutesPerMember: 75, finalePowerMultiplier: 1.5, rewardValueMultiplier: 1.35, renown: 14 },
+  veteran: { requiredMinutesPerMember: 120, optionalMinutesPerMember: 60, finalePowerMultiplier: 1.20, rewardValueMultiplier: 1.2, renown: 12 },
+  heroic: { requiredMinutesPerMember: 150, optionalMinutesPerMember: 75, finalePowerMultiplier: 1.40, rewardValueMultiplier: 1.35, renown: 14 },
 };
 
 export const WEEKLY_PARTY_EVENT_FAMILIES: Readonly<Record<WeeklyPartyFamily, {

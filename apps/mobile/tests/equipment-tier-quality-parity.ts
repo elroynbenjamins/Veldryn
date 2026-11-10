@@ -1,8 +1,8 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
-import {rarityMeta,type ItemRarity} from '../src/core/item-rarity';
-import {craftedRarityStatMultiplier,craftedGearRarityOutcomes} from '../src/core/crafted-gear-rarity';
+import {itemRarity,rarityMeta,type ItemRarity} from '../src/core/item-rarity';
+import {CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION,craftedRarityStatMultiplier,craftedGearRarityOutcomes} from '../src/core/crafted-gear-rarity';
 import {craftedGearQualityMultiplier,normalizeCraftedGearInstances} from '../src/core/crafted-gear-instances';
 import {enhancedGearStatsAtRank} from '../src/core/equipment-enhancement';
 import {itemInspectModel} from '../src/core/item-inspect';
@@ -34,19 +34,27 @@ const withCopies=(copies:CraftedGearInstance[],where:'inventory'|'bank'='invento
   [where]:{...seed[where],stacks:copies.map(record=>({itemId:record.itemId,quantity:1,instanceId:record.id}))},
 });
 
+ok(CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION===.75,'Higher-tier bonus should retain 75% of the new incremental uplift');
 for(let i=0;i<tiers.length;i++){
   const id=boots[i],item=itemDef(id);
   for(const rarity of rarities){
-    close(craftedRarityStatMultiplier(id,rarity),rarityMeta(rarity).statMultiplier,
-      `${tiers[i]} ${rarity} always has the same Forge bonus`);
+    const rolled=rarityMeta(rarity).statMultiplier;
+    const catalogBase=rarityMeta(itemRarity(item)).statMultiplier;
+    const previous=Math.max(1,rolled/catalogBase);
+    const expected=previous+(rolled-previous)*CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION;
+    close(craftedRarityStatMultiplier(id,rarity),expected,
+      `${tiers[i]} ${rarity} retains only 75% of the new uplift`);
+    ok(expected>=previous&&expected<=rolled,
+      `${tiers[i]} ${rarity} does not drop below the former stat level or exceed the recent buff`);
+    if(i===0)close(expected,rolled,'T1 rarities must be unchanged');
     const outcome=craftedGearRarityOutcomes(id).find(row=>row.rarity===rarity)!;
-    close(outcome.statMultiplier,rarityMeta(rarity).statMultiplier,
+    close(outcome.statMultiplier,expected,
       `${tiers[i]} ${rarity} Forge preview must match equipped stats`);
     for(const quality of [0,20,50,55,62,90,100]){
       const instance=copy(id,rarity,quality);
       const state=withCopies([instance]);
       const stats=enhancedGearStatsAtRank(state,id,0,instance.id);
-      const multiplier=rarityMeta(rarity).statMultiplier*craftedGearQualityMultiplier(quality);
+      const multiplier=craftedRarityStatMultiplier(id,rarity)*craftedGearQualityMultiplier(quality);
       close(stats.attack,(item.attack??0)*multiplier,`${tiers[i]} ATK Q${quality} ${rarity}`);
       close(stats.defense,(item.defense??0)*multiplier,`${tiers[i]} DEF Q${quality} ${rarity}`);
       close(stats.hp,(item.hp??0)*multiplier,`${tiers[i]} HP Q${quality} ${rarity}`);
@@ -68,6 +76,10 @@ for(let i=0;i<tiers.length;i++){
   }
 }
 
+close(craftedRarityStatMultiplier(boots[1],'uncommon'),1.09,'T2 Uncommon retains +9%, down from +12%');
+close(craftedRarityStatMultiplier(boots[2],'rare'),1.21,'T3 Rare retains +21%, down from +28%');
+close(craftedRarityStatMultiplier(boots[4],'epic'),1.375,'T5 Epic retains +37.5%, down from +50%');
+close(craftedRarityStatMultiplier(boots[8],'mythic'),1.75,'T9 Mythic retains +75%, down from +100%');
 const old=copy(boots[0],'uncommon',62,0,'tier1-q62');
 const fresh=copy(boots[1],'uncommon',55,0,'tier2-q55');
 const original=withCopies([old,fresh]);

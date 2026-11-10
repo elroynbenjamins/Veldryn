@@ -330,7 +330,8 @@ function combatTimeline(input) {
   const segments = [];
   while (at < end) {
     const prepared = remaining > 0, candy = !!input.candy && at >= input.candy.startsAtMs && at < input.candy.endsAtMs;
-    const cycleSeconds = (prepared ? input.preparedCycleSeconds : input.cycleSeconds) / (candy ? 1.1 : 1);
+    const authoredSeconds = input.cycleSecondsForEncounter?.(encounters.length, prepared) ?? (prepared ? input.preparedCycleSeconds : input.cycleSeconds);
+    const cycleSeconds = authoredSeconds / (candy ? 1.1 : 1);
     if (!Number.isFinite(cycleSeconds) || cycleSeconds <= 0) throw new Error("Invalid combat cycle");
     const boundary = Math.min(end, ...input.candy ? [input.candy.startsAtMs, input.candy.endsAtMs].filter((t) => t > at) : []);
     const fromFraction = progress, startsAtMs = at;
@@ -400,6 +401,20 @@ function huntHitEvents(input) {
   }
   return hits.sort((a, b) => a.fraction - b.fraction || (a.actor === "enemy" ? -1 : 1));
 }
+function regionalHuntHits(plan, input) {
+  const attacks = Math.max(1, plan.enemyAttackCount);
+  const hits = plan.strikes.map((strike, index) => ({
+    fraction: Math.min(1, strike.atSeconds / plan.cycleSeconds),
+    actor: strike.actor,
+    damage: strike.actor === "enemy" ? Math.max(0, input.monsterDamage) / attacks : strike.damage,
+    healing: 0,
+    critical: strike.critical,
+    index
+  }));
+  const fatigueFraction = Math.max(0, 1 - 1e-5);
+  hits.push({ fraction: fatigueFraction, actor: "fatigue", damage: Math.max(0, input.fatigueDamage), healing: Math.max(0, input.healingPerEncounter), critical: false, index: hits.length });
+  return hits.sort((a, b) => a.fraction - b.fraction || (a.actor === "fatigue" ? -1 : a.actor === "enemy" ? -1 : 1));
+}
 function huntHitsBetween(events, fromFraction, toFraction) {
   const from = clamp(finite(fromFraction, 0), 0, 1), to = clamp(finite(toFraction, 0), 0, 1);
   return events.filter((hit) => hit.fraction > from + 1e-9 && hit.fraction <= to + 1e-9);
@@ -407,6 +422,50 @@ function huntHitsBetween(events, fromFraction, toFraction) {
 function huntEnemyHpAt(monsterHp, events, progressFraction) {
   const hp = Math.max(1, Math.round(monsterHp));
   return Math.max(0, hp - events.reduce((sum, hit) => sum + (hit.actor === "player" && hit.fraction <= progressFraction + 1e-9 ? hit.damage : 0), 0));
+}
+
+// ../apps/mobile/src/core/ordinary-hunt.ts
+var SEARCH_RANGES = {
+  Greenfields: [5, 8],
+  Silverbrook: [5, 8],
+  "Ironwood Forest": [6, 9],
+  "Old Mines": [7, 10],
+  "King's Road": [7, 10],
+  Sunscar: [8, 12]
+};
+function usesDamageDrivenHunts(zone) {
+  return Object.prototype.hasOwnProperty.call(SEARCH_RANGES, zone);
+}
+var clamp2 = (v, low, high) => Math.max(low, Math.min(high, Number.isFinite(v) ? v : low));
+var round = (v) => Math.round(v * 1e3) / 1e3;
+function regionalHuntPlan(options) {
+  const range = SEARCH_RANGES[options.zone];
+  if (!range) throw new Error("Damage-driven hunt is not enabled in this region");
+  const seed = options.seed, monsterHp = Math.max(1, Math.ceil(options.monsterHp));
+  const searchSeconds = round((range[0] + (range[1] - range[0]) * random01(seed + ":search", 0)) * clamp2(options.environmentTimeMultiplier, 0.5, 2));
+  const interval = round(clamp2(2.5 / (clamp2(options.tempo, 0.35, 3) * clamp2(1 + options.haste, 0.65, 2)), 1, 5));
+  const enemyInterval = round(clamp2(3.5 / clamp2(1 + options.enemyHaste, 0.65, 2), 2, 5));
+  const strikes = [];
+  let enemyHp = monsterHp, finishSeconds = searchSeconds + interval;
+  for (let i = 0; i < 1e4; i++) {
+    const atSeconds = round(searchSeconds + (i + 1) * interval);
+    const landed = random01(seed + ":accuracy", i) < clamp2(options.hitChance, 0.55, 0.99);
+    const critical = landed && random01(seed + ":critical", i) < clamp2(options.critChance, 0, 0.65);
+    const spread = 0.9 + random01(seed + ":variance", i) * 0.2;
+    const damage = landed ? Math.min(enemyHp, Math.max(1, Math.round(options.playerHit * spread * (critical ? clamp2(options.critMultiplier, 1, 3) : 1)))) : 0;
+    if (damage > 0) {
+      strikes.push({ actor: "player", atSeconds, damage, critical });
+      enemyHp -= damage;
+    }
+    finishSeconds = atSeconds;
+    if (enemyHp <= 0) break;
+  }
+  if (enemyHp > 0) throw new Error("Ordinary hunt exceeded the safe attack count");
+  for (let i = 1; searchSeconds + i * enemyInterval < finishSeconds - 1e-6; i++) {
+    strikes.push({ actor: "enemy", atSeconds: round(searchSeconds + i * enemyInterval), damage: 0, critical: false });
+  }
+  strikes.sort((a, b) => a.atSeconds - b.atSeconds || (a.actor === "enemy" ? -1 : 1));
+  return { cycleSeconds: finishSeconds, searchSeconds, fightSeconds: round(finishSeconds - searchSeconds), strikes, enemyAttackCount: strikes.filter((hit) => hit.actor === "enemy").length };
 }
 
 // ../apps/mobile/src/core/combat-progression-pacing.ts
@@ -42765,7 +42824,7 @@ var T3_T4_DUNEWOOD_REDUCTION_FACTOR = 0.8;
 function reducedSunscarDunewood(base, multiplier) {
   return Math.max(1, Math.round(q(base, multiplier) * 3 * T3_T4_DUNEWOOD_REDUCTION_FACTOR));
 }
-function clamp2(value, min, max) {
+function clamp3(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 function mergeInputs(inputs) {
@@ -42844,7 +42903,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     level,
     xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
-    seconds: clamp2(Math.round(range.base * multiplier), range.min, range.max),
+    seconds: clamp3(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
@@ -43955,7 +44014,7 @@ var COMBAT_LIMITS = {
 };
 
 // src/server/combat/calculations.ts
-var clamp3 = (v, min, max) => Math.max(min, Math.min(max, v));
+var clamp4 = (v, min, max) => Math.max(min, Math.min(max, v));
 function roleAdjustedAttackPower(input) {
   const attack = Math.max(0, input.attackPower);
   if (input.team !== "players" || input.role === "damage" || input.role === "enemy") return attack;
@@ -43964,13 +44023,13 @@ function roleAdjustedAttackPower(input) {
 }
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
-  return clamp3(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
+  return clamp4(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
 }
 function hitChance(accuracy, evasion, accuracyScale) {
-  return clamp3(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
+  return clamp4(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
 }
 function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation2, variance, crit = false, critMultiplier = COMBAT_LIMITS.defaultCritMultiplier) {
-  const varianceClamped = clamp3(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
+  const varianceClamped = clamp4(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
   const normal = Math.max(1, attackPowerValue * abilityCoeff * varianceClamped * (1 - mitigation2));
   return crit ? normal * critMultiplier : normal;
 }
@@ -44844,7 +44903,7 @@ function simulateCombat(input) {
       return;
     }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
-    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp3(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
+    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp4(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
     const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
     const varianceRoll = rng.next(`${now}:${abilityId}:var`);
     const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
@@ -44858,7 +44917,7 @@ function simulateCombat(input) {
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
     raw2 *= gemIncomingDamageMultiplierV1(target2, now);
-    if (hpPct(target2) < clamp3(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp3(effect2.executeBonus ?? 0, 0, 1);
+    if (hpPct(target2) < clamp4(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp4(effect2.executeBonus ?? 0, 0, 1);
     const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
     const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
@@ -44942,7 +45001,7 @@ function simulateCombat(input) {
     if (effect2.kind === "shield") {
       const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1));
       target2.shield += amt;
-      if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp3(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
+      if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp4(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
       gemConsumeSupportChargeV1(now, source);
       emitGemState(now);
@@ -45509,7 +45568,7 @@ function companionTrialSeasonDefinition(seasonKey) {
 
 // src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
-var clamp4 = (value, min, max) => Math.max(min, Math.min(max, value));
+var clamp5 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
   damage: { hp: 180, power: 22, defense: 12, attackSpeed: 2 },
   tank: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 },
@@ -45518,16 +45577,16 @@ var ROLE_ANCHORS = {
 function companionBalancedBaseStats(def) {
   const a = ROLE_ANCHORS[def.role], b = def.baseStats;
   return {
-    hp: a.hp * clamp4(b.hp / a.hp, 0.95, 1.05),
-    power: a.power * clamp4(b.power / a.power, 0.95, 1.05),
-    defense: a.defense * clamp4(b.defense / a.defense, 0.95, 1.05),
-    attackSpeed: a.attackSpeed * clamp4(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
+    hp: a.hp * clamp5(b.hp / a.hp, 0.95, 1.05),
+    power: a.power * clamp5(b.power / a.power, 0.95, 1.05),
+    defense: a.defense * clamp5(b.defense / a.defense, 0.95, 1.05),
+    attackSpeed: a.attackSpeed * clamp5(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
   };
 }
 function companionInvestmentMultiplier(def, progress) {
   const max = COMPANION_RARITY_MAX_LEVEL[def.rarity];
   const endpoint = COMMON_MAX_INVESTMENT_MULTIPLIER * COMPANION_RARITY_TARGET[def.rarity];
-  const fraction = max <= 1 ? 1 : clamp4((progress.level - 1) / (max - 1), 0, 1);
+  const fraction = max <= 1 ? 1 : clamp5((progress.level - 1) / (max - 1), 0, 1);
   return 1 + (endpoint - 1) * fraction;
 }
 function identityModifiers(def, progress) {
@@ -45569,13 +45628,13 @@ function engineEffects(def, progress, context) {
       return [{ kind: "buff", value: -Math.max(0.01, levelCoeff * identity.mitigationMultiplier), durationMs: 5e3, tag: "damage_taken" }];
     case "utility":
     default:
-      if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp4(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
+      if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp5(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
       return def.role === "support" ? [{ kind: "buff", value: Math.max(0.01, levelCoeff * identity.utilityMultiplier), durationMs: 5e3, tag: "companion_utility" }] : [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * identity.activeDamageMultiplier), tag: "companion_active" }];
   }
 }
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
-  const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp4(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp4(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
+  const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp5(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp5(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
   const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery;
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
@@ -50795,11 +50854,11 @@ function newJournalState(accountId) {
   if (!accountId) throw new Error("account_required");
   return { schemaVersion: 42, accountId, revision: 0, unlockedAchievements: {}, unlockedTitles: {}, selectedTitleByCharacter: {}, records: {} };
 }
-var clamp5 = (value) => Math.max(0, Math.min(1, value));
+var clamp6 = (value) => Math.max(0, Math.min(1, value));
 function journalAchievementProgress(state, snapshot2) {
   return JOURNAL_ACHIEVEMENTS_V42.map((definition) => {
     const current = Math.max(0, snapshot2.metrics[definition.metricKey] ?? 0);
-    return { definition, current, target: definition.target, progress: clamp5(definition.target ? current / definition.target : 1), complete: current >= definition.target, unlockedAtMs: state.unlockedAchievements[definition.id] };
+    return { definition, current, target: definition.target, progress: clamp6(definition.target ? current / definition.target : 1), complete: current >= definition.target, unlockedAtMs: state.unlockedAchievements[definition.id] };
   });
 }
 function applyJournalSnapshot(state, snapshot2, nowMs) {
@@ -51640,55 +51699,55 @@ var BY_PROFILE = {
   REVENANT: { accuracy: 0.9, evasion: 0.05, critChance: 0.07, critMultiplier: 1.6, haste: 0.03 },
   FALLEN_KNIGHT: { accuracy: 0.93, evasion: 0.05, critChance: 0.1, critMultiplier: 1.75, haste: 0.05 }
 };
-var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
-var expectedCrit = (chance, multiplier) => 1 + clamp6(chance, 0, 0.75) * Math.max(0, multiplier - 1);
+var clamp7 = (value, min, max) => Math.max(min, Math.min(max, value));
+var expectedCrit = (chance, multiplier) => 1 + clamp7(chance, 0, 0.75) * Math.max(0, multiplier - 1);
 function regionalEnemySecondaryStats(monster) {
   return BY_PROFILE[encounterIdentity(monster).id] ?? NEUTRAL2;
 }
 function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05) {
   const enemy2 = regionalEnemySecondaryStats(monster);
-  const playerHitChance = clamp6(player.accuracy - enemy2.evasion, 0.55, 0.99);
-  const enemyHitChance = clamp6(enemy2.accuracy - player.evasion, 0.55, 0.99);
+  const playerHitChance = clamp7(player.accuracy - enemy2.evasion, 0.55, 0.99);
+  const enemyHitChance = clamp7(enemy2.accuracy - player.evasion, 0.55, 0.99);
   const baselinePlayerHit = 0.84 - NEUTRAL2.evasion;
   const baselineEnemyHit = NEUTRAL2.accuracy - 0.04;
   const playerCritExpected = expectedCrit(player.critChance, player.critMultiplier);
   const enemyCritExpected = expectedCrit(enemy2.critChance, enemy2.critMultiplier);
   const baselinePlayerCritExpected = expectedCrit(basePlayerCritChance, 1.5);
   const baselineEnemyCritExpected = expectedCrit(NEUTRAL2.critChance, NEUTRAL2.critMultiplier);
-  const playerHasteMultiplier = clamp6((1 + player.haste) / 1.05, 0.75, 1.5);
+  const playerHasteMultiplier = clamp7((1 + player.haste) / 1.05, 0.75, 1.5);
   return {
     enemy: enemy2,
     playerHitChance,
     enemyHitChance,
     playerCritExpected,
     enemyCritExpected,
-    playerOutputMultiplier: clamp6(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
-    incomingPressureMultiplier: clamp6(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
+    playerOutputMultiplier: clamp7(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
+    incomingPressureMultiplier: clamp7(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
   };
 }
 
 // ../apps/mobile/src/core/story-boss.ts
-var clamp7 = (value, min, max) => Math.max(min, Math.min(max, value));
+var clamp8 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
 var FALLEN_KNIGHT_MAX_POTION_UNITS = 5;
 function mitigation(defense) {
-  return clamp7(defense / Math.max(1, defense + 110), 0, 0.72);
+  return clamp8(defense / Math.max(1, defense + 110), 0, 0.72);
 }
 function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const monster = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
   if (!monster) throw new Error("fallen_knight_missing");
   const bossSecondary = regionalEnemySecondaryStats(monster);
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
-  let bossHp = bossMaxHp, playerHp = clamp7(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp7(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
+  let bossHp = bossMaxHp, playerHp = clamp8(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp8(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
   const phasesReached = [1], events = [];
-  const playerHitChance = clamp7(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
-  const playerAttackIntervalMs = clamp7(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
+  const playerHitChance = clamp8(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
+  const playerAttackIntervalMs = clamp8(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
   let nextPlayerAt = 650, nextBossAt = 1800;
   const push = (event) => events.push({ ...event, playerHp: Math.max(0, Math.round(playerHp)), bossHp: Math.max(0, Math.round(bossHp)), phase });
   push({ atMs: 0, type: "battle_start", label: "The Fallen Knight raises the oathglass blade." });
   const maybePotion = (atMs) => {
-    const threshold = clamp7(player.autoEatThresholdPct, 10, 90) / 100;
+    const threshold = clamp8(player.autoEatThresholdPct, 10, 90) / 100;
     if (player.potionHeal <= 0) return;
     if (playerHp > 0 && playerHp / playerMaxHp <= threshold && potionLeft > 0) {
       const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.potionHeal)));
@@ -51720,7 +51779,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       if (!hit) {
         push({ atMs: now, type: "player_miss", label: "Your strike misses.", abilityId: "PLAYER_STRIKE" });
       } else {
-        const critical = random01(seed, rngIndex++) < clamp7(player.critChance, 0, 0.75);
+        const critical = random01(seed, rngIndex++) < clamp8(player.critChance, 0, 0.75);
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
         const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
@@ -51741,7 +51800,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     now = nextBossAt;
     bossAttackCount++;
     const phaseHaste = phase === 3 ? 0.18 : phase === 2 ? 0.07 : 0;
-    const attackInterval = clamp7(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
+    const attackInterval = clamp8(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
     let abilityId = "FALLEN_SLASH", label = "Fallen Slash", coeff = 1, telegraph = 0;
     if (bossAttackCount % 6 === 0) {
       abilityId = "OATHGLASS_COLLAPSE";
@@ -51755,12 +51814,12 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       telegraph = 900;
     }
     if (telegraph) push({ atMs: Math.max(0, now - telegraph), type: "telegraph", label: `${label} incoming`, abilityId });
-    const bossAccuracy = clamp7(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
-    const bossHitChance = clamp7(bossAccuracy - player.evasion, 0.55, 0.99);
+    const bossAccuracy = clamp8(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
+    const bossHitChance = clamp8(bossAccuracy - player.evasion, 0.55, 0.99);
     if (random01(seed, rngIndex++) > bossHitChance) {
       push({ atMs: now, type: "boss_miss", label: `${label} misses.`, abilityId });
     } else {
-      const bossCritChance = clamp7(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
+      const bossCritChance = clamp8(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
       const critical = random01(seed, rngIndex++) < bossCritChance;
       const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
       const raw2 = monster.attack * 0.29 + monster.level * 0.14;
@@ -51796,7 +51855,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     potionConsumed,
     phasesReached,
     events,
-    player: { hitChance: playerHitChance, critChance: clamp7(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
+    player: { hitChance: playerHitChance, critChance: clamp8(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
     boss: { accuracy: bossSecondary.accuracy, evasion: bossSecondary.evasion, critChance: bossSecondary.critChance, critMultiplier: bossSecondary.critMultiplier, haste: bossSecondary.haste }
   };
 }
@@ -52245,6 +52304,10 @@ function regionalMonsterPressureBand(monsterId) {
   if (index >= Math.ceil((peers.length - 1) * 0.75)) return "hard";
   return "standard";
 }
+function regionalHuntSeed(state, monsterId, index) {
+  const activity = state.activity?.kind === "combat" && state.activity.targetId === monsterId ? state.activity : void 0;
+  return `${state.character.id}:${activity?.startedAtMs ?? 0}:${monsterId}:${(activity?.sessionKills ?? 0) + index}`;
+}
 function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const c = state.character, baseMonster = MONSTERS.find((x) => x.id === monsterId);
   const m = baseMonster, stats4 = effectiveStats(state), modifiers = characterPermanentMultipliers(state), companion = companionCombatContribution(state);
@@ -52266,32 +52329,71 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const gearAttritionMultiplier = 1 + tierGap * MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   const outgoingPreparation = c.preparation ? preparationEffects(c.preparation).outgoing : 1;
   const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
-  const killCycleSeconds = m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
-  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier };
+  const huntOptions = usesDamageDrivenHunts(m.zone) && !m.boss ? {
+    zone: m.zone,
+    monsterHp: m.hp,
+    playerHit: huntBasePlayerHit(
+      Math.round(stats4.attack * modifiers.combatPowerMultiplier),
+      m.defense,
+      setCombat.penetrationMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * progressionSpeedPenalty * outgoingPreparation
+    ),
+    hitChance: secondary.playerHitChance,
+    critChance: stats4.critChance,
+    critMultiplier: stats4.critMultiplier,
+    haste: stats4.haste,
+    enemyHaste: secondary.enemy.haste,
+    tempo: style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed),
+    environmentTimeMultiplier: environment?.actionTimeMultiplier ?? 1,
+    seed: regionalHuntSeed(state, monsterId, 0)
+  } : void 0;
+  const killCycleSeconds = huntOptions ? regionalHuntPlan(huntOptions).cycleSeconds : m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
+  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier, huntOptions };
 }
-function combatEncounterDamage(runtime, champion = false) {
+function combatEncounterDamage(runtime, champion = false, enemyAttackCount, fightSeconds) {
   const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds } = runtime;
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
-  const incoming = Math.max(floor, damage);
-  const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - floor));
-  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
-  return { damage: incoming, healing, onKillHealing, net: incoming - healing };
+  const fatigue = runtime.huntOptions ? Math.max(floor, Math.min(stats4.hp * 6e-4, m.hp * 0.02) * runtime.gearAttritionMultiplier) : 0;
+  const huntPlan = runtime.huntOptions && (enemyAttackCount === void 0 || fightSeconds === void 0) ? regionalHuntPlan(runtime.huntOptions) : void 0;
+  const attackCount = enemyAttackCount ?? huntPlan?.enemyAttackCount ?? 1;
+  const fightExposure = Math.max(0.35, Math.min(3, (fightSeconds ?? huntPlan?.fightSeconds ?? 10) / 10));
+  const monsterDamage = runtime.huntOptions ? attackCount ? damage * fightExposure * runtime.gearAttritionMultiplier : 0 : Math.max(floor, damage);
+  const incoming = monsterDamage + fatigue;
+  const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - Math.max(floor, fatigue)));
+  const rawHealing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
+  const healing = runtime.huntOptions ? Math.min(rawHealing, monsterDamage + fatigue * 0.65) : rawHealing;
+  return { damage: incoming, monsterDamage, fatigue, healing, onKillHealing, net: incoming - healing };
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const c = state.character, activity = state.activity, startsAtMs = activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;
   const unprepared = { ...state, character: { ...c, preparation: void 0 } }, plain = combatRuntimeDetails(unprepared, monsterId, startsAtMs), prepared = combatRuntimeDetails(state, monsterId, startsAtMs);
   const startCandy = eventCandyUtilityMultiplier(state, startsAtMs, "combat");
-  const timeline = combatTimeline({ startsAtMs, elapsedSeconds: elapsed, progressFraction: activity?.progressFraction ?? 0, preparationEncounters: c.preparation?.remainingEncounters ?? 0, cycleSeconds: plain.killCycleSeconds * startCandy, preparedCycleSeconds: prepared.killCycleSeconds * startCandy, candy: eventCandyWindow(state, "combat"), trackSegments: true });
+  const seedFor = (index) => regionalHuntSeed(state, monsterId, index);
+  const dynamic = !!plain.huntOptions;
+  const timeline = combatTimeline({
+    startsAtMs,
+    elapsedSeconds: elapsed,
+    progressFraction: activity?.progressFraction ?? 0,
+    preparationEncounters: c.preparation?.remainingEncounters ?? 0,
+    cycleSeconds: plain.killCycleSeconds * (dynamic ? 1 : startCandy),
+    preparedCycleSeconds: prepared.killCycleSeconds * (dynamic ? 1 : startCandy),
+    cycleSecondsForEncounter: dynamic ? (index, isPrepared) => regionalHuntPlan({ ...(isPrepared ? prepared : plain).huntOptions, seed: seedFor(index) }).cycleSeconds : void 0,
+    candy: eventCandyWindow(state, "combat"),
+    trackSegments: true
+  });
   const food = c.equippedFoodId ? itemDef(c.equippedFoodId) : void 0, threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
   let foodLeft = stackQty2(state.inventory.stacks, c.equippedFoodId), foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
   const completed = [];
   let activeEncounterIndex = 0, enemyHp = activity?.combatEnemyHp;
   let lastHit;
-  const seedFor = (index) => `${c.id}:${activity?.startedAtMs ?? startsAtMs}:${monsterId}:${(activity?.sessionKills ?? 0) + index}`;
   const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds) => {
+    if (runtime.huntOptions) {
+      const plan = regionalHuntPlan({ ...runtime.huntOptions, seed: seedFor(index) });
+      const exchange2 = combatEncounterDamage(runtime, champion, plan.enemyAttackCount, plan.fightSeconds);
+      return regionalHuntHits(plan, { monsterDamage: exchange2.monsterDamage, fatigueDamage: exchange2.fatigue, healingPerEncounter: exchange2.healing });
+    }
     const exchange = combatEncounterDamage(runtime, champion);
     return huntHitEvents({ monsterHp: runtime.m.hp, basePlayerHit: huntBasePlayerHit(runtime.stats.attack, runtime.m.defense, runtime.secondary.playerOutputMultiplier), incomingDamage: exchange.damage, healingPerEncounter: exchange.healing, cycleSeconds: attackCadenceSeconds, critChance: runtime.stats.critChance, seed: seedFor(index) });
   };
@@ -52322,7 +52424,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
           foodConsumed++;
         }
       }
-      lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical };
+      if (hit.actor !== "fatigue") lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical };
       if (hp <= 1) {
         hp = 1;
         stoppedReason = food && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";

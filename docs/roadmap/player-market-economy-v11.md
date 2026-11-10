@@ -40,13 +40,14 @@ The preview engine can suggest a change to each approved item's **min/max** afte
 - 10% of the highest/lowest observed prices are trimmed before the median is computed; suggested weekly change is capped at **±10%**
 - All suggestions are **review-only**; none update database prices automatically. Thin, highly concentrated, and high-value markets require explicit review.
 
-Do **not** use a seller's asking prices, local-client event payloads, incomplete listings, cancelled sales or unverified account activity as evidence. All history supplied to the evaluator must be fetched from server-settled purchase receipts and reconciled with the locked private Gold ledger. A separate read-only private evidence projection will be necessary at launch.
+Do **not** use a seller's asking prices, local-client event payloads, incomplete listings, cancelled sales or unverified account activity as evidence. All history supplied to the evaluator must be fetched from server-settled purchase receipts and reconciled with the locked private Gold ledger. A capped read-only private evidence projection is authored in V11D, but **not deployed** until prior Market custody tables and settlement ledgers are installed.
 
 ## Implemented foundations and dependency boundaries
 
 - **V11A**, `20261110103500_market_lot_tax_policy_foundation_v11.sql`: independent private 35-row lot policy with **zero approved rows**, private 5% tax quote, RLS, no public/user permissions. Installed and verified on **staging only**.
 - **V11B**, `20261110104000_market_offer_minimum_lots_private_v11.sql`: two private offer publishers enforce approved lot sizes in addition to existing price checks. Authored but **not deployed**; requires prior V8/V9 custody and V10B guards.
 - **V11C**, `20261110104500_market_completed_sale_gold_tax_private_v11.sql`: two private purchase settlements reconcile buyer/seller Gold, charge 5% seller tax, burn fee and persist gross/net/fee atomically. Authored but **not deployed**; requires prior custody, settlement and V11B dependency chain.
+- **V11D**, `20261110105000_market_verified_sale_review_private_v11.sql`: capped read-only private evidence from sold offers, custody holds, purchase receipts and the conserved Gold ledger. **Not deployed**, no player access and no automatic price changes.
 - `backend/online/market-economy-policy-v11.ts`: deterministic read-only lot, tax and verified-sale review helpers; no permission to settle/approve.
 - `backend/online/tests/market-economy-policy-v11.ts`: safeguards for tier/resource policy, overflows, rounding, Gold conservation, wash-trades, self-trades and duplicate settlements.
 

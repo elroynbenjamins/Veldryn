@@ -3,6 +3,7 @@ export const BATTLE_MESSAGES={
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
 
  'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],
+ 'Searching for an encounter...':['Suche nach einem Gegner...','Buscando un enemigo...','Op zoek naar een vijand...','Alla ricerca di un nemico...','Recherche d’un adversaire...'],
  'Enemy health':['Gegner-Lebenspunkte','Salud del enemigo','Gezondheid vijand','Salute del nemico','Vie de l’ennemi'],
  'Hit · {amount}':['Treffer · {amount}','Golpe · {amount}','Treffer · {amount}','Colpo · {amount}','Coup · {amount}'],
 

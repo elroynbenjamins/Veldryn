@@ -326,7 +326,8 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
         onRefresh={refreshDungeonMarksShop}
         onPurchase={marksShopSnapshot?.shopEnabled?async offerId=>{
           const receipt=await coopClient.purchaseDungeonMarksShop(offerId,coopRequestId());
-          await onRewardsChanged?.();
+          // A failed character sync must not turn a committed spend into a purchase error.
+          void Promise.resolve().then(()=>onRewardsChanged?.()).catch(()=>{});
           return receipt.status;
         }:undefined}/>
     </View>;

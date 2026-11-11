@@ -4,6 +4,7 @@ import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {coopEntryHandler} from '../coop-entry';
 import {GameplayError} from '../gameplay';
+import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 
 async function main(){
  const state=createCharacter(newGame(1000),'IRONWARDEN','Entry Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
@@ -25,7 +26,7 @@ async function main(){
  const entry=await handler(request('entry')),projection=await entry.json();
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
- assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[2].available,false);
+ assert.equal(projection.dungeons[0].available,combatPowerRating(state).total>=2500);assert.equal(projection.dungeons[2].available,false);
  for(const dungeon of projection.dungeons){
   assert.deepEqual(dungeon.difficulties,[1,2,3],'Only the three published tiers are offered');
   assert.deepEqual(Object.keys(dungeon.expectedMarksByTier),['1','2','3'],'Reward previews must only include selectable tiers');
@@ -72,7 +73,7 @@ async function main(){
  state.character!.equippedCombatCompanionId=previousCompanion;
  state.defeatedBossIds=state.defeatedBossIds.filter(id=>id!=='FALLEN_KNIGHT');
  const beforeBoss=await (await handler(request('entry'))).json();
- assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.available,true,'Asterfall is available without clearing Chapter I');
+ assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.available,combatPowerRating(state).total>=2500,'Asterfall requires Combat Power, but not Chapter I');
  assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.available,false,'Sunscar remains chapter-locked');
  assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.lockedReason,'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.');
 

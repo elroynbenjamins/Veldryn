@@ -139,10 +139,15 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
    <Text style={s.copy}>{dungeonRewardPreviewText(language,'Rewards must be claimed. After enhanced charges or the weekly cap, Marks are reduced to 20%.')}</Text>
    <View style={s.rewardDropSection}>
     <Text style={s.levels}>{dungeonRewardPreviewText(language,'Potential item drops')}</Text>
+    {dungeon.bossVariants.length?<Text style={s.copy}>{a('Successful clear:')} {dungeon.bossVariants[0].rawGemPercent}% {a('chance of one unrefined Grade III gem (guaranteed after')} {dungeon.bossVariants[0].gemPityClears} {a('eligible clears without one). Effect recipe:')} {dungeon.bossVariants[0].recipePercent}% · {a('Regional Catalyst:')} {dungeon.bossVariants[0].catalystPercent}%.</Text>:null}
+    {dungeon.bossVariants.map(boss=><View key={boss.bossId} style={s.rewardDropSection}>
+     <Text style={s.levels}>{boss.name} · {boss.chancePercent}%</Text>
+     <Text style={s.copy}>{a('Possible gem families:')} {boss.gemFamilies.map(family=>family.replace(/^(effect_|stat_)/,'').replace(/_/g,' ')).join(', ')}</Text>
+    </View>)}
     {dungeon.itemDropRates.length?dungeon.itemDropRates.map(item=><View key={item.itemId} style={s.dropRow}>
      <Text style={[s.copy,s.flex]}>{item.name} · {item.minQuantity===item.maxQuantity?item.minQuantity:`${item.minQuantity}–${item.maxQuantity}`}</Text>
      <StateChip label={`${dungeonRewardPreviewText(language,'Drop chance')}: ${item.chancePercent.toLocaleString(language,{maximumFractionDigits:2})}%`} tone="neutral"/>
-    </View>):<Text style={s.copy}>{dungeonRewardPreviewText(language,'No permanent item drop rates are published for regular dungeons yet.')}</Text>}
+    </View>):<Text style={s.copy}>{dungeon.bossVariants.length?a('Other permanent item drops are not yet published.'):dungeonRewardPreviewText(language,'No permanent item drop rates are published for regular dungeons yet.')}</Text>}
    </View>
    {mode==='live'&&liveBonus>0?<Text style={s.copy}>{dungeonRewardPreviewText(language,'Live Fellowship bonus is conditional on remaining weekly bonuses.')}</Text>:null}
    <Text style={s.copy}>{dungeonRewardPreviewText(language,'Complete a dungeon to earn its clear reward. Failed runs may earn limited consolation Marks.')}</Text>
@@ -155,7 +160,7 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
    {mode==='live'?<View style={s.modeHead}><Text style={s.copy}>{coopPolicyText(language,'fellowshipLabel')}{liveBonus>0?` (+${liveBonus})`:''}</Text><StateChip label={Math.max(0,Math.min(3,liveFellowshipRemaining))+'/3'} tone={liveFellowshipRemaining>0?'success':'neutral'}/></View>:null}
   </DungeonDisclosure>
   <DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language}/></DungeonDisclosure>
-  {dungeon.id==='EXP_001'?<DungeonBossPreview name="Rootbound Heart" label={ct(language,'event.finalBoss')}/>:null}
+  {dungeon.bossVariants.length?<DungeonDisclosure title={a('Possible final bosses')}><Text style={s.copy}>{a('One final boss is selected by the server at the start of each run (50/50). Reconnecting never changes it.')}</Text>{dungeon.bossVariants.map(boss=><DungeonBossPreview key={boss.bossId} name={boss.name} label={boss.chancePercent+'%'}/>)}</DungeonDisclosure>:null}
   <DungeonDisclosure title={a('More information')}><Text style={s.copy}>{roomCount} {a('rooms before the boss')}</Text><Text style={s.copy}>{dungeon.rewardBudgetState??coopPolicyText(language,'rewardCadence')}</Text>{rewardBudget?.failureConsolationRemaining!==undefined?<Text style={s.copy}>{st('Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.',{remaining:rewardBudget.failureConsolationRemaining})}</Text>:null}{dungeon.enabledRoomTypes.length?<View style={s.roomGrid}>{dungeon.enabledRoomTypes.map(room=><RoomTile key={room} language={language} room={room}/>)}</View>:null}</DungeonDisclosure>
  </ExpeditionScreenShell>;
 }

@@ -14,6 +14,15 @@ assert.ok(app.includes("QuestRefinedScreen as QuestScreen"),'App must mount the 
 assert.ok(screen.includes("journalEntries(state,filter,'').filter(({def})=>questMatchesLocalizedSearch(language,def,query))"),'story filtering must use real journal state and preserve English/localized search');
 assert.ok(screen.includes('seasonalQuestBoard(state'),'challenge cards must preserve class/period projections');
 assert.ok(screen.includes('weeklyOrderBoardForState(state)'),'contracts must use real current weekly board');
+assert.ok(!screen.includes('weeklyOrderPendingRewards')&&!screen.includes('contractAttention={boardPending.length}')&&!screen.includes('rewards pending processing'),
+  'automatic Contract reward receipts must not create sticky attention badges or misleading pending copy');
+const legacy=fs.readFileSync(path.join(__dirname,'../src/screens/QuestScreen.tsx'),'utf8');
+assert.ok(!legacy.includes('pendingBoardRewards')&&!legacy.includes('contractAttention={pendingBoardRewards.length}'),
+  'legacy Quest layout must not count settled Contract rewards as notifications');
+assert.ok(screen.includes('storyAttention={storyReady} challengeAttention={challengeReady.length}')&&
+  legacy.includes('storyAttention={ready} challengeAttention={challengeReadyCount}'),
+  'Journal and Challenge claimable badges must remain while Contracts have no passive-reward alert');
+
 assert.ok(screen.includes('GameModalSurface')&&screen.includes('GameModalHeader'),
   'details and final reward receipts use the shared themed native sheet');
 assert.ok(screen.includes('accessibilityRole="button"')&&screen.includes('minHeight:touchTargetMin'),

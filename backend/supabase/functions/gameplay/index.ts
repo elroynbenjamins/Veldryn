@@ -43009,14 +43009,25 @@ var GUILD_COMPONENT_RECIPES = [
 // ../apps/mobile/src/content/gathering-tools.ts
 init_progression();
 var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75;
+var TOOL_BLUEPRINT_DROP_ROUNDING_STEP = 1e-3;
+function roundDownToolBlueprintDropChance(chance) {
+  if (!Number.isFinite(chance) || chance < 0 || chance > 1) throw new Error("invalid_tool_blueprint_chance");
+  return Math.floor(chance / TOOL_BLUEPRINT_DROP_ROUNDING_STEP + 1e-10) * TOOL_BLUEPRINT_DROP_ROUNDING_STEP;
+}
 var TOOL_CRAFT_COST_MULTIPLIER = 2;
 var TOOL_CRAFT_XP_BONUS = 3;
+var TOOL_CRAFT_XP_MULTIPLIER = 1.75;
+var TOOL_CRAFT_XP_ROUNDING_STEP = 10;
+function increasedToolCraftXp(baseXp) {
+  if (!Number.isSafeInteger(baseXp) || baseXp < 0) throw new Error("invalid_tool_craft_xp");
+  return Math.ceil((baseXp + TOOL_CRAFT_XP_BONUS) * TOOL_CRAFT_XP_MULTIPLIER / TOOL_CRAFT_XP_ROUNDING_STEP) * TOOL_CRAFT_XP_ROUNDING_STEP;
+}
 var tool = (definition) => ({
   ...definition,
   requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel),
   recipe: {
     ...definition.recipe,
-    xp: definition.recipe.xp + TOOL_CRAFT_XP_BONUS,
+    xp: increasedToolCraftXp(definition.recipe.xp),
     gold: increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER,
     inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER }))
   }
@@ -43517,7 +43528,8 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
       const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
       const relativeChanceScale = drop.itemId === HOLY_WATER_ID ? 1 : drop.chance < 1 ? 0.95 : 1;
       const toolBlueprintScale = toolBlueprintItemIds.has(drop.itemId) ? TOOL_BLUEPRINT_DROP_MULTIPLIER : 1;
-      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale * toolBlueprintScale };
+      const adjustedChance = drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale * toolBlueprintScale;
+      return { ...drop, chance: toolBlueprintScale !== 1 ? roundDownToolBlueprintDropChance(adjustedChance) : adjustedChance };
     }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.
     // Scale both the displayed combat stats and cycle time, so 20% more HP

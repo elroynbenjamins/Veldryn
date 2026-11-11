@@ -79,6 +79,67 @@ export function previewTierAffordabilityV15(
   dataComplete:complete,approved:false,canBuyNow:false};
 }
 
+export interface MarketTradeIncomeScenarioV15{
+ tier:EarlyMarketGearTierV15;
+ assumedSoldFraction:number;
+ /** No active approved trade policies or verified player sales exist. */
+ observedPlayerTradeData:false;
+ referenceGoldPerHour:number;
+ hypotheticalResourceGrossGoldPerHour:number;
+ hypotheticalResourceNetGoldPerHour:number;
+ combinedHypotheticalGoldPerHour:number;
+ estimatedFullSetBuyoutHours:number|null;
+ basis:'hypothetical_raw_drop_floor_sales_not_verified_income';
+ representedResources:Array<{
+  itemId:string;expectedUnitsPerHour:number;draftUnitFloor:number;
+  grossGoldPerHour:number;minimumListingLot:number;
+ }>;
+ approved:false;
+ canTradeNow:false;
+}
+/** Long-run illustrative drop income only. This calculation cannot assume
+ * real demand, buyer Gold, offer fill rate, 24-hour lots or actual sale receipts.
+ * 5% is a continuous approximation: live tax is rounded UP per sold listing.
+ * Never use these values to authorize policy or automatic repricing.
+ */
+export function previewMarketTradeIncomeScenarioV15(
+ tier:EarlyMarketGearTierV15,assumedSoldFraction:number,
+):MarketTradeIncomeScenarioV15|undefined{
+ if(!Number.isFinite(assumedSoldFraction)||assumedSoldFraction<0||assumedSoldFraction>1)return undefined;
+ const audit=previewTierAffordabilityV15(tier,'IRONWARDEN','Foundation');
+ const monster=MONSTERS.find(row=>row.id===REFERENCE_HUNT_V15[tier]);
+ if(!audit||!monster)return undefined;
+ const baseline=combatBaselineProjection(monster);
+ const items=new Map<string,{itemId:string;expectedUnitsPerHour:number;draftUnitFloor:number;grossGoldPerHour:number;minimumListingLot:number}>();
+ for(const drop of monster.drops){
+  if(!(drop.chance>0&&drop.chance<=1)||drop.max<drop.min||drop.min<1)continue;
+  const quote=previewMarketResourceBandV14(drop.itemId);
+  if(!quote)continue;
+  const units=baseline.killsPerHour*drop.chance*(drop.min+drop.max)/2;
+  const gross=units*quote.unitMin;
+  const previous=items.get(drop.itemId);
+  items.set(drop.itemId,{itemId:drop.itemId,
+   expectedUnitsPerHour:(previous?.expectedUnitsPerHour??0)+units,
+   draftUnitFloor:quote.unitMin,
+   grossGoldPerHour:(previous?.grossGoldPerHour??0)+gross,
+   minimumListingLot:quote.minimumLot});
+ }
+ const representedResources=[...items.values()].sort((a,b)=>b.grossGoldPerHour-a.grossGoldPerHour||a.itemId.localeCompare(b.itemId))
+  .map(row=>({...row,expectedUnitsPerHour:rounded(row.expectedUnitsPerHour),
+   grossGoldPerHour:rounded(row.grossGoldPerHour)}));
+ const hypotheticalResourceGrossGoldPerHour=[...items.values()].reduce((a,b)=>a+b.grossGoldPerHour,0);
+ const net=hypotheticalResourceGrossGoldPerHour*assumedSoldFraction*.95;
+ const combined=baseline.goldPerHour+net;
+ return {tier,assumedSoldFraction,observedPlayerTradeData:false,
+  referenceGoldPerHour:rounded(baseline.goldPerHour),
+  hypotheticalResourceGrossGoldPerHour:rounded(hypotheticalResourceGrossGoldPerHour),
+  hypotheticalResourceNetGoldPerHour:rounded(net),
+  combinedHypotheticalGoldPerHour:rounded(combined),
+  estimatedFullSetBuyoutHours:audit.dataComplete?rounded(audit.totalCommonQ50MinimumGold/combined):null,
+  basis:'hypothetical_raw_drop_floor_sales_not_verified_income',
+  representedResources,approved:false,canTradeNow:false};
+}
+
 export interface MarketEnhancementInvestmentV15{
  itemId:string;
  rarity:ItemRarity;

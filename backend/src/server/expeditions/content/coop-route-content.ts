@@ -13,7 +13,8 @@ function themed(prefix:string):ContentPools{
   return {battle:ids('BATTLE'),elite:ids('ELITE'),event:ids('EVENT'),forge:ids('FORGE'),shrine:ids('SHRINE'),camp:ids('CAMP'),treasure:ids('TREASURE'),echo:ids('ECHO'),risk:ids('RISK'),merchant:ids('MERCHANT'),secret:ids('SECRET')};
 }
 
-/** Both former dungeon route palettes feed one regional queue; retired IDs remain intact. */
+/** Both former dungeon route palettes feed one regional queue; retired IDs remain intact.
+ * Regional tier-power changes require the canonical co-op Edge bundle to be rebuilt. */
 function mergePools(a:ContentPools,b:ContentPools):ContentPools{
  const merged:Record<NonBossKind,readonly string[]>={...a};
  for(const kind of Object.keys(a) as NonBossKind[])merged[kind]=[...a[kind],...b[kind]];

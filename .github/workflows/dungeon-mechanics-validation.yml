@@ -45,6 +45,9 @@ jobs:
       - name: Install mobile workspace types used by shared backend snapshots
         run: pnpm install --frozen-lockfile
         working-directory: apps/mobile
+      - name: Validate hidden Dungeon Marks Shop catalogue and purchase eligibility
+        run: pnpm test:dungeon-shop-catalog
+        working-directory: backend
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
         working-directory: backend

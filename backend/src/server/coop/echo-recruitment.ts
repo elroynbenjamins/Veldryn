@@ -21,7 +21,7 @@ function missingRoles(controllerRole:CoopRole):CoopRole[]{
 
 export function recruitEligibleEchoes(input:{
  serverSecret:string; requestId:string; controllerAccountId:string; controllerRole:CoopRole; controllerClassId:string;
- contentVersion:string; nowMs:number; profiles:readonly PublishedEcho[];
+ contentVersion:string; nowMs:number; profiles:readonly PublishedEcho[]; minimumCombatPower?:number;
 }):ReadonlyArray<PublishedEcho>{
  const eligible=input.profiles.filter(profile=>
   profile.optedIn
@@ -30,6 +30,7 @@ export function recruitEligibleEchoes(input:{
   && profile.publishedAtMs+COOP_ROGUELITE_CONFIG.echoFreshnessMs>input.nowMs
   && !profile.blockedAccountIds.includes(input.controllerAccountId)
   && profile.snapshot.readiness.ready
+  && (input.minimumCombatPower===undefined||(profile.snapshot.combatPower??-1)>=input.minimumCombatPower)
  );
  const selected:PublishedEcho[]=[]; const usedAccounts=new Set<string>([input.controllerAccountId]); const usedCharacters=new Set<string>();
  const usedDamageClasses=new Set<string>(input.controllerRole==='damage'?[input.controllerClassId.trim().toUpperCase()]:[]);
@@ -47,7 +48,8 @@ export interface QModeAlly {kind:'echo'|'npc';snapshot:FrozenLoadoutSnapshot;ech
 export function recruitQModeAllies(input:Parameters<typeof recruitEligibleEchoes>[0]&{npcSnapshots:readonly FrozenLoadoutSnapshot[]}):ReadonlyArray<QModeAlly>{
  const eligible=input.profiles.filter(echo=>echo.optedIn&&echo.sourceAccountId!==input.controllerAccountId
   &&echo.contentVersion===input.contentVersion&&echo.publishedAtMs+COOP_ROGUELITE_CONFIG.echoFreshnessMs>input.nowMs
-  &&!echo.blockedAccountIds.includes(input.controllerAccountId)&&echo.snapshot.readiness.ready);
+  &&!echo.blockedAccountIds.includes(input.controllerAccountId)&&echo.snapshot.readiness.ready
+  &&(input.minimumCombatPower===undefined||(echo.snapshot.combatPower??-1)>=input.minimumCombatPower));
  const team:QModeAlly[]=[],accounts=new Set([input.controllerAccountId]),characters=new Set<string>();
  const usedDamage=new Set(input.controllerRole==='damage'?[input.controllerClassId.trim().toUpperCase()]:[]);
  for(const role of missingRoles(input.controllerRole)){

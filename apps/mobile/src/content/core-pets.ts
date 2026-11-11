@@ -1,20 +1,23 @@
 import type {CollectibleDefinition,CollectibleTarget} from './collectibles';
 
 export type CorePetRegion='Asterfall'|'Sunscar'|'Frostmarch'|'Ashlands';
+export type CorePetRarity='Normal'|'Rare'|'Epic'|'Mythic';
 
-const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,nativeSize:48|64,activeBps=200,source?:string):CollectibleDefinition=>({
+export const CORE_PET_ACTIVE_BPS:Readonly<Record<CorePetRarity,number>>={Normal:200,Rare:300,Epic:400,Mythic:500};
+
+const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,rarity:CorePetRarity,source:string):CollectibleDefinition=>({
   id,
   kind:'pet',
   name,
   bonusFamilyId:id,
   target,
   ownedBps:50,
-  activeBps,
-  source:source??`${region} pet collection`,
+  activeBps:CORE_PET_ACTIVE_BPS[rarity],
+  source,
   collectionGroup:'core',
   region,
-  nativeSize,
-  rarity:nativeSize===64?'Epic':undefined,
+  nativeSize:rarity==='Epic'||rarity==='Mythic'?64:48,
+  rarity,
   description:`A permanent ${region} pet collectible.`,
 });
 
@@ -26,53 +29,68 @@ const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,n
  * pet-art registry; missing art must never invalidate ownership or bonuses.
  */
 export const CORE_PET_COLLECTIBLES:readonly CollectibleDefinition[]=[
-  pet('PET_001','Pebblemole','Asterfall','gatheringYield',48,200,'Rare discovery while mining Copper Veins'),
-  pet('PET_002','Cinderchip','Asterfall','craftingSpeed',48,200,'Rare discovery while mining Aster-Iron Veins'),
-  pet('PET_003','Twiglet','Asterfall','gatheringYield',48,200,'Rare discovery while cutting Greenwood Trees'),
-  pet('PET_004','Mossback Pup','Asterfall','characterXp',48,200,'Rare drop from Ironwood Wolf'),
-  pet('PET_005','Silverfin','Asterfall','fishingSpeed',48,200,'Rare discovery while fishing Silverbrook Shoals'),
-  pet('PET_006','Lantern Carp Fry','Asterfall','fishingSpeed',48,200,'Rare discovery while fishing Oathscale Pools'),
-  pet('PET_007','Briarbud','Asterfall','herbalismSpeed',48,200,'Rare discovery while gathering Ironbloom'),
-  pet('PET_008','Gloamcap','Asterfall','herbalismSpeed',48,200,'Rare discovery while gathering Cavelichen'),
-  pet('PET_009','Tusklet','Asterfall','dropChance',48,200,'Rare drop from Roadside Boar'),
-  pet('PET_010','Redfeather Chick','Asterfall','cookingSpeed',48,200,'Rare discovery while scouting the Greenfields'),
-  pet('PET_011','Forge Spark','Asterfall','craftingSpeed',48,200,'Rare discovery while mining Oathstone Seams'),
-  pet('PET_012','Mini Wretch','Asterfall','dropChance',48,200,'Rare drop from Lantern Wretch'),
-  pet('PET_013','Mapwing','Asterfall','skillXp',48,200,"Rare discovery while surveying the King's Road"),
-  pet('PET_014','Pack Mimic','Asterfall','materialPreservation',48,200,'Rare discovery while surveying the Old Mines'),
-  pet('PET_015','Coinmouse','Asterfall','gold',48,200,'Rare discovery while mapping Silverbrook'),
-  pet('PET_016','Echo Wisp','Asterfall','actionSpeed',48,200,'Rare drop from Echo Bat'),
-  pet('PET_017','Campfox','Asterfall','skillXp',48,200,'Rare discovery while tracing Ironwood paths'),
-  pet('PET_018','Oathling','Asterfall','defense',64,300,'0.05% drop from Oathglass Revenant'),
+  pet('PET_001','Pebblemole','Asterfall','gatheringYield','Normal','Discovery while mining Copper Veins'),
+  pet('PET_002','Cinderchip','Asterfall','craftingSpeed','Normal','Discovery while mining Aster-Iron Veins'),
+  pet('PET_003','Twiglet','Asterfall','gatheringYield','Normal','Discovery while cutting Greenwood Trees'),
+  pet('PET_004','Mossback Pup','Asterfall','characterXp','Rare','Rare drop from Ironwood Wolf'),
+  pet('PET_005','Silverfin','Asterfall','fishingSpeed','Normal','Discovery while fishing Silverbrook Shoals'),
+  pet('PET_006','Lantern Carp Fry','Asterfall','fishingSpeed','Normal','Discovery while fishing Oathscale Pools'),
+  pet('PET_007','Briarbud','Asterfall','herbalismSpeed','Normal','Discovery while gathering Ironbloom'),
+  pet('PET_008','Gloamcap','Asterfall','herbalismSpeed','Normal','Discovery while gathering Cavelichen'),
+  pet('PET_009','Tusklet','Asterfall','dropChance','Normal','Drop from Roadside Boar'),
+  pet('PET_010','Redfeather Chick','Asterfall','cookingSpeed','Normal','Discovery while scouting the Greenfields'),
+  pet('PET_011','Forge Spark','Asterfall','craftingSpeed','Rare','Rare discovery while mining Oathstone Seams'),
+  pet('PET_012','Mini Wretch','Asterfall','dropChance','Rare','Rare drop from Lantern Wretch'),
+  pet('PET_013','Mapwing','Asterfall','skillXp','Normal',"Discovery while surveying the King's Road"),
+  pet('PET_014','Pack Mimic','Asterfall','materialPreservation','Epic','Epic discovery while surveying the Old Mines'),
+  pet('PET_015','Coinmouse','Asterfall','gold','Normal','Discovery while mapping Silverbrook'),
+  pet('PET_016','Echo Wisp','Asterfall','actionSpeed','Epic','Epic drop from Echo Bat'),
+  pet('PET_017','Campfox','Asterfall','skillXp','Normal','Discovery while tracing Ironwood paths'),
+  pet('PET_018','Oathling','Asterfall','defense','Mythic','0.025% drop from Oathglass Revenant'),
 
-  pet('PET_019','Duneling','Sunscar','gatheringYield',48,200,'Rare drop from Sunscar Scorpion'),
-  pet('PET_020','Mirage Minnow','Sunscar','fishingSpeed',48,200,'Rare discovery while charting the Sunscar glasslands'),
-  pet('PET_021','Sunscarab','Sunscar','craftingSpeed',48,200,'Rare discovery while gathering Sunscale Bloom'),
-  pet('PET_022','Tiny Sphinx','Sunscar','skillXp',64,300,'Rare drop from Dune Oracle'),
-  pet('PET_023','Tyrant Larva','Sunscar','characterXp',64,300,'0.05% drop from Glassbound Sentinel'),
+  pet('PET_019','Duneling','Sunscar','gatheringYield','Rare','Rare drop from Sunscar Scorpion'),
+  pet('PET_020','Mirage Minnow','Sunscar','fishingSpeed','Normal','Discovery while charting the Sunscar glasslands'),
+  pet('PET_021','Sunscarab','Sunscar','craftingSpeed','Rare','Rare discovery while gathering Sunscale Bloom'),
+  pet('PET_022','Tiny Sphinx','Sunscar','skillXp','Epic','Epic drop from Dune Oracle'),
+  pet('PET_023','Tyrant Larva','Sunscar','characterXp','Mythic','0.025% drop from Glassbound Sentinel'),
+  pet('PET_034','Glasswing Jerboa','Sunscar','gold','Normal','Drop from Glass Dune Strider'),
+  pet('PET_035','Mirage Kit','Sunscar','actionSpeed','Rare','Rare discovery while gathering Mirage Saltbloom'),
+  pet('PET_036','Crownscale Hatchling','Sunscar','defense','Epic',"Epic drop from Royal Sandguard in Tyrant's Crown"),
 
-  pet('PET_024','Snowpuff Hare','Frostmarch','actionSpeed',48,200,'Rare discovery while following the Frostmarch bells'),
-  pet('PET_025','Rimecap','Frostmarch','herbalismSpeed',48,200,'Rare discovery while gathering Frostbell Flowers'),
-  pet('PET_026','Bellfin Fry','Frostmarch','fishingSpeed',48,200,'Rare drop from Frostwolf'),
-  pet('PET_027','Choir Pebble','Frostmarch','defense',64,300,'Rare drop from Bellwraith'),
-  pet('PET_028','Wyrmling Flake','Frostmarch','skillXp',64,300,'0.05% drop from Choir Hunter'),
+  pet('PET_024','Snowpuff Hare','Frostmarch','actionSpeed','Normal','Discovery while following the Frostmarch bells'),
+  pet('PET_025','Rimecap','Frostmarch','herbalismSpeed','Rare','Rare discovery while gathering Frostbell Flowers'),
+  pet('PET_026','Bellfin Fry','Frostmarch','fishingSpeed','Rare','Rare drop from Frostwolf'),
+  pet('PET_027','Choir Pebble','Frostmarch','defense','Epic','Epic drop from Bellwraith'),
+  pet('PET_028','Wyrmling Flake','Frostmarch','skillXp','Mythic','0.025% drop from Choir Hunter'),
+  pet('PET_037','Whitepine Owlet','Frostmarch','characterXp','Rare','Rare drop from Snow Treant'),
+  pet('PET_038','Rime Otter','Frostmarch','fishingSpeed','Epic','Epic drop from Lakebound Specter in Shiverlake'),
+  pet('PET_039','Iceglass Minnow','Frostmarch','gatheringYield','Normal','Discovery while fishing the Shiverlake Icefin Pool'),
 
-  pet('PET_029','Coalbug','Ashlands','craftingSpeed',48,200,'Rare drop from Blackglass Mireling'),
-  pet('PET_030','Sootling','Ashlands','materialPreservation',48,200,'Rare discovery while gathering Ashen Myrrh'),
-  pet('PET_031','Ember Eel Fry','Ashlands','fishingSpeed',48,200,'Rare discovery while reading the Ashlands smoke'),
-  pet('PET_032','Forge Imp','Ashlands','craftingSpeed',64,300,'Rare drop from Cinder Titan'),
-  pet('PET_033','Cinder Crownling','Ashlands','dropChance',64,300,'0.05% drop from Ashen Revenant'),
+  pet('PET_029','Coalbug','Ashlands','craftingSpeed','Rare','Rare drop from Blackglass Mireling'),
+  pet('PET_030','Sootling','Ashlands','materialPreservation','Rare','Rare discovery while gathering Ashen Myrrh'),
+  pet('PET_031','Ember Eel Fry','Ashlands','fishingSpeed','Normal','Discovery while reading the Ashlands smoke'),
+  pet('PET_032','Forge Imp','Ashlands','craftingSpeed','Epic','Epic drop from Cinder Titan'),
+  pet('PET_033','Cinder Crownling','Ashlands','dropChance','Mythic','0.025% drop from Ashen Revenant'),
+  pet('PET_040','Emberfin Tadpole','Ashlands','healingEffectiveness','Normal','Discovery while fishing Emberfin Deepwater'),
+  pet('PET_041','Blackglass Newt','Ashlands','defense','Rare','Rare discovery while mining Deep Blackglass Veins'),
+  pet('PET_042','Heartfire Salamander','Ashlands','materialPreservation','Epic','Epic discovery while cutting Heartfire Cinderwood'),
 ];
 
 export const CORE_PET_IDS=new Set(CORE_PET_COLLECTIBLES.map(row=>row.id));
 
 export function validateCorePetCatalog(catalog:readonly CollectibleDefinition[]=CORE_PET_COLLECTIBLES){
-  const expected=Array.from({length:33},(_,index)=>`PET_${String(index+1).padStart(3,'0')}`);
-  const actual=catalog.map(row=>row.id);
-  if(actual.length!==33)throw new Error(`Canonical core pet catalog must contain 33 pets, got ${actual.length}.`);
-  if(actual.join('|')!==expected.join('|'))throw new Error('Canonical core pet IDs must remain PET_001 through PET_033 in order.');
+  const expected=Array.from({length:42},(_,index)=>`PET_${String(index+1).padStart(3,'0')}`).sort();
+  const actual=catalog.map(row=>row.id).sort();
+  if(actual.length!==42)throw new Error(`Canonical core pet catalog must contain 42 pets, got ${actual.length}.`);
+  if(actual.join('|')!==expected.join('|'))throw new Error('Canonical core pet IDs must remain PET_001 through PET_042.');
   for(const row of catalog){
-    if(row.kind!=='pet'||row.collectionGroup!=='core'||row.ownedBps!==50||row.activeBps<200)throw new Error(`Invalid core pet ${row.id}.`);
+    const rarity=row.rarity as CorePetRarity;
+    if(row.kind!=='pet'||row.collectionGroup!=='core'||row.ownedBps!==50||row.activeBps!==CORE_PET_ACTIVE_BPS[rarity])throw new Error(`Invalid core pet ${row.id}.`);
+  }
+  for(const region of ['Asterfall','Sunscar','Frostmarch','Ashlands'] as const){
+    const rows=catalog.filter(row=>row.region===region);
+    const expectedCounts=region==='Asterfall'?{Normal:12,Rare:3,Epic:2,Mythic:1}:{Normal:2,Rare:3,Epic:2,Mythic:1};
+    for(const [rarity,count] of Object.entries(expectedCounts))if(rows.filter(row=>row.rarity===rarity).length!==count)throw new Error(`${region} must contain ${count} ${rarity} pets.`);
   }
 }
 

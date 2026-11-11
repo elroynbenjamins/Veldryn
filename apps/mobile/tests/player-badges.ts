@@ -57,7 +57,8 @@ for(const path of ['FriendsScreen','RankingsScreen'])
 const profile=read('src/components/ProfileEditor.tsx'),screen=read('src/screens/ProfileCustomizeScreen.tsx'),settings=read('src/components/PlayerBadgeSettings.tsx');
 ok(profile.includes("'Badges'|'Name Style'")&&profile.includes("tab==='Badges'&&<PlayerBadgeSettings/>"),'Badges are their own appearance tab');
 ok(!profile.includes("<PlayerBadgeSettings/>\n   <PlayerNameStyleEditor"),'badge chooser was removed from Name Style');
-ok(screen.includes('badge'),'profile introduction mentions badges');
+const chips=read('src/components/profile/ProfileWardrobeChips.tsx'),look=read('src/components/profile/ProfileLookPanel.tsx');
+ok(chips.includes("profileT(language,\"Badges\")")&&look.includes('<PlayerBadgeSettings/>'),'Customize Profile reaches the badge chooser from its own category chips');
 ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('COLLECTIBLE_PLAYER_BADGE_IDS.map'),'new gallery includes all six collectibles and four supporter tiers');
 ok(settings.includes('badges.setEquipped(equipped===id?null:id)'),'single tap replaces or unequips badge');
 ok(settings.includes("staff badges appear automatically".replace('staff','Staff')),'staff identity is explained');

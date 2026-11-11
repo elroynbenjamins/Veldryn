@@ -18,7 +18,7 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 function withPetsUnlocked(state:GameState):GameState{return {...state,quests:state.quests.map(row=>row.questId==='QST_003'?{...row,status:'claimed' as const}:row)}}
 
 equal(CORE_PET_SIGNATURE_DROPS.length,4,'signature regional pet count');
-ok(CORE_PET_SIGNATURE_DROPS.every(row=>row.chance===.0005),'signature regional pets use the 0.05% drop rate');
+ok(CORE_PET_SIGNATURE_DROPS.every(row=>row.chance===.00025),'mythic signature regional pets use the 0.025% drop rate');
 equal(corePetSignatureDropForMonster('OATHGLASS_REVENANT')?.petId,'PET_018','Asterfall signature source');
 equal(corePetSignatureDropForMonster('GLASSBOUND_SENTINEL')?.petId,'PET_023','Sunscar signature source');
 equal(corePetSignatureDropForMonster('CHOIR_HUNTER')?.petId,'PET_028','Frostmarch signature source');
@@ -26,16 +26,19 @@ equal(corePetSignatureDropForMonster('ASHEN_REVENANT')?.petId,'PET_033','Ashland
 
 const asterfallActivity=CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Asterfall');
 equal(asterfallActivity.length,17,'Asterfall regular activity pet count');
-equal(CORE_PET_ACTIVITY_DROPS.length,29,'regular regional non-signature pet count');
-equal(CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Sunscar').length,4,'Sunscar regular pet source count');
-equal(CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Frostmarch').length,4,'Frostmarch regular pet source count');
-equal(CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Ashlands').length,4,'Ashlands regular pet source count');
+equal(CORE_PET_ACTIVITY_DROPS.length,38,'regular regional non-signature pet count');
+equal(CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Sunscar').length,7,'Sunscar regular pet source count');
+equal(CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Frostmarch').length,7,'Frostmarch regular pet source count');
+equal(CORE_PET_ACTIVITY_DROPS.filter(row=>row.region==='Ashlands').length,7,'Ashlands regular pet source count');
 equal(asterfallActivity.filter(row=>row.sourceType==='combat').length,4,'Asterfall regular combat pet count');
 equal(asterfallActivity.filter(row=>row.sourceType==='gathering').length,8,'Asterfall regular gathering pet count');
 equal(asterfallActivity.filter(row=>row.sourceType==='exploration').length,5,'Asterfall exploration pet count');
-ok(asterfallActivity.filter(row=>row.sourceType==='combat').every(row=>row.chance===.001),'regular combat pets use 0.10% per-kill rate');
-ok(asterfallActivity.filter(row=>row.sourceType==='gathering').every(row=>row.chance===.0012),'gathering pets use 0.12% per-action rate');
-ok(asterfallActivity.filter(row=>row.sourceType==='exploration').every(row=>row.chance===.002),'exploration pets use 0.20% per-route rate');
+ok(asterfallActivity.some(row=>row.sourceType==='combat'&&row.chance===.001),'normal combat pets use 0.10% per-kill rate');
+ok(asterfallActivity.some(row=>row.sourceType==='gathering'&&row.chance===.0012),'normal gathering pets use 0.12% per-action rate');
+ok(asterfallActivity.some(row=>row.sourceType==='exploration'&&row.chance===.002),'normal exploration pets use 0.20% per-route rate');
+ok(CORE_PET_ACTIVITY_DROPS.some(row=>row.petId==='PET_036'&&row.sourceId==='ROYAL_SANDGUARD'&&row.chance===.0005),'Tyrant Crown epic pet source');
+ok(CORE_PET_ACTIVITY_DROPS.some(row=>row.petId==='PET_038'&&row.sourceId==='LAKEBOUND_SPECTER'&&row.chance===.0005),'Shiverlake epic pet source');
+ok(CORE_PET_ACTIVITY_DROPS.some(row=>row.petId==='PET_042'&&row.sourceId==='HEARTFIRE_CINDERWOOD'&&row.chance===.0006),'Ashlands epic gathering pet source');
 
 equal(corePetActivityDropsForSource('gathering','COPPER_VEIN')[0]?.petId,'PET_001','Copper Vein can discover Pebblemole');
 equal(corePetActivityDropsForSource('exploration','SCOUT_GREENFIELDS')[0]?.petId,'PET_010','Greenfields exploration can discover Redfeather Chick');

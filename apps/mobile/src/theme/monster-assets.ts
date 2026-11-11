@@ -6,6 +6,7 @@ export const monsterPortraits:Record<MonsterDef['id'],ImageSourcePropType>={
  ANCIENT_TREANT:require('../../assets/monsters/ancient_treant.webp'),CAVE_SKITTER:require('../../assets/monsters/cave_skitter.webp'),IRONBACK_MOLE:require('../../assets/monsters/ironback_mole.webp'),ECHO_BAT:require('../../assets/monsters/echo_bat.webp'),RUNEBOUND_MINER:require('../../assets/monsters/runebound_miner.webp'),
  GLOAM_MITE:require('../../assets/monsters/gloam_mite.webp'),LANTERN_WRETCH:require('../../assets/monsters/lantern_wretch.webp'),DROWNED_PILGRIM:require('../../assets/monsters/drowned_pilgrim.webp'),OATHBOUND_SQUIRE:require('../../assets/monsters/oathbound_squire.webp'),BANNER_SHADE:require('../../assets/monsters/banner_shade.webp'),
  FALLEN_SENTINEL:require('../../assets/monsters/fallen_sentinel.webp'),OATHGLASS_REVENANT:require('../../assets/monsters/oathglass_revenant.webp'),FALLEN_KNIGHT:require('../../assets/monsters/fallen_knight.webp'),
+ SUNSCAR_SCORPION:require('../../assets/monsters/sunscar_scorpion.png'),DUNE_ORACLE:require('../../assets/monsters/dune_oracle.png'),GLASSBOUND_SENTINEL:require('../../assets/monsters/glassbound_sentinel.png'),
 };
 
 export const REGIONAL_MONSTER_CELL=48;

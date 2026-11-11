@@ -14,6 +14,7 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {PublicProfileScene} from './PublicProfileScene';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {useSelfProfileGuild} from '../online/useSelfProfileGuild';
+import {usePlayerBadges} from '../online/PlayerBadgeProvider';
 
 const audienceRows:ReadonlyArray<{id:ProfilePreviewAudience;label:string;detail:string}>=[
  {id:'public',label:'Public viewer',detail:'Signed-in player outside your guild'},
@@ -25,7 +26,7 @@ const visibilityLabel={public:'Public',guild:'Guild only',private:'Private'} as 
 const words=(value?:string|null)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Not selected';
 
 export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose}:{visible:boolean;state:GameState;identityDraft:ProfileExtensionSelfV43|null;onClose:()=>void}){
- const guild=useSelfProfileGuild(state,visible);
+ const guild=useSelfProfileGuild(state,visible),badges=usePlayerBadges();
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
  const [audience,setAudience]=useState<ProfilePreviewAudience>('public');
@@ -42,6 +43,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   displayName:character.name,
   visibility,
   nameStyle:effectivePlayerNameStyle(state),
+  playerBadges:badges.identity,
   character:{id:character.id,name:character.name,classId:character.classId,level:character.level,bodyPresentation:character.bodyPresentation??'male',profileIconId:character.profileIconId??''},
   title:character.profileTitle??'New Adventurer',
   backgroundId:character.profileBackgroundId??'asterfall-night',

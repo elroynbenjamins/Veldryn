@@ -69,7 +69,8 @@ for(const language of SUPPORTED_LANGUAGES){
 const owned=[
   'screens/ClassSelectScreen.tsx','screens/CharacterScreen.tsx','screens/ProfileScreen.tsx','screens/ProfileCustomizeScreen.tsx',
   ...['ClassCombatOverview','ClassHeroCarousel','CreationChrome','CreationLanguagePicker'].map(n=>'components/creation/'+n+'.tsx'),
-  ...['ProfileEditor','ProfileAudiencePreviewModal','ProfileFavoriteHighlights','ProfileShowcaseSection','PlayerNameStyleEditor','PlayerProfileCard','PublicProfileScene','AccountRosterPanel','AsterfallWelcomeModal','FirstSessionTutorialPopup','FeatureUnlockPopup','CustomizationUnlockPopup','ClassSkillAffinityNote','OnlineProfileExtensionPanel','ProfileScenePreview'].map(n=>'components/'+n+'.tsx'),
+  ...['ProfileEditor','ProfileAudiencePreviewModal','ProfileFavoriteHighlights','ProfileShowcaseSection','PlayerNameStyleEditor','PlayerProfileCard','PublicProfileScene','AccountRosterPanel','AsterfallWelcomeModal','FirstSessionTutorialPopup','FeatureUnlockPopup','CustomizationUnlockPopup','ClassSkillAffinityNote','ProfileScenePreview','NameColorPicker'].map(n=>'components/'+n+'.tsx'),
+  ...['ProfileStage','ProfileLookPanel','ProfileIdentityPanel','ProfileShowcasePanel','ProfileUnlockSheet','ProfileWardrobeChips'].map(n=>'components/profile/'+n+'.tsx'),
 ];
 const translateCall=/(?:profile(?:T|Text|SourceText)|creation(?:T|Text)|\bct)\(/;
 const technical=new Set(['key','accessibilityRole','pointerEvents','animationType','resizeMode','keyboardType','autoCapitalize','returnKeyType','presentation','tone','slot','classId','skillId','regionId','backgroundId','testID']);
@@ -91,7 +92,7 @@ for(const file of owned){
 const source=file=>fs.readFileSync(path.join(root,'src',file),'utf8');
 assert.ok(source('screens/ClassSelectScreen.tsx').includes('language=languageProp??gameLanguage'));
 assert.ok(source('components/ClassSkillAffinityNote.tsx').includes('language=languageProp??gameLanguage'));
-assert.ok(source('components/OnlineProfileExtensionPanel.tsx').includes('setBio(text.slice(0,160))'));
+assert.ok(source('online/useProfileExtensionDraft.ts').includes('setBioState(text.slice(0,160))'));
 assert.ok(source('components/ProfileEditor.tsx').includes("profileTitle:title.trim()||'New Adventurer'"));
 assert.ok(source('components/ProfileAudiencePreviewModal.tsx').includes('{profile.bio}'));
 assert.ok(source('components/PublicProfileScene.tsx').includes('{profile.title}'));

@@ -272,6 +272,7 @@
   ".core-build/apps/mobile/tests/working-toward-v2.js",
   ".core-build/apps/mobile/tests/profile-social-identity.js",
   ".core-build/apps/mobile/tests/profile-customization-polish.js",
+  ".core-build/apps/mobile/tests/profile-wardrobe.js",
   ".core-build/apps/mobile/tests/profile-attention.js",
   ".core-build/apps/mobile/tests/profile-showcase-prestige.js",
   ".core-build/apps/mobile/tests/social-identity-presentation.js",

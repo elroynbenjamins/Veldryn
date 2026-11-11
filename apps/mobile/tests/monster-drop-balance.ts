@@ -20,7 +20,7 @@ function closeTo(actual:number|undefined,expected:number,message:string){
 }
 
 for(const source of HOLY_WATER_SOURCES){
- closeTo(dropChance(source.monsterId,HOLY_WATER_ID),source.chance*.95,`${source.monsterId} Holy Water is 5% less likely`);
+ closeTo(dropChance(source.monsterId,HOLY_WATER_ID),source.chance,`${source.monsterId} Holy Water uses the final whole-percent Faith rate without a second 5% cut`);
 }
 closeTo(dropChance('MOSS_RAT','MOSS_FIBER'),.55*.5*.95,'Ordinary material keeps the 50% adjustment followed by the 5% reduction');
 closeTo(dropChance('ANCIENT_TREANT','IRONWOOD_LOG'),.52*.5*.95,'Original Ironwood Forest source remains at reduced probability');
@@ -44,4 +44,4 @@ for(const bossDrop of monster('FALLEN_KNIGHT').drops.filter(drop=>drop.chance===
  closeTo(bossDrop.chance,1,`Guaranteed boss drop ${bossDrop.itemId} remains guaranteed`);
 }
 check(MONSTERS.every(m=>m.drops.every(d=>d.chance>=0&&d.chance<=1)),'All combat drop probabilities stay valid');
-console.log('PASS monster loot balance: -5% random chances, three enemy removals, guaranteed bosses protected');
+console.log('PASS monster loot balance: final Faith Holy Water odds, -5% other random chances, three enemy removals, guaranteed bosses protected');

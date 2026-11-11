@@ -135,7 +135,7 @@ const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const homeStage=fs.readFileSync('src/components/BattleStage.tsx','utf8');
 assert.ok(homeStage.includes('activeCombatHitProjection('),'Home encounter preview must use actual hunt events');
 assert.ok(homeStage.includes('!motion.enabled||isLive'),'Home must not play cosmetic hits over live fight events');
-assert.ok(homeStage.includes('current={fight?.enemyHp??'),'Home must display projected real enemy HP without rounding live damage');
+assert.ok(homeStage.includes('current={displayStat(fight?.enemyHp??view.enemyHp)}'),'Home displays authoritative projected enemy HP on the canonical x10 UI scale');
 const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
 assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');

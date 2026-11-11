@@ -2,7 +2,7 @@ import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progress
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
 import {mobileRawGemItemIdV1} from './gems-v1';
 import {itemDef} from './items';
-import {TOOL_BLUEPRINT_ITEMS,TOOL_BLUEPRINT_DROP_MULTIPLIER} from './gathering-tools';
+import {TOOL_BLUEPRINT_ITEMS,TOOL_BLUEPRINT_DROP_MULTIPLIER,roundDownToolBlueprintDropChance} from './gathering-tools';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;areaId?:string;regionalAreaAutoUnlock?:boolean;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -90,7 +90,9 @@ export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
     const ordinaryMaterial=!monster.boss&&drop.itemId!==HOLY_WATER_ID&&itemDef(drop.itemId).type==='material';
     const relativeChanceScale=drop.itemId===HOLY_WATER_ID?1:drop.chance<1?.95:1;
     const toolBlueprintScale=toolBlueprintItemIds.has(drop.itemId)?TOOL_BLUEPRINT_DROP_MULTIPLIER:1;
-    return {...drop,chance:drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale*toolBlueprintScale};
+    const adjustedChance=drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale*toolBlueprintScale;
+    // Tool-only final rates: T2 3.5625% → 3.5%; T3 1.425% → 1.4%; T4 0.7125% → 0.7%.
+    return {...drop,chance:toolBlueprintScale!==1?roundDownToolBlueprintDropChance(adjustedChance):adjustedChance};
   }),
   // Idle combat uses authored cycle duration rather than HP to calculate kills.
   // Scale both the displayed combat stats and cycle time, so 20% more HP

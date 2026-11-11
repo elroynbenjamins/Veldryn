@@ -3,7 +3,7 @@ import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-
 import {upgradeGoldCost} from '../../../apps/mobile/src/core/equipment-enhancement';
 import {
  MARKET_AFFORDABILITY_RELEASED_V15,
- previewTierAffordabilityV15,previewEnhancementInvestmentV15,
+ previewTierAffordabilityV15,previewMarketTradeIncomeScenarioV15,previewEnhancementInvestmentV15,
  previewGearScarcityContextV15,previewMarketExactGearReviewV15,
 } from '../market-affordability-v15';
 
@@ -37,6 +37,34 @@ for(const tier of tiers){
   hours:quote.estimatedHoursForFullBuyoutAtTimedReference,
   missing:quote.missingPriceItemIds.length});
 }
+const incomeScenarios=[];
+for(const tier of tiers){
+ const noSales=previewMarketTradeIncomeScenarioV15(tier,0);
+ const quarter=previewMarketTradeIncomeScenarioV15(tier,.25);
+ const all=previewMarketTradeIncomeScenarioV15(tier,1);
+ assert(noSales&&quarter&&all);
+ assert.equal(noSales.approved,false);
+ assert.equal(noSales.canTradeNow,false);
+ assert.equal(noSales.observedPlayerTradeData,false);
+ assert.equal(noSales.hypotheticalResourceNetGoldPerHour,0);
+ assert.equal(noSales.referenceGoldPerHour,noSales.combinedHypotheticalGoldPerHour);
+ assert.equal(noSales.basis,'hypothetical_raw_drop_floor_sales_not_verified_income');
+ assert.equal(noSales.estimatedFullSetBuyoutHours,previewTierAffordabilityV15(tier)!.estimatedHoursForFullBuyoutAtTimedReference);
+ assert(quarter.combinedHypotheticalGoldPerHour>=noSales.combinedHypotheticalGoldPerHour);
+ assert(all.combinedHypotheticalGoldPerHour>=quarter.combinedHypotheticalGoldPerHour);
+ assert(all.estimatedFullSetBuyoutHours!<=quarter.estimatedFullSetBuyoutHours!);
+ assert(all.representedResources.every(row=>row.expectedUnitsPerHour>0&&row.draftUnitFloor>0&&row.minimumListingLot>=1));
+ incomeScenarios.push({tier,combatOnlyGoldPerHour:noSales.referenceGoldPerHour,
+  grossPotentialMaterialGoldPerHour:all.hypotheticalResourceGrossGoldPerHour,
+  quarterSoldNetGoldPerHour:quarter.hypotheticalResourceNetGoldPerHour,
+  quarterSoldSetHours:quarter.estimatedFullSetBuyoutHours,
+  hypotheticalAllSoldSetHours:all.estimatedFullSetBuyoutHours});
+}
+assert.equal(previewMarketTradeIncomeScenarioV15('T1',-1),undefined);
+assert.equal(previewMarketTradeIncomeScenarioV15('T1',1.01),undefined);
+assert.equal(previewMarketTradeIncomeScenarioV15('T1',Number.NaN),undefined);
+console.log('V15_HYPOTHETICAL_DROP_SALE_SCENARIOS='+JSON.stringify(incomeScenarios));
+
 const recipe=V33_EQUIPMENT_RECIPES.find(x=>x.v33EquipmentTier==='T1'&&x.classId==='IRONWARDEN'&&x.v33Path==='Foundation');
 assert(recipe);
 const itemId=recipe.output.itemId;

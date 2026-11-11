@@ -77,7 +77,7 @@ export class QModeService{
    applyRoomBoon(run,selectedBoon as RoomBoonId);
   }else if(input.boonId)throw new Error('invalid_boon_choice');
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
-  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1);
+  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1),enemyHpMultiplier:regional?.hp,enemyDefenseMultiplier:regional?.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;

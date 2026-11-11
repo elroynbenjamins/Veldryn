@@ -69,7 +69,7 @@ jobs:
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify the two-path equipment and Exploration balance regressions
-        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance
+        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery
       - name: Rebuild canonical generated bundles and commit them on top of current main
         shell: bash
         run: |

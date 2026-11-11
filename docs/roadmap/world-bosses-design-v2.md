@@ -117,6 +117,18 @@ There is **one account-wide, nontradeable World Sigil wallet** shared across eve
 
 The three proposed pet names and exact artwork are **provisional**; the **common prices 120 / 180 / 240 / 360 are retained**. Each boss has four separately owned item IDs. All rewards are account-wide, purchases are one-time per account for cosmetic/pet entitlements and ownership persists across seasons. Previously purchased cosmetics remain equippable even while that boss theme is not featured.
 
+**Accepted provisional rarity/buff design (2026-11-11; not live):** All three World Boss **pets, backgrounds, borders, and profile icons are Epic**. Icons are cosmetic only. Bonuses follow the ordinary Veldryn collectible formula; the owned bonus is permanent and account-wide, while the active bonus requires equipping the item in its corresponding slot.
+
+| Boss | Epic pet (360 Sigils) | Epic background (240 Sigils) | Epic border (180 Sigils) | Epic icon (120 Sigils) |
+| --- | --- | --- | --- | --- |
+| Hollowroot | **Heartwood Sprout**: +3% Healing Effectiveness active; +0.50% owned | **Heartwood Sanctuary**: +2% Gathering Yield active; +0.50% owned | Living roots: +2% Herbalism Speed active; +0.50% owned | Amber-heartwood icon; no buff |
+| Sunscar | **Sunscale Hatchling**: +3% Attack active; +0.50% owned | **Scorched Dominion**: +2% ordinary combat Gold active; +0.50% owned | Bronze-and-ember border: +2% Crafting Speed active; +0.50% owned | Desert wyrm icon; no buff |
+| Frostmarch | **Rimebound Wisp**: +3% Defense active; +0.50% owned | **Frozen Citadel**: +2% Action Speed active; +0.50% owned | Ice-rune border: +2% Fishing Speed active; +0.50% owned | Frost-rune icon; no buff |
+
+The +0.50% owned bonus in each row applies to the **same stat as its active bonus**, irrespective of whether the reward is selected. Only one selected pet, background, and border can contribute their equipped active bonus. Pet bonuses use +3% active rather than a new stronger World Boss tier; backgrounds and borders use +2% active. Existing collectible-family deduplication and target caps must govern all ownership and active bonuses; no bypass, extra stack, or separate World Boss bonus multiplier. Profile icons provide **zero passive and zero active buffs**.
+
+**Background art direction:** Heartwood Sanctuary is a glowing amber forest grove with gentle spore movement; Scorched Dominion is a desert ruin with shifting embers; Frozen Citadel is a snow-covered, glacial stronghold. Subtle motion is optional and must support a static reduced-motion fallback. All three backgrounds remain **profile cosmetics**, not combat scenes. Names and art are provisional; this is approval to record and later implement the design, not activation of currency, shop, assets, or buffs.
+
 **Pet balance:** use the existing active/passive pet bonus budget, with no stronger permanent stats than comparable pets. Equip only one active pet; multiple World Boss pets must not stack their power. Their distinction is visual. **Prestige cosmetics** remain deferred at **480–600 Sigils**, pending telemetry. Never sell Sigils or extra attempts for real money; do not make the exclusive pet a random loot box.
 
 **Shop UI and backend rules:** featured boss art, all four previews and prices, balance, ownership indicators, rotation countdown, permanent utility shelf, and Archive; server-authoritative wallet debits, unique account entitlement grants, catalog price/version and active-window checks, event purchase limits for utilities, and replay-safe idempotent transaction receipts. A past theme is preview-only until it returns. No FOMO confiscation.

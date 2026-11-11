@@ -5,7 +5,7 @@ import {craftedGearInstances} from './crafted-gear-instances';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from './equipment-enhancement';
 import {equipmentPouch} from './equipment-pouch';
-import {equipmentSalvageReward} from './equipment-salvage';
+import {equipmentSalvageReward,equipmentSalvageRewards} from './equipment-salvage';
 import type {GameState,GearSlot,ItemStack} from './types';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
@@ -171,6 +171,7 @@ export function salvageEquipmentPouchSelected(state:GameState,ids:readonly strin
 export interface EquipmentPouchSalvageCandidate{
  id:string;index:number;itemId:string;eligible:boolean;reason?:string;
  reward?:{itemId:string;quantity:number};
+ rewards?:ItemStack[];
 }
 
 /** Simulate candidates from the highest pouch slot down, matching settlement order.
@@ -179,14 +180,16 @@ export function equipmentPouchSalvageCandidates(state:GameState,onlyIds?:readonl
  const original=equipmentPouch(state).stacks,result:EquipmentPouchSalvageCandidate[]=[];
  const requested=onlyIds?new Set(onlyIds):null;
  let candidateState=state;
+ const copies=new Map(craftedGearInstances(state).map(copy=>[copy.id,copy]));
  for(let index=original.length-1;index>=0;index--){
    const stack=original[index],id=equipmentPouchSaleId(stack,index),reward=equipmentSalvageReward(stack.itemId);
+   const rewards=equipmentSalvageRewards(stack.itemId,stack.instanceId?copies.get(stack.instanceId):undefined);
    if(requested&&!requested.has(id))continue;
    try{
      const next=salvageEquipmentPouchSelected(candidateState,[id]);
      candidateState=next;
      result.push({id,index,itemId:stack.itemId,eligible:true,
-       reward:reward?{itemId:reward.itemId,quantity:reward.quantity}:undefined});
+       reward:reward?{itemId:reward.itemId,quantity:reward.quantity}:undefined,rewards});
    }catch(error){
      result.push({id,index,itemId:stack.itemId,eligible:false,
        reason:error instanceof Error?error.message:'Protected equipment'});

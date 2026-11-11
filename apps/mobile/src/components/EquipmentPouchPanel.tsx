@@ -57,7 +57,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const salvageCandidate=selectedIndex===null?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
  const salvageMaterials=(rows:typeof salvageCandidates)=>{
   const amounts=new Map<string,number>();
-  for(const row of rows)if(row.reward)amounts.set(row.reward.itemId,(amounts.get(row.reward.itemId)??0)+row.reward.quantity);
+  for(const row of rows)for(const reward of row.rewards??(row.reward?[row.reward]:[]))amounts.set(reward.itemId,(amounts.get(reward.itemId)??0)+reward.quantity);
   return [...amounts].map(([id,amount])=>`${amount.toLocaleString(language)}× ${localizedItemName(language,id)}`).join(' · ');
  };
  const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
@@ -221,7 +221,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
      {salvageRecipe?<GameButton compact tone="secondary" title={salvageCandidate?.eligible?p('Salvage · {count}× {name}',{count:salvageRecipe.quantity,name:localizedItemName(language,salvageRecipe.itemId)}):p('Protected')} disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/>:null}
     </View>
     <Text style={s.meta}>{p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')} {p('Enhanced, socketed and loadout gear cannot be sold.')}</Text>
-    {salvageRecipe&&!salvageCandidate?.eligible?<Text style={s.saleWarning}>{p(salvageCandidate?.reason??'This equipment is protected.')}</Text>:null}
+    {salvageCandidate?.eligible&&salvageCandidate.rewards&&salvageCandidate.rewards.length>1?<Text style={s.meta}>{salvageMaterials([salvageCandidate])}</Text>:null}
+     {salvageRecipe&&!salvageCandidate?.eligible?<Text style={s.saleWarning}>{p(salvageCandidate?.reason??'This equipment is protected.')}</Text>:null}
    </ScrollView>:null}
   </GameModalSurface>
  </View>;

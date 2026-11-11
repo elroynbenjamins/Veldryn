@@ -3,7 +3,7 @@
  * catalog remains registered so existing saves can still be read safely, but
  * tiers without finished artwork cannot be crafted, selected, or surfaced.
  */
-export const MAX_RELEASED_EQUIPMENT_TIER=4;
+export const MAX_RELEASED_EQUIPMENT_TIER=5;
 
 export function equipmentTierNumber(tier:string|undefined){
   return Number(String(tier??'').replace(/\D/g,''))||0;

@@ -115,7 +115,7 @@ export default function BrowserReview(){
    <TextInput accessibilityLabel="Search review screens" value={query} onChangeText={setQuery} placeholder="Search screens…" placeholderTextColor="#9aadc5" style={s.search}/>
    <Text style={s.count}>{filtered.length} / {routes.length}</Text>
   </View>
-  <ScrollView contentContainerStyle={s.menu} showsVerticalScrollIndicator={false}>
+  <ScrollView contentContainerStyle={s.menu} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {groups.map(g=>{
     const items=filtered.filter(item=>item.group===g);
     if(!items.length)return null;

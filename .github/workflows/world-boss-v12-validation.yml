@@ -1,0 +1,53 @@
+name: Hidden World Boss V12 validation
+
+# Test-only: no Supabase connection, deployment, wallet or production feature.
+on:
+  pull_request:
+    paths:
+      - 'backend/online/world-boss-loadout-v12.ts'
+      - 'backend/src/server/combat/world-boss-*.ts'
+      - 'apps/mobile/tests/world-boss-*.ts'
+      - 'apps/mobile/tsconfig.core.json'
+      - '.github/workflows/world-boss-v12-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  world-boss-fixture-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck world boss and game fixture bridge
+        run: pnpm typecheck:core
+      - name: Compile hidden game core test fixtures
+        run: pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+      - name: Typecheck Node-backed equipment and companion integration
+        run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
+      - name: Compile Node-backed real-loadout integration suite
+        run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
+      - name: Run v9-v12 World Boss tests
+        run: |
+          set -e
+          for suite in \
+            world-boss-verified-roster-v9 \
+            world-boss-atomic-emulator-v9 \
+            world-boss-reservation-v10 \
+            world-boss-war-camp-v11 \
+            world-boss-real-loadout-v12 \
+            world-boss-supply-economy-v12 \
+            world-boss-guard-role-v13
+          do
+            node ".core-build/apps/mobile/tests/${suite}.js"
+          done

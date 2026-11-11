@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-dungeon-shop"
+  },
+  "include": [
+    "src/server/expeditions/dungeon-shop-catalog-v1.ts",
+    "src/server/expeditions/__tests__/dungeon-shop-catalog-v1.ts"
+  ]
+}

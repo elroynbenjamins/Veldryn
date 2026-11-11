@@ -1,0 +1,61 @@
+name: Hidden Player Market price & affordability validation
+on:
+  pull_request:
+    paths:
+      - 'backend/online/market-price-bands-v10.ts'
+      - 'backend/online/market-economy-policy-v11.ts'
+      - 'backend/online/market-recipe-aware-price-v14.ts'
+      - 'backend/online/market-affordability-v15.ts'
+      - 'backend/online/tests/market-*.ts'
+      - 'backend/online/tests/player-market-*.ts'
+      - 'backend/package.json'
+      - 'apps/mobile/src/content/equipment-recipes-v33.ts'
+      - 'apps/mobile/src/content/skills.ts'
+      - 'apps/mobile/src/content/alchemy.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/core/crafted-gear-rarity.ts'
+      - 'apps/mobile/src/core/crafted-gear-instances.ts'
+      - 'apps/mobile/src/core/equipment-enhancement.ts'
+      - '.github/workflows/hidden-market-pricing-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/online/market-price-bands-v10.ts'
+      - 'backend/online/market-economy-policy-v11.ts'
+      - 'backend/online/market-recipe-aware-price-v14.ts'
+      - 'backend/online/market-affordability-v15.ts'
+      - 'backend/online/tests/market-*.ts'
+      - 'backend/online/tests/player-market-*.ts'
+      - 'backend/package.json'
+      - 'apps/mobile/src/content/equipment-recipes-v33.ts'
+      - 'apps/mobile/src/content/skills.ts'
+      - 'apps/mobile/src/content/alchemy.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/core/crafted-gear-rarity.ts'
+      - 'apps/mobile/src/core/crafted-gear-instances.ts'
+      - 'apps/mobile/src/core/equipment-enhancement.ts'
+      - '.github/workflows/hidden-market-pricing-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  draft-price-guard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Verify dormant custody, pricing, tax, recipe costs and V15 Gold benchmarks
+        run: pnpm --dir ../../backend test:market-readiness

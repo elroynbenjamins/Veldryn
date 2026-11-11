@@ -44,12 +44,12 @@ Use the least-cost **complete** recipe among valid alternatives, not a recipe wi
 | Craftable material | V10 minimum | V14 draft minimum | V14 draft maximum |
 | --- | ---: | ---: | ---: |
 | Copper Ingot | 18 | 20 | 108 |
-| Aster-Iron Ingot | 45 | 57 | 270 |
-| Sunstone Ingot | 180 | 297 | 1,188 |
+| Aster-Iron Ingot | 45 | 58 | 270 |
+| Sunstone Ingot | 180 | 298 | 1,192 |
 | Frostiron Ingot | 320 | 676 | 2,704 |
 | Blackglass Ingot | 420 | 1,389 | 5,556 |
 | Verdant Binding Resin | Not priced | 193 | 772 |
-| Ironwood Binding Resin | Not priced | 327 | 1,308 |
+| Ironwood Binding Resin | Not priced | 328 | 1,312 |
 | Dune Binding Resin | Not priced | 548 | 2,192 |
 | Glassbound Binding Resin | Not priced | 974 | 3,896 |
 

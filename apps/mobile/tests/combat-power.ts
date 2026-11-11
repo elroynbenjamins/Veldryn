@@ -30,7 +30,7 @@ equal(boostedPower.companion,Math.floor(boostedPower.total*MAX_COMPANION_COMBAT_
 equal(boostedPower.rows.reduce((sum,row)=>sum+row.value,0),boostedPower.total,'redistributed source rows must reconcile');
 const noGear={...state,character:{...state.character!,equipment:{}}};
 const noGearPower=combatPowerRating(noGear);
-ok(withCompanion.player>=noGearPower.player,'Equipped gear must contribute to real player Combat Power');
+ok(withCompanion.player>=noGearPower.player,'Equipped gear must not reduce the personal Combat Power rating');
 equal(noGearPower.rows.find(row=>row.id==='build')?.value,0,
  'No equipment means no gear/set/gem build contribution');
 

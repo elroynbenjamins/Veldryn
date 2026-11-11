@@ -1,18 +1,24 @@
 import {claimActivity,claimSeasonalContract,createCharacter,newGame,startCombat,startGathering,startExploration,craftRecipe} from '../src/core/game';
 import {QUEST_RARITIES,seasonalQuestBoard,seasonalQuestCache,recordSeasonalActivity,normalizeSeasonalProgress,seasonalQuestRewardOptions} from '../src/core/seasonal-quests';
+import {FAITH_TIERS,HOLY_WATER_ID} from '../src/content/faith';
+import {startFaithPractice} from '../src/core/faith';
 import {itemDef} from '../src/content/items';
 import {normalizeSave} from '../src/core/save-normalization';
 import {CLASSES} from '../src/content/classes';
 import type {GameState} from '../src/core/types';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
+function creditAll(state:GameState,units:number,nowMs:number):GameState{
+ return (['combat','gathering','crafting','exploration','faith'] as const).reduce((current,tag)=>recordSeasonalActivity(current,tag,units,nowMs),state);
+}
 const state=createCharacter(newGame(0),'BASTION','Tester');
 const date=new Date('2026-09-05T12:00:00Z'),daily=seasonalQuestBoard(state,'daily',date),a=seasonalQuestBoard(state,'weekly',date),b=seasonalQuestBoard(state,'weekly',date),m=seasonalQuestBoard(state,'monthly',date);
 if(daily.length!==2||a.length!==3||m.length!==4)throw new Error('Seasonal board sizes are incorrect');
-if(daily[0].required!==27||a[0].required!==90||m[0].required!==240)throw new Error('Bastion daily/weekly/monthly goals must use 2×/3×/4× baseline scaling');
-if([daily,a,m].flat().some(row=>row.tag==='equipment'))throw new Error('Challenges must use repeatable action counters, not equipped-gear slot counts');
+if([...daily].some(q=>q.required!==30)||a.some(q=>q.required!==150)||m.some(q=>q.required!==450))throw new Error('Shared daily/weekly/monthly goals must be 30/150/450 actions');
+if([daily,a,m].flat().some(row=>row.tag==='equipment'||row.tag==='boss'))throw new Error('Challenges must use repeatable action counters, not equipment slots or scarce bosses');
+if([daily,a,m].some(board=>new Set(board.map(q=>q.tag)).size!==board.length))throw new Error('One period must not duplicate an action type');
 if(daily[0].rewardGold<60||a[0].rewardGold<260||m[0].rewardGold<660)throw new Error('Challenges should retain slightly improved but recognizable rewards');
 if(JSON.stringify(a)!==JSON.stringify(b))throw new Error('Same seasonal period must be deterministic');
-if(a.some(q=>q.className!=='Bastion'||!q.id.startsWith('WEEKLY_')))throw new Error('Class-aligned weekly quests missing');
+if(a.some(q=>q.className!=='Adventurer'||!q.id.startsWith('WEEKLY_')))throw new Error('Shared weekly quests missing');
 if(m.some(q=>q.rewardGold<=a[0].rewardGold))throw new Error('Monthly rewards should exceed weekly rewards');
 if([...daily,...a,...m].some(q=>{
  const item=!!q.rewardItemId&&Number.isSafeInteger(q.rewardItemQty)&&q.rewardItemQty!>0;
@@ -32,8 +38,8 @@ for(const [period,rarity,essence,itemId,qty] of expectedCaches){
 if(daily.some(q=>q.rarity==='epic'||q.rarity==='legendary')||m.some(q=>q.rarity==='common'||q.rarity==='uncommon'))throw new Error('Period rarity pools are incorrect');
 const complete={...state,character:{...state.character!,xp:100000,equipment:{weapon:'basic_sword',helmet:'ASTER_IRON_HELM',chest:'ASTER_IRON_CHEST',legs:'ASTER_IRON_LEGS',boots:'ASTER_IRON_BOOTS',gloves:'ASTER_IRON_GLOVES'},craftedNoviceItemIds:['a','b','c','d','e','f','g']},skills:state.skills.map(skill=>({...skill,xp:10000,level:20})),unlockedMonsterIds:['MOSS_RAT','FIELD_WISP','ROADSIDE_BOAR','SILVERFIN_SWARM','IRONWOOD_WOLF','VENOM_WEAVER','THORNLING']};
 if(seasonalQuestBoard(complete,'daily',date)[0].progress!==0)throw new Error('Lifetime XP must not complete a new combat contract');
-const earned=recordSeasonalActivity(complete,'combat',100,date.getTime());
-const earlyLevelOne=recordSeasonalActivity(state,'combat',100,date.getTime());
+const earned=creditAll(complete,100,date.getTime());
+const earlyLevelOne=creditAll(state,500,date.getTime());
 const levelOneWeekly=seasonalQuestBoard(earlyLevelOne,'weekly',date)[0];
 if(levelOneWeekly.progress<levelOneWeekly.required||earlyLevelOne.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed'))throw new Error('The test requires a completed weekly challenge without the Contract Board unlock');
 const earlyWeekly=executeGameCommand(earlyLevelOne,{type:'seasonal',args:{period:'weekly',id:levelOneWeekly.id}},date.getTime()).state;
@@ -50,7 +56,7 @@ let duplicateRejected=false;try{claimSeasonalContract(claimed,'daily',ready.id,d
 let verifiedEssenceClaim=false;
 for(let day=1;day<=20;day++){
  const dateWithEssence=new Date(Date.UTC(2026,8,day,12));
- const withProgress=recordSeasonalActivity(state,'combat',1000,dateWithEssence.getTime());
+ const withProgress=creditAll(state,1000,dateWithEssence.getTime());
  const essenceContract=seasonalQuestBoard(withProgress,'daily',dateWithEssence).find(q=>!!q.rewardCompanionEssence&&q.progress>=q.required);
  if(!essenceContract)continue;
  const before=withProgress.account.companionEssence??0;
@@ -66,8 +72,8 @@ for(let day=1;day<=20;day++){
 }
 if(!verifiedEssenceClaim)throw new Error('Test must find at least one earned Essence quest to verify actual account settlement');
 const other=seasonalQuestBoard(createCharacter(newGame(0),'WAYFINDER','Scout'),'weekly',date);
-if(JSON.stringify(a.map(q=>q.name))===JSON.stringify(other.map(q=>q.name)))throw new Error('Class layouts should differ');
-console.log('PASS: deterministic class-aligned weekly and monthly quest boards');
+if(JSON.stringify(a.map(q=>[q.name,q.rarity,q.required,q.rewardGold]))!==JSON.stringify(other.map(q=>[q.name,q.rarity,q.required,q.rewardGold])))throw new Error('All classes must receive the same quests and rarity rolls');
+console.log('PASS: deterministic shared weekly and monthly quest boards');
 
 function check(value:unknown,message:string){if(!value)throw new Error(message);}
 const t=date.getTime();
@@ -107,7 +113,16 @@ check(gathered.reward.kills>0&&gathered.state.account.seasonalContractProgress?.
 const crafter:GameState={...state,character:{...state.character!,gold:10000},bank:{...state.bank,stacks:[{itemId:'MEADOW_PERCH',quantity:100},{itemId:'GREENWOOD_LOG',quantity:10}]}};
 const cooked=craftRecipe(crafter,'COOK_MEADOW_PERCH',t);
 check(cooked.account.seasonalContractProgress?.daily?.counts.crafting===1,'A completed recipe must count as a craft');
-const monthlyEarned=recordSeasonalActivity(earned,'combat',300,t);
+const faithTier=FAITH_TIERS[0],faithReady:GameState={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:HOLY_WATER_ID,quantity:faithTier.water*2}]}};
+const faithStarted=startFaithPractice(faithReady,faithTier.id,2,t);
+const faithSettled=claimActivity(faithStarted,t+faithTier.seconds*2000+1000);
+check(faithSettled.reward.faithActions===2,'Faith test must settle two completed practices');
+for(const period of ['daily','weekly','monthly'] as const)
+ check(faithSettled.state.account.seasonalContractProgress?.[period]?.counts.faith===2,'Completed Faith practices must count toward '+period+' quests');
+const faithRepeated=claimActivity(faithSettled.state,t+faithTier.seconds*2000+1000);
+check(faithRepeated.state.account.seasonalContractProgress?.daily?.counts.faith===2,'Repeated Faith claim must not double credit');
+
+const monthlyEarned=creditAll(earned,500,t);
 const monthlyReady=seasonalQuestBoard(monthlyEarned,'monthly',date)[0];
 check(monthlyReady.progress>=monthlyReady.required,'Monthly challenge should require substantial verified monthly progress');
 const unlocked:GameState={...monthlyEarned,character:{...monthlyEarned.character!,equipment:state.character!.equipment},quests:monthlyEarned.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q)};
@@ -150,7 +165,7 @@ let verifiedBondstoneClaim=false;
 for(let month=0;month<48&&!verifiedBondstoneClaim;month++){
  const monthDate=new Date(Date.UTC(2027+Math.floor(month/12),month%12,12,12));
  let earnedForMonth=createCharacter(newGame(0),'BASTION','Reward Choice Tester');
- for(const tag of ['combat','gathering','crafting','exploration','boss'] as const)earnedForMonth=recordSeasonalActivity(earnedForMonth,tag,100000,monthDate.getTime());
+ for(const tag of ['combat','gathering','crafting','exploration','faith','boss'] as const)earnedForMonth=recordSeasonalActivity(earnedForMonth,tag,100000,monthDate.getTime());
  const legendary=seasonalQuestBoard(earnedForMonth,'monthly',monthDate).find(q=>q.rarity==='legendary'&&q.progress>=q.required);
  if(!legendary)continue;
  const beforeStones=earnedForMonth.account.bondstones??0;
@@ -171,7 +186,7 @@ let verifiedGemDustClaim=false;
 for(let day=0;day<90&&!verifiedGemDustClaim;day++){
  const dayDate=new Date(Date.UTC(2027,0,1+day,12));
  let withActions=createCharacter(newGame(0),'BASTION','Gem Choice Tester');
- for(const tag of ['combat','gathering','crafting','exploration','boss'] as const)withActions=recordSeasonalActivity(withActions,tag,10000,dayDate.getTime());
+ for(const tag of ['combat','gathering','crafting','exploration','faith','boss'] as const)withActions=recordSeasonalActivity(withActions,tag,10000,dayDate.getTime());
  const rare=seasonalQuestBoard(withActions,'daily',dayDate).find(q=>q.rarity==='rare'&&q.progress>=q.required);
  if(!rare)continue;
  const count=(s:GameState,id:string)=>[...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks].filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0);
@@ -184,4 +199,4 @@ for(let day=0;day<90&&!verifiedGemDustClaim;day++){
 check(verifiedGemDustClaim,'Find and settle a real Daily Rare Gem Dust alternative');
 // Every real reward-choice assertion above runs against the shared authoritative command path.
 
-console.log('PASS: seasonal action accounting, UTC rollovers, equipment limits, claims and reward choices and save round trips');
+console.log('PASS: shared seasonal targets, Faith settlement, UTC rollovers, claims, reward choices and save round trips');

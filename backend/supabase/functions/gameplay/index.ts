@@ -48195,6 +48195,27 @@ var REGIONAL_AREAS = [
   }
 ].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
 
+// ../apps/mobile/src/core/item-rarity.ts
+var GEAR_RARITIES = [
+  { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
+  { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
+  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
+  { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
+  { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
+  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
+];
+function itemRarity(item) {
+  if (item.rarity) return item.rarity;
+  if (item.type !== "gear") return "common";
+  if (item.value >= 1500) return "mythic";
+  if (item.value >= 800) return "legendary";
+  if (item.value >= 400 || item.readiness && item.readiness >= 10) return "epic";
+  if (item.value >= 150 || item.readiness && item.readiness >= 7) return "rare";
+  if (item.value >= 50 || item.readiness && item.readiness >= 3) return "uncommon";
+  return "common";
+}
+var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
+
 // ../apps/mobile/src/core/equipment-salvage.ts
 var MATERIAL_ID = "TEMPERING_DUST";
 var tieredRewards = /* @__PURE__ */ new Map();
@@ -48204,8 +48225,51 @@ for (const item of EQUIPMENT_ITEMS_V33) {
   tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
 }
 function equipmentSalvageReward(itemId) {
-  const recipe2 = tieredRewards.get(itemId);
-  return recipe2 ? { ...recipe2 } : null;
+  const dust = tieredRewards.get(itemId);
+  return dust ? { ...dust } : null;
+}
+var CONSUMED_INFUSIONS = /* @__PURE__ */ new Set([
+  "VERDANT_BINDING_RESIN",
+  "IRONWOOD_BINDING_RESIN",
+  "SUNSCAR_DUNE_BINDER",
+  "GLASSBOUND_BINDER",
+  "SUNFUSED_FIXATIVE",
+  "RIMEWARD_DISTILLATE",
+  "CINDERHEART_ELIXIR"
+]);
+function eligibleOrdinaryIngredient(itemId) {
+  if (CONSUMED_INFUSIONS.has(itemId)) return false;
+  const ingredient = itemDef(itemId);
+  return ingredient.type === "material" && ["common", "uncommon"].includes(itemRarity(ingredient));
+}
+function equipmentSalvageRewards(itemId, crafted) {
+  const dust = equipmentSalvageReward(itemId);
+  if (!dust) return [];
+  if (!crafted || crafted.acquireSource !== "craft" || crafted.itemId !== itemId) return [dust];
+  const recipe2 = v33EquipmentRecipeForItem(itemId);
+  if (!recipe2) return [dust];
+  const rarityBps = crafted.rarity === "rare" ? 250 : ["epic", "legendary", "mythic"].includes(crafted.rarity) ? 500 : 0;
+  const quality = crafted.quality;
+  const qualityBps = typeof quality === "number" && Number.isInteger(quality) && quality >= 0 && quality <= 100 ? quality >= 90 ? 500 : quality >= 70 ? 250 : 0 : 0;
+  const percentBps = Math.min(2500, 1500 + rarityBps + qualityBps);
+  const materials = recipe2.inputs.filter((input) => eligibleOrdinaryIngredient(input.itemId)).map((input) => ({ itemId: input.itemId, quantity: Math.floor(input.quantity * percentBps / 1e4) })).filter((input) => input.quantity > 0);
+  return [dust, ...materials];
+}
+function inventoryWithSalvageRewards(inventory, rewards, capacity) {
+  const stacks = inventory.stacks.map((stack) => ({ ...stack }));
+  for (const reward2 of rewards) {
+    if (!Number.isSafeInteger(reward2.quantity) || reward2.quantity < 1) throw new Error("Invalid salvage quantity");
+    const current = stacks.find((stack) => stack.itemId === reward2.itemId && stack.instanceId === void 0);
+    if (current) {
+      const sum = current.quantity + reward2.quantity;
+      if (!Number.isSafeInteger(sum)) throw new Error("Salvage material quantity overflow");
+      current.quantity = sum;
+    } else {
+      if (stacks.filter((stack) => stack.quantity > 0).length >= capacity) throw new Error("Inventory is full; make space for salvage");
+      stacks.push({ itemId: reward2.itemId, quantity: reward2.quantity });
+    }
+  }
+  return { ...inventory, stacks };
 }
 
 // ../apps/mobile/src/content/mining-essence.ts
@@ -49546,27 +49610,6 @@ function currentRegionId(state) {
   }
   return WORLD_ZONES[0].id;
 }
-
-// ../apps/mobile/src/core/item-rarity.ts
-var GEAR_RARITIES = [
-  { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
-  { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
-  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
-  { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
-  { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
-  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
-];
-function itemRarity(item) {
-  if (item.rarity) return item.rarity;
-  if (item.type !== "gear") return "common";
-  if (item.value >= 1500) return "mythic";
-  if (item.value >= 800) return "legendary";
-  if (item.value >= 400 || item.readiness && item.readiness >= 10) return "epic";
-  if (item.value >= 150 || item.readiness && item.readiness >= 7) return "rare";
-  if (item.value >= 50 || item.readiness && item.readiness >= 3) return "uncommon";
-  return "common";
-}
-var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
 // ../apps/mobile/src/core/crafted-gear-rarity.ts
 var CRAFTED_MYTHIC_CHANCE = 1e-3;
@@ -53770,11 +53813,8 @@ function disposeCraftedGearInstance(state, instanceId, method) {
     }
   } else {
     if (!next.character) throw new Error("No active character");
-    const reward2 = equipmentSalvageReward(def.id);
-    const stack = next.inventory.stacks.find((row) => row.itemId === reward2.itemId && row.instanceId === void 0);
-    if (!stack && next.inventory.stacks.filter((row) => row.quantity > 0).length >= entitlementStorageCapacity(next, "inventory"))
-      throw new Error("Inventory is full; make space for salvage");
-    next = { ...next, inventory: { ...next.inventory, stacks: stack ? next.inventory.stacks.map((row) => row === stack ? { ...row, quantity: row.quantity + reward2.quantity } : row) : [...next.inventory.stacks, { ...reward2 }] } };
+    const rewards = equipmentSalvageRewards(def.id, record);
+    next = { ...next, inventory: inventoryWithSalvageRewards(next.inventory, rewards, entitlementStorageCapacity(next, "inventory")) };
   }
   return next;
 }

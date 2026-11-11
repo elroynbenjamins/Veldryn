@@ -45607,6 +45607,27 @@ var REGIONAL_AREAS = [
   }
 ].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
 
+// ../apps/mobile/src/core/item-rarity.ts
+var GEAR_RARITIES = [
+  { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
+  { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
+  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
+  { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
+  { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
+  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
+];
+function itemRarity(item) {
+  if (item.rarity) return item.rarity;
+  if (item.type !== "gear") return "common";
+  if (item.value >= 1500) return "mythic";
+  if (item.value >= 800) return "legendary";
+  if (item.value >= 400 || item.readiness && item.readiness >= 10) return "epic";
+  if (item.value >= 150 || item.readiness && item.readiness >= 7) return "rare";
+  if (item.value >= 50 || item.readiness && item.readiness >= 3) return "uncommon";
+  return "common";
+}
+var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
+
 // ../apps/mobile/src/core/equipment-salvage.ts
 var MATERIAL_ID = "TEMPERING_DUST";
 var tieredRewards = /* @__PURE__ */ new Map();
@@ -45727,27 +45748,6 @@ var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
 // ../apps/mobile/src/core/account-roster.ts
 init_progression();
-
-// ../apps/mobile/src/core/item-rarity.ts
-var GEAR_RARITIES = [
-  { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
-  { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
-  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
-  { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
-  { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
-  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
-];
-function itemRarity(item) {
-  if (item.rarity) return item.rarity;
-  if (item.type !== "gear") return "common";
-  if (item.value >= 1500) return "mythic";
-  if (item.value >= 800) return "legendary";
-  if (item.value >= 400 || item.readiness && item.readiness >= 10) return "epic";
-  if (item.value >= 150 || item.readiness && item.readiness >= 7) return "rare";
-  if (item.value >= 50 || item.readiness && item.readiness >= 3) return "uncommon";
-  return "common";
-}
-var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
 // ../apps/mobile/src/core/crafted-gear-rarity.ts
 var CRAFTED_MYTHIC_CHANCE = 1e-3;

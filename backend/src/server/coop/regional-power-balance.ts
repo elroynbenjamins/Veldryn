@@ -9,7 +9,7 @@ export const REGIONAL_DUNGEON_BALANCE_VERSION='regional-tier-power-v1';
 export const REGIONAL_DUNGEON_BALANCE=Object.freeze({
  EXP_001:{
   enemyLevel:10,
-  attack:[1.258,1.681,1.715],hp:[1.665,2.337,2.52],defense:[2.294,3.075,3.15],
+  attack:[1.258,1.722,1.725],hp:[1.665,2.394,2.54],defense:[2.294,3.15,3.17],
  },
  EXP_003:{
   enemyLevel:25,
@@ -17,7 +17,7 @@ export const REGIONAL_DUNGEON_BALANCE=Object.freeze({
  },
 } as const);
 const LEGACY_ROOTBOUND_ATTACK_MULTIPLIER=2.9;
-const ROOTBOUND_TIER_ATTACK=[1.2,.95,1.0] as const;
+const ROOTBOUND_TIER_ATTACK=[1.2,.95,.94] as const;
 export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled:boolean,encounterId?:string){
  if(!enabled||![1,2,3].includes(tier))return undefined;
  const row=REGIONAL_DUNGEON_BALANCE[expeditionId as keyof typeof REGIONAL_DUNGEON_BALANCE];
@@ -26,8 +26,9 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
  // resolveCoopNode already multiplies Rootbound content by 2.9. Reconcile
  // that legacy-specific modifier only for new Asterfall regional runs.
  const rootCorrection=rootbound?ROOTBOUND_TIER_ATTACK[tier-1]/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
- const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?.77:
-  expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'&&tier===3?1.08:1;
+ const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3?.75:.77):
+  expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'&&tier===3?1.04:
+  expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'&&tier===3?1.04:1;
  return {attack:row.attack[tier-1]*rootCorrection*bossCorrection,
   hp:row.hp[tier-1]*bossCorrection,defense:row.defense[tier-1]*bossCorrection,enemyLevel:row.enemyLevel};
 }

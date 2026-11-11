@@ -1,5 +1,5 @@
 import type {ExpeditionDefinition} from '../expeditions/content/launch-content';
-import {COOP_ROGUELITE_CONFIG,PUBLISHED_COOP_TIERS,type CoopTier} from './config';
+import {COOP_ROGUELITE_CONFIG,PUBLISHED_COOP_TIERS,coopRequiredLevel,type CoopTier} from './config';
 
 /** Requirements refer to the character-sheet Combat Power rating, not the
  * separate normalized Dungeon Power metric used for matchmaking similarity. */
@@ -13,14 +13,14 @@ const DEVELOPMENT_DUNGEONS=new Set(['EXP_005']);
 export function publishedRegularDungeon(def:ExpeditionDefinition):boolean{return def.coopImplemented&&Boolean(DUNGEON_REQUIREMENTS[def.id]);}
 export function listedRegularDungeon(def:ExpeditionDefinition):boolean{return publishedRegularDungeon(def)||DEVELOPMENT_DUNGEONS.has(def.id);}
 export function regularDungeonTierRequiredLevel(def:ExpeditionDefinition,tier:CoopTier):number{
- if(!PUBLISHED_COOP_TIERS.some(value=>value===tier))throw new Error('dungeon_difficulty_unavailable');
+ if(!PUBLISHED_COOP_TIERS.some(value=>value===tier))return coopRequiredLevel(def.minLevel,tier); // legacy tier 4/5 saved-run fixtures
  return DUNGEON_REQUIREMENTS[def.id]?.minLevel??Math.max(DUNGEON_UNLOCK_LEVEL,def.minLevel);
 }
 export function regularDungeonTierRequiredPower(def:ExpeditionDefinition,tier:CoopTier):number{
- if(!PUBLISHED_COOP_TIERS.some(value=>value===tier))throw new Error('dungeon_difficulty_unavailable');
+ if(!PUBLISHED_COOP_TIERS.some(value=>value===tier))return 0; // new entries reject 4/5 separately
  return DUNGEON_REQUIREMENTS[def.id]?.powers[tier-1]??0;
 }
-export function highestEligibleRegularDungeonTier(def:ExpeditionDefinition,level:number,combatPower=Number.POSITIVE_INFINITY):CoopTier|undefined{
+export function highestEligibleRegularDungeonTier(def:ExpeditionDefinition,level:number,combatPower=0):CoopTier|undefined{
  if(!publishedRegularDungeon(def)||!Number.isInteger(level))return undefined;
  return [...PUBLISHED_COOP_TIERS].reverse().find(tier=>level>=regularDungeonTierRequiredLevel(def,tier)&&combatPower>=regularDungeonTierRequiredPower(def,tier));
 }
@@ -32,7 +32,7 @@ export function defeatedDungeonChapterBoss(state:{defeatedBossIds?:readonly stri
  return Array.isArray(state?.defeatedBossIds)&&state.defeatedBossIds.includes(DUNGEON_CHAPTER_ONE_BOSS);
 }
 export type DungeonEntryError='dungeon_unavailable'|'dungeon_level_requirement'|'chapter_one_required'|'dungeon_power_requirement';
-export function regularDungeonEntryError(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,characterLevel:number,combatPower=Number.POSITIVE_INFINITY,tier:CoopTier=1):DungeonEntryError|undefined{
+export function regularDungeonEntryError(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,characterLevel:number,combatPower=0,tier:CoopTier=1):DungeonEntryError|undefined{
  const rule=DUNGEON_REQUIREMENTS[def.id];
  if(!publishedRegularDungeon(def)||!rule)return 'dungeon_unavailable';
  if(!Number.isInteger(characterLevel)||characterLevel<regularDungeonTierRequiredLevel(def,tier))return 'dungeon_level_requirement';
@@ -40,7 +40,7 @@ export function regularDungeonEntryError(def:ExpeditionDefinition,state:{defeate
  if(combatPower<regularDungeonTierRequiredPower(def,tier)||(!Number.isFinite(combatPower)&&combatPower!==Number.POSITIVE_INFINITY))return 'dungeon_power_requirement';
  return undefined;
 }
-export function regularDungeonLockedReason(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,level:number,combatPower=Number.POSITIVE_INFINITY):string|undefined{
+export function regularDungeonLockedReason(def:ExpeditionDefinition,state:{defeatedBossIds?:readonly string[]}|null|undefined,level:number,combatPower=0):string|undefined{
  const error=regularDungeonEntryError(def,state,level,combatPower);
  if(!error)return undefined;
  if(error==='dungeon_unavailable')return DEVELOPMENT_DUNGEONS.has(def.id)||def.region==='Ashlands'?'In Development':'No longer available for new runs';

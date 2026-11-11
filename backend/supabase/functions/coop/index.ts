@@ -46628,14 +46628,14 @@ function listedRegularDungeon(def) {
   return publishedRegularDungeon(def) || DEVELOPMENT_DUNGEONS.has(def.id);
 }
 function regularDungeonTierRequiredLevel(def, tier) {
-  if (!PUBLISHED_COOP_TIERS.some((value) => value === tier)) throw new Error("dungeon_difficulty_unavailable");
+  if (!PUBLISHED_COOP_TIERS.some((value) => value === tier)) return coopRequiredLevel(def.minLevel, tier);
   return DUNGEON_REQUIREMENTS[def.id]?.minLevel ?? Math.max(DUNGEON_UNLOCK_LEVEL, def.minLevel);
 }
 function regularDungeonTierRequiredPower(def, tier) {
-  if (!PUBLISHED_COOP_TIERS.some((value) => value === tier)) throw new Error("dungeon_difficulty_unavailable");
+  if (!PUBLISHED_COOP_TIERS.some((value) => value === tier)) return 0;
   return DUNGEON_REQUIREMENTS[def.id]?.powers[tier - 1] ?? 0;
 }
-function highestEligibleRegularDungeonTier(def, level, combatPower = Number.POSITIVE_INFINITY) {
+function highestEligibleRegularDungeonTier(def, level, combatPower = 0) {
   if (!publishedRegularDungeon(def) || !Number.isInteger(level)) return void 0;
   return [...PUBLISHED_COOP_TIERS].reverse().find((tier) => level >= regularDungeonTierRequiredLevel(def, tier) && combatPower >= regularDungeonTierRequiredPower(def, tier));
 }
@@ -46646,7 +46646,7 @@ function regularDungeonReadyTier(def, level, normalizedScore, combatPower = 0) {
 function defeatedDungeonChapterBoss(state) {
   return Array.isArray(state?.defeatedBossIds) && state.defeatedBossIds.includes(DUNGEON_CHAPTER_ONE_BOSS);
 }
-function regularDungeonEntryError(def, state, characterLevel, combatPower = Number.POSITIVE_INFINITY, tier = 1) {
+function regularDungeonEntryError(def, state, characterLevel, combatPower = 0, tier = 1) {
   const rule = DUNGEON_REQUIREMENTS[def.id];
   if (!publishedRegularDungeon(def) || !rule) return "dungeon_unavailable";
   if (!Number.isInteger(characterLevel) || characterLevel < regularDungeonTierRequiredLevel(def, tier)) return "dungeon_level_requirement";
@@ -46654,7 +46654,7 @@ function regularDungeonEntryError(def, state, characterLevel, combatPower = Numb
   if (combatPower < regularDungeonTierRequiredPower(def, tier) || !Number.isFinite(combatPower) && combatPower !== Number.POSITIVE_INFINITY) return "dungeon_power_requirement";
   return void 0;
 }
-function regularDungeonLockedReason(def, state, level, combatPower = Number.POSITIVE_INFINITY) {
+function regularDungeonLockedReason(def, state, level, combatPower = 0) {
   const error = regularDungeonEntryError(def, state, level, combatPower);
   if (!error) return void 0;
   if (error === "dungeon_unavailable") return DEVELOPMENT_DUNGEONS.has(def.id) || def.region === "Ashlands" ? "In Development" : "No longer available for new runs";
@@ -49456,6 +49456,28 @@ function recruitQModeAllies(input) {
   return Object.freeze(team.map((row) => Object.freeze(structuredClone(row))));
 }
 
+// src/server/coop/regional-power-balance.ts
+var REGIONAL_DUNGEON_BALANCE_VERSION = "regional-tier-power-v1";
+var REGIONAL_DUNGEON_BALANCE = Object.freeze({
+  EXP_001: {
+    enemyLevel: 10,
+    attack: [0.34, 0.41, 0.49],
+    hp: [0.45, 0.57, 0.72],
+    defense: [0.62, 0.75, 0.9]
+  },
+  EXP_003: {
+    enemyLevel: 25,
+    attack: [0.22, 0.26, 0.31],
+    hp: [0.52, 0.65, 0.81],
+    defense: [0.6, 0.74, 0.88]
+  }
+});
+function regionalPowerMultipliers(expeditionId, tier, enabled) {
+  if (!enabled || ![1, 2, 3].includes(tier)) return void 0;
+  const row = REGIONAL_DUNGEON_BALANCE[expeditionId];
+  return row ? { attack: row.attack[tier - 1], hp: row.hp[tier - 1], defense: row.defense[tier - 1], enemyLevel: row.enemyLevel } : void 0;
+}
+
 // src/server/coop/potion-modifiers.ts
 var DUNGEON_ROLE_TONIC_MODIFIERS = {
   VIGOR_TONIC: { outgoing: 1.05, incoming: 1, healing: 1, shielding: 1 },
@@ -49556,10 +49578,12 @@ var QModeService = class {
     const definition = EXPEDITIONS[input.expeditionId];
     if (!definition) throw new Error("unknown_expedition");
     if (!definition.coopImplemented) throw new Error("expedition_not_implemented");
-    const allies = recruitQModeAllies({ serverSecret: this.serverSecret, requestId: input.requestId, controllerAccountId: input.controllerAccountId, controllerRole: input.controllerSnapshot.readiness.role, controllerClassId: input.controllerSnapshot.classId, contentVersion: input.contentVersion, nowMs: input.nowMs, profiles: input.profiles, minimumCombatPower: regularDungeonTierRequiredPower(definition, input.tier), npcSnapshots: input.npcSnapshots ?? [] });
+    const allies = recruitQModeAllies({ serverSecret: this.serverSecret, requestId: input.requestId, controllerAccountId: input.controllerAccountId, controllerRole: input.controllerSnapshot.readiness.role, controllerClassId: input.controllerSnapshot.classId, contentVersion: input.contentVersion, nowMs: input.nowMs, profiles: input.profiles, minimumCombatPower: input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? regularDungeonTierRequiredPower(definition, input.tier) : void 0, npcSnapshots: input.npcSnapshots ?? [] });
     const requiredLevel = regularDungeonTierRequiredLevel(definition, input.tier);
     for (const snapshot of [input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)]) if ((snapshot.characterLevel ?? snapshot.normalized.before.level) < requiredLevel) throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-    for (const snapshot of [input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)]) if (snapshot.combatPower !== void 0 && snapshot.combatPower < regularDungeonTierRequiredPower(definition, input.tier)) throw new Error("dungeon_power_requirement");
+    if (input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION) {
+      for (const snapshot of [input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)]) if (!Number.isFinite(snapshot.combatPower) || snapshot.combatPower < regularDungeonTierRequiredPower(definition, input.tier)) throw new Error("dungeon_power_requirement");
+    }
     validateCoopRoster([{ accountId: input.controllerAccountId, characterId: input.controllerSnapshot.characterId, role: input.controllerSnapshot.readiness.role }, ...allies.map((ally) => ({ accountId: ally.snapshot.accountId, characterId: ally.snapshot.characterId, role: ally.snapshot.readiness.role }))]);
     validateUniqueDamageClasses([input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)].map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
     const players = [combatant(input.controllerSnapshot), ...allies.map((ally) => combatant(ally.snapshot))];
@@ -49572,7 +49596,9 @@ var QModeService = class {
     if (input.snapshots.length !== 4) throw new Error("invalid_live_roster");
     const requiredLevel = regularDungeonTierRequiredLevel(definition, input.tier);
     for (const snapshot of input.snapshots) if ((snapshot.characterLevel ?? snapshot.normalized.before.level) < requiredLevel) throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-    for (const snapshot of input.snapshots) if (snapshot.combatPower !== void 0 && snapshot.combatPower < regularDungeonTierRequiredPower(definition, input.tier)) throw new Error("dungeon_power_requirement");
+    if (input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION) {
+      for (const snapshot of input.snapshots) if (!Number.isFinite(snapshot.combatPower) || snapshot.combatPower < regularDungeonTierRequiredPower(definition, input.tier)) throw new Error("dungeon_power_requirement");
+    }
     validateCoopRoster(input.snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })));
     validateUniqueDamageClasses(input.snapshots.map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
     return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players: input.snapshots.map(combatant), echoSourceAccountIds: [] });
@@ -49597,7 +49623,8 @@ var QModeService = class {
       applyRoomBoon(run, selectedBoon);
     } else if (input.boonId) throw new Error("invalid_boon_choice");
     const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1);
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1), enemyHpMultiplier: regional2?.hp, enemyDefenseMultiplier: regional2?.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -49623,7 +49650,7 @@ var QModeService = class {
   }
   createRun(input) {
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion);
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), tierScalingVersion: 2, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }
@@ -49974,7 +50001,7 @@ var OnlineQModeRuntime = class {
     const npcSnapshots = createQModeNpcAllies({ minimumLevel: minimum, minimumCombatPower: minimumPower, syncLevel: sync, controllerLevel: record.characterLevel });
     const seed = this.services.randomId() + this.services.randomId(), id = this.services.randomId();
     const domain = new QModeService(new MemoryQModeRunRepository(), seed);
-    const run = domain.create({ requestId: request.requestId, runId: id, controllerAccountId: accountId, controllerSnapshot: controller, expeditionId: definition.id, tier: request.tier, contentVersion: content, balanceVersion: content, nowMs: game.serverNow, profiles, npcSnapshots });
+    const run = domain.create({ requestId: request.requestId, runId: id, controllerAccountId: accountId, controllerSnapshot: controller, expeditionId: definition.id, tier: request.tier, contentVersion: content, balanceVersion: REGIONAL_DUNGEON_BALANCE_VERSION, nowMs: game.serverNow, profiles, npcSnapshots });
     const members = [{ memberKind: "human", snapshot: controller, sourceHash: onlineCoopLoadoutHash(record), profileId: null }, ...run.players.slice(1).map((player2) => {
       const selected2 = profiles.find((row) => row.snapshot.characterId === player2.id && run.echoSourceAccountIds.includes(row.sourceAccountId));
       if (selected2) {
@@ -50225,7 +50252,10 @@ var OnlineLiveQueue = class {
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
     const eligible = Object.values(EXPEDITIONS).filter((definition2) => publishedRegularDungeon(definition2) && !regularDungeonEntryError(definition2, game.state, record.characterLevel, record.combatPower) && highestEligibleRegularDungeonTier(definition2, record.characterLevel, record.combatPower) !== void 0).sort((a, b) => b.minLevel - a.minLevel || a.id.localeCompare(b.id));
-    if (!eligible.length) throw new GameplayError("dungeon_power_requirement");
+    if (!eligible.length) {
+      const hasDungeonLevel = Object.values(EXPEDITIONS).some((definition2) => publishedRegularDungeon(definition2) && record.characterLevel >= regularDungeonTierRequiredLevel(definition2, 1));
+      throw new GameplayError(hasDungeonLevel ? "dungeon_power_requirement" : "dungeon_level_requirement");
+    }
     const demand = await this.services.rpc("online_live_quick_match_demand_server_v1", { p_account_id: accountId });
     const dungeonId = chooseQuickMatchExpedition(demand.demands, eligible.map((definition2) => definition2.id), readiness.role, demand.serverNow);
     const definition = dungeonId ? EXPEDITIONS[dungeonId] : void 0;
@@ -50368,7 +50398,7 @@ var OnlineLiveRuntime = class {
         this.run = structuredClone(run2);
       }
     }(), seed);
-    const run = domain.createLive({ requestId: `live-${checkId}`, runId: id, controllerAccountId: source.frozenRoster[0].accountId, expeditionId: source.dungeonId, tier: source.tier, contentVersion: ONLINE_COOP_BALANCE_VERSION, balanceVersion: ONLINE_COOP_BALANCE_VERSION, snapshots: source.frozenRoster });
+    const run = domain.createLive({ requestId: `live-${checkId}`, runId: id, controllerAccountId: source.frozenRoster[0].accountId, expeditionId: source.dungeonId, tier: source.tier, contentVersion: ONLINE_COOP_BALANCE_VERSION, balanceVersion: REGIONAL_DUNGEON_BALANCE_VERSION, snapshots: source.frozenRoster });
     const members = source.frozenRoster.map((snapshot) => ({ snapshot, sourceHash: onlineCoopLoadoutHash({ accountId: snapshot.accountId, characterId: snapshot.characterId, classId: snapshot.classId, loadoutId: snapshot.loadoutId, revision: snapshot.revision, characterLevel: snapshot.normalized.before.level, dungeonUnlocked: true, legalEquipment: true, stats: snapshot.normalized.snapshot, abilities: snapshot.normalized.abilities, capabilities: [] }), profileId: null }));
     const result = await this.services.rpc("start_online_live_server_v1", { p_account_id: accountId, p_check_id: checkId, p_run_id: id, p_seed_hash: digest2(seed), p_private_state: { run, seed }, p_client_projection: projection2(run, 1), p_members: members });
     return result.runId;

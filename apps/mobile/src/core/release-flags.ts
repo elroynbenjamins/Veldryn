@@ -13,3 +13,6 @@ export const RANKINGS_RELEASED=false;
 export const PLAYER_MARKET_RELEASED=false;
 /** Independent launch prerequisite: authenticated Market Edge write/read routes are not mounted. */
 export const MARKET_AUTHENTICATED_SERVICE_READY=false;
+
+/** Dungeon Marks Shop authored across three regions; keep collectible passives and shop UI hidden until server and art release. */
+export const DUNGEON_MARKS_SHOP_RELEASED=false;

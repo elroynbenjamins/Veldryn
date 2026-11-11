@@ -2,7 +2,7 @@ import type {GameState,GearSlot,ItemStack,CraftedGearInstance} from './types';
 import {craftedGearInstances} from './crafted-gear-instances';
 import {entitlementStorageCapacity} from './account-entitlements';
 import {itemDef} from '../content/items';
-import {equipmentSalvageReward} from './equipment-salvage';
+import {equipmentSalvageReward,equipmentSalvageRewards,inventoryWithSalvageRewards} from './equipment-salvage';
 import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
 
 export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
@@ -268,13 +268,8 @@ export function disposeCraftedGearInstance(state:GameState,instanceId:string,met
     // Salvage never eats a protected gem; the received material is carried by
     // the active character, independent of whether equipment was in Bank.
     if(!next.character)throw new Error('No active character');
-    const reward=equipmentSalvageReward(def.id)!;
-    const stack=next.inventory.stacks.find(row=>row.itemId===reward.itemId&&row.instanceId===undefined);
-    if(!stack&&next.inventory.stacks.filter(row=>row.quantity>0).length>=entitlementStorageCapacity(next,'inventory'))
-      throw new Error('Inventory is full; make space for salvage');
-    next={...next,inventory:{...next.inventory,stacks:stack
-      ?next.inventory.stacks.map(row=>row===stack?{...row,quantity:row.quantity+reward.quantity}:row)
-      :[...next.inventory.stacks,{...reward}]}};
+    const rewards=equipmentSalvageRewards(def.id,record);
+    next={...next,inventory:inventoryWithSalvageRewards(next.inventory,rewards,entitlementStorageCapacity(next,'inventory'))};
   }
   return next;
 }

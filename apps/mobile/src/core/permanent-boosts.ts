@@ -144,6 +144,7 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
   const blessing=selectedFaithBlessing(state);
   if(blessing){
     if(blessing.family==='attack')result=merge(result,{...BASE,attackMultiplier:1+blessing.bonus,combatPowerMultiplier:1+blessing.bonus});
+    if(blessing.family==='combatSpeed')result=merge(result,{...BASE,combatSpeedMultiplier:1+blessing.bonus});
     if(blessing.family==='defense')result=merge(result,{...BASE,incomingDamageMultiplier:1-blessing.bonus});
     // HP blessings modify effectiveStats.hp directly, not combat power.
     if(blessing.family==='gathering')result=merge(result,{...BASE,gatheringSpeedMultiplier:1+blessing.bonus});

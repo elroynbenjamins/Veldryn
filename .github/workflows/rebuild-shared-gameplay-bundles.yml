@@ -9,6 +9,18 @@ on:
     paths:
       - '.github/workflows/rebuild-shared-gameplay-bundles.yml'
       - 'apps/mobile/src/content/exploration.ts'
+      - 'apps/mobile/src/content/faith.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/gathering-tools.ts'
+      - 'apps/mobile/tests/gathering-tools.ts'
+      - 'apps/mobile/tests/monster-drop-balance.ts'
+      - 'apps/mobile/src/core/live-events.ts'
+      - 'apps/mobile/src/core/permanent-boosts.ts'
+      - 'apps/mobile/src/core/equipment-salvage.ts'
+      - 'apps/mobile/src/core/crafted-gear-ownership.ts'
+      - 'apps/mobile/src/core/equipment-pouch-selling.ts'
+      - 'apps/mobile/tests/equipment-salvage-recovery.ts'
+      - 'apps/mobile/tests/faith.ts'
       - 'apps/mobile/tests/exploration-balance.ts'
       - 'apps/mobile/src/core/gem-progression-v1.ts'
       - 'apps/mobile/tests/gem-progression-v1.ts'
@@ -23,6 +35,10 @@ on:
       - 'backend/src/server/coop/loadout-snapshots.ts'
       - 'backend/src/server/coop/echo-recruitment.ts'
       - 'backend/src/server/coop/qmode-npc-allies.ts'
+      - 'backend/online/coop.ts'
+      - 'backend/online/dungeon-shop.ts'
+      - 'backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'
+      - 'apps/mobile/src/core/dungeon-marks-shop-types.ts'
       - 'backend/online/coop-entry.ts'
       - 'backend/online/coop-loadout.ts'
       - 'backend/online/qmode-runtime.ts'
@@ -60,7 +76,7 @@ jobs:
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify the two-path equipment and Exploration balance regressions
-        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance
+        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery gathering-tools monster-drop-balance
       - name: Rebuild canonical generated bundles and commit them on top of current main
         shell: bash
         run: |

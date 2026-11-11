@@ -1,0 +1,22 @@
+Category,Item ID,Min Gold per unit,Max Gold per unit,Minimum lot,Recipe source or formula,Status,Notes
+RAW_CANDIDATE,DEWLEAF,5,30,10,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,ASTERFALL_BOTANICAL_ESSENCE,55,330,1,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,SUNSCALE,50,300,5,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,WHITEPINE_LOG,75,450,5,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,SCORPION_VENOM,90,540,1,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,WINTERMINT,90,540,5,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,RIME_RESIN,110,660,1,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,FROSTBLOOM,120,720,5,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,ASHEN_MYRRH,180,1080,1,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,OATHSTONE_ORE,25,150,5,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+RAW_CANDIDATE,CROWNWOOD_LOG,24,144,5,Manual raw anchor,DRAFT_ONLY,Not in V10 policy and not approved
+CRAFTED_RESOURCE,COPPER_INGOT,20,108,5,SMELT_COPPER_INGOT,DRAFT_ONLY,5 outputs per batch and 5 percent sale tax
+CRAFTED_RESOURCE,ASTER_IRON_INGOT,58,270,1,SMELT_ASTER_IRON_INGOT,DRAFT_ONLY,4 outputs per batch and 5 percent sale tax
+CRAFTED_RESOURCE,SUNSTONE_INGOT,298,1192,1,SMELT_SUNSTONE_INGOT,DRAFT_ONLY,3 outputs per batch and 5 percent sale tax
+CRAFTED_RESOURCE,FROSTIRON_INGOT,676,2704,1,SMELT_FROSTIRON_INGOT,DRAFT_ONLY,3 outputs per batch and 5 percent sale tax
+CRAFTED_RESOURCE,BLACKGLASS_INGOT,1389,5556,1,SMELT_BLACKGLASS_INGOT,DRAFT_ONLY,3 outputs per batch and 5 percent sale tax
+CRAFTED_RESOURCE,VERDANT_BINDING_RESIN,193,772,1,BREW_VERDANT_BINDING_RESIN,DRAFT_ONLY,Single output and 15 percent crafter premium
+CRAFTED_RESOURCE,IRONWOOD_BINDING_RESIN,328,1312,1,BREW_IRONWOOD_BINDING_RESIN,DRAFT_ONLY,Single output and 15 percent crafter premium
+CRAFTED_RESOURCE,SUNSCAR_DUNE_BINDER,548,2192,1,BREW_SUNSCAR_DUNE_BINDER,DRAFT_ONLY,Single output and 15 percent crafter premium
+CRAFTED_RESOURCE,GLASSBOUND_BINDER,974,3896,1,BREW_GLASSBOUND_BINDER,DRAFT_ONLY,Single output and 15 percent crafter premium
+EQUIPMENT_RULE,ALL_FORGED_T1_T9,,,1,Max(V10 tier floor / exact recipe cost with premium and tax) times rarity quality enchant,DRAFT_ONLY,Per-piece quote computed at runtime; no blanket per-tier approval

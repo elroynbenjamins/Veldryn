@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import {coopEntryHandler} from './coop-entry';
+import {makeDungeonShopController} from './dungeon-shop';
 import {OnlineQModeRuntime} from './qmode-runtime';
 import {OnlineLiveQueue} from './live-queue';
 import {OnlineLiveReady} from './live-ready';
@@ -16,6 +17,7 @@ const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{statu
 const uuid='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 
 export function coopHandler(services:GameplayServices){
+ const dungeonShop=makeDungeonShopController(services);
  const entry=coopEntryHandler(services),runtime=new OnlineQModeRuntime(services),liveRuntime=new OnlineLiveRuntime(services),eventRuntime=new OnlineEventExpeditionRuntime(services),queue=new OnlineLiveQueue(services),lfg=new OnlineCoopLfg(services);
  return async(request:Request):Promise<Response>=>{
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
@@ -25,6 +27,17 @@ export function coopHandler(services:GameplayServices){
    const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
    if(!bearer)return json({error:'auth_required'},401);
    const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
+
+   if(path.endsWith('/coop/shop')){
+    if(request.method==='GET')return json(await dungeonShop.snapshot(accountId));
+    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+    const raw=await request.text();if(raw.length>1024)return json({error:'request_too_large'},413);
+    let payload:unknown;try{payload=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
+    if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new GameplayError('invalid_dungeon_shop_request');
+    const input=payload as Record<string,unknown>;
+    if(Object.keys(input).some(key=>key!=='requestId'&&key!=='offerId')||typeof input.requestId!=='string'||typeof input.offerId!=='string')throw new GameplayError('invalid_dungeon_shop_request');
+    return json(await dungeonShop.purchase(accountId,input.offerId,input.requestId));
+   }
 
    const profilePower=path.match(new RegExp('/coop/profiles/('+uuid+')/power$'));
    if(profilePower){
@@ -170,7 +183,7 @@ export function coopHandler(services:GameplayServices){
   }catch(error){
    const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
    const status=/^(stale_|idempotency_|node_resolving|potion_charges_exhausted|tonic_already_prepared|tonic_preparation_closed|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
-    /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
+    /^(dungeon_shop_unreleased|not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
     /^(invalid_|healing_potion_not_selected|healing_potion_not_carried|tonic_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
    if(status===503)console.error('coop_unexpected_error',request.method,code);
    return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):code},status);

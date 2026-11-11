@@ -3,10 +3,17 @@ import {SUPPORTED_LANGUAGES} from './languages';
 import type {SeasonalQuest} from '../core/seasonal-quests';
 import {interpolateTranslation,type TranslationParams} from './translator';
 
-/** Only authored class challenge names, rarity/cache labels and exact objective templates.
+/** Authored challenge names, rarity/cache labels and exact objective templates.
  * Unknown server/custom text stays unchanged. DE/ES/NL/IT/FR/RU/TR columns. */
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const seasonalChallengeRows={
+  "Field Patrol": ["Feldpatrouille","Patrulla de campo","Veldpatrouille","Pattuglia sul campo","Patrouille de terrain","Полевой патруль","Saha Devriyesi"],
+  "Gathering Run": ["Sammelrunde","Ruta de recolección","Verzamelronde","Giro di raccolta","Tournée de récolte","Сбор ресурсов","Toplama Turu"],
+  "Crafting Orders": ["Handwerksaufträge","Encargos de fabricación","Productieopdrachten","Ordini di creazione","Commandes d'artisanat","Заказы на изготовление","Üretim Siparişleri"],
+  "Trail Survey": ["Wegerkundung","Exploración de senderos","Padverkenning","Esplorazione dei sentieri","Reconnaissance des sentiers","Разведка троп","Patika Keşfi"],
+  "Faith Practice": ["Glaubenspraxis","Práctica de fe","Geloofsoefening","Pratica della fede","Pratique de la foi","Практика веры","İnanç İbadeti"],
+  "Complete {n} Faith practices this period.": ["Schließe in diesem Zeitraum {n} Glaubensübungen ab.","Completa {n} prácticas de fe durante este período.","Voltooi in deze periode {n} geloofsoefeningen.","Completa {n} pratiche di fede durante questo periodo.","Effectuez {n} pratiques de foi pendant cette période.","Заверши {n} молитвенных практик за этот период.","Bu dönemde {n} inanç ibadeti tamamla."],
+  "FAITH": ["GLAUBE","FE","GELOOF","FEDE","FOI","ВЕРА","İNANÇ"],
   "Hold the Line": [
     "Die Stellung halten",
     "Mantener la línea",
@@ -401,6 +408,7 @@ const objectiveTemplate:Partial<Record<SeasonalQuest['tag'],string>>={
  gathering:'Complete {n} gathering actions this period.',
  crafting:'Complete {n} crafts this period.',
  exploration:'Complete {n} exploration route actions this period.',
+ faith:'Complete {n} Faith practices this period.',
 };
 export function seasonalChallengeDescription(language:Language,quest:Pick<SeasonalQuest,'description'|'required'|'tag'>):string{
  const template=objectiveTemplate[quest.tag];

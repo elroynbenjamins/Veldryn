@@ -48,12 +48,12 @@ function retimeReservedMealCraft(state, prior) {
   if (a.kind === "processing" && a.processing) return { ...state, activity: { ...a, processing: { ...a.processing, cycleSeconds: Math.max(1, Math.min(86400, a.processing.cycleSeconds * factor)) } } };
   return state;
 }
-function commitMealActivityTime(state, source, reward2) {
+function commitMealActivityTime(state, source, reward3) {
   const buff = state.character?.activeMealBuff;
   if (!buff || !source) return state;
   const eligible = source.kind === "combat" || source.kind === "mining" || source.kind === "woodcutting" || source.kind === "fishing" || source.kind === "herbalism" || source.kind === "alchemy" || source.kind === "processing" || source.kind === "exploration" || source.kind === "faith" || source.kind === "training";
   if (!eligible) return state;
-  const qualified = Math.max(0, Math.min(reward2.elapsedSeconds, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
+  const qualified = Math.max(0, Math.min(reward3.elapsedSeconds, reward3.qualifyingActivitySeconds ?? reward3.elapsedSeconds));
   if (qualified <= 0) return state;
   const seconds = Math.max(0, buff.remainingSeconds - qualified);
   return { ...state, character: { ...state.character, activeMealBuff: seconds > 0 ? { ...buff, remainingSeconds: seconds } : void 0 } };
@@ -185,27 +185,31 @@ var init_faith = __esm({
       { id: "WARD_OF_STONE", name: "Ward of Stone", level: 10, family: "defense", bonus: 3 / 100 },
       { id: "ARTISANS_PRAYER", name: "Artisan's Prayer", level: 12, family: "production", bonus: 2 / 100 },
       { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
+      { id: "QUICKENED_STEP", name: "Quickened Step", level: 18, family: "combatSpeed", bonus: 3 / 100 },
       { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
+      { id: "FESTIVAL_FAVOR", name: "Festival Favor", level: 30, family: "eventCurrency", bonus: 10 / 100 },
       { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
       { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
       { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
       { id: "FORGES_FAVOR", name: "Forge's Favor", level: 48, family: "production", bonus: 4 / 100 },
       { id: "LIVING_GRACE", name: "Living Grace", level: 50, family: "hp", bonus: 8 / 100 },
+      { id: "ZEALOUS_TEMPO", name: "Zealous Tempo", level: 52, family: "combatSpeed", bonus: 5 / 100 },
       { id: "SCHOLARS_DEVOTION", name: "Scholar's Devotion", level: 55, family: "xp", bonus: 4 / 100 },
       { id: "HARVESTS_GRACE", name: "Harvest's Grace", level: 70, family: "gathering", bonus: 6 / 100 },
       { id: "MASTERS_BENEDICTION", name: "Master's Benediction", level: 75, family: "production", bonus: 6 / 100 },
       { id: "DAWN_COVENANT", name: "Dawn Covenant", level: 80, family: "attack", bonus: 6 / 100 },
       { id: "ETERNAL_BASTION", name: "Eternal Bastion", level: 85, family: "defense", bonus: 9 / 100 },
+      { id: "CELESTIAL_TEMPO", name: "Celestial Tempo", level: 88, family: "combatSpeed", bonus: 8 / 100 },
       { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
       { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
     HOLY_WATER_SOURCES = [
-      { monsterId: "FIELD_WISP", chance: 0.2, min: 1, max: 2 },
-      { monsterId: "DROWNED_PILGRIM", chance: 0.4, min: 2, max: 4 },
-      { monsterId: "OATHBOUND_SQUIRE", chance: 0.35, min: 2, max: 4 },
-      { monsterId: "DUNE_ORACLE", chance: 0.5, min: 3, max: 5 },
-      { monsterId: "BELLWRAITH", chance: 0.6, min: 4, max: 6 },
-      { monsterId: "ASHEN_REVENANT", chance: 0.75, min: 6, max: 10 }
+      { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
+      { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
+      { monsterId: "OATHBOUND_SQUIRE", chance: 0.28, min: 2, max: 4 },
+      { monsterId: "DUNE_ORACLE", chance: 0.35, min: 3, max: 5 },
+      { monsterId: "BELLWRAITH", chance: 0.4, min: 4, max: 6 },
+      { monsterId: "ASHEN_REVENANT", chance: 0.5, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
   }
@@ -839,6 +843,7 @@ var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var EVENT_COMMUNITY_ENABLED = false;
+var DUNGEON_MARKS_SHOP_RELEASED = false;
 
 // ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
@@ -43003,8 +43008,36 @@ var GUILD_COMPONENT_RECIPES = [
 
 // ../apps/mobile/src/content/gathering-tools.ts
 init_progression();
-var tool = (definition) => ({ ...definition, requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel), recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
-var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
+var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75;
+var TOOL_BLUEPRINT_DROP_ROUNDING_STEP = 1e-3;
+function roundDownToolBlueprintDropChance(chance) {
+  if (!Number.isFinite(chance) || chance < 0 || chance > 1) throw new Error("invalid_tool_blueprint_chance");
+  return Math.floor(chance / TOOL_BLUEPRINT_DROP_ROUNDING_STEP + 1e-10) * TOOL_BLUEPRINT_DROP_ROUNDING_STEP;
+}
+var TOOL_CRAFT_COST_MULTIPLIER = 2;
+var TOOL_CRAFT_XP_BONUS = 3;
+var TOOL_CRAFT_XP_MULTIPLIER = 1.75;
+var TOOL_CRAFT_XP_ROUNDING_STEP = 10;
+function increasedToolCraftXp(baseXp) {
+  if (!Number.isSafeInteger(baseXp) || baseXp < 0) throw new Error("invalid_tool_craft_xp");
+  return Math.ceil((baseXp + TOOL_CRAFT_XP_BONUS) * TOOL_CRAFT_XP_MULTIPLIER / TOOL_CRAFT_XP_ROUNDING_STEP) * TOOL_CRAFT_XP_ROUNDING_STEP;
+}
+var tool = (definition) => ({
+  ...definition,
+  requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel),
+  recipe: {
+    ...definition.recipe,
+    xp: increasedToolCraftXp(definition.recipe.xp),
+    gold: increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER,
+    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER }))
+  }
+});
+var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({
+  itemId,
+  knowledgeId,
+  sourceMonsterId,
+  dropChance: dropChance * TOOL_BLUEPRINT_DROP_MULTIPLIER
+});
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
   tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
@@ -43462,6 +43495,7 @@ var MONSTERS_RAW = [
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
 ];
+var toolBlueprintItemIds = new Set(TOOL_BLUEPRINT_ITEMS.map((blueprint2) => blueprint2.id));
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
 var ADVANCED_REGION_MONSTER_MULTIPLIER = 1.2;
@@ -43485,14 +43519,17 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   return {
     ...monster,
     unlockLevel: rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
-    // Reduce all chance-based combat drops by 5% relative to their existing
-    // chance, including Holy Water, rare equipment and gem materials. Preserve
-    // authored guaranteed boss drops and the existing 50% standard-material rule.
-    // This single normalized table also feeds the player-visible loot preview.
+    // Reduce other chance-based combat drops by 5% relative to their existing
+    // chance. Holy Water's dedicated Faith catalog already contains the final
+    // whole-percent rates after this 5% cut and a further 15% reduction.
+    // Preserve guaranteed boss drops and the 50% standard-material rule.
+    // This normalized table also feeds the player-visible loot preview.
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => {
       const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
-      const relativeChanceScale = drop.chance < 1 ? 0.95 : 1;
-      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale };
+      const relativeChanceScale = drop.itemId === HOLY_WATER_ID ? 1 : drop.chance < 1 ? 0.95 : 1;
+      const toolBlueprintScale = toolBlueprintItemIds.has(drop.itemId) ? TOOL_BLUEPRINT_DROP_MULTIPLIER : 1;
+      const adjustedChance = drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale * toolBlueprintScale;
+      return { ...drop, chance: toolBlueprintScale !== 1 ? roundDownToolBlueprintDropChance(adjustedChance) : adjustedChance };
     }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.
     // Scale both the displayed combat stats and cycle time, so 20% more HP
@@ -46033,15 +46070,15 @@ function resolveCompanionTrialFloor(input, runIdValue, executor) {
   }
   const floor = run.currentFloor, boss2 = floorDef.boss, firstClear = !progress.season.firstClearFloors.includes(floor), base = companionTrialReward(floor, firstClear, boss2), seasonDef = companionTrialSeasonDefinition(progress.season.seasonKey);
   const featured = !!seasonDef.featuredOrigin && teamCheck.members.some((x) => x.originId === seasonDef.featuredOrigin), essenceMult = companionEssenceRewardMultiplier(synergies) * (featured ? 1.05 : 1);
-  const reward2 = { ...base, companionEssence: Math.round(base.companionEssence * essenceMult), materials: Object.fromEntries(Object.entries(base.materials).filter(([, v]) => typeof v === "number")) };
+  const reward3 = { ...base, companionEssence: Math.round(base.companionEssence * essenceMult), materials: Object.fromEntries(Object.entries(base.materials).filter(([, v]) => typeof v === "number")) };
   const firstClearFloors = firstClear ? [...progress.season.firstClearFloors, floor] : progress.season.firstClearFloors;
   const bossRewardFloors = firstClear && boss2 ? [...progress.season.bossRewardFloors, floor] : progress.season.bossRewardFloors;
   const previousHighest = progress.season.currentSeasonHighestFloor, currentSeasonHighestFloor = Math.max(previousHighest, floor), monthlyCompleted = firstClear && floor === COMPANION_TRIAL_FLOOR_COUNT;
   if (monthlyCompleted) {
-    reward2.companionEssence += COMPANION_MONTHLY_COMPLETION_REWARD.companionEssence;
-    reward2.gold += COMPANION_MONTHLY_COMPLETION_REWARD.gold;
-    reward2.bondstones += COMPANION_MONTHLY_COMPLETION_REWARD.bondstones;
-    for (const [id, q2] of Object.entries(COMPANION_MONTHLY_COMPLETION_REWARD.materials)) reward2.materials[id] = (reward2.materials[id] ?? 0) + q2;
+    reward3.companionEssence += COMPANION_MONTHLY_COMPLETION_REWARD.companionEssence;
+    reward3.gold += COMPANION_MONTHLY_COMPLETION_REWARD.gold;
+    reward3.bondstones += COMPANION_MONTHLY_COMPLETION_REWARD.bondstones;
+    for (const [id, q2] of Object.entries(COMPANION_MONTHLY_COMPLETION_REWARD.materials)) reward3.materials[id] = (reward3.materials[id] ?? 0) + q2;
   }
   const teamPower = companionTeamPower(run.teamCompanionIds, input.owned), lifetime = { ...progress.lifetime, lifetimeHighestFloor: Math.max(progress.lifetime.lifetimeHighestFloor, floor), totalTrialFloorsCleared: progress.lifetime.totalTrialFloorsCleared + 1, totalTrialBossesDefeated: progress.lifetime.totalTrialBossesDefeated + (boss2 ? 1 : 0), monthlyFloor30Clears: progress.lifetime.monthlyFloor30Clears + (monthlyCompleted ? 1 : 0), bestEverCompanionTeamPower: Math.max(progress.lifetime.bestEverCompanionTeamPower, teamPower) };
   const weeklyCompleted = false;
@@ -46054,7 +46091,7 @@ function resolveCompanionTrialFloor(input, runIdValue, executor) {
   const endRun = boss2 || floor === COMPANION_TRIAL_FLOOR_COUNT;
   const nextRun = endRun ? void 0 : { ...run, currentFloor: nextFloor };
   const nextProgress = { ...progress, lifetime, season: { ...progress.season, currentFloor: endRun ? checkpointFloor : nextFloor, checkpointFloor, currentSeasonHighestFloor, firstClearFloors, bossRewardFloors, leaderboardScore: Math.max(progress.season.leaderboardScore, Math.round(floor * 1e3 - result.durationMs / 100)), activeRun: nextRun, monthlyChallengeCompletion: special } };
-  return { progress: nextProgress, result, reward: reward2, firstClear, monthlyCompleted, weeklyCompleted, runEnded: endRun, nextFloor: nextProgress.season.currentFloor, checkpointFloor };
+  return { progress: nextProgress, result, reward: reward3, firstClear, monthlyCompleted, weeklyCompleted, runEnded: endRun, nextFloor: nextProgress.season.currentFloor, checkpointFloor };
 }
 function claimMonthlyCompanionChallenge(progress, challengeId, serverNowMs) {
   const current = rolloverCompanionTrialSeason(progress, serverNowMs).progress;
@@ -46240,8 +46277,8 @@ function claimCompanionAssignment(input) {
   const materials = {};
   for (const [id, q2] of Object.entries(mission.baseRewards.materials ?? {})) materials[id] = Math.max(1, Math.round(q2 * mult * materialMult));
   if (bonusRewardGranted) for (const [id, q2] of Object.entries(mission.bonusRewards?.materials ?? {})) materials[id] = (materials[id] ?? 0) + q2;
-  const reward2 = { companionEssence: Math.round(mission.baseRewards.companionEssence * mult * bonusMult * essenceMult) + (bonusRewardGranted ? mission.bonusRewards?.companionEssence ?? 0 : 0), gold: Math.round(mission.baseRewards.gold * mult) + (bonusRewardGranted ? mission.bonusRewards?.gold ?? 0 : 0), companionXp: perXp, bondXp: perBond, bondstones, materials, companionXpById: Object.fromEntries(completed.companionIds.map((id) => [id, perXp])), bondXpById: Object.fromEntries(completed.companionIds.map((id) => [id, perBond])), bonusRewardGranted };
-  return { assignment: { ...completed, status: "claimed", claimedAt: new Date(input.serverNowMs).toISOString(), performanceGrade: grade, rewardSnapshot: reward2 }, reward: reward2 };
+  const reward3 = { companionEssence: Math.round(mission.baseRewards.companionEssence * mult * bonusMult * essenceMult) + (bonusRewardGranted ? mission.bonusRewards?.companionEssence ?? 0 : 0), gold: Math.round(mission.baseRewards.gold * mult) + (bonusRewardGranted ? mission.bonusRewards?.gold ?? 0 : 0), companionXp: perXp, bondXp: perBond, bondstones, materials, companionXpById: Object.fromEntries(completed.companionIds.map((id) => [id, perXp])), bondXpById: Object.fromEntries(completed.companionIds.map((id) => [id, perBond])), bonusRewardGranted };
+  return { assignment: { ...completed, status: "claimed", claimedAt: new Date(input.serverNowMs).toISOString(), performanceGrade: grade, rewardSnapshot: reward3 }, reward: reward3 };
 }
 
 // src/server/companions/policy.ts
@@ -47026,6 +47063,7 @@ function eventCurrencyPromotionBps(eventId, earnedAtMs) {
 }
 
 // ../apps/mobile/src/core/live-events.ts
+init_faith2();
 function eventLifecycle(state, nowMs = Date.now()) {
   const runtime = state.account.liveEvent;
   if (!runtime?.enabled) return null;
@@ -47066,8 +47104,8 @@ function promotedCommonReward(state, eventId, quantity2, earnedAtMs) {
   return Math.floor(quantity2 * (1e4 + eventCurrencyBonusBps(state, eventId, earnedAtMs)) / 1e4);
 }
 var EVENT_COMMUNITY_MIN_CONTRIBUTION = 100;
-function eventPrestigeReward(source, reward2) {
-  return source === "boss" ? Math.max(0, Math.floor(reward2)) : 0;
+function eventPrestigeReward(source, reward3) {
+  return source === "boss" ? Math.max(0, Math.floor(reward3)) : 0;
 }
 function eventCandyWindow(state, kind = "skill") {
   const runtime = state.account.liveEvent, definition = runtime?.enabled ? liveEventDef(runtime.eventId) : void 0;
@@ -47169,7 +47207,9 @@ function eventEffectiveDropRate(state, eventId, source, nowMs = Date.now()) {
   const event = liveEventDef(eventId);
   if (!event) return 0;
   const blessing = eventDailyFestivalBlessing2(state, nowMs), blessingMultiplier = blessing?.source === source ? 1 + blessing.bonusBps / 1e4 : 1;
-  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4);
+  const active2 = activeLiveEvent(state, nowMs), faith = active2?.definition.id === eventId ? selectedFaithBlessing(state) : void 0;
+  const faithMultiplier = faith?.family === "eventCurrency" ? 1 + faith.bonus : 1;
+  return event.dropRates[source] * (eventProjectChoice(state, eventId)?.dropMultipliers?.[source] ?? 1) * blessingMultiplier * (1 + eventCurrencyBonusBps(state, eventId, nowMs) / 1e4) * faithMultiplier;
 }
 function eventContributionValue(state, eventId, spent) {
   const multiplier = eventProjectChoice(state, eventId)?.contributionMultiplier ?? 1;
@@ -47268,39 +47308,39 @@ function grantEventActivity(state, source, nowMs = Date.now(), units = 1) {
   const quantity2 = eventDropQuantity(state, source, count, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity2, source, units: count, recordedAtMs: nowMs }]);
   return applyEventDiscoveries(withDrops, activityEventDiscoveries(state, source, count, nowMs));
 }
-function addReward(state, reward2, nowMs = Date.now()) {
+function addReward(state, reward3, nowMs = Date.now()) {
   const account = { ...state.account };
   let character = state.character;
-  if (reward2.kind === "companion") {
-    const alreadyOwned = (state.account.unlockedCombatCompanionIds ?? []).includes(reward2.id);
+  if (reward3.kind === "companion") {
+    const alreadyOwned = (state.account.unlockedCombatCompanionIds ?? []).includes(reward3.id);
     if (alreadyOwned) {
-      const high = reward2.rarity === "mythic" || reward2.rarity === "legendary", essence = high ? 300 : 180, bondbloom = high ? 3 : 2;
+      const high = reward3.rarity === "mythic" || reward3.rarity === "legendary", essence = high ? 300 : 180, bondbloom = high ? 3 : 2;
       return { ...state, account: { ...state.account, companionEssence: (state.account.companionEssence ?? 0) + essence, companionMaterials: { ...state.account.companionMaterials ?? {}, EVENT_BONDBLOOM: (state.account.companionMaterials?.EVENT_BONDBLOOM ?? 0) + bondbloom }, longTermMetrics: { ...state.account.longTermMetrics ?? {}, "companions.event_duplicates_converted": (state.account.longTermMetrics?.["companions.event_duplicates_converted"] ?? 0) + 1, "companions.event_duplicate_essence": (state.account.longTermMetrics?.["companions.event_duplicate_essence"] ?? 0) + essence } } };
     }
-    const unlocked = unlockCombatCompanion(state, reward2.id, nowMs);
+    const unlocked = unlockCombatCompanion(state, reward3.id, nowMs);
     const materials = { ...unlocked.account.companionMaterials ?? {} };
-    materials.EVENT_BONDBLOOM = (materials.EVENT_BONDBLOOM ?? 0) + (reward2.rarity === "mythic" || reward2.rarity === "legendary" ? 8 : 6);
+    materials.EVENT_BONDBLOOM = (materials.EVENT_BONDBLOOM ?? 0) + (reward3.rarity === "mythic" || reward3.rarity === "legendary" ? 8 : 6);
     return { ...unlocked, account: { ...unlocked.account, companionMaterials: materials } };
   }
-  if (reward2.kind === "candy") {
-    account.eventCandyChargesById = { ...account.eventCandyChargesById ?? {}, [reward2.id]: (account.eventCandyChargesById?.[reward2.id] ?? 0) + Math.max(1, Math.floor(reward2.quantity ?? 1)) };
-  } else if (reward2.kind === "gold") {
+  if (reward3.kind === "candy") {
+    account.eventCandyChargesById = { ...account.eventCandyChargesById ?? {}, [reward3.id]: (account.eventCandyChargesById?.[reward3.id] ?? 0) + Math.max(1, Math.floor(reward3.quantity ?? 1)) };
+  } else if (reward3.kind === "gold") {
     if (!character) throw new Error("Character required.");
-    character = { ...character, gold: character.gold + Math.max(1, Math.floor(reward2.quantity ?? 1)) };
-  } else if (reward2.kind === "companion_essence") account.companionEssence = (account.companionEssence ?? 0) + Math.max(1, Math.floor(reward2.quantity ?? 1));
-  else if (reward2.kind === "bondstones") account.bondstones = (account.bondstones ?? 0) + Math.max(1, Math.floor(reward2.quantity ?? 1));
-  else if (reward2.kind === "guild_name_color" || reward2.kind === "guild_frame" || reward2.kind === "guild_banner") {
-    account.unlockedGuildCosmeticIds = [.../* @__PURE__ */ new Set([...account.unlockedGuildCosmeticIds ?? [], reward2.id])];
-  } else if (reward2.kind === "profile_icon") account.unlockedProfileIconIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileIconIds ?? [], reward2.id])];
-  else if (reward2.kind === "pet") {
-    account.unlockedCosmeticPetIds = [.../* @__PURE__ */ new Set([...account.unlockedCosmeticPetIds ?? [], reward2.id])];
+    character = { ...character, gold: character.gold + Math.max(1, Math.floor(reward3.quantity ?? 1)) };
+  } else if (reward3.kind === "companion_essence") account.companionEssence = (account.companionEssence ?? 0) + Math.max(1, Math.floor(reward3.quantity ?? 1));
+  else if (reward3.kind === "bondstones") account.bondstones = (account.bondstones ?? 0) + Math.max(1, Math.floor(reward3.quantity ?? 1));
+  else if (reward3.kind === "guild_name_color" || reward3.kind === "guild_frame" || reward3.kind === "guild_banner") {
+    account.unlockedGuildCosmeticIds = [.../* @__PURE__ */ new Set([...account.unlockedGuildCosmeticIds ?? [], reward3.id])];
+  } else if (reward3.kind === "profile_icon") account.unlockedProfileIconIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileIconIds ?? [], reward3.id])];
+  else if (reward3.kind === "pet") {
+    account.unlockedCosmeticPetIds = [.../* @__PURE__ */ new Set([...account.unlockedCosmeticPetIds ?? [], reward3.id])];
     if (character) {
-      character = { ...character, ownedPetIds: [.../* @__PURE__ */ new Set([...character.ownedPetIds ?? [], reward2.id])] };
+      character = { ...character, ownedPetIds: [.../* @__PURE__ */ new Set([...character.ownedPetIds ?? [], reward3.id])] };
     }
-  } else if (reward2.kind === "background") account.unlockedProfileBackgroundIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileBackgroundIds ?? [], reward2.id])];
-  else if (reward2.kind === "border") account.unlockedProfileBorderIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileBorderIds ?? [], reward2.id])];
-  else if (reward2.kind === "emote") account.unlockedEmoteIds = [.../* @__PURE__ */ new Set([...account.unlockedEmoteIds ?? [], reward2.id])];
-  else account.unlockedTitleIds = [.../* @__PURE__ */ new Set([...account.unlockedTitleIds ?? [], reward2.id])];
+  } else if (reward3.kind === "background") account.unlockedProfileBackgroundIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileBackgroundIds ?? [], reward3.id])];
+  else if (reward3.kind === "border") account.unlockedProfileBorderIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileBorderIds ?? [], reward3.id])];
+  else if (reward3.kind === "emote") account.unlockedEmoteIds = [.../* @__PURE__ */ new Set([...account.unlockedEmoteIds ?? [], reward3.id])];
+  else account.unlockedTitleIds = [.../* @__PURE__ */ new Set([...account.unlockedTitleIds ?? [], reward3.id])];
   return character === state.character ? { ...state, account } : { ...state, account, character };
 }
 function grantEventCurrencies(state, eventId, common, prestige) {
@@ -47581,6 +47621,34 @@ var GUILD_PET_COLLECTIBLES = [
   }
 ];
 
+// ../apps/mobile/src/content/dungeon-shop-collectibles-v1.ts
+var reward2 = (id, kind, name, target2, region, activeBps) => ({
+  id,
+  kind,
+  name,
+  bonusFamilyId: id,
+  target: target2,
+  ownedBps: 50,
+  activeBps,
+  rarity: "Epic",
+  collectionGroup: "profile",
+  region,
+  source: "Dungeon Marks Shop \xB7 " + region,
+  nativeSize: kind === "pet" ? 64 : void 0,
+  description: "A permanent " + region + " Dungeon Marks collectible."
+});
+var DUNGEON_SHOP_COLLECTIBLES_V1 = [
+  reward2("dungeon:asterfall:briarbound-frame", "border", "Briarbound Frame", "gatheringYield", "Asterfall", 200),
+  reward2("dungeon:asterfall:rootbound-sanctuary", "background", "Rootbound Sanctuary", "hp", "Asterfall", 200),
+  reward2("DUNGEON_PET_ASTERFALL_001", "pet", "Oathroot Seedling", "healingEffectiveness", "Asterfall", 300),
+  reward2("dungeon:sunscar:amberglass-loop", "border", "Amberglass Loop", "craftingSpeed", "Sunscar", 200),
+  reward2("dungeon:sunscar:buried-observatory", "background", "Buried Observatory", "skillXp", "Sunscar", 200),
+  reward2("DUNGEON_PET_SUNSCAR_001", "pet", "Vaultscarab", "dropChance", "Sunscar", 300),
+  reward2("dungeon:frostmarch:frostbound-chime", "border", "Frostbound Chime", "fishingSpeed", "Frostmarch", 200),
+  reward2("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
+  reward2("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
+];
+
 // ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
 var PROFILE_COLLECTIBLES = [
@@ -47600,6 +47668,7 @@ var PROFILE_COLLECTIBLES = [
 var COLLECTIBLES = [
   ...CORE_PET_COLLECTIBLES,
   ...GUILD_PET_COLLECTIBLES,
+  ...DUNGEON_MARKS_SHOP_RELEASED ? DUNGEON_SHOP_COLLECTIBLES_V1 : [],
   ...EVENTS_RELEASED ? EVENT_PET_COLLECTIBLES : [],
   // The authored event backgrounds/borders below are unreleased Harvestwake
   // prototypes. Retain their definitions for future authoring, not the journal.
@@ -47945,6 +48014,7 @@ function characterPermanentMultipliers(state) {
   const blessing = selectedFaithBlessing(state);
   if (blessing) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
+    if (blessing.family === "combatSpeed") result = merge(result, { ...BASE, combatSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
     if (blessing.family === "gathering") result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "production") result = merge(result, { ...BASE, craftingSpeedMultiplier: 1 + blessing.bonus });
@@ -48186,6 +48256,27 @@ var REGIONAL_AREAS = [
   }
 ].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
 
+// ../apps/mobile/src/core/item-rarity.ts
+var GEAR_RARITIES = [
+  { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
+  { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
+  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
+  { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
+  { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
+  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
+];
+function itemRarity(item) {
+  if (item.rarity) return item.rarity;
+  if (item.type !== "gear") return "common";
+  if (item.value >= 1500) return "mythic";
+  if (item.value >= 800) return "legendary";
+  if (item.value >= 400 || item.readiness && item.readiness >= 10) return "epic";
+  if (item.value >= 150 || item.readiness && item.readiness >= 7) return "rare";
+  if (item.value >= 50 || item.readiness && item.readiness >= 3) return "uncommon";
+  return "common";
+}
+var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
+
 // ../apps/mobile/src/core/equipment-salvage.ts
 var MATERIAL_ID = "TEMPERING_DUST";
 var tieredRewards = /* @__PURE__ */ new Map();
@@ -48195,8 +48286,51 @@ for (const item of EQUIPMENT_ITEMS_V33) {
   tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
 }
 function equipmentSalvageReward(itemId) {
-  const recipe2 = tieredRewards.get(itemId);
-  return recipe2 ? { ...recipe2 } : null;
+  const dust = tieredRewards.get(itemId);
+  return dust ? { ...dust } : null;
+}
+var CONSUMED_INFUSIONS = /* @__PURE__ */ new Set([
+  "VERDANT_BINDING_RESIN",
+  "IRONWOOD_BINDING_RESIN",
+  "SUNSCAR_DUNE_BINDER",
+  "GLASSBOUND_BINDER",
+  "SUNFUSED_FIXATIVE",
+  "RIMEWARD_DISTILLATE",
+  "CINDERHEART_ELIXIR"
+]);
+function eligibleOrdinaryIngredient(itemId) {
+  if (CONSUMED_INFUSIONS.has(itemId)) return false;
+  const ingredient = itemDef(itemId);
+  return ingredient.type === "material" && ["common", "uncommon"].includes(itemRarity(ingredient));
+}
+function equipmentSalvageRewards(itemId, crafted) {
+  const dust = equipmentSalvageReward(itemId);
+  if (!dust) return [];
+  if (!crafted || crafted.acquireSource !== "craft" || crafted.itemId !== itemId) return [dust];
+  const recipe2 = v33EquipmentRecipeForItem(itemId);
+  if (!recipe2) return [dust];
+  const rarityBps = crafted.rarity === "rare" ? 250 : ["epic", "legendary", "mythic"].includes(crafted.rarity) ? 500 : 0;
+  const quality = crafted.quality;
+  const qualityBps = typeof quality === "number" && Number.isInteger(quality) && quality >= 0 && quality <= 100 ? quality >= 90 ? 500 : quality >= 70 ? 250 : 0 : 0;
+  const percentBps = Math.min(2500, 1500 + rarityBps + qualityBps);
+  const materials = recipe2.inputs.filter((input) => eligibleOrdinaryIngredient(input.itemId)).map((input) => ({ itemId: input.itemId, quantity: Math.floor(input.quantity * percentBps / 1e4) })).filter((input) => input.quantity > 0);
+  return [dust, ...materials];
+}
+function inventoryWithSalvageRewards(inventory, rewards, capacity) {
+  const stacks = inventory.stacks.map((stack) => ({ ...stack }));
+  for (const reward3 of rewards) {
+    if (!Number.isSafeInteger(reward3.quantity) || reward3.quantity < 1) throw new Error("Invalid salvage quantity");
+    const current = stacks.find((stack) => stack.itemId === reward3.itemId && stack.instanceId === void 0);
+    if (current) {
+      const sum = current.quantity + reward3.quantity;
+      if (!Number.isSafeInteger(sum)) throw new Error("Salvage material quantity overflow");
+      current.quantity = sum;
+    } else {
+      if (stacks.filter((stack) => stack.quantity > 0).length >= capacity) throw new Error("Inventory is full; make space for salvage");
+      stacks.push({ itemId: reward3.itemId, quantity: reward3.quantity });
+    }
+  }
+  return { ...inventory, stacks };
 }
 
 // ../apps/mobile/src/content/mining-essence.ts
@@ -49083,7 +49217,7 @@ function environmentEffectForActivity(activity) {
 
 // ../apps/mobile/src/core/seasonal-quests.ts
 var periods = ["daily", "weekly", "monthly"];
-var activityTags = ["combat", "gathering", "crafting", "exploration", "boss"];
+var activityTags = ["combat", "gathering", "crafting", "exploration", "faith", "boss"];
 function normalizeSeasonalProgress(raw2) {
   const result = {};
   if (!raw2 || typeof raw2 !== "object") return result;
@@ -49116,22 +49250,15 @@ var QUEST_RARITIES = {
   epic: { label: "Epic", color: "#c79cff", multiplier: 2.25, cache: "Oathbound cache" },
   legendary: { label: "Legendary", color: "#f0a24b", multiplier: 3, cache: "Crown cache" }
 };
-var roleTemplates = {
-  Tank: [["Hold the Line", "Defeat {n} monsters while staying battle-ready.", 24, "combat"], ["Iron Ration", "Build toward {n} total skill levels for the next expedition.", 12, "gathering"], ["Marching Vigil", "Defeat {n} monsters on patrol.", 28, "combat"], ["Roadwarden Survey", "Unlock {n} monster encounters.", 5, "exploration"]],
-  Support: [["Light the Way", "Build toward {n} total skill levels through gathering.", 30, "gathering"], ["Mercy in Motion", "Craft or equip {n} meaningful upgrades.", 12, "crafting"], ["Dawn Patrol", "Earn progress from {n} combat milestones.", 20, "combat"], ["Safe Passage", "Unlock {n} monster encounters.", 5, "exploration"]],
-  Damage: [["Predator\u2019s Circuit", "Earn progress from {n} combat milestones.", 18, "combat"], ["Edge of Mastery", "Craft or equip {n} meaningful upgrades.", 14, "crafting"], ["The Long Hunt", "Earn progress from {n} combat milestones.", 30, "combat"], ["Forward Scout", "Unlock {n} monster encounters.", 5, "exploration"]]
-};
-var classTemplates = {
-  IRONWARDEN: ["Steel Discipline", "Defeat {n} monsters to reinforce the line.", 26, "combat"],
-  BASTION: ["Unbroken Wall", "Earn progress from {n} combat milestones.", 30, "combat"],
-  DREADGUARD: ["Chain of Command", "Earn progress from {n} combat milestones.", 28, "combat"],
-  DAWNKEEPER: ["Sunlamp Offering", "Craft or equip {n} meaningful upgrades.", 15, "crafting"],
-  WAYFINDER: ["Cartographer\u2019s Eye", "Unlock {n} additional monster encounters.", 5, "exploration"],
-  RAVAGER: ["Break Their Line", "Earn progress from {n} combat milestones.", 40, "combat"],
-  HEXWEAVER: ["Runic Survey", "Build toward {n} total skill levels through gathering.", 22, "gathering"],
-  KNIFE_DANCER: ["Steps Unseen", "Unlock {n} monster encounters.", 6, "exploration"],
-  STONECALLER: ["Stone and Storm", "Build toward {n} total skill levels through gathering.", 24, "gathering"]
-};
+var sharedTemplates = [
+  ["Field Patrol", "combat"],
+  ["Gathering Run", "gathering"],
+  ["Crafting Orders", "crafting"],
+  ["Trail Survey", "exploration"],
+  ["Faith Practice", "faith"]
+];
+var ACTION_TARGETS = { daily: 30, weekly: 150, monthly: 450 };
+var BASE_REWARD_ACTIONS = 30;
 function periodKey(period, date = /* @__PURE__ */ new Date()) {
   const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   if (period === "daily") return utc.toISOString().slice(0, 10);
@@ -49143,11 +49270,8 @@ function periodKey(period, date = /* @__PURE__ */ new Date()) {
   }
   return `${utc.getUTCFullYear()}-${utc.getUTCMonth() + 1}`;
 }
-function pick(list, seed, index) {
-  return list[hash32(`${seed}:${index}`) % list.length];
-}
-function rarityFor(period, key, index, classId) {
-  const roll = hash32(`${period}:${key}:${classId}:${index}:rarity`) % 100;
+function rarityFor(period, key, index) {
+  const roll = hash32(`${period}:${key}:${index}:rarity`) % 100;
   if (period === "daily") return roll < 55 ? "common" : roll < 90 ? "uncommon" : "rare";
   if (period === "weekly") return roll < 45 ? "uncommon" : roll < 87 ? "rare" : "epic";
   return roll < 48 ? "rare" : roll < 88 ? "epic" : "legendary";
@@ -49169,9 +49293,9 @@ function seasonalQuestCache(period, rarity) {
 }
 function seasonalQuestRewardOptions(state, period, rarity) {
   const base = seasonalQuestCache(period, rarity), options = [];
-  const add = (reward2) => {
-    const id = reward2.rewardItemId ? "item:" + reward2.rewardItemId : reward2.rewardBondstones ? "bondstones" : "essence";
-    if (!options.some((option) => option.id === id)) options.push({ id, ...reward2 });
+  const add = (reward3) => {
+    const id = reward3.rewardItemId ? "item:" + reward3.rewardItemId : reward3.rewardBondstones ? "bondstones" : "essence";
+    if (!options.some((option) => option.id === id)) options.push({ id, ...reward3 });
   };
   const item = (id, amount) => add({ rewardItemId: id, rewardItemQty: amount });
   add(base);
@@ -49220,18 +49344,27 @@ function contractProgress(state, tag, period, key) {
   return progress?.key === key ? progress.counts[tag] ?? 0 : 0;
 }
 function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
-  const character = state.character;
-  if (!character) return [];
-  const classDef = CLASSES.find((item) => item.id === character.classId);
+  if (!state.character) return [];
   const key = periodKey(period, date), count = period === "daily" ? 2 : period === "weekly" ? 3 : 4;
-  const role = roleTemplates[classDef.role], specific = classTemplates[character.classId];
-  const rows2 = [specific, ...Array.from({ length: count }, (_, index) => pick(role, key, index))].slice(0, count);
-  const volume = period === "daily" ? 0.9 : period === "weekly" ? 3 : 8;
-  return rows2.map((row, index) => {
-    const [name, templateDescription, base, tag] = row, rarity = rarityFor(period, key, index, character.classId), meta = QUEST_RARITIES[rarity], required = Math.min(tag === "equipment" ? 10 : Infinity, Math.max(1, Math.round(base * volume))), progress = Math.min(required, contractProgress(state, tag, period, key)), reward2 = seasonalQuestCache(period, rarity), rewardOptions = seasonalQuestRewardOptions(state, period, rarity);
-    const description = tag === "combat" ? "Defeat {n} monsters this period." : tag === "gathering" ? "Complete {n} gathering actions this period." : tag === "crafting" ? "Complete {n} crafts this period." : tag === "exploration" ? "Complete {n} exploration route actions this period." : templateDescription;
-    const baseGold = period === "daily" ? Math.max(20, base * 2) : period === "weekly" ? base * 8 : Math.max(300, base * 20), baseXp = period === "daily" ? Math.max(40, base * 4) : period === "weekly" ? base * 15 : Math.max(600, base * 40);
-    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name: name.replace("{n}", String(required)), description: description.replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward2, rewardOptions, className: classDef.name, tag, rarity };
+  const available = [...sharedTemplates];
+  const rows2 = Array.from({ length: count }, (_, index) => available.splice(hash32(`${period}:${key}:quest:${index}`) % available.length, 1)[0]);
+  const required = ACTION_TARGETS[period], base = BASE_REWARD_ACTIONS;
+  return rows2.map(([name, tag], index) => {
+    const rarity = rarityFor(period, key, index), meta = QUEST_RARITIES[rarity];
+    const progress = Math.min(required, contractProgress(state, tag, period, key));
+    const reward3 = seasonalQuestCache(period, rarity), rewardOptions = seasonalQuestRewardOptions(state, period, rarity);
+    const descriptions = {
+      combat: "Defeat {n} monsters this period.",
+      gathering: "Complete {n} gathering actions this period.",
+      crafting: "Complete {n} crafts this period.",
+      exploration: "Complete {n} exploration route actions this period.",
+      faith: "Complete {n} Faith practices this period.",
+      equipment: "Equip {n} equipment pieces this period.",
+      boss: "Defeat {n} bosses this period."
+    };
+    const baseGold = period === "daily" ? Math.max(20, base * 2) : period === "weekly" ? base * 8 : Math.max(300, base * 20);
+    const baseXp = period === "daily" ? Math.max(40, base * 4) : period === "weekly" ? base * 15 : Math.max(600, base * 40);
+    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name, description: descriptions[tag].replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward3, rewardOptions, className: "Adventurer", tag, rarity };
   });
 }
 
@@ -49537,27 +49670,6 @@ function currentRegionId(state) {
   }
   return WORLD_ZONES[0].id;
 }
-
-// ../apps/mobile/src/core/item-rarity.ts
-var GEAR_RARITIES = [
-  { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
-  { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
-  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
-  { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
-  { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
-  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
-];
-function itemRarity(item) {
-  if (item.rarity) return item.rarity;
-  if (item.type !== "gear") return "common";
-  if (item.value >= 1500) return "mythic";
-  if (item.value >= 800) return "legendary";
-  if (item.value >= 400 || item.readiness && item.readiness >= 10) return "epic";
-  if (item.value >= 150 || item.readiness && item.readiness >= 7) return "rare";
-  if (item.value >= 50 || item.readiness && item.readiness >= 3) return "uncommon";
-  return "common";
-}
-var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
 // ../apps/mobile/src/core/crafted-gear-rarity.ts
 var CRAFTED_MYTHIC_CHANCE = 1e-3;
@@ -51217,14 +51329,14 @@ function updateRecord(journal, event, changed) {
     changed.push(event.recordId);
   }
 }
-function settlementRecords(journal, reward2, eventId, nowMs, characterId) {
-  if (!reward2 || reward2.elapsedSeconds <= 0) return [];
+function settlementRecords(journal, reward3, eventId, nowMs, characterId) {
+  if (!reward3 || reward3.elapsedSeconds <= 0) return [];
   const changed = [], base = { eventId, achievedAtMs: nowMs, ...characterId ? { characterId } : {} };
-  const totalItems = reward2.items.reduce((sum, row) => sum + row.quantity, 0), events = [
-    { ...base, eventId: `${eventId}:duration`, recordId: "longest_activity_seconds", value: reward2.elapsedSeconds },
-    { ...base, eventId: `${eventId}:actions`, recordId: "most_actions_single_settlement", value: reward2.kills },
-    { ...base, eventId: `${eventId}:xp`, recordId: "most_xp_single_settlement", value: reward2.xp },
-    { ...base, eventId: `${eventId}:gold`, recordId: "most_gold_single_settlement", value: reward2.gold },
+  const totalItems = reward3.items.reduce((sum, row) => sum + row.quantity, 0), events = [
+    { ...base, eventId: `${eventId}:duration`, recordId: "longest_activity_seconds", value: reward3.elapsedSeconds },
+    { ...base, eventId: `${eventId}:actions`, recordId: "most_actions_single_settlement", value: reward3.kills },
+    { ...base, eventId: `${eventId}:xp`, recordId: "most_xp_single_settlement", value: reward3.xp },
+    { ...base, eventId: `${eventId}:gold`, recordId: "most_gold_single_settlement", value: reward3.gold },
     { ...base, eventId: `${eventId}:items`, recordId: "most_items_single_settlement", value: totalItems }
   ];
   for (const event of events) if (event.value > 0) updateRecord(journal, event, changed);
@@ -51241,7 +51353,7 @@ function sourceKind(event) {
   }
   return void 0;
 }
-function applyTrustedLongTermProgression(input, events, reward2, nowMs, options) {
+function applyTrustedLongTermProgression(input, events, reward3, nowMs, options) {
   let state = reconcileWeeklyOrderRollover(input, nowMs).state;
   const account = { ...state.account }, metrics = { ...account.longTermMetrics ?? {} }, mastery = { ...account.professionMasteryByAction ?? {} };
   state = { ...state, account: { ...account, longTermMetrics: metrics, professionMasteryByAction: mastery } };
@@ -51300,7 +51412,7 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
       rareGrantRefs.push(...result.grants.map((row) => row.reward.ref));
     }
   }
-  const journal = ensureJournal(state, options.accountId), recordUpdates = settlementRecords(journal, reward2, options.eventId, nowMs, state.character?.id), journalResult = applyJournalSnapshot(journal, { metrics: journalMetrics({ ...state, account: { ...state.account, longTermMetrics: metrics } }) }, nowMs);
+  const journal = ensureJournal(state, options.accountId), recordUpdates = settlementRecords(journal, reward3, options.eventId, nowMs, state.character?.id), journalResult = applyJournalSnapshot(journal, { metrics: journalMetrics({ ...state, account: { ...state.account, longTermMetrics: metrics } }) }, nowMs);
   if (state.quests.some((row) => row.questId === "QST_015" && row.status === "claimed") && journal.unlockedTitles.oathbreaker === void 0) {
     journal.unlockedTitles.oathbreaker = nowMs;
     journalResult.newlyUnlockedTitleIds.push("oathbreaker");
@@ -51572,10 +51684,10 @@ function claimDailySupplies(state, characterId, nowMs) {
   if (status.reward.kind === "premium") {
     next = { ...next, account: { ...next.account, premiumCurrencyBalance: (next.account.premiumCurrencyBalance ?? 0) + status.reward.amount } };
   } else {
-    const reward2 = status.reward;
+    const reward3 = status.reward;
     next = updateCharacter(next, characterId, (character) => {
-      const bank = { ...character.dailySupplyBoostBank ?? {} }, type = reward2.type;
-      bank[type] = (bank[type] ?? 0) + reward2.charges;
+      const bank = { ...character.dailySupplyBoostBank ?? {} }, type = reward3.type;
+      bank[type] = (bank[type] ?? 0) + reward3.charges;
       return { ...character, dailySupplyBoostBank: bank };
     });
   }
@@ -51604,24 +51716,24 @@ function bonusInteger(base, key, fraction, remainders) {
   remainders[key] = Math.max(0, extraFloat - extra);
   return extra;
 }
-function previewDailySupplyTimedReward(state, reward2, mode) {
+function previewDailySupplyTimedReward(state, reward3, mode) {
   const boosts = activeDailySupplyBoosts(state.character), updates = {};
-  let next = { ...reward2, items: reward2.items.map((item) => ({ ...item })) };
+  let next = { ...reward3, items: reward3.items.map((item) => ({ ...item })) };
   for (const type of DAILY_SUPPLY_BOOST_TYPES) {
     const active2 = boosts[type];
-    if (!active2 || !activityModeEligible(type, mode) || reward2.elapsedSeconds <= 0) continue;
-    const hasReward = type === "combat_xp" ? reward2.xp > 0 : type === "skill_xp" ? reward2.xp > 0 || (reward2.faithXp ?? 0) > 0 || (reward2.classSkillXp ?? []).some((row) => row.xp > 0) : reward2.items.some((item) => item.quantity > 0);
+    if (!active2 || !activityModeEligible(type, mode) || reward3.elapsedSeconds <= 0) continue;
+    const hasReward = type === "combat_xp" ? reward3.xp > 0 : type === "skill_xp" ? reward3.xp > 0 || (reward3.faithXp ?? 0) > 0 || (reward3.classSkillXp ?? []).some((row) => row.xp > 0) : reward3.items.some((item) => item.quantity > 0);
     if (!hasReward) continue;
-    const qualifyingSeconds = Math.min(Math.max(0, reward2.elapsedSeconds), Math.max(0, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
+    const qualifyingSeconds = Math.min(Math.max(0, reward3.elapsedSeconds), Math.max(0, reward3.qualifyingActivitySeconds ?? reward3.elapsedSeconds));
     if (qualifyingSeconds <= 0) continue;
     const consumedSeconds = Math.min(active2.remainingSeconds, qualifyingSeconds), fraction = consumedSeconds / Math.max(1, qualifyingSeconds), remainders = { ...active2.remainders ?? {} };
-    if (type === "combat_xp") next.xp += bonusInteger(reward2.xp, "xp:combat", fraction, remainders);
+    if (type === "combat_xp") next.xp += bonusInteger(reward3.xp, "xp:combat", fraction, remainders);
     else if (type === "skill_xp") {
-      if (reward2.classSkillXp?.length) next.classSkillXp = reward2.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, `class:${row.skillId}`, fraction, remainders) }));
+      if (reward3.classSkillXp?.length) next.classSkillXp = reward3.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, `class:${row.skillId}`, fraction, remainders) }));
       else {
-        const extra = bonusInteger(reward2.xp, "xp:skill", fraction, remainders);
+        const extra = bonusInteger(reward3.xp, "xp:skill", fraction, remainders);
         next.xp += extra;
-        if (reward2.faithXp !== void 0) next.faithXp = (reward2.faithXp ?? 0) + extra;
+        if (reward3.faithXp !== void 0) next.faithXp = (reward3.faithXp ?? 0) + extra;
       }
     } else next.items = next.items.map((item) => ({ ...item, quantity: item.quantity + bonusInteger(item.quantity, `item:${item.itemId}`, fraction, remainders) }));
     updates[type] = { consumedSeconds, nextRemainders: remainders };
@@ -51982,9 +52094,9 @@ function companionUnlocksBetween(before, after) {
     return def ? [{ companionId: id, name: def.name, role: def.role, rarity: def.rarity }] : [];
   });
 }
-function withCompanionUnlocks(reward2, before, after) {
+function withCompanionUnlocks(reward3, before, after) {
   const companionUnlocks = companionUnlocksBetween(before, after);
-  return companionUnlocks.length ? { ...reward2, companionUnlocks } : reward2;
+  return companionUnlocks.length ? { ...reward3, companionUnlocks } : reward3;
 }
 var BASE_OFFLINE_CAP_HOURS = 8;
 var FREE_OFFLINE_CAP_HOURS = 24;
@@ -52193,20 +52305,20 @@ function startNextQueuedActivity(state, nowMs) {
   }
   return tryStartNextQueuedActivity(state, nowMs, true);
 }
-function continueCompletedQueueActivity(state, nowMs, source, reward2) {
-  return { ...state, outOfCombatSinceMs: void 0, activity: { ...source, lastClaimAtMs: nowMs, queueGoalCompletedAtMs: source.queueGoalCompletedAtMs ?? nowMs, progressFraction: reward2.nextProgressFraction, sessionKills: (source.sessionKills ?? 0) + (source.kind === "combat" ? reward2.kills : 0), sessionChampions: (source.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) } };
+function continueCompletedQueueActivity(state, nowMs, source, reward3) {
+  return { ...state, outOfCombatSinceMs: void 0, activity: { ...source, lastClaimAtMs: nowMs, queueGoalCompletedAtMs: source.queueGoalCompletedAtMs ?? nowMs, progressFraction: reward3.nextProgressFraction, sessionKills: (source.sessionKills ?? 0) + (source.kind === "combat" ? reward3.kills : 0), sessionChampions: (source.sessionChampions ?? 0) + (reward3.championEncounters?.count ?? 0) } };
 }
-function autoAdvanceActivityQueue(state, nowMs, source, reward2) {
+function autoAdvanceActivityQueue(state, nowMs, source, reward3) {
   if (!state.character) return state;
   if (!normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state)).length) {
     if (!source.queueManaged) return state;
-    return continueCompletedQueueActivity(state, nowMs, source, reward2);
+    return continueCompletedQueueActivity(state, nowMs, source, reward3);
   }
   const next = tryStartNextQueuedActivity(state, nowMs, false);
   if (next.activity || !state.character.activityQueueCombatRecovery) return next;
   const safeIndex = state.character.activityQueue?.findIndex((entry2) => entry2.kind !== "combat" && queuedActivityReadiness(state, entry2, false).ready) ?? -1;
   if (safeIndex >= 0) return tryStartNextQueuedActivity(state, nowMs, false, safeIndex, false);
-  return source.kind !== "combat" ? continueCompletedQueueActivity(next, nowMs, source, reward2) : next;
+  return source.kind !== "combat" ? continueCompletedQueueActivity(next, nowMs, source, reward3) : next;
 }
 function startFinishedQueuedActivity(state, nowMs) {
   if (!state.character?.activityQueue?.length) return state;
@@ -52291,30 +52403,30 @@ function addBounded(stacks, capacity, incoming) {
 function routeRewards(state, incoming, nowMs) {
   let stored = state;
   const remaining = [];
-  for (const reward2 of incoming) {
-    if (!reward2 || !Number.isSafeInteger(reward2.quantity) || reward2.quantity < 1) {
-      remaining.push(reward2);
+  for (const reward3 of incoming) {
+    if (!reward3 || !Number.isSafeInteger(reward3.quantity) || reward3.quantity < 1) {
+      remaining.push(reward3);
       continue;
     }
-    if (!reward2.instanceId && isGemPouchItemId(reward2.itemId)) {
-      const placed = tryStoreGemInPouch(stored, reward2.itemId, reward2.quantity);
+    if (!reward3.instanceId && isGemPouchItemId(reward3.itemId)) {
+      const placed = tryStoreGemInPouch(stored, reward3.itemId, reward3.quantity);
       if (placed) {
         stored = placed;
         continue;
       }
     }
-    if (isEquipmentPouchItemId(reward2.itemId)) {
-      let left = reward2.quantity;
+    if (isEquipmentPouchItemId(reward3.itemId)) {
+      let left = reward3.quantity;
       while (left > 0) {
-        const placed = tryStoreEquipmentInPouch(stored, { itemId: reward2.itemId, quantity: 1, ...reward2.instanceId ? { instanceId: reward2.instanceId } : {} });
+        const placed = tryStoreEquipmentInPouch(stored, { itemId: reward3.itemId, quantity: 1, ...reward3.instanceId ? { instanceId: reward3.instanceId } : {} });
         if (!placed) break;
         stored = placed;
         left--;
       }
-      if (left > 0) remaining.push({ ...reward2, quantity: left });
+      if (left > 0) remaining.push({ ...reward3, quantity: left });
       continue;
     }
-    remaining.push(reward2);
+    remaining.push(reward3);
   }
   const inv = addBounded(stored.inventory.stacks, entitlementStorageCapacity(stored, "inventory"), remaining);
   const bank = addBounded(stored.bank.stacks, entitlementStorageCapacity(stored, "bank"), inv.overflow);
@@ -52571,8 +52683,8 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
         if (rareQuantity) items2.push({ itemId: essence.itemId, quantity: rareQuantity });
       }
     }
-    const reward3 = { xp, gold: 0, items: items2, kills: actions, elapsedSeconds: elapsed, nextProgressFraction: timeline.nextProgressFraction, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [xpKey]: gain.remainder, [g.itemId]: Math.max(0, quantityFloat - quantity2) } };
-    return { ...reward3, ...gatheringEventRewards(state, reward3.elapsedSeconds) };
+    const reward4 = { xp, gold: 0, items: items2, kills: actions, elapsedSeconds: elapsed, nextProgressFraction: timeline.nextProgressFraction, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [xpKey]: gain.remainder, [g.itemId]: Math.max(0, quantityFloat - quantity2) } };
+    return { ...reward4, ...gatheringEventRewards(state, reward4.elapsedSeconds) };
   }
   const m = MONSTERS.find((x) => x.id === state.activity.targetId);
   if (!m) throw new Error("Unknown monster");
@@ -52623,8 +52735,8 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward2 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
-  return { ...reward2, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
+  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  return { ...reward3, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
   const base = previewStandardActivityRewardRaw(state, effectiveNowMs), mode = dailySupplyActivityMode(state.activity);
@@ -52639,43 +52751,43 @@ function activeIdleRuleForState(state) {
   if (rule && state.activity?.queueManaged) return { ...rule, conditions: rule.conditions.filter((row) => row.kind === "food_below" || row.kind === "free_slots_below" || activityCanAdvanceCondition(state, row)) };
   return rule;
 }
-function projectedStoredQuantities(state, reward2) {
+function projectedStoredQuantities(state, reward3) {
   const quantities2 = {};
   for (const stack of [...state.inventory.stacks, ...state.bank.stacks, ...state.overflow.stacks, ...gemPouch(state).stacks, ...state.character?.equipmentPouch?.stacks ?? []]) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
-  for (const stack of reward2.items) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
+  for (const stack of reward3.items) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
   return quantities2;
 }
-function projectedIdleContext(state, reward2, settleAtMs) {
+function projectedIdleContext(state, reward3, settleAtMs) {
   const activity = state.activity;
   const skillLevels = Object.fromEntries(state.skills.map((row) => [row.skillId, row.level]));
   if (activity.kind !== "combat" && activity.kind !== "exploration") {
     const gathering = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId);
     const skillId = gathering?.skillId ?? activity.kind;
     const skill2 = state.skills.find((row) => row.skillId === skillId);
-    if (skill2) skillLevels[skillId] = levelFromXp(skill2.xp + reward2.xp);
+    if (skill2) skillLevels[skillId] = levelFromXp(skill2.xp + reward3.xp);
   } else if (activity.kind === "exploration") {
     const skill2 = state.skills.find((row) => row.skillId === "exploration");
-    if (skill2) skillLevels.exploration = levelFromXp(skill2.xp + reward2.xp);
+    if (skill2) skillLevels.exploration = levelFromXp(skill2.xp + reward3.xp);
   }
   const monsterKills = { ...state.character?.monsterMasteryPoints ?? {} };
-  if (activity.kind === "combat") monsterKills[activity.targetId] = (monsterKills[activity.targetId] ?? 0) + reward2.kills;
+  if (activity.kind === "combat") monsterKills[activity.targetId] = (monsterKills[activity.targetId] ?? 0) + reward3.kills;
   const weeklyOrderProgress = {}, activityRegionId = zoneIdForTarget(activity.targetId);
   for (const order of state.account.weeklyOrders?.orders ?? []) {
     let progress = order.progress;
     const expectedKind = activity.kind === "combat" ? "hunt" : "profession", direct = order.kind === expectedKind && order.targetId === activity.targetId;
     const regional2 = order.kind === "regional" && order.targetId === activityRegionId && (activity.kind === "combat" || ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind));
-    if (direct || regional2) progress = Math.min(order.target, progress + reward2.kills);
+    if (direct || regional2) progress = Math.min(order.target, progress + reward3.kills);
     weeklyOrderProgress[order.id] = progress;
   }
-  const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward2.foodConsumed ?? 0));
-  const routed = routeRewards(state, reward2.items, settleAtMs);
+  const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward3.foodConsumed ?? 0));
+  const routed = routeRewards(state, reward3.items, settleAtMs);
   const beforeOverflow = state.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0), afterOverflow = routed.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0);
   return {
-    itemQuantities: projectedStoredQuantities(state, reward2),
+    itemQuantities: projectedStoredQuantities(state, reward3),
     skillLevels,
     monsterKills,
-    sessionKills: (activity.sessionKills ?? 0) + (activity.kind === "combat" ? reward2.kills : 0),
-    championDefeats: (activity.sessionChampions ?? 0) + (activity.kind === "combat" ? reward2.championEncounters?.count ?? 0 : 0),
+    sessionKills: (activity.sessionKills ?? 0) + (activity.kind === "combat" ? reward3.kills : 0),
+    championDefeats: (activity.sessionChampions ?? 0) + (activity.kind === "combat" ? reward3.championEncounters?.count ?? 0 : 0),
     weeklyOrderProgress,
     foodRemaining,
     freeStorageSlots: Math.max(0, entitlementStorageCapacity(state, "inventory") - usedSlots(routed.inventory.stacks)) + Math.max(0, entitlementStorageCapacity(state, "bank") - usedSlots(routed.bank.stacks)),
@@ -52692,10 +52804,10 @@ function idleRuleSettlementWindow(state, nowMs) {
   if (!rule && !goalRule && !activity.queueManaged && !state.character.activityQueue?.length) return { settleAtMs: nowMs, shouldStop: false, safety: false, combatRecovery: false };
   const capAtMs = activity.lastClaimAtMs + offlineCapSeconds(state) * 1e3, upper = Math.max(activity.lastClaimAtMs, Math.min(nowMs, capAtMs));
   const evaluateAt = (time) => {
-    const reward2 = previewStandardActivityRewardWithSupplies(state, time).reward, ctx = projectedIdleContext(state, reward2, time), saved = rule ? evaluateIdleRuleSet(rule, ctx) : { shouldStop: false, safety: false }, goal = goalRule ? evaluateIdleRuleSet(goalRule, ctx) : { shouldStop: false, safety: false };
-    const evaluation = reward2.stoppedReason ? { shouldStop: true, safety: true, reason: reward2.stoppedReason } : saved.safety ? saved : goal.shouldStop ? { ...goal, reason: queueGoal ? "Queue goal reached." : `Hunt goal reached: ${activity.huntGoal?.label ?? "target"}.` } : saved;
-    const combatRecovery = activity.kind === "combat" && (!!reward2.stoppedReason?.toLowerCase().includes("injured") || saved.safety && (saved.reason === "Food reserve is empty." || rule?.conditions.some((row) => row.id === saved.conditionId && row.kind === "food_below") === true));
-    return { reward: reward2, evaluation, combatRecovery };
+    const reward3 = previewStandardActivityRewardWithSupplies(state, time).reward, ctx = projectedIdleContext(state, reward3, time), saved = rule ? evaluateIdleRuleSet(rule, ctx) : { shouldStop: false, safety: false }, goal = goalRule ? evaluateIdleRuleSet(goalRule, ctx) : { shouldStop: false, safety: false };
+    const evaluation = reward3.stoppedReason ? { shouldStop: true, safety: true, reason: reward3.stoppedReason } : saved.safety ? saved : goal.shouldStop ? { ...goal, reason: queueGoal ? "Queue goal reached." : `Hunt goal reached: ${activity.huntGoal?.label ?? "target"}.` } : saved;
+    const combatRecovery = activity.kind === "combat" && (!!reward3.stoppedReason?.toLowerCase().includes("injured") || saved.safety && (saved.reason === "Food reserve is empty." || rule?.conditions.some((row) => row.id === saved.conditionId && row.kind === "food_below") === true));
+    return { reward: reward3, evaluation, combatRecovery };
   };
   const upperResult = evaluateAt(upper);
   if (!upperResult.evaluation.shouldStop) return { settleAtMs: upper, shouldStop: false, safety: false, combatRecovery: false };
@@ -52730,8 +52842,8 @@ function previewActivityReward(state, nowMs) {
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
-  const idleWindow = idleRuleSettlementWindow(state, nowMs), reward2 = previewStandardActivityRewardWithSupplies(state, idleWindow.settleAtMs).reward;
-  return idleWindow.shouldStop && !reward2.stoppedReason ? { ...reward2, stoppedReason: idleWindow.reason } : reward2;
+  const idleWindow = idleRuleSettlementWindow(state, nowMs), reward3 = previewStandardActivityRewardWithSupplies(state, idleWindow.settleAtMs).reward;
+  return idleWindow.shouldStop && !reward3.stoppedReason ? { ...reward3, stoppedReason: idleWindow.reason } : reward3;
 }
 function refreshQuests(state, lastCombatTarget, lastKills = 0) {
   const characterLevel = state.character?.level ?? 0;
@@ -52780,7 +52892,7 @@ function claimSeasonalContract(state, period, contractId2, nowMs = Date.now(), c
   if (!contract) throw new Error("This contract has expired.");
   if ((state.account.seasonalContractClaimIds ?? []).includes(contract.id)) throw new Error("This contract reward was already claimed.");
   if (contract.progress < contract.required) throw new Error("Complete the contract before claiming its cache.");
-  const chosen = choiceId === void 0 ? contract.rewardOptions[0] : contract.rewardOptions.find((reward2) => reward2.id === choiceId);
+  const chosen = choiceId === void 0 ? contract.rewardOptions[0] : contract.rewardOptions.find((reward3) => reward3.id === choiceId);
   if (!chosen) throw new Error("Invalid or unavailable Quest reward choice.");
   const xp = state.character.xp + contract.rewardXp, level = characterLevelFromXp(xp);
   const routed = chosen.rewardItemId && chosen.rewardItemQty ? routeRewards(state, [{ itemId: chosen.rewardItemId, quantity: chosen.rewardItemQty }], nowMs) : state;
@@ -52819,18 +52931,18 @@ function claimActivity(state, nowMs) {
     const recoveredToGathering = activity.kind === "combat" && state.activity && state.activity.kind !== "combat";
     if (!state.activity || !result.reward.goalReached && !recoveredToGathering || state.activity.lastClaimAtMs >= until) break;
   }
-  const reward2 = combineActivityRewards(results);
+  const reward3 = combineActivityRewards(results);
   if (state.activity) {
     const continuing = { kind: state.activity.kind, targetId: state.activity.targetId, queueGoalsCompleted: state.activity.queueGoalCompletedAtMs !== void 0 && !state.character?.activityQueue?.length && !state.character?.activityQueueCombatRecovery };
     const cappedMs = Math.max(0, nowMs - until);
     state = { ...state, activity: { ...state.activity, lastClaimAtMs: Math.max(state.activity.lastClaimAtMs, nowMs), startedAtMs: state.activity.startedAtMs + cappedMs } };
-    reward2.stoppedReason = void 0;
-    reward2.continuingActivity = continuing;
+    reward3.stoppedReason = void 0;
+    reward3.continuingActivity = continuing;
   }
-  reward2.offlineCapReached = nowMs > until && !!state.activity;
-  reward2.queuePausedReason = state.character?.activityQueuePausedReason;
-  reward2.pendingQueue = state.character?.activityQueue;
-  return { state, reward: reward2 };
+  reward3.offlineCapReached = nowMs > until && !!state.activity;
+  reward3.queuePausedReason = state.character?.activityQueuePausedReason;
+  reward3.pendingQueue = state.character?.activityQueue;
+  return { state, reward: reward3 };
 }
 function claimActivitySegment(state, nowMs) {
   const drill = state.character?.classTraining;
@@ -52867,106 +52979,107 @@ function claimActivitySegmentRaw(state, nowMs) {
   }
   if (state.activity?.kind === "faith") {
     const source = state.activity;
-    const settled = settleFaithPractice(state, nowMs, offlineCapSeconds(state)), boost = previewDailySupplyTimedReward(state, settled.reward, "skill"), reward3 = boost.reward;
+    const settled = settleFaithPractice(state, nowMs, offlineCapSeconds(state)), boost = previewDailySupplyTimedReward(state, settled.reward, "skill"), reward4 = boost.reward;
     const routed2 = settled.refund ? routeRewards(state, [{ itemId: HOLY_WATER_ID, quantity: settled.refund }], nowMs) : { inventory: state.inventory, bank: state.bank, overflow: state.overflow };
     const faith = normalizeFaith(settled.state.character.faith);
     const faithXp = Math.min(totalXpAtLevel(100), Math.max(
       settled.state.character.faith?.xp ?? 0,
-      (state.skills.find((x) => x.skillId === "faith")?.xp ?? 0) + (reward3.faithXp ?? 0)
+      (state.skills.find((x) => x.skillId === "faith")?.xp ?? 0) + (reward4.faithXp ?? 0)
     ));
     const skills2 = state.skills.map((x) => x.skillId === "faith" ? { ...x, xp: faithXp, level: levelFromXp(faithXp) } : x);
     const nextBase2 = { ...settled.state, ...routed2, skills: skills2, character: { ...settled.state.character, faith: { ...faith, xp: faithXp } }, activity: faith.practice ? settled.state.activity : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), reconciled = reconcileCombatCompanionUnlocks(next2, nowMs);
-    const queuedState2 = !faith.practice && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(reconciled, nowMs) : reconciled;
-    return { state: queuedState2, reward: withCompanionUnlocks(reward3, state, queuedState2) };
+    const credited = recordSeasonalActivity(reconciled, "faith", reward4.faithActions ?? 0, nowMs);
+    const queuedState2 = !faith.practice && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(credited, nowMs) : credited;
+    return { state: queuedState2, reward: withCompanionUnlocks(reward4, state, queuedState2) };
   }
   if (state.activity?.kind === "alchemy") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewAlchemyReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, brew = state.activity.brew;
-    const routed2 = routeRewards(state, reward3.items, nowMs);
-    const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0))) } : x);
-    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, brew: { ...brew, remainingBatches: reward3.nextBrewRemaining } } : null };
-    const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward3.craftingActions ?? 0;
-    const progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: brew.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward3, nowMs, { accountId: longTermAccountScope(state), eventId: `alchemy:${state.character?.id ?? "unknown"}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
-    const eventApplied = applyEventDiscoveries(applyEventDrops(progressed2, reward3.eventDrops ?? []), reward3.eventDiscoveries ?? []);
-    const queuedState2 = !reward3.nextBrewRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(eventApplied, nowMs) : eventApplied;
-    return { state: queuedState2, reward: reward3 };
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewAlchemyReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
+    const routed2 = routeRewards(state, reward4.items, nowMs);
+    const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0))) } : x);
+    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, brew: { ...brew, remainingBatches: reward4.nextBrewRemaining } } : null };
+    const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward4.craftingActions ?? 0;
+    const progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: brew.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `alchemy:${state.character?.id ?? "unknown"}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
+    const eventApplied = applyEventDiscoveries(applyEventDrops(progressed2, reward4.eventDrops ?? []), reward4.eventDiscoveries ?? []);
+    const queuedState2 = !reward4.nextBrewRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(eventApplied, nowMs) : eventApplied;
+    return { state: queuedState2, reward: reward4 };
   }
   if (state.activity?.kind === "processing") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewProcessingReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, processing = state.activity.processing;
-    const routed2 = routeRewards(state, reward3.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward3.xp ?? 0);
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewProcessingReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, processing = state.activity.processing;
+    const routed2 = routeRewards(state, reward4.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward4.xp ?? 0);
     const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
-    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, processing: { ...processing, remainingBatches: reward3.nextProcessingRemaining } } : null };
-    const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward3.craftingActions ?? 0;
-    let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward3, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
-    progressed2 = applyEventDiscoveries(applyEventDrops(progressed2, reward3.eventDrops ?? []), reward3.eventDiscoveries ?? []);
+    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
+    const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward4.craftingActions ?? 0;
+    let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
+    progressed2 = applyEventDiscoveries(applyEventDrops(progressed2, reward4.eventDrops ?? []), reward4.eventDiscoveries ?? []);
     progressed2 = refreshQuests(progressed2);
     const finalState2 = reconcileCombatCompanionUnlocks(progressed2, nowMs);
-    const queuedState2 = !reward3.nextProcessingRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
-    return { state: queuedState2, reward: withCompanionUnlocks(reward3, state, queuedState2) };
+    const queuedState2 = !reward4.nextProcessingRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
+    return { state: queuedState2, reward: withCompanionUnlocks(reward4, state, queuedState2) };
   }
   if (!state.character || !state.activity) {
     const recovered2 = settleOutOfCombatRecovery(state, nowMs);
     return { state: recovered2, reward: previewActivityReward(state, nowMs) };
   }
   const idleWindow = idleRuleSettlementWindow(state, nowMs), settledAtMs = idleWindow.settleAtMs, idleStopReason = idleWindow.shouldStop ? idleWindow.reason : void 0, supply = previewStandardActivityRewardWithSupplies(state, settledAtMs), boosted = supply.reward;
-  const reward2 = idleWindow.shouldStop && !boosted.stoppedReason ? { ...boosted, stoppedReason: idleStopReason, goalReached: !idleWindow.safety } : boosted;
+  const reward3 = idleWindow.shouldStop && !boosted.stoppedReason ? { ...boosted, stoppedReason: idleStopReason, goalReached: !idleWindow.safety } : boosted;
   if (state.activity.kind !== "combat") {
-    const skills2 = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward2.xp, level: levelFromXp(x.xp + reward2.xp) } : x);
-    const routed2 = routeRewards(state, reward2.items, settledAtMs);
-    const exploredRouteIds = state.activity.kind === "exploration" && reward2.kills > 0 ? [.../* @__PURE__ */ new Set([...state.exploredRouteIds ?? [], state.activity.targetId])] : state.exploredRouteIds ?? [];
-    const nextBase2 = { ...state, skills: skills2, ...routed2, rewardRemainders: reward2.nextRewardRemainders ?? state.rewardRemainders, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...reward2.explorationDiscoveries ?? []])], exploredRouteIds, outOfCombatSinceMs: idleWindow.shouldStop ? settledAtMs : void 0, activity: idleWindow.shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction } };
+    const skills2 = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward3.xp, level: levelFromXp(x.xp + reward3.xp) } : x);
+    const routed2 = routeRewards(state, reward3.items, settledAtMs);
+    const exploredRouteIds = state.activity.kind === "exploration" && reward3.kills > 0 ? [.../* @__PURE__ */ new Set([...state.exploredRouteIds ?? [], state.activity.targetId])] : state.exploredRouteIds ?? [];
+    const nextBase2 = { ...state, skills: skills2, ...routed2, rewardRemainders: reward3.nextRewardRemainders ?? state.rewardRemainders, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...reward3.explorationDiscoveries ?? []])], exploredRouteIds, outOfCombatSinceMs: idleWindow.shouldStop ? settledAtMs : void 0, activity: idleWindow.shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward3.nextProgressFraction } };
     const next2 = commitDailySupplyTimedBoost(nextBase2, supply);
-    const progression = applyTrustedLongTermProgression(next2, [{ kind: "gathering", contentId: state.activity.targetId, units: reward2.kills, startedAtMs: state.activity.lastClaimAtMs }], reward2, settledAtMs, { accountId: longTermAccountScope(state), eventId: `activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
-    const eventApplied = refreshQuests(applyEventDiscoveries(applyEventDrops(progression, reward2.eventDrops ?? []), reward2.eventDiscoveries ?? []));
+    const progression = applyTrustedLongTermProgression(next2, [{ kind: "gathering", contentId: state.activity.targetId, units: reward3.kills, startedAtMs: state.activity.lastClaimAtMs }], reward3, settledAtMs, { accountId: longTermAccountScope(state), eventId: `activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
+    const eventApplied = refreshQuests(applyEventDiscoveries(applyEventDrops(progression, reward3.eventDrops ?? []), reward3.eventDiscoveries ?? []));
     const petSourceType = state.activity.kind === "exploration" ? "exploration" : "gathering";
-    const petResult2 = applyCorePetActivityDrops(eventApplied, petSourceType, state.activity.targetId, reward2.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`, void 0, (() => {
+    const petResult2 = applyCorePetActivityDrops(eventApplied, petSourceType, state.activity.targetId, reward3.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`, void 0, (() => {
       const candy = eventCandyWindow(state, "pet");
       return candy ? { startsAtMs: candy.startsAtMs, endsAtMs: candy.endsAtMs, settlementStartsAtMs: state.activity.lastClaimAtMs, settlementEndsAtMs: settledAtMs } : void 0;
     })());
-    const petReward2 = petResult2.drops.length ? { ...reward2, petDrops: [...reward2.petDrops ?? [], ...petResult2.drops] } : reward2;
-    const finalState2 = recordCompanionActivity(petResult2.state, "gathering", state.activity.targetId, reward2.kills, settledAtMs);
-    const queuedState2 = idleWindow.shouldStop && !idleWindow.safety ? autoAdvanceActivityQueue(finalState2, settledAtMs, state.activity, reward2) : idleWindow.shouldStop ? pauseActivityQueue(finalState2, reward2.stoppedReason ?? idleStopReason ?? "Safety stop reached.") : finalState2;
+    const petReward2 = petResult2.drops.length ? { ...reward3, petDrops: [...reward3.petDrops ?? [], ...petResult2.drops] } : reward3;
+    const finalState2 = recordCompanionActivity(petResult2.state, "gathering", state.activity.targetId, reward3.kills, settledAtMs);
+    const queuedState2 = idleWindow.shouldStop && !idleWindow.safety ? autoAdvanceActivityQueue(finalState2, settledAtMs, state.activity, reward3) : idleWindow.shouldStop ? pauseActivityQueue(finalState2, reward3.stoppedReason ?? idleStopReason ?? "Safety stop reached.") : finalState2;
     return { state: queuedState2, reward: withCompanionUnlocks(petReward2, state, queuedState2) };
   }
-  const xp = state.character.xp + reward2.xp, level = characterLevelFromXp(xp);
+  const xp = state.character.xp + reward3.xp, level = characterLevelFromXp(xp);
   const activeRegion = currentRegionId(state);
   const unlocked = MONSTERS.filter((m) => !m.boss && m.unlockLevel <= level && zoneIdForTarget(m.id) === activeRegion).map((m) => m.id);
   let baseInventory = state.inventory.stacks;
-  if (reward2.foodConsumed && state.character.equippedFoodId) baseInventory = consume2(baseInventory, state.character.equippedFoodId, reward2.foodConsumed);
-  const routed = routeRewards({ ...state, inventory: { ...state.inventory, stacks: baseInventory } }, reward2.items, settledAtMs);
-  const shouldStop = !!reward2.stoppedReason || idleWindow.shouldStop;
-  const combatStoppedAtMs = reward2.stoppedReason ? Math.min(settledAtMs, state.activity.lastClaimAtMs + Math.max(0, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds) * 1e3) : settledAtMs;
+  if (reward3.foodConsumed && state.character.equippedFoodId) baseInventory = consume2(baseInventory, state.character.equippedFoodId, reward3.foodConsumed);
+  const routed = routeRewards({ ...state, inventory: { ...state.inventory, stacks: baseInventory } }, reward3.items, settledAtMs);
+  const shouldStop = !!reward3.stoppedReason || idleWindow.shouldStop;
+  const combatStoppedAtMs = reward3.stoppedReason ? Math.min(settledAtMs, state.activity.lastClaimAtMs + Math.max(0, reward3.qualifyingActivitySeconds ?? reward3.elapsedSeconds) * 1e3) : settledAtMs;
   const monster = MONSTERS.find((m) => m.id === state.activity.targetId);
-  const trained = awardCombatClassXp(state.character, reward2.kills, monster.xp * environmentEffectForActivity(state.activity).effect.xpMultiplier * characterPermanentMultipliers(state).skillXpMultiplier, state.activity.classFocus).character;
+  const trained = awardCombatClassXp(state.character, reward3.kills, monster.xp * environmentEffectForActivity(state.activity).effect.xpMultiplier * characterPermanentMultipliers(state).skillXpMultiplier, state.activity.classFocus).character;
   const skills = state.skills.map((skill2) => {
-    if (skill2.skillId !== "exploration" || !(reward2.explorationXp ?? 0)) return skill2;
-    const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward2.explorationXp ?? 0));
+    if (skill2.skillId !== "exploration" || !(reward3.explorationXp ?? 0)) return skill2;
+    const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward3.explorationXp ?? 0));
     return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
   });
-  const nextBase = { ...state, skills, ...routed, rewardRemainders: reward2.nextRewardRemainders ?? state.rewardRemainders, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, combatEnemyHp: reward2.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
+  const nextBase = { ...state, skills, ...routed, rewardRemainders: reward3.nextRewardRemainders ?? state.rewardRemainders, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward3.gold, currentHp: reward3.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward3.nextProgressFraction, combatEnemyHp: reward3.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward3.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward3.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
   let next = commitDailySupplyTimedBoost(nextBase, supply);
-  next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward2.masteryMaterialRemainders };
-  if (next.character.preparation && (reward2.preparationEncounters ?? reward2.kills) > 0) {
+  next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward3.masteryMaterialRemainders };
+  if (next.character.preparation && (reward3.preparationEncounters ?? reward3.kills) > 0) {
     let prep = next.character.preparation;
-    for (let i = 0; i < (reward2.preparationEncounters ?? reward2.kills); i++) prep = spendPreparationEncounter(prep, prep?.itemId);
+    for (let i = 0; i < (reward3.preparationEncounters ?? reward3.kills); i++) prep = spendPreparationEncounter(prep, prep?.itemId);
     next.character = { ...next.character, preparation: prep };
   }
-  if (next.activity && reward2.kills > 0) next.activity.classFocus = normalizeTrainingFocus(next.character.trainingFocus);
-  let progressed = recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next, reward2.eventDrops ?? []), reward2.eventDiscoveries ?? []), state.activity.targetId, reward2.kills), state.activity.targetId, reward2.kills);
-  progressed = applyTrustedLongTermProgression(progressed, [{ kind: "combat", contentId: state.activity.targetId, units: reward2.kills, startedAtMs: state.activity.lastClaimAtMs }], reward2, settledAtMs, { accountId: longTermAccountScope(state), eventId: `combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
-  const petResult = applyCorePetCombatDrops(progressed, state.activity.targetId, reward2.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`, void 0, (() => {
+  if (next.activity && reward3.kills > 0) next.activity.classFocus = normalizeTrainingFocus(next.character.trainingFocus);
+  let progressed = recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next, reward3.eventDrops ?? []), reward3.eventDiscoveries ?? []), state.activity.targetId, reward3.kills), state.activity.targetId, reward3.kills);
+  progressed = applyTrustedLongTermProgression(progressed, [{ kind: "combat", contentId: state.activity.targetId, units: reward3.kills, startedAtMs: state.activity.lastClaimAtMs }], reward3, settledAtMs, { accountId: longTermAccountScope(state), eventId: `combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
+  const petResult = applyCorePetCombatDrops(progressed, state.activity.targetId, reward3.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`, void 0, (() => {
     const candy = eventCandyWindow(state, "pet");
     return candy ? { startsAtMs: candy.startsAtMs, endsAtMs: candy.endsAtMs, settlementStartsAtMs: state.activity.lastClaimAtMs, settlementEndsAtMs: settledAtMs } : void 0;
   })());
   progressed = petResult.state;
-  const petReward = petResult.drops.length ? { ...reward2, petDrops: petResult.drops } : reward2;
-  const finalState = recordCompanionActivity(progressed, "combat", state.activity.targetId, reward2.kills, settledAtMs);
-  const plannedQueueAdvance = idleWindow.shouldStop && !idleWindow.safety && !reward2.stoppedReason?.includes("injured") && !reward2.stoppedReason?.includes("Out of food");
-  const queuedState = plannedQueueAdvance ? autoAdvanceActivityQueue(finalState, settledAtMs, state.activity, reward2) : shouldStop ? idleWindow.combatRecovery ? recoverCombatQueue(finalState, combatStoppedAtMs, reward2.stoppedReason ?? idleStopReason ?? "Combat recovery required.") : pauseActivityQueue(finalState, reward2.stoppedReason ?? idleStopReason ?? "Safety stop reached.") : finalState;
+  const petReward = petResult.drops.length ? { ...reward3, petDrops: petResult.drops } : reward3;
+  const finalState = recordCompanionActivity(progressed, "combat", state.activity.targetId, reward3.kills, settledAtMs);
+  const plannedQueueAdvance = idleWindow.shouldStop && !idleWindow.safety && !reward3.stoppedReason?.includes("injured") && !reward3.stoppedReason?.includes("Out of food");
+  const queuedState = plannedQueueAdvance ? autoAdvanceActivityQueue(finalState, settledAtMs, state.activity, reward3) : shouldStop ? idleWindow.combatRecovery ? recoverCombatQueue(finalState, combatStoppedAtMs, reward3.stoppedReason ?? idleStopReason ?? "Combat recovery required.") : pauseActivityQueue(finalState, reward3.stoppedReason ?? idleStopReason ?? "Safety stop reached.") : finalState;
   const recovered = settleOutOfCombatRecovery(queuedState, nowMs);
   return { state: recovered, reward: withCompanionUnlocks(petReward, state, recovered) };
 }
@@ -53101,15 +53214,15 @@ function sellItem(state, itemId, quantity2 = 1) {
 function salvageItem(state, itemId) {
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before salvaging.");
   if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected. Unlock it before salvaging.");
-  const d = itemDef(itemId), reward2 = equipmentSalvageReward(itemId);
-  if (d.type !== "gear" || !reward2) throw new Error("Cannot salvage");
+  const d = itemDef(itemId), reward3 = equipmentSalvageReward(itemId);
+  if (d.type !== "gear" || !reward3) throw new Error("Cannot salvage");
   if (state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0) && !canDisposeLegacyEquipment(state, itemId, "inventory", 1))
     throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
   const remaining = consume2(state.inventory.stacks, itemId, 1);
-  const existing = remaining.find((row) => row.itemId === reward2.itemId && row.instanceId === void 0);
+  const existing = remaining.find((row) => row.itemId === reward3.itemId && row.instanceId === void 0);
   if (!existing && remaining.length >= entitlementStorageCapacity(state, "inventory")) throw new Error("Inventory is full; make space for salvage");
-  if (!Number.isSafeInteger((existing?.quantity ?? 0) + reward2.quantity)) throw new Error("Salvage material quantity overflow");
-  let next = { ...state, inventory: { ...state.inventory, stacks: stackItems(remaining, [reward2]) } };
+  if (!Number.isSafeInteger((existing?.quantity ?? 0) + reward3.quantity)) throw new Error("Salvage material quantity overflow");
+  let next = { ...state, inventory: { ...state.inventory, stacks: stackItems(remaining, [reward3]) } };
   return next;
 }
 function validBankGoldAmount(amount) {
@@ -53761,11 +53874,8 @@ function disposeCraftedGearInstance(state, instanceId, method) {
     }
   } else {
     if (!next.character) throw new Error("No active character");
-    const reward2 = equipmentSalvageReward(def.id);
-    const stack = next.inventory.stacks.find((row) => row.itemId === reward2.itemId && row.instanceId === void 0);
-    if (!stack && next.inventory.stacks.filter((row) => row.quantity > 0).length >= entitlementStorageCapacity(next, "inventory"))
-      throw new Error("Inventory is full; make space for salvage");
-    next = { ...next, inventory: { ...next.inventory, stacks: stack ? next.inventory.stacks.map((row) => row === stack ? { ...row, quantity: row.quantity + reward2.quantity } : row) : [...next.inventory.stacks, { ...reward2 }] } };
+    const rewards = equipmentSalvageRewards(def.id, record);
+    next = { ...next, inventory: inventoryWithSalvageRewards(next.inventory, rewards, entitlementStorageCapacity(next, "inventory")) };
   }
   return next;
 }
@@ -56376,13 +56486,13 @@ function salvageLegacySlot(state, index, itemId) {
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
   if (characters.some((character) => character.savedLoadouts?.some((loadout) => Object.entries(loadout.equipment).some(([slot, id]) => id === itemId && !loadout.equipmentInstanceIds?.[slot]))))
     throw new Error("Saved loadouts protect this equipment");
-  const reward2 = equipmentSalvageReward(itemId);
-  const existing = state.inventory.stacks.find((row) => row.itemId === reward2.itemId && row.instanceId === void 0);
+  const reward3 = equipmentSalvageReward(itemId);
+  const existing = state.inventory.stacks.find((row) => row.itemId === reward3.itemId && row.instanceId === void 0);
   if (!existing && state.inventory.stacks.filter((row) => row.quantity > 0).length >= entitlementStorageCapacity(state, "inventory"))
     throw new Error("Inventory is full; make space for salvage");
-  if (!Number.isSafeInteger((existing?.quantity ?? 0) + reward2.quantity))
+  if (!Number.isSafeInteger((existing?.quantity ?? 0) + reward3.quantity))
     throw new Error("Salvage material quantity overflow");
-  const inventoryStacks = existing ? state.inventory.stacks.map((row) => row === existing ? { ...row, quantity: row.quantity + reward2.quantity } : row) : [...state.inventory.stacks, { ...reward2 }];
+  const inventoryStacks = existing ? state.inventory.stacks.map((row) => row === existing ? { ...row, quantity: row.quantity + reward3.quantity } : row) : [...state.inventory.stacks, { ...reward3 }];
   const pouchStacks = pouch.stacks.slice();
   if (stack.quantity === 1) pouchStacks.splice(index, 1);
   else pouchStacks[index] = { ...stack, quantity: stack.quantity - 1 };
@@ -56866,7 +56976,7 @@ function validateGameSettings(value) {
 }
 function executeGameCommand(previous, value, now, options = {}) {
   const command = validateGameCommand(value), a = command.args ?? {}, activity = previous.activity, contributions = [];
-  let state = structuredClone(previous), reward2, message, won, storyBossBattle, upgrade, forgeResults;
+  let state = structuredClone(previous), reward3, message, won, storyBossBattle, upgrade, forgeResults;
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
   if (options.accountId) state.account.longTermAccountScopeId = options.accountId;
   state = migrateRetiredStoryRewards(state, now);
@@ -56878,7 +56988,7 @@ function executeGameCommand(previous, value, now, options = {}) {
   const settle = () => {
     const source = state.activity, result = claimActivity(state, now);
     state = result.state;
-    reward2 = result.reward;
+    reward3 = result.reward;
     if (result.reward.activityResults) {
       for (const segment of result.reward.activityResults) {
         const { activity: activity2, reward: earned } = segment;
@@ -57500,7 +57610,7 @@ function executeGameCommand(previous, value, now, options = {}) {
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
   state = reconcileAccountCollections(migrateGemPouch(state));
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
-  return { state, reward: reward2, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
+  return { state, reward: reward3, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }
 
 // online/gameplay.ts
@@ -58051,8 +58161,8 @@ async function resolveRegionalCombatV1(deps, input) {
   if (prior) {
     if ((await deps.store.load(input.receiptId)).accountId !== input.accountId) throw new Error("regional_combat_owner_mismatch");
     const reservation2 = await deps.store.load(input.receiptId);
-    const reward3 = prior.victory ? await settleVerifiedRegionalGemEncounterV1(deps.rewards, { accountId: input.accountId, receiptKey: "regional:" + reservation2.receiptId, zoneId: reservation2.zoneId, kind: gemKind(reservation2.kind), victory: true }) : void 0;
-    return { result: prior, reward: reward3, duplicate: true };
+    const reward4 = prior.victory ? await settleVerifiedRegionalGemEncounterV1(deps.rewards, { accountId: input.accountId, receiptKey: "regional:" + reservation2.receiptId, zoneId: reservation2.zoneId, kind: gemKind(reservation2.kind), victory: true }) : void 0;
+    return { result: prior, reward: reward4, duplicate: true };
   }
   const reservation = await deps.store.load(input.receiptId);
   if (reservation.accountId !== input.accountId) throw new Error("regional_combat_owner_mismatch");
@@ -58077,8 +58187,8 @@ async function resolveRegionalCombatV1(deps, input) {
     replayCues: regionalReplayCuesV1(combat)
   };
   const committed = await deps.store.commitResult(stored);
-  const reward2 = committed.result.victory ? await settleVerifiedRegionalGemEncounterV1(deps.rewards, { accountId: input.accountId, receiptKey: "regional:" + reservation.receiptId, zoneId: reservation.zoneId, kind: gemKind(reservation.kind), victory: true }) : void 0;
-  return { result: committed.result, reward: reward2, duplicate: committed.duplicate };
+  const reward3 = committed.result.victory ? await settleVerifiedRegionalGemEncounterV1(deps.rewards, { accountId: input.accountId, receiptKey: "regional:" + reservation.receiptId, zoneId: reservation.zoneId, kind: gemKind(reservation.kind), victory: true }) : void 0;
+  return { result: committed.result, reward: reward3, duplicate: committed.duplicate };
 }
 
 // online/coop-loadout.ts

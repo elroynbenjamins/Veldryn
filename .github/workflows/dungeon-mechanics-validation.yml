@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'backend/online/live-runtime.ts'
+      - 'backend/online/dungeon-shop.ts'
+      - 'backend/online/coop.ts'
+      - 'backend/online/tests/dungeon-shop.ts'
       - 'backend/online/tests/dungeon-variety.ts'
       - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'
@@ -45,8 +48,14 @@ jobs:
       - name: Install mobile workspace types used by shared backend snapshots
         run: pnpm install --frozen-lockfile
         working-directory: apps/mobile
+      - name: Validate hidden Dungeon Marks Shop catalogue and purchase eligibility
+        run: pnpm test:dungeon-shop-catalog
+        working-directory: backend
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
+        working-directory: backend
+      - name: Validate hidden Dungeon Shop HTTP authorization and preview gate
+        run: node dist/online/backend/online/tests/dungeon-shop.js
         working-directory: backend
       - name: Calibrate all six regional dungeon power tiers and both bosses
         run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js

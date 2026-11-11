@@ -29,7 +29,7 @@ import {characterNameError,normalizeCharacterName} from './character-creation';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
 import {classCombatStyle} from './class-combat';
 import {captureActivityEnvironment,environmentEffectForActivity,zoneIdForTarget} from './world-weather';
-import {SeasonalPeriod,seasonalQuestBoard} from './seasonal-quests';
+import {SeasonalPeriod,seasonalQuestBoard,recordSeasonalActivity} from './seasonal-quests';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEventDrops,grantEventActivity,eventCandyUtilityMultiplier} from './live-events';
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -1049,7 +1049,9 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId==='faith'?{...x,xp:faithXp,level:levelFromXp(faithXp)}:x);
     const nextBase={...settled.state,...routed,skills,character:{...settled.state.character!,faith:{...faith,xp:faithXp}},activity:faith.practice?settled.state.activity:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),reconciled=reconcileCombatCompanionUnlocks(next,nowMs);
-    const queuedState=!faith.practice&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(reconciled,nowMs):reconciled;
+    // Only actually completed and settled Faith practices advance repeatable contracts.
+    const credited=recordSeasonalActivity(reconciled,'faith',reward.faithActions??0,nowMs);
+    const queuedState=!faith.practice&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(credited,nowMs):credited;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(state.activity?.kind==='alchemy'){

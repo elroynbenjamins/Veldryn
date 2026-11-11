@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {noteCoopEntryMutation} from '../core/coop-dungeon-browse-cache';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
+import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
@@ -89,6 +90,8 @@ async function publicProfilePower(accountId:string):Promise<{combatPower:number}
 }
 export const coopClient={
  entry:()=>request<CoopEntryData>('/coop/entry'),
+ dungeonMarksShop:()=>request<DungeonMarksShopSnapshot>('/coop/shop'),
+ purchaseDungeonMarksShop:(offerId:string,requestId:string)=>mutate<{status:'purchased'|'already_owned';balance:number}>('/coop/shop',{offerId,requestId}),
  profilePower:publicProfilePower,
  liveQueue:()=>request<LiveQueueView>('/coop/queue'),
  liveRecruitment:()=>request<CoopLiveRecruitmentPost[]>('/coop/lfg'),

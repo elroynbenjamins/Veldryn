@@ -59,7 +59,10 @@ export class OnlineLiveQueue {
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
   const eligible=Object.values(EXPEDITIONS).filter(definition=>publishedRegularDungeon(definition)&&!regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower)&&highestEligibleRegularDungeonTier(definition,record.characterLevel,record.combatPower)!==undefined).sort((a,b)=>b.minLevel-a.minLevel||a.id.localeCompare(b.id));
-  if(!eligible.length)throw new GameplayError('dungeon_power_requirement');
+  if(!eligible.length){
+    const hasDungeonLevel=Object.values(EXPEDITIONS).some(definition=>publishedRegularDungeon(definition)&&record.characterLevel>=regularDungeonTierRequiredLevel(definition,1));
+    throw new GameplayError(hasDungeonLevel?'dungeon_power_requirement':'dungeon_level_requirement');
+   }
   // Asterfall is available before Chapter I; Sunscar's chapter gate is checked per dungeon.
   const demand=await this.services.rpc<{serverNow:number;demands:CoopQuickMatchDemand[]}>('online_live_quick_match_demand_server_v1',{p_account_id:accountId});
   const dungeonId=chooseQuickMatchExpedition(demand.demands,eligible.map(definition=>definition.id),readiness.role,demand.serverNow);

@@ -137,27 +137,33 @@ var init_faith = __esm({
       { id: "WARD_OF_STONE", name: "Ward of Stone", level: 10, family: "defense", bonus: 3 / 100 },
       { id: "ARTISANS_PRAYER", name: "Artisan's Prayer", level: 12, family: "production", bonus: 2 / 100 },
       { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
+      { id: "QUICKENED_STEP", name: "Quickened Step", level: 18, family: "combatSpeed", bonus: 3 / 100 },
       { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
+      { id: "FESTIVAL_FAVOR", name: "Festival Favor", level: 30, family: "eventCurrency", bonus: 3 / 100 },
       { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
       { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
       { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
       { id: "FORGES_FAVOR", name: "Forge's Favor", level: 48, family: "production", bonus: 4 / 100 },
       { id: "LIVING_GRACE", name: "Living Grace", level: 50, family: "hp", bonus: 8 / 100 },
+      { id: "ZEALOUS_TEMPO", name: "Zealous Tempo", level: 52, family: "combatSpeed", bonus: 5 / 100 },
       { id: "SCHOLARS_DEVOTION", name: "Scholar's Devotion", level: 55, family: "xp", bonus: 4 / 100 },
+      { id: "SEASONAL_GRACE", name: "Seasonal Grace", level: 65, family: "eventCurrency", bonus: 6 / 100 },
       { id: "HARVESTS_GRACE", name: "Harvest's Grace", level: 70, family: "gathering", bonus: 6 / 100 },
       { id: "MASTERS_BENEDICTION", name: "Master's Benediction", level: 75, family: "production", bonus: 6 / 100 },
       { id: "DAWN_COVENANT", name: "Dawn Covenant", level: 80, family: "attack", bonus: 6 / 100 },
       { id: "ETERNAL_BASTION", name: "Eternal Bastion", level: 85, family: "defense", bonus: 9 / 100 },
+      { id: "CELESTIAL_TEMPO", name: "Celestial Tempo", level: 88, family: "combatSpeed", bonus: 8 / 100 },
       { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
-      { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
+      { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 },
+      { id: "FESTIVAL_BEACON", name: "Festival Beacon", level: 98, family: "eventCurrency", bonus: 10 / 100 }
     ];
     HOLY_WATER_SOURCES = [
       { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
       { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
       { monsterId: "OATHBOUND_SQUIRE", chance: 0.28, min: 2, max: 4 },
-      { monsterId: "DUNE_ORACLE", chance: 0.4, min: 3, max: 5 },
-      { monsterId: "BELLWRAITH", chance: 0.48, min: 4, max: 6 },
-      { monsterId: "ASHEN_REVENANT", chance: 0.6, min: 6, max: 10 }
+      { monsterId: "DUNE_ORACLE", chance: 0.35, min: 3, max: 5 },
+      { monsterId: "BELLWRAITH", chance: 0.4, min: 4, max: 6 },
+      { monsterId: "ASHEN_REVENANT", chance: 0.5, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
   }
@@ -45005,6 +45011,9 @@ function promotedEventCurrency(eventId, quantity, earnedAtMs) {
   return Math.floor(Math.max(0, quantity) * (1e4 + eventCurrencyPromotionBps(eventId, earnedAtMs)) / 1e4);
 }
 
+// ../apps/mobile/src/core/live-events.ts
+init_faith2();
+
 // ../apps/mobile/src/content/event-collectible-content-active.ts
 var EVENT_PET_COLLECTIBLES = [
   { id: "EVT_PET_013", kind: "pet", name: "Gloomkin", bonusFamilyId: "EVT_PET_013", target: "dropChance", ownedBps: 50, activeBps: 300, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Rare", buff: "+3% relative Combat Drop Chance", description: "A playful void kitten carrying a small spectral lantern." },
@@ -45461,6 +45470,7 @@ function characterPermanentMultipliers(state) {
   const blessing = selectedFaithBlessing(state);
   if (blessing) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
+    if (blessing.family === "combatSpeed") result = merge(result, { ...BASE, combatSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
     if (blessing.family === "gathering") result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + blessing.bonus });
     if (blessing.family === "production") result = merge(result, { ...BASE, craftingSpeedMultiplier: 1 + blessing.bonus });

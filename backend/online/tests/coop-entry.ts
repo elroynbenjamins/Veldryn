@@ -7,7 +7,7 @@ import {GameplayError} from '../gameplay';
 import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 
 async function main(){
- const state=createCharacter(newGame(1000),'IRONWARDEN','Entry Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
+ const state=createCharacter(newGame(1000),'IRONWARDEN','Entry Test');state.character!.level=50;state.character!.xp=legacyCharacterTotalXpAtLevel(50);state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
  state.defeatedBossIds.push('FALLEN_KNIGHT');
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let publicationError:string|undefined;

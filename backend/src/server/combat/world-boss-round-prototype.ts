@@ -186,14 +186,21 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
    // anyway: measure the real HP difference after existing shield coverage.
    const guardian=aliveTank()!;
    const coverage=target.shields.reduce((n,s)=>n+s.amount,0);
-   const intercept=money(preShield*.10);
+   // V13 profile-only Tank counterplay: guard telegraphed cleaves/spikes
+   // more strongly than an ordinary hit. The saved HP remains fully ledger-
+   // backed after shields and actual HP caps, never an invented Impact bonus.
+   const predictedSpike=Boolean(input.serverEncounterProfile&&pending&&!pending.cancelled&&
+    pending.id===abilityId&&pending.resolvesRound===round);
+   const intercept=money(preShield*(predictedSpike?.25:.10));
    const before=Math.min(target.hp,Math.max(0,preShield-coverage));
    const after=Math.min(target.hp,Math.max(0,preShield-intercept-coverage));
    protectedAmount=money(Math.max(0,before-after));
    preShield=money(preShield-intercept);
    if(protectedAmount>0){
     ledger[guardian.def.id].tankProtection=money(ledger[guardian.def.id].tankProtection+protectedAmount);
-    emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,targetId:target.def.id,amount:protectedAmount});
+    emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,
+     targetId:target.def.id,amount:protectedAmount,
+     detail:predictedSpike?'telegraphed_ward':'ordinary_intercept'});
    }
   }
   let warOrderSaved=0;

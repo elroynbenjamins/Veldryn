@@ -64,7 +64,7 @@ function ownerMetric(r:WorldBossRoundResult,role:'tank'|'support',field:'tankPro
  return Object.entries(r.participants).filter(([id])=>id.startsWith(role==='tank'?'P_Ironwarden':'P_Dawnkeeper'))
   .reduce((n,[,p])=>n+p[field],0);
 }
-let baselineFights=0,stressFights=0,roleComparisons=0,downed=0,measuredRecovery=0,measuredInterception=0;
+let baselineFights=0,stressFights=0,roleComparisons=0,downed=0,measuredRecovery=0,measuredInterception=0,telegraphedWards=0;
 let positiveLowestBand=0,supportSurvivalWins=0,tankSurvivalWins=0,firstDeathAt:number|null=null;
 const summaries=[] as Array<{boss:WorldBossId;phase:WorldBossPhase;tier:string;
  band:number;attack:number;guard:number;unguarded:number;meanDamage:number;
@@ -114,6 +114,8 @@ for(const boss of BOSSES)for(const phase of PHASES)for(const bracket of BRACKETS
   const tank=normal.participants[players[0].id];
   measuredRecovery+=healer.effectiveHealing+healer.shieldConsumed;
   measuredInterception+=tank.tankProtection;
+  telegraphedWards+=normal.events.filter(e=>e.type==='mitigate'&&
+   e.abilityId==='TANK_INTERCEPT'&&e.detail==='telegraphed_ward'&&e.amount!>0).length;
   assert.equal(noSupport.participants[players[3].id].effectiveHealing,0);
   assert.equal(noSupport.participants[players[3].id].shieldConsumed,0);
   assert.equal(noTank.participants[players[0].id].tankProtection,0);
@@ -132,6 +134,7 @@ assert.equal(roleComparisons,3*3*4*STRESS.length*2);
 assert.equal(stressFights,roleComparisons*3);
 assert.equal(positiveLowestBand,3,'every T1 armored boss needs to accept actual HP damage');
 assert.ok(measuredRecovery>0&&measuredInterception>0,'real Tank/Support ledgers must be nonzero');
+assert.ok(telegraphedWards>0,'V13 Tank must actually respond to script-backed telegraphed boss attacks');
 assert.ok(downed>0,'synthetic pressure must reveal some deaths; else review model before tuning');
 // No assertion that removing a role ALWAYS worsens survival: hard RNG
 // and timing differences mean matched-seed counterfactuals are not causal.
@@ -151,7 +154,7 @@ for(const row of summaries)console.log('WB_V13_BAND_GUARD='+JSON.stringify(row))
 console.log('WB_V13_STRESS_MATRIX='+JSON.stringify({
  baselineFights,stressFights,roleComparisons,downed,firstDeathAt,
  supportSurvivalWins,tankSurvivalWins,measuredRecovery:round(measuredRecovery),
- measuredInterception:round(measuredInterception),positiveLowestBand,
+ measuredInterception:round(measuredInterception),telegraphedWards,positiveLowestBand,
  realEquipmentRules:true,actualLiveAccountReads:0,
  approvedBossTuning:false,liveWorldBossEnabled:false,
 }));

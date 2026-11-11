@@ -8,7 +8,7 @@ import { marksForRun } from '../expeditions/rewards';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
 import { recruitQModeAllies, type PublishedEcho } from './echo-recruitment';
 import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
-import {coopRequiredLevel} from './config';
+import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from './dungeon-entry-policy';
 import {preparedCoopCombatants} from './potion-modifiers';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
 
@@ -33,8 +33,10 @@ export class QModeService{
  create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[];npcSnapshots?:readonly FrozenLoadoutSnapshot[]}):QModeRun{
   const prior=this.repository.getByRequest(input.controllerAccountId,input.requestId);if(prior)return prior;
   const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
-  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,npcSnapshots:input.npcSnapshots??[]});
-  const requiredLevel=coopRequiredLevel(definition.minLevel,input.tier);for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(snapshot.normalized.before.level<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,minimumCombatPower:regularDungeonTierRequiredPower(definition,input.tier),npcSnapshots:input.npcSnapshots??[]});
+  const requiredLevel=regularDungeonTierRequiredLevel(definition,input.tier);
+  for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if((snapshot.characterLevel??snapshot.normalized.before.level)<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+  for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(snapshot.combatPower!==undefined&&snapshot.combatPower<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...allies.map(ally=>({accountId:ally.snapshot.accountId,characterId:ally.snapshot.characterId,role:ally.snapshot.readiness.role}))]);
   validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   const players=[combatant(input.controllerSnapshot),...allies.map(ally=>combatant(ally.snapshot))];
@@ -43,8 +45,9 @@ export class QModeService{
  createLive(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;snapshots:readonly FrozenLoadoutSnapshot[]}):QModeRun{
   const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
   if(input.snapshots.length!==4)throw new Error('invalid_live_roster');
-  const requiredLevel=coopRequiredLevel(definition.minLevel,input.tier);
-  for(const snapshot of input.snapshots)if(snapshot.normalized.before.level<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+  const requiredLevel=regularDungeonTierRequiredLevel(definition,input.tier);
+  for(const snapshot of input.snapshots)if((snapshot.characterLevel??snapshot.normalized.before.level)<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+  for(const snapshot of input.snapshots)if(snapshot.combatPower!==undefined&&snapshot.combatPower<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
   validateCoopRoster(input.snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})));
   validateUniqueDamageClasses(input.snapshots.map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players:input.snapshots.map(combatant),echoSourceAccountIds:[]});

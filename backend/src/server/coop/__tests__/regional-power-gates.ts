@@ -4,7 +4,7 @@ import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../regi
 assert.equal(REGIONAL_DUNGEON_BALANCE_VERSION,'regional-tier-power-v1');
 for(const id of ['EXP_001','EXP_003'])for(const tier of [1,2,3]){
  const row=regionalPowerMultipliers(id,tier,true);
- assert.ok(row,'new online regional dungeon has scaled encounter pressure');
+ if(!row)throw new Error('new online regional dungeon missing scaled encounter pressure');
  assert.ok(row.attack>0&&row.attack<1&&row.hp>0&&row.hp<1&&row.defense>0&&row.defense<=1);
  assert.equal(regionalPowerMultipliers(id,tier,false),undefined,'saved legacy runs retain old enemy stats');
 }

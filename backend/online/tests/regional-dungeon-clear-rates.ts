@@ -82,7 +82,7 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
  const roster=calibratedRoster(id,tier),count=40;
  const results=Array.from({length:count},(_,seed)=>runOne(id,tier,seed,roster));
  const successes=results.filter(row=>row.clear);
- const bossResults=Object.fromEntries([...new Set(results.map(row=>row.boss))].map(boss=>{
+ const bossResults:Record<string,{clears:number;attempts:number}>=Object.fromEntries([...new Set(results.map(row=>row.boss))].map(boss=>{
   const subset=results.filter(row=>row.boss===boss);
   return [boss,{clears:subset.filter(row=>row.clear).length,attempts:subset.length}];
  }));

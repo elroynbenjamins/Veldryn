@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
@@ -13,6 +14,14 @@ async function main(){
   const accountId=`00000000-0000-4000-8000-00000000000${index+1}`,state=createCharacter(newGame(0),classId,'Ready Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.defeatedBossIds.push('FALLEN_KNIGHT');
   state.character!.id='ready-character-'+index;
   state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
+  // Keep online test rosters above the new Sunscar tier threshold using the
+  // same Combat Power formula as the real server.
+  for(let pass=0;pass<30&&combatPowerRating(state).total<6200;pass++){
+   state.character!.attack=Math.ceil(state.character!.attack*1.4+1);
+   state.character!.defense=Math.ceil(state.character!.defense*1.4+1);
+   state.character!.hp=Math.ceil(state.character!.hp*1.4+1);
+  }
+  assert.ok(combatPowerRating(state).total>=6200,'Sunscar fixture must satisfy published Combat Power requirement');
   const record=deriveOnlineCoopLoadout(accountId,state,1),snapshot=resolveAndFreezeLoadout({accountId,characterId:state.character!.id,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>record}});
   return {accountId,characterId:record.characterId,loadoutId:'current',loadoutRevision:1,loadoutSnapshotHash:snapshot.snapshotHash,state,version:1,role:snapshot.readiness.role};
  });

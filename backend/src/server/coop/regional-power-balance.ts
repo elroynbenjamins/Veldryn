@@ -26,7 +26,7 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
  // resolveCoopNode already multiplies Rootbound content by 2.9. Reconcile
  // that legacy-specific modifier only for new Asterfall regional runs.
  const rootCorrection=rootbound?ROOTBOUND_TIER_ATTACK[tier-1]/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
- const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3?.75:.77):
+ const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .75 : .77):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'&&tier===3?1.04:
   expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'&&tier===3?1.04:1;
  return {attack:row.attack[tier-1]*rootCorrection*bossCorrection,

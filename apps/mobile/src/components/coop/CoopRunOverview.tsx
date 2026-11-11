@@ -4,7 +4,7 @@ import {useGameplayText} from '../../i18n/gameplay';
 import type {DungeonHealingPotionView} from '../../core/coop-potion-view';
 import type {DungeonTonicView} from '../../core/coop-tonic-view';
 import {useEffect,useRef,useState} from 'react';
-import {Animated,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {isCoopBattleResolving,isCoopCombatNodeKind,validateCoopRunView} from '../../core/coop-presentation';
 import {ct,t,type Language} from '../../i18n';
@@ -12,6 +12,7 @@ import {accountText} from '../../i18n/account';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} from './CoopVisualKit';
 import {DungeonRouteChoices} from './DungeonRouteChoices';
+import {RoutePathStrip} from './RoutePathStrip';
 import {DungeonRoomResolution} from './DungeonRoomResolution';
 import {DungeonMerchantPanel} from './DungeonMerchantPanel';
 import {DungeonRoomOutcomeBanner} from './DungeonRoomOutcomeBanner';
@@ -50,7 +51,36 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onUseHealingPotion,healingPotion,onPrepareTonic,dungeonTonic,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string,boonId?:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onPrepareTonic?:(id:string)=>void;dungeonTonic?:DungeonTonicView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+
+/** Count up to the final value when the reward row first appears, so the
+ * player SEES the Marks accrue instead of a static number landing. Reduce-
+ * motion jumps straight to the final value. */
+function AnimatedMarkAmount({value,reduceMotion,style}:{value:number;reduceMotion:boolean;style:any}){
+ const [displayed,setDisplayed]=useState(reduceMotion?value:0);
+ const latest=useRef(value);latest.current=value;
+ useEffect(()=>{
+  if(reduceMotion){setDisplayed(value);return;}
+  const driver=new Animated.Value(0);
+  const listener=driver.addListener(({value:progress})=>setDisplayed(Math.round(progress*latest.current)));
+  Animated.timing(driver,{toValue:1,duration:900,easing:Easing.out(Easing.cubic),useNativeDriver:false}).start();
+  return()=>{driver.removeListener(listener);driver.stopAnimation();};
+ },[value,reduceMotion]);
+ return <Text style={style}>+{displayed}</Text>;
+}
+
+/** A single-pass sheen around the Expedition Mark icon when the reward lands. */
+function MarkIconBurst({reduceMotion}:{reduceMotion:boolean}){
+ const burst=useRef(new Animated.Value(0)).current;
+ useEffect(()=>{
+  if(reduceMotion){burst.setValue(0);return;}
+  burst.setValue(0);
+  Animated.timing(burst,{toValue:1,duration:900,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
+ },[reduceMotion,burst]);
+ if(reduceMotion)return null;
+ const style={position:'absolute' as const,top:-6,left:-6,right:-6,bottom:-6,borderRadius:16,borderWidth:2,borderColor:'#F4CE5D',opacity:burst.interpolate({inputRange:[0,.4,1],outputRange:[0,.85,0]}),transform:[{scale:burst.interpolate({inputRange:[0,1],outputRange:[.8,1.4]})}]};
+ return <Animated.View pointerEvents="none" style={style}/>;
+}
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onUseHealingPotion,healingPotion,onPrepareTonic,dungeonTonic,onRefresh,onClaim,onQueueAgain,onPartyRematch,onOpenShop,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string,boonId?:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onPrepareTonic?:(id:string)=>void;dungeonTonic?:DungeonTonicView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;onOpenShop?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value),{gt}=useGameplayText();
  const localizedMechanic=run.mechanic?localizedSeasonalDungeonMechanic(language,run.mechanic):undefined;
@@ -156,6 +186,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     </FantasyPanel>:null}
     {run.merchantShop?<DungeonMerchantPanel shop={run.merchantShop} busy={busy} onPurchase={onPurchaseMerchant}/>:null}
     {run.phase==='awaiting_choice'&&run.options.length&&!enteringUtility?<View style={s.actionArea}>
+      {run.routePath?<RoutePathStrip path={run.routePath} reduceMotion={reduceMotion}/>:null}
       <View style={s.routeHeader}><View style={s.grow}><Text style={s.routeEyebrow}>{modeLabel}</Text><Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text></View>{bossNext?<StateChip label={st('FINAL BOSS')} tone="warning"/>:null}</View>
       {!seasonal&&(dungeonTonic?.open||dungeonTonic?.preparedName||healingPotion)?<View style={s.routeSupplies}>{dungeonTonic&&(dungeonTonic.open||dungeonTonic.preparedName)?<Text style={s.routeSupply} numberOfLines={1}>{dungeonTonic.preparedName?`${gt('DUNGEON TONIC')}: ${dungeonTonic.preparedName}`:gt('Choose a tonic before the first room.')}</Text>:null}{healingPotion?<Text style={s.routeSupply}>{gt('DUNGEON HEALING')} {healingPotion.remaining}/{healingPotion.capacity}</Text>:null}</View>:null}
       {needsBoon&&!selectedBoonId?<Text style={s.copy}>{st('Choose your boon above to continue.')}</Text>:null}
@@ -230,7 +261,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
        ?st("No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.")
        :st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}
       {rewards.map(reward=><View key={reward.id} style={s.rewardRow}>
-       <View style={s.summary}><View style={s.rewardCurrencyIcon}><ExpeditionMarkIcon size={32}/></View><View style={s.grow}><Text style={s.rewardRowTitle}>{st("Expedition Marks")}</Text><Text style={s.rewardRowAmount}>+{reward.reward_json.marks??0}</Text>
+       <View style={s.summary}><View style={s.rewardCurrencyIcon}><MarkIconBurst reduceMotion={reduceMotion}/><ExpeditionMarkIcon size={32}/></View><View style={s.grow}><Text style={s.rewardRowTitle}>{st("Expedition Marks")}</Text><AnimatedMarkAmount value={reward.reward_json.marks??0} reduceMotion={reduceMotion} style={s.rewardRowAmount}/>
        {reward.reward_json.live_fellowship_bonus?<Text style={s.copy}>{st("Live Fellowship bonus: +{marks} Marks",{marks:reward.reward_json.live_fellowship_bonus})}</Text>:null}
        {reward.reward_json.failure_consolation_applied?<Text style={s.copy}>{st("Consolation reward · No enhanced charge spent.")}</Text>:null}
         {reward.reward_json.reward_charges_remaining!==undefined&&reward.reward_json.weekly_enhanced_remaining!==undefined?<Text style={s.copy}>{st("Enhanced: {charges} charges · {weekly} weekly rewards left",{charges:reward.reward_json.reward_charges_remaining,weekly:reward.reward_json.weekly_enhanced_remaining})}</Text>:null}
@@ -240,8 +271,9 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       {terminalAction?<View style={s.rewardRow}>{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("CLAIMED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??st("Seasonal reward collected.")}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</View>:null}
       {run.rewardText?<Text style={s.copy}>{run.rewardText}</Text>:null}
       {!!notice?<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>:null}
-      {rewardsSecured&&run.phase==='completed'&&run.mode==='live'&&onPartyRematch?<GameButton title={st('Rematch with this party')} disabled={busy} onPress={()=>{setRewardOpen(false);onPartyRematch();}}/>:null}
-      {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} disabled={busy} onPress={onQueueAgain.onPress}/>:null}
+      {rewardsSecured&&onOpenShop?<GameButton title={st('Spend at Expedition Shop')} disabled={busy} onPress={()=>{setRewardOpen(false);onOpenShop();}}/>:null}
+      {rewardsSecured&&run.phase==='completed'&&run.mode==='live'&&onPartyRematch?<GameButton title={st('Rematch with this party')} tone="secondary" disabled={busy} onPress={()=>{setRewardOpen(false);onPartyRematch();}}/>:null}
+      {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} tone="secondary" disabled={busy} onPress={onQueueAgain.onPress}/>:null}
       {!rewardSurfaceReady&&onRefresh?<GameButton title={st("Refresh rewards")} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}
       <GameButton title={st("Return to dungeon list")} tone="secondary" disabled={busy} onPress={onBack}/>
      </ScrollView>

@@ -1,5 +1,5 @@
-import {useEffect,useState} from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import {useEffect,useRef,useState} from 'react';
+import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import type {CoopRoomOutcomeView} from '../../core/coop-presentation';
 import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
@@ -9,9 +9,12 @@ import {dungeonRoomPresentation} from './dungeon-room-presentation';
 /** A transient, non-modal result based on committed server deltas, not guesses. */
 export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView}){
  const {styles:s}=useCoopStyles(makeStyles),st=useSocialText(),[visible,setVisible]=useState(Boolean(outcome));
+ const enter=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   setVisible(Boolean(outcome));
   if(!outcome)return;
+  enter.setValue(0);
+  Animated.timing(enter,{toValue:1,duration:280,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
   const timeout=setTimeout(()=>setVisible(false),6500);
   return()=>clearTimeout(timeout);
  },[outcome?.nodeId,outcome?.kind,outcome?.offerKind,outcome?.resourcesDelta]);
@@ -30,10 +33,11 @@ export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView
  if(outcome.resourcesDelta!==0)detail.push(st('{amount} resources',{amount:`${outcome.resourcesDelta>0?'+':''}${outcome.resourcesDelta}`}));
  const room=dungeonRoomPresentation(outcome.kind);
  const summary=detail.length?detail.join(' · '):st('Room cleared');
- return <View style={s.banner} accessibilityLiveRegion="polite">
+ const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[-8,0]})}]};
+ return <Animated.View style={[s.banner,enterStyle]} accessibilityLiveRegion="polite">
   <Text style={s.mark}>✓</Text>
   <Text style={s.text} numberOfLines={3}>{room?`${st(room.name)} · ${summary}`:summary}</Text>
- </View>;
+ </Animated.View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
  banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm,minHeight:38,paddingHorizontal:coopSpacing.sm,paddingVertical:7,borderRadius:9,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,backgroundColor:C.surface},

@@ -1,4 +1,5 @@
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef} from 'react';
 import type {CoopMode,CoopRouteOptionView} from '../../core/coop-presentation';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {useCoopStyles} from '../../theme/useCoopStyles';
@@ -24,8 +25,16 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
  const st=useSocialText(),ui=useDungeonDynamicUiText(),language=useGameLanguage(),canChoose=Boolean(onChoose)&&phase==='awaiting_choice'&&!busy;
  const action=mode==='qmode'?ui('Choose room'):ui('Vote');
  const live=mode==='live',totalVotes=live?options.reduce((total,option)=>total+(option.votes??0),0):0;
+ const stepKey=options.map(option=>option.nodeId).join('|');
+ const anims=useMemo(()=>options.map(()=>new Animated.Value(0)),[stepKey]);
+ useEffect(()=>{
+  anims.forEach(value=>value.setValue(0));
+  Animated.stagger(70,anims.map(value=>Animated.timing(value,{toValue:1,duration:260,easing:Easing.out(Easing.cubic),useNativeDriver:true}))).start();
+ },[stepKey]);
  return <View style={s.list}>
-  {options.map(option=>{
+  {options.map((option,optionIndex)=>{
+   const enter=anims[optionIndex]??new Animated.Value(1);
+   const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[10,0]})}]};
    const canPress=canChoose&&!option.hidden;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
@@ -36,8 +45,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
    const translatedRisk=localizedSeasonalDungeonRouteRisk(language,option.risk);
    const translatedReward=localizedSeasonalDungeonRouteReward(language,option.reward);
-   return <Pressable
-    key={option.nodeId}
+   return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
     accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?action:ui('Unavailable')})}
     accessibilityHint={preview}
@@ -63,7 +71,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
       {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
      </View>:null}
     </View>
-   </Pressable>;
+   </Pressable></Animated.View>;
   })}
  </View>;
 }

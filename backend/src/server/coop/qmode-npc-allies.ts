@@ -15,16 +15,18 @@ const CLASSES:readonly {id:ClassId;className:string;name:string}[]=[
  {id:'DAWNKEEPER',className:'Dawnkeeper',name:'NPC · Dawn Medic'},
  {id:'STONECALLER',className:'Stonecaller',name:'NPC · Stone Sage'},
 ];
-export function createQModeNpcAllies({minimumLevel,syncLevel,controllerLevel}:{minimumLevel:number;syncLevel:number;controllerLevel:number}):FrozenLoadoutSnapshot[]{
+export function createQModeNpcAllies({minimumLevel,minimumCombatPower,syncLevel,controllerLevel}:{minimumLevel:number;minimumCombatPower?:number;syncLevel:number;controllerLevel:number}):FrozenLoadoutSnapshot[]{
  if(![minimumLevel,syncLevel,controllerLevel].every(n=>Number.isInteger(n)&&n>=1&&n<=100))throw new Error('invalid_npc_level');
  if(controllerLevel<minimumLevel)throw new Error('character_below_tier_level');
  const level=Math.max(minimumLevel,Math.min(syncLevel,controllerLevel));
  return CLASSES.map(({id,className,name})=>{
   const role=deriveRole(id),ref=ROOTBOUND_ROLE_REFERENCES[role],kit=launchPlayer(className,level);
-  const scale=level/ref.level*.9,accountId=`npc:qmode:${id}`,characterId=accountId;
+  const powerRatio=minimumCombatPower?Math.max(1,Math.min(2.2,minimumCombatPower/(minimumLevel<=10?2500:6000))):1;
+  // NPC-only power calibration; it does not create or mutate any player Echo.
+  const scale=Math.max(.55,level/ref.level)*.9*Math.pow(powerRatio,.52),accountId=`npc:qmode:${id}`,characterId=accountId;
   const capabilities=role==='tank'?['threat','defense']:role==='support'?['restore','mitigate','utility']:['damage'];
   const record:AuthoritativeLoadoutRecord={accountId,characterId,classId:id,loadoutId:'npc-kit',revision:1,
-   characterLevel:level,dungeonUnlocked:true,legalEquipment:true,capabilities:capabilities as AuthoritativeLoadoutRecord['capabilities'],
+   characterLevel:level,...(minimumCombatPower?{combatPower:minimumCombatPower}:{}),dungeonUnlocked:true,legalEquipment:true,capabilities:capabilities as AuthoritativeLoadoutRecord['capabilities'],
    abilities:structuredClone(kit.abilities),
    stats:{characterId,classId:id,displayName:name,bodyPresentation:'male',level,
     maxHp:ref.maxHp*scale,attackPower:ref.attackPower*scale,healingPower:ref.healingPower*scale,

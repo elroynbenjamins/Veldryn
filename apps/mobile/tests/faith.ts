@@ -57,6 +57,19 @@ test('Faith practice XP uses the 20% lower rewards at every tier without changin
 });
 test('Faith catalog has escalating water tiers and ordered blessings',()=>{equal(FAITH_TIERS.length,6,'tiers');equal(FAITH_BLESSINGS.length,18,'blessings');for(let i=1;i<FAITH_TIERS.length;i++){ok(FAITH_TIERS[i].level>FAITH_TIERS[i-1].level,'tier level');ok(FAITH_TIERS[i].water>FAITH_TIERS[i-1].water,'water');ok(FAITH_TIERS[i].xp/FAITH_TIERS[i].water>=FAITH_TIERS[i-1].xp/FAITH_TIERS[i-1].water,'efficiency');}});
 test('Holy Water has authored enemy sources and cannot be sold',()=>{const s=water(fresh(),2);for(const source of HOLY_WATER_SOURCES){const monster=MONSTERS.find(x=>x.id===source.monsterId)!;ok(!!monster,'monster');ok(monster.drops.some(x=>x.itemId===HOLY_WATER_ID),'drop wired');}throws(()=>sellItem(s,HOLY_WATER_ID,1),'cannot be sold');equal(qty(s,HOLY_WATER_ID),2,'unchanged');});
+test('Holy Water chances drop by 15% relative to existing effective odds, rounded down to whole percentage points',()=>{
+ const originallyAuthored=[.20,.40,.35,.50,.60,.75];
+ const finalChances=originallyAuthored.map(chance=>Math.floor(chance*.95*.85*100+1e-9)/100);
+ equal(finalChances,[.16,.32,.28,.40,.48,.60],'expected rounded drop chances');
+ equal(HOLY_WATER_SOURCES.map(source=>source.chance),finalChances,'Faith catalog exposes final chances');
+ for(const source of HOLY_WATER_SOURCES){
+  const monster=MONSTERS.find(monster=>monster.id===source.monsterId)!;
+  const waterDrop=monster.drops.find(drop=>drop.itemId===HOLY_WATER_ID)!;
+  equal(waterDrop.chance,source.chance,source.monsterId+' actual chance matches Faith source and player preview');
+  equal([waterDrop.min,waterDrop.max],[source.min,source.max],source.monsterId+' stack quantity unchanged');
+  ok(Math.abs(waterDrop.chance*100-Math.round(waterDrop.chance*100))<1e-9,source.monsterId+' final chance uses a whole percent');
+ }
+});
 test('Holy Water source strength scales with regional Faith progression',()=>{
  equal(HOLY_WATER_SOURCES.length,6,'six dedicated sources');
  const projected=HOLY_WATER_SOURCES.map(source=>{const monster=MONSTERS.find(x=>x.id===source.monsterId)!;const drop=monster.drops.find(x=>x.itemId===HOLY_WATER_ID)!;const pace=combatBaselineProjection(monster);return {source,drop,perHour:dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour).expectedQuantityPerHour};});

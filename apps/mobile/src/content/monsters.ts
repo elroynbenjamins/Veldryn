@@ -78,13 +78,14 @@ export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const advancedScale=ADVANCED_MONSTER_REGIONS.has(monster.zone)?ADVANCED_REGION_MONSTER_MULTIPLIER:1;
   return {...monster,
   unlockLevel:rebaseLevel(monster.unlockLevel),
-  // Reduce all chance-based combat drops by 5% relative to their existing
-  // chance, including Holy Water, rare equipment and gem materials. Preserve
-  // authored guaranteed boss drops and the existing 50% standard-material rule.
-  // This single normalized table also feeds the player-visible loot preview.
+  // Reduce other chance-based combat drops by 5% relative to their existing
+  // chance. Holy Water's dedicated Faith catalog already contains the final
+  // whole-percent rates after this 5% cut and a further 15% reduction.
+  // Preserve guaranteed boss drops and the 50% standard-material rule.
+  // This normalized table also feeds the player-visible loot preview.
   drops:[...monster.drops,...(holyWater?[{itemId:HOLY_WATER_ID,chance:holyWater.chance,min:holyWater.min,max:holyWater.max}]:[]),...enhancementDrops(monster)].map(drop=>{
     const ordinaryMaterial=!monster.boss&&drop.itemId!==HOLY_WATER_ID&&itemDef(drop.itemId).type==='material';
-    const relativeChanceScale=drop.chance<1?.95:1;
+    const relativeChanceScale=drop.itemId===HOLY_WATER_ID?1:drop.chance<1?.95:1;
     return {...drop,chance:drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale};
   }),
   // Idle combat uses authored cycle duration rather than HP to calculate kills.

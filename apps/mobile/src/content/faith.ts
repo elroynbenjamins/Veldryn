@@ -49,12 +49,17 @@ export function faithBlessingEffectLabel(blessing:FaithBlessing){
   case 'xp':return `+${percent}% Combat & skill XP`;
  }
 }
+/** Final Holy Water drop rates. Original authored chances already received
+ * a universal 5% relative drop reduction; lower those effective rates by an
+ * additional 15% and floor to the nearest whole percentage point:
+ * floor(originalChance * .95 * .85 * 100) / 100.
+ * These are FINAL odds and are not multiplied by .95 again in MONSTERS. */
 export const HOLY_WATER_SOURCES=[
- {monsterId:'FIELD_WISP',chance:.20,min:1,max:2},
- {monsterId:'DROWNED_PILGRIM',chance:.40,min:2,max:4},
- {monsterId:'OATHBOUND_SQUIRE',chance:.35,min:2,max:4},
- {monsterId:'DUNE_ORACLE',chance:.50,min:3,max:5},
- {monsterId:'BELLWRAITH',chance:.60,min:4,max:6},
- {monsterId:'ASHEN_REVENANT',chance:.75,min:6,max:10},
+ {monsterId:'FIELD_WISP',chance:.16,min:1,max:2},
+ {monsterId:'DROWNED_PILGRIM',chance:.32,min:2,max:4},
+ {monsterId:'OATHBOUND_SQUIRE',chance:.28,min:2,max:4},
+ {monsterId:'DUNE_ORACLE',chance:.40,min:3,max:5},
+ {monsterId:'BELLWRAITH',chance:.48,min:4,max:6},
+ {monsterId:'ASHEN_REVENANT',chance:.60,min:6,max:10},
 ] as const;
 export const faithBlessingDef=(id?:string)=>FAITH_BLESSINGS.find(b=>b.id===id);

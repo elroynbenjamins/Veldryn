@@ -15,6 +15,21 @@ on:
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'
       - 'backend/src/server/expeditions/content/coop-route-content.ts'
+      # Keep the deployable co-op Edge bundle synchronized whenever its
+      # regional gates, roster snapshots, matchmaking, or combat logic changes.
+      - 'backend/src/server/coop/dungeon-entry-policy.ts'
+      - 'backend/src/server/coop/regional-power-balance.ts'
+      - 'backend/src/server/coop/qmode.ts'
+      - 'backend/src/server/coop/loadout-snapshots.ts'
+      - 'backend/src/server/coop/echo-recruitment.ts'
+      - 'backend/src/server/coop/qmode-npc-allies.ts'
+      - 'backend/online/coop-entry.ts'
+      - 'backend/online/coop-loadout.ts'
+      - 'backend/online/qmode-runtime.ts'
+      - 'backend/online/live-runtime.ts'
+      - 'backend/online/live-ready.ts'
+      - 'backend/online/live-queue.ts'
+      - 'apps/mobile/src/core/combat-power.ts'
 
 permissions:
   contents: write

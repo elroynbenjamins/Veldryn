@@ -16,7 +16,13 @@ The prior single fixed **T2** enemy profile was held against T1–T4 players. It
 - **Tank telegraph response refined:** for V13 server-frozen profiles only, a living Tank now intercepts up to **25% of eligible telegraphed boss spike damage** to non-Tanks versus the original **10% on ordinary attacks**. Only actual HP prevented after shield/HP caps is recorded as Tank Impact. The new V13 tests detected **3,382** genuinely ledger-backed telegraphed ward instances. There are no free attacks or invented role rewards.
 - Prior V13 stress data before this prototype improvement showed Tank survival wins in **16** comparisons. The targeted ward refinement increased that to **39** and reduced full-squad downed outcomes from **113 to 104**, while Support comparisons stayed near 293–294. The exact tactical tuning and class fairness are **not approved**.
 
-**Next balance gate:** verify both support class kits (Dawnkeeper heals/HoTs vs Stonecaller consumed shields), each Tank class, mixed-tier Echo teams, and player-specific equipment/gem/companion snapshots. Do not equate stress-test outcomes with live matchmaking odds.
+### Validated class-kit counterplay addendum
+
+[Focused run 43043117614](https://github.com/elroynbenjamins/Veldryn/actions/runs/43043117614) passed an additional **216 role-kit comparisons** across all three bosses, phases and T1–T4 synthetic equipped bands, checking every combination of **Ironwarden, Bastion and Dreadguard** with **Dawnkeeper and Stonecaller** against identical band-specific enemy profiles at test-only stress factor 6.
+
+Observed mean surviving allies out of four: Ironwarden **3.44**, Bastion **3.47**, Dreadguard **3.57**; Dawnkeeper **3.60** versus Stonecaller **3.39**. The source [five-class data table](spreadsheets/world-boss-v13-tank-support-kits-test-only.csv) separately reports genuinely consumed shields, effective recovery, Tank HP prevented and personal damage. Stonecaller generated shields that were actually consumed; Dawnkeeper contributed more total effective recovery in this sample. Different class abilities interact with the deterministic action RNG, so the averages **are not proof of superiority or an invitation to nerf/buff a class**. No Ward/recovery rewards have been minted.
+
+**Next balance gate:** use server-authenticated live-owned equipment/gem/faith/companion snapshots, true five-bracket power quantiles and mixed-tier Echo teams to verify class parity, then decide whether any Tank or Support changes should proceed beyond this hidden test prototype. Do not equate stress-test outcomes with live matchmaking odds.
 
 ## V13 engineering implementation
 

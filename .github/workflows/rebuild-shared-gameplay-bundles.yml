@@ -1,6 +1,6 @@
 name: Rebuild shared gameplay Edge bundles
 
-# Rebuild the canonical server game engines when shared Exploration rules change.
+# Rebuild the canonical server game engines when shared balance and Guild Bank rules change.
 # Other gameplay modifications can still request the workflow manually.
 on:
   workflow_dispatch:
@@ -10,6 +10,8 @@ on:
       - '.github/workflows/rebuild-shared-gameplay-bundles.yml'
       - 'apps/mobile/src/content/exploration.ts'
       - 'apps/mobile/tests/exploration-balance.ts'
+      - 'apps/mobile/src/core/gem-progression-v1.ts'
+      - 'apps/mobile/tests/gem-progression-v1.ts'
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'
 

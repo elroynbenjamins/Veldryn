@@ -18,7 +18,7 @@ export function regularDungeonTierRequiredLevel(def:ExpeditionDefinition,tier:Co
 }
 export function regularDungeonTierRequiredPower(def:ExpeditionDefinition,tier:CoopTier):number{
  if(!PUBLISHED_COOP_TIERS.some(value=>value===tier))throw new Error('dungeon_difficulty_unavailable');
- return DUNGEON_REQUIREMENTS[def.id]?.powers[tier-1]??Number.POSITIVE_INFINITY;
+ return DUNGEON_REQUIREMENTS[def.id]?.powers[tier-1]??0;
 }
 export function highestEligibleRegularDungeonTier(def:ExpeditionDefinition,level:number,combatPower=Number.POSITIVE_INFINITY):CoopTier|undefined{
  if(!publishedRegularDungeon(def)||!Number.isInteger(level))return undefined;

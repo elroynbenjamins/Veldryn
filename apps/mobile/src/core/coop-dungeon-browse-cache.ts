@@ -5,7 +5,7 @@ import type {CoopDungeonProjection} from './coop-dungeon-browsing';
 export interface CoopBrowseCatalog {dungeons:CoopDungeonProjection[];savedAtMs:number}
 export interface CoopCatalogStore {getItem:(key:string)=>Promise<string|null>;setItem:(key:string,value:string)=>Promise<unknown>}
 export const COOP_BROWSE_CATALOG_MAX_AGE_MS=24*60*60*1000;
-const VERSION=2; // Invalidate retired dungeon queues when the regional catalog changes.
+const VERSION=3; // Evict cached level-25 rules: the next release gates Asterfall/Sunscar by Combat Power.
 const MAX_CATALOG_DUNGEONS=100;
 const MAX_MEMORY_ENTRIES=4;
 

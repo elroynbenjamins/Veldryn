@@ -14,7 +14,7 @@ function themed(prefix:string):ContentPools{
 }
 
 /** Both former dungeon route palettes feed one regional queue; retired IDs remain intact.
- * Regional tier-power changes require the canonical co-op Edge bundle to be rebuilt. */
+ * Regional tier-power v1 has calibrated boss-specific odds and its generated co-op Edge bundle must be rebuilt. */
 function mergePools(a:ContentPools,b:ContentPools):ContentPools{
  const merged:Record<NonBossKind,readonly string[]>={...a};
  for(const kind of Object.keys(a) as NonBossKind[])merged[kind]=[...a[kind],...b[kind]];

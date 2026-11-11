@@ -1,7 +1,7 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
 import React,{useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier,unmetScoutingPrerequisite} from '../content/exploration';
@@ -10,6 +10,7 @@ import {regionalArea} from '../content/regional-areas';
 import {currentRegionId} from '../core/combat-region';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
+import {DisclosureControl} from './DisclosureControl';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -75,10 +76,7 @@ export function ExplorationPanel({state,onCommand}:{state:GameState;onCommand:(c
     <GameButton compact title={buttonLabel} disabled={!ready} tone={ready?'primary':'secondary'} onPress={()=>onCommand({type:'explore',args:{id:route.id}})}/>
    </View>;
   })}
-  {otherRoutes.length?<Pressable accessibilityRole="button" accessibilityState={{expanded:showOtherRegions}} onPress={()=>setShowOtherRegions(open=>!open)} style={({pressed})=>[s.otherToggle,pressed&&s.pressed]}>
-   <Text style={s.otherLabel}>{showOtherRegions?p('Hide other regions'):p('View other regions')} ({otherRoutes.length})</Text>
-   <Text style={s.otherMark}>{showOtherRegions?'−':'+'}</Text>
-  </Pressable>:null}
+  {otherRoutes.length?<DisclosureControl label={(showOtherRegions?p('Hide other regions'):p('View other regions'))+' ('+otherRoutes.length+')'} expanded={showOtherRegions} onPress={()=>setShowOtherRegions(open=>!open)}/>:null}
  </Panel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
@@ -106,9 +104,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  prerequisite:{...typography.caption,color:C.warning},
  reward:{...typography.caption,color:C.accent},
  tag:{fontSize:9,fontWeight:'900',letterSpacing:.7},
- tagReady:{color:C.good},tagFound:{color:C.special},tagLocked:{color:C.warning},
- otherToggle:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},
- otherLabel:{...typography.bodyStrong,color:C.text},
- otherMark:{fontSize:20,color:C.accent,fontWeight:'900'},
- pressed:{opacity:.7}
+ tagReady:{color:C.good},tagFound:{color:C.special},tagLocked:{color:C.warning}
 });}

@@ -76,12 +76,12 @@ ok(sunscarRoutes.slice(1).every((route,index)=>route.prerequisiteRouteId===sunsc
 ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_IRONWOOD')?.requiredExplorationLevel===3,'Ironwood now requires Exploration level 3');
 ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_OLD_MINES')?.requiredExplorationLevel===4,'Old Mines now requires Exploration level 4');
 ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_KINGS_ROAD')?.requiredExplorationLevel===5,'King\'s Road now requires Exploration level 5');
-const legacySunscar=['SCOUT_SUNSCAR'];
+const legacySunscar=['SCOUT_KINGS_ROAD','SCOUT_SUNSCAR'];
 ok(!unmetScoutingPrerequisite(sunscarRoutes[0],legacySunscar),'Existing Sunscar completion has no new prerequisite');
 ok(unmetScoutingPrerequisite(sunscarRoutes[2],legacySunscar)?.id===sunscarRoutes[1].id,'Cannot skip the second Sunscar area survey');
 const sunscarXpPerHour=sunscarRoutes.map(route=>rate(route.id));
 ok(sunscarXpPerHour.every((value,index)=>index===0||value>sunscarXpPerHour[index-1]),'Later Sunscar surveys should be better XP training');
-const testExplorer={...base,currentRegionId:'SUNSCAR',character:{...base.character!,level:rebaseLevel(45)},skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill),exploredRouteIds:legacySunscar};
+const testExplorer={...base,currentRegionId:'SUNSCAR',character:{...base.character!,level:rebaseLevel(45)},skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill),exploredRouteIds:legacySunscar,defeatedBossIds:[...(base.defeatedBossIds??[]),'FALLEN_KNIGHT']};
 let prerequisiteBlocked=false;
 try{startExploration(testExplorer,'SCOUT_SUNSCAR_MIRAGE',1000)}catch(e){prerequisiteBlocked=String(e).includes('Scorchwind');}
 ok(prerequisiteBlocked,'Starting an advanced Sunscar survey must validate earlier survey completion');
@@ -103,7 +103,7 @@ ok(explorationScoutingSpeedMultiplier(10)===1.02&&explorationScoutingSpeedMultip
 const noviceGathering=characterPermanentMultipliers(base).gatheringSpeedMultiplier;
 const veteran={...base,skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:50,xp:totalXpAtLevel(50)}:skill)};
 ok(Math.abs(characterPermanentMultipliers(veteran).gatheringSpeedMultiplier/noviceGathering-1.05)<1e-7,'Exploration 50 adds 5% to baseline gathering speed');
-const highScout=startExploration({...veteran,character:{...veteran.character!,level:rebaseLevel(26)},currentRegionId:'SUNSCAR'},'SCOUT_SUNSCAR',1000);
+const highScout=startExploration({...veteran,character:{...veteran.character!,level:rebaseLevel(26)},currentRegionId:'SUNSCAR',exploredRouteIds:['SCOUT_KINGS_ROAD'],defeatedBossIds:[...(veteran.defeatedBossIds??[]),'FALLEN_KNIGHT']},'SCOUT_SUNSCAR',1000);
 const fasterSeconds=Math.ceil(168/explorationScoutingSpeedMultiplier(50));
 ok(previewActivityReward(highScout,1000+(fasterSeconds+1)*1000).kills>=1,'Exploration 50 actually completes scouting faster');
 const explorationMilestones=skillMilestones(veteran,'exploration');

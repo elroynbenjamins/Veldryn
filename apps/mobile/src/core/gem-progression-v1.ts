@@ -17,11 +17,11 @@ export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;d
  4:{to:5,copies:3,dust:40,gold:72000,seconds:2*60*60,level:60,xp:3200,catalystId:'RADIANT_CATALYST'},
 };
 export const GEM_REFINE_COSTS_V1:Readonly<Record<MobileGemGradeV1,{level:number;xp:number;gold:number;seconds:number;reagents:readonly ItemStack[]}>>={
- 1:{level:1,xp:90,gold:90,seconds:60,reagents:[{itemId:'WISP_DUST',quantity:2}]},
- 2:{level:12,xp:240,gold:360,seconds:180,reagents:[{itemId:'WISP_DUST',quantity:4},{itemId:'OATHGLASS_FRAGMENT',quantity:1}]},
- 3:{level:28,xp:700,gold:1080,seconds:600,reagents:[{itemId:'GLOAM_DUST',quantity:2},{itemId:'OATHGLASS_FRAGMENT',quantity:1}]},
- 4:{level:45,xp:1600,gold:3120,seconds:1200,reagents:[{itemId:'GLOAM_DUST',quantity:5},{itemId:'RIMEGLASS',quantity:1}]},
- 5:{level:62,xp:3600,gold:9600,seconds:2700,reagents:[{itemId:'RIMEGLASS',quantity:2},{itemId:'RADIANT_CATALYST',quantity:1}]},
+ 1:{level:1,xp:110,gold:90,seconds:60,reagents:[{itemId:'WISP_DUST',quantity:2}]},
+ 2:{level:12,xp:260,gold:360,seconds:180,reagents:[{itemId:'WISP_DUST',quantity:4},{itemId:'OATHGLASS_FRAGMENT',quantity:1}]},
+ 3:{level:28,xp:720,gold:1080,seconds:600,reagents:[{itemId:'GLOAM_DUST',quantity:2},{itemId:'OATHGLASS_FRAGMENT',quantity:1}]},
+ 4:{level:45,xp:1620,gold:3120,seconds:1200,reagents:[{itemId:'GLOAM_DUST',quantity:5},{itemId:'RIMEGLASS',quantity:1}]},
+ 5:{level:62,xp:3620,gold:9600,seconds:2700,reagents:[{itemId:'RIMEGLASS',quantity:2},{itemId:'RADIANT_CATALYST',quantity:1}]},
 };
 export const GEM_DISMANTLE_DUST_V1:Readonly<Record<MobileGemGradeV1,number>>={1:1,2:3,3:8,4:22,5:60};
 export const GEM_UNSOCKET_COST_V1:Readonly<Record<MobileGemGradeV1,{gold:number;dust:number}>>={

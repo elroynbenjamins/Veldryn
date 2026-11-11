@@ -25,10 +25,14 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
  const rootbound=expeditionId==='EXP_001'&&(encounterId?.startsWith('ROOT')||encounterId==='BOSS_EXP_ROOT');
  // resolveCoopNode already multiplies Rootbound content by 2.9. Reconcile
  // that legacy-specific modifier only for new Asterfall regional runs.
- const rootCorrection=rootbound?ROOTBOUND_TIER_ATTACK[tier-1]/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
- const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .75 : .77):
-  expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'&&tier===3?1.04:
-  expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'&&tier===3?1.04:1;
+ const rootAttack=encounterId==='BOSS_EXP_ROOT'&&tier===2 ? .92:
+  encounterId==='BOSS_EXP_ROOT'&&tier===3 ? .88:ROOTBOUND_TIER_ATTACK[tier-1];
+ const rootCorrection=rootbound?rootAttack/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
+ // Correct only the final bosses. Normal rooms retain monotonic regional
+ // scaling and saved runs retain their original boss definitions.
+ const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .759:tier===2 ? .768:.77):
+  expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'?(tier===3?1.017:tier===2?1.015:1):
+  expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'?(tier===3?1.01:tier===2?1.06:1):1;
  return {attack:row.attack[tier-1]*rootCorrection*bossCorrection,
   hp:row.hp[tier-1]*bossCorrection,defense:row.defense[tier-1]*bossCorrection,enemyLevel:row.enemyLevel};
 }

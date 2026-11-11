@@ -1,0 +1,84 @@
+import assert from 'node:assert/strict';
+import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
+import {upgradeGoldCost} from '../../../apps/mobile/src/core/equipment-enhancement';
+import {
+ MARKET_AFFORDABILITY_RELEASED_V15,
+ previewTierAffordabilityV15,previewEnhancementInvestmentV15,
+ previewGearScarcityContextV15,previewMarketExactGearReviewV15,
+} from '../market-affordability-v15';
+
+assert.equal(MARKET_AFFORDABILITY_RELEASED_V15,false);
+const tiers=['T1','T2','T3','T4'] as const;
+const matrix=[];
+for(const tier of tiers){
+ const quote=previewTierAffordabilityV15(tier,'IRONWARDEN','Foundation');
+ assert(quote,'Expected a reference record for '+tier);
+ assert.equal(quote.approved,false);
+ assert.equal(quote.canBuyNow,false);
+ assert.equal(quote.referenceBasis,'authored_timed_combat_proxy');
+ assert(quote.referenceGoldPerHour>0&&quote.referenceKillsPerHour>0);
+ assert(quote.itemCount>0&&quote.expectedSlots===10);
+ assert(quote.totalDirectForgeGold>0);
+ assert(quote.totalCommonQ50MinimumGold>=0);
+ assert(quote.totalCommonQ50MaximumGold>=quote.totalCommonQ50MinimumGold);
+ if(quote.dataComplete){
+  assert.equal(quote.itemCount,10);
+  assert.equal(quote.missingPriceItemIds.length,0);
+  assert(quote.estimatedHoursForFullBuyoutAtTimedReference!==null&&
+   quote.estimatedHoursForFullBuyoutAtTimedReference>0);
+ }else{
+  assert(quote.estimatedHoursForFullBuyoutAtTimedReference===null,
+   'Partial price data must never imply a complete-set affordability figure');
+ }
+ matrix.push({tier,referenceMonsterId:quote.referenceMonsterId,
+  referenceGoldPerHour:quote.referenceGoldPerHour,itemCount:quote.itemCount,
+  minBuyoutGold:quote.totalCommonQ50MinimumGold,
+  directForgeGold:quote.totalDirectForgeGold,
+  hours:quote.estimatedHoursForFullBuyoutAtTimedReference,
+  missing:quote.missingPriceItemIds.length});
+}
+const recipe=V33_EQUIPMENT_RECIPES.find(x=>x.v33EquipmentTier==='T1'&&x.classId==='IRONWARDEN'&&x.v33Path==='Foundation');
+assert(recipe);
+const itemId=recipe.output.itemId;
+const enh=previewEnhancementInvestmentV15(itemId,'common',1);
+assert(enh,'Need initial enhancement investment');
+assert.equal(enh.approved,false);
+assert.equal(enh.canListNow,false);
+assert.equal(enh.requiresHumanReview,true);
+assert.equal(enh.confirmedAttemptGold,upgradeGoldCost(itemId,1,'common'));
+assert(enh.incrementalMarketMinimumGold>0);
+assert(enh.v14Q50MinimumGold>enh.v14Q50Rank0MinimumGold);
+assert.deepEqual(enh.excludedCosts,['tempering_dust','tempering_cores','failed_attempts']);
+const maxRank=previewEnhancementInvestmentV15(itemId,'epic',4);
+assert(maxRank&&maxRank.confirmedAttemptGold>enh.confirmedAttemptGold);
+assert.equal(previewEnhancementInvestmentV15(itemId,'common',0),undefined);
+assert.equal(previewEnhancementInvestmentV15(itemId,'common',5),undefined);
+assert.equal(previewEnhancementInvestmentV15('basic_sword','common',1),undefined);
+
+const normal=previewGearScarcityContextV15(itemId,'common',50);
+const mythic=previewGearScarcityContextV15(itemId,'mythic',90);
+const epic=previewGearScarcityContextV15(itemId,'epic',50);
+assert(normal&&mythic&&epic);
+assert.equal(mythic.rarityChance,.001);
+assert.equal(epic.rarityChance,.006);
+assert(mythic.qualityChanceAtLeast>.08&&mythic.qualityChanceAtLeast<.10);
+assert(mythic.approxCraftsPerJointResult>10_000);
+assert.equal(mythic.automaticPriceMultiplier,false);
+assert.equal(mythic.humanReviewSuggested,true);
+assert.equal(normal.humanReviewSuggested,false);
+assert.equal(previewGearScarcityContextV15('basic_sword','common',101),undefined);
+assert.equal(previewGearScarcityContextV15('INVALID','common',50),undefined);
+const reviewed=previewMarketExactGearReviewV15({
+ itemId,rarity:'mythic',quality:95,enhancementRank:2,
+ hasStatGem:true,hasEffectGem:false,
+});
+assert(reviewed);
+assert.equal(reviewed.approved,false);
+assert.equal(reviewed.canListNow,false);
+assert.equal(reviewed.priceConfirmed,false);
+assert.deepEqual(reviewed.reviewFlags,[
+ 'scarce_rarity_manual_review','high_quality_manual_review',
+ 'enhancement_cost_manual_review','socket_gem_price_unverified',
+]);
+console.log('V15_SOURCE_REFERENCE_MATRIX='+JSON.stringify(matrix));
+console.log('PASS: hidden V15 affordability proxies, sunk enhancement Gold, rarity odds and human-review security');

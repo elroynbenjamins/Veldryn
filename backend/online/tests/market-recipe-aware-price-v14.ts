@@ -33,8 +33,10 @@ for(const id of ['COPPER_INGOT','ASTER_IRON_INGOT','SUNSTONE_INGOT',
  assert(quote.recipeCost);
  const cost=quote.recipeCost!;
  assert(cost.ingredientFloorGold>0&&cost.craftingGold>0);
- assert(quote.unitMin*.95>=cost.unitProductionCostGold*1.15-1e-8,
-  id+' should pay ingredients, crafting Gold, 15% labor and 5% sale tax');
+ const gross=quote.unitMin*quote.minimumLot;
+ const sellerNet=gross-Math.ceil(gross*.05);
+ assert(sellerNet>=cost.unitProductionCostGold*1.15*quote.minimumLot-1e-8,
+  id+' should pay ingredients, crafting Gold, 15% labor and integer-rounded 5% tax');
  assert(quote.unitMax>=quote.unitMin*4);
 }
 const copper=resource('COPPER_INGOT');
@@ -43,16 +45,16 @@ assert.equal(copper.unitMin,20);
 assert.equal(copper.minimumLot,5,'Preserve existing minimum lots');
 const aster=resource('ASTER_IRON_INGOT');
 assert.equal(aster.recipeCost?.unitProductionCostGold,188/4);
-assert.equal(aster.unitMin,57);
+assert.equal(aster.unitMin,58);
 const sun=resource('SUNSTONE_INGOT');
 assert.equal(sun.recipeCost?.unitProductionCostGold,736/3);
-assert.equal(sun.unitMin,297);
+assert.equal(sun.unitMin,298);
 const black=resource('BLACKGLASS_INGOT');
 assert.equal(black.recipeCost?.unitProductionCostGold,3440/3);
 assert.equal(black.unitMin,1389);
 const resin=resource('IRONWOOD_BINDING_RESIN');
 assert.equal(resin.recipeCost?.unitProductionCostGold,270);
-assert.equal(resin.unitMin,327);
+assert.equal(resin.unitMin,328);
 assert.equal(resource('SUNSCALE').source,'raw_anchor');
 assert.equal(previewMarketResourceBandV14('HOLY_WATER'),undefined);
 assert.equal(previewMarketResourceBandV14('FALLEN_KNIGHT_SIGIL'),undefined);
@@ -73,8 +75,8 @@ for(const tier of tiers){
  assert.equal(quote.canListNow,false);
  const old=previewMarketPriceBandV10(recipe.output.itemId,'equipment',traits)!;
  assert(quote.unitMin>=old.unitMin,'Never undercut old starter anchor');
- assert(quote.unitMin*.95>=quote.recipeCost!.unitProductionCostGold*1.15-1e-8,
-  tier+' must not undercut crafting costs');
+ assert(quote.unitMin-Math.ceil(quote.unitMin*.05)>=quote.recipeCost!.unitProductionCostGold*1.15-1e-8,
+  tier+' must cover crafting Gold and a 15% premium after whole-Gold tax');
  const epic=previewMarketGearBandV14(recipe.output.itemId,{rarity:'epic',quality:50,enhancementRank:0})!;
  const highQuality=previewMarketGearBandV14(recipe.output.itemId,{rarity:'common',quality:100,enhancementRank:0})!;
  const enhanced=previewMarketGearBandV14(recipe.output.itemId,{rarity:'common',quality:50,enhancementRank:4})!;

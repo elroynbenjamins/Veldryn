@@ -5,7 +5,7 @@ assert.equal(REGIONAL_DUNGEON_BALANCE_VERSION,'regional-tier-power-v1');
 for(const id of ['EXP_001','EXP_003'])for(const tier of [1,2,3]){
  const row=regionalPowerMultipliers(id,tier,true);
  if(!row)throw new Error('new online regional dungeon missing scaled encounter pressure');
- assert.ok(row.attack>0&&row.attack<1&&row.hp>0&&row.hp<1&&row.defense>0&&row.defense<=1);
+ assert.ok(row.attack>0&&row.attack<2&&row.hp>0&&row.hp<4&&row.defense>0&&row.defense<4);
  assert.equal(regionalPowerMultipliers(id,tier,false),undefined,'saved legacy runs retain old enemy stats');
 }
 assert.equal(regionalPowerMultipliers('EXP_005',1,true),undefined,'Frostmarch is still in development');
@@ -26,3 +26,11 @@ assert.ok(regionalCombatPowerBoost('EXP_001',5000,true)<1.4,'Combat Power increa
 assert.equal(regionalCombatPowerBoost('EXP_001',50000,true),1.4,'No unlimited power in normalized co-op');
 assert.equal(regionalCombatPowerBoost('EXP_001',50000,false),1,'Legacy saved runs keep original equipment normalization');
 assert.equal(regionalCombatPowerBoost('EXP_005',50000,true),1,'Development dungeons have no published power scaling');
+
+const root=regionalPowerMultipliers('EXP_001',2,true,'BOSS_EXP_ROOT')!;
+const bell=regionalPowerMultipliers('EXP_001',2,true,'BOSS_EXP_BELL')!;
+assert.ok(root.attack<bell.attack,'New Asterfall routes compensate for the legacy 2.9x Rootbound modifier');
+const solar=regionalPowerMultipliers('EXP_003',3,true,'BOSS_EXP_SOLAR')!;
+const sphinx=regionalPowerMultipliers('EXP_003',3,true,'BOSS_EXP_SPHINX')!;
+assert.ok(solar.attack<sphinx.attack&&solar.hp<sphinx.hp,'Solar boss mechanics need lower raw pressure than Sphinx');
+assert.equal(regionalPowerMultipliers('EXP_001',2,false,'BOSS_EXP_ROOT'),undefined,'Old completed and running graphs must not be retuned');

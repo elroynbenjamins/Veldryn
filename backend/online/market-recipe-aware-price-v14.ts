@@ -70,6 +70,27 @@ const validMaterial=(id:string)=>{
 function validDraftPrice(min:number,max:number){
  return saneInteger(min)&&min>0&&saneInteger(max)&&max>=min&&max<=MARKET_MAX_PRICE_V14;
 }
+/** 5% tax is rounded UP per completed listing, not fractional Gold per unit.
+ * Verify the real minimum-lot payout pays the entire 15% labor premium.
+ */
+function minimumProfitableUnitPrice(costPerUnit:number,minimumLot:number){
+ if(!Number.isFinite(costPerUnit)||costPerUnit<=0||!saneInteger(minimumLot)||minimumLot<1)return undefined;
+ const requiredNet=costPerUnit*(1+MARKET_CRAFT_LABOR_PREMIUM_V14)*minimumLot;
+ const tax=MARKET_SALE_TAX_BASIS_POINTS_V11/10_000;
+ const unrounded=costPerUnit*(1+MARKET_CRAFT_LABOR_PREMIUM_V14)/(1-tax);
+ if(!Number.isFinite(unrounded)||unrounded>MARKET_MAX_PRICE_V14)return undefined;
+ let tick=priceTick(unrounded),unitMin=ceilTick(unrounded,tick);
+ for(let n=0;n<100;n++){
+  tick=priceTick(unitMin);
+  unitMin=ceilTick(unitMin,tick);
+  const gross=unitMin*minimumLot;
+  if(!Number.isSafeInteger(gross)||gross>1_000_000_000_000_000)return undefined;
+  if(gross-Math.ceil(gross*tax)>=requiredNet-1e-8)return {unitMin,tick};
+  unitMin+=tick;
+  if(unitMin>MARKET_MAX_PRICE_V14)return undefined;
+ }
+ return undefined;
+}
 function inputAnchor(id:string):MaterialQuote|undefined{
  const legacy=resourcePriceSeedV10(id);
  if(legacy)return {unitMin:legacy[0],unitMax:legacy[1],source:'raw_anchor',
@@ -120,15 +141,15 @@ function materialQuote(id:string,seen:Set<string>,depth:number):MaterialQuote|un
  costs.sort((a,b)=>a.unitProductionCostGold-b.unitProductionCostGold||a.recipeId.localeCompare(b.recipeId));
  const cheapest=costs[0];
  // 15% crafter premium and 5% tax protection on the CHEAPEST complete recipe.
- const floorRaw=cheapest.unitProductionCostGold*(1+MARKET_CRAFT_LABOR_PREMIUM_V14)
-    /(1-MARKET_SALE_TAX_BASIS_POINTS_V11/10_000);
- const tick=priceTick(floorRaw);
- const unitMin=ceilTick(floorRaw,tick);
+ const minimumLot=marketDraftResourceMinLotV11(id)??1;
+ const floor=minimumProfitableUnitPrice(cheapest.unitProductionCostGold,minimumLot);
+ if(!floor)return undefined;
+ const {tick,unitMin}=floor;
  const oldCap=resourcePriceSeedV10(id)?.[1]??0;
  const unitMax=ceilTick(Math.max(unitMin*MARKET_CRAFTED_CORRIDOR_MULTIPLIER_V14,oldCap),tick);
  if(!validDraftPrice(unitMin,unitMax))return undefined;
  return {unitMin,unitMax,source:'crafted_recipe',
-  minimumLot:marketDraftResourceMinLotV11(id)??1,recipeCost:cheapest};
+  minimumLot,recipeCost:cheapest};
 }
 export function previewMarketResourceBandV14(itemId:string):MarketPriceDraftV14|undefined{
  const q=materialQuote(itemId,new Set(),0);
@@ -150,9 +171,9 @@ export function previewMarketGearBandV14(itemId:string,traits:MarketGearPriceTra
  const baseline=previewMarketPriceBandV10(itemId,'equipment',{rarity:'common',quality:50,enhancementRank:0});
  const cost=recipeCost(recipe,new Set([itemId]),0);
  if(!baseline||!cost)return undefined;
- const minimumProfitable=cost.unitProductionCostGold*(1+MARKET_CRAFT_LABOR_PREMIUM_V14)
-   /(1-MARKET_SALE_TAX_BASIS_POINTS_V11/10_000);
- const baseMin=Math.max(baseline.unitMin,minimumProfitable);
+ const minimumProfitable=minimumProfitableUnitPrice(cost.unitProductionCostGold,1);
+ if(!minimumProfitable)return undefined;
+ const baseMin=Math.max(baseline.unitMin,minimumProfitable.unitMin);
  const baseMax=Math.max(baseline.unitMax,baseMin*MARKET_CRAFTED_CORRIDOR_MULTIPLIER_V14);
  const multiplier=RARITY_MULTIPLIER_V14[traits.rarity]
    *(.70+traits.quality*.006)*(1+traits.enhancementRank*.12);

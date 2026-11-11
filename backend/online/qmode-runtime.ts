@@ -13,6 +13,7 @@ import type {CoopRunRequest,CoopDecisionCommand} from '../src/shared/coop-types'
 import {marksForRun} from '../src/server/expeditions/rewards';
 import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
+import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
@@ -65,7 +66,7 @@ export class OnlineQModeRuntime{
   const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,minimumCombatPower:minimumPower,syncLevel:sync,controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
-  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:content,nowMs:game.serverNow,profiles,npcSnapshots});
+  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots});
   const members=[{memberKind:'human',snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.players.slice(1).map(player=>{
    const selected=profiles.find(row=>row.snapshot.characterId===player.id&&run.echoSourceAccountIds.includes(row.sourceAccountId));
    if(selected){const source=raw.find(row=>row.profileId===selected.profileId)!;return {memberKind:'echo',snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};}

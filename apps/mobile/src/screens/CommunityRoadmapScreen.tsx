@@ -82,7 +82,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
      <Text style={s.subtitle}>{a("Vote on upcoming features and improvements. Your choices help guide Veldryn's development.")}</Text>
    </View>
 
-   <View style={s.voteBudget}>
+   {selected==='considering'?<View style={s.voteBudget}>
      <View style={s.flex}>
        <Text style={s.budgetTitle}>{a('Your votes')}</Text>
        <Text style={s.budgetHint}>{a('Up to three active choices per account')}</Text>
@@ -93,7 +93,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
          {Array.from({length:limit},(_,index)=><View key={index} style={[s.diamond,index<used&&s.diamondActive]}/>)}
        </View>
      </View>
-   </View>
+   </View>:null}
 
    <View accessibilityRole="tablist" style={s.tabs}>
      {STATUS_OPTIONS.map(option=><Pressable key={option.id} accessibilityRole="tab" accessibilityState={{selected:selected===option.id}} onPress={()=>setSelected(option.id)} style={({pressed})=>[s.tab,selected===option.id&&s.tabSelected,pressed&&s.pressed]}>
@@ -129,17 +129,17 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
          </Pressable>:null}
        </View>
        <Text style={s.description}>{a(feature.description)}</Text>
-       <View style={s.featureFooter}>
-         <Text style={s.meta}>{feature.votes} {a(feature.votes===1?'vote':'votes')}</Text>
+       {canVote||feature.release_version?<View style={s.featureFooter}>
+         {canVote?<Text style={s.meta}>{feature.votes} {a(feature.votes===1?'vote':'votes')}</Text>:null}
          {feature.release_version?<Text style={s.meta}>{a('Released in')} {feature.release_version}</Text>:null}
-       </View>
+       </View>:null}
      </View>;
    })}
    {snapshot&&!loading&&!rows.length?<View style={s.empty}>
      <Text style={s.emptyTitle}>{a(selected==='considering'?'No ideas open for voting':'Nothing here yet')}</Text>
      <Text style={s.emptyText}>{a('Major expansions will appear here when announced.')}</Text>
    </View>:null}
-   {snapshot?<Text style={s.footnote}>{a('Votes are not a promise of a release date. The development team decides priorities. When an idea moves to Planned, its votes are returned.')}</Text>:null}
+   {snapshot&&selected==='considering'?<Text style={s.footnote}>{a('Votes are not a promise of a release date. The development team decides priorities. When an idea moves to Planned, its votes are returned.')}</Text>:null}
  </ScrollView>;
 }
 

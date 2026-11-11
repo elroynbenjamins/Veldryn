@@ -54,8 +54,8 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
    {showCatalog&&available.length===0&&locked.length===0&&eventExpeditions.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
    {showCatalog&&available.length>0?<View style={s.catalogHeading}><Text style={s.section}>{a('Ready now')}</Text><Text style={s.catalogCount}>{available.length} {st('Dungeons')} · {groupCoopDungeonsByRegion(available).length} {st('Regions')}</Text></View>:null}
    {showCatalog&&groupCoopDungeonsByRegion(available).map(group=>{const accent=REGION_ACCENT[group.region]??'gold';return <View key={group.region} style={s.regionGroup}>
-     <View style={[s.regionBand,s['regionBand_'+accent as keyof typeof s]]}>
-       <View style={s.regionBandHead}><Text style={[s.regionName,s['regionName_'+accent as keyof typeof s]]}>{group.region}</Text><Text style={s.regionProgress}>{group.availableCount} {st('Ready')}</Text></View>
+     <View style={[s.regionBand,s[('regionBand_'+accent) as 'regionBand_gold']]}>
+       <View style={s.regionBandHead}><Text style={[s.regionName,s[('regionName_'+accent) as 'regionName_gold']]}>{group.region}</Text><Text style={s.regionProgress}>{group.availableCount} {st('Ready')}</Text></View>
        {REGION_TAGLINE[group.region]?<Text style={s.regionTagline}>{st(REGION_TAGLINE[group.region])}</Text>:null}
      </View>
      {group.dungeons.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}
@@ -63,8 +63,8 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
    {showCatalog&&eventExpeditions.length>0?<View style={s.eventSection}><Text style={s.section}>{ct(language,'event.section')}</Text>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}</View>:null}
    {showCatalog&&mode==='qmode'&&echoTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoTools}} onPress={()=>setShowEchoTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("My Echo & sharing")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showEchoTools?'−':'+'}</Text></Pressable>{showEchoTools?echoTools:null}</>:null}
    {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?groupCoopDungeonsByRegion(locked).map(group=>{const accent=REGION_ACCENT[group.region]??'gold';return <View key={group.region} style={s.regionGroup}>
-     <View style={[s.regionBand,s['regionBand_'+accent as keyof typeof s]]}>
-       <View style={s.regionBandHead}><Text style={[s.regionName,s['regionName_'+accent as keyof typeof s]]}>{group.region}</Text><Text style={s.regionProgress}>{group.dungeons.length} {st('Locked')}</Text></View>
+     <View style={[s.regionBand,s[('regionBand_'+accent) as 'regionBand_gold']]}>
+       <View style={s.regionBandHead}><Text style={[s.regionName,s[('regionName_'+accent) as 'regionName_gold']]}>{group.region}</Text><Text style={s.regionProgress}>{group.dungeons.length} {st('Locked')}</Text></View>
        {REGION_TAGLINE[group.region]?<Text style={s.regionTagline}>{st(REGION_TAGLINE[group.region])}</Text>:null}
      </View>
      {group.dungeons.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}

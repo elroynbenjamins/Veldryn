@@ -84,9 +84,10 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
   if(offers.length)applyRoomBoon(run,offers[0].id);
   const selected=options[0],scale=regionalPowerMultipliers(id,tier,true)!;
   const rootboundContent=selected.contentId.startsWith('ROOT')||selected.contentId==='BOSS_EXP_ROOT';
-  const rootCorrection=testBossNormalization&&id==='EXP_001'&&rootboundContent?1/ROOTBOUND_COOP_BALANCE_V2.enemyAttackMultiplier:1;
+  const rootCorrection=testBossNormalization&&id==='EXP_001'&&rootboundContent?
+   ([1.35,.95,1.05][tier-1])/ROOTBOUND_COOP_BALANCE_V2.enemyAttackMultiplier:1;
   const bossCorrection=testBossNormalization&&selected.kind==='boss'&&id==='EXP_003'?
-   (selected.contentId==='BOSS_EXP_SOLAR'?.75:selected.contentId==='BOSS_EXP_SPHINX'?1.12:1):1;
+   (selected.contentId==='BOSS_EXP_SOLAR'?.77:selected.contentId==='BOSS_EXP_SPHINX'?1:1):1;
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
   const result=resolveCoopNode({
    runId,serverSecret:'regional-balance-probe-v1',node:selected,
@@ -117,7 +118,7 @@ for(const id of ['EXP_001','EXP_003'] as const){
    return {factor,clears:wins.length,bosses:Object.fromEntries([...new Set(samples.map(x=>x.finalBoss))].map(boss=>[boss,{clears:wins.filter(x=>x.finalBoss===boss).length,attempts:samples.filter(x=>x.finalBoss===boss).length}]))};
   });
   assert.equal(candidates[0].clears,clears,'manual scaling probe should reproduce the production route solver at factor=1');
-  const normalized=[1.75,2,2.5,3,3.5,4].map(factor=>{
+  const normalized=[2.8,3.1,3.3,3.5,3.7,4,4.3,4.6,5].map(factor=>{
    const attempts=Array.from({length:12},(_,seed)=>runOne(id,tier,seed,roster,factor,true,true));
    const successes=attempts.filter(row=>row.cleared);
    return {factor,clears:successes.length,bosses:Object.fromEntries([...new Set(attempts.map(row=>row.finalBoss))].map(boss=>[boss,{clears:successes.filter(row=>row.finalBoss===boss).length,attempts:attempts.filter(row=>row.finalBoss===boss).length}]))};

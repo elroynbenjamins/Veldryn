@@ -21,8 +21,26 @@ export interface GatheringToolDef{
   rarity:'common'|'uncommon'|'rare'|'epic';value:number;
 }
 
-const tool=(definition:GatheringToolDef):GatheringToolDef=>({...definition,requiredCharacterLevel:rebaseLevel(definition.requiredCharacterLevel),recipe:{...definition.recipe,gold:increasedCraftingGoldCost(definition.recipe.gold)}});
-const blueprint=(itemId:string,knowledgeId:string,sourceMonsterId:string,dropChance:number):GatheringToolBlueprintDef=>({itemId,knowledgeId,sourceMonsterId,dropChance});
+/** Tool blueprints are 25% rarer than their previously authored odds.
+ * The normal 5% combat-drop reduction is applied separately by MONSTERS. */
+export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75;
+/** Tool crafts cost twice the current Gold and twice each input material.
+ * Craft duration, output count, unlocks and Smithing requirements do not change. */
+export const TOOL_CRAFT_COST_MULTIPLIER=2;
+export const TOOL_CRAFT_XP_BONUS=3;
+const tool=(definition:GatheringToolDef):GatheringToolDef=>({
+ ...definition,
+ requiredCharacterLevel:rebaseLevel(definition.requiredCharacterLevel),
+ recipe:{
+  ...definition.recipe,
+  xp:definition.recipe.xp+TOOL_CRAFT_XP_BONUS,
+  gold:increasedCraftingGoldCost(definition.recipe.gold)*TOOL_CRAFT_COST_MULTIPLIER,
+  inputs:definition.recipe.inputs.map(input=>({...input,quantity:input.quantity*TOOL_CRAFT_COST_MULTIPLIER})),
+ },
+});
+const blueprint=(itemId:string,knowledgeId:string,sourceMonsterId:string,dropChance:number):GatheringToolBlueprintDef=>({
+ itemId,knowledgeId,sourceMonsterId,dropChance:dropChance*TOOL_BLUEPRINT_DROP_MULTIPLIER,
+});
 
 export const GATHERING_TOOLS:GatheringToolDef[]=[
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.

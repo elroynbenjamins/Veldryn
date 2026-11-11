@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   deploy-gameplay:
-    if: ${{ github.event.head_commit.message == 'chore(deploy): one-time Guild Bank gameplay hotfix' }}
+    if: "${{ github.event.head_commit.message == 'chore(deploy): one-time Guild Bank gameplay hotfix' }}"
     runs-on: ubuntu-latest
     environment: supabase-production
     env:

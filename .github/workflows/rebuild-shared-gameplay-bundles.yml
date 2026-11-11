@@ -14,6 +14,7 @@ on:
       - 'apps/mobile/tests/gem-progression-v1.ts'
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'
+      - 'backend/src/server/expeditions/content/coop-route-content.ts'
 
 permissions:
   contents: write

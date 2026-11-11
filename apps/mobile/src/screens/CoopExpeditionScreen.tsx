@@ -29,6 +29,10 @@ import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEv
 import type {CoopChatMessage} from '../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../online/coop-profile-icons';
 import {combatPowerRating} from '../core/combat-power';
+import {DungeonMarksShopView,type DungeonMarksShopSnapshot} from '../components/coop/DungeonMarksShopView';
+// Preview is development-only and requires explicit opt-in; server purchases remain off.
+declare const process:{env:Record<string,string|undefined>};
+const dungeonMarksShopPreview=typeof __DEV__!=='undefined'&&__DEV__&&process.env.EXPO_PUBLIC_DUNGEON_MARKS_SHOP_PREVIEW==='true';
 
 export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged,onRunActiveChange,onCommand}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>;onRunActiveChange?:(active:boolean)=>void;onCommand?:(command:GameCommand)=>Promise<void>}){
  const st=useSocialText();
@@ -52,6 +56,10 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   },[isActiveRun,onRunActiveChange]);
   const [showLive,setShowLive]=useState(false);
   const [showEchoSharing,setShowEchoSharing]=useState(false);
+  const [marksShopOpen,setMarksShopOpen]=useState(false);
+  const [marksShopSnapshot,setMarksShopSnapshot]=useState<DungeonMarksShopSnapshot|null>(null);
+  const [marksShopError,setMarksShopError]=useState('');
+  const [marksShopLoading,setMarksShopLoading]=useState(false);
   const [foreground,setForeground]=useState(AppState.currentState==='active');
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
@@ -301,6 +309,28 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     onPublish={(dungeonId,note)=>action(async()=>{await coopClient.publishLiveRecruitment({requestId:coopRequestId(),dungeonId,note});await refreshLiveRecruitment();setNotice(st("Live LFG posted for 30 minutes."));})}
     onCloseMine={()=>void action(async()=>{await coopClient.closeLiveRecruitment();await refreshLiveRecruitment();setNotice(st("Live LFG removed."));})}
     onRefresh={()=>action(refreshLiveRecruitment)}/>:undefined;
+  const refreshDungeonMarksShop=async()=>{
+    if(marksShopLoading)return;
+    setMarksShopLoading(true);setMarksShopError('');
+    try{setMarksShopSnapshot(await coopClient.dungeonMarksShop());}
+    catch(error){setMarksShopError(coopErrorMessage(error,'Could not load Dungeon Shop preview.'));}
+    finally{setMarksShopLoading(false);}
+  };
+  if(dungeonMarksShopPreview&&marksShopOpen){
+    return <View style={{flex:1,paddingTop:8}}>
+      <View style={{paddingHorizontal:16,gap:8,paddingBottom:8}}>
+        <GameButton title={st('Back to Dungeons')} tone="secondary" compact onPress={()=>setMarksShopOpen(false)}/>
+        {!!marksShopError&&<Text accessibilityRole="alert" style={{color:C.warning}}>{marksShopError}</Text>}
+      </View>
+      <DungeonMarksShopView snapshot={marksShopSnapshot} busy={marksShopLoading}
+        onRefresh={refreshDungeonMarksShop}
+        onPurchase={marksShopSnapshot?.shopEnabled?async offerId=>{
+          const receipt=await coopClient.purchaseDungeonMarksShop(offerId,coopRequestId());
+          await onRewardsChanged?.();
+          return receipt.status;
+        }:undefined}/>
+    </View>;
+  }
   if(showLive)return <CoopLiveLobby dungeons={dungeons} setupState={state} selfPortrait={state.character?profileIconSource(state.character.profileIconId,state.character.classId):undefined} onBack={()=>setShowLive(false)} onRunReady={runId=>{setShowLive(false);void action(async()=>{const projection=await coopClient.run(runId);if(!('team' in projection))throw new Error(st("Invalid Live run response."));acceptRun(projection);});}}/>;
   if(eventRun){
     const view=runWithIcons!,marks=eventRun.settlement.rewardMarks??0;
@@ -346,6 +376,9 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     </View>):undefined;
   return <View style={{flex:1}}>
     {retry}
+    {dungeonMarksShopPreview&&entrySource.kind==='real'?<View style={{paddingHorizontal:16,paddingTop:6,paddingBottom:4}}>
+      <GameButton compact tone="secondary" title={st('Dungeon Marks Shop (Preview)')} onPress={()=>{setMarksShopOpen(true);void refreshDungeonMarksShop();}}/>
+    </View>:null}
     <CoopDungeonList language={language} mode={mode} liveAvailable={entrySource.kind!=='real'||coopLiveReadyEnabled} onMode={next=>{setMode(next);setNotice('')}} dungeons={dungeons} eventExpeditions={activeEventExpeditions} loading={loading} error={error} notice={notice} activeRun={entry?.activeRun} liveTools={liveTools} echoTools={echoTools} onQuickMatch={coopLiveReadyEnabled&&entrySource.kind==='real'?quickLiveMatch:undefined} quickMatchBusy={busy||loading||pending} onBack={onClose} onRetry={()=>load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}resumeActiveRun()}}/>
   </View>;
 }

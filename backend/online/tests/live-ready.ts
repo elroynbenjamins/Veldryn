@@ -32,7 +32,7 @@ async function main(){
    if(name==='read_online_coop_receipt_server_v1')return prior as T;
    if(name==='online_live_ready_sources_server_v1'){
     if(sourceFailsAfterCommit){prior={requestHash:'[1,true]',response:{status:'committed'}};throw new Error('ready_check_closed');}
-    return {dungeonId:'EXP_004',tier:1,members} as T;
+    return {dungeonId:'EXP_003',tier:1,members} as T;
    }
    if(name==='respond_online_live_ready_server_v1')return {status:'open'} as T;
    if(name==='online_live_committed_sources_server_v1')return {runId} as T;

@@ -32,10 +32,13 @@ async function main(){
   assert.deepEqual(dungeon.itemDropRates,[],'No permanent item drop rates may be invented before server settlement supports them');
   assert.ok(Array.isArray(dungeon.companionCounterIds)&&dungeon.companionCounterIds.length>0,'Possible companion counters must come from the server-published encounter catalog');
  }
- const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_004');
- assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Mirage Well tier rewards must use canonical mark multipliers');
- assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_003','EXP_004','EXP_005','EXP_006'],'Only released Sunscar and Frostmarch regular dungeons are listed');
- assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.minLevel,25,'Mirage Well is the first dungeon at current Level 25');
+ const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_003');
+ assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Canonical Sunscar tier rewards keep the existing mark multipliers');
+ assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_001','EXP_003','EXP_005'],'Two active regional dungeons and one development-only Frostmarch preview are listed');
+ assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.minLevel,25,'Restored Asterfall begins at Level 25');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinLevels,{1:25,2:30,3:35},'Asterfall tiers use current-level requirements');
+ for(const id of ['EXP_001','EXP_003'])assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id===id)?.bossVariants.map((row:{chancePercent:number})=>row.chancePercent),[50,50],'Each active dungeon must expose two equally likely bosses');
+ assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_005')?.lockedReason,'In Development','Frostmarch is preview-only');
  assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_007'),'Unreleased Ashlands dungeons are omitted from entry');
  assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_008'),'Unreleased Ashlands dungeons stay out of the playable catalog');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
@@ -68,7 +71,7 @@ async function main(){
  state.defeatedBossIds=state.defeatedBossIds.filter(id=>id!=='FALLEN_KNIGHT');
  const beforeBoss=await (await handler(request('entry'))).json();
  assert.ok(beforeBoss.dungeons.every((dungeon:{available:boolean})=>!dungeon.available),'Chapter I boss is mandatory even at Level 30+');
- assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_004')?.lockedReason,'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.');
+ assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.lockedReason,'Defeat the Fallen Knight (Chapter I) to unlock regional dungeons.');
 
  console.log('PASS co-op entry authentication, authoritative projection, consent validation and transactional replay boundary');
 }

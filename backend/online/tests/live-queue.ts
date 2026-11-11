@@ -3,14 +3,14 @@ import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
-import {readinessEligibleCoopTier} from '../../src/server/coop/config';
+import {regularDungeonReadyTier} from '../../src/server/coop/dungeon-entry-policy';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout} from '../coop-loadout';
 import {coopHandler} from '../coop';
 import {GameplayError} from '../gameplay';
 
 async function main(){
  const account='11111111-1111-4111-8111-111111111111',ticket='22222222-2222-4222-8222-222222222222';
- const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.character!.level=1;state.defeatedBossIds.push('FALLEN_KNIGHT');
+ const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(45);state.character!.level=1;state.defeatedBossIds.push('FALLEN_KNIGHT');
  state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0;
@@ -24,7 +24,7 @@ async function main(){
    }
    if(name==='online_live_queue_state_server_v1')return {ticket:null} as T;
    if(name==='online_live_candidates_server_v1')return {tickets:[],requiredTicketIds:[],refillId:null,serverNow:0} as T;
-   if(name==='online_live_quick_match_demand_server_v1')return {serverNow:1000,demands:[{expeditionId:'EXP_004',tank:0,damage:2,support:1,oldestQueuedAtMs:0},{expeditionId:'EXP_003',tank:0,damage:0,support:0,oldestQueuedAtMs:0}]} as T;
+   if(name==='online_live_quick_match_demand_server_v1')return {serverNow:1000,demands:[{expeditionId:'EXP_003',tank:0,damage:2,support:1,oldestQueuedAtMs:0},{expeditionId:'EXP_001',tank:0,damage:0,support:0,oldestQueuedAtMs:0}]} as T;
    if(name==='command_online_live_queue_server_v1'){
     if(args.p_ticket_id!==ticket)throw new GameplayError('ticket_not_owned',403);
     return {ticketId:ticket,status:args.p_action==='cancel'?'cancelled':'queued'} as T;
@@ -32,20 +32,20 @@ async function main(){
    throw new Error('unexpected_rpc:'+name);
   }});
  const request=(path:string,body?:unknown,token='valid')=>new Request('https://test.invalid/coop/'+path,{method:body===undefined?'GET':'POST',headers:{authorization:'Bearer '+token},body:body===undefined?undefined:JSON.stringify(body)});
- const body={requestId:'live-start-001',dungeonId:'EXP_004',tier:2,characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
+ const body={requestId:'live-start-001',dungeonId:'EXP_003',tier:2,characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
  assert.equal((await handler(request('queue',body,'bad'))).status,401);assert.equal(calls.length,0);
  for(const extra of [{accountId:'other'},{role:'support'},{stats:{}},{normalizedReadiness:999},{now:999},{serviceRegion:'other'},{echoAllowed:true}])assert.equal((await handler(request('queue',{...body,...extra}))).status,400);
  assert.equal(calls.length,0);
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_005'}))).status,400);
- assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_001'}))).status,400,'Retired Asterfall dungeons cannot be joined');
+ assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_004'}))).status,400,'Retired Mirage Well cannot be joined');
  assert.equal((await handler(request('queue',{...body,characterId:'other'}))).status,403);
  assert.equal((await handler(request('queue',{...body,loadoutRevision:6}))).status,409);
  const quick={requestId:'quick-start-001',characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
  const quickResponse=await handler(request('quick-queue',quick));assert.equal(quickResponse.status,200);
  const quickWrite=calls.filter(row=>row.name==='join_online_live_queue_server_v1').at(-1)!;
- assert.equal(quickWrite.args.p_expedition_id,'EXP_004','Quick Match should send the Tank to the nearly complete dungeon pool');
+ assert.equal(quickWrite.args.p_expedition_id,'EXP_003','Quick Match should send the Tank to the nearly complete dungeon pool');
  const quickRecord=deriveOnlineCoopLoadout(account,state,version),quickReadiness=assessOnlineCoopLoadout(quickRecord).readiness;
- assert.equal(quickWrite.args.p_tier,readinessEligibleCoopTier(EXPEDITIONS.EXP_004.minLevel,quickRecord.characterLevel,quickReadiness.normalizedScore),'Quick Match uses the XP-derived level and verified readiness for its tier');
+ assert.equal(quickWrite.args.p_tier,regularDungeonReadyTier(EXPEDITIONS.EXP_003,quickRecord.characterLevel,quickReadiness.normalizedScore),'Quick Match uses the XP-derived level and verified readiness for its tier');
  prior=null;reads=0;calls.length=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;

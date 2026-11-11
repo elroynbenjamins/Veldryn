@@ -9,8 +9,8 @@ import type {CoopEventExpeditionPreview} from '../core/coop-event-expeditions';
 const rooms:CoopRoomType[]=['battle','elite','event','camp','treasure','echo','merchant','risk','boss'];
 const difficulties:CoopTier[]=[1,2,3];
 const definitions:Array<{id:string;name:string;region:string;min:number;recommended:number;implemented:boolean;description:CoopMessageKey}>=[
- {id:'EXP_001',name:'Rootbound Vault',region:'Asterfall',min:25,recommended:25,implemented:true,description:'fixture.rootbound'},
- {id:'EXP_003',name:'Buried Observatory',region:'Sunscar',min:27,recommended:34,implemented:true,description:'fixture.observatory'},
+ {id:'EXP_001',name:'Rootbound Vault',region:'Asterfall',min:10,recommended:25,implemented:true,description:'fixture.rootbound'},
+ {id:'EXP_003',name:'Buried Observatory',region:'Sunscar',min:25,recommended:34,implemented:true,description:'fixture.observatory'},
  {id:'EXP_005',name:'Shiverlake Descent',region:'Frostmarch',min:38,recommended:52,implemented:false,description:'fixture.shiverlake'},
 ];
 
@@ -20,7 +20,7 @@ export function createCoopDungeonFixtureSource(language:Language,character?:Char
   const characterLevel=character?.level??25;
   const dungeons:CoopDungeonProjection[]=definitions.map(definition=>({
     id:definition.id,name:definition.name,region:definition.region,description:ct(language,definition.description),minLevel:definition.min,recommendedLevel:definition.recommended,syncLevel:definition.recommended,
-    available:definition.implemented&&characterLevel>=definition.min,lockedReason:!definition.implemented?ct(language,'browse.inDevelopment'):characterLevel<definition.min?ct(language,'browse.requiresLevel',{level:definition.min}):undefined,enabledRoomTypes:rooms,difficulties,preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8},tierMinLevels:{1:definition.min,2:definition.min+5,3:definition.min+10},
+    available:definition.implemented&&characterLevel>=definition.min,lockedReason:!definition.implemented?ct(language,'browse.inDevelopment'):characterLevel<definition.min?ct(language,'browse.requiresLevel',{level:definition.min}):undefined,enabledRoomTypes:rooms,difficulties,preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8},tierMinLevels:{1:definition.min,2:definition.min,3:definition.min},tierMinPower:definition.id==='EXP_001'?{1:2500,2:3750,3:5000}:definition.id==='EXP_003'?{1:6000,2:7250,3:8500}:{1:0,2:0,3:0},
     bossVariants:definition.id==='EXP_001'?[
       {bossId:'BOSS_EXP_ROOT',name:'Rootbound Heart',chancePercent:50,gemFamilies:['effect_bulwark','effect_renewal','effect_unyielding','stat_vitality'],rawGemPercent:18,recipePercent:8,catalystPercent:15,gemPityClears:8},
       {bossId:'BOSS_EXP_BELL',name:'Bell-Warden',chancePercent:50,gemFamilies:['effect_bulwark','effect_ruin','effect_execution','stat_vitality'],rawGemPercent:18,recipePercent:8,catalystPercent:15,gemPityClears:8},

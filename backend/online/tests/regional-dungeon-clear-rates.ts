@@ -10,6 +10,7 @@ import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../../src/server/coop/dungeon-entry-policy';
 import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../../src/server/coop/regional-power-balance';
+import {ROOTBOUND_COOP_BALANCE_V2} from '../../src/server/coop/config';
 import {resolveCoopNode} from '../../src/server/expeditions/node-resolution';
 import {preparedCoopCombatants} from '../../src/server/coop/potion-modifiers';
 import {roomBoonOffers,applyRoomBoon} from '../../src/server/coop/room-boon-choices';
@@ -55,7 +56,7 @@ function calibratedRoster(id:'EXP_001'|'EXP_003',tier:1|2|3){
   return {snapshot,cp,ready:snapshot.readiness.normalizedScore,multiplier};
  });
 }
-function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<typeof calibratedRoster>,factor=1,manual=false){
+function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<typeof calibratedRoster>,factor=1,manual=false,testBossNormalization=false){
  const repository=new MemoryQModeRunRepository();
  const service=new QModeService(repository,'regional-balance-probe-v1');
  const runId=id+'-tier-'+tier+'-seed-'+seed;
@@ -82,14 +83,18 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
   const offers=roomBoonOffers(run,'regional-balance-probe-v1');
   if(offers.length)applyRoomBoon(run,offers[0].id);
   const selected=options[0],scale=regionalPowerMultipliers(id,tier,true)!;
+  const rootboundContent=selected.contentId.startsWith('ROOT')||selected.contentId==='BOSS_EXP_ROOT';
+  const rootCorrection=testBossNormalization&&id==='EXP_001'&&rootboundContent?1/ROOTBOUND_COOP_BALANCE_V2.enemyAttackMultiplier:1;
+  const bossCorrection=testBossNormalization&&selected.kind==='boss'&&id==='EXP_003'?
+   (selected.contentId==='BOSS_EXP_SOLAR'?.75:selected.contentId==='BOSS_EXP_SPHINX'?1.12:1):1;
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
   const result=resolveCoopNode({
    runId,serverSecret:'regional-balance-probe-v1',node:selected,
    players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,
    state:run.persistentState,tier,
-   enemyAttackMultiplier:1.005*scale.attack*factor,
-   enemyHpMultiplier:scale.hp*factor,
-   enemyDefenseMultiplier:scale.defense*factor,
+   enemyAttackMultiplier:1.005*scale.attack*factor*rootCorrection*bossCorrection,
+   enemyHpMultiplier:scale.hp*factor*bossCorrection,
+   enemyDefenseMultiplier:scale.defense*factor*bossCorrection,
    enemyLevel:scale.enemyLevel,enemyDamageProfile:'qmode-v1',
   });
   run.lastResolution={nodeId:selected.nodeId,result};
@@ -112,7 +117,12 @@ for(const id of ['EXP_001','EXP_003'] as const){
    return {factor,clears:wins.length,bosses:Object.fromEntries([...new Set(samples.map(x=>x.finalBoss))].map(boss=>[boss,{clears:wins.filter(x=>x.finalBoss===boss).length,attempts:samples.filter(x=>x.finalBoss===boss).length}]))};
   });
   assert.equal(candidates[0].clears,clears,'manual scaling probe should reproduce the production route solver at factor=1');
+  const normalized=[1.75,2,2.5,3,3.5,4].map(factor=>{
+   const attempts=Array.from({length:12},(_,seed)=>runOne(id,tier,seed,roster,factor,true,true));
+   const successes=attempts.filter(row=>row.cleared);
+   return {factor,clears:successes.length,bosses:Object.fromEntries([...new Set(attempts.map(row=>row.finalBoss))].map(boss=>[boss,{clears:successes.filter(row=>row.finalBoss===boss).length,attempts:attempts.filter(row=>row.finalBoss===boss).length}]))};
+  });
   assert(metrics.every(x=>x.phase==='completed'||x.phase==='failed'),'Each synthetic run must terminate');
-  console.log('REGIONAL_DUNGEON_BALANCE_PROBE '+JSON.stringify({id,tier,minPower:regularDungeonTierRequiredPower(EXPEDITIONS[id],tier),clears,samples:metrics.length,bosses,roster:numbers,candidates}));
+  console.log('REGIONAL_DUNGEON_BALANCE_PROBE '+JSON.stringify({id,tier,minPower:regularDungeonTierRequiredPower(EXPEDITIONS[id],tier),clears,samples:metrics.length,bosses,roster:numbers,candidates,normalized}));
  }
 }

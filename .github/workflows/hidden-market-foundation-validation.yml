@@ -17,6 +17,8 @@ on:
       - 'backend/online/tests/market-equipment-proof.ts'
       - 'backend/online/market-recipe-aware-price-v14.ts'
       - 'backend/online/tests/market-recipe-aware-price-v14.ts'
+      - 'backend/online/market-affordability-v15.ts'
+      - 'backend/online/tests/market-affordability-v15.ts'
       - 'backend/online/market-auth-boundary.ts'
       - 'backend/online/tests/market-auth-boundary.ts'
       - 'backend/online/tests/player-market-custody.ts'

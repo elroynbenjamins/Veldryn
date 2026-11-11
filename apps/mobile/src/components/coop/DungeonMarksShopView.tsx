@@ -10,7 +10,7 @@ export type DungeonMarksShopItemStatus='eligible'|'region_locked'|'already_owned
 export interface DungeonMarksShopCard {
  id:string;name:string;category:'supply'|'companion'|'icon'|'border'|'background'|'pet';
  marks:number;summary:string;status:DungeonMarksShopItemStatus;
- rarity?:'Rare'|'Epic';region?:'Sunscar'|'Frostmarch';
+ rarity?:'Rare'|'Epic';region?:'Asterfall'|'Sunscar'|'Frostmarch';
  owned?:boolean;remainingThisUtcWeek?:number|null;lockReason?:string;
 }
 export interface DungeonMarksShopSnapshot {

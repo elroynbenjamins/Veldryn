@@ -44,7 +44,14 @@ export function makeDungeonShopController(services:Services){
    if(!dungeonShopPurchasesEnabledV1())return {
     currency:'expedition_mark' as const,
     catalogueVersion:DUNGEON_SHOP_CATALOG_VERSION,balance:0,shopEnabled:false,
-    nextUtcWeekReset:nextUtcMonday(nowMs),offers:[],
+    nextUtcWeekReset:nextUtcMonday(nowMs),
+    offers:DUNGEON_SHOP_CATALOG_V1.map(offer=>({
+     id:offer.id,name:offer.name,category:offer.category,marks:offer.marks,
+     summary:category(offer),status:'unreleased' as const,
+     rarity:offer.grant.kind==='profile_collectible'?offer.grant.rarity:undefined,
+     region:offer.firstClearRegion,owned:false,remainingThisUtcWeek:offer.perUtcWeek??null,
+     lockReason:'Shop preview only — no purchases are available.',
+    })),
    };
    const account=sanitizedSnapshot(await services.rpc<DungeonShopServerAccountSnapshot>('dungeon_shop_snapshot_server_v1',{p_account_id:accountId}));
    return {

@@ -61,12 +61,13 @@ Existing foundations:
 5. The client may only read a server projection and submit a **SKU ID + unique request ID**, not price, quantity, item ID for reward generation, account ID, or a fabricated first-clear flag.
 6. Run double-device, low-balance, duplicate request, week-boundary, character-swap, incomplete-art, material provenance, reward repair and insufficient-wallet tests before enabling.
 
-**Current V1 implementation state:** Authenticated wallet and claim infrastructure pre-exist. The **new V1 server catalogue, quote/weekly-reset rules, and tests are staged as hidden code**. No shop UI route, currency debit RPC, material grant, entitlement grant, production schema migration or release flag is enabled. Building those and verifying actual account synchronization is a separate release gate, not evidence that items can already be bought.
+**Current V1 implementation state:** Authenticated wallet and claim infrastructure pre-exist. The **new V1 server catalogue, quote/weekly-reset rules, and tests are staged as hidden code**, with an isolated TypeScript test command and Dungeon mechanics CI step. A disconnected **mobile presentation component** is also staged (`DungeonMarksShopView.tsx`), but is not mounted in navigation and has no purchase API. No actual currency debit RPC, material grant, entitlement grant, production schema migration or release flag is enabled. Building those and verifying actual account synchronization is a separate release gate, not evidence that items can already be bought.
 
 ## 7. Release and balancing checklist
 - [x] Define two shop shelves, 13 SKUs, base prices, regional first-clear rules, and ownership/weekly caps.
 - [x] Reuse existing Expedition Marks wallet instead of adding another currency.
 - [x] Commit hidden server catalogue, read-only quote contract and basic static test suite.
+- [x] Stage a mobile presentation component and isolated Dungeon mechanics CI test (unreleased; requires server projection wiring).
 - [ ] Wire a server-authoritative, idempotent atomic transaction into existing wallet, ledger and profile/account inventory.
 - [ ] Prove account-bound material provenance cannot be relisted in Player Market.
 - [ ] Create all eight distinct icon/border/background/pet assets and collectible definitions.

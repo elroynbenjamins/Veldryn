@@ -6,7 +6,7 @@
 
 **User-confirmed:** every 14 days; seven active days followed by seven inactive days; three attacks per account per event, with no daily obligation; asynchronous initiator plus saved Echo loadouts; community-wide optional War Supplies. These are unchanged.
 
-**Prior, still proposed:** Tank + 2 Damage + Support, three rotating bosses, global phases selected once at battle start (100–70% / 70–30% / 30–0%), fourteen combat rounds, World Impact fairness, World Sigils (98 maximum theoretical), two supply bundles per account, Residual Echo attempts after community victory, and cosmetics-first rewards.
+**Prior, still proposed:** Tank + 2 Damage + Support, three rotating bosses, global phases selected once at battle start (100–70% / 70–30% / 30–0%), fourteen combat rounds, World Impact fairness, World Sigils (98 theoretical under historical v5; **superseded November 11, 2026 by a 100-Sigil proposed cap**, see [updated shop/reward design](world-bosses-design-v2.md)), two supply bundles per account, Residual Echo attempts after community victory, and cosmetics-first rewards.
 
 **Engineering baseline:** v3 Hollowroot is authored in `spreadsheets/world-bosses-hollowroot-rounds-v3.csv`. v4 verified **812 test-only deterministic engine runs**, not full World Boss rounds; initial baseline teams all survived, and real Support abilities mattered under stress. The existing time-driven engine currently approximates several mechanics. See [v4 findings](world-bosses-hollowroot-engine-calibration-v4.md). **This v5 document does not claim to have implemented or validated a turn scheduler.**
 

@@ -1,8 +1,8 @@
-import {useEffect,useMemo,useState,type ReactNode} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {useMemo,type ReactNode} from 'react';
+import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES,type WorldZoneDef} from '../content/world-map';
-import {WORLD_CHAPTER_GROUPS,worldChapterForRegionId} from '../content/world-chapters';
+import {WORLD_CHAPTER_GROUPS,worldChapterForRegionId,type WorldChapterGroup} from '../content/world-chapters';
 import {regionAreas} from '../content/regional-areas';
 import {regionActivitySummary,regionTravelAvailability,regionTravelLockReason} from '../core/world-navigation';
 import {regionalAreaActivityCounts} from '../core/region-area-activities';
@@ -23,33 +23,53 @@ type Props={
   onOpenCombat:(areaId?:string)=>void;
   onOpenSkills:(areaId?:string)=>void;
 };
-type LocationRow={
+
+/** A single row inside a chapter's zone list. */
+type ZoneRow={
   id:string;
-  region:WorldZoneDef;
   name:string;
   minLevel:number;
   maxLevel:number;
-  description:string;
+  /** When set, this zone is itself a travelable region (Chapter I's siblings). */
+  region?:WorldZoneDef;
+  /** When set, this zone is a combat area inside the chapter's region (Sunscar/Frostmarch). */
+  areaRegionId?:string;
   areaId?:string;
 };
-function rowsForRegion(region:WorldZoneDef):LocationRow[]{
+
+function zonesForChapter(chapter:WorldChapterGroup):ZoneRow[]{
+  if(chapter.regionIds.length>1){
+    return chapter.regionIds.map(id=>{
+      const region=WORLD_ZONES.find(zone=>zone.id===id)!;
+      return {id:region.id,name:region.name,minLevel:region.minLevel,maxLevel:region.maxLevel,region};
+    });
+  }
+  const region=WORLD_ZONES.find(zone=>zone.id===chapter.regionIds[0]);
+  if(!region)return [];
   const areas=regionAreas(region.id);
   return areas.length?areas.map(area=>({
-    id:area.id,region,name:area.name,minLevel:area.minLevel,maxLevel:area.maxLevel,
-    description:area.identity,areaId:area.id,
-  })):[{
-    id:region.id,region,name:region.name,minLevel:region.minLevel,
-    maxLevel:region.maxLevel,description:region.subtitle,
-  }];
+    id:area.id,name:area.name,minLevel:area.minLevel,maxLevel:area.maxLevel,
+    areaRegionId:region.id,areaId:area.id,
+  })):[{id:region.id,name:region.name,minLevel:region.minLevel,maxLevel:region.maxLevel,region}];
 }
-const CHAPTER_ROWS=WORLD_CHAPTER_GROUPS.map(chapter=>({
-  chapter,
-  rows:chapter.regionIds.flatMap(id=>{
-    const region=WORLD_ZONES.find(zone=>zone.id===id);
-    return region?rowsForRegion(region):[];
-  }),
-}));
-/** All grouping lives in this component; travel remains region-based. */
+function chapterLevelRange(chapter:WorldChapterGroup){
+  const rows=zonesForChapter(chapter);
+  return {min:Math.min(...rows.map(row=>row.minLevel)),max:Math.max(...rows.map(row=>row.maxLevel))};
+}
+function chapterTravelTarget(chapter:WorldChapterGroup,state:GameState){
+  const regions=chapter.regionIds.map(id=>WORLD_ZONES.find(zone=>zone.id===id)).filter((zone):zone is WorldZoneDef=>!!zone);
+  return regions.find(zone=>regionTravelAvailability(state,zone)==='available')??regions[0];
+}
+function chapterAvailability(chapter:WorldChapterGroup,state:GameState){
+  const regions=chapter.regionIds.map(id=>WORLD_ZONES.find(zone=>zone.id===id)).filter((zone):zone is WorldZoneDef=>!!zone);
+  if(regions.every(zone=>regionTravelAvailability(state,zone)==='inDevelopment'))return 'inDevelopment' as const;
+  return regions.some(zone=>regionTravelAvailability(state,zone)==='available')?'available' as const:'locked' as const;
+}
+
+/**
+ * Chapter-level navigation. The current chapter shows its zones always expanded;
+ * other chapters are one compact row each.
+ */
 export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTravel,onOpenCombat,onOpenSkills,children}:Props){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
@@ -58,190 +78,186 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
   const level=state.character?.level??1;
   const current=WORLD_ZONES.find(zone=>zone.id===currentRegionId)??WORLD_ZONES[0];
   const currentChapter=worldChapterForRegionId(current.id)??WORLD_CHAPTER_GROUPS[0];
-  const defaultRow=useMemo(()=>{
-    const rows=CHAPTER_ROWS.find(group=>group.chapter.id===currentChapter.id)?.rows.filter(row=>row.region.id===current.id)??[];
-    return [...rows].reverse().find(row=>level>=row.minLevel)?.id??rows[0]?.id??current.id;
-  },[current.id,currentChapter.id,level]);
-  const [openChapter,setOpenChapter]=useState<string>(currentChapter.id);
-  const [openRow,setOpenRow]=useState<string|null>(defaultRow);
-  useEffect(()=>{
-    setOpenChapter(currentChapter.id);
-    setOpenRow(defaultRow);
-  },[current.id,currentChapter.id]); // Preserve user selection while levels change.
+  const currentZones=zonesForChapter(currentChapter);
   const summary=regionActivitySummary(state,current.id);
+  const otherChapters=WORLD_CHAPTER_GROUPS.filter(chapter=>chapter.id!==currentChapter.id);
+  const goalChapter=goalRegionId?worldChapterForRegionId(goalRegionId):undefined;
+  const orderedChapters=otherChapters.sort((a,b)=>{
+    const goal=Number(b.id===goalChapter?.id)-Number(a.id===goalChapter?.id);if(goal)return goal;
+    const availability={available:0,locked:1,inDevelopment:2};
+    const stateA=chapterAvailability(a,state),stateB=chapterAvailability(b,state);
+    if(stateA!==stateB)return availability[stateA]-availability[stateB];
+    return chapterLevelRange(a).min-chapterLevelRange(b).min;
+  });
   const next=WORLD_ZONES.filter(zone=>zone.id!==current.id&&regionTravelAvailability(state,zone)==='locked')
     .sort((a,b)=>a.minLevel-b.minLevel)[0];
   const nextReason=next?regionTravelLockReason(state,next):undefined;
   const nextProgress=next?Math.min(100,Math.max(0,Math.round(level/Math.max(1,next.minLevel)*100))):100;
-  const currentGoal=goalRegionId&&goalRegionId!==current.id?WORLD_ZONES.find(zone=>zone.id===goalRegionId):undefined;
 
   return <View style={s.root}>
     <View style={[s.current,{borderColor:current.accent}]}>
-      <View style={s.currentArtwork}><ZoneSceneArtwork regionId={current.id}/></View>
-      <View style={s.flex}>
-        <Text style={s.eyebrow}>{p('CURRENT LOCATION')}</Text>
-        <Text numberOfLines={1} style={s.currentTitle}>{p(current.name)}</Text>
-        <Text numberOfLines={1} style={s.meta}>{p(currentChapter.name)} · {t('Level {level}',{level})}</Text>
-        <Text numberOfLines={1} style={s.count}>{t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
-          ready:summary.combatReady,total:summary.combatTotal,gatherReady:summary.gatheringReady,gatherTotal:summary.gatheringTotal,
-        })}</Text>
+      <View style={s.currentHero}>
+        <View style={s.currentArtwork}><ZoneSceneArtwork regionId={current.id}/></View>
+        <View style={s.flex}>
+          <Text style={s.eyebrow}>{p('CURRENT REGION')} · {p('Chapter')} {currentChapter.numeral}</Text>
+          <Text numberOfLines={1} style={s.currentTitle}>{p(currentChapter.name)}</Text>
+          <Text numberOfLines={1} style={s.meta}>{p(current.name)} · {t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
+            ready:summary.combatReady,total:summary.combatTotal,gatherReady:summary.gatheringReady,gatherTotal:summary.gatheringTotal,
+          })}</Text>
+        </View>
       </View>
-    </View>
-    <View style={s.currentActions}>
-      <View style={s.flex}><GameButton compact title={t('Combat')} onPress={()=>onOpenCombat()}/></View>
-      <View style={s.flex}><GameButton compact tone="secondary" title={p('Gathering')} onPress={()=>onOpenSkills()}/></View>
+      <View style={s.zoneList}>
+        {currentZones.map(zone=>{
+          const artId=zone.areaId??zone.region?.id??zone.id;
+          const siblingRegion=zone.region;
+          const here=siblingRegion?siblingRegion.id===current.id:zone.areaRegionId===current.id;
+          let access:boolean,subtitle:string;
+          if(siblingRegion){
+            const availability=regionTravelAvailability(state,siblingRegion);
+            access=availability==='available';
+            const lockReason=availability==='locked'?regionTravelLockReason(state,siblingRegion):undefined;
+            subtitle=availability==='inDevelopment'?p('In Development')
+              :access?p(siblingRegion.subtitle)
+              :(lockReason?progressionTravelReason(language,lockReason):t('Unlocks at level {level}',{level:zone.minLevel}));
+          }else{
+            const regionAvailable=zone.areaRegionId?regionTravelAvailability(state,WORLD_ZONES.find(wz=>wz.id===zone.areaRegionId)!)==='available':false;
+            access=regionAvailable&&level>=zone.minLevel;
+            const counts=zone.areaId?regionalAreaActivityCounts(zone.areaRegionId!,zone.areaId):{enemies:0,gathering:0};
+            subtitle=access
+              ?counts.enemies+' '+p('enemies')+' · '+counts.gathering+' '+p('gathering')
+              :t('Unlocks at level {level}',{level:zone.minLevel});
+          }
+          if(here)return <View key={zone.id} style={s.zoneHereCard}>
+            <View style={s.zoneHereArtwork}><ZoneSceneArtwork regionId={artId}/></View>
+            <View style={s.zoneHereShade}/>
+            <View style={s.zoneHereBody}>
+              <Text style={s.zoneHereKicker}>{p('HERE')} · {t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
+              <Text numberOfLines={1} style={s.zoneHereName}>{p(zone.name)}</Text>
+              <Text numberOfLines={2} style={s.zoneHereSubtitle}>{subtitle}</Text>
+              <View style={s.zoneHereActions}>
+                <View style={s.flex}><GameButton compact title={t('Combat')} onPress={()=>siblingRegion?onOpenCombat():onOpenCombat(zone.areaId)}/></View>
+                <View style={s.flex}><GameButton compact tone="secondary" title={p('Gathering')} onPress={()=>siblingRegion?onOpenSkills():onOpenSkills(zone.areaId)}/></View>
+              </View>
+            </View>
+          </View>;
+          return <View key={zone.id} style={[s.zone,!access&&s.zoneLocked]}>
+            <View style={s.zoneArtwork}><ZoneSceneArtwork regionId={artId} muted={!access}/></View>
+            <View style={s.flex}>
+              <Text numberOfLines={1} style={s.zoneName}>{p(zone.name)}</Text>
+              <Text style={s.zoneMeta}>{t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
+              <Text numberOfLines={2} style={[s.zoneSubtitle,!access&&s.zoneSubtitleLocked]}>{subtitle}</Text>
+            </View>
+            <View style={s.zoneActions}>
+              {siblingRegion
+                ?<GameButton compact title={t('Travel')} disabled={!access} onPress={()=>onTravel(zone.id)}/>
+                :<>
+                  <GameButton compact title={t('Combat')} disabled={!access} onPress={()=>onOpenCombat(zone.areaId)}/>
+                  <GameButton compact tone="secondary" title={p('Gather')} disabled={!access} onPress={()=>onOpenSkills(zone.areaId)}/>
+                </>}
+            </View>
+          </View>;
+        })}
+      </View>
     </View>
 
     {children}
-    {currentGoal?<View style={s.goalNotice}>
-      <Text style={s.goalText}>{t('OBJECTIVE ROUTE')} · {p(currentGoal.name)}</Text>
+    {goalChapter&&goalChapter.id!==currentChapter.id?<View style={s.goalNotice}>
+      <Text style={s.goalText}>{t('OBJECTIVE ROUTE')} · {p(goalChapter.name)}</Text>
     </View>:null}
 
-    <View style={s.sectionHead}>
-      <Text style={s.sectionTitle}>{p('EXPLORE REGIONS')}</Text>
-      <Text style={s.sectionHint}>{p('Select a chapter')}</Text>
+    <View style={s.divider}>
+      <View style={s.dividerRule}/>
+      <Text style={s.dividerLabel}>{p('OTHER REGIONS')} · {orderedChapters.length}</Text>
+      <View style={s.dividerRule}/>
     </View>
+
     <TutorialBeacon id="world-travel" reduceMotion={state.settings.reduceMotion}>
-      <View style={s.groups}>
-        {CHAPTER_ROWS.map(({chapter,rows})=>{
-          const expanded=openChapter===chapter.id;
-          const released=rows.some(row=>regionTravelAvailability(state,row.region)!=='inDevelopment');
-          const available=rows.filter(row=>regionTravelAvailability(state,row.region)==='available'&&level>=row.minLevel).length;
-          const currentHere=chapter.id===currentChapter.id;
-          const chapterGoal=rows.some(row=>row.region.id===goalRegionId)&&!currentHere;
-          const low=Math.min(...rows.map(row=>row.minLevel)),high=Math.max(...rows.map(row=>row.maxLevel));
-          return <View key={chapter.id} style={[s.chapter,currentHere&&s.chapterActive,chapterGoal&&s.goalChapter]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={p(chapter.name)}
-              accessibilityHint={expanded?p('Collapse locations'):p('Expand locations')}
-              accessibilityState={{expanded}}
-              onPress={()=>{setOpenChapter(expanded?'':chapter.id);if(!expanded){setOpenRow(null);}}}
-              style={({pressed})=>[s.chapterHeader,pressed&&s.pressed]}>
-              <View style={s.chapterArtwork}><ZoneSceneArtwork regionId={chapter.artRegionId} muted={!released}/></View>
-              <View style={s.flex}>
-                <Text numberOfLines={1} style={s.chapterName}>{p(chapter.name)} {chapterGoal?'· '+t('GOAL'):''}</Text>
-                <Text numberOfLines={1} style={s.chapterMeta}>
-                  {p('Chapter')} {chapter.numeral} · {t('Levels {min}–{max}',{min:low,max:high})}
-                </Text>
-                <Text style={s.chapterCount}>{released?available+'/'+rows.length+' '+p('available'):t('In Development')}</Text>
+      <View style={s.list}>
+        {next?<View style={s.nextUnlock}>
+          <View style={s.flex}>
+            <Text style={s.nextLabel}>{t('NEXT REGION UNLOCK')}</Text>
+            <Text style={s.nextName}>{p(next.name)}</Text>
+            <Text numberOfLines={2} style={s.nextHint}>{nextReason?progressionTravelReason(language,nextReason):p('Continue exploring')}</Text>
+            {level<next.minLevel?<View style={s.track}><View style={[s.fill,{width:(nextProgress+'%') as any}]}/></View>:null}
+          </View>
+          <Text style={s.nextLevel}>{level<next.minLevel?t('Level {level}',{level:next.minLevel}):t('SCOUT')}</Text>
+        </View>:null}
+
+        {orderedChapters.map(chapter=>{
+          const availability=chapterAvailability(chapter,state);
+          const development=availability==='inDevelopment';
+          const access=availability==='available';
+          const target=chapterTravelTarget(chapter,state);
+          const range=chapterLevelRange(chapter);
+          const zones=zonesForChapter(chapter);
+          const goal=chapter.id===goalChapter?.id;
+          return <View key={chapter.id} style={[s.dest,goal&&s.destGoal,development&&s.destDev]}>
+            <View style={s.destThumb}><ZoneSceneArtwork regionId={chapter.artRegionId} muted={!access}/>
+              {!access&&!development?<View style={s.lockedTag}><Text style={s.lockedText}>{level>=range.min?t('SCOUT'):t('Level {level}',{level:range.min})}</Text></View>:null}
+            </View>
+            <View style={s.flex}>
+              <View style={s.destHeadRow}>
+                <Text numberOfLines={1} style={[s.destName,development&&s.destNameDev]}>{p('Chapter')} {chapter.numeral} · {p(chapter.name)}</Text>
+                {goal?<Text style={s.goalBadge}>{t('GOAL')}</Text>:null}
               </View>
-              <Text style={s.chevron}>{expanded?'⌃':'⌄'}</Text>
-            </Pressable>
-            {expanded?<View style={s.locationList}>
-              {rows.map(row=>{
-                const availability=regionTravelAvailability(state,row.region);
-                const development=availability==='inDevelopment';
-                const sameRegion=row.region.id===current.id;
-                const access=availability==='available'&&level>=row.minLevel;
-                const selected=openRow===row.id;
-                const label=development?t('In Development'):!access?t('Locked'):sameRegion&&!row.areaId?p('HERE'):p('Available');
-                const status=development?'development':access?'available':'locked';
-                const counts=row.areaId?regionalAreaActivityCounts(row.region.id,row.areaId):null;
-                const regionCounts=row.areaId?null:regionActivitySummary(state,row.region.id);
-                const lockReason=availability==='locked'?regionTravelLockReason(state,row.region):undefined;
-                const detail=development?p(row.region.developmentNote??row.description):
-                  lockReason?progressionTravelReason(language,lockReason):
-                  level<row.minLevel?t('Unlocks at level {level}',{level:row.minLevel}):p(row.description);
-                return <View key={row.id} style={[s.location,selected&&s.locationSelected]}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={p(row.name)+' · '+t('Levels {min}–{max}',{min:row.minLevel,max:row.maxLevel})}
-                    accessibilityState={{expanded:selected}}
-                    onPress={()=>setOpenRow(selected?null:row.id)}
-                    style={({pressed})=>[s.locationHeader,pressed&&s.pressed]}>
-                    <View style={[s.dot,status==='locked'&&s.dotLocked,status==='development'&&s.dotComing]}/>
-                    <View style={s.flex}>
-                      <Text numberOfLines={1} style={s.locationName}>{p(row.name)}</Text>
-                      <Text style={s.locationMeta}>{t('Levels {min}–{max}',{min:row.minLevel,max:row.maxLevel})}</Text>
-                    </View>
-                    <Text style={[s.status,!access&&s.statusMuted,development&&s.statusComing]}>{label}</Text>
-                    <Text style={s.smallChevron}>{selected?'⌃':'⌄'}</Text>
-                  </Pressable>
-                  {selected?<View style={s.locationDetail}>
-                    <View style={s.detailContent}>
-                      {row.areaId&&(row.region.id==='SUNSCAR'||row.region.id==='FROSTMARCH')?
-                        <View style={s.zoneArtwork}><ZoneSceneArtwork regionId={row.areaId} muted={!access}/></View>:null}
-                      <View style={s.flex}>
-                        <Text style={s.description}>{detail}</Text>
-                        {!development?<Text style={s.activityCount}>
-                          {row.areaId?counts?.enemies+' '+p('enemies')+' · '+counts?.gathering+' '+p('gathering'):
-                            t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
-                              ready:regionCounts?.combatReady??0,total:regionCounts?.combatTotal??0,
-                              gatherReady:regionCounts?.gatheringReady??0,gatherTotal:regionCounts?.gatheringTotal??0,
-                            })}
-                        </Text>:null}
-                      </View>
-                    </View>
-                    {access?<View style={s.inlineActions}>
-                      {sameRegion?<>
-                        <View style={s.flex}><GameButton compact title={t('Combat')} onPress={()=>onOpenCombat(row.areaId)}/></View>
-                        <View style={s.flex}><GameButton compact title={p('Gathering')} tone="secondary" onPress={()=>onOpenSkills(row.areaId)}/></View>
-                      </>:<View style={s.flex}><GameButton compact title={t('Travel')} onPress={()=>onTravel(row.region.id)}/></View>}
-                    </View>:null}
-                  </View>:null}
-                </View>;
-              })}
-            </View>:null}
+              <Text style={[s.destMeta,!access&&s.destMetaLocked]}>{development?t('In Development'):t('Levels {min}–{max}',{min:range.min,max:range.max})}</Text>
+              <Text numberOfLines={1} style={[s.destCounts,!access&&s.destCountsLocked]}>{zones.length+' '+(zones.length===1?p('zone inside'):p('zones inside'))}</Text>
+              <Text numberOfLines={2} style={s.destSub}>{p(chapter.description)}</Text>
+            </View>
+            {access&&target?<View style={s.destBtn}><GameButton compact title={t('Travel')} tone="secondary" onPress={()=>onTravel(target.id)}/></View>:null}
           </View>;
         })}
       </View>
     </TutorialBeacon>
-    {next?<View style={s.nextUnlock}>
-      <View style={s.flex}>
-        <Text style={s.nextLabel}>{t('NEXT REGION UNLOCK')}</Text>
-        <Text style={s.nextName}>{p(next.name)}</Text>
-        <Text numberOfLines={2} style={s.nextHint}>{nextReason?progressionTravelReason(language,nextReason):p('Continue exploring')}</Text>
-        {level<next.minLevel?<View style={s.track}><View style={[s.fill,{width:(nextProgress+'%') as any}]}/></View>:null}
-      </View>
-      <Text style={s.nextLevel}>{level<next.minLevel?t('Level {level}',{level:next.minLevel}):t('SCOUT')}</Text>
-    </View>:null}
   </View>;
 }
 function styles(C:ThemeColors){
   const equipmentColors=equipmentTheme(C);
   return StyleSheet.create({
     root:{gap:9},flex:{flex:1,minWidth:0},
-    current:{flexDirection:'row',alignItems:'center',gap:10,padding:9,backgroundColor:C.panel,borderWidth:1,borderRadius:12,minHeight:94},
-    currentArtwork:{width:72,height:74,borderRadius:8,overflow:'hidden',backgroundColor:C.panel2},
+
+    /* Current chapter: hero header + always-visible zone list, in one bordered card. */
+    current:{borderWidth:1,borderRadius:13,backgroundColor:C.panel,overflow:'hidden'},
+    currentHero:{flexDirection:'row',alignItems:'center',gap:10,padding:10,minHeight:92},
+    currentArtwork:{width:82,height:76,borderRadius:9,overflow:'hidden',backgroundColor:C.panel2},
     eyebrow:{fontSize:9,fontWeight:'800',letterSpacing:.9,color:equipmentColors.goldSoft},
     currentTitle:{fontSize:17,fontWeight:'900',color:C.text,marginTop:2},
-    meta:{fontSize:11,color:C.muted,marginTop:1},
-    count:{fontSize:10,color:C.muted,marginTop:4},
-    currentActions:{flexDirection:'row',gap:8},
+    meta:{fontSize:11,color:C.muted,marginTop:3},
+
+    /* Zone list inside the current chapter card. */
+    zoneList:{gap:7,padding:8,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.bg},
+
+    /* The HERE zone is a scenic hero card so the player instantly sees where they are. */
+    zoneHereCard:{borderRadius:11,overflow:'hidden',borderWidth:1,borderColor:C.info,backgroundColor:C.panel,minHeight:170,position:'relative'},
+    zoneHereArtwork:{...StyleSheet.absoluteFillObject,backgroundColor:C.panel2},
+    zoneHereShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.62)':'rgba(255,255,255,.60)'},
+    zoneHereBody:{padding:12,gap:4,justifyContent:'flex-end',flex:1,minHeight:170},
+    zoneHereKicker:{fontSize:9,fontWeight:'900',letterSpacing:1,color:C.info},
+    zoneHereName:{fontSize:20,fontWeight:'900',color:C.text,marginTop:2},
+    zoneHereSubtitle:{fontSize:11,lineHeight:15,color:C.muted,marginTop:2},
+    zoneHereActions:{flexDirection:'row',gap:8,marginTop:9},
+
+    /* Sibling zones stay compact one-row entries. */
+    zone:{flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
+    zoneLocked:{opacity:.72},
+    zoneArtwork:{width:58,height:54,borderRadius:7,overflow:'hidden',backgroundColor:C.panel2},
+    zoneName:{fontSize:12.5,fontWeight:'800',color:C.text},
+    zoneMeta:{fontSize:10,color:C.muted,marginTop:1},
+    zoneSubtitle:{fontSize:10,lineHeight:14,color:C.info,fontWeight:'700',marginTop:2},
+    zoneSubtitleLocked:{color:C.muted,fontWeight:'600'},
+    zoneActions:{flexDirection:'column',gap:5,alignItems:'stretch',minWidth:92},
+
     goalNotice:{borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.infoSurface,padding:9,borderRadius:6},
     goalText:{fontSize:11,fontWeight:'800',color:C.info},
-    sectionHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,marginTop:4},
+
+    divider:{flexDirection:'row',alignItems:'center',gap:10,marginTop:4},
+    dividerRule:{flex:1,height:1,backgroundColor:C.line},
+    dividerLabel:{fontSize:10,fontWeight:'900',letterSpacing:1.2,color:equipmentColors.goldSoft},
+    sectionHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
     sectionTitle:{fontSize:10,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.8},
     sectionHint:{fontSize:10,color:C.muted},
-    groups:{gap:7},
-    chapter:{borderWidth:1,borderColor:C.line,borderRadius:11,overflow:'hidden',backgroundColor:C.panel},
-    chapterActive:{borderColor:C.selectionLine},goalChapter:{borderColor:C.info},
-    chapterHeader:{flexDirection:'row',alignItems:'center',gap:9,padding:9,minHeight:64},
-    chapterArtwork:{width:56,height:45,borderRadius:7,overflow:'hidden',backgroundColor:C.panel2},
-    chapterName:{fontSize:14,fontWeight:'900',color:C.text},
-    chapterMeta:{fontSize:10,color:C.muted,marginTop:2},
-    chapterCount:{fontSize:10,color:C.info,marginTop:3,fontWeight:'700'},
-    chevron:{fontSize:18,color:C.muted,paddingHorizontal:5},
-    locationList:{borderTopWidth:1,borderTopColor:C.line,padding:7,gap:3,backgroundColor:C.bg},
-    location:{borderRadius:8,overflow:'hidden',borderWidth:1,borderColor:'transparent'},
-    locationSelected:{borderColor:C.selectionLine,backgroundColor:C.panel},
-    locationHeader:{flexDirection:'row',alignItems:'center',gap:8,minHeight:45,paddingHorizontal:8,paddingVertical:5},
-    dot:{width:8,height:8,borderRadius:4,backgroundColor:C.good},
-    dotLocked:{backgroundColor:C.muted,opacity:.5},
-    dotComing:{backgroundColor:C.warning,opacity:.65},
-    locationName:{fontSize:12,fontWeight:'800',color:C.text},
-    locationMeta:{fontSize:10,color:C.muted,marginTop:2},
-    status:{fontSize:9,fontWeight:'900',color:C.good},
-    statusMuted:{color:C.muted},statusComing:{color:C.warning},
-    smallChevron:{fontSize:13,color:C.muted,width:13,textAlign:'center'},
-    locationDetail:{paddingLeft:23,paddingRight:9,paddingBottom:10,borderTopWidth:1,borderTopColor:C.line,paddingTop:8,gap:5},
-    detailContent:{flexDirection:'row',alignItems:'center',gap:8},
-    zoneArtwork:{width:88,height:50,borderRadius:6,overflow:'hidden',backgroundColor:C.panel2},
-    description:{fontSize:11,lineHeight:16,color:C.muted},
-    activityCount:{fontSize:10,color:C.info,fontWeight:'700'},
-    inlineActions:{flexDirection:'row',gap:7,marginTop:3},
-    pressed:{opacity:.76},
+
+    list:{gap:7},
     nextUnlock:{flexDirection:'row',alignItems:'flex-start',gap:10,padding:10,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},
     nextLabel:{fontSize:9,fontWeight:'800',letterSpacing:.7,color:equipmentColors.goldSoft},
     nextName:{fontSize:12,fontWeight:'800',color:C.text,marginTop:3},
@@ -249,5 +265,25 @@ function styles(C:ThemeColors){
     nextLevel:{fontSize:10,fontWeight:'800',color:C.info},
     track:{height:4,borderRadius:3,backgroundColor:C.bg,overflow:'hidden',marginTop:7},
     fill:{height:4,backgroundColor:C.accent,borderRadius:3},
+
+    /* Other chapter rows: compact one-row-per-chapter. */
+    dest:{minHeight:92,flexDirection:'row',alignItems:'center',gap:9,padding:8,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:11},
+    destGoal:{borderColor:C.info,borderWidth:2},
+    destDev:{opacity:.72,borderStyle:'dashed'},
+    destThumb:{width:66,height:76,borderRadius:9,overflow:'hidden',backgroundColor:C.panel2},
+    lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:3,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},
+    lockedText:{color:C.muted,textAlign:'center',fontSize:10,fontWeight:'800',letterSpacing:.3},
+    destHeadRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},
+    destName:{fontSize:13.5,fontWeight:'900',color:C.text},
+    destNameDev:{color:C.muted},
+    goalBadge:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.8},
+    destMeta:{fontSize:11,color:C.info,fontWeight:'700',marginTop:1},
+    destMetaLocked:{color:C.muted,fontWeight:'600'},
+    destCounts:{fontSize:10,color:C.text,fontWeight:'800',marginTop:1},
+    destCountsLocked:{color:C.muted,fontWeight:'600'},
+    description:{fontSize:11,lineHeight:16,color:C.muted},
+    activityCount:{fontSize:10,color:C.info,fontWeight:'700'},
+    destSub:{fontSize:11,lineHeight:15,color:C.muted,marginTop:1},
+    destBtn:{alignSelf:'center',minWidth:88},
   });
 }

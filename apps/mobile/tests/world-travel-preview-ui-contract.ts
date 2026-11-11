@@ -14,11 +14,11 @@ ok(navigation.includes('!worldZoneInDevelopment(zone)&&zone.minLevel>level'),'In
 ok(navigation.includes('const released=!worldZoneInDevelopment(region)'),'In-development regions must never become active just from level');
 ok(world.includes('<WorldChapterNavigator'),'World screen must display the inline chapter navigator');
 ok(chapters.includes('<ZoneSceneArtwork regionId={current.id}/>'),'Current-location card must use scenic zone artwork');
-ok(chapters.includes('<ZoneSceneArtwork regionId={chapter.artRegionId} muted={!released}/>'),'Chapter rows must use existing scenic artwork and dim development chapters');
-ok(chapters.includes("development?t('In Development')"),'Future chapters must show an In Development state');
+ok(chapters.includes('<ZoneSceneArtwork regionId={artId} muted={!access}/>'),'Zone drawer rows must use existing scenic artwork and dim locked zones');
+ok(chapters.includes("development?t('In Development')"),'Future regions must show an In Development state');
 ok(!world.includes('TravelRegionModal')&&!chapters.includes('TravelRegionModal'),'World travel must not open a preview modal');
-ok(chapters.includes("const access=availability==='available'&&level>=row.minLevel"),'Location actions must respect level and travel gates');
-ok(chapters.includes('onTravel(row.region.id)'),'Unlocked destination rows must travel directly using the original region ID');
-ok(chapters.includes("!access?t('Locked')"),'Locked locations must remain visibly locked');
-ok(chapters.includes('disabled')===false||chapters.includes('{access?<View'),'Locked locations must not expose active travel actions');
+ok(chapters.includes("const access=availability==='available'"),'Travel rows must respect level and travel gates via region availability');
+ok(chapters.includes('onTravel(zone.id)'),'Unlocked destination rows must travel directly using the original region ID');
+ok(chapters.includes('<Text style={s.lockedText}>'),'Locked destinations must remain visibly tagged on their thumbnail');
+ok(chapters.includes('{access&&target?<View'),'Locked locations must not expose active travel actions');
 console.log('PASS: inline chapter travel is direct, scenic, and properly gated');

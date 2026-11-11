@@ -36,6 +36,7 @@ const CLASS_IDS=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const satis
 const mean=(x:number[])=>x.reduce((a,b)=>a+b,0)/Math.max(1,x.length);
 const round=(v:number)=>+v.toFixed(2);
 const cache=new Map<string,CombatantDefinition>();
+const serverProfiles=new Map<string,ReturnType<typeof proposeWorldBossGearBandProfileV13>>();
 for(const {band,def} of BRACKETS)for(const cl of CLASSES){
  let state:GameState=regionalCombatFixture(def,'prepared',cl.id);
  state={...state,character:{...state.character!,id:'WB13_'+band+'_'+cl.id}};
@@ -88,6 +89,7 @@ for(const boss of BOSSES)for(const phase of PHASES)for(const bracket of BRACKETS
   referenceUnguardedHpDamage:unguarded,
  });
  verifyWorldBossEncounterProfileV13(profile,boss,phase,EVENT);
+ serverProfiles.set([boss,phase,bracket.band].join(':'),profile);
  assert.ok(profile.guardMax<unguarded*.3+.02,'guard budget must stay bounded by an attackable reference');
  const actual=[] as WorldBossRoundResult[];
  for(const order of ORDERS)for(let seed=0;seed<2;seed++){
@@ -129,6 +131,46 @@ for(const boss of BOSSES)for(const phase of PHASES)for(const bracket of BRACKETS
   protection:round(mean(actual.map(r=>r.participants[players[0].id].tankProtection))),
   stressDowns,supportSurvivalWin:localSupportWins,tankSurvivalWin:localTankWins});
 }
+// Compare every real Tank kit and both real Support kits against the same
+// server-frozen encounter profile. This is NOT a class balance verdict.
+const tankVariants=['IRONWARDEN','BASTION','DREADGUARD'] as const satisfies readonly ClassId[];
+const supportVariants=['DAWNKEEPER','STONECALLER'] as const satisfies readonly ClassId[];
+type RoleKitMetric={samples:number;alive:number;recovery:number;shields:number;protection:number;damage:number};
+const emptyKit=():RoleKitMetric=>({samples:0,alive:0,recovery:0,shields:0,protection:0,damage:0});
+const tankKits:Record<(typeof tankVariants)[number],RoleKitMetric>={
+ IRONWARDEN:emptyKit(),BASTION:emptyKit(),DREADGUARD:emptyKit(),
+};
+const supportKits:Record<(typeof supportVariants)[number],RoleKitMetric>={
+ DAWNKEEPER:emptyKit(),STONECALLER:emptyKit(),
+};
+let roleKitFights=0;
+for(const boss of BOSSES)for(const phase of PHASES)for(const {band} of BRACKETS){
+ const profile=serverProfiles.get([boss,phase,band].join(':'))!;
+ assert.ok(profile,'frozen per-band boss profile must exist');
+ for(const tankId of tankVariants)for(const supportId of supportVariants){
+  const members=[tankId,'WAYFINDER','RAVAGER',supportId].map(id=>cache.get(id+':'+band)!);
+  const fight=simulateWorldBossRounds({
+   boss,phase,seed:'WB13:ROLE_KITS:'+boss+':'+phase+':'+band+':'+tankId+':'+supportId,
+   players:members,serverEncounterProfile:profile,testOnlyStressMultiplier:6,
+  });
+  assert.equal(members.filter(p=>p.role==='tank').length,1);
+  assert.equal(members.filter(p=>p.role==='damage').length,2);
+  assert.equal(members.filter(p=>p.role==='support').length,1);
+  const support=fight.participants[members[3].id],tank=fight.participants[members[0].id];
+  for(const out of [tankKits[tankId],supportKits[supportId]]){
+   out.samples++;out.alive+=survivors(fight);
+   out.recovery+=support.effectiveHealing+support.shieldConsumed;
+   out.shields+=support.shieldConsumed;out.protection+=tank.tankProtection;
+   out.damage+=fight.bossHpDamage;
+  }
+  roleKitFights++;
+ }
+}
+assert.equal(roleKitFights,3*3*4*3*2,'each real Tank/Support class pairing at stress 6');
+assert.ok(supportKits.DAWNKEEPER.recovery>0&&supportKits.STONECALLER.shields>0,
+ 'Dawnkeeper recovery and Stonecaller consumed shields must both contribute in real fights');
+assert.ok(tankVariants.every(id=>tankKits[id].protection>0),
+ 'every Tank class must genuinely prevent HP across the complete authored boss matrix');
 assert.equal(baselineFights,3*3*4*3*2);
 assert.equal(roleComparisons,3*3*4*STRESS.length*2);
 assert.equal(stressFights,roleComparisons*3);
@@ -151,6 +193,16 @@ rejects(()=>verifyWorldBossEncounterProfileV13(one,'hollowroot','armored','OTHER
 rejects(()=>simulateWorldBossRounds({boss:'hollowroot',phase:'armored',
  players:squad(1),seed:'bad_stress',testOnlyStressMultiplier:2}),'invalid_test_stress');
 for(const row of summaries)console.log('WB_V13_BAND_GUARD='+JSON.stringify(row));
+console.log('WB_V13_ROLE_KITS='+JSON.stringify({
+ roleKitFights,stressMultiplierTestOnly:6,
+ tanks:Object.fromEntries(tankVariants.map(id=>[id,{...tankKits[id],
+  avgAlive:round(tankKits[id].alive/tankKits[id].samples),
+  avgProtection:round(tankKits[id].protection/tankKits[id].samples)}])),
+ supports:Object.fromEntries(supportVariants.map(id=>[id,{...supportKits[id],
+  avgAlive:round(supportKits[id].alive/supportKits[id].samples),
+  avgRecovery:round(supportKits[id].recovery/supportKits[id].samples)}])),
+ realClassKits:true,productionTierBalanceApproved:false,liveWorldBossEnabled:false,
+}));
 console.log('WB_V13_STRESS_MATRIX='+JSON.stringify({
  baselineFights,stressFights,roleComparisons,downed,firstDeathAt,
  supportSurvivalWins,tankSurvivalWins,measuredRecovery:round(measuredRecovery),

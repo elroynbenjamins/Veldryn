@@ -1,6 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
-import React,{useMemo} from 'react';
+import React,{useMemo,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
@@ -9,6 +9,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
+import {DisclosureControl} from './DisclosureControl';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -17,18 +18,28 @@ export function ExplorationPanel({state,onCommand}:{state:GameState;onCommand:(c
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
 
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),c=state.character;if(!c)return null;
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),c=state.character;
+ const [showOtherRegions,setShowOtherRegions]=useState(false);
+ if(!c)return null;
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(item=>item.id===regionId),exploration=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
- const routes=[...EXPLORATION_ROUTES].sort((a,b)=>Number(b.zoneId===regionId)-Number(a.zoneId===regionId)||a.requiredLevel-b.requiredLevel);
+ const currentRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId===regionId).sort((a,b)=>a.requiredLevel-b.requiredLevel);
+ const otherRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId!==regionId).sort((a,b)=>a.requiredLevel-b.requiredLevel);
+ const routes=showOtherRegions?[...currentRoutes,...otherRoutes]:currentRoutes;
+ const mapped=currentRoutes.filter(route=>(state.exploredRouteIds??[]).includes(route.id)).length;
  return <Panel>
   <View style={s.heading}><View style={s.flex}><Text style={s.eyebrow}>{t("SCOUTING ROUTES")}</Text><Text style={s.title}>{t("Explore the world")}</Text><Text style={s.body}>{t("Scouting is the fastest way to train Exploration, reveal encounters, and discover routes into later regions. Combat also grants a smaller amount of passive Exploration XP while you learn the area.")}</Text></View><View style={s.regionBadge}><Text style={s.regionBadgeLabel}>{t("CURRENT")}</Text><Text numberOfLines={2} style={s.regionBadgeValue}>{region?.name??regionId}</Text></View></View>
+  <View style={s.overview}><Text style={s.overviewTitle}>{p('CURRENT REGION SURVEYS')}</Text><Text style={s.overviewCount}>{mapped} / {currentRoutes.length} {t('MAPPED')}</Text></View>
+  {!currentRoutes.length?<Text style={s.body}>{p('No scouting surveys are available in this region yet.')}</Text>:null}
   {routes.map(route=>{const zone=WORLD_ZONES.find(item=>item.id===route.zoneId),nextZone=route.unlockZoneId?WORLD_ZONES.find(item=>item.id===route.unlockZoneId):undefined,here=regionId===route.zoneId,characterReady=c.level>=route.requiredLevel,explorationReady=exploration>=route.requiredExplorationLevel,ready=here&&characterReady&&explorationReady,completed=(state.exploredRouteIds??[]).includes(route.id),found=!!route.unlockMonsterId&&state.unlockedMonsterIds.includes(route.unlockMonsterId);const stateLabel=completed?t("MAPPED"):!characterReady?`CHAR LV ${route.requiredLevel}`:!explorationReady?`EXP LV ${route.requiredExplorationLevel}`:!here?t("TRAVEL"):t("READY");return <View key={route.id} style={[s.route,ready&&s.routeReady]}>
    <View style={s.routeTop}><View style={s.flex}><View style={s.inline}><Text style={s.routeName}>{route.name}</Text><Text style={[s.tag,ready?s.tagReady:completed?s.tagFound:s.tagLocked]}>{stateLabel}</Text></View><Text style={s.routeMeta}>{zone?.name??route.zoneId} · {route.seconds}s · {route.xp}  {t("Exploration XP · Exp Lv")} {route.requiredExplorationLevel}</Text>{route.unlockMonsterId?<Text style={s.reward}>{found?t("Encounter revealed"):t("Reveals a regional encounter")}</Text>:null}{nextZone?<Text style={s.reward}>{completed?`Route to ${nextZone.name} discovered`:`Discovers the route to ${nextZone.name}`}</Text>:null}</View></View>
    <GameButton compact title={completed&&ready?t("Scout again"):ready?t("Scout"):!characterReady?`Requires character level ${route.requiredLevel}`:!explorationReady?`Requires Exploration level ${route.requiredExplorationLevel}`:`Travel to ${zone?.name??route.zoneId}`} disabled={!ready} tone={ready?'primary':'secondary'} onPress={()=>onCommand({type:'explore',args:{id:route.id}})}/>
   </View>})}
+  {otherRoutes.length?<DisclosureControl label={(showOtherRegions?p('Hide other regions'):p('View other regions'))+' ('+otherRoutes.length+')'} expanded={showOtherRegions} onPress={()=>setShowOtherRegions(open=>!open)}/>:null}
  </Panel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  flex:{flex:1,minWidth:0},heading:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},eyebrow:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.9},title:{...typography.title,color:C.text},body:{...typography.body,color:C.muted},regionBadge:{maxWidth:112,alignItems:'flex-end',paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.info,borderRadius:10,backgroundColor:C.infoSurface},regionBadgeLabel:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.7},regionBadgeValue:{...typography.caption,color:C.text,fontWeight:'800',textAlign:'right'},
- route:{gap:7,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},routeReady:{padding:spacing.sm,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.selection},routeTop:{flexDirection:'row',gap:8},inline:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},routeName:{...typography.bodyStrong,color:C.text},routeMeta:{...typography.caption,color:C.muted},reward:{...typography.caption,color:C.accent},tag:{fontSize:9,fontWeight:'900',letterSpacing:.7},tagReady:{color:C.good},tagFound:{color:C.special},tagLocked:{color:C.warning}
+ overview:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:4},
+ overviewTitle:{...typography.caption,color:C.accent,fontWeight:'900'},overviewCount:{...typography.caption,color:C.good,fontWeight:'900'},
+ route:{gap:7,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line}, routeReady:{padding:spacing.sm,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.selection},routeTop:{flexDirection:'row',gap:8},inline:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},routeName:{...typography.bodyStrong,color:C.text},routeMeta:{...typography.caption,color:C.muted},reward:{...typography.caption,color:C.accent},tag:{fontSize:9,fontWeight:'900',letterSpacing:.7},tagReady:{color:C.good},tagFound:{color:C.special},tagLocked:{color:C.warning}
 });}

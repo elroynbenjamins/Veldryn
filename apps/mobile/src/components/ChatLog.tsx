@@ -65,12 +65,28 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
   initializedRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));nearBottomRef.current=false;
   requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-10),animated:false});if(contentHeightRef.current<=viewportHeightRef.current+44){nearBottomRef.current=true;caughtUp();}});
  };
+ // Native layout can change after the first scroll (emotes, font scaling,
+ // composer resizing, keyboard opening/closing). Keep the end in view only
+ // when the player was already following the latest messages.
+ const followLatestAfterLayout=()=>{
+  if(!visible()||!nearBottomRef.current)return;
+  requestAnimationFrame(()=>{if(visible()&&nearBottomRef.current)scrollRef.current?.scrollToEnd({animated:false});});
+ };
  const onContentSizeChange=(_width:number,height:number)=>{
+  const previousHeight=contentHeightRef.current;
   contentHeightRef.current=height;
-  if(initializedRef.current)return;
+  if(initializedRef.current){
+   if(previousHeight>0&&Math.abs(height-previousHeight)>1)followLatestAfterLayout();
+   return;
+  }
   if(dividerId&&!dividerCleared)return;
   initializedRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));nearBottomRef.current=true;
   requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
+ };
+ const onViewportLayout=(event:LayoutChangeEvent)=>{
+  const nextHeight=event.nativeEvent.layout.height,previousHeight=viewportHeightRef.current;
+  viewportHeightRef.current=nextHeight;
+  if(initializedRef.current&&previousHeight>0&&Math.abs(nextHeight-previousHeight)>1)followLatestAfterLayout();
  };
  const onScroll=(event:NativeSyntheticEvent<NativeScrollEvent>)=>{
   const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;
@@ -81,10 +97,10 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  const jumpLatest=()=>{nearBottomRef.current=true;setPendingNew(0);scrollRef.current?.scrollToEnd({animated:true});caughtUp();};
 
  return <View style={[s.root,expanded&&s.expandedRoot]}>
-  <ScrollView ref={scrollRef} style={[s.log,expanded&&s.expandedLog]} contentContainerStyle={[s.inner,expanded&&!hasMessages&&s.emptyInner]} keyboardShouldPersistTaps="handled" scrollEventThrottle={80} onLayout={event=>{viewportHeightRef.current=event.nativeEvent.layout.height}} onScroll={onScroll} onContentSizeChange={onContentSizeChange} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  <ScrollView ref={scrollRef} style={[s.log,expanded&&s.expandedLog]} contentContainerStyle={[s.inner,expanded&&!hasMessages&&s.emptyInner]} keyboardShouldPersistTaps="handled" scrollEventThrottle={80} onLayout={onViewportLayout} onScroll={onScroll} onContentSizeChange={onContentSizeChange} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {items.length?items.map((item,index)=>{const createdAt=typeof (item as {created_at?:unknown}).created_at==='string'?(item as unknown as {created_at:string}).created_at:undefined;const previous=items[index-1];const previousAt=previous&&typeof (previous as {created_at?:unknown}).created_at==='string'?(previous as unknown as {created_at:string}).created_at:undefined;const date=createdAt?new Date(createdAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;const previousDate=previousAt?new Date(previousAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;return <View key={item.id} onLayout={!dividerCleared&&dividerId===item.id?onDividerLayout:undefined}>{date&&date!==previousDate?<View style={s.dateDivider}><View style={s.line}/><Text style={s.dateText}>{date}</Text><View style={s.line}/></View>:null}{!dividerCleared&&dividerId===item.id?<View style={s.divider}><View style={[s.line,{backgroundColor:C.warning}]}/><Text style={[s.dividerText,{color:C.warning}]}>{st("NEW MESSAGES")}</Text><View style={[s.line,{backgroundColor:C.warning}]}/></View>:null}{renderItem(item)}</View>;}):<Text style={[s.empty,{color:C.muted}]}>{emptyText}</Text>}
   </ScrollView>
   {pendingNew>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Jump to {count} new messages',{count:pendingNew})} onPress={jumpLatest} style={({pressed})=>[s.jump,{backgroundColor:C.selection,borderColor:C.selectionLine},pressed&&s.pressed]}><Text style={[s.jumpText,{color:C.info}]}>{st('↓ {count} NEW',{count:pendingNew>99?'99+':pendingNew})}</Text></Pressable>:null}
  </View>;
 }
-const s=StyleSheet.create({root:{position:'relative'},expandedRoot:{flex:1,minHeight:0},log:{minHeight:120,maxHeight:260},expandedLog:{flex:1,minHeight:0,maxHeight:undefined},inner:{paddingVertical:2},emptyInner:{flexGrow:1,justifyContent:'center',alignItems:'center',paddingHorizontal:20},dateDivider:{minHeight:24,flexDirection:'row',alignItems:'center',gap:7,paddingVertical:5},dateText:{fontSize:8,fontWeight:'900',letterSpacing:.7,color:'#8b98a8'},divider:{minHeight:26,flexDirection:'row',alignItems:'center',gap:7,paddingVertical:4},line:{height:1,flex:1,opacity:.75,backgroundColor:'#3a4654'},dividerText:{fontSize:8,fontWeight:'900',letterSpacing:.9},empty:{fontSize:12,textAlign:'center',paddingVertical:28},jump:{position:'absolute',right:8,bottom:8,minHeight:44,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderRadius:16},jumpText:{fontSize:9,fontWeight:'900',letterSpacing:.5},pressed:{opacity:.72}});
+const s=StyleSheet.create({root:{position:'relative'},expandedRoot:{flex:1,minHeight:0},log:{minHeight:120,maxHeight:260},expandedLog:{flex:1,minHeight:0,maxHeight:undefined},inner:{paddingTop:2,paddingBottom:16},emptyInner:{flexGrow:1,justifyContent:'center',alignItems:'center',paddingHorizontal:20},dateDivider:{minHeight:24,flexDirection:'row',alignItems:'center',gap:7,paddingVertical:5},dateText:{fontSize:8,fontWeight:'900',letterSpacing:.7,color:'#8b98a8'},divider:{minHeight:26,flexDirection:'row',alignItems:'center',gap:7,paddingVertical:4},line:{height:1,flex:1,opacity:.75,backgroundColor:'#3a4654'},dividerText:{fontSize:8,fontWeight:'900',letterSpacing:.9},empty:{fontSize:12,textAlign:'center',paddingVertical:28},jump:{position:'absolute',right:8,bottom:8,minHeight:44,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderRadius:16},jumpText:{fontSize:9,fontWeight:'900',letterSpacing:.5},pressed:{opacity:.72}});

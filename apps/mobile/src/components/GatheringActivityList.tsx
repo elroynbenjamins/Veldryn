@@ -16,6 +16,7 @@ import type {WorkingTowardDestination} from '../core/working-toward';
 import {gatheringBalanceProjection} from '../core/balance-projection';
 import {gatheringDropPercent,gatheringDropPreview,type GatheringDropPreviewRow} from '../core/gathering-drop-preview';
 import {petArtSource} from '../theme/pet-art';
+import {DisclosureControl} from './DisclosureControl';
 
 const IRONWOOD_T2_BINDING_RECIPE=RECIPES.find(recipe=>recipe.id==='BREW_IRONWOOD_BINDING_RESIN');
 
@@ -45,15 +46,17 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       <ResourceArtwork itemId={activity.itemId} size={34}/>
       <View style={s.copy}>
        <View style={s.topLine}>
-        <View style={s.nameLine}><Text numberOfLines={1} style={s.name}>{activity.name}</Text>{inCurrentRegion&&<Text style={s.regionTag}>{gt("HERE")}</Text>}</View>
+        <Text numberOfLines={2} style={s.name}>{activity.name}</Text>
         <Text style={s.xp}>{`+${formatGameNumber(Math.round(activity.xp),state.settings.numberMode,state.settings.language)} XP`}</Text>
        </View>
-       <Text numberOfLines={1} style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?`Region: ${nodeRegion?.name??activity.zoneId}`:unlocked?`Have: ${formatGameNumber(available,state.settings.numberMode,state.settings.language)} ${resource.name} · ${Math.ceil(view.cycleSeconds)}s`:`Unlocks at ${skillId} level ${activity.unlockLevel}`}</Text>
+       <View style={s.metaLine}>
+        {inCurrentRegion&&<Text style={s.regionTag}>{gt("HERE")}</Text>}
+        <Text numberOfLines={2} style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?`Region: ${nodeRegion?.name??activity.zoneId}`:unlocked?`Have: ${formatGameNumber(available,state.settings.numberMode,state.settings.language)} ${resource.name} · ${Math.ceil(view.cycleSeconds)}s`:`Unlocks at ${skillId} level ${activity.unlockLevel}`}</Text>
+       </View>
       </View>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel={`${gt('Drops')}: ${gl(activity.name)}`} accessibilityState={{expanded}}
-      onPress={()=>setExpandedDropId(value=>value===activity.id?null:activity.id)}
-      style={s.dropsToggle}><Text style={s.dropsLabel}>{gt('Drops')}</Text><Text style={s.chevron}>{expanded?'⌃':'⌄'}</Text></Pressable>
+     <DisclosureControl label={gt('Drops')} expanded={expanded}
+      onPress={()=>setExpandedDropId(value=>value===activity.id?null:activity.id)}/>
     </View>
     {expanded?<View style={s.dropDetails}>
      {drops.map(drop=><GatheringDropLine key={drop.id} drop={drop} gl={gl} s={s}
@@ -81,17 +84,19 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  instruction:{fontSize:13,lineHeight:19,color:C.muted,textAlign:'center',fontWeight:'600',paddingBottom:2},
  card:{minHeight:64,paddingHorizontal:12,paddingVertical:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
  cardCurrent:{borderColor:C.selectionLine,backgroundColor:C.selection},cardActive:{borderColor:C.good,backgroundColor:C.goodSurface},
- cardRow:{flexDirection:'row',alignItems:'center',gap:6},
+ cardRow:{flexDirection:'row',alignItems:'center',gap:8}, 
  activityTap:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:10},
  cardLocked:{opacity:.6},pressed:{opacity:.76},
- dropsToggle:{minWidth:58,minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:3,paddingHorizontal:2},
- dropsLabel:{color:C.accent,fontSize:11,fontWeight:'800'},chevron:{color:C.accent,fontSize:17,lineHeight:20,fontWeight:'700'},
- copy:{flex:1,minWidth:0,gap:3},topLine:{flexDirection:'row',alignItems:'baseline',justifyContent:'space-between',gap:5},
- nameLine:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:4},
- name:{flexShrink:1,fontSize:14,lineHeight:20,color:C.text,fontWeight:'800'},
- regionTag:{fontSize:8,color:C.info,fontWeight:'900',letterSpacing:.7},
- xp:{fontSize:11,lineHeight:16,color:C.accentSoft,fontWeight:'800'},
- meta:{fontSize:11,lineHeight:16,color:C.muted},activeMeta:{fontSize:11,lineHeight:16,color:C.good,fontWeight:'800'},
+ chevron:{color:C.accent,fontSize:17,lineHeight:20,fontWeight:'700'}, 
+ copy:{flex:1,minWidth:0,gap:5},
+ topLine:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:7,minWidth:0},
+ name:{flex:1,minWidth:0,fontSize:14,lineHeight:19,color:C.text,fontWeight:'800',flexShrink:1},
+ xp:{flexShrink:0,fontSize:11,lineHeight:18,color:C.accentSoft,fontWeight:'800',textAlign:'right'},
+ metaLine:{flexDirection:'row',alignItems:'flex-start',gap:6,minWidth:0},
+ regionTag:{fontSize:9,lineHeight:15,color:C.info,fontWeight:'900',letterSpacing:.5,
+  paddingHorizontal:6,paddingVertical:1,borderRadius:6,borderWidth:1,borderColor:C.info,flexShrink:0},
+ meta:{flex:1,minWidth:0,fontSize:11,lineHeight:16,color:C.muted},
+ activeMeta:{flex:1,minWidth:0,fontSize:11,lineHeight:16,color:C.good,fontWeight:'800'},
  dropDetails:{marginTop:8,paddingTop:8,borderTopWidth:1,borderColor:C.line,gap:5},
  dropRow:{minHeight:24,flexDirection:'row',alignItems:'center',gap:7},
  dropIcon:{width:20,height:20},dropSymbol:{width:20,fontSize:16,textAlign:'center',color:C.accent},

@@ -300,8 +300,10 @@ export function guildBankDepositHandler(services:GuildShopReadServices){
   try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
   if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
   const body=input as Record<string,unknown>;
+  // SQL is authoritative for both published Construction AND released Guild Skill resources.
+  // A construction-only whitelist here rejected valid skill materials before the RPC.
   if(Object.keys(body).length!==3||typeof body.resourceId!=="string"||
-   !GUILD_CONSTRUCTION_TEMPLATES.some(t=>(['gold',...t.materials.map(m=>m.materialKey)]).includes(body.resourceId as string))||
+   !/^[A-Za-z0-9_]{1,100}$/.test(body.resourceId)||
    !Number.isSafeInteger(body.amount)||Number(body.amount)<1||Number(body.amount)>1000000||
    typeof body.requestKey!=="string"||!/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
    return json({error:"invalid_guild_bank_deposit"},400);
@@ -315,7 +317,8 @@ export function guildBankDepositHandler(services:GuildShopReadServices){
    return json(result);
   }catch(reason){
    const code=reason instanceof Error?reason.message:'';
-   if(['guild_membership_required','guild_bank_resource_unavailable','guild_bank_item_locked',
+   if(['guild_membership_required','guild_bank_resource_unavailable',
+     'guild_bank_resource_exceeds_active_requirements','guild_bank_item_locked',
      'insufficient_gold','insufficient_construction_materials','guild_bank_capacity_reached',
      'guild_bank_request_conflict','character_required'].includes(code))
     return json({error:code},code.startsWith('insufficient_')?422:409);

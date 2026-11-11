@@ -99,7 +99,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     }
   },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
   const entries=journalEntries(state,filter,'').filter(({def})=>questMatchesLocalizedSearch(language,def,query));
-  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly'),contractBoard=weeklyOrderBoardForState(state),pendingBoardRewards=(state.account.weeklyOrderPendingRewards??[]).filter(row=>row.weekKey===contractBoard.weekKey);
+  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly'),contractBoard=weeklyOrderBoardForState(state);
   const fallenKnightWeekly=state.defeatedBossIds.includes('FALLEN_KNIGHT')?fallenKnightWeeklyStatus(state,Date.now()):undefined;
   const claimed=QUESTS.filter(def=>state.quests.some(q=>q.questId===def.id&&q.status==='claimed')).length;
   const ready=state.quests.filter(q=>q.status==='complete').length;
@@ -130,7 +130,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   }
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.scenicHeader}><ZoneSceneArtwork regionId={mode==='contracts'?'KINGS_ROAD':mode==='challenges'?'IRONWOOD':currentAct.act===1?'GREENFIELDS':currentAct.act===2?'IRONWOOD':'KINGS_ROAD'}/><View style={s.scenicShade}/><View style={s.scenicCopy}><Text style={s.scenicEyebrow}>{t("QUESTS & OBJECTIVES")}</Text><Text accessibilityRole="header" style={s.scenicTitle}>{modeTitle}</Text><Text style={s.scenicSubtitle}>{modeSubtitle}</Text></View></View>
-    <QuestModeSwitch mode={mode} onChange={onModeChange} storyMeta={ready?t("{count} ready",{count:ready}):t("{current}/{total} claimed",{current:claimed,total:QUESTS.length})} contractMeta={t("{current}/{total} complete",{current:boardComplete,total:contractBoard.orders.length})} challengeMeta={challengeReadyCount?t("{count} ready",{count:challengeReadyCount}):t("{current}/{total} claimed",{current:challengeClaimedCount,total:allChallenges.length})} storyAttention={ready} contractAttention={pendingBoardRewards.length} challengeAttention={challengeReadyCount}/>
+    <QuestModeSwitch mode={mode} onChange={onModeChange} storyMeta={ready?t("{count} ready",{count:ready}):t("{current}/{total} claimed",{current:claimed,total:QUESTS.length})} contractMeta={t("{current}/{total} complete",{current:boardComplete,total:contractBoard.orders.length})} challengeMeta={challengeReadyCount?t("{count} ready",{count:challengeReadyCount}):t("{current}/{total} claimed",{current:challengeClaimedCount,total:allChallenges.length})} storyAttention={ready} challengeAttention={challengeReadyCount}/>
     {claimMoment&&<ClaimMomentCard moment={claimMoment} reduceMotion={state.settings.reduceMotion}/>} {!!notice&&<ActionFeedback message={notice} compact reduceMotion={state.settings.reduceMotion}/>} {!!error&&<ActionFeedback message={error} tone="error" compact reduceMotion={state.settings.reduceMotion}/>}
     <View style={s.board}>
     {mode==='story'?<>
@@ -141,7 +141,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     </>:null}
     {mode==='contracts'?<>
       <View style={[s.boardSummary,s.boardOverview]}>
-        <View style={s.modeHeroHead}><Text style={[s.modeEyebrow,s.flex]}>{t("WEEKLY BOARD ·")} {contractBoard.weekKey}</Text>{focusedOrder?<StatusPill label={t("FOCUSED")} tone="info"/>:pendingBoardRewards.length>0?<StatusPill label={t("{count} rewards",{count:pendingBoardRewards.length})} tone="good"/>:<StatusPill label={t("WEEKLY")} tone="info"/>}</View>
+        <View style={s.modeHeroHead}><Text style={[s.modeEyebrow,s.flex]}>{t("WEEKLY BOARD ·")} {contractBoard.weekKey}</Text>{focusedOrder?<StatusPill label={t("FOCUSED")} tone="info"/>:<StatusPill label={t("WEEKLY")} tone="info"/>}</View>
         <View style={s.boardHeroRow}>
           <View style={s.boardCompletion}><Text style={s.boardHeroNumber}>{boardComplete}<Text style={s.boardHeroTotal}>/{contractBoard.orders.length}</Text></Text><Text style={s.boardHeroLabel}>{p("JOBS COMPLETE")}</Text></View>
           <View style={s.flex}><Text style={s.title}>{boardComplete===contractBoard.orders.length?p("Board cleared"):p("Your weekly assignments")}</Text><Text style={s.contractHint}>{boardActive} {p("still active")} · {t("Resets")} {new Date(contractBoard.endsAtMs).toISOString().slice(0,10)} UTC</Text></View>

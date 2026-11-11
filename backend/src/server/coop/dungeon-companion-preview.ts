@@ -1,5 +1,6 @@
 import {COOP_ROUTE_CONTENT} from '../expeditions/content/coop-route-content';
 import {EXPEDITIONS} from '../expeditions/content/launch-content';
+import {dungeonBossVariantsFor} from '../expeditions/content/dungeon-boss-rotation';
 import {EXPEDITION_ENCOUNTERS} from '../combat/content/expedition-encounters';
 import {dungeonCompanionCounterOptions,type DungeonCompanionCounterId} from './dungeon-companion-counters';
 
@@ -9,7 +10,8 @@ export function possibleDungeonCompanionCounters(dungeonId:string):DungeonCompan
  const route=COOP_ROUTE_CONTENT[dungeonId],dungeon=EXPEDITIONS[dungeonId];
  if(!route||!dungeon)return [];
  const result=new Set<DungeonCompanionCounterId>();
- for(const id of [...route.battle,...route.elite,dungeon.bossId]){
+ const variants=dungeonBossVariantsFor(dungeonId);
+ for(const id of [...route.battle,...route.elite,...(variants.length?variants.map(boss=>boss.bossId):[dungeon.bossId])]){
   const encounter=EXPEDITION_ENCOUNTERS[id]?.();
   if(!encounter)continue;
   for(const counter of dungeonCompanionCounterOptions(encounter))result.add(counter);

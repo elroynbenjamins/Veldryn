@@ -5,6 +5,8 @@ import type {GameState} from '../core/types';
 import {playerFacingGameplayError} from '../core/feature-unlocks';
 import {ActionFeedback,type FeedbackTone} from '../components/ActionFeedback';
 import {AnnualEventCalendarPanel} from '../components/AnnualEventCalendarPanel';
+import {FrostfallPreview} from '../components/FrostfallPreview';
+import {frostfallPreviewPhase} from '../content/frostfall-preview';
 import {GameButton} from '../components/GameButton';
 import {BoardTabs} from '../components/BoardTabs';
 import {EventShopCatalogue} from '../components/EventShopCatalogue';
@@ -54,8 +56,14 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
   return()=>{live=false};
  },[authoritativeGuildPve,event?.definition.id,event?.phase,tab]);
  const act=async(message:string,local:()=>GameState,command:GameCommand,pendingId:string=command.type)=>{if(busy.current)return;busy.current=true;setPendingAction(pendingId);setNotice('');try{if(onCommand){if(!await onCommand(command))throw new Error(command.type==='event_reward'?eventRewardText(language,'Reward could not be confirmed. Please retry.'):'Action could not be confirmed. Please retry.');}else await onChange(local());setTone('success');setNotice(message);}catch(error){setTone('error');setNotice(playerFacingGameplayError(error instanceof Error?error.message:'Action could not be completed.'));}finally{busy.current=false;setPendingAction(null);}};
- if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>Events</Text><Text style={[s.muted,{color:C.muted}]}>No event is active right now.</Text><AnnualEventCalendarPanel state={state}/></ScrollView>;
- if(event.phase==='upcoming')return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>Coming soon</Text><Text style={[s.muted,{color:C.muted}]}>This event opens when its live window begins.</Text></Panel><AnnualEventCalendarPanel state={state} highlightEventId={event.definition.id}/></ScrollView>;
+ if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>Events</Text><Text style={[s.muted,{color:C.muted}]}>Browse upcoming festivals and seasonal previews.</Text><AnnualEventCalendarPanel state={state} nowMs={now}/></ScrollView>;
+ if(event.phase==='upcoming'){
+  const frostfallTeaser=event.definition.visualKey==='frostfall'&&frostfallPreviewPhase(event.runtime.startsAtMs,now)!==null;
+  return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+   {frostfallTeaser?<FrostfallPreview startsAtMs={event.runtime.startsAtMs} nowMs={now}/>:<><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>Coming soon</Text><Text style={[s.muted,{color:C.muted}]}>This event opens when its live window begins.</Text></Panel></>}
+   <AnnualEventCalendarPanel state={state} nowMs={now} highlightEventId={event.definition.id} showFrostfallPreview={!frostfallTeaser}/>
+  </ScrollView>;
+ }
  const definition=event.definition,currency=eventCurrencyBalance(state,definition.id),prestige=eventPrestigeBalance(state,definition.id),daily=eventDailyGift(state,now),offers=eventShopOffers(state,now),readyClaims=eventRewardTabReadyClaimCount(state,now);
  const visuals=liveEventVisuals(definition.visualKey);
  const currencyBonus=eventCurrencyBonusBps(state,definition.id,now);

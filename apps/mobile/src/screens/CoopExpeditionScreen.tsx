@@ -67,7 +67,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const displayRun=useMemo(()=>eventRun?presentEventExpeditionRun(eventRun):run,[eventRun,run]);
   const selectableLoadouts=useMemo(()=>state.character?(entry?.loadouts??[]).map(loadout=>presentCoopLoadout(loadout,state.character!.id)).filter(loadout=>loadout.selectable):[],[entry,state.character]);
   const echoLoadout=entry?.loadouts.find(loadout=>loadout.id==='current');
-  const echoReady=Boolean(echoLoadout?.ready&&(state.character?.level??0)>=15);
+  const echoReady=Boolean(echoLoadout?.ready&&(state.character?.level??0)>=10&&combatPowerRating(state).total>=2500);
   const runIcons=useCoopProfileIcons('run',displayRun?[displayRun.runId]:[],entrySource.kind==='real',displayRun?.roleSlots.map(slot=>slot.memberId??'').sort().join(','));
   const runWithIcons=useMemo(()=>displayRun&&entrySource.kind==='real'?{...displayRun,roleSlots:displayRun.roleSlots.map(slot=>({...slot,...(runIcons.get(slot.memberId??'')??noCoopProfileIcon)}))}:displayRun,[displayRun,entrySource.kind,runIcons]);
   const showRecruitment=mode==='live'&&coopLiveReadyEnabled&&entrySource.kind==='real'&&!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun;
@@ -341,7 +341,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
         <Text style={{color:C.text,fontWeight:'700'}}>{echoLoadout?st('{name} · Level {level}',{name:echoLoadout.className,level:echoLoadout.level}):st("Current character")}</Text>
         <Text style={{color:C.muted,fontSize:12}}>{echoLoadout?st("Role: {role} · {count} equipped items",{role:echoLoadout.role,count:echoLoadout.equipment.length}):st("No loadout verified yet.")}</Text>
         <Text style={{color:echoReady?C.good:C.warning,fontSize:12,fontWeight:'700'}}>{entry.echoSharing?st("SHARED"):echoReady?st("READY TO SHARE"):st("NOT READY")}</Text>
-        {!echoReady&&<Text style={{color:C.muted,fontSize:12}}>{state.character&&state.character.level<15?st("Echo sharing unlocks at character level 15."):st("Your current co-op equipment must pass the readiness check.")}</Text>}
+        {!echoReady&&<Text style={{color:C.muted,fontSize:12}}>{state.character&&state.character.level<10?st("Echo sharing unlocks at character level 10."):combatPowerRating(state).total<2500?st("Echo sharing requires 2,500 Combat Power."):st("Your current co-op equipment must pass the readiness check.")}</Text>}
         <Text style={{color:C.muted,fontSize:12,lineHeight:17}}>{st("Your Echo is a frozen copy of your current class, equipment and combat abilities. It remains available for up to 7 days. Changing your gear does not automatically update an existing Echo.")}</Text>
         <GameButton title={entry.echoSharing?st("Update Echo from current gear"):st("Share my current Echo")} disabled={busy||!echoReady} onPress={()=>action(async()=>{await coopClient.shareEcho(entry.gameVersion!,true);await load();setNotice(st("Your Echo has been published from your current equipment."));})}/>
         {entry.echoSharing&&<GameButton title={st("Stop sharing my Echo")} tone="secondary" disabled={busy} onPress={()=>action(async()=>{await coopClient.shareEcho(entry.gameVersion!,false);await load();setNotice(st("Your Echo is no longer shared."));})}/>}

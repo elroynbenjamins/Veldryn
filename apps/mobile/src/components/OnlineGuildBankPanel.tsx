@@ -6,6 +6,7 @@ import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {ResourceArtwork} from './ResourceArtwork';
+import {GoldIcon} from './GoldIcon';
 import {guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -79,7 +80,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
  const needs=useMemo(()=>projectNeeds(snapshot,skillSnapshot),[snapshot,skillSnapshot]);
  const stored=new Map((snapshot.bank?.balances??[]).map(row=>[row.resourceId,row.amount]));
  const balance=(id:string)=>stored.get(id)??0;
- const depositCapacity=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)-balance(id));
+ // Published upcoming Construction may be pre-funded, just like released Skill ranks.
+ const depositCapacity=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.upcoming??0)+(needs.get(id)?.skills??0)-balance(id));
  const lockedIds=new Set((playerState as unknown as {settings?:{lockedItemIds?:string[]}}|undefined)?.settings?.lockedItemIds??[]);
  const ownedQuantity=(id:string)=>id==='gold'?Math.max(0,Math.floor(playerState?.character?.gold??0)):
   (playerState?.inventory.stacks??[]).filter(row=>row.itemId===id).reduce((sum,row)=>sum+Math.max(0,Math.floor(row.quantity)),0);
@@ -122,7 +124,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   .replace('Fortification Hinge Set','Hinge Set')
   .replace('Heraldic Dye Flask','Heraldic Dye')
   .replace('Beacon Oil Flask','Beacon Oil');
- const status=(id:string)=>depositCapacity(id)>0?'Needed now':shortageUpcoming(id)>0?'Upcoming':'Covered';
+ const status=(id:string)=>shortageNow(id)>0?'Needed now':shortageUpcoming(id)>0?'Upcoming':'Covered';
  const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString()+'k':value.toLocaleString();
  const activityTime=(iso:string)=>{
   const date=new Date(iso);
@@ -173,7 +175,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
     state==='Needed now'?s.nowSlot:state==='Upcoming'?s.futureSlot:null,pressed&&s.pressed]}>
    <View style={[s.statusDot,state==='Needed now'?s.nowDot:state==='Upcoming'?s.futureDot:s.fundedDot]}/>
    <View style={s.artFrame}>
-    {id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={39} framed={false}/>}
+    {id==='gold'?<GoldIcon size={39}/>:<ResourceArtwork itemId={id} size={39} framed={false}/>}
     <View style={s.stackCount}><Text numberOfLines={1} style={s.stackText}>{compactQuantity(onHand)}</Text></View>
    </View>
    <Text numberOfLines={2} style={s.slotName}>{shortName(id)}</Text>
@@ -187,7 +189,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
  const neededRow=(id:string,upcoming:boolean)=>{
   const shortage=upcoming?shortageUpcoming(id):shortageNow(id);
   return <View key={(upcoming?'later-':'now-')+id} style={s.neededRow}>
-   <View style={s.neededArt}>{id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
+   <View style={s.neededArt}>{id==='gold'?<GoldIcon size={34}/>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
    <View style={s.flex}><Text numberOfLines={2} style={s.name}>{resourceTitle(id)}</Text>
     <Text style={s.meta}>{ui('{stored} stored · {more} more to deposit',{stored:balance(id).toLocaleString(),more:shortage.toLocaleString()})}{!upcoming&&(needs.get(id)?.skills??0)>0?' · '+ui('Guild Skills'):''}</Text>
     {playerState?<Text style={s.meta}>{ui('You own {count} · {available} available',{count:ownedQuantity(id).toLocaleString(),available:(availableQuantity(id)??0).toLocaleString()})}</Text>:null}
@@ -271,7 +273,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   {view==='activity'?<View style={s.section}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Recent guild activity')}</Text><Text style={s.meta}>{ui('Shared ledger')}</Text></View>
    {snapshot.bank?.activity.length?snapshot.bank.activity.slice(0,20).map((item,index)=><View key={item.createdAt+'-'+item.resourceId+'-'+index} style={s.activityRow}>
-    <View style={s.neededArt}>{item.resourceId==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={item.resourceId} size={30} framed={false}/>}</View>
+    <View style={s.neededArt}>{item.resourceId==='gold'?<GoldIcon size={30}/>:<ResourceArtwork itemId={item.resourceId} size={30} framed={false}/>}</View>
     <View style={s.flex}>
      <Text numberOfLines={2} style={s.name}>{ui(item.kind==='project_reward'?'Guild Project reward':item.kind==='deposit'?(item.mine?'You donated':'Member donated'):item.kind==='skill_upgrade'?'Spent on Guild Skill':'Allocated to construction')}</Text>
      <Text numberOfLines={2} style={s.meta}>{resourceTitle(item.resourceId)} · {activityTime(item.createdAt)}</Text>
@@ -288,7 +290,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
     closeDisabled={busy} onClose={close}/>
    {selected?(confirming?<View style={s.confirmBody}>
     <View style={s.modalSummary}>
-     <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
+     <View style={s.modalArt}>{selected==='gold'?<GoldIcon size={56}/>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
       <Text style={s.help}>{ui('{amount} from your inventory into the shared Guild Bank',{amount:amount.toLocaleString()})}</Text>
       <Text style={s.meta}>{ui('{count} currently stored',{count:balance(selected).toLocaleString()})}</Text>
@@ -303,7 +305,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    </View>:<ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
     showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody}>
     <View style={s.modalSummary}>
-     <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
+     <View style={s.modalArt}>{selected==='gold'?<GoldIcon size={56}/>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
       <Text style={s.help}>{ui('{count} stored in the shared Bank',{count:balance(selected).toLocaleString()})}</Text>
       <Text style={s.meta}>{ui('Only published Construction and released Skill materials can be deposited')}</Text>
@@ -371,7 +373,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  statusDot:{position:'absolute',width:6,height:6,borderRadius:4,right:6,top:6},
  nowDot:{backgroundColor:C.good},futureDot:{backgroundColor:C.info},fundedDot:{backgroundColor:C.muted},
  artFrame:{width:49,height:45,alignItems:'center',justifyContent:'center'},
- goldGlyph:{fontSize:28,fontWeight:'900',color:C.accent},
  stackCount:{position:'absolute',right:-4,bottom:-1,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.lineStrong,borderRadius:4,minWidth:19,maxWidth:51,paddingHorizontal:3,alignItems:'center'},
  stackText:{fontSize:10,fontWeight:'900',color:C.text},
  slotName:{fontSize:10,lineHeight:12,color:C.text,textAlign:'center',fontWeight:'800',minHeight:24},

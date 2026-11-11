@@ -1,0 +1,142 @@
+name: Deploy Veldryn Browser Screen Review
+
+# This is a separate, synthetic-data-only site. It must never publish the
+# production application entry, activate developer commands for real accounts,
+# or expose a Supabase session or privileged credential to the browser.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-browser-review.yml'
+      - 'apps/mobile/index.js'
+      - 'apps/mobile/src/dev/**'
+      - 'apps/mobile/tests/browser-review-host.cjs'
+      - 'apps/mobile/src/components/DisclosureControl.tsx'
+      - 'apps/mobile/src/components/GatheringActivityList.tsx'
+      - 'apps/mobile/src/components/GatheringToolArtwork.tsx'
+      - 'apps/mobile/src/components/AnnualEventCalendarPanel.tsx'
+      - 'apps/mobile/src/screens/SkillsScreen.tsx'
+      - 'apps/mobile/src/screens/EventScreen.tsx'
+      - 'apps/mobile/src/content/frostfall-preview.ts'
+      - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
+      - 'apps/mobile/tests/exploration-balance.ts'
+      - 'apps/mobile/tests/gathering-drop-ui-contract.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veldryn-browser-review-host
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      EXPO_PUBLIC_BROWSER_REVIEW: '1'
+      # Explicit empty values stop the production fallback in src/online/supabase.ts
+      # in optimized (__DEV__ = false) browser exports.
+      EXPO_PUBLIC_SUPABASE_URL: ''
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ''
+      EXPO_PUBLIC_COOP_URL: ''
+      EXPO_PUBLIC_GAMEPLAY_URL: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install exact mobile and shared backend dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Validate production-safe review entry and navigation
+        run: node tests/browser-review-host.cjs
+        working-directory: apps/mobile
+      - name: Check screen layout, Exploration gates and Frostfall teaser protection
+        run: |
+          cd apps/mobile
+          node tests/skill-disclosure-layout-ui.cjs
+          pnpm test:frostfall-preview
+          node ../../tools/run-mobile-tests.mjs exploration-balance
+      - name: Typecheck the mobile application
+        run: pnpm --dir apps/mobile typecheck
+      - name: Export sandbox-only web build
+        run: pnpm exec expo export --platform web --output-dir .browser-review-dist --clear
+        working-directory: apps/mobile
+      - name: Verify generated browser entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s apps/mobile/.browser-review-dist/index.html
+          test -d apps/mobile/.browser-review-dist/_expo
+          echo "Review export generated with synthetic screen fixtures."
+      - name: Verify separate Cloudflare review-host credentials
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          if [[ -z "$CF_TOKEN" || -z "$CF_ACCOUNT" ]]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as GitHub Actions secrets for the separate review host."
+            exit 1
+          fi
+      - name: Ensure isolated Cloudflare Pages project exists
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --show-error --output /tmp/veldryn-pages-review.json --write-out '%{http_code}' \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/veldryn-review")
+          if [[ "$status" == "404" ]]; then
+            echo 'Creating separate veldryn-review Cloudflare Pages project'
+            curl --fail --silent --show-error -X POST \
+              -H "Authorization: Bearer $CF_TOKEN" -H 'Content-Type: application/json' \
+              --data '{"name":"veldryn-review","production_branch":"main"}' \
+              "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects" > /tmp/veldryn-pages-create.json
+          elif [[ "$status" != "200" ]]; then
+            echo "::error::Could not inspect Cloudflare Pages project (HTTP $status)"
+            exit 1
+          fi
+      - name: Deploy standalone browser review to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/mobile
+          command: pages deploy .browser-review-dist --project-name=veldryn-review --branch=main
+      - name: Verify hosted review returns a live HTML page
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$DEPLOYMENT_URL" ]]; then
+            echo '::error::Cloudflare did not return the deployed preview URL.'
+            exit 1
+          fi
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 2 --output /tmp/veldryn-review.html "$DEPLOYMENT_URL"
+          test -s /tmp/veldryn-review.html
+          grep -q -E '_expo|expo' /tmp/veldryn-review.html
+          echo "Verified HTML response at $DEPLOYMENT_URL"
+      - name: Report verified deployment destination
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          echo '## Veldryn screen review' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Sandbox route catalogue: 64 entry points, with further in-screen tabs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public review project: https://veldryn-review.pages.dev' >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo 'No production account, save, guild reward, billing or matchmaking connections.' >> "$GITHUB_STEP_SUMMARY"

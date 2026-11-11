@@ -32,7 +32,7 @@ const allKeys=[...new Set([...src.matchAll(/\bp\(\s*(['"])([^'"]+)\1/g)].map(m=>
 const missing=allKeys.filter(k=>!Object.hasOwn(progressionTranslationRows,k));
 const notCovered=missing.filter(k=>!Object.hasOwn(questJournalUiRows,k));
 assert.deepEqual(notCovered,[],'all missing fixed Quest Journal UI keys must be translated');
-assert.equal(missing.length,46,'update this test if Journal UI strings change');
+assert.equal(missing.length,45,'update this test if Journal UI strings change');
 assert.ok(src.includes('const p=(value:string)=>questJournalText(language,value)'),'Quest Journal must use local catalog with progression fallback');
 assert.ok(src.includes('language:Language'),'quest row needs explicit language for screen-reader copy');
 assert.ok(src.includes("questJournalText(language,'{title}, {status}, {current} of {max}'"),'progress accessibility label must be localized');

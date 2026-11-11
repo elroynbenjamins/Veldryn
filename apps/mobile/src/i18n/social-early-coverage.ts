@@ -2,6 +2,8 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
+  "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],
   "{points} shared points left": ["Осталось {points} общих очков","{points} ortak puan kaldı"],
   "No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.": ["Пока нет записи о награде за неудачный поход. Еженедельные утешительные награды могли закончиться — обновите данные.","Başarısız sefer ödül kaydı henüz yok. Haftalık teselli ödülleri bitmiş olabilir; yenileyip kontrol et."],
   "Choose a boon": ["Выберите благословение","Bir lütuf seç"],

@@ -1,5 +1,12 @@
 name: Guild Shop validation
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/online/guild-shop-read.ts'
+      - 'backend/online/tests/guild-shop-read.ts'
+      - 'apps/mobile/src/components/OnlineGuildBankPanel.tsx'
+      - '.github/workflows/guild-shop-validation.yml'
   pull_request:
     paths:
       - 'apps/mobile/src/**'

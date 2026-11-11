@@ -3,6 +3,7 @@ import {CLASSES} from '../../apps/mobile/src/content/classes';
 import {itemDef} from '../../apps/mobile/src/content/items';
 import {noviceItemId,noviceSetFor} from '../../apps/mobile/src/content/novice-sets';
 import {createCharacter,effectiveStats,newGame} from '../../apps/mobile/src/core/game';
+import {combatPowerRating} from '../../apps/mobile/src/core/combat-power';
 import {activeEquipmentBuildStats} from '../../apps/mobile/src/core/equipment-set-runtime';
 import {canonicalGemMetaV1,equippedCanonicalSocketsV1} from '../../apps/mobile/src/core/gem-progression-v1';
 import {summarizeGemLoadoutV1} from '../src/server/equipment/gems/gem-runtime-v1';
@@ -62,7 +63,7 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  if(companionId)assertCompanionIdle(state,companionId);
  const combatCompanion=companionId?companionOwned(state)[companionId]:undefined;
  if(companionId&&!combatCompanion)throw new Error('missing_companion_progress');
- return {accountId,characterId:character.id,classId:character.classId,loadoutId:'current',revision:version,characterLevel:character.level,combatScalingLevel,
+ return {accountId,characterId:character.id,classId:character.classId,loadoutId:'current',revision:version,characterLevel:character.level,combatPower:combatPowerRating(state).total,combatScalingLevel,
   dungeonUnlocked:true,legalEquipment,capabilities,abilities:structuredClone(kit.abilities),stats:{
    characterId:character.id,classId:character.classId,displayName:character.name,bodyPresentation:character.bodyPresentation??'male',level:character.level,
    ...(combatCompanion?{combatCompanion:structuredClone(combatCompanion)}:{}),

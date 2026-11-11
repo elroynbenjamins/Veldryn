@@ -5,7 +5,7 @@ import {EXPEDITIONS} from '../../expeditions/content/launch-content';
 import {initialPersistentRunState,resolveCoopNode} from '../../expeditions/node-resolution';
 import {generateCoopRouteGraph} from '../../expeditions/route-generation';
 
-const prefixes:Record<string,readonly string[]>={EXP_001:['ROOT_'],EXP_002:['LANTERN_'],EXP_003:['SUN_OBS_'],EXP_004:['SUN_MIRAGE_'],EXP_005:['FROST_LAKE_'],EXP_006:['FROST_CHOIR_'],EXP_007:['ASH_FEN_'],EXP_008:['ASH_CRUCIBLE_']};
+const prefixes:Record<string,readonly string[]>={EXP_001:['ROOT_','LANTERN_'],EXP_002:['LANTERN_'],EXP_003:['SUN_OBS_','SUN_MIRAGE_'],EXP_004:['SUN_MIRAGE_'],EXP_005:['FROST_LAKE_'],EXP_006:['FROST_CHOIR_'],EXP_007:['ASH_FEN_'],EXP_008:['ASH_CRUCIBLE_']};
 for(const [expeditionId,allowed] of Object.entries(prefixes)){
   assert.equal(EXPEDITIONS[expeditionId].coopImplemented,true);
   for(let seed=0;seed<100;seed++){

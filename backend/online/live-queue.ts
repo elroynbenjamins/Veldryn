@@ -2,8 +2,8 @@ import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import type {CoopRunRequest} from '../src/shared/coop-types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {coopRequiredLevel,highestEligibleCoopTier,readinessEligibleCoopTier,isPublishedCoopTier} from '../src/server/coop/config';
-import {defeatedDungeonChapterBoss,publishedRegularDungeon,regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
+import {isPublishedCoopTier} from '../src/server/coop/config';
+import {publishedRegularDungeon,regularDungeonEntryError,regularDungeonReadyTier,regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower,highestEligibleRegularDungeonTier} from '../src/server/coop/dungeon-entry-policy';
 import {resolveAndFreezeLoadout} from '../src/server/coop/loadout-snapshots';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
@@ -32,12 +32,12 @@ export class OnlineLiveQueue {
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
   if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
-  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier);
   if(entryError)throw new GameplayError(entryError);
   if(!isPublishedCoopTier(request.tier))throw new GameplayError('dungeon_difficulty_unavailable');
-  const maximumTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maximumTier||request.tier>maximumTier)throw new GameplayError('dungeon_level_requirement');
+  const maximumTier=highestEligibleRegularDungeonTier(definition,record.characterLevel,record.combatPower);if(!maximumTier||request.tier>maximumTier)throw new GameplayError('dungeon_level_requirement');
   const selectedTier=request.tier;
-  const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,selectedTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
+  const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:regularDungeonTierRequiredLevel(definition,selectedTier),minCombatPower:regularDungeonTierRequiredPower(definition,selectedTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
   return this.services.rpc('join_online_live_queue_server_v1',{
    p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,
    p_ticket_id:this.services.randomId(),p_expedition_id:definition.id,p_tier:selectedTier,
@@ -58,15 +58,18 @@ export class OnlineLiveQueue {
   if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
-  const eligible=Object.values(EXPEDITIONS).filter(definition=>publishedRegularDungeon(definition)&&highestEligibleCoopTier(definition.minLevel,record.characterLevel)!==undefined).sort((a,b)=>b.minLevel-a.minLevel||a.id.localeCompare(b.id));
-  if(!eligible.length)throw new GameplayError('dungeon_level_requirement');
-  if(!defeatedDungeonChapterBoss(game.state))throw new GameplayError('chapter_one_required');
+  const eligible=Object.values(EXPEDITIONS).filter(definition=>publishedRegularDungeon(definition)&&!regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower)&&highestEligibleRegularDungeonTier(definition,record.characterLevel,record.combatPower)!==undefined).sort((a,b)=>b.minLevel-a.minLevel||a.id.localeCompare(b.id));
+  if(!eligible.length){
+    const hasDungeonLevel=Object.values(EXPEDITIONS).some(definition=>publishedRegularDungeon(definition)&&record.characterLevel>=regularDungeonTierRequiredLevel(definition,1));
+    throw new GameplayError(hasDungeonLevel?'dungeon_power_requirement':'dungeon_level_requirement');
+   }
+  // Asterfall is available before Chapter I; Sunscar's chapter gate is checked per dungeon.
   const demand=await this.services.rpc<{serverNow:number;demands:CoopQuickMatchDemand[]}>('online_live_quick_match_demand_server_v1',{p_account_id:accountId});
   const dungeonId=chooseQuickMatchExpedition(demand.demands,eligible.map(definition=>definition.id),readiness.role,demand.serverNow);
   const definition=dungeonId?EXPEDITIONS[dungeonId]:undefined;if(!definition)throw new GameplayError('dungeon_unavailable');
-  const autoTier=readinessEligibleCoopTier(definition.minLevel,record.characterLevel,readiness.normalizedScore);
+  const autoTier=regularDungeonReadyTier(definition,record.characterLevel,readiness.normalizedScore,record.combatPower);
   if(!autoTier)throw new GameplayError('role_not_ready');
-  const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,autoTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
+  const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:regularDungeonTierRequiredLevel(definition,autoTier),minCombatPower:regularDungeonTierRequiredPower(definition,autoTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
   return this.services.rpc('join_online_live_queue_server_v1',{
    p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,
    p_ticket_id:this.services.randomId(),p_expedition_id:definition.id,p_tier:autoTier,

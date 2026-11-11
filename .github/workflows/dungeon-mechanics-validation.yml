@@ -5,6 +5,7 @@ on:
     paths:
       - 'backend/online/live-runtime.ts'
       - 'backend/online/tests/dungeon-variety.ts'
+      - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'
       - 'backend/src/server/combat/**'
       - 'backend/src/server/coop/**'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'backend/online/live-runtime.ts'
       - 'backend/online/tests/dungeon-variety.ts'
+      - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'
       - 'backend/src/server/combat/**'
       - 'backend/src/server/coop/**'
@@ -45,4 +47,17 @@ jobs:
         working-directory: apps/mobile
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
+        working-directory: backend
+      - name: Calibrate all six regional dungeon power tiers and both bosses
+        run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
+        working-directory: backend
+      - name: Probe new regional dungeon tiers against their minimum Combat Power
+        run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
+        working-directory: backend
+      - name: Verify authenticated dungeon browsing, queues, and ready check
+        run: |
+          node dist/online/backend/online/tests/coop-entry.js
+          node dist/online/backend/online/tests/live-queue.js
+          node dist/online/backend/online/tests/live-ready.js
+          node dist/online/backend/online/tests/qmode-runtime.js
         working-directory: backend

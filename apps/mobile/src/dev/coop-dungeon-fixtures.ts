@@ -9,15 +9,9 @@ import type {CoopEventExpeditionPreview} from '../core/coop-event-expeditions';
 const rooms:CoopRoomType[]=['battle','elite','event','camp','treasure','echo','merchant','risk','boss'];
 const difficulties:CoopTier[]=[1,2,3];
 const definitions:Array<{id:string;name:string;region:string;min:number;recommended:number;implemented:boolean;description:CoopMessageKey}>=[
-  {id:'EXP_001',name:'Rootbound Vault',region:'Asterfall',min:15,recommended:25,implemented:true,description:'fixture.rootbound'},
-  {id:'EXP_002',name:'Lanternwatch Descent',region:'Asterfall',min:18,recommended:25,implemented:true,description:'fixture.lantern'},
-  {id:'EXP_003',name:'Buried Observatory',region:'Sunscar',min:36,recommended:45,implemented:true,description:'fixture.observatory'},
-  {id:'EXP_004',name:'Mirage Well',region:'Sunscar',min:32,recommended:45,implemented:true,description:'fixture.mirage'},
-  {id:'COP_007',name:'Whitepine Hunt',region:'Frostmarch',min:52,recommended:70,implemented:true,description:'fixture.shiverlake'},
-  {id:'COP_008',name:'Shiverlake Descent',region:'Frostmarch',min:58,recommended:70,implemented:true,description:'fixture.shiverlake'},
-  {id:'COP_009',name:'Choir Caverns',region:'Frostmarch',min:64,recommended:70,implemented:true,description:'fixture.choir'},
-  {id:'EXP_007',name:'Blackglass Fen',region:'Ashlands',min:77,recommended:94,implemented:true,description:'fixture.blackglass'},
-  {id:'EXP_008',name:'Crucible Depths',region:'Ashlands',min:82,recommended:100,implemented:true,description:'fixture.crucible'},
+ {id:'EXP_001',name:'Rootbound Vault',region:'Asterfall',min:10,recommended:25,implemented:true,description:'fixture.rootbound'},
+ {id:'EXP_003',name:'Buried Observatory',region:'Sunscar',min:25,recommended:34,implemented:true,description:'fixture.observatory'},
+ {id:'EXP_005',name:'Shiverlake Descent',region:'Frostmarch',min:38,recommended:52,implemented:false,description:'fixture.shiverlake'},
 ];
 
 /** Development-only projection; values mirror the canonical backend launch registry. */
@@ -26,7 +20,14 @@ export function createCoopDungeonFixtureSource(language:Language,character?:Char
   const characterLevel=character?.level??25;
   const dungeons:CoopDungeonProjection[]=definitions.map(definition=>({
     id:definition.id,name:definition.name,region:definition.region,description:ct(language,definition.description),minLevel:definition.min,recommendedLevel:definition.recommended,syncLevel:definition.recommended,
-    available:definition.implemented&&characterLevel>=definition.min,lockedReason:!definition.implemented?ct(language,'browse.inDevelopment'):characterLevel<definition.min?ct(language,'browse.requiresLevel',{level:definition.min}):undefined,enabledRoomTypes:rooms,difficulties,preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8},tierMinLevels:{1:definition.min,2:definition.min+5,3:definition.min+10},rewardBudgetState:coopPolicyText(language,'rewardCadence'),
+    available:definition.implemented&&characterLevel>=definition.min,lockedReason:!definition.implemented?ct(language,'browse.inDevelopment'):characterLevel<definition.min?ct(language,'browse.requiresLevel',{level:definition.min}):undefined,enabledRoomTypes:rooms,difficulties,preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8},tierMinLevels:{1:definition.min,2:definition.min,3:definition.min},tierMinPower:definition.id==='EXP_001'?{1:2500,2:3750,3:5000}:definition.id==='EXP_003'?{1:6000,2:7250,3:8500}:{1:0,2:0,3:0},
+    bossVariants:definition.id==='EXP_001'?[
+      {bossId:'BOSS_EXP_ROOT',name:'Rootbound Heart',chancePercent:50,gemFamilies:['effect_bulwark','effect_renewal','effect_unyielding','stat_vitality'],rawGemPercent:18,recipePercent:8,catalystPercent:15,gemPityClears:8},
+      {bossId:'BOSS_EXP_BELL',name:'Bell-Warden',chancePercent:50,gemFamilies:['effect_bulwark','effect_ruin','effect_execution','stat_vitality'],rawGemPercent:18,recipePercent:8,catalystPercent:15,gemPityClears:8},
+    ]:definition.id==='EXP_003'?[
+      {bossId:'BOSS_EXP_SOLAR',name:'The Buried Heliarch',chancePercent:50,gemFamilies:['effect_momentum','effect_critical_surge','effect_retaliation','stat_precision'],rawGemPercent:18,recipePercent:8,catalystPercent:15,gemPityClears:8},
+      {bossId:'BOSS_EXP_SPHINX',name:'The Veiled Sphinx',chancePercent:50,gemFamilies:['effect_momentum','effect_flow','effect_benediction','stat_precision'],rawGemPercent:18,recipePercent:8,catalystPercent:15,gemPityClears:8},
+    ]:[],rewardBudgetState:coopPolicyText(language,'rewardCadence'),
   }));
   const role=character?roles[character.classId]:'damage',characterId=character?.id??'fixture-character',level=characterLevel;
   const before={maxHp:character?.hp??3400,attackPower:character?.attack??625,healingPower:role==='support'?650:120,defense:character?.defense??750};

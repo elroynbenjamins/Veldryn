@@ -1,12 +1,14 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
+import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../src/server/coop/dungeon-entry-policy';
 import {QModeService,type QModeRun} from '../src/server/coop/qmode';
 import {enhancedDungeonMarks} from '../src/server/coop/dungeon-reward-balance';
 import {projectQModeRun} from '../src/server/coop/qmode-public-projection';
 import {liveNodeWaitMs,livePendingCombat} from './live-pacing';
 import type {FrozenLoadoutSnapshot} from '../src/server/coop/loadout-snapshots';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
+import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
 import type {CoopDecisionCommand} from '../src/shared/coop-types';
 interface ReadySource {checkId:string;runId:string|null;dungeonId:string;tier:1|2|3|4|5;roster:Array<Record<string,unknown>>;frozenRoster:FrozenLoadoutSnapshot[]|null;}
@@ -54,9 +56,10 @@ export class OnlineLiveRuntime{
   if(source.runId)return source.runId;
   if(!source.frozenRoster||source.frozenRoster.length!==4)throw new GameplayError('invalid_frozen_roster');
   const definition=EXPEDITIONS[source.dungeonId];if(!definition?.coopImplemented)throw new GameplayError('dungeon_unavailable');
+  if(source.frozenRoster.some(snapshot=>(snapshot.characterLevel??snapshot.normalized.before.level)<regularDungeonTierRequiredLevel(definition,source.tier)||!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,source.tier)))throw new GameplayError('dungeon_power_requirement');
   const id=this.services.randomId(),seed=this.services.randomId()+this.services.randomId();
   const domain=new QModeService(new (class{private run?:QModeRun;get(id:string){return this.run?.id===id?structuredClone(this.run):undefined}getByRequest(){return undefined}save(run:QModeRun){this.run=structuredClone(run)}})(),seed);
-  const run=domain.createLive({requestId:`live-${checkId}`,runId:id,controllerAccountId:source.frozenRoster[0].accountId,expeditionId:source.dungeonId,tier:source.tier,contentVersion:ONLINE_COOP_BALANCE_VERSION,balanceVersion:ONLINE_COOP_BALANCE_VERSION,snapshots:source.frozenRoster});
+  const run=domain.createLive({requestId:`live-${checkId}`,runId:id,controllerAccountId:source.frozenRoster[0].accountId,expeditionId:source.dungeonId,tier:source.tier,contentVersion:ONLINE_COOP_BALANCE_VERSION,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,snapshots:source.frozenRoster});
   const members=source.frozenRoster.map(snapshot=>({snapshot,sourceHash:onlineCoopLoadoutHash({accountId:snapshot.accountId,characterId:snapshot.characterId,classId:snapshot.classId,loadoutId:snapshot.loadoutId,revision:snapshot.revision,characterLevel:snapshot.normalized.before.level,dungeonUnlocked:true,legalEquipment:true,stats:snapshot.normalized.snapshot,abilities:snapshot.normalized.abilities,capabilities:[]}),profileId:null}));
   const result=await this.services.rpc<{runId:string}>('start_online_live_server_v1',{p_account_id:accountId,p_check_id:checkId,p_run_id:id,p_seed_hash:digest(seed),p_private_state:{run,seed},p_client_projection:projection(run,1),p_members:members});
   return result.runId;

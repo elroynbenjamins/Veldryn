@@ -55,6 +55,8 @@ jobs:
         run: node tests/quest-refined-ui.cjs
       - name: Validate Gems storage and dungeon recovery UX
         run: node tests/storage-dungeon-refinement-ui.cjs
+      - name: Validate Frostfall 14-day preview and sealed rewards
+        run: pnpm test:frostfall-preview
       - name: Validate Companion Collection and Codex UX
         run: node tests/companion-codex-focused-ui.cjs
       - name: Validate Companion layout and upgrade resource icons

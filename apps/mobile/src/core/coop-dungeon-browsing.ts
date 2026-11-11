@@ -6,6 +6,16 @@ export type CoopTier=1|2|3|4|5;
 /** Only server-published drop rates are shown; empty means no published item drops. */
 export interface CoopDungeonItemDrop{itemId:string;name:string;chancePercent:number;minQuantity:number;maxQuantity:number;}
 
+export interface CoopDungeonBossVariant{
+ bossId:string;
+ name:string;
+ chancePercent:number;
+ gemFamilies:readonly string[];
+ rawGemPercent:number;
+ recipePercent:number;
+ catalystPercent:number;
+ gemPityClears:number;
+}
 export interface CoopDungeonProjection{
   id:string;
   name:string;
@@ -26,12 +36,14 @@ export interface CoopDungeonProjection{
   expectedMarksByTier?:Partial<Record<CoopTier,number>>;
   /** Item drop probabilities verified by the authoritative reward settlement, not inferred from room names. */
   itemDropRates?:readonly CoopDungeonItemDrop[];
+  bossVariants?:readonly CoopDungeonBossVariant[];
   /** Possible situational counters; room-specific advantage is not guaranteed. */
   companionCounterIds?:readonly DungeonCompanionCounterId[];
   /** Server-owned verified gear recommendation for automatic Live tier. */
   recommendedLiveTier?:CoopTier;
   estimatedMinutes?:{min:number;max:number};
   tierMinLevels?:Partial<Record<CoopTier,number>>;
+  tierMinPower?:Partial<Record<CoopTier,number>>;
 }
 
 export interface CoopDungeonView extends CoopDungeonProjection{
@@ -43,16 +55,18 @@ export interface CoopDungeonView extends CoopDungeonProjection{
   recommendedPower:number;
   enabledRoomTypes:CoopRoomType[];
   itemDropRates:CoopDungeonItemDrop[];
+  bossVariants:CoopDungeonBossVariant[];
   difficulties:CoopTier[];
   preBossRoomMin:number;
   preBossRoomMax:number;
   estimatedMinutes:{min:number;max:number};
   tierMinLevels:Record<CoopTier,number>;
+  tierMinPower:Record<CoopTier,number>;
 }
 
 const artById:Record<string,{card:CoopUiAssetId;hero?:CoopUiAssetId}>={
   EXP_001:{card:'forest_thumbnail',hero:'rootbound_hero'},EXP_002:{card:'forest_thumbnail'},
-  EXP_003:{card:'lava_thumbnail'},EXP_004:{card:'lava_thumbnail'},
+  EXP_003:{card:'lava_thumbnail'},EXP_004:{card:'lava_thumbnail'},EXP_005:{card:'ice_thumbnail'},
   COP_007:{card:'ice_thumbnail'},COP_008:{card:'ice_thumbnail'},COP_009:{card:'ice_thumbnail'},
   EXP_007:{card:'sunken_thumbnail'},EXP_008:{card:'sunken_thumbnail'},
 };
@@ -62,8 +76,8 @@ export function presentCoopDungeon(source:CoopDungeonProjection):CoopDungeonView
   const art=artById[source.id],enabledRoomTypes=(source.enabledRoomTypes??[]).filter(room=>supportedRooms.has(room));
   return {...source,artId:art?.card,heroArtId:art?.hero??art?.card,available:source.available??!source.lockedReason,
     description:source.description?.trim()||'Authoritative description unavailable.',recommendedLevel:source.recommendedLevel??source.syncLevel,
-    enabledRoomTypes,itemDropRates:(source.itemDropRates??[]).filter(item=>item.itemId&&item.name&&Number.isFinite(item.chancePercent)&&item.chancePercent>0&&item.chancePercent<=100&&Number.isInteger(item.minQuantity)&&item.minQuantity>0&&Number.isInteger(item.maxQuantity)&&item.maxQuantity>=item.minQuantity).map(item=>({...item})),difficulties:[...new Set(source.difficulties??[])].filter(tier=>tier>=1&&tier<=3),preBossRoomMin:source.preBossRoomMin??5,preBossRoomMax:source.preBossRoomMax??5,
-    recommendedPower:source.recommendedPower??Math.round(700+source.minLevel*520),estimatedMinutes:source.estimatedMinutes??{min:6,max:8},tierMinLevels:{1:source.tierMinLevels?.[1]??source.minLevel,2:source.tierMinLevels?.[2]??source.minLevel+5,3:source.tierMinLevels?.[3]??source.minLevel+10,4:source.tierMinLevels?.[4]??source.minLevel+15,5:source.tierMinLevels?.[5]??source.minLevel+20}};
+    enabledRoomTypes,bossVariants:(source.bossVariants??[]).filter(boss=>boss.bossId&&boss.name&&boss.chancePercent>0&&boss.chancePercent<=100&&Array.isArray(boss.gemFamilies)).map(boss=>({...boss,gemFamilies:[...boss.gemFamilies]})),itemDropRates:(source.itemDropRates??[]).filter(item=>item.itemId&&item.name&&Number.isFinite(item.chancePercent)&&item.chancePercent>0&&item.chancePercent<=100&&Number.isInteger(item.minQuantity)&&item.minQuantity>0&&Number.isInteger(item.maxQuantity)&&item.maxQuantity>=item.minQuantity).map(item=>({...item})),difficulties:[...new Set(source.difficulties??[])].filter(tier=>tier>=1&&tier<=3),preBossRoomMin:source.preBossRoomMin??5,preBossRoomMax:source.preBossRoomMax??5,
+    recommendedPower:source.recommendedPower??source.tierMinPower?.[1]??Math.round(700+source.minLevel*520),tierMinPower:{1:source.tierMinPower?.[1]??0,2:source.tierMinPower?.[2]??0,3:source.tierMinPower?.[3]??0,4:source.tierMinPower?.[4]??0,5:source.tierMinPower?.[5]??0},estimatedMinutes:source.estimatedMinutes??{min:6,max:8},tierMinLevels:{1:source.tierMinLevels?.[1]??source.minLevel,2:source.tierMinLevels?.[2]??source.minLevel+5,3:source.tierMinLevels?.[3]??source.minLevel+10,4:source.tierMinLevels?.[4]??source.minLevel+15,5:source.tierMinLevels?.[5]??source.minLevel+20}};
 }
 
 export function filterCoopDungeons(dungeons:CoopDungeonView[],filter:'all'|'available'):CoopDungeonView[]{
@@ -76,14 +90,14 @@ export function groupCoopDungeonsByRegion(dungeons:CoopDungeonView[]):Array<{reg
   return [...groups].map(([region,items])=>{const sorted=[...items].sort((a,b)=>a.minLevel-b.minLevel||a.name.localeCompare(b.name));return{region,dungeons:sorted,availableCount:sorted.filter(item=>item.available).length}});
 }
 
-export function coopTierEligibility(dungeon:CoopDungeonView,tier:CoopTier,currentLevel:number):{eligible:boolean;requiredLevel:number}{
+export function coopTierEligibility(dungeon:CoopDungeonView,tier:CoopTier,currentLevel:number,currentPower=Number.POSITIVE_INFINITY):{eligible:boolean;requiredLevel:number;requiredPower:number}{
   const requiredLevel=dungeon.tierMinLevels[tier];
-  return{eligible:dungeon.available&&dungeon.difficulties.includes(tier)&&Number.isInteger(currentLevel)&&currentLevel>=requiredLevel,requiredLevel};
+  const requiredPower=dungeon.tierMinPower[tier];return{eligible:dungeon.available&&dungeon.difficulties.includes(tier)&&Number.isInteger(currentLevel)&&currentLevel>=requiredLevel&&currentPower>=requiredPower,requiredLevel,requiredPower};
 }
 
-export function highestEligibleCoopTier(dungeon:CoopDungeonView,currentLevel:number):CoopTier|undefined{
+export function highestEligibleCoopTier(dungeon:CoopDungeonView,currentLevel:number,currentPower=Number.POSITIVE_INFINITY):CoopTier|undefined{
   if(!dungeon.available||!Number.isInteger(currentLevel))return undefined;
-  return [...dungeon.difficulties].sort((a,b)=>b-a).find(tier=>currentLevel>=dungeon.tierMinLevels[tier]);
+  return [...dungeon.difficulties].sort((a,b)=>b-a).find(tier=>currentLevel>=dungeon.tierMinLevels[tier]&&currentPower>=dungeon.tierMinPower[tier]);
 }
 
 export function validateCoopDungeonView(view:CoopDungeonView):void{
@@ -92,6 +106,8 @@ export function validateCoopDungeonView(view:CoopDungeonView):void{
   if(view.preBossRoomMin!==5||view.preBossRoomMax!==5)throw new Error('invalid_route_room_range');
   if(view.estimatedMinutes.min!==6||view.estimatedMinutes.max!==8)throw new Error('invalid_run_duration_target');
   if(view.difficulties.some(tier=>view.tierMinLevels[tier]<view.minLevel))throw new Error('invalid_tier_level_requirement');
+  if(view.difficulties.some(tier=>!Number.isFinite(view.tierMinPower[tier])||view.tierMinPower[tier]<0))throw new Error('invalid_tier_power_requirement');
   if(view.difficulties.some(tier=>tier<1||tier>3))throw new Error('invalid_difficulty');
   if(view.itemDropRates.some(item=>item.chancePercent<=0||item.chancePercent>100||item.minQuantity<1||item.maxQuantity<item.minQuantity))throw new Error('invalid_item_drop_rate');
+  if(view.bossVariants.length&& (view.bossVariants.length!==2||view.bossVariants.some(boss=>boss.chancePercent!==50)))throw new Error('invalid_dungeon_boss_chances');
 }

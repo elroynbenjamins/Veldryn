@@ -8,7 +8,9 @@ check(source.includes('const drops=expanded?gatheringDropPreview(activity,state)
 check(source.includes('return <View key={activity.id}'),'The card container is not an outer pressable');
 check(source.includes('onPress={start}'),'Existing one-tap resource selection must still work');
 check(source.includes('onPress={()=>setExpandedDropId('),'Drops must have a separate toggle handler');
-check(source.includes('accessibilityState={{expanded}}'),'Disclosure must expose its expanded state to accessibility services');
+const disclosure=fs.readFileSync('src/components/DisclosureControl.tsx','utf8');
+check(source.includes('<DisclosureControl label='),'Drops must use the shared labeled disclosure control');
+check(disclosure.includes('accessibilityState={{expanded}}'),'Shared disclosure must expose its expanded state to accessibility services');
 check(source.includes('disabled={active||!inCurrentRegion||(!unlocked&&!onNavigate)}'),'The existing gather action gating remains intact');
 check(source.includes('drop.kind===\'essence\'?gt(\'base chance\')'),'Botanical essence labels must distinguish base from effective odds');
 check(source.includes("drop.kind==='event_discovery'?gt('per event minute')"),'Event minutes must not be described as gathering action odds');

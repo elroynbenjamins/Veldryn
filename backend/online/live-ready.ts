@@ -3,8 +3,8 @@ import type {CoopReadyCommand} from '../src/shared/coop-types';
 import {chooseBoundedCoopMatch,type CoopQueueTicket} from '../src/server/coop/queue-service';
 import {freezeCoopRosterAtCommit} from '../src/server/coop/loadout-snapshots';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {publishedRegularDungeon,regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
-import {coopRequiredLevel,type CoopTier} from '../src/server/coop/config';
+import {publishedRegularDungeon,regularDungeonEntryError,regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../src/server/coop/dungeon-entry-policy';
+import type {CoopTier} from '../src/server/coop/config';
 import {deriveOnlineCoopLoadout} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 type Services=Pick<GameplayServices,'rpc'|'randomId'>;
@@ -39,8 +39,8 @@ export class OnlineLiveReady {
    const source=await this.services.rpc<ReadySources>('online_live_ready_sources_server_v1',{p_account_id:accountId,p_check_id:checkId});
    const definition=EXPEDITIONS[source.dungeonId];if(!definition)throw new GameplayError('dungeon_unavailable');
    const records=source.members.map(member=>deriveOnlineCoopLoadout(member.accountId,member.state,member.version));
-   source.members.forEach((member,index)=>{const issue=regularDungeonEntryError(definition,member.state,records[index].characterLevel);if(issue)throw new GameplayError(issue);});
-   frozen=freezeCoopRosterAtCommit({minLevel:coopRequiredLevel(definition.minLevel,source.tier),syncLevel:definition.recommendedLevel,
+   source.members.forEach((member,index)=>{const issue=regularDungeonEntryError(definition,member.state,records[index].characterLevel,records[index].combatPower,source.tier);if(issue)throw new GameplayError(issue);});
+   frozen=freezeCoopRosterAtCommit({minLevel:regularDungeonTierRequiredLevel(definition,source.tier),minCombatPower:regularDungeonTierRequiredPower(definition,source.tier),syncLevel:definition.recommendedLevel,
     selections:source.members.map(member=>({accountId:member.accountId,characterId:member.characterId,loadoutId:member.loadoutId,expectedRevision:member.loadoutRevision,queuedSnapshotHash:member.loadoutSnapshotHash})),
     repository:{getOwnedLoadout:(owner,character,loadout)=>records.find(record=>record.accountId===owner&&record.characterId===character&&record.loadoutId===loadout)},
    });

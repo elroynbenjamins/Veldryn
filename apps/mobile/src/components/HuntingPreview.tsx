@@ -7,6 +7,7 @@ import {activeCombatHitProjection,combatSustainProjection} from '../core/game';
 import {liveHuntNarration} from '../core/combat-narration';
 import {itemDef} from '../content/items';
 import {formatGameNumber} from '../core/number-format';
+import {displayStat,displayStatPrecise} from '../core/stat-display';
 import {useGameTheme} from '../theme/ThemeContext';
 import {battleText} from '../i18n/battle';
 import {progressionT} from '../i18n/progression';
@@ -36,9 +37,9 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
   return()=>animation.stop();
  },[active,fight?.searching,fight?.lastHit?.atMs,fight?.lastHit?.actor,state.settings.reduceMotion,playerImpact,enemyImpact]);
  const number=(value:number)=>formatGameNumber(Math.round(value),state.settings.numberMode,state.settings.language);
- const hpText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
- // Small real damage ticks must never render as a misleading zero.
- const damageText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
+ const hpText=(value:number)=>number(displayStat(value));
+ // Show real fractional damage ticks precisely, on the same tenfold UI scale.
+ const damageText=(value:number)=>displayStatPrecise(value);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
  const narration=fight&&!fight.searching&&state.character?liveHuntNarration({classId:state.character.classId,monster,nowMs:clock,startedAtMs:state.activity?.startedAtMs??clock,lastHit:fight.lastHit,stoppedReason:fight.stoppedReason,playerHp:fight.playerHp,playerMaxHp:fight.playerMaxHp,enemyHp:fight.enemyHp,enemyMaxHp:fight.enemyMaxHp,damageText}):undefined;

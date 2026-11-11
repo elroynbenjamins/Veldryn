@@ -14,6 +14,7 @@ import {mealBonusDef} from '../core/meal-buffs';
 import {displayStat} from '../core/stat-display';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
+import {DisclosureMark} from './DisclosureControl';
 import {ItemArtwork} from './ItemArtwork';
 import {IngredientList} from './IngredientList';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -165,7 +166,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
       </View>
     </Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+' · '+gt('Show recipe details')} accessibilityState={{expanded:isExpanded}} onPress={()=>setDetailId(current=>current===detailKey(recipe)?null:detailKey(recipe))} style={[s.potionRowInfo,{borderTopColor:C.line,backgroundColor:isExpanded?C.selection:C.panel2}]}>
-      <Text style={[s.caption,{color:C.info}]}>ⓘ {gt('Details')} {isExpanded?'▴':'▾'}</Text>
+      <Text style={[s.caption,{color:C.info,fontWeight:'800'}]}>{gt('Details')}</Text><DisclosureMark expanded={isExpanded}/>
     </Pressable>
     {isExpanded?renderInlineDetails(recipe):null}
   </View>;
@@ -204,7 +205,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
       {meal?<Text style={[s.buff,{color:C.good}]} numberOfLines={2}>{meal.label} · {meal.durationHours}h</Text>:null}
       <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):available?'▶ '+available+' '+gt('batches'):skillId==='alchemy'?missingReason(recipe):recipe.level>skillLevel?gt('Locked'):gt('Needs materials')}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel={gt('Show recipe details')} accessibilityState={skillId==='alchemy'?{expanded:detailId===recipe.id}:undefined} onPress={()=>setDetailId(x=>x===recipe.id?null:recipe.id)} style={[s.info,{borderTopColor:C.line}]}><Text style={[s.caption,{color:C.muted}]}>ⓘ {gt('Details')} {skillId==='alchemy'?(detailId===recipe.id?'▴':'▾'):''}</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={gt('Show recipe details')} accessibilityState={skillId==='alchemy'?{expanded:detailId===recipe.id}:undefined} onPress={()=>setDetailId(x=>x===recipe.id?null:recipe.id)} style={[s.info,{borderTopColor:C.line}]}><Text style={[s.caption,{color:C.muted,fontWeight:'800'}]}>{gt('Details')}</Text><DisclosureMark expanded={detailId===recipe.id}/></Pressable>
      {skillId==='alchemy'&&detailId===recipe.id?renderInlineDetails(recipe):null}
     </View>;
    })}
@@ -233,7 +234,7 @@ const s=StyleSheet.create({
  categories:{flexDirection:'row',gap:6},category:{flex:1,minWidth:0,minHeight:44,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center',paddingHorizontal:4},categoryText:{fontSize:11,fontWeight:'800'},
  sourceSelector:{gap:5},sourceChoices:{flexDirection:'row',flexWrap:'wrap',gap:5},sourceChip:{borderRadius:7,borderWidth:1,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  potionList:{gap:14},potionTierGroup:{gap:7},potionTierHeading:{minHeight:28,flexDirection:'row',alignItems:'center',gap:8},potionTierTitle:{fontSize:12,fontWeight:'900',letterSpacing:.6},potionTierDivider:{height:1,flex:1},
- potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowInfo:{minHeight:44,borderTopWidth:1,alignItems:'center',justifyContent:'center'},inlineDetails:{gap:9,padding:11,borderTopWidth:1},
- grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},alchemyTileTap:{minHeight:108},info:{minHeight:38,borderTopWidth:1,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},detailModal:{maxHeight:'86%'},detailScroll:{flexGrow:0,flexShrink:1},detailContent:{gap:10,paddingBottom:8},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
+ potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowInfo:{minHeight:44,borderTopWidth:1,flexDirection:'row',gap:8,alignItems:'center',justifyContent:'center'}, inlineDetails:{gap:9,padding:11,borderTopWidth:1},
+ grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},alchemyTileTap:{minHeight:108},info:{minHeight:44,borderTopWidth:1,flexDirection:'row',gap:8,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},detailModal:{maxHeight:'86%'},detailScroll:{flexGrow:0,flexShrink:1},detailContent:{gap:10,paddingBottom:8},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
  secondary:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},active:{borderWidth:1,borderRadius:11,padding:12,gap:5}
 });

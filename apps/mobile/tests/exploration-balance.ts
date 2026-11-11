@@ -1,6 +1,7 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,refreshQuests,startCombat,startExploration} from '../src/core/game';
 // previewActivityReward and startExploration are used in the partial-progress assertion below.
 import {EXPLORATION_ROUTES} from '../src/content/exploration';
+import {queuedActivityReadiness} from '../src/core/activity-queue';
 import {MONSTERS} from '../src/content/monsters';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -28,7 +29,35 @@ const progressionLevels=EXPLORATION_ROUTES.map(row=>row.requiredExplorationLevel
 ok(progressionLevels.every((value,index)=>index===0||value>=progressionLevels[index-1]),'Exploration route requirements must rise with world progression');
 ok(EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_IRONWOOD')?.unlockZoneId==='OLD_MINES','Ironwood scouting should discover the first Exploration-gated region');
 
-let storyScout:GameState={...base,currentRegionId:'IRONWOOD',character:{...base.character!,level:7},skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:2,xp:120}:row),quests:base.quests.map(row=>row.questId==='QST_001'||row.questId==='QST_002'?{...row,status:'claimed' as const}:row.questId==='QST_003'?{...row,status:'active' as const}:row)};
+const requiredLevels:Record<string,number>={
+ SCOUT_GREENFIELDS:1,SCOUT_SILVERBROOK:1,SCOUT_IRONWOOD:3,SCOUT_OLD_MINES:5,
+ SCOUT_KINGS_ROAD:7,SCOUT_SUNSCAR:12,SCOUT_FROSTMARCH:18,SCOUT_ASHLANDS:28,
+};
+for(const route of EXPLORATION_ROUTES){
+ const requirement=requiredLevels[route.id];
+ ok(requirement===route.requiredExplorationLevel,route.id+' must retain its distinct Exploration gate');
+ if(requirement<=1)continue;
+ const below={...base,currentRegionId:route.zoneId,character:{...base.character!,level:route.requiredLevel},
+   // Test the Exploration gate in a legitimately unlocked region rather than
+   // allowing travel/story restrictions to obscure the failure being tested.
+   exploredRouteIds:EXPLORATION_ROUTES.map(scout=>scout.id),defeatedBossIds:['FALLEN_KNIGHT'],
+   skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:requirement-1,xp:totalXpAtLevel(requirement-1)}:row)};
+ let blocked=false;
+ try{startExploration(below,route.id,1)}catch(error){blocked=String(error).includes('Exploration level '+requirement);}
+ ok(blocked,route.id+' must reject manual start before required Exploration level');
+ const queue=queuedActivityReadiness(below,{kind:'exploration',targetId:route.id});
+ ok(!queue.ready,route.id+' queue cannot bypass the Exploration gate');
+ if(route.id==='SCOUT_ASHLANDS'){
+  // Ashlands is unreleased and must never become playable through a QA fixture.
+  continue;
+ }
+ ok(!!queue.blocker?.includes(String(requirement)),route.id+' queue must explain the Exploration gate');
+ const ready={...below,skills:below.skills.map(row=>row.skillId==='exploration'?{...row,level:requirement,xp:totalXpAtLevel(requirement)}:row)};
+ ok(startExploration(ready,route.id,1).activity?.targetId===route.id,route.id+' should start at the required Exploration level');
+}
+
+
+let storyScout:GameState={...base,currentRegionId:'IRONWOOD',character:{...base.character!,level:7},skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:3,xp:totalXpAtLevel(3)}:row),quests:base.quests.map(row=>row.questId==='QST_001'||row.questId==='QST_002'?{...row,status:'claimed' as const}:row.questId==='QST_003'?{...row,status:'active' as const}:row)};
 storyScout=startExploration(storyScout,'SCOUT_IRONWOOD',1);
 const storyExplored=claimActivity(storyScout,97_001).state;
 ok(storyExplored.unlockedMonsterIds.includes('IRONWOOD_WOLF'),'Ironwood scouting should reveal the wolf encounter');

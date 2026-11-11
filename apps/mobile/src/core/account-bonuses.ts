@@ -4,6 +4,7 @@ import {collectionBonusBreakdown} from './collectibles';
 import {COLLECTIBLE_TARGET_LABELS} from '../content/collectibles';
 import {BUYABLE_PERMANENT_BOOSTS} from '../content/permanent-boosts';
 import {selectedFaithBlessing} from './faith';
+import {faithBlessingEffectLabel} from '../content/faith';
 import {DAILY_SUPPLY_BONUS,dailySupplyBoostLabel,normalizeActiveDailySupplyBoost} from './daily-supplies';
 import {equipmentCraftSlotBreakdown} from './equipment-crafting-queue';
 import {accountEntitlementBenefits} from './account-entitlements';
@@ -72,7 +73,7 @@ export function accountBonusOverview(state:GameState):AccountBonusOverview{
  if(blessing)sources.push({
   id:'faith:'+blessing.id,
   label:'Faith · '+blessing.name,
-  detail:'+'+(blessing.bonus*100).toFixed(1)+'% '+blessing.family,
+  detail:faithBlessingEffectLabel(blessing),
   scope:'character',
  });
  for(const id of new Set(state.character?.ownedBoostIds??[])){

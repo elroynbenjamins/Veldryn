@@ -50,7 +50,7 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
     if(!blessings.length)return null;
     return <View key={group.id} style={s.blessingGroup}>
      <View style={s.blessingGroupHeader}>
-      <Text style={s.blessingGroupTitle}>{gt(group.id==='combat'?'Combat':group.id==='gathering'?'Gathering':group.id==='production'?'Production':'Experience')}</Text>
+      <Text style={s.blessingGroupTitle}>{gt(group.id==='combat'?'Combat':group.id==='gathering'?'Gathering':group.id==='production'?'Production':group.id==='events'?'Events':'Experience')}</Text>
       <Text style={s.blessingGroupMeta}>{FAITH_BLESSINGS.filter(row=>group.families.includes(row.family)&&row.level<=level).length} {gt("unlocked")}</Text>
      </View>
      {blessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingId===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>

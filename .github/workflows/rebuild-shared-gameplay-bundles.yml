@@ -11,6 +11,8 @@ on:
       - 'apps/mobile/src/content/exploration.ts'
       - 'apps/mobile/src/content/faith.ts'
       - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/core/live-events.ts'
+      - 'apps/mobile/src/core/permanent-boosts.ts'
       - 'apps/mobile/tests/faith.ts'
       - 'apps/mobile/tests/exploration-balance.ts'
       - 'apps/mobile/src/core/gem-progression-v1.ts'

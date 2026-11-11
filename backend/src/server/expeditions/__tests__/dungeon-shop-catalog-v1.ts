@@ -11,14 +11,14 @@ import {
 } from '../dungeon-shop-catalog-v1';
 
 validateDungeonShopCatalogV1();
-assert.equal(DUNGEON_SHOP_CATALOG_VERSION,'dungeon-marks-shop-v1-2026-11-11');
+assert.equal(DUNGEON_SHOP_CATALOG_VERSION,'dungeon-marks-shop-v2-2026-11-11');
 assert.equal(dungeonShopPurchasesEnabledV1(),false,'Catalog must not activate a public purchase route');
-assert.equal(DUNGEON_SHOP_CATALOG_V1.length,13);
-assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.permanent).length,8);
+assert.equal(DUNGEON_SHOP_CATALOG_V1.length,17);
+assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.permanent).length,12);
 assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.perUtcWeek!==undefined).length,5);
-assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.map(row=>row.id)).size,13);
-assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.grant.kind==='profile_collectible').map(row=>row.grant.kind==='profile_collectible'?row.grant.rewardId:'')).size,8);
-for(const region of ['Sunscar','Frostmarch']){
+assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.map(row=>row.id)).size,17);
+assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.grant.kind==='profile_collectible').map(row=>row.grant.kind==='profile_collectible'?row.grant.rewardId:'')).size,12);
+for(const region of ['Asterfall','Sunscar','Frostmarch']){
   const set=DUNGEON_SHOP_CATALOG_V1.filter(row=>row.firstClearRegion===region);
   assert.deepEqual(set.map(row=>row.marks),[500,950,1500,3000]);
   assert.equal(set.reduce((sum,row)=>sum+row.marks,0),5950);
@@ -41,6 +41,9 @@ const initial:DungeonShopAccountViewV1={
   marks:4000,clearedRegions:['Sunscar'],ownedRewardIds:[],purchasesThisUtcWeek:{},
 };
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',initial).status,'eligible');
+assert.equal(dungeonShopQuoteV1('dshop_asterfall_icon',initial).status,'region_locked');
+assert.equal(dungeonShopQuoteV1('dshop_asterfall_pet',{...initial,clearedRegions:['Asterfall'],marks:3000}).status,'eligible');
+assert.equal(dungeonShopOfferV1('dshop_asterfall_pet')?.grant.kind,'profile_collectible');
 assert.equal(dungeonShopQuoteV1('dshop_frostmarch_pet',initial).status,'region_locked');
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',{...initial,ownedRewardIds:['DUNGEON_PET_SUNSCAR_001']}).status,'already_owned');
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',{...initial,marks:1000}).status,'insufficient_marks');

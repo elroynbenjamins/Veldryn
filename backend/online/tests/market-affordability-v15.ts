@@ -80,5 +80,22 @@ assert.deepEqual(reviewed.reviewFlags,[
  'scarce_rarity_manual_review','high_quality_manual_review',
  'enhancement_cost_manual_review','socket_gem_price_unverified',
 ]);
+const priceSamples=tiers.flatMap(tier=>{
+ const selected=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier
+  &&row.classId==='IRONWARDEN'&&row.v33Path==='Foundation');
+ return selected.filter(row=>['Chest','Ring'].some(slot=>row.name.includes(slot))).slice(0,2).map(row=>{
+  const basic=previewMarketExactGearReviewV15({itemId:row.output.itemId,rarity:'common',
+   quality:50,enhancementRank:0,hasStatGem:false,hasEffectGem:false})?.quote;
+  const rare=previewMarketExactGearReviewV15({itemId:row.output.itemId,rarity:'rare',
+   quality:50,enhancementRank:0,hasStatGem:false,hasEffectGem:false})?.quote;
+  const mythic=previewMarketExactGearReviewV15({itemId:row.output.itemId,rarity:'mythic',
+   quality:90,enhancementRank:0,hasStatGem:false,hasEffectGem:false})?.quote;
+  return {tier,slotName:row.name,itemId:row.output.itemId,
+   commonQ50:[basic?.unitMin,basic?.unitMax],
+   rareQ50:[rare?.unitMin,rare?.unitMax],
+   mythicQ90:[mythic?.unitMin,mythic?.unitMax]};
+ });
+});
+console.log('V15_EQUIPMENT_PRICE_EXAMPLES='+JSON.stringify(priceSamples));
 console.log('V15_SOURCE_REFERENCE_MATRIX='+JSON.stringify(matrix));
 console.log('PASS: hidden V15 affordability proxies, sunk enhancement Gold, rarity odds and human-review security');

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
@@ -12,6 +13,14 @@ async function main(){
  const account='11111111-1111-4111-8111-111111111111',ticket='22222222-2222-4222-8222-222222222222';
  const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(45);state.character!.level=40;state.defeatedBossIds.push('FALLEN_KNIGHT');
  state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
+  // Keep online test rosters above the new Sunscar tier threshold using the
+  // same Combat Power formula as the real server.
+  for(let pass=0;pass<30&&combatPowerRating(state).total<7700;pass++){
+   state.character!.attack=Math.ceil(state.character!.attack*1.4+1);
+   state.character!.defense=Math.ceil(state.character!.defense*1.4+1);
+   state.character!.hp=Math.ceil(state.character!.hp*1.4+1);
+  }
+  assert.ok(combatPowerRating(state).total>=7700,'Sunscar fixture must satisfy published Combat Power requirement');
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0;
  const handler=coopHandler({authenticate:async token=>token==='valid'?account:null,randomId:()=>ticket,randomRoll:()=>0,

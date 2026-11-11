@@ -434,6 +434,7 @@ var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_
 
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
+var DUNGEON_MARKS_SHOP_RELEASED = false;
 
 // ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
@@ -44013,13 +44014,13 @@ function gemShieldMultiplierV1(source, now) {
 }
 function gemOnAbilityUsedV1(now, actor, ability3) {
   if (actor.definition.team !== "players") return;
-  const category = abilityCategory(ability3);
+  const category2 = abilityCategory(ability3);
   const bulwark = gem(actor, "effect_bulwark");
-  if (bulwark && category === "support") {
+  if (bulwark && category2 === "support") {
     setOne(actor, actor.definition.id, "gem:damage_reduction", bulwark.totalValue, now + (bulwark.resonance >= 2 ? 5e3 : 4e3), now);
   }
   const benediction = gem(actor, "effect_benediction");
-  if (benediction && category === "support") {
+  if (benediction && category2 === "support") {
     const max = benediction.resonance >= 2 ? 2 : 1;
     const current = active(actor, "gem:benediction_charge", now, actor.definition.id);
     if (current.length < max) actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:benediction_charge", value: 1, expiresAt: now + 1e4, createdAt: now, kind: "gem" });
@@ -44036,15 +44037,15 @@ function gemOnAbilityUsedV1(now, actor, ability3) {
     for (let i = 0; i < refreshed.length; i++) refreshed[i].expiresAt = now + 6e3 + (flow.resonance >= 3 ? i * 2e3 : 0);
   }
   const rhythm = gem(actor, "effect_battle_rhythm");
-  if (rhythm && category !== "neutral") {
+  if (rhythm && category2 !== "neutral") {
     const last = actor.modifiers.find((row) => row.tag.startsWith("gem:battle_last:"));
     const previous = last?.tag.split(":").pop();
     actor.modifiers = actor.modifiers.filter((row) => !row.tag.startsWith("gem:battle_last:"));
-    actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:battle_last:" + category, value: 1, expiresAt: FOREVER, createdAt: now, kind: "gem" });
+    actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:battle_last:" + category2, value: 1, expiresAt: FOREVER, createdAt: now, kind: "gem" });
     const window = rhythm.resonance >= 2 ? 12e3 : 8e3;
-    if (category === "offense") setOne(actor, actor.definition.id, "gem:battle_support_ready", rhythm.totalValue, now + window, now);
+    if (category2 === "offense") setOne(actor, actor.definition.id, "gem:battle_support_ready", rhythm.totalValue, now + window, now);
     else setOne(actor, actor.definition.id, "gem:battle_offense_ready", rhythm.totalValue, now + window, now);
-    if (previous && previous !== category && rhythm.resonance >= 3) setOne(actor, actor.definition.id, "gem:haste_bonus", 0.02, now + 4e3, now);
+    if (previous && previous !== category2 && rhythm.resonance >= 3) setOne(actor, actor.definition.id, "gem:haste_bonus", 0.02, now + 4e3, now);
   }
 }
 function gemOnDirectHitV1(now, source, target2, abilityId, crit) {
@@ -45115,6 +45116,34 @@ var GUILD_PET_COLLECTIBLES = [
   }
 ];
 
+// ../apps/mobile/src/content/dungeon-shop-collectibles-v1.ts
+var reward = (id, kind, name, target2, region, activeBps) => ({
+  id,
+  kind,
+  name,
+  bonusFamilyId: id,
+  target: target2,
+  ownedBps: 50,
+  activeBps,
+  rarity: "Epic",
+  collectionGroup: "profile",
+  region,
+  source: "Dungeon Marks Shop \xB7 " + region,
+  nativeSize: kind === "pet" ? 64 : void 0,
+  description: "A permanent " + region + " Dungeon Marks collectible."
+});
+var DUNGEON_SHOP_COLLECTIBLES_V1 = [
+  reward("dungeon:asterfall:briarbound-frame", "border", "Briarbound Frame", "gatheringYield", "Asterfall", 200),
+  reward("dungeon:asterfall:rootbound-sanctuary", "background", "Rootbound Sanctuary", "hp", "Asterfall", 200),
+  reward("DUNGEON_PET_ASTERFALL_001", "pet", "Oathroot Seedling", "healingEffectiveness", "Asterfall", 300),
+  reward("dungeon:sunscar:amberglass-loop", "border", "Amberglass Loop", "craftingSpeed", "Sunscar", 200),
+  reward("dungeon:sunscar:buried-observatory", "background", "Buried Observatory", "skillXp", "Sunscar", 200),
+  reward("DUNGEON_PET_SUNSCAR_001", "pet", "Vaultscarab", "dropChance", "Sunscar", 300),
+  reward("dungeon:frostmarch:frostbound-chime", "border", "Frostbound Chime", "fishingSpeed", "Frostmarch", 200),
+  reward("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
+  reward("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
+];
+
 // ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
 var PROFILE_COLLECTIBLES = [
@@ -45134,6 +45163,7 @@ var PROFILE_COLLECTIBLES = [
 var COLLECTIBLES = [
   ...CORE_PET_COLLECTIBLES,
   ...GUILD_PET_COLLECTIBLES,
+  ...DUNGEON_MARKS_SHOP_RELEASED ? DUNGEON_SHOP_COLLECTIBLES_V1 : [],
   ...EVENTS_RELEASED ? EVENT_PET_COLLECTIBLES : [],
   // The authored event backgrounds/borders below are unreleased Harvestwake
   // prototypes. Retain their definitions for future authoring, not the journal.
@@ -46204,7 +46234,7 @@ var skillIds = new Set(CURRENT_SKILL_IDS);
 
 // ../apps/mobile/src/core/adventurers-journal-v42.ts
 var TIERS = ["novice", "adventurer", "veteran", "master", "grandmaster"];
-var ladder = (category, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
+var ladder = (category2, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category: category2, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
 var JOURNAL_TITLES_V42 = [
   { id: "oathbreaker", name: "Oathbreaker", description: "Complete Beyond the Green and break the Fallen Knight\u2019s oath.", sourceAchievementId: "quest:QST_015" },
   { id: "the_unbroken", name: "The Unbroken", description: "A title earned through exceptional lifetime combat experience.", sourceAchievementId: "combatant_grandmaster" },
@@ -48728,6 +48758,141 @@ function coopEntryHandler(services) {
   };
 }
 
+// src/server/expeditions/dungeon-shop-catalog-v1.ts
+var DUNGEON_SHOP_LIVE_V1 = false;
+var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v2-2026-11-11";
+var DUNGEON_SHOP_CATALOG_V1 = Object.freeze([
+  { id: "dshop_tempering_satchel", name: "Delver Tempering Satchel", category: "supply", marks: 120, perUtcWeek: 2, grant: { kind: "material", itemId: "TEMPERING_DUST", quantity: 10, accountBound: true } },
+  { id: "dshop_gem_dust_cache", name: "Gem Dust Cache", category: "supply", marks: 240, perUtcWeek: 1, grant: { kind: "material", itemId: "GEM_DUST", quantity: 8, accountBound: true } },
+  { id: "dshop_tempering_core_cache", name: "Tempering Core Cache", category: "supply", marks: 450, perUtcWeek: 1, grant: { kind: "material", itemId: "TEMPERING_CORE", quantity: 2, accountBound: true } },
+  { id: "dshop_companion_essence", name: "Companion Essence Cache", category: "companion", marks: 400, perUtcWeek: 1, grant: { kind: "account_resource", field: "companionEssence", quantity: 100 } },
+  { id: "dshop_bondstone", name: "Bondstone", category: "companion", marks: 750, perUtcWeek: 1, grant: { kind: "account_resource", field: "bondstones", quantity: 1 } },
+  { id: "dshop_asterfall_icon", name: "Warden's Lantern", category: "icon", marks: 500, firstClearRegion: "Asterfall", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileIconIds", rewardId: "dungeon:asterfall:wardens-lantern", rarity: "Rare" } },
+  { id: "dshop_asterfall_border", name: "Briarbound Frame", category: "border", marks: 950, firstClearRegion: "Asterfall", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileBorderIds", rewardId: "dungeon:asterfall:briarbound-frame", rarity: "Epic", bonus: { target: "gatheringYield", ownedBps: 50, activeBps: 200 } } },
+  { id: "dshop_asterfall_background", name: "Rootbound Sanctuary", category: "background", marks: 1500, firstClearRegion: "Asterfall", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileBackgroundIds", rewardId: "dungeon:asterfall:rootbound-sanctuary", rarity: "Epic", bonus: { target: "hp", ownedBps: 50, activeBps: 200 } } },
+  { id: "dshop_asterfall_pet", name: "Oathroot Seedling", category: "pet", marks: 3e3, firstClearRegion: "Asterfall", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedCosmeticPetIds", rewardId: "DUNGEON_PET_ASTERFALL_001", rarity: "Epic", bonus: { target: "healingEffectiveness", ownedBps: 50, activeBps: 300 } } },
+  { id: "dshop_sunscar_icon", name: "Solar Vault Key", category: "icon", marks: 500, firstClearRegion: "Sunscar", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileIconIds", rewardId: "dungeon:sunscar:solar-vault-key", rarity: "Rare" } },
+  { id: "dshop_sunscar_border", name: "Amberglass Loop", category: "border", marks: 950, firstClearRegion: "Sunscar", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileBorderIds", rewardId: "dungeon:sunscar:amberglass-loop", rarity: "Epic", bonus: { target: "craftingSpeed", ownedBps: 50, activeBps: 200 } } },
+  { id: "dshop_sunscar_background", name: "Buried Observatory", category: "background", marks: 1500, firstClearRegion: "Sunscar", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileBackgroundIds", rewardId: "dungeon:sunscar:buried-observatory", rarity: "Epic", bonus: { target: "skillXp", ownedBps: 50, activeBps: 200 } } },
+  { id: "dshop_sunscar_pet", name: "Vaultscarab", category: "pet", marks: 3e3, firstClearRegion: "Sunscar", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedCosmeticPetIds", rewardId: "DUNGEON_PET_SUNSCAR_001", rarity: "Epic", bonus: { target: "dropChance", ownedBps: 50, activeBps: 300 } } },
+  { id: "dshop_frostmarch_icon", name: "Resonant Bell", category: "icon", marks: 500, firstClearRegion: "Frostmarch", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileIconIds", rewardId: "dungeon:frostmarch:resonant-bell", rarity: "Rare" } },
+  { id: "dshop_frostmarch_border", name: "Frostbound Chime", category: "border", marks: 950, firstClearRegion: "Frostmarch", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileBorderIds", rewardId: "dungeon:frostmarch:frostbound-chime", rarity: "Epic", bonus: { target: "fishingSpeed", ownedBps: 50, activeBps: 200 } } },
+  { id: "dshop_frostmarch_background", name: "Shiverlake Reflections", category: "background", marks: 1500, firstClearRegion: "Frostmarch", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileBackgroundIds", rewardId: "dungeon:frostmarch:shiverlake-reflections", rarity: "Epic", bonus: { target: "defense", ownedBps: 50, activeBps: 200 } } },
+  { id: "dshop_frostmarch_pet", name: "Choirbell Sprite", category: "pet", marks: 3e3, firstClearRegion: "Frostmarch", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedCosmeticPetIds", rewardId: "DUNGEON_PET_FROSTMARCH_001", rarity: "Epic", bonus: { target: "actionSpeed", ownedBps: 50, activeBps: 300 } } }
+]);
+function dungeonShopOfferV1(itemId) {
+  return DUNGEON_SHOP_CATALOG_V1.find((offer) => offer.id === itemId);
+}
+function dungeonShopUtcWeekKey(nowMs) {
+  if (!Number.isSafeInteger(nowMs) || nowMs < 0) throw new Error("invalid_dungeon_shop_clock");
+  const date = new Date(nowMs);
+  date.setUTCHours(0, 0, 0, 0);
+  const day = date.getUTCDay();
+  date.setUTCDate(date.getUTCDate() - (day === 0 ? 6 : day - 1));
+  return date.toISOString().slice(0, 10);
+}
+function dungeonShopQuoteV1(itemId, account) {
+  const offer = dungeonShopOfferV1(itemId);
+  if (!offer) return { status: "unknown_offer", marks: account.marks, price: 0, remaining: null };
+  const purchased = account.purchasesThisUtcWeek[itemId] ?? 0;
+  const remaining = offer.perUtcWeek === void 0 ? null : Math.max(0, offer.perUtcWeek - purchased);
+  const ownedId = offer.grant.kind === "profile_collectible" ? offer.grant.rewardId : null;
+  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < offer.marks ? "insufficient_marks" : "eligible";
+  return { status, marks: account.marks, price: offer.marks, remaining };
+}
+function dungeonShopPurchasesEnabledV1() {
+  return DUNGEON_SHOP_LIVE_V1;
+}
+function validateDungeonShopCatalogV1() {
+  const ids2 = /* @__PURE__ */ new Set(), rewardIds = /* @__PURE__ */ new Set();
+  for (const offer of DUNGEON_SHOP_CATALOG_V1) {
+    if (ids2.has(offer.id) || !Number.isSafeInteger(offer.marks) || offer.marks <= 0) throw new Error("invalid_dungeon_shop_catalogue");
+    ids2.add(offer.id);
+    if (offer.permanent === true && offer.grant.kind !== "profile_collectible") throw new Error("permanent_offer_without_entitlement");
+    if (offer.permanent === true && offer.perUtcWeek !== void 0) throw new Error("permanent_offer_weekly_limit");
+    if (offer.perUtcWeek !== void 0 && (!Number.isSafeInteger(offer.perUtcWeek) || offer.perUtcWeek < 1)) throw new Error("invalid_dungeon_shop_limit");
+    if (offer.grant.kind === "profile_collectible") {
+      if (!offer.permanent || rewardIds.has(offer.grant.rewardId)) throw new Error("duplicate_or_unbounded_dungeon_collectible");
+      rewardIds.add(offer.grant.rewardId);
+      if (offer.category === "icon" && offer.grant.bonus) throw new Error("profile_icon_must_be_cosmetic");
+      if (offer.grant.bonus?.ownedBps !== void 0 && offer.grant.bonus.ownedBps !== 50) throw new Error("invalid_owned_bonus");
+    }
+  }
+}
+validateDungeonShopCatalogV1();
+
+// online/dungeon-shop.ts
+var category = (offer) => offer.grant.kind === "material" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") : offer.grant.kind === "account_resource" ? offer.grant.quantity + " " + (offer.grant.field === "bondstones" ? "Bondstones" : "Companion Essence") : offer.grant.bonus ? "+ " + (offer.grant.bonus.activeBps / 100).toFixed(2) + "% " + offer.grant.bonus.target + " equipped; +" + (offer.grant.bonus.ownedBps / 100).toFixed(2) + "% owned" : "Profile icon \xB7 visual only";
+function sanitizedSnapshot(raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  const s2 = raw2;
+  if (!Number.isSafeInteger(s2.marks) || Number(s2.marks) < 0 || !Array.isArray(s2.clearedRegions) || !Array.isArray(s2.ownedRewardIds) || !s2.purchasesThisUtcWeek || typeof s2.purchasesThisUtcWeek !== "object") throw new GameplayError("invalid_dungeon_shop_snapshot");
+  const regions = ["Asterfall", "Sunscar", "Frostmarch"];
+  if (s2.clearedRegions.some((v) => !regions.includes(v)) || s2.ownedRewardIds.some((v) => typeof v !== "string")) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  const purchases = s2.purchasesThisUtcWeek;
+  if (Object.entries(purchases).some(([key, value]) => !/^dshop_[a-z0-9_]{1,80}$/.test(key) || !Number.isSafeInteger(value) || Number(value) < 0)) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, purchasesThisUtcWeek: purchases };
+}
+function nextUtcMonday(nowMs) {
+  const week = dungeonShopUtcWeekKey(nowMs);
+  return new Date(Date.parse(week + "T00:00:00.000Z") + 7 * 24 * 60 * 60 * 1e3).toISOString();
+}
+function makeDungeonShopController(services) {
+  return {
+    async snapshot(accountId, nowMs = Date.now()) {
+      if (!dungeonShopPurchasesEnabledV1()) return {
+        currency: "expedition_mark",
+        catalogueVersion: DUNGEON_SHOP_CATALOG_VERSION,
+        balance: 0,
+        shopEnabled: false,
+        nextUtcWeekReset: nextUtcMonday(nowMs),
+        offers: DUNGEON_SHOP_CATALOG_V1.map((offer) => ({
+          id: offer.id,
+          name: offer.name,
+          category: offer.category,
+          marks: offer.marks,
+          summary: category(offer),
+          status: "unreleased",
+          rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
+          region: offer.firstClearRegion,
+          owned: false,
+          remainingThisUtcWeek: offer.perUtcWeek ?? null,
+          lockReason: "Shop preview only \u2014 no purchases are available."
+        }))
+      };
+      const account = sanitizedSnapshot(await services.rpc("dungeon_shop_snapshot_server_v1", { p_account_id: accountId }));
+      return {
+        currency: "expedition_mark",
+        catalogueVersion: DUNGEON_SHOP_CATALOG_VERSION,
+        balance: account.marks,
+        shopEnabled: dungeonShopPurchasesEnabledV1(),
+        nextUtcWeekReset: nextUtcMonday(nowMs),
+        offers: DUNGEON_SHOP_CATALOG_V1.map((offer) => {
+          const quote = dungeonShopQuoteV1(offer.id, account);
+          return {
+            id: offer.id,
+            name: offer.name,
+            category: offer.category,
+            marks: offer.marks,
+            summary: category(offer),
+            status: quote.status,
+            rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
+            region: offer.firstClearRegion,
+            remainingThisUtcWeek: quote.remaining,
+            owned: quote.status === "already_owned",
+            lockReason: quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
+          };
+        })
+      };
+    },
+    async purchase(accountId, offerId, requestId) {
+      if (!dungeonShopPurchasesEnabledV1()) throw new GameplayError("dungeon_shop_unreleased", 403);
+      if (!/^dshop_[a-z0-9_]{1,80}$/.test(offerId) || !DUNGEON_SHOP_CATALOG_V1.some((v) => v.id === offerId) || !/^[A-Za-z0-9_-]{8,128}$/.test(requestId)) throw new GameplayError("invalid_dungeon_shop_request");
+      return services.rpc("dungeon_shop_purchase_server_v1", { p_account_id: accountId, p_item_id: offerId, p_request_id: requestId });
+    }
+  };
+}
+
 // online/qmode-runtime.ts
 import { createHash as createHash4 } from "node:crypto";
 
@@ -51150,11 +51315,11 @@ var OnlineEventExpeditionRuntime = class {
     const loaded = await this.services.rpc("load_online_event_expedition_server_v1", { p_account_id: accountId, p_run_id: runId });
     const repository = new MemoryEventRunRepository();
     repository.save(loaded.privateState.run);
-    const domain = new EventExpeditionService(repository, loaded.privateState.seed), reward = domain.claimReward({ runId, accountId, requestId, nowMs: loaded.serverNow });
+    const domain = new EventExpeditionService(repository, loaded.privateState.seed), reward2 = domain.claimReward({ runId, accountId, requestId, nowMs: loaded.serverNow });
     const run = repository.get(runId);
     if (!run) throw new GameplayError("event_run_not_found");
     const projection3 = projectOnlineEventRun(run, loaded.stateVersion + 1, loaded.privateState.liveEventId, loaded.serverNow);
-    return this.services.rpc("claim_online_event_expedition_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: requestId, p_request_hash: hash, p_marks: reward.marks, p_private_state: { run, seed: loaded.privateState.seed, liveEventId: loaded.privateState.liveEventId }, p_client_projection: projection3 });
+    return this.services.rpc("claim_online_event_expedition_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: requestId, p_request_hash: hash, p_marks: reward2.marks, p_private_state: { run, seed: loaded.privateState.seed, liveEventId: loaded.privateState.liveEventId }, p_client_projection: projection3 });
   }
 };
 
@@ -51198,6 +51363,7 @@ var headers2 = { "Content-Type": "application/json", "Cache-Control": "no-store"
 var json2 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: headers2 });
 var uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 function coopHandler(services) {
+  const dungeonShop = makeDungeonShopController(services);
   const entry2 = coopEntryHandler(services), runtime = new OnlineQModeRuntime(services), liveRuntime = new OnlineLiveRuntime(services), eventRuntime = new OnlineEventExpeditionRuntime(services), queue = new OnlineLiveQueue(services), lfg = new OnlineCoopLfg(services);
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: headers2 });
@@ -51208,6 +51374,22 @@ function coopHandler(services) {
       if (!bearer) return json2({ error: "auth_required" }, 401);
       const accountId = await services.authenticate(bearer);
       if (!accountId) return json2({ error: "invalid_session" }, 401);
+      if (path.endsWith("/coop/shop")) {
+        if (request.method === "GET") return json2(await dungeonShop.snapshot(accountId));
+        if (request.method !== "POST") return json2({ error: "method_not_allowed" }, 405);
+        const raw3 = await request.text();
+        if (raw3.length > 1024) return json2({ error: "request_too_large" }, 413);
+        let payload;
+        try {
+          payload = JSON.parse(raw3);
+        } catch {
+          throw new GameplayError("invalid_json");
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new GameplayError("invalid_dungeon_shop_request");
+        const input = payload;
+        if (Object.keys(input).some((key) => key !== "requestId" && key !== "offerId") || typeof input.requestId !== "string" || typeof input.offerId !== "string") throw new GameplayError("invalid_dungeon_shop_request");
+        return json2(await dungeonShop.purchase(accountId, input.offerId, input.requestId));
+      }
       const profilePower = path.match(new RegExp("/coop/profiles/(" + uuid + ")/power$"));
       if (profilePower) {
         if (request.method !== "GET") return json2({ error: "method_not_allowed" }, 405);
@@ -51399,7 +51581,7 @@ function coopHandler(services) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error", code = message.toLowerCase();
-      const status = /^(stale_|idempotency_|node_resolving|potion_charges_exhausted|tonic_already_prepared|tonic_preparation_closed|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code) ? 409 : /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code) ? 403 : /^(invalid_|healing_potion_not_selected|healing_potion_not_carried|tonic_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code) ? 400 : error instanceof GameplayError ? error.status : 503;
+      const status = /^(stale_|idempotency_|node_resolving|potion_charges_exhausted|tonic_already_prepared|tonic_preparation_closed|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code) ? 409 : /^(dungeon_shop_unreleased|not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code) ? 403 : /^(invalid_|healing_potion_not_selected|healing_potion_not_carried|tonic_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code) ? 400 : error instanceof GameplayError ? error.status : 503;
       if (status === 503) console.error("coop_unexpected_error", request.method, code);
       return json2({ error: status === 503 ? request.method === "GET" ? "Dungeons are temporarily unavailable. Try again." : "Could not confirm the co-op action. Retry it." : code }, status);
     }

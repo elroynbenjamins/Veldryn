@@ -43,10 +43,13 @@ export interface PublicQModeRunProjection {
  * hidden graph nodes, RNG state and calculated-but-unentitled rewards stay private. */
 export function projectQModeRun(run:QModeRun,mode:'qmode'|'live'='qmode',serverSecret?:string):PublicQModeRunProjection{
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current)throw new Error('invalid_qmode_current_node');
-  const bossNode=run.graph.nodes.find(node=>node.kind==='boss'),bossTelegraph=bossNode?cachedBossTelegraph(bossNode.contentId):undefined;
+  const bossNode=run.graph.nodes.find(node=>node.kind==='boss');
   const revealed=[run.graph.entryNodeId,...run.persistentState.visitedNodeIds,run.currentNodeId];
   const graph=coopRouteClientProjection(run.graph,revealed);
   const visible=new Set(graph.nodes.map(node=>node.nodeId));
+  // A regional boss roll remains a surprise until the final room is reachable.
+  // Otherwise this private telegraph would reveal the 50/50 result on entry.
+  const bossTelegraph=bossNode&&visible.has(bossNode.nodeId)?cachedBossTelegraph(bossNode.contentId):undefined;
   const options=run.phase==='awaiting_choice'?current.nextNodeIds.filter(id=>visible.has(id)).map(id=>graph.nodes.find(node=>node.nodeId===id)!).filter(Boolean).map(node=>({...node,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:cachedEncounterPreview(node.contentId)}:{})})):[];
   const lastRoomOutcome=publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary);
   const boonOffers=mode==='qmode'&&serverSecret?roomBoonOffers(run,serverSecret):[];

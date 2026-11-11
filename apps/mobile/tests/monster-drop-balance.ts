@@ -1,5 +1,5 @@
 import {MONSTERS} from '../src/content/monsters';
-import {GATHERING_TOOLS} from '../src/content/gathering-tools';
+import {GATHERING_TOOLS,roundDownToolBlueprintDropChance} from '../src/content/gathering-tools';
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from '../src/content/faith';
 import {itemDef} from '../src/content/items';
 
@@ -26,13 +26,16 @@ for(const source of HOLY_WATER_SOURCES){
 closeTo(dropChance('MOSS_RAT','MOSS_FIBER'),.55*.5*.95,'Ordinary material keeps the 50% adjustment followed by the 5% reduction');
 closeTo(dropChance('ANCIENT_TREANT','IRONWOOD_LOG'),.52*.5*.95,'Original Ironwood Forest source remains at reduced probability');
 closeTo(dropChance('IRONBACK_MOLE','COPPER_ORE'),.30*.5*.95,'Alternative Copper Ore source stays available');
-closeTo(dropChance('CAVE_SKITTER','BP_ASTER_IRON_PICKAXE'),.05*.75*.95,'Tool blueprints get the additional 25% relative rarity cut after ordinary 5% combat-drop balancing');
+closeTo(dropChance('CAVE_SKITTER','BP_ASTER_IRON_PICKAXE'),.035,'Tier-2 tool blueprint chance rounds 3.5625% down to 3.5%');
 for(const tool of GATHERING_TOOLS){
  if(!tool.blueprint)continue;
  const source=tool.blueprint.sourceMonsterId;
  const drop=dropChance(source,tool.blueprint.itemId);
- closeTo(drop,tool.blueprint.dropChance*.95,source+' tool blueprint must match the authored -25% drop rate and existing -5% normalization');
+ const expected=roundDownToolBlueprintDropChance(tool.blueprint.dropChance*.95);
+  closeTo(drop,expected,source+' blueprint gets 25% rarity adjustment and is floored to nearest 0.10 percentage point');
 }
+closeTo(dropChance('RUNEBOUND_MINER','BP_OATHSTONE_PICKAXE'),.014,'Tier-3 tool blueprint chance rounds 1.425% down to 1.4%');
+closeTo(dropChance('FROSTWOLF','BP_FROSTIRON_HATCHET'),.007,'Tier-4 tool blueprint chance rounds 0.7125% down to 0.7%');
 closeTo(dropChance('ANCIENT_TREANT','THORN_SAP'),.30*.5*.95,'Non-blueprint Thorn Sap keeps its original independent adjustment');
 
 for(const [enemy,forbidden] of [

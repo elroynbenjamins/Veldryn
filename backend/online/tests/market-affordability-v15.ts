@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
+import {itemDef} from '../../../apps/mobile/src/content/items';
 import {upgradeGoldCost} from '../../../apps/mobile/src/core/equipment-enhancement';
 import {
  MARKET_AFFORDABILITY_RELEASED_V15,
@@ -111,7 +112,9 @@ assert.deepEqual(reviewed.reviewFlags,[
 const priceSamples=tiers.flatMap(tier=>{
  const selected=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier
   &&row.classId==='IRONWARDEN'&&row.v33Path==='Foundation');
- return selected.filter(row=>['Chest','Ring'].some(slot=>row.name.includes(slot))).slice(0,2).map(row=>{
+ return selected.filter(row=>['chest','ring'].includes(itemDef(row.output.itemId).slot??''))
+  .sort((a,b)=>(itemDef(a.output.itemId).slot==='chest'?-1:1)-(itemDef(b.output.itemId).slot==='chest'?-1:1))
+  .slice(0,2).map(row=>{
   const basic=previewMarketExactGearReviewV15({itemId:row.output.itemId,rarity:'common',
    quality:50,enhancementRank:0,hasStatGem:false,hasEffectGem:false})?.quote;
   const rare=previewMarketExactGearReviewV15({itemId:row.output.itemId,rarity:'rare',

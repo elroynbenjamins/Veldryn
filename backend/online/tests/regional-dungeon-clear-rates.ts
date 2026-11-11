@@ -20,7 +20,7 @@ function calibratedRoster(id:'EXP_001'|'EXP_003',tier:1|2|3){
  const def=EXPEDITIONS[id],required=regularDungeonTierRequiredPower(def,tier);
  return classes.map((classId,index)=>{
   const level=regularDungeonTierRequiredLevel(def,tier);
-  const state=createCharacter(newGame(0),classId,'Dungeon Balance '+index);
+  const state=createCharacter(newGame(0),classId,'Dungeon Balance');
   const char=state.character!;
   char.id=id+'-'+tier+'-'+index;
   char.xp=characterTotalXpAtLevel(level);

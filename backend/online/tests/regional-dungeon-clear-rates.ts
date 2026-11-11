@@ -9,7 +9,10 @@ import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../../src/server/coop/dungeon-entry-policy';
-import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../../src/server/coop/regional-power-balance';
+import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../../src/server/coop/regional-power-balance';
+import {resolveCoopNode} from '../../src/server/expeditions/node-resolution';
+import {preparedCoopCombatants} from '../../src/server/coop/potion-modifiers';
+import {roomBoonOffers,applyRoomBoon} from '../../src/server/coop/room-boon-choices';
 
 /** Deterministic build-calibration probe. This models equal-CP parties using
  * the game's real character ratings, gear->co-op conversion, role readiness,
@@ -52,7 +55,7 @@ function calibratedRoster(id:'EXP_001'|'EXP_003',tier:1|2|3){
   return {snapshot,cp,ready:snapshot.readiness.normalizedScore,multiplier};
  });
 }
-function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<typeof calibratedRoster>){
+function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<typeof calibratedRoster>,factor=1,manual=false){
  const repository=new MemoryQModeRunRepository();
  const service=new QModeService(repository,'regional-balance-probe-v1');
  const runId=id+'-tier-'+tier+'-seed-'+seed;
@@ -72,7 +75,27 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
   const options=current.nextNodeIds.map(nodeId=>run.graph.nodes.find(node=>node.nodeId===nodeId)!);
   if(!options.length)break;
   options.sort((a,b)=>priority.indexOf(a.kind)-priority.indexOf(b.kind));
-  run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:options[0].nodeId});
+  if(!manual){
+   run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:options[0].nodeId});
+   continue;
+  }
+  const offers=roomBoonOffers(run,'regional-balance-probe-v1');
+  if(offers.length)applyRoomBoon(run,offers[0].id);
+  const selected=options[0],scale=regionalPowerMultipliers(id,tier,true)!;
+  const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
+  const result=resolveCoopNode({
+   runId,serverSecret:'regional-balance-probe-v1',node:selected,
+   players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,
+   state:run.persistentState,tier,
+   enemyAttackMultiplier:1.005*scale.attack*factor,
+   enemyHpMultiplier:scale.hp*factor,
+   enemyDefenseMultiplier:scale.defense*factor,
+   enemyLevel:scale.enemyLevel,enemyDamageProfile:'qmode-v1',
+  });
+  run.lastResolution={nodeId:selected.nodeId,result};
+  run.persistentState=result.state;run.currentNodeId=selected.nodeId;
+  if(!result.success)run.phase='failed';
+  else if(selected.kind==='boss')run.phase='completed';
  }
  return {cleared:run.phase==='completed',finalBoss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId,phase:run.phase};
 }
@@ -83,7 +106,13 @@ for(const id of ['EXP_001','EXP_003'] as const){
   const clears=metrics.filter(x=>x.cleared).length;
   const bosses=Object.fromEntries([...new Set(metrics.map(x=>x.finalBoss))].map(boss=>[boss,metrics.filter(x=>x.finalBoss===boss).length]));
   const numbers=roster.map(x=>({cp:x.cp,role:x.snapshot.readiness.role,readiness:Number(x.ready.toFixed(2)),scale:Number(x.multiplier.toFixed(2))}));
+  const candidates=[1,1.75,2.5,3.5,5].map(factor=>{
+   const samples=Array.from({length:12},(_,seed)=>runOne(id,tier,seed,roster,factor,true));
+   const wins=samples.filter(x=>x.cleared);
+   return {factor,clears:wins.length,bosses:Object.fromEntries([...new Set(samples.map(x=>x.finalBoss))].map(boss=>[boss,{clears:wins.filter(x=>x.finalBoss===boss).length,attempts:samples.filter(x=>x.finalBoss===boss).length}]))};
+  });
+  assert.equal(candidates[0].clears,clears,'manual scaling probe should reproduce the production route solver at factor=1');
   assert(metrics.every(x=>x.phase==='completed'||x.phase==='failed'),'Each synthetic run must terminate');
-  console.log('REGIONAL_DUNGEON_BALANCE_PROBE '+JSON.stringify({id,tier,minPower:regularDungeonTierRequiredPower(EXPEDITIONS[id],tier),clears,samples:metrics.length,bosses,roster:numbers}));
+  console.log('REGIONAL_DUNGEON_BALANCE_PROBE '+JSON.stringify({id,tier,minPower:regularDungeonTierRequiredPower(EXPEDITIONS[id],tier),clears,samples:metrics.length,bosses,roster:numbers,candidates}));
  }
 }

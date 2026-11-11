@@ -35,6 +35,7 @@ on:
       - 'backend/online/coop.ts'
       - 'backend/online/dungeon-shop.ts'
       - 'backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'
+      - 'apps/mobile/src/core/dungeon-marks-shop-types.ts'
       - 'backend/online/coop-entry.ts'
       - 'backend/online/coop-loadout.ts'
       - 'backend/online/qmode-runtime.ts'

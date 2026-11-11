@@ -3,13 +3,13 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
-import {GameTextInput} from './GameTextInput';
+import {NameColorPicker} from './NameColorPicker';
 import {PlayerStyledName} from './PlayerStyledName';
 import {SettingToggle} from './SettingToggle';
 import type {GameState} from '../core/types';
 import {
   DEFAULT_VIP_NAME_COLOR,SUPPORTER_NAME_PRESETS,normalizeHexColor,normalizePlayerNameStyle,
-  playerNameStyleEntitlements,type PlayerNameStylePreference,
+  isHexColor,playerNameStyleEntitlements,type PlayerNameStylePreference,
 } from '../core/player-name-style';
 import type {SavePlayerNameStyle} from '../core/player-name-style-save';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -32,6 +32,7 @@ export function PlayerNameStyleEditor({state,draft,onDraftChange,onSaveNameStyle
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),entitlements=playerNameStyleEntitlements(state);
  const fieldKey=JSON.stringify(colorFields(draft,state.account.vipPlusNameColor));
  const [fields,setFields]=useState<ColorFields>(()=>JSON.parse(fieldKey)),[saving,setSaving]=useState(false),[message,setMessage]=useState('');
+ const [stop,setStop]=useState<'a'|'b'|'c'>('a');
  const savingRef=useRef(false),mounted=useRef(true);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  useEffect(()=>{setFields(JSON.parse(fieldKey) as ColorFields);},[fieldKey,resetVersion]);
@@ -44,6 +45,8 @@ export function PlayerNameStyleEditor({state,draft,onDraftChange,onSaveNameStyle
  const editField=(key:keyof ColorFields,value:string)=>{setFields(current=>({...current,[key]:value}));setMessage('');};
  const previewStyle=(style:PlayerNameStylePreference)=>{const normalized=normalizePlayerNameStyle(style);setFields(colorFields(normalized,state.account.vipPlusNameColor));onDraftChange(normalized);setMessage('');};
  const chooseSolid=()=>previewStyle({mode:'solid',solidColor:normalizeHexColor(fields.solid),animation:'none'});
+ const pickSolid=(hex:string)=>{setFields(current=>({...current,solid:hex}));previewStyle({mode:'solid',solidColor:hex,animation:'none'});};
+ const pickStop=(hex:string)=>{const next={...fields,[stop]:hex} as ColorFields;setFields(next);previewStyle({mode:'gradient',gradientColors:[normalizeHexColor(next.a),normalizeHexColor(next.b),normalizeHexColor(next.c)],animation:draft.mode==='gradient'?draft.animation??'flow':'flow'});};
  const choosePreset=(preset:(typeof SUPPORTER_NAME_PRESETS)[number])=>previewStyle({mode:'gradient',gradientColors:[...preset.colors],animation:preset.animation});
  const chooseCustom=()=>previewStyle({mode:'gradient',gradientColors:[normalizeHexColor(fields.a),normalizeHexColor(fields.b),normalizeHexColor(fields.c)],animation:draft.mode==='gradient'?draft.animation??'none':'none'});
  const save=async()=>{
@@ -60,18 +63,17 @@ export function PlayerNameStyleEditor({state,draft,onDraftChange,onSaveNameStyle
   <View style={s.section}>
    <Text style={s.sectionTitle}>{profileT(language,"VIP+ · SOLID RGB")}</Text>
    <Text style={s.meta}>{entitlements.vipPlus?profileT(language,"Permanent unlock active."):profileT(language,"Requires VIP+ for permanent use. Active Supporter can also use solid colors while subscribed.")}</Text>
-   <View style={s.inputRow}><View style={s.colorField}><GameTextInput accessibilityLabel={profileT(language,"Solid player name color")} value={fields.solid} onChangeText={value=>editField('solid',value)} editable={entitlements.canUseSolidRgb&&!saving} autoCapitalize="characters" maxLength={7} placeholder="#8F7CFF"/></View><View style={s.action}><GameButton compact title={profileT(language,"Preview solid")} tone="secondary" disabled={!entitlements.canUseSolidRgb||saving} onPress={chooseSolid}/></View></View>
+   <NameColorPicker label="Name color" accessibilityLabel={profileT(language,"Solid player name color")} value={fields.solid} disabled={!entitlements.canUseSolidRgb||saving} onChangeText={value=>editField('solid',value)} onPick={pickSolid}/>
+   <View style={s.action}><GameButton compact title={profileT(language,"Preview solid")} tone="secondary" disabled={!entitlements.canUseSolidRgb||saving||!isHexColor(fields.solid)} onPress={chooseSolid}/></View>
   </View>
   <View style={s.section}>
    <Text style={s.sectionTitle}>{profileT(language,"SUPPORTER · ADVANCED STYLES")}</Text>
    <Text style={s.meta}>{entitlements.supporter?profileT(language,"Subscription active · gradients and motion are available."):profileT(language,"Requires active Supporter. Your saved gradient remains stored and VIP+ falls back to its permanent solid color.")}</Text>
    <View style={s.presets}>{SUPPORTER_NAME_PRESETS.map(preset=><Pressable key={preset.id} accessibilityRole="button" accessibilityState={{disabled:!entitlements.canUseAdvanced||saving}} disabled={!entitlements.canUseAdvanced||saving} onPress={()=>choosePreset(preset)} style={({pressed})=>[s.preset,pressed&&s.pressed,(!entitlements.canUseAdvanced||saving)&&s.disabled]}><PlayerStyledName name={preset.name} nameStyle={{mode:'gradient',gradientColors:[...preset.colors],animation:preset.animation}} reduceMotion={state.settings.reduceMotion||!active} style={s.presetName}/><Text style={s.presetMeta}>{preset.id==='prismatic'?profileT(language,"Spectrum flow"):preset.colors.join(' → ')}</Text></Pressable>)}</View>
    <Text style={s.customTitle}>{profileT(language,"CUSTOM 3-COLOR GRADIENT")}</Text>
-   <View style={s.colorInputs}>
-    <GameTextInput accessibilityLabel={profileT(language,"Gradient color one")} value={fields.a} onChangeText={value=>editField('a',value)} editable={entitlements.canUseAdvanced&&!saving} autoCapitalize="characters" maxLength={7}/>
-    <GameTextInput accessibilityLabel={profileT(language,"Gradient color two")} value={fields.b} onChangeText={value=>editField('b',value)} editable={entitlements.canUseAdvanced&&!saving} autoCapitalize="characters" maxLength={7}/>
-    <GameTextInput accessibilityLabel={profileT(language,"Gradient color three")} value={fields.c} onChangeText={value=>editField('c',value)} editable={entitlements.canUseAdvanced&&!saving} autoCapitalize="characters" maxLength={7}/>
-   </View>
+   <View style={s.stops}>{(['a','b','c'] as const).map((key,index)=><Pressable key={key} accessibilityRole="tab" accessibilityState={{selected:stop===key}} accessibilityLabel={profileT(language,'Gradient color {index}',{index:index+1})} disabled={!entitlements.canUseAdvanced||saving} onPress={()=>setStop(key)} style={({pressed})=>[s.stop,stop===key&&s.stopOn,pressed&&s.pressed,(!entitlements.canUseAdvanced||saving)&&s.disabled]}><View style={[s.stopSwatch,{backgroundColor:isHexColor(fields[key])?normalizeHexColor(fields[key]):C.panel2}]}/><Text style={[s.stopText,stop===key&&s.stopTextOn]}>{profileT(language,'Color {index}',{index:index+1})}</Text></Pressable>)}</View>
+   <NameColorPicker label={profileT(language,'Color {index}',{index:stop==='a'?1:stop==='b'?2:3})} value={fields[stop]} disabled={!entitlements.canUseAdvanced||saving} onChangeText={value=>editField(stop,value)} onPick={pickStop}/>
+
    <GameButton compact title={profileT(language,"Preview custom gradient")} tone="secondary" disabled={!entitlements.canUseAdvanced||saving} onPress={chooseCustom}/>
    <SettingToggle label={profileT(language,"Slow flowing gradient")} description={profileT(language,"Reduced Motion always renders this as a static gradient.")} value={draft.mode==='gradient'&&draft.animation==='flow'} disabled={!entitlements.canUseAdvanced||draft.mode!=='gradient'||saving} onValueChange={value=>{if(draft.mode==='gradient'){onDraftChange({...draft,animation:value?'flow':'none'});setMessage('');}}}/>
   </View>
@@ -84,5 +86,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:spacing.md},head:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},title:{...typography.title,color:C.text},
  entitlement:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},entitlementText:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.6},supporter:{borderColor:C.info,backgroundColor:C.infoSurface},supporterText:{color:C.info},
  copy:{...typography.body,color:C.muted,lineHeight:20},preview:{minHeight:68,justifyContent:'center',alignItems:'center',gap:4,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.bg},previewLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.8},previewName:{fontSize:24,fontWeight:'900'},
- section:{gap:8,paddingTop:4},sectionTitle:{...typography.bodyStrong,color:C.text},meta:{...typography.caption,color:C.muted,lineHeight:17},inputRow:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:8},colorField:{flex:1,minWidth:140},action:{minWidth:118},presets:{flexDirection:'row',flexWrap:'wrap',gap:7},preset:{minHeight:48,minWidth:112,flexGrow:1,padding:8,gap:2,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},presetName:{...typography.bodyStrong},presetMeta:{fontSize:8.5,lineHeight:12,color:C.muted},pressed:{opacity:.72},disabled:{opacity:.42},customTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.65,marginTop:2},colorInputs:{gap:7},footer:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:8},save:{flex:1},message:{...typography.caption,color:C.info,lineHeight:17},
+ section:{gap:8,paddingTop:4},sectionTitle:{...typography.bodyStrong,color:C.text},meta:{...typography.caption,color:C.muted,lineHeight:17},inputRow:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:8},colorField:{flex:1,minWidth:140},action:{minWidth:118},presets:{flexDirection:'row',flexWrap:'wrap',gap:7},preset:{minHeight:48,minWidth:112,flexGrow:1,padding:8,gap:2,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},presetName:{...typography.bodyStrong},presetMeta:{fontSize:8.5,lineHeight:12,color:C.muted},pressed:{opacity:.72},disabled:{opacity:.42},customTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.65,marginTop:2},colorInputs:{gap:7},stops:{flexDirection:'row',gap:6},stop:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',gap:4,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},stopOn:{borderColor:C.selectionLine,backgroundColor:C.selection},stopSwatch:{width:22,height:22,borderRadius:99,borderWidth:1,borderColor:C.line},stopText:{fontSize:9,color:C.muted,fontWeight:'800'},stopTextOn:{color:C.text},footer:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:8},save:{flex:1},message:{...typography.caption,color:C.info,lineHeight:17},
 });}

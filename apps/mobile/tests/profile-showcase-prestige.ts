@@ -58,7 +58,7 @@ ok(hallScreen.includes('PRESTIGE, NOT POWER')&&hallScreen.includes('do not add a
 ok(hallScreen.includes('Choose Profile Mastery Showcase'),'Mastery Hall must hand off R50 records to Profile showcase selection');
 ok(hallPanel.includes('Open Mastery Hall'),'Compact Profile Hall panel must link to the full account Hall');
 ok(more.includes("'MasteryHall'")&&more.includes('title:a("Mastery Hall")'),'Account navigation must expose the localized Mastery Hall directly');
-ok(app.includes("tab==='MasteryHall'")&&app.includes("setProfileCustomizeSection('Identity')"),'App must route Mastery Hall to profession, achievements and identity showcase destinations');
-ok(profileCustomize.includes("initialSection='Appearance'")&&profileCustomize.includes('setSection(initialSection)'),'Profile customization must support direct Identity & Showcases entry without changing its normal Appearance default');
+ok(app.includes("tab==='MasteryHall'")&&app.includes("setProfileCustomizeSection('Showcase')"),'App must route Mastery Hall to the profile tab that owns the R50 mastery showcase');
+ok(profileCustomize.includes("initialSection='Look'")&&profileCustomize.includes('setTab(resolveTab(initialSection))'),'Profile customization must support direct Identity/Showcase entry without changing its normal Look default');
 
 console.log('PASS: profile showcase prestige presentation');

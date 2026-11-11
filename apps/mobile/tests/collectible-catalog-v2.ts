@@ -10,7 +10,7 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 validateCollectibleCatalog();
 validateCorePetCatalog();
 
-equal(CORE_PET_COLLECTIBLES.length,33,'core pet count');
+equal(CORE_PET_COLLECTIBLES.length,42,'core pet count');
 equal(EVENT_PET_COLLECTIBLES.length,18,'released event pet count');
 
 const eventCompanions=ALL_COMBAT_COMPANIONS.filter(row=>row.id.startsWith('EVT_UNIT_'));
@@ -23,7 +23,7 @@ ok(CORE_PET_COLLECTIBLES.every(row=>row.collectionGroup==='core'),'all permanent
 ok(EVENT_PET_COLLECTIBLES.every(row=>row.collectionGroup==='event'),'all event pets use the event collection group');
 ok(eventCompanions.every(row=>row.origin.type==='event'),'all EVT_UNIT companions use event origin');
 
-for(let index=1;index<=33;index++){
+for(let index=1;index<=42;index++){
   const id=`PET_${String(index).padStart(3,'0')}`;
   ok(CORE_PET_COLLECTIBLES.some(row=>row.id===id),`missing canonical ${id}`);
 }

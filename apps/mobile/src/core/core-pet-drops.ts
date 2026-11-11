@@ -21,10 +21,10 @@ export interface CorePetActivityDrop{
 }
 
 export const CORE_PET_SIGNATURE_DROPS:readonly CorePetSignatureDrop[]=[
-  {petId:'PET_018',monsterId:'OATHGLASS_REVENANT',region:'Asterfall',chance:.0005},
-  {petId:'PET_023',monsterId:'GLASSBOUND_SENTINEL',region:'Sunscar',chance:.0005},
-  {petId:'PET_028',monsterId:'CHOIR_HUNTER',region:'Frostmarch',chance:.0005},
-  {petId:'PET_033',monsterId:'ASHEN_REVENANT',region:'Ashlands',chance:.0005},
+  {petId:'PET_018',monsterId:'OATHGLASS_REVENANT',region:'Asterfall',chance:.00025},
+  {petId:'PET_023',monsterId:'GLASSBOUND_SENTINEL',region:'Sunscar',chance:.00025},
+  {petId:'PET_028',monsterId:'CHOIR_HUNTER',region:'Frostmarch',chance:.00025},
+  {petId:'PET_033',monsterId:'ASHEN_REVENANT',region:'Ashlands',chance:.00025},
 ];
 
 /**
@@ -39,35 +39,44 @@ export const CORE_PET_ACTIVITY_DROPS:readonly CorePetActivityDrop[]=[
   {petId:'PET_001',sourceType:'gathering',sourceId:'COPPER_VEIN',region:'Asterfall',chance:.0012},
   {petId:'PET_002',sourceType:'gathering',sourceId:'ASTER_IRON_VEIN',region:'Asterfall',chance:.0012},
   {petId:'PET_003',sourceType:'gathering',sourceId:'GREENWOOD_TREE',region:'Asterfall',chance:.0012},
-  {petId:'PET_004',sourceType:'combat',sourceId:'IRONWOOD_WOLF',region:'Asterfall',chance:.001},
+  {petId:'PET_004',sourceType:'combat',sourceId:'IRONWOOD_WOLF',region:'Asterfall',chance:.00075},
   {petId:'PET_005',sourceType:'gathering',sourceId:'SILVERBROOK_SHOAL',region:'Asterfall',chance:.0012},
   {petId:'PET_006',sourceType:'gathering',sourceId:'OATHSCALE_POOL',region:'Asterfall',chance:.0012},
   {petId:'PET_007',sourceType:'gathering',sourceId:'IRONBLOOM_THICKET',region:'Asterfall',chance:.0012},
   {petId:'PET_008',sourceType:'gathering',sourceId:'CAVELICHEN_COLONY',region:'Asterfall',chance:.0012},
   {petId:'PET_009',sourceType:'combat',sourceId:'ROADSIDE_BOAR',region:'Asterfall',chance:.001},
   {petId:'PET_010',sourceType:'exploration',sourceId:'SCOUT_GREENFIELDS',region:'Asterfall',chance:.002},
-  {petId:'PET_011',sourceType:'gathering',sourceId:'OATHSTONE_SEAM',region:'Asterfall',chance:.0012},
-  {petId:'PET_012',sourceType:'combat',sourceId:'LANTERN_WRETCH',region:'Asterfall',chance:.001},
+  {petId:'PET_011',sourceType:'gathering',sourceId:'OATHSTONE_SEAM',region:'Asterfall',chance:.0009},
+  {petId:'PET_012',sourceType:'combat',sourceId:'LANTERN_WRETCH',region:'Asterfall',chance:.00075},
   {petId:'PET_013',sourceType:'exploration',sourceId:'SCOUT_KINGS_ROAD',region:'Asterfall',chance:.002},
-  {petId:'PET_014',sourceType:'exploration',sourceId:'SCOUT_OLD_MINES',region:'Asterfall',chance:.002},
+  {petId:'PET_014',sourceType:'exploration',sourceId:'SCOUT_OLD_MINES',region:'Asterfall',chance:.001},
   {petId:'PET_015',sourceType:'exploration',sourceId:'SCOUT_SILVERBROOK',region:'Asterfall',chance:.002},
-  {petId:'PET_016',sourceType:'combat',sourceId:'ECHO_BAT',region:'Asterfall',chance:.001},
+  {petId:'PET_016',sourceType:'combat',sourceId:'ECHO_BAT',region:'Asterfall',chance:.0005},
   {petId:'PET_017',sourceType:'exploration',sourceId:'SCOUT_IRONWOOD',region:'Asterfall',chance:.002},
 
-  {petId:'PET_019',sourceType:'combat',sourceId:'SUNSCAR_SCORPION',region:'Sunscar',chance:.001},
+  {petId:'PET_019',sourceType:'combat',sourceId:'SUNSCAR_SCORPION',region:'Sunscar',chance:.00075},
   {petId:'PET_020',sourceType:'exploration',sourceId:'SCOUT_SUNSCAR',region:'Sunscar',chance:.002},
-  {petId:'PET_021',sourceType:'gathering',sourceId:'SUNSCALE_BLOOM',region:'Sunscar',chance:.0012},
-  {petId:'PET_022',sourceType:'combat',sourceId:'DUNE_ORACLE',region:'Sunscar',chance:.0008},
+  {petId:'PET_021',sourceType:'gathering',sourceId:'SUNSCALE_BLOOM',region:'Sunscar',chance:.0009},
+  {petId:'PET_022',sourceType:'combat',sourceId:'DUNE_ORACLE',region:'Sunscar',chance:.0005},
+  {petId:'PET_034',sourceType:'combat',sourceId:'GLASS_DUNE_STRIDER',region:'Sunscar',chance:.001},
+  {petId:'PET_035',sourceType:'gathering',sourceId:'MIRAGE_SALTBLOOM',region:'Sunscar',chance:.0009},
+  {petId:'PET_036',sourceType:'combat',sourceId:'ROYAL_SANDGUARD',region:'Sunscar',chance:.0005},
 
   {petId:'PET_024',sourceType:'exploration',sourceId:'SCOUT_FROSTMARCH',region:'Frostmarch',chance:.002},
-  {petId:'PET_025',sourceType:'gathering',sourceId:'FROSTBELL_FLOWER',region:'Frostmarch',chance:.0012},
-  {petId:'PET_026',sourceType:'combat',sourceId:'FROSTWOLF',region:'Frostmarch',chance:.001},
-  {petId:'PET_027',sourceType:'combat',sourceId:'BELLWRAITH',region:'Frostmarch',chance:.0008},
+  {petId:'PET_025',sourceType:'gathering',sourceId:'FROSTBELL_FLOWER',region:'Frostmarch',chance:.0009},
+  {petId:'PET_026',sourceType:'combat',sourceId:'FROSTWOLF',region:'Frostmarch',chance:.00075},
+  {petId:'PET_027',sourceType:'combat',sourceId:'BELLWRAITH',region:'Frostmarch',chance:.0005},
+  {petId:'PET_037',sourceType:'combat',sourceId:'SNOW_TREANT',region:'Frostmarch',chance:.00075},
+  {petId:'PET_038',sourceType:'combat',sourceId:'LAKEBOUND_SPECTER',region:'Frostmarch',chance:.0005},
+  {petId:'PET_039',sourceType:'gathering',sourceId:'SHIVERLAKE_ICEFISH_POOL',region:'Frostmarch',chance:.0012},
 
-  {petId:'PET_029',sourceType:'combat',sourceId:'BLACKGLASS_MIRELING',region:'Ashlands',chance:.001},
-  {petId:'PET_030',sourceType:'gathering',sourceId:'ASHEN_MYRRH_GROVE',region:'Ashlands',chance:.0012},
+  {petId:'PET_029',sourceType:'combat',sourceId:'BLACKGLASS_MIRELING',region:'Ashlands',chance:.00075},
+  {petId:'PET_030',sourceType:'gathering',sourceId:'ASHEN_MYRRH_GROVE',region:'Ashlands',chance:.0009},
   {petId:'PET_031',sourceType:'exploration',sourceId:'SCOUT_ASHLANDS',region:'Ashlands',chance:.002},
-  {petId:'PET_032',sourceType:'combat',sourceId:'CINDER_TITAN',region:'Ashlands',chance:.0008},
+  {petId:'PET_032',sourceType:'combat',sourceId:'CINDER_TITAN',region:'Ashlands',chance:.0005},
+  {petId:'PET_040',sourceType:'gathering',sourceId:'EMBERFIN_DEEPWATER',region:'Ashlands',chance:.0012},
+  {petId:'PET_041',sourceType:'gathering',sourceId:'DEEP_BLACKGLASS_VEIN',region:'Ashlands',chance:.0009},
+  {petId:'PET_042',sourceType:'gathering',sourceId:'HEARTFIRE_CINDERWOOD',region:'Ashlands',chance:.0006},
 ];
 
 export type CorePetDropRoll=(seed:string,index:number)=>number;

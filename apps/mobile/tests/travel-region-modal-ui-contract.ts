@@ -9,11 +9,11 @@ const map=read('src/content/world-map.ts');
 const navigation=read('src/core/world-navigation.ts');
 
 ok(!world.includes('TravelRegionModal')&&!world.includes('travelTargetId')&&!chapters.includes('TravelRegionModal'),'World screen must not stage a travel-preview sheet');
-ok(chapters.includes('onTravel(row.region.id)'),'Available destinations must travel directly');
+ok(chapters.includes('onTravel(zone.id)'),'Available destinations must travel directly');
 ok(chapters.includes("development?t('In Development')"),'Future destinations must expose localized In Development status');
-ok(chapters.includes("const access=availability==='available'&&level>=row.minLevel")&&chapters.includes('{access?<View'),'Unavailable destinations must never render an active Travel button');
+ok(chapters.includes("availability==='available'")&&chapters.includes('{access&&target?<View'),'Unavailable destinations must never render an active Travel button');
 ok(chapters.includes('<ZoneSceneArtwork regionId={current.id}/>'),'Current region must use the scenic artwork entrypoint');
-ok(chapters.includes('<ZoneSceneArtwork regionId={chapter.artRegionId} muted={!released}/>'),'Chapter images must be scenic and dim future chapters');
+ok(chapters.includes('<ZoneSceneArtwork regionId={artId} muted={!access}/>'),'Current-region zone drawer must show scenic area art and dim locked zones');
 ok(map.includes("WorldZoneAvailability='released'|'inDevelopment'"),'World zone definitions must use explicit release metadata');
 ok(map.includes("availability:WorldZoneAvailability"),'Every world zone needs an explicit availability field');
 ok(map.includes("plannedActivities?:string[]"),'Future region definitions must support planned activity metadata');

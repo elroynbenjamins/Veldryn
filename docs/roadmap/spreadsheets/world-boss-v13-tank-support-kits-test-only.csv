@@ -1,0 +1,6 @@
+role,classId,samples,avgSurvivors,avgTankProtection,avgSupportRecovery,avgConsumedShields,avgBossHpDamage,testStressMultiplier,ciRun,livePlayerData,approvedBalance
+tank,IRONWARDEN,72,3.44,3253.83,23347.10,7762.56,31403.16,6,43043117614,false,false
+tank,BASTION,72,3.47,3291.07,24535.39,7892.36,31078.46,6,43043117614,false,false
+tank,DREADGUARD,72,3.57,3326.53,22858.29,7916.98,32394.27,6,43043117614,false,false
+support,DAWNKEEPER,108,3.60,3454.20,28111.11,0.00,31960.64,6,43043117614,false,false
+support,STONECALLER,108,3.39,3126.76,19049.41,15714.60,31289.95,6,43043117614,false,false

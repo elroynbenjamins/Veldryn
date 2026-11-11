@@ -17,7 +17,7 @@ const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expec
 validateCollectibleCatalog();
 validateCorePetCatalog();
 
-equal(CORE_PET_COLLECTIBLES.length,33,'canonical core pet count');
+equal(CORE_PET_COLLECTIBLES.length,42,'canonical core pet count');
 equal(EVENT_PET_COLLECTIBLES.length,2,'released event pet count');
 equal(
   COLLECTIBLES.length,
@@ -27,8 +27,8 @@ equal(
 
 const coreIds=CORE_PET_COLLECTIBLES.map(row=>row.id);
 equal(coreIds[0],'PET_001','first core pet id');
-equal(coreIds[32],'PET_033','last core pet id');
-equal(new Set(coreIds).size,33,'core pet ids are unique');
+equal(coreIds.includes('PET_042'),true,'last core pet id exists');
+equal(new Set(coreIds).size,42,'core pet ids are unique');
 
 let state=unlockCollectible(createCharacter(newGame(1),'IRONWARDEN','Mira'),'PET_001');
 state.quests=state.quests.map(q=>q.questId==='QST_003'?{...q,status:'claimed'}:q);

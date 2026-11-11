@@ -14,6 +14,9 @@ export interface CoopEventExpeditionPreview{
   finalBoss:string;
   status:CoopEventExpeditionStatus;
   minLevel:number;
+  tiers?:number[];
+  tierMinLevels?:number[];
+  tierRewardMarks?:number[];
   levelScaling?:{minLevel:number;maxLevel:number};
   rewardMarks:number;
   routeNodeCount?:number;
@@ -27,6 +30,7 @@ export interface CoopEventExpeditionPreview{
 export interface CoopEventRunServerProjection{
   runId:string;
   eventExpeditionId:string;
+  tier?:number;
   liveEventId:string;
   eventName:string;
   dungeonName:string;
@@ -68,7 +72,7 @@ const EVENT_EXPEDITION_IDENTITIES:Readonly<Record<string,SeasonalEventExpedition
   EVT_ANNUAL_008:{seriesId:'EVT_ANNUAL_008',expeditionId:'EVENT_STARFALL_ASTRAL_RIFT',eventName:'Starfall Nights',name:'Astral Rift Expedition',description:'Cross meteor fields and celestial ruins as instability builds toward the rift nexus.',routeHighlights:['Meteor Field','Star Shrine','Rift Gate'],questline:['Survey the Meteor Field','Stabilize the Star Shrine','Seal the Astral Rift'],enemies:['Astral Marauder','Meteoric Sentinel','Riftbound Herald'],finalBoss:'The Constellation Eater',minLevel:70,rewardMarks:118},
   EVT_ANNUAL_010:{seriesId:'EVT_ANNUAL_010',expeditionId:'EVENT_VEILBREAK_GLOAM_BREACH',eventName:'The Veilbreak',name:'The Gloam Breach',description:'Enter a ruptured ward district where shades are extinguishing lanterns and pulling the streets into the Gloam.',routeHighlights:['Lantern Gate','Hollow Chapel','Gloam Crossing'],questline:['Relight the Lantern Gate','Seal the Hollow Chapel','Hunt the Hollow Regent'],enemies:['Veilshade Stalker','Lantern-Eater','Hollow Warden'],finalBoss:'The Hollow Regent',minLevel:15,levelScaling:{minLevel:15,maxLevel:35},rewardMarks:102},
   EVT_ANNUAL_011:{seriesId:'EVT_ANNUAL_011',expeditionId:'EVENT_MERCHANT_GILDED_ROAD',eventName:'Merchant & Guild Festival',name:'The Gilded Road',description:'Escort a high-value guild caravan through sabotaged tollgates, raider camps and a seized counting house.',routeHighlights:['Broken Tollgate','Caravan Crossroads','Seized Counting House'],questline:['Secure the Broken Tollgate','Recover the Stolen Ledgers','Retake the Counting House'],enemies:['Road Reaver','Ledger Hexer','Iron Tollkeeper'],finalBoss:'The Coinbound Captain',minLevel:35,rewardMarks:100},
-  EVT_ANNUAL_012:{seriesId:'EVT_ANNUAL_012',expeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',eventName:'Frostfall Festival',name:'Aurora Hollow',description:'Follow stolen festival bells into a frozen hollow where winter spirits have turned the celebration into a deadly procession.',routeHighlights:['Snowbell Pass','Frozen Giftworks','Aurora Belfry'],questline:['Recover the Snowbells','Clear the Frozen Giftworks','Ring the Aurora Belfry'],enemies:['Rimefang Marauder','Bellfrost Spirit','Giftwork Colossus'],finalBoss:'The Rimebell Colossus',minLevel:35,rewardMarks:104},
+  EVT_ANNUAL_012:{seriesId:'EVT_ANNUAL_012',expeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',eventName:'Frostfall Festival',name:'Aurora Hollow',description:'Follow stolen festival bells into a frozen hollow where winter spirits have turned the celebration into a deadly procession.',routeHighlights:['Snowbell Pass','Frozen Giftworks','Aurora Belfry'],questline:['Recover the Snowbells','Clear the Frozen Giftworks','Ring the Aurora Belfry'],enemies:['Rimefang Marauder','Bellfrost Spirit','Giftwork Colossus'],finalBoss:'The Rimebell Colossus',minLevel:10,rewardMarks:104},
 };
 
 function eventSeriesId(liveEventId:string){return liveEventId.match(/^(EVT_ANNUAL_\d{3})(?:_|$)/)?.[1];}
@@ -86,6 +90,7 @@ export function seasonalEventHasExpedition(liveEventId:string):boolean{
 export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPreview):void{
   if(!value.id.trim()||!value.eventName.trim()||!value.name.trim()||!value.description.trim()||!value.finalBoss.trim())throw new Error('invalid_event_expedition_preview');
   if(value.status!=='preview'&&value.status!=='available')throw new Error('invalid_event_expedition_status');
+  if(value.tiers&&(!Array.isArray(value.tierMinLevels)||!Array.isArray(value.tierRewardMarks)||value.tiers.length!==value.tierMinLevels.length||value.tiers.length!==value.tierRewardMarks.length||value.tiers.some((tier,index)=>!Number.isInteger(tier)||tier!==index+1||!Number.isInteger(value.tierMinLevels![index])||value.tierMinLevels![index]<1||!Number.isInteger(value.tierRewardMarks![index])||value.tierRewardMarks![index]<1)))throw new Error('invalid_event_tier_catalog');
   if(!Number.isInteger(value.minLevel)||value.minLevel<1||!Number.isInteger(value.rewardMarks)||value.rewardMarks<0)throw new Error('invalid_event_expedition_requirements');
   if(value.levelScaling&&(!Number.isInteger(value.levelScaling.minLevel)||!Number.isInteger(value.levelScaling.maxLevel)||value.levelScaling.minLevel<value.minLevel||value.levelScaling.maxLevel<value.levelScaling.minLevel))throw new Error('invalid_event_level_scaling');
   if(value.status==='available'&&!value.liveEventId?.trim())throw new Error('available_event_requires_live_event');

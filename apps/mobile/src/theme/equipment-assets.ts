@@ -84,6 +84,9 @@ export const equipmentSheetBySet:Record<string,ImageSourcePropType>={
   T7_001:require('../../assets/equipment-t7-ironwarden/T7_001-frostiron-rampart-icon-sheet.webp'),
   T7_003:require('../../assets/equipment-t7-ironwarden/T7_003-bellguard-reprisal-icon-sheet.webp'),
 };
+
+/** Optional presentation overrides used by isolated artwork-review fixtures. */
+export const equipmentArtworkScaleBySet:Partial<Record<string,number>>={};
 const pieceIdsBySet=(catalog.pieces as Array<Record<string,string|number>>).reduce<Record<string,string[]>>((bySet,piece)=>{
   const setId=String(piece['Set ID']);
   (bySet[setId]??=[]).push(String(piece['Piece ID']));

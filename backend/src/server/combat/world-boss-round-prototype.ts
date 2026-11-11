@@ -7,6 +7,8 @@
 import {clamp, damageAfterMitigation, defenseMitigation, hitChance, roleAdjustedAttackPower} from './calculations';
 import {CombatRng} from './deterministic-rng';
 import type {CombatantDefinition, AbilityDefinition, AbilityEffect} from './types';
+import {deriveWorldBossWarCampEffectsV11,type WorldBossWarCampSnapshotV11} from './world-boss-war-camp-v11';
+import {verifyWorldBossEncounterProfileV13,type WorldBossEncounterProfileV13} from './world-boss-encounter-profile-v13';
 
 export type WorldBossId='hollowroot'|'sunscar'|'frostmarch';
 export type WorldBossPhase='armored'|'exposed'|'enraged';
@@ -25,6 +27,17 @@ export interface WorldBossRoundInput {
   order?:WorldBossOrder; pressure?:number;
   /** Offline counterfactual only. Must never be set from a client or production event. */
   testOnlyDisableTankInterception?:boolean;
+  /** Test-only fixed boss strength to compare different gear without boosting the boss as Attack rises. */
+  testOnlyFixedBossAttack?:number;
+  /** These test-only controls freeze the entire enemy defensive profile across gear samples. */
+  testOnlyFixedBossDefense?:number;
+  testOnlyFixedGuardMax?:number;
+  /** Hidden per-gear-band server-configured encounter, frozen before combat. */
+  serverEncounterProfile?:WorldBossEncounterProfileV13;
+  /** Explicitly synthetic survival-stress scale, NEVER a live pressure control. */
+  testOnlyStressMultiplier?:number;
+  /** Must come from a trusted frozen event reservation, never from player JSON. */
+  serverWarCamp?:WorldBossWarCampSnapshotV11;
 }
 export interface WorldBossRoundResult {
   boss:WorldBossId;phase:WorldBossPhase;roundsCompleted:number;survived:boolean;bossHpDamage:number;
@@ -80,7 +93,22 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  if(new Set(input.players.map(p=>p.id)).size!==4)throw Error('world_boss_duplicate_echo');
  if(input.players.some(p=>p.team!=='players'||p.stats.maxHp<=0||p.stats.attackPower<=0))throw Error('world_boss_invalid_resolved_snapshot');
  if(!Number.isFinite(input.pressure??1)||(input.pressure??1)<.1||(input.pressure??1)>5)throw Error('world_boss_invalid_pressure');
- const players:Player[]=input.players.map(def=>({def,hp:money(def.stats.maxHp),shields:[],statuses:[],cooldowns:{},buffs:{}}));
+ if(input.testOnlyFixedBossAttack!==undefined&&(!Number.isFinite(input.testOnlyFixedBossAttack)||input.testOnlyFixedBossAttack<=0||input.testOnlyFixedBossAttack>1e8))throw Error('world_boss_invalid_fixed_test_attack');
+ if(input.testOnlyFixedBossDefense!==undefined&&(!Number.isFinite(input.testOnlyFixedBossDefense)||input.testOnlyFixedBossDefense<0||input.testOnlyFixedBossDefense>1e8))throw Error('world_boss_invalid_fixed_test_defense');
+ if(input.testOnlyFixedGuardMax!==undefined&&(!Number.isFinite(input.testOnlyFixedGuardMax)||input.testOnlyFixedGuardMax<0||input.testOnlyFixedGuardMax>1e8))throw Error('world_boss_invalid_fixed_test_guard');
+ if(input.serverEncounterProfile){
+  verifyWorldBossEncounterProfileV13(input.serverEncounterProfile,input.boss,input.phase);
+  if(input.testOnlyFixedBossAttack!==undefined||input.testOnlyFixedBossDefense!==undefined||input.testOnlyFixedGuardMax!==undefined)
+   throw Error('world_boss_v13_ambiguous_server_threat');
+ }
+ if(input.testOnlyStressMultiplier!==undefined&&(!input.serverEncounterProfile||
+  !Number.isFinite(input.testOnlyStressMultiplier)||input.testOnlyStressMultiplier<1||input.testOnlyStressMultiplier>12))
+  throw Error('world_boss_v13_invalid_test_stress');
+ const camp=deriveWorldBossWarCampEffectsV11(input.serverWarCamp);
+ const players:Player[]=input.players.map(original=>{
+  const def={...original,stats:{...original.stats,maxHp:money(original.stats.maxHp*camp.startingHpMultiplier)}};
+  return {def,hp:def.stats.maxHp,shields:[],statuses:[],cooldowns:{},buffs:{}};
+ });
  const byId=new Map(players.map(p=>[p.def.id,p]));
  const ledger:Record<string,WorldBossRoleLedger>=Object.fromEntries(players.map(p=>[p.def.id,emptyRole()]));
  const rng=new CombatRng(input.seed),events:WorldBossRoundEvent[]=[];
@@ -88,9 +116,9 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
  const order=input.order??'steady_assault';
  const squadAttack=players.reduce((n,p)=>n+p.def.stats.attackPower,0);
  const meanAttack=squadAttack/players.length;
- const bossAttack=meanAttack*1.1*(input.pressure??1);
- const bossDefense=players.reduce((n,p)=>n+p.def.stats.defense,0)/players.length*.55;
- const guardMax=money(squadAttack*(input.boss==='frostmarch'?3:input.boss==='sunscar'?2.2:1.8));
+ const bossAttack=(input.serverEncounterProfile?.attack??input.testOnlyFixedBossAttack??meanAttack*1.1)*(input.pressure??1)*(input.testOnlyStressMultiplier??1);
+ const bossDefense=input.serverEncounterProfile?.defense??input.testOnlyFixedBossDefense??players.reduce((n,p)=>n+p.def.stats.defense,0)/players.length*.55;
+ const guardMax=money(input.serverEncounterProfile?.guardMax??input.testOnlyFixedGuardMax??squadAttack*(input.boss==='frostmarch'?3:input.boss==='sunscar'?2.2:1.8));
  let guard=input.phase==='armored'?guardMax:money(guardMax*.45),guardDamage=0,guardRestored=0,bossHpDamage=0,exposedThrough=0,roundsCompleted=0;
  let bossVulnerability=0,bossVulnerabilityThrough=0;
  let pending:Telegraph|undefined;
@@ -124,8 +152,8 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
    const ap=roleAdjustedAttackPower({team:'players',role:actor.def.role,attackPower:actor.def.stats.attackPower,defense:actor.def.stats.defense,maxHp:actor.def.stats.maxHp,healingPower:actor.def.stats.healingPower});
    const damage=money(damageAfterMitigation(ap,coeff,defenseMitigation(bossDefense,1200),.95+noRngBelow(rng,round+':damage_variance')*.1,crit,actor.def.stats.critMultiplier));
    const weak=round<=exposedThrough && guard<=0;
-   const enhanced=money(damage*(weak?1.10:1)*(round<=bossVulnerabilityThrough?1+bossVulnerability:1));
-   const guardCoeff=order==='break_armor'?1.05:1;
+   const enhanced=money(damage*(weak?1.10*camp.weakPointMultiplier:1)*(round<=bossVulnerabilityThrough?1+bossVulnerability:1));
+   const guardCoeff=(order==='break_armor'?1.05:1)*camp.guardBreakMultiplier;
    const absorbed=money(Math.min(guard,enhanced*guardCoeff));
    guard=money(guard-absorbed);
    guardDamage=money(guardDamage+absorbed);ledger[actor.def.id].guardDamage=money(ledger[actor.def.id].guardDamage+absorbed);
@@ -141,20 +169,38 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
   const mit=defenseMitigation(target.def.stats.defense,1200);
   let preShield=money(damageAfterMitigation(attack,coeff,mit,.95+noRngBelow(rng,round+':boss_variance')*.1,false,1));
   const blockedByDefense=money(Math.max(0,raw-preShield));
+  let campSaved=0;
+  if(camp.bossDamageReduction>0){
+   const shieldCoverage=target.shields.reduce((n,s)=>n+s.amount,0);
+   const beforeHp=Math.min(target.hp,Math.max(0,preShield-shieldCoverage));
+   const reduced=money(preShield*(1-camp.bossDamageReduction));
+   const afterHp=Math.min(target.hp,Math.max(0,reduced-shieldCoverage));
+   campSaved=money(Math.max(0,beforeHp-afterHp));
+   preShield=reduced;
+   if(campSaved>0)emit({round,type:'mitigate',abilityId:'WAR_CAMP_FORTIFICATIONS',
+    actorId:'WAR_CAMP',targetId:target.def.id,amount:campSaved,detail:'community_buff_not_impact'});
+  }
   let protectedAmount=0;
   if(target.def.role!=='tank'&&aliveTank()&&!input.testOnlyDisableTankInterception){
    // Do not award Tank Impact for shields which would have absorbed the strike
    // anyway: measure the real HP difference after existing shield coverage.
    const guardian=aliveTank()!;
    const coverage=target.shields.reduce((n,s)=>n+s.amount,0);
-   const intercept=money(preShield*.10);
+   // V13 profile-only Tank counterplay: guard telegraphed cleaves/spikes
+   // more strongly than an ordinary hit. The saved HP remains fully ledger-
+   // backed after shields and actual HP caps, never an invented Impact bonus.
+   const predictedSpike=Boolean(input.serverEncounterProfile&&pending&&!pending.cancelled&&
+    pending.id===abilityId&&pending.resolvesRound===round);
+   const intercept=money(preShield*(predictedSpike?.25:.10));
    const before=Math.min(target.hp,Math.max(0,preShield-coverage));
    const after=Math.min(target.hp,Math.max(0,preShield-intercept-coverage));
    protectedAmount=money(Math.max(0,before-after));
    preShield=money(preShield-intercept);
    if(protectedAmount>0){
     ledger[guardian.def.id].tankProtection=money(ledger[guardian.def.id].tankProtection+protectedAmount);
-    emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,targetId:target.def.id,amount:protectedAmount});
+    emit({round,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:guardian.def.id,
+     targetId:target.def.id,amount:protectedAmount,
+     detail:predictedSpike?'telegraphed_ward':'ordinary_intercept'});
    }
   }
   let warOrderSaved=0;
@@ -179,12 +225,12 @@ export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoun
   }
   target.shields=target.shields.filter(s=>s.amount>0);
   const hpDamage=money(Math.min(target.hp,remaining));target.hp=money(target.hp-hpDamage);
-  emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+protectedAmount+warOrderSaved)});
+  emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+campSaved+protectedAmount+warOrderSaved)});
   if(target.hp===0)emit({round,type:'down',abilityId,actorId:bossName(input.boss),targetId:target.def.id});
  };
  const applyHeal=(round:number,actor:Player,target:Player,abilityId:string,amount:number)=>{
   if(target.hp<=0)return;
-  const healed=money(Math.min(money(amount),target.def.stats.maxHp-target.hp));
+  const healed=money(Math.min(money(amount*camp.healingMultiplier),target.def.stats.maxHp-target.hp));
   target.hp=money(target.hp+healed);ledger[actor.def.id].effectiveHealing=money(ledger[actor.def.id].effectiveHealing+healed);
   emit({round,type:'heal',actorId:actor.def.id,targetId:target.def.id,abilityId,amount:healed});
  };

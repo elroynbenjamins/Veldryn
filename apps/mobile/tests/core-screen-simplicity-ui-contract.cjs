@@ -20,7 +20,7 @@ assert.ok(crafting.includes('sort===')&&crafting.includes('setSort(value)')&&cra
 assert.ok(crafting.includes('recipeAvailability(state,recipe.id)')&&crafting.includes('<RecipeCard'), 'recipe and craft rules still sourced from live state');
 assert.ok(!world.includes('Your location controls which enemies and gathering activities are available.'),'remove world intro copy');
 assert.ok(world.includes('<WorldChapterNavigator')&&world.includes('onOpenCombat={onOpenCombat}')&&world.includes('onOpenSkills={onOpenSkills}'), 'regional primary actions retained');
-assert.ok(worldNavigator.includes('regionTravelLockReason')&&worldNavigator.includes('regionTravelAvailability')&&worldNavigator.includes('onTravel(row.region.id)'), 'travel eligibility and destination list retained');
+assert.ok(worldNavigator.includes('regionTravelLockReason')&&worldNavigator.includes('regionTravelAvailability')&&worldNavigator.includes('onTravel(zone.id)'), 'travel eligibility and destination list retained');
 assert.ok(!world.includes('topTab')&&!world.includes('dungeonContent'),'World no longer duplicates standalone Dungeons');
 assert.ok(!guild.includes("{(['Activities','Hall','Roster','Manage'] as const).some"), 'remove duplicated online Guild section headers');
 assert.ok(guild.includes('<GuildNavigation value={onlineSection}')&&guild.includes('activityView==='), 'Guild section navigation intact');

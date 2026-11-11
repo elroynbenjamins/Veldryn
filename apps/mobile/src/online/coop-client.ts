@@ -24,7 +24,7 @@ export interface CoopEntryData {rewardBudget?:{charges:number;chargeCapacity:num
 export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
-export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;tier?:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopDecisionBody {requestId:string;decisionId:string;decisionRevision:number;optionId:string;boonId?:string;}
 export interface CoopMerchantPurchaseBody {requestId:string;expectedVersion:number;offerId:string;}
 export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:boolean;}

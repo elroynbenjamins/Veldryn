@@ -83,7 +83,7 @@ export const EVENT_EXPEDITIONS:readonly EventExpeditionDefinition[] = Object.fre
   mechanic:{id:'caravan_integrity',label:'Caravan Integrity',description:'Protect and repair the guild caravan. A battered caravan makes the final assault harder; a pristine convoy earns a delivery bonus.',startValue:72,maxValue:100,lowThreshold:30,highThreshold:82,battleDelta:-7,lowBossAttackMultiplier:1.10,highBossAttackMultiplier:.96,highRewardBonus:8},
   objective:{id:'cargo_crates',label:'Protected Cargo',description:'The caravan begins with three valuable cargo lots. Dangerous routes can lose them; each delivered lot adds 3 event currency.',startCount:3,maxCount:3,effect:'reward_bonus',perPoint:3},
   specialNodes:[special(3,1,'event','EVENT_MERCHANT_WAGON_REPAIR','Repair the Damaged Wagons','caravan_repair',18,undefined,1),special(3,2,'merchant','EVENT_MERCHANT_GUILD_SUPPLY','Stop at the Guild Supply Wagon','supply_stop',8),special(4,1,'event','EVENT_MERCHANT_ESCORT_FORMATION','Form a Caravan Escort','escort_formation',15,undefined,1),special(4,2,'risk','EVENT_MERCHANT_UNSAFE_SHORTCUT','Take the Unsafe Toll Road','unsafe_shortcut',-20,1.20,-1),special(5,1,'camp','EVENT_MERCHANT_GUARD_CAMP','Fortify the Guard Camp','guard_camp',12),special(5,2,'elite','EVENT_MERCHANT_BATTLE_03','Break the Iron Tollkeeper Ambush','tollkeeper_ambush',-6,1.14,-1),special(6,1,'merchant','EVENT_MERCHANT_GUILD_QUARTER','Resupply at the Guild Quarter','guild_resupply',12),special(6,2,'event','EVENT_MERCHANT_TOLLGATE_SECURE','Secure the Final Tollgate','tollgate_secured',16)]},
- {id:'EVENT_FROSTFALL_AURORA_HOLLOW',eventName:'Frostfall Festival',liveEventSeriesId:'EVT_ANNUAL_012',name:'Aurora Hollow',description:'Follow stolen festival bells into a frozen hollow where winter spirits have turned the celebration into a deadly procession.',routeHighlights:['Snowbell Pass','Frozen Giftworks','Aurora Belfry'],finalBoss:'The Rimebell Colossus',minLevel:35,rewardMarks:104,startMonth:12,startDay:6,endMonth:12,endDay:21,encounterPrefix:'EVENT_FROSTFALL',bossEncounterId:'EVENT_FROSTFALL_BOSS',routeNodeCount:6,
+ {id:'EVENT_FROSTFALL_AURORA_HOLLOW',eventName:'Frostfall Festival',liveEventSeriesId:'EVT_ANNUAL_012',name:'Aurora Hollow',description:'Follow stolen festival bells into a frozen hollow where winter spirits have turned the celebration into a deadly procession.',routeHighlights:['Snowbell Pass','Frozen Giftworks','Aurora Belfry'],finalBoss:'The Rimebell Colossus',minLevel:10,rewardMarks:104,startMonth:12,startDay:3,endMonth:12,endDay:21,encounterPrefix:'EVENT_FROSTFALL',bossEncounterId:'EVENT_FROSTFALL_BOSS',routeNodeCount:6,
   mechanic:{id:'warmth',label:'Warmth',description:'Maintain the party’s warmth with hearths, shelter and festival magic. Deep cold empowers the Rimebell Colossus.',startValue:66,maxValue:100,lowThreshold:30,highThreshold:80,battleDelta:-7,lowBossAttackMultiplier:1.14,highBossAttackMultiplier:.94,highRewardBonus:8},
   objective:{id:'lit_hearths',label:'Festival Hearths',description:'Light up to three festival hearths. Each hearth restores 8% maximum health to surviving party members before the final boss.',startCount:0,maxCount:3,effect:'preboss_heal',perPoint:.08},
   specialNodes:[special(3,1,'camp','EVENT_FROSTFALL_FESTIVAL_HEARTH','Restore the Festival Hearth','hearth_warmth',20,undefined,1),special(3,2,'risk','EVENT_FROSTFALL_FROZEN_SHORTCUT','Cross the Frozen Shortcut','cold_shortcut',-18,1.20),special(4,1,'event','EVENT_FROSTFALL_WINDBREAK','Build a Snowbreak Shelter','windbreak',15),special(4,2,'elite','EVENT_FROSTFALL_BATTLE_02','Drive Off the Bellfrost Spirits','bellfrost_assault',-6,1.12),special(5,1,'shrine','EVENT_FROSTFALL_AURORA_BRAZIER','Kindle the Aurora Brazier','aurora_brazier',18,undefined,1),special(5,2,'risk','EVENT_FROSTFALL_WHITEOUT','Push Through the Whiteout','whiteout_crossing',-20,1.22,-1),special(6,1,'camp','EVENT_FROSTFALL_HOT_MEAL','Prepare a Festival Hot Meal','festival_meal',16,undefined,1),special(6,2,'event','EVENT_FROSTFALL_WARMING_BELLS','Ring the Warming Bells','warming_bells',12)]},
@@ -113,6 +113,19 @@ function active(definition:EventExpeditionDefinition,nowMs:number):boolean{
 
 /** Calendar dates are presentation metadata only. Authenticated co-op entry promotes
  * the matching route to available only when the authoritative LiveOps event is active. */
+/** Frostfall-only difficulty progression; ordinary dungeons retain their release gates. */
+export const FROSTFALL_EVENT_TIER_LEVELS=[10,15,20,25,30] as const;
+export const FROSTFALL_EVENT_TIER_MARK_MULTIPLIERS=[1,1.2,1.45,1.75,2.1] as const;
+export const isFrostfallEventExpedition=(id:string)=>id==='EVENT_FROSTFALL_AURORA_HOLLOW';
+export function eventTierMinLevel(definition:Pick<EventExpeditionDefinition,'id'|'minLevel'>,tier:number):number{
+ if(!Number.isInteger(tier)||tier<1||tier>5||(!isFrostfallEventExpedition(definition.id)&&tier!==1))throw new Error('invalid_event_tier');
+ return isFrostfallEventExpedition(definition.id)?FROSTFALL_EVENT_TIER_LEVELS[tier-1]:definition.minLevel;
+}
+export function eventTierRewardMarks(definition:Pick<EventExpeditionDefinition,'id'|'minLevel'|'rewardMarks'>,tier:number):number{
+ eventTierMinLevel(definition,tier);
+ return isFrostfallEventExpedition(definition.id)?Math.round(definition.rewardMarks*FROSTFALL_EVENT_TIER_MARK_MULTIPLIERS[tier-1]):definition.rewardMarks;
+}
+
 export function eventExpeditionPreviews(nowMs:number):Array<EventExpeditionDefinition&{status:'preview';scheduled:boolean}>{
  return EVENT_EXPEDITIONS.map(definition=>({...definition,status:'preview' as const,scheduled:active(definition,nowMs)}));
 }

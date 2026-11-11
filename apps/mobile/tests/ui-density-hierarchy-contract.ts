@@ -261,14 +261,14 @@ ok(dungeonDeepLinkScreen.includes('That dungeon source is not currently availabl
 
 const world=read('src/screens/WorldScreen.tsx');
 const worldNavigator=read('src/components/WorldChapterNavigator.tsx');
-ok(worldNavigator.includes('current:{flexDirection')&&worldNavigator.includes('<ZoneSceneArtwork regionId={current.id}/>'),"World current-region card must use the dedicated region artwork");
-ok(worldNavigator.includes('chapterHeader:{flexDirection')&&worldNavigator.includes('locationHeader:{flexDirection'),'World chapter and location rows must remain compact');
+ok(worldNavigator.includes('currentHero:{flexDirection')&&worldNavigator.includes('<ZoneSceneArtwork regionId={current.id}/>'),"World current-region card must use the dedicated region artwork");
+ok(worldNavigator.includes('dest:{minHeight:92,flexDirection')&&worldNavigator.includes('zone:{flexDirection'),'World travel rows and the current-region zone drawer must remain compact');
 ok(!world.includes('CURRENT REGION CONTENT')&&!world.includes('What can I do in {current.name}?'),'World must not show the redundant current-region action panel');
 ok(world.includes('<WorldChapterNavigator')&&world.includes('extraContent?<View'),'Region-specific content must stay within the World navigator before chapter exploration');
 ok(worldNavigator.includes('NEXT REGION UNLOCK')&&worldNavigator.includes('track:{height:4'),'World travel section must show compact next-region level progress');
-ok(worldNavigator.includes('WORLD_CHAPTER_GROUPS')&&worldNavigator.includes('CHAPTER_ROWS'),'World travel must group authored regions into chapters');
-ok(worldNavigator.includes('OBJECTIVE ROUTE')&&worldNavigator.includes('currentGoal'),'World route guidance must remain truthful for Working Toward region deep links');
-ok(worldNavigator.includes('description:{fontSize:11')&&worldNavigator.includes('activityCount:{fontSize:10'),'Travel locations must preview authored content without making rows excessively tall');
+ok(worldNavigator.includes('currentZones.map(zone=>')&&!worldNavigator.includes('zonesOpen'),'Current chapter zones must stay inline without a collapse toggle');
+ok(worldNavigator.includes('OBJECTIVE ROUTE')&&worldNavigator.includes('goalChapter'),'World route guidance must remain truthful for Working Toward region deep links');
+ok(worldNavigator.includes('destSub:{fontSize:11')&&worldNavigator.includes('zoneSubtitle:{fontSize:10'),'Travel locations must preview authored content without making rows excessively tall');
 ok(!world.includes('Open Co-op Expeditions'),'World must not keep a duplicate standalone co-op panel after adding co-op to current-region quick actions');
 
 const character=read('src/screens/CharacterScreen.tsx');
@@ -412,8 +412,8 @@ const characterPolish=read('src/screens/CharacterScreen.tsx');
 ok(characterPolish.includes('<GameButton compact title={selectedDecision.upgrade.canAfford?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
 
 const worldPolish=read('src/components/WorldChapterNavigator.tsx');
-ok(worldPolish.includes('currentArtwork:{width:72')&&worldPolish.includes('current:{flexDirection')&&worldPolish.includes('backgroundColor:C.panel'),'World current-location artwork must remain separate from theme-safe text content');
-ok(worldPolish.includes('locationSelected:{borderColor:C.selectionLine,backgroundColor:C.panel}')&&worldPolish.includes('statusMuted:{color:C.muted}'),'World locked-region states must remain theme-safe');
+ok(worldPolish.includes('currentArtwork:{width:82')&&worldPolish.includes('currentHero:{flexDirection')&&worldPolish.includes('backgroundColor:C.panel'),'World current-location artwork must remain separate from theme-safe text content');
+ok(worldPolish.includes('destGoal:{borderColor:C.info,borderWidth:2}')&&worldPolish.includes('destMetaLocked:{color:C.muted'),'World locked-region states must remain theme-safe');
 
 const encounterList=read('src/components/RegionEncounterList.tsx');
 ok(encounterList.includes('BASELINE REWARDS')&&encounterList.includes('rewardValue')&&encounterList.includes('readiness.safety'),'Expanded encounters must expose compact reward and readiness context');

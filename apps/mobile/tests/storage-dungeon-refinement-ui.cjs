@@ -37,7 +37,7 @@ assert(!coop.includes('catch(reason){setEntry(undefined);setError('),'Refresh er
 assert(coop.includes('requestId===loadRequestId.current'),'Late requests cannot overwrite a newer refresh');
 assert(coop.includes('setSyncError('),'Run connection errors are not mixed into action notices');
 assert(browser.includes('hasUsableSnapshot'),'Previously loaded dungeons remain accessible while refresh is pending');
-assert(browser.includes('showCatalog&&available.map('),'Dungeon cards remain visible if a refresh fails');
+assert(browser.includes('showCatalog&&groupCoopDungeonsByRegion(available)'),'Dungeon cards remain visible if a refresh fails');
 assert(browser.includes('Showing previously loaded dungeons'),'Users know when they are viewing cached server data');
 assert(run.includes('{!!syncError&&<FantasyPanel variant="danger">'),'Connection recovery is shown only after a sync failure');
 assert(run.indexOf('{!!syncError&&<FantasyPanel variant="danger">')<run.indexOf("{!(run.phase==='resolving_node'"),'Reconnect warning remains visible even while combat is resolving');

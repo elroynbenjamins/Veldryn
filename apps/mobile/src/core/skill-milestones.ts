@@ -1,5 +1,7 @@
 import {GATHERING,RECIPES,type Recipe} from '../content/skills';
 import {HERB_NODES,HERBALISM_METHODS} from '../content/herbalism';
+import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier} from '../content/exploration';
+import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {GATHERING_TOOLS} from '../content/gathering-tools';
 import {MONSTERS} from '../content/monsters';
 import {FAITH_BLESSINGS,FAITH_TIERS} from '../content/faith';
@@ -36,7 +38,7 @@ export const skillMilestoneCategory=(kind:SkillMilestoneKind)=>kind==='gathering
 
 function skillMode(skillId:string):'gathering'|'crafting'|'faith'|undefined{
  if(skillId==='faith')return 'faith';
- if(gatheringIds.has(skillId as SkillId))return 'gathering';
+ if(gatheringIds.has(skillId as SkillId)||skillId==='exploration')return 'gathering';
  if(craftingIds.has(skillId as SkillId))return 'crafting';
  return undefined;
 }
@@ -63,6 +65,26 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
     id:'tool:'+tool.id,kind:'tool',level:tool.unlockLevel,title:tool.name,category:'TOOL TIER',
     detail:'Tier '+tool.tier+' · Level '+tool.requiredCharacterLevel+' + '+pretty(skillId)+' '+tool.unlockLevel+(tool.blueprint?' · blueprint: '+(blueprintSource?.name??tool.blueprint.sourceMonsterId)+' · '+Math.round(tool.blueprint.dropChance*100)+'% drop':' · recipe known'),
     destination:{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_'+tool.id,button:'Craft '+tool.name,detail:'Open the Smithing recipe for '+tool.name+'.'},
+   });
+  }
+ }
+ if(skillId==='exploration'){
+  for(const route of EXPLORATION_ROUTES){
+   const zone=WORLD_ZONES.find(row=>row.id===route.zoneId);
+   if(!zone||worldZoneInDevelopment(zone))continue;
+   rows.push({
+    id:'scout:'+route.id,kind:'service',level:route.requiredExplorationLevel,
+    title:route.name,category:'SURVEY',
+    detail:zone.name+' · Character Lv '+route.requiredLevel+(route.unlockMonsterId?' · reveals an encounter':' · repeatable training'),
+    destination:milestoneDestination('exploration'),
+   });
+  }
+  for(let level=10;level<=100;level+=10){
+   rows.push({
+    id:'trailcraft:'+level,kind:'service',level,
+    title:'Trailcraft '+(level/10),category:'PASSIVE BENEFIT',
+    detail:'+'+Math.round(explorationGatheringSpeedBonus(level)*100)+'% gathering speed · +'+Math.round((explorationScoutingSpeedMultiplier(level)-1)*100)+'% scouting speed',
+    destination:milestoneDestination('exploration'),
    });
   }
  }

@@ -13,9 +13,17 @@ assert.equal(guildPveView({...row,allowanceUsed:50000},live).allowance,0);
 assert.equal(guildPveView({...row,damage:500000},live).status,'Defeated');
 assert.equal(guildPveView({...row,damage:500000},live).active,false);
 assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:2},live).attemptsRemaining,1);
+assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:1,guildLevel:3,requiredGuildLevel:3},live).canContribute,true); // Weekly guild fights must remain accessible without event character-level fields.
 assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:3},live).canContribute,false);
 assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:1,pendingAttempts:1},live).canContribute,false);
 assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:1,guildLevel:2,requiredGuildLevel:3},live).canContribute,false);
+const frostRow:GuildPveEncounter={...row,kind:'event',eventId:'EVT_ANNUAL_012_2026',startsAt:'2026-12-03T00:00:00Z',endsAt:'2026-12-30T00:00:00Z',claimEndsAt:'2027-01-03T00:00:00Z',guildLevel:1,requiredGuildLevel:1,characterLevel:9,requiredCharacterLevel:10,attemptCap:9,attemptsUsed:0};
+const frostNow=Date.parse('2026-12-05T00:00:00Z');
+assert.equal(guildPveView(frostRow,frostNow).canContribute,false);
+assert.equal(guildPveView({...frostRow,characterLevel:10},frostNow).canContribute,true);
+assert.equal(guildPveView({...frostRow,characterLevel:10,guildLevel:1,requiredGuildLevel:3},frostNow).canContribute,false);
+assert.equal(guildPvePresentation(frostRow).visualKey,'frostfall');
+assert.equal(guildPvePresentation(frostRow).bossName,'Frostbell Herald');
 const weeklyPresentation=guildPvePresentation(row);
 assert.equal(weeklyPresentation.bossName,'Rootbound Colossus');
 assert.deepEqual(weeklyPresentation.activities,['combat']);

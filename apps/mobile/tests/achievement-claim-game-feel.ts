@@ -22,6 +22,7 @@ ok(screen.includes('Achievement showcase updated.'),'showcase saves need lightwe
 ok(screen.includes('showcase.length>=3')&&screen.includes('All 3 showcase slots are full. Unselect another achievement to make room.'),'A full showcase must explain why a claimed achievement cannot be added.');
 
 ok(!app.includes('<AchievementsScreen'),'The unfinished online Achievements screen must not be mounted for players');
-ok(app.includes("onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}"),'Journal title customization must remain reachable from the Mastery Hall');
+ok(app.includes("onProfile={()=>{setProfileCustomizeSection('Showcase');setTab('ProfileCustomize')}}"),'Mastery Hall must open the profile tab that holds its mastery showcase');
+ok(read('src/core/profile-wardrobe.ts').includes('JOURNAL_TITLES_V42'),'Journal title customization must remain reachable from profile customization');
 
 console.log('PASS achievement claims provide committed reward, score, title and idempotency feedback');

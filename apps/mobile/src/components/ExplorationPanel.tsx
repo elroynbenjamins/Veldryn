@@ -4,8 +4,9 @@ import React,{useMemo,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
-import {EXPLORATION_ROUTES} from '../content/exploration';
-import {WORLD_ZONES} from '../content/world-map';
+import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier,unmetScoutingPrerequisite} from '../content/exploration';
+import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
+import {regionalArea} from '../content/regional-areas';
 import {currentRegionId} from '../core/combat-region';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
@@ -14,32 +15,94 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function ExplorationPanel({state,onCommand}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>}){
-  const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
-  const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
-  const p=(text:string)=>progressionText(language,text);
-
+ const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
+ const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
+ const p=(text:string)=>progressionText(language,text);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),c=state.character;
  const [showOtherRegions,setShowOtherRegions]=useState(false);
  if(!c)return null;
- const regionId=currentRegionId(state),region=WORLD_ZONES.find(item=>item.id===regionId),exploration=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
- const currentRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId===regionId).sort((a,b)=>a.requiredLevel-b.requiredLevel);
- const otherRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId!==regionId).sort((a,b)=>a.requiredLevel-b.requiredLevel);
- const routes=showOtherRegions?[...currentRoutes,...otherRoutes]:currentRoutes;
- const mapped=currentRoutes.filter(route=>(state.exploredRouteIds??[]).includes(route.id)).length;
+ const regionId=currentRegionId(state),region=WORLD_ZONES.find(item=>item.id===regionId);
+ const exploration=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
+ const currentRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId===regionId);
+ const otherRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId!==regionId);
+ const shownRoutes=showOtherRegions?[...currentRoutes,...otherRoutes]:currentRoutes;
+ const explored=state.exploredRouteIds??[];
+ const mapped=currentRoutes.filter(route=>explored.includes(route.id)).length;
+ const gatheringPercent=Math.round(explorationGatheringSpeedBonus(exploration)*100);
+ const scoutPercent=Math.round((explorationScoutingSpeedMultiplier(exploration)-1)*100);
+ const nextPerkLevel=exploration>=100?undefined:Math.min(100,(Math.floor(exploration/10)+1)*10);
+
  return <Panel>
-  <View style={s.heading}><View style={s.flex}><Text style={s.eyebrow}>{t("SCOUTING ROUTES")}</Text><Text style={s.title}>{t("Explore the world")}</Text><Text style={s.body}>{t("Scouting is the fastest way to train Exploration, reveal encounters, and discover routes into later regions. Combat also grants a smaller amount of passive Exploration XP while you learn the area.")}</Text></View><View style={s.regionBadge}><Text style={s.regionBadgeLabel}>{t("CURRENT")}</Text><Text numberOfLines={2} style={s.regionBadgeValue}>{region?.name??regionId}</Text></View></View>
-  <View style={s.overview}><Text style={s.overviewTitle}>{p('CURRENT REGION SURVEYS')}</Text><Text style={s.overviewCount}>{mapped} / {currentRoutes.length} {t('MAPPED')}</Text></View>
+  <View style={s.heading}>
+   <View style={s.flex}>
+    <Text style={s.eyebrow}>{t('SCOUTING ROUTES')}</Text>
+    <Text style={s.title}>{t('Explore the world')}</Text>
+    <Text style={s.body}>{p('Scouting reveals encounters and discovers routes between regions. Combat also earns passive Exploration XP.')}</Text>
+   </View>
+   <View style={s.regionBadge}><Text style={s.regionBadgeLabel}>{t('CURRENT')}</Text><Text numberOfLines={2} style={s.regionBadgeValue}>{region?.name??regionId}</Text></View>
+  </View>
+
+  <View style={s.mastery}>
+   <Text style={s.masteryLabel}>{p('TRAILCRAFT · PASSIVE BENEFITS')}</Text>
+   <Text style={s.masteryValue}>{p('Gathering speed')} +{gatheringPercent}%  ·  {p('Scouting speed')} +{scoutPercent}%</Text>
+   <Text style={s.masteryHint}>{nextPerkLevel? p('Next Trailcraft upgrade at Exploration Lv')+' '+nextPerkLevel : p('Trailcraft fully mastered')}</Text>
+  </View>
+
+  <View style={s.sectionHeading}>
+   <Text style={s.sectionTitle}>{p('CURRENT REGION SURVEYS')}</Text>
+   <Text style={s.sectionProgress}>{mapped}/{currentRoutes.length} {t('MAPPED')}</Text>
+  </View>
   {!currentRoutes.length?<Text style={s.body}>{p('No scouting surveys are available in this region yet.')}</Text>:null}
-  {routes.map(route=>{const zone=WORLD_ZONES.find(item=>item.id===route.zoneId),nextZone=route.unlockZoneId?WORLD_ZONES.find(item=>item.id===route.unlockZoneId):undefined,here=regionId===route.zoneId,characterReady=c.level>=route.requiredLevel,explorationReady=exploration>=route.requiredExplorationLevel,ready=here&&characterReady&&explorationReady,completed=(state.exploredRouteIds??[]).includes(route.id),found=!!route.unlockMonsterId&&state.unlockedMonsterIds.includes(route.unlockMonsterId);const stateLabel=completed?t("MAPPED"):!characterReady?`CHAR LV ${route.requiredLevel}`:!explorationReady?`EXP LV ${route.requiredExplorationLevel}`:!here?t("TRAVEL"):t("READY");return <View key={route.id} style={[s.route,ready&&s.routeReady]}>
-   <View style={s.routeTop}><View style={s.flex}><View style={s.inline}><Text style={s.routeName}>{route.name}</Text><Text style={[s.tag,ready?s.tagReady:completed?s.tagFound:s.tagLocked]}>{stateLabel}</Text></View><Text style={s.routeMeta}>{zone?.name??route.zoneId} · {route.seconds}s · {route.xp}  {t("Exploration XP · Exp Lv")} {route.requiredExplorationLevel}</Text>{route.unlockMonsterId?<Text style={s.reward}>{found?t("Encounter revealed"):t("Reveals a regional encounter")}</Text>:null}{nextZone?<Text style={s.reward}>{completed?`Route to ${nextZone.name} discovered`:`Discovers the route to ${nextZone.name}`}</Text>:null}</View></View>
-   <GameButton compact title={completed&&ready?t("Scout again"):ready?t("Scout"):!characterReady?`Requires character level ${route.requiredLevel}`:!explorationReady?`Requires Exploration level ${route.requiredExplorationLevel}`:`Travel to ${zone?.name??route.zoneId}`} disabled={!ready} tone={ready?'primary':'secondary'} onPress={()=>onCommand({type:'explore',args:{id:route.id}})}/>
-  </View>})}
+  {shownRoutes.map(route=>{
+   const zone=WORLD_ZONES.find(item=>item.id===route.zoneId);
+   const area=route.areaId?regionalArea(route.zoneId,route.areaId):undefined;
+   const here=regionId===route.zoneId,completed=explored.includes(route.id);
+   const available=!!zone&&!worldZoneInDevelopment(zone);
+   const characterReady=c.level>=route.requiredLevel,explorationReady=exploration>=route.requiredExplorationLevel;
+   const prerequisite=unmetScoutingPrerequisite(route,explored);
+   const ready=here&&available&&characterReady&&explorationReady&&!prerequisite;
+   const found=!!route.unlockMonsterId&&state.unlockedMonsterIds.includes(route.unlockMonsterId);
+   const stateLabel=completed?t('MAPPED'):!available?t('In Development'):!characterReady?'CHAR LV '+route.requiredLevel:!explorationReady?'EXP LV '+route.requiredExplorationLevel:prerequisite?p('PRIOR SURVEY'):!here?t('TRAVEL'):t('READY');
+   const buttonLabel=!available?t('In Development'):!characterReady?p('Character Lv')+' '+route.requiredLevel:!explorationReady?p('Exploration Lv')+' '+route.requiredExplorationLevel:prerequisite?p('Finish prior survey'):!here?p('Travel to')+' '+(zone?.name??route.zoneId):completed?t('Scout again'):t('Scout');
+   return <View key={route.id} style={[s.route,ready&&s.routeReady]}>
+    <View style={s.inline}>
+     <View style={s.flex}><Text style={s.routeName}>{route.name}</Text>{area?<Text style={s.areaName}>{p(area.name)}</Text>:null}</View>
+     <Text style={[s.tag,ready?s.tagReady:completed?s.tagFound:s.tagLocked]}>{stateLabel}</Text>
+    </View>
+    <Text style={s.routeMeta}>{zone?.name??route.zoneId} · {Math.round(route.seconds/explorationScoutingSpeedMultiplier(exploration))}s · {route.xp} {p('Exploration XP')} · {p('Exp Lv')} {route.requiredExplorationLevel}</Text>
+    {prerequisite?<Text style={s.prerequisite}>{p('First map')} {prerequisite.name}</Text>:null}
+    {route.unlockMonsterId?<Text style={s.reward}>{found?t('Encounter revealed'):t('Reveals a regional encounter')}</Text>:null}
+    {route.unlockZoneId?<Text style={s.reward}>{completed?p('Route discovered to'):p('Discovers the route to')} {WORLD_ZONES.find(item=>item.id===route.unlockZoneId)?.name??route.unlockZoneId}</Text>:null}
+    <GameButton compact title={buttonLabel} disabled={!ready} tone={ready?'primary':'secondary'} onPress={()=>onCommand({type:'explore',args:{id:route.id}})}/>
+   </View>;
+  })}
   {otherRoutes.length?<DisclosureControl label={(showOtherRegions?p('Hide other regions'):p('View other regions'))+' ('+otherRoutes.length+')'} expanded={showOtherRegions} onPress={()=>setShowOtherRegions(open=>!open)}/>:null}
  </Panel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- flex:{flex:1,minWidth:0},heading:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},eyebrow:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.9},title:{...typography.title,color:C.text},body:{...typography.body,color:C.muted},regionBadge:{maxWidth:112,alignItems:'flex-end',paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.info,borderRadius:10,backgroundColor:C.infoSurface},regionBadgeLabel:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.7},regionBadgeValue:{...typography.caption,color:C.text,fontWeight:'800',textAlign:'right'},
- overview:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:4},
- overviewTitle:{...typography.caption,color:C.accent,fontWeight:'900'},overviewCount:{...typography.caption,color:C.good,fontWeight:'900'},
- route:{gap:7,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line}, routeReady:{padding:spacing.sm,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.selection},routeTop:{flexDirection:'row',gap:8},inline:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},routeName:{...typography.bodyStrong,color:C.text},routeMeta:{...typography.caption,color:C.muted},reward:{...typography.caption,color:C.accent},tag:{fontSize:9,fontWeight:'900',letterSpacing:.7},tagReady:{color:C.good},tagFound:{color:C.special},tagLocked:{color:C.warning}
+ flex:{flex:1,minWidth:0},
+ heading:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},
+ eyebrow:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.9},
+ title:{...typography.title,color:C.text},
+ body:{...typography.body,color:C.muted},
+ regionBadge:{maxWidth:112,alignItems:'flex-end',paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.info,borderRadius:10,backgroundColor:C.infoSurface},
+ regionBadgeLabel:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.7},
+ regionBadgeValue:{...typography.caption,color:C.text,fontWeight:'800',textAlign:'right'},
+ mastery:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panel2},
+ masteryLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},
+ masteryValue:{...typography.bodyStrong,color:C.good,fontSize:12},
+ masteryHint:{...typography.caption,color:C.muted},
+ sectionHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:spacing.xs},
+ sectionTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.6},
+ sectionProgress:{...typography.caption,color:C.good,fontWeight:'900'},
+ route:{gap:6,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
+ routeReady:{padding:spacing.sm,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.selection},
+ inline:{flexDirection:'row',alignItems:'center',gap:6},
+ routeName:{...typography.bodyStrong,color:C.text},
+ areaName:{...typography.caption,color:C.info},
+ routeMeta:{...typography.caption,color:C.muted},
+ prerequisite:{...typography.caption,color:C.warning},
+ reward:{...typography.caption,color:C.accent},
+ tag:{fontSize:9,fontWeight:'900',letterSpacing:.7},
+ tagReady:{color:C.good},tagFound:{color:C.special},tagLocked:{color:C.warning}
 });}

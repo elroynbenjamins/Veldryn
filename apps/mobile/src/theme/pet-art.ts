@@ -10,7 +10,7 @@ const guildPetSourceById=new Map<string,ImageSourcePropType>([
 /**
  * Canonical pet-art resolver used by collection surfaces.
  *
- * Master PET_001–PET_033 artwork is canonical. Event artwork remains available
+ * Master PET_001–PET_042 artwork is canonical. Event artwork remains available
  * for the separate annual event collection.
  */
 export function petArtSource(id:string):ImageSourcePropType|undefined{
@@ -64,6 +64,15 @@ const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
  ['PET_031',require('../../assets/master_roster/pets/portraits_512/PET_031_Ember_Eel_Fry.png')],
  ['PET_032',require('../../assets/master_roster/pets/portraits_512/PET_032_Forge_Imp.png')],
  ['PET_033',require('../../assets/master_roster/pets/portraits_512/PET_033_Cinder_Crownling.png')],
+ ['PET_034',require('../../assets/master_roster/pets/portraits_512/PET_034_Glasswing_Jerboa.png')],
+ ['PET_035',require('../../assets/master_roster/pets/portraits_512/PET_035_Mirage_Kit.png')],
+ ['PET_036',require('../../assets/master_roster/pets/portraits_512/PET_036_Crownscale_Hatchling.png')],
+ ['PET_037',require('../../assets/master_roster/pets/portraits_512/PET_037_Whitepine_Owlet.png')],
+ ['PET_038',require('../../assets/master_roster/pets/portraits_512/PET_038_Rime_Otter.png')],
+ ['PET_039',require('../../assets/master_roster/pets/portraits_512/PET_039_Iceglass_Minnow.png')],
+ ['PET_040',require('../../assets/master_roster/pets/portraits_512/PET_040_Emberfin_Tadpole.png')],
+ ['PET_041',require('../../assets/master_roster/pets/portraits_512/PET_041_Blackglass_Newt.png')],
+ ['PET_042',require('../../assets/master_roster/pets/portraits_512/PET_042_Heartfire_Salamander.png')],
 ]);
 
 export function petDetailArtSource(id:string):ImageSourcePropType|undefined{

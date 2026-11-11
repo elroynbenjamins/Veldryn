@@ -9,7 +9,7 @@ const DUNGEON_REQUIREMENTS:Readonly<Record<string,{minLevel:number;powers:readon
  EXP_001:{minLevel:10,powers:[2500,3750,5000],requiresChapterOne:false},
  EXP_003:{minLevel:25,powers:[6000,7250,8500],requiresChapterOne:true},
 });
-const DEVELOPMENT_DUNGEONS=new Set(['EXP_005']);
+const DEVELOPMENT_DUNGEONS=new Set(['EXP_005','EXP_007']);
 export function publishedRegularDungeon(def:ExpeditionDefinition):boolean{return def.coopImplemented&&Boolean(DUNGEON_REQUIREMENTS[def.id]);}
 export function listedRegularDungeon(def:ExpeditionDefinition):boolean{return publishedRegularDungeon(def)||DEVELOPMENT_DUNGEONS.has(def.id);}
 export function regularDungeonTierRequiredLevel(def:ExpeditionDefinition,tier:CoopTier):number{

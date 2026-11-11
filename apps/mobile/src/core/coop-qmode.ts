@@ -1,6 +1,10 @@
 import type {CoopRole} from './coop-ui-contract';
-import type {CoopRoomOutcomeView,CoopMerchantShopView} from './coop-presentation';
+import type {CoopRoomOutcomeView,CoopMerchantShopView,CoopRunRegion} from './coop-presentation';
 import {parseCoopEncounterPreview,validateCoopRunView,type CoopRunBossMechanicView,type CoopCombatReplayView,type CoopPendingCombatView,type CoopRunView} from './coop-presentation';
+const EXPEDITION_REGION:Record<string,CoopRunRegion>={
+ EXP_001:'Asterfall',EXP_002:'Asterfall',EXP_003:'Sunscar',EXP_004:'Sunscar',
+ EXP_005:'Frostmarch',EXP_006:'Frostmarch',EXP_007:'Ashlands',EXP_008:'Ashlands',
+};
 export type CoopQModeStatus='recruiting'|'ready'|'candidate_shortage'|'content_conflict'|'resuming'|'error'|'reward_pending'|'completed';
 export interface CoopQModeMemberView {memberId:string;displayName:string;role:CoopRole;kind:'controller'|'echo'|'npc';effectiveLevel:number;status:'ready'|'loading'|'unavailable';appearanceId?:string;}
 export interface CoopQModeTeamView {runId?:string;requestId:string;status:CoopQModeStatus;members:CoopQModeMemberView[];message?:string;stateVersion?:number;}
@@ -25,10 +29,17 @@ export function presentQModeRun(projection:CoopQModeServerProjection&{stateVersi
  });
  // Queued dungeon nodes keep their selected ID in the server projection.
  // Look up its public route kind; resolving_node alone does not imply combat.
- const graph=projection.graph&&typeof projection.graph==='object'?projection.graph as {nodes?:unknown}:undefined;
+ const graph=projection.graph&&typeof projection.graph==='object'?projection.graph as {nodes?:unknown;preBossNodeCount?:unknown}:undefined;
  const graphNodes=Array.isArray(graph?.nodes)?graph.nodes:[];
  const selectedNode=projection.selectedNodeId?graphNodes.find(value=>value&&typeof value==='object'&&(value as {nodeId?:unknown}).nodeId===projection.selectedNodeId):undefined;
  const selectedNodeKind=selectedNode&&typeof selectedNode==='object'&&typeof (selectedNode as {kind?:unknown}).kind==='string'?(selectedNode as {kind:string}).kind:undefined;
- const run:CoopRunView={runId:projection.runId,mode:projection.mode,phase:projection.phase,syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),potionChargeCapacity:projection.potionChargeCapacity,healingPotionUsesByActor:projection.healingPotionUsesByActor,potionPreparationOpen:projection.potionPreparationOpen,preparedAlchemyPotionIdsByActor:projection.preparedAlchemyPotionIdsByActor,tier:projection.tier,roleSlots:projection.team.map(member=>({memberId:member.memberId,role:member.role,name:member.displayName,echo:projection.mode==='qmode'&&member.kind==='echo',npc:projection.mode==='qmode'&&member.kind==='npc',classId:member.classId,bodyPresentation:member.bodyPresentation,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:!member.downed})),options,selectedNodeId:projection.selectedNodeId,selectedNodeKind,stateVersion:projection.stateVersion,decisionId:projection.decisionId,decisionRevision:projection.decisionRevision,resolvesAtMs:projection.resolvesAtMs,presenceSummary:projection.presenceSummary,bossMechanic:projection.bossMechanic,lastCombat:projection.lastCombat,pendingCombat:projection.pendingCombat,lastRoomOutcome:projection.lastRoomOutcome,merchantShop:projection.merchantShop,boonOffers:projection.boonOffers,serverNow:projection.serverNow};
+ // Every resolved node is counted; the boss is the last depth. visitedNodeIds
+ // excludes the un-resolvable entry, so its length is the current depth.
+ const preBossNodeCount=typeof graph?.preBossNodeCount==='number'&&Number.isInteger(graph.preBossNodeCount)&&graph.preBossNodeCount>0&&graph.preBossNodeCount<=12?graph.preBossNodeCount:undefined;
+ const visitedDepth=Array.isArray(projection.visitedNodeIds)?projection.visitedNodeIds.length:0;
+ const totalDepth=preBossNodeCount!==undefined?preBossNodeCount+1:undefined;
+ const routePath=totalDepth!==undefined?{depth:Math.min(visitedDepth,totalDepth),totalDepth}:undefined;
+ const region=EXPEDITION_REGION[projection.expeditionId];
+ const run:CoopRunView={runId:projection.runId,mode:projection.mode,phase:projection.phase,syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),potionChargeCapacity:projection.potionChargeCapacity,healingPotionUsesByActor:projection.healingPotionUsesByActor,potionPreparationOpen:projection.potionPreparationOpen,preparedAlchemyPotionIdsByActor:projection.preparedAlchemyPotionIdsByActor,tier:projection.tier,roleSlots:projection.team.map(member=>({memberId:member.memberId,role:member.role,name:member.displayName,echo:projection.mode==='qmode'&&member.kind==='echo',npc:projection.mode==='qmode'&&member.kind==='npc',classId:member.classId,bodyPresentation:member.bodyPresentation,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:!member.downed})),options,selectedNodeId:projection.selectedNodeId,selectedNodeKind,stateVersion:projection.stateVersion,decisionId:projection.decisionId,decisionRevision:projection.decisionRevision,resolvesAtMs:projection.resolvesAtMs,presenceSummary:projection.presenceSummary,bossMechanic:projection.bossMechanic,lastCombat:projection.lastCombat,pendingCombat:projection.pendingCombat,lastRoomOutcome:projection.lastRoomOutcome,merchantShop:projection.merchantShop,boonOffers:projection.boonOffers,...(routePath?{routePath}:{}),...(region?{region}:{}),serverNow:projection.serverNow};
  validateCoopRunView(run);return run;
 }

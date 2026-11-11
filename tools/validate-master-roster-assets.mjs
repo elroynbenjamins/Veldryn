@@ -15,7 +15,7 @@ const registryPath=resolve(repoRoot,'apps/mobile/src/theme/master-roster-assets.
 const portraitRegistryPath=resolve(repoRoot,'apps/mobile/src/theme/pet-art.ts');
 
 const fail=(message)=>{throw new Error(message)};
-const expectedPetIds=Array.from({length:33},(_,i)=>`PET_${String(i+1).padStart(3,'0')}`);
+const expectedPetIds=Array.from({length:42},(_,i)=>`PET_${String(i+1).padStart(3,'0')}`);
 const expectedUnitIds=Array.from({length:24},(_,i)=>`UNIT_${String(i+1).padStart(3,'0')}`);
 
 function webpInfo(path){

@@ -5,7 +5,7 @@ import {DUNGEON_UNLOCK_LEVEL,defeatedDungeonChapterBoss,listedRegularDungeon,pub
 const before={defeatedBossIds:[]},cleared={defeatedBossIds:['FALLEN_KNIGHT']};
 assert.equal(DUNGEON_UNLOCK_LEVEL,10);
 assert.deepEqual(Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003']);
-assert.deepEqual(Object.values(EXPEDITIONS).filter(listedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003','EXP_005']);
+assert.deepEqual(Object.values(EXPEDITIONS).filter(listedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003','EXP_005','EXP_007']);
 for(const id of ['EXP_002','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'])assert.equal(regularDungeonEntryError(EXPEDITIONS[id],cleared,100,100_000),'dungeon_unavailable');
 for(const [id,level,powers] of [['EXP_001',10,[2500,3750,5000]],['EXP_003',25,[6000,7250,8500]]] as const){
  const def=EXPEDITIONS[id];
@@ -27,4 +27,5 @@ assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_003,before,25,6000),'chapt
 assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_001,before,10,2499),'Requires 2,500 Combat Power');
 assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_003,before,25,6000),'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.');
 assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_005,cleared,100,100_000),'In Development');
+assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_007,cleared,100,100_000),'In Development');
 console.log('PASS: regional Combat Power gates, tier boundaries, early Asterfall and chapter-locked Sunscar');

@@ -17,8 +17,8 @@ ok(scene.includes(':<RegionArtwork regionId={regionId}/>'),'Unmapped future zone
 ok(scene.includes('muted&&s.muted'),'Unavailable regions must retain muted treatment');
 ok(scene.includes('resizeMode="cover"'),'Panoramas must fill cards without stretching');
 ok(world.includes('<WorldChapterNavigator')&&chapters.includes('<ZoneSceneArtwork regionId={current.id}/>'),'Current location must display the same scenic region art');
-ok(chapters.includes('<ZoneSceneArtwork regionId={chapter.artRegionId} muted={!released}/>'),'Chapter thumbnails must use the existing region panoramas');
-ok(chapters.includes('<ZoneSceneArtwork regionId={row.areaId} muted={!access}/>'),'Expanded Sunscar and Frostmarch locations must use their own scene');
+ok(chapters.includes('<ZoneSceneArtwork regionId={chapter.artRegionId} muted={!access}/>'),'Chapter rows must use the chapter panorama and dim locked chapters');
+ok(chapters.includes('<ZoneSceneArtwork regionId={artId} muted={!access}/>')&&chapters.includes('<ZoneSceneArtwork regionId={artId}/>'),'Expanded chapter zones must use their own scene, with the HERE zone shown unmuted');
 const artwork=['asterfall-heartlands','saffron-gate','scorchwind-flats','mirage-basin','tyrants-crown','thawgate','whitepine-reach','shiverlake','wyrmspine'];
 for(const name of artwork)ok(fs.existsSync('assets/world/chapters-v1/'+name+'-pixel-v1.webp'),'Missing new world artwork: '+name);
 for(const id of ['ASTERFALL_HEARTLANDS','ZONE_006','ZONE_007','ZONE_008','ZONE_010','ZONE_011','ZONE_012','ZONE_013','ZONE_015'])

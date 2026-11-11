@@ -4,7 +4,7 @@ import {Image,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native'
 import {ItemDef} from '../content/items';
 import {C,radii} from '../theme/theme';
 import {itemRarity,rarityMeta,type ItemRarity} from '../core/item-rarity';
-import {equipmentArtworkSetByItemId,equipmentSheetBySet} from '../theme/equipment-assets';
+import {equipmentArtworkScaleBySet,equipmentArtworkSetByItemId,equipmentSheetBySet} from '../theme/equipment-assets';
 import {hasStarterWeaponArtwork,StarterWeaponArtwork} from './StarterWeaponArtwork';
 import {EQUIPMENT_ATLAS_COLUMNS,EQUIPMENT_ATLAS_ROWS,equipmentArtworkLayout} from '../core/equipment-artwork-layout';
 
@@ -33,11 +33,11 @@ export function EquipmentArtwork({item,rarity,compact=false,framed=true,size:req
   const slotIndex=item.slot?slots.indexOf(item.slot as typeof slots[number]):-1;
   const frameStyle={width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent'};
   if(hasStarterWeaponArtwork(item.id))return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><StarterWeaponArtwork itemId={item.id} size={size}/></View>;
-  const crop=sheet?equipmentArtworkLayout(slotIndex,size,equipmentSheetCellAspect(sheet)):null;
+  const crop=sheet?equipmentArtworkLayout(slotIndex,size,equipmentSheetCellAspect(sheet),setId?equipmentArtworkScaleBySet[setId]:undefined):null;
   if(sheet&&crop){
     // Crop within each source cell rather than simply nudging the atlas. The
     // latter can reveal a neighbouring icon at the top/left edge of a tile.
-    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:crop.cellWidth,height:crop.cellHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:crop.sheetWidth,height:crop.sheetHeight,left:crop.left,top:crop.top}}/></View></View>;
+    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:crop.artWidth,height:crop.artHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:crop.sheetWidth,height:crop.sheetHeight,left:crop.left,top:crop.top}}/></View></View>;
   }
   return <View accessibilityLabel={tr('{name} equipment marker',{name:item.name})} style={[s.frame,frameStyle]}><Text style={[s.marker,{color:meta.color}]}>◇</Text></View>;
 }

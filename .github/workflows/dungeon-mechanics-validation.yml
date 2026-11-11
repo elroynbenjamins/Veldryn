@@ -5,6 +5,7 @@ on:
     paths:
       - 'backend/online/live-runtime.ts'
       - 'backend/online/tests/dungeon-variety.ts'
+      - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'
       - 'backend/src/server/combat/**'
       - 'backend/src/server/coop/**'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'backend/online/live-runtime.ts'
       - 'backend/online/tests/dungeon-variety.ts'
+      - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'
       - 'backend/src/server/combat/**'
       - 'backend/src/server/coop/**'

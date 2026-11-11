@@ -1,9 +1,12 @@
 /** Personal frames are authored at 16:9. Keep corner/medallion proportions
- * in square and rectangular cards; scale only the unadorned connecting rails. */
-export function profileFrameSegments(width:number,height:number,sourceAspect=16/9){
+ * in square and rectangular cards; scale only the unadorned connecting rails.
+ * `minCorner` is the corner's target pixel size: the redesigned stage asks for a
+ * heavier corner than a 96px wardrobe tile, which would otherwise be all corner. */
+export function profileFrameSegments(width:number,height:number,sourceAspect=16/9,minCorner=36){
  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0||!Number.isFinite(sourceAspect)||sourceAspect<=0)return [];
+ if(!Number.isFinite(minCorner)||minCorner<=0)return [];
  const sx=[0,.20,.34,.66,.80,1],sy=[0,.34,.42,.58,.66,1];
- const scale=Math.min(36/(.20*sourceAspect),36/.34,width*.25/(.20*sourceAspect),height*.25/.34);
+ const scale=Math.min(minCorner/(.20*sourceAspect),minCorner/.34,width*.25/(.20*sourceAspect),height*.25/.34);
  const cx=.20*sourceAspect*scale,cy=.34*scale,mx=.32*sourceAspect*scale,my=.16*scale;
  const xs=[0,cx,(width-mx)/2,(width+mx)/2,width-cx,width],ys=[0,cy,(height-my)/2,(height+my)/2,height-cy,height];
  const segments=[];

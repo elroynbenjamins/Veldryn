@@ -49,6 +49,7 @@ T4 feels valuable through material selection, a stronger central emblem, and sli
 
 - **T5 versus T4:** a side-by-side 40 px comparison must show an immediate material and construction upgrade. Carry the primary Sunscar resource across at least three large/readable slots—normally helmet or chest plus weapon, offhand, or cape—and echo it on two smaller slots. Use broad plates, faceted inserts, woven panels, scale fields, reinforced limbs, or structural rims; a new buckle color or a few thin highlights do not qualify.
 - **T6 versus T5:** keep the class family, then add one more resolved construction layer and a controlled secondary resource signature. The primary resource remains dominant; the secondary appears on at least two readable slots. T6 must not be a recolored T5 or a T5 sheet with extra sparkles.
+- **Progression is never scale:** T5 and T6 icons must use the same normalized cell occupancy as T1–T4. A larger helmet, shield, weapon, cape, ornament, glow, or shadow is not a valid tier upgrade. T5/T6 strength comes only from construction, material placement, silhouette refinement, and readable motifs inside the shared safe box.
 - **Named-set uniqueness:** Foundation and Alternate remain sidegrades, but each must exceed its approved T4 parent. Their difference comes from their actual source material, processed form, emblem, weapon/offhand treatment, and helmet profile—not from one being visually weaker.
 - **Reject near-duplicates:** if T5 can be mistaken for T4, or T6 for T5, when the sheets are viewed at 40 px per item, regenerate with broader material placement and a clearer construction change before adding detail.
 
@@ -117,7 +118,7 @@ Use the listed accent exactly as a guide, while harmonizing it with the set name
 
 ## Required sheet layout and clean-boundary rules
 
-Create one transparent two-row sheet of ten isolated equipment icons in this exact order:
+Create one transparent atlas with **exactly five equal square cells across and two equal square cells down**. It contains ten isolated equipment icons in this exact order:
 
 1. helmet
 2. chest
@@ -130,13 +131,28 @@ Create one transparent two-row sheet of ten isolated equipment icons in this exa
 9. amulet
 10. ring
 
-Match the existing target sheet dimensions, two-row cell rhythm, front/three-quarter inventory angle, and scale of the matching approved sheet. Never add a character body, mannequin, hands, duplicate gear, or decorative filler.
+Match the existing target sheet dimensions, front/three-quarter inventory angle, and scale of the matching approved sheet. Never add a character body, mannequin, hands, duplicate gear, or decorative filler.
 
-- Keep a minimum 10–12% transparent safe margin inside every cell; reserve extra lengthwise room for swords, bows, staffs, capes, and chains.
+- Every icon must fit completely inside the **central 74%** of its own cell: at least **13% fully transparent padding on the left, right, top, and bottom** after normalization. This same occupancy applies to every tier, including T5 and T6.
+- The 74% limit includes every visible pixel: weapon tips, shield rims, horns, feathers, handles, straps, chains, ribbons, book pages, lantern handles, cape corners, particles, shadows, and semi-transparent antialiasing. Paired gloves, boots, and legs must fit together inside one safe box.
+- Long or asymmetric pieces do not receive a larger allowance. Rotate or redesign swords, bows, staffs, capes, chains, and shields so the complete object fits inside the shared safe box while remaining readable.
 - Every opaque and semi-transparent pixel must remain inside its own cell. Nothing may cross a cell boundary, touch the sheet edge, or overlap a neighboring icon.
 - Render with overscan, then crop each icon against its own safe bounds. Do not rely on a final global crop.
 - Keep thin objects, amulets, rings, horns, weapon tips, cape corners, and shield edges fully intact; do not clip them to make scale fit.
 - Use real alpha, with no black/white matte fringe. Check the result on both dark and light backgrounds.
+
+### Mandatory T5/T6 geometry gate
+
+Prompted padding is not accepted as proof of correct geometry. Before a T5 or T6 sheet can be reviewed or wired into the app:
+
+1. Split the generated image into five proportional columns and two proportional rows so every source cell is isolated before any resizing.
+2. Reject the generation if the main icon component touches a source-cell edge. Normalization can shrink complete artwork, but it cannot restore a tip, horn, cape, shield, or handle that was already generated off-canvas.
+3. Remove disconnected background fragments, matte pixels, particles, and contamination from neighboring cells.
+4. Fit the complete surviving icon into the central 74% safe box and center it in an exact square output cell.
+5. Recompose an exact 5×2 atlas with real alpha and validate at least 13% transparent padding on all four sides of every cell.
+6. Compare T4, T5, and T6 at the same rendered box size. Reject any progression that depends on T5/T6 occupying more pixels than the lower tier.
+
+Use `tools/normalize-equipment-atlas.ps1` for the deterministic isolation, cleanup, centering, and safe-area pass. T5/T6 batches must run it with `-FailOnSourceEdge`; this deletes rejected normalized outputs and returns a failing exit so they cannot be mistaken for review candidates. Keep the unnormalized source outside the shipping asset directory; only the validated result may proceed to mobile WebP optimization.
 
 ## Mobile asset-size budget and optimization
 
@@ -154,7 +170,7 @@ Artwork must be clean at inventory scale without inflating the mobile bundle. Ge
 
 Replace every bracketed value for every named set:
 
-> Transparent two-row equipment icon sheet for Veldryn, matching the supplied approved **[REFERENCE TIER] [CLASS]** equipment sheets exactly in painterly mobile-RPG style, silhouette weight, soft upper-left studio lighting, cell rhythm, and inventory readability. Create the Tier **[1–6]** **[SET ID] [SET NAME]** set: helmet, chest, gloves, legs, boots, weapon, offhand, cape, amulet, ring, in that exact left-to-right order across two rows. Class contract: **[CLASS ACCENT COLOR]** as a restrained accent; **[CLASS CONSTRUCTION/MOTIF]**; unique set motif **[SET-SPECIFIC EMBLEM OR MATERIAL STORY]**. Required weapon identity: **[UNIQUE NAMED WEAPON SHAPE]**. Required offhand/sidearm identity: **[UNIQUE NAMED OFFHAND SHAPE]**. Required helmet identity: **[UNIQUE HELMET PROFILE]**. Material direction: **[TIER MATERIAL AND SINGLE REGIONAL MOTIF]**. For T5/T6, use the supplied shipping icon for **[PRIMARY RECIPE RESOURCE / PROCESSED FORM]** as the material authority: preserve its **[DOMINANT COLORS]**, **[FACET/SCALE/PETAL/GRAIN SHAPE]**, and **[SURFACE PATTERN]**, translated into **[BELIEVABLE EQUIPMENT CONSTRUCTION]** across **[THREE LARGE/READABLE SLOTS]**. Use **[SECONDARY RESOURCE + ICON SIGNATURE]** on **[TWO SUPPORTING SLOTS]**; match **[CATALOG REGION SOURCE]**. Make the result visibly stronger or more unique than **[APPROVED PRIOR-TIER SHEET]** at 40 px through **[BROAD MATERIAL/CONSTRUCTION DELTA]**, not glow or micro-detail. Make all ten pieces clean isolated high-detail painted fantasy icons with broad readable forms, restrained age and wear, subtle hand-painted texture, and no silhouette reuse from another set. Keep 10–12% transparent safe padding inside every cell; no item, glow, shadow, chain, cape, or weapon tip crosses a cell boundary. Fully transparent background, real alpha, no text, UI, labels, scene, card, pedestal, cast shadow, character body, photorealism, hard outlines, glossy 3D render, excessive filigree, duplicated items, or clipping.
+> Transparent equipment atlas for Veldryn with exactly five equal square cells across and two equal square cells down, matching the supplied approved **[REFERENCE TIER] [CLASS]** equipment sheets exactly in painterly mobile-RPG style, silhouette weight, soft upper-left studio lighting, cell rhythm, and inventory readability. Create the Tier **[1–6]** **[SET ID] [SET NAME]** set: helmet, chest, gloves, legs, boots, weapon, offhand, cape, amulet, ring, in that exact left-to-right order across two rows. Class contract: **[CLASS ACCENT COLOR]** as a restrained accent; **[CLASS CONSTRUCTION/MOTIF]**; unique set motif **[SET-SPECIFIC EMBLEM OR MATERIAL STORY]**. Required weapon identity: **[UNIQUE NAMED WEAPON SHAPE]**. Required offhand/sidearm identity: **[UNIQUE NAMED OFFHAND SHAPE]**. Required helmet identity: **[UNIQUE HELMET PROFILE]**. Material direction: **[TIER MATERIAL AND SINGLE REGIONAL MOTIF]**. For T5/T6, use the supplied shipping icon for **[PRIMARY RECIPE RESOURCE / PROCESSED FORM]** as the material authority: preserve its **[DOMINANT COLORS]**, **[FACET/SCALE/PETAL/GRAIN SHAPE]**, and **[SURFACE PATTERN]**, translated into **[BELIEVABLE EQUIPMENT CONSTRUCTION]** across **[THREE LARGE/READABLE SLOTS]**. Use **[SECONDARY RESOURCE + ICON SIGNATURE]** on **[TWO SUPPORTING SLOTS]**; match **[CATALOG REGION SOURCE]**. Make the result visibly stronger or more unique than **[APPROVED PRIOR-TIER SHEET]** at 40 px through **[BROAD MATERIAL/CONSTRUCTION DELTA]**, never by making the T5/T6 icon larger. Make all ten pieces clean isolated high-detail painted fantasy icons with broad readable forms, restrained age and wear, subtle hand-painted texture, and no silhouette reuse from another set. Every complete icon—including all tips, handles, chains, ribbons, cape corners, shadows, glow, and antialiasing—must fit inside the central 74% of its own cell, leaving at least 13% fully transparent padding on the left, right, top, and bottom. Paired wearables fit together inside one safe box. Nothing crosses or touches a cell boundary. Fully transparent background, real alpha, no text, UI, labels, scene, card, pedestal, cast shadow, character body, photorealism, hard outlines, glossy 3D render, excessive filigree, duplicated items, detached fragments, or clipping.
 
 For T1, use unmistakably basic starter materials, simple construction, and only a minimal class-color trim—no repeated rune/emblem program or polished ceremonial finish. For T2, enhance fit and craft and introduce the first modest set motif without changing the class language. For T3, use refined practical material and one heraldic motif. For T4, increase material rarity and trim while staying in the same painted T1/T2 illustration family. For T5/T6, include the actual shipping resource icons as labeled material-reference images, increase their visible identity and processed construction, and state the specific prior-tier delta while retaining that same painted family and cell-safe scale.
 
@@ -170,6 +186,8 @@ Reject and regenerate when the result contains any of the following:
 - class color used as a full recolor rather than a controlled accent;
 - background pixels, floor shadows, UI tiles, text, extra gear, missing slots, duplicate items, or a character/mannequin;
 - a weapon tip, chain, cape, ring, glow, or shadow crossing a cell boundary or being cropped;
+- any T5/T6 icon whose complete alpha bounds exceed the central 74% safe box, whose padding is below 13% on any side, or whose perceived upgrade comes from greater cell occupancy;
+- any main component touching its source-cell edge before normalization, even if the normalized preview appears to have padding;
 - magical particles or VFX that obscure item silhouettes;
 - T2–T6 looking like a different game's assets instead of a crafted material evolution of its parent;
 - T5/T6 that are near-duplicates of the approved prior tier at 40 px, or whose stronger read comes only from brightness, glow, particles, or extra micro-detail;
@@ -191,3 +209,5 @@ Before wiring a new sheet:
 9. Run the equipment artwork wiring tests before connecting the asset.
 10. For T5/T6, compare the one-line material plan with the catalog, recipe, runtime mapping, and shipping resource icon. At 40 px, identify the primary resource by at least two of its icon traits on three large/readable slots and the secondary cue on two supporting slots.
 11. Compare T5 directly with the approved matching-class T4 and T6 directly with both T5 and T4 at 40 px. Confirm the new tier is immediately stronger or more unique through broad material placement and construction, while the class silhouette remains intact.
+12. Run the mandatory cell-isolation and 74% normalization pass. Confirm every cell has at least 13% transparent padding on all four sides and that no main source component touched an edge before normalization.
+13. Compare T4/T5/T6 in the actual phone crafting boxes at one shared UI scale. Confirm T5/T6 progression survives without a larger rendered footprint and that long weapons, offhands, helmets, capes, and paired wearables remain fully visible.

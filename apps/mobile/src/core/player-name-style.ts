@@ -27,6 +27,41 @@ export const SUPPORTER_NAME_PRESETS=[
   {id:'prismatic',name:'Prismatic',colors:['#FF6978','#FFD166','#6EE7B7','#61C7FF','#A978FF'],animation:'prismatic' as const},
 ] as const;
 
+/** Curated swatches for the VIP+ colour picker. A hex field stays available beside them,
+ * so a player can either tap a known-good colour or type an exact code. */
+export type NameColorTone='warm'|'cool'|'nature'|'arcane'|'neutral';
+export const NAME_COLOR_PALETTE=[
+  {id:'ember',name:'Ember',color:'#FF6F59',tone:'warm' as const},
+  {id:'flame',name:'Flame',color:'#FF9C42',tone:'warm' as const},
+  {id:'amber',name:'Amber',color:'#FFC247',tone:'warm' as const},
+  {id:'rose',name:'Rose',color:'#FF7FA8',tone:'warm' as const},
+  {id:'crimson',name:'Crimson',color:'#D94452',tone:'warm' as const},
+  {id:'sky',name:'Sky',color:'#61C7FF',tone:'cool' as const},
+  {id:'azure',name:'Azure',color:'#4B7BFF',tone:'cool' as const},
+  {id:'frost',name:'Frost',color:'#BDEBFF',tone:'cool' as const},
+  {id:'teal',name:'Teal',color:'#35CFC0',tone:'cool' as const},
+  {id:'deep',name:'Deep Tide',color:'#2E6E8E',tone:'cool' as const},
+  {id:'moss',name:'Moss',color:'#7FC77F',tone:'nature' as const},
+  {id:'fern',name:'Fern',color:'#4FAE6E',tone:'nature' as const},
+  {id:'lime',name:'Lime',color:'#C7E86B',tone:'nature' as const},
+  {id:'bark',name:'Bark',color:'#A9815A',tone:'nature' as const},
+  {id:'oath',name:'Oathsteel',color:'#8FA6B2',tone:'nature' as const},
+  {id:'violet',name:'Arcane Violet',color:'#8F7CFF',tone:'arcane' as const},
+  {id:'orchid',name:'Orchid',color:'#C08BFF',tone:'arcane' as const},
+  {id:'void',name:'Void',color:'#6A4BC4',tone:'arcane' as const},
+  {id:'veil',name:'Veilglow',color:'#B6FF8F',tone:'arcane' as const},
+  {id:'gilded',name:'Gilded',color:'#DDAF5A',tone:'arcane' as const},
+  {id:'parchment',name:'Parchment',color:'#E8DCC6',tone:'neutral' as const},
+  {id:'silver',name:'Silver',color:'#D5DADD',tone:'neutral' as const},
+  {id:'slate',name:'Slate',color:'#8A939B',tone:'neutral' as const},
+  {id:'ink',name:'Ink',color:'#4A5159',tone:'neutral' as const},
+] as const;
+export const NAME_COLOR_TONES:readonly NameColorTone[]=['warm','cool','nature','arcane','neutral'];
+export const NAME_COLOR_TONE_LABELS:Record<NameColorTone,string>={warm:'Warm',cool:'Cool',nature:'Nature',arcane:'Arcane',neutral:'Neutral'};
+/** True only for a complete 3 or 6 digit hex code, so the field can report a typo before saving. */
+export function isHexColor(value:string|undefined){return /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test((value??'').trim())}
+export function nameColorPaletteMatch(value:string|undefined){const hex=normalizeHexColor(value,'');return NAME_COLOR_PALETTE.find(row=>row.color.toUpperCase()===hex)?.id}
+
 export function playerNameStyleEntitlements(state:GameState):PlayerNameStyleEntitlements{
   const benefits=accountEntitlementBenefits(state);
   return {vipPlus:benefits.vipPlus,supporter:benefits.supporter,canUseSolidRgb:benefits.solidRgbNames,canUseAdvanced:benefits.advancedNameStyles};

@@ -1,4 +1,4 @@
-import {GATHERING_TOOLS,TOOL_BLUEPRINT_ITEMS,TOOL_RECIPES} from '../src/content/gathering-tools';
+import {GATHERING_TOOLS,TOOL_BLUEPRINT_ITEMS,TOOL_RECIPES,roundDownToolBlueprintDropChance,increasedToolCraftXp} from '../src/content/gathering-tools';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES} from '../src/content/herbalism';
 import {craftRecipe,createCharacter,equipGatheringTool,GATHER_TIME_SCALE,newGame,previewActivityReward,startGathering} from '../src/core/game';
@@ -16,6 +16,8 @@ ok(GATHERING_TOOLS.length===12,'Expected four tool tiers for three gathering ski
 ok(TOOL_RECIPES.length===12&&TOOL_RECIPES.every(recipe=>recipe.skillId==='smithing'&&recipe.level===1),'All gathering tools must be craftable at Smithing level 1, regardless of tier');
 ok(RECIPES.filter(entry=>entry.output.itemId.endsWith('PICKAXE')||entry.output.itemId.endsWith('HATCHET')||entry.output.itemId.endsWith('ROD')).length===12,'Every gathering tool must be craftable');
 ok(TOOL_BLUEPRINT_ITEMS.length===9,'Tier 2-4 gathering tools should use permanent blueprints while Tier 1 stays directly craftable');
+ok(roundDownToolBlueprintDropChance(.035625)===.035&&roundDownToolBlueprintDropChance(.01425)===.014&&roundDownToolBlueprintDropChance(.007125)===.007,'Blueprint drop rates round down in 0.10% steps');
+ok(increasedToolCraftXp(105)===190&&increasedToolCraftXp(2300)===4040,'Tool XP calculation rounds up after +3 and +75%');
 
 const balanceCases=[
   ['GREENWOOD_HATCHET',105,110,[24,12],undefined],
@@ -36,7 +38,8 @@ for(const [id,previousXp,previousBaseGold,previousInputs,previousBlueprintChance
  ok(tool,id+' must remain a gatherable/craftable tool');
  const recipe=TOOL_RECIPES.find(row=>row.output.itemId===id);
  ok(recipe,id+' must have a crafting recipe');
- ok(tool.recipe.xp===previousXp+3&&recipe.xp===previousXp+3,id+' should give exactly 3 more Smithing XP');
+ const expectedXp=Math.ceil((previousXp+3)*1.75/10)*10;
+ ok(tool.recipe.xp===expectedXp&&recipe.xp===expectedXp&&increasedToolCraftXp(previousXp)===expectedXp,id+' should retain prior +3 XP then increase another 75% and round UP to 10');
  const previousChargedGold=Math.ceil(previousBaseGold*1.2);
  ok(recipe.gold===previousChargedGold*2,id+' should charge exactly twice its previous crafting Gold cost');
  ok(recipe.inputs.length===previousInputs.length&&recipe.inputs.every((input,i)=>previousInputs[i]!==undefined&&input.quantity===previousInputs[i]! *2),id+' should consume twice each crafting material');
@@ -56,7 +59,7 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
   ok(tools[i].requiredCharacterLevel>=tools[i-1].requiredCharacterLevel,skillId+' tool Level requirements must not regress');
   ok(!!tools[i].blueprint,skillId+' Tier '+tools[i].tier+' must have a blueprint');
   const source=MONSTERS.find(monster=>monster.id===tools[i].blueprint!.sourceMonsterId);
-  ok(!!source&&source.drops.some(drop=>drop.itemId===tools[i].blueprint!.itemId&&Math.abs(drop.chance-tools[i].blueprint!.dropChance*.95)<1e-12),tools[i].name+' blueprint source must be an authored monster drop');
+  ok(!!source&&source.drops.some(drop=>drop.itemId===tools[i].blueprint!.itemId&&Math.abs(drop.chance-roundDownToolBlueprintDropChance(tools[i].blueprint!.dropChance*.95))<1e-12),tools[i].name+' blueprint final drop rate must be rounded DOWN to the nearest 0.10 percentage point');
  }
 }
 

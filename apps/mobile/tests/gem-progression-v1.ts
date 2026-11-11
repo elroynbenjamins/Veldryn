@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {equippedCanonicalStatGemBonusesV1,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
-import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostV1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {gemRollPercentFromUnitV1,gemRolledValueV1,gemValueRangeV1} from '../src/content/gems-v1';
@@ -52,13 +52,16 @@ let rawSocketBlocked=false;try{socketGem(state,'basic_sword','raw_gem:stat_vital
 ok(rawSocketBlocked,'Unrefined gems must never be socketable');
 const refinement=availableGemRefinementsV1(state).find(row=>row.recipe.familyId==='stat_vitality'&&row.recipe.grade===1);
 ok(Boolean(refinement?.ready),'Owned Grade I raw gem with reagents should be refinement-ready at Enchanting level 1');
+for(const [grade,xp] of [[1,110],[2,260],[3,720],[4,1620],[5,3620]] as const){
+ ok(GEM_REFINE_COSTS_V1[grade].xp===xp,`Refining Grade ${grade} gems should grant the previous reward plus 20 XP`);
+}
 const enchantingBeforeRefine=state.skills.find(row=>row.skillId==='enchanting')!.xp;
 const refineStarted=startGemRefinement(state,gemRefineRecipeIdV1('stat_vitality',1),500);
 const refineClaimed=claimForgeJob(refineStarted.state,refineStarted.job.id,refineStarted.job.completesAtMs);
 state=refineClaimed.state;
 ok(gemPouch(state).stacks.some(row=>row.itemId==='gem:stat_vitality:g1'),'Refinement should create the socketable gem of the same family and grade');
 ok(!state.inventory.stacks.some(row=>row.itemId==='raw_gem:stat_vitality:g1'),'Refinement should consume the unrefined gem');
-ok(state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeRefine+90,'Gem refinement should award Enchanting XP on completion');
+ok(state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeRefine+110,'Gem refinement should award 20 extra Enchanting XP on completion');
 const dustBefore=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 state=dismantleGemV1(state,'gem:effect_bulwark:g1',1);
 const dustAfter=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);

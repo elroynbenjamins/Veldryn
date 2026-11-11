@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+const assert=require('node:assert/strict') as {ok:(value:unknown,message?:string)=>void;equal:(actual:unknown,expected:unknown,message?:string)=>void;deepEqual:(actual:unknown,expected:unknown,message?:string)=>void;throws:(operation:()=>unknown,expected?:RegExp|string,message?:string)=>void};
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {createCharacter,newGame} from '../src/core/game';

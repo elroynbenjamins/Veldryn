@@ -1,28 +1,30 @@
 import assert from 'node:assert/strict';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
-import {rebaseLegacyCombatLevel} from '../../src/server/coop/config';
-import {DUNGEON_UNLOCK_LEVEL,defeatedDungeonChapterBoss,listedRegularDungeon,publishedRegularDungeon,regularDungeonEntryError,regularDungeonLockedReason,regularDungeonTierRequiredLevel} from '../../src/server/coop/dungeon-entry-policy';
+import {DUNGEON_UNLOCK_LEVEL,defeatedDungeonChapterBoss,listedRegularDungeon,publishedRegularDungeon,regularDungeonEntryError,regularDungeonLockedReason,regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower,highestEligibleRegularDungeonTier,regularDungeonReadyTier} from '../../src/server/coop/dungeon-entry-policy';
 
-const before={defeatedBossIds:[]};
-const cleared={defeatedBossIds:['FALLEN_KNIGHT']};
-assert.equal(DUNGEON_UNLOCK_LEVEL,25);
+const before={defeatedBossIds:[]},cleared={defeatedBossIds:['FALLEN_KNIGHT']};
+assert.equal(DUNGEON_UNLOCK_LEVEL,10);
 assert.deepEqual(Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003']);
 assert.deepEqual(Object.values(EXPEDITIONS).filter(listedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003','EXP_005']);
-for(const id of ['EXP_002','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008']){
- assert.equal(regularDungeonEntryError(EXPEDITIONS[id],cleared,100),'dungeon_unavailable','Retired or development IDs must be closed to fresh runs');
+for(const id of ['EXP_002','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'])assert.equal(regularDungeonEntryError(EXPEDITIONS[id],cleared,100,100_000),'dungeon_unavailable');
+for(const [id,level,powers] of [['EXP_001',10,[2500,3750,5000]],['EXP_003',25,[6000,7250,8500]]] as const){
+ const def=EXPEDITIONS[id];
+ assert.deepEqual(([1,2,3] as const).map(tier=>regularDungeonTierRequiredLevel(def,tier)),[level,level,level]);
+ assert.deepEqual(([1,2,3] as const).map(tier=>regularDungeonTierRequiredPower(def,tier)),powers);
+ assert.equal(regularDungeonEntryError(def,cleared,level-1,powers[2]),'dungeon_level_requirement');
+ assert.equal(regularDungeonEntryError(def,cleared,level,powers[0]-1),'dungeon_power_requirement');
+ for(const tier of [1,2,3] as const){
+  assert.equal(regularDungeonEntryError(def,cleared,level,powers[tier-1],tier),undefined);
+  assert.equal(regularDungeonEntryError(def,cleared,level,powers[tier-1]-1,tier),'dungeon_power_requirement');
+  assert.equal(highestEligibleRegularDungeonTier(def,level,powers[tier-1]),tier);
+  assert.equal(regularDungeonReadyTier(def,level,1,powers[tier-1]),tier);
+ }
+ assert.equal(regularDungeonReadyTier(def,level,.5,powers[2]),undefined,'role readiness remains separate');
 }
-assert.deepEqual(([1,2,3] as const).map(t=>regularDungeonTierRequiredLevel(EXPEDITIONS.EXP_001,t)),[25,30,35]);
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_001,cleared,24),'dungeon_level_requirement','Level 24 cannot enter Asterfall');
-assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_001,cleared,24),'Requires level 25');
-assert.equal(defeatedDungeonChapterBoss(before),false,'Chapter I clear is character-specific');
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_001,before,25),'chapter_one_required');
-assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_001,before,25),'Defeat the Fallen Knight (Chapter I) to unlock regional dungeons.');
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_001,cleared,25),undefined);
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_003,cleared,25),'dungeon_level_requirement','Sunscar preserves its regional entry curve');
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_003,cleared,rebaseLegacyCombatLevel(EXPEDITIONS.EXP_003.minLevel)),undefined);
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_003,before,100),'chapter_one_required');
-assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_005,cleared,100),'In Development');
-assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_007,cleared,100),'In Development');
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_001,{defeatedBossIds:['OTHER_BOSS']},100),'chapter_one_required');
-assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_001,null,100),'chapter_one_required');
-console.log('PASS: one dungeon per region, Asterfall reopens, Frostmarch preview, chapter gate, legacy IDs retired');
+assert.equal(defeatedDungeonChapterBoss(before),false);
+assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_001,before,10,2500),undefined,'Asterfall is playable before the chapter boss');
+assert.equal(regularDungeonEntryError(EXPEDITIONS.EXP_003,before,25,6000),'chapter_one_required','Sunscar remains story-gated');
+assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_001,before,10,2499),'Requires 2,500 Combat Power');
+assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_003,before,25,6000),'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.');
+assert.equal(regularDungeonLockedReason(EXPEDITIONS.EXP_005,cleared,100,100_000),'In Development');
+console.log('PASS: regional Combat Power gates, tier boundaries, early Asterfall and chapter-locked Sunscar');

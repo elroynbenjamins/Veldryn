@@ -58779,7 +58779,7 @@ function guildBankDepositHandler(services2) {
     }
     if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
     const body = input;
-    if (Object.keys(body).length !== 3 || typeof body.resourceId !== "string" || !GUILD_CONSTRUCTION_TEMPLATES.some((t) => ["gold", ...t.materials.map((m) => m.materialKey)].includes(body.resourceId)) || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+    if (Object.keys(body).length !== 3 || typeof body.resourceId !== "string" || !/^[A-Za-z0-9_]{1,100}$/.test(body.resourceId) || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
       return json4({ error: "invalid_guild_bank_deposit" }, 400);
     try {
       const result = await services2.rpc("guild_bank_deposit_server_v1", {
@@ -58796,6 +58796,7 @@ function guildBankDepositHandler(services2) {
       if ([
         "guild_membership_required",
         "guild_bank_resource_unavailable",
+        "guild_bank_resource_exceeds_active_requirements",
         "guild_bank_item_locked",
         "insufficient_gold",
         "insufficient_construction_materials",

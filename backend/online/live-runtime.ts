@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
+import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../src/server/coop/dungeon-entry-policy';
 import {QModeService,type QModeRun} from '../src/server/coop/qmode';
 import {enhancedDungeonMarks} from '../src/server/coop/dungeon-reward-balance';
 import {projectQModeRun} from '../src/server/coop/qmode-public-projection';
@@ -54,6 +55,7 @@ export class OnlineLiveRuntime{
   if(source.runId)return source.runId;
   if(!source.frozenRoster||source.frozenRoster.length!==4)throw new GameplayError('invalid_frozen_roster');
   const definition=EXPEDITIONS[source.dungeonId];if(!definition?.coopImplemented)throw new GameplayError('dungeon_unavailable');
+  if(source.frozenRoster.some(snapshot=>(snapshot.characterLevel??snapshot.normalized.before.level)<regularDungeonTierRequiredLevel(definition,source.tier)||!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,source.tier)))throw new GameplayError('dungeon_power_requirement');
   const id=this.services.randomId(),seed=this.services.randomId()+this.services.randomId();
   const domain=new QModeService(new (class{private run?:QModeRun;get(id:string){return this.run?.id===id?structuredClone(this.run):undefined}getByRequest(){return undefined}save(run:QModeRun){this.run=structuredClone(run)}})(),seed);
   const run=domain.createLive({requestId:`live-${checkId}`,runId:id,controllerAccountId:source.frozenRoster[0].accountId,expeditionId:source.dungeonId,tier:source.tier,contentVersion:ONLINE_COOP_BALANCE_VERSION,balanceVersion:ONLINE_COOP_BALANCE_VERSION,snapshots:source.frozenRoster});

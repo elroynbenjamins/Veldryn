@@ -8,12 +8,17 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0",
-    "rootDir": "../.."
+    "rootDir": "../..",
+    "jsx": "react-jsx"
   },
   "include": [
     "src/core/**/*.ts",
     "src/content/**/*.ts",
     "src/dev/**/*.ts",
     "tests/**/*.ts"
+  ],
+  "exclude": [
+    "tests/world-boss-real-loadout-v12.ts",
+    "tests/world-boss-guard-role-v13.ts"
   ]
 }

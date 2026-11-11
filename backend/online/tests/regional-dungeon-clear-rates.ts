@@ -90,6 +90,16 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
  }));
  assert.equal(Object.keys(bossResults).length,2,'Each region should retain two reachable final bosses');
  assert.equal(Object.values(bossResults).reduce((sum,row)=>sum+row.attempts,0),count);
+ // Keep a measurable release guard around the current 40-run synthetic
+ // calibration. Broad bands allow tuning without masking all-win Tier III or
+ // unplayable Tier I and preserve the intended difficulty progression.
+ const [minClears,maxClears]=tier===1?[32,40]:tier===2?[26,39]:[12,30];
+ assert.ok(successes.length>=minClears&&successes.length<=maxClears,
+  `${id} Tier ${tier} clear rate ${successes.length}/${count} fell outside published calibration band ${minClears}-${maxClears}`);
+ const bossSamples=Object.values(bossResults);
+ assert.ok(bossSamples.every(row=>row.attempts>=10),'Both original bosses must be encountered in a representative test batch');
+ const bossRates=bossSamples.map(row=>row.clears/row.attempts);
+ assert.ok(Math.abs(bossRates[0]-bossRates[1])<=.45,'A random boss roll must not create an excessive difficulty lottery');
  // Wide, deliberately synthetic release guards rather than promised live
  // success rates. T1 must remain welcoming, T2 reasonably accessible, and
  // T3 must remain meaningfully challenging without becoming a dead end.

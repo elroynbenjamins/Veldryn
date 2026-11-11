@@ -23,6 +23,30 @@ These numbers are **not actual observed Gold/hour** and are **not verified playe
 
 The `previewTierAffordabilityV15` diagnostic totals all 10 Foundation-path Ironwarden pieces, obtains the exact Common/Q50/unenchanted V14 recipe-priced minimum for every piece, reports only complete sets, and divides the finished-item buyout minimum by the reference Gold/hour. No historical 7-slot equipment acquisition target is mistakenly treated as the current 10-piece market set.
 
+## Verified V14/V15 read-only output (2026-11-11)
+
+The dedicated hidden pricing workflow successfully compiled and ran the V10–V15 safeguards. The full **ten-slot Ironwarden Foundation** quote (Common, Q50, rank 0) had complete price coverage; the source-derived baseline is not real observed Gold income.
+
+| Tier | Ten-slot min buyout Gold | Direct ten-item Forge Gold (within recipe cost) | Legacy authored Gold/hour | Gold-only min buyout hours |
+| --- | ---: | ---: | ---: | ---: |
+| T1 | 10,632 | 3,914 | 221.67 | 47.96 |
+| T2 | 35,032 | 13,688 | 387.93 | 90.30 |
+| T3 | 120,707 | 58,644 | 892.77 | 135.20 |
+| T4 | 239,910 | 117,288 | 1,155.54 | 207.62 |
+
+The direct Forge Gold component is especially useful: it is a **mandatory cost even when a player gathers every ingredient**, though players may fund it through quest, activity or merchant income instead of just ordinary hunts. Do not treat prior seven-slot acquisition targets as equivalent to these ten-slot economic totals.
+
+**Example: verified sample ring price corridors (Gold per exact copy)**
+
+| Tier | Common Q50 minimum–maximum | Rare Q50 minimum–maximum | Mythic Q90 minimum–maximum |
+| --- | --- | --- | --- |
+| T1 | 737–3,600 | 1,217–5,940 | 5,941–29,016 |
+| T2 | 2,291–11,400 | 3,781–18,810 | 18,470–91,890 |
+| T3 | 7,454–33,000 | 12,300–54,450 | 60,080–265,980 |
+| T4 | 15,040–60,160 | 24,820–99,270 | 121,300–484,900 |
+
+The market does not approve these prices, and the Q90+ Mythic entries always require manual review before any trade. Socket/enchant valuation still requires additional proof and economic review.
+
 ## Decisions from this pass
 
 1. **Keep source ingredients and exact crafting costs visible.** Per-item market floors still come from current production recipes and V14's 5% sale-tax/15% labour assumptions. Do not force all common items to sell at a profit; Q0 can already quote less than Q50 because low-quality copies have lower utility.

@@ -225,6 +225,9 @@ test('Faith combat tempo has three unlock tiers with a single active blessing',(
  throws(()=>selectFaithBlessing(faithAt(fresh(),17),'QUICKENED_STEP'),'18');
 });
 test('Festival Faith adds up to 10% common activity currency without inflating fixed event rewards',()=>{
+ const eventBranches=FAITH_BLESSINGS.filter(blessing=>blessing.family==='eventCurrency');
+ equal(eventBranches.map(blessing=>[blessing.level,blessing.bonus]),[[30,.03],[65,.06],[98,.10]],'festival currency tiers');
+ throws(()=>selectFaithBlessing(faithAt(fresh(),29),'FESTIVAL_FAVOR'),'30');
  const ev=LIVE_EVENT_CATALOG[0],id=ev.id,now=T,baseState=faithAt(fresh(),98);
  const s={...baseState,account:{...baseState.account,liveEvent:{eventId:id,enabled:true,startsAtMs:T-86400000,endsAtMs:T+86400000}}};
  const original=eventEffectiveDropRate(s,id,'gathering',now),gift=eventDailyGift(s,now),weekly=eventWeeklyBoard(s,now);

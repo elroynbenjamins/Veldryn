@@ -51,3 +51,10 @@ jobs:
       - name: Probe new regional dungeon tiers against their minimum Combat Power
         run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
         working-directory: backend
+      - name: Verify authenticated dungeon browsing, queues, and ready check
+        run: |
+          node dist/online/backend/online/tests/coop-entry.js
+          node dist/online/backend/online/tests/live-queue.js
+          node dist/online/backend/online/tests/live-ready.js
+          node dist/online/backend/online/tests/qmode-runtime.js
+        working-directory: backend

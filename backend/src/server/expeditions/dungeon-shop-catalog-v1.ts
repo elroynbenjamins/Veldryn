@@ -9,12 +9,12 @@
  * This module intentionally has no routes, database writes, or feature activation.
  */
 export const DUNGEON_SHOP_LIVE_V1 = false as const;
-export const DUNGEON_SHOP_CATALOG_VERSION = 'dungeon-marks-shop-v1-2026-11-11' as const;
+export const DUNGEON_SHOP_CATALOG_VERSION = 'dungeon-marks-shop-v2-2026-11-11' as const;
 
-export type DungeonShopRegion = 'Sunscar' | 'Frostmarch';
+export type DungeonShopRegion = 'Asterfall' | 'Sunscar' | 'Frostmarch';
 export type DungeonShopCategory = 'supply' | 'companion' | 'icon' | 'border' | 'background' | 'pet';
 export type DungeonShopBonusTarget =
-  | 'craftingSpeed' | 'skillXp' | 'dropChance'
+  | 'craftingSpeed' | 'skillXp' | 'dropChance' | 'gatheringYield' | 'hp' | 'healingEffectiveness'
   | 'fishingSpeed' | 'defense' | 'actionSpeed';
 export type DungeonShopGrant =
   | {kind:'material'; itemId:'TEMPERING_DUST'|'GEM_DUST'|'TEMPERING_CORE'; quantity:number; accountBound:true}
@@ -42,6 +42,11 @@ export const DUNGEON_SHOP_CATALOG_V1:readonly DungeonShopOfferV1[] = Object.free
   {id:'dshop_tempering_core_cache',name:'Tempering Core Cache',category:'supply',marks:450,perUtcWeek:1,grant:{kind:'material',itemId:'TEMPERING_CORE',quantity:2,accountBound:true}},
   {id:'dshop_companion_essence',name:'Companion Essence Cache',category:'companion',marks:400,perUtcWeek:1,grant:{kind:'account_resource',field:'companionEssence',quantity:100}},
   {id:'dshop_bondstone',name:'Bondstone',category:'companion',marks:750,perUtcWeek:1,grant:{kind:'account_resource',field:'bondstones',quantity:1}},
+
+  {id:'dshop_asterfall_icon',name:"Warden's Lantern",category:'icon',marks:500,firstClearRegion:'Asterfall',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileIconIds',rewardId:'dungeon:asterfall:wardens-lantern',rarity:'Rare'}},
+  {id:'dshop_asterfall_border',name:'Briarbound Frame',category:'border',marks:950,firstClearRegion:'Asterfall',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileBorderIds',rewardId:'dungeon:asterfall:briarbound-frame',rarity:'Epic',bonus:{target:'gatheringYield',ownedBps:50,activeBps:200}}},
+  {id:'dshop_asterfall_background',name:'Rootbound Sanctuary',category:'background',marks:1500,firstClearRegion:'Asterfall',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileBackgroundIds',rewardId:'dungeon:asterfall:rootbound-sanctuary',rarity:'Epic',bonus:{target:'hp',ownedBps:50,activeBps:200}}},
+  {id:'dshop_asterfall_pet',name:'Oathroot Seedling',category:'pet',marks:3000,firstClearRegion:'Asterfall',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedCosmeticPetIds',rewardId:'DUNGEON_PET_ASTERFALL_001',rarity:'Epic',bonus:{target:'healingEffectiveness',ownedBps:50,activeBps:300}}},
 
   {id:'dshop_sunscar_icon',name:'Solar Vault Key',category:'icon',marks:500,firstClearRegion:'Sunscar',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileIconIds',rewardId:'dungeon:sunscar:solar-vault-key',rarity:'Rare'}},
   {id:'dshop_sunscar_border',name:'Amberglass Loop',category:'border',marks:950,firstClearRegion:'Sunscar',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileBorderIds',rewardId:'dungeon:sunscar:amberglass-loop',rarity:'Epic',bonus:{target:'craftingSpeed',ownedBps:50,activeBps:200}}},

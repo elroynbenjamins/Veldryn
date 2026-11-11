@@ -7,6 +7,8 @@ import type {ClassId} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode';
+import {recruitQModeAllies} from '../../src/server/coop/echo-recruitment';
+import {createQModeNpcAllies} from '../../src/server/coop/qmode-npc-allies';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../../src/server/coop/dungeon-entry-policy';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../../src/server/coop/regional-power-balance';
@@ -93,4 +95,29 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
   clears:successes.length,samples:count,bossResults,
   roster:roster.map(row=>({cp:row.cp,role:row.snapshot.readiness.role,readiness:Number(row.ready.toFixed(2))})),
  }));
+}
+
+/** Old or underpowered Echoes must never bypass the new regional tier gate.
+ * A low-level player can still enter Q-Mode with correctly calibrated NPCs. */
+{
+ const roster=calibratedRoster('EXP_001',1).map(row=>row.snapshot);
+ const npcSnapshots=createQModeNpcAllies({minimumLevel:10,minimumCombatPower:2500,syncLevel:25,controllerLevel:10});
+ const profiles=roster.slice(1).map((snapshot,index)=>({
+  profileId:'echo-power-'+index,sourceAccountId:snapshot.accountId,optedIn:true,
+  publishedAtMs:1000,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot,
+ }));
+ const recruit=(donors:typeof profiles)=>recruitQModeAllies({
+  serverSecret:'regional-echo-guard',requestId:'regional-echo-001',
+  controllerAccountId:roster[0].accountId,controllerRole:'tank',controllerClassId:roster[0].classId,
+  contentVersion:'online-coop-loadout-v1',nowMs:2000,minimumCombatPower:2500,
+  profiles:donors,npcSnapshots,
+ });
+ assert.equal(recruit(profiles).filter(row=>row.kind==='echo').length,3,'Verified Echoes meeting the power floor are preferred');
+ const missingPower=profiles.map(row=>({...row,snapshot:{...row.snapshot,combatPower:undefined}}));
+ assert.ok(recruit(missingPower).every(row=>row.kind==='npc'),'Old Echoes without verified CP need republishing');
+ const underPowered=profiles.map(row=>({...row,snapshot:{...row.snapshot,combatPower:2499}}));
+ assert.ok(recruit(underPowered).every(row=>row.kind==='npc'),'Underpowered Echoes cannot bypass a tier');
+ const expired=profiles.map(row=>({...row,publishedAtMs:-8*24*60*60*1000}));
+ assert.ok(recruit(expired).every(row=>row.kind==='npc'),'Echo freshness expires after seven days');
+ console.log('PASS regional Echo power floors, legacy donor invalidation, seven-day freshness and NPC fallback');
 }

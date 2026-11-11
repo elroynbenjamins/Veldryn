@@ -5,19 +5,9 @@ import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {GameButton} from '../GameButton';
 
-/** Server projection only. The client never authors costs, grants or unlock eligibility. */
-export type DungeonMarksShopItemStatus='eligible'|'region_locked'|'already_owned'|'weekly_limit'|'insufficient_marks'|'unreleased';
-export interface DungeonMarksShopCard {
- id:string;name:string;category:'supply'|'companion'|'icon'|'border'|'background'|'pet';
- marks:number;summary:string;status:DungeonMarksShopItemStatus;
- rarity?:'Rare'|'Epic';region?:'Asterfall'|'Sunscar'|'Frostmarch';
- owned?:boolean;remainingThisUtcWeek?:number|null;lockReason?:string;
-}
-export interface DungeonMarksShopSnapshot {
- currency:'expedition_mark';catalogueVersion:string;
- balance:number;shopEnabled:boolean;nextUtcWeekReset:string;
- offers:DungeonMarksShopCard[];
-}
+import type {DungeonMarksShopSnapshot} from '../../core/dungeon-marks-shop-types';
+export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
+
 type Shelf='Supplies'|'Collections'|'Owned';
 
 /**

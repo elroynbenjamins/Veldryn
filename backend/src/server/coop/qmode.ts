@@ -9,7 +9,7 @@ import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
 import { recruitQModeAllies, type PublishedEcho } from './echo-recruitment';
 import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from './dungeon-entry-policy';
-import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from './regional-power-balance';
+import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from './regional-power-balance';
 import {preparedCoopCombatants} from './potion-modifiers';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
 
@@ -28,6 +28,16 @@ export class MemoryQModeRunRepository implements QModeRunRepository{
 }
 
 function combatant(snapshot:FrozenLoadoutSnapshot):CombatantDefinition{return combatantFromVerifiedSnapshot(snapshot.normalized.snapshot,snapshot.normalized.abilities);}
+function regionalCombatant(snapshot:FrozenLoadoutSnapshot,expeditionId:string,balanceVersion:string):CombatantDefinition{
+ const base=combatant(snapshot);
+ const boost=regionalCombatPowerBoost(expeditionId,snapshot.combatPower,balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION);
+ if(boost===1)return base;
+ // Role-defining attack/heal receives the clearest gear benefit. Mitigation
+ // and durability grow more gently; no PvP, world combat or legacy run changes.
+ const survival=1+(boost-1)*.7;
+ return {...base,stats:{...base.stats,attackPower:base.stats.attackPower*boost,healingPower:base.stats.healingPower*boost,
+  defense:base.stats.defense*survival,maxHp:base.stats.maxHp*survival}};
+}
 
 export class QModeService{
  constructor(private repository:QModeRunRepository,private serverSecret:string){}
@@ -40,7 +50,7 @@ export class QModeService{
   if(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION)for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...allies.map(ally=>({accountId:ally.snapshot.accountId,characterId:ally.snapshot.characterId,role:ally.snapshot.readiness.role}))]);
   validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
-  const players=[combatant(input.controllerSnapshot),...allies.map(ally=>combatant(ally.snapshot))];
+  const players=[regionalCombatant(input.controllerSnapshot,input.expeditionId,input.balanceVersion),...allies.map(ally=>regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion))];
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,qmodePressureVersion:1,echoSourceAccountIds:allies.filter(ally=>ally.kind==='echo').map(ally=>ally.snapshot.accountId),npcCharacterIds:allies.filter(ally=>ally.kind==='npc').map(ally=>ally.snapshot.characterId)});
  }
  createLive(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;snapshots:readonly FrozenLoadoutSnapshot[]}):QModeRun{
@@ -51,7 +61,7 @@ export class QModeService{
   if(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION)for(const snapshot of input.snapshots)if(!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
   validateCoopRoster(input.snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})));
   validateUniqueDamageClasses(input.snapshots.map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
-  return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players:input.snapshots.map(combatant),echoSourceAccountIds:[]});
+  return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players:input.snapshots.map(snapshot=>regionalCombatant(snapshot,input.expeditionId,input.balanceVersion)),echoSourceAccountIds:[]});
  }
  getAuthorized(runId:string,accountId:string):QModeRun{const run=this.repository.get(runId);if(!run)throw new Error('run_not_found');if(run.controllerAccountId!==accountId)throw new Error('not_participant');return run;}
  choose(input:{runId:string;controllerAccountId:string;optionNodeId:string;boonId?:string;safetyAiPlayerIds?:readonly string[]}):QModeRun{

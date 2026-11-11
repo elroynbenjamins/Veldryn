@@ -2,6 +2,7 @@ import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progress
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
 import {mobileRawGemItemIdV1} from './gems-v1';
 import {itemDef} from './items';
+import {TOOL_BLUEPRINT_ITEMS,TOOL_BLUEPRINT_DROP_MULTIPLIER} from './gathering-tools';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;areaId?:string;regionalAreaAutoUnlock?:boolean;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -48,6 +49,8 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'ASHEN_REVENANT',name:'Ashen Revenant',level:88,hp:4100,attack:224,defense:142,xp:2320,gold:136,secondsPerKill:82,unlockLevel:86,zone:'Ashlands',drops:[{itemId:'BANNER_ASH',chance:.55,min:1,max:2},{itemId:'CINDER_HEART',chance:.10,min:1,max:1},{itemId:'REGENT_SIGIL',chance:.04,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.28,min:1,max:1},{itemId:'RIMEGLASS',chance:.22,min:1,max:1},{itemId:'RENEWAL_SIGIL',chance:.0025,min:1,max:1}]},
 {id:'FALLEN_KNIGHT',name:'Fallen Knight',level:25,hp:180000,attack:68,defense:36,xp:3000,gold:180,secondsPerKill:75,unlockLevel:25,zone:"King's Road",boss:true,drops:[{itemId:'FALLEN_KNIGHT_SIGIL',chance:1,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:1,min:2,max:4},{itemId:'TORN_OATHCLOTH',chance:1,min:4,max:6}]},
 ];
+/** All nine tool-blueprint drops are eligible for the tool-only -25% adjustment. */
+const toolBlueprintItemIds=new Set(TOOL_BLUEPRINT_ITEMS.map(blueprint=>blueprint.id));
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
 /** King’s Road is the first crafted-gear checkpoint. Keep early regions unchanged. */
@@ -86,7 +89,8 @@ export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   drops:[...monster.drops,...(holyWater?[{itemId:HOLY_WATER_ID,chance:holyWater.chance,min:holyWater.min,max:holyWater.max}]:[]),...enhancementDrops(monster)].map(drop=>{
     const ordinaryMaterial=!monster.boss&&drop.itemId!==HOLY_WATER_ID&&itemDef(drop.itemId).type==='material';
     const relativeChanceScale=drop.itemId===HOLY_WATER_ID?1:drop.chance<1?.95:1;
-    return {...drop,chance:drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale};
+    const toolBlueprintScale=toolBlueprintItemIds.has(drop.itemId)?TOOL_BLUEPRINT_DROP_MULTIPLIER:1;
+    return {...drop,chance:drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale*toolBlueprintScale};
   }),
   // Idle combat uses authored cycle duration rather than HP to calculate kills.
   // Scale both the displayed combat stats and cycle time, so 20% more HP

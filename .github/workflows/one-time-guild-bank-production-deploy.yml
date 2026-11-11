@@ -1,0 +1,49 @@
+name: One-time Guild Bank production gameplay hotfix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-time-guild-bank-production-deploy.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guild-bank-production-hotfix
+  cancel-in-progress: false
+
+jobs:
+  deploy-gameplay:
+    if: ${{ github.event.head_commit.message == 'chore(deploy): one-time Guild Bank gameplay hotfix' }}
+    runs-on: ubuntu-latest
+    environment: supabase-production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: nyjwigipamnvpdvpauuv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Verify production deployment credentials
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::error::Production SUPABASE_ACCESS_TOKEN secret missing."
+            exit 1
+          fi
+      - name: Install pinned backend dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Verify canonical gameplay bundle matches the Guild Bank handler
+        run: node tools/verify-gameplay-edge.mjs
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy only the gameplay Edge Function to production
+        run: supabase functions deploy gameplay --project-ref "$PROJECT_REF"
+        working-directory: backend/supabase

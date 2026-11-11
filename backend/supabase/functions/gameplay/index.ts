@@ -200,12 +200,12 @@ var init_faith = __esm({
       { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
     HOLY_WATER_SOURCES = [
-      { monsterId: "FIELD_WISP", chance: 0.2, min: 1, max: 2 },
-      { monsterId: "DROWNED_PILGRIM", chance: 0.4, min: 2, max: 4 },
-      { monsterId: "OATHBOUND_SQUIRE", chance: 0.35, min: 2, max: 4 },
-      { monsterId: "DUNE_ORACLE", chance: 0.5, min: 3, max: 5 },
-      { monsterId: "BELLWRAITH", chance: 0.6, min: 4, max: 6 },
-      { monsterId: "ASHEN_REVENANT", chance: 0.75, min: 6, max: 10 }
+      { monsterId: "FIELD_WISP", chance: 0.16, min: 1, max: 2 },
+      { monsterId: "DROWNED_PILGRIM", chance: 0.32, min: 2, max: 4 },
+      { monsterId: "OATHBOUND_SQUIRE", chance: 0.28, min: 2, max: 4 },
+      { monsterId: "DUNE_ORACLE", chance: 0.4, min: 3, max: 5 },
+      { monsterId: "BELLWRAITH", chance: 0.48, min: 4, max: 6 },
+      { monsterId: "ASHEN_REVENANT", chance: 0.6, min: 6, max: 10 }
     ];
     faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
   }
@@ -43485,13 +43485,14 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   return {
     ...monster,
     unlockLevel: rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
-    // Reduce all chance-based combat drops by 5% relative to their existing
-    // chance, including Holy Water, rare equipment and gem materials. Preserve
-    // authored guaranteed boss drops and the existing 50% standard-material rule.
-    // This single normalized table also feeds the player-visible loot preview.
+    // Reduce other chance-based combat drops by 5% relative to their existing
+    // chance. Holy Water's dedicated Faith catalog already contains the final
+    // whole-percent rates after this 5% cut and a further 15% reduction.
+    // Preserve guaranteed boss drops and the 50% standard-material rule.
+    // This normalized table also feeds the player-visible loot preview.
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => {
       const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
-      const relativeChanceScale = drop.chance < 1 ? 0.95 : 1;
+      const relativeChanceScale = drop.itemId === HOLY_WATER_ID ? 1 : drop.chance < 1 ? 0.95 : 1;
       return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale };
     }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.

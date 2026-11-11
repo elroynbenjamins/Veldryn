@@ -28,7 +28,8 @@ const statScore=(stats:{hp:number;attack:number;defense:number;power?:number;cri
 ));
 
 /** A readable build comparison score, not a replacement for encounter damage simulation.
- * Breakdown rows are exact marginal projections, not estimated source percentages. */
+ * Stat rows are exact marginal projections; the personal-weighting row explicitly
+ * shows any companion rating redistribution, preserving the same total score. */
 export function combatPowerRating(state:GameState){
   const character=state.character;
   if(!character)return {total:0,player:0,companion:0,rows:[] as CombatPowerBreakdownRow[]};

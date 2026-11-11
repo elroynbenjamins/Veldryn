@@ -24,16 +24,32 @@ export interface GatheringToolDef{
 /** Tool blueprints are 25% rarer than their previously authored odds.
  * The normal 5% combat-drop reduction is applied separately by MONSTERS. */
 export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75;
+/** Drop chances are stored as fractional probabilities, so 0.001 = 0.10%.
+ * Round the FINAL monster drop probability down, after the existing general
+ * 5% reduction, rather than rounding the authored baseline too early. */
+export const TOOL_BLUEPRINT_DROP_ROUNDING_STEP=0.001;
+export function roundDownToolBlueprintDropChance(chance:number):number{
+ if(!Number.isFinite(chance)||chance<0||chance>1)throw new Error('invalid_tool_blueprint_chance');
+ return Math.floor(chance/TOOL_BLUEPRINT_DROP_ROUNDING_STEP+1e-10)*TOOL_BLUEPRINT_DROP_ROUNDING_STEP;
+}
 /** Tool crafts cost twice the current Gold and twice each input material.
  * Craft duration, output count, unlocks and Smithing requirements do not change. */
 export const TOOL_CRAFT_COST_MULTIPLIER=2;
+/** The prior +3 XP stays, then an additional 75% applies, rounded UP to 10 XP.
+ * E.g. previous 105 XP → 108 → 189 → 190 Smithing XP. */
 export const TOOL_CRAFT_XP_BONUS=3;
+export const TOOL_CRAFT_XP_MULTIPLIER=1.75;
+export const TOOL_CRAFT_XP_ROUNDING_STEP=10;
+export function increasedToolCraftXp(baseXp:number):number{
+ if(!Number.isSafeInteger(baseXp)||baseXp<0)throw new Error('invalid_tool_craft_xp');
+ return Math.ceil((baseXp+TOOL_CRAFT_XP_BONUS)*TOOL_CRAFT_XP_MULTIPLIER/TOOL_CRAFT_XP_ROUNDING_STEP)*TOOL_CRAFT_XP_ROUNDING_STEP;
+}
 const tool=(definition:GatheringToolDef):GatheringToolDef=>({
  ...definition,
  requiredCharacterLevel:rebaseLevel(definition.requiredCharacterLevel),
  recipe:{
   ...definition.recipe,
-  xp:definition.recipe.xp+TOOL_CRAFT_XP_BONUS,
+  xp:increasedToolCraftXp(definition.recipe.xp),
   gold:increasedCraftingGoldCost(definition.recipe.gold)*TOOL_CRAFT_COST_MULTIPLIER,
   inputs:definition.recipe.inputs.map(input=>({...input,quantity:input.quantity*TOOL_CRAFT_COST_MULTIPLIER})),
  },

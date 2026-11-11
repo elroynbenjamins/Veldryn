@@ -10,7 +10,7 @@ import {GameplayError} from '../gameplay';
 
 async function main(){
  const account='11111111-1111-4111-8111-111111111111',ticket='22222222-2222-4222-8222-222222222222';
- const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(45);state.character!.level=1;state.defeatedBossIds.push('FALLEN_KNIGHT');
+ const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(45);state.character!.level=40;state.defeatedBossIds.push('FALLEN_KNIGHT');
  state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0;
@@ -45,7 +45,7 @@ async function main(){
  const quickWrite=calls.filter(row=>row.name==='join_online_live_queue_server_v1').at(-1)!;
  assert.equal(quickWrite.args.p_expedition_id,'EXP_003','Quick Match should send the Tank to the nearly complete dungeon pool');
  const quickRecord=deriveOnlineCoopLoadout(account,state,version),quickReadiness=assessOnlineCoopLoadout(quickRecord).readiness;
- assert.equal(quickWrite.args.p_tier,regularDungeonReadyTier(EXPEDITIONS.EXP_003,quickRecord.characterLevel,quickReadiness.normalizedScore),'Quick Match uses the XP-derived level and verified readiness for its tier');
+ assert.equal(quickWrite.args.p_tier,regularDungeonReadyTier(EXPEDITIONS.EXP_003,quickRecord.characterLevel,quickReadiness.normalizedScore,quickRecord.combatPower),'Quick Match uses the XP-derived level and verified readiness for its tier');
  prior=null;reads=0;calls.length=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;

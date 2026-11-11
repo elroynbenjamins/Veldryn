@@ -6,6 +6,18 @@
 
 The prior single fixed **T2** enemy profile was held against T1–T4 players. Its Frostmarch Armored Guard prevented the **T1 squad from scoring even one point of boss HP damage**, while T4 scored >143k. Every cohort averaged four surviving actors. This is unsuitable as a released balance model; it also shows why simply increasing boss Attack/HP or replacing the 14-round script with a generic fight would hide the real problem.
 
+## Validation evidence — focused CI passed
+
+[GitHub focused run 43042396232](https://github.com/elroynbenjamins/Veldryn/actions/runs/43042396232) completed successfully on November 11, 2026. [36-cohort result CSV](spreadsheets/world-boss-v13-guard-role-calibration-test-only.csv) retains boss/phase/T1–T4 numbers with provenance and approval=false.
+
+- The baseline matrix completed **216 ordinary fights** (six per boss/phase/band cohort). All three T1 Armored profiles now cause **positive boss HP damage**; T1 Frostmarch averaged **7,670.96** versus zero under V12's globally fixed T2 Guard.
+- Additional **1,728 deliberately stressed test fights** cover 576 controlled class/role counterfactual groupings. Stress factors of 1–12 are **not production multipliers**. With a full team, at least one actor fell in **104** cases; the first sampled deaths appeared at stress factor **6**. All ordinary baseline cohorts still had four survivors, so final launch difficulty remains unresolved.
+- The complete squad had more survivors than a counterfactual that removed Support recovery in **294/576** comparisons and more than removing Tank interception in **39/576** comparisons. These are *paired descriptive test counts*, not unbiased estimates of causal class effects, because ability differences can advance the deterministic combat RNG cursor.
+- **Tank telegraph response refined:** for V13 server-frozen profiles only, a living Tank now intercepts up to **25% of eligible telegraphed boss spike damage** to non-Tanks versus the original **10% on ordinary attacks**. Only actual HP prevented after shield/HP caps is recorded as Tank Impact. The new V13 tests detected **3,382** genuinely ledger-backed telegraphed ward instances. There are no free attacks or invented role rewards.
+- Prior V13 stress data before this prototype improvement showed Tank survival wins in **16** comparisons. The targeted ward refinement increased that to **39** and reduced full-squad downed outcomes from **113 to 104**, while Support comparisons stayed near 293–294. The exact tactical tuning and class fairness are **not approved**.
+
+**Next balance gate:** verify both support class kits (Dawnkeeper heals/HoTs vs Stonecaller consumed shields), each Tank class, mixed-tier Echo teams, and player-specific equipment/gem/companion snapshots. Do not equate stress-test outcomes with live matchmaking odds.
+
 ## V13 engineering implementation
 
 - **Per-equipment-band threat profiles:** one versioned server-frozen profile per **boss × global phase × equipment reference band** (four synthetic bands in the current fixture). The profile fixes the boss's Attack, Defense and local Guard, with a deterministic SHA256 integrity digest, version, event ID and phase. The **event** chooses and seals this profile before combat; it is never taken from untrusted client JSON.

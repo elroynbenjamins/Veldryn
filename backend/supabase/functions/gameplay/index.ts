@@ -49755,11 +49755,11 @@ var GEM_COMBINE_COSTS_V1 = {
   4: { to: 5, copies: 3, dust: 40, gold: 72e3, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
 };
 var GEM_REFINE_COSTS_V1 = {
-  1: { level: 1, xp: 90, gold: 90, seconds: 60, reagents: [{ itemId: "WISP_DUST", quantity: 2 }] },
-  2: { level: 12, xp: 240, gold: 360, seconds: 180, reagents: [{ itemId: "WISP_DUST", quantity: 4 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 1 }] },
-  3: { level: 28, xp: 700, gold: 1080, seconds: 600, reagents: [{ itemId: "GLOAM_DUST", quantity: 2 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 1 }] },
-  4: { level: 45, xp: 1600, gold: 3120, seconds: 1200, reagents: [{ itemId: "GLOAM_DUST", quantity: 5 }, { itemId: "RIMEGLASS", quantity: 1 }] },
-  5: { level: 62, xp: 3600, gold: 9600, seconds: 2700, reagents: [{ itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RADIANT_CATALYST", quantity: 1 }] }
+  1: { level: 1, xp: 110, gold: 90, seconds: 60, reagents: [{ itemId: "WISP_DUST", quantity: 2 }] },
+  2: { level: 12, xp: 260, gold: 360, seconds: 180, reagents: [{ itemId: "WISP_DUST", quantity: 4 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 1 }] },
+  3: { level: 28, xp: 720, gold: 1080, seconds: 600, reagents: [{ itemId: "GLOAM_DUST", quantity: 2 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 1 }] },
+  4: { level: 45, xp: 1620, gold: 3120, seconds: 1200, reagents: [{ itemId: "GLOAM_DUST", quantity: 5 }, { itemId: "RIMEGLASS", quantity: 1 }] },
+  5: { level: 62, xp: 3620, gold: 9600, seconds: 2700, reagents: [{ itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RADIANT_CATALYST", quantity: 1 }] }
 };
 var GEM_DISMANTLE_DUST_V1 = { 1: 1, 2: 3, 3: 8, 4: 22, 5: 60 };
 var GEM_UNSOCKET_COST_V1 = {
@@ -58084,6 +58084,44 @@ async function resolveRegionalCombatV1(deps, input) {
 // online/coop-loadout.ts
 import { createHash as createHash2 } from "node:crypto";
 
+// ../apps/mobile/src/core/combat-power.ts
+init_progression();
+var statScore = (stats4, level) => Math.max(0, Math.round(
+  stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
+));
+function combatPowerRating(state) {
+  const character = state.character;
+  if (!character) return { total: 0, player: 0, companion: 0, rows: [] };
+  const powerLevel = legacyCharacterLevelFromXp(character.xp);
+  const stats4 = effectiveStats(state), player = statScore(stats4, powerLevel);
+  const role = CLASSES.find((def2) => def2.id === character.classId)?.role;
+  const base = statScore({
+    hp: character.hp,
+    attack: character.attack,
+    defense: character.defense,
+    power: Math.round(character.attack * 1.5 + character.defense * 0.8 + character.hp * 0.08 + powerLevel * 2.5),
+    critChance: role === "Damage" ? 0.1 : 0.05,
+    critMultiplier: 1.5,
+    accuracy: 0.84,
+    evasion: role === "Damage" ? 0.07 : 0.04,
+    haste: 0.05
+  }, powerLevel);
+  const unequipped = { ...state, character: { ...character, equipment: {}, equipmentInstanceIds: {} } };
+  const withoutGear = statScore(effectiveStats(unequipped), powerLevel);
+  const build = player - withoutGear;
+  const passive2 = withoutGear - base;
+  const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
+  const contribution = companionCombatContribution(state);
+  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rows2 = [
+    { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
+    { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
+    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+  ];
+  return { total: player + companion, player, companion, rows: rows2 };
+}
+
 // src/server/equipment/gems/gem-runtime-v1.ts
 function effectiveRollPercent(value) {
   return typeof value === "number" && Number.isInteger(value) && value >= 80 && value <= 120 && (value - 80) % 5 === 0 ? value : 100;
@@ -58255,6 +58293,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
     loadoutId: "current",
     revision: version,
     characterLevel: character.level,
+    combatPower: combatPowerRating(state).total,
     combatScalingLevel,
     dungeonUnlocked: true,
     legalEquipment,

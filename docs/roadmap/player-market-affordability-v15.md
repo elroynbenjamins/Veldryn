@@ -47,6 +47,23 @@ The direct Forge Gold component is especially useful: it is a **mandatory cost e
 
 The market does not approve these prices, and the Q90+ Mythic entries always require manual review before any trade. Socket/enchant valuation still requires additional proof and economic review.
 
+**Exact same-tier slot distinction, Common Q50:** T1 chest 1,335–5,340 vs ring 737–3,600; T2 chest 4,513–18,052 vs ring 2,291–11,400; T3 chest 15,810–63,240 vs ring 7,454–33,000; T4 chest 31,570–126,280 vs ring 15,040–60,160. This arises from each slot's actual recipe cost; no artificial common slot multiplier is applied on top.
+
+## Sensitivity: hypothetical sale of combat drops at draft resource floors
+
+For the same representative monster, `previewMarketTradeIncomeScenarioV15` reads the **already adjusted current drop chances** and only material IDs with V14 draft quotes. It applies a selected hypothetical percentage sold at their **draft minimum unit price**, with a 5% *continuous approximation* for the seller tax. This is **not market revenue, not an earnings forecast, and not a simulation of actual supply/demand**; buyer currency, competition, listing minimum lots and exact fee rounding can prevent sales.
+
+| Tier | All Gold from combat alone: hours | If 25% of dropped resource value sells: hours | If all dropped resource value sells: hours |
+| --- | ---: | ---: | ---: |
+| T1 | 47.96 | 37.49 | 22.66 |
+| T2 | 90.30 | 64.10 | 34.27 |
+| T3 | 135.20 | 95.19 | 50.42 |
+| T4 | 207.62 | 123.66 | 55.87 |
+
+These scenarios isolate *possible trade-value effects* and intentionally have no input into range approval. A valid economy needs buyers with enough actually earned Gold. Do not use this optimistic table to justify inflating all resource/gear prices.
+
+
+
 ## Decisions from this pass
 
 1. **Keep source ingredients and exact crafting costs visible.** Per-item market floors still come from current production recipes and V14's 5% sale-tax/15% labour assumptions. Do not force all common items to sell at a profit; Q0 can already quote less than Q50 because low-quality copies have lower utility.

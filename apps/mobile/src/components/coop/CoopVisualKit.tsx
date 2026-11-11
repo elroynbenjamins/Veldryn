@@ -40,11 +40,17 @@ export function CoopImageSlot({assetId,size='node',fallbackLabel='ART',accessibi
   return <View accessibilityLabel={accessibilityLabel} style={[s.imageSlot,s[`image_${size}`]]}>{source?<Image source={source} resizeMode={size==='hero'||size==='room'||size==='thumbnail'?'cover':'contain'} style={s.image}/>:<View style={s.imageFallback}><Text style={s.fallbackMark}>◇</Text><Text style={s.fallbackText}>{fallbackLabel}</Text></View>}</View>;
 }
 
-type ShellProps=PropsWithChildren<{eyebrow:string;title:string;compactHeader?:boolean;hideHeader?:boolean;titleInHero?:boolean;onBack?:()=>void;backLabel?:string;banner?:React.ReactNode;stickyAction?:React.ReactNode;testID?:string}>;
-/** Content shell for use inside the app's single existing SafeAreaView. */
-export function ExpeditionScreenShell({eyebrow,title,onBack,backLabel='Back',compactHeader=false,hideHeader=false,titleInHero=false,banner,stickyAction,children,testID}:ShellProps){
+type ShellProps=PropsWithChildren<{eyebrow:string;title:string;compactHeader?:boolean;hideHeader?:boolean;titleInHero?:boolean;onBack?:()=>void;backLabel?:string;banner?:React.ReactNode;stickyAction?:React.ReactNode;testID?:string;regionWashColor?:string}>;
+/** Content shell for use inside the app's single existing SafeAreaView.
+ * `regionWashColor` paints a subtle top-aligned tint behind the content so
+ * the player feels the biome they're in (pointerEvents none, tiny opacity). */
+export function ExpeditionScreenShell({eyebrow,title,onBack,backLabel='Back',compactHeader=false,hideHeader=false,titleInHero=false,banner,stickyAction,children,testID,regionWashColor}:ShellProps){
  const {styles:s}=useCoopStyles(makeStyles);
   return <View testID={testID} style={s.shell}>{compactHeader&&!hideHeader&&!titleInHero?<Image source={require('../../../assets/combat-scenes/hollow-courtyard-v1.jpg')} resizeMode="cover" style={{position:'absolute',top:0,left:0,right:0,height:420,opacity:.09}}/>:null}
+    {regionWashColor?<>
+      <View pointerEvents="none" style={{position:'absolute',top:0,left:0,right:0,height:260,backgroundColor:regionWashColor,opacity:.18}}/>
+      <View pointerEvents="none" style={{position:'absolute',top:260,left:0,right:0,height:120,backgroundColor:regionWashColor,opacity:.09}}/>
+    </>:null}
     {!hideHeader&&<View style={[s.shellHeader,compactHeader&&{paddingBottom:8,overflow:'hidden',backgroundColor:'transparent',borderBottomWidth:0}]}>{onBack?<Pressable accessibilityRole="button" accessibilityLabel={backLabel} hitSlop={8} onPress={onBack} style={({pressed})=>[s.back,pressed&&s.backPressed]}><Text style={s.backText}>‹ {backLabel}</Text></Pressable>:null}{!titleInHero&&<View style={s.heading}>{!compactHeader&&<Text style={s.eyebrow}>{eyebrow}</Text>}<Text style={[s.title,compactHeader&&{fontFamily:'sans-serif',fontSize:23,lineHeight:29}]}>{title}</Text></View>}</View>}
     {banner?<View style={s.banner}>{banner}</View>:null}
     <ScrollView style={s.scroll} contentContainerStyle={[s.content,stickyAction?s.contentWithAction:undefined]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{children}</ScrollView>

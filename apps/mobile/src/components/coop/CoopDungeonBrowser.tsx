@@ -103,21 +103,25 @@ function seasonalIdentity(event:CoopEventExpeditionPreview){
   return undefined;
 }
 
-type EventDetailsProps={language:Language;event:CoopEventExpeditionPreview;currentLevel?:number;loadoutReady?:boolean;notice?:string;busy?:boolean;onBack:()=>void;onLaunch:()=>void;onRefresh?:()=>void};
+type EventDetailsProps={language:Language;event:CoopEventExpeditionPreview;currentLevel?:number;loadoutReady?:boolean;notice?:string;busy?:boolean;onBack:()=>void;onLaunch:(tier:1|2|3|4|5)=>void;onRefresh?:()=>void};
 export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutReady=true,notice,busy=false,onBack,onLaunch,onRefresh}:EventDetailsProps){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
-  const available=event.status==='available',meetsLevel=currentLevel===undefined||currentLevel>=event.minLevel,canLaunch=available&&meetsLevel&&loadoutReady;
-  const [preparing,setPreparing]=useState(false);
+  const [selectedTier,setSelectedTier]=useState<1|2|3|4|5>(1),[preparing,setPreparing]=useState(false);
+  const tierRequiredLevel=event.tierMinLevels?.[selectedTier-1]??event.minLevel;
+  const tierReward=event.tierRewardMarks?.[selectedTier-1]??event.rewardMarks;
+  const tierReady=currentLevel===undefined||currentLevel>=tierRequiredLevel;
+  const available=event.status==='available',meetsLevel=currentLevel===undefined||currentLevel>=event.minLevel,canLaunch=available&&meetsLevel&&tierReady&&loadoutReady;
   const identity=seasonalIdentity(event),definition=liveEventDef(event.liveEventId??''),visuals=definition?liveEventVisuals(definition.visualKey):identity?liveEventVisuals('veilbreak'):undefined;
   const localizedMechanic=event.mechanic?localizedSeasonalDungeonPreviewCopy(language,event.mechanic):undefined;
   const localizedObjective=event.objective?localizedSeasonalDungeonPreviewCopy(language,event.objective):undefined;
   const a=(text:string)=>accountText(language,text);
-  const locked=!available?(event.lockedReason??st("Seasonal expedition unavailable")):!meetsLevel?ct(language,'browse.requiresLevel',{level:event.minLevel}):!loadoutReady?st("No verified expedition-ready loadout is available. Refresh your co-op loadout first."):undefined;
-  return <ExpeditionScreenShell compactHeader titleInHero eyebrow={st("SEASONAL EVENT EXPEDITION")} title={event.name} onBack={preparing?()=>setPreparing(false):onBack} backLabel={preparing?a('Back'):ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}{locked?<Text accessibilityRole="alert" style={s.lock}>{locked}</Text>:null}<PrimaryAction label={preparing?st("Launch seasonal expedition"):a('Prepare expedition')} loading={busy} disabled={!canLaunch} onPress={preparing?onLaunch:()=>setPreparing(true)}/></View>}>
+  const locked=!available?(event.lockedReason??st("Seasonal expedition unavailable")):!meetsLevel||!tierReady?ct(language,'browse.requiresLevel',{level:tierRequiredLevel}):!loadoutReady?st("No verified expedition-ready loadout is available. Refresh your co-op loadout first."):undefined;
+  return <ExpeditionScreenShell compactHeader titleInHero eyebrow={st("SEASONAL EVENT EXPEDITION")} title={event.name} onBack={preparing?()=>setPreparing(false):onBack} backLabel={preparing?a('Back'):ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}{locked?<Text accessibilityRole="alert" style={s.lock}>{locked}</Text>:null}<PrimaryAction label={preparing?st("Launch seasonal expedition"):a('Prepare expedition')} loading={busy} disabled={!canLaunch} onPress={preparing?()=>onLaunch(selectedTier):()=>setPreparing(true)}/></View>}>
     {!loadoutReady&&onRefresh?<PrimaryAction label={clt(language,'refresh')} tone="secondary" loading={busy} onPress={onRefresh}/>:null}<DungeonHero title={event.name} source={seasonalDungeonArtwork(event.id,visuals?.heroBackground)} label={event.eventName} description={event.description}/>
     <View style={s.eventTitleRow}><StateChip label={ct(language,'browse.requiresLevel',{level:event.minLevel})}/><StateChip label={available?st("LIVE"):ct(language,'event.preview')} tone={available?'success':'warning'}/></View>
-    <FantasyPanel><DungeonReward source={visuals?.commonCurrencyIcon} title={event.rewardMarks.toLocaleString()+' '+(definition?.currencyName??a('event currency'))} detail={identity?'150 Veilshards + reputation · 250 with 80+ Lantern Light':a('Base completion reward')}/></FantasyPanel>
+    <FantasyPanel><DungeonReward source={visuals?.commonCurrencyIcon} title={tierReward.toLocaleString()+' '+(definition?.currencyName??a('event currency'))} detail={identity?'150 Veilshards + reputation · 250 with 80+ Lantern Light':a('Base completion reward')}/></FantasyPanel>
+    {event.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?<FantasyPanel><Text style={s.cardTitle}>{ct(language,'details.difficulty')}</Text><View style={[s.tiers,{flexWrap:'wrap'}]}>{([1,2,3,4,5] as const).map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={event.tierMinLevels?.[value-1]??10+(value-1)*5} currentLevel={currentLevel??0} selected={value===selectedTier} onPress={()=>{setSelectedTier(value);setPreparing(false);}}/>)}</View><Text style={s.copy}>{ct(language,'browse.requiresLevel',{level:tierRequiredLevel})} · {tierReward} {a('event currency')}</Text></FantasyPanel>:null}
     {preparing?<FantasyPanel variant="selected"><Text style={s.cardTitle}>{a('Expedition preparation')}</Text><Text style={s.copy}>{a('Your verified character and current expedition-ready loadout will enter with three eligible Echo recruits.')}</Text><DungeonPartyRoles language={language}/></FantasyPanel>:<DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language} note={a('Your verified character + three eligible Echo recruits')}/></DungeonDisclosure>}
     <DungeonDisclosure key={String(preparing)} title={ct(language,'event.route')} initiallyOpen={preparing}>
       {event.routeNodeCount?<Text style={s.copy}>{event.routeNodeCount} {a('themed stages + final boss')}</Text>:null}

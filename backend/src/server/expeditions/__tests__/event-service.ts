@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { launchPlayer } from '../../combat/content/launch-combat';
-import { EVENT_EXPEDITIONS } from '../content/event-expeditions';
+import {buildExpeditionEncounter,expeditionEncounterPreview} from '../../combat/expedition-combat-service';
+import { EVENT_EXPEDITIONS,eventTierMinLevel,eventTierRewardMarks } from '../content/event-expeditions';
 import { EventExpeditionService, MemoryEventRunRepository, eventBossMechanicProjection, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
 
 const players=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
@@ -37,6 +38,31 @@ for(const definition of EVENT_EXPEDITIONS){
  const alternate=eventBossMechanicProjection({...run,objective:{id:definition.objective.id,count:altCount}});assert.ok(alternate);assert.notEqual(alternate!.profileId,bossProfile!.profileId);
 }
 assert.deepEqual(effects,new Set(['boss_attack_down','boss_hp_down','boss_defense_down','reward_bonus','preboss_heal']));
+const frostfall=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_FROSTFALL_AURORA_HOLLOW')!;
+assert.equal(frostfall.minLevel,10);
+for(let tier=1;tier<=5;tier++){
+ const required=10+(tier-1)*5;
+ assert.equal(eventTierMinLevel(frostfall,tier),required);
+ assert.ok(eventTierRewardMarks(frostfall,tier)>=frostfall.rewardMarks);
+}
+assert.throws(()=>eventTierMinLevel(frostfall,0),/invalid_event_tier/);
+assert.throws(()=>eventTierMinLevel(frostfall,6),/invalid_event_tier/);
+const frostBase=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_01'})[0];
+const frostEntry=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_01',enemyLevel:10})[0];
+const frostVeteran=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_01',enemyLevel:30})[0];
+assert.ok(frostEntry.stats.maxHp<frostBase.stats.maxHp*.5,'Tier I must not inherit level-35 hit points');
+assert.ok(frostVeteran.stats.maxHp>frostEntry.stats.maxHp*2,'Tier V must be meaningfully tougher than Tier I');
+assert.equal(frostEntry.level,10);
+assert.equal(frostVeteran.level,30);
+assert.ok(expeditionEncounterPreview('EVENT_FROSTFALL_BATTLE_01',10),'tier encounter preview available');
+for(let tier=1;tier<=5;tier++){
+ const service=new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-tier-test-'+tier);
+ const run=service.start({requestId:'frost-tier-request-'+tier,runId:'frost-tier-run-'+tier,accountId:'a',eventId:frostfall.id,tier,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
+ assert.equal(run.tier,tier);
+ assert.equal(run.syncLevel,eventTierMinLevel(frostfall,tier));
+ assert.equal(run.graph.preBossNodeCount,6);
+}
+assert.throws(()=>new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-gate').start({requestId:'frost-req-level',runId:'frost-run-level',accountId:'a',eventId:frostfall.id,tier:2,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players:players.map((player,index)=>index===0?{...player,level:14}:player),nowMs:now}),/event_level_requirement/);
 const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
 const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});
 assert.equal(veil.minLevel,15);

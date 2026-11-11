@@ -61,9 +61,9 @@ export interface ExpeditionCombatCommitPayload {
   endingPlayerState:Record<string,PersistentActorState>;
 }
 
-export function expeditionEncounterPreview(encounterId:string):PveEncounterPreview|undefined{
+export function expeditionEncounterPreview(encounterId:string,enemyLevel?:number):PveEncounterPreview|undefined{
   const factory=EXPEDITION_ENCOUNTERS[encounterId];
-  return factory?pveEncounterPreview(factory()):undefined;
+  return factory?pveEncounterPreview(enemyLevel===undefined?factory():buildExpeditionEncounter({encounterId,enemyLevel})):undefined;
 }
 export function expeditionBossTelegraph(encounterId:string):PveBossTelegraph|undefined{
  const factory=EXPEDITION_ENCOUNTERS[encounterId];return factory?pveBossTelegraph(factory()):undefined;
@@ -73,7 +73,9 @@ export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):Co
   const factory=EXPEDITION_ENCOUNTERS[input.encounterId]; if(!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
   const tuning=input.bossTuning,removed=new Set(tuning?.removeAbilityIds??[]);
   return factory().map((enemy,index)=>{
-    const levelRatio=input.enemyLevel===undefined?1:Math.max(.65,Math.min(1.2,input.enemyLevel/Math.max(1,enemy.level)));
+    // Frostfall's five accessible tiers span levels 10–30; do not clamp its level-10 enemies to 65% of level-35 stats.
+    const minimumRatio=input.encounterId.startsWith('EVENT_FROSTFALL_')?.25:.65;
+    const levelRatio=input.enemyLevel===undefined?1:Math.max(minimumRatio,Math.min(1.2,input.enemyLevel/Math.max(1,enemy.level)));
     const base={...enemy,level:input.enemyLevel??enemy.level,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*levelRatio*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*levelRatio*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*levelRatio*(input.enemyDefenseMultiplier??1)}};
     if(!base.boss||!tuning)return applyCoopRoomModifier(base,input.roomModifierId,index,input.roomModifierElite);
     const abilities=base.abilities.filter(ability=>!removed.has(ability.id)).map(ability=>{

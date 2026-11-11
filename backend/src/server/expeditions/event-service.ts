@@ -1,6 +1,6 @@
 import type { CoopRouteGraph, CoopRouteNode } from '../../shared/coop-types';
 import type { CombatantDefinition } from '../combat/types';
-import { EVENT_EXPEDITIONS, type EventExpeditionDefinition } from './content/event-expeditions';
+import { EVENT_EXPEDITIONS, eventTierMinLevel, eventTierRewardMarks, isFrostfallEventExpedition, type EventExpeditionDefinition } from './content/event-expeditions';
 import { initialPersistentRunState, resolveCoopNode, type NodeResolutionResult, type PersistentRunState } from './node-resolution';
 import { validateCoopRoster, validateUniqueDamageClasses } from '../coop/invariants';
 import type { CoopRole } from '../../shared/coop-types';
@@ -11,7 +11,7 @@ import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
-export interface EventRun {id:string;requestId:string;accountIds:string[];eventId:string;graph:CoopRouteGraph;players:CombatantDefinition[];persistentState:PersistentRunState;mechanic?:EventMechanicState;objective?:EventObjectiveState;syncLevel?:number;currentNodeId:string;phase:'awaiting_choice'|'completed'|'failed';settlement:'pending'|'claimed';rewardMarks?:number;lastResolution?:{nodeId:string;result:NodeResolutionResult};}
+export interface EventRun {id:string;requestId:string;accountIds:string[];eventId:string;tier?:number;graph:CoopRouteGraph;players:CombatantDefinition[];persistentState:PersistentRunState;mechanic?:EventMechanicState;objective?:EventObjectiveState;syncLevel?:number;currentNodeId:string;phase:'awaiting_choice'|'completed'|'failed';settlement:'pending'|'claimed';rewardMarks?:number;lastResolution?:{nodeId:string;result:NodeResolutionResult};}
 export interface EventRunRepository {get(id:string):EventRun|undefined;getByRequest(accountId:string,requestId:string):EventRun|undefined;save(run:EventRun):void;}
 export class MemoryEventRunRepository implements EventRunRepository{private runs=new Map<string,EventRun>();private requests=new Map<string,string>();get(id:string){const run=this.runs.get(id);return run?structuredClone(run):undefined;}getByRequest(accountId:string,requestId:string){const id=this.requests.get(`${accountId}:${requestId}`);return id?this.get(id):undefined;}save(run:EventRun){this.runs.set(run.id,structuredClone(run));this.requests.set(`${run.accountIds[0]}:${run.requestId}`,run.id);}}
 
@@ -141,14 +141,15 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
 export class EventExpeditionService{
  private commandReceipts=new Map<string,{hash:string;run:EventRun}>();private claims=new Map<string,{marks:number}>();private dailyClears=new Map<string,number>();
  constructor(private repository:EventRunRepository,private serverSecret:string){}
- start(input:{requestId:string;runId:string;accountId:string;eventId:string;activeLiveEventId?:string;members:Array<{accountId:string;characterId:string;role:CoopRole}>;players:CombatantDefinition[];nowMs:number}):EventRun{
+ start(input:{requestId:string;runId:string;accountId:string;eventId:string;tier?:number;activeLiveEventId?:string;members:Array<{accountId:string;characterId:string;role:CoopRole}>;players:CombatantDefinition[];nowMs:number}):EventRun{
   const prior=this.repository.getByRequest(input.accountId,input.requestId);if(prior)return prior;
   const definition=definitionFor(input.eventId);
   if(!input.activeLiveEventId||!input.activeLiveEventId.startsWith(`${definition.liveEventSeriesId}_`))throw new Error('event_not_live');
-  validateCoopRoster(input.members);if(input.players.length!==4||input.players.some(player=>player.level<definition.minLevel))throw new Error('event_level_requirement');
+  const tier=input.tier??1,requiredLevel=eventTierMinLevel(definition,tier);
+  validateCoopRoster(input.members);if(input.players.length!==4||input.players.some(player=>player.level<requiredLevel))throw new Error('event_level_requirement');
   validateUniqueDamageClasses(input.players.map(player=>({role:player.role as CoopRole,classId:player.classId??''})));
   if(!/^[-a-zA-Z0-9_]{8,128}$/.test(input.requestId)||!/^[-a-zA-Z0-9_]{8,128}$/.test(input.runId))throw new Error('invalid_event_identity');
-  const syncLevel=eventSyncLevel(definition,input.players),run:EventRun={id:input.runId,requestId:input.requestId,accountIds:input.members.map(member=>member.accountId),eventId:input.eventId,graph:graph(input.eventId,input.runId,this.serverSecret),players:input.players,persistentState:initialPersistentRunState(input.players),mechanic:{id:definition.mechanic.id,value:definition.mechanic.startValue},objective:{id:definition.objective.id,count:definition.objective.startCount},...(syncLevel===undefined?{}:{syncLevel}),currentNodeId:'entry',phase:'awaiting_choice',settlement:'pending'};this.repository.save(run);return structuredClone(run);
+  const syncLevel=isFrostfallEventExpedition(definition.id)?requiredLevel:eventSyncLevel(definition,input.players),run:EventRun={id:input.runId,requestId:input.requestId,accountIds:input.members.map(member=>member.accountId),eventId:input.eventId,tier,graph:graph(input.eventId,input.runId,this.serverSecret),players:input.players,persistentState:initialPersistentRunState(input.players),mechanic:{id:definition.mechanic.id,value:definition.mechanic.startValue},objective:{id:definition.objective.id,count:definition.objective.startCount},...(syncLevel===undefined?{}:{syncLevel}),currentNodeId:'entry',phase:'awaiting_choice',settlement:'pending'};this.repository.save(run);return structuredClone(run);
  }
  choose(input:{runId:string;accountId:string;optionNodeId:string;requestId:string}):EventRun{
   const hash=`${input.runId}:${input.accountId}:${input.optionNodeId}`,receiptKey=`${input.runId}:${input.requestId}`,prior=this.commandReceipts.get(receiptKey);if(prior){if(prior.hash!==hash)throw new Error('event_idempotency_conflict');return structuredClone(prior.run);}
@@ -165,7 +166,7 @@ export class EventExpeditionService{
    if(selected.objectiveDelta){const currentCount=run.objective?.count??definition.objective.startCount;run.objective={id:definition.objective.id,count:clamp(currentCount+selected.objectiveDelta,0,definition.objective.maxCount)};}
   }
   if(!result.success)run.phase='failed';
-  if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);run.rewardMarks=definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus;}
+  if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);run.rewardMarks=eventTierRewardMarks(definition,run.tier??1)+mechanic.rewardBonus+objective.rewardBonus;}
   this.repository.save(run);this.commandReceipts.set(receiptKey,{hash,run:structuredClone(run)});return structuredClone(run);
  }
  claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=2)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}

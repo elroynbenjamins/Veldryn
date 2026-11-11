@@ -14,6 +14,9 @@ export interface CoopEventExpeditionPreview{
   finalBoss:string;
   status:CoopEventExpeditionStatus;
   minLevel:number;
+  tiers?:number[];
+  tierMinLevels?:number[];
+  tierRewardMarks?:number[];
   levelScaling?:{minLevel:number;maxLevel:number};
   rewardMarks:number;
   routeNodeCount?:number;
@@ -27,6 +30,7 @@ export interface CoopEventExpeditionPreview{
 export interface CoopEventRunServerProjection{
   runId:string;
   eventExpeditionId:string;
+  tier?:number;
   liveEventId:string;
   eventName:string;
   dungeonName:string;
@@ -86,6 +90,7 @@ export function seasonalEventHasExpedition(liveEventId:string):boolean{
 export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPreview):void{
   if(!value.id.trim()||!value.eventName.trim()||!value.name.trim()||!value.description.trim()||!value.finalBoss.trim())throw new Error('invalid_event_expedition_preview');
   if(value.status!=='preview'&&value.status!=='available')throw new Error('invalid_event_expedition_status');
+  if(value.tiers&&(!Array.isArray(value.tierMinLevels)||!Array.isArray(value.tierRewardMarks)||value.tiers.length!==value.tierMinLevels.length||value.tiers.length!==value.tierRewardMarks.length||value.tiers.some((tier,index)=>!Number.isInteger(tier)||tier!==index+1||!Number.isInteger(value.tierMinLevels![index])||value.tierMinLevels![index]<1||!Number.isInteger(value.tierRewardMarks![index])||value.tierRewardMarks![index]<1)))throw new Error('invalid_event_tier_catalog');
   if(!Number.isInteger(value.minLevel)||value.minLevel<1||!Number.isInteger(value.rewardMarks)||value.rewardMarks<0)throw new Error('invalid_event_expedition_requirements');
   if(value.levelScaling&&(!Number.isInteger(value.levelScaling.minLevel)||!Number.isInteger(value.levelScaling.maxLevel)||value.levelScaling.minLevel<value.minLevel||value.levelScaling.maxLevel<value.levelScaling.minLevel))throw new Error('invalid_event_level_scaling');
   if(value.status==='available'&&!value.liveEventId?.trim())throw new Error('available_event_requires_live_event');

@@ -15,7 +15,9 @@ function themed(prefix:string):ContentPools{
 
 /** Both former dungeon route palettes feed one regional queue; retired IDs remain intact. */
 function mergePools(a:ContentPools,b:ContentPools):ContentPools{
- return Object.fromEntries((Object.keys(a) as NonBossKind[]).map(kind=>[kind,[...a[kind],...b[kind]]])) as ContentPools;
+ const merged:Record<NonBossKind,readonly string[]>={...a};
+ for(const kind of Object.keys(a) as NonBossKind[])merged[kind]=[...a[kind],...b[kind]];
+ return merged;
 }
 export const COOP_ROUTE_CONTENT:Readonly<Record<string,ContentPools>>=Object.freeze({
   EXP_001:mergePools(ROOTBOUND,themed('LANTERN')),EXP_002:themed('LANTERN'),EXP_003:mergePools(themed('SUN_OBS'),themed('SUN_MIRAGE')),EXP_004:themed('SUN_MIRAGE'),EXP_005:themed('FROST_LAKE'),EXP_006:themed('FROST_CHOIR'),EXP_007:themed('ASH_FEN'),EXP_008:themed('ASH_CRUCIBLE'),

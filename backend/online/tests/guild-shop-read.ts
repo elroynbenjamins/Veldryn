@@ -161,16 +161,32 @@ async function run() {
 
  const bankCalls:Array<{name:string;args:Record<string,unknown>}>=[];
  const bank=guildBankDepositHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
-  bankCalls.push({name,args});return {alreadyProcessed:false,resourceId:'GREENWOOD_LOG',amount:10} as unknown as T;
+  if(args.p_resource_id==='NOT_AN_ITEM')throw new Error('guild_bank_resource_unavailable');
+  bankCalls.push({name,args});
+  return {alreadyProcessed:false,resourceId:args.p_resource_id,amount:args.p_amount} as unknown as T;
  }});
  const bankUri=claimUri+'&action=bank-deposit';
  const bankInput={resourceId:'GREENWOOD_LOG',amount:10,requestKey:'bank-deposit-123'};
+ const bankRequest=(body:unknown)=>new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(body)});
  assert((await bank(new Request(bankUri,{method:'POST',body:JSON.stringify(bankInput)}))).status===401,'Guild Bank requires auth');
- assert((await bank(new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...bankInput,accountId:'spoof'})}))).status===400,'Guild Bank rejects account spoofing');
- assert((await bank(new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...bankInput,resourceId:'NOT_AN_ITEM'})}))).status===400,'Guild Bank only accepts reviewed construction materials');
- assert((await bank(new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(bankInput)}))).status===200,'verified Guild Bank deposit succeeds');
- assert(bankCalls.length===1&&bankCalls[0].name==='guild_bank_deposit_server_v1','Guild Bank writes only through bank SQL');
- assert(bankCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','bank cannot accept caller-supplied account identity');
+ assert((await bank(bankRequest({...bankInput,accountId:'spoof'}))).status===400,'Guild Bank rejects account spoofing');
+ assert((await bank(bankRequest({...bankInput,resourceId:'bad resource!'}))).status===400,'Guild Bank rejects malformed resource IDs');
+ const unknownBankResult=await bank(bankRequest({...bankInput,resourceId:'NOT_AN_ITEM'}));
+ assert(unknownBankResult.status===409&&
+  (await unknownBankResult.json() as {error:string}).error==='guild_bank_resource_unavailable',
+  'authoritative SQL rejects resources not needed by guild upgrades');
+ assert((await bank(bankRequest(bankInput))).status===200,'verified Guild Bank construction deposit succeeds');
+ assert((await bank(bankRequest({...bankInput,resourceId:'CAVELICHEN'}))).status===200,
+  'released Guild Skill materials are not blocked by a construction-only API allowlist');
+ assert(bankCalls.length===2&&bankCalls.every(x=>x.name==='guild_bank_deposit_server_v1'),'Guild Bank writes only through bank SQL');
+ assert(bankCalls.every(x=>x.args.p_account_id==='11111111-1111-4111-8111-111111111111'),'bank cannot accept caller-supplied account identity');
+ const bankExceeded=guildBankDepositHandler({...services,rpc:async<T>():Promise<T>=>{
+  throw new Error('guild_bank_resource_exceeds_active_requirements');
+ }});
+ const bankExceededResult=await bankExceeded(bankRequest(bankInput));
+ assert(bankExceededResult.status===409&&
+  (await bankExceededResult.json() as {error:string}).error==='guild_bank_resource_exceeds_active_requirements',
+  'overfunded resource errors are actionable rather than trapped as unknown retries');
 
   const weeklyCalls:Array<{name:string;args:Record<string,unknown>}>=[];
  const weekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{

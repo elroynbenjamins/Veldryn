@@ -42504,8 +42504,25 @@ var GUILD_COMPONENT_RECIPES = [
 
 // ../apps/mobile/src/content/gathering-tools.ts
 init_progression();
-var tool = (definition) => ({ ...definition, requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel), recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
-var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
+var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75;
+var TOOL_CRAFT_COST_MULTIPLIER = 2;
+var TOOL_CRAFT_XP_BONUS = 3;
+var tool = (definition) => ({
+  ...definition,
+  requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel),
+  recipe: {
+    ...definition.recipe,
+    xp: definition.recipe.xp + TOOL_CRAFT_XP_BONUS,
+    gold: increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER,
+    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER }))
+  }
+});
+var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({
+  itemId,
+  knowledgeId,
+  sourceMonsterId,
+  dropChance: dropChance * TOOL_BLUEPRINT_DROP_MULTIPLIER
+});
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
   tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
@@ -42934,6 +42951,7 @@ var MONSTERS_RAW = [
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
 ];
+var toolBlueprintItemIds = new Set(TOOL_BLUEPRINT_ITEMS.map((blueprint2) => blueprint2.id));
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
 var ADVANCED_REGION_MONSTER_MULTIPLIER = 1.2;
@@ -42965,7 +42983,8 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => {
       const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
       const relativeChanceScale = drop.itemId === HOLY_WATER_ID ? 1 : drop.chance < 1 ? 0.95 : 1;
-      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale };
+      const toolBlueprintScale = toolBlueprintItemIds.has(drop.itemId) ? TOOL_BLUEPRINT_DROP_MULTIPLIER : 1;
+      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale * toolBlueprintScale };
     }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.
     // Scale both the displayed combat stats and cycle time, so 20% more HP

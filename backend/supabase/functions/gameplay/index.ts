@@ -43008,8 +43008,25 @@ var GUILD_COMPONENT_RECIPES = [
 
 // ../apps/mobile/src/content/gathering-tools.ts
 init_progression();
-var tool = (definition) => ({ ...definition, requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel), recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
-var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
+var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75;
+var TOOL_CRAFT_COST_MULTIPLIER = 2;
+var TOOL_CRAFT_XP_BONUS = 3;
+var tool = (definition) => ({
+  ...definition,
+  requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel),
+  recipe: {
+    ...definition.recipe,
+    xp: definition.recipe.xp + TOOL_CRAFT_XP_BONUS,
+    gold: increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER,
+    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER }))
+  }
+});
+var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({
+  itemId,
+  knowledgeId,
+  sourceMonsterId,
+  dropChance: dropChance * TOOL_BLUEPRINT_DROP_MULTIPLIER
+});
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
   tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
@@ -43467,6 +43484,7 @@ var MONSTERS_RAW = [
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
 ];
+var toolBlueprintItemIds = new Set(TOOL_BLUEPRINT_ITEMS.map((blueprint2) => blueprint2.id));
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
 var ADVANCED_REGION_MONSTER_MULTIPLIER = 1.2;
@@ -43498,7 +43516,8 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => {
       const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
       const relativeChanceScale = drop.itemId === HOLY_WATER_ID ? 1 : drop.chance < 1 ? 0.95 : 1;
-      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale };
+      const toolBlueprintScale = toolBlueprintItemIds.has(drop.itemId) ? TOOL_BLUEPRINT_DROP_MULTIPLIER : 1;
+      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale * toolBlueprintScale };
     }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.
     // Scale both the displayed combat stats and cycle time, so 20% more HP
@@ -49186,7 +49205,7 @@ function environmentEffectForActivity(activity) {
 
 // ../apps/mobile/src/core/seasonal-quests.ts
 var periods = ["daily", "weekly", "monthly"];
-var activityTags = ["combat", "gathering", "crafting", "exploration", "boss"];
+var activityTags = ["combat", "gathering", "crafting", "exploration", "faith", "boss"];
 function normalizeSeasonalProgress(raw2) {
   const result = {};
   if (!raw2 || typeof raw2 !== "object") return result;
@@ -49219,22 +49238,15 @@ var QUEST_RARITIES = {
   epic: { label: "Epic", color: "#c79cff", multiplier: 2.25, cache: "Oathbound cache" },
   legendary: { label: "Legendary", color: "#f0a24b", multiplier: 3, cache: "Crown cache" }
 };
-var roleTemplates = {
-  Tank: [["Hold the Line", "Defeat {n} monsters while staying battle-ready.", 24, "combat"], ["Iron Ration", "Build toward {n} total skill levels for the next expedition.", 12, "gathering"], ["Marching Vigil", "Defeat {n} monsters on patrol.", 28, "combat"], ["Roadwarden Survey", "Unlock {n} monster encounters.", 5, "exploration"]],
-  Support: [["Light the Way", "Build toward {n} total skill levels through gathering.", 30, "gathering"], ["Mercy in Motion", "Craft or equip {n} meaningful upgrades.", 12, "crafting"], ["Dawn Patrol", "Earn progress from {n} combat milestones.", 20, "combat"], ["Safe Passage", "Unlock {n} monster encounters.", 5, "exploration"]],
-  Damage: [["Predator\u2019s Circuit", "Earn progress from {n} combat milestones.", 18, "combat"], ["Edge of Mastery", "Craft or equip {n} meaningful upgrades.", 14, "crafting"], ["The Long Hunt", "Earn progress from {n} combat milestones.", 30, "combat"], ["Forward Scout", "Unlock {n} monster encounters.", 5, "exploration"]]
-};
-var classTemplates = {
-  IRONWARDEN: ["Steel Discipline", "Defeat {n} monsters to reinforce the line.", 26, "combat"],
-  BASTION: ["Unbroken Wall", "Earn progress from {n} combat milestones.", 30, "combat"],
-  DREADGUARD: ["Chain of Command", "Earn progress from {n} combat milestones.", 28, "combat"],
-  DAWNKEEPER: ["Sunlamp Offering", "Craft or equip {n} meaningful upgrades.", 15, "crafting"],
-  WAYFINDER: ["Cartographer\u2019s Eye", "Unlock {n} additional monster encounters.", 5, "exploration"],
-  RAVAGER: ["Break Their Line", "Earn progress from {n} combat milestones.", 40, "combat"],
-  HEXWEAVER: ["Runic Survey", "Build toward {n} total skill levels through gathering.", 22, "gathering"],
-  KNIFE_DANCER: ["Steps Unseen", "Unlock {n} monster encounters.", 6, "exploration"],
-  STONECALLER: ["Stone and Storm", "Build toward {n} total skill levels through gathering.", 24, "gathering"]
-};
+var sharedTemplates = [
+  ["Field Patrol", "combat"],
+  ["Gathering Run", "gathering"],
+  ["Crafting Orders", "crafting"],
+  ["Trail Survey", "exploration"],
+  ["Faith Practice", "faith"]
+];
+var ACTION_TARGETS = { daily: 30, weekly: 150, monthly: 450 };
+var BASE_REWARD_ACTIONS = 30;
 function periodKey(period, date = /* @__PURE__ */ new Date()) {
   const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   if (period === "daily") return utc.toISOString().slice(0, 10);
@@ -49246,11 +49258,8 @@ function periodKey(period, date = /* @__PURE__ */ new Date()) {
   }
   return `${utc.getUTCFullYear()}-${utc.getUTCMonth() + 1}`;
 }
-function pick(list, seed, index) {
-  return list[hash32(`${seed}:${index}`) % list.length];
-}
-function rarityFor(period, key, index, classId) {
-  const roll = hash32(`${period}:${key}:${classId}:${index}:rarity`) % 100;
+function rarityFor(period, key, index) {
+  const roll = hash32(`${period}:${key}:${index}:rarity`) % 100;
   if (period === "daily") return roll < 55 ? "common" : roll < 90 ? "uncommon" : "rare";
   if (period === "weekly") return roll < 45 ? "uncommon" : roll < 87 ? "rare" : "epic";
   return roll < 48 ? "rare" : roll < 88 ? "epic" : "legendary";
@@ -49323,18 +49332,27 @@ function contractProgress(state, tag, period, key) {
   return progress?.key === key ? progress.counts[tag] ?? 0 : 0;
 }
 function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
-  const character = state.character;
-  if (!character) return [];
-  const classDef = CLASSES.find((item) => item.id === character.classId);
+  if (!state.character) return [];
   const key = periodKey(period, date), count = period === "daily" ? 2 : period === "weekly" ? 3 : 4;
-  const role = roleTemplates[classDef.role], specific = classTemplates[character.classId];
-  const rows2 = [specific, ...Array.from({ length: count }, (_, index) => pick(role, key, index))].slice(0, count);
-  const volume = period === "daily" ? 0.9 : period === "weekly" ? 3 : 8;
-  return rows2.map((row, index) => {
-    const [name, templateDescription, base, tag] = row, rarity = rarityFor(period, key, index, character.classId), meta = QUEST_RARITIES[rarity], required = Math.min(tag === "equipment" ? 10 : Infinity, Math.max(1, Math.round(base * volume))), progress = Math.min(required, contractProgress(state, tag, period, key)), reward3 = seasonalQuestCache(period, rarity), rewardOptions = seasonalQuestRewardOptions(state, period, rarity);
-    const description = tag === "combat" ? "Defeat {n} monsters this period." : tag === "gathering" ? "Complete {n} gathering actions this period." : tag === "crafting" ? "Complete {n} crafts this period." : tag === "exploration" ? "Complete {n} exploration route actions this period." : templateDescription;
-    const baseGold = period === "daily" ? Math.max(20, base * 2) : period === "weekly" ? base * 8 : Math.max(300, base * 20), baseXp = period === "daily" ? Math.max(40, base * 4) : period === "weekly" ? base * 15 : Math.max(600, base * 40);
-    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name: name.replace("{n}", String(required)), description: description.replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward3, rewardOptions, className: classDef.name, tag, rarity };
+  const available = [...sharedTemplates];
+  const rows2 = Array.from({ length: count }, (_, index) => available.splice(hash32(`${period}:${key}:quest:${index}`) % available.length, 1)[0]);
+  const required = ACTION_TARGETS[period], base = BASE_REWARD_ACTIONS;
+  return rows2.map(([name, tag], index) => {
+    const rarity = rarityFor(period, key, index), meta = QUEST_RARITIES[rarity];
+    const progress = Math.min(required, contractProgress(state, tag, period, key));
+    const reward3 = seasonalQuestCache(period, rarity), rewardOptions = seasonalQuestRewardOptions(state, period, rarity);
+    const descriptions = {
+      combat: "Defeat {n} monsters this period.",
+      gathering: "Complete {n} gathering actions this period.",
+      crafting: "Complete {n} crafts this period.",
+      exploration: "Complete {n} exploration route actions this period.",
+      faith: "Complete {n} Faith practices this period.",
+      equipment: "Equip {n} equipment pieces this period.",
+      boss: "Defeat {n} bosses this period."
+    };
+    const baseGold = period === "daily" ? Math.max(20, base * 2) : period === "weekly" ? base * 8 : Math.max(300, base * 20);
+    const baseXp = period === "daily" ? Math.max(40, base * 4) : period === "weekly" ? base * 15 : Math.max(600, base * 40);
+    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name, description: descriptions[tag].replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward3, rewardOptions, className: "Adventurer", tag, rarity };
   });
 }
 
@@ -52959,7 +52977,8 @@ function claimActivitySegmentRaw(state, nowMs) {
     const skills2 = state.skills.map((x) => x.skillId === "faith" ? { ...x, xp: faithXp, level: levelFromXp(faithXp) } : x);
     const nextBase2 = { ...settled.state, ...routed2, skills: skills2, character: { ...settled.state.character, faith: { ...faith, xp: faithXp } }, activity: faith.practice ? settled.state.activity : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), reconciled = reconcileCombatCompanionUnlocks(next2, nowMs);
-    const queuedState2 = !faith.practice && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(reconciled, nowMs) : reconciled;
+    const credited = recordSeasonalActivity(reconciled, "faith", reward4.faithActions ?? 0, nowMs);
+    const queuedState2 = !faith.practice && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(credited, nowMs) : credited;
     return { state: queuedState2, reward: withCompanionUnlocks(reward4, state, queuedState2) };
   }
   if (state.activity?.kind === "alchemy") {

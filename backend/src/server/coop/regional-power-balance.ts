@@ -2,20 +2,34 @@
  * templates to the lower level-10/25 regional entry bands. Legacy saved
  * runs omit regionalBalanceVersion and keep their original tuning. */
 export const REGIONAL_DUNGEON_BALANCE_VERSION='regional-tier-power-v1';
+/** Simulation-calibrated enemy stats at 105% of the required Combat Power.
+ * Base multipliers increase at each tier. Historical runs do not pass enabled.
+ * The two bosses remain mechanically different but their win rates are
+ * normalized so a 50/50 boss roll is not an accidental difficulty lottery. */
 export const REGIONAL_DUNGEON_BALANCE=Object.freeze({
  EXP_001:{
   enemyLevel:10,
-  attack:[.34,.41,.49],hp:[.45,.57,.72],defense:[.62,.75,.90],
+  attack:[1.258,1.681,1.715],hp:[1.665,2.337,2.52],defense:[2.294,3.075,3.15],
  },
  EXP_003:{
   enemyLevel:25,
-  attack:[.22,.26,.31],hp:[.52,.65,.81],defense:[.60,.74,.88],
+  attack:[1.045,1.066,1.0695],hp:[2.47,2.665,2.7945],defense:[2.85,3.034,3.036],
  },
 } as const);
-export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled:boolean){
+const LEGACY_ROOTBOUND_ATTACK_MULTIPLIER=2.9;
+const ROOTBOUND_TIER_ATTACK=[1.2,.95,1.0] as const;
+export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled:boolean,encounterId?:string){
  if(!enabled||![1,2,3].includes(tier))return undefined;
  const row=REGIONAL_DUNGEON_BALANCE[expeditionId as keyof typeof REGIONAL_DUNGEON_BALANCE];
- return row?{attack:row.attack[tier-1],hp:row.hp[tier-1],defense:row.defense[tier-1],enemyLevel:row.enemyLevel}:undefined;
+ if(!row)return undefined;
+ const rootbound=expeditionId==='EXP_001'&&(encounterId?.startsWith('ROOT')||encounterId==='BOSS_EXP_ROOT');
+ // resolveCoopNode already multiplies Rootbound content by 2.9. Reconcile
+ // that legacy-specific modifier only for new Asterfall regional runs.
+ const rootCorrection=rootbound?ROOTBOUND_TIER_ATTACK[tier-1]/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
+ const bossCorrection=expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?.77:
+  expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'&&tier===3?1.08:1;
+ return {attack:row.attack[tier-1]*rootCorrection*bossCorrection,
+  hp:row.hp[tier-1]*bossCorrection,defense:row.defense[tier-1]*bossCorrection,enemyLevel:row.enemyLevel};
 }
 
 /** Power beyond each region's entry baseline retains a bounded, meaningful

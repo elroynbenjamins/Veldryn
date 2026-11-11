@@ -42,8 +42,9 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   try{
    const status=await onPurchase(id);
    setNotice(status==='purchased'?'Purchase confirmed. Refresh to view your balance and reward.':'Already owned. No Marks spent.');
-   await onRefresh?.();
    setSelected(null);
+   try{await onRefresh?.()}
+   catch{setError('Purchase confirmed, but refresh failed. Reopen the shop to synchronize your account.');}
   }catch(cause){
    setError(cause instanceof Error?cause.message:'Unable to confirm purchase. Refresh before retrying.');
   }finally{setPending(null)}

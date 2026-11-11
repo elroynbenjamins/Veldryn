@@ -46,3 +46,6 @@ jobs:
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
         working-directory: backend
+      - name: Probe new regional dungeon tiers against their minimum Combat Power
+        run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
+        working-directory: backend

@@ -1,8 +1,12 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,refreshQuests,startCombat,startExploration} from '../src/core/game';
 // previewActivityReward and startExploration are used in the partial-progress assertion below.
-import {EXPLORATION_ROUTES} from '../src/content/exploration';
-import {queuedActivityReadiness} from '../src/core/activity-queue';
+import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier,unmetScoutingPrerequisite} from '../src/content/exploration';
 import {MONSTERS} from '../src/content/monsters';
+import {regionAreas} from '../src/content/regional-areas';
+import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
+import {queuedActivityReadiness} from '../src/core/activity-queue';
+import {skillMilestones} from '../src/core/skill-milestones';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
@@ -28,34 +32,6 @@ ok((level71.etaSeconds??Infinity)<=10*3600,'Ashlands Exploration should stay und
 const progressionLevels=EXPLORATION_ROUTES.map(row=>row.requiredExplorationLevel);
 ok(progressionLevels.every((value,index)=>index===0||value>=progressionLevels[index-1]),'Exploration route requirements must rise with world progression');
 ok(EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_IRONWOOD')?.unlockZoneId==='OLD_MINES','Ironwood scouting should discover the first Exploration-gated region');
-
-const requiredLevels:Record<string,number>={
- SCOUT_GREENFIELDS:1,SCOUT_SILVERBROOK:1,SCOUT_IRONWOOD:3,SCOUT_OLD_MINES:5,
- SCOUT_KINGS_ROAD:7,SCOUT_SUNSCAR:12,SCOUT_FROSTMARCH:18,SCOUT_ASHLANDS:28,
-};
-for(const route of EXPLORATION_ROUTES){
- const requirement=requiredLevels[route.id];
- ok(requirement===route.requiredExplorationLevel,route.id+' must retain its distinct Exploration gate');
- if(requirement<=1)continue;
- const below={...base,currentRegionId:route.zoneId,character:{...base.character!,level:route.requiredLevel},
-   // Test the Exploration gate in a legitimately unlocked region rather than
-   // allowing travel/story restrictions to obscure the failure being tested.
-   exploredRouteIds:EXPLORATION_ROUTES.map(scout=>scout.id),defeatedBossIds:['FALLEN_KNIGHT'],
-   skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:requirement-1,xp:totalXpAtLevel(requirement-1)}:row)};
- let blocked=false;
- try{startExploration(below,route.id,1)}catch(error){blocked=String(error).includes('Exploration level '+requirement);}
- ok(blocked,route.id+' must reject manual start before required Exploration level');
- const queue=queuedActivityReadiness(below,{kind:'exploration',targetId:route.id});
- ok(!queue.ready,route.id+' queue cannot bypass the Exploration gate');
- if(route.id==='SCOUT_ASHLANDS'){
-  // Ashlands is unreleased and must never become playable through a QA fixture.
-  continue;
- }
- ok(!!queue.blocker?.includes(String(requirement)),route.id+' queue must explain the Exploration gate');
- const ready={...below,skills:below.skills.map(row=>row.skillId==='exploration'?{...row,level:requirement,xp:totalXpAtLevel(requirement)}:row)};
- ok(startExploration(ready,route.id,1).activity?.targetId===route.id,route.id+' should start at the required Exploration level');
-}
-
 
 let storyScout:GameState={...base,currentRegionId:'IRONWOOD',character:{...base.character!,level:7},skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:3,xp:totalXpAtLevel(3)}:row),quests:base.quests.map(row=>row.questId==='QST_001'||row.questId==='QST_002'?{...row,status:'claimed' as const}:row.questId==='QST_003'?{...row,status:'active' as const}:row)};
 storyScout=startExploration(storyScout,'SCOUT_IRONWOOD',1);
@@ -87,6 +63,51 @@ ok(secondClaim.state.skills.find(row=>row.skillId==='exploration')!.xp===splitEx
 
 const frostRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_FROSTMARCH')!,ashRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_ASHLANDS')!;
 ok(frostRoute.seconds===240&&ashRoute.seconds===288,'Exploration routes should stay 20% faster so later-region discovery does not become an unnecessary wait');
+
+// Each of Sunscar's four playable areas has a progressively gated survey.
+// Existing SCOUT_SUNSCAR completion must remain valid, including the Frostmarch route.
+const sunscarRoutes=EXPLORATION_ROUTES.filter(route=>route.zoneId==='SUNSCAR');
+ok(sunscarRoutes.length===4,'Sunscar needs one scouting route per playable area');
+ok(sunscarRoutes.map(route=>route.areaId).join(',')===regionAreas('SUNSCAR').map(area=>area.id).join(','),'Each survey must target the correct Sunscar area');
+ok(sunscarRoutes[0].id==='SCOUT_SUNSCAR'&&sunscarRoutes[0].unlockZoneId==='FROSTMARCH','Keep the original first Sunscar survey and Frostmarch discovery');
+ok(sunscarRoutes.every((route,index)=>route.requiredLevel===regionAreas('SUNSCAR')[index].minLevel),'Sunscar character levels match playable area level gates');
+ok(sunscarRoutes.map(route=>route.requiredExplorationLevel).join(',')==='8,9,10,11','Sunscar Exploration requirements increase gradually from 8 to 11');
+ok(sunscarRoutes.slice(1).every((route,index)=>route.prerequisiteRouteId===sunscarRoutes[index].id),'Additional surveys require the prior survey');
+ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_IRONWOOD')?.requiredExplorationLevel===3,'Ironwood now requires Exploration level 3');
+ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_OLD_MINES')?.requiredExplorationLevel===4,'Old Mines now requires Exploration level 4');
+ok(EXPLORATION_ROUTES.find(route=>route.id==='SCOUT_KINGS_ROAD')?.requiredExplorationLevel===5,'King\'s Road now requires Exploration level 5');
+const legacySunscar=['SCOUT_SUNSCAR'];
+ok(!unmetScoutingPrerequisite(sunscarRoutes[0],legacySunscar),'Existing Sunscar completion has no new prerequisite');
+ok(unmetScoutingPrerequisite(sunscarRoutes[2],legacySunscar)?.id===sunscarRoutes[1].id,'Cannot skip the second Sunscar area survey');
+const sunscarXpPerHour=sunscarRoutes.map(route=>rate(route.id));
+ok(sunscarXpPerHour.every((value,index)=>index===0||value>sunscarXpPerHour[index-1]),'Later Sunscar surveys should be better XP training');
+const testExplorer={...base,currentRegionId:'SUNSCAR',character:{...base.character!,level:rebaseLevel(45)},skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill),exploredRouteIds:legacySunscar};
+let prerequisiteBlocked=false;
+try{startExploration(testExplorer,'SCOUT_SUNSCAR_MIRAGE',1000)}catch(e){prerequisiteBlocked=String(e).includes('Scorchwind');}
+ok(prerequisiteBlocked,'Starting an advanced Sunscar survey must validate earlier survey completion');
+const queuedMirage=queuedActivityReadiness(testExplorer,{kind:'exploration',targetId:'SCOUT_SUNSCAR_MIRAGE'});
+ok(!queuedMirage.ready&&!!queuedMirage.blocker?.includes('Scorchwind'),'Queue execution must use the same Sunscar prerequisites');
+let progressedSunscar=startExploration(testExplorer,'SCOUT_SUNSCAR_SCORCHWIND',1000);
+progressedSunscar=claimActivity(progressedSunscar,181_000).state;
+ok(progressedSunscar.exploredRouteIds?.includes('SCOUT_SUNSCAR_SCORCHWIND'),'Completing a full Sunscar survey persists its mapping');
+ok(progressedSunscar.unlockedMonsterIds.includes('DUNE_ORACLE'),'Scorchwind survey reveals the Dune Oracle encounter');
+const nextSunscar=startExploration(progressedSunscar,'SCOUT_SUNSCAR_MIRAGE',200_000);
+ok(nextSunscar.activity?.targetId==='SCOUT_SUNSCAR_MIRAGE','The next Sunscar survey unlocks after the prior one');
+let developingBlocked=false;
+try{startExploration({...testExplorer,currentRegionId:'ASHLANDS',exploredRouteIds:['SCOUT_FROSTMARCH']} as GameState,'SCOUT_ASHLANDS',1000)}catch(e){developingBlocked=String(e).includes('in development');}
+ok(developingBlocked,'Unreleased regions cannot run Exploration scouting even in legacy saves');
+
+// Exploration improves regular gathering pace and active scouting, not combat.
+ok(explorationGatheringSpeedBonus(1)===0&&explorationGatheringSpeedBonus(10)===.01&&explorationGatheringSpeedBonus(100)===.1,'Trailcraft grants exactly 1% gathering speed per 10 levels, capped at 10%');
+ok(explorationScoutingSpeedMultiplier(10)===1.02&&explorationScoutingSpeedMultiplier(100)===1.2,'Trailcraft scouting speed is 2% per 10 levels, capped at 20%');
+const noviceGathering=characterPermanentMultipliers(base).gatheringSpeedMultiplier;
+const veteran={...base,skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:50,xp:totalXpAtLevel(50)}:skill)};
+ok(Math.abs(characterPermanentMultipliers(veteran).gatheringSpeedMultiplier/noviceGathering-1.05)<1e-7,'Exploration 50 adds 5% to baseline gathering speed');
+const highScout=startExploration({...veteran,character:{...veteran.character!,level:rebaseLevel(26)},currentRegionId:'SUNSCAR'},'SCOUT_SUNSCAR',1000);
+const fasterSeconds=Math.ceil(168/explorationScoutingSpeedMultiplier(50));
+ok(previewActivityReward(highScout,1000+(fasterSeconds+1)*1000).kills>=1,'Exploration 50 actually completes scouting faster');
+const explorationMilestones=skillMilestones(veteran,'exploration');
+ok(explorationMilestones.some(row=>row.id==='scout:SCOUT_SUNSCAR_MIRAGE')&&explorationMilestones.some(row=>row.id==='trailcraft:50'),'Scouting and Trailcraft appear in the skill progression milestones');
 
 // Partial progress between claims must bank, so a sub-cycle claim does not reset the progress bar.
 const scoutRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_GREENFIELDS')!;

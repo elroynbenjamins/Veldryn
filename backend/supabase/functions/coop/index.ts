@@ -45051,64 +45051,80 @@ var EVENT_PET_COLLECTIBLES = [
 ];
 
 // ../apps/mobile/src/content/core-pets.ts
-var pet = (id, name, region, target2, nativeSize, activeBps = 200, source) => ({
+var CORE_PET_ACTIVE_BPS = { Normal: 200, Rare: 300, Epic: 400, Mythic: 500 };
+var pet = (id, name, region, target2, rarity, source) => ({
   id,
   kind: "pet",
   name,
   bonusFamilyId: id,
   target: target2,
   ownedBps: 50,
-  activeBps,
-  source: source ?? `${region} pet collection`,
+  activeBps: CORE_PET_ACTIVE_BPS[rarity],
+  source,
   collectionGroup: "core",
   region,
-  nativeSize,
-  rarity: nativeSize === 64 ? "Epic" : void 0,
+  nativeSize: rarity === "Epic" || rarity === "Mythic" ? 64 : 48,
+  rarity,
   description: `A permanent ${region} pet collectible.`
 });
 var CORE_PET_COLLECTIBLES = [
-  pet("PET_001", "Pebblemole", "Asterfall", "gatheringYield", 48, 200, "Rare discovery while mining Copper Veins"),
-  pet("PET_002", "Cinderchip", "Asterfall", "craftingSpeed", 48, 200, "Rare discovery while mining Aster-Iron Veins"),
-  pet("PET_003", "Twiglet", "Asterfall", "gatheringYield", 48, 200, "Rare discovery while cutting Greenwood Trees"),
-  pet("PET_004", "Mossback Pup", "Asterfall", "characterXp", 48, 200, "Rare drop from Ironwood Wolf"),
-  pet("PET_005", "Silverfin", "Asterfall", "fishingSpeed", 48, 200, "Rare discovery while fishing Silverbrook Shoals"),
-  pet("PET_006", "Lantern Carp Fry", "Asterfall", "fishingSpeed", 48, 200, "Rare discovery while fishing Oathscale Pools"),
-  pet("PET_007", "Briarbud", "Asterfall", "herbalismSpeed", 48, 200, "Rare discovery while gathering Ironbloom"),
-  pet("PET_008", "Gloamcap", "Asterfall", "herbalismSpeed", 48, 200, "Rare discovery while gathering Cavelichen"),
-  pet("PET_009", "Tusklet", "Asterfall", "dropChance", 48, 200, "Rare drop from Roadside Boar"),
-  pet("PET_010", "Redfeather Chick", "Asterfall", "cookingSpeed", 48, 200, "Rare discovery while scouting the Greenfields"),
-  pet("PET_011", "Forge Spark", "Asterfall", "craftingSpeed", 48, 200, "Rare discovery while mining Oathstone Seams"),
-  pet("PET_012", "Mini Wretch", "Asterfall", "dropChance", 48, 200, "Rare drop from Lantern Wretch"),
-  pet("PET_013", "Mapwing", "Asterfall", "skillXp", 48, 200, "Rare discovery while surveying the King's Road"),
-  pet("PET_014", "Pack Mimic", "Asterfall", "materialPreservation", 48, 200, "Rare discovery while surveying the Old Mines"),
-  pet("PET_015", "Coinmouse", "Asterfall", "gold", 48, 200, "Rare discovery while mapping Silverbrook"),
-  pet("PET_016", "Echo Wisp", "Asterfall", "actionSpeed", 48, 200, "Rare drop from Echo Bat"),
-  pet("PET_017", "Campfox", "Asterfall", "skillXp", 48, 200, "Rare discovery while tracing Ironwood paths"),
-  pet("PET_018", "Oathling", "Asterfall", "defense", 64, 300, "0.05% drop from Oathglass Revenant"),
-  pet("PET_019", "Duneling", "Sunscar", "gatheringYield", 48, 200, "Rare drop from Sunscar Scorpion"),
-  pet("PET_020", "Mirage Minnow", "Sunscar", "fishingSpeed", 48, 200, "Rare discovery while charting the Sunscar glasslands"),
-  pet("PET_021", "Sunscarab", "Sunscar", "craftingSpeed", 48, 200, "Rare discovery while gathering Sunscale Bloom"),
-  pet("PET_022", "Tiny Sphinx", "Sunscar", "skillXp", 64, 300, "Rare drop from Dune Oracle"),
-  pet("PET_023", "Tyrant Larva", "Sunscar", "characterXp", 64, 300, "0.05% drop from Glassbound Sentinel"),
-  pet("PET_024", "Snowpuff Hare", "Frostmarch", "actionSpeed", 48, 200, "Rare discovery while following the Frostmarch bells"),
-  pet("PET_025", "Rimecap", "Frostmarch", "herbalismSpeed", 48, 200, "Rare discovery while gathering Frostbell Flowers"),
-  pet("PET_026", "Bellfin Fry", "Frostmarch", "fishingSpeed", 48, 200, "Rare drop from Frostwolf"),
-  pet("PET_027", "Choir Pebble", "Frostmarch", "defense", 64, 300, "Rare drop from Bellwraith"),
-  pet("PET_028", "Wyrmling Flake", "Frostmarch", "skillXp", 64, 300, "0.05% drop from Choir Hunter"),
-  pet("PET_029", "Coalbug", "Ashlands", "craftingSpeed", 48, 200, "Rare drop from Blackglass Mireling"),
-  pet("PET_030", "Sootling", "Ashlands", "materialPreservation", 48, 200, "Rare discovery while gathering Ashen Myrrh"),
-  pet("PET_031", "Ember Eel Fry", "Ashlands", "fishingSpeed", 48, 200, "Rare discovery while reading the Ashlands smoke"),
-  pet("PET_032", "Forge Imp", "Ashlands", "craftingSpeed", 64, 300, "Rare drop from Cinder Titan"),
-  pet("PET_033", "Cinder Crownling", "Ashlands", "dropChance", 64, 300, "0.05% drop from Ashen Revenant")
+  pet("PET_001", "Pebblemole", "Asterfall", "gatheringYield", "Normal", "Discovery while mining Copper Veins"),
+  pet("PET_002", "Cinderchip", "Asterfall", "craftingSpeed", "Normal", "Discovery while mining Aster-Iron Veins"),
+  pet("PET_003", "Twiglet", "Asterfall", "gatheringYield", "Normal", "Discovery while cutting Greenwood Trees"),
+  pet("PET_004", "Mossback Pup", "Asterfall", "characterXp", "Rare", "Rare drop from Ironwood Wolf"),
+  pet("PET_005", "Silverfin", "Asterfall", "fishingSpeed", "Normal", "Discovery while fishing Silverbrook Shoals"),
+  pet("PET_006", "Lantern Carp Fry", "Asterfall", "fishingSpeed", "Normal", "Discovery while fishing Oathscale Pools"),
+  pet("PET_007", "Briarbud", "Asterfall", "herbalismSpeed", "Normal", "Discovery while gathering Ironbloom"),
+  pet("PET_008", "Gloamcap", "Asterfall", "herbalismSpeed", "Normal", "Discovery while gathering Cavelichen"),
+  pet("PET_009", "Tusklet", "Asterfall", "dropChance", "Normal", "Drop from Roadside Boar"),
+  pet("PET_010", "Redfeather Chick", "Asterfall", "cookingSpeed", "Normal", "Discovery while scouting the Greenfields"),
+  pet("PET_011", "Forge Spark", "Asterfall", "craftingSpeed", "Rare", "Rare discovery while mining Oathstone Seams"),
+  pet("PET_012", "Mini Wretch", "Asterfall", "dropChance", "Rare", "Rare drop from Lantern Wretch"),
+  pet("PET_013", "Mapwing", "Asterfall", "skillXp", "Normal", "Discovery while surveying the King's Road"),
+  pet("PET_014", "Pack Mimic", "Asterfall", "materialPreservation", "Epic", "Epic discovery while surveying the Old Mines"),
+  pet("PET_015", "Coinmouse", "Asterfall", "gold", "Normal", "Discovery while mapping Silverbrook"),
+  pet("PET_016", "Echo Wisp", "Asterfall", "actionSpeed", "Epic", "Epic drop from Echo Bat"),
+  pet("PET_017", "Campfox", "Asterfall", "skillXp", "Normal", "Discovery while tracing Ironwood paths"),
+  pet("PET_018", "Oathling", "Asterfall", "defense", "Mythic", "0.025% drop from Oathglass Revenant"),
+  pet("PET_019", "Duneling", "Sunscar", "gatheringYield", "Rare", "Rare drop from Sunscar Scorpion"),
+  pet("PET_020", "Mirage Minnow", "Sunscar", "fishingSpeed", "Normal", "Discovery while charting the Sunscar glasslands"),
+  pet("PET_021", "Sunscarab", "Sunscar", "craftingSpeed", "Rare", "Rare discovery while gathering Sunscale Bloom"),
+  pet("PET_022", "Tiny Sphinx", "Sunscar", "skillXp", "Epic", "Epic drop from Dune Oracle"),
+  pet("PET_023", "Tyrant Larva", "Sunscar", "characterXp", "Mythic", "0.025% drop from Glassbound Sentinel"),
+  pet("PET_034", "Glasswing Jerboa", "Sunscar", "gold", "Normal", "Drop from Glass Dune Strider"),
+  pet("PET_035", "Mirage Kit", "Sunscar", "actionSpeed", "Rare", "Rare discovery while gathering Mirage Saltbloom"),
+  pet("PET_036", "Crownscale Hatchling", "Sunscar", "defense", "Epic", "Epic drop from Royal Sandguard in Tyrant's Crown"),
+  pet("PET_024", "Snowpuff Hare", "Frostmarch", "actionSpeed", "Normal", "Discovery while following the Frostmarch bells"),
+  pet("PET_025", "Rimecap", "Frostmarch", "herbalismSpeed", "Rare", "Rare discovery while gathering Frostbell Flowers"),
+  pet("PET_026", "Bellfin Fry", "Frostmarch", "fishingSpeed", "Rare", "Rare drop from Frostwolf"),
+  pet("PET_027", "Choir Pebble", "Frostmarch", "defense", "Epic", "Epic drop from Bellwraith"),
+  pet("PET_028", "Wyrmling Flake", "Frostmarch", "skillXp", "Mythic", "0.025% drop from Choir Hunter"),
+  pet("PET_037", "Whitepine Owlet", "Frostmarch", "characterXp", "Rare", "Rare drop from Snow Treant"),
+  pet("PET_038", "Rime Otter", "Frostmarch", "fishingSpeed", "Epic", "Epic drop from Lakebound Specter in Shiverlake"),
+  pet("PET_039", "Iceglass Minnow", "Frostmarch", "gatheringYield", "Normal", "Discovery while fishing the Shiverlake Icefin Pool"),
+  pet("PET_029", "Coalbug", "Ashlands", "craftingSpeed", "Rare", "Rare drop from Blackglass Mireling"),
+  pet("PET_030", "Sootling", "Ashlands", "materialPreservation", "Rare", "Rare discovery while gathering Ashen Myrrh"),
+  pet("PET_031", "Ember Eel Fry", "Ashlands", "fishingSpeed", "Normal", "Discovery while reading the Ashlands smoke"),
+  pet("PET_032", "Forge Imp", "Ashlands", "craftingSpeed", "Epic", "Epic drop from Cinder Titan"),
+  pet("PET_033", "Cinder Crownling", "Ashlands", "dropChance", "Mythic", "0.025% drop from Ashen Revenant"),
+  pet("PET_040", "Emberfin Tadpole", "Ashlands", "healingEffectiveness", "Normal", "Discovery while fishing Emberfin Deepwater"),
+  pet("PET_041", "Blackglass Newt", "Ashlands", "defense", "Rare", "Rare discovery while mining Deep Blackglass Veins"),
+  pet("PET_042", "Heartfire Salamander", "Ashlands", "materialPreservation", "Epic", "Epic discovery while cutting Heartfire Cinderwood")
 ];
 var CORE_PET_IDS = new Set(CORE_PET_COLLECTIBLES.map((row) => row.id));
 function validateCorePetCatalog(catalog2 = CORE_PET_COLLECTIBLES) {
-  const expected = Array.from({ length: 33 }, (_, index) => `PET_${String(index + 1).padStart(3, "0")}`);
-  const actual = catalog2.map((row) => row.id);
-  if (actual.length !== 33) throw new Error(`Canonical core pet catalog must contain 33 pets, got ${actual.length}.`);
-  if (actual.join("|") !== expected.join("|")) throw new Error("Canonical core pet IDs must remain PET_001 through PET_033 in order.");
+  const expected = Array.from({ length: 42 }, (_, index) => `PET_${String(index + 1).padStart(3, "0")}`).sort();
+  const actual = catalog2.map((row) => row.id).sort();
+  if (actual.length !== 42) throw new Error(`Canonical core pet catalog must contain 42 pets, got ${actual.length}.`);
+  if (actual.join("|") !== expected.join("|")) throw new Error("Canonical core pet IDs must remain PET_001 through PET_042.");
   for (const row of catalog2) {
-    if (row.kind !== "pet" || row.collectionGroup !== "core" || row.ownedBps !== 50 || row.activeBps < 200) throw new Error(`Invalid core pet ${row.id}.`);
+    const rarity = row.rarity;
+    if (row.kind !== "pet" || row.collectionGroup !== "core" || row.ownedBps !== 50 || row.activeBps !== CORE_PET_ACTIVE_BPS[rarity]) throw new Error(`Invalid core pet ${row.id}.`);
+  }
+  for (const region of ["Asterfall", "Sunscar", "Frostmarch", "Ashlands"]) {
+    const rows2 = catalog2.filter((row) => row.region === region);
+    const expectedCounts = region === "Asterfall" ? { Normal: 12, Rare: 3, Epic: 2, Mythic: 1 } : { Normal: 2, Rare: 3, Epic: 2, Mythic: 1 };
+    for (const [rarity, count] of Object.entries(expectedCounts)) if (rows2.filter((row) => row.rarity === rarity).length !== count) throw new Error(`${region} must contain ${count} ${rarity} pets.`);
   }
 }
 validateCorePetCatalog();
@@ -45387,6 +45403,25 @@ function guildSkillProfessionMultipliers(effects) {
   };
 }
 
+// ../apps/mobile/src/content/exploration.ts
+init_progression();
+var EXPLORATION_ROUTES = [
+  { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
+  { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
+  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 3 },
+  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 4 },
+  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 5 },
+  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", areaId: "ZONE_006", name: "Chart Saffron Gate", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 8 },
+  { id: "SCOUT_SUNSCAR_SCORCHWIND", zoneId: "SUNSCAR", areaId: "ZONE_007", name: "Survey Scorchwind Flats", seconds: 180, xp: 290, unlockMonsterId: "DUNE_ORACLE", prerequisiteRouteId: "SCOUT_SUNSCAR", requiredLevel: 31, requiredExplorationLevel: 9 },
+  { id: "SCOUT_SUNSCAR_MIRAGE", zoneId: "SUNSCAR", areaId: "ZONE_008", name: "Trace Mirage Basin", seconds: 192, xp: 340, unlockMonsterId: "GLASSBOUND_SENTINEL", prerequisiteRouteId: "SCOUT_SUNSCAR_SCORCHWIND", requiredLevel: 36, requiredExplorationLevel: 10 },
+  { id: "SCOUT_SUNSCAR_CROWN", zoneId: "SUNSCAR", areaId: "ZONE_010", name: "Chart Tyrant's Crown", seconds: 204, xp: 390, prerequisiteRouteId: "SCOUT_SUNSCAR_MIRAGE", requiredLevel: 41, requiredExplorationLevel: 11 },
+  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 480, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 12 },
+  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 16 }
+].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
+function explorationGatheringSpeedBonus(level) {
+  return Math.min(10, Math.max(0, Math.floor(level / 10))) / 100;
+}
+
 // ../apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
@@ -45526,6 +45561,8 @@ function characterPermanentMultipliers(state) {
   let result = { ...BASE };
   const c = state.character;
   if (!c) return result;
+  const explorationLevel = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
+  result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + explorationGatheringSpeedBonus(explorationLevel) });
   const blessing = selectedFaithBlessing(state);
   if (blessing) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
@@ -45697,19 +45734,6 @@ for (const item of EQUIPMENT_ITEMS_V33) {
   if (!match) continue;
   tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
 }
-
-// ../apps/mobile/src/content/exploration.ts
-init_progression();
-var EXPLORATION_ROUTES = [
-  { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
-  { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
-  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 3 },
-  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 5 },
-  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 7 },
-  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 12 },
-  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 430, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 18 },
-  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 28 }
-].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
 
 // ../apps/mobile/src/content/quests.ts
 init_progression();
@@ -47777,9 +47801,10 @@ function applyDungeonCompanionCounters(players, enemies, inactivePlayerIds = /* 
 function possibleDungeonCompanionCounters(dungeonId) {
   const route = COOP_ROUTE_CONTENT[dungeonId], dungeon = EXPEDITIONS[dungeonId];
   if (!route || !dungeon) return [];
-  const result = /* @__PURE__ */ new Set();
   const variants = dungeonBossVariantsFor(dungeonId);
-  for (const id of [...route.battle, ...route.elite, ...variants.length ? variants.map((boss4) => boss4.bossId) : [dungeon.bossId]]) {
+  const bossIds = variants.length ? variants.map((variant) => variant.bossId) : [dungeon.bossId];
+  const result = /* @__PURE__ */ new Set();
+  for (const id of [...route.battle, ...route.elite, ...bossIds]) {
     const encounter2 = EXPEDITION_ENCOUNTERS[id]?.();
     if (!encounter2) continue;
     for (const counter of dungeonCompanionCounterOptions(encounter2)) result.add(counter);

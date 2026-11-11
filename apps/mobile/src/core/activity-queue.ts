@@ -8,7 +8,7 @@ import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from './combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from './hunt-goals';
 import {accountEntitlementBenefits} from './account-entitlements';
 import {FAITH_TIERS} from '../content/faith';
-import {EXPLORATION_ROUTES} from '../content/exploration';
+import {EXPLORATION_ROUTES,unmetScoutingPrerequisite} from '../content/exploration';
 import {faithLevel,faithPracticeAvailability} from './faith';
 import {alchemyAvailability} from './alchemy';
 import {ALCHEMY_RECIPES,alchemyRecipeDef} from '../content/alchemy';
@@ -94,6 +94,8 @@ export function activityQueueSchedulingIssue(state:GameState,activity:Pick<Queue
   const route=EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)!;
   if((state.character?.level??1)<route.requiredLevel)return `Reach character level ${route.requiredLevel} before queuing ${route.name}.`;
   if((state.skills.find(skill=>skill.skillId==='exploration')?.level??1)<route.requiredExplorationLevel)return `Requires Exploration level ${route.requiredExplorationLevel} before queuing ${route.name}.`;
+  const prerequisite=unmetScoutingPrerequisite(route,state.exploredRouteIds);
+  if(prerequisite)return `Complete ${prerequisite.name} before queuing ${route.name}.`;
  }
  return undefined;
 }
@@ -299,6 +301,8 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
   if(state.character.level<route.requiredLevel)return {ready:false,blocker:`Reach character level ${route.requiredLevel} for ${route.name}.`};
   const level=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
   if(level<route.requiredExplorationLevel)return {ready:false,blocker:`Requires Exploration level ${route.requiredExplorationLevel} for ${route.name}.`};
+  const prerequisite=unmetScoutingPrerequisite(route,state.exploredRouteIds);
+  if(prerequisite)return {ready:false,blocker:`Complete ${prerequisite.name} before scouting ${route.name}.`};
   return {ready:true,blocker:undefined};
  }
  if(activity.kind==='alchemy'){

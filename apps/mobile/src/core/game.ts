@@ -16,7 +16,7 @@ import {equipmentSalvageReward} from './equipment-salvage';
 import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
 import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
-import {explorationRoute} from '../content/exploration';
+import {explorationRoute,explorationScoutingSpeedMultiplier,unmetScoutingPrerequisite} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatTacticId} from './types';
 import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
@@ -723,7 +723,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
       const candy=eventCandyWindow(state,'skill');
-      const routeSeconds=route.seconds/mealSpeedFactor(state.character,'noncombat');
+      const explorationLevel=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
+      const routeSeconds=route.seconds/(mealSpeedFactor(state.character,'noncombat')*explorationScoutingSpeedMultiplier(explorationLevel));
       const bankedSeconds=(state.activity.progressFraction??0)*routeSeconds;
       const totalSeconds=bankedSeconds+elapsed;
       const actions=Math.floor(totalSeconds/routeSeconds);
@@ -1336,7 +1337,20 @@ export function claimOverflowToBank(state:GameState):GameState{
 
 export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,outOfCombatSinceMs:undefined,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,g.skillId),kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
 export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');const method=herbalismMethod(state.character?.herbalismMethodId,skill.level);return {...state,outOfCombatSinceMs:undefined,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,'herbalism'),kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs),herbalismMethodId:method.id}}}
-export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');state=finishClassDrills(state,nowMs);if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);const exploration=state.skills.find(skill=>skill.skillId==='exploration');if(!exploration||exploration.level<route.requiredExplorationLevel)throw new Error(`Reach Exploration level ${route.requiredExplorationLevel} to scout this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity){state=claimActivity(state,nowMs).state;state=stopActivity(state,nowMs);}return {...state,outOfCombatSinceMs:undefined,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
+export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{
+ const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');
+ const zone=WORLD_ZONES.find(item=>item.id===route.zoneId);
+ if(!zone||worldZoneInDevelopment(zone))throw new Error('This scouting region is still in development');
+ state=finishClassDrills(state,nowMs);
+ if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);
+ const exploration=state.skills.find(skill=>skill.skillId==='exploration');
+ if(!exploration||exploration.level<route.requiredExplorationLevel)throw new Error(`Reach Exploration level ${route.requiredExplorationLevel} to scout this route`);
+ const prerequisite=unmetScoutingPrerequisite(route,state.exploredRouteIds);
+ if(prerequisite)throw new Error(`Complete ${prerequisite.name} before scouting ${route.name}`);
+ if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${zone.name} before exploring`);
+ if(state.activity){state=claimActivity(state,nowMs).state;state=stopActivity(state,nowMs);}
+ return {...state,outOfCombatSinceMs:undefined,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}};
+}
 export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('Create a character first');
   const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');

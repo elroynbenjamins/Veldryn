@@ -7,6 +7,7 @@
     "test:market-readiness": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/player-market-custody.js && node dist/online/backend/online/tests/market-price-bands-v10.js && node dist/online/backend/online/tests/market-economy-policy-v11.js && node dist/online/backend/online/tests/market-recipe-aware-price-v14.js && node dist/online/backend/online/tests/market-affordability-v15.js",
     "test:release-gate": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/release-gate.js",
     "test:event-currency-promotion": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/event-currency-promotion.js",
+    "test:dungeon-shop-catalog": "tsc && node dist/server/expeditions/__tests__/dungeon-shop-catalog-v1.js",
     "typecheck": "tsc --noEmit",
     "content-v21": "tsc --noEmit && tsc --outDir dist-v21 && node dist-v21/server/content/region-v21.test.js",
     "test:merged-content": "tsc --outDir dist-merged && node dist-merged/server/content/sunscar-v20.test.js && node dist-merged/server/content/region-v21.test.js && node dist-merged/server/live-dungeon/live-dungeon-v20.test.js && node dist-merged/server/guild/guild-projects-v18.test.js && node dist-merged/server/shared-world/shared-world-v19.test.js",

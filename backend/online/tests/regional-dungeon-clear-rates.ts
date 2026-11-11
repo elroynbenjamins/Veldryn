@@ -90,6 +90,18 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
  }));
  assert.equal(Object.keys(bossResults).length,2,'Each region should retain two reachable final bosses');
  assert.equal(Object.values(bossResults).reduce((sum,row)=>sum+row.attempts,0),count);
+ // Wide, deliberately synthetic release guards rather than promised live
+ // success rates. T1 must remain welcoming, T2 reasonably accessible, and
+ // T3 must remain meaningfully challenging without becoming a dead end.
+ const lower=tier===1?30:tier===2?22:10;
+ const upper=tier===1?40:tier===2?38:32;
+ assert(successes.length>=lower&&successes.length<=upper,`Regional ${id} Tier ${tier} drifted outside the intended synthetic clear-rate band: ${successes.length}/${count}`);
+ if(tier===3){
+  for(const [boss,result] of Object.entries(bossResults)){
+   assert(result.attempts>=10,`Insufficient deterministic boss coverage: ${boss}`);
+   assert(result.clears>=3,`Tier III final boss ${boss} has become effectively unbeatable in the calibration runs`);
+  }
+ }
  console.log('REGIONAL_DUNGEON_RELEASE_BALANCE '+JSON.stringify({
   id,tier,minPower:regularDungeonTierRequiredPower(EXPEDITIONS[id],tier),
   clears:successes.length,samples:count,bossResults,

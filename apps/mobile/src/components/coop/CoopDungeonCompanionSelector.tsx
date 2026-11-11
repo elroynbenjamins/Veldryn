@@ -82,20 +82,6 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
       const status=item.busy?st('In Trial or Expedition'):item.forbidden?st('Same role as your class'):item.selected?st('Equipped'):item.matchup?st('Possible counter'):st('Available');
       const roleLabel=st(item.def.role==='damage'?'Damage':item.def.role==='tank'?'Tank':'Support');
       const assist=st(item.def.role==='damage'?'Damage assist':item.def.role==='tank'?'Shield assist':'Healing assist');
-      return <Pressable key={item.id} accessibilityRole="button"
-       accessibilityLabel={item.def.name+', '+item.def.role+', '+status}
-       accessibilityState={{selected:item.selected,disabled}}
-       disabled={disabled} onPress={()=>void choose(item.id)}
-       style={({pressed})=>[s.item,item.selected&&s.equipped,disabled&&!item.selected&&s.disabled,pressed&&s.pressed]}>
-       <View style={s.artFrame}>{art?<Image source={art} style={s.art} resizeMode="contain"/>:<UiIcon name="companions" size={28}/>}</View>
-       <View style={s.grow}>
-        <Text numberOfLines={1} style={s.name}>{item.def.name}{item.selected?' ✓':''}</Text>
-        <Text style={s.meta}>{st('Level')} {item.progress.level} · {roleLabel} · {item.def.rarity}</Text>
-        <Text style={s.assist}>{assist}</Text>
-        {item.matchup&&!item.busy&&!item.forbidden?<Text style={s.matchup}>{dungeonCompanionCounterLabel(item.matchup,st)}</Text>:null}
-        {item.busy||item.forbidden?<Text style={s.reason}>{status}</Text>:null}
-       </View>
-       {pending&&pendingId===item.id?<ActivityIndicator size="small" color={s.status.color}/>:<Text style={[s.status,item.matchup&&!disabled&&s.matchup]}>{status}</Text>}
       </Pressable>;
      })}
      {!entries.length?<Text style={s.hint}>{st('No companions unlocked yet.')}</Text>:null}

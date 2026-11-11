@@ -49461,9 +49461,9 @@ var REGIONAL_DUNGEON_BALANCE_VERSION = "regional-tier-power-v1";
 var REGIONAL_DUNGEON_BALANCE = Object.freeze({
   EXP_001: {
     enemyLevel: 10,
-    attack: [1.258, 1.722, 1.725],
-    hp: [1.665, 2.394, 2.54],
-    defense: [2.294, 3.15, 3.17]
+    attack: [1.258, 1.722, 1.86],
+    hp: [1.665, 2.394, 2.71],
+    defense: [2.294, 3.15, 3.25]
   },
   EXP_003: {
     enemyLevel: 25,

@@ -49461,21 +49461,39 @@ var REGIONAL_DUNGEON_BALANCE_VERSION = "regional-tier-power-v1";
 var REGIONAL_DUNGEON_BALANCE = Object.freeze({
   EXP_001: {
     enemyLevel: 10,
-    attack: [0.34, 0.41, 0.49],
-    hp: [0.45, 0.57, 0.72],
-    defense: [0.62, 0.75, 0.9]
+    attack: [1.258, 1.722, 1.725],
+    hp: [1.665, 2.394, 2.54],
+    defense: [2.294, 3.15, 3.17]
   },
   EXP_003: {
     enemyLevel: 25,
-    attack: [0.22, 0.26, 0.31],
-    hp: [0.52, 0.65, 0.81],
-    defense: [0.6, 0.74, 0.88]
+    attack: [1.045, 1.066, 1.0695],
+    hp: [2.47, 2.665, 2.7945],
+    defense: [2.85, 3.034, 3.036]
   }
 });
-function regionalPowerMultipliers(expeditionId, tier, enabled) {
+var LEGACY_ROOTBOUND_ATTACK_MULTIPLIER = 2.9;
+var ROOTBOUND_TIER_ATTACK = [1.2, 0.95, 0.94];
+function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId) {
   if (!enabled || ![1, 2, 3].includes(tier)) return void 0;
   const row = REGIONAL_DUNGEON_BALANCE[expeditionId];
-  return row ? { attack: row.attack[tier - 1], hp: row.hp[tier - 1], defense: row.defense[tier - 1], enemyLevel: row.enemyLevel } : void 0;
+  if (!row) return void 0;
+  const rootbound = expeditionId === "EXP_001" && (encounterId?.startsWith("ROOT") || encounterId === "BOSS_EXP_ROOT");
+  const rootAttack = encounterId === "BOSS_EXP_ROOT" && tier === 2 ? 0.92 : encounterId === "BOSS_EXP_ROOT" && tier === 3 ? 0.88 : ROOTBOUND_TIER_ATTACK[tier - 1];
+  const rootCorrection = rootbound ? rootAttack / LEGACY_ROOTBOUND_ATTACK_MULTIPLIER : 1;
+  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? 0.88 : tier === 2 ? 0.93 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.03 : tier === 2 ? 1.06 : 1 : 1;
+  return {
+    attack: row.attack[tier - 1] * rootCorrection * bossCorrection,
+    hp: row.hp[tier - 1] * bossCorrection,
+    defense: row.defense[tier - 1] * bossCorrection,
+    enemyLevel: row.enemyLevel
+  };
+}
+function regionalCombatPowerBoost(expeditionId, combatPower, enabled) {
+  if (!enabled || !Number.isFinite(combatPower)) return 1;
+  const baseline = expeditionId === "EXP_001" ? 2500 : expeditionId === "EXP_003" ? 6e3 : void 0;
+  if (!baseline) return 1;
+  return Math.min(1.4, Math.max(1, 1 + Math.log2(Math.max(1, combatPower / baseline)) * 0.18));
 }
 
 // src/server/coop/potion-modifiers.ts
@@ -49565,6 +49583,19 @@ var MemoryQModeRunRepository = class {
 function combatant(snapshot) {
   return combatantFromVerifiedSnapshot(snapshot.normalized.snapshot, snapshot.normalized.abilities);
 }
+function regionalCombatant(snapshot, expeditionId, balanceVersion) {
+  const base = combatant(snapshot);
+  const boost = regionalCombatPowerBoost(expeditionId, snapshot.combatPower, balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION);
+  if (boost === 1) return base;
+  const survival = 1 + (boost - 1) * 0.7;
+  return { ...base, stats: {
+    ...base.stats,
+    attackPower: base.stats.attackPower * boost,
+    healingPower: base.stats.healingPower * boost,
+    defense: base.stats.defense * survival,
+    maxHp: base.stats.maxHp * survival
+  } };
+}
 var QModeService = class {
   constructor(repository, serverSecret) {
     this.repository = repository;
@@ -49586,7 +49617,7 @@ var QModeService = class {
     }
     validateCoopRoster([{ accountId: input.controllerAccountId, characterId: input.controllerSnapshot.characterId, role: input.controllerSnapshot.readiness.role }, ...allies.map((ally) => ({ accountId: ally.snapshot.accountId, characterId: ally.snapshot.characterId, role: ally.snapshot.readiness.role }))]);
     validateUniqueDamageClasses([input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)].map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
-    const players = [combatant(input.controllerSnapshot), ...allies.map((ally) => combatant(ally.snapshot))];
+    const players = [regionalCombatant(input.controllerSnapshot, input.expeditionId, input.balanceVersion), ...allies.map((ally) => regionalCombatant(ally.snapshot, input.expeditionId, input.balanceVersion))];
     return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players, qmodePressureVersion: 1, echoSourceAccountIds: allies.filter((ally) => ally.kind === "echo").map((ally) => ally.snapshot.accountId), npcCharacterIds: allies.filter((ally) => ally.kind === "npc").map((ally) => ally.snapshot.characterId) });
   }
   createLive(input) {
@@ -49601,7 +49632,7 @@ var QModeService = class {
     }
     validateCoopRoster(input.snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })));
     validateUniqueDamageClasses(input.snapshots.map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
-    return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players: input.snapshots.map(combatant), echoSourceAccountIds: [] });
+    return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players: input.snapshots.map((snapshot) => regionalCombatant(snapshot, input.expeditionId, input.balanceVersion)), echoSourceAccountIds: [] });
   }
   getAuthorized(runId, accountId) {
     const run = this.repository.get(runId);
@@ -49623,7 +49654,7 @@ var QModeService = class {
       applyRoomBoon(run, selectedBoon);
     } else if (input.boonId) throw new Error("invalid_boon_choice");
     const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
-    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1);
+    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId);
     const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1), enemyHpMultiplier: regional2?.hp, enemyDefenseMultiplier: regional2?.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;

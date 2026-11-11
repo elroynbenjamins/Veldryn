@@ -6,7 +6,7 @@ import {generateCoopRouteGraph} from '../../expeditions/route-generation';
 import {listedRegularDungeon,publishedRegularDungeon,regularDungeonTierRequiredLevel} from '../dungeon-entry-policy';
 
 assert.deepEqual(Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map(d=>d.id),['EXP_001','EXP_003']);
-assert.deepEqual(Object.values(EXPEDITIONS).filter(listedRegularDungeon).map(d=>d.id),['EXP_001','EXP_003','EXP_005']);
+assert.deepEqual(Object.values(EXPEDITIONS).filter(listedRegularDungeon).map(d=>d.id),['EXP_001','EXP_003','EXP_005','EXP_007']);
 assert.deepEqual(([1,2,3] as const).map(t=>regularDungeonTierRequiredLevel(EXPEDITIONS.EXP_001,t)),[10,10,10]);
 for(const id of ['EXP_002','EXP_004','EXP_005','EXP_006'])assert.equal(publishedRegularDungeon(EXPEDITIONS[id]),false);
 for(const [canonical,legacy,retiredPrefix] of [['EXP_001','EXP_002','LANTERN_'],['EXP_003','EXP_004','SUN_MIRAGE_']] as const){

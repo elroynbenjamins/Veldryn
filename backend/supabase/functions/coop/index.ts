@@ -46620,7 +46620,7 @@ var DUNGEON_REQUIREMENTS = Object.freeze({
   EXP_001: { minLevel: 10, powers: [2500, 3750, 5e3], requiresChapterOne: false },
   EXP_003: { minLevel: 25, powers: [6e3, 7250, 8500], requiresChapterOne: true }
 });
-var DEVELOPMENT_DUNGEONS = /* @__PURE__ */ new Set(["EXP_005"]);
+var DEVELOPMENT_DUNGEONS = /* @__PURE__ */ new Set(["EXP_005", "EXP_007"]);
 function publishedRegularDungeon(def) {
   return def.coopImplemented && Boolean(DUNGEON_REQUIREMENTS[def.id]);
 }

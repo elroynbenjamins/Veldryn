@@ -35,15 +35,15 @@ async function main(){
  }
  const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_003');
  assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Canonical Sunscar tier rewards keep the existing mark multipliers');
- assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_001','EXP_003','EXP_005'],'Two active regional dungeons and one development-only Frostmarch preview are listed');
+ assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_001','EXP_003','EXP_005','EXP_007'],'Two active regional dungeons plus Frostmarch and Ashlands development previews are listed');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.minLevel,10,'Restored Asterfall begins at Level 10');
  assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinLevels,{1:10,2:10,3:10},'Asterfall tiers are determined by Combat Power, not additional level offsets');
  assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinPower,{1:2500,2:3750,3:5000});
  assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.tierMinPower,{1:6000,2:7250,3:8500});
  for(const id of ['EXP_001','EXP_003'])assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id===id)?.bossVariants.map((row:{chancePercent:number})=>row.chancePercent),[50,50],'Each active dungeon must expose two equally likely bosses');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_005')?.lockedReason,'In Development','Frostmarch is preview-only');
- assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_007'),'Unreleased Ashlands dungeons are omitted from entry');
- assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_008'),'Unreleased Ashlands dungeons stay out of the playable catalog');
+ assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_007')?.lockedReason,'In Development','Ashlands preview is visible but unplayable');
+ assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_008'),'Second Ashlands dungeon remains out of the playable catalog');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
  assert.equal(suncrest.status,'available');assert.equal(suncrest.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(starfall.status,'preview');
  assert.equal(calls.length,5);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);

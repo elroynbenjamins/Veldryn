@@ -35,8 +35,10 @@ async function main(){
  const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_003');
  assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Canonical Sunscar tier rewards keep the existing mark multipliers');
  assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_001','EXP_003','EXP_005'],'Two active regional dungeons and one development-only Frostmarch preview are listed');
- assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.minLevel,25,'Restored Asterfall begins at Level 25');
- assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinLevels,{1:25,2:30,3:35},'Asterfall tiers use current-level requirements');
+ assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.minLevel,10,'Restored Asterfall begins at Level 10');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinLevels,{1:10,2:10,3:10},'Asterfall tiers are determined by Combat Power, not additional level offsets');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinPower,{1:2500,2:3750,3:5000});
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.tierMinPower,{1:6000,2:7250,3:8500});
  for(const id of ['EXP_001','EXP_003'])assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id===id)?.bossVariants.map((row:{chancePercent:number})=>row.chancePercent),[50,50],'Each active dungeon must expose two equally likely bosses');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_005')?.lockedReason,'In Development','Frostmarch is preview-only');
  assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_007'),'Unreleased Ashlands dungeons are omitted from entry');
@@ -70,8 +72,9 @@ async function main(){
  state.character!.equippedCombatCompanionId=previousCompanion;
  state.defeatedBossIds=state.defeatedBossIds.filter(id=>id!=='FALLEN_KNIGHT');
  const beforeBoss=await (await handler(request('entry'))).json();
- assert.ok(beforeBoss.dungeons.every((dungeon:{available:boolean})=>!dungeon.available),'Chapter I boss is mandatory even at Level 30+');
- assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.lockedReason,'Defeat the Fallen Knight (Chapter I) to unlock regional dungeons.');
+ assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.available,true,'Asterfall is available without clearing Chapter I');
+ assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.available,false,'Sunscar remains chapter-locked');
+ assert.equal(beforeBoss.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.lockedReason,'Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.');
 
  console.log('PASS co-op entry authentication, authoritative projection, consent validation and transactional replay boundary');
 }

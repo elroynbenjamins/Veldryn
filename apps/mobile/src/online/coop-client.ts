@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {noteCoopEntryMutation} from '../core/coop-dungeon-browse-cache';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
-import type {DungeonMarksShopSnapshot} from '../components/coop/DungeonMarksShopView';
+import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';

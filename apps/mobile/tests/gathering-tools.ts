@@ -8,7 +8,7 @@ import {executeGameCommand} from '../src/core/game-commands';
 import {totalXpAtLevel} from '../src/core/progression';
 import {MONSTERS} from '../src/content/monsters';
 
-function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
+function ok(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Tool Tester','female');
 const oathstone=GATHERING.find(entry=>entry.id==='OATHSTONE_SEAM')!;
@@ -39,7 +39,7 @@ for(const [id,previousXp,previousBaseGold,previousInputs,previousBlueprintChance
  ok(tool.recipe.xp===previousXp+3&&recipe.xp===previousXp+3,id+' should give exactly 3 more Smithing XP');
  const previousChargedGold=Math.ceil(previousBaseGold*1.2);
  ok(recipe.gold===previousChargedGold*2,id+' should charge exactly twice its previous crafting Gold cost');
- ok(recipe.inputs.length===previousInputs.length&&recipe.inputs.every((input,i)=>input.quantity===previousInputs[i]*2),id+' should consume twice each crafting material');
+ ok(recipe.inputs.length===previousInputs.length&&recipe.inputs.every((input,i)=>previousInputs[i]!==undefined&&input.quantity===previousInputs[i]! *2),id+' should consume twice each crafting material');
  ok(recipe.seconds===tool.recipe.seconds,id+' must preserve tool crafting time');
  if(previousBlueprintChance===undefined){
   ok(!tool.blueprint,id+' Tier 1 still has no blueprint');

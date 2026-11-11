@@ -52,7 +52,7 @@ export const DUNGEON_SHOP_CATALOG_V1:readonly DungeonShopOfferV1[] = Object.free
   {id:'dshop_frostmarch_border',name:'Frostbound Chime',category:'border',marks:950,firstClearRegion:'Frostmarch',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileBorderIds',rewardId:'dungeon:frostmarch:frostbound-chime',rarity:'Epic',bonus:{target:'fishingSpeed',ownedBps:50,activeBps:200}}},
   {id:'dshop_frostmarch_background',name:'Shiverlake Reflections',category:'background',marks:1500,firstClearRegion:'Frostmarch',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedProfileBackgroundIds',rewardId:'dungeon:frostmarch:shiverlake-reflections',rarity:'Epic',bonus:{target:'defense',ownedBps:50,activeBps:200}}},
   {id:'dshop_frostmarch_pet',name:'Choirbell Sprite',category:'pet',marks:3000,firstClearRegion:'Frostmarch',permanent:true,grant:{kind:'profile_collectible',accountField:'unlockedCosmeticPetIds',rewardId:'DUNGEON_PET_FROSTMARCH_001',rarity:'Epic',bonus:{target:'actionSpeed',ownedBps:50,activeBps:300}}},
-]);
+] satisfies DungeonShopOfferV1[]);
 
 export function dungeonShopOfferV1(itemId:string):DungeonShopOfferV1|undefined {
   return DUNGEON_SHOP_CATALOG_V1.find(offer=>offer.id===itemId);

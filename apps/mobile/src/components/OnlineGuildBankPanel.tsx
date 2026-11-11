@@ -80,7 +80,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
  const needs=useMemo(()=>projectNeeds(snapshot,skillSnapshot),[snapshot,skillSnapshot]);
  const stored=new Map((snapshot.bank?.balances??[]).map(row=>[row.resourceId,row.amount]));
  const balance=(id:string)=>stored.get(id)??0;
- const depositCapacity=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)-balance(id));
+ // Published upcoming Construction may be pre-funded, just like released Skill ranks.
+ const depositCapacity=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.upcoming??0)+(needs.get(id)?.skills??0)-balance(id));
  const lockedIds=new Set((playerState as unknown as {settings?:{lockedItemIds?:string[]}}|undefined)?.settings?.lockedItemIds??[]);
  const ownedQuantity=(id:string)=>id==='gold'?Math.max(0,Math.floor(playerState?.character?.gold??0)):
   (playerState?.inventory.stacks??[]).filter(row=>row.itemId===id).reduce((sum,row)=>sum+Math.max(0,Math.floor(row.quantity)),0);
@@ -123,7 +124,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   .replace('Fortification Hinge Set','Hinge Set')
   .replace('Heraldic Dye Flask','Heraldic Dye')
   .replace('Beacon Oil Flask','Beacon Oil');
- const status=(id:string)=>depositCapacity(id)>0?'Needed now':shortageUpcoming(id)>0?'Upcoming':'Covered';
+ const status=(id:string)=>shortageNow(id)>0?'Needed now':shortageUpcoming(id)>0?'Upcoming':'Covered';
  const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString()+'k':value.toLocaleString();
  const activityTime=(iso:string)=>{
   const date=new Date(iso);

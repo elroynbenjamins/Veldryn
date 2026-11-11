@@ -1,5 +1,6 @@
 import type { ExpeditionNodeType } from '../../shared/expedition-types';
 import { EXPEDITIONS } from './content/launch-content';
+import {dungeonBossVariantsFor} from './content/dungeon-boss-rotation';
 import { deterministicInt, deterministicUnit } from './rng';
 import type { CoopRouteGraph, CoopRouteNode } from '../../shared/coop-types';
 import { COOP_ROGUELITE_CONFIG } from '../coop/config';
@@ -82,7 +83,10 @@ export function generateCoopRouteGraph(secret:string, expeditionId:string, runId
       nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId,modifierId:kind==='elite'?MODIFIERS[modifierIndex]:'steady',risk:kind==='risk'?1.15:kind==='elite'?1.08:1,rewardTag:kind,nextNodeIds:depth===preBossNodeCount?['boss']:idsAt(depth+1)});
     }
   }
-  nodes.push({nodeId:'boss',depth:preBossNodeCount+1,kind:'boss',contentId:def.bossId,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[]});
+  // One stable 50/50 roll at run creation. Never reroll a saved graph on reconnect.
+  const finalBosses=dungeonBossVariantsFor(expeditionId);
+  const bossId=finalBosses.length?finalBosses[deterministicInt(secret,0,finalBosses.length-1,'regional-boss-v1',runId,expeditionId,contentVersion,balanceVersion)].bossId:def.bossId;
+  nodes.push({nodeId:'boss',depth:preBossNodeCount+1,kind:'boss',contentId:bossId,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[]});
   const graph:CoopRouteGraph={schemaVersion:1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,preBossNodeCount,entryNodeId:'entry',bossNodeId:'boss',nodes};
   validateCoopRouteGraph(graph);
   return graph;

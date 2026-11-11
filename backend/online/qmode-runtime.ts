@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {coopRequiredLevel} from '../src/server/coop/config';
+import {regularDungeonTierRequiredLevel} from '../src/server/coop/dungeon-entry-policy';
 import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {isPublishedCoopTier} from '../src/server/coop/config';
 import {MemoryQModeRunRepository,QModeService,type QModeRun} from '../src/server/coop/qmode';
@@ -50,7 +50,7 @@ export class OnlineQModeRuntime{
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
   if(entryError)throw new GameplayError(entryError);
-  const minimum=coopRequiredLevel(definition.minLevel,request.tier),sync=definition.recommendedLevel;
+  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),sync=definition.recommendedLevel;
   const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned');
   if(request.loadoutRevision!==record.revision){const replay=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}

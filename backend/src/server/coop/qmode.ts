@@ -37,7 +37,7 @@ export class QModeService{
   const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,minimumCombatPower:input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?regularDungeonTierRequiredPower(definition,input.tier):undefined,npcSnapshots:input.npcSnapshots??[]});
   const requiredLevel=regularDungeonTierRequiredLevel(definition,input.tier);
   for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if((snapshot.characterLevel??snapshot.normalized.before.level)<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-  for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(snapshot.combatPower!==undefined&&snapshot.combatPower<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
+  if(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION)for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...allies.map(ally=>({accountId:ally.snapshot.accountId,characterId:ally.snapshot.characterId,role:ally.snapshot.readiness.role}))]);
   validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   const players=[combatant(input.controllerSnapshot),...allies.map(ally=>combatant(ally.snapshot))];
@@ -48,7 +48,7 @@ export class QModeService{
   if(input.snapshots.length!==4)throw new Error('invalid_live_roster');
   const requiredLevel=regularDungeonTierRequiredLevel(definition,input.tier);
   for(const snapshot of input.snapshots)if((snapshot.characterLevel??snapshot.normalized.before.level)<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-  for(const snapshot of input.snapshots)if(snapshot.combatPower!==undefined&&snapshot.combatPower<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
+  if(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION)for(const snapshot of input.snapshots)if(!Number.isFinite(snapshot.combatPower)||snapshot.combatPower!<regularDungeonTierRequiredPower(definition,input.tier))throw new Error('dungeon_power_requirement');
   validateCoopRoster(input.snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})));
   validateUniqueDamageClasses(input.snapshots.map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players:input.snapshots.map(combatant),echoSourceAccountIds:[]});

@@ -1,5 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../regional-power-balance';
+import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from '../regional-power-balance';
 
 assert.equal(REGIONAL_DUNGEON_BALANCE_VERSION,'regional-tier-power-v1');
 for(const id of ['EXP_001','EXP_003'])for(const tier of [1,2,3]){
@@ -18,3 +18,11 @@ for(const id of ['EXP_001','EXP_003']){
  }
 }
 console.log('PASS: versioned regional encounter scale and legacy-run protection');
+
+assert.equal(regionalCombatPowerBoost('EXP_001',2500,true),1);
+assert.ok(regionalCombatPowerBoost('EXP_001',5000,true)>regionalCombatPowerBoost('EXP_001',3750,true));
+assert.ok(regionalCombatPowerBoost('EXP_003',8500,true)>regionalCombatPowerBoost('EXP_003',7250,true));
+assert.ok(regionalCombatPowerBoost('EXP_001',5000,true)<1.4,'Combat Power increases must stay capped');
+assert.equal(regionalCombatPowerBoost('EXP_001',50000,true),1.4,'No unlimited power in normalized co-op');
+assert.equal(regionalCombatPowerBoost('EXP_001',50000,false),1,'Legacy saved runs keep original equipment normalization');
+assert.equal(regionalCombatPowerBoost('EXP_005',50000,true),1,'Development dungeons have no published power scaling');

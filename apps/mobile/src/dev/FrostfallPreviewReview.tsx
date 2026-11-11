@@ -12,7 +12,7 @@ const SECOND_MS=Date.UTC(2026,10,27);
 export default function FrostfallPreviewReview(){
  const [stage,setStage]=useState<'first'|'second'>('first');
  return <SafeAreaProvider><GameThemeProvider themeId="obsidian"><GameLanguageProvider language="en">
-  <ScrollView style={s.root} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={s.root} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.header}><Text style={s.label}>PRELAUNCH SCREEN QA · SYNTHETIC CLOCK</Text>
     <Text style={s.explanation}>Switch reveal stages to review artwork and mobile layout. This does not change the published event schedule or unlock rewards.</Text>
     <View style={s.buttons}>

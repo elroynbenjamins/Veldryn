@@ -11,6 +11,9 @@ on:
       - 'apps/mobile/src/content/exploration.ts'
       - 'apps/mobile/src/content/faith.ts'
       - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/gathering-tools.ts'
+      - 'apps/mobile/tests/gathering-tools.ts'
+      - 'apps/mobile/tests/monster-drop-balance.ts'
       - 'apps/mobile/src/core/live-events.ts'
       - 'apps/mobile/src/core/permanent-boosts.ts'
       - 'apps/mobile/src/core/equipment-salvage.ts'
@@ -73,7 +76,7 @@ jobs:
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify the two-path equipment and Exploration balance regressions
-        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery
+        run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery gathering-tools monster-drop-balance
       - name: Rebuild canonical generated bundles and commit them on top of current main
         shell: bash
         run: |

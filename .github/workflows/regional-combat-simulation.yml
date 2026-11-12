@@ -23,6 +23,11 @@ on:
       - 'apps/mobile/src/content/equipment-sets.ts'
       - 'apps/mobile/src/content/exploration.ts'
       - 'apps/mobile/src/content/alchemy.ts'
+      - 'apps/mobile/tests/progression-level-gates.ts'
+      - 'apps/mobile/tests/regional-four-areas.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
+      - 'apps/mobile/tests/skill-unlock-density.ts'
+      - 'apps/mobile/tests/balance-projection.ts'
       - 'backend/src/server/coop/dungeon-entry-policy.ts'
       - '.github/workflows/regional-combat-simulation.yml'
   pull_request:
@@ -53,7 +58,7 @@ jobs:
         run: |
           pnpm --dir apps/mobile typecheck:core
           pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
-          for test in apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js
+          for test in apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js apps/mobile/.core-build/apps/mobile/tests/progression-level-gates.js apps/mobile/.core-build/apps/mobile/tests/regional-four-areas.js apps/mobile/.core-build/apps/mobile/tests/exploration-balance.js apps/mobile/.core-build/apps/mobile/tests/skill-unlock-density.js apps/mobile/.core-build/apps/mobile/tests/balance-projection.js
           do
             test -f "$test" || { echo "Missing compiled test: $test"; exit 1; }
             node "$test"

@@ -148,7 +148,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
  switch(input.family){
  case 'broken_caravan':{
   // Cargo breaches target the convoy even when the players survive.
-  const cargoPressure=(safe2?.91:1.10)*(safe3?.88:1.10)*strength;
+  const cargoPressure=(safe2 ? 0.91 : 1.10)*(safe3 ? 0.88 : 1.10)*strength;
   hpModifier=(safe2?1.04:.97)*(safe3?1.04:.95);
   attackModifier=safe3?1:1.05;
   attacks=[
@@ -162,7 +162,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
   tags=['escort_cargo','repair_opportunity'];break;
  }
  case 'nightfall_hunt':{
-  const howl=(safe2?.92:1.13)*(safe3?.88:1.11)*strength;
+  const howl=(safe2 ? 0.92 : 1.13)*(safe3 ? 0.88 : 1.11)*strength;
   hpModifier=(safe2?1.05:.95)*(safe3?1.02:.96);
   evasionBonus=safe2?-15:24;
   attackModifier=safe3?.98:1.05;
@@ -181,7 +181,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
   tags=['tracking','exposure_window'];break;
  }
  case 'broken_wards':{
-  const surge=(safe2?.90:1.12)*(safe3?.89:1.11)*strength;
+  const surge=(safe2 ? 0.90 : 1.12)*(safe3 ? 0.89 : 1.11)*strength;
   hpModifier=(safe2?1.03:.98)*(safe3?1.03:.97);
   defenseModifier*=safe2?1.05:.94;
   const burnDuration=safe2?4000:8000;
@@ -193,7 +193,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
     Math.round(29000*speed),4500,'all_enemies',
     [{kind:'debuff',tag:'damage_taken',value:.06,durationMs:6000}]),
   ];
-  const barrier=Math.round(base.stats.maxHp*(safe3?.065:.027));
+  const barrier=Math.round(base.stats.maxHp*(safe3 ? 0.065 : 0.027));
   phases=[
    phase('WARDS_BARRIER_65',.65,'self',[{kind:'shield',flat:barrier,tag:'ward_barrier'}]),
    phase('WARDS_BARRIER_30',.30,'self',[{kind:'shield',flat:barrier,tag:'ward_barrier'}]),
@@ -201,7 +201,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
   tags=['ward_barriers','rune_burn'];break;
  }
  case 'lost_reliquary':{
-  const seal=(safe2?.92:1.13)*(safe3?.86:1.19)*strength;
+  const seal=(safe2 ? 0.92 : 1.13)*(safe3 ? 0.86 : 1.19)*strength;
   hpModifier=(safe2?1.05:.96)*(safe3?1.05:.93);
   defenseModifier*=safe3?1.04:.86;
   attackModifier=safe3?.98:1.07;

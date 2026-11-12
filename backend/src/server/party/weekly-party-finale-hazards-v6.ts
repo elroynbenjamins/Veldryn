@@ -91,7 +91,7 @@ export function buildHiddenPartyFinaleHazard(input:HiddenPartyFinaleHazardInput)
  const hazardPressure=1.08-.08*defensive;
  const bossHp=1-.02*(2-defensive)+.02*defensive;
  const variantIndex=family.variations.indexOf(input.variation);
- const abilities:AbilityDefinition[]=[config.first,config.second].map((a,index)=>({
+ const abilities:AbilityDefinition[]=[config.first,config.second].map((a,index):AbilityDefinition=>({
   id:'PE_V6_'+input.family.toUpperCase()+'_'+(index===0?'WARNING':'PRESSURE'),
   name:a.name,
   cooldownMs:a.cooldownMs+variantIndex*600,

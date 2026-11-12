@@ -472,6 +472,71 @@ function regionalHuntPlan(options) {
   return { cycleSeconds: finishSeconds, searchSeconds, fightSeconds: round(finishSeconds - searchSeconds), strikes, enemyAttackCount: strikes.filter((hit) => hit.actor === "enemy").length };
 }
 
+// ../apps/mobile/src/content/equipment-release.ts
+var MAX_RELEASED_EQUIPMENT_TIER = 5;
+function isReleasedEquipmentItemId(itemId) {
+  const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
+  return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
+}
+
+// ../apps/mobile/src/core/region-level-plan.ts
+var REGIONAL_CHAPTER_LEVELS = {
+  ASTERFALL: { first: 1, last: 25, firstTier: 1, secondTier: 2, secondTierEntry: 13, secondTierExpected: 17 },
+  SUNSCAR: { first: 26, last: 50, firstTier: 3, secondTier: 4, secondTierEntry: 38, secondTierExpected: 42 },
+  FROSTMARCH: { first: 51, last: 75, firstTier: 5, secondTier: 6, secondTierEntry: 63, secondTierExpected: 67 }
+};
+function expectedRegionalEquipmentTier(zone, enemyLevel) {
+  if (zone === "Sunscar") return enemyLevel >= REGIONAL_CHAPTER_LEVELS.SUNSCAR.secondTierExpected ? 4 : 3;
+  if (zone === "Frostmarch") {
+    const desired = enemyLevel >= REGIONAL_CHAPTER_LEVELS.FROSTMARCH.secondTierExpected ? 6 : 5;
+    return Math.min(desired, MAX_RELEASED_EQUIPMENT_TIER);
+  }
+  return void 0;
+}
+function frostMarchCharacterXpMultiplier(zone, characterLevel) {
+  if (zone !== "Frostmarch") return 1;
+  const l = Math.min(75, Math.max(51, Math.floor(characterLevel)));
+  if (l <= 62) return 1.4 + (l - 51) * (0.6 / 11);
+  return 2 + (l - 62) * (0.3 / 13);
+}
+var REGION_MONSTER_LEVELS = {
+  SUNSCAR_SCORPION: { level: 28, unlockLevel: 26 },
+  SAFFRON_MARAUDER: { level: 30, unlockLevel: 29 },
+  DUNE_ORACLE: { level: 34, unlockLevel: 32 },
+  GLASS_DUNE_STRIDER: { level: 36, unlockLevel: 35 },
+  MIRAGE_SHADE: { level: 40, unlockLevel: 38 },
+  GLASSBOUND_SENTINEL: { level: 42, unlockLevel: 41 },
+  OBSERVATORY_KEEPER: { level: 47, unlockLevel: 46 },
+  ROYAL_SANDGUARD: { level: 50, unlockLevel: 49 },
+  FROSTWOLF: { level: 52, unlockLevel: 51 },
+  ICEBOUND_RAIDER: { level: 55, unlockLevel: 54 },
+  SNOW_TREANT: { level: 58, unlockLevel: 57 },
+  BELLWRAITH: { level: 61, unlockLevel: 59 },
+  RIME_STALKER: { level: 65, unlockLevel: 64 },
+  LAKEBOUND_SPECTER: { level: 68, unlockLevel: 67 },
+  CHOIR_HUNTER: { level: 72, unlockLevel: 71 },
+  WYRMSPINE_GUARDIAN: { level: 75, unlockLevel: 74 },
+  FALLEN_KNIGHT: { level: 25, unlockLevel: 25 }
+};
+var REGIONAL_EQUIPMENT_CHARACTER_FLOORS = {
+  T3: 26,
+  T4: 38,
+  T5: 51,
+  T6: 63,
+  // Preview-only future tiers. Release still blocked by equipment-release.ts.
+  T7: 76,
+  T8: 88,
+  T9: 100
+};
+function regionalGearCharacterLevel(tier, oldRebasedLevel) {
+  return REGIONAL_EQUIPMENT_CHARACTER_FLOORS[tier] ?? oldRebasedLevel;
+}
+function regionalGearCatalogRegion(tier, existingRegion) {
+  if (tier === "T3" || tier === "T4") return "Sunscar";
+  if (tier === "T5" || tier === "T6") return "Frostmarch";
+  return existingRegion;
+}
+
 // ../apps/mobile/src/core/combat-progression-pacing.ts
 function characterCombatXpScale(enemyLevel, boss2 = false) {
   if (boss2) return 1;
@@ -479,6 +544,9 @@ function characterCombatXpScale(enemyLevel, boss2 = false) {
   if (enemyLevel >= 7) return 0.75;
   if (enemyLevel >= 4) return 0.85;
   return 1;
+}
+function regionalCharacterCombatXpScale(zone, enemyLevel, characterLevel, boss2 = false) {
+  return characterCombatXpScale(enemyLevel, boss2) * frostMarchCharacterXpMultiplier(zone, characterLevel);
 }
 
 // ../apps/mobile/src/content/event-companions-v2.ts
@@ -42786,7 +42854,7 @@ var timerRange = {
   T9: { base: 2250, min: 1800, max: 2700 }
 };
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
-var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
+var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 4500, T6: 9e3, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
 var infusionByTier = {
@@ -42794,15 +42862,15 @@ var infusionByTier = {
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
   T3: { itemId: "SUNSCAR_DUNE_BINDER", quantity: 1 },
   T4: { itemId: "GLASSBOUND_BINDER", quantity: 1 },
-  T5: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 },
-  T6: { itemId: "SUNFUSED_FIXATIVE", quantity: 2 },
+  T5: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 },
+  T6: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 },
   T7: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 },
   T8: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 },
   T9: { itemId: "CINDERHEART_ELIXIR", quantity: 3 }
 };
 var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 2, T5: 1, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
-var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 40, T5: 55, T6: 70, T7: 82, T8: 92, T9: 100 };
-var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
+var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 38, T5: 51, T6: 63, T7: 82, T8: 92, T9: 100 };
+var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 32, T5: 45, T6: 57, T7: 76, T8: 89, T9: 97 };
 var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
   IRONWARDEN: "smithing",
   BASTION: "smithing",
@@ -42854,9 +42922,9 @@ function ingredients(tier, path, multiplier, skillId) {
       case "T4":
         return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(7, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
       case "T5":
-        return [{ itemId: "SUNSCALE", quantity: q(25, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }];
+        return [{ itemId: "FROSTBLOOM", quantity: q(25, multiplier) }, { itemId: "RIMEGLASS", quantity: q(8, multiplier) }];
       case "T6":
-        return [{ itemId: "SUNSCALE", quantity: q(30, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
+        return [{ itemId: "FROSTBLOOM", quantity: q(30, multiplier) }, { itemId: "RIMEGLASS", quantity: q(10, multiplier) }, { itemId: "CHOIR_BLOOM", quantity: q(1, multiplier) }];
       case "T7":
         return [{ itemId: "FROSTBLOOM", quantity: q(32, multiplier) }, { itemId: "RIMEGLASS", quantity: Math.max(5, q(8, multiplier)) }];
       case "T8":
@@ -42878,9 +42946,9 @@ function ingredients(tier, path, multiplier, skillId) {
     case "T4":
       return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
     case "T5":
-      return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
+      return [{ itemId: "FROSTIRON_INGOT", quantity: q(11, multiplier) }, { itemId: "RIMEGLASS", quantity: q(7, multiplier) }];
     case "T6":
-      return [{ itemId: "SUNSTONE_INGOT", quantity: q(15, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
+      return [{ itemId: "FROSTIRON_INGOT", quantity: q(15, multiplier) }, { itemId: "RIMEGLASS", quantity: q(10, multiplier) }, { itemId: "CHOIR_BLOOM", quantity: q(1, multiplier) }];
     case "T7":
       return [{ itemId: "FROSTIRON_INGOT", quantity: q(16, multiplier) }, { itemId: "RIMEGLASS", quantity: Math.max(5, q(8, multiplier)) }];
     case "T8":
@@ -42897,7 +42965,9 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
   const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
-  const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
+  const authoredLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1);
+  const characterLevel = regionalGearCharacterLevel(tier, rebasedCombatLevelFromLegacyLevel(authoredLevel));
+  const level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const craftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
@@ -42912,9 +42982,9 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
-    characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
+    characterLevel,
     v33EquipmentTier: tier,
-    v33Region: tier === "T9" ? "Ashlands" : String(set.Region),
+    v33Region: tier === "T9" ? "Ashlands" : regionalGearCatalogRegion(tier, String(set.Region)),
     v33SetId: setId,
     v33Path: String(piece.Path)
   };
@@ -42996,11 +43066,11 @@ var GUILD_COMPONENT_ITEMS = [
 ];
 var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
-  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 4, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 560, gold: 475, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 10 }, { itemId: "IRONWOOD_LOG", quantity: 15 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
   { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 1120, gold: 1450, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
   { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 2900, gold: 5e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 10 }, { itemId: "WHITEPINE_LOG", quantity: 10 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
-  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 4, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 550, gold: 450, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 15 }, { itemId: "THORN_SAP", quantity: 5 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 1130, gold: 1500, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 2840, gold: 4750, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 10 }, { itemId: "WINTERMINT", quantity: 10 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
@@ -43208,7 +43278,9 @@ var ALCHEMY_RECIPES = [
   { id: "REFINE_OATHGLASS_TO_DUNE_BINDER", name: "Refine Oathglass into Dune Binder", skillId: "alchemy", level: 20, seconds: 140, xp: 360, gold: 60, inputs: [{ itemId: "OATHGLASS_SOLVENT", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }], output: { itemId: "SUNSCAR_DUNE_BINDER", quantity: 1 } },
   { id: "REFINE_OATHGLASS_TO_GLASSBOUND_BINDER", name: "Refine Oathglass into Glassbound Binder", skillId: "alchemy", level: 34, seconds: 160, xp: 700, gold: 95, inputs: [{ itemId: "OATHGLASS_SOLVENT", quantity: 1 }, { itemId: "SUNSTONE_ORE", quantity: 4 }, { itemId: "GLASSBOUND_CORE", quantity: 1 }], output: { itemId: "GLASSBOUND_BINDER", quantity: 1 } },
   { id: "BREW_SUNFUSED_FIXATIVE", name: "Sunfused Fixative", skillId: "alchemy", level: 49, seconds: 165, xp: 950, gold: 110, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "SCORPION_VENOM", quantity: 2 }], output: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 } },
-  { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
+  { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 46, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
+  // Optional advanced Frostmarch batching: small time/resource savings; T5 stays craftable at Alchemy 46.
+  { id: "REFINE_RIMEWARD_DISTILLATE_BATCH", name: "Rimeward Distillate (Batch of 2)", skillId: "alchemy", level: 76, seconds: 340, xp: 2800, gold: 400, inputs: [{ itemId: "WINTERMINT", quantity: 6 }, { itemId: "RIMEGLASS", quantity: 3 }, { itemId: "RIME_RESIN", quantity: 5 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
 ].map((recipe2) => {
   const combatPotion = POTIONS.some((potion) => potion.id === recipe2.output.itemId);
@@ -43309,7 +43381,7 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
     value: Math.max(10, level * scale * 12),
     rarity: rarityByTier[tier] ?? "common",
     classRestriction: classIdByName2[String(piece.Class)],
-    requiredLevel: rebasedCombatLevelFromLegacyLevel(level),
+    requiredLevel: regionalGearCharacterLevel(tier, rebasedCombatLevelFromLegacyLevel(level)),
     equipmentSetId: String(piece["Set ID"])
   };
 });
@@ -43479,7 +43551,7 @@ var MONSTERS_RAW = [
   { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", areaId: "ZONE_008", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
   { id: "SAFFRON_MARAUDER", name: "Saffron Marauder", level: 30, hp: 670, attack: 56, defense: 33, xp: 388, gold: 23, secondsPerKill: 33, unlockLevel: 29, zone: "Sunscar", areaId: "ZONE_006", regionalAreaAutoUnlock: true, drops: [{ itemId: "DUNEWOOD", chance: 0.42, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.2, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }] },
   { id: "GLASS_DUNE_STRIDER", name: "Glass Dune Strider", level: 35, hp: 815, attack: 66, defense: 38, xp: 474, gold: 29, secondsPerKill: 36, unlockLevel: 34, zone: "Sunscar", areaId: "ZONE_007", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.2, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.05, min: 1, max: 1 }] },
-  { id: "MIRAGE_SHADE", name: "Mirage Shade", level: 38, hp: 905, attack: 72, defense: 41, xp: 521, gold: 32, secondsPerKill: 39, unlockLevel: 36, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.09, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }] },
+  { id: "MIRAGE_SHADE", name: "Mirage Shade", level: 38, hp: 905, attack: 72, defense: 41, xp: 521, gold: 32, secondsPerKill: 39, unlockLevel: 36, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.09, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.1, min: 1, max: 1 }] },
   { id: "OBSERVATORY_KEEPER", name: "Observatory Keeper", level: 42, hp: 1090, attack: 79, defense: 50, xp: 622, gold: 38, secondsPerKill: 43, unlockLevel: 41, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "GLASSBOUND_CORE", chance: 0.25, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.18, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.3, min: 1, max: 1 }] },
   { id: "ROYAL_SANDGUARD", name: "Royal Sandguard", level: 45, hp: 1240, attack: 87, defense: 58, xp: 705, gold: 43, secondsPerKill: 47, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "GLASSBOUND_CORE", chance: 0.3, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
   { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
@@ -43516,9 +43588,11 @@ var enhancementDrops = (monster) => {
 var MONSTERS = MONSTERS_RAW.map((monster) => {
   const holyWater = HOLY_WATER_SOURCES.find((source) => source.monsterId === monster.id);
   const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
+  const regionalLevel = REGION_MONSTER_LEVELS[monster.id];
   return {
     ...monster,
-    unlockLevel: rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
+    ...regionalLevel ? { level: regionalLevel.level } : {},
+    unlockLevel: regionalLevel?.unlockLevel ?? (monster.zone === "Ashlands" ? Math.max(76, rebasedCombatLevelFromLegacyLevel(monster.unlockLevel)) : rebasedCombatLevelFromLegacyLevel(monster.unlockLevel)),
     // Reduce other chance-based combat drops by 5% relative to their existing
     // chance. Holy Water's dedicated Faith catalog already contains the final
     // whole-percent rates after this 5% cut and a further 15% reduction.
@@ -43977,7 +44051,11 @@ var WORLD_ZONES = [
   { availability: "released", id: "FROSTMARCH", name: "Frostmarch", subtitle: "Frozen passes where every bell carries through the ice", minLevel: 45, maxLevel: 70, x: 0.42, y: 0.1, accent: "#91c7dc", symbol: "\u2744" },
   { availability: "inDevelopment", id: "ASHLANDS", name: "Ashlands", subtitle: "Blackglass marshes and the crucible at the edge of the known road", minLevel: 71, maxLevel: 90, x: 0.12, y: 0.22, accent: "#a77972", symbol: "\u25C7", developmentNote: "Ashlands is in development. The region is visible as a preview, but travel, enemies, gathering routes and rewards are not yet available.", plannedActivities: ["Blackglass marshes", "Cinderwood gathering", "Crucible expeditions", "High-tier equipment"] },
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
-].map((zone) => ({ ...zone, minLevel: rebasedCombatLevelFromLegacyLevel(zone.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(zone.maxLevel) }));
+].map((zone) => ({
+  ...zone,
+  minLevel: zone.id === "SUNSCAR" ? 26 : zone.id === "FROSTMARCH" ? 51 : zone.id === "ASHLANDS" ? 76 : rebasedCombatLevelFromLegacyLevel(zone.minLevel),
+  maxLevel: zone.id === "KINGS_ROAD" ? 25 : zone.id === "SUNSCAR" ? 50 : zone.id === "FROSTMARCH" ? 75 : zone.id === "ASHLANDS" ? 100 : rebasedCombatLevelFromLegacyLevel(zone.maxLevel)
+}));
 
 // ../apps/mobile/src/content/skills.ts
 init_progression();
@@ -47902,7 +47980,18 @@ var EXPLORATION_ROUTES = [
   { id: "SCOUT_SUNSCAR_CROWN", zoneId: "SUNSCAR", areaId: "ZONE_010", name: "Chart Tyrant's Crown", seconds: 204, xp: 390, prerequisiteRouteId: "SCOUT_SUNSCAR_MIRAGE", requiredLevel: 41, requiredExplorationLevel: 11 },
   { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 480, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 12 },
   { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 16 }
-].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
+].map((route) => ({
+  ...route,
+  requiredLevel: {
+    SCOUT_KINGS_ROAD: 20,
+    SCOUT_SUNSCAR: 26,
+    SCOUT_SUNSCAR_SCORCHWIND: 32,
+    SCOUT_SUNSCAR_MIRAGE: 38,
+    SCOUT_SUNSCAR_CROWN: 44,
+    SCOUT_FROSTMARCH: 51,
+    SCOUT_ASHLANDS: 76
+  }[route.id] ?? rebasedCombatLevelFromLegacyLevel(route.requiredLevel)
+}));
 var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 function unmetScoutingPrerequisite(route, completed = []) {
   return route.prerequisiteRouteId && !completed.includes(route.prerequisiteRouteId) ? explorationRoute(route.prerequisiteRouteId) : void 0;
@@ -48216,14 +48305,13 @@ var CLASSES = [
 ];
 
 // ../apps/mobile/src/content/regional-areas.ts
-init_progression();
 var REGIONAL_AREAS = [
   {
     id: "ZONE_006",
     regionId: "SUNSCAR",
     name: "Saffron Gate",
     minLevel: 26,
-    maxLevel: 30,
+    maxLevel: 31,
     identity: "Caravan roads and the first settlements beyond Asterfall.",
     activities: ["Sunstone", "Dunewood", "Oasis fishing"],
     hazards: ["desert wind"]
@@ -48232,8 +48320,8 @@ var REGIONAL_AREAS = [
     id: "ZONE_007",
     regionId: "SUNSCAR",
     name: "Scorchwind Flats",
-    minLevel: 31,
-    maxLevel: 35,
+    minLevel: 32,
+    maxLevel: 37,
     identity: "Open glass-sand plains and fierce exposure.",
     activities: ["Glass-sand mining", "Heat-scarred timber"],
     hazards: ["exposure", "heat"]
@@ -48242,8 +48330,8 @@ var REGIONAL_AREAS = [
     id: "ZONE_008",
     regionId: "SUNSCAR",
     name: "Mirage Basin",
-    minLevel: 36,
-    maxLevel: 40,
+    minLevel: 38,
+    maxLevel: 43,
     identity: "Mirage pools and reflections that mislead travelers.",
     activities: ["Glassfin", "Mirage botanicals"],
     hazards: ["false trails"]
@@ -48252,8 +48340,8 @@ var REGIONAL_AREAS = [
     id: "ZONE_010",
     regionId: "SUNSCAR",
     name: "Tyrant's Crown",
-    minLevel: 41,
-    maxLevel: 45,
+    minLevel: 44,
+    maxLevel: 50,
     identity: "Royal ruins, the buried observatory and the Sand Tyrant.",
     activities: ["Astral minerals", "Ancient herbs"],
     hazards: ["glass storms", "sand pillars"]
@@ -48262,8 +48350,8 @@ var REGIONAL_AREAS = [
     id: "ZONE_011",
     regionId: "FROSTMARCH",
     name: "Thawgate",
-    minLevel: 45,
-    maxLevel: 50,
+    minLevel: 51,
+    maxLevel: 56,
     identity: "Fortified northern gate and the last dependable shelter.",
     activities: ["Frostiron", "Whitepine", "Icefin"],
     hazards: ["black ice"]
@@ -48272,8 +48360,8 @@ var REGIONAL_AREAS = [
     id: "ZONE_012",
     regionId: "FROSTMARCH",
     name: "Whitepine Reach",
-    minLevel: 51,
-    maxLevel: 56,
+    minLevel: 57,
+    maxLevel: 62,
     identity: "Snow forest with false trails and ancient frozen treants.",
     activities: ["Snowbound timber", "Rime herbs"],
     hazards: ["whiteout trails"]
@@ -48282,8 +48370,8 @@ var REGIONAL_AREAS = [
     id: "ZONE_013",
     regionId: "FROSTMARCH",
     name: "Shiverlake",
-    minLevel: 57,
-    maxLevel: 63,
+    minLevel: 63,
+    maxLevel: 68,
     identity: "Frozen lake and the resonant ruins beneath its ice.",
     activities: ["Under-ice fishing", "Frostiron"],
     hazards: ["thin ice"]
@@ -48292,13 +48380,13 @@ var REGIONAL_AREAS = [
     id: "ZONE_015",
     regionId: "FROSTMARCH",
     name: "Wyrmspine",
-    minLevel: 64,
-    maxLevel: 70,
+    minLevel: 69,
+    maxLevel: 75,
     identity: "High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.",
     activities: ["Wyrmspine ore", "Highland herbs"],
     hazards: ["ice prison", "breath lines"]
   }
-].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
+];
 
 // ../apps/mobile/src/core/item-rarity.ts
 var GEAR_RARITIES = [
@@ -48577,6 +48665,7 @@ function spendPreparationEncounter(preparation, itemId) {
 }
 
 // ../apps/mobile/src/core/world-navigation.ts
+init_progression();
 var FIRST_CHAPTER_BOSS_ID = "FALLEN_KNIGHT";
 var POST_CHAPTER_ONE_REGIONS = /* @__PURE__ */ new Set(["SUNSCAR", "FROSTMARCH", "ASHLANDS"]);
 var REGION_SCOUT_REQUIREMENTS = {
@@ -48586,10 +48675,18 @@ var REGION_SCOUT_REQUIREMENTS = {
   FROSTMARCH: "SCOUT_SUNSCAR",
   ASHLANDS: "SCOUT_FROSTMARCH"
 };
+function historicalRegionalAccess(state, zone) {
+  const oldMinLevel = zone.id === "SUNSCAR" ? rebasedCombatLevelFromLegacyLevel(26) : zone.id === "FROSTMARCH" ? rebasedCombatLevelFromLegacyLevel(45) : void 0;
+  if (oldMinLevel === void 0 || (state.character?.level ?? 0) < oldMinLevel) return false;
+  if (state.currentRegionId === zone.id) return true;
+  const oldSurvey = zone.id === "SUNSCAR" ? "SCOUT_SUNSCAR" : "SCOUT_FROSTMARCH";
+  if ((state.exploredRouteIds ?? []).includes(oldSurvey)) return true;
+  return MONSTERS.some((monster) => monster.zone === zone.name && (state.unlockedMonsterIds ?? []).includes(monster.id));
+}
 function regionTravelLockReason(state, zone) {
   if (worldZoneInDevelopment(zone)) return zone.name + " is still in development";
   const level = state.character?.level ?? 1;
-  if (level < zone.minLevel) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if (level < zone.minLevel && !historicalRegionalAccess(state, zone)) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
   if (POST_CHAPTER_ONE_REGIONS.has(zone.id) && !(state.defeatedBossIds ?? []).includes(FIRST_CHAPTER_BOSS_ID)) return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId = REGION_SCOUT_REQUIREMENTS[zone.id];
   if (routeId && !(state.exploredRouteIds ?? []).includes(routeId)) {
@@ -50473,6 +50570,7 @@ var CLASS_ICON_ACCENT = {
 };
 
 // ../apps/mobile/src/content/equipment-sets.ts
+init_progression();
 var classIdByCatalogName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -50503,7 +50601,8 @@ for (const piece of equipment_catalog_t1_t9_v33_default.pieces) {
   piecesBySet.set(setId, list);
 }
 var EQUIPMENT_SETS = equipment_catalog_t1_t9_v33_default.sets.map((set) => {
-  const palette = paletteByTier[String(set.Tier)] ?? paletteByTier.T1;
+  const tier = String(set.Tier), region = regionalGearCatalogRegion(tier, String(set.Region));
+  const palette = paletteByTier[tier] ?? paletteByTier.T1;
   const classId = classIdByCatalogName[String(set.Class)];
   return {
     id: String(set["Set ID"]),
@@ -50515,13 +50614,13 @@ var EQUIPMENT_SETS = equipment_catalog_t1_t9_v33_default.sets.map((set) => {
     sixPiece: String(set["6pc Bonus v33"]),
     eightPiece: String(set["8pc Bonus v33"]),
     tenPiece: String(set["10pc Bonus v33"]),
-    source: `${String(set.Region)} \xB7 ${String(set["Build Focus"])}`,
+    source: `${region} \xB7 ${String(set["Build Focus"])}`,
     accent: CLASS_ICON_ACCENT[classId],
     surface: palette.surface,
-    tier: String(set.Tier),
-    region: String(set.Region),
+    tier,
+    region,
     path: String(set.Path),
-    requiredLevel: Number(set["Set Unlock Level"]),
+    requiredLevel: regionalGearCharacterLevel(tier, rebasedCombatLevelFromLegacyLevel(Number(set["Set Unlock Level"]))),
     buildFocus: String(set["Build Focus"])
   };
 });
@@ -51937,7 +52036,8 @@ function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05)
 // ../apps/mobile/src/core/story-boss.ts
 var clamp8 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
-var FALLEN_KNIGHT_MAX_POTION_UNITS = 5;
+var FALLEN_KNIGHT_THREE_POTION_DAMAGE_FACTOR = 0.75;
+var FALLEN_KNIGHT_MAX_POTION_UNITS = 3;
 function mitigation(defense) {
   return clamp8(defense / Math.max(1, defense + 110), 0, 0.72);
 }
@@ -52032,7 +52132,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
       const raw2 = monster.attack * 0.29 + monster.level * 0.14;
       const phaseDamage = phase === 3 ? 1.18 : phase === 2 ? 1.06 : 1;
-      const amount = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
+      const amount = Math.max(1, Math.round(raw2 * FALLEN_KNIGHT_THREE_POTION_DAMAGE_FACTOR * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
       playerHp = Math.max(0, playerHp - amount);
       push({ atMs: now, type: "boss_hit", label, abilityId, amount, critical });
       maybePotion(now);
@@ -52529,7 +52629,7 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
-  const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
+  const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" || m.zone === "Frostmarch" ? expectedRegionalEquipmentTier(m.zone, m.level) : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
   const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
   const tierGap = regionalEquippedTierGap(state, expectedTier);
   const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.5, 1 - tierGap * 0.24);
@@ -52761,7 +52861,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     item.quantity += whole;
     materialRemainders[item.itemId] = Math.max(0, extra - whole);
   }
-  const combatXpScale = characterCombatXpScale(m.level, m.boss);
+  const combatXpScale = regionalCharacterCombatXpScale(m.zone, m.level, state.character.level, m.boss);
   const rewardItems = items, champion = championBonus(Math.floor(m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
   const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
   const explorationSkill = state.skills.find((skill2) => skill2.skillId === "exploration");
@@ -53557,7 +53657,7 @@ function previewFallenKnightBattle(state, nowMs = Date.now(), mode = "story") {
   return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state), `${state.character.id}:FALLEN_KNIGHT_${mode.toUpperCase()}:${nowMs}`, mode);
 }
 function challengeFallenKnightRematch(state, nowMs) {
-  if (!state.character || state.character.level < rebasedCombatLevelFromLegacyLevel(25) || !state.defeatedBossIds.includes("FALLEN_KNIGHT")) throw new Error("Defeat the Fallen Knight in the story first.");
+  if (!state.character || state.character.level < REGIONAL_CHAPTER_LEVELS.ASTERFALL.last || !state.defeatedBossIds.includes("FALLEN_KNIGHT")) throw new Error("Defeat the Fallen Knight in the story first.");
   state = settleOutOfCombatRecovery(state, nowMs);
   if (!state.character) throw new Error("No character");
   const weekly = fallenKnightWeeklyStatus(state, nowMs);
@@ -53600,7 +53700,7 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
   if (!state.character) throw new Error("No character");
   state = settleOutOfCombatRecovery(state, nowMs);
   if (!state.character) throw new Error("No character");
-  if (state.character.level < rebasedCombatLevelFromLegacyLevel(25)) return { state, won: false, message: `Reach level ${rebasedCombatLevelFromLegacyLevel(25)} first.` };
+  if (state.character.level < REGIONAL_CHAPTER_LEVELS.ASTERFALL.last) return { state, won: false, message: `Reach level ${REGIONAL_CHAPTER_LEVELS.ASTERFALL.last} first.` };
   if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return challengeFallenKnightRematch(state, nowMs);
   const q14 = state.quests.find((q2) => q2.questId === "QST_014");
   if (q14 && q14.status === "locked") return { state, won: false, message: "Advance the Asterfall questline before challenging the Fallen Knight." };
@@ -54663,13 +54763,6 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   if (replacement) return { ...state, character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account };
   const fresh = newGame(now);
   return { ...state, character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
-}
-
-// ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 4;
-function isReleasedEquipmentItemId(itemId) {
-  const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
-  return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
 }
 
 // ../apps/mobile/src/core/loadout-storage.ts
@@ -58244,6 +58337,13 @@ import { createHash as createHash2 } from "node:crypto";
 
 // ../apps/mobile/src/core/combat-power.ts
 init_progression();
+var MAX_COMPANION_COMBAT_POWER_SHARE = 0.18;
+function redistributeCompanionCombatPower(personal, companion) {
+  const total = personal + companion;
+  const reweightedCompanion = Math.min(companion, Math.floor(total * MAX_COMPANION_COMBAT_POWER_SHARE));
+  const reallocated = companion - reweightedCompanion;
+  return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
+}
 var statScore = (stats4, level) => Math.max(0, Math.round(
   stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
 ));
@@ -58270,14 +58370,16 @@ function combatPowerRating(state) {
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
-  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rawCompanion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rating = redistributeCompanionCombatPower(player, rawCompanion);
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
-    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" }
   ];
-  return { total: player + companion, player, companion, rows: rows2 };
+  if (rating.reallocated > 0) rows2.push({ id: "allocation", label: "Personal power weighting", value: rating.reallocated, detail: "Combat Power shifted from the companion rating; actual stats and effects are unchanged" });
+  rows2.push({ id: "companion", label: "Combat companion", value: rating.companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" });
+  return { total: rating.total, player: rating.player, companion: rating.companion, rows: rows2 };
 }
 
 // src/server/equipment/gems/gem-runtime-v1.ts

@@ -7,3 +7,10 @@ export function characterCombatXpScale(enemyLevel:number,boss=false):number{
  if(enemyLevel>=4)return .85;
  return 1;
 }
+
+import {frostMarchCharacterXpMultiplier} from './region-level-plan';
+
+/** Region-aware character XP. Does not touch class-skill XP or loot. */
+export function regionalCharacterCombatXpScale(zone:string,enemyLevel:number,characterLevel:number,boss=false):number{
+ return characterCombatXpScale(enemyLevel,boss)*frostMarchCharacterXpMultiplier(zone,characterLevel);
+}

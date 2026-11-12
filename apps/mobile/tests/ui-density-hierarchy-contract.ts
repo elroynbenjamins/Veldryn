@@ -94,7 +94,7 @@ const balanceProjection=read('src/core/balance-projection.ts');
 ok(balanceProjection.includes('professionMasteryMultipliers')&&balanceProjection.includes('mastery.speed')&&balanceProjection.includes('mastery.xp')&&balanceProjection.includes('mastery.yield'),'Shared gathering balance projection must apply action-specific mastery to speed, XP and yield');
 
 const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
-ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');
+ok(craftingBrowser.includes("(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)"),'Crafting lists must permit all-class V33 equipment commissions but keep unrelated class-locked recipes hidden');
 ok(craftingBrowser.includes('label:gt("READY NOW"),tone:\'ready\'')&&craftingBrowser.includes('label:gt("NEEDS REQUIREMENTS"),tone:\'needs\'')&&craftingBrowser.includes('label:gt("LOCKED"),tone:\'locked\''),"Crafting recipes must remain grouped by actionable state");
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes('processingAvailability(state,recipe.id,undefined,true)'),'Timed skill recipes must remain startable while another activity is settled and replaced');

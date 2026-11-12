@@ -54,7 +54,7 @@ equal(affected,720,'All nine classes, two paths and ten slots across T1–T4 mus
 for(const [classId,profession] of [['IRONWARDEN','tailoring'],['WAYFINDER','smithing']] as const){
  const gear=V33_EQUIPMENT_RECIPES.find(recipe=>recipe.skillId===profession&&recipe.classId!==classId&&recipe.v33EquipmentTier==='T1')!;
  ok(gear,'Need a foreign-class gear recipe for the cross-class forge check');
- let state=createCharacter(newGame(0),classId,'All-Profession Crafter');
+ let state=createCharacter(newGame(0),classId,'Gear Crafter');
  state={...state,character:{...state.character!,level:gear.characterLevel,gold:gear.gold+1},skills:state.skills.map(s=>s.skillId===profession?{...s,level:gear.level}:s),inventory:{...state.inventory,stacks:gear.inputs.map(input=>({...input}))}};
  const started=startEquipmentCraft(state,gear.id,1000);
  equal(started.job.recipeId,gear.id,'Foreign class must be able to start the forge');

@@ -27,7 +27,7 @@ const eligible=claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'mining
 ok(eligible.skills.find(skill=>skill.skillId==='mining')!.xp===1000,'First milestone adds exact XP');
 ok(eligible.skills.find(skill=>skill.skillId==='mining')!.level>1,'Skill levels recomputed after XP grant');
 ok(monthlyQuestMilestoneStatus(eligible,now)[0].claimed.includes(30),'Claim is recorded account-wide');
-const reloaded=normalizeSave(JSON.parse(JSON.stringify(eligible)),now);
+const reloaded=normalizeSave(JSON.parse(JSON.stringify(eligible)));
 ok(monthlyQuestMilestoneStatus(reloaded,now)[0].claimed.includes(30),'Offline save normalization must preserve the completed milestone');
 fails(()=>claimMonthlyQuestMilestone(eligible,'2026-11',30,characterId,'mining',now),'Different requests cannot claim the same milestone twice');
 fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,'not-my-character','mining',now),'Cannot credit an unknown character');

@@ -160,7 +160,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  // Event weekly contracts are automatic. Keep the retired accept command
  // compatible with older clients without needlessly settling an activity.
- const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
+ const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='monthly_quest_milestone'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
  // Starting a new activity replaces the old one in a single trusted operation. This also
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);

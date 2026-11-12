@@ -8,6 +8,9 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Equipment for all classes":["Equipment for all classes","Ausrüstung für alle Klassen","Equipo para todas las clases","Uitrusting voor alle klassen","Equipaggiamento per tutte le classi","Équipement pour toutes les classes"],
+ "All classes":["All classes","Alle Klassen","Todas las clases","Alle klassen","Tutte le classi","Toutes les classes"],
+ "My class":["My class","Meine Klasse","Mi clase","Mijn klasse","La mia classe","Ma classe"],
  "Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.":["Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.","Tränke heilen bei Bossen und in Dungeons. Tonika bereiten Dungeonläufe vor und stärken normale Kämpfe.","Las pociones curan contra jefes y en mazmorras. Los tónicos preparan las mazmorras y mejoran los combates normales.","Drankjes herstellen HP bij bazen en in kerkers. Tonics bereiden kerkers voor en versterken gewone gevechten.","Le pozioni curano contro i boss e nei dungeon. I tonici preparano i dungeon e potenziano gli scontri normali.","Les potions soignent contre les boss et en donjon. Les toniques préparent les donjons et renforcent les combats ordinaires."],
  "Potions":["Potions","Tränke","Pociones","Drankjes","Pozioni","Potions"],
  "Recipe source":["Recipe source","Rezeptquelle","Origen de la receta","Receptbron","Fonte della ricetta","Source de la recette"],

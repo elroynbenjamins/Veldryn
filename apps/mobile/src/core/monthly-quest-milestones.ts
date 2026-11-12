@@ -1,6 +1,7 @@
 import type {GameState,SkillId,SkillState} from './types';
 import type {SeasonalPeriod} from './seasonal-quests';
 import {levelFromXp,totalXpAtLevel} from './progression';
+import {normalizeFaith} from './faith';
 
 /** Personal challenge completions feed one shared account calendar-month reward track. */
 export const MONTHLY_QUEST_MILESTONES = [
@@ -103,19 +104,25 @@ export function claimMonthlyQuestMilestone(state:GameState,key:string,threshold:
  const parkedIndex=isActive?-1:(state.otherCharacters??[]).findIndex(entry=>entry.character.id===characterId);
  if(!isActive&&parkedIndex<0)throw new Error('Select a character on this account.');
  const originalSkills:SkillState[]=isActive?state.skills:state.otherCharacters![parkedIndex].skills;
+ const targetCharacter=isActive?state.character!:state.otherCharacters![parkedIndex].character;
  const selected=originalSkills.find(skill=>skill.skillId===skillId);
  if(!selected||!Number.isFinite(selected.xp)||selected.xp<0)throw new Error('Select an unlocked skill.');
- const award=Math.min(milestone.xp,Math.max(0,MAX_XP-selected.xp));
+ // Faith has a second legacy XP mirror on CharacterState; award above the higher source, never below it.
+ const faith=skillId==='faith'?normalizeFaith(targetCharacter.faith):undefined;
+ const baseXp=faith?Math.max(selected.xp,faith.xp):selected.xp;
+ const award=Math.min(milestone.xp,Math.max(0,MAX_XP-baseXp));
+ const nextXp=Math.min(MAX_XP,baseXp+award);
  if(award<1)throw new Error('This skill is already at maximum level.');
  const updatedSkills=originalSkills.map(skill=>{
   if(skill.skillId!==skillId)return skill;
-  const xp=Math.min(MAX_XP,skill.xp+award);
-  return {...skill,xp,level:levelFromXp(xp)};
+  return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
  });
  const updatedMonth:MonthlyQuestMilestoneMonth={
   ...row,claimed:{...row.claimed,[milestone.points]:{characterId,skillId,claimedAtMs:nowMs,xpGranted:award}},
  };
  const updatedAccount={...state.account,monthlyQuestMilestones:{months:months.map(entry=>entry.key===key?updatedMonth:entry)}};
- if(isActive)return {...state,account:updatedAccount,skills:updatedSkills};
- return {...state,account:updatedAccount,otherCharacters:(state.otherCharacters??[]).map((entry,index)=>index===parkedIndex?{...entry,skills:updatedSkills}:entry)};
+ if(isActive)return {...state,account:updatedAccount,skills:updatedSkills,
+  ...(faith?{character:{...state.character!,faith:{...faith,xp:nextXp}}}:{})};
+ return {...state,account:updatedAccount,otherCharacters:(state.otherCharacters??[]).map((entry,index)=>index===parkedIndex?{...entry,skills:updatedSkills,
+  ...(faith?{character:{...entry.character,faith:{...faith,xp:nextXp}}}:{})}:entry)};
 }

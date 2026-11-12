@@ -12,6 +12,7 @@ import {CLASS_IDS,PATHS,SCENARIOS,STAGES,makeCharacter} from './regional-gear-cp
 import {combatSustainProjection,effectiveStats,previewFallenKnightBattle,fallenKnightPlayerSnapshot} from '../apps/mobile/src/core/game';
 import {simulateFallenKnightStoryBattle} from '../apps/mobile/src/core/story-boss';
 import {MONSTERS} from '../apps/mobile/src/content/monsters';
+import {regionalArea} from '../apps/mobile/src/content/regional-areas';
 import {characterXpForNextLevel} from '../apps/mobile/src/core/progression';
 import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipes-v33';
 
@@ -77,6 +78,38 @@ for(const e of ENCOUNTERS){
   });
  }
 }
+/** Full Lv51..75 per-character-level XP validation with only level-unlocked regional enemies. */
+const frostmarchLevelPacing:Record<string,unknown>[]=[];
+for(let level=51;level<=75;level++){
+ const tier=level<63?'T5':'T6';
+ const original=STAGES.find(s=>s.tier===tier)!;
+ const stage={...original,level};
+ const candidates=MONSTERS.filter(monster=>
+  monster.zone==='Frostmarch'&&!monster.boss&&monster.unlockLevel<=level&&
+  (!monster.areaId||(regionalArea('FROSTMARCH',monster.areaId)?.minLevel??999)<=level)
+ );
+ assert(candidates.length>0,'no Frostmarch enemies available at level '+level);
+ const hours:number[]=[],chosen=new Map<string,number>(),xpRates:number[]=[];
+ for(const cls of CLASS_IDS)for(const path of PATHS){
+  const state=makeCharacter(cls,path,stage,get('representative_common_q50'));
+  const projected=candidates.map(m=>combatSustainProjection(state,m.id)!)
+    .filter(v=>v&&v.xpPerHour>0).sort((a,b)=>b.xpPerHour-a.xpPerHour);
+  assert(projected.length>0,'no profitable Frostmarch hunt at Lv'+level);
+  const best=projected[0];
+  chosen.set(best.monsterId,(chosen.get(best.monsterId)??0)+1);
+  hours.push(characterXpForNextLevel(level)/best.xpPerHour);
+  xpRates.push(best.xpPerHour);
+ }
+ frostmarchLevelPacing.push({
+  characterLevel:level,tier,release:tier==='T6'?'unreleased_hypothetical':'released',
+  candidates:candidates.length,
+  meanHours:rounded(mean(hours)),p10Hours:rounded(percentile(hours,.1)),
+  p90Hours:rounded(percentile(hours,.9)),
+  meanXpPerHour:rounded(mean(xpRates)),
+  bestMonsterVotes:Object.fromEntries(chosen),
+ });
+}
+
 const bossResults:Record<string,unknown>[]=[];
 const bossStage=STAGES.find(x=>x.tier==='T2'&&x.level===25)!;
 const BOSS_SEEDS=12;
@@ -187,11 +220,12 @@ console.log(JSON.stringify({
   purpose:'Read-only current live combat projection / recipe source audit',
   exactMobileEngine:true,
   encounterStates:'synthetic never drawn from player DB',
-  proposedRegionRemapApplied:false,
-  proposedEnemyRetuneApplied:false,
+  proposedRegionRemapApplied:true,
+  proposedEnemyLevelsApplied:true,
+  proposedEnemyStatMultipliersChanged:false,
   sourceDate:'2026-11-12',
   huntLoadouts:CLASS_IDS.length*PATHS.length*SELECTED.length*ENCOUNTERS.length,
   bossAttempts:bossResults.reduce((sum,r)=>sum+Number(r.attempts),0),
  },
- hunts:simHunts,boss:bossResults,bossDamageSweep,recipes:recipeAudit,
+ hunts:simHunts,frostmarchLevelPacing,boss:bossResults,bossDamageSweep,recipes:recipeAudit,
 }));

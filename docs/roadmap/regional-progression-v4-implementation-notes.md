@@ -26,10 +26,11 @@ T3/T4 are interpreted as Sunscar gear, T5/T6 as Frostmarch gear at runtime witho
 
 The branch's real mobile hunt simulation tested the representative full-Common-Q50 loadout (four +2 enchantments, four G2 Stat Gems, legal trained companion) across all **nine classes, both set paths, and each Frostmarch level 51–75**, choosing the highest XP/hour encounter available at that level from the current monster list. Results from run [43209281022](https://github.com/elroynbenjamins/Veldryn/actions/runs/43209281022):
 
-- **25.37 hours/level** unweighted mean across the 25 levels.
+- **25.37 hours/level** unweighted mean across the 25 levels, confirmed by the staged CI run [43210183324](https://github.com/elroynbenjamins/Veldryn/actions/runs/43210183324).
 - Per-level class/path mean between **24.23 and 27.64 hours**.
 - Differences among roles/classes remain; 10th–90th percentile ranges are broadly ~21–32 hours, depending on level.
-- No quests, season/party XP, dungeon XP, boosters, offline cap calendar effects, world boss XP or late-game T6 release delay are incorporated.
+- With **T5 gear only** during levels 63–75 (because T6 remains locked), the independent release-ready-gear scenario averages **26.31 hours/level**, with individual checkpoint means **24.61–28.02 hours**. This verifies the target does not rely on prematurely releasing T6.
+- No quests, season/party XP, dungeon XP, boosters, offline cap calendar effects or world boss XP are incorporated.
 - Frostmarch still uses the current authored-timer hunt mode; if it is later migrated to the damage-driven combat system, repeat this calibration. The harness is reusable via `node tools/regional-combat-sim.mjs`.
 
 Avoid treating this number as hours of play required; it is continuous combat XP at a specific optimistic equipment/equipment-source assumption. The source model is authoritative for current game math, not an observed player mean.
@@ -38,11 +39,11 @@ Avoid treating this number as hours of play required; it is continuous combat XP
 
 **Policy selected for the next release:** **up to three healing draughts per Fallen Knight story/rematch fight**, automatically consumed only when damaged below the selected healing threshold, no regular food. **One attack/defense preparation tonic per dungeon run or boss attempt** is a separate consumable rule and is unchanged. Dungeon healing charges still follow the existing dungeon difficulty policy, not the story-boss cap.
 
-Simply changing from five to three draughts without recalibration lowered full Common T2 synthetic win rate to ~52%. The staged story-boss source therefore reduces incoming Fallen Knight damage to **75% of the previous coefficient**. Dry-run 9-class/2-path × 12-seed projections at that coefficient predicted:
+Simply changing from five to three draughts without recalibration lowered full Common T2 synthetic win rate to ~52%. The staged story-boss source therefore reduces incoming Fallen Knight damage to **75% of the previous coefficient**. Validated 9-class/2-path × 12-seed projections at that coefficient (staged run [43210183324](https://github.com/elroynbenjamins/Veldryn/actions/runs/43210183324)) show:
 - Plain full Common T2 with three draughts: **98.61% wins**, lowest class/path **83.33%**.
 - Representative Common T2 with three draughts: **99.54% wins**.
 - Mixed 7-piece T2/3-piece T1: **~53.24% wins**.
-These are synthetic tests, not live win rates. Re-run the modified boss source and the 9-class dedicated story-boss regression before final acceptance.
+These are synthetic tests, not live win rates. The modified story-boss runtime, the nine-class dedicated story-boss regression, regional sustain tests and mobile core TypeScript checks **passed** in CI.
 
 **Do not** apply the 3-draught cap to server-authoritative dungeon potion charges without a separate server/SQL design and corresponding tests; dungeon policy is different from a story boss. Nor should one-use offensive tonics be confused with healing charges.
 

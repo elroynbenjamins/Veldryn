@@ -32,6 +32,7 @@ import {normalizeEquipmentCraftingQueue} from './equipment-crafting-queue';
 import {normalizeEnhancementGemSlots} from './equipment-enhancement';
 import {normalizeCraftedGearInstances} from './crafted-gear-instances';
 import {normalizeSeasonalProgress} from './seasonal-quests';
+import {normalizeMonthlyQuestMilestones} from './monthly-quest-milestones';
 import {migrateGemPouch,normalizeGemPouch} from './gem-pouch';
 
 function normalizeGearEnhancements(raw:unknown){
@@ -229,6 +230,7 @@ export function normalizeSave(input:any):GameState{
     : [];
   normalized.account.guideState=normalizeOnboardingGuideState(input.account?.guideState);
   normalized.account.seasonalContractProgress=normalizeSeasonalProgress(input.account?.seasonalContractProgress);
+  normalized.account.monthlyQuestMilestones=normalizeMonthlyQuestMilestones(input.account?.monthlyQuestMilestones);
   normalized.account.arenaSquadCharacterIds=Array.isArray(input.account?.arenaSquadCharacterIds)
     ? [...new Set(input.account.arenaSquadCharacterIds.filter((id:unknown)=>typeof id==='string'))].slice(0,3) as string[]
     : undefined;

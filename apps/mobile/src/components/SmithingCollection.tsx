@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState,type ComponentProps} from 'react';
+import {useEffect,useMemo,useRef,useState,type ComponentProps} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {EQUIPMENT_SETS} from '../content/equipment-sets';
 import {isReleasedEquipmentTier} from '../content/equipment-release';
@@ -21,6 +21,8 @@ import {ActivityArtwork} from './ActivityArtwork';
 import {progressWithinLevel} from '../core/progression';
 import {ownedEquipmentDefinitionIds} from '../core/equipment-collection-ownership';
 import {workingTowardItemSourceEntries} from '../core/working-toward';
+import {rememberedEquipmentTier,rememberEquipmentTier} from '../core/equipment-tier-memory';
+import {OptionPager,type PagerOption} from './OptionPager';
 
 type EquipmentCraftingSkill='smithing'|'tailoring';
 type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill};
@@ -39,7 +41,7 @@ export const SmithingHeader=EquipmentCraftingHeader;
 export function SmithingCollection(props:Props){
  const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{fontScale}=useWindowDimensions();
  const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId]);
- const preferred=recipes.find(r=>r.id===preferredRecipeId);
+ const preferred=recipes.find(r=>r.id===preferredRecipeId),characterId=state.character?.id;
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);
  const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[bonusesOpen,setBonusesOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[queueOpen,setQueueOpen]=useState(()=>equipmentCraftQueueModel(state,Date.now()).ready>0),[width,setWidth]=useState(400),[now,setNow]=useState(Date.now()),[error,setError]=useState('');
@@ -55,7 +57,30 @@ export function SmithingCollection(props:Props){
  // Switch to larger touch targets only on narrow screens or enlarged system text.
  const tileColumns=width<345||fontScale>=1.3?4:5;
  const tileWidth=(width-8*(tileColumns-1))/tileColumns,artSize=Math.max(32,Math.min(78,tileWidth-12));
- const chooseSet=(id:string)=>{setSetId(id);setItemId(undefined);setDetailsOpen(false);setBonusesOpen(false);setError('')};
+ const chooseSet=(id:string)=>{
+  setSetId(id);setItemId(undefined);setDetailsOpen(false);setBonusesOpen(false);setError('');
+  const tier=sets.find(row=>row.id===id)?.tier;
+  if(tier)void rememberEquipmentTier(characterId,skillId,tier);
+ };
+ // A smith at T7 should not have to walk back up from T1 on every visit. Restore the last
+ // tier they browsed, but never over a set the caller asked for or one already chosen here.
+ const restoredFor=useRef('');
+ useEffect(()=>{
+  const key=(characterId??'')+'|'+skillId;
+  if(preferred||!sets.length||restoredFor.current===key)return;
+  restoredFor.current=key;
+  let active=true;
+  void rememberedEquipmentTier(characterId,skillId).then(tier=>{
+   if(!active||!tier)return;
+   const landing=sets.find(row=>row.tier===tier);
+   if(landing)setSetId(current=>current===undefined||current===sets[0]?.id?landing.id:current);
+  });
+  return()=>{active=false};
+ },[characterId,skillId,sets,preferred]);
+ const tierOptions:PagerOption[]=tiers.map(tier=>{
+  const ids=sets.filter(row=>row.tier===tier).flatMap(row=>row.itemIds);
+  return {key:tier,label:gl('Tier')+' '+tier.slice(1),meta:ids.filter(id=>owned.has(id)).length+'/'+ids.length};
+ });
  const panel={backgroundColor:C.panel,borderColor:C.line},text={color:C.text},muted={color:C.muted};
  const button=(title:string,onPress:()=>void,extra?:object,accessibleLabel=title)=><Pressable accessibilityRole="button" accessibilityLabel={accessibleLabel} onPress={onPress} style={({pressed})=>[s.control,panel,extra,pressed&&s.pressed]}><Text style={[s.body,text]}>{title}</Text></Pressable>;
  const active=queue.jobs.find(job=>job.status==='active'),progress=active?Math.max(0,Math.min(1,1-active.remainingSeconds/Math.max(1,active.durationSeconds))):0;
@@ -70,7 +95,9 @@ export function SmithingCollection(props:Props){
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
   {tab==='equipment'&&set&&item&&recipe&&status?<>
    <View style={s.between}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')}</Text><Text style={[s.body,muted]}>{state.character?.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
-   <View style={s.tiers}>{tiers.map(tier=>{const first=sets.find(row=>row.tier===tier)!,selectedTier=tier===set.tier;return <Pressable key={tier} accessibilityRole="button" accessibilityLabel={`${gl('Tier')} ${tier.slice(1)}`} accessibilityState={{selected:selectedTier}} onPress={()=>chooseSet(first.id)} style={({pressed})=>[s.tierOption,{width:(width-24)/4,backgroundColor:selectedTier?C.selection:C.panel,borderColor:selectedTier?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tierNumber,{color:selectedTier?C.text:C.muted}]}>{tier}</Text>{selectedTier?<View style={[s.tierMarker,{backgroundColor:C.selectionLine}]}/>:null}</Pressable>})}</View>
+   <OptionPager options={tierOptions} value={set.tier} onChange={tier=>{const first=sets.find(row=>row.tier===tier);if(first)chooseSet(first.id)}}
+    accessibilityLabel={gt('Equipment tier')} previousLabel={gt('Previous tier')} nextLabel={gt('Next tier')}
+    reduceMotion={state.settings.reduceMotion}/>
    <View style={[s.setHeader,panel]}>
     {button('‹',()=>chooseSet(tierSets[(setIndex-1+tierSets.length)%tierSets.length].id),undefined,gt('Previous set'))}
     <View style={s.center}>
@@ -99,4 +126,4 @@ export function SmithingCollection(props:Props){
   </>}
  </View>;
 }
-const s=StyleSheet.create({root:{gap:12},tabs:{flexDirection:'row',borderBottomWidth:1},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',borderBottomWidth:2},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},control:{minHeight:44,minWidth:44,paddingHorizontal:12,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center'},body:{fontSize:14,lineHeight:20},caption:{fontSize:12,lineHeight:17},tiers:{flexDirection:'row',flexWrap:'wrap',gap:8},tierOption:{minHeight:48,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center',overflow:'hidden'},tierNumber:{fontSize:17,lineHeight:22,fontWeight:'700'},tierMarker:{position:'absolute',bottom:0,left:12,right:12,height:3,borderTopLeftRadius:3,borderTopRightRadius:3},setHeader:{flexDirection:'row',alignItems:'center',padding:8,borderWidth:1,borderRadius:10,gap:8},center:{flex:1,alignItems:'center',gap:3},setName:{fontSize:16,lineHeight:22,fontWeight:'700',textAlign:'center'},grid:{flexDirection:'row',flexWrap:'wrap',gap:8},tile:{borderWidth:1,borderRadius:9,paddingVertical:10,alignItems:'center',justifyContent:'center',gap:8,minHeight:84},slot:{fontSize:11,lineHeight:16,paddingHorizontal:2},check:{position:'absolute',right:4,top:4,width:16,height:16,borderRadius:8,alignItems:'center',justifyContent:'center'},disclosure:{minHeight:44,paddingHorizontal:12,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderWidth:1,borderRadius:8},detail:{padding:12,gap:12,borderWidth:1,borderRadius:10},title:{flex:1,fontSize:19,lineHeight:25,fontWeight:'700'},badge:{borderWidth:1,borderRadius:5,paddingVertical:3,paddingHorizontal:7,fontSize:12},itemHero:{flexDirection:'row',alignItems:'center',gap:16},stats:{flex:1,gap:7},stat:{flexDirection:'row',justifyContent:'space-between',borderBottomWidth:1,paddingBottom:6},materials:{borderTopWidth:1,paddingTop:12,gap:10},ingredients:{flexDirection:'row',flexWrap:'wrap',gap:8},ingredient:{flexGrow:1,flexBasis:120,flexDirection:'row',alignItems:'center',gap:8,padding:8,minHeight:60,borderWidth:1,borderRadius:8},flex:{flex:1,minWidth:0},craft:{minHeight:50,borderWidth:1.5,borderRadius:8,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,padding:8},queue:{minHeight:58,borderWidth:1,borderRadius:10,padding:12,flexDirection:'row',alignItems:'center',gap:12},track:{height:4,borderRadius:2,overflow:'hidden',marginTop:6},pressed:{opacity:.75}});
+const s=StyleSheet.create({root:{gap:12},tabs:{flexDirection:'row',borderBottomWidth:1},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',borderBottomWidth:2},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},control:{minHeight:44,minWidth:44,paddingHorizontal:12,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center'},body:{fontSize:14,lineHeight:20},caption:{fontSize:12,lineHeight:17},setHeader:{flexDirection:'row',alignItems:'center',padding:8,borderWidth:1,borderRadius:10,gap:8},center:{flex:1,alignItems:'center',gap:3},setName:{fontSize:16,lineHeight:22,fontWeight:'700',textAlign:'center'},grid:{flexDirection:'row',flexWrap:'wrap',gap:8},tile:{borderWidth:1,borderRadius:9,paddingVertical:10,alignItems:'center',justifyContent:'center',gap:8,minHeight:84},slot:{fontSize:11,lineHeight:16,paddingHorizontal:2},check:{position:'absolute',right:4,top:4,width:16,height:16,borderRadius:8,alignItems:'center',justifyContent:'center'},disclosure:{minHeight:44,paddingHorizontal:12,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderWidth:1,borderRadius:8},detail:{padding:12,gap:12,borderWidth:1,borderRadius:10},title:{flex:1,fontSize:19,lineHeight:25,fontWeight:'700'},badge:{borderWidth:1,borderRadius:5,paddingVertical:3,paddingHorizontal:7,fontSize:12},itemHero:{flexDirection:'row',alignItems:'center',gap:16},stats:{flex:1,gap:7},stat:{flexDirection:'row',justifyContent:'space-between',borderBottomWidth:1,paddingBottom:6},materials:{borderTopWidth:1,paddingTop:12,gap:10},ingredients:{flexDirection:'row',flexWrap:'wrap',gap:8},ingredient:{flexGrow:1,flexBasis:120,flexDirection:'row',alignItems:'center',gap:8,padding:8,minHeight:60,borderWidth:1,borderRadius:8},flex:{flex:1,minWidth:0},craft:{minHeight:50,borderWidth:1.5,borderRadius:8,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,padding:8},queue:{minHeight:58,borderWidth:1,borderRadius:10,padding:12,flexDirection:'row',alignItems:'center',gap:12},track:{height:4,borderRadius:2,overflow:'hidden',marginTop:6},pressed:{opacity:.75}});

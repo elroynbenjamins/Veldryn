@@ -24,8 +24,7 @@ assert.ok(incoming.some(hit=>hit.actor==='fatigue'&&hit.damage>0),'one-shot figh
 assert.equal(huntEnemyHpAt(30,incoming,upgraded.searchSeconds/upgraded.cycleSeconds),30,'searching does not damage enemies');
 assert.equal(huntEnemyHpAt(30,incoming,1),0,'actual final attack kills the monster');
 assert.equal(huntHitsBetween(incoming,0,.5).length+huntHitsBetween(incoming,.5,1).length,incoming.length,'split settlement must preserve real hit events');
-for(const zone of ['Greenfields','Silverbrook','Ironwood Forest','Old Mines',"King's Road",'Sunscar'])assert.ok(usesDamageDrivenHunts(zone),zone+' must use damage-driven hunts');
-for(const zone of ['Frostmarch','Ashlands'])assert.ok(!usesDamageDrivenHunts(zone),zone+' is intentionally unchanged');
+for(const zone of ['Greenfields','Silverbrook','Ironwood Forest','Old Mines',"King's Road",'Sunscar','Frostmarch','Ashlands'])assert.ok(usesDamageDrivenHunts(zone),zone+' must use damage-driven hunts');
 
 const T=1_700_000;
 const weakBase=createCharacter(newGame(T),'WAYFINDER','Weak Hunter');
@@ -63,4 +62,4 @@ const huntUi=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 const stageUi=fs.readFileSync('src/components/BattleStage.tsx','utf8');
 assert.ok(huntUi.includes('fight.searching')&&huntUi.includes("!fight?.searching&&fight?.lastHit"),'hunting UI must hide unencountered enemy HP and stale hit effects');
 assert.ok(stageUi.includes("!fight?.searching&&fight?.lastHit"),'live combat theater must hide leftover hits while searching');
-console.log('PASS damage-based launch hunts, search-state polish, consistent HUD estimates, stamina food, later-region exclusion and split claims');
+console.log('PASS damage-based regional hunts, search-state polish, consistent HUD estimates, stamina food and split claims');

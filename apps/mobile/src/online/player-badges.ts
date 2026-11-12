@@ -1,4 +1,4 @@
-import {COLLECTIBLE_PLAYER_BADGE_IDS,isCollectiblePlayerBadgeId,isEquippablePlayerBadgeId,normalizePlayerBadges,supporterTierMonths,validatedFeaturedBadges,type CollectiblePlayerBadgeId,type EquippablePlayerBadgeId,type PlayerBadgeIdentity,type SupporterTenureTier} from '../core/player-badges';
+import {COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,canEquipSupporterBadge,isCollectiblePlayerBadgeId,isEquippablePlayerBadgeId,normalizePlayerBadges,supporterTierMonths,validatedFeaturedBadges,type CollectiblePlayerBadgeId,type EquippablePlayerBadgeId,type PlayerBadgeIdentity,type SupporterTenureTier} from '../core/player-badges';
 import {supabase} from './supabase';
 
 export interface PlayerBadgePreferences{
@@ -9,7 +9,11 @@ export interface PlayerBadgePreferences{
  supporterTotalDays:number;
  equippedBadgeId:EquippablePlayerBadgeId|null;
  ownedExtras?:CollectiblePlayerBadgeId[];
- featuredExtras?:CollectiblePlayerBadgeId[];
+ /** Everything this account may put on its profile: earned collectibles plus any
+  * Supporter tier its verified tenure has actually reached. */
+ selectableBadgeIds?:EquippablePlayerBadgeId[];
+ /** The chosen profile showcase, up to three. */
+ featuredExtras?:EquippablePlayerBadgeId[];
 }
 async function request(name:string,args:Record<string,unknown>={}):Promise<PlayerBadgePreferences>{
  if(!supabase)throw new Error('Online services are not configured.');
@@ -21,20 +25,31 @@ async function request(name:string,args:Record<string,unknown>={}):Promise<Playe
  const available=data?.supporterAvailable===true;
  const equipped=data?.equippedBadgeId??identity?.equippedBadgeId;
  const selected=isEquippablePlayerBadgeId(equipped)?equipped:null;
+ const tier=supporterTierMonths(data?.supporterTierMonths,available);
+ const ownedCollectibles=[...new Set(owned)].sort((a,b)=>COLLECTIBLE_PLAYER_BADGE_IDS.indexOf(a)-COLLECTIBLE_PLAYER_BADGE_IDS.indexOf(b));
+ const selectable:EquippablePlayerBadgeId[]=[
+  ...SUPPORTER_BADGE_IDS.filter(id=>canEquipSupporterBadge(id,available,tier)),
+  ...ownedCollectibles,
+ ];
  return {
   identity,
   showSupporter:data?.showSupporter===true,
   supporterAvailable:available,
-  supporterTierMonths:supporterTierMonths(data?.supporterTierMonths,available),
+  supporterTierMonths:tier,
   supporterTotalDays:typeof data?.supporterTotalDays==='number'&&Number.isSafeInteger(data.supporterTotalDays)&&data.supporterTotalDays>=0?data.supporterTotalDays:0,
   equippedBadgeId:selected,
-  ownedExtras:[...new Set(owned)].sort((a,b)=>COLLECTIBLE_PLAYER_BADGE_IDS.indexOf(a)-COLLECTIBLE_PLAYER_BADGE_IDS.indexOf(b)),
-  featuredExtras:validatedFeaturedBadges(data?.featuredExtras,owned),
+  ownedExtras:ownedCollectibles,
+  selectableBadgeIds:selectable,
+  featuredExtras:validatedFeaturedBadges(data?.featuredExtras,selectable),
  };
 }
 export const loadPlayerBadgePreferences=()=>request('player_badge_self_v1');
 export const updatePlayerBadgePreferences=(showSupporter:boolean)=>request('update_player_badge_preferences_v1',{p_show_supporter:showSupporter});
-export const updateFeaturedPlayerBadges=(ids:readonly CollectiblePlayerBadgeId[])=>request('update_player_featured_badges_v1',{p_badge_ids:ids});
+/** Pre-showcase servers mirrored "featured" onto the one equipped badge. Keep that
+ * writer for the legacy fallback below, and never route a 3-badge showcase through it. */
+const updateLegacyFeaturedBadges=(ids:readonly CollectiblePlayerBadgeId[])=>request('update_player_featured_badges_v1',{p_badge_ids:ids});
+/** The profile showcase: up to three unlocked badges, re-validated server-side. */
+export const updateProfileBadges=(ids:readonly EquippablePlayerBadgeId[])=>request('update_player_profile_badges_v3',{p_badge_ids:ids});
 
 /** Server validates ownership, Supporter tenure and account identity. */
 const missingBadgeRpc=(error:unknown)=>error instanceof Error&&error.message==='Player badges are not available on this server yet.';
@@ -46,8 +61,8 @@ export async function updatePlayerEquippedBadge(id:EquippablePlayerBadgeId|null)
  try{return await request('update_player_equipped_badge_v2',{p_badge_id:id});}
  catch(error){
   if(!missingBadgeRpc(error)||id==='supporter_3m'||id==='supporter_6m'||id==='supporter_12m')throw error;
-  if(isCollectiblePlayerBadgeId(id))return updateFeaturedPlayerBadges([id]);
-  try{await updateFeaturedPlayerBadges([]);}
+  if(isCollectiblePlayerBadgeId(id))return updateLegacyFeaturedBadges([id]);
+  try{await updateLegacyFeaturedBadges([]);}
   catch(legacyError){if(!missingBadgeRpc(legacyError))throw legacyError;}
   return updatePlayerBadgePreferences(id==='supporter');
  }

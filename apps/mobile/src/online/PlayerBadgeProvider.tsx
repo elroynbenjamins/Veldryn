@@ -1,18 +1,18 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
 import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
-import {loadPlayerBadgePreferences,updatePlayerBadgePreferences,updateFeaturedPlayerBadges,updatePlayerEquippedBadge,type PlayerBadgePreferences} from './player-badges';
+import {loadPlayerBadgePreferences,updatePlayerBadgePreferences,updateProfileBadges,updatePlayerEquippedBadge,type PlayerBadgePreferences} from './player-badges';
 import {guildIdentities,type SocialProfileIcon} from './social';
 import {invalidatePlayerIdentity,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,subscribePlayerIdentityChanges} from './player-identity-cache';
-import type {CollectiblePlayerBadgeId,EquippablePlayerBadgeId,PlayerBadgeIdentity} from '../core/player-badges';
+import type {EquippablePlayerBadgeId,PlayerBadgeIdentity} from '../core/player-badges';
 
-export type BadgeState=PlayerBadgePreferences&{accountId:string;loading:boolean;busy:boolean;error:string;setVisible:(visible:boolean)=>Promise<void>;setFeatured?:(ids:readonly CollectiblePlayerBadgeId[])=>Promise<void>;setEquipped:(id:EquippablePlayerBadgeId|null)=>Promise<void>;refresh:()=>Promise<void>};
+export type BadgeState=PlayerBadgePreferences&{accountId:string;loading:boolean;busy:boolean;error:string;setVisible:(visible:boolean)=>Promise<void>;setProfileBadges:(ids:readonly EquippablePlayerBadgeId[])=>Promise<void>;setEquipped:(id:EquippablePlayerBadgeId|null)=>Promise<void>;refresh:()=>Promise<void>};
 type BadgeContext=BadgeState&{remote:Map<string,PlayerBadgeIdentity|undefined>;icons:Map<string,SocialProfileIcon>;watch:(id:string)=>()=>void};
 const empty={accountId:'',showSupporter:true,supporterAvailable:false,supporterTierMonths:0 as const,supporterTotalDays:0,equippedBadgeId:null,identity:undefined,loading:false,busy:false,error:''};
-const Context=createContext<BadgeContext>({...empty,setVisible:async()=>{},setFeatured:async()=>{},setEquipped:async()=>{},refresh:async()=>{},remote:new Map(),icons:new Map(),watch:()=>()=>{}});
+const Context=createContext<BadgeContext>({...empty,setVisible:async()=>{},setProfileBadges:async()=>{},setEquipped:async()=>{},refresh:async()=>{},remote:new Map(),icons:new Map(),watch:()=>()=>{}});
 export function PlayerBadgeProvider({children}:{children:ReactNode}){
  const accountId=useAuthSession().session?.user.id??'';
- const [state,setState]=useState<Omit<BadgeState,'setVisible'|'setFeatured'|'setEquipped'|'refresh'>>(empty),generation=useRef(0),saving=useRef(0);
+ const [state,setState]=useState<Omit<BadgeState,'setVisible'|'setProfileBadges'|'setEquipped'|'refresh'>>(empty),generation=useRef(0),saving=useRef(0);
  const watched=useRef(new Map<string,number>()),[watchVersion,setWatchVersion]=useState(0);
  const [remote,setRemote]=useState<{accountId:string;identities:Map<string,PlayerBadgeIdentity|undefined>;icons:Map<string,SocialProfileIcon>}>({accountId:'',identities:new Map(),icons:new Map()});
  const watch=useCallback((id:string)=>{watched.current.set(id,(watched.current.get(id)??0)+1);setWatchVersion(value=>value+1);return()=>{const count=(watched.current.get(id)??1)-1;if(count)watched.current.set(id,count);else watched.current.delete(id);setWatchVersion(value=>value+1);};},[]);
@@ -86,14 +86,14 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
   catch(e){if(version===generation.current)setState(value=>({...value,busy:false,error:e instanceof Error?e.message:'Could not equip badge.'}));}
   finally{if(saving.current===version)saving.current=0;}
  };
- const setFeatured=async(ids:readonly CollectiblePlayerBadgeId[])=>{
+ const setProfileBadges=async(ids:readonly EquippablePlayerBadgeId[])=>{
   if(!accountId||saving.current)return;
   const version=++generation.current;saving.current=version;setState(value=>({...value,busy:true,error:''}));
-  try{const data=await updateFeaturedPlayerBadges(ids);if(version===generation.current){setState({...data,accountId,loading:false,busy:false,error:''});invalidatePlayerIdentity(accountId);}}
-  catch(e){if(version===generation.current)setState(value=>({...value,busy:false,error:e instanceof Error?e.message:'Could not save featured badges.'}));}
+  try{const data=await updateProfileBadges(ids);if(version===generation.current){setState({...data,accountId,loading:false,busy:false,error:''});invalidatePlayerIdentity(accountId);}}
+  catch(e){if(version===generation.current)setState(value=>({...value,busy:false,error:e instanceof Error?e.message:'Could not save profile badges.'}));}
   finally{if(saving.current===version)saving.current=0;}
  };
- return <Context.Provider value={{...(state.accountId===accountId?state:empty),setVisible,setFeatured,setEquipped,refresh,watch,remote:remote.accountId===accountId?remote.identities:new Map(),icons:remote.accountId===accountId?remote.icons:new Map()}}>{children}</Context.Provider>;
+ return <Context.Provider value={{...(state.accountId===accountId?state:empty),setVisible,setProfileBadges,setEquipped,refresh,watch,remote:remote.accountId===accountId?remote.identities:new Map(),icons:remote.accountId===accountId?remote.icons:new Map()}}>{children}</Context.Provider>;
 }
 export const usePlayerBadges=()=>useContext(Context);
 export function useIdentityBadges(accountId:string|undefined,initial:PlayerBadgeIdentity|undefined){

@@ -15,12 +15,16 @@ import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {ActivityCard} from './ActivityCard';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
+import {GatheringScene} from './GatheringScene';
+import {isGatheringSceneKind} from '../core/gathering-scene';
 
 type Props={
  title:string;kind:ActivityKind;activity:ActiveActivity;cycleSeconds:number;capHours:number;
  preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};
  resourceRate?:IdleResourceRate;maxHp?:number;levelPace?:LevelPaceProjection;reduceMotion?:boolean;
  numberMode?:'exact'|'abbreviated';onClaim:()=>void;onStop:()=>void;
+ /** Authoritative gathering action time; keeps the scene's completion cue on the settlement clock. */
+ gatheringCycleSeconds?:number;
 };
 const kindNames:Record<ActivityKind,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',exploration:'EXPLORATION'};
 const unitNames:Record<ActivityKind,string>={combat:'kills',mining:'actions',woodcutting:'actions',fishing:'actions',herbalism:'actions',alchemy:'brews',processing:'crafts',faith:'practices',training:'drills',exploration:'routes'};
@@ -52,6 +56,7 @@ export function HomeActivityFocus(props:Props){
      <Text style={[s.statusLabel,{color:stopped?C.bad:capped?C.warning:C.good}]}>{stopped?gl('STOPPED'):capped?gl('AFK FULL'):gl('ACTIVE')}</Text>
     </View>
    </View>
+   {isGatheringSceneKind(kind)?<GatheringScene activity={activity} cycleSeconds={props.gatheringCycleSeconds??props.cycleSeconds} reduceMotion={props.reduceMotion} working={!stopped&&!capped}/>:null}
    <View style={s.identity}>
     <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={44} framed={false} reduceMotion/>:<ActivityArtwork id={iconId} size={38}/>}</View>
     <View style={s.copy}><Text numberOfLines={2} style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{gl(kindNames[kind])} · {gl('Rewards since last collection')}</Text></View>

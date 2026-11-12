@@ -175,6 +175,9 @@ const common={
 "Increase quality":["Increase quality","Qualität erhöhen","Aumentar calidad","Kwaliteit verhogen","Aumenta qualità","Augmenter la qualité"],
 "Previous set":["Previous set","Vorheriges Set","Conjunto anterior","Vorige set","Set precedente","Ensemble précédent"],
 "Next set":["Next set","Nächstes Set","Conjunto siguiente","Volgende set","Set successivo","Ensemble suivant"],
+"Previous tier":["Previous tier","Vorherige Stufe","Nivel anterior","Vorige rang","Livello precedente","Palier précédent"],
+"Next tier":["Next tier","Nächste Stufe","Nivel siguiente","Volgende rang","Livello successivo","Palier suivant"],
+"Equipment tier":["Equipment tier","Ausrüstungsstufe","Nivel de equipo","Uitrustingsrang","Livello equipaggiamento","Palier d'équipement"],
  // Interactive Forge odds and quality preview: en/de/es/nl/it/fr.
  "Mythic":["Mythic","Mythisch","Mítico","Mythisch","Mitico","Mythique"],
  "Quality preview":["Quality preview","Qualitätsvorschau","Vista previa de calidad","Kwaliteitsvoorbeeld","Anteprima qualità","Aperçu de la qualité"],

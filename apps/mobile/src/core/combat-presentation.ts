@@ -13,9 +13,9 @@ const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 
 export type CombatSafety='safe'|'steady'|'dangerous';
 export function combatReadiness(state:GameState,monster:MonsterDef,_challengeId?:never,_affixId?:never,tacticId:CombatTacticId='balanced'){
-  const tuned=monster,stats=effectiveStats(state),multipliers=characterPermanentMultipliers(state),tactic=combatTactic(tacticId);
+  const tuned=monster,stats=effectiveStats(state),tactic=combatTactic(tacticId);
   const baseCritChance=CLASSES.find(def=>def.id===state.character?.classId)?.role==='Damage'?.10:.05,secondary=regionalSecondaryExchange(stats,tuned,baseCritChance);
-  const power=Math.max(1,Math.round(stats.power*multipliers.combatPowerMultiplier));
+  const power=Math.max(1,Math.round(stats.power));
   const baseRecommendedPower=(tuned.attack*1.2+tuned.defense*.8+tuned.level*2.2)*COMBAT_EXPECTED_SCALE;
   const secondaryPressure=Math.sqrt(secondary.incomingPressureMultiplier/Math.max(.7,secondary.playerOutputMultiplier));
   const survivalPressure=tactic.damageTakenMultiplier;
@@ -31,8 +31,8 @@ export function combatPresentation(state:GameState,monster:MonsterDef,elapsedSec
   const secondary=regionalSecondaryExchange(stats,tuned,baseCritChance);
   const cycle=Math.max(1,cycleSeconds),within=elapsedSeconds%cycle;
   const enemyProgress=Math.min(.96,within/cycle);
-  const boostedAttack=Math.max(1,Math.round(stats.attack*multipliers.combatPowerMultiplier));
-  const boostedDefense=Math.max(1,Math.round(stats.defense*multipliers.combatPowerMultiplier));
+  const boostedAttack=Math.max(1,Math.round(stats.attack));
+  const boostedDefense=Math.max(1,Math.round(stats.defense));
   const visualOffense=Math.max(.72,Math.min(1.35,secondary.playerOutputMultiplier/(Math.max(.75,(1+stats.haste)/1.05))));
   const playerHit=Math.max(1,Math.round((boostedAttack*1.35-tuned.defense*.45)*visualOffense));
   const raw=Math.max(1,Math.round(tuned.attack*COMBAT_MONSTER_DAMAGE_SCALE-Math.floor(boostedDefense*.58)));

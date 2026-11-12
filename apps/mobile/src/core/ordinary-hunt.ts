@@ -1,7 +1,7 @@
 import {random01} from './rng';
 
-/** Only the launch regions are being rebalanced. Frostmarch and later retain
- * their authored timed encounters until their own balancing pass. */
+/** Region-specific search time is the anti-farming floor; actual Attack,
+ * Defense, accuracy, crit and haste determine the fight itself. */
 const SEARCH_RANGES:Readonly<Record<string,readonly [number,number]>>={
   Greenfields:[5,8],
   Silverbrook:[5,8],
@@ -9,6 +9,8 @@ const SEARCH_RANGES:Readonly<Record<string,readonly [number,number]>>={
   'Old Mines':[7,10],
   "King's Road":[7,10],
   Sunscar:[8,12],
+  Frostmarch:[9,13],
+  Ashlands:[10,14],
 };
 export function usesDamageDrivenHunts(zone:string){return Object.prototype.hasOwnProperty.call(SEARCH_RANGES,zone);}
 

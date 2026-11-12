@@ -1,5 +1,6 @@
 import type {ClassId,GearSlot} from '../core/types';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
+import {isT5EquipmentAffixSlot,T5_AFFIX_EXTRA_FIXATIVE,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_TIME_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from './t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 
@@ -39,10 +40,10 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 /** Equipment-only gold sink: recipe gold is authoritative for the UI, queue reservation and server validation. */
 export const EQUIPMENT_FORGE_GOLD_MULTIPLIER=3;
 export const EQUIPMENT_CRAFT_GOLD_MULTIPLIER=EQUIPMENT_FORGE_GOLD_MULTIPLIER;
-const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
+const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 // More early profession XP helps Smithing/Tailoring reach T2 without
 // lowering level gates, reducing costs, or speeding up late-tier training.
-const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 /** Boost final equipment assembly XP for T2–T4, including the existing T3/T4 +20 XP. */
 export const T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER=1.25;
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
@@ -62,7 +63,7 @@ const infusionByTier:Record<string,{itemId:string;quantity:number}>={
  * This curve keeps early tiers meaningful while allowing late regional
  * materials to stay usable after standard combat drops were reduced.
  */
-const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:2,T5:1,T6:.8,T7:.8,T8:.75,T9:.75};
+const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:1.5,T5:1.25,T6:.8,T7:.8,T8:.75,T9:.75};
 /**
  * Tier pacing deliberately leaves room for a player to finish a meaningful
  * Fieldborn kit before the next rarity appears.  The old floors put T2/T3
@@ -138,11 +139,15 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const setId=String(piece['Set ID']),set=setById.get(setId);
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
   const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
+  const t5Affix=tier==='T5'&&isT5EquipmentAffixSlot(slot);
   const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1),level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   const baseCraftXp=q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0);
-  const craftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
+  const standardCraftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
+  const craftXp=t5Affix?Math.round(standardCraftXp*T5_AFFIX_XP_MULTIPLIER):standardCraftXp;
+  const infusion={...infusionByTier[tier],quantity:infusionByTier[tier].quantity+(t5Affix?T5_AFFIX_EXTRA_FIXATIVE:0)};
+  const baseSeconds=clamp(Math.round(range.base*multiplier),range.min,range.max);
   return {
     id:`CRAFT_V33_${String(piece['Piece ID'])}`,
     name:String(piece['Item Name']),
@@ -150,8 +155,8 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     level,
     xp:craftXp,
     gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1),
-    seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
+    seconds:clamp(Math.round(baseSeconds*(t5Affix?T5_AFFIX_TIME_MULTIPLIER:1)),range.min,range.max),
+    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier*(t5Affix?T5_AFFIX_MATERIAL_MULTIPLIER:1),skillId),infusion]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

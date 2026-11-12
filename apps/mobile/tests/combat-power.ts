@@ -23,7 +23,7 @@ ok(withCompanion.companion<=Math.floor(withCompanion.total*MAX_COMPANION_COMBAT_
 equal(withCompanion.player+withCompanion.companion,withCompanion.total,'personal and companion shares must reconcile');
 equal(withCompanion.rows.reduce((total,row)=>total+row.value,0),withCompanion.total,
  'Combat Power source rows must reconcile without estimating passive percentages');
-const boosted={...state,account:{...state.account,combatCompanionProgress:{...state.account.combatCompanionProgress,UNIT_001:{...state.account.combatCompanionProgress!['UNIT_001'],level:70,ascensionTier:5,bondLevel:10}}}};
+const boosted={...state,account:{...state.account,combatCompanionProgress:{...state.account.combatCompanionProgress,UNIT_001:{...state.account.combatCompanionProgress!['UNIT_001'],level:70,ascensionTier:3 as const,bondLevel:10}}}};
 const boostedPower=combatPowerRating(boosted);
 ok(boostedPower.rows.some(row=>row.id==='allocation'),'high-level companions should reallocate excess rating to personal power');
 equal(boostedPower.companion,Math.floor(boostedPower.total*MAX_COMPANION_COMBAT_POWER_SHARE),'high-level companions must use the exact cap');

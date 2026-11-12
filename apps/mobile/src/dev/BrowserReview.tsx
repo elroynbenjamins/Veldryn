@@ -11,11 +11,12 @@ import GuildPveReview from './GuildPveReview';
 import FrostfallPreviewReview from './FrostfallPreviewReview';
 import GuildLayoutReview from './GuildLayoutReview';
 import AdditionalScreensReview,{type AdditionalReviewScreen} from './AdditionalScreensReview';
+import PixelSceneReview from './PixelSceneReview';
 
 type Group='Game'|'Equipment'|'Dungeon'|'Guild'|'Social'|'Account'|'QA';
 type Route={
  id:string;label:string;group:Group;
- kind:'native'|'store'|'board'|'companion'|'pve'|'guild-layout'|'frostfall'|'extra';
+ kind:'native'|'store'|'board'|'companion'|'pve'|'guild-layout'|'frostfall'|'extra'|'pixel-scenes';
  native?:NativeSection;storeScreen?:string;storeSkill?:string;screen?:string;extra?:AdditionalReviewScreen;
  note?:string;
 };
@@ -26,6 +27,7 @@ const routes:readonly Route[]=[
  {id:'battle',label:'Live combat artwork',group:'Game',kind:'store',storeScreen:'battle'},
  {id:'skills',label:'Skills / Mining',group:'Game',kind:'store',storeScreen:'skills'},
  {id:'skill-grid',label:'Skill selection grid',group:'Game',kind:'store',storeScreen:'skill-grid'},
+ {id:'pixel-scenes',label:'Gathering scenes & combat FX',group:'Game',kind:'pixel-scenes'},
  {id:'crafting',label:'Smithing / Crafting',group:'Game',kind:'store',storeScreen:'crafting',storeSkill:'smithing'},
  {id:'woodcutting',label:'Woodcutting',group:'Game',kind:'store',storeScreen:'skills',storeSkill:'woodcutting'},
  {id:'fishing',label:'Fishing',group:'Game',kind:'store',storeScreen:'skills',storeSkill:'fishing'},
@@ -140,6 +142,7 @@ export default function BrowserReview(){
   case 'frostfall':content=<FrostfallPreviewReview/>;break;
   case 'guild-layout':content=<GuildLayoutReview/>;break;
   case 'extra':content=<AdditionalScreensReview screen={route.extra!}/>;break;
+  case 'pixel-scenes':content=<PixelSceneReview/>;break;
   default:content=<StoreCaptureReview/>;
  }
  return <View style={s.root}>

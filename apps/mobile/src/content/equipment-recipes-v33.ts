@@ -39,10 +39,10 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 /** Equipment-only gold sink: recipe gold is authoritative for the UI, queue reservation and server validation. */
 export const EQUIPMENT_FORGE_GOLD_MULTIPLIER=3;
 export const EQUIPMENT_CRAFT_GOLD_MULTIPLIER=EQUIPMENT_FORGE_GOLD_MULTIPLIER;
-const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
+const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 // More early profession XP helps Smithing/Tailoring reach T2 without
 // lowering level gates, reducing costs, or speeding up late-tier training.
-const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 /** Boost final equipment assembly XP for T2–T4, including the existing T3/T4 +20 XP. */
 export const T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER=1.25;
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
@@ -62,7 +62,8 @@ const infusionByTier:Record<string,{itemId:string;quantity:number}>={
  * This curve keeps early tiers meaningful while allowing late regional
  * materials to stay usable after standard combat drops were reduced.
  */
-const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:2,T5:1,T6:.8,T7:.8,T8:.75,T9:.75};
+// Keep heavy T5 pieces within the 5.4h baseline gathering ceiling without flattening slot differences.
+const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:1.5,T5:1.2,T6:.8,T7:.8,T8:.75,T9:.75};
 /**
  * Tier pacing deliberately leaves room for a player to finish a meaningful
  * Fieldborn kit before the next rarity appears.  The old floors put T2/T3

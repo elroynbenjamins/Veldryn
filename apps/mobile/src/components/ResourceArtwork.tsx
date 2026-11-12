@@ -14,6 +14,7 @@ import {
   regionalResourceSheet,
 } from '../theme/regional-resource-assets';
 import {C,radii} from '../theme/theme';
+import {CROSS_PROFESSION_ICON_CELL,CROSS_PROFESSION_ICON_WIDTH,CROSS_PROFESSION_ICON_HEIGHT,CROSS_PROFESSION_ICON_SOURCE,crossProfessionIconCell} from '../theme/cross-profession-assets';
 
 // The newer plated-dish exports deliberately retain generous transparent
 // breathing room. At a 32–48 px inventory size that made the meals read much
@@ -55,6 +56,9 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
   const source=resourceIconSource(itemId);
   const zoom=platedDishZoom[itemId]??1;
   if(source)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><Image source={source} resizeMode="contain" fadeDuration={0} style={[s.image,zoom!==1&&{transform:[{scale:zoom}]}]}/></View>;
+
+  const sharedComponent=crossProfessionIconCell(itemId);
+  if(sharedComponent)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={CROSS_PROFESSION_ICON_SOURCE} column={sharedComponent.column} row={sharedComponent.row} cell={CROSS_PROFESSION_ICON_CELL} sheetWidth={CROSS_PROFESSION_ICON_WIDTH} sheetHeight={CROSS_PROFESSION_ICON_HEIGHT} size={size}/></View>;
 
   const consumable=consumableArtworkCell(itemId);
   if(consumable)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={consumableArtworkSheet(consumable.sheet)} column={consumable.column} row={consumable.row} cell={CONSUMABLE_ART_CELL} sheetWidth={CONSUMABLE_ART_SHEET_SIZE} sheetHeight={CONSUMABLE_ART_SHEET_SIZE} size={size}/></View>;

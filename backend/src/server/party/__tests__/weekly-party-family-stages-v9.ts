@@ -49,6 +49,13 @@ for(const [family,definition] of variants){
      assert(preview.kind==='hidden_non_rewarding_story_stage'
       &&!('eventPoints' in preview)&&!('rewards' in preview)
       &&!('grantedItems' in preview),'no grantable reward or EP in stage preview');
+     assert(preview.availableChoices.length===(stage===1?0:2),
+      'v9 shows only the current stage voting choices');
+     assert(preview.selectedChoice===(stage===1?null:stage===2
+      ?choice.stage2Choice:choice.stage3Choice),
+      'confirmed ballot matches the visible stage selection');
+     assert(preview.previousStageChoice===(stage===3?choice.stage2Choice:null),
+      'later stages display only the verified previous route');
      assert(preview.presentation.cues.length===3
       &&preview.presentation.cues.every(c=>c.atMs>=2000&&c.line.length>8),
       'each stage has readable authored presentation cues');

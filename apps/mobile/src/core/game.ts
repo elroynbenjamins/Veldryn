@@ -2,7 +2,8 @@ import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
-import {characterCombatXpScale} from './combat-progression-pacing';
+import {regionalCharacterCombatXpScale} from './combat-progression-pacing';
+import {expectedRegionalEquipmentTier,REGIONAL_CHAPTER_LEVELS} from './region-level-plan';
 import {eventCandyWindow} from './live-events';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
@@ -469,8 +470,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
     m.zone==='Ironwood Forest'?(m.level>=14?2:1):
     m.zone==='Old Mines'?2:
     m.zone==="King's Road"?2:
-    m.zone==='Sunscar'?(m.level>=40?4:3):
-    m.zone==='Frostmarch'?(m.level>=70?6:m.level>=55?5:4):
+    m.zone==='Sunscar'||m.zone==='Frostmarch'?expectedRegionalEquipmentTier(m.zone,m.level):
     m.zone==='Ashlands'?(m.level>=82?7:6):undefined;
   const expectedTier=regionalGearTier??(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0);
   const tierGap=regionalEquippedTierGap(state,expectedTier);
@@ -555,7 +555,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
- const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
+ const xpPerHour=killsPerHour*runtime.m.xp*regionalCharacterCombatXpScale(runtime.m.zone,runtime.m.level,state.character!.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
  const goldPerHour=killsPerHour*runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const netHpLossPerHour=netDamagePerKill*killsPerHour;
@@ -572,7 +572,7 @@ export function activeCombatRuntimeProjection(state:GameState){
   // Share the same deterministic sample as food forecasting and the HUD.
   const meanCycleSeconds=averagedRegionalHunt(state,state.activity.targetId,runtime)?.killCycleSeconds??runtime.killCycleSeconds;
   const killsPerHour=3600/Math.max(.1,meanCycleSeconds);
-  const xpPerKill=runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
+  const xpPerKill=runtime.m.xp*regionalCharacterCombatXpScale(runtime.m.zone,runtime.m.level,state.character!.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
   const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
   return {
     killCycleSeconds:meanCycleSeconds,
@@ -783,7 +783,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const classGain=awardCombatClassXp(state.character,sim.kills,m.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*combatCandy,state.activity.classFocus);
   const mastery=monsterMastery(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
-  const combatXpScale=characterCombatXpScale(m.level,m.boss);
+  const combatXpScale=regionalCharacterCombatXpScale(m.zone,m.level,c.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
   const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
   const explorationSkill=state.skills.find(skill=>skill.skillId==='exploration');
@@ -1505,7 +1505,7 @@ export function previewFallenKnightBattle(state:GameState,nowMs=Date.now(),mode:
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
 /** Rewarded rematches stay capped weekly; all valid attempts return the same battle timeline for cinematic playback. */
 export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string;battle:FallenKnightBattleResult}{
-  if(!state.character||state.character.level<rebasedCombatLevelFromLegacyLevel(25)||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
+  if(!state.character||state.character.level<REGIONAL_CHAPTER_LEVELS.ASTERFALL.last||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
   state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
   const weekly=fallenKnightWeeklyStatus(state,nowMs);
@@ -1549,7 +1549,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   if(!state.character)throw new Error('No character');
   state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
-  if(state.character.level<rebasedCombatLevelFromLegacyLevel(25))return {state,won:false,message:`Reach level ${rebasedCombatLevelFromLegacyLevel(25)} first.`};
+  if(state.character.level<REGIONAL_CHAPTER_LEVELS.ASTERFALL.last)return {state,won:false,message:`Reach level ${REGIONAL_CHAPTER_LEVELS.ASTERFALL.last} first.`};
   if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return challengeFallenKnightRematch(state,nowMs);
   const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
   const battle=previewFallenKnightBattle(state,nowMs),potionId=state.character.equippedHealingPotionId;

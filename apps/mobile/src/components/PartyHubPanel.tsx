@@ -15,6 +15,7 @@ import {
   filterRecruitmentCards,
   partyOpenSpots,
   partyRoleVacancies,
+  partyHasRoleOverflow,
   personalContributionEligible,
   normalizedPartyPreferences,
   partyActivityLabel,
@@ -98,6 +99,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  const inParty=!!props.party,canManageParty=!!props.party?.members.some(member=>member.accountId===props.accountId&&member.isLeader);
  const openSpots=props.party?partyOpenSpots(props.party):0;
  const roleVacancies=partyRoleVacancies(props.party?.members??[]);
+ const legacyRoleOverflow=partyHasRoleOverflow(props.party?.members??[]);
  const neededRoles=([['tank',st('Tank')],['damage',st('Damage')],['support',st('Support')]] as const)
   .flatMap(([role,label])=>roleVacancies[role]?[`${roleVacancies[role]} ${label}`]:[]);
  const readyContractRewards=props.party?partyContractClaimableRewardIds(props.contracts).length:0;
@@ -127,7 +129,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    </View>:null}
    {(!props.dedicated||props.activeView!=='Contracts')?<View style={s.panel}>
     <View style={s.between}><Text style={s.sectionTitle}>{st('PARTY MEMBERS')}</Text><Text style={s.metaCount}>{props.party!.members.length}/4</Text></View>
-    {openSpots>0?<Text style={s.muted}>{st('Open party roles')}: {neededRoles.length?neededRoles.join(' · '):st('Resolve existing role overflow first')}</Text>:null}
+    {openSpots>0?<Text style={s.muted}>{st('Open party roles')}: {legacyRoleOverflow?st('Resolve existing role overflow first'):neededRoles.join(' · ')}</Text>:null}
     <View style={s.members}>{props.party!.members.map(member=>{
      const manage=partyMemberManagement(canManageParty,props.accountId,member.accountId);
      const canOpenManagement=manage.canTransfer&&!!props.onTransferLeadership||manage.canRemove&&!!props.onRemoveMember;

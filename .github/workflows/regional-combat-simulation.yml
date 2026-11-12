@@ -12,6 +12,9 @@ on:
       - 'apps/mobile/src/core/combat-progression-pacing.ts'
       - 'apps/mobile/src/core/game.ts'
       - 'apps/mobile/src/core/story-boss.ts'
+      - 'apps/mobile/src/core/ordinary-hunt.ts'
+      - 'apps/mobile/src/core/combat-timing.ts'
+      - 'apps/mobile/src/core/progression.ts'
       - 'apps/mobile/src/content/regional-areas.ts'
       - 'apps/mobile/src/content/world-map.ts'
       - 'apps/mobile/src/content/monsters.ts'
@@ -52,7 +55,8 @@ jobs:
           pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
           for test in apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js
           do
-            if [ -f "$test" ]; then node "$test"; fi
+            test -f "$test" || { echo "Missing compiled test: $test"; exit 1; }
+            node "$test"
           done
       - name: Re-run gear CP baseline to confirm fixture safety
         run: |
@@ -61,7 +65,7 @@ jobs:
       - name: Simulate ordinary hunts, first boss and recipe gates
         run: |
           node tools/regional-combat-sim.mjs > regional-combat-simulation.json
-          node -e "const x=require('./regional-combat-simulation.json'); if(x.hunts.length!==45||x.boss.length!==10||x.recipes.length!==108)process.exit(1); if(x.hunts.some(r=>!Number.isFinite(r.killsPerHourMean)))process.exit(1);console.log('PASS hunt:',x.hunts.length,'boss:',x.boss.length,'recipe:',x.recipes.length,'attempts:',x.metadata.bossAttempts)"
+          node -e "const x=require('./regional-combat-simulation.json');if(x.hunts.length!==45||x.boss.length!==10||x.recipes.length!==108||x.frostmarchLevelPacing.length!==25)process.exit(1);if(x.hunts.some(r=>!Number.isFinite(r.killsPerHourMean)))process.exit(1);const h=x.frostmarchLevelPacing.map(r=>r.meanHours);const avg=h.reduce((a,b)=>a+b,0)/h.length;if(h.some(v=>v<20||v>30)||avg<24||avg>27)throw Error('Frostmarch 25h target regressed: '+avg);const full=x.boss.find(r=>r.scenario==='full_common_q50_plain'&&r.potionMode==='three_healing_potions');const mixed=x.boss.find(r=>r.scenario==='mixed_7_of_10_common_q40'&&r.potionMode==='three_healing_potions');if(!full||full.winRate<.9||!mixed||mixed.winRate>.7)throw Error('3-potion Fallen Knight fairness regressed');if(x.boss.some(r=>r.consumedPotionsMean>3))throw Error('boss healing cap');console.log('PASS chapter XP mean:',avg,'boss:',full.winRate,'mixed:',mixed.winRate,'hunts:',x.hunts.length)"
       - uses: actions/upload-artifact@v4
         with:
           name: regional-combat-simulation

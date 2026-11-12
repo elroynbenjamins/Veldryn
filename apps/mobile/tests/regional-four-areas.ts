@@ -28,7 +28,7 @@ check(regionalArea('SUNSCAR','ZONE_009')?.id==='ZONE_010','Old Buried Observator
 check(regionalArea('FROSTMARCH','ZONE_014')?.id==='ZONE_015','Old Choir Caverns navigation must map to Wyrmspine');
 check(MONSTERS.some(m=>m.id==='FALLEN_KNIGHT'&&m.boss&&m.zone==="King's Road"),'Chapter I Fallen Knight must be untouched');
 const state={
- character:{level:rebaseLevel(29)},unlockedMonsterIds:[],defeatedBossIds:['FALLEN_KNIGHT'],
+ character:{level:29},unlockedMonsterIds:[],defeatedBossIds:['FALLEN_KNIGHT'],
  exploredRouteIds:['SCOUT_KINGS_ROAD'],quests:[],
 } as unknown as GameState;
 const early=MONSTERS.find(m=>m.id==='SAFFRON_MARAUDER');

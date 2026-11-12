@@ -360,5 +360,6 @@
   ".core-build/apps/mobile/tests/community-roadmap-release-visibility.js",
   ".core-build/apps/mobile/tests/player-market-readiness.js",
   "tests/skill-disclosure-layout-ui.cjs",
-  ".core-build/apps/mobile/tests/pixel-animation.js"
+  ".core-build/apps/mobile/tests/pixel-animation.js",
+  ".core-build/apps/mobile/tests/guild-member-last-active.js"
 ]

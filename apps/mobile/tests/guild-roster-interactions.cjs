@@ -4,9 +4,9 @@ globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const mock=name=>props=>React.createElement(name,props,props.children);
 const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/components/OnlineGuildManagement.tsx'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
 function load(role){
- const social={guildLeadershipStatus:async()=>null,myGuild:async()=>({guild_id:'guild',role,account_id:'self'}),socialInvitations:async()=>({guild:[]}),socialOutgoingInvitations:async()=>({guild:[]}),guildDetails:async()=>({name:'Stormwatch',tag:'STW',level:8,member_cap:30}),guildRoster:async()=>[{account_id:'self',display_name:'Elowen',role,joined_at:'2026-10-01'},{account_id:'other',display_name:'Brann',role:'member',joined_at:'2026-10-02'}],guildApplications:async()=>[{id:'application',account_id:'applicant'}]};
- const dependencies={react:React,'react/jsx-runtime':require('react/jsx-runtime'),'react-native':{View:'View',Text:'Text',Pressable:'Pressable',StyleSheet:{create:x=>x}},'../i18n/social':{useSocialText:()=>s=>s},'../theme/ThemeContext':{useGameTheme:()=>({})},'../theme/theme':{spacing:{md:12,sm:8},typography:{}},'../online/supabase':{onlineConfigured:true},'../online/social':social,'../online/profile-extension-v43':{publicPlayerProfileV43:async()=>({displayName:'Aster'})},'./GuildMemberActionSheet':{GuildMemberActionSheet:mock('GuildMemberActionSheet')},'../core/social-management':{guildMemberManagement:(viewer,target,self)=>({canPromote:viewer==='leader'&&target==='member'&&!self})}};
- for(const name of ['GameButton','Panel','BoardTabs','GameTextInput','ChatPlayerSheet','CompactPlayerIdentity','SocialInvitationCard','GuildIdentitySummary','LoadingState','ActionFeedback'])dependencies['./'+name]={[name]:mock(name)};
+ const social={guildLeadershipStatus:async()=>null,myGuild:async()=>({guild_id:'guild',role,account_id:'self'}),socialInvitations:async()=>({guild:[]}),socialOutgoingInvitations:async()=>({guild:[]}),guildDetails:async()=>({name:'Stormwatch',tag:'STW',level:8,member_cap:30}),guildRoster:async()=>[{account_id:'self',display_name:'Elowen',role,joined_at:'2026-10-01',last_active_at:'2026-11-12T14:00:00Z'},{account_id:'other',display_name:'Brann',role:'member',joined_at:'2026-10-02',last_active_at:'2026-11-11T14:00:00Z'}],guildApplications:async()=>[{id:'application',account_id:'applicant'}]};
+ const dependencies={react:React,'react/jsx-runtime':require('react/jsx-runtime'),'react-native':{View:'View',Text:'Text',Pressable:'Pressable',StyleSheet:{create:x=>x}},'../i18n/social':{useSocialText:()=>s=>s},'../i18n/guild-flow-ui':{useGuildFlowUiText:()=>s=>s},'../core/guild-member-last-active':{sortGuildMembersByActivity:rows=>rows.sort((a,b)=>Date.parse(a.last_active_at??'')-Date.parse(b.last_active_at??''))},'../theme/ThemeContext':{useGameTheme:()=>({})},'../theme/theme':{spacing:{md:12,sm:8},typography:{}},'../online/supabase':{onlineConfigured:true},'../online/social':social,'../online/profile-extension-v43':{publicPlayerProfileV43:async()=>({displayName:'Aster'})},'./GuildMemberActionSheet':{GuildMemberActionSheet:mock('GuildMemberActionSheet')},'../core/social-management':{guildMemberManagement:(viewer,target,self)=>({canPromote:viewer==='leader'&&target==='member'&&!self})}};
+ for(const name of ['GameButton','Panel','BoardTabs','GameTextInput','ChatPlayerSheet','CompactPlayerIdentity','GuildMemberActivityLabel','SocialInvitationCard','GuildIdentitySummary','LoadingState','ActionFeedback'])dependencies['./'+name]={[name]:mock(name)};
  const sandbox={exports:{},Error,require:name=>dependencies[name]??{}};vm.runInNewContext(code,sandbox);return sandbox.exports.OnlineGuildManagement;
 }
 (async()=>{
@@ -15,6 +15,14 @@ function load(role){
   const buttons=()=>renderer.root.findAllByType('GameButton');
   assert.ok(!buttons().some(button=>/Leave Guild|Disband Guild/.test(button.props.title)),'destructive controls are absent from member browsing');
   assert.equal(renderer.root.findAllByType('CompactPlayerIdentity').length,2);
+  assert.equal(renderer.root.findAllByType('GuildMemberActivityLabel').length,2,'each Guild member receives an activity label');
+  assert.equal(renderer.root.findAllByType('GuildMemberActivityLabel')[0].props.lastActiveAt,'2026-11-12T14:00:00Z','the roster forwards server activity, not the join date');
+  if(role==='leader'){
+   const sortButton=buttons().find(button=>button.props.title==='Inactive first');
+   assert.ok(sortButton,'Guild leadership can sort by inactivity');
+   await act(async()=>sortButton.props.onPress());
+   assert.deepEqual(renderer.root.findAllByType('CompactPlayerIdentity').map(row=>row.props.name),['Brann','Elowen'],'inactive-first shows least recently active Guild members first');
+  }else assert.ok(!buttons().some(button=>button.props.title==='Inactive first'),'ordinary members do not get management sorting controls');
   await act(async()=>renderer.root.findByType('GameTextInput').props.onChangeText('brann'));
   assert.equal(renderer.root.findAllByType('CompactPlayerIdentity').length,1,'search filters actual loaded member names');
   const memberRow=renderer.root.findAllByType('Pressable').find(button=>/Guild member details/.test(button.props.accessibilityLabel??''));

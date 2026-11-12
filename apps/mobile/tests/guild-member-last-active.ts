@@ -1,0 +1,25 @@
+import {guildMemberActivityStatus,sortGuildMembersByActivity} from '../src/core/guild-member-last-active';
+export {};
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+function ok(value:boolean,explanation:string){if(!value)throw Error(explanation)}
+const now=Date.UTC(2026,10,12,14,0,0);
+const ago=(minutes:number)=>new Date(now-minutes*60_000).toISOString();
+const status=(v:string|null|undefined)=>guildMemberActivityStatus(v,now);
+ok(status(ago(0)).key==='Active recently','fresh activity is never described as online');
+ok(status(ago(9)).key==='Active recently'&&status(ago(10)).count===10,'recency threshold uses ten minutes');
+ok(status(ago(59)).key==='Last active {count}m ago','minutes are displayed below an hour');
+ok(status(ago(61)).key==='Last active {count}h ago'&&status(ago(61)).count===1,'hours are rounded down');
+ok(status(ago(1440)).key==='Last active {count}d ago'&&status(ago(1440)).count===1,'days are displayed after 24h');
+ok(status(ago(31*1440)).key==='Last active {count}mo ago','older activity is shown in months');
+ok(status(ago(-60)).key==='Active recently','future timestamps never display negative durations');
+ok(status(undefined).key==='Activity unavailable'&&status('bad timestamp').key==='Activity unavailable','missing and corrupt timestamps are not treated as never active');
+const rows=[{id:'a',last_active_at:ago(1)},{id:'b',last_active_at:ago(600)},{id:'c',last_active_at:null}];
+ok(sortGuildMembersByActivity([...rows]).map(x=>x.id).join(',')==='c,b,a','leader sort puts least-active and unrecorded members first');
+ok(rows[0].id==='a','sorting a copy does not mutate roster order');
+const sql=fs.readFileSync('../../backend/supabase/migrations/20261112143000_guild_roster_last_active_v1.sql','utf8');
+ok(sql.includes('exists(')&&sql.includes('viewer.account_id=(select auth.uid())'),'the RPC enforces caller Guild membership');
+ok(sql.includes('social_account_last_active_v1(gm.account_id,null::timestamptz)'),'the roster reuses server activity with no synthetic join-date timestamp');
+ok(!sql.includes('to anon;')&&sql.includes('to authenticated;'),'only authenticated clients get RPC execution');
+const transport=fs.readFileSync('src/online/social.ts','utf8');
+ok(transport.includes("client.rpc('guild_roster_with_activity_v1'")&&transport.includes("client.rpc('guild_roster'"),'new Guild roster has a legacy-server fallback');
+console.log('PASS: Guild member last-active formatting, sorting, privacy and versioned RPC contract');

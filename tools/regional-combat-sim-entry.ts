@@ -27,10 +27,9 @@ const ENCOUNTERS=[
  {region:'Frostmarch',tier:'T6',level:63,monster:'CHOIR_HUNTER',food:'FROSTED_ICEFIN'},
  {region:'Frostmarch',tier:'T6',level:75,monster:'WYRMSPINE_GUARDIAN',food:'FROSTED_ICEFIN'},
 ] as const;
-const assert=(value:unknown,message:string):asserts value=>{
+function assert(value:unknown,message:string):asserts value {
  if(!value)throw new Error('regional_combat_sim: '+message);
-};
-const finite=(value:number)=>Number.isFinite(value)?value:null;
+}
 const rounded=(value:number,digits=2)=>Number.isFinite(value)?Number(value.toFixed(digits)):null;
 const percentile=(values:number[],frac:number)=>{
  const sorted=[...values].sort((a,b)=>a-b),v=(sorted.length-1)*frac;
@@ -46,7 +45,6 @@ for(const e of ENCOUNTERS){
  assert(monster&&monster.zone===e.region&&!monster.boss,'missing encounter '+e.monster);
  for(const scenarioId of SELECTED){
   const scenario=get(scenarioId),rows:ReturnType<typeof combatSustainProjection>[]=[];
-  const ratings:number[]=[];
   for(const cls of CLASS_IDS)for(const path of PATHS){
    let state=makeCharacter(cls,path,stage,scenario);
    state={...state,character:{...state.character!,currentHp:effectiveStats(state).hp,equippedFoodId:e.food}};

@@ -91,10 +91,12 @@ The expanded [regional combat regression](https://github.com/elroynbenjamins/Vel
 
 ### Explicit remaining release requirements
 
-- **High priority**: Determine how to grandfather already-existing Sunscar characters at previous rebased levels 20–25 who could enter the area before the new Lv26 gate. Do not silently delete history or upgrade character XP. Existing gear/equipment state should survive, but access for active low-level characters requires an explicit compatibility policy.
+- **Implemented with regression, awaiting latest CI**: Grandfather previously visited Sunscar/Frostmarch regional access based on persisted visit state, completed region scouting, or already unlocked local enemies **at a prior valid old level**. Chapter I and scouting requirements still apply, and only previously unlocked enemies can be hunted below the new region gate. Existing character XP/gear is not rewritten. Tests in `apps/mobile/tests/regional-legacy-access.ts` also reject fresh underleveled entry. Recheck production snapshots before release.
 - **High priority**: Pass updated Sunscar Tier I/II/III dungeon Q-Mode tests for both final bosses at 105% minimum CP; leave all existing v1 run snapshots untouched.
 - **High priority**: Regenerate/verify both Edge bundles in branch, then pass backend authoritative tests.
 - **Release quality**: Full mobile validation currently has unrelated pre-existing Expo package drift and UI-contract failures in Guild/Profile/scroll indicators. Do not mark the release fully green until those are addressed or independently baselined.
 - **Content**: Lv50/75 regional bosses are not designed/implemented here, and T6 artwork/source QA remains pending.
 
 **No merge or deployment occurred.** This document must not be read as production rollout approval.
+
+**Latest draft-branch QA update:** `regional-gear-save-compatibility.ts` tests the old equipped gear and `regional-legacy-access.ts` tests historic region entry; final GitHub Actions evidence has not returned yet. The branch-only Edge rebuild checkout now reads the latest branch HEAD rather than its stale triggering commit. No deployment or merge has been authorized.

@@ -110,6 +110,30 @@ for(let level=51;level<=75;level++){
  });
 }
 
+/** Release guard: the same Lv63–75 content with currently obtainable T5 (T6 locked). */
+const frostmarchReleasedGearPacing:Record<string,unknown>[]=[];
+for(let level=63;level<=75;level++){
+ const original=STAGES.find(s=>s.tier==='T5')!;
+ const stage={...original,level};
+ const candidates=MONSTERS.filter(monster=>
+  monster.zone==='Frostmarch'&&!monster.boss&&monster.unlockLevel<=level&&
+  (!monster.areaId||(regionalArea('FROSTMARCH',monster.areaId)?.minLevel??999)<=level)
+ );
+ const hours:number[]=[];
+ for(const cls of CLASS_IDS)for(const path of PATHS){
+  const state=makeCharacter(cls,path,stage,get('representative_common_q50'));
+  const projections=candidates.map(m=>combatSustainProjection(state,m.id)!)
+   .filter(x=>x&&x.xpPerHour>0).sort((a,b)=>b.xpPerHour-a.xpPerHour);
+  assert(projections.length>0,'T5-only Frostmarch cannot farm Lv'+level);
+  hours.push(characterXpForNextLevel(level)/projections[0].xpPerHour);
+ }
+ frostmarchReleasedGearPacing.push({
+  characterLevel:level,gearTier:'T5',gearReleased:true,
+  meanHours:rounded(mean(hours)),p10Hours:rounded(percentile(hours,.1)),
+  p90Hours:rounded(percentile(hours,.9)),
+ });
+}
+
 const bossResults:Record<string,unknown>[]=[];
 const bossStage=STAGES.find(x=>x.tier==='T2'&&x.level===25)!;
 const BOSS_SEEDS=12;
@@ -227,5 +251,5 @@ console.log(JSON.stringify({
   huntLoadouts:CLASS_IDS.length*PATHS.length*SELECTED.length*ENCOUNTERS.length,
   bossAttempts:bossResults.reduce((sum,r)=>sum+Number(r.attempts),0),
  },
- hunts:simHunts,frostmarchLevelPacing,boss:bossResults,bossDamageSweep,recipes:recipeAudit,
+ hunts:simHunts,frostmarchLevelPacing,frostmarchReleasedGearPacing,boss:bossResults,bossDamageSweep,recipes:recipeAudit,
 }));

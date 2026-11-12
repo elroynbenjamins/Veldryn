@@ -33,6 +33,9 @@ export interface StoryPresentationV9{
  backdropToken:SceneTokenV9;
  motionToken:AnimationTokenV9;
  foreground:string;
+ paletteToken:string;
+ stageMotion:string;
+ supplyCategoryShares:Readonly<Record<'wood'|'ore'|'herb',number>>;
  cues:readonly {atMs:number;line:string}[];
 }
 interface StoryFamilyV9{
@@ -87,7 +90,7 @@ const STORIES:Readonly<Record<WeeklyPartyFamily,StoryFamilyV9>>={
    'Keep the predator visible long enough to corner it.',
    'Prepare scent blockers and lure the pack.',
    'Commit a legal loadout and final pursuit route.'],
-  skillExamples:[['herbalism','fishing'],['combat','herbalism'],['herbalism','alchemy'],['tailoring']],
+  skillExamples:[['herbalism','fishing'],['combat','herbalism'],['herbalism','alchemy'],['alchemy']],
   alternatives:['Study spoor and record the direction of travel.',
    'Locate a concealed exit route for the hunters.',
    'Blend a scent decoy from verified herbs.',
@@ -111,7 +114,7 @@ const STORIES:Readonly<Record<WeeklyPartyFamily,StoryFamilyV9>>={
    'Interrupt magic before it cascades.',
    'Ground the spires and reinforce their links.',
    'Commit a legal loadout and final ward pattern.'],
-  skillExamples:[['mining','smithing'],['combat','mining'],['mining','smithing'],['tailoring']],
+  skillExamples:[['mining','smithing'],['combat','mining'],['mining','smithing'],['smithing']],
   alternatives:['Record the cracked rune pattern without fighting.',
    'Reconnect a loose conduit using verified ore.',
    'Reinforce an unstable rune circuit.',

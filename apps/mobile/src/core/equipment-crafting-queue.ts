@@ -98,7 +98,7 @@ function consumeAcross(state:GameState,itemId:string,amount:number){
 function validateStart(state:GameState,recipe:Recipe){
   if(!state.character)throw new Error('Create a character first');
   if(!isTimedEquipmentRecipe(recipe))throw new Error('This recipe does not use the equipment crafting queue');
-  if(recipe.classId&&recipe.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
+  // Recipe classId identifies who can equip the finished piece, not who can forge it.
   if(state.character.level<(recipe.characterLevel??1))throw new Error(`Requires character level ${recipe.characterLevel}`);
   const skill=state.skills.find(row=>row.skillId===recipe.skillId);
   if(!skill||skill.level<recipe.level)throw new Error(`Requires ${recipe.skillId} level ${recipe.level}`);

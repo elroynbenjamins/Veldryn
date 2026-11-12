@@ -34,7 +34,7 @@ begin
    v_excluded_character := old.character_id;
  end if;
 
- select upper(c.class_id) into v_class
+ select upper(c.class_id::text) into v_class
  from public.characters c
  where c.id = new.character_id and c.account_id = new.account_id;
  if v_class is null then raise exception 'party_character_not_owned'; end if;
@@ -53,9 +53,9 @@ begin
  if not found then raise exception 'party_not_found'; end if;
 
  select count(*)::integer,
-   count(*) filter (where upper(c.class_id) in ('IRONWARDEN','BASTION','DREADGUARD'))::integer,
-   count(*) filter (where upper(c.class_id) not in ('IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','STONECALLER'))::integer,
-   count(*) filter (where upper(c.class_id) in ('DAWNKEEPER','STONECALLER'))::integer
+   count(*) filter (where upper(c.class_id::text) in ('IRONWARDEN','BASTION','DREADGUARD'))::integer,
+   count(*) filter (where upper(c.class_id::text) not in ('IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','STONECALLER'))::integer,
+   count(*) filter (where upper(c.class_id::text) in ('DAWNKEEPER','STONECALLER'))::integer
  into v_existing_total,v_existing_tank,v_existing_damage,v_existing_support
  from public.party_members m
  join public.characters c on c.id = m.character_id

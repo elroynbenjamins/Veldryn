@@ -9,6 +9,8 @@ on:
       - 'backend/src/server/party/__tests__/weekly-party-finale-hazards-v6.ts'
       - 'backend/src/server/party/weekly-party-finale-objectives-v7.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-objectives-v7.ts'
+      - 'backend/src/server/party/weekly-party-distinct-finales-v8.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-distinct-finales-v8.ts
       - 'backend/src/server/party/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-stages-prototype-v3.ts'
@@ -28,6 +30,8 @@ on:
       - 'backend/src/server/party/__tests__/weekly-party-finale-hazards-v6.ts'
       - 'backend/src/server/party/weekly-party-finale-objectives-v7.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-objectives-v7.ts'
+      - 'backend/src/server/party/weekly-party-distinct-finales-v8.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-distinct-finales-v8.ts
       - 'backend/src/server/party/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-readiness-v3.ts'
       - 'backend/src/server/party/__tests__/weekly-party-stages-prototype-v3.ts'

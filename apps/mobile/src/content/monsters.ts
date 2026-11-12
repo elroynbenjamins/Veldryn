@@ -83,7 +83,7 @@ export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const regionalLevel=REGION_MONSTER_LEVELS[monster.id];
   return {...monster,
   ...(regionalLevel?{level:regionalLevel.level}:{}),
-  unlockLevel:regionalLevel?.unlockLevel??rebaseLevel(monster.unlockLevel),
+  unlockLevel:regionalLevel?.unlockLevel??(monster.zone==='Ashlands'?Math.max(76,rebaseLevel(monster.unlockLevel)):rebaseLevel(monster.unlockLevel)),
   // Reduce other chance-based combat drops by 5% relative to their existing
   // chance. Holy Water's dedicated Faith catalog already contains the final
   // whole-percent rates after this 5% cut and a further 15% reduction.

@@ -45812,6 +45812,7 @@ function characterNameError(value) {
 
 // ../apps/mobile/src/core/monthly-quest-milestones.ts
 init_progression();
+init_faith2();
 var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
 var MAX_XP2 = totalXpAtLevel(100);
 

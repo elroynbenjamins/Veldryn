@@ -49404,6 +49404,7 @@ function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
 
 // ../apps/mobile/src/core/monthly-quest-milestones.ts
 init_progression();
+init_faith2();
 var MONTHLY_QUEST_MILESTONES = [
   { points: 30, xp: 1e3 },
   { points: 60, xp: 2500 },
@@ -49480,22 +49481,34 @@ function claimMonthlyQuestMilestone(state, key, threshold, characterId, skillId,
   const parkedIndex = isActive2 ? -1 : (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === characterId);
   if (!isActive2 && parkedIndex < 0) throw new Error("Select a character on this account.");
   const originalSkills = isActive2 ? state.skills : state.otherCharacters[parkedIndex].skills;
+  const targetCharacter = isActive2 ? state.character : state.otherCharacters[parkedIndex].character;
   const selected2 = originalSkills.find((skill2) => skill2.skillId === skillId);
   if (!selected2 || !Number.isFinite(selected2.xp) || selected2.xp < 0) throw new Error("Select an unlocked skill.");
-  const award = Math.min(milestone.xp, Math.max(0, MAX_XP2 - selected2.xp));
+  const faith = skillId === "faith" ? normalizeFaith(targetCharacter.faith) : void 0;
+  const baseXp = faith ? Math.max(selected2.xp, faith.xp) : selected2.xp;
+  const award = Math.min(milestone.xp, Math.max(0, MAX_XP2 - baseXp));
+  const nextXp = Math.min(MAX_XP2, baseXp + award);
   if (award < 1) throw new Error("This skill is already at maximum level.");
   const updatedSkills = originalSkills.map((skill2) => {
     if (skill2.skillId !== skillId) return skill2;
-    const xp = Math.min(MAX_XP2, skill2.xp + award);
-    return { ...skill2, xp, level: levelFromXp(xp) };
+    return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
   });
   const updatedMonth = {
     ...row,
     claimed: { ...row.claimed, [milestone.points]: { characterId, skillId, claimedAtMs: nowMs, xpGranted: award } }
   };
   const updatedAccount = { ...state.account, monthlyQuestMilestones: { months: months.map((entry2) => entry2.key === key ? updatedMonth : entry2) } };
-  if (isActive2) return { ...state, account: updatedAccount, skills: updatedSkills };
-  return { ...state, account: updatedAccount, otherCharacters: (state.otherCharacters ?? []).map((entry2, index) => index === parkedIndex ? { ...entry2, skills: updatedSkills } : entry2) };
+  if (isActive2) return {
+    ...state,
+    account: updatedAccount,
+    skills: updatedSkills,
+    ...faith ? { character: { ...state.character, faith: { ...faith, xp: nextXp } } } : {}
+  };
+  return { ...state, account: updatedAccount, otherCharacters: (state.otherCharacters ?? []).map((entry2, index) => index === parkedIndex ? {
+    ...entry2,
+    skills: updatedSkills,
+    ...faith ? { character: { ...entry2.character, faith: { ...faith, xp: nextXp } } } : {}
+  } : entry2) };
 }
 
 // ../apps/mobile/src/core/quick-navigation.ts
@@ -57145,7 +57158,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();

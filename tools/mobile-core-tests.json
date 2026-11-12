@@ -142,6 +142,7 @@
   ".core-build/apps/mobile/tests/equipment-two-path-balance.js",
   ".core-build/apps/mobile/tests/equipment-crafting-source-v33.js",
   ".core-build/apps/mobile/tests/cross-profession-crafting.js",
+  ".core-build/apps/mobile/tests/cross-profession-balance.js",
   ".core-build/apps/mobile/tests/equipment-crafting-source-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-timed-crafting-queue.js",
   ".core-build/apps/mobile/tests/equipment-timed-crafting-ui-contract.js",

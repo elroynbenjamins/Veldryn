@@ -29,12 +29,12 @@ type Scenario = {
   enhancedPieces:number; enhancementRank:0|2|3; gemCount:number; gemGrade:MobileGemGradeV1;
 };
 
-const CLASS_IDS:readonly ClassId[]=[
+export const CLASS_IDS:readonly ClassId[]=[
  'IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER',
  'HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER',
 ];
-const PATHS:readonly Path[]=['Foundation','Alternate'];
-const STAGES:readonly {tier:Tier;level:number;region:string;companionLevel:number;ascension:0|1|2;bond:number}[]=[
+export const PATHS:readonly Path[]=['Foundation','Alternate'];
+export const STAGES:readonly {tier:Tier;level:number;region:string;companionLevel:number;ascension:0|1|2;bond:number}[]=[
  {tier:'T1',level:12,region:'Asterfall',companionLevel:5,ascension:0,bond:1},
  {tier:'T2',level:25,region:'Asterfall',companionLevel:10,ascension:0,bond:2},
  {tier:'T3',level:26,region:'Sunscar',companionLevel:12,ascension:1,bond:3},
@@ -46,7 +46,7 @@ const STAGES:readonly {tier:Tier;level:number;region:string;companionLevel:numbe
  {tier:'T6',level:63,region:'Frostmarch',companionLevel:25,ascension:2,bond:6},
  {tier:'T6',level:75,region:'Frostmarch',companionLevel:25,ascension:2,bond:6},
 ];
-const SCENARIOS:readonly Scenario[]=[
+export const SCENARIOS:readonly Scenario[]=[
  {id:'mixed_7_of_10_common_q40',pieces:7,rarity:'common',quality:40,enhancedPieces:0,enhancementRank:0,gemCount:0,gemGrade:1},
  {id:'full_common_q50_plain',pieces:10,rarity:'common',quality:50,enhancedPieces:0,enhancementRank:0,gemCount:0,gemGrade:1},
  {id:'representative_common_q50',pieces:10,rarity:'common',quality:50,enhancedPieces:4,enhancementRank:2,gemCount:4,gemGrade:2},
@@ -84,7 +84,7 @@ function legalCompanionId(classId:ClassId,tier:Tier):string {
  // Characters cannot equip companions matching their own combat role.
  return damage?(rare?'UNIT_005':'UNIT_002'):(rare?'UNIT_004':'UNIT_001');
 }
-function makeCharacter(
+export function makeCharacter(
  classId:ClassId,path:Path,
  stage:typeof STAGES[number],scenario:Scenario
 ):GameState{
@@ -138,6 +138,7 @@ function quantile(sorted:number[],fraction:number):number {
  const offset=(sorted.length-1)*fraction,base=Math.floor(offset),next=Math.min(sorted.length-1,base+1);
  return Math.round(sorted[base]+(sorted[next]-sorted[base])*(offset-base));
 }
+if(process.env.VELDRYN_REGIONAL_CP_FIXTURES_ONLY!=='1'){
 const rows:Record<string,string|number>[]=[];
 for(const stage of STAGES){
  for(const scenario of SCENARIOS){
@@ -174,3 +175,5 @@ const columns=Object.keys(rows[0]);
 console.log(columns.join(','));
 for(const row of rows)console.log(columns.map(col=>String(row[col])).join(','));
 console.error(`calibration complete: ${rows.length} cohort rows; ${rows.length*CLASS_IDS.length*PATHS.length} actual mobile Combat Power calls; no gameplay mutations`);
+
+}

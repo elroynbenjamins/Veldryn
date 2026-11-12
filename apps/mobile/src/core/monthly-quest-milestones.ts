@@ -52,7 +52,7 @@ function activeMonths(state:GameState,nowMs:number):MonthlyQuestMilestoneMonth[]
 }
 export function monthlyQuestMilestoneStatus(state:GameState,nowMs=Date.now()):MonthlyQuestMilestoneView[]{
  const current=utcQuestMonth(nowMs),existing=activeMonths(state,nowMs);
- const currentRow=existing.find(row=>row.key===current)??{key:current,points:0,creditedQuestIds:[],claimed:{}};
+ const currentRow:MonthlyQuestMilestoneMonth=existing.find(row=>row.key===current)??{key:current,points:0,creditedQuestIds:[],claimed:{}};
  const previous=existing.find(row=>row.key===previousMonth(current));
  return [currentRow,...(previous?[previous]:[])].map(row=>({
   key:row.key,points:row.points,

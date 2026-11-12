@@ -1,0 +1,78 @@
+name: Temporary monthly quest Edge bundle sync
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    paths:
+      - 'apps/mobile/src/core/monthly-quest-milestones.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+      - '.github/workflows/quest-milestone-bundle-sync.yml'
+
+concurrency:
+  group: monthly-quest-bundle-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/monthly-quest-milestones-20261112' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Typecheck core and run milestone regression tests
+        run: |
+          pnpm --dir apps/mobile typecheck:core
+          node tools/run-mobile-tests.mjs monthly-quest-milestones
+      - name: Typecheck full mobile app and online backend
+        run: |
+          pnpm --dir apps/mobile typecheck
+          pnpm --dir backend typecheck:online
+      - name: Rebuild and verify generated game engine
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Rebuild latest feature branch and commit generated bundle safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # Old PR jobs may finish after newer user commits. Never overwrite their changes.
+          for attempt in 1 2 3 4; do
+            git fetch origin "refs/heads/${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}"
+            git reset --hard "refs/remotes/origin/${GITHUB_HEAD_REF}"
+            pnpm --dir backend build:online
+            node tools/verify-gameplay-edge.mjs
+            git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+            if git diff --cached --quiet; then
+              echo 'Edge bundles are synchronized with the latest PR head.'
+              exit 0
+            fi
+            git commit -m 'build(edge): sync monthly quest milestone gameplay'
+            if git push origin "HEAD:${GITHUB_HEAD_REF}"; then
+              echo 'Generated bundles committed to the feature branch.'
+              exit 0
+            fi
+            echo "Another PR update raced this build (attempt ${attempt}); rebuilding against the latest head."
+          done
+          echo 'Could not sync generated Edge bundles without concurrent branch changes.' >&2
+          exit 1

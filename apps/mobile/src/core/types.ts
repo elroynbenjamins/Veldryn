@@ -138,6 +138,7 @@ export interface GameState {
   journalState?:import('./adventurers-journal-v42').JournalState;
   longTermMetrics?:Record<string,number>;
   seasonalContractProgress?:import('./seasonal-quests').SeasonalProgress;
+  monthlyQuestMilestones?:import('./monthly-quest-milestones').MonthlyQuestMilestoneState;
   dailySupplies?:import('./daily-supplies').DailySuppliesTrack;
   unlockedKnowledgeIds?:string[];
   /** Server-owned gem acquisition persistence. Pity is source-level, never one counter per family. */

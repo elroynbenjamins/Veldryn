@@ -30,6 +30,7 @@ import {noviceItemId,noviceSetFor} from '../content/novice-sets';
 import {classCombatStyle} from './class-combat';
 import {captureActivityEnvironment,environmentEffectForActivity,zoneIdForTarget} from './world-weather';
 import {SeasonalPeriod,seasonalQuestBoard,recordSeasonalActivity} from './seasonal-quests';
+import {creditMonthlyQuestMilestone} from './monthly-quest-milestones';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEventDrops,grantEventActivity,eventCandyUtilityMultiplier} from './live-events';
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -952,7 +953,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const recordedChoices=Object.fromEntries([...Object.entries(previousChoices),[contract.id,chosen.id]].filter(([id])=>claimed.includes(id)));
   const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
   const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
-  return applyLocalBalanceSnapshot(refreshQuests(grantBondstones(withEssence,chosen.rewardBondstones??0)),nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(creditMonthlyQuestMilestone(grantBondstones(withEssence,chosen.rewardBondstones??0),period,contract.id,nowMs)),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */

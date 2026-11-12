@@ -1,0 +1,71 @@
+import {createCharacter,newGame,claimSeasonalContract} from '../src/core/game';
+import {recordSeasonalActivity,seasonalQuestBoard} from '../src/core/seasonal-quests';
+import {MONTHLY_QUEST_MILESTONES,creditMonthlyQuestMilestone,claimMonthlyQuestMilestone,monthlyQuestMilestoneStatus,utcQuestMonth} from '../src/core/monthly-quest-milestones';
+import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
+import {totalXpAtLevel} from '../src/core/progression';
+import {normalizeSave} from '../src/core/save-normalization';
+import type {GameState} from '../src/core/types';
+
+function ok(condition:unknown,message:string){if(!condition)throw new Error(message);}
+function fails(fn:()=>unknown,message:string){let threw=false;try{fn();}catch{threw=true;}ok(threw,message);}
+const now=Date.parse('2026-11-12T12:00:00Z');
+let state=createCharacter(newGame(now),'BASTION','Monthly Tester');
+ok(monthlyQuestMilestoneStatus(state,now)[0].points===0,'New accounts start at zero monthly points');
+ok(utcQuestMonth(now)==='2026-11','Monthly points must use UTC month keys');
+ok(MONTHLY_QUEST_MILESTONES.map(row=>row.points).join(',')==='30,60,100','Three approved thresholds');
+state=creditMonthlyQuestMilestone(state,'daily','DAILY_2026-11-12_0',now);
+state=creditMonthlyQuestMilestone(state,'daily','DAILY_2026-11-12_0',now);
+state=creditMonthlyQuestMilestone(state,'weekly','WEEKLY_2026-W46_0',now);
+state=creditMonthlyQuestMilestone(state,'monthly','MONTHLY_2026-11_0',now);
+ok(monthlyQuestMilestoneStatus(state,now)[0].points===9,'Daily/Weekly/Monthly weights and duplicate credit guard');
+fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,state.character!.id,'mining',now),'Unreached milestones must not pay');
+fails(()=>claimMonthlyQuestMilestone(state,'2026-11',99,state.character!.id,'mining',now),'Only authored thresholds allowed');
+for(let i=0;i<21;i++)state=creditMonthlyQuestMilestone(state,'daily','DAILY_2026-11-'+String(i).padStart(2,'0')+'_1',now);
+ok(monthlyQuestMilestoneStatus(state,now)[0].points===30,'Point credits accumulate');
+const characterId=state.character!.id;
+const eligible=claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'mining',now);
+ok(eligible.skills.find(skill=>skill.skillId==='mining')!.xp===1000,'First milestone adds exact XP');
+ok(eligible.skills.find(skill=>skill.skillId==='mining')!.level>1,'Skill levels recomputed after XP grant');
+
+const higherFaith={...state,character:{...state.character!,faith:{favoriteBlessingIds:[],hideWeakerBlessings:true,xp:10000}}};
+const faithClaim=claimMonthlyQuestMilestone(higherFaith,'2026-11',30,characterId,'faith',now);
+ok(faithClaim.skills.find(skill=>skill.skillId==='faith')!.xp===11000,'Faith skill XP must award above the separate character Faith XP mirror');
+ok(faithClaim.character?.faith?.xp===11000,'Character Faith XP mirror must be updated atomically');
+ok(normalizeSave(JSON.parse(JSON.stringify(faithClaim))).character?.faith?.xp===11000,'Faith milestone reward must survive save normalization');
+
+ok(monthlyQuestMilestoneStatus(eligible,now)[0].claimed.includes(30),'Claim is recorded account-wide');
+const reloaded=normalizeSave(JSON.parse(JSON.stringify(eligible)));
+ok(monthlyQuestMilestoneStatus(reloaded,now)[0].claimed.includes(30),'Offline save normalization must preserve the completed milestone');
+fails(()=>claimMonthlyQuestMilestone(eligible,'2026-11',30,characterId,'mining',now),'Different requests cannot claim the same milestone twice');
+fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,'not-my-character','mining',now),'Cannot credit an unknown character');
+fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'invalid-skill' as any,now),'Cannot credit an unknown skill');
+const parkedId='PARKED_MONTHLY_TESTER';
+const parked={character:{...state.character!,id:parkedId,name:'Parked Tester'},inventory:state.inventory,overflow:state.overflow,activity:null,skills:state.skills.map(skill=>({...skill})),quests:state.quests,currentRegionId:state.currentRegionId};
+let rosterState:GameState={...state,otherCharacters:[parked]};
+const paidToParked=claimMonthlyQuestMilestone(rosterState,'2026-11',30,parkedId,'tailoring',now);
+ok(paidToParked.skills.find(skill=>skill.skillId==='tailoring')!.xp===0,'Active character should not receive parked character XP');
+ok(paidToParked.otherCharacters![0].skills.find(skill=>skill.skillId==='tailoring')!.xp===1000,'Parked character XP is saved');
+const maxed={...state,skills:state.skills.map(skill=>skill.skillId==='mining'?{...skill,xp:totalXpAtLevel(100),level:100}:skill)};
+fails(()=>claimMonthlyQuestMilestone(maxed,'2026-11',30,characterId,'mining',now),'Maxed skills must not consume a reward');
+const dec1=Date.parse('2026-12-01T00:00:00Z'),dec7=Date.parse('2026-12-07T23:59:59Z'),dec8=Date.parse('2026-12-08T00:00:00Z');
+ok(monthlyQuestMilestoneStatus(state,dec1)[0].points===0,'Monthly progress resets at 00:00 UTC');
+ok(monthlyQuestMilestoneStatus(state,dec1)[1]?.points===30,'Previous month remains visible in grace window');
+ok(claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'mining',dec7).skills.find(skill=>skill.skillId==='mining')!.xp===1000,'Earned prior month rewards remain claimable for 7 days');
+fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'mining',dec8),'Prior month awards expire after seven days');
+ok(monthlyQuestMilestoneStatus(state,dec8).length===1,'Expired month no longer appears');
+const yearBoundary=Date.parse('2027-01-01T00:00:00Z');
+ok(utcQuestMonth(yearBoundary)==='2027-01','Year rollover is UTC-safe');
+ok(validateGameCommand({type:'monthly_quest_milestone',args:{month:'2026-11',threshold:30,characterId,skillId:'mining'}}).type==='monthly_quest_milestone','Gameplay command is allowlisted');
+fails(()=>validateGameCommand({type:'monthly_quest_milestone',args:{month:'2026-11',threshold:30,characterId,skillId:'mining',xp:100000}}),'Clients cannot supply an XP amount');
+
+const allTags=['combat','gathering','crafting','exploration','faith'] as const;
+let questState=createCharacter(newGame(now),'BASTION','Quest Milestone');
+for(const tag of allTags)questState=recordSeasonalActivity(questState,tag,30,now);
+const questId=seasonalQuestBoard(questState,'daily',new Date(now))[0].id;
+const claimedQuest=claimSeasonalContract(questState,'daily',questId,now);
+ok(monthlyQuestMilestoneStatus(claimedQuest,now)[0].points===1,'Claiming a verified daily challenge credits one point');
+fails(()=>claimSeasonalContract(claimedQuest,'daily',questId,now),'Quest cannot be claimed twice for extra points');
+const throughCommand=executeGameCommand(questState,{type:'seasonal',args:{period:'daily',id:questId}},now);
+ok(monthlyQuestMilestoneStatus(throughCommand.state,now)[0].points===1,'Online command also credits milestone points');
+
+console.log('PASS monthly quest milestone account ledger, skill XP selection, grace window and duplicate protection');

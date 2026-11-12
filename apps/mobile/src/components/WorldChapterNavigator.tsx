@@ -229,8 +229,8 @@ function styles(C:ThemeColors){
 
     /* The HERE zone is a scenic hero card so the player instantly sees where they are. */
     zoneHereCard:{borderRadius:11,overflow:'hidden',borderWidth:1,borderColor:C.info,backgroundColor:C.panel,minHeight:170,position:'relative'},
-    zoneHereArtwork:{...StyleSheet.absoluteFillObject,backgroundColor:C.panel2},
-    zoneHereShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.62)':'rgba(255,255,255,.60)'},
+    zoneHereArtwork:{...StyleSheet.absoluteFill,backgroundColor:C.panel2},
+    zoneHereShade:{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(5,12,20,.62)':'rgba(255,255,255,.60)'},
     zoneHereBody:{padding:12,gap:4,justifyContent:'flex-end',flex:1,minHeight:170},
     zoneHereKicker:{fontSize:9,fontWeight:'900',letterSpacing:1,color:C.info},
     zoneHereName:{fontSize:20,fontWeight:'900',color:C.text,marginTop:2},

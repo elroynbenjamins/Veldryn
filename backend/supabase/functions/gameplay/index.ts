@@ -42996,11 +42996,11 @@ var GUILD_COMPONENT_ITEMS = [
 ];
 var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
-  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 4, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 560, gold: 475, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 10 }, { itemId: "IRONWOOD_LOG", quantity: 15 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
   { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 1120, gold: 1450, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
   { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 2900, gold: 5e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 10 }, { itemId: "WHITEPINE_LOG", quantity: 10 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
-  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 4, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 550, gold: 450, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 15 }, { itemId: "THORN_SAP", quantity: 5 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 1130, gold: 1500, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 2840, gold: 4750, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 10 }, { itemId: "WINTERMINT", quantity: 10 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
@@ -49402,6 +49402,115 @@ function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   });
 }
 
+// ../apps/mobile/src/core/monthly-quest-milestones.ts
+init_progression();
+init_faith2();
+var MONTHLY_QUEST_MILESTONES = [
+  { points: 30, xp: 1e3 },
+  { points: 60, xp: 2500 },
+  { points: 100, xp: 5e3 }
+];
+var MONTHLY_QUEST_POINTS = { daily: 1, weekly: 3, monthly: 5 };
+var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
+var MAX_XP2 = totalXpAtLevel(100);
+function utcQuestMonth(nowMs) {
+  return new Date(nowMs).toISOString().slice(0, 7);
+}
+function previousMonth(key) {
+  const [year, month] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 2, 1));
+  return date.toISOString().slice(0, 7);
+}
+function monthStartMs(key) {
+  return Date.parse(key + "-01T00:00:00.000Z");
+}
+function normalizeMonthlyQuestMilestones(raw2) {
+  const input = raw2 && typeof raw2 === "object" ? raw2.months : void 0;
+  if (!Array.isArray(input)) return { months: [] };
+  const allowedSkills = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "herbalism", "smithing", "cooking", "alchemy", "exploration", "tailoring", "enchanting", "faith"]);
+  const months = [];
+  for (const value of input) {
+    if (!value || typeof value !== "object") continue;
+    const row = value;
+    if (typeof row.key !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.key)) continue;
+    const claimed = {};
+    for (const milestone of MONTHLY_QUEST_MILESTONES) {
+      const record = row.claimed?.[milestone.points];
+      if (!record || typeof record.characterId !== "string" || !record.characterId || !allowedSkills.has(record.skillId) || !Number.isFinite(record.claimedAtMs) || !Number.isFinite(record.xpGranted) || record.xpGranted < 1 || record.xpGranted > milestone.xp) continue;
+      claimed[milestone.points] = { characterId: record.characterId, skillId: record.skillId, claimedAtMs: record.claimedAtMs, xpGranted: record.xpGranted };
+    }
+    months.push({
+      key: row.key,
+      points: Number.isSafeInteger(row.points) && Number(row.points) >= 0 ? Math.min(300, Number(row.points)) : 0,
+      creditedQuestIds: Array.isArray(row.creditedQuestIds) ? [...new Set(row.creditedQuestIds.filter((id) => typeof id === "string" && id.length < 120))].slice(-150) : [],
+      claimed
+    });
+  }
+  return { months: [...new Map(months.map((row) => [row.key, row])).values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-2) };
+}
+function readMonths(state) {
+  return normalizeMonthlyQuestMilestones(state.account.monthlyQuestMilestones).months;
+}
+function eligibleMonth(key, nowMs) {
+  const current = utcQuestMonth(nowMs);
+  if (key === current) return true;
+  return key === previousMonth(current) && nowMs < monthStartMs(current) + GRACE_MS;
+}
+function activeMonths(state, nowMs) {
+  return readMonths(state).filter((row) => eligibleMonth(row.key, nowMs));
+}
+function creditMonthlyQuestMilestone(state, period, questId, nowMs) {
+  const key = utcQuestMonth(nowMs), months = activeMonths(state, nowMs);
+  const existing = months.find((row) => row.key === key) ?? { key, points: 0, creditedQuestIds: [], claimed: {} };
+  if (existing.creditedQuestIds.includes(questId)) return state;
+  const next = {
+    ...existing,
+    points: existing.points + MONTHLY_QUEST_POINTS[period],
+    creditedQuestIds: [...existing.creditedQuestIds, questId].slice(-150)
+  };
+  return { ...state, account: { ...state.account, monthlyQuestMilestones: { months: [...months.filter((row) => row.key !== key), next] } } };
+}
+function claimMonthlyQuestMilestone(state, key, threshold, characterId, skillId, nowMs) {
+  const milestone = MONTHLY_QUEST_MILESTONES.find((row2) => row2.points === threshold);
+  if (!milestone) throw new Error("Unknown monthly quest milestone.");
+  if (!eligibleMonth(key, nowMs)) throw new Error("This monthly milestone has expired.");
+  const months = activeMonths(state, nowMs), row = months.find((entry2) => entry2.key === key);
+  if (!row || row.points < milestone.points) throw new Error("Earn more Quest Points before claiming this milestone.");
+  if (row.claimed[milestone.points]) throw new Error("This monthly milestone was already claimed.");
+  const isActive2 = state.character?.id === characterId;
+  const parkedIndex = isActive2 ? -1 : (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === characterId);
+  if (!isActive2 && parkedIndex < 0) throw new Error("Select a character on this account.");
+  const originalSkills = isActive2 ? state.skills : state.otherCharacters[parkedIndex].skills;
+  const targetCharacter = isActive2 ? state.character : state.otherCharacters[parkedIndex].character;
+  const selected2 = originalSkills.find((skill2) => skill2.skillId === skillId);
+  if (!selected2 || !Number.isFinite(selected2.xp) || selected2.xp < 0) throw new Error("Select an unlocked skill.");
+  const faith = skillId === "faith" ? normalizeFaith(targetCharacter.faith) : void 0;
+  const baseXp = faith ? Math.max(selected2.xp, faith.xp) : selected2.xp;
+  const award = Math.min(milestone.xp, Math.max(0, MAX_XP2 - baseXp));
+  const nextXp = Math.min(MAX_XP2, baseXp + award);
+  if (award < 1) throw new Error("This skill is already at maximum level.");
+  const updatedSkills = originalSkills.map((skill2) => {
+    if (skill2.skillId !== skillId) return skill2;
+    return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
+  });
+  const updatedMonth = {
+    ...row,
+    claimed: { ...row.claimed, [milestone.points]: { characterId, skillId, claimedAtMs: nowMs, xpGranted: award } }
+  };
+  const updatedAccount = { ...state.account, monthlyQuestMilestones: { months: months.map((entry2) => entry2.key === key ? updatedMonth : entry2) } };
+  if (isActive2) return {
+    ...state,
+    account: updatedAccount,
+    skills: updatedSkills,
+    ...faith ? { character: { ...state.character, faith: { ...faith, xp: nextXp } } } : {}
+  };
+  return { ...state, account: updatedAccount, otherCharacters: (state.otherCharacters ?? []).map((entry2, index) => index === parkedIndex ? {
+    ...entry2,
+    skills: updatedSkills,
+    ...faith ? { character: { ...entry2.character, faith: { ...faith, xp: nextXp } } } : {}
+  } : entry2) };
+}
+
 // ../apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
   "Home",
@@ -52945,7 +53054,7 @@ function claimSeasonalContract(state, period, contractId2, nowMs = Date.now(), c
   const recordedChoices = Object.fromEntries([...Object.entries(previousChoices), [contract.id, chosen.id]].filter(([id]) => claimed.includes(id)));
   const withRewards = { ...state, ...routed, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + contract.rewardGold }, account: { ...state.account, ...routed.account ?? {}, seasonalContractClaimIds: claimed, seasonalContractRewardChoices: recordedChoices } };
   const withEssence = grantCompanionEssence(withRewards, chosen.rewardCompanionEssence ?? 0);
-  return applyLocalBalanceSnapshot(refreshQuests(grantBondstones(withEssence, chosen.rewardBondstones ?? 0)), nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(creditMonthlyQuestMilestone(grantBondstones(withEssence, chosen.rewardBondstones ?? 0), period, contract.id, nowMs)), nowMs);
 }
 function queuedReservationEnd(state) {
   const activity = state.activity;
@@ -54666,7 +54775,7 @@ function deleteAccountCharacter(state, id, confirmation, now) {
 }
 
 // ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 4;
+var MAX_RELEASED_EQUIPMENT_TIER = 5;
 function isReleasedEquipmentItemId(itemId) {
   const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
   return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
@@ -56909,6 +57018,7 @@ var fields = {
   daily_supplies_activate: ["type"],
   quest: ["id"],
   seasonal: ["period", "id", "choiceId"],
+  monthly_quest_milestone: ["month", "threshold", "characterId", "skillId"],
   settings: ["settings"],
   inventory_preference: ["id", "kind", "enabled"],
   inventory_seen_all: [],
@@ -57048,7 +57158,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -57575,6 +57685,9 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "seasonal":
       state = claimSeasonalContract(state, oneOf(a.period, ["daily", "weekly", "monthly"]), text(a, "id"), now, a.choiceId === void 0 ? void 0 : text(a, "choiceId", 100));
+      break;
+    case "monthly_quest_milestone":
+      state = claimMonthlyQuestMilestone(state, text(a, "month", 7), integer(a, "threshold", 30, 100), text(a, "characterId", 100), oneOf(a.skillId, ["mining", "woodcutting", "fishing", "herbalism", "smithing", "cooking", "alchemy", "exploration", "tailoring", "enchanting", "faith"]), now);
       break;
     case "settings":
       state = { ...state, settings: validateGameSettings(a.settings) };
@@ -58244,6 +58357,13 @@ import { createHash as createHash2 } from "node:crypto";
 
 // ../apps/mobile/src/core/combat-power.ts
 init_progression();
+var MAX_COMPANION_COMBAT_POWER_SHARE = 0.18;
+function redistributeCompanionCombatPower(personal, companion) {
+  const total = personal + companion;
+  const reweightedCompanion = Math.min(companion, Math.floor(total * MAX_COMPANION_COMBAT_POWER_SHARE));
+  const reallocated = companion - reweightedCompanion;
+  return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
+}
 var statScore = (stats4, level) => Math.max(0, Math.round(
   stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
 ));
@@ -58270,14 +58390,16 @@ function combatPowerRating(state) {
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
-  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rawCompanion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rating = redistributeCompanionCombatPower(player, rawCompanion);
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
-    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" }
   ];
-  return { total: player + companion, player, companion, rows: rows2 };
+  if (rating.reallocated > 0) rows2.push({ id: "allocation", label: "Personal power weighting", value: rating.reallocated, detail: "Combat Power shifted from the companion rating; actual stats and effects are unchanged" });
+  rows2.push({ id: "companion", label: "Combat companion", value: rating.companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" });
+  return { total: rating.total, player: rating.player, companion: rating.companion, rows: rows2 };
 }
 
 // src/server/equipment/gems/gem-runtime-v1.ts

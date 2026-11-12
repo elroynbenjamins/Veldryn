@@ -105,8 +105,8 @@ ok(t1.inputs.some(row=>row.itemId==='GREENWOOD_LOG'),'T1 must use early Asterfal
 ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accidentally routed through the old late-Asterfall generator');
 const t3=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3');
 const t4=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T4');
-const t3Materials=new Set(['DUNEWOOD','SUNSTONE_ORE','SUNSCALE','AMBERGLASS','ASTRAL_SCRIPT','SUNSCAR_DUNE_BINDER']);
-const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_BINDER']);
+const t3Materials=new Set(['DUNEWOOD','SUNSTONE_ORE','SUNSCALE','AMBERGLASS','ASTRAL_SCRIPT','SUNSCAR_DUNE_BINDER','REINFORCED_STRAPS','ARMOR_RIVETS']);
+const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_BINDER','REINFORCED_STRAPS','ARMOR_RIVETS']);
 ok(t3.every(recipe=>recipe.inputs.every(input=>t3Materials.has(input.itemId))),'T3 gear must use early-Sunscar sources only, without Asterfall solvent');
 ok(t3.length===180,'Nine classes × two paths × ten slots must retain all 180 T3 equipment recipes');
 for(const recipe of t3){

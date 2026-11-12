@@ -61,6 +61,13 @@ export interface PersistentPartySummary {
   maxMembers: 4;
 }
 
+/** Desired class composition for a complete, four-member persistent Party. */
+export function partyRoleVacancies(members: readonly Pick<PartyMemberSummary,'role'>[]): Record<PartyRole,number> {
+ const counts:Record<PartyRole,number>={tank:1,damage:2,support:1};
+ for(const member of members)if(member.role in counts)counts[member.role]--;
+ return {tank:Math.max(0,counts.tank),damage:Math.max(0,counts.damage),support:Math.max(0,counts.support)};
+}
+
 export interface PartyMemberView {
   accountId: string;
   characterId: string;

@@ -12,21 +12,23 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 
 const ids=new Set(CROSS_PROFESSION_COMPONENT_ITEMS.map(item=>item.id));
 equal(ids.size,6,'Cross-profession item IDs must be unique');
-equal(CROSS_PROFESSION_COMPONENT_RECIPES.length,6,'Both professions must have three repeatable component recipes');
+equal(CROSS_PROFESSION_COMPONENT_RECIPES.length,8,'Six core recipes plus two optional recycling routes must be registered');
 
 for(const item of CROSS_PROFESSION_COMPONENT_ITEMS){
  equal(itemDef(item.id).type,'material','Every component must be a registered material');
  ok(marketCatalogCandidate(item.id),'Shared components must be eligible for future player trading');
  const recipes=CROSS_PROFESSION_COMPONENT_RECIPES.filter(recipe=>recipe.output.itemId===item.id);
- equal(recipes.length,1,'Each component must have exactly one recipe');
- ok(recipes[0].repeatableTraining,'Every component must provide repeatable profession XP');
- ok(recipes[0].xp>0,'Every component craft must award XP');
- ok(recipes[0].inputs.length>0&&recipes[0].inputs.every(input=>!ids.has(input.itemId)),'Component recipes must not depend on each other or create circular crafting chains');
- ok(RECIPES.some(recipe=>recipe.id===recipes[0].id),'Shared component recipe must be in the global catalog');
+ equal(recipes.length,['ARMOR_RIVETS','REINFORCED_STRAPS'].includes(item.id)?2:1,'Every component has a canonical recipe and only the two chosen components have recycling alternatives');
+ for(const recipe of recipes){
+  ok(recipe.repeatableTraining,'Every component route must provide repeatable profession XP');
+  ok(recipe.xp>0,'Every component craft must award XP');
+  ok(recipe.inputs.length>0&&recipe.inputs.every(input=>!ids.has(input.itemId)),'Component recipes must not depend on other components or create circular crafting chains');
+  ok(RECIPES.some(row=>row.id===recipe.id),'Shared component recipe must be registered in the global catalog');
+ }
 }
 for(const skillId of ['smithing','tailoring'] as const){
  const recipes=CROSS_PROFESSION_COMPONENT_RECIPES.filter(recipe=>recipe.skillId===skillId);
- equal(recipes.length,3,'Each profession must produce three component tiers');
+ equal(recipes.length,4,'Each profession must have three core components and one optional recycling route');
  ok(recipes.some(recipe=>recipe.level===1),'Every class needs a profession training recipe at level 1');
 }
 
@@ -41,6 +43,7 @@ for(const gear of V33_EQUIPMENT_RECIPES){
    equal(cross.length,1,'Every T1–T4 gear piece must require exactly one opposite-profession component');
    equal(cross[0].itemId,assembly[gear.skillId],'Cross component must come from opposite profession');
    ok(cross[0].quantity>=1,'Shared component quantity must remain positive');
+   if(gear.v33EquipmentTier==='T2')equal(cross[0].quantity,gear.v33Path==='Alternate'?2:1,'Only T2 Alternate pieces require one additional cross-profession component');
    const producer=CROSS_PROFESSION_COMPONENT_RECIPES.find(recipe=>recipe.output.itemId===cross[0].itemId)!;
    equal(producer.skillId,opposite,'Component producer must be opposite of assembly skill');
  }else equal(cross.length,0,'T5+ material costs must remain unchanged until a separate tier balance pass');

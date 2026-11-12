@@ -167,5 +167,45 @@ for(const diff of ['veteran','heroic'] as WeeklyPartyDifficulty[]){
  }
 }
 assert(higherDifficulty===48,'48 Veteran/Heroic route previews');
+// Cover all nine playable classes with legal 1 Tank / 2 Damage / 1 Support
+// parties and mixed character levels. These are diagnostic simulations, not
+// empirical gear-curve balancing or release authorization.
+const mixedTeams=[
+ ['Ironwarden','Wayfinder','Ravager','Dawnkeeper'],
+ ['Bastion','Hexweaver','Knife Dancer','Stonecaller'],
+ ['Dreadguard','Wayfinder','Hexweaver','Dawnkeeper'],
+ ['Ironwarden','Ravager','Knife Dancer','Stonecaller'],
+] as const;
+const coveredClasses=new Set<string>();
+let mixedRuns=0;
+for(const [family,definition] of variants){
+ const votes=partyEventFamilyDesignV8(family);
+ for(let teamIndex=0;teamIndex<mixedTeams.length;teamIndex++){
+  const team=mixedTeams[teamIndex]!.map((name,index)=>{
+   const level=[12,25,38,50][index]!;
+   coveredClasses.add(name);
+   return {...launchPlayer(name,level),
+    classId:name.toUpperCase().replaceAll(' ','_'),
+    id:'mixed-'+family+'-'+teamIndex+'-'+index};
+  });
+  for(const difficulty of ['standard','veteran','heroic'] as WeeklyPartyDifficulty[]){
+   for(const stage of [2,3] as const){
+    const result=simulatePartyEventStoryStageV9({
+     family,variation:definition.variations[teamIndex%3]!,stage,difficulty,
+     seed:600+teamIndex,verifiedActors:team,verifiedOrders:[],
+     stage2Choice:votes.stage2[teamIndex%2]!.id,
+     ...(stage===3?{stage3Choice:votes.stage3[teamIndex%2]!.id}:{}),
+    });
+    assert(result.combat!==null&&result.combat.familyObjective.value>=0
+     &&result.combat.familyObjective.value<=100,
+     'mixed level/class legal teams produce bounded source combat');
+    mixedRuns++;
+   }
+  }
+ }
+}
+assert(coveredClasses.size===9&&mixedRuns===96,
+ 'all nine classes and mixed-level legal parties across all four events');
 console.log('PASS Party Events hidden v9: '+total+' story stages, '+encounters
- +' real combat encounters, '+higherDifficulty+' difficult variants; 4 visual themes, verified bonuses, no grants');
+ +' real combat encounters, '+higherDifficulty+' difficult variants, '
+ +mixedRuns+' mixed-level all-class previews; 4 visual themes, verified bonuses, no grants');

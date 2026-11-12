@@ -80,7 +80,7 @@ const bossResults:Record<string,unknown>[]=[];
 const bossStage=STAGES.find(x=>x.tier==='T2'&&x.level===25)!;
 const BOSS_SEEDS=12;
 for(const scenarioId of SELECTED){
- for(const potionMode of ['none','five_healing_potions'] as const){
+ for(const potionMode of ['none','three_healing_potions'] as const){
   const outcomes:{won:boolean;durationMs:number;potions:number;bossHpFraction:number}[]=[];
   const perProfile:{classId:string;path:string;winRate:number|null;avgPotions:number|null}[]=[];
   let profiles=0;
@@ -90,14 +90,14 @@ for(const scenarioId of SELECTED){
       currentHp:effectiveStats(base).hp,
       equippedHealingPotionId:potionMode==='none'?undefined:'RIVERHEART_DRAUGHT',
      },
-     inventory:{...base.inventory,stacks:potionMode==='none'?[]:[{itemId:'RIVERHEART_DRAUGHT',quantity:5}]},
+     inventory:{...base.inventory,stacks:potionMode==='none'?[]:[{itemId:'RIVERHEART_DRAUGHT',quantity:3}]},
    };
    profiles++;
    const profileOutcomes:typeof outcomes=[];
    for(let seed=0;seed<BOSS_SEEDS;seed++){
     const battle=previewFallenKnightBattle(prepared,Date.UTC(2026,10,12,12,0,0)+seed*93_001,'story');
     assert(battle.foodConsumed===0,'food used in boss');
-    assert(battle.potionConsumed<=5,'potion cap broken');
+    assert(battle.potionConsumed<=3,'potion cap broken');
     const outcome={
      won:battle.won,durationMs:battle.durationMs,potions:battle.potionConsumed,
      bossHpFraction:battle.finalBossHp/Math.max(1,battle.bossMaxHp),

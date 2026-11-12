@@ -42826,11 +42826,29 @@ function q(base, multiplier) {
   return Math.max(1, Math.round(base * multiplier));
 }
 var T3_T4_DUNEWOOD_REDUCTION_FACTOR = 0.8;
-function reducedSunscarDunewood(base, multiplier) {
-  return Math.max(1, Math.round(q(base, multiplier) * 3 * T3_T4_DUNEWOOD_REDUCTION_FACTOR));
+var T2_ALT_IRONWOOD_FANG_FACTOR = 0.77;
+var T2_ALT_TROLL_HIDE_FACTOR = 0.858;
+var T3_SMITHING_DUNEWOOD_FINAL_FACTOR = 0.735;
+var T4_SMITHING_DUNEWOOD_FINAL_FACTOR = 0.738;
+var T4_TAILORING_SUNSCALE_FACTOR = 0.907;
+var T4_ASTRAL_SCRIPT_FACTOR = 0.88;
+function reducedSunscarDunewood(base, multiplier, factor = T3_T4_DUNEWOOD_REDUCTION_FACTOR) {
+  return Math.max(1, Math.round(q(base, multiplier) * 3 * factor));
 }
 function clamp3(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+var CROSS_PROFESSION_ASSEMBLY_INPUTS = {
+  T1: { smithing: "CLOTH_BINDINGS", tailoring: "METAL_CLASPS", baseQty: 1 },
+  T2: { smithing: "PADDED_LININGS", tailoring: "REINFORCED_BUCKLES", baseQty: 1 },
+  T3: { smithing: "REINFORCED_STRAPS", tailoring: "ARMOR_RIVETS", baseQty: 2 },
+  T4: { smithing: "REINFORCED_STRAPS", tailoring: "ARMOR_RIVETS", baseQty: 3 }
+};
+function crossProfessionAssemblyInput(tier, skillId, slotMultiplier2, path) {
+  const entry2 = CROSS_PROFESSION_ASSEMBLY_INPUTS[tier];
+  if (!entry2) return [];
+  const alternateExtra = tier === "T2" && path === "Alternate" ? 1 : 0;
+  return [{ itemId: entry2[skillId], quantity: Math.max(1, Math.round(entry2.baseQty * slotMultiplier2)) + alternateExtra }];
 }
 function mergeInputs(inputs) {
   const totals = /* @__PURE__ */ new Map();
@@ -42845,14 +42863,14 @@ function ingredients(tier, path, multiplier, skillId) {
       case "T1":
         return mergeInputs([{ itemId: "MOSS_FIBER", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(7, multiplier) }]);
       case "T2":
-        return mergeInputs([{ itemId: "WOLF_PELT", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(9, multiplier) }]);
+        return mergeInputs([{ itemId: "WOLF_PELT", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(9, multiplier * (path === "Alternate" ? T2_ALT_TROLL_HIDE_FACTOR : 1)) }]);
       // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
       // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
       case "T3":
         return mergeInputs([{ itemId: "SUNSCALE", quantity: q(18, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(10, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
       // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
       case "T4":
-        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(7, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
+        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier * T4_TAILORING_SUNSCALE_FACTOR) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(7, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier * (path === "Alternate" ? T4_ASTRAL_SCRIPT_FACTOR : 1)) }]);
       case "T5":
         return [{ itemId: "SUNSCALE", quantity: q(25, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }];
       case "T6":
@@ -42872,11 +42890,11 @@ function ingredients(tier, path, multiplier, skillId) {
     case "T1":
       return [{ itemId: "GREENWOOD_LOG", quantity: q(28, multiplier) }, { itemId: pathItem ?? "MOSS_FIBER", quantity: q(8, multiplier) }];
     case "T2":
-      return [{ itemId: "IRONWOOD_LOG", quantity: q(34, multiplier) }, { itemId: pathItem ?? "WOLF_PELT", quantity: q(10, multiplier) }];
+      return [{ itemId: "IRONWOOD_LOG", quantity: q(34, multiplier) }, { itemId: pathItem ?? "WOLF_PELT", quantity: q(10, multiplier * (path === "Alternate" ? T2_ALT_IRONWOOD_FANG_FACTOR : 1)) }];
     case "T3":
-      return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
+      return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier, T3_SMITHING_DUNEWOOD_FINAL_FACTOR) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
-      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier, T4_SMITHING_DUNEWOOD_FINAL_FACTOR) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier * (path === "Foundation" ? T4_ASTRAL_SCRIPT_FACTOR : 1)) }]);
     case "T5":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
@@ -42909,7 +42927,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
     seconds: clamp3(Math.round(range.base * multiplier), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
+    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), ...crossProfessionAssemblyInput(tier, skillId, multiplier, String(piece.Path)), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42996,14 +43014,35 @@ var GUILD_COMPONENT_ITEMS = [
 ];
 var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
-  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 4, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 560, gold: 475, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 10 }, { itemId: "IRONWOOD_LOG", quantity: 15 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
   { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 1120, gold: 1450, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
   { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 2900, gold: 5e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 10 }, { itemId: "WHITEPINE_LOG", quantity: 10 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
-  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 4, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 550, gold: 450, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 15 }, { itemId: "THORN_SAP", quantity: 5 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 1130, gold: 1500, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 2840, gold: 4750, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 10 }, { itemId: "WINTERMINT", quantity: 10 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
+].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
+
+// ../apps/mobile/src/content/cross-profession-components.ts
+var CROSS_PROFESSION_COMPONENT_ITEMS = [
+  { id: "METAL_CLASPS", name: "Metal Clasps", type: "material", value: 35 },
+  { id: "REINFORCED_BUCKLES", name: "Reinforced Buckles", type: "material", value: 145 },
+  { id: "ARMOR_RIVETS", name: "Armor Rivets", type: "material", value: 620 },
+  { id: "CLOTH_BINDINGS", name: "Cloth Bindings", type: "material", value: 28 },
+  { id: "PADDED_LININGS", name: "Padded Linings", type: "material", value: 100 },
+  { id: "REINFORCED_STRAPS", name: "Reinforced Straps", type: "material", value: 520 }
+];
+var CROSS_PROFESSION_COMPONENT_RECIPES = [
+  { id: "FORGE_METAL_CLASPS", name: "Forge Metal Clasps", skillId: "smithing", level: 1, xp: 75, gold: 30, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 1 }], output: { itemId: "METAL_CLASPS", quantity: 1 } },
+  { id: "FORGE_REINFORCED_BUCKLES", name: "Forge Reinforced Buckles", skillId: "smithing", level: 8, xp: 210, gold: 85, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }], output: { itemId: "REINFORCED_BUCKLES", quantity: 1 } },
+  { id: "FORGE_ARMOR_RIVETS", name: "Forge Armor Rivets", skillId: "smithing", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 3 }, { itemId: "ASTER_IRON_INGOT", quantity: 1 }], output: { itemId: "ARMOR_RIVETS", quantity: 1 } },
+  { id: "WEAVE_CLOTH_BINDINGS", name: "Weave Cloth Bindings", skillId: "tailoring", level: 1, xp: 75, gold: 30, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 5 }, { itemId: "BOAR_HIDE", quantity: 1 }], output: { itemId: "CLOTH_BINDINGS", quantity: 1 } },
+  { id: "STITCH_PADDED_LININGS", name: "Stitch Padded Linings", skillId: "tailoring", level: 8, xp: 210, gold: 85, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 6 }], output: { itemId: "PADDED_LININGS", quantity: 1 } },
+  { id: "STITCH_REINFORCED_STRAPS", name: "Stitch Reinforced Straps", skillId: "tailoring", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "REINFORCED_STRAPS", quantity: 1 } },
+  // Optional reclamation routes: never force Asterfall monster trophies into Sunscar equipment.
+  { id: "FORGE_RECLAIMED_ARMOR_RIVETS", name: "Forge Reclaimed Armor Rivets", skillId: "smithing", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "FALLEN_RIVET", quantity: 1 }, { itemId: "SUNSTONE_ORE", quantity: 2 }, { itemId: "ASTER_IRON_INGOT", quantity: 1 }], output: { itemId: "ARMOR_RIVETS", quantity: 1 } },
+  { id: "STITCH_RECYCLED_REINFORCED_STRAPS", name: "Stitch Recycled Reinforced Straps", skillId: "tailoring", level: 20, xp: 480, gold: 260, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "TORN_OATHCLOTH", quantity: 2 }, { itemId: "SUNSCALE", quantity: 2 }, { itemId: "DUNEWOOD", quantity: 2 }], output: { itemId: "REINFORCED_STRAPS", quantity: 1 } }
 ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
 
 // ../apps/mobile/src/content/gathering-tools.ts
@@ -43197,6 +43236,8 @@ var ALCHEMY_RECIPES = [
   recipe("OATH_VIGOR_TONIC", 60, 174, 1700, 98, [{ itemId: "WINTERMINT", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
   recipe("OATH_WARD_TONIC", 60, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS"),
   { id: "BREW_VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", skillId: "alchemy", level: 1, seconds: 90, xp: 95, gold: 18, inputs: [{ itemId: "DEWLEAF", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 12 }, { itemId: "WISP_DUST", quantity: 3 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 } },
+  // Five-resin optional batch: 20% less rare Essence, modestly more common supplies; no XP or time shortcut.
+  { id: "BREW_VERDANT_BINDING_RESIN_BULK", name: "Bulk Verdant Binding Resin", skillId: "alchemy", level: 1, seconds: 450, xp: 475, gold: 91, inputs: [{ itemId: "DEWLEAF", quantity: 35 }, { itemId: "MOSS_FIBER", quantity: 60 }, { itemId: "WISP_DUST", quantity: 20 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 4 }], output: { itemId: "VERDANT_BINDING_RESIN", quantity: 5 } },
   // Available at the start of T2: all inputs come from Ironwood hunts or woodcutting, without backtracking to Greenfields.
   { id: "BREW_IRONWOOD_BINDING_RESIN", name: "Ironwood Binding Resin", skillId: "alchemy", level: 8, seconds: 115, xp: 200, gold: 35, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 6 }, { itemId: "THORN_SAP", quantity: 6 }, { itemId: "IRONWOOD_FANG", quantity: 2 }], output: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 } },
   { id: "BREW_OATHGLASS_SOLVENT", name: "Oathglass Solvent", skillId: "alchemy", level: 20, seconds: 135, xp: 420, gold: 55, inputs: [{ itemId: "IRONBLOOM", quantity: 4 }, { itemId: "OATHGLASS_SHARD", quantity: 4 }, { itemId: "ECHO_QUARTZ", quantity: 2 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "OATHGLASS_SOLVENT", quantity: 1 } },
@@ -43441,7 +43482,7 @@ var BASE_ITEMS = [
   { id: "OATHGLASS_CAPE", name: "Oathglass Cape", type: "gear", slot: "cape", attack: 2, defense: 6, hp: 18, readiness: 5, rarity: "rare", requiredLevel: 25, value: 240 },
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...CROSS_PROFESSION_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -44029,6 +44070,7 @@ var GATHERING = [
 var REBASED_CHARACTER_LEVEL_RECIPES = new Set([...TOOL_RECIPES, ...V33_EQUIPMENT_RECIPES].map((recipe2) => recipe2.id));
 var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
+  ...CROSS_PROFESSION_COMPONENT_RECIPES,
   ...ALCHEMY_RECIPES,
   ...NOVICE_RECIPES,
   // Keep the full catalog authoritative for crafting, progression, and save
@@ -53425,7 +53467,7 @@ function craftRecipe(state, recipeId, nowMs = Date.now()) {
   if (recipeId.startsWith("BREW_")) throw new Error("Timed alchemy recipes must be started as a batch.");
   const r = recipeDef(recipeId);
   if (!r) throw new Error("Unknown recipe");
-  if (r.classId && r.classId !== state.character.classId) throw new Error("This recipe belongs to another class");
+  if (r.classId && r.classId !== state.character.classId && !r.v33SetId) throw new Error("This recipe belongs to another class");
   if (state.character.level < (r.characterLevel ?? 1)) throw new Error(`Requires character level ${r.characterLevel}`);
   if (r.requiresCraftedItemId && !state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId)) throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
   const tool2 = gatheringToolDef(r.output.itemId);
@@ -54072,7 +54114,6 @@ function consumeAcross2(state, itemId, amount) {
 function validateStart(state, recipe2) {
   if (!state.character) throw new Error("Create a character first");
   if (!isTimedEquipmentRecipe(recipe2)) throw new Error("This recipe does not use the equipment crafting queue");
-  if (recipe2.classId && recipe2.classId !== state.character.classId) throw new Error("This recipe belongs to another class");
   if (state.character.level < (recipe2.characterLevel ?? 1)) throw new Error(`Requires character level ${recipe2.characterLevel}`);
   const skill2 = state.skills.find((row) => row.skillId === recipe2.skillId);
   if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires ${recipe2.skillId} level ${recipe2.level}`);
@@ -54666,7 +54707,7 @@ function deleteAccountCharacter(state, id, confirmation, now) {
 }
 
 // ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 4;
+var MAX_RELEASED_EQUIPMENT_TIER = 5;
 function isReleasedEquipmentItemId(itemId) {
   const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
   return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
@@ -56584,7 +56625,7 @@ function quantity(state, itemId) {
 }
 function processingRecipeFor(itemId) {
   return RECIPES.filter((recipe2) => {
-    if (recipe2.output.itemId !== itemId || recipe2.skillId !== "smithing" || recipe2.noviceSetId || timedEquipmentRecipe(recipe2.id)) return false;
+    if (recipe2.output.itemId !== itemId || recipe2.skillId !== "smithing" && recipe2.skillId !== "tailoring" || recipe2.noviceSetId || timedEquipmentRecipe(recipe2.id)) return false;
     return itemDef(recipe2.output.itemId).type === "material";
   }).sort((a, b) => a.level - b.level || a.gold - b.gold || a.seconds - b.seconds)[0];
 }
@@ -56592,7 +56633,6 @@ function craftEquipmentPrerequisites(state, equipmentRecipeId, nowMs) {
   const equipment = timedEquipmentRecipe(equipmentRecipeId);
   if (!equipment) throw new Error("This equipment recipe does not use the forge");
   if (!state.character) throw new Error("Create a character first");
-  if (equipment.classId && equipment.classId !== state.character.classId) throw new Error("This equipment recipe belongs to another class");
   let next = structuredClone(state), stepClock = 0;
   const craftedByRecipe = /* @__PURE__ */ new Map();
   const visiting = /* @__PURE__ */ new Set();
@@ -58244,6 +58284,13 @@ import { createHash as createHash2 } from "node:crypto";
 
 // ../apps/mobile/src/core/combat-power.ts
 init_progression();
+var MAX_COMPANION_COMBAT_POWER_SHARE = 0.18;
+function redistributeCompanionCombatPower(personal, companion) {
+  const total = personal + companion;
+  const reweightedCompanion = Math.min(companion, Math.floor(total * MAX_COMPANION_COMBAT_POWER_SHARE));
+  const reallocated = companion - reweightedCompanion;
+  return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
+}
 var statScore = (stats4, level) => Math.max(0, Math.round(
   stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
 ));
@@ -58270,14 +58317,16 @@ function combatPowerRating(state) {
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
-  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rawCompanion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rating = redistributeCompanionCombatPower(player, rawCompanion);
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
-    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" }
   ];
-  return { total: player + companion, player, companion, rows: rows2 };
+  if (rating.reallocated > 0) rows2.push({ id: "allocation", label: "Personal power weighting", value: rating.reallocated, detail: "Combat Power shifted from the companion rating; actual stats and effects are unchanged" });
+  rows2.push({ id: "companion", label: "Combat companion", value: rating.companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" });
+  return { total: rating.total, player: rating.player, companion: rating.companion, rows: rows2 };
 }
 
 // src/server/equipment/gems/gem-runtime-v1.ts

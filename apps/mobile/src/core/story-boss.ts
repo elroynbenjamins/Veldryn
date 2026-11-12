@@ -69,8 +69,8 @@ export interface FallenKnightBattleResult{
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const FALLEN_KNIGHT_MAX_DURATION_MS=100_000;
-/** Boss fights use limited Alchemy healing potions, never ordinary food. */
-export const FALLEN_KNIGHT_MAX_POTION_UNITS=5;
+/** Story boss healing uses up to three draughts, one at a time on actual damage.\n * This is separate from the ONE preparation/attack tonic per boss attempt. */
+export const FALLEN_KNIGHT_MAX_POTION_UNITS=3;
 /** Legacy compatibility: no food charges are permitted in boss encounters. */
 export const FALLEN_KNIGHT_MAX_FOOD_UNITS=0;
 

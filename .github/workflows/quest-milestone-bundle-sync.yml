@@ -1,0 +1,52 @@
+name: Temporary monthly quest Edge bundle sync
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    paths:
+      - 'apps/mobile/src/core/monthly-quest-milestones.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+      - '.github/workflows/quest-milestone-bundle-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/monthly-quest-milestones-20261112' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild and verify generated game engine
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated gameplay bundles to the feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Generated Edge bundles are already synchronized.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync generated gameplay with monthly quest milestones'
+          git push origin HEAD:${GITHUB_HEAD_REF}

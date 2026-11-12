@@ -29,7 +29,10 @@ export interface PartyInviteDecision {
     | 'party_full'
     | 'already_member'
     | 'account_already_in_party'
-    | 'duplicate_character';
+    | 'duplicate_character'
+    | 'party_role_required'
+    | 'party_role_full'
+    | 'party_legacy_role_overflow';
 }
 
 export interface PartyLeaveResult {
@@ -40,6 +43,24 @@ export interface PartyLeaveResult {
 
 export const PERSISTENT_PARTY_MIN_SIZE = 1;
 export const PERSISTENT_PARTY_MAX_SIZE = 4;
+/** A full persistent party follows the Live Dungeon roster: 1 Tank, 2 Damage, 1 Support. */
+export const PERSISTENT_PARTY_ROLE_LIMITS: Readonly<Record<PartyRole, number>> =
+  Object.freeze({tank: 1, damage: 2, support: 1});
+
+export function persistentPartyOpenRoles(members: readonly PersistentPartyMember[]): Record<PartyRole, number> {
+  const available: Record<PartyRole, number> = {...PERSISTENT_PARTY_ROLE_LIMITS};
+  for (const member of members) {
+    if (member.role && Object.prototype.hasOwnProperty.call(available, member.role)) {
+      available[member.role]--;
+    }
+  }
+  return {
+    tank: Math.max(0, available.tank),
+    damage: Math.max(0, available.damage),
+    support: Math.max(0, available.support),
+  };
+}
+
 
 function hasDuplicateAccounts(members: readonly PersistentPartyMember[]): boolean {
   return new Set(members.map(member => member.accountId)).size !== members.length;
@@ -65,7 +86,7 @@ export function validatePersistentParty(state: PersistentPartyState): void {
 
 export function canJoinPersistentParty(
   state: PersistentPartyState,
-  candidate: Pick<PersistentPartyMember, 'accountId' | 'characterId'>,
+  candidate: Pick<PersistentPartyMember, 'accountId' | 'characterId' | 'role'>,
   accountAlreadyInAnotherPersistentParty = false,
 ): PartyInviteDecision {
   if (state.status === 'disbanded') return { allowed: false, reason: 'party_inactive' };
@@ -78,6 +99,20 @@ export function canJoinPersistentParty(
   }
   if (accountAlreadyInAnotherPersistentParty) {
     return { allowed: false, reason: 'account_already_in_party' };
+  }
+  // Legacy parties may remain together; new joins cannot increase role overflow.
+  const roles = state.members.map(member => member.role);
+  if (roles.some(role => !role || !(role in PERSISTENT_PARTY_ROLE_LIMITS))) {
+    return {allowed: false, reason: 'party_legacy_role_overflow'};
+  }
+  if (roles.some(role => roles.filter(other => other === role).length > PERSISTENT_PARTY_ROLE_LIMITS[role!])) {
+    return {allowed: false, reason: 'party_legacy_role_overflow'};
+  }
+  if (!candidate.role || !(candidate.role in PERSISTENT_PARTY_ROLE_LIMITS)) {
+    return {allowed: false, reason: 'party_role_required'};
+  }
+  if (persistentPartyOpenRoles(state.members)[candidate.role] < 1) {
+    return {allowed: false, reason: 'party_role_full'};
   }
   return { allowed: true };
 }
@@ -142,8 +177,9 @@ export interface LiveDungeonComposition {
 }
 
 /**
- * Persistent Parties are intentionally NOT role-locked. Live Dungeons remain a separate
- * synchronous queue and must still enforce exactly 1 Tank / 2 Damage / 1 Support.
+ * New persistent Party joins are now capped at 1 Tank / 2 Damage / 1 Support.
+ * Existing legacy parties are not kicked or invalidated on read. Live Dungeons
+ * still run their independent exact-composition check at queue start.
  */
 export function evaluateLiveDungeonComposition(members: readonly PersistentPartyMember[]): LiveDungeonComposition {
   const roles=members.flatMap(member=>member.role?[member.role]:[]);

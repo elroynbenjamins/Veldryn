@@ -11,7 +11,7 @@
 | III | Frostmarch | 51–75 | T5 51–62 | T6 63–75 | T6 helps from ~63, expected by ~67 | Region boss ~Lv75 |
 | IV | Ashlands | 76–100 | T7 76–87 | T8 88–100 | T8 helps from ~88, expected by ~92 | **Future only, no gameplay activation** |
 
-T9 requires a separate plan relative to the CURRENT level-100 cap. Do not assume a level 101+ is supported. **T6 is currently unreleased in `equipment-release.ts`** (MAX_RELEASED_EQUIPMENT_TIER=5); this chapter outline does not unlock it.
+**Important current-level distinction:** The Fallen Knight monster definition still has authored level 25, but the actual player-facing `challengeFallenKnight` gate uses `rebasedCombatLevelFromLegacyLevel(25)` (currently character level **20**). Raising the Chapter I boss to actual character level 25 is therefore part of this proposal, not something already true in the rebased runtime. Likewise, current Sunscar travel begins at rebased level 20, and current Frostmarch travel at rebased level 34. Do not confuse authored enemy levels with active character unlocks.\n\nT9 requires a separate plan relative to the CURRENT level-100 cap. Do not assume a level 101+ is supported. **T6 is currently unreleased in `equipment-release.ts`** (MAX_RELEASED_EQUIPMENT_TIER=5); this chapter outline does not unlock it.
 
 A single zone should not jump instantly from easy to inaccessible at a tier boundary. Introduce higher-tier enemies gradually over ~4 levels, keeping the prior tier viable with food, gems, enchants, tactics and optional companions. Stronger high-tier gear should shorten encounters and help survival; do not force a specific rarity or a full ten-piece set for ordinary mobs. Chapter bosses may reward a better kit but should not hard-require all Mythic/Epic rolls.
 

@@ -13,7 +13,7 @@ import {applyVerifiedPartyPreparation,deriveVerifiedPartyPhaseSupport,
 import {WEEKLY_PARTY_EVENT_FAMILIES,type WeeklyPartyFamily,
  type WeeklyPartyDifficulty,type WeeklyPartyPreparation} from './weekly-party-events-v2';
 import {buildHiddenPartyFamilyEncounterV8,deriveHiddenPartyFamilyObjectiveV8,
- partyEventFamilyDesignV8,type PartyEventFinaleV8,type FamilyObjectiveTraceV8} from './weekly-party-distinct-finales-v8';
+ partyEventFamilyDesignV8,type PartyEventFinaleV8,type FamilyObjectiveTraceV8,type FamilyChoiceV8} from './weekly-party-distinct-finales-v8';
 
 export const PARTY_EVENT_STORY_STAGES_V9_RELEASED=false;
 export type StoryStageV9=1|2|3;
@@ -181,6 +181,9 @@ export interface PartyEventStoryStageV9Preview{
  stage:StoryStageV9;family:WeeklyPartyFamily;variation:string;
  presentation:StoryPresentationV9;
  actions:readonly StoryActionV9[];
+ availableChoices:readonly FamilyChoiceV8[];
+ selectedChoice:string|null;
+ previousStageChoice:string|null;
  verifiedRequiredStages:number;
  verifiedOptionalPreparations:readonly WeeklyPartyPreparation[];
  verifiedFamilyBenefits:readonly {preparation:WeeklyPartyPreparation;label:string;stat:string;multiplier:number}[];
@@ -244,6 +247,10 @@ export function simulatePartyEventStoryStageV9(input:PartyEventStoryStageV9Input
  const base={kind:'hidden_non_rewarding_story_stage' as const,
   stage:input.stage,family:input.family,variation:input.variation,
   presentation,actions,
+  availableChoices:input.stage===1?[]:input.stage===2
+   ?[...finaleDesign.stage2]:[...finaleDesign.stage3],
+  selectedChoice:input.stage===1?null:input.stage===2?input.stage2Choice!:input.stage3Choice!,
+  previousStageChoice:input.stage===3?input.stage2Choice!:null,
   verifiedRequiredStages:support.combat.completedRequiredStages,
   verifiedOptionalPreparations:[...support.combat.completedOptionalPreparations],
   verifiedFamilyBenefits:benefits};
@@ -289,6 +296,6 @@ export function simulatePartyEventStoryStageV9(input:PartyEventStoryStageV9Input
   reason:combat.reason,victory:combat.victory,durationMs:combat.durationMs,
   familyObjective:deriveHiddenPartyFamilyObjectiveV8({encounter,players:prepared,combat}),
   combatEvents:combat.events.filter(e=>['cast_start','cast_complete','phase','interrupt',
-   'damage','heal','shield','status_apply','status_remove','combat_end'].includes(e.type)).slice(-125),
+   'damage','miss','dot_tick','hot_tick','heal','shield','status_apply','status_remove','combat_end'].includes(e.type)).slice(-125),
  }};
 }

@@ -19,7 +19,7 @@ export const PARTY_EVENT_STORY_STAGES_V9_RELEASED=false;
 export type StoryStageV9=1|2|3;
 type SceneTokenV9='dusty_crossing'|'moonlit_forest'|'fractured_runestones'|'mirrored_vault';
 type AnimationTokenV9='wagon_sway'|'tracks_reveal'|'rune_flicker'|'mirror_shimmer';
-type SkillV9='woodcutting'|'mining'|'herbalism'|'fishing'|'combat'|'crafting';
+type SkillV9='woodcutting'|'mining'|'herbalism'|'fishing'|'combat'|'exploration'|'smithing'|'tailoring'|'alchemy';
 export interface StoryActionV9{
  id:'scout_route'|'secure_approach'|'support_expedition'|'prepare_finale';
  label:string;
@@ -42,6 +42,7 @@ interface StoryFamilyV9{
  backdrop:SceneTokenV9;
  motion:AnimationTokenV9;
  foreground:string;
+ stageMotion:readonly [string,string,string];
  actions:readonly [string,string,string,string];
  goals:readonly [string,string,string,string];
  skillExamples:readonly [readonly SkillV9[],readonly SkillV9[],readonly SkillV9[],readonly SkillV9[]];
@@ -56,12 +57,13 @@ const STORIES:Readonly<Record<WeeklyPartyFamily,StoryFamilyV9>>={
    'Secure the cargo, repair axles and prepare the final charge.'],
   colorKey:'dust_amber',backdrop:'dusty_crossing',motion:'wagon_sway',
   foreground:'wagon_wheels_rope_wooden_barricade',
+  stageMotion:['scouts_raise_flag','arrows_strike_wagon','wagons_form_barrier'],
   actions:['Map the Wagon Route','Break the Ambush','Repair the Supply Train','Secure the Final Convoy'],
   goals:['Locate a viable crossing before the raiders move.',
    'Protect the wagon lane while raiders attack.',
    'Reinforce the train so cargo survives the finale.',
    'Commit a legal final loadout and cargo plan.'],
-  skillExamples:[['woodcutting','mining'],['combat','crafting'],['woodcutting','crafting'],['crafting']],
+  skillExamples:[['woodcutting','mining'],['combat','smithing'],['woodcutting','tailoring'],['tailoring']],
   alternatives:['Survey damaged bridge supports and mark the safe path.',
    'Construct a temporary wagon barricade.',
    'Repair a wagon axle with verified materials.',
@@ -79,12 +81,13 @@ const STORIES:Readonly<Record<WeeklyPartyFamily,StoryFamilyV9>>={
    'Set decoys and prepare to expose the alpha at the clearing.'],
   colorKey:'moon_indigo',backdrop:'moonlit_forest',motion:'tracks_reveal',
   foreground:'branch_silhouette_tracks_moonlight',
+  stageMotion:['footprints_fade_in','howl_shakes_leaves','moonlight_reveals_alpha'],
   actions:['Follow the Trail','Flush the Pack','Lay a Scent Decoy','Ready the Alpha Hunt'],
   goals:['Identify recent tracks and the safest approach.',
    'Keep the predator visible long enough to corner it.',
    'Prepare scent blockers and lure the pack.',
    'Commit a legal loadout and final pursuit route.'],
-  skillExamples:[['herbalism','fishing'],['combat','herbalism'],['herbalism','crafting'],['crafting']],
+  skillExamples:[['herbalism','fishing'],['combat','herbalism'],['herbalism','alchemy'],['tailoring']],
   alternatives:['Study spoor and record the direction of travel.',
    'Locate a concealed exit route for the hunters.',
    'Blend a scent decoy from verified herbs.',
@@ -102,12 +105,13 @@ const STORIES:Readonly<Record<WeeklyPartyFamily,StoryFamilyV9>>={
    'Link the surviving stones before the guardian overloads them.'],
   colorKey:'arcane_cyan',backdrop:'fractured_runestones',motion:'rune_flicker',
   foreground:'shattered_sigil_pillars_sparks',
+  stageMotion:['rune_cracks_glimmer','arcane_surge_pulses','ward_circle_links'],
   actions:['Read the Rune Fractures','Silence a Runestone','Ground a Failing Sigil','Ready the Ward Circle'],
   goals:['Map the unstable rune network.',
    'Interrupt magic before it cascades.',
    'Ground the spires and reinforce their links.',
    'Commit a legal loadout and final ward pattern.'],
-  skillExamples:[['mining','crafting'],['combat','mining'],['mining','crafting'],['crafting']],
+  skillExamples:[['mining','smithing'],['combat','mining'],['mining','smithing'],['tailoring']],
   alternatives:['Record the cracked rune pattern without fighting.',
    'Reconnect a loose conduit using verified ore.',
    'Reinforce an unstable rune circuit.',
@@ -125,12 +129,13 @@ const STORIES:Readonly<Record<WeeklyPartyFamily,StoryFamilyV9>>={
    'Decide whether to preserve or fracture the innermost seal.'],
   colorKey:'relic_violet',backdrop:'mirrored_vault',motion:'mirror_shimmer',
   foreground:'reflection_shards_sealed_relic',
+  stageMotion:['glyphs_reflect_in_water','mirrors_rotate','seal_hairline_fractures'],
   actions:['Decipher the Vault Glyphs','Navigate the Mirror Hall','Stabilize the Inner Seal','Ready the Reliquary Entry'],
   goals:['Identify the guardian’s protective inscriptions.',
    'Move through the mirrored passage without releasing corruption.',
    'Hold the seals and plan the danger budget.',
    'Commit a legal loadout and seal-opening route.'],
-  skillExamples:[['crafting','mining'],['combat','crafting'],['crafting','mining'],['crafting']],
+  skillExamples:[['exploration','mining'],['combat','smithing'],['exploration','mining'],['tailoring']],
   alternatives:['Copy the inscriptions for a safe translation.',
    'Align the mirrors to form a safe corridor.',
    'Restore one seal using verified materials.',
@@ -221,6 +226,8 @@ export function simulatePartyEventStoryStageV9(input:PartyEventStoryStageV9Input
  const presentation:StoryPresentationV9={
   scene:story.stage[stageIndex]+' — '+story.scenes[stageIndex],
   backdropToken:story.backdrop,motionToken:story.motion,foreground:story.foreground,
+  paletteToken:story.colorKey,stageMotion:story.stageMotion[stageIndex]!,
+  supplyCategoryShares:{...family.categoryShares},
   cues:[
    {atMs:2000+variationIndex*300,line:variationFlavor},
    {atMs:5800+stageIndex*700,line:story.scenes[stageIndex]!},
@@ -279,6 +286,6 @@ export function simulatePartyEventStoryStageV9(input:PartyEventStoryStageV9Input
   reason:combat.reason,victory:combat.victory,durationMs:combat.durationMs,
   familyObjective:deriveHiddenPartyFamilyObjectiveV8({encounter,players:prepared,combat}),
   combatEvents:combat.events.filter(e=>['cast_start','cast_complete','phase','interrupt',
-   'damage','heal','shield','status_apply','status_remove','combat_end'].includes(e.type)).slice(0,125),
+   'damage','heal','shield','status_apply','status_remove','combat_end'].includes(e.type)).slice(-125),
  }};
 }

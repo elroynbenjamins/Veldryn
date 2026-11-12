@@ -32,15 +32,34 @@ function previousMonth(key:string):string{
  return date.toISOString().slice(0,7);
 }
 function monthStartMs(key:string):number{return Date.parse(key+'-01T00:00:00.000Z');}
+/** Preserve the account ledger when upgrading older offline saves; discard malformed data. */
+export function normalizeMonthlyQuestMilestones(raw:unknown):MonthlyQuestMilestoneState{
+ const input=raw&&typeof raw==='object'?(raw as {months?:unknown}).months:undefined;
+ if(!Array.isArray(input))return {months:[]};
+ const allowedSkills=new Set<string>(['mining','woodcutting','fishing','herbalism','smithing','cooking','alchemy','exploration','tailoring','enchanting','faith']);
+ const months:MonthlyQuestMilestoneMonth[]=[];
+ for(const value of input){
+  if(!value||typeof value!=='object')continue;
+  const row=value as Partial<MonthlyQuestMilestoneMonth>;
+  if(typeof row.key!=='string'||!/^\d{4}-(0[1-9]|1[0-2])$/.test(row.key))continue;
+  const claimed:MonthlyQuestMilestoneMonth['claimed']={};
+  for(const milestone of MONTHLY_QUEST_MILESTONES){
+   const record=row.claimed?.[milestone.points];
+   if(!record||typeof record.characterId!=='string'||!record.characterId||!allowedSkills.has(record.skillId)||
+    !Number.isFinite(record.claimedAtMs)||!Number.isFinite(record.xpGranted)||record.xpGranted<1||record.xpGranted>milestone.xp)continue;
+   claimed[milestone.points]={characterId:record.characterId,skillId:record.skillId,claimedAtMs:record.claimedAtMs,xpGranted:record.xpGranted};
+  }
+  months.push({
+   key:row.key,
+   points:Number.isSafeInteger(row.points)&&Number(row.points)>=0?Math.min(300,Number(row.points)):0,
+   creditedQuestIds:Array.isArray(row.creditedQuestIds)?[...new Set(row.creditedQuestIds.filter(id=>typeof id==='string'&&id.length<120))].slice(-150):[],
+   claimed,
+  });
+ }
+ return {months:[...new Map(months.map(row=>[row.key,row])).values()].sort((a,b)=>a.key.localeCompare(b.key)).slice(-2)};
+}
 function readMonths(state:GameState):MonthlyQuestMilestoneMonth[]{
- const input=state.account.monthlyQuestMilestones?.months??[];
- if(!Array.isArray(input))return [];
- return input.filter(row=>row&&/^\d{4}-(0[1-9]|1[0-2])$/.test(row.key))
-  .map(row=>({
-   key:row.key,points:Number.isSafeInteger(row.points)&&row.points>=0?Math.min(300,row.points):0,
-   creditedQuestIds:Array.isArray(row.creditedQuestIds)?row.creditedQuestIds.filter(id=>typeof id==='string').slice(-150):[],
-   claimed:row.claimed??{},
-  }));
+ return normalizeMonthlyQuestMilestones(state.account.monthlyQuestMilestones).months;
 }
 function eligibleMonth(key:string,nowMs:number):boolean{
  const current=utcQuestMonth(nowMs);

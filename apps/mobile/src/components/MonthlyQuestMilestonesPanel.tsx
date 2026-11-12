@@ -32,6 +32,8 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
  const availableSkills=(selectedCharacter?.skills??[]).filter(skill=>skill.xp<MAX_SKILL_XP);
  const selectedMonth=selection?months.find(row=>row.key===selection.month):undefined;
  const selectedReward=selection?MONTHLY_QUEST_MILESTONES.find(row=>row.points===selection.threshold):undefined;
+ const selectedSkill=availableSkills.find(skill=>skill.skillId===skillId);
+ const actualXp=selectedReward&&selectedSkill?Math.min(selectedReward.xp,Math.max(0,MAX_SKILL_XP-selectedSkill.xp)):0;
  const open=(month:string,threshold:MonthlyQuestMilestoneThreshold)=>{
   setSelection({month,threshold});setCharacterId(state.character?.id??characters[0]?.id??'');setSkillId(null);setError('');
  };
@@ -94,6 +96,7 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
      </Pressable>)}
      {!availableSkills.length?<Text style={styles.muted}>All skills for this character have reached the XP cap. Select another character.</Text>:null}
     </View>
+    {selectedReward&&selectedSkill&&actualXp<selectedReward.xp?<Text style={[styles.muted,{color:C.warning}]}>{`Near the level-100 cap: only ${actualXp.toLocaleString()} of ${selectedReward.xp.toLocaleString()} XP would be applied to this skill. Select another skill to receive the full reward.`}</Text>:null}
     {error?<Text accessibilityLiveRegion="polite" style={[styles.muted,{color:C.bad}]}>{error}</Text>:null}
     <GameButton title="Claim Skill XP" disabled={!selection||!selectedMonth||!skillId||busy} loading={busy} onPress={claim}/>
    </ScrollView>

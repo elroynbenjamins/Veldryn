@@ -2,6 +2,7 @@ import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progress
 import type {ClassId} from '../core/types';
 import {NOVICE_RECIPES} from './novice-sets';
 import {GUILD_COMPONENT_RECIPES,GUILD_COMPONENT_CRAFTING_RELEASED} from './guild-components';
+import {CROSS_PROFESSION_COMPONENT_RECIPES} from './cross-profession-components';
 import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
 import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
@@ -60,6 +61,7 @@ export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alch
 const REBASED_CHARACTER_LEVEL_RECIPES=new Set([...TOOL_RECIPES,...V33_EQUIPMENT_RECIPES].map(recipe=>recipe.id));
 export const RECIPES:Recipe[]=[
 ...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
+...CROSS_PROFESSION_COMPONENT_RECIPES,
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
 // Keep the full catalog authoritative for crafting, progression, and save

@@ -7,7 +7,7 @@ export const DUNGEON_UNLOCK_LEVEL=10;
 export const DUNGEON_CHAPTER_ONE_BOSS='FALLEN_KNIGHT';
 const DUNGEON_REQUIREMENTS:Readonly<Record<string,{minLevel:number;powers:readonly [number,number,number];requiresChapterOne:boolean}>>=Object.freeze({
  EXP_001:{minLevel:10,powers:[2500,3750,5000],requiresChapterOne:false},
- EXP_003:{minLevel:25,powers:[6000,7250,8500],requiresChapterOne:true},
+ EXP_003:{minLevel:26,powers:[6000,7250,8500],requiresChapterOne:true},
 });
 const DEVELOPMENT_DUNGEONS=new Set(['EXP_005','EXP_007']);
 export function publishedRegularDungeon(def:ExpeditionDefinition):boolean{return def.coopImplemented&&Boolean(DUNGEON_REQUIREMENTS[def.id]);}

@@ -68,3 +68,33 @@ Pre-release QA still required:
 5. Fully test all actual Frostmarch levels and food consumption after changes to the hunt engine, particularly if the region moves away from authored timers.
 
 **Merge/deploy status: draft PR only.** No schema migration, release flag flip, production SQL, player XP rewrite, or player-data modification was performed.
+
+## 6. Additional regression and migration safeguards — November 12 continuation
+
+The draft branch now has a dedicated `apps/mobile/tests/regional-gear-save-compatibility.ts` test for all nine classes: preserve already-equipped T3/T4/T5 item IDs and stats in a pre-transition level state, prevent *new* equipping before character Lv26/38/51, and confirm unlocked requirements are respected once attained. The test also asserts T6 is still not released. **This is not a full migration dry-run against production data** and does not guarantee safe item swaps in every historical save variant.
+
+All Sunscar/Frostmarch chapter areas, exploration surveys and region monsters have matching new character-level bands. The prior advanced-Sunscar survey test was corrected to simulate the new **Lv38** Mirage entry rather than the old rebased Lv45. Existing Area IDs and legacy navigation aliases are unchanged; the new target band does not revoke exploration IDs. Unreleased Ashlands monsters are clamped to its future Lv76 entrance so authoring does not indicate a lower level than the visible region preview.
+
+**Locked future items** T7/T8/T9 have provisional display/equip floors **76/88/100**. This does *not* constitute approval or release of Tier 9; the user's chapter plan puts T7/T8 in future Ashlands and reserves the T9 design for a later pass.
+
+The approved tool-blueprint lower drop odds remain in effect; the regression now checks the reduced, rounded **3.5%** T2 baseline instead of the superseded 4.75%. A mild optional **Alchemy Lv76** double Rimeward Distillate batch uses 6 Wintermint / 3 Rimeglass / 5 Rime Resin for 2 outputs, 340 sec, 400 base Gold, 2,800 XP. The Lv46 recipe remains the standard T5 path; T6 remains locked.
+
+### Sunscar dungeon new-run balance
+
+Current server-authoritative Sunscar dungeon tiers remain at published **6,000 / 7,250 / 8,500 CP**, but minimum entry is now Lv26. The transition to a higher character level made the prior Tier II and Tier III test profile slightly too strong. The branch now stamps new sessions with `regional-tier-power-v2`, while saved `regional-tier-power-v1` Sunscar runs preserve their prior enemy level and multipliers. Dedicated tests verify the v1/v2 distinction. The new v2 Tier II attack/HP multipliers are 1.225/2.78 and Tier III 1.275/2.85; **these are provisional until the 40-seed two-boss regression passes**. Do not weaken the published target bands merely to make the test pass.
+
+### Generated Edge bundle parity
+
+The source changes affect the server-side shared gameplay and co-op engines, so the committed generated Edge bundles must be rebuilt before any merge. `.github/workflows/rebuild-region-balance-edge-branch.yml` is a *branch-only* one-shot rebuild that installs locked packages, runs `pnpm --dir backend build:online`, verifies both generated bundles, and may commit only those two generated files back to the **draft branch**. It has no production DB access, no deployment step, and cannot push to `main`. The workflow is queued as GitHub Actions [run 43220359459](https://github.com/elroynbenjamins/Veldryn/actions/runs/43220359459).
+
+The expanded [regional combat regression](https://github.com/elroynbenjamins/Veldryn/actions/workflows/regional-combat-simulation.yml) now asserts level-band consistency, 25 Frostmarch checkpoints, XP timing target, three-healing-potion fairness, crafting recipes, old-equipped-gear preservation and basic source checks. Previous dedicated 25-hour/Fallen Knight simulation [43210183324](https://github.com/elroynbenjamins/Veldryn/actions/runs/43210183324) passed, but **newest branch checks are queued** and are not yet accepted as passing.
+
+### Explicit remaining release requirements
+
+- **High priority**: Determine how to grandfather already-existing Sunscar characters at previous rebased levels 20–25 who could enter the area before the new Lv26 gate. Do not silently delete history or upgrade character XP. Existing gear/equipment state should survive, but access for active low-level characters requires an explicit compatibility policy.
+- **High priority**: Pass updated Sunscar Tier I/II/III dungeon Q-Mode tests for both final bosses at 105% minimum CP; leave all existing v1 run snapshots untouched.
+- **High priority**: Regenerate/verify both Edge bundles in branch, then pass backend authoritative tests.
+- **Release quality**: Full mobile validation currently has unrelated pre-existing Expo package drift and UI-contract failures in Guild/Profile/scroll indicators. Do not mark the release fully green until those are addressed or independently baselined.
+- **Content**: Lv50/75 regional bosses are not designed/implemented here, and T6 artwork/source QA remains pending.
+
+**No merge or deployment occurred.** This document must not be read as production rollout approval.

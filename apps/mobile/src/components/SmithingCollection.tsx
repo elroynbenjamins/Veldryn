@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState,type ComponentProps} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {EQUIPMENT_SETS} from '../content/equipment-sets';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../content/equipment-recipes-v33';
 import {isReleasedEquipmentTier} from '../content/equipment-release';
 import {RECIPES} from '../content/skills';
 import {alchemyRecipeDef} from '../content/alchemy';
@@ -38,7 +39,11 @@ export const SmithingHeader=EquipmentCraftingHeader;
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
  const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{fontScale}=useWindowDimensions();
- const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||!!r.v33SetId||r.classId===state.character?.classId)&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId]);
+ const [showAllClasses,setShowAllClasses]=useState(false);
+ const ownProfession=!!state.character&&EQUIPMENT_CRAFT_SKILL_BY_CLASS[state.character.classId]===skillId;
+ // Keep normal browsing focused on your class, with an opt-in for commissions.
+ // In the other profession, show the available foreign-class equipment directly.
+ const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||(!r.v33SetId?r.classId===state.character?.classId:showAllClasses||!ownProfession||r.classId===state.character?.classId))&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId,showAllClasses,ownProfession]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId);
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);
@@ -68,8 +73,9 @@ export function SmithingCollection(props:Props){
   </Pressable>
   {queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
+  {tab==='equipment'&&ownProfession?<Pressable accessibilityRole="button" accessibilityState={{selected:showAllClasses}} onPress={()=>{setShowAllClasses(value=>!value);setItemId(undefined);setDetailsOpen(false);}} style={[s.control,panel,{flexDirection:'row',justifyContent:'space-between'}]}><Text style={[s.body,text]}>{gt('Equipment for all classes')}</Text><Text style={[s.caption,{color:showAllClasses?C.good:C.muted}]}>{showAllClasses?gt('All classes'):gt('My class')}</Text></Pressable>:null}
   {tab==='equipment'&&set&&item&&recipe&&status?<>
-   <View style={s.between}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')}</Text><Text style={[s.body,muted]}>{state.character?.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
+   <View style={s.between}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')}</Text><Text style={[s.body,muted]}>{set.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
    <View style={s.tiers}>{tiers.map(tier=>{const first=sets.find(row=>row.tier===tier)!,selectedTier=tier===set.tier;return <Pressable key={tier} accessibilityRole="button" accessibilityLabel={`${gl('Tier')} ${tier.slice(1)}`} accessibilityState={{selected:selectedTier}} onPress={()=>chooseSet(first.id)} style={({pressed})=>[s.tierOption,{width:(width-24)/4,backgroundColor:selectedTier?C.selection:C.panel,borderColor:selectedTier?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tierNumber,{color:selectedTier?C.text:C.muted}]}>{tier}</Text>{selectedTier?<View style={[s.tierMarker,{backgroundColor:C.selectionLine}]}/>:null}</Pressable>})}</View>
    <View style={[s.setHeader,panel]}>
     {button('‹',()=>chooseSet(tierSets[(setIndex-1+tierSets.length)%tierSets.length].id),undefined,gt('Previous set'))}

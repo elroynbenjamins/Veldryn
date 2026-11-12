@@ -93,6 +93,18 @@ function reducedSunscarDunewood(base:number,multiplier:number){
   return Math.max(1,Math.round(q(base,multiplier)*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR));
 }
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
+/** Each T1-T4 piece uses a small input produced by its opposite profession.
+ * Nothing in this list is a prerequisite for crafting the component itself. */
+export const CROSS_PROFESSION_ASSEMBLY_INPUTS:Readonly<Record<string,{smithing:string;tailoring:string;baseQty:number}>>={
+  T1:{smithing:'CLOTH_BINDINGS',tailoring:'METAL_CLASPS',baseQty:1},
+  T2:{smithing:'PADDED_LININGS',tailoring:'REINFORCED_BUCKLES',baseQty:1},
+  T3:{smithing:'REINFORCED_STRAPS',tailoring:'ARMOR_RIVETS',baseQty:2},
+  T4:{smithing:'REINFORCED_STRAPS',tailoring:'ARMOR_RIVETS',baseQty:3},
+};
+export function crossProfessionAssemblyInput(tier:string,skillId:'smithing'|'tailoring',slotMultiplier:number){
+  const entry=CROSS_PROFESSION_ASSEMBLY_INPUTS[tier];
+  return entry?[{itemId:entry[skillId],quantity:Math.max(1,Math.round(entry.baseQty*slotMultiplier))}]:[];
+}
 function mergeInputs(inputs:{itemId:string;quantity:number}[]){
   const totals=new Map<string,number>();for(const input of inputs)totals.set(input.itemId,(totals.get(input.itemId)??0)+input.quantity);
   return [...totals].map(([itemId,quantity])=>({itemId,quantity}));
@@ -151,7 +163,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     xp:craftXp,
     gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
+    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),...crossProfessionAssemblyInput(tier,skillId,multiplier),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

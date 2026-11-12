@@ -38,3 +38,28 @@ export function frostMarchCharacterXpMultiplier(zone:string,characterLevel:numbe
  if(l<=62)return 1.4+(l-51)*(0.60/11);
  return 2.0+(l-62)*(0.30/13);
 }
+
+/**
+ * Staged authored regional monster levels. Source monsters retain their
+ * catalog item/drop identities; only the character-facing combat/unlock
+ * levels are remapped. No extra HP/attack/defense multiplier is applied.
+ */
+export const REGION_MONSTER_LEVELS:Readonly<Record<string,{level:number;unlockLevel:number}>>={
+ SUNSCAR_SCORPION:{level:28,unlockLevel:26},
+ SAFFRON_MARAUDER:{level:30,unlockLevel:29},
+ DUNE_ORACLE:{level:34,unlockLevel:32},
+ GLASS_DUNE_STRIDER:{level:36,unlockLevel:35},
+ MIRAGE_SHADE:{level:40,unlockLevel:38},
+ GLASSBOUND_SENTINEL:{level:42,unlockLevel:41},
+ OBSERVATORY_KEEPER:{level:47,unlockLevel:46},
+ ROYAL_SANDGUARD:{level:50,unlockLevel:49},
+ FROSTWOLF:{level:52,unlockLevel:51},
+ ICEBOUND_RAIDER:{level:55,unlockLevel:54},
+ SNOW_TREANT:{level:58,unlockLevel:57},
+ BELLWRAITH:{level:61,unlockLevel:59},
+ RIME_STALKER:{level:65,unlockLevel:64},
+ LAKEBOUND_SPECTER:{level:68,unlockLevel:67},
+ CHOIR_HUNTER:{level:72,unlockLevel:71},
+ WYRMSPINE_GUARDIAN:{level:75,unlockLevel:74},
+ FALLEN_KNIGHT:{level:25,unlockLevel:25},
+};

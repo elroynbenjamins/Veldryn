@@ -9,7 +9,8 @@
  * enemy simulation. It does not mutate production, release locks, or save files.
  */
 import {CLASS_IDS,PATHS,SCENARIOS,STAGES,makeCharacter} from './regional-gear-cp-benchmark-entry';
-import {combatSustainProjection,effectiveStats,previewFallenKnightBattle} from '../apps/mobile/src/core/game';
+import {combatSustainProjection,effectiveStats,previewFallenKnightBattle,fallenKnightPlayerSnapshot} from '../apps/mobile/src/core/game';
+import {simulateFallenKnightStoryBattle} from '../apps/mobile/src/core/story-boss';
 import {MONSTERS} from '../apps/mobile/src/content/monsters';
 import {characterXpForNextLevel} from '../apps/mobile/src/core/progression';
 import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipes-v33';
@@ -125,6 +126,37 @@ for(const scenarioId of SELECTED){
   });
  }
 }
+/** Dry-run damage-sweep to choose a fair 3-potion Chapter I boss coefficient. */
+const bossDamageSweep:Record<string,unknown>[]=[];
+for(const factor of [1,.9,.85,.8,.75,.7]){
+ for(const scenarioId of ['mixed_7_of_10_common_q40','full_common_q50_plain','representative_common_q50'] as const){
+  const profileWins:number[]=[];
+  for(const cls of CLASS_IDS)for(const path of PATHS){
+   const base=makeCharacter(cls,path,bossStage,get(scenarioId));
+   const state={...base,character:{...base.character!,
+     currentHp:effectiveStats(base).hp,equippedHealingPotionId:'RIVERHEART_DRAUGHT'},
+     inventory:{...base.inventory,stacks:[{itemId:'RIVERHEART_DRAUGHT',quantity:3}]},
+   };
+   const snapshot=fallenKnightPlayerSnapshot(state);
+   let wins=0;
+   for(let seed=0;seed<BOSS_SEEDS;seed++){
+    const time=Date.UTC(2026,10,12,12,0,0)+seed*93_001;
+    const battle=simulateFallenKnightStoryBattle({
+     ...snapshot,incomingDamageMultiplier:snapshot.incomingDamageMultiplier*factor,
+    },`${state.character!.id}:FALLEN_KNIGHT_STORY:${time}`,'story');
+    wins+=Number(battle.won);
+   }
+   profileWins.push(wins/BOSS_SEEDS);
+  }
+  bossDamageSweep.push({
+   factor,scenario:scenarioId,
+   winRate:rounded(mean(profileWins),4),
+   minimumClassPathWinRate:rounded(Math.min(...profileWins),4),
+   classPathsBelow75Pct:profileWins.filter(v=>v<.75).length,
+  });
+ }
+}
+
 const recipeAudit:Record<string,unknown>[]=[];
 const chapterMidpoints:Record<string,number>={T1:1,T2:13,T3:26,T4:38,T5:51,T6:63};
 for(const tier of ['T1','T2','T3','T4','T5','T6']){
@@ -161,5 +193,5 @@ console.log(JSON.stringify({
   huntLoadouts:CLASS_IDS.length*PATHS.length*SELECTED.length*ENCOUNTERS.length,
   bossAttempts:bossResults.reduce((sum,r)=>sum+Number(r.attempts),0),
  },
- hunts:simHunts,boss:bossResults,recipes:recipeAudit,
+ hunts:simHunts,boss:bossResults,bossDamageSweep,recipes:recipeAudit,
 }));

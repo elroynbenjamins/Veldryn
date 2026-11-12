@@ -165,7 +165,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
   const howl=(safe2 ? 0.92 : 1.13)*(safe3 ? 0.88 : 1.11)*strength;
   hpModifier=(safe2?1.05:.95)*(safe3?1.02:.96);
   evasionBonus=safe2?-15:24;
-  attackModifier=safe3?.98:1.05;
+  attackModifier=safe3 ? 0.98 : 1.05;
   attacks=[
    cast('HUNT_HOWL','Nightfall Howl','shadow',.42*howl,Math.round(18000*speed),
     4100,'all_enemies',[{kind:'debuff',tag:'healing_received',value:-.08,durationMs:6000}]),
@@ -175,8 +175,8 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
     tags:['party_event_hidden_v8','counterable_hazard','hunt_concealment']},
   ];
   phases=[
-   phase('HUNT_REVEAL_70',.7,'self',[{kind:'debuff',tag:'damage_taken',value:safe3?.10:.18,durationMs:9500}]),
-   phase('HUNT_REVEAL_35',.35,'self',[{kind:'debuff',tag:'damage_taken',value:safe3?.10:.18,durationMs:9500}]),
+   phase('HUNT_REVEAL_70',.7,'self',[{kind:'debuff',tag:'damage_taken',value:safe3 ? 0.10 : 0.18,durationMs:9500}]),
+   phase('HUNT_REVEAL_35',.35,'self',[{kind:'debuff',tag:'damage_taken',value:safe3 ? 0.10 : 0.18,durationMs:9500}]),
   ];
   tags=['tracking','exposure_window'];break;
  }
@@ -204,7 +204,7 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
   const seal=(safe2 ? 0.92 : 1.13)*(safe3 ? 0.86 : 1.19)*strength;
   hpModifier=(safe2?1.05:.96)*(safe3?1.05:.93);
   defenseModifier*=safe3?1.04:.86;
-  attackModifier=safe3?.98:1.07;
+  attackModifier=safe3 ? 0.98 : 1.07;
   attacks=[
    cast('RELIQUARY_SWEEP','Mirrored Sweep','nature',.42*seal,
     Math.round(17300*speed),3800,'all_enemies',
@@ -217,8 +217,8 @@ export function buildHiddenPartyFamilyEncounterV8(input:HiddenPartyFinaleHazardI
       durationMs:safe3?4000:6000,tickMs:2000}]),
   ];
   phases=[phase('RELIQUARY_FRACTURE_50',.50,'self',[
-   {kind:'buff',tag:'damage_done',value:safe3?.05:.12,durationMs:13000},
-   {kind:'debuff',tag:'damage_taken',value:safe3?.05:.15,durationMs:12000},
+   {kind:'buff',tag:'damage_done',value:safe3 ? 0.05 : 0.12,durationMs:13000},
+   {kind:'debuff',tag:'damage_taken',value:safe3 ? 0.05 : 0.15,durationMs:12000},
   ])];
   tags=['seal_corruption','dangerous_shortcut'];break;
  }

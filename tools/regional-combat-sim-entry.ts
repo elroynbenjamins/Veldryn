@@ -42,7 +42,7 @@ for(const e of ENCOUNTERS){
  const stage=STAGES.find(s=>s.tier===e.tier&&s.level===e.level);
  assert(stage,'missing stage '+e.tier+'/'+e.level);
  const monster=MONSTERS.find(m=>m.id===e.monster);
- assert(monster&&(monster.zone===e.region||(e.region==='Asterfall'&&monster.zone===\"King's Road\"))&&!monster.boss,'missing encounter '+e.monster);
+ assert(monster&&(monster.zone===e.region||(e.region==='Asterfall'&&monster.zone==="King's Road"))&&!monster.boss,'missing encounter '+e.monster);
  for(const scenarioId of SELECTED){
   const scenario=get(scenarioId),rows:ReturnType<typeof combatSustainProjection>[]=[];
   for(const cls of CLASS_IDS)for(const path of PATHS){

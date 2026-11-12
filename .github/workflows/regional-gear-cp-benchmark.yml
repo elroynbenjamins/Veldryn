@@ -1,0 +1,43 @@
+name: Regional gear Combat Power benchmark
+
+# Calibration only. Uses game sources; it does not deploy, open content,
+# change enemy stats, or read any production/player data.
+on:
+  push:
+    paths:
+      - 'tools/regional-gear-cp-benchmark-entry.ts'
+      - 'tools/regional-gear-cp-benchmark.mjs'
+      - '.github/workflows/regional-gear-cp-benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies (esbuild runtime)
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Calculate nine-class by two-path Combat Power cohorts
+        run: |
+          node tools/regional-gear-cp-benchmark.mjs > regional-gear-cp-results.csv
+          test "$(wc -l < regional-gear-cp-results.csv)" -eq 61
+          head -n 4 regional-gear-cp-results.csv
+          echo "Benchmark rows: $(wc -l < regional-gear-cp-results.csv)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regional-gear-cp-benchmark
+          path: regional-gear-cp-results.csv
+          retention-days: 14

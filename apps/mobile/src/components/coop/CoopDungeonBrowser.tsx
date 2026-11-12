@@ -203,14 +203,14 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
 function FactRow({label,value,last=false}:{label:string;value:string;last?:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);return <View style={[s.factRow,last&&s.factRowLast]}><Text style={s.factLabel}>{label}</Text><Text style={s.factValue}>{value}</Text></View>}
 const TIER_ROMAN:Record<number,string>={1:'I',2:'II',3:'III'};
-function TierChoice({value,requiredLevel,requiredPower,currentLevel,currentPower,selected,levelLabel,difficultyLabel,marks,onPress}:{value:CoopTier;requiredLevel:number;requiredPower:number;currentLevel:number;currentPower:number;selected:boolean;levelLabel:string;difficultyLabel:string;marks?:number;onPress:()=>void}){
+function TierChoice({value,requiredLevel,requiredPower,currentLevel,currentPower,selected,levelLabel,difficultyLabel,marks,onPress}:{value:CoopTier;requiredLevel:number;requiredPower?:number;currentLevel:number;currentPower?:number;selected:boolean;levelLabel:string;difficultyLabel:string;marks?:number;onPress:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
- const locked=currentLevel<requiredLevel||currentPower<requiredPower;
- const pips='★'.repeat(value)+'☆'.repeat(3-value);
- return <Pressable accessibilityRole="button" accessibilityLabel={`${difficultyLabel} ${value}, ${levelLabel} ${requiredLevel}, ${requiredPower.toLocaleString()} Combat Power${marks?', ~'+marks+' Marks':''}`} accessibilityState={{selected,disabled:locked}} disabled={locked} onPress={onPress} style={({pressed})=>[s.tierChoice,selected&&s.tierChoiceSelected,locked&&s.tierChoiceLocked,pressed&&s.pressed]}>
+ const locked=currentLevel<requiredLevel||(requiredPower!==undefined&&currentPower!==undefined&&currentPower<requiredPower);
+ const pips='★'.repeat(value)+'☆'.repeat(Math.max(0,3-value));
+ return <Pressable accessibilityRole="button" accessibilityLabel={`${difficultyLabel} ${value}, ${levelLabel} ${requiredLevel}, ${requiredPower===undefined?'':requiredPower.toLocaleString()+' Combat Power, '}${marks?', ~'+marks+' Marks':''}`} accessibilityState={{selected,disabled:locked}} disabled={locked} onPress={onPress} style={({pressed})=>[s.tierChoice,selected&&s.tierChoiceSelected,locked&&s.tierChoiceLocked,pressed&&s.pressed]}>
   <Text style={[s.tierPips,selected&&s.tierNumberSelected]} numberOfLines={1}>{pips}</Text>
   <Text style={[s.tierNumber,selected&&s.tierNumberSelected]}>{TIER_ROMAN[value]??value}</Text>
-  <Text numberOfLines={1} style={s.tierLevel}>{requiredPower.toLocaleString()} CP</Text>
+  <Text numberOfLines={1} style={s.tierLevel}>{requiredPower===undefined?`${levelLabel} ${requiredLevel}`:`${requiredPower.toLocaleString()} CP`}</Text>
   {marks?<Text numberOfLines={1} style={s.tierMarks}>~{marks} ★</Text>:null}
   {locked?<Text style={s.tierLock}>◆</Text>:null}
  </Pressable>;

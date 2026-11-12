@@ -32,7 +32,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  const q=query.trim().toLowerCase();
  const recipes=useMemo(()=>{
   const key=skillId+':'+state.character?.classId,cached=recipeGroups.get(key);if(cached)return cached;
-  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
   recipeGroups.set(key,group);return group;
  },[skillId,state.character?.classId]);
  const stored=useMemo(()=>{

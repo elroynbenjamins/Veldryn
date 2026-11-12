@@ -46,9 +46,13 @@ Each family also has **three different scene twists** with small, deterministic 
 
 **Balance tuning required before launch:** Compare cautious/risky branch choices with real power/gear level curves, validate that 30/35/30/70 objective thresholds are fair, use real fully frozen companion/food/potion state, check actual Day 8 tiers, evaluate how barriers and DoTs interact with all nine classes, and then wire server-owned ballots to a transaction-safe event resolver. Keep v8's released constant false throughout.
 
+## v9 continuation: different scouting, confrontations, preparations and visuals
+
+See [Party Events weekly stories v9](./party-events-weekly-stories-v9.md). Four separate, three-stage story arcs now have family-specific scouting alternatives, voted combat mechanics, final preparation objectives, pixel-scene motion/color tokens and small receipt-gated optional supply buffs. Stage 1 is noncombat. Stages 2/3 use the real deterministic combat engine and enforce a role-legal party. V9 remains entirely hidden and does not issue EP, resources or rewards.
+
 ## Guardrails
 
-- `PARTY_WEEKLY_EVENTS_RELEASED`, `PARTY_EVENT_STAGE_V3_RELEASED`, `PARTY_EVENT_FINALE_HAZARDS_V6_RELEASED`, `PARTY_EVENT_FINALE_OBJECTIVES_V7_RELEASED`, and `PARTY_EVENT_DISTINCT_FINALES_V8_RELEASED` stay false.
+- `PARTY_WEEKLY_EVENTS_RELEASED`, `PARTY_EVENT_STAGE_V3_RELEASED`, `PARTY_EVENT_FINALE_HAZARDS_V6_RELEASED`, `PARTY_EVENT_FINALE_OBJECTIVES_V7_RELEASED`, and `PARTY_EVENT_DISTINCT_FINALES_V8_RELEASED`, and `PARTY_EVENT_STORY_STAGES_V9_RELEASED` stay false.
 - The new module is not imported from `resolvePartyEventDayEightBoss` or public APIs; the old Medium curve, contribution accounting, shared reward-band formula and saved loadout verification remain as before.
 - Replay-only metrics are labels for future UX, **not implemented objective-health meters**. Do not claim the mechanic is fully shippable or allow the browser to author votes.
 - Stage vote selection must eventually be read from a frozen, service-authored ballot ledger. Client-provided `stage2Choice`, `stage3Choice`, `baseline` or `players` is never sufficient for authoritative settlement.

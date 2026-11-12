@@ -1,5 +1,5 @@
 import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
-import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,T3_SMITHING_DUNEWOOD_FINAL_FACTOR,T4_SMITHING_DUNEWOOD_FINAL_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
@@ -114,14 +114,15 @@ for(const recipe of t3){
   const woodBase=recipe.skillId==='tailoring'?10:22;
   const previousWood=Math.max(1,Math.round(woodBase*1.35*originalSlotGold[slot]));
   const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
-  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR)),recipe.id+' must reduce recently tripled T3 Dunewood by 20% after slot rounding');
+  const woodFactor=recipe.skillId==='smithing'?T3_SMITHING_DUNEWOOD_FINAL_FACTOR:T3_T4_DUNEWOOD_REDUCTION_FACTOR;
+  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*woodFactor)),recipe.id+' must preserve the moderate T3 Dunewood adjustment after slot rounding');
   ok(recipe.inputs.find(row=>row.itemId==='SUNSCAR_DUNE_BINDER')?.quantity===1,recipe.id+' must preserve one Dune Binding Resin');
 }
 for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
   for(const path of ['Foundation','Alternate']){
     const set=t3.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
-    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?643:290),classId+' / '+path+' T3 set must reflect the 20% cut, rounded for every piece');
+    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?590:290),classId+' / '+path+' T3 set must reflect the 20% cut, rounded for every piece');
     ok(set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='SUNSCAR_DUNE_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T3 set must still require ten Dune Binders');
   }
 }
@@ -132,7 +133,8 @@ for(const recipe of t4){
   const woodBase=recipe.skillId==='tailoring'?7:8;
   const previousWood=Math.max(1,Math.round(woodBase*2*originalSlotGold[slot]));
   const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
-  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR)),recipe.id+' must reduce recently tripled T4 Dunewood by 20% after slot rounding');
+  const woodFactor=recipe.skillId==='smithing'?T4_SMITHING_DUNEWOOD_FINAL_FACTOR:T3_T4_DUNEWOOD_REDUCTION_FACTOR;
+  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*woodFactor)),recipe.id+' must preserve the moderate T4 Dunewood adjustment after slot rounding');
 }
 ok(t4.every(recipe=>recipe.inputs.some(input=>input.itemId==='DUNEWOOD')&&recipe.inputs.some(input=>input.itemId==='GLASSBOUND_BINDER'&&input.quantity===1)&&!recipe.inputs.some(input=>input.itemId==='GLASSBOUND_CORE')),'Each T4 piece must use one Glassbound Binder and ordinary regional timber, never duplicate the rare Core directly');
 for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
@@ -140,7 +142,7 @@ for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
     const set=t4.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     ok(set.length===10&&set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='GLASSBOUND_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T4 set must cost precisely ten Glassbound Binders');
     const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
-    ok(woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?349:308),classId+' / '+path+' T4 set must reflect the 20% cut, rounded for every piece');
+    ok(woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?321:308),classId+' / '+path+' T4 set must reflect the 20% cut, rounded for every piece');
   }
 }
 const binderRoutes=RECIPES.filter(recipe=>recipe.output.itemId==='GLASSBOUND_BINDER');

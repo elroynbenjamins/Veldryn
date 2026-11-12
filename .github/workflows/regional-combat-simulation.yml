@@ -50,12 +50,7 @@ jobs:
         run: |
           pnpm --dir apps/mobile typecheck:core
           pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
-          for test in \\
-            apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js \\
-            apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js \\
-            apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js \\
-            apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js \\
-            apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js
+          for test in apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js
           do
             if [ -f "$test" ]; then node "$test"; fi
           done

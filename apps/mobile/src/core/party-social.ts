@@ -62,6 +62,15 @@ export interface PersistentPartySummary {
 }
 
 /** Desired class composition for a complete, four-member persistent Party. */
+export function partyHasRoleOverflow(members: readonly Pick<PartyMemberSummary,'role'>[]): boolean {
+ const counts: Record<PartyRole,number> = {tank:0,damage:0,support:0};
+ for (const member of members) {
+  if (!(member.role in counts)) return true;
+  counts[member.role]++;
+ }
+ return counts.tank>1 || counts.damage>2 || counts.support>1;
+}
+
 export function partyRoleVacancies(members: readonly Pick<PartyMemberSummary,'role'>[]): Record<PartyRole,number> {
  const counts:Record<PartyRole,number>={tank:1,damage:2,support:1};
  for(const member of members)if(member.role in counts)counts[member.role]--;

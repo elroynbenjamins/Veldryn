@@ -82,6 +82,7 @@ const BOSS_SEEDS=12;
 for(const scenarioId of SELECTED){
  for(const potionMode of ['none','five_healing_potions'] as const){
   const outcomes:{won:boolean;durationMs:number;potions:number;bossHpFraction:number}[]=[];
+  const perProfile:{classId:string;path:string;winRate:number|null;avgPotions:number|null}[]=[];
   let profiles=0;
   for(const cls of CLASS_IDS)for(const path of PATHS){
    const base=makeCharacter(cls,path,bossStage,get(scenarioId));
@@ -92,15 +93,22 @@ for(const scenarioId of SELECTED){
      inventory:{...base.inventory,stacks:potionMode==='none'?[]:[{itemId:'RIVERHEART_DRAUGHT',quantity:5}]},
    };
    profiles++;
+   const profileOutcomes:typeof outcomes=[];
    for(let seed=0;seed<BOSS_SEEDS;seed++){
     const battle=previewFallenKnightBattle(prepared,Date.UTC(2026,10,12,12,0,0)+seed*93_001,'story');
     assert(battle.foodConsumed===0,'food used in boss');
     assert(battle.potionConsumed<=5,'potion cap broken');
-    outcomes.push({
+    const outcome={
      won:battle.won,durationMs:battle.durationMs,potions:battle.potionConsumed,
      bossHpFraction:battle.finalBossHp/Math.max(1,battle.bossMaxHp),
-    });
+    };
+    outcomes.push(outcome);profileOutcomes.push(outcome);
    }
+   perProfile.push({
+    classId:cls,path,
+    winRate:rounded(profileOutcomes.filter(o=>o.won).length/profileOutcomes.length,4),
+    avgPotions:rounded(mean(profileOutcomes.map(o=>o.potions))),
+   });
   }
   bossResults.push({
    bossId:'FALLEN_KNIGHT',authoringLevel:25,testedCharacterLevel:25,
@@ -110,6 +118,9 @@ for(const scenarioId of SELECTED){
    durationSecondsMean:rounded(mean(outcomes.map(x=>x.durationMs))/1000),
    consumedPotionsMean:rounded(mean(outcomes.map(x=>x.potions))),
    remainingBossHpFractionMean:rounded(mean(outcomes.map(x=>x.bossHpFraction)),4),
+   minClassPathWinRate:Math.min(...perProfile.map(p=>p.winRate??0)),
+   classPathsBelow75Pct:perProfile.filter(p=>(p.winRate??0)<.75).length,
+   perClassPath:perProfile,
    status:'current_live_boss_rules_but_synthetic_fixtures',
   });
  }

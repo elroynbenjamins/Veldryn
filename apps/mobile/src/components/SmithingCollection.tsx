@@ -38,7 +38,7 @@ export const SmithingHeader=EquipmentCraftingHeader;
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
  const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{fontScale}=useWindowDimensions();
- const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId]);
+ const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||!!r.v33SetId||r.classId===state.character?.classId)&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId);
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);

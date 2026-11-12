@@ -43,7 +43,8 @@
     "test:companion-trial-playback": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/companion-trial-playback.js",
     "test:onboarding-locks": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/pet-companion-onboarding-locks.js && node .core-build/apps/mobile/tests/pet-companion-unlock-moments.js && node .core-build/apps/mobile/tests/early-onboarding-exposure.js",
     "test:class-affinities": "node -e \"require('fs').rmSync('.affinity-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .affinity-build && node .affinity-build/apps/mobile/tests/class-skill-affinities.js",
-    "test:tool-artwork": "node tests/gathering-tool-individual-artwork.cjs"
+    "test:tool-artwork": "node tests/gathering-tool-individual-artwork.cjs",
+    "test:cross-profession-art": "node tests/cross-profession-art.cjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",

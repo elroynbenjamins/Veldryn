@@ -60,7 +60,7 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
     <Text style={styles.monthTitle}>{month.isPrevious?'Previous month':'This month'} · {month.key}</Text>
     <Text style={styles.monthPoints}>{month.points} / 100 pts</Text>
    </View>
-   <View style={styles.progressTrack}><View style={[styles.progressFill,{width:(Math.min(100,month.points)+'%') as (number|string)&string}]}/></View>
+   <View style={styles.progressTrack}><View style={[styles.progressFill,{width:(Math.min(100,month.points)+'%') as `${number}%`}]}/></View>
    {month.isPrevious?<Text style={styles.muted}>Earned rewards remain claimable during the first 7 days of the new month (UTC).</Text>:null}
    <View style={styles.milestoneList}>
     {MONTHLY_QUEST_MILESTONES.map((milestone,index)=>{
@@ -94,7 +94,7 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
      </Pressable>)}
      {!availableSkills.length?<Text style={styles.muted}>All skills for this character have reached the XP cap. Select another character.</Text>:null}
     </View>
-    {error?<Text accessibilityLiveRegion="polite" style={[styles.muted,{color:C.danger}]}>{error}</Text>:null}
+    {error?<Text accessibilityLiveRegion="polite" style={[styles.muted,{color:C.bad}]}>{error}</Text>:null}
     <GameButton title="Claim Skill XP" disabled={!selection||!selectedMonth||!skillId||busy} loading={busy} onPress={claim}/>
    </ScrollView>
   </GameModalSurface>

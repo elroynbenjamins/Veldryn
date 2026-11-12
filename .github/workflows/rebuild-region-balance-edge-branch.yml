@@ -23,6 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # The initiating push can be many commits behind queued staging jobs.
+          ref: balance/25-level-regions-frostmarch-potions
           fetch-depth: 0
           persist-credentials: true
       - uses: pnpm/action-setup@v4
@@ -47,6 +49,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          test "$GITHUB_REF_NAME" = 'balance/25-level-regions-frostmarch-potions'
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if git diff --cached --quiet; then
             echo 'Staged Edge bundles are already synchronized.'

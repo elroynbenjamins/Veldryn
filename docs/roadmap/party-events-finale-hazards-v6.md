@@ -15,6 +15,16 @@
 - These new abilities and the optional preview combat use the real deterministic combat engine with a bounded duration and a replayable seeded result. No custom payout formula is attached.
 - Coverage: four families × three variations × four voting pairs × two party compositions = **96 preview fights**, plus validation of illegitimate choices/rosters and deterministic output.
 
+## v7 continuation: source-derived companion assists and objective traces
+
+- New `weekly-party-finale-objectives-v7.ts` reads genuine combat event records from the hidden finale hazard preview. It never fabricates companion stats, achievements or rewards.
+- Four UI-ready *display-only* objective meter definitions: **Escort Integrity** (100 downward), **Tracking Marks** (0 upward), **Ward Stability** (100 downward), and **Seal Pressure** (0 upward).
+- Warnings, resolved hazard hits, shield absorption, effective healing, party boss damage, interrupts and individual owner-bound companion ability contributions are derived from logged real combat events.
+- Hidden 72-scenario family/variation/ballot/roster-size matrix now uses source-generated character-assist abilities from the existing companion adapter. Valid classes and matching companion roles remain required.
+- **Important design update:** the persistent Party now has a proposed separate 1 Tank / 2 Damage / 1 Support membership requirement in [PR #1046](https://github.com/elroynbenjamins/Veldryn/pull/1046). The earlier v6 all-Damage combat fixtures remain useful legacy/stress tests, **not an allowed composition for new persistent Parties**. The Party Event 2–4-player final difficulty still needs calibration under the restricted formation.
+- Objective pressure and percentages are diagnostic only; the existing authority to decide fight victory, payout, account entitlement and roster eligibility remains unchanged.
+- Feature flag `PARTY_EVENT_FINALE_OBJECTIVES_V7_RELEASED` remains `false`. Source-derived companion effects still need matchup/balance calibration; no outcome meter is connected to the live boss.
+
 ## Guardrails
 
 - `PARTY_WEEKLY_EVENTS_RELEASED`, `PARTY_EVENT_STAGE_V3_RELEASED`, and `PARTY_EVENT_FINALE_HAZARDS_V6_RELEASED` stay false.

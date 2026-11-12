@@ -1,0 +1,10 @@
+region,gear_tier,character_level,monster_id,authored_enemy_level,avg_kills_per_hour,avg_food_per_hour,avg_xp_per_hour,estimated_hours_to_next_level,avg_net_hp_loss_per_hour,character_cp_representative,loadouts,notes
+Asterfall,T2,25,OATHGLASS_REVENANT,25,95.09,8.88,17971.83,9.14,621.69,4732,18,King_s_Road_mob;current_rules
+Sunscar,T3,26,SUNSCAR_SCORPION,28,95.50,11.62,20054.79,8.65,1289.28,6084,18,current_rules
+Sunscar,T3,37,GLASS_DUNE_STRIDER,35,74.50,15.54,21186.64,14.73,1724.41,6459,18,current_rules
+Sunscar,T4,38,MIRAGE_SHADE,38,87.82,13.14,27452.09,11.73,1458.48,7773,18,current_rules
+Sunscar,T4,50,ROYAL_SANDGUARD,45,63.97,16.44,27057.74,19.13,1824.33,8199,18,current_rules
+Frostmarch,T5,51,FROSTWOLF,48,33.26,11.87,14170.45,34.78,2528.80,9726,18,current_rules
+Frostmarch,T5,62,RIME_STALKER,59,22.00,13.16,13133.01,51.89,2802.62,10106,18,current_rules
+Frostmarch,T6,63,CHOIR_HUNTER,66,20.08,13.30,14214.76,49.38,2832.27,11588,18,T6_UNRELEASED_current_enemy_rules
+Frostmarch,T6,75,WYRMSPINE_GUARDIAN,69,20.79,13.18,16344.77,57.06,2808.09,11876,18,T6_UNRELEASED_current_enemy_rules

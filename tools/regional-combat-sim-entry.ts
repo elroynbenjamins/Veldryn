@@ -42,7 +42,7 @@ for(const e of ENCOUNTERS){
  const stage=STAGES.find(s=>s.tier===e.tier&&s.level===e.level);
  assert(stage,'missing stage '+e.tier+'/'+e.level);
  const monster=MONSTERS.find(m=>m.id===e.monster);
- assert(monster&&monster.zone===e.region&&!monster.boss,'missing encounter '+e.monster);
+ assert(monster&&(monster.zone===e.region||(e.region==='Asterfall'&&monster.zone===\"King's Road\"))&&!monster.boss,'missing encounter '+e.monster);
  for(const scenarioId of SELECTED){
   const scenario=get(scenarioId),rows:ReturnType<typeof combatSustainProjection>[]=[];
   for(const cls of CLASS_IDS)for(const path of PATHS){
@@ -57,7 +57,7 @@ for(const e of ENCOUNTERS){
   const foodFinite=proj.map(x=>x.foodPerHour).filter(Number.isFinite);
   const hoursPerLevel=proj.map(x=>x.xpPerHour>0?characterXpForNextLevel(e.level)/x.xpPerHour:Infinity);
   simHunts.push({
-   region:e.region,tier:e.tier,characterLevel:e.level,monsterId:e.monster,
+   region:e.region,actualZone:monster.zone,tier:e.tier,characterLevel:e.level,monsterId:e.monster,
    authoredMonsterLevel:monster.level,actualMonsterUnlockLevel:monster.unlockLevel,
    scenario:scenarioId,loadouts:proj.length,
    cpNotUsedAsProxy:true,

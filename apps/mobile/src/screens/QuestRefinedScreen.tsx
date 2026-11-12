@@ -26,6 +26,8 @@ import type {Language} from '../i18n/languages';
 import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
 import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
 import {GameButton} from '../components/GameButton';
+import {MonthlyQuestMilestonesPanel} from '../components/MonthlyQuestMilestonesPanel';
+import type {SkillId} from '../core/types';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {QuestReward} from '../components/QuestReward';
 import {itemDef} from '../content/items';
@@ -98,9 +100,10 @@ function Rail({items,selected,onChange,C}:{items:{id:string;label:string}[];sele
  </ScrollView>;
 }
 
-export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{
- state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;
+export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onClaimMilestone,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{
+ state:GameState;nowMs:number;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;
  onClaim:(id:string)=>void|boolean|Promise<void|boolean>;onClaimContract:(period:SeasonalPeriod,id:string,choiceId?:string)=>void|boolean|Promise<void|boolean>;
+ onClaimMilestone:(month:string,threshold:number,characterId:string,skillId:SkillId)=>Promise<boolean>;
  onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;
  onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void;
 }){
@@ -275,6 +278,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     </View>:null}
    </>:null}
    {mode==='challenges'?<>
+    <MonthlyQuestMilestonesPanel state={state} nowMs={nowMs} onClaim={onClaimMilestone}/>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('CLASS OBJECTIVES')}</Text><StatusPill label={p('CLASS')} tone="special"/></View>
      <View style={styles.statRow}>

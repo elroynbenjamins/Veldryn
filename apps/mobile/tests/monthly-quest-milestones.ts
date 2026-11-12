@@ -26,6 +26,13 @@ const characterId=state.character!.id;
 const eligible=claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'mining',now);
 ok(eligible.skills.find(skill=>skill.skillId==='mining')!.xp===1000,'First milestone adds exact XP');
 ok(eligible.skills.find(skill=>skill.skillId==='mining')!.level>1,'Skill levels recomputed after XP grant');
+
+const higherFaith={...state,character:{...state.character!,faith:{favoriteBlessingIds:[],hideWeakerBlessings:true,xp:10000}}};
+const faithClaim=claimMonthlyQuestMilestone(higherFaith,'2026-11',30,characterId,'faith',now);
+ok(faithClaim.skills.find(skill=>skill.skillId==='faith')!.xp===11000,'Faith skill XP must award above the separate character Faith XP mirror');
+ok(faithClaim.character?.faith?.xp===11000,'Character Faith XP mirror must be updated atomically');
+ok(normalizeSave(JSON.parse(JSON.stringify(faithClaim))).character?.faith?.xp===11000,'Faith milestone reward must survive save normalization');
+
 ok(monthlyQuestMilestoneStatus(eligible,now)[0].claimed.includes(30),'Claim is recorded account-wide');
 const reloaded=normalizeSave(JSON.parse(JSON.stringify(eligible)));
 ok(monthlyQuestMilestoneStatus(reloaded,now)[0].claimed.includes(30),'Offline save normalization must preserve the completed milestone');

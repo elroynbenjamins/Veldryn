@@ -210,7 +210,7 @@ function EventTierChoice({value,requiredLevel,currentLevel,selected,levelLabel,d
  const pips='★'.repeat(value)+'☆'.repeat(5-value);
  return <Pressable accessibilityRole="button" accessibilityLabel={`${difficultyLabel} ${value}, ${levelLabel} ${requiredLevel}`} accessibilityState={{selected,disabled:locked}} disabled={locked} onPress={onPress} style={({pressed})=>[s.tierChoice,selected&&s.tierChoiceSelected,locked&&s.tierChoiceLocked,pressed&&s.pressed]}>
   <Text style={[s.tierPips,selected&&s.tierNumberSelected]} numberOfLines={1}>{pips}</Text>
-  <Text style={[s.tierNumber,selected&&s.tierNumberSelected]}>{TIER_ROMAN[value]??value}</Text>
+  <Text style={[s.tierNumber,selected&&s.tierNumberSelected]}>{['I','II','III','IV','V'][value-1]}</Text>
   <Text numberOfLines={1} style={s.tierLevel}>{levelLabel} {requiredLevel}</Text>
   {locked?<Text style={s.tierLock}>◆</Text>:null}
  </Pressable>;

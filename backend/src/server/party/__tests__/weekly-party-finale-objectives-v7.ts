@@ -61,8 +61,8 @@ for(const family of Object.keys(WEEKLY_PARTY_EVENT_FAMILIES) as WeeklyPartyFamil
      'objective never mints rewards or EP');
     assert(trace.value>=0&&trace.value<=100&&Number.isFinite(trace.pressure),
      'all objective metrics are bounded');
-    assert(trace.hazardCastStarts>=trace.hazardResolvedHits,
-     'damage only follows telegraphed hazard casts');
+    assert(trace.hazardResolvedHits<=trace.hazardCastStarts*size,
+     'each telegraphed hazard can hit up to one target per party member');
     assert(trace.companionContributions.length===size,
      'companion assists measured from owner-bound abilities');
     assert(trace.companionContributions.every(c=>c.ownerId.startsWith('v7-player-')),

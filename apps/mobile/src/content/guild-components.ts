@@ -21,7 +21,7 @@ export const GUILD_COMPONENT_ITEMS:ItemDef[]=[
  */
 export const GUILD_COMPONENT_CRAFTING_RELEASED:boolean=true;
 export const GUILD_COMPONENT_RECIPES:Recipe[]=([
- {id:'GUILD_FORGE_TIMBER',name:'Prepare Reinforced Timber',skillId:'smithing',level:5,xp:220,gold:150,seconds:75,repeatableTraining:true,inputs:[{itemId:'COPPER_INGOT',quantity:15},{itemId:'GREENWOOD_LOG',quantity:10}],output:{itemId:'GUILD_REINFORCED_TIMBER',quantity:1}},
+ {id:'GUILD_FORGE_TIMBER',name:'Prepare Reinforced Timber',skillId:'smithing',level:4,xp:220,gold:150,seconds:75,repeatableTraining:true,inputs:[{itemId:'COPPER_INGOT',quantity:15},{itemId:'GREENWOOD_LOG',quantity:10}],output:{itemId:'GUILD_REINFORCED_TIMBER',quantity:1}},
  {id:'GUILD_FORGE_KEYSTONE',name:'Forge Mason\'s Keystone',skillId:'smithing',level:18,xp:560,gold:475,seconds:140,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:10},{itemId:'IRONWOOD_LOG',quantity:15}],output:{itemId:'GUILD_MASONS_KEYSTONE',quantity:1}},
  {id:'GUILD_FORGE_RIVETS',name:'Forge Rivet Crate',skillId:'smithing',level:35,xp:1120,gold:1450,seconds:260,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_INGOT',quantity:10},{itemId:'OATHGLASS_SHARD',quantity:5}],output:{itemId:'GUILD_FORGED_RIVETS',quantity:1}},
  {id:'GUILD_FORGE_HINGES',name:'Forge Fortification Hinges',skillId:'smithing',level:60,xp:2900,gold:5000,seconds:570,repeatableTraining:true,inputs:[{itemId:'FROSTIRON_INGOT',quantity:10},{itemId:'WHITEPINE_LOG',quantity:10}],output:{itemId:'GUILD_FORTIFICATION_HINGES',quantity:1}},

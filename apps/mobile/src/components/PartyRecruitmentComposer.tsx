@@ -4,7 +4,7 @@ import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,type ThemeColors} from '../theme/theme';
-import {PARTY_LANGUAGES,normalizedPartyPreferences,partyRoleVacancies,type PartyRole,type PartyLanguage,type PersistentPartySummary,type RecruitmentActivityLevel} from '../core/party-social';
+import {PARTY_LANGUAGES,normalizedPartyPreferences,partyRoleVacancies,partyHasRoleOverflow,type PartyRole,type PartyLanguage,type PersistentPartySummary,type RecruitmentActivityLevel} from '../core/party-social';
 import type {PublishRecruitmentInput} from '../online/party-social';
 import {useSocialText} from '../i18n/social';
 
@@ -24,10 +24,11 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
  const language=recruiting?prefs.language:seekerLanguage;
  const languageName=language==='any'?st('Any language'):PARTY_LANGUAGES.find(item=>item.id===language)?.label??st('Any language');
  const vacancies=partyRoleVacancies(party?.members??[]);
+ const legacyRoleOverflow=recruiting&&partyHasRoleOverflow(party?.members??[]);
  const neededRoles=(['tank','damage','support'] as PartyRole[]).filter(role=>vacancies[role]>0);
  const patch=(change:Partial<PublishRecruitmentInput>)=>setDraft(current=>({...current,...change}));
  const publish=()=>{
-  if(draft.title.trim().length<3)return;
+  if(draft.title.trim().length<3||legacyRoleOverflow)return;
   onPublish({...draft,durationDays:1,roles:recruiting?neededRoles:[],
     requiredRoleCounts:recruiting?vacancies:{},flexibleRoles:!recruiting,
     activityLevel:advertActivityLevel,language:language==='any'?undefined:language,
@@ -41,7 +42,7 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
   </View>
   {recruiting?<View style={s.summary}><View style={s.between}><Text style={s.summaryTitle}>{st('Your Party')}</Text><Text style={s.available}>{st('{count} open',{count:Math.max(0,4-(party?.members.length??1))})}</Text></View>
     <Text style={s.hint}>{languageName}{prefs.minimumLevel?' · Lv. '+prefs.minimumLevel+'+':''}</Text>
-    <Text style={s.hint}>{st('Needed roles')}: {neededRoles.map(role=>`${vacancies[role]} ${st(role==='tank'?'Tank':role==='damage'?'Damage':'Support')}`).join(' · ')||st('None')}</Text>
+    <Text style={s.hint}>{legacyRoleOverflow?st('Your existing Party has too many members of one role. Adjust its composition before recruiting.'):st('Needed roles')+': '+(neededRoles.map(role=>`${vacancies[role]} ${st(role==='tank'?'Tank':role==='damage'?'Damage':'Support')}`).join(' · ')||st('None'))}</Text>
     <Text style={s.help}>{st('Language and minimum level follow your Party settings.')}</Text>
    </View>:null}
   <View style={s.section}>
@@ -61,7 +62,7 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
    <TextInput accessibilityLabel={st('Recruitment description')} value={draft.body} maxLength={600} multiline onChangeText={body=>patch({body})} placeholder={st('What would you like to do together?')} placeholderTextColor={C.muted} style={[s.input,s.body]}/>
   </View>
   <View style={s.expiry}><Text style={s.expiryText}>◷  {st('Expires automatically after 24 hours')}</Text></View>
-  <GameButton title={busy?st('Publishing…'):st('Publish recruitment post')} disabled={busy||draft.title.trim().length<3} loading={busy} onPress={publish}/>
+  <GameButton title={busy?st('Publishing…'):st('Publish recruitment post')} disabled={busy||draft.title.trim().length<3||legacyRoleOverflow} loading={busy} onPress={publish}/>
   <GameButton title={st('Cancel')} compact tone="secondary" disabled={busy} onPress={onCancel}/>
  </View>;
 }

@@ -3,6 +3,7 @@ import { ClassId,GatheringSkillId,GearSlot,GemEffectId,GemSocketKind,GemStat } f
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 import {GUILD_COMPONENT_ITEMS} from './guild-components';
+import {CROSS_PROFESSION_COMPONENT_ITEMS} from './cross-profession-components';
 import {TOOL_BLUEPRINT_ITEMS,TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {ALCHEMY_EQUIPMENT_INFUSION_ITEMS,POTION_ITEMS} from './alchemy';
@@ -154,7 +155,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 
 ];
-export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
+export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...CROSS_PROFESSION_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
 if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
 export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

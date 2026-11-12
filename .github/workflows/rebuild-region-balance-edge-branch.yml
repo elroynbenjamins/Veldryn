@@ -1,0 +1,56 @@
+name: Rebuild regional balance Edge bundles (draft branch only)
+
+# One-shot staging build. Never touches main or production infrastructure.
+on:
+  push:
+    branches: [balance/25-level-regions-frostmarch-potions]
+    paths:
+      - '.github/workflows/rebuild-region-balance-edge-branch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regional-balance-edge-draft
+  cancel-in-progress: false
+
+jobs:
+  staging-bundles:
+    if: github.ref_name == 'balance/25-level-regions-frostmarch-potions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Compile both server-authoritative bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit only regenerated Edge bundles to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Staged Edge bundles are already synchronized.'
+            exit 0
+          fi
+          git commit -m 'build(edge): synchronize gameplay and coop bundles for staged regional progression'
+          git push origin HEAD:"$GITHUB_REF_NAME"

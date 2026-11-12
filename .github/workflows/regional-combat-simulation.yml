@@ -1,0 +1,47 @@
+name: Regional combat simulation (read-only)
+
+# Uses CURRENT combat balance and synthetic full sets. No production access,
+# schema changes, gear unlocks, game revisions, or migrations.
+on:
+  push:
+    paths:
+      - 'tools/regional-combat-sim-entry.ts'
+      - 'tools/regional-combat-sim.mjs'
+      - 'tools/regional-gear-cp-benchmark-entry.ts'
+      - '.github/workflows/regional-combat-simulation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Re-run gear CP baseline to confirm fixture safety
+        run: |
+          node tools/regional-gear-cp-benchmark.mjs > /tmp/regional-cp-crosscheck.csv
+          test "$(wc -l < /tmp/regional-cp-crosscheck.csv)" -eq 61
+      - name: Simulate ordinary hunts, first boss and recipe gates
+        run: |
+          node tools/regional-combat-sim.mjs > regional-combat-simulation.json
+          node -e "const x=require('./regional-combat-simulation.json'); if(x.hunts.length!==45||x.boss.length!==10||x.recipes.length!==108)process.exit(1); if(x.hunts.some(r=>!Number.isFinite(r.killsPerHourMean)))process.exit(1);console.log('PASS hunt:',x.hunts.length,'boss:',x.boss.length,'recipe:',x.recipes.length,'attempts:',x.metadata.bossAttempts)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regional-combat-simulation
+          path: regional-combat-simulation.json
+          retention-days: 14

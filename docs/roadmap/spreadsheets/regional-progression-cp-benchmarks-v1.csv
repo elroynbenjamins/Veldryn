@@ -1,0 +1,11 @@
+region,section,gear_tier,character_level,cp_nine_class_mean,cp_nine_class_min,cp_nine_class_max,personal_cp_mean,companion_cp_mean,companion_level,model_tag,released_in_current_catalog,notes
+Asterfall,first_half_exit,T1,12,3020,2838,3144,2284,736,5,approx_without_full_set_bonus,yes,common_q50_4_of_10_plus2_4_g2_gems
+Asterfall,chapter_boss,T2,25,4682,4445,4880,3776,906,10,approx_without_full_set_bonus,yes,common_q50_4_of_10_plus2_4_g2_gems
+Sunscar,entry,T3,26,6018,5724,6285,4943,1075,12,approx_without_full_set_bonus,yes,common_q50_4_of_10_plus2_4_g2_gems
+Sunscar,first_half_exit,T3,37,6389,6095,6657,5295,1094,12,approx_without_full_set_bonus,yes,common_q50_4_of_10_plus2_4_g2_gems
+Sunscar,second_half_entry,T4,38,7668,7319,8011,6435,1233,15,approx_without_full_set_bonus,yes,common_q50_4_of_10_plus2_4_g2_gems
+Sunscar,chapter_boss,T4,50,8089,7738,8434,6832,1257,15,approx_without_full_set_bonus,yes,common_q50_4_of_10_plus2_4_g2_gems
+Frostmarch,entry,T5,51,9545,9137,9960,7998,1547,20,approx_without_full_set_bonus,yes,rare_companion_proxy
+Frostmarch,first_half_exit,T5,62,9920,9513,10335,8350,1570,20,approx_without_full_set_bonus,yes,rare_companion_proxy
+Frostmarch,second_half_entry,T6,63,11366,10900,11863,9514,1852,25,approx_without_full_set_bonus,no,unreleased_T6_hypothetical
+Frostmarch,chapter_boss,T6,75,11651,11183,12147,9779,1872,25,approx_without_full_set_bonus,no,unreleased_T6_hypothetical

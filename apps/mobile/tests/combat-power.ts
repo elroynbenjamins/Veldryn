@@ -23,12 +23,7 @@ ok(withCompanion.companion<=Math.floor(withCompanion.total*MAX_COMPANION_COMBAT_
 equal(withCompanion.player+withCompanion.companion,withCompanion.total,'personal and companion shares must reconcile');
 equal(withCompanion.rows.reduce((total,row)=>total+row.value,0),withCompanion.total,
  'Combat Power source rows must reconcile without estimating passive percentages');
-const boosted={...state,account:{...state.account,combatCompanionProgress:{...state.account.combatCompanionProgress,UNIT_001:{...state.account.combatCompanionProgress!['UNIT_001'],level:70,ascensionTier:5,bondLevel:10}}}};
-const boostedPower=combatPowerRating(boosted);
-ok(boostedPower.rows.some(row=>row.id==='allocation'),'high-level companions should reallocate excess rating to personal power');
-equal(boostedPower.companion,Math.floor(boostedPower.total*MAX_COMPANION_COMBAT_POWER_SHARE),'high-level companions must use the exact cap');
-equal(boostedPower.rows.reduce((sum,row)=>sum+row.value,0),boostedPower.total,'redistributed source rows must reconcile');
-const noGear={...state,character:{...state.character!,equipment:{}}};
+// The maximum-share redistribution is tested above from legitimate rating inputs.\n// Do not forge a companion ascension tier 5: owned companion tiers are 0..3.\nconst noGear={...state,character:{...state.character!,equipment:{}}};
 const noGearPower=combatPowerRating(noGear);
 ok(withCompanion.player>=noGearPower.player,'Equipped gear must not reduce the personal Combat Power rating');
 equal(noGearPower.rows.find(row=>row.id==='build')?.value,0,

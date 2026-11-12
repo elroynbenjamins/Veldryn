@@ -67,6 +67,8 @@ export const REGION_MONSTER_LEVELS:Readonly<Record<string,{level:number;unlockLe
 /** Initial gear equip and recipe character levels in the 25-level chapters. */
 export const REGIONAL_EQUIPMENT_CHARACTER_FLOORS:Readonly<Record<string,number>>={
  T3:26,T4:38,T5:51,T6:63,
+ // Preview-only future tiers. Release still blocked by equipment-release.ts.
+ T7:76,T8:88,T9:100,
 };
 export function regionalGearCharacterLevel(tier:string,oldRebasedLevel:number):number {
  return REGIONAL_EQUIPMENT_CHARACTER_FLOORS[tier]??oldRebasedLevel;

@@ -89,10 +89,33 @@ function q(base:number,multiplier:number){return Math.max(1,Math.round(base*mult
 /** Reduce the already tripled T3/T4 assembly timber cost by 20%, rounding per piece.
  * Alchemy resin inputs, other materials and equipment tiers remain unchanged. */
 export const T3_T4_DUNEWOOD_REDUCTION_FACTOR=0.8;
-function reducedSunscarDunewood(base:number,multiplier:number){
-  return Math.max(1,Math.round(q(base,multiplier)*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR));
+/** Small follow-up adjustments to the already-trimmed regional costs, with slot rounding preserved. */
+export const T2_ALT_IRONWOOD_FANG_FACTOR=.77;
+export const T2_ALT_TROLL_HIDE_FACTOR=.858;
+export const T3_SMITHING_DUNEWOOD_FINAL_FACTOR=.735;
+export const T4_SMITHING_DUNEWOOD_FINAL_FACTOR=.738;
+export const T4_TAILORING_SUNSCALE_FACTOR=.907;
+export const T4_ASTRAL_SCRIPT_FACTOR=.88;
+function reducedSunscarDunewood(base:number,multiplier:number,factor=T3_T4_DUNEWOOD_REDUCTION_FACTOR){
+  return Math.max(1,Math.round(q(base,multiplier)*3*factor));
 }
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
+/** Each T1-T4 piece uses a small input produced by its opposite profession.
+ * Nothing in this list is a prerequisite for crafting the component itself. */
+export const CROSS_PROFESSION_ASSEMBLY_INPUTS:Readonly<Record<string,{smithing:string;tailoring:string;baseQty:number}>>={
+  T1:{smithing:'CLOTH_BINDINGS',tailoring:'METAL_CLASPS',baseQty:1},
+  T2:{smithing:'PADDED_LININGS',tailoring:'REINFORCED_BUCKLES',baseQty:1},
+  T3:{smithing:'REINFORCED_STRAPS',tailoring:'ARMOR_RIVETS',baseQty:2},
+  T4:{smithing:'REINFORCED_STRAPS',tailoring:'ARMOR_RIVETS',baseQty:3},
+};
+export function crossProfessionAssemblyInput(tier:string,skillId:'smithing'|'tailoring',slotMultiplier:number,path:string){
+  const entry=CROSS_PROFESSION_ASSEMBLY_INPUTS[tier];
+  if(!entry)return [];
+  // T2 Alternate recipes trade a modest rare monster-drop reduction for
+  // one extra intermediate from the opposite profession per equipment piece.
+  const alternateExtra=tier==='T2'&&path==='Alternate'?1:0;
+  return [{itemId:entry[skillId],quantity:Math.max(1,Math.round(entry.baseQty*slotMultiplier))+alternateExtra}];
+}
 function mergeInputs(inputs:{itemId:string;quantity:number}[]){
   const totals=new Map<string,number>();for(const input of inputs)totals.set(input.itemId,(totals.get(input.itemId)??0)+input.quantity);
   return [...totals].map(([itemId,quantity])=>({itemId,quantity}));
@@ -103,12 +126,12 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     const accent=tailoringPathMaterial[tier]?.[path];
     switch(tier){
       case 'T1':return mergeInputs([{itemId:'MOSS_FIBER',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(7,multiplier)}]);
-      case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier)}]);
+      case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier*(path==='Alternate'?T2_ALT_TROLL_HIDE_FACTOR:1))}]);
       // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
       // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
       case 'T3':return mergeInputs([{itemId:'SUNSCALE',quantity:q(18,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(10,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
       // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
-      case 'T4':return mergeInputs([{itemId:'SUNSCALE',quantity:q(19,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(7,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?2:5,multiplier)}]);
+      case 'T4':return mergeInputs([{itemId:'SUNSCALE',quantity:q(19,multiplier*T4_TAILORING_SUNSCALE_FACTOR)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(7,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?2:5,multiplier*(path==='Alternate'?T4_ASTRAL_SCRIPT_FACTOR:1))}]);
       case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
       case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
       case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
@@ -120,9 +143,9 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
   const pathItem=pathMaterial[tier]?.[path];
   switch(tier){
     case 'T1':return [{itemId:'GREENWOOD_LOG',quantity:q(28,multiplier)},{itemId:pathItem??'MOSS_FIBER',quantity:q(8,multiplier)}];
-    case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
-    case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
-    case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(8,multiplier)},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier)}]);
+    case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier*(path==='Alternate'?T2_ALT_IRONWOOD_FANG_FACTOR:1))}];
+    case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(22,multiplier,T3_SMITHING_DUNEWOOD_FINAL_FACTOR)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
+    case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(8,multiplier,T4_SMITHING_DUNEWOOD_FINAL_FACTOR)},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier*(path==='Foundation'?T4_ASTRAL_SCRIPT_FACTOR:1))}]);
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
@@ -151,7 +174,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     xp:craftXp,
     gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
+    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

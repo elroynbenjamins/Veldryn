@@ -13,6 +13,7 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 
 const state=createCharacter(newGame(0),'WAYFINDER','Profession Tester');
 const tailoring=RECIPES.filter(row=>row.skillId==='tailoring'&&!!row.v33SetId);
+const tailorTraining=RECIPES.filter(row=>row.skillId==='tailoring'&&!row.noviceSetId);
 const enchantingRecipes=RECIPES.filter(row=>row.skillId==='enchanting');
 const retiredRecipeIds=['TAILOR_MOSSWRAP_GLOVES','TAILOR_BOARHIDE_BOOTS','TAILOR_HIDE_VEST','TAILOR_TROLLGUARD_HELM','ENCHANT_WISP_CHARM','ENCHANT_THORN_RING','ENCHANT_OATHGLASS_CAPE'];
 
@@ -31,7 +32,7 @@ equal(tailoringDestination.kind,'skills','Tailoring training navigation stays in
 if(tailoringDestination.kind==='skills'){
  equal(tailoringDestination.mode,'crafting','Tailoring training opens crafting mode');
  equal(tailoringDestination.skillId,'tailoring','Tailoring remains selected');
- ok(!!tailoringDestination.recipeId&&tailoring.some(recipe=>recipe.id===tailoringDestination.recipeId),'Tailoring training must recommend an active V33 recipe');
+ ok(!!tailoringDestination.recipeId&&tailorTraining.some(recipe=>recipe.id===tailoringDestination.recipeId),'Tailoring training must recommend an unlocked equipment or reusable component recipe');
 }
 
 const enchantingDestination=bestRecipeTrainingDestination(state,'enchanting');

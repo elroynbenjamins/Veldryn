@@ -28,15 +28,16 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
  const [error,setError]=useState('');
  const [busy,setBusy]=useState(false);
  const characters=[
-  ...(state.character?[{id:state.character.id,name:state.character.name,skills:state.skills}]:[]),
-  ...(state.otherCharacters??[]).map(row=>({id:row.character.id,name:row.character.name,skills:row.skills})),
+  ...(state.character?[{id:state.character.id,name:state.character.name,skills:state.skills,faithXp:state.character.faith?.xp??0}]:[]),
+  ...(state.otherCharacters??[]).map(row=>({id:row.character.id,name:row.character.name,skills:row.skills,faithXp:row.character.faith?.xp??0})),
  ];
  const selectedCharacter=characters.find(row=>row.id===characterId);
- const availableSkills=(selectedCharacter?.skills??[]).filter(skill=>skill.xp<MAX_SKILL_XP);
+ const availableSkills=(selectedCharacter?.skills??[]).filter(skill=>Math.max(skill.xp,skill.skillId==='faith'?selectedCharacter?.faithXp??0:0)<MAX_SKILL_XP);
  const selectedMonth=selection?months.find(row=>row.key===selection.month):undefined;
  const selectedReward=selection?MONTHLY_QUEST_MILESTONES.find(row=>row.points===selection.threshold):undefined;
  const selectedSkill=availableSkills.find(skill=>skill.skillId===skillId);
- const actualXp=selectedReward&&selectedSkill?Math.min(selectedReward.xp,Math.max(0,MAX_SKILL_XP-selectedSkill.xp)):0;
+ const selectedXp=selectedSkill?Math.max(selectedSkill.xp,selectedSkill.skillId==='faith'?selectedCharacter?.faithXp??0:0):0;
+ const actualXp=selectedReward&&selectedSkill?Math.min(selectedReward.xp,Math.max(0,MAX_SKILL_XP-selectedXp)):0;
  const open=(month:string,threshold:MonthlyQuestMilestoneThreshold)=>{
   setSelection({month,threshold});setCharacterId(state.character?.id??characters[0]?.id??'');setSkillId(null);setError('');
  };

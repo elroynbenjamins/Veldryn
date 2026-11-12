@@ -22,7 +22,7 @@ const roster=[
  {className:'Dawnkeeper',companionId:'UNIT_007'},  // damage with support class
  {className:'Ravager',companionId:'UNIT_003'},    // healing with damage class
 ].map((row,index)=>applyCharacterCompanionAssist({
- ...launchPlayer(row.className,25),id:'v7-player-'+index,
+ ...launchPlayer(row.className,25),classId:row.className.toUpperCase(),id:'v7-player-'+index,
 },companion(row.companionId)));
 assert(roster.every(p=>p.abilities.some(a=>a.tags?.includes('combat_companion'))),
  'real server-character-assist abilities, not invented companion buffs');

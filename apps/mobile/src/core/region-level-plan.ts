@@ -63,3 +63,17 @@ export const REGION_MONSTER_LEVELS:Readonly<Record<string,{level:number;unlockLe
  WYRMSPINE_GUARDIAN:{level:75,unlockLevel:74},
  FALLEN_KNIGHT:{level:25,unlockLevel:25},
 };
+
+/** Initial gear equip and recipe character levels in the 25-level chapters. */
+export const REGIONAL_EQUIPMENT_CHARACTER_FLOORS:Readonly<Record<string,number>>={
+ T3:26,T4:38,T5:51,T6:63,
+};
+export function regionalGearCharacterLevel(tier:string,oldRebasedLevel:number):number {
+ return REGIONAL_EQUIPMENT_CHARACTER_FLOORS[tier]??oldRebasedLevel;
+}
+/** Normalize existing catalog region strings without reissuing persistent item IDs. */
+export function regionalGearCatalogRegion(tier:string,existingRegion:string):string {
+ if(tier==='T3'||tier==='T4')return 'Sunscar';
+ if(tier==='T5'||tier==='T6')return 'Frostmarch';
+ return existingRegion;
+}

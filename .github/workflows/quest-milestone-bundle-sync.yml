@@ -34,6 +34,14 @@ jobs:
         run: |
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Typecheck core and run milestone regression tests
+        run: |
+          pnpm --dir apps/mobile typecheck:core
+          node tools/run-mobile-tests.mjs monthly-quest-milestones
+      - name: Typecheck full mobile app and online backend
+        run: |
+          pnpm --dir apps/mobile typecheck
+          pnpm --dir backend typecheck:online
       - name: Rebuild and verify generated game engine
         run: |
           pnpm --dir backend build:online

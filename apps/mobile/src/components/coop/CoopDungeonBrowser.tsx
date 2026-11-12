@@ -121,7 +121,7 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
     {!loadoutReady&&onRefresh?<PrimaryAction label={clt(language,'refresh')} tone="secondary" loading={busy} onPress={onRefresh}/>:null}<DungeonHero title={event.name} source={seasonalDungeonArtwork(event.id,visuals?.heroBackground)} label={event.eventName} description={event.description}/>
     <View style={s.eventTitleRow}><StateChip label={ct(language,'browse.requiresLevel',{level:event.minLevel})}/><StateChip label={available?st("LIVE"):ct(language,'event.preview')} tone={available?'success':'warning'}/></View>
     <FantasyPanel><DungeonReward source={visuals?.commonCurrencyIcon} title={tierReward.toLocaleString()+' '+(definition?.currencyName??a('event currency'))} detail={identity?'150 Veilshards + reputation · 250 with 80+ Lantern Light':a('Base completion reward')}/></FantasyPanel>
-    {event.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?<FantasyPanel><Text style={s.cardTitle}>{ct(language,'details.difficulty')}</Text><View style={[s.tiers,{flexWrap:'wrap'}]}>{([1,2,3,4,5] as const).map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={event.tierMinLevels?.[value-1]??10+(value-1)*5} currentLevel={currentLevel??0} selected={value===selectedTier} onPress={()=>{setSelectedTier(value);setPreparing(false);}}/>)}</View><Text style={s.copy}>{ct(language,'browse.requiresLevel',{level:tierRequiredLevel})} · {tierReward} {a('event currency')}</Text></FantasyPanel>:null}
+    {event.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?<FantasyPanel><Text style={s.cardTitle}>{ct(language,'details.difficulty')}</Text><View style={[s.tiers,{flexWrap:'wrap'}]}>{([1,2,3,4,5] as const).map(value=><EventTierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={event.tierMinLevels?.[value-1]??10+(value-1)*5} currentLevel={currentLevel} selected={value===selectedTier} onPress={()=>{setSelectedTier(value);setPreparing(false);}}/>)}</View><Text style={s.copy}>{ct(language,'browse.requiresLevel',{level:tierRequiredLevel})} · {tierReward} {a('event currency')}</Text></FantasyPanel>:null}
     {preparing?<FantasyPanel variant="selected"><Text style={s.cardTitle}>{a('Expedition preparation')}</Text><Text style={s.copy}>{a('Your verified character and current expedition-ready loadout will enter with three eligible Echo recruits.')}</Text><DungeonPartyRoles language={language}/></FantasyPanel>:<DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language} note={a('Your verified character + three eligible Echo recruits')}/></DungeonDisclosure>}
     <DungeonDisclosure key={String(preparing)} title={ct(language,'event.route')} initiallyOpen={preparing}>
       {event.routeNodeCount?<Text style={s.copy}>{event.routeNodeCount} {a('themed stages + final boss')}</Text>:null}
@@ -203,6 +203,18 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
 function FactRow({label,value,last=false}:{label:string;value:string;last?:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);return <View style={[s.factRow,last&&s.factRowLast]}><Text style={s.factLabel}>{label}</Text><Text style={s.factValue}>{value}</Text></View>}
 const TIER_ROMAN:Record<number,string>={1:'I',2:'II',3:'III'};
+/** Event dungeons have five level-gated tiers, not regular dungeon CP requirements. */
+function EventTierChoice({value,requiredLevel,currentLevel,selected,levelLabel,difficultyLabel,onPress}:{value:1|2|3|4|5;requiredLevel:number;currentLevel?:number;selected:boolean;levelLabel:string;difficultyLabel:string;onPress:()=>void}){
+ const {styles:s}=useCoopStyles(makeStyles);
+ const locked=currentLevel!==undefined&&currentLevel<requiredLevel;
+ const pips='★'.repeat(value)+'☆'.repeat(5-value);
+ return <Pressable accessibilityRole="button" accessibilityLabel={`${difficultyLabel} ${value}, ${levelLabel} ${requiredLevel}`} accessibilityState={{selected,disabled:locked}} disabled={locked} onPress={onPress} style={({pressed})=>[s.tierChoice,selected&&s.tierChoiceSelected,locked&&s.tierChoiceLocked,pressed&&s.pressed]}>
+  <Text style={[s.tierPips,selected&&s.tierNumberSelected]} numberOfLines={1}>{pips}</Text>
+  <Text style={[s.tierNumber,selected&&s.tierNumberSelected]}>{TIER_ROMAN[value]??value}</Text>
+  <Text numberOfLines={1} style={s.tierLevel}>{levelLabel} {requiredLevel}</Text>
+  {locked?<Text style={s.tierLock}>◆</Text>:null}
+ </Pressable>;
+}
 function TierChoice({value,requiredLevel,requiredPower,currentLevel,currentPower,selected,levelLabel,difficultyLabel,marks,onPress}:{value:CoopTier;requiredLevel:number;requiredPower:number;currentLevel:number;currentPower:number;selected:boolean;levelLabel:string;difficultyLabel:string;marks?:number;onPress:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const locked=currentLevel<requiredLevel||currentPower<requiredPower;

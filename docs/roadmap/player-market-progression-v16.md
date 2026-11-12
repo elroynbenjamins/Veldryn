@@ -1,26 +1,28 @@
 # Veldryn Player Market — V16 character-level purchase restrictions
 
-**Status:** HIDDEN, DESIGN DRAFT / PROPOSED THRESHOLDS, NOT LIVE. 2026-11-12. No market rollout, public route, production migration, pricing approval, item tradability approval, or equipment progression rebalance is authorized by this document.
+**Status:** HIDDEN, DESIGN DRAFT / MARKET T1–T4 EQUIPMENT LEVEL THRESHOLDS APPROVED BY OWNER (2026-11-12), NOT LIVE. Rarity premiums were also accepted. Later-tier market levels and per-SKU resource mapping remain provisional. No market rollout, public route, production migration, pricing approval, item tradability approval, or general equipment progression rebalance is authorized by this document.
 
 ## Why
 
 Market purchases must not skip character progression. Existing V33 equipment items already expose `requiredLevel` calculated with `rebasedCombatLevelFromLegacyLevel`, and use `TIER_CHARACTER_LEVEL_FLOOR` before the XP rebase. **Reuse the actual per-item rebased `requiredLevel`; never compare a rebased character level to legacy raw tier floors.** Do not use account level, profession skill, highest roster character, or combat discipline levels.
 
-## Proposed purchase baseline (rebased character levels)
+## Equipment market purchase thresholds (rebased character levels)
 
-| Tier | Existing legacy floor | Existing rebased equipment floor | Proposed resource market minimum | Release |
-|---|---:|---:|---:|---|
-| T1 | 2 | 2 | 1 | released |
-| T2 | 12 | 10 | 10 | released |
-| T3 | 26 | 20 | 20 | released |
-| T4 | 40 | 30 | 30 | released |
-| T5 | 55 | 40 | 40 | released |
-| T6 | 70 | 50 | 50 | unreleased |
-| T7 | 82 | 58 | 58 | unreleased |
-| T8 | 92 | 65 | 65 | unreleased |
-| T9 | 100 | 70 | 70 | unreleased |
+| Tier | Existing in-game equipment floor | Market purchase minimum | Market approval | Equipment availability |
+|---|---:|---:|---|---|
+| T1 | 2 | **6** | **Owner approved** | released |
+| T2 | 10 | **18** | **Owner approved** | released |
+| T3 | 20 | **30** | **Owner approved** | released |
+| T4 | 30 | **52** | **Owner approved** | released |
+| T5 | 40 | **60** | Proposed follow-on minimum only; **not approved** | released in item catalog |
+| T6 | 50 | **68** | Future placeholder; **not approved** | unreleased |
+| T7 | 58 | **76** | Future placeholder; **not approved** | unreleased |
+| T8 | 65 | **84** | Future placeholder; **not approved** | unreleased |
+| T9 | 70 | **90** | Future placeholder; **not approved** | unreleased |
 
-These are the floors; the individual item's `requiredLevel` may be higher. T6–T9 should remain untradeable while they are not released, regardless of a player's level. Source: `apps/mobile/src/content/equipment-recipes-v33.ts`, `apps/mobile/src/content/equipment-items-v33.ts`, `apps/mobile/src/content/equipment-release.ts`, `apps/mobile/src/core/progression.ts`.
+**Market and game progression are intentionally different.** Level 6/18/30/52 are **market purchase floors**, not changes to crafting, monster drops, quest loot, existing item `requiredLevel`, or ordinary equipment eligibility. The item's own `requiredLevel` can exceed its tier floor. Source: `apps/mobile/src/content/equipment-recipes-v33.ts`, `apps/mobile/src/content/equipment-items-v33.ts`, `apps/mobile/src/content/equipment-release.ts`, `apps/mobile/src/core/progression.ts`.
+
+The T5 existing equipment floor of 40 must **not** accidentally become a market threshold of 40 below T4's approved 52. **Do not activate T5 market trading until a later-tier threshold is approved**; 60 is a coherent suggestion, not an owner decision. T6–T9 remain blocked while unreleased, even for eligible-level characters. Future floors should preserve a monotonic tier ladder while keeping attainable rarities within the maximum character level.
 
 ## Proposed additional market acquisition restriction by *actual crafted rarity*
 
@@ -33,11 +35,13 @@ These are the floors; the individual item's `requiredLevel` may be higher. T6–
 | Legendary | 6 |
 | Mythic | 8 |
 
-**Proposed gear buy minimum:** `max(exact item.requiredLevel, rebased tier floor) + rarity market premium`. Example at floor: T2 Rare 12, T3 Epic 24, T4 Legendary 36, T4 Mythic 38. An actual T4 piece requiring level 34 would need level 42 when Mythic. The rarity is the persisted *rolled instance rarity*, not the catalog's tier-themed default rarity; never derive from item ID or price multiplier. Quality, enchants, socket gems, attributes, set, or asking price do not reduce unlock levels.
+**Approved T1–T4 gear purchase formula:** `max(exact item.requiredLevel, approved MARKET tier purchase floor) + rarity market premium`. Examples at the current market floor: T1 Common 6, T2 Rare 20, T3 Epic 34, T4 Legendary 58, T4 Mythic 60. An individual piece with a higher equipment level still uses that higher requirement before adding rarity premium. The rarity must be the persisted *rolled instance rarity*, not a default inferred from the tier, item ID, or asking-price multiplier. Quality, enchants, socket gems, attributes, set, or asking price do not reduce unlock levels. For T5 onward use the same formula **only after the market tier floors are individually approved**.
 
 The rarity addition applies to buying a market listing, not a retroactive change to drop or self-crafting equipment eligibility. If market-owned gear can be routed via a shared bank or switched to a lower-level character, delivery/equip must also enforce the market-acquisition requirement or preserve the locked recipient/market provenance so the rule cannot be bypassed; do not impose a universal rarity equip change on existing crafted gear by accident.
 
 ## Resources, processed materials, gems, and tools
+
+**Resource restrictions remain separately scoped to source/item policy**: the user's 6/18/30/52 change explicitly applies to *equipment market purchase tiers*, not automatically to materials. T1/2/3/4 resource floors provisionally remain 1/10/20/30, subject to per-SKU review. This lets lower-level gatherers sell useful materials without buying gear beyond their progression.
 
 - Every tradeable stack SKU should get a **reviewed canonical source tier / required character level** in the server-side item policy, not a tier guessed from its sale price, name, or the *highest* recipe that consumes it.
 - A material shared between T3 and T4 recipes remains T3-gated if its ordinary source is T3. Example proposal: Dunewood and Sunstone Ore are T3 (20); Frostiron from Frostmarch is T5 (40). A genuinely T4-only component is T4 (30). Early universal materials remain level 1.
@@ -58,12 +62,13 @@ The rarity addition applies to buying a market listing, not a retroactive change
 
 ## Minimum acceptance tests
 
-- At level 1, T1 common gear requiring 2 is locked; at 2, it is eligible. T2 level 9 blocked / 10 eligible. T3 19/20 and T4 29/30 follow similarly for pieces at the floor.
-- T4 Mythic at the tier floor is blocked at 37 and allowed at 38; a piece with its own higher required level uses the higher value.
+- Market T1 Common level 5 blocked / 6 eligible; T2 Common 17/18; T3 Common 29/30; T4 Common 51/52. A level-2 player may still craft or equip eligible T1 gear, but cannot buy it before level 6.
+- The approved rarity offsets give T2 Rare 20, T3 Epic 34, T4 Legendary 58 and T4 Mythic 60 at their tier floors. T4 Mythic at level 59 is blocked and at level 60 eligible; higher individual item requirements are still respected.
+- The released T5 tier must not be market-purchasable with its old level-40 floor once T4 requires level 52; pending explicit T5 approval, fail closed for T5 market acquisition. Future-tier placeholders never imply release.
 - T3-gated Dunewood can be bought at 20 even when a T4 recipe also consumes it; T4-only material cannot be bought at 20.
 - Character level must be derived from XP; an account with level-40 main and level-5 alt cannot buy T4 on the alt; profession level 99 cannot override this.
 - A forged request replacing exact rarity/tier/item/character, stale state revision, rejected purchase, claimed delivery to low-level alt, malformed policy and unreleased T6+ all fail closed without Gold or receipt mutations.
 - Legitimately self-crafted high-rarity gear is not silently nerfed by a market-only change; locked purchases must not leak or lose items.
 - Existing V12/V15 hidden-market synthetic lifecycle, tax, pricing, cancellation, delivery and zero-activation assertions remain green.
 
-**Next engineering task:** introduce a private, data-driven item acquisition-policy catalog and read-only eligibility preview, then wire it to both purchase RPCs plus claim and mobile locked-offer UI, under rollback-only integration tests. Human approval of rarity offsets and item-specific source-tier mapping is needed before a real implementation or launch.
+**Next engineering task:** introduce a private, data-driven item acquisition-policy catalog and read-only eligibility preview, then wire it to both purchase RPCs plus claim and mobile locked-offer UI, under rollback-only integration tests. The owner-approved T1–T4 equipment floors and rarity offsets can now be used in hidden test-only policy; T5+ market floors and item-specific resource source-tier mapping still need review before trading is enabled.

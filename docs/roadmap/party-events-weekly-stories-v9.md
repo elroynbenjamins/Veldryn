@@ -49,7 +49,7 @@ These deliberately small proposed values **need balancing against actual gear ti
 - Current stage and both vote IDs are checked; Stage 3 requires both locked routes, while Stage 2 cannot read a future Stage 3 vote. A forged route or unknown variation is rejected.
 - Party composition caps, actor identity uniqueness, positive levels, supply quantity limits and canonical campaign metadata are validated. True server-origin verification remains the future service/DB responsibility, **not** a security claim about a direct call to this preview function.
 - Recorded combat source events provide objective telemetry and timed warnings. No fabricated victories or write-enabled actions.
-- The v9 regression suite covers **252 story/choice/variation/size scenarios**, including **216 real engine fights**, plus **48 Veteran/Heroic scenarios**, no-supply/partial-supply cases, deterministic replay and invalid ballot/role/receipt rejections.
+- The v9 regression suite covers **252 story/choice/variation/size scenarios**, including **216 real engine fights**, plus **48 Veteran/Heroic scenarios** and **96 additional mixed-level legal-party battles covering all nine classes**; no-supply/partial-supply cases, deterministic replay and invalid ballot/role/receipt rejections.
 - A UI art pass, stage-action server receipts, a frozen stage-vote ledger, encounter tier balancing and atomic Day 8 payout integration remain **unimplemented**. Do not connect this prototype to a production claim service without those safeguards.
 
 ## Next pass

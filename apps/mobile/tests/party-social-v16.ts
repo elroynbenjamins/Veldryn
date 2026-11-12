@@ -5,6 +5,7 @@ import {
   recruitmentPaceForParty,
   partyOpenSpots,
   partyRoleVacancies,
+  partyHasRoleOverflow,
   personalContributionEligible,
   recruitmentTimeLabel,
   recruitmentPostTypePresentation,
@@ -27,6 +28,8 @@ assert(recruitmentPaceForParty('casual')==='casual','Casual activity inherits cl
 assert(partyOpenSpots(party)===3,'party open spots');
 assert(JSON.stringify(partyRoleVacancies(party.members))===JSON.stringify({tank:1,damage:1,support:1}),'Party recruitment shows class-role vacancies');
 assert(partyRoleVacancies([...party.members,{...party.members[0]!,accountId:'a2'}]).damage===0,'A second Damage closes the Damage slot');
+assert(partyHasRoleOverflow([...party.members,{...party.members[0]!,accountId:'a2'},{...party.members[0]!,accountId:'a3'}]),'Legacy three-Damage Party must not advertise inaccessible slots');
+assert(!partyHasRoleOverflow(party.members),'Valid forming Party keeps recruitment available');
 assert(shouldShowPartyChat(party,'a1'),'member sees party chat');
 assert(!shouldShowPartyChat(party,'a2'),'nonmember must not see party chat');
 assert(!shouldShowPartyChat(null,'a1'),'Party Chat disappears after leaving or disbanding');

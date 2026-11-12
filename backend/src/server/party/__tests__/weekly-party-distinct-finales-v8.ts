@@ -91,8 +91,7 @@ for(const family of families){
   assert(scenes.size===1,'the same variation keeps its narrative identity across votes');
  }
  // Detect materially different combat engine mechanics, not different names.
- const sample=buildHiddenPartyFamilyEncounterV8({family,variation:d.variations
-  ?WEEKLY_PARTY_EVENT_FAMILIES[family].variations[0]:WEEKLY_PARTY_EVENT_FAMILIES[family].variations[0],
+ const sample=buildHiddenPartyFamilyEncounterV8({family,variation:WEEKLY_PARTY_EVENT_FAMILIES[family].variations[0],
   stage2Choice:d.stage2[0].id,stage3Choice:d.stage3[0].id,tier:2,baseline:boss});
  const signature=JSON.stringify({
   abilities:sample.boss.abilities.map(a=>({

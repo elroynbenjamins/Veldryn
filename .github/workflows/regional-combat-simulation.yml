@@ -8,7 +8,21 @@ on:
       - 'tools/regional-combat-sim-entry.ts'
       - 'tools/regional-combat-sim.mjs'
       - 'tools/regional-gear-cp-benchmark-entry.ts'
+      - 'apps/mobile/src/core/region-level-plan.ts'
+      - 'apps/mobile/src/core/combat-progression-pacing.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/story-boss.ts'
+      - 'apps/mobile/src/content/regional-areas.ts'
+      - 'apps/mobile/src/content/world-map.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/equipment-recipes-v33.ts'
+      - 'apps/mobile/src/content/equipment-items-v33.ts'
+      - 'apps/mobile/src/content/equipment-sets.ts'
+      - 'apps/mobile/src/content/exploration.ts'
+      - 'apps/mobile/src/content/alchemy.ts'
+      - 'backend/src/server/coop/dungeon-entry-policy.ts'
       - '.github/workflows/regional-combat-simulation.yml'
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -32,6 +46,19 @@ jobs:
         run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Install backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck mobile gameplay and run targeted story/region tests
+        run: |
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
+          for test in \\
+            apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js \\
+            apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js \\
+            apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js \\
+            apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js \\
+            apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js
+          do
+            if [ -f "$test" ]; then node "$test"; fi
+          done
       - name: Re-run gear CP baseline to confirm fixture safety
         run: |
           node tools/regional-gear-cp-benchmark.mjs > /tmp/regional-cp-crosscheck.csv

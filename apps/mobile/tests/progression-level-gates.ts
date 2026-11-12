@@ -1,5 +1,6 @@
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
+import {regionalGearCharacterLevel} from '../src/core/region-level-plan';
 import {HERB_NODES} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
 import {WORLD_ZONES} from '../src/content/world-map';
@@ -46,7 +47,7 @@ for(let i=1;i<=9;i++){
 }
 const ashlands=zoneById.get('ASHLANDS')!;
 ok(ashlands.availability==='inDevelopment','Ashlands content stays authored but the region is not yet playable');
-ok(rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR.T9)>=ashlands.minLevel,'T9 must begin in the Ashlands character band');
+ok(regionalGearCharacterLevel('T9',rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR.T9))>=ashlands.minLevel,'Locked T9 preview level cannot precede Ashlands');
 ok(TIER_CRAFTING_LEVEL_FLOOR.T9>=65,'T9 crafting must remain a late-game profession gate');
 const t9=equipment.filter(recipe=>recipe.v33EquipmentTier==='T9');
 ok(t9.every(recipe=>recipe.v33Region==='Ashlands'),'Every T9 set must be authored as Ashlands equipment');

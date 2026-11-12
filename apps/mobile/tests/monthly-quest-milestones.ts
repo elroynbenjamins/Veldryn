@@ -3,6 +3,7 @@ import {recordSeasonalActivity,seasonalQuestBoard} from '../src/core/seasonal-qu
 import {MONTHLY_QUEST_MILESTONES,creditMonthlyQuestMilestone,claimMonthlyQuestMilestone,monthlyQuestMilestoneStatus,utcQuestMonth} from '../src/core/monthly-quest-milestones';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {totalXpAtLevel} from '../src/core/progression';
+import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
 
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message);}
@@ -26,6 +27,8 @@ const eligible=claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'mining
 ok(eligible.skills.find(skill=>skill.skillId==='mining')!.xp===1000,'First milestone adds exact XP');
 ok(eligible.skills.find(skill=>skill.skillId==='mining')!.level>1,'Skill levels recomputed after XP grant');
 ok(monthlyQuestMilestoneStatus(eligible,now)[0].claimed.includes(30),'Claim is recorded account-wide');
+const reloaded=normalizeSave(JSON.parse(JSON.stringify(eligible)),now);
+ok(monthlyQuestMilestoneStatus(reloaded,now)[0].claimed.includes(30),'Offline save normalization must preserve the completed milestone');
 fails(()=>claimMonthlyQuestMilestone(eligible,'2026-11',30,characterId,'mining',now),'Different requests cannot claim the same milestone twice');
 fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,'not-my-character','mining',now),'Cannot credit an unknown character');
 fails(()=>claimMonthlyQuestMilestone(state,'2026-11',30,characterId,'invalid-skill' as any,now),'Cannot credit an unknown skill');

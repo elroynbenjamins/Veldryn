@@ -1,4 +1,5 @@
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
+import {REGION_MONSTER_LEVELS} from '../core/region-level-plan';
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
 import {mobileRawGemItemIdV1} from './gems-v1';
 import {itemDef} from './items';
@@ -33,7 +34,7 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'GLASSBOUND_SENTINEL',name:'Glassbound Sentinel',level:40,hp:980,attack:74,defense:45,xp:560,gold:35,secondsPerKill:40,unlockLevel:38,zone:'Sunscar',areaId:'ZONE_008',drops:[{itemId:'SUNSTONE_ORE',chance:.50,min:1,max:2},{itemId:'AMBERGLASS',chance:.28,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.12,min:1,max:1},{itemId:'GLASSBOUND_CORE',chance:.38,min:1,max:1}]},
 {id:'SAFFRON_MARAUDER',name:'Saffron Marauder',level:30,hp:670,attack:56,defense:33,xp:388,gold:23,secondsPerKill:33,unlockLevel:29,zone:'Sunscar',areaId:'ZONE_006',regionalAreaAutoUnlock:true,drops:[{itemId:'DUNEWOOD',chance:0.42,min:1,max:2},{itemId:'SUNSCALE',chance:0.2,min:1,max:1},{itemId:'AMBERGLASS',chance:0.08,min:1,max:1}]},
 {id:'GLASS_DUNE_STRIDER',name:'Glass Dune Strider',level:35,hp:815,attack:66,defense:38,xp:474,gold:29,secondsPerKill:36,unlockLevel:34,zone:'Sunscar',areaId:'ZONE_007',regionalAreaAutoUnlock:true,drops:[{itemId:'SUNSTONE_ORE',chance:0.45,min:1,max:2},{itemId:'AMBERGLASS',chance:0.2,min:1,max:1},{itemId:'SCORPION_VENOM',chance:0.05,min:1,max:1}]},
-{id:'MIRAGE_SHADE',name:'Mirage Shade',level:38,hp:905,attack:72,defense:41,xp:521,gold:32,secondsPerKill:39,unlockLevel:36,zone:'Sunscar',areaId:'ZONE_008',regionalAreaAutoUnlock:true,drops:[{itemId:'AMBERGLASS',chance:0.34,min:1,max:2},{itemId:'ASTRAL_SCRIPT',chance:0.09,min:1,max:1},{itemId:'SUNSCALE',chance:0.24,min:1,max:1}]},
+{id:'MIRAGE_SHADE',name:'Mirage Shade',level:38,hp:905,attack:72,defense:41,xp:521,gold:32,secondsPerKill:39,unlockLevel:36,zone:'Sunscar',areaId:'ZONE_008',regionalAreaAutoUnlock:true,drops:[{itemId:'AMBERGLASS',chance:0.34,min:1,max:2},{itemId:'ASTRAL_SCRIPT',chance:0.09,min:1,max:1},{itemId:'SUNSCALE',chance:0.24,min:1,max:1},{itemId:'GLASSBOUND_CORE',chance:0.10,min:1,max:1}]},
 {id:'OBSERVATORY_KEEPER',name:'Observatory Keeper',level:42,hp:1090,attack:79,defense:50,xp:622,gold:38,secondsPerKill:43,unlockLevel:41,zone:'Sunscar',areaId:'ZONE_010',regionalAreaAutoUnlock:true,drops:[{itemId:'GLASSBOUND_CORE',chance:0.25,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:0.18,min:1,max:1},{itemId:'AMBERGLASS',chance:0.3,min:1,max:1}]},
 {id:'ROYAL_SANDGUARD',name:'Royal Sandguard',level:45,hp:1240,attack:87,defense:58,xp:705,gold:43,secondsPerKill:47,unlockLevel:44,zone:'Sunscar',areaId:'ZONE_010',regionalAreaAutoUnlock:true,drops:[{itemId:'SUNSTONE_ORE',chance:0.45,min:1,max:2},{itemId:'GLASSBOUND_CORE',chance:0.3,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:0.12,min:1,max:1}]},
 {id:'FROSTWOLF',name:'Frostwolf',level:48,hp:1220,attack:88,defense:55,xp:710,gold:43,secondsPerKill:44,unlockLevel:46,zone:'Frostmarch',areaId:'ZONE_011',drops:[{itemId:'FROSTIRON',chance:.42,min:1,max:2},{itemId:'RIMEGLASS',chance:.08,min:1,max:1},{itemId:'RIME_RESIN',chance:.06,min:1,max:1},{itemId:'BP_FROSTIRON_HATCHET',chance:.01,min:1,max:1}]},
@@ -79,8 +80,10 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);
   const advancedScale=ADVANCED_MONSTER_REGIONS.has(monster.zone)?ADVANCED_REGION_MONSTER_MULTIPLIER:1;
+  const regionalLevel=REGION_MONSTER_LEVELS[monster.id];
   return {...monster,
-  unlockLevel:rebaseLevel(monster.unlockLevel),
+  ...(regionalLevel?{level:regionalLevel.level}:{}),
+  unlockLevel:regionalLevel?.unlockLevel??(monster.zone==='Ashlands'?Math.max(76,rebaseLevel(monster.unlockLevel)):rebaseLevel(monster.unlockLevel)),
   // Reduce other chance-based combat drops by 5% relative to their existing
   // chance. Holy Water's dedicated Faith catalog already contains the final
   // whole-percent rates after this 5% cut and a further 15% reduction.

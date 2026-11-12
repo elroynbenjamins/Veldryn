@@ -81,7 +81,7 @@ ok(!unmetScoutingPrerequisite(sunscarRoutes[0],legacySunscar),'Existing Sunscar 
 ok(unmetScoutingPrerequisite(sunscarRoutes[2],legacySunscar)?.id===sunscarRoutes[1].id,'Cannot skip the second Sunscar area survey');
 const sunscarXpPerHour=sunscarRoutes.map(route=>rate(route.id));
 ok(sunscarXpPerHour.every((value,index)=>index===0||value>sunscarXpPerHour[index-1]),'Later Sunscar surveys should be better XP training');
-const testExplorer={...base,currentRegionId:'SUNSCAR',character:{...base.character!,level:rebaseLevel(45)},skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill),exploredRouteIds:legacySunscar,defeatedBossIds:[...(base.defeatedBossIds??[]),'FALLEN_KNIGHT']};
+const testExplorer={...base,currentRegionId:'SUNSCAR',character:{...base.character!,level:regionAreas('SUNSCAR')[2].minLevel},skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill),exploredRouteIds:legacySunscar,defeatedBossIds:[...(base.defeatedBossIds??[]),'FALLEN_KNIGHT']};
 let prerequisiteBlocked=false;
 try{startExploration(testExplorer,'SCOUT_SUNSCAR_MIRAGE',1000)}catch(e){prerequisiteBlocked=String(e).includes('Scorchwind');}
 ok(prerequisiteBlocked,'Starting an advanced Sunscar survey must validate earlier survey completion');

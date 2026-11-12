@@ -69,8 +69,10 @@ export interface FallenKnightBattleResult{
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const FALLEN_KNIGHT_MAX_DURATION_MS=100_000;
-/** Boss fights use limited Alchemy healing potions, never ordinary food. */
-export const FALLEN_KNIGHT_MAX_POTION_UNITS=5;
+/** Calibrated with 3 healing draughts: preserves prepared Common T2 success. */
+export const FALLEN_KNIGHT_THREE_POTION_DAMAGE_FACTOR=.75;
+/** Story boss healing uses up to three draughts, one at a time on actual damage.\n * This is separate from the ONE preparation/attack tonic per boss attempt. */
+export const FALLEN_KNIGHT_MAX_POTION_UNITS=3;
 /** Legacy compatibility: no food charges are permitted in boss encounters. */
 export const FALLEN_KNIGHT_MAX_FOOD_UNITS=0;
 
@@ -162,7 +164,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
       const variance=.95+random01(seed,rngIndex++)*.10;
       const raw=monster.attack*.29+monster.level*.14;
       const phaseDamage=phase===3?1.18:phase===2?1.06:1;
-      const amount=Math.max(1,Math.round(raw*(1-mitigation(player.defense))*coeff*phaseDamage*variance*player.incomingDamageMultiplier*(critical?bossSecondary.critMultiplier:1)));
+      const amount=Math.max(1,Math.round(raw*FALLEN_KNIGHT_THREE_POTION_DAMAGE_FACTOR*(1-mitigation(player.defense))*coeff*phaseDamage*variance*player.incomingDamageMultiplier*(critical?bossSecondary.critMultiplier:1)));
       playerHp=Math.max(0,playerHp-amount);
       push({atMs:now,type:'boss_hit',label,abilityId,amount,critical});
       maybePotion(now);

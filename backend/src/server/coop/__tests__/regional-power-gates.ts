@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from '../regional-power-balance';
 
-assert.equal(REGIONAL_DUNGEON_BALANCE_VERSION,'regional-tier-power-v1');
+assert.equal(REGIONAL_DUNGEON_BALANCE_VERSION,'regional-tier-power-v2');
 for(const id of ['EXP_001','EXP_003'])for(const tier of [1,2,3]){
  const row=regionalPowerMultipliers(id,tier,true);
  if(!row)throw new Error('new online regional dungeon missing scaled encounter pressure');
@@ -10,7 +10,13 @@ for(const id of ['EXP_001','EXP_003'])for(const tier of [1,2,3]){
 }
 assert.equal(regionalPowerMultipliers('EXP_005',1,true),undefined,'Frostmarch is still in development');
 assert.equal(regionalPowerMultipliers('EXP_001',1,true)?.enemyLevel,10);
-assert.equal(regionalPowerMultipliers('EXP_003',1,true)?.enemyLevel,25);
+assert.equal(regionalPowerMultipliers('EXP_003',1,true)?.enemyLevel,26);
+const savedV1=regionalPowerMultipliers('EXP_003',2,true,undefined,1)!;
+assert.equal(savedV1.enemyLevel,25,'existing v1 Q-Mode runs retain old enemy level');
+assert.equal(savedV1.attack,1.066,'existing v1 Q-Mode runs retain old tier 2 attack');
+assert.equal(savedV1.hp,2.665,'existing v1 Q-Mode runs retain old tier 2 HP');
+const newV2=regionalPowerMultipliers('EXP_003',2,true,undefined,2)!;
+assert.ok(newV2.attack>savedV1.attack&&newV2.hp>savedV1.hp,'new balance must not rewrite old saved run tuning');
 for(const id of ['EXP_001','EXP_003']){
  const rows=[1,2,3].map(tier=>regionalPowerMultipliers(id,tier,true)!);
  for(const stat of ['attack','hp','defense'] as const){

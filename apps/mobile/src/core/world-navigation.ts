@@ -6,6 +6,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
 import {ITEMS} from '../content/items';
 import {EXPLORATION_ROUTES} from '../content/exploration';
+import {rebasedCombatLevelFromLegacyLevel} from './progression';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
 // The opening story boss is mandatory before entering the second region or beyond.
@@ -18,10 +19,25 @@ const REGION_SCOUT_REQUIREMENTS:Partial<Record<string,string>>={
  FROSTMARCH:'SCOUT_SUNSCAR',
  ASHLANDS:'SCOUT_FROSTMARCH',
 };
+/**
+ * Grandfather legitimate pre-rebalance visits after increasing regional entry
+ * requirements. World/quest/scouting safety gates still apply. A newly created
+ * character cannot bypass the Lv26/51 unlock just by knowing King's Road.
+ * A saved unlocked monster or previously visited zone is proof of old access.
+ */
+function historicalRegionalAccess(state:GameState,zone:WorldZoneDef):boolean{
+ const oldMinLevel=zone.id==='SUNSCAR'?rebasedCombatLevelFromLegacyLevel(26):
+  zone.id==='FROSTMARCH'?rebasedCombatLevelFromLegacyLevel(45):undefined;
+ if(oldMinLevel===undefined||(state.character?.level??0)<oldMinLevel)return false;
+ if(state.currentRegionId===zone.id)return true;
+ const oldSurvey=zone.id==='SUNSCAR'?'SCOUT_SUNSCAR':'SCOUT_FROSTMARCH';
+ if((state.exploredRouteIds??[]).includes(oldSurvey))return true;
+ return MONSTERS.some(monster=>monster.zone===zone.name&&(state.unlockedMonsterIds??[]).includes(monster.id));
+}
 export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
   if(worldZoneInDevelopment(zone))return zone.name+' is still in development';
   const level=state.character?.level??1;
-  if(level<zone.minLevel)return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if(level<zone.minLevel&&!historicalRegionalAccess(state,zone))return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
   if(POST_CHAPTER_ONE_REGIONS.has(zone.id)&&!(state.defeatedBossIds??[]).includes(FIRST_CHAPTER_BOSS_ID))return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId=REGION_SCOUT_REQUIREMENTS[zone.id];
   if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)){
@@ -55,7 +71,7 @@ export function encounterLockRequirement(state:GameState,monster:MonsterDef):Enc
   // Authored future-region encounters must stay unplayable even when old save
   // data contains their unlock IDs or the character is above the level gate.
   if(region&&worldZoneInDevelopment(region))return {kind:'regionProgression'};
-  if(level<(region?.minLevel??1))return {kind:'level',level:region?.minLevel??1};
+  if(level<(region?.minLevel??1)&&!(region&&historicalRegionalAccess(state,region)&&(state.unlockedMonsterIds??[]).includes(monster.id)))return {kind:'level',level:region?.minLevel??1};
   if(monster.boss){
     if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};
     return state.quests.find(q=>q.questId==='QST_014')?.status==='locked'?{kind:'story'}:undefined;

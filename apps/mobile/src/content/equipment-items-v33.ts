@@ -4,6 +4,7 @@ import type {ItemDef} from './items';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 import {TIER_CHARACTER_LEVEL_FLOOR} from './equipment-recipes-v33';
 import {equipmentStatsForSetPath} from './equipment-path-stats';
+import {regionalGearCharacterLevel} from '../core/region-level-plan';
 
 const classIdByName:Record<string,ClassId>={Ironwarden:'IRONWARDEN',Bastion:'BASTION',Dreadguard:'DREADGUARD',Dawnkeeper:'DAWNKEEPER',Wayfinder:'WAYFINDER',Ravager:'RAVAGER',Hexweaver:'HEXWEAVER','Knife Dancer':'KNIFE_DANCER',Stonecaller:'STONECALLER'};
 const slotByName:Record<string,GearSlot>={Helmet:'helmet',Chest:'chest',Gloves:'gloves',Legs:'legs',Boots:'boots',Weapon:'weapon','Off-hand':'offhand',Cape:'cape',Amulet:'amulet',Ring:'ring'};
@@ -26,6 +27,6 @@ export const EQUIPMENT_ITEMS_V33:ItemDef[]=(catalog.pieces as Array<Record<strin
     id:String(piece['Piece ID']),name:String(piece['Item Name']),type:'gear',slot,
     ...pathStats,
     readiness:Math.max(1,Math.ceil(level/4)),value:Math.max(10,level*scale*12),
-    rarity:rarityByTier[tier]??'common',classRestriction:classIdByName[String(piece.Class)],requiredLevel:rebaseLevel(level),equipmentSetId:String(piece['Set ID']),
+    rarity:rarityByTier[tier]??'common',classRestriction:classIdByName[String(piece.Class)],requiredLevel:regionalGearCharacterLevel(tier,rebaseLevel(level)),equipmentSetId:String(piece['Set ID']),
   };
 });

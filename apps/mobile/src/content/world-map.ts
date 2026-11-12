@@ -12,4 +12,8 @@ export const WORLD_ZONES:WorldZoneDef[]=([
   {availability:'released',id:'FROSTMARCH',name:'Frostmarch',subtitle:'Frozen passes where every bell carries through the ice',minLevel:45,maxLevel:70,x:.42,y:.10,accent:'#91c7dc',symbol:'❄'},
   {availability:'inDevelopment',id:'ASHLANDS',name:'Ashlands',subtitle:'Blackglass marshes and the crucible at the edge of the known road',minLevel:71,maxLevel:90,x:.12,y:.22,accent:'#a77972',symbol:'◇',developmentNote:'Ashlands is in development. The region is visible as a preview, but travel, enemies, gathering routes and rewards are not yet available.',plannedActivities:['Blackglass marshes','Cinderwood gathering','Crucible expeditions','High-tier equipment']},
   {availability:'inDevelopment',id:'VEILLANDS',name:'The Veillands',subtitle:'A reality-thin frontier beyond the known road',minLevel:91,maxLevel:110,x:.82,y:.08,accent:'#8a6bc9',symbol:'◈',developmentNote:'The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.',plannedActivities:['High-level combat','Regional gathering','Elite encounters','Region progression']},
-] as WorldZoneDef[]).map(zone=>({...zone,minLevel:rebaseLevel(zone.minLevel),maxLevel:rebaseLevel(zone.maxLevel)}));
+] as WorldZoneDef[]).map(zone=>({
+ ...zone,
+ minLevel:zone.id==='SUNSCAR'?26:zone.id==='FROSTMARCH'?51:zone.id==='ASHLANDS'?76:rebaseLevel(zone.minLevel),
+ maxLevel:zone.id==='KINGS_ROAD'?25:zone.id==='SUNSCAR'?50:zone.id==='FROSTMARCH'?75:zone.id==='ASHLANDS'?100:rebaseLevel(zone.maxLevel),
+}));

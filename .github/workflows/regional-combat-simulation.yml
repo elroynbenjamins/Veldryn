@@ -8,7 +8,32 @@ on:
       - 'tools/regional-combat-sim-entry.ts'
       - 'tools/regional-combat-sim.mjs'
       - 'tools/regional-gear-cp-benchmark-entry.ts'
+      - 'apps/mobile/src/core/region-level-plan.ts'
+      - 'apps/mobile/src/core/combat-progression-pacing.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/story-boss.ts'
+      - 'apps/mobile/src/core/ordinary-hunt.ts'
+      - 'apps/mobile/src/core/combat-timing.ts'
+      - 'apps/mobile/src/core/progression.ts'
+      - 'apps/mobile/src/content/regional-areas.ts'
+      - 'apps/mobile/src/content/world-map.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/equipment-recipes-v33.ts'
+      - 'apps/mobile/src/content/equipment-items-v33.ts'
+      - 'apps/mobile/src/content/equipment-sets.ts'
+      - 'apps/mobile/src/content/exploration.ts'
+      - 'apps/mobile/src/content/alchemy.ts'
+      - 'apps/mobile/tests/progression-level-gates.ts'
+      - 'apps/mobile/tests/regional-four-areas.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
+      - 'apps/mobile/tests/skill-unlock-density.ts'
+      - 'apps/mobile/tests/balance-projection.ts'
+      - 'apps/mobile/tests/regional-gear-save-compatibility.ts'
+      - 'apps/mobile/src/core/world-navigation.ts'
+      - 'apps/mobile/tests/regional-legacy-access.ts'
+      - 'backend/src/server/coop/dungeon-entry-policy.ts'
       - '.github/workflows/regional-combat-simulation.yml'
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -32,6 +57,15 @@ jobs:
         run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Install backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck mobile gameplay and run targeted story/region tests
+        run: |
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
+          for test in apps/mobile/.core-build/apps/mobile/tests/fallen-knight-gear-food.js apps/mobile/.core-build/apps/mobile/tests/regional-food-pressure.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-sustain-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-combat-preparation-matrix.js apps/mobile/.core-build/apps/mobile/tests/regional-undergeared-sustain.js apps/mobile/.core-build/apps/mobile/tests/progression-level-gates.js apps/mobile/.core-build/apps/mobile/tests/regional-four-areas.js apps/mobile/.core-build/apps/mobile/tests/exploration-balance.js apps/mobile/.core-build/apps/mobile/tests/skill-unlock-density.js apps/mobile/.core-build/apps/mobile/tests/balance-projection.js apps/mobile/.core-build/apps/mobile/tests/regional-gear-save-compatibility.js apps/mobile/.core-build/apps/mobile/tests/regional-legacy-access.js
+          do
+            test -f "$test" || { echo "Missing compiled test: $test"; exit 1; }
+            node "$test"
+          done
       - name: Re-run gear CP baseline to confirm fixture safety
         run: |
           node tools/regional-gear-cp-benchmark.mjs > /tmp/regional-cp-crosscheck.csv
@@ -39,7 +73,7 @@ jobs:
       - name: Simulate ordinary hunts, first boss and recipe gates
         run: |
           node tools/regional-combat-sim.mjs > regional-combat-simulation.json
-          node -e "const x=require('./regional-combat-simulation.json'); if(x.hunts.length!==45||x.boss.length!==10||x.recipes.length!==108)process.exit(1); if(x.hunts.some(r=>!Number.isFinite(r.killsPerHourMean)))process.exit(1);console.log('PASS hunt:',x.hunts.length,'boss:',x.boss.length,'recipe:',x.recipes.length,'attempts:',x.metadata.bossAttempts)"
+          node -e "const x=require('./regional-combat-simulation.json');if(x.hunts.length!==45||x.boss.length!==10||x.recipes.length!==108||x.frostmarchLevelPacing.length!==25)process.exit(1);if(x.hunts.some(r=>!Number.isFinite(r.killsPerHourMean)))process.exit(1);const h=x.frostmarchLevelPacing.map(r=>r.meanHours);const avg=h.reduce((a,b)=>a+b,0)/h.length;if(h.some(v=>v<20||v>30)||avg<24||avg>27)throw Error('Frostmarch 25h target regressed: '+avg);const full=x.boss.find(r=>r.scenario==='full_common_q50_plain'&&r.potionMode==='three_healing_potions');const mixed=x.boss.find(r=>r.scenario==='mixed_7_of_10_common_q40'&&r.potionMode==='three_healing_potions');if(!full||full.winRate<.9||!mixed||mixed.winRate>.7)throw Error('3-potion Fallen Knight fairness regressed');if(x.boss.some(r=>r.consumedPotionsMean>3))throw Error('boss healing cap');console.log('PASS chapter XP mean:',avg,'boss:',full.winRate,'mixed:',mixed.winRate,'hunts:',x.hunts.length)"
       - uses: actions/upload-artifact@v4
         with:
           name: regional-combat-simulation

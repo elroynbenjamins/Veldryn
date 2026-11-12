@@ -9,8 +9,10 @@
  * enemy simulation. It does not mutate production, release locks, or save files.
  */
 import {CLASS_IDS,PATHS,SCENARIOS,STAGES,makeCharacter} from './regional-gear-cp-benchmark-entry';
-import {combatSustainProjection,effectiveStats,previewFallenKnightBattle} from '../apps/mobile/src/core/game';
+import {combatSustainProjection,effectiveStats,previewFallenKnightBattle,fallenKnightPlayerSnapshot} from '../apps/mobile/src/core/game';
+import {simulateFallenKnightStoryBattle} from '../apps/mobile/src/core/story-boss';
 import {MONSTERS} from '../apps/mobile/src/content/monsters';
+import {regionalArea} from '../apps/mobile/src/content/regional-areas';
 import {characterXpForNextLevel} from '../apps/mobile/src/core/progression';
 import {V33_EQUIPMENT_RECIPES} from '../apps/mobile/src/content/equipment-recipes-v33';
 
@@ -76,11 +78,67 @@ for(const e of ENCOUNTERS){
   });
  }
 }
+/** Full Lv51..75 per-character-level XP validation with only level-unlocked regional enemies. */
+const frostmarchLevelPacing:Record<string,unknown>[]=[];
+for(let level=51;level<=75;level++){
+ const tier=level<63?'T5':'T6';
+ const original=STAGES.find(s=>s.tier===tier)!;
+ const stage={...original,level};
+ const candidates=MONSTERS.filter(monster=>
+  monster.zone==='Frostmarch'&&!monster.boss&&monster.unlockLevel<=level&&
+  (!monster.areaId||(regionalArea('FROSTMARCH',monster.areaId)?.minLevel??999)<=level)
+ );
+ assert(candidates.length>0,'no Frostmarch enemies available at level '+level);
+ const hours:number[]=[],chosen=new Map<string,number>(),xpRates:number[]=[];
+ for(const cls of CLASS_IDS)for(const path of PATHS){
+  const state=makeCharacter(cls,path,stage,get('representative_common_q50'));
+  const projected=candidates.map(m=>combatSustainProjection(state,m.id)!)
+    .filter(v=>v&&v.xpPerHour>0).sort((a,b)=>b.xpPerHour-a.xpPerHour);
+  assert(projected.length>0,'no profitable Frostmarch hunt at Lv'+level);
+  const best=projected[0];
+  chosen.set(best.monsterId,(chosen.get(best.monsterId)??0)+1);
+  hours.push(characterXpForNextLevel(level)/best.xpPerHour);
+  xpRates.push(best.xpPerHour);
+ }
+ frostmarchLevelPacing.push({
+  characterLevel:level,tier,release:tier==='T6'?'unreleased_hypothetical':'released',
+  candidates:candidates.length,
+  meanHours:rounded(mean(hours)),p10Hours:rounded(percentile(hours,.1)),
+  p90Hours:rounded(percentile(hours,.9)),
+  meanXpPerHour:rounded(mean(xpRates)),
+  bestMonsterVotes:Object.fromEntries(chosen),
+ });
+}
+
+/** Release guard: the same Lv63–75 content with currently obtainable T5 (T6 locked). */
+const frostmarchReleasedGearPacing:Record<string,unknown>[]=[];
+for(let level=63;level<=75;level++){
+ const original=STAGES.find(s=>s.tier==='T5')!;
+ const stage={...original,level};
+ const candidates=MONSTERS.filter(monster=>
+  monster.zone==='Frostmarch'&&!monster.boss&&monster.unlockLevel<=level&&
+  (!monster.areaId||(regionalArea('FROSTMARCH',monster.areaId)?.minLevel??999)<=level)
+ );
+ const hours:number[]=[];
+ for(const cls of CLASS_IDS)for(const path of PATHS){
+  const state=makeCharacter(cls,path,stage,get('representative_common_q50'));
+  const projections=candidates.map(m=>combatSustainProjection(state,m.id)!)
+   .filter(x=>x&&x.xpPerHour>0).sort((a,b)=>b.xpPerHour-a.xpPerHour);
+  assert(projections.length>0,'T5-only Frostmarch cannot farm Lv'+level);
+  hours.push(characterXpForNextLevel(level)/projections[0].xpPerHour);
+ }
+ frostmarchReleasedGearPacing.push({
+  characterLevel:level,gearTier:'T5',gearReleased:true,
+  meanHours:rounded(mean(hours)),p10Hours:rounded(percentile(hours,.1)),
+  p90Hours:rounded(percentile(hours,.9)),
+ });
+}
+
 const bossResults:Record<string,unknown>[]=[];
 const bossStage=STAGES.find(x=>x.tier==='T2'&&x.level===25)!;
 const BOSS_SEEDS=12;
 for(const scenarioId of SELECTED){
- for(const potionMode of ['none','five_healing_potions'] as const){
+ for(const potionMode of ['none','three_healing_potions'] as const){
   const outcomes:{won:boolean;durationMs:number;potions:number;bossHpFraction:number}[]=[];
   const perProfile:{classId:string;path:string;winRate:number|null;avgPotions:number|null}[]=[];
   let profiles=0;
@@ -90,14 +148,14 @@ for(const scenarioId of SELECTED){
       currentHp:effectiveStats(base).hp,
       equippedHealingPotionId:potionMode==='none'?undefined:'RIVERHEART_DRAUGHT',
      },
-     inventory:{...base.inventory,stacks:potionMode==='none'?[]:[{itemId:'RIVERHEART_DRAUGHT',quantity:5}]},
+     inventory:{...base.inventory,stacks:potionMode==='none'?[]:[{itemId:'RIVERHEART_DRAUGHT',quantity:3}]},
    };
    profiles++;
    const profileOutcomes:typeof outcomes=[];
    for(let seed=0;seed<BOSS_SEEDS;seed++){
     const battle=previewFallenKnightBattle(prepared,Date.UTC(2026,10,12,12,0,0)+seed*93_001,'story');
     assert(battle.foodConsumed===0,'food used in boss');
-    assert(battle.potionConsumed<=5,'potion cap broken');
+    assert(battle.potionConsumed<=3,'potion cap broken');
     const outcome={
      won:battle.won,durationMs:battle.durationMs,potions:battle.potionConsumed,
      bossHpFraction:battle.finalBossHp/Math.max(1,battle.bossMaxHp),
@@ -125,6 +183,37 @@ for(const scenarioId of SELECTED){
   });
  }
 }
+/** Dry-run damage-sweep to choose a fair 3-potion Chapter I boss coefficient. */
+const bossDamageSweep:Record<string,unknown>[]=[];
+for(const factor of [1,.9,.85,.8,.75,.7]){
+ for(const scenarioId of ['mixed_7_of_10_common_q40','full_common_q50_plain','representative_common_q50'] as const){
+  const profileWins:number[]=[];
+  for(const cls of CLASS_IDS)for(const path of PATHS){
+   const base=makeCharacter(cls,path,bossStage,get(scenarioId));
+   const state={...base,character:{...base.character!,
+     currentHp:effectiveStats(base).hp,equippedHealingPotionId:'RIVERHEART_DRAUGHT'},
+     inventory:{...base.inventory,stacks:[{itemId:'RIVERHEART_DRAUGHT',quantity:3}]},
+   };
+   const snapshot=fallenKnightPlayerSnapshot(state);
+   let wins=0;
+   for(let seed=0;seed<BOSS_SEEDS;seed++){
+    const time=Date.UTC(2026,10,12,12,0,0)+seed*93_001;
+    const battle=simulateFallenKnightStoryBattle({
+     ...snapshot,incomingDamageMultiplier:snapshot.incomingDamageMultiplier*factor,
+    },`${state.character!.id}:FALLEN_KNIGHT_STORY:${time}`,'story');
+    wins+=Number(battle.won);
+   }
+   profileWins.push(wins/BOSS_SEEDS);
+  }
+  bossDamageSweep.push({
+   factor,scenario:scenarioId,
+   winRate:rounded(mean(profileWins),4),
+   minimumClassPathWinRate:rounded(Math.min(...profileWins),4),
+   classPathsBelow75Pct:profileWins.filter(v=>v<.75).length,
+  });
+ }
+}
+
 const recipeAudit:Record<string,unknown>[]=[];
 const chapterMidpoints:Record<string,number>={T1:1,T2:13,T3:26,T4:38,T5:51,T6:63};
 for(const tier of ['T1','T2','T3','T4','T5','T6']){
@@ -155,11 +244,12 @@ console.log(JSON.stringify({
   purpose:'Read-only current live combat projection / recipe source audit',
   exactMobileEngine:true,
   encounterStates:'synthetic never drawn from player DB',
-  proposedRegionRemapApplied:false,
-  proposedEnemyRetuneApplied:false,
+  proposedRegionRemapApplied:true,
+  proposedEnemyLevelsApplied:true,
+  proposedEnemyStatMultipliersChanged:false,
   sourceDate:'2026-11-12',
   huntLoadouts:CLASS_IDS.length*PATHS.length*SELECTED.length*ENCOUNTERS.length,
   bossAttempts:bossResults.reduce((sum,r)=>sum+Number(r.attempts),0),
  },
- hunts:simHunts,boss:bossResults,recipes:recipeAudit,
+ hunts:simHunts,frostmarchLevelPacing,frostmarchReleasedGearPacing,boss:bossResults,bossDamageSweep,recipes:recipeAudit,
 }));

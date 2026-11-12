@@ -2,6 +2,7 @@ import type {ClassId,GearSlot} from '../core/types';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
+import {regionalGearCharacterLevel,regionalGearCatalogRegion} from '../core/region-level-plan';
 
 export interface V33EquipmentRecipeDef{
   id:string;
@@ -39,7 +40,7 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 /** Equipment-only gold sink: recipe gold is authoritative for the UI, queue reservation and server validation. */
 export const EQUIPMENT_FORGE_GOLD_MULTIPLIER=3;
 export const EQUIPMENT_CRAFT_GOLD_MULTIPLIER=EQUIPMENT_FORGE_GOLD_MULTIPLIER;
-const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
+const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:4500,T6:9000,T7:18000,T8:30000,T9:50000};
 // More early profession XP helps Smithing/Tailoring reach T2 without
 // lowering level gates, reducing costs, or speeding up late-tier training.
 const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
@@ -48,7 +49,7 @@ export const T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER=1.25;
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
   T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'IRONWOOD_BINDING_RESIN',quantity:1},
   T3:{itemId:'SUNSCAR_DUNE_BINDER',quantity:1},T4:{itemId:'GLASSBOUND_BINDER',quantity:1},
-  T5:{itemId:'SUNFUSED_FIXATIVE',quantity:1},T6:{itemId:'SUNFUSED_FIXATIVE',quantity:2},
+  T5:{itemId:'RIMEWARD_DISTILLATE',quantity:1},T6:{itemId:'RIMEWARD_DISTILLATE',quantity:2},
   T7:{itemId:'RIMEWARD_DISTILLATE',quantity:1},T8:{itemId:'RIMEWARD_DISTILLATE',quantity:2},
   T9:{itemId:'CINDERHEART_ELIXIR',quantity:3},
 };
@@ -69,8 +70,8 @@ const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:2,T
  * beside the first regional enemies, which made the first tier feel like a
  * disposable tutorial item.
  */
-export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:12,T3:26,T4:40,T5:55,T6:70,T7:82,T8:92,T9:100};
-export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:20,T4:34,T5:49,T6:64,T7:76,T8:89,T9:97};
+export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:12,T3:26,T4:38,T5:51,T6:63,T7:82,T8:92,T9:100};
+export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:20,T4:32,T5:45,T6:57,T7:76,T8:89,T9:97};
 export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring'>={
   IRONWARDEN:'smithing',BASTION:'smithing',DREADGUARD:'smithing',RAVAGER:'smithing',
   WAYFINDER:'tailoring',HEXWEAVER:'tailoring',KNIFE_DANCER:'tailoring',DAWNKEEPER:'tailoring',STONECALLER:'tailoring',
@@ -109,8 +110,8 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       case 'T3':return mergeInputs([{itemId:'SUNSCALE',quantity:q(18,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(10,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
       // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
       case 'T4':return mergeInputs([{itemId:'SUNSCALE',quantity:q(19,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(7,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?2:5,multiplier)}]);
-      case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
-      case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
+      case 'T5':return [{itemId:'FROSTBLOOM',quantity:q(25,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+      case 'T6':return [{itemId:'FROSTBLOOM',quantity:q(30,multiplier)},{itemId:'RIMEGLASS',quantity:q(10,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
       case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
       case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
       case 'T9':return [{itemId:'ASHEN_MYRRH',quantity:Math.max(23,q(40,multiplier))},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:Math.max(3,q(3,multiplier))}];
@@ -123,8 +124,8 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
     case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
     case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(8,multiplier)},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier)}]);
-    case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
-    case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
+    case 'T5':return [{itemId:'FROSTIRON_INGOT',quantity:q(11,multiplier)},{itemId:'RIMEGLASS',quantity:q(7,multiplier)}];
+    case 'T6':return [{itemId:'FROSTIRON_INGOT',quantity:q(15,multiplier)},{itemId:'RIMEGLASS',quantity:q(10,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
     case 'T8':return [{itemId:'FROSTIRON_INGOT',quantity:q(18,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
     case 'T9':return [{itemId:'BLACKGLASS_INGOT',quantity:q(20,multiplier)},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:Math.max(3,q(3,multiplier))}];
@@ -139,7 +140,9 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
   const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
   const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
-  const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1),level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
+  const authoredLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1);
+  const characterLevel=regionalGearCharacterLevel(tier,rebaseLevel(authoredLevel));
+  const level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   const baseCraftXp=q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0);
   const craftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
@@ -154,9 +157,9 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
-    characterLevel:rebaseLevel(characterLevel),
+    characterLevel,
     v33EquipmentTier:tier,
-    v33Region:tier==='T9'?'Ashlands':String(set.Region),
+    v33Region:tier==='T9'?'Ashlands':regionalGearCatalogRegion(tier,String(set.Region)),
     v33SetId:setId,
     v33Path:String(piece.Path),
   };

@@ -23,7 +23,9 @@ ok(withCompanion.companion<=Math.floor(withCompanion.total*MAX_COMPANION_COMBAT_
 equal(withCompanion.player+withCompanion.companion,withCompanion.total,'personal and companion shares must reconcile');
 equal(withCompanion.rows.reduce((total,row)=>total+row.value,0),withCompanion.total,
  'Combat Power source rows must reconcile without estimating passive percentages');
-// The maximum-share redistribution is tested above from legitimate rating inputs.\n// Do not forge a companion ascension tier 5: owned companion tiers are 0..3.\nconst noGear={...state,character:{...state.character!,equipment:{}}};
+// The maximum-share redistribution is tested above from legitimate rating inputs.
+ // Do not forge a companion ascension tier 5: owned companion tiers are 0..3.
+const noGear={...state,character:{...state.character!,equipment:{}}};
 const noGearPower=combatPowerRating(noGear);
 ok(withCompanion.player>=noGearPower.player,'Equipped gear must not reduce the personal Combat Power rating');
 equal(noGearPower.rows.find(row=>row.id==='build')?.value,0,

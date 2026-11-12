@@ -1,4 +1,5 @@
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
+import {REGION_MONSTER_LEVELS} from '../core/region-level-plan';
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
 import {mobileRawGemItemIdV1} from './gems-v1';
 import {itemDef} from './items';
@@ -79,8 +80,10 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);
   const advancedScale=ADVANCED_MONSTER_REGIONS.has(monster.zone)?ADVANCED_REGION_MONSTER_MULTIPLIER:1;
+  const regionalLevel=REGION_MONSTER_LEVELS[monster.id];
   return {...monster,
-  unlockLevel:rebaseLevel(monster.unlockLevel),
+  ...(regionalLevel?{level:regionalLevel.level}:{}),
+  unlockLevel:regionalLevel?.unlockLevel??rebaseLevel(monster.unlockLevel),
   // Reduce other chance-based combat drops by 5% relative to their existing
   // chance. Holy Water's dedicated Faith catalog already contains the final
   // whole-percent rates after this 5% cut and a further 15% reduction.

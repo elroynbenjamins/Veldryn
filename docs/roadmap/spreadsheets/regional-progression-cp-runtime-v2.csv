@@ -1,0 +1,11 @@
+region,equipment_tier,character_level,seven_piece_transition_cp,plain_common_q50_cp,representative_common_q50_cp,invested_uncommon_q60_cp,well_prepared_rare_q70_cp,aspirational_epic_q85_cp,equipment_tier_released,source,provenance
+Asterfall,T1,12,2666,3006,3051,3286,3619,4148,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Asterfall,T2,25,4253,4650,4732,5129,5783,6813,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Sunscar,T3,26,5507,5960,6084,6681,7516,9021,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Sunscar,T3,37,5882,6336,6459,7056,7892,9397,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Sunscar,T4,38,7094,7612,7773,8576,9698,11718,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Sunscar,T4,50,7518,8036,8199,9002,10123,12144,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Frostmarch,T5,51,8949,9523,9726,10736,12146,14358,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Frostmarch,T5,62,9330,9903,10106,11116,12528,14740,yes,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime
+Frostmarch,T6,63,10707,11345,11588,12808,14510,17180,no,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime_unreleased_tier
+Frostmarch,T6,75,10995,11632,11876,13096,14800,17469,no,GitHub_Actions_run_43202573610,synthetic_real_mobile_runtime_unreleased_tier

@@ -20,7 +20,7 @@ import {PlayerStyledName} from './PlayerStyledName';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
-import {PlayerBadges} from './PlayerBadges';
+import {PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
 
 export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgroundId:string}){
@@ -36,11 +36,12 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
-   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/><View style={[s.identityPlate,compact&&s.compactIdentity]}>
-    <Text style={s.eyebrow}>{profileT(language,"PLAYER SHOWCASE")}</Text>
+   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
     <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+    <View style={s.identityFill}/>
+    {compact?null:<PlayerBadgeShowcase identity={badges.identity} size={15}/>}
    </View>
    <CharacterPortrait state={state} style={[s.character,compact&&s.compactCharacter]}/>
    {petSource&&<View style={s.petBadge}><Image source={petSource} accessibilityLabel={pet?.name??petCollectible?.name??profileT(language,"Pet preview")} resizeMode="contain" style={s.petImage}/></View>}

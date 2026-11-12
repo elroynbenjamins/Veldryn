@@ -453,9 +453,12 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
   const secondary=regionalSecondaryExchange(stats,m,baseCritChance);
-  const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
+  // effectiveStats is the canonical, already-buffed character snapshot. Do not
+  // apply permanent Combat Power a second time here (or turn Attack bonuses
+  // into unintended Defense bonuses).
+  const boostedDefense=Math.max(1,Math.round(stats.defense));
   const bossPowerMultiplier=m.boss?1+effectGems.boss_power:1;
-  const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier*bossPowerMultiplier));
+  const boostedPower=Math.max(1,Math.round(stats.power*bossPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
   const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier;
   const combatCandy=eventCandyUtilityMultiplier(state,nowMs,'combat');
@@ -485,7 +488,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // the search phase limits easy-area kill rates without artificial HP.
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
-    playerHit:huntBasePlayerHit(Math.round(stats.attack*modifiers.combatPowerMultiplier),m.defense,
+    playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
       setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation),
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,

@@ -14,7 +14,7 @@ import {radii,typography,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {usePlayerBadges} from '../../online/PlayerBadgeProvider';
 import {CardBackground} from '../CardBackground';
-import {PlayerBadges} from '../PlayerBadges';
+import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileIcon} from '../ProfileIcon';
@@ -61,6 +61,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
      </View>
      <Text numberOfLines={1} style={s.title}>{title}</Text>
      <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}{trailing?' · '+trailing:''}</Text>
+     <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
     </View>
    </View>
   </View>
@@ -92,6 +93,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  name:{...typography.title,color:C.text,flexShrink:1,minWidth:0},
  title:{...typography.caption,color:C.dark?C.accentSoft:C.text,fontWeight:'700',marginTop:1},
  meta:{fontSize:10,lineHeight:14,color:C.dark?C.muted:C.disabled,fontWeight:'700',marginTop:2},
+ badgeShelf:{marginTop:5},
  strip:{height:58,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:10,borderRadius:radii.md,overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.stage},
  stripArt:{...StyleSheet.absoluteFill},
  stripArtFramed:{top:4,left:4,right:4,bottom:4,borderRadius:4,overflow:'hidden'},

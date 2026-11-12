@@ -101,14 +101,14 @@ export function activityCycleSeconds(state:GameState){
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
   if(!monster){const specialty=gathering?.skillId==='fishing'?modifiers.fishingSpeedMultiplier:gathering?.skillId==='herbalism'?modifiers.herbalismSpeedMultiplier:1,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.activity?.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier*(method?.actionTimeMultiplier??1))/(modifiers.gatheringSpeedMultiplier*specialty);}
-  // The old authored timer no longer describes damage-driven early hunts.
-  // Keep the existing later-region calculation until its separate balance pass.
+  // Damage-driven hunts use their real seeded strike plan rather than an
+  // authored timer in every released region.
   if(state.activity?.kind==='combat'&&!monster.boss&&usesDamageDrivenHunts(monster.zone)){
     const live=activeCombatRuntimeProjection(state);
     if(live)return live.killCycleSeconds;
   }
   const stats=effectiveStats(state),expected=monster.attack*1.2+monster.defense*.8+monster.level*2.2;
-  const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
+  const boostedPower=Math.max(1,Math.round(stats.power));
   const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,adjustedExpected)))*classCombatStyle(state.character!.classId).speedMultiplier*modifiers.combatSpeedMultiplier;
   return monster.secondsPerKill*COMBAT_TIME_SCALE*environmentMultiplier/(speed*companionCombatContribution(state).outputMultiplier*(1+monsterMastery(state,monster.id).damageBonus));

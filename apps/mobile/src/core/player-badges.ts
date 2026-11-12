@@ -13,6 +13,9 @@ export interface PlayerBadgeIdentity{
  /** Server entitlement state, independent of which badge is equipped. */
  supporterAvailable?:boolean;
  extras?:CollectiblePlayerBadgeId[];
+ /** The player's chosen profile showcase: up to three unlocked badges, in their own order.
+  * Independent of `equippedBadgeId`, which is the single badge worn beside the name. */
+ featured?:EquippablePlayerBadgeId[];
  /** null means explicitly unequipped, undefined means a legacy badge projection. */
  equippedBadgeId?:EquippablePlayerBadgeId|null;
  supporterTierMonths?:SupporterTenureTier;
@@ -38,9 +41,13 @@ export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter_6m:'Unlock after 6 total verified months of Supporter.',
  supporter_12m:'Unlock after 12 total verified months of Supporter.',
 };
-/** One elective earned or Supporter badge; staff role is shown independently. */
+/** One elective earned or Supporter badge beside the name, in chat and every name row.
+ * Staff role is shown independently and never costs the player a slot. */
 export const MAX_EQUIPPED_PLAYER_BADGES=1;
 export const MAX_DISPLAYED_PLAYER_BADGES=2;
+/** The profile has room to tell a longer story than a chat line does: three badges of
+ * the player's choosing, so a Supporter star does not have to displace a Founder mark. */
+export const MAX_FEATURED_PLAYER_BADGES=3;
 export function isCollectiblePlayerBadgeId(value:unknown):value is CollectiblePlayerBadgeId{
  return typeof value==='string'&&(COLLECTIBLE_PLAYER_BADGE_IDS as readonly string[]).includes(value);
 }
@@ -53,6 +60,14 @@ export function isEquippablePlayerBadgeId(value:unknown):value is EquippablePlay
 function cleanExtras(value:unknown):CollectiblePlayerBadgeId[]{
  if(!Array.isArray(value))return [];
  return [...new Set(value.filter(isCollectiblePlayerBadgeId))].slice(0,MAX_EQUIPPED_PLAYER_BADGES);
+}
+function cleanFeatured(value:unknown,supporterAvailable:boolean,tier:SupporterTenureTier):EquippablePlayerBadgeId[]{
+ if(!Array.isArray(value))return [];
+ // Collectible ownership is a server fact we cannot recompute here, the same way
+ // equippedBadgeId is trusted. Supporter tenure we can check, so we do.
+ return [...new Set(value.filter(isEquippablePlayerBadgeId))]
+  .filter(id=>!isSupporterBadgeId(id)||canEquipSupporterBadge(id,supporterAvailable,tier))
+  .slice(0,MAX_FEATURED_PLAYER_BADGES);
 }
 export function supporterTierMonths(value:unknown,active:boolean):SupporterTenureTier{
  if(!active)return 0;
@@ -79,8 +94,9 @@ export function normalizePlayerBadges(value:unknown):PlayerBadgeIdentity|undefin
   if(equippedBadgeId&&isSupporterBadgeId(equippedBadgeId)&&!canEquipSupporterBadge(equippedBadgeId,supporterAvailable,tier))equippedBadgeId=null;
   if(equippedBadgeId&&isCollectiblePlayerBadgeId(equippedBadgeId)&&!extras.includes(equippedBadgeId))equippedBadgeId=null;
  }
+ const featured=cleanFeatured(row.featured,supporterAvailable,tier);
  return {staff,supporter,supporterAvailable,extras,validUntilMs:row.validUntilMs,supporterTierMonths:tier,
-  ...(hasEquipped?{equippedBadgeId}:{})};
+  ...(featured.length?{featured}:{}),...(hasEquipped?{equippedBadgeId}:{})};
 }
 export function playerBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date.now()):PlayerBadgeId[]{
  identity=normalizePlayerBadges(identity);
@@ -90,6 +106,19 @@ export function playerBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date
   :identity.equippedBadgeId??undefined;
  return [...(identity.staff?[identity.staff]:[]),...(featured?[featured]:[])].slice(0,MAX_DISPLAYED_PLAYER_BADGES);
 }
-export function validatedFeaturedBadges(value:unknown,owned:readonly CollectiblePlayerBadgeId[]):CollectiblePlayerBadgeId[]{
- return cleanExtras(value).filter(id=>owned.includes(id));
+/** The profile shelf: only what the player deliberately featured. The name row beside it
+ * already carries their staff mark and the badge they wear, so neither is repeated here;
+ * a player who has featured nothing simply has no shelf. */
+export function profileBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date.now()):PlayerBadgeId[]{
+ const normalized=normalizePlayerBadges(identity);
+ if(!normalized||!Number.isFinite(nowMs)||normalized.validUntilMs<=nowMs)return [];
+ return (normalized.featured??[]).slice(0,MAX_FEATURED_PLAYER_BADGES);
+}
+/** Validate a showcase selection against what the account actually owns.
+ * The server re-validates on write and on read; this keeps the picker honest. */
+export function validatedFeaturedBadges(value:unknown,owned:readonly EquippablePlayerBadgeId[]):EquippablePlayerBadgeId[]{
+ if(!Array.isArray(value))return [];
+ return [...new Set(value.filter(isEquippablePlayerBadgeId))]
+  .filter(id=>owned.includes(id))
+  .slice(0,MAX_FEATURED_PLAYER_BADGES);
 }

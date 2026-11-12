@@ -27,7 +27,7 @@ function flattenStyle(style) {
 
 function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
   let now = 0, timerSequence = 0;
-  const timers = new Map(), loaded = new Map(), animations = [], values = [], accessibilityListeners = new Set();
+  const timers = new Map(), loaded = new Map(), animations = [], values = [], accessibilityListeners = new Set(), appStateListeners = new Set();
   const size = {width, height: 844, fontScale: 1, scale: 1};
   const originals = {setTimeout, clearTimeout, setInterval, clearInterval, now: Date.now};
   global.setTimeout = (callback, delay = 0) => {
@@ -62,6 +62,12 @@ function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
   const theme = new Proxy({dark: true}, {get: (target, key) => key in target ? target[key] : '#557799'});
   const tr = (text, params) => text.replace(/\{([^}]+)\}/g, (_, key) => String(params?.[key] ?? key));
   const native = {
+    // Shared motion policy reads AppState at module scope, so the double must supply it
+    // or every module that reaches src/components/anim/motion.ts throws on import.
+    AppState: {
+      currentState: 'active',
+      addEventListener: (_name, callback) => { appStateListeners.add(callback); return {remove: () => appStateListeners.delete(callback)}; }
+    },
     AccessibilityInfo: {
       isReduceMotionEnabled: () => motionQuery ?? Promise.resolve(reducedMotion),
       addEventListener: (_name, callback) => { accessibilityListeners.add(callback); return {remove: () => accessibilityListeners.delete(callback)}; }

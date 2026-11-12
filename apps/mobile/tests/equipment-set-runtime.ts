@@ -1,7 +1,7 @@
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
-import {activeEquipmentSetRuntime,equipmentSetBonusCoverage,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
+import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equipmentSetBonusCoverage,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -64,4 +64,16 @@ close(runtime10.stats.tenacity,.02,'Full Oathbound runtime must include Tenacity
 close(stats10.armor??0,.07,'Effective stats must surface live Armor');
 close(stats10.tenacity??0,.02,'Effective stats must surface live Tenacity');
 
-console.log('PASS: all V33 always-on set bonuses parse and Oathbound 2/4/6/8/10 runtime thresholds behave correctly');
+const t5Set=EQUIPMENT_SETS.find(row=>row.id==='T5_001');if(!t5Set)throw new Error('Missing T5_001 set');
+let t5State=createCharacter(newGame(0),'IRONWARDEN','Affix Test','male');
+t5State=withSetPieces(t5State,'T5_001',10);
+const t5Build=activeEquipmentBuildStats(t5State);
+ok(t5Build.haste>.01,'Full T5 build stats must include Haste from Gloves affix slot');
+ok(t5Build.critRate>.01,'Full T5 build stats must include Crit Rate from Amulet affix slot');
+ok(t5Build.evasion>.01,'Full T5 build stats must include Evasion from Boots affix slot');
+const t5Combat=equipmentSetCombatModifiers(t5State);
+ok(t5Combat.speedMultiplier>1,'T5 Haste affix must increase combat speed multiplier');
+ok(t5Combat.incomingDamageMultiplier<1,'T5 Evasion affix must reduce incoming damage multiplier');
+ok(t5Combat.critExpectedMultiplier>1,'T5 Crit Rate affix must increase expected crit multiplier');
+
+console.log('PASS: all V33 always-on set bonuses parse and Oathbound 2/4/6/8/10 runtime thresholds behave correctly; T5 affix stats surface in combat');

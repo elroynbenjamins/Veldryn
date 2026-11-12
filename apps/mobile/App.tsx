@@ -762,6 +762,11 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     setSkillsMode(activity.kind==='faith'?'faith':activity.kind==='alchemy'?'crafting':'gathering');
     setTab('Skills');
   }
+  // The reward preview replays the settlement simulation over the whole unclaimed window
+  // (up to a full AFK reserve). It is a pure function of the authoritative state and the
+  // presentation clock, so unrelated root re-renders (tab changes, popups, chat, alerts)
+  // reuse the last result instead of re-simulating.
+  const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,now):undefined,[state,now]);
   const renderApp=()=>{
   if(!versionGateChecked)return <View style={s.startupUnderlay}/>;
   if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title={appText(languageRef.current,"VELDRYN maintenance")} message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;
@@ -776,7 +781,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   if(showAdminQa&&(adminQa||(__DEV__&&!serverGameplayEnabled)))return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><AdminQaScreen state={state} onChange={!serverGameplayEnabled?commit:undefined} onApplyQa={serverGameplayEnabled&&adminQa?applyOnlineAdminQa:undefined} onRefillQa={serverGameplayEnabled&&adminQa?refillOnlineAdminQa:undefined} onClose={()=>setShowAdminQa(false)} onOpenDungeon={()=>{setShowAdminQa(false);setTab('Coop')}}/></SafeAreaView>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const theme=resolveTheme(state.settings.uiTheme);
-  const preview=previewActivityReward(state,now);
+  const preview=activityPreview??previewActivityReward(state,now);
   const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
   const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
   const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;

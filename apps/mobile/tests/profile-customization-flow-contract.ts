@@ -38,7 +38,10 @@ ok(look.includes('onDirtyChange?:(dirty:boolean)=>void')&&look.includes('onPrevi
 const chips=fs.readFileSync('src/components/profile/ProfileWardrobeChips.tsx','utf8');
 ok(look.includes('profileWardrobe(state,WARDROBE_ASSETS)')&&screen.includes('profileWardrobe(state,WARDROBE_ASSETS)'),'The wardrobe model must drive both the chips and the grid');
 ok(chips.includes('row.owned')&&chips.includes('row.total'),'Category chips must carry their owned/total unlock counts');
-ok(chips.includes("flexWrap:'wrap'")&&!chips.includes('ScrollView'),'Category chips must wrap instead of hiding Pets, Titles and Badges off the right edge');
+const pager=fs.readFileSync('src/components/OptionPager.tsx','utf8');
+ok(chips.includes('<OptionPager')&&chips.includes("{key:'badge'"),'Every cosmetic category, Badges included, must stay reachable from the pinned header');
+ok(pager.includes('onPanResponderRelease')&&pager.includes('accessibilityRole="adjustable"')&&pager.includes('s.dotTarget'),'A category must be reachable by arrow, by drag and by its own dot, and the control must announce itself as adjustable');
+ok(pager.includes('Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.6'),'A vertical flick must keep scrolling the page instead of being eaten by the pager');
 ok(screen.includes('<ProfileWardrobeChips'),'Category chips must live in the pinned header beside the stage');
 ok(look.includes('COMMIT_DELAY_MS')&&look.includes('queueCommit(next)'),'Instant equip must batch its writes instead of committing once per tap');
 ok(look.includes('useEffect(()=>()=>flush(),[flush])'),'A pending cosmetic write must be flushed when the wardrobe unmounts');
@@ -49,7 +52,10 @@ ok(look.includes('onNotice?.({name:row.name,undo:'),'Equipping must offer an und
 ok(look.includes('row.lockTag')&&look.includes('<ProfileUnlockSheet'),'Locked tiles must print their unlock tag and open the unlock sheet');
 ok(look.includes('JOURNAL_TITLES_V42')||fs.readFileSync('src/core/profile-wardrobe.ts','utf8').includes('JOURNAL_TITLES_V42'),"Earned Adventurer's Journal titles must remain selectable from Profile customization");
 ok(unlock.includes('Try it on')&&unlock.includes('onNavigateSource'),'The unlock sheet must offer both a try-on and a route to the source');
-ok(stage.includes('ProfileFrameOverlay')&&stage.includes('minCorner={46}'),'The stage must render the equipped frame at stage proportions');
+ok(stage.includes('ProfileFrameOverlay')&&!stage.includes('minCorner'),'The stage must render the equipped frame and let the card size it, not carry a hand-tuned corner');
+ok(stage.includes('!!frame&&s.identityFramed')&&stage.includes('!!frame&&s.surfaceFramed'),'A framed stage must tuck its art and identity inside the frame instead of being struck through by it');
+ok(showcase.includes('<PlayerBadges identity={badges.identity}')&&stage.includes('<PlayerBadges identity={badges.identity}'),'Earned badges must show beside the name on the profile, on the stage and on the showcase card');
+ok(preview.includes('playerBadges:badges.identity'),'The audience preview must hand its own badges to the public scene, which has no published identity to read offline');
 
 // The Character screen keeps its own inline editor, so its contract still holds.
 ok(appearance.includes("['All','Starter','Class','Combat','Event']")&&!appearance.includes("['All','Starter','Class','Companion','Combat','Event']"),'Profile icon filters must not expose the retired Companion tab');

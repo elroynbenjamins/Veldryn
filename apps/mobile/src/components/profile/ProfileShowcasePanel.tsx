@@ -26,7 +26,7 @@ import {CardBackground} from '../CardBackground';
 import {GameButton} from '../GameButton';
 import {GameModalHeader,GameModalSurface} from '../GameModalSurface';
 import {Panel} from '../Panel';
-import {PlayerBadges} from '../PlayerBadges';
+import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
@@ -117,6 +117,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
      <PlayerBadges identity={badges.identity} size={16}/>
     </View>
     <Text numberOfLines={1} style={s.headlineMeta}>{character?profileT(language,'Lv. {level}',{level:character.level})+' · '+className:''}</Text>
+    <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
     {characters.length>1?<Text style={s.headlineAction}>{profileT(language,"Tap to swap")} ›</Text>:null}
    </View>
   </Pressable>
@@ -216,6 +217,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  headlineName:{...typography.title,color:C.text,flexShrink:1,minWidth:0},
  headlineMeta:{...typography.caption,color:C.dark?C.accentSoft:C.text,fontWeight:'700',marginTop:1},
  headlineAction:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.5,marginTop:4},
+ badgeShelf:{marginTop:5},
  pair:{flexDirection:'row',gap:8},
  slotCard:{flex:1,minWidth:0,minHeight:60,flexDirection:'row',alignItems:'center',gap:9,padding:9,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  slotIcon:{width:40,height:40,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.bg},

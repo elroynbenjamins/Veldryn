@@ -23,7 +23,7 @@ function load(file,dependencies={}){const sandbox={exports:{},require:name=>depe
  profileResult=null;tag='BLM';assert.equal(await profiles.publicPlayerProfileV43('player'),null);assert.equal(lookupCount,0,'hidden profiles never trigger guild enrichment');
  const personal=fs.readFileSync(path.join(root,'components/ProfileScenePreview.tsx'),'utf8');
  assert.ok(!personal.includes('ProfileGuildAffiliation'),'Personal card has no guild button');
- assert.ok(personal.includes('PLAYER SHOWCASE')&&personal.includes('s.identityPlate'),'Personal identity overlays the artwork');
+ assert.ok(personal.includes('s.identityPlate')&&personal.includes('s.identityStack'),'Personal identity overlays the artwork and is bracketed by the portrait beside it');
  assert.ok(!personal.includes('s.info'),'Personal card has no separate details footer');
  assert.ok(fs.readFileSync(path.join(root,'screens/ProfileScreen.tsx'),'utf8').includes('showGuild={false}'),'Online self profile also hides the guild button');
  let detailsCalls=0,tagCalls=0,unavailable=false;

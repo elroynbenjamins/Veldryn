@@ -22,4 +22,14 @@ check(collection.includes('ownedEquipmentDefinitionIds(state)'),'Ownership badge
 check(collection.includes('workingTowardItemSourceEntries(state,input.itemId)')&&collection.includes('props.onNavigate(source.destination)'),'Missing material tiles must route to a valid material source');
 check(collection.indexOf('onCraft(recipe.id)')<collection.indexOf('status.inputs.map(input=>'),'Craft CTA must be visible before long material details');
 check(screen.includes('<SmithingCollection state={state} skillId={initialSkill}'),'Smithing and Tailoring must continue sharing the same refined component');
+
+// Nine tiers used to wrap into three rows of buttons above the set browser.
+const tierMemory=read('src/core/equipment-tier-memory.ts');
+check(collection.includes('<OptionPager options={tierOptions}')&&!collection.includes('s.tierOption'),'Equipment tiers must be one stepped row, not a wrapping grid of nine buttons');
+check(collection.includes("meta:ids.filter(id=>owned.has(id)).length+'/'+ids.length"),'The tier step must carry how much of that tier is already owned');
+check(collection.includes('rememberEquipmentTier(characterId,skillId,tier)')&&collection.includes('rememberedEquipmentTier(characterId,skillId)'),'A smith returning to the Forge must land on the tier they last browsed, not back at T1');
+check(collection.includes('if(preferred||!sets.length||restoredFor.current===key)return;'),'A caller-requested recipe must win over the remembered tier');
+check(collection.includes('current===undefined||current===sets[0]?.id?landing.id:current'),'A tier restored late must never overwrite a tier the player has already chosen by hand');
+check(tierMemory.includes('/^T[1-9]$/')&&tierMemory.includes('catch{'),'Stored tiers must be validated on read and never throw into the Forge');
+check(tierMemory.includes('Presentation only')&&tierMemory.includes('can never unlock'),'Remembering a tier must stay a browsing preference, never an entitlement');
 console.log('PASS collection-first Forge, profession crafting separation, material source links and pouch ownership wiring');

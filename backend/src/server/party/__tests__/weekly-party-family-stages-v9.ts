@@ -24,7 +24,7 @@ const roster=classes.map((name,i)=>({
  ...launchPlayer(name,25),id:'story-player-'+i,
  classId:name.toUpperCase(),
 }));
-const colorKeys=new Set<string>(),backgrounds=new Set<string>(),sceneMotifs=new Set<string>(),
+const backgrounds=new Set<string>(),sceneMotifs=new Set<string>(),
  uniqueDescriptions=new Set<string>(),mechanicTraces=new Set<string>();
 let total=0,scouting=0,encounters=0,warningEvents=0;
 const variants=Object.entries(WEEKLY_PARTY_EVENT_FAMILIES) as [WeeklyPartyFamily,
@@ -53,7 +53,9 @@ for(const [family,definition] of variants){
       &&preview.presentation.cues.every(c=>c.atMs>=2000&&c.line.length>8),
       'each stage has readable authored presentation cues');
      assert(preview.presentation.backdropToken!==undefined
-      &&preview.presentation.motionToken!==undefined,
+      &&preview.presentation.motionToken!==undefined
+      &&preview.presentation.stageMotion.length>5
+      &&Object.values(preview.presentation.supplyCategoryShares).reduce((n,v)=>n+v,0)>.99,
       'pixel stage has artwork/animation tokens');
      assert(preview.verifiedRequiredStages===stage,'only verified complete stage supplies count');
      assert(preview.verifiedOptionalPreparations.length===(stage===1?0:3),

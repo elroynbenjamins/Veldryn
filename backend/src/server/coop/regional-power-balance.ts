@@ -13,7 +13,7 @@ export const REGIONAL_DUNGEON_BALANCE=Object.freeze({
  },
  EXP_003:{
   enemyLevel:26,
-  attack:[1.045,1.225,1.0695],hp:[2.47,2.78,2.7945],defense:[2.85,3.034,3.036],
+  attack:[1.045,1.225,1.24],hp:[2.47,2.78,2.7945],defense:[2.85,3.034,3.036],
  },
 } as const);
 /** Saved v1 Q-Mode runs continue using the exact old power normalization. */

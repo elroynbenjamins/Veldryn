@@ -39,6 +39,9 @@ export const seasonalChallengeRows={
   "HIGH_TIER_CRAFT": ["MEISTERWERK","OBRA MAESTRA","MEESTERWERK","LAVORO MAESTRO","OUVRAGE DE MAÎTRE","МАСТЕРСКАЯ РАБОТА","USTALIK ÜRETİMİ"],
   "EXPEDITION": ["EXPEDITION","EXPEDICIÓN","EXPEDITIE","SPEDIZIONE","EXPÉDITION","ЭКСПЕДИЦИЯ","SEFER"],
   "TRIAL": ["PRÜFUNG","PRUEBA","PROEF","PROVA","ÉPREUVE","ИСПЫТАНИЕ","DENEME"],
+  "Festival Service": ["Festdienst","Servicio del festival","Festivalwerk","Servizio del festival","Service du festival","Служба на празднике","Festival Hizmeti"],
+  "Claim {n} completed event objective this period.": ["Hole in diesem Zeitraum {n} abgeschlossene Eventaufgabe ab.","Reclama {n} objetivo de evento completado durante este período.","Claim in deze periode {n} voltooid evenementdoel.","Riscatta {n} obiettivo evento completato in questo periodo.","Récupérez {n} objectif d'événement terminé pendant cette période.","Заберите награду за {n} выполненное задание события за этот период.","Bu dönemde tamamlanan {n} etkinlik hedefinin ödülünü al."],
+  "EVENT": ["EVENT","EVENTO","EVENEMENT","EVENTO","ÉVÉNEMENT","СОБЫТИЕ","ETKİNLİK"],
   "Field Patrol": ["Feldpatrouille","Patrulla de campo","Veldpatrouille","Pattuglia sul campo","Patrouille de terrain","Полевой патруль","Saha Devriyesi"],
   "Gathering Run": ["Sammelrunde","Ruta de recolección","Verzamelronde","Giro di raccolta","Tournée de récolte","Сбор ресурсов","Toplama Turu"],
   "Crafting Orders": ["Handwerksaufträge","Encargos de fabricación","Productieopdrachten","Ordini di creazione","Commandes d'artisanat","Заказы на изготовление","Üretim Siparişleri"],
@@ -452,6 +455,7 @@ const objectiveTemplate:Partial<Record<SeasonalQuest['tag'],string>>={
  high_tier_craft:'Craft {n} Tier 3 or higher equipment pieces this period.',
  expedition:'Claim {n} completed companion expeditions this period.',
  trial:'Win {n} Companion Trial floors this period.',
+ event:'Claim {n} completed event objective this period.',
 };
 export function seasonalChallengeDescription(language:Language,quest:Pick<SeasonalQuest,'description'|'required'|'tag'>):string{
  const template=objectiveTemplate[quest.tag];

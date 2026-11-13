@@ -33,8 +33,12 @@ else{
 const accountSource=ts.createSourceFile('account.ts',fs.readFileSync(path.join(root,'account.ts'),'utf8'),ts.ScriptTarget.Latest,true);
 const accountKeys=new Set();
 function collectAccountKeys(node){
- if(ts.isVariableDeclaration(node)&&node.name.getText(accountSource)==='accountTranslationRows'&&node.initializer&&ts.isObjectLiteralExpression(node.initializer))
-  for(const entry of node.initializer.properties)if(ts.isPropertyAssignment(entry)&&ts.isStringLiteral(entry.name))accountKeys.add(entry.name.text);
+ if(ts.isVariableDeclaration(node)&&node.name.getText(accountSource)==='accountTranslationRows'&&node.initializer){
+  let initializer=node.initializer;
+  while(ts.isAsExpression(initializer)||ts.isSatisfiesExpression(initializer)||ts.isParenthesizedExpression(initializer))initializer=initializer.expression;
+  if(ts.isObjectLiteralExpression(initializer))
+   for(const entry of initializer.properties)if(ts.isPropertyAssignment(entry)&&ts.isStringLiteral(entry.name))accountKeys.add(entry.name.text);
+ }
  ts.forEachChild(node,collectAccountKeys);
 }
 collectAccountKeys(accountSource);

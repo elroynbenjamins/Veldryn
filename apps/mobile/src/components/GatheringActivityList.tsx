@@ -1,4 +1,5 @@
 import {useGameplayText} from '../i18n/gameplay';
+import {localizedItemName} from '../i18n/starter-item-names';
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,GatheringSkillId} from '../core/types';
@@ -31,12 +32,13 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
  return <View style={s.root}>
   {showInstruction?<Text style={s.instruction}>{gt("Tap a resource to begin gathering.")}</Text>:null}
   {nodes.map(activity=>{
-   const active=state.activity?.targetId===activity.id,inCurrentRegion=activity.zoneId===region.id,unlocked=skillLevel>=activity.unlockLevel,resource=itemDef(activity.itemId),nodeRegion=WORLD_ZONES.find(row=>row.id===activity.zoneId),view=gatheringBalanceProjection(state,activity,0),available=stock(activity.itemId);
+   const active=state.activity?.targetId===activity.id,inCurrentRegion=activity.zoneId===region.id,unlocked=skillLevel>=activity.unlockLevel,nodeRegion=WORLD_ZONES.find(row=>row.id===activity.zoneId),view=gatheringBalanceProjection(state,activity,0),available=stock(activity.itemId);
    const start=()=>{if(active||!inCurrentRegion)return;if(unlocked)onGather(activity.id);else onNavigate?.(gatheringProgressionAction(state,activity).destination);};
    const expanded=expandedDropId===activity.id;
    // Drop rows are not assembled until the player expands this resource.
    const drops=expanded?gatheringDropPreview(activity,state):[];
-   const actionLabel=active?`${activity.name} is currently gathering`:!inCurrentRegion?`${activity.name} is in ${nodeRegion?.name??activity.zoneId}`:unlocked?`Gather ${activity.name}`:`Train to gather ${activity.name}`;
+   const activityName=gl(activity.name),resourceName=localizedItemName(language,activity.itemId),regionName=gl(nodeRegion?.name??activity.zoneId);
+   const actionLabel=active?gt('{name} is currently gathering',{name:activityName}):!inCurrentRegion?gt('{name} is in {region}',{name:activityName,region:regionName}):unlocked?gt('Gather {name}',{name:activityName}):gt('Train to gather {name}',{name:activityName});
    return <View key={activity.id} style={[s.card,inCurrentRegion&&s.cardCurrent,active&&s.cardActive]}>
     <View style={s.cardRow}>
      <Pressable accessibilityRole="button" accessibilityLabel={actionLabel}
@@ -46,12 +48,12 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       <ResourceArtwork itemId={activity.itemId} size={34}/>
       <View style={s.copy}>
        <View style={s.topLine}>
-        <Text numberOfLines={2} style={s.name}>{activity.name}</Text>
+        <Text numberOfLines={2} style={s.name}>{activityName}</Text>
         <Text style={s.xp}>{`+${formatGameNumber(Math.round(activity.xp),state.settings.numberMode,state.settings.language)} XP`}</Text>
        </View>
        <View style={s.metaLine}>
         {inCurrentRegion&&<Text style={s.regionTag}>{gt("HERE")}</Text>}
-        <Text numberOfLines={2} style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?`Region: ${nodeRegion?.name??activity.zoneId}`:unlocked?`Have: ${formatGameNumber(available,state.settings.numberMode,state.settings.language)} ${resource.name} · ${Math.ceil(view.cycleSeconds)}s`:`Unlocks at ${skillId} level ${activity.unlockLevel}`}</Text>
+        <Text numberOfLines={2} style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?gt('Region: {name}',{name:regionName}):unlocked?gt('Have: {count} {resource} · {seconds}s',{count:formatGameNumber(available,state.settings.numberMode,language),resource:resourceName,seconds:Math.ceil(view.cycleSeconds)}):gt('Unlocks at {skill} level {level}',{skill:gl(skillId),level:activity.unlockLevel})}</Text>
        </View>
       </View>
      </Pressable>
@@ -64,10 +66,10 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       petLabel={gt('Pet')} ownedLabel={gt('Owned')}/>)}
      {drops.some(drop=>drop.kind==='pet')?<Text style={s.dropHint}>{drops.some(drop=>drop.kind==='pet'&&drop.locked)?gt('Pet drops unlock with the Pet collection.'):gt('Pet chances are per completed gathering action.')}</Text>:null}
      {drops.some(drop=>drop.kind==='essence')?<Text style={s.dropHint}>{gt('Essence chances are base rates; bonuses may change them.')}</Text>:null}
-     {activity.id==='IRONWOOD_TREE'&&IRONWOOD_T2_BINDING_RECIPE?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open Alchemy recipe for {name}',{name:itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name})} disabled={!onNavigate} onPress={()=>onNavigate?.({kind:'skills',skillId:'alchemy',mode:'crafting',recipeId:IRONWOOD_T2_BINDING_RECIPE.id,button:gt('Open Alchemy'),detail:gt('Craft the T2 equipment binding resin in Alchemy.')})} style={s.relatedCraft}>
+     {activity.id==='IRONWOOD_TREE'&&IRONWOOD_T2_BINDING_RECIPE?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open Alchemy recipe for {name}',{name:localizedItemName(language,IRONWOOD_T2_BINDING_RECIPE.output.itemId)})} disabled={!onNavigate} onPress={()=>onNavigate?.({kind:'skills',skillId:'alchemy',mode:'crafting',recipeId:IRONWOOD_T2_BINDING_RECIPE.id,button:gt('Open Alchemy'),detail:gt('Craft the T2 equipment binding resin in Alchemy.')})} style={s.relatedCraft}>
       <ResourceArtwork itemId={IRONWOOD_T2_BINDING_RECIPE.output.itemId} size={24} framed={false}/>
       <View style={s.copy}>
-       <Text numberOfLines={1} style={s.relatedCraftName}>{gt('T2 equipment')} · {itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name}</Text>
+       <Text numberOfLines={1} style={s.relatedCraftName}>{gt('T2 equipment')} · {localizedItemName(language,IRONWOOD_T2_BINDING_RECIPE.output.itemId)}</Text>
        <Text style={s.dropHint}>{gt('Alchemy Lv {level} · Crafted, not a Woodcutting drop',{level:IRONWOOD_T2_BINDING_RECIPE.level})}</Text>
       </View>
       {onNavigate?<Text style={s.chevron}>›</Text>:null}
@@ -75,7 +77,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
     </View>:null}
    </View>;
   })}
-  {!nodes.length&&<Text style={s.empty}>No {skillId} resources are configured.</Text>}
+  {!nodes.length&&<Text style={s.empty}>{gt('No {skill} resources are configured.',{skill:gl(skillId)})}</Text>}
  </View>;
 }
 

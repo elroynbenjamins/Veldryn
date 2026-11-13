@@ -45,10 +45,10 @@ export function applyCharacterIdentityChange(state:GameState,change:CharacterIde
  const newClass=CLASSES.find(row=>row.id===change.newClassId);
  if(!newClass)throw new Error('invalid_class');
  if(newClass.id===character.classId)throw new Error('class_unchanged');
- if(state.activity!==null)throw new Error('stop_activity_before_class_change');
+ if(state.activity!==null||character.classTraining)throw new Error('stop_activity_before_class_change');
  if((state.account.equipmentCraftingQueue??[]).some(job=>job.ownerCharacterId===character.id))throw new Error('claim_crafting_before_class_change');
  const audit=auditCraftedGearOwnership(state);
- if(audit.problems.length||audit.unlocatedInstanceIds.length)throw new Error('equipment_ownership_audit_failed');
+ if(!audit.consistent)throw new Error('equipment_ownership_audit_failed');
 
  const destroyedIds=new Set(Object.values(character.equipmentInstanceIds??{}).filter((id):id is string=>typeof id==='string'&&!!id));
  const records=state.account.craftedGearInstances??[];

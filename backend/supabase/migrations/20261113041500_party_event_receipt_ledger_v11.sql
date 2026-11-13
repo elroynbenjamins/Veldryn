@@ -174,6 +174,12 @@ begin
  then raise exception 'party_event_invalid_stage_window';end if;
  if tg_op='INSERT' then
   if new.stage<>v_week.active_stage then raise exception 'party_event_wrong_open_stage';end if;
+  if new.stage>1 and not exists(
+   select 1 from private.party_event_stages_v11
+    where party_id=new.party_id and event_starts_at=new.event_starts_at
+     and stage=new.stage-1
+     and (stage=1 or vote_locked_at is not null))
+  then raise exception 'party_event_prior_stage_not_locked';end if;
   return new;
  end if;
  if row(old.party_id,old.event_starts_at,old.stage,old.opened_at)
@@ -184,6 +190,17 @@ begin
  if new.vote_choice is not null then
   if new.stage=1 or new.vote_locked_at<new.opened_at or new.vote_locked_at>now()
    then raise exception 'party_event_invalid_vote_lock';end if;
+  if not (case v_week.family
+   when 'broken_caravan' then (new.stage=2 and new.vote_choice in ('safe_pass','fast_pass'))
+     or (new.stage=3 and new.vote_choice in ('brace_wagons','disrupt_raiders'))
+   when 'nightfall_hunt' then (new.stage=2 and new.vote_choice in ('clear_trail','shadow_trail'))
+     or (new.stage=3 and new.vote_choice in ('hold_ground','hunt_alpha'))
+   when 'broken_wards' then (new.stage=2 and new.vote_choice in ('ground_spires','charge_sigils'))
+     or (new.stage=3 and new.vote_choice in ('protect_wards','overload_wards'))
+   when 'lost_reliquary' then (new.stage=2 and new.vote_choice in ('quiet_passage','deep_passage'))
+     or (new.stage=3 and new.vote_choice in ('preserve_seals','break_seals'))
+   else false end)
+  then raise exception 'party_event_invalid_family_vote';end if;
  end if;
  return new;
 end;$$;
@@ -191,6 +208,35 @@ end;$$;
 create trigger party_event_stage_guard_v11
  before insert or update or delete on private.party_event_stages_v11
  for each row execute function private.party_event_stage_guard_v11();
+
+-- Week metadata and the active stage are monotone. This does not itself
+-- certify supply completion; the server must enforce v2 stage progression.
+create or replace function private.party_event_week_guard_v11()
+returns trigger language plpgsql security definer set search_path='' as $
+begin
+ if tg_op<>'UPDATE' then return old;end if;
+ if row(old.party_id,old.event_starts_at,old.event_ends_at,
+     old.family,old.variation,old.seed,old.difficulty,old.created_at)
+  is distinct from
+    row(new.party_id,new.event_starts_at,new.event_ends_at,
+     new.family,new.variation,new.seed,new.difficulty,new.created_at)
+ then raise exception 'party_event_week_identity_immutable';end if;
+ if old.status='settled' or old.status='closed' and new.status<>'settled'
+  or old.status='active' and new.status not in ('active','closed','settled')
+  or new.active_stage<old.active_stage
+  or new.active_stage>old.active_stage+1
+  or old.status<>'active' and new.active_stage<>old.active_stage
+ then raise exception 'party_event_lifecycle_regression';end if;
+ if new.active_stage>old.active_stage and not exists(
+  select 1 from private.party_event_stages_v11
+   where party_id=old.party_id and event_starts_at=old.event_starts_at
+    and stage=old.active_stage and (stage=1 or vote_locked_at is not null))
+ then raise exception 'party_event_previous_stage_not_locked';end if;
+ return new;
+end;$;
+create trigger party_event_week_guard_v11
+ before update on private.party_event_weeks_v11
+ for each row execute function private.party_event_week_guard_v11();
 
 -- A source is append-only. No changing its actor, timing or gameplay kind
 -- to re-credit a different action later.
@@ -312,6 +358,7 @@ revoke all on function private.record_party_event_action_v11(
  uuid,timestamptz,text,text,text,text) from public,anon,authenticated;
 grant execute on function private.record_party_event_action_v11(
  uuid,timestamptz,text,text,text,text) to service_role;
+revoke all on function private.party_event_week_guard_v11() from public,anon,authenticated;
 revoke all on function private.party_event_roster_guard_v11() from public,anon,authenticated;
 revoke all on function private.party_event_stage_guard_v11() from public,anon,authenticated;
 revoke all on function private.party_event_append_only_v11() from public,anon,authenticated;

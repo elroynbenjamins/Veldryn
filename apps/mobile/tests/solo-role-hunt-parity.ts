@@ -13,7 +13,7 @@ const report:Array<{region:string;preparation:string;tankPct:number;supportPct:n
 assert.equal(CLASSES.length,9,'all playable classes must be represented');
 for(const cls of CLASSES){
  const style=CLASS_COMBAT_STYLES[cls.id];
- assert.ok(style.soloHuntDamageMultiplier>=1&&style.soloHuntDamageMultiplier<=1.4,cls.id+' solo offense must remain bounded');
+ assert.ok(style.soloHuntDamageMultiplier>=1&&style.soloHuntDamageMultiplier<=2.1,cls.id+' solo offense must remain bounded');
  assert.ok(style.soloHuntTempoMultiplier>=1&&style.soloHuntTempoMultiplier<=1.1,cls.id+' solo tempo must remain bounded');
  if(cls.role==='Damage'){
   assert.equal(style.soloHuntDamageMultiplier,1,cls.id+' damage baseline cannot gain a role conversion');

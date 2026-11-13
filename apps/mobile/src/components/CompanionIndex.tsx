@@ -1,11 +1,11 @@
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS} from '../content/combat-companions';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {WORLD_ZONES} from '../content/world-map';
 import {UiIcon} from './UiIcon';
 import type {UiIconName} from '../theme/ui-icons';
 import {formatLocalizedNumber} from '../i18n/translator';
-import {COMPANION_INDEX_COUNTS,UNRELEASED_SEASONAL_COMPANION_COUNT,companionIndexGroup,type CompanionIndexGroup} from '../core/companion-index-availability';
+import {COMPANION_INDEX_COUNTS,companionIndexGroup,type CompanionIndexGroup} from '../core/companion-index-availability';
 import {GUILD_SHOP_CATALOGUE} from '../../../../packages/guild-shop/src/catalogue';
 import type {CombatCompanionRole,CompanionUnlockRequirementType} from '../core/combat-companion-types';
 import type {GameState} from '../core/types';
@@ -27,7 +27,9 @@ const sourceIcon:Record<CompanionUnlockRequirementType,UiIconName>={
  monster_mastery:'world',skill_level:'skills',reputation:'guild',collection:'inventory',
  event_currency:'events',event_challenge:'trials',meta:'companions',
 };
-const groupOrder:readonly CompanionIndexGroup[]=['available','event','comingSoon'];
+// Only obtainable and previously released companions belong in the public Index.
+const groupOrder=['available','event'] as const satisfies readonly CompanionIndexGroup[];
+type VisibleGroup=(typeof groupOrder)[number];
 export interface CompanionIndexProps{
  state:GameState;
  hiddenIds:ReadonlySet<string>;
@@ -41,9 +43,10 @@ const unavailableOriginIds=new Set(WORLD_ZONES.filter(zone=>zone.availability===
 export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:CompanionIndexProps){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),language=useGameLanguage(),t=companionTranslator(language);
  const {width}=useWindowDimensions(),wide=width>=680;
- const [scope,setScope]=useState<Scope>('all'),[group,setGroup]=useState<CompanionIndexGroup>('available'),[role,setRole]=useState<Role>('all'),[query,setQuery]=useState('');
+ const [scope,setScope]=useState<Scope>('all'),[group,setGroup]=useState<VisibleGroup>('available'),[role,setRole]=useState<Role>('all'),[query,setQuery]=useState('');
  const ownedIds=new Set(state.account.unlockedCombatCompanionIds??[]);
- const unlocked=COMBAT_COMPANIONS.filter(def=>ownedIds.has(def.id)).length;
+ const unlocked=COMBAT_COMPANIONS.filter(def=>companionIndexGroup(def)!=='comingSoon'&&ownedIds.has(def.id)).length;
+ const publicTotal=COMPANION_INDEX_COUNTS.available+COMPANION_INDEX_COUNTS.event;
  const groupCompanions=COMBAT_COMPANIONS.filter(def=>companionIndexGroup(def)===group);
  const groupUnlocked=groupCompanions.filter(def=>ownedIds.has(def.id)).length;
  const visible=useMemo(()=>{
@@ -78,7 +81,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   <View style={s.header}>
    <View style={s.headingBlock}>
     <Text accessibilityRole="header" style={s.heading}>{t('Companion Index')}</Text>
-    <Text style={s.caption}>{t('{value0} collected · {value1} total',{value0:unlocked,value1:ALL_COMBAT_COMPANIONS.length})}</Text>
+    <Text style={s.caption}>{t('{value0} collected · {value1} total',{value0:unlocked,value1:publicTotal})}</Text>
    </View>
    <Pressable accessibilityRole="button" onPress={onCodex} style={({pressed})=>[s.codexAction,pressed&&s.pressed]}>
     <Text style={s.codexText}>{t('Codex & rewards')} ›</Text>
@@ -95,7 +98,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     <Text style={s.nextArrow}>›</Text>
    </Pressable>:null}
   <View accessibilityRole="tablist" style={s.groupRow}>{groupOrder.map(id=>{
-   const title=id==='available'?t('Available to earn'):id==='event'?t('Event / Past'):t('Coming soon');
+   const title=id==='available'?t('Available to earn'):t('Event / Past');
    return <Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:group===id}} accessibilityLabel={title+' · '+COMPANION_INDEX_COUNTS[id]} onPress={()=>{setGroup(id);setScope('all');setRole('all');setQuery('');}} style={[s.groupTab,group===id&&s.groupTabActive]}>
     <Text style={[s.groupCount,group===id&&s.groupTextActive]}>{COMPANION_INDEX_COUNTS[id]}</Text>
     <Text numberOfLines={2} style={[s.groupText,group===id&&s.groupTextActive]}>{title}</Text>
@@ -107,21 +110,17 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   ] as const).map(([id,title])=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:scope===id}} onPress={()=>setScope(id)} style={[s.segment,scope===id&&s.segmentActive]}><Text style={[s.segmentText,scope===id&&s.segmentTextActive]}>{title}{id==='owned'?' · '+groupUnlocked:id==='missing'?' · '+(groupCompanions.length-groupUnlocked):''}</Text></Pressable>)}</View>
   <View style={s.roleRow}>{roleOrder.map(id=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected:role===id}} onPress={()=>setRole(id)} style={[s.roleFilter,role===id&&s.roleFilterActive]}><Text style={[s.roleFilterText,role===id&&s.roleFilterTextActive]}>{id==='all'?t('All roles'):companionLabel(language,id)}</Text></Pressable>)}</View>
   <Text style={s.resultsLabel}>{t('{value0} companions shown',{value0:visible.length})}</Text>
-  {group==='comingSoon'&&UNRELEASED_SEASONAL_COMPANION_COUNT>0?<View style={s.seasonPreview}>
-   <Text style={s.seasonSymbol}>◇</Text>
-   <Text style={s.seasonText}>{t('{value0} more seasonal companions are hidden until their events release.',{value0:UNRELEASED_SEASONAL_COMPANION_COUNT})}</Text>
-  </View>:null}
   {visible.length===0?<View style={s.empty}><Text style={s.cardName}>{t('No companions found')}</Text><Text style={s.caption}>{t('Try another filter or search.')}</Text><Pressable onPress={()=>{setQuery('');setScope('all');setRole('all');}} accessibilityRole="button"><Text style={s.codexText}>{t('Show all companions')}</Text></Pressable></View>:null}
   <View style={s.list}>{visible.map(def=>{
-   const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id),upcoming=!owned&&unavailableOriginIds.has(def.origin.id),progress=state.account.combatCompanionProgress?.[def.id],equipped=state.character?.equippedCombatCompanionId===def.id;
+   const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id),progress=state.account.combatCompanionProgress?.[def.id],equipped=state.character?.equippedCombatCompanionId===def.id;
    const status=owned?companionAvailability(state,def.id).label:undefined;
    const guildShopEntry=def.origin.id==='GUILD_TOKEN_SHOP'?GUILD_SHOP_CATALOGUE.find(entry=>entry.category==='companion'&&entry.id==='guild_companion_'+def.id.slice(-2)):undefined;
-   const achievement=!owned&&!hidden&&!upcoming&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'?companionUnlockCompletion(state,def):undefined;
+   const achievement=!owned&&!hidden&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'?companionUnlockCompletion(state,def):undefined;
    const guidance=achievement?companionUnlockGuidance(state,def):undefined;
    const percent=achievement?Math.round(achievement.ratio*100):0;
    const label=hidden?t('Unknown Prestige Companion'):def.name,art=hidden?undefined:companionArtSource(def.id);
-   const category=hidden?t('Undiscovered'):upcoming?t('Coming soon'):def.origin.type==='event'?t('Event reward'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Guild Token Shop'):companionLabel(language,def.rarity);
-   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):upcoming?t('Region in development'):def.origin.type==='event'?t('Previously available through {event}',{event:def.origin.name}):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):companionContent(language,guidance?.label??t('Complete unlock requirements'));
+   const category=hidden?t('Undiscovered'):def.origin.type==='event'?t('Event reward'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Guild Token Shop'):companionLabel(language,def.rarity);
+   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1} ):hidden?t('Discover through companion challenges'):def.origin.type==='event'?t('Previously available through {event}',{event:def.origin.name}):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):companionContent(language,guidance?.label??t('Complete unlock requirements'));
    const requirementHint=achievement?def.unlockRequirements.map((req,index)=>{
     const p=achievement.requirements[index];
     return companionUnlockRequirement(language,req.description)+' '+(p.complete?'✓':p.current+'/'+p.total);
@@ -139,7 +138,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
       </View>
      </View>:null}
      {!owned&&!hidden&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'&&def.unlockRequirements.length>0?<View style={s.requirementList}>
-      <Text style={s.requirementHeading}>{upcoming?t('Planned unlocks'):t('Unlock requirements')}</Text>
+      <Text style={s.requirementHeading}>{t('Unlock requirements')}</Text>
       {def.unlockRequirements.map((req,index)=>{
        const requirement=achievement?.requirements[index],complete=requirement?.complete===true;
        return <View key={req.type+':'+(req.target??index)} style={s.requirementRow}>
@@ -183,8 +182,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  roleRow:{flexDirection:'row',gap:5,flexWrap:'wrap'},roleFilter:{paddingHorizontal:10,minHeight:32,justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line},
  roleFilterActive:{borderColor:C.accent,backgroundColor:C.panel2},roleFilterText:{fontSize:10,color:C.muted,fontWeight:'700'},roleFilterTextActive:{color:C.text},
  resultsLabel:{fontSize:10,fontWeight:'700',color:C.muted},
- seasonPreview:{flexDirection:'row',alignItems:'center',gap:9,padding:10,borderRadius:9,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line},
- seasonSymbol:{fontSize:20,color:C.accent,fontWeight:'700'},seasonText:{flex:1,fontSize:11,lineHeight:16,color:C.muted},
  requirementList:{marginTop:6,paddingTop:7,borderTopWidth:1,borderTopColor:C.line,gap:6},
  requirementHeading:{fontSize:10,lineHeight:13,fontWeight:'800',color:C.muted,letterSpacing:.3},
  requirementRow:{flexDirection:'row',alignItems:'center',gap:7,minHeight:26},

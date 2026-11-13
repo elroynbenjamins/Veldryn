@@ -13,8 +13,6 @@ import {
 } from '../party-event-replay-repository-v22';
 import type {WeeklyPartyFamily,WeeklyPartyDifficulty}
   from '../../src/server/party/weekly-party-events-v2';
-import type {PrivatePartyReplayBundleV21}
-  from '../../src/server/party/weekly-party-boss-reader-v21';
 
 function assert(value:unknown,message:string):asserts value{
   if(!value)throw Error('party_event_v22_test: '+message);
@@ -47,7 +45,7 @@ assert([...PARTY_EVENT_V22_APPROVED_ITEM_IDS].sort().join('|')
 assert(catalog.every(x=>!['THORN_SAP','IRONWOOD_LOG','ASTER_IRON_ORE'].includes(x.itemId)),
  'a crafted reagent or higher-level resource entered starter plan');
 reject(()=>{
- (catalog as {itemId:string}[])[0]!.itemId='CHEAT_ORE';
+ Object.assign(catalog[0]!,{itemId:'CHEAT_ORE'});
 },'read only'); // Object.freeze fail-closed under strict compiled Node code.
 
 const families:WeeklyPartyFamily[]=[

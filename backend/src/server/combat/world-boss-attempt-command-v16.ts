@@ -83,7 +83,22 @@ export async function prepareOrResumeWorldBossAttemptV16(input:{
    throw Error('world_boss_v16_request_id_reused_with_different_intent');
   if(!['reserved','committed','voided'].includes(reservation.status)||
    !Number.isInteger(reservation.ordinal)||
-   reservation.ordinal<1||reservation.ordinal>3)
+   reservation.ordinal<1||reservation.ordinal>3||
+   !reservation.command||
+   reservation.command.accountId!==query.accountId||
+   reservation.command.characterId!==command.characterId||
+   reservation.command.requestId!==command.requestId||
+   reservation.command.order!==command.order||
+   reservation.command.serverSeed!==reservation.serverSeed||
+   reservation.command.snapshotDigest!==reservation.snapshotDigest||
+   !/^[a-f0-9]{64}$/.test(reservation.snapshotDigest)||
+   !/^[A-Za-z0-9:_-]{24,512}$/.test(reservation.serverSeed)||
+   (reservation.status==='committed'&&
+     (!reservation.settlement||
+      reservation.settlement.eventId!==query.eventId||
+      reservation.settlement.accountId!==query.accountId||
+      reservation.settlement.requestId!==query.requestId))||
+   (reservation.status!=='committed'&&Boolean(reservation.settlement)))
    throw Error('world_boss_v16_invalid_reservation_receipt');
   return structuredClone(reservation);
  }

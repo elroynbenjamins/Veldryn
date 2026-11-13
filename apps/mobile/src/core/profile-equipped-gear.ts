@@ -13,12 +13,15 @@ export interface ProfileEquippedGear{
  rank?:number;
  statGemId?:string;
  effectGemId?:string;
+ /** Legacy saves used a single array for both gem socket types. */
+ gemIds?:string[];
 }
 const rarities:readonly string[]=['common','uncommon','rare','epic','legendary','mythic'];
 const allowedSlots=new Set<string>(PROFILE_GEAR_SLOTS);
 const cleanId=(value:unknown)=>typeof value==='string'&&value.length>0&&value.length<=160?value:undefined;
 const cleanRank=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=4?value:undefined;
 const cleanQuality=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=100?value:undefined;
+const cleanGems=(value:unknown)=>Array.isArray(value)?Array.from(new Set(value.map(cleanId).filter((id):id is string=>!!id))).slice(0,2):[];
 
 /** Validate untrusted RPC JSON and never repeat or invent equipment slots. */
 export function normalizeProfileGear(rows:unknown):ProfileEquippedGear[]|undefined{
@@ -35,6 +38,7 @@ export function normalizeProfileGear(rows:unknown):ProfileEquippedGear[]|undefin
    slot:row.slot as GearSlot,itemId,rarity,
    quality:cleanQuality(row.quality),rank:cleanRank(row.rank),
    statGemId:cleanId(row.statGemId),effectGemId:cleanId(row.effectGemId),
+   gemIds:cleanGems(row.gemIds),
   });
  }
  return PROFILE_GEAR_SLOTS.flatMap(slot=>bySlot.has(slot)?[bySlot.get(slot)!]:[]);
@@ -61,6 +65,7 @@ export function localProfileGear(state:GameState,selectedCharacterId?:string|nul
    rank:cleanRank(enhancement?.rank),
    statGemId:cleanId(enhancement?.statGemId),
    effectGemId:cleanId(enhancement?.effectGemId),
+   gemIds:cleanGems(enhancement?.gemIds),
   }];
  });
 }

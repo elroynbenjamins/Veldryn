@@ -5,6 +5,7 @@ export const BATTLE_MESSAGES={
  'COMPANION · PASSIVE BONUS':['BEGLEITER · PASSIVER BONUS','COMPAÑERO · BONO PASIVO','METGEZEL · PASSIEVE BONUS','COMPAGNO · BONUS PASSIVO','COMPAGNON · BONUS PASSIF'],
  'Lv. {level}':['St. {level}','Nv. {level}','Niv. {level}','Liv. {level}','Niv. {level}'],
  'Combat bonus active':['Kampfbonus aktiv','Bono de combate activo','Gevechtsbonus actief','Bonus di combattimento attivo','Bonus de combat actif'],
+ 'ON-KILL RECOVERY':['HEILUNG NACH SIEG','RECUPERACIÓN TRAS VENCER','HERSTEL NA OVERWINNING','RECUPERO DOPO LA VITTORIA','SOIN APRÈS LA VICTOIRE'],
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
 
  'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],

@@ -90,7 +90,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
    <View accessibilityRole="tablist" style={s.tabs}>
     {TABS.map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>openTab(value)}
       style={({pressed})=>[s.tab,tab===value&&s.tabOn,pressed&&s.pressed]}>
-     <Text style={[s.tabText,tab===value&&s.tabTextOn]}>{profileText(language,value)}</Text>
+     <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[s.tabText,tab===value&&s.tabTextOn]}>{profileText(language,value)}</Text>
     </Pressable>)}
    </View>
    {tab==='Look'?<ProfileWardrobeChips categories={categories} chip={chip} onChange={setChip} reduceMotion={state.settings.reduceMotion}/>:null}
@@ -112,7 +112,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
  </ScrollView>
 
  {notice?<View accessibilityLiveRegion="polite" style={[s.toast,{top:headerHeight+spacing.md}]}>
-  <Text numberOfLines={1} style={s.toastText}>{profileT(language,'{name} equipped',{name:notice.name})}</Text>
+  <Text numberOfLines={2} style={s.toastText}>{profileT(language,'{name} equipped',{name:notice.name})}</Text>
   <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Undo")} onPress={()=>{notice.undo();setNotice(null)}} style={({pressed})=>[s.undo,pressed&&s.pressed]}>
    <Text style={s.undoText}>{profileT(language,"UNDO")}</Text>
   </Pressable>
@@ -133,7 +133,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  pillText:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.6},
  pillTextDirty:{color:C.warning},
  tabs:{flexDirection:'row',gap:4,padding:3,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
- tab:{flex:1,minWidth:0,minHeight:38,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:'transparent'},
+ tab:{flex:1,minWidth:0,minHeight:44,paddingHorizontal:4,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:'transparent'},
  tabOn:{backgroundColor:C.selection,borderColor:C.selectionLine},
  tabText:{...typography.bodyStrong,color:C.muted},
  tabTextOn:{color:C.text},
@@ -141,7 +141,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  sectionShown:{display:'flex'},
  sectionHidden:{display:'none'},
  footer:{paddingTop:4},
- toast:{position:'absolute',left:spacing.lg,right:spacing.lg,minHeight:46,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:12,
+ toast:{position:'absolute',left:spacing.lg,right:spacing.lg,minHeight:52,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:12,
   borderRadius:radii.md,borderWidth:1,borderColor:C.info,backgroundColor:C.infoSurface,
   shadowColor:'#000',shadowOpacity:.45,shadowRadius:12,shadowOffset:{width:0,height:6},elevation:8},
  toastText:{flex:1,minWidth:0,...typography.caption,color:C.text,fontWeight:'800'},

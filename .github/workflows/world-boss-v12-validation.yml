@@ -55,7 +55,7 @@ jobs:
             world-boss-real-loadout-v12 \
             world-boss-supply-economy-v12 \
             world-boss-guard-role-v13 \
-            world-boss-bracket-audit-v14 \\
+            world-boss-bracket-audit-v14 \
             world-boss-owned-cohort-v15
           do
             node ".core-build/apps/mobile/tests/${suite}.js"

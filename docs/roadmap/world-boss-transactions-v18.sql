@@ -28,6 +28,7 @@ DECLARE
  a private.world_boss_attempts_v17%ROWTYPE;
  ordinal_slot integer;
  phase_at_start text;
+ selected_profile_digest text;
  now_at timestamptz := clock_timestamp();
  hard_until timestamptz;
 BEGIN
@@ -80,6 +81,22 @@ BEGIN
   WHEN e.remaining_hp::numeric/e.max_hp<=0.3 THEN 'enraged'
   WHEN e.remaining_hp::numeric/e.max_hp<=0.7 THEN 'exposed'
   ELSE 'armored' END;
+ -- V20 chooses the locked event phase after other settlements, then
+ -- binds the matching server-frozen profile digest to this reservation.
+ IF p_squad->>'schema'='world-boss-v20-serialized-v9' THEN
+  IF p_camp_digest IS NULL OR
+     p_camp_digest IS DISTINCT FROM p_squad->'warCamp'->>'digest' OR
+     jsonb_typeof(p_squad->'encounterProfiles')<>'object'
+  THEN RAISE EXCEPTION 'WB20_MISSING_FROZEN_MODIFIERS'; END IF;
+  selected_profile_digest:=p_squad->'encounterProfiles'->phase_at_start->>'digest';
+  IF selected_profile_digest IS NULL OR
+     selected_profile_digest !~ '^[a-f0-9]{64}$' OR
+     (p_profile_digest IS NOT NULL AND
+      p_profile_digest IS DISTINCT FROM selected_profile_digest)
+  THEN RAISE EXCEPTION 'WB20_FROZEN_PHASE_PROFILE_MISMATCH'; END IF;
+ ELSE
+  selected_profile_digest:=p_profile_digest;
+ END IF;
  hard_until:=LEAST(now_at+interval '15 minutes',e.ends_at+interval '15 minutes');
  INSERT INTO private.world_boss_attempts_v17(
   event_id,account_id,request_id,ordinal,character_id,war_order,phase,
@@ -89,7 +106,7 @@ BEGIN
  ) VALUES (
   p_event,p_account,p_request,ordinal_slot,p_character,p_order,phase_at_start,
   e.rules_version,p_engine,p_seed,p_digest,p_squad,
-  p_camp_digest,p_profile_digest,
+  p_camp_digest,selected_profile_digest,
   now_at,p_worker,LEAST(now_at+interval '2 minutes',hard_until),hard_until
  );
  RETURN jsonb_build_object('status','reserved','ordinal',ordinal_slot,

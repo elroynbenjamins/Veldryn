@@ -22,6 +22,7 @@
     "tests/world-boss-guard-role-v13.ts",
     "tests/world-boss-bracket-audit-v14.ts",
     "tests/world-boss-owned-cohort-v15.ts",
-    "tests/world-boss-server-service-v19.ts"
+    "tests/world-boss-server-service-v19.ts",
+    "tests/world-boss-consented-echoes-v20.ts"
   ]
 }

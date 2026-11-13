@@ -48888,7 +48888,7 @@ function coopEntryHandler(services) {
 }
 
 // src/server/expeditions/dungeon-shop-catalog-v1.ts
-var DUNGEON_SHOP_LIVE_V1 = false;
+var DUNGEON_SHOP_LIVE_V1 = true;
 var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v2-2026-11-11";
 var DUNGEON_SHOP_CATALOG_V1 = Object.freeze([
   { id: "dshop_tempering_satchel", name: "Delver Tempering Satchel", category: "supply", marks: 120, perUtcWeek: 2, grant: { kind: "material", itemId: "TEMPERING_DUST", quantity: 10, accountBound: true } },
@@ -48920,14 +48920,16 @@ function dungeonShopUtcWeekKey(nowMs) {
   date.setUTCDate(date.getUTCDate() - (day === 0 ? 6 : day - 1));
   return date.toISOString().slice(0, 10);
 }
-function dungeonShopQuoteV1(itemId, account) {
+function dungeonShopQuoteV1(itemId, account, serverPrice) {
   const offer = dungeonShopOfferV1(itemId);
   if (!offer) return { status: "unknown_offer", marks: account.marks, price: 0, remaining: null };
+  const price = serverPrice ?? offer.marks;
+  if (!Number.isSafeInteger(price) || price < 1 || price >= 1e6) throw new Error("invalid_server_shop_price");
   const purchased = account.purchasesThisUtcWeek[itemId] ?? 0;
   const remaining = offer.perUtcWeek === void 0 ? null : Math.max(0, offer.perUtcWeek - purchased);
   const ownedId = offer.grant.kind === "profile_collectible" ? offer.grant.rewardId : null;
-  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < offer.marks ? "insufficient_marks" : "eligible";
-  return { status, marks: account.marks, price: offer.marks, remaining };
+  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < price ? "insufficient_marks" : "eligible";
+  return { status, marks: account.marks, price, remaining };
 }
 function dungeonShopPurchasesEnabledV1() {
   return DUNGEON_SHOP_LIVE_V1;
@@ -48960,7 +48962,10 @@ function sanitizedSnapshot(raw2) {
   if (s2.clearedRegions.some((v) => !regions.includes(v)) || s2.ownedRewardIds.some((v) => typeof v !== "string")) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const purchases = s2.purchasesThisUtcWeek;
   if (Object.entries(purchases).some(([key, value]) => !/^dshop_[a-z0-9_]{1,80}$/.test(key) || !Number.isSafeInteger(value) || Number(value) < 0)) throw new GameplayError("invalid_dungeon_shop_snapshot");
-  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, purchasesThisUtcWeek: purchases };
+  if (typeof s2.shopEnabled !== "boolean" || !s2.releasedPrices || typeof s2.releasedPrices !== "object" || Array.isArray(s2.releasedPrices)) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  const released = s2.releasedPrices;
+  if (Object.entries(released).some(([key, value]) => !DUNGEON_SHOP_CATALOG_V1.some((offer) => offer.id === key) || !Number.isSafeInteger(value) || Number(value) < 1 || Number(value) >= 1e6)) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, purchasesThisUtcWeek: purchases, releasedPrices: released, shopEnabled: s2.shopEnabled };
 }
 function nextUtcMonday(nowMs) {
   const week = dungeonShopUtcWeekKey(nowMs);
@@ -48994,22 +48999,25 @@ function makeDungeonShopController(services) {
         currency: "expedition_mark",
         catalogueVersion: DUNGEON_SHOP_CATALOG_VERSION,
         balance: account.marks,
-        shopEnabled: dungeonShopPurchasesEnabledV1(),
+        shopEnabled: account.shopEnabled,
         nextUtcWeekReset: nextUtcMonday(nowMs),
         offers: DUNGEON_SHOP_CATALOG_V1.map((offer) => {
-          const quote = dungeonShopQuoteV1(offer.id, account);
+          const published = account.shopEnabled && account.releasedPrices[offer.id] !== void 0;
+          const price = account.releasedPrices[offer.id] ?? offer.marks;
+          const quote = dungeonShopQuoteV1(offer.id, account, price);
+          const owned = offer.grant.kind === "profile_collectible" && account.ownedRewardIds.includes(offer.grant.rewardId);
           return {
             id: offer.id,
             name: offer.name,
             category: offer.category,
-            marks: offer.marks,
+            marks: price,
             summary: category(offer),
-            status: quote.status,
+            status: published ? quote.status : "unreleased",
             rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
             region: offer.firstClearRegion,
             remainingThisUtcWeek: quote.remaining,
-            owned: quote.status === "already_owned",
-            lockReason: quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
+            owned,
+            lockReason: !published ? "Not yet released \u2014 no Marks can be spent on this offer." : quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
           };
         })
       };

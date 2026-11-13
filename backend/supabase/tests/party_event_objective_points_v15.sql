@@ -18,7 +18,7 @@ begin
 
  insert into auth.users(id,email) values(a,'v15-'||a||'@example.invalid');
  insert into public.characters(id,account_id,name,class_id)
- values(c,a,'Special Objective Tester','IRONWARDEN');
+ values(c,a,'Special Tester','IRONWARDEN');
  insert into public.parties(id,leader_account_id,leader_character_id) values(p,a,c);
  insert into private.party_event_weeks_v11(
   party_id,event_starts_at,event_ends_at,family,variation,seed,difficulty)
@@ -33,7 +33,7 @@ begin
  begin
   insert into auth.users(id,email) values(a2,'v15-'||a2||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id)
-   values(c2,a2,'Other Objective Tester','WAYFINDER');
+   values(c2,a2,'Other Tester','WAYFINDER');
   insert into private.party_event_roster_v11(
    party_id,event_starts_at,account_id,character_id,role,joined_at)
   values(p,start_at,a2,c2,'damage',start_at);

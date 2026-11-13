@@ -6,9 +6,9 @@ Russian has expanded but still incomplete coverage; Turkish remains starter-only
 
 ## Russian focused coverage (November 2026)
 
-- A reviewed Russian-only expansion covers active Companion Index and acquisition guidance, Dungeon companion selection, Guild Rally notices, the food fallback queue, potion and Alchemy controls, account security and community roadmap actions, equipped-gear inspection, World Boss attempts, achievement and contract prompts, navigation alerts, local-save recovery, first-character guidance and combat status labels.
+- A focused Russian expansion now adds **682 exact, authored UI translations** across the Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup, Guild Rally, food/potions/Alchemy, account security and roadmap, equipment preview and profile showcase, World Boss and world travel, contracts/achievements, navigation alerts, local-save recovery, and character creation/combat guidance.
 - The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
-- The dedicated Russian regression test checks exact catalog membership, placeholders, fallback semantics and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+- The dedicated Russian regression test checks all 682 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
 
 ## Implemented
 

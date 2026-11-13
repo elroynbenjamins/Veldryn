@@ -27,7 +27,7 @@ begin
  for i in 1..5 loop
   insert into auth.users(id,email) values(a[i],'party-v11-'||a[i]||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id)
-  values(c[i],a[i],'V11Hero'||chr(64+i),
+  values(c[i],a[i],'Adventure Test '||chr(64+i),
    case i when 1 then 'IRONWARDEN' when 2 then 'WAYFINDER'
     when 3 then 'RAVAGER' when 4 then 'DAWNKEEPER' else 'BASTION' end);
  end loop;

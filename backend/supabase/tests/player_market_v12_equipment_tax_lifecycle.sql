@@ -690,6 +690,22 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
   end;
+  begin
+    update public.online_game_states set state=jsonb_set(state,
+      '{bank,stacks}',(state#>'{bank,stacks}')||jsonb_build_array(v_stack),
+      false) where account_id=v_buyer;
+    raise exception 'V21 bank copy was duplicated by normal snapshot update';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  begin
+    update public.online_game_states set state=jsonb_set(state,
+      '{account,craftedGearInstances,0,ownerCharacterId}',
+      to_jsonb(v_buyer_main::text),false) where account_id=v_buyer;
+    raise exception 'V21 banked receipt ownership spoof succeeded';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
   -- Withdrawal is checked at the time of release, NOT just the purchase
   -- or bank deposit time. Main character's XP was previously 11M.
   update public.online_game_states set state=jsonb_set(state,
@@ -709,6 +725,20 @@ begin
   then raise exception 'V21 denied withdrawal consumed bank custody';end if;
   update public.online_game_states set state=jsonb_set(state,
     '{character,xp}','11000000'::jsonb,false) where account_id=v_buyer;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,classId}','"KNIFE_DANCER"'::jsonb,false)
+    where account_id=v_buyer;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'withdraw',v_buyer_main::text,'equipment_pouch',
+      0,1,12,'v21-wrong-class',repeat('e',64));
+    raise exception 'V21 forged class allowed bank withdrawal';
+  exception when raise_exception then
+    if sqlerrm<>'market_class_or_recipient_required' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,classId}','"BASTION"'::jsonb,false)
+    where account_id=v_buyer;
   begin
     perform private.market_move_purchased_equipment_bank_v21(
       v_buyer,v_instance,'withdraw',v_buyer_main::text,'inventory',

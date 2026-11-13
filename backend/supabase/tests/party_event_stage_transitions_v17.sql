@@ -4,8 +4,9 @@ begin;
 do $$
 declare
  p uuid:=gen_random_uuid();
- a uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
- c uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
+ p_timeout uuid:=gen_random_uuid();
+ a uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
+ c uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
  start_at timestamptz:=date_trunc('week',now() at time zone 'UTC') at time zone 'UTC';
  v_ore uuid;v_wood uuid;v_herb uuid;
  v_result jsonb;v_replay jsonb;v_stage integer;v_receipt uuid;
@@ -35,12 +36,11 @@ begin
   insert into private.party_event_weeks_v11(
    party_id,event_starts_at,event_ends_at,family,variation,
    seed,difficulty,active_stage)
-  values(gen_random_uuid(),start_at,start_at+interval '7 days',
+  values(p,start_at,start_at+interval '7 days',
    'broken_caravan','bandits_crossing',1,'standard',3);
   raise exception 'v17 initial week started in stage 3';
  exception when others then
-  if sqlerrm<>'party_event_v17_invalid_initial_week'
-  and sqlerrm<>'party_event_party_not_found' then raise;end if;
+  if sqlerrm<>'party_event_v17_invalid_initial_week' then raise;end if;
  end;
  insert into private.party_event_weeks_v11(
   party_id,event_starts_at,event_ends_at,family,variation,seed,difficulty)
@@ -286,6 +286,65 @@ begin
   or exists(select 1 from private.party_event_receipts_v11
    where party_id=p and event_points_awarded<>0)
  then raise exception 'v17 finale or loot settled accidentally';end if;
-end $$;
+
+ -- Admin-only synthetic week closure: only previously committed transitions
+ -- replay, and it never creates another one after event close.
+ update private.party_event_weeks_v11 set status='closed'
+  where party_id=p and event_starts_at=start_at;
+ v_replay:=private.advance_party_event_stage_v17(
+  p,start_at,2,'v17-advance-stage2');
+ if v_replay->>'replayed'<>'true' then
+  raise exception 'v17 after-closure transition replay broken';end if;
+ v_replay:=private.resolve_party_event_ballot_v17(p,start_at,2);
+ if v_replay->>'replayed'<>'true' then
+  raise exception 'v17 locked ballot no longer replays after close';end if;
+ begin
+  perform private.advance_party_event_stage_v17(
+   p,start_at,2,'v17-new-after-close');
+  raise exception 'v17 created new stage while closed';
+ exception when others then
+  if sqlerrm<>'party_event_v17_advance_conflict' then raise;end if;
+ end;
+
+ -- Independent 7-hour-old Stage 2 ballot to verify deterministic timeout
+ -- default without waiting or manipulating any system clock. These fixtures
+ -- are database-only and rolled back in the same test transaction.
+ for j in 4..5 loop
+  insert into auth.users(id,email) values(a[j],'v17-'||a[j]||'@example.invalid');
+  insert into public.characters(id,account_id,name,class_id)
+   values(c[j],a[j],'Timeout Tester '||chr(60+j),
+    case j when 4 then 'IRONWARDEN' else 'WAYFINDER' end);
+ end loop;
+ insert into public.parties(id,leader_account_id,leader_character_id)
+  values(p_timeout,a[4],c[4]);
+ insert into private.party_event_weeks_v11(
+  party_id,event_starts_at,event_ends_at,family,variation,seed,difficulty)
+ values(p_timeout,start_at,start_at+interval '7 days',
+  'broken_caravan','bandits_crossing',0,'standard');
+ insert into private.party_event_roster_v11(
+  party_id,event_starts_at,account_id,character_id,role,joined_at)
+ values(p_timeout,start_at,a[4],c[4],'tank',start_at),
+  (p_timeout,start_at,a[5],c[5],'damage',start_at);
+ insert into private.party_event_stages_v11(
+  party_id,event_starts_at,stage,opened_at)
+ values(p_timeout,start_at,1,now()-interval '9 hours');
+ update private.party_event_weeks_v11 set active_stage=2
+  where party_id=p_timeout and event_starts_at=start_at;
+ insert into private.party_event_stages_v11(
+  party_id,event_starts_at,stage,opened_at)
+ values(p_timeout,start_at,2,now()-interval '7 hours');
+ begin
+  perform private.cast_party_event_ballot_v17(
+   p_timeout,start_at,2,a[4],'fast_pass');
+  raise exception 'v17 ballot cast after real timeout';
+ exception when others then
+  if sqlerrm<>'party_event_v17_ballot_window_closed' then raise;end if;
+ end;
+ v_result:=private.resolve_party_event_ballot_v17(p_timeout,start_at,2);
+ if v_result->>'replayed'<>'false'
+   or v_result->>'choice'<>'safe_pass'
+   or v_result->>'reason'<>'timeout'
+ then raise exception 'v17 6h deterministic fallback wrong';end if;
+end $;
 select 'PASS: v17 sealed 3-category orders, 2-vote majority and stage1->2->3 exact-once; no finale settlement' as result;
 rollback;

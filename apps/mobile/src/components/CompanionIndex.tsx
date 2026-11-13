@@ -140,7 +140,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
    const percent=achievement?Math.round(achievement.ratio*100):0;
    const label=hidden?t('Unknown Prestige Companion'):def.name,art=hidden?undefined:companionArtSource(def.id);
    const category=hidden?t('Undiscovered'):def.origin.type==='event'?t('Event reward'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Guild Token Shop'):companionLabel(language,def.rarity);
-   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):def.origin.type==='event'?t('Previously available through {event}',{event:def.origin.name}):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):achievement?achievement.completeCount+'/'+achievement.totalCount+' '+t('requirements'):t('Complete unlock requirements');
+   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):def.origin.type==='event'?t('Previously available through {event}',{event:def.origin.name}):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):companionContent(language,def.origin.name);
    const requirementHint=achievement?def.unlockRequirements.map((req,index)=>{
     const p=achievement.requirements[index];
     return companionUnlockRequirement(language,req.description)+' '+(p.complete?'✓':p.current+'/'+p.total);

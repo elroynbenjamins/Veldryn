@@ -28,7 +28,7 @@ BEGIN
  FOREACH v_board IN ARRAY ARRAY[
    'profession_total','mining','woodcutting','fishing','smithing','cooking',
    'herbalism','alchemy','hunting','exploration','tailoring','enchanting',
-   'faith','dungeon_tier','dungeon_clears'
+   'faith','achievement_score','dungeon_tier','dungeon_clears'
  ] LOOP
    SELECT public.rankings_board_server_v3(v_account,v_board,51,0) INTO v_out;
    IF v_out->>'board'<>v_board OR jsonb_typeof(v_out->'entries')<>'array'

@@ -7,6 +7,12 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  // Read-only Rankings page controls and exhausted-page guidance.
+  "No further ranked entries": ["Keine weiteren Ranglisteneinträge","No hay más entradas en la clasificación","Geen verdere ranglijstvermeldingen","Nessun'altra voce in classifica","Aucune autre entrée au classement"],
+  "Return to the previous page to view ranked entries.": ["Kehre zur vorherigen Seite zurück, um Ranglisteneinträge anzusehen.","Vuelve a la página anterior para consultar la clasificación.","Ga terug naar de vorige pagina om de ranglijst te bekijken.","Torna alla pagina precedente per vedere la classifica.","Revenez à la page précédente pour consulter le classement."],
+  "Previous": ["Zurück","Anterior","Vorige","Precedente","Précédent"],
+  "Next": ["Weiter","Siguiente","Volgende","Successiva","Suivant"],
+  "Page": ["Seite","Página","Pagina","Pagina","Page"],
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],
   "Damage assist": ["Schadenshilfe","Ayuda de daño","Hulp bij schade","Assistenza ai danni","Assistance offensive"],

@@ -13,6 +13,19 @@ Russian and Turkish have expanded but still incomplete coverage. English remains
 - The dedicated Russian regression test checks all 2,081 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
 
 
+## November 13, 2026: recently changed screens
+
+- Added 168 reviewed eight-language source keys (English plus DE/ES/NL/IT/FR/RU/TR) in `src/i18n/recent-screens.ts` covering the Community Roadmap, the not-yet-released Market Inbox, Player Badge settings, and authored regional Journal goals/achievement ladders.
+- Roadmap entries from the four November 10 authoritative migrations have matching localized titles/descriptions and category labels. Unknown or changed server entries still display their original source text rather than being translated speculatively.
+- Added placeholder, locale coverage, badge metadata, authored Journal source, and Roadmap SQL source checks in `tests/recent-ui-localization.cjs`, wired into the localization test runner.
+- The hidden Market price-history chart has localized period labels, price/sale explanations and screen-reader descriptions, with number formatting for every supported language; this does not change sample requirements or generated data. The Rewards Inbox Market tab and remaining Settings update/developer labels are translated.
+- Continued Home/account localization: 91 additional Russian/Turkish translations now cover the Home dashboard, session status, character-management and deletion warnings, and Account Bonuses. The Home Quick Actions panel is now fully localized (including accessibility labels) for all eight languages; tiles allow two text lines and their heading can wrap on narrow screens.
+- `account-localization.cjs` scans the actual authored text calls across Home, Home Session, Home Adventure Header, character management, and Account Bonuses for RU/TR coverage and placeholder safety. `recent-ui-localization.cjs` protects the Quick Actions labels and compact layout. Player names, future server content, and unknown dynamic text remain unchanged.
+
+- The Market Inbox now uses the existing item-name locale registry and language-aware number formatting. Regional Journal objectives/Echo labels and the generated nine-by-five achievement ladder display reviewed translations while unknown names remain untouched.
+- Russian and Turkish remain starter-level across the **rest** of the game. Unreviewed, data-driven, and new interface text may still fall back to English. Native-speaker review and narrow-screen text-expansion QA remain open.
+
+
 ## Spanish gap review · 2026-11-13
 
 - New exact-English-source Spanish translations cover Resource Codex searches/sources/recipes, Market Inbox deliveries and claim states, More navigation, release information, Settings, the Community Roadmap, the activity queue, Store headers and Event calendar/teasers.

@@ -1,4 +1,5 @@
-import {accountText,accountDuration} from '../i18n/account';
+import {accountDuration} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {appBuildText} from '../i18n/app-build';
 import {APP_BUILD_INFO} from '../app-build';
@@ -56,7 +57,7 @@ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <
 
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,onUiThemeChange,uiThemeId,online=false}:Props){
  const language=state.settings.language;
- const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+ const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
   const [selectedSection,setSelectedSection]=useState<SettingsSection>(normalizeSettingsSection(initialSection));

@@ -1,4 +1,5 @@
 import {accountText,accountError} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import type {Language} from '../i18n/languages';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useState} from 'react';
@@ -26,6 +27,7 @@ export function PlayerBadgeSettings(){
 export function PlayerBadgeSettingsView({language:languageOverride,badges}:{language?:Language;badges:BadgeState}){
  const contextLanguage=useGameLanguage(),language=languageOverride??contextLanguage;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+ const r=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
  const C=useGameTheme();
  const [slot,setSlot]=useState<Slot>('name');
  const owned=badges.ownedExtras??[];
@@ -45,15 +47,15 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
   const selected=slot==='name'?equipped===id:showcase.includes(id);
   const maxed=slot==='profile'&&!selected&&full;
   const blocked=disabled||!unlocked||maxed;
-  const status=!unlocked?'LOCKED'
-   :slot==='name'?(selected?'EQUIPPED':'EQUIP')
-   :selected?'ON PROFILE '+(showcase.indexOf(id)+1):maxed?'FULL':'FEATURE';
+  const status=!unlocked?r('LOCKED')
+   :slot==='name'?(selected?r('EQUIPPED'):r('EQUIP'))
+   :selected?r('ON PROFILE {slot}',{slot:showcase.indexOf(id)+1}):maxed?r('FULL'):r('FEATURE');
   return <Pressable
    key={id} accessibilityRole="button"
-   accessibilityLabel={PLAYER_BADGE_LABELS[id]} accessibilityValue={{text:status}}
-   accessibilityHint={!unlocked?detail
-    :slot==='name'?(selected?'Unequip this badge':'Wear this badge beside your name')
-    :selected?'Remove this badge from your profile':maxed?'Remove a featured badge to make room':'Feature this badge on your profile'}
+   accessibilityLabel={r(PLAYER_BADGE_LABELS[id])} accessibilityValue={{text:status}}
+   accessibilityHint={!unlocked?r(detail)
+    :slot==='name'?(selected?r('Unequip this badge'):r('Wear this badge beside your name'))
+    :selected?r('Remove this badge from your profile'):maxed?r('Remove a featured badge to make room'):r('Feature this badge on your profile')}
    accessibilityState={{selected,disabled:blocked}}
    disabled={blocked}
    onPress={()=>choose(id)}
@@ -61,8 +63,8 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
     (!unlocked||maxed)&&s.locked,pressed&&s.pressed]}>
    <View style={[s.artFrame,{backgroundColor:C.bg}]}><PlayerBadge id={id} size={38}/></View>
    <View style={s.badgeDetails}>
-    <Text numberOfLines={1} style={[s.badgeName,{color:C.text}]}>{PLAYER_BADGE_LABELS[id]}</Text>
-    <Text style={[s.badgeDetail,{color:C.muted}]}>{detail}</Text>
+    <Text numberOfLines={1} style={[s.badgeName,{color:C.text}]}>{r(PLAYER_BADGE_LABELS[id])}</Text>
+    <Text style={[s.badgeDetail,{color:C.muted}]}>{r(detail)}</Text>
    </View>
    <Text style={[s.status,{color:selected?C.accent:unlocked&&!maxed?C.good:C.muted}]}>{status}</Text>
   </Pressable>;
@@ -74,72 +76,72 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
   <Text numberOfLines={1} style={[s.slotTabText,{color:slot===value?C.accent:C.muted}]}>{label}</Text>
   <Text numberOfLines={1} style={[s.slotTabCount,{color:slot===value?C.text:C.muted}]}>{count}</Text>
  </Pressable>;
- if(!badges.accountId)return <Text style={{color:C.muted}}>Sign in to choose a player badge.</Text>;
+ if(!badges.accountId)return <Text style={{color:C.muted}}>{r('Sign in to choose a player badge.')}</Text>;
 
  return <View style={s.root}>
   <View style={s.heading}>
    <View style={s.grow}>
     <Text style={[s.title,{color:C.text}]}>{a('Player badges')}</Text>
-    <Text style={[s.note,{color:C.muted}]}>Wear one badge beside your name, and feature up to three on your profile. Staff badges appear automatically.</Text>
+    <Text style={[s.note,{color:C.muted}]}>{r('Wear one badge beside your name, and feature up to three on your profile. Staff badges appear automatically.')}</Text>
    </View>
   </View>
   <View style={[s.preview,{backgroundColor:C.panel,borderColor:C.line}]}>
    <View style={s.previewRow}>
     <View style={s.previewLabels}>
-     <Text style={[s.sectionEyebrow,{color:C.accent}]}>BESIDE YOUR NAME</Text>
-     <Text style={[s.note,{color:C.muted}]}>{equipped?PLAYER_BADGE_LABELS[equipped]:'No badge equipped'}</Text>
+     <Text style={[s.sectionEyebrow,{color:C.accent}]}>{r('BESIDE YOUR NAME')}</Text>
+     <Text style={[s.note,{color:C.muted}]}>{equipped?r(PLAYER_BADGE_LABELS[equipped]):r('No badge equipped')}</Text>
     </View>
     <PlayerBadges identity={badges.identity} size={29}/>
    </View>
    <View style={[s.previewDivider,{backgroundColor:C.line}]}/>
    <View style={s.previewRow}>
     <View style={s.previewLabels}>
-     <Text style={[s.sectionEyebrow,{color:C.accent}]}>ON YOUR PROFILE</Text>
-     <Text numberOfLines={2} style={[s.note,{color:C.muted}]}>{showcase.length?showcase.map(id=>PLAYER_BADGE_LABELS[id]).join(' · '):'No badges featured yet'}</Text>
+     <Text style={[s.sectionEyebrow,{color:C.accent}]}>{r('ON YOUR PROFILE')}</Text>
+     <Text numberOfLines={2} style={[s.note,{color:C.muted}]}>{showcase.length?showcase.map(id=>r(PLAYER_BADGE_LABELS[id])).join(' · '):r('No badges featured yet')}</Text>
     </View>
     <PlayerBadgeShowcase identity={badges.identity} size={23}/>
    </View>
   </View>
 
   <View accessibilityRole="radiogroup" style={s.slotTabs}>
-   {slotTab('name','Beside your name',equipped?'1/1':'0/1')}
-   {slotTab('profile','Profile showcase',showcase.length+'/'+MAX_FEATURED_PLAYER_BADGES)}
+   {slotTab('name',r('Beside your name'),equipped?'1/1':'0/1')}
+   {slotTab('profile',r('Profile showcase'),showcase.length+'/'+MAX_FEATURED_PLAYER_BADGES)}
   </View>
   <Text style={[s.note,{color:C.muted}]}>{slot==='name'
-   ?'Tap a badge to wear it beside your name in chat, parties, guilds and rankings.'
-   :'Tap up to '+MAX_FEATURED_PLAYER_BADGES+' badges to feature on your profile, in the order you tap them. Tap a featured badge again to remove it.'}</Text>
+   ?r('Tap a badge to wear it beside your name in chat, parties, guilds and rankings.')
+   :r('Tap up to {count} badges to feature on your profile, in the order you tap them. Tap a featured badge again to remove it.',{count:MAX_FEATURED_PLAYER_BADGES})}</Text>
 
   {slot==='profile'&&full?<Text accessibilityLiveRegion="polite" style={[s.fullNotice,{color:C.info,backgroundColor:C.infoSurface,borderColor:C.selectionLine}]}>All three profile slots are filled. Remove a featured badge to choose another.</Text>:null}
 
   <View style={s.section}>
    <View style={s.sectionHeading}>
-    <Text style={[s.sectionTitle,{color:C.text}]}>Supporter</Text>
-    <Text style={[s.counter,{color:C.muted}]}>{badges.supporterAvailable?'ACTIVE':'NOT ACTIVE'}</Text>
+    <Text style={[s.sectionTitle,{color:C.text}]}>{r('Supporter')}</Text>
+    <Text style={[s.counter,{color:C.muted}]}>{badges.supporterAvailable?r('ACTIVE'):r('NOT ACTIVE')}</Text>
    </View>
-   {badges.supporterTotalDays>0?<Text style={[s.note,{color:C.muted}]}>{`Verified Supporter time: ${badges.supporterTotalDays} days total`}</Text>:null}
-   <Text style={[s.note,{color:C.muted}]}>Your star evolves at 3, 6 and 12 total verified months of Supporter time.</Text>
+   {badges.supporterTotalDays>0?<Text style={[s.note,{color:C.muted}]}>{r('Verified Supporter time: {days} days total',{days:badges.supporterTotalDays})}</Text>:null}
+   <Text style={[s.note,{color:C.muted}]}>{r('Your star evolves at 3, 6 and 12 total verified months of Supporter time.')}</Text>
    {SUPPORTER_BADGE_IDS.map((id:SupporterBadgeId)=>{
     const required=id==='supporter_12m'?12:id==='supporter_6m'?6:id==='supporter_3m'?3:0;
     const unlocked=canEquipSupporterBadge(id,badges.supporterAvailable,badges.supporterTierMonths);
     return row(id,unlocked,unlocked
-     ?required===0?'Active Supporter · first star':`Verified ${required}-month Supporter milestone`
+     ?required===0?'Active Supporter · first star':r('Verified {months}-month Supporter milestone',{months:required})
      :SUPPORTER_BADGE_UNLOCK_HINTS[id]);
    })}
-   <Text style={[s.footnote,{color:C.muted}]}>Time from separate verified subscription periods adds together. Pauses do not erase progress, and buying future months does not count early. Earlier history requires reliable billing proof.</Text>
+   <Text style={[s.footnote,{color:C.muted}]}>{r('Time from separate verified subscription periods adds together. Pauses do not erase progress, and buying future months does not count early. Earlier history requires reliable billing proof.')}</Text>
   </View>
 
   <View style={s.section}>
    <View style={s.sectionHeading}>
-    <Text style={[s.sectionTitle,{color:C.text}]}>Earned badges</Text>
-    <Text style={[s.counter,{color:C.muted}]}>{owned.length}/{COLLECTIBLE_PLAYER_BADGE_IDS.length} UNLOCKED</Text>
+    <Text style={[s.sectionTitle,{color:C.text}]}>{r('Earned badges')}</Text>
+    <Text style={[s.counter,{color:C.muted}]}>{r('{owned}/{total} UNLOCKED',{owned:owned.length,total:COLLECTIBLE_PLAYER_BADGE_IDS.length})}</Text>
    </View>
    {COLLECTIBLE_PLAYER_BADGE_IDS.map(id=>row(id,owned.includes(id),
     owned.includes(id)?'Unlocked · account-wide':PLAYER_BADGE_UNLOCK_HINTS[id]))}
   </View>
 
-  {slot==='name'&&equipped?<GameButton compact title="Unequip badge" tone="secondary" loading={badges.busy} disabled={disabled} onPress={()=>badges.setEquipped(null)}/>:null}
-  {slot==='profile'&&showcase.length?<GameButton compact title="Clear profile badges" tone="secondary" loading={badges.busy} disabled={disabled} onPress={()=>badges.setProfileBadges([])}/>:null}
-  {badges.loading?<Text style={[s.note,{color:C.muted}]}>Loading earned badges…</Text>:null}
+  {slot==='name'&&equipped?<GameButton compact title={r('Unequip badge')} tone="secondary" loading={badges.busy} disabled={disabled} onPress={()=>badges.setEquipped(null)}/>:null}
+  {slot==='profile'&&showcase.length?<GameButton compact title={r('Clear profile badges')} tone="secondary" loading={badges.busy} disabled={disabled} onPress={()=>badges.setProfileBadges([])}/>:null}
+  {badges.loading?<Text style={[s.note,{color:C.muted}]}>{r('Loading earned badges…')}</Text>:null}
   {badges.error?<View style={s.errors}>
    <Text accessibilityRole="alert" style={[s.note,{color:C.bad}]}>{accountError(language,badges.error,'Could not load badges.')}</Text>
    <GameButton compact title={a('Retry badges')} tone="secondary" loading={badges.loading} onPress={()=>badges.refresh()}/>

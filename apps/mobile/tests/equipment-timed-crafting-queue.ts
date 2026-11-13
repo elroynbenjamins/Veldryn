@@ -101,17 +101,21 @@ const bulkClaim=executeGameCommand(baseActiveState,{type:'craft_claim_all'},done
 ok(bulkClaim.forgeResults?.length===3,'Claim All must return each of three finished equipment results');
 ok(equipmentCraftingQueue(bulkClaim.state).length===0,'Claim All must remove only claimed ready jobs');
 ok(bulkClaim.contributions.filter(row=>row.kind==='crafting').length===3,'Bulk claim must credit each verified craft');
+ok(bulkClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===3,'Claim All must count each completed equipment piece toward Forge Automaton');
 const bulkRepeat=executeGameCommand(bulkClaim.state,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
 ok(bulkRepeat.forgeResults?.length===0&&bulkRepeat.message==='No finished forge jobs','Repeating Claim All must not duplicate rewards');
+ok(bulkRepeat.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===3,'Repeated Claim All must not duplicate companion crafting progress');
 
 // A full bank must not cause an entire batch to fail and roll back earlier rewards.
 const constrained:GameState={...baseActiveState,inventory:{...baseActiveState.inventory,capacity:0},bank:{...baseActiveState.bank,capacity:1}};
 const partial=executeGameCommand(constrained,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
 ok(partial.forgeResults?.length===1,'Bulk claim should keep the first storable equipment result');
+ok(partial.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===1,'Blocked forge jobs must not count toward companion recruitment');
 ok(equipmentCraftingQueue(partial.state).length===2,'Blocked jobs must remain in the queue');
 ok(partial.message?.includes('2 still waiting')===true,'Partial claims must explain how many jobs were blocked');
 const recovered=executeGameCommand({...partial.state,bank:{...partial.state.bank,capacity:8}},{type:'craft_claim_all'},doneAt+1,{randomRoll:.5});
 ok(recovered.forgeResults?.length===2&&equipmentCraftingQueue(recovered.state).length===0,'Blocked jobs must be claimable after storage is freed');
+ok(recovered.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===3,'Recovering blocked forge jobs counts the remaining two equipment pieces once');
 
 ok(validateGameCommand({type:'craft_claim',args:{id:'job'}}).type==='craft_claim','Online command validator must accept equipment craft claims');
 ok(validateGameCommand({type:'craft_claim_all'}).type==='craft_claim_all','Online command validator must accept claim-all');
@@ -124,6 +128,12 @@ const commandJob=equipmentCraftingQueue(online)[0];
 const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(commandClaim.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative claim command must grant finished equipment');
 ok(commandClaim.contributions.some(row=>row.kind==='crafting'&&row.contentId===recipe.id),'Verified crafting contribution must occur on completion');
+ok(commandClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===1,'Claiming one completed equipment craft must advance Forge Automaton recruitment');
+const nearAutomaton={...online,skills:online.skills.map(row=>row.skillId==='smithing'?{...row,level:30}:row),account:{...online.account,companionUnlockProgress:{...online.account.companionUnlockProgress,EQUIPMENT_CRAFTS:499}}};
+ok(!nearAutomaton.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton remains locked before the final equipment craft');
+const automatonClaim=executeGameCommand(nearAutomaton,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
+ok(automatonClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'The 500th equipment claim reaches the exact recruitment threshold');
+ok(automatonClaim.state.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton unlocks automatically after 500 equipment claims and Smithing 30');
 
 let tailor=createCharacter(newGame(0),tailoringRecipe.classId,'Tailor Queue','male');
 tailor={...tailor,character:{...tailor.character!,level:tailoringRecipe.characterLevel,gold:500000},skills:tailor.skills.map(row=>row.skillId==='tailoring'?{...row,level:tailoringRecipe.level,xp:0}:row),inventory:{...tailor.inventory,capacity:60,stacks:tailoringRecipe.inputs.map(input=>({...input,quantity:input.quantity*2}))},bank:{...tailor.bank,capacity:200,stacks:[]}};

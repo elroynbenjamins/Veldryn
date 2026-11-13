@@ -91,7 +91,7 @@ create trigger party_event_supply_donation_immutable_v16 before update
 -- deterministic supply planner, never client user input. An order is
 -- inserted once, cannot be reconfigured, and must use audited content IDs.
 create or replace function private.freeze_party_event_supply_order_v16(
- p_party_id uuid,p_event_starts_at timestamptz,p_stage smallint,
+ p_party_id uuid,p_event_starts_at timestamptz,p_stage integer,
  p_item_id text,p_kind text,p_target_quantity integer
 ) returns uuid language plpgsql security definer set search_path='' as $$
 declare
@@ -300,9 +300,9 @@ begin
 end;$$;
 
 revoke all on function private.freeze_party_event_supply_order_v16(
- uuid,timestamptz,smallint,text,text,integer) from public,anon,authenticated;
+ uuid,timestamptz,integer,text,text,integer) from public,anon,authenticated;
 grant execute on function private.freeze_party_event_supply_order_v16(
- uuid,timestamptz,smallint,text,text,integer) to service_role;
+ uuid,timestamptz,integer,text,text,integer) to service_role;
 revoke all on function private.donate_party_event_supply_v16(
  uuid,timestamptz,uuid,uuid,integer,text) from public,anon,authenticated;
 grant execute on function private.donate_party_event_supply_v16(

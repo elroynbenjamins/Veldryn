@@ -1,5 +1,5 @@
 import {claimActivity,claimSeasonalContract,createCharacter,newGame,startCombat,startGathering,startExploration,craftRecipe} from '../src/core/game';
-import {QUEST_RARITIES,seasonalQuestBoard,seasonalQuestCache,recordSeasonalActivity,normalizeSeasonalProgress,seasonalQuestRewardOptions} from '../src/core/seasonal-quests';
+import {QUEST_RARITIES,seasonalQuestBoard,seasonalQuestCache,recordSeasonalActivity,normalizeSeasonalProgress,seasonalQuestRewardOptions,SEASONAL_ACTIVITY_TAGS,recordSeasonalCraftProfession} from '../src/core/seasonal-quests';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../src/content/faith';
 import {startFaithPractice} from '../src/core/faith';
 import {itemDef} from '../src/content/items';
@@ -8,13 +8,16 @@ import {CLASSES} from '../src/content/classes';
 import type {GameState} from '../src/core/types';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 function creditAll(state:GameState,units:number,nowMs:number):GameState{
- return (['combat','gathering','crafting','exploration','faith'] as const).reduce((current,tag)=>recordSeasonalActivity(current,tag,units,nowMs),state);
+ return SEASONAL_ACTIVITY_TAGS.reduce((current,tag)=>recordSeasonalActivity(current,tag,units,nowMs),state);
 }
 const state=createCharacter(newGame(0),'BASTION','Tester');
 const date=new Date('2026-09-05T12:00:00Z'),daily=seasonalQuestBoard(state,'daily',date),a=seasonalQuestBoard(state,'weekly',date),b=seasonalQuestBoard(state,'weekly',date),m=seasonalQuestBoard(state,'monthly',date);
 if(daily.length!==2||a.length!==3||m.length!==4)throw new Error('Seasonal board sizes are incorrect');
-if([...daily].some(q=>q.required!==30)||a.some(q=>q.required!==150)||m.some(q=>q.required!==450))throw new Error('Shared daily/weekly/monthly goals must be 30/150/450 actions');
-if([daily,a,m].flat().some(row=>row.tag==='equipment'||row.tag==='boss'))throw new Error('Challenges must use repeatable action counters, not equipment slots or scarce bosses');
+if([...daily,...a,...m].some(q=>q.required<1))throw new Error('Seasonal targets must require positive verified actions');
+if([...daily,...a,...m].some(q=>q.tag==='combat'&&q.required!==({daily:30,weekly:150,monthly:450}[q.period])))throw new Error('Combat goals should retain familiar pacing');
+if([...daily,...a,...m].some(q=>q.tag==='crafting'&&q.required>=({daily:30,weekly:150,monthly:450}[q.period])))throw new Error('Crafting goals should be smaller than raw gathering goals');
+if([daily,a,m].flat().some(row=>row.tag==='equipment'))throw new Error('Challenges must use completed actions, not equipment slot counts');
+if([daily,a,m].flat().some(row=>row.tag==='boss'||row.tag==='salvage'||row.tag==='upgrade'||row.tag==='high_tier_craft'))throw new Error('Unprepared low-level players must never be assigned endgame objectives');
 if([daily,a,m].some(board=>new Set(board.map(q=>q.tag)).size!==board.length))throw new Error('One period must not duplicate an action type');
 if(daily[0].rewardGold<60||a[0].rewardGold<260||m[0].rewardGold<660)throw new Error('Challenges should retain slightly improved but recognizable rewards');
 if(JSON.stringify(a)!==JSON.stringify(b))throw new Error('Same seasonal period must be deterministic');
@@ -72,8 +75,25 @@ for(let day=1;day<=20;day++){
 }
 if(!verifiedEssenceClaim)throw new Error('Test must find at least one earned Essence quest to verify actual account settlement');
 const other=seasonalQuestBoard(createCharacter(newGame(0),'WAYFINDER','Scout'),'weekly',date);
-if(JSON.stringify(a.map(q=>[q.name,q.rarity,q.required,q.rewardGold]))!==JSON.stringify(other.map(q=>[q.name,q.rarity,q.required,q.rewardGold])))throw new Error('All classes must receive the same quests and rarity rolls');
-console.log('PASS: deterministic shared weekly and monthly quest boards');
+if(JSON.stringify(a.map(q=>[q.rarity,q.rewardGold]))!==JSON.stringify(other.map(q=>[q.rarity,q.rewardGold])))throw new Error('Quest rarity and cache quality must be class-independent');
+// New objectives use the exact paid/settled operation; raw XP and equipped slots never count.
+const highLevel={...state,character:{...state.character!,level:70,equipment:{...state.character!.equipment,weapon:'basic_sword'}},defeatedBossIds:['FALLEN_KNIGHT'],skills:state.skills.map(x=>({...x,level:70}))} as GameState;
+const initiallyOffered=seasonalQuestBoard(state,'monthly',date);
+const frozen=recordSeasonalActivity(state,'combat',1,date.getTime());
+const improvedAfterStart={...frozen,character:{...frozen.character!,level:70,equipment:{...frozen.character!.equipment,weapon:'basic_sword'}},defeatedBossIds:['FALLEN_KNIGHT'],skills:frozen.skills.map(x=>({...x,level:70}))} as GameState;
+check(JSON.stringify(seasonalQuestBoard(frozen,'monthly',date).map(q=>q.tag))===JSON.stringify(initiallyOffered.map(q=>q.tag)),'First verified action should freeze selection');
+check(JSON.stringify(seasonalQuestBoard(improvedAfterStart,'monthly',date).map(q=>q.tag))===JSON.stringify(initiallyOffered.map(q=>q.tag)),'Level-ups must not replace active monthly objectives');
+check(!!normalizeSave(frozen).account.seasonalContractProgress?.monthly?.tags,'Frozen selections should survive save normalization');
+let bossEverOffered=false;
+for(let day=1;day<=35;day++){
+ const dt=new Date(Date.UTC(2026,8,day,12)),board=seasonalQuestBoard(highLevel,'weekly',dt);
+ if(board.some(q=>q.tag==='boss')){bossEverOffered=true;break;}
+}
+check(bossEverOffered,'Unlocked boss objectives should enter the weekly rotation');
+const specialized=recordSeasonalCraftProfession(state,'COOK_MEADOW_PERCH',2,date.getTime());
+check(specialized.account.seasonalContractProgress?.daily?.counts.cooking===2,'Trusted recipe type should credit its profession');
+check(!recordSeasonalCraftProfession(state,'UNKNOWN_RECIPE',3,date.getTime()).account.seasonalContractProgress?.daily?.counts.cooking,'Unknown recipes must not credit a profession');
+console.log('PASS: deterministic unlock-aware seasonal quest boards with verified activity variety');
 
 function check(value:unknown,message:string){if(!value)throw new Error(message);}
 const t=date.getTime();
@@ -113,6 +133,7 @@ check(gathered.reward.kills>0&&gathered.state.account.seasonalContractProgress?.
 const crafter:GameState={...state,character:{...state.character!,gold:10000},bank:{...state.bank,stacks:[{itemId:'MEADOW_PERCH',quantity:100},{itemId:'GREENWOOD_LOG',quantity:10}]}};
 const cooked=craftRecipe(crafter,'COOK_MEADOW_PERCH',t);
 check(cooked.account.seasonalContractProgress?.daily?.counts.crafting===1,'A completed recipe must count as a craft');
+check(cooked.account.seasonalContractProgress?.daily?.counts.cooking===1,'Cooking a recipe must count specifically toward Cooking contracts');
 const faithTier=FAITH_TIERS[0],faithReady:GameState={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:HOLY_WATER_ID,quantity:faithTier.water*2}]}};
 const faithStarted=startFaithPractice(faithReady,faithTier.id,2,t);
 const faithSettled=claimActivity(faithStarted,t+faithTier.seconds*2000+1000);

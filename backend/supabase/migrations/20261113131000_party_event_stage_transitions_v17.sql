@@ -349,15 +349,75 @@ begin
   'verifiedEventPoints',(v_readiness->>'verifiedTotalEventPoints')::integer);
 end;$$;
 
+
+-- A read-only projection that matches the v17 mutation gates, unlike the
+-- deliberately conservative v16 preview. Stage 3 never completes from EP.
+create or replace function private.party_event_stage_readiness_v17(
+ p_party_id uuid,p_event_starts_at timestamptz
+) returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare
+ b jsonb;
+ w private.party_event_weeks_v11%rowtype;
+ v_sealed boolean;
+ v_missing integer;
+ v_required_actions text[];
+ v_stage integer;
+ v_ready boolean;
+ v_status text;
+begin
+ b:=private.party_event_stage_readiness_v16(p_party_id,p_event_starts_at);
+ select * into w from private.party_event_weeks_v11
+  where party_id=p_party_id and event_starts_at=p_event_starts_at;
+ v_stage:=w.active_stage;
+ select exists(select 1 from private.party_event_stage_seals_v17 s
+   where s.party_id=p_party_id and s.event_starts_at=p_event_starts_at
+    and s.stage=v_stage) into v_sealed;
+ v_required_actions:=case v_stage
+  when 1 then array['scout_route']
+  when 2 then array['secure_approach','support_expedition']
+  else array['prepare_finale'] end;
+ select count(*)::int into v_missing from unnest(v_required_actions) action_required
+ where not exists(select 1 from private.party_event_receipts_v11 r
+  where r.party_id=p_party_id and r.event_starts_at=p_event_starts_at
+   and r.stage=v_stage and r.action_id=action_required);
+ v_ready:=w.status='active' and v_stage in (1,2)
+  and now()>=w.event_starts_at and now()<w.event_ends_at
+  and v_sealed and v_missing=0
+  and (b->>'requiredSuppliesVerified')::boolean=true
+  and (b->>'voteLocked')::boolean=true
+  and (b->>'verifiedTotalEventPoints')::integer
+   >=(b->>'cumulativeStageTarget')::integer;
+ v_status:=case
+  when w.status<>'active' or now()<w.event_starts_at
+    or now()>=w.event_ends_at then 'closed'
+  when (b->>'verifiedTotalEventPoints')::integer
+       <(b->>'cumulativeStageTarget')::integer then 'awaiting_progress'
+  when not v_sealed then 'awaiting_supply_seal'
+  when (b->>'requiredSuppliesVerified')::boolean is distinct from true
+    then 'awaiting_supplies'
+  when (b->>'voteLocked')::boolean is distinct from true then 'awaiting_vote'
+  when v_missing>0 then 'awaiting_objectives'
+  when v_stage=3 then 'awaiting_finale'
+  else 'ready_to_advance' end;
+ return b||jsonb_build_object(
+  'stageSupplyPlanSealed',v_sealed,
+  'missingRequiredObjectives',v_missing,
+  'stageReadyToAdvance',v_ready,
+  'status',v_status,
+  'finaleVerified',false);
+end;$$;
+
 revoke all on function private.seal_party_event_supplies_v17(uuid,timestamptz,integer),
  private.cast_party_event_ballot_v17(uuid,timestamptz,integer,uuid,text),
  private.resolve_party_event_ballot_v17(uuid,timestamptz,integer),
- private.advance_party_event_stage_v17(uuid,timestamptz,integer,text)
+ private.advance_party_event_stage_v17(uuid,timestamptz,integer,text),
+ private.party_event_stage_readiness_v17(uuid,timestamptz)
  from public,anon,authenticated;
 grant execute on function private.seal_party_event_supplies_v17(uuid,timestamptz,integer),
  private.cast_party_event_ballot_v17(uuid,timestamptz,integer,uuid,text),
  private.resolve_party_event_ballot_v17(uuid,timestamptz,integer),
- private.advance_party_event_stage_v17(uuid,timestamptz,integer,text)
+ private.advance_party_event_stage_v17(uuid,timestamptz,integer,text),
+ private.party_event_stage_readiness_v17(uuid,timestamptz)
  to service_role;
 revoke all on function private.party_event_order_seal_guard_v17(),
  private.party_event_initial_week_guard_v17() from public,anon,authenticated;

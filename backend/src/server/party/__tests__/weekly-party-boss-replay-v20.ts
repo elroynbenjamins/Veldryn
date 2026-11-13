@@ -1,5 +1,12 @@
 import {launchPlayer} from '../../combat/content/launch-combat';
 import {
+  PARTY_EVENT_BOSS_ATTESTATION_V23_RELEASED,
+  PARTY_EVENT_BOSS_RESOURCE_AUDIT_V23,attestPrivatePartyBossReplayV23,
+  type PrivatePartyReplayAttestationV23,
+  type TrustedPartyReplayAttestationRepositoryV23,
+} from '../weekly-party-boss-attestation-v23';
+
+import {
   PARTY_EVENT_BOSS_READER_V21_RELEASED,replayPrivatePartyEventBossV21,
   PARTY_EVENT_REPLAY_SNAPSHOT_V21,
   type PrivatePartyReplayBundleV21,type TrustedPartyReplayRepositoryV21,
@@ -235,6 +242,77 @@ async function verifyPrivateReaderV21():Promise<void> {
     gateEnabled:true,reservationId:input.reservation.id,
     repository:{...repo,readReplayBundle:async()=>wrongReservation},
   }),'reservation_bundle_mismatch');
+
+  assert(PARTY_EVENT_BOSS_ATTESTATION_V23_RELEASED===false,
+    'v23 must remain hidden without a trusted worker deployment');
+  let attestationCalls=0;
+  let committed:PrivatePartyReplayAttestationV23|undefined;
+  const attestationRepo:TrustedPartyReplayAttestationRepositoryV23={
+    ...repo,
+    attestReplayProof:async(candidate)=>{
+      attestationCalls++;
+      assert(candidate.requestId==='party-event-v23-replay:'+input.reservation.id,
+        'v23 request ID must be deterministic and not player-supplied');
+      assert(candidate.resourceAudit===PARTY_EVENT_BOSS_RESOURCE_AUDIT_V23,
+        'v23 must pin the audited gathering policy');
+      assert(candidate.sourceDigest===bundle.sourceDigest
+        &&candidate.candidateHash===result.proof.candidateHash
+        &&candidate.replayHash===result.proof.replayHash
+        &&candidate.loadoutHash===result.proof.frozenLoadoutHash,
+        'v23 worker must attest only the real server-replayed evidence');
+      if(committed){
+        assert(JSON.stringify(committed)===JSON.stringify(candidate),
+          'v23 replay mutated an existing proof');
+      }else committed=clone(candidate);
+      return {
+        replayed:attestationCalls>1,reservationId:candidate.reservationId,
+        replayHash:candidate.replayHash,
+        workerReplayAttested:true as const,
+        combatIndependentlyVerifiedBySql:false as const,
+        rewardsGranted:false as const,entitlementsCreated:false as const,
+      };
+    },
+  };
+  await rejectAsync(()=>attestPrivatePartyBossReplayV23({
+    gateEnabled:false,reservationId:input.reservation.id,
+    repository:attestationRepo,
+  }),'release_gate_disabled');
+  await rejectAsync(()=>attestPrivatePartyBossReplayV23({
+    gateEnabled:true,reservationId:'client-combat-claim',
+    repository:attestationRepo,
+  }),'invalid_reservation');
+  assert(attestationCalls===0,'v23 invalid input must not persist a proof');
+  await rejectAsync(()=>attestPrivatePartyBossReplayV23({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:{...attestationRepo,readReplayBundle:async()=>changedBundle},
+  }),'combat_replay_mismatch');
+  assert(attestationCalls===0,'v23 cannot attest mismatched combat');
+  const firstAttestation=await attestPrivatePartyBossReplayV23({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:attestationRepo,
+  });
+  assert(firstAttestation.kind==='trusted_worker_replay_attested_no_reward'
+    &&firstAttestation.replayed===false
+    &&firstAttestation.rewardsGranted===false
+    &&firstAttestation.entitlementsCreated===false,
+    'v23 first attestation must never grant loot');
+  const repeatedAttestation=await attestPrivatePartyBossReplayV23({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:attestationRepo,
+  });
+  assert(repeatedAttestation.replayed===true&&attestationCalls===2
+    &&repeatedAttestation.replayHash===firstAttestation.replayHash,
+    'v23 retry must preserve original immutable result');
+  await rejectAsync(()=>attestPrivatePartyBossReplayV23({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:{...attestationRepo,attestReplayProof:async(candidate)=>({
+      replayed:false,reservationId:candidate.reservationId,
+      replayHash:candidate.replayHash,workerReplayAttested:true as const,
+      combatIndependentlyVerifiedBySql:false as const,
+      rewardsGranted:true as false,entitlementsCreated:false as const,
+    })},
+  }),'attestation_write_inconsistent');
+  console.log('Party boss v23: independently replayed server proof, one-write attestation, idempotency and zero rewards validated');
   console.log('Party boss v21: one private snapshot, trusted catalogue, full replay and zero-grant gate validated');
 }
 void verifyPrivateReaderV21().catch(e=>{console.error(e);process.exitCode=1;});

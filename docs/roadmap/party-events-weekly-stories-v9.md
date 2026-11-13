@@ -825,3 +825,97 @@ by persisted replay-verified settlement and economy-safe
 once-per-account Inbox grants. The v19 candidate alone
 must never authorize a payout. Leave the PR draft,
 unmerged, game mode hidden, and production untouched.
+
+## v22 — verified Greenfields gathering catalogue and safe herb sink (13 Nov 2026)
+
+**Audited from live game content**, not an invented resource:
+`apps/mobile/src/content/skills.ts` exposes
+`GREENWOOD_TREE` in Greenfields, Level 1, Greenwood Log,
+**28 seconds per action** after its current ×2 gathering-time
+rule, and `GREENFIELDS_COPPER_OUTCROP`, Greenfields,
+Level 1, Copper Ore, **30 seconds per action**.
+`apps/mobile/src/content/herbalism.ts` exposes
+`DEWLEAF_PATCH`, Greenfields, Level 1, Dewleaf,
+**30 seconds per action**. All three sources guarantee
+at least one item and are registered as material items.
+`THORN_SAP` occurs in game crafting recipes, but **is not a
+direct `HERB_NODES` gathering output**. It stays disabled
+for the Party Events herb supply catalogue.
+
+**Real source adapter and deterministic plan:**
+`backend/online/party-event-canonical-supplies-v22.ts`
+reads the actual `GATHERING`, `HERB_NODES` and `itemDef`
+content and validates exact source/node IDs, category, skill,
+Greenfields zone, unlock Level 1, guaranteed yield, gather
+times and item rarity. It fails closed if any source changes
+or disappears. `canonicalPartyEventOrdersV22` sends those
+three trusted common-tier materials to the existing v2 weekly
+planner, creating **nine mandatory supply orders (wood + ore +
+herb in every stage) and three individually optional
+preparation orders (reinforced, provisions, specialist)**.
+For now, higher-tier resources are intentionally excluded
+from this *new* starter planner: that keeps a 2–4-person
+party with new characters from being assigned inaccessible
+zones or gathering requirements.
+
+**SQL catalogue release-safety:**
+`backend/supabase/migrations/20261113184500_party_event_audited_herb_v22.sql`
+adds **DEWLEAF** as the sole enabled Party Events *herb*
+in the private v16 supply sink. It disables THORN_SAP and
+other unaudited herbs. It **preserves the earlier v16 approved
+wood and ore allowlist**, including Ironwood Log, because
+older service-authored optional orders and SQL regressions
+rely on that whitelist. Only the new v22 server planner
+restricts its output to common Level 1 Greenwood Log,
+Copper Ore and Dewleaf. v20's complete-order comparison
+rejects an unplanned higher-tier/extra order before replay.
+The migration provides no service-role table UPDATE,
+public game endpoint, payout, flag enablement or production
+configuration.
+
+**Concrete SQL reader adapter:**
+`backend/online/party-event-replay-repository-v22.ts`
+provides `createCanonicalPartyReplayRepositoryV22`
+for the v21 service-only replay API. It performs
+**one parameterized private PostgreSQL call** to the v21
+single-MVCC-bundle reader using a reservation UUID,
+returns no fabricated substitute on a missing row,
+and loads the audited resource catalogue independently
+from actual gameplay content. It must only be injected
+with an internal database connection allowed to execute
+private SQL; it is **not** a public PostgREST route or
+deployed background worker.
+
+**Tests and validation:**
+`backend/online/tests/party-event-canonical-supplies-v22.ts`
+checks the real three starting nodes, their exact server
+gather times, nonmaterial/higher-level exclusion,
+frozen catalogue, private parameterized query and
+**108 deterministic family × difficulty × roster × seed
+plans**, including complete mandatory/optional categories.
+It is included in the hidden `test:party-weekly-v2`
+command (which now also compiles `tsconfig.online.json`)
+and workflow source filters; **GitHub TypeScript CI result
+still requires confirmation**.
+
+The v22 SQL regression confirms only the audited herb
+is enabled, DEWLEAF frozen orders are replay-idempotent,
+Thorn Sap cannot be ordered, and two Dewleaf items
+are atomically consumed from a real online-game-state
+stack with no unrelated inventory changes or rewards.
+All **11 SQL suites v11–v19, v21, v22 passed** against the
+complete v11–v22 migration chain on staging, split into
+two savepoint-isolated rollback-only batches. An initial
+blanket-disable approach for wood/ore failed an older
+optional-supply test; it was corrected by preserving
+the v16 approved wood/ore IDs before both regression
+batches passed.
+
+**Remaining release gates:** Confirm the TypeScript CI
+compilation/regressions, verify actual per-player gathering
+and migration data in release builds, secure worker
+credentials and consistency boundaries, persist a verified
+replay transaction, build **once-per-account atomic reward
+entitlements and Inbox delivery**, and finish mobile UI.
+Keep `PARTY_WEEKLY_EVENTS_RELEASED=false`, all drafts
+unmerged, and production untouched.

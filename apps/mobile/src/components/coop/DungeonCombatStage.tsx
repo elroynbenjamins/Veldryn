@@ -10,7 +10,7 @@ import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatClassFx,dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackSkillActivation,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
 import {type CoopColors} from '../../theme/coop-ui-theme';
 import {StateChip} from './CoopVisualKit';
 import {radii,spacing,touchTargetMin,typography} from '../../theme/theme';
@@ -150,6 +150,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const partyIds=useMemo(()=>new Set(ordered.map(slot=>slot.memberId).filter((id):id is string=>Boolean(id))),[ordered]);
  const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId);
  const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
+ const skillActivation=playbackSkillActivation(currentCue,actorIsParty===true);
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
  const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,1):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),1,120):0;
  useEffect(()=>{
@@ -236,6 +237,12 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={dungeonDynamicUiText(language,'{count} combat events',{count:replay.cues.length})} reduceMotion={reduceMotion}/>:null}
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?localizedDungeonPlaybackCue(language,currentCue):pending?st("Battle in progress"):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={localizedDungeonCueType(language,currentCue?.type??(pending?undefined:replay.reason))} tone={currentCue?playbackCueTone(currentCue):pending?'selected':replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
    
+   {skillActivation?<View accessibilityLiveRegion="polite" style={[s.skillBanner,skillActivation.kind==='companion'&&s.companionSkillBanner]}>
+    <Text style={[s.skillBannerLabel,skillActivation.kind==='companion'&&s.companionSkillLabel]}>{dungeonDynamicUiText(language,skillActivation.kind==='companion'?'COMPANION SKILL':'CLASS ABILITY')}</Text>
+    <View style={s.skillBannerRow}><Text numberOfLines={1} style={s.skillBannerName}>{skillActivation.name}</Text>
+     {skillActivation.outcome==='miss'?<Text style={s.skillBannerResult}>{dungeonDynamicUiText(language,'MISS')}</Text>:skillActivation.amount!==undefined&&skillActivation.actionKind?<Text style={s.skillBannerResult}>{dungeonDynamicUiText(language,skillActivation.actionKind==='heal'?'HEAL {amount}':skillActivation.actionKind==='shield'?'SHIELD {amount}':'DMG {amount}',{amount:Math.round(skillActivation.amount)})}</Text>:null}
+    </View>
+   </View>:null}
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(language,slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(language,slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':dungeonDynamicUiText(language,'{count} recent',{count:recent.length})+' ▼'}</Text></Pressable>:null}
    {recent.length&&(!complete||showLog)?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{localizedDungeonPlaybackCue(language,cue)}</Text></View>)}</View>:!recent.length?<Text style={s.note}>{pending?st("Battle in progress"):st("No event details were saved for this encounter.")}</Text>:null}
@@ -249,6 +256,13 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap',alignItems:'stretch',justifyContent:'space-between'},formationSlot:{width:'48%',flexGrow:1,minWidth:0},
  replayPanel:{padding:spacing.md,gap:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.surface},
  replayHead:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},replayKicker:{...typography.caption,color:C.cyan,fontWeight:'800',letterSpacing:.6},replayCurrent:{...typography.caption,color:C.text,fontWeight:'700'},
+ skillBanner:{gap:3,paddingHorizontal:spacing.sm,paddingVertical:7,borderWidth:1,borderColor:C.cyan,borderRadius:radii.md,backgroundColor:C.surfaceRaised},
+ companionSkillBanner:{borderColor:C.violet},
+ skillBannerLabel:{fontSize:9,lineHeight:12,fontWeight:'900',letterSpacing:.7,color:C.cyan},
+ companionSkillLabel:{color:C.violet},
+ skillBannerRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},
+ skillBannerName:{flex:1,minWidth:0,fontSize:12,lineHeight:16,fontWeight:'800',color:C.text},
+ skillBannerResult:{fontSize:10,lineHeight:14,fontWeight:'800',color:C.textSecondary},
  replayMeta:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:spacing.sm},replayTime:{...typography.caption,color:C.textMuted},replayTrack:{height:5,borderRadius:99,overflow:'hidden',backgroundColor:C.line},replayFill:{height:'100%',backgroundColor:C.cyan},
  contributionPanel:{gap:spacing.xs},contributionHead:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:spacing.xs},contributionKicker:{...typography.caption,color:C.textMuted,fontWeight:'800',letterSpacing:.6},contributionHint:{...typography.caption,color:C.textMuted},
  contributionRow:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm,paddingVertical:spacing.xs,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},contributionIdentity:{gap:2},contributionRole:{...typography.caption,color:C.cyan,fontWeight:'700'},contributionName:{...typography.caption,color:C.text,fontWeight:'700'},contributionStats:{flex:1,...typography.caption,color:C.textSecondary,textAlign:'right'},

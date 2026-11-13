@@ -13,8 +13,8 @@ assert(panel.includes("onCodex={()=>setSection('Codex')}"),'Index must keep Code
 for(const needle of ['<SearchField','setScope','setRole','Companion Index','NEXT TO UNLOCK','hiddenIds.has(def.id)','companionUnlockCompletion','companionUnlockGuidance','companionRarityBorder','useWindowDimensions','accessibilityRole="button"']){
  assert(index.includes(needle),'Index missing '+needle);
 }
-assert(!index.includes('Unknown Prestige Companion\':def.name'), 'Undiscovered Prestige identities must not leak');
-assert(index.includes("hidden?'Unknown Prestige Companion':def.name"),'Prestige names must remain hidden before discovery');
+assert(index.includes("const label=hidden?t('Unknown Prestige Companion'):def.name"),'Prestige names must remain hidden before discovery');
+assert(index.includes("const q=query.trim()"),'Search must run against the displayed identity');
 assert(index.includes("def.origin.type==='event'"),'Event acquisition must be shown distinctly');
 assert(index.includes("def.origin.id==='GUILD_TOKEN_SHOP'"),'Guild Shop acquisition must be shown distinctly');
 console.log('PASS: concise searchable Companion Index preserves detail, training, Codex, and discovery privacy');

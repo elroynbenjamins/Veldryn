@@ -1,6 +1,6 @@
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS} from '../content/combat-companions';
 import {WORLD_ZONES} from '../content/world-map';
 import {COMPANION_INDEX_COUNTS,UNRELEASED_SEASONAL_COMPANION_COUNT,companionIndexGroup,type CompanionIndexGroup} from '../core/companion-index-availability';
 import {GUILD_SHOP_CATALOGUE} from '../../../../packages/guild-shop/src/catalogue';
@@ -73,7 +73,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   <View style={s.header}>
    <View style={s.headingBlock}>
     <Text accessibilityRole="header" style={s.heading}>{t('Companion Index')}</Text>
-    <Text style={s.caption}>{t('{value0} collected · {value1} total',{value0:unlocked,value1:COMBAT_COMPANIONS.length})}</Text>
+    <Text style={s.caption}>{t('{value0} collected · {value1} total',{value0:unlocked,value1:ALL_COMBAT_COMPANIONS.length})}</Text>
    </View>
    <Pressable accessibilityRole="button" onPress={onCodex} style={({pressed})=>[s.codexAction,pressed&&s.pressed]}>
     <Text style={s.codexText}>{t('Codex & rewards')} ›</Text>

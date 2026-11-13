@@ -1,0 +1,99 @@
+name: Reconcile v1.0.9 integration with main (branch only)
+
+on:
+  push:
+    branches: [integration/v1-0-9-badges-pager-tier-memory-20261112]
+    paths:
+      - '.github/workflows/v109-main-reconcile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.ref_name == 'integration/v1-0-9-badges-pager-tier-memory-20261112'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/v1-0-9-badges-pager-tier-memory-20261112
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Merge current main preserving its verified conflict hunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          if git merge --no-ff --no-commit origin/main; then
+            echo 'Current main incorporated without conflicts'
+          else
+            python3 - <<'PY'
+          import pathlib,re,subprocess,sys
+          expected = {
+            'apps/mobile/App.tsx':1,
+            'apps/mobile/src/content/equipment-recipes-v33.ts':1,
+            'apps/mobile/src/core/game.ts':1,
+            'apps/mobile/src/core/ordinary-hunt.ts':1,
+            'apps/mobile/src/i18n/social-early-coverage.ts':1,
+            'apps/mobile/src/i18n/social.ts':1,
+            'apps/mobile/tests/localization-social.mjs':1,
+            'apps/mobile/tests/ordinary-hunt.ts':1,
+            'marketing/release-notes/1.0.9.md':4,
+            'tools/mobile-core-tests.json':1
+          }
+          paths=subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
+          if set(paths)!=set(expected):
+            sys.exit('Unexpected conflicting paths: '+repr(paths))
+          marker=re.compile(r'(?ms)^<<<<<<< HEAD\n(.*?)^=======\n(.*?)^>>>>>>> origin/main\n?')
+          for path in paths:
+            file=pathlib.Path(path)
+            source=file.read_text()
+            matches=list(marker.finditer(source))
+            if len(matches)!=expected[path]:
+              sys.exit('Changed conflict shape in '+path+': '+str(len(matches)))
+            # Preserve every already-merged feature line; in the overlapping
+            # sections prefer main's newer combat scaling, search timing, theme
+            # persistence, translations, tests and release-copy safety language.
+            resolved=marker.sub(lambda m:m.group(2),source)
+            if '<<<<<<< ' in resolved or '>>>>>>> ' in resolved:
+              sys.exit('Unresolved markers after conservative merge in '+path)
+            file.write_text(resolved)
+          PY
+            git add -u
+            test -z "$(git diff --name-only --diff-filter=U)"
+          fi
+          if test -f .git/MERGE_HEAD; then
+            git commit -m 'merge(main): preserve verified live changes with v1.0.9 visuals'
+          fi
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild bundles, typecheck, and validate
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile typecheck
+      - name: Commit generated bundles and update only integration branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'integration/v1-0-9-badges-pager-tier-memory-20261112'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(edge): synchronize v1.0.9 integration bundles'
+          fi
+          git push origin HEAD:"$GITHUB_REF_NAME"

@@ -6,7 +6,7 @@ create or replace function public.profile_equipped_gear_v1(p_target_account_id u
 returns jsonb
 language plpgsql
 security definer
-set search_path=public,private
+set search_path=''
 as $$
 declare
   v_profile jsonb;
@@ -69,7 +69,8 @@ begin
       'rarity',v_instance->>'rarity','quality',v_instance->'quality',
       'rank',v_enhancement->'rank',
       'statGemId',v_enhancement->>'statGemId',
-      'effectGemId',v_enhancement->>'effectGemId'
+      'effectGemId',v_enhancement->>'effectGemId',
+      'gemIds',case when jsonb_typeof(v_enhancement->'gemIds')='array' then v_enhancement->'gemIds' else '[]'::jsonb end
     ));
   end loop;
   return jsonb_build_object('characterId',v_profile#>>'{character,id}','items',v_rows);

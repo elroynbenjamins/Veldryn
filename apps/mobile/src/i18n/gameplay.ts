@@ -8,6 +8,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "FOOD BACKUPS":["FOOD BACKUPS","ESSENSRESERVE","COMIDA DE RESERVA","ETENRESERVE","SCORTE DI CIBO","RÉSERVES DE NOURRITURE"],
+ "Uses the selected food first, then each backup in order when it runs out. Only food carried in Inventory is used.":["Uses the selected food first, then each backup in order when it runs out. Only food carried in Inventory is used.","Verbraucht zuerst das gewählte Essen und dann die Reserve in Reihenfolge. Nur Essen im Inventar wird genutzt.","Usa primero la comida seleccionada y luego las reservas en orden. Solo se usa comida del inventario.","Gebruikt eerst het gekozen eten en daarna de reserve op volgorde. Alleen eten in je inventaris wordt gebruikt.","Usa prima il cibo selezionato, poi le scorte in ordine. Viene usato solo il cibo nell'inventario.","Utilise d'abord la nourriture choisie, puis les réserves dans l'ordre. Seule la nourriture de l'inventaire est utilisée."],
+ "BACKUP":["BACKUP","RESERVE","RESERVA","RESERVE","SCORTA","RÉSERVE"],
+ "Remove backup":["Remove backup","Reserve entfernen","Quitar reserva","Verwijder reserve","Rimuovi scorta","Retirer la réserve"],
+ "Add as backup":["Add as backup","Als Reserve hinzufügen","Añadir como reserva","Voeg toe als reserve","Aggiungi alle scorte","Ajouter en réserve"],
+ "Up":["Up","Nach oben","Subir","Omhoog","Su","Monter"],
+ "Down":["Down","Nach unten","Bajar","Omlaag","Giù","Descendre"],
  "Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.":["Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.","Tränke heilen bei Bossen und in Dungeons. Tonika bereiten Dungeonläufe vor und stärken normale Kämpfe.","Las pociones curan contra jefes y en mazmorras. Los tónicos preparan las mazmorras y mejoran los combates normales.","Drankjes herstellen HP bij bazen en in kerkers. Tonics bereiden kerkers voor en versterken gewone gevechten.","Le pozioni curano contro i boss e nei dungeon. I tonici preparano i dungeon e potenziano gli scontri normali.","Les potions soignent contre les boss et en donjon. Les toniques préparent les donjons et renforcent les combats ordinaires."],
  "Potions":["Potions","Tränke","Pociones","Drankjes","Pozioni","Potions"],
  "Recipe source":["Recipe source","Rezeptquelle","Origen de la receta","Receptbron","Fonte della ricetta","Source de la recette"],

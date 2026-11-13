@@ -1,6 +1,7 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo,useState} from 'react';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
+import {journalAchievementDisplayTitle} from '../i18n/recent-screens';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {JOURNAL_ACHIEVEMENTS_V42,JOURNAL_TITLES_V42} from '../core/adventurers-journal-v42';
@@ -58,9 +59,9 @@ export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onN
     <View style={s.flex}><Text style={s.title}>{t("Long-term Achievements")}</Text><Text style={s.sub}>{earnedAchievements}/{JOURNAL_ACHIEVEMENTS_V42.length} · {categories.length} {t("categories")}</Text></View><Text style={s.chevron}>{showAchievementInfo?'−':'+'}</Text>
   </Pressable>
   {showAchievementInfo?<View style={s.expanded}>
-    {nextAchievement?<View style={s.nextAchievement}><Text style={s.nextTitle}>{t("Next milestone: {title}",{title:nextAchievement.row.title})}</Text>
+    {nextAchievement?<View style={s.nextAchievement}><Text style={s.nextTitle}>{t("Next milestone: {title}",{title:journalAchievementDisplayTitle(language,nextAchievement.row.title)})}</Text>
       <View style={s.sectionTitle}><Text style={s.sub}>{Math.floor(nextAchievement.progress).toLocaleString(language)} / {nextAchievement.row.target.toLocaleString(language)}</Text><Text style={s.sub}>{Math.min(100,Math.floor(nextAchievement.progress/nextAchievement.row.target*100))}%</Text></View>
-      <View accessibilityRole="progressbar" accessibilityLabel={nextAchievement.row.title} accessibilityValue={{min:0,max:nextAchievement.row.target,now:Math.min(nextAchievement.progress,nextAchievement.row.target)}} style={s.track}><View style={[s.trackFill,{width:`${Math.min(100,Math.max(0,nextAchievement.progress/nextAchievement.row.target*100))}%`}]}/></View>
+      <View accessibilityRole="progressbar" accessibilityLabel={journalAchievementDisplayTitle(language,nextAchievement.row.title)} accessibilityValue={{min:0,max:nextAchievement.row.target,now:Math.min(nextAchievement.progress,nextAchievement.row.target)}} style={s.track}><View style={[s.trackFill,{width:`${Math.min(100,Math.max(0,nextAchievement.progress/nextAchievement.row.target*100))}%`}]}/></View>
       <Text style={s.sub}>{t("Rewards are cosmetic titles rather than power.")}</Text>
     </View>:<Text style={s.nextTitle}>{t("All long-term achievements earned")}</Text>}
   </View>:null}

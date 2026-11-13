@@ -7,6 +7,7 @@ import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/region
 const selected=['KINGS_ROAD','SUNSCAR','FROSTMARCH','ASHLANDS'];
 const preparations=['prepared','optimized'] as const;
 const average=(values:number[])=>values.reduce((sum,value)=>sum+value,0)/values.length;
+const violations:string[]=[];
 const report:Array<{region:string;preparation:string;tankPct:number;supportPct:number;minRolePct:number;damageKillsPerHour:number;roleRates:Record<string,number>}>=[];
 
 assert.equal(CLASSES.length,9,'all playable classes must be represented');
@@ -39,13 +40,13 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(fixture=>selected.includes(fixt
   report.push({region:def.regionName,preparation,tankPct:Number(tankPct.toFixed(3)),supportPct:Number(supportPct.toFixed(3)),minRolePct:Number(Math.min(tankPct,supportPct).toFixed(3)),damageKillsPerHour:Number(reference.toFixed(2)),roleRates});
   // Search time creates a hard floor in overgeared regions. Do not artificially
   // slow one-hit kills to force a perfect role ratio at the search ceiling.
-  assert.ok(tankPct>=.74&&supportPct>=.70,
-   def.regionName+'/'+preparation+' role output fell too far behind Damage: '+JSON.stringify({tankPct,supportPct}));
-  assert.ok(tankPct<=1.15&&supportPct<=1.15,
-   def.regionName+'/'+preparation+' role output overshot Damage: '+JSON.stringify({tankPct,supportPct}));
+  if(tankPct<.80||supportPct<.75||tankPct>1.15||supportPct>1.15)
+   violations.push(def.regionName+'/'+preparation+': '+JSON.stringify({tankPct,supportPct}));
  }
 }
 
 // Class damage and survival still differ: this test only covers ordinary hunt
 // settlement. Boss, dungeon and PvP simulations must not use these bonuses.
-console.log('PASS: nine-class ordinary hunt role parity across prepared/optimized regional gear '+JSON.stringify(report));
+console.log('ROLE_HUNT_PARITY_REPORT '+JSON.stringify(report));
+assert.equal(violations.length,0,'ordinary-hunt role gap outside the safe band: '+violations.join('; '));
+console.log('PASS: nine-class ordinary hunt role parity across prepared/optimized regional gear');

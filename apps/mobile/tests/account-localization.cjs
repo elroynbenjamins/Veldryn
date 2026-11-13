@@ -86,7 +86,7 @@ assert.ok(more.includes("const attentionPriority:MoreDestination[]=['DailySuppli
 // Russian/Turkish coverage for the frequently used dashboard, roster and bonuses.
 // Scan actual call sites so future copy edits cannot silently revert to English.
 let earlyScreenKeys=0;
-for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.tsx','screens/AccountBonusesScreen.tsx']){
+for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.tsx','screens/AccountBonusesScreen.tsx','components/HomeSessionOverview.tsx','components/HomeAdventureHeader.tsx']){
  const source=fs.readFileSync(path.join(root,relative),'utf8');
  const tree=ts.createSourceFile(relative,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(tree.parseDiagnostics.length,0,relative+' parses');
@@ -100,7 +100,8 @@ for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.
     const reviewed=recent??earlyLocaleText(language,english);
     assert.ok(reviewed&&reviewed.trim(),relative+' missing '+language+' for '+english);
     assert.deepEqual(placeholders(reviewed),placeholders(english),relative+' placeholders '+language+' '+english);
-    const output=relative.includes('HomeScreen')?recentScreenText(language,english,params):accountText(language,english,params);
+    const recentScreen=relative==='screens/HomeScreen.tsx'||relative==='components/HomeSessionOverview.tsx'||relative==='components/HomeAdventureHeader.tsx';
+    const output=recentScreen?recentScreenText(language,english,params):accountText(language,english,params);
     assert.ok(output&&output.trim(),relative+' output '+language+' '+english);
     for(const value of Object.values(params))assert.ok(output.includes(value),relative+' interpolation '+language+' '+english);
    }
@@ -110,10 +111,12 @@ for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.
  }
  visit(tree);
 }
-assert.ok(earlyScreenKeys>=75,'dashboard/roster/bonus coverage');
+assert.ok(earlyScreenKeys>=100,'dashboard/roster/bonus/home-card coverage');
 assert.equal(accountText('ru','Delete character only'),'Только удалить персонажа');
 assert.equal(accountText('tr','ACCOUNT SKILL'),'HESAP BEC.');
 assert.equal(recentScreenText('ru','ACTIVITY QUEUE'),'ОЧЕРЕДЬ ЗАНЯТИЙ');
+assert.equal(recentScreenText('tr','Your adventure'),'Maceran');
+assert.equal(recentScreenText('ru','READY NOW'),'ГОТОВО СЕЙЧАС');
 console.log('RU/TR account screen coverage: '+earlyScreenKeys+' authored display calls.');
 
 console.log('Account localization passed: '+keys.length+' keys x 6 languages; '+guides.length+' guides; '+records.length+' records; '+files.length+' owned files; '+displayCalls+' display calls.');

@@ -872,6 +872,27 @@ begin
   -- V23. Simulate a complete second-sale lifecycle using only synthetic
   -- accounts, including cancelled listing, return, relist, pending buyer
   -- claim and a third sale of the SAME immutable exact Forge instance.
+  -- Resale offers share the twenty-open-offer ceiling with normal Market
+  -- listings. Synthetic fake rows exist ONLY within this rollback test.
+  insert into private.market_equipment_resale_offers_v23(
+    exact_instance_id,first_source_hold_id,last_sale_ordinal,
+    seller_account_id,seller_character_id,item_id,source_location,
+    source_index,source_revision,receipt_payload,stack_payload,unit_price)
+  select 'v23-cap-synthetic-'||n,v_hold,1,v_buyer,v_buyer_main::text,
+    v_item,'equipment_pouch',0,13,v_receipt,v_stack,125
+  from generate_series(1,20) n;
+  begin
+    perform private.market_reserve_equipment_resale_v23(
+      v_buyer,13,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
+      'v23-cap-rejected',repeat('0',64));
+    raise exception 'V23 resale bypassed twenty-listing ceiling';
+  exception when raise_exception then
+    if sqlerrm<>'market_offer_limit_reached' then raise;end if;
+  end;
+  delete from private.market_equipment_resale_offers_v23
+    where exact_instance_id like 'v23-cap-synthetic-%';
+  if (select count(*) from private.market_equipment_resale_offers_v23)<>0
+  then raise exception 'V23 synthetic cap test left listings behind';end if;
   v_result:=private.market_reserve_equipment_resale_v23(
     v_buyer,13,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
     'v23-resale-first-reserve',repeat('1',64));

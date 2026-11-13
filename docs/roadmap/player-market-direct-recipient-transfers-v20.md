@@ -13,6 +13,7 @@ This implementation does **not** enable shared-bank staging, item resale, the cl
 New SQL `backend/supabase/migrations/20261113063000_market_direct_recipient_transfer_private_v20.sql` adds:
 
 - Private RLS/revoked ledger `market_equipment_recipient_transfers_v20` with account-scoped idempotency key and SHA-256 request hash, exact Forge instance, source and destination character IDs, storage locations, expected revision and result.
+- The V19 online-snapshot validation trigger is kept in the private schema but changed to `SECURITY DEFINER` (pinned empty search path, no dynamic SQL, no public/service-role EXECUTE grants). This allows ordinary `service_role` online-game saves to invoke the trigger without granting direct read access to the private provenance ledger. The trigger only validates and raises errors; it never exposes account data.
 - Private **security-invoker** function `market_transfer_purchased_equipment_v20(uuid,text,text,text,integer,text,text,bigint,text,text)`. No client, service-role or authenticated grants; hard-false runtime and equipment flags remain.
 - Same account advisory transaction lock as game saves, locked authoritative `online_game_states` revision and locked V19 exact-copy provenance. Replay returns saved result; same key with different arguments/hash is rejected.
 - Revalidates the source's exact held equipment identity, immutable Forge receipt, server-owned existing recipient, and no current equipment/loadout reservation, favorite or locked item.
@@ -28,7 +29,7 @@ A transient test transaction loaded the GitHub V12 browse function (required due
 
 **Passing cases:** eligible cross-character direct transfer, second transfer back, account-owned character/class and XP thresholds, under-level target blocked without moving any stack or receipt, source non-owner blocked, shared Bank destination blocked, full target inventory blocked, saved loadout reservation blocked, same idempotency key replayed exactly once, reused key with different hash blocked, stale revision blocked, preexisting V19 anti-forgery rules preserved, 5% seller tax and sale history unaffected.
 
-A separate transient transaction loaded V18/V19/V20 and validated the V20 ACL/release gates together with the complete V12 resource lifecycle (5% tax, 20 offer cap, minimum lots, cancellation, idempotent purchase).
+A separate transient transaction loaded V18/V19/V20 and validated the V20 ACL/release gates together with the complete V12 resource lifecycle (5% tax, 20 offer cap, minimum lots, cancellation, idempotent purchase). The V20 security suite additionally creates a synthetic account and successfully performs a normal online-game snapshot update as `service_role` under the private V19 integrity trigger, then rolls all changes back.
 
 All transactions concluded in SQL `ROLLBACK`. GitHub Actions' clean PG17 full-stack suite was updated to load **27 migrations** and run V20 security checks. GitHub CI is not represented as passed until its workflows conclude.
 

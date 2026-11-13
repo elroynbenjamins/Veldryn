@@ -12,7 +12,7 @@ const skills=fs.readFileSync(path.join(root,'src/screens/SkillsScreen.tsx'),'utf
 
 // The everyday roster starts with owned companions; discovery remains available.
 assert(read('CompanionIndex.tsx').includes("useState<Scope>('owned')"),'Companion Index must default to owned companions');
-assert(panel.includes("title={t(\"Companion Codex\")}"),'Companion discovery remains available');
+assert(read('CompanionIndex.tsx').includes('onCodex}'),'Companion discovery remains available through the Index header');
 assert(panel.includes("Train equipped companion"),'Equipped companion should have a shortcut to Training');
 
 // Only real server-derived costs/holdings should drive upgrade readiness.

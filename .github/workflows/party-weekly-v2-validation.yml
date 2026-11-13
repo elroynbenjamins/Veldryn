@@ -4,6 +4,8 @@ on:
     paths:
       - 'backend/src/server/party/weekly-party-events-v2.ts'
       - 'backend/src/server/party/weekly-party-boss-v2.ts'
+      - 'backend/src/server/party/weekly-party-boss-replay-v20.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-boss-replay-v20.ts'
       - 'backend/src/server/party/weekly-party-stage-prototype-v3.ts'
       - 'backend/src/server/party/weekly-party-finale-hazards-v6.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-hazards-v6.ts'
@@ -47,6 +49,8 @@ on:
     paths:
       - 'backend/src/server/party/weekly-party-events-v2.ts'
       - 'backend/src/server/party/weekly-party-boss-v2.ts'
+      - 'backend/src/server/party/weekly-party-boss-replay-v20.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-boss-replay-v20.ts'
       - 'backend/src/server/party/weekly-party-stage-prototype-v3.ts'
       - 'backend/src/server/party/weekly-party-finale-hazards-v6.ts'
       - 'backend/src/server/party/__tests__/weekly-party-finale-hazards-v6.ts'

@@ -48,6 +48,7 @@ DECLARE
  now_at timestamptz;
  owner_text text;
  char_text text;
+ selected_revision bigint;
 BEGIN
  -- Locks event first inside V18; the lock remains held until THIS function
  -- finishes its checks. No separate JS call may substitute for this guard.
@@ -76,10 +77,12 @@ BEGIN
   WHERE event_id=p_event AND owner_account_id=owner_text::uuid
    AND character_id=char_text::uuid
   FOR SHARE;
+  IF (selected->>'consentRevision') IS NULL OR
+     (selected->>'consentRevision') !~ '^[0-9]{1,18}$'
+  THEN RAISE EXCEPTION 'WB20_INVALID_CONSENT_REVISION'; END IF;
+  selected_revision:=(selected->>'consentRevision')::bigint;
   IF NOT FOUND OR NOT r.enabled OR
-     r.consent_revision IS DISTINCT FROM
-       CASE WHEN (selected->>'consentRevision') ~ '^[0-9]{1,18}$'
-        THEN (selected->>'consentRevision')::bigint ELSE NULL END OR
+     r.consent_revision IS DISTINCT FROM selected_revision OR
      r.granted_at>now_at OR r.expires_at<=now_at OR
      now_at-r.granted_at>interval '7 days' OR
      NOT EXISTS (

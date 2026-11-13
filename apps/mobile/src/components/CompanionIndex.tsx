@@ -3,7 +3,7 @@ import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-na
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import type {CombatCompanionRole} from '../core/combat-companion-types';
 import type {GameState} from '../core/types';
-import {companionUnlockCompletion,companionUnlockGuidance} from '../core/companion-presentation';
+import {companionNextUnlockTargets,companionUnlockCompletion,companionUnlockGuidance} from '../core/companion-presentation';
 import {companionAvailability} from '../core/companion-runtime';
 import {companionArtSource} from '../theme/companion-art';
 import {companionRarityBorder} from './CompanionPresentation';
@@ -53,9 +53,8 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
    return a.name.localeCompare(b.name);
   });
  },[state,scope,role,query,hiddenIds,language]);
- const candidate=COMBAT_COMPANIONS.filter(def=>!ownedIds.has(def.id)&&!hiddenIds.has(def.id)&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP')
-  .map(def=>({def,progress:companionUnlockCompletion(state,def)}))
-  .sort((a,b)=>b.progress.ratio-a.progress.ratio||a.def.name.localeCompare(b.def.name))[0];
+ const candidate=companionNextUnlockTargets(state,COMBAT_COMPANIONS.length)
+  .find(({def})=>!hiddenIds.has(def.id)&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP');
  const open=(id:string)=>onOpen(id);
  return <View style={s.root}>
   <View style={s.header}>

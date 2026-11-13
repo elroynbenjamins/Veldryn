@@ -173,7 +173,7 @@ function recoverVerifiedEquipmentCrafts(state:GameState):GameState {
   if(current>=500)return state;
   let recorded=0;
   for(const [recipeId,progress] of Object.entries(state.account.professionMasteryByAction??{})){
-    if(companionEquipmentRecipeIds.has(recipeId))recorded+=Math.max(0,Math.floor(progress.points));
+    if(companionEquipmentRecipeIds.has(recipeId)&&Number.isFinite(progress?.points)&&progress.points>0)recorded+=Math.floor(progress.points);
   }
   if(recorded<=current)return state;
   return {...state,account:{...state.account,companionUnlockProgress:{...state.account.companionUnlockProgress,EQUIPMENT_CRAFTS:recorded}}};

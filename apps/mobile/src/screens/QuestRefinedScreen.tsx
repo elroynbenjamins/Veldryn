@@ -88,7 +88,7 @@ function OrderArt({order}:{order:WeeklyOrder}){
  return <ActivityArtwork id={destination.kind==='skills'?destination.skillId??'exploration':'smithing'} size={38}/>;
 }
 function ChallengeArt({quest}:{quest:SeasonalQuest}){
- return <ActivityArtwork id={quest.tag==='boss'||quest.tag==='trial'?'combat':quest.tag==='expedition'||quest.tag==='event'?'exploration':quest.tag==='equipment'||quest.tag==='crafting'||quest.tag==='salvage'||quest.tag==='upgrade'||quest.tag==='high_tier_craft'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={38}/>;
+ return <ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='expedition'||quest.tag==='event'?'exploration':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={38}/>;
 }
 function Rail({items,selected,onChange,C}:{items:{id:string;label:string}[];selected:string;onChange:(value:any)=>void;C:ThemeColors}){
  return <ScrollView horizontal accessibilityRole="tablist" showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.rail}>

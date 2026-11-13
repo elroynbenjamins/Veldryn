@@ -69,8 +69,20 @@ BEGIN
   IF jsonb_array_length(v_result->'entries')<>1
   THEN RAISE EXCEPTION 'WORLD_BOSS_PRIVATE_PROFILE_VISIBLE'; END IF;
 
+  -- Original global ranks stay fixed across privacy filtering.
+  -- The second eligible player remains #2 even with the leader hidden.
   UPDATE public.player_profiles SET profile_visibility='public'
   WHERE account_id=v_two;
+  UPDATE public.player_profiles SET profile_visibility='private'
+  WHERE account_id=v_one;
+  SELECT private.leaderboards_world_boss_event_v1(v_two,v_boss,1,0)
+    INTO v_result;
+  IF jsonb_array_length(v_result->'entries')<>1
+    OR (v_result->'entries'->0->>'rank')::integer<>2
+    OR (v_result->'self'->>'rank')::integer<>2
+  THEN RAISE EXCEPTION 'WORLD_BOSS_GLOBAL_RANK_CHANGED_BY_FILTER'; END IF;
+  UPDATE public.player_profiles SET profile_visibility='public'
+  WHERE account_id=v_one;
   INSERT INTO public.player_blocks(blocker_id,blocked_id)
   VALUES(v_two,v_one) ON CONFLICT DO NOTHING;
   SELECT private.leaderboards_world_boss_event_v1(v_one,v_boss,51,0)

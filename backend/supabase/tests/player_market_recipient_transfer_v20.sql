@@ -52,4 +52,40 @@ begin
  end;
 end
 $market_v20$;
+
+-- Simulate an ordinary backend online-game save made as service_role, with
+-- zero Market items. It must not lose access to private V19 provenance when
+-- the global snapshot-integrity trigger fires.
+do $market_v20_prepare_role$
+declare
+  v_account uuid:=gen_random_uuid();
+  v_character uuid:=gen_random_uuid();
+begin
+  perform pg_catalog.set_config('market.v20_test_account',v_account::text,true);
+  insert into auth.users(id,email)
+    values(v_account,'v20-probe-'||v_account::text||'@example.invalid');
+  insert into public.characters(id,account_id,name,class_id,gold)
+    values(v_character,v_account,'TransferProbe','BASTION',1);
+  insert into public.online_game_states(account_id,character_id,revision,state)
+  values(v_account,v_character,0,pg_catalog.jsonb_build_object(
+    'character',pg_catalog.jsonb_build_object(
+      'id',v_character::text,'xp',0,'classId','BASTION','gold',1),
+    'account',pg_catalog.jsonb_build_object(
+      'craftedGearInstances','[]'::jsonb),
+    'inventory',pg_catalog.jsonb_build_object(
+      'capacity',5,'stacks','[]'::jsonb),
+    'otherCharacters','[]'::jsonb));
+end
+$market_v20_prepare_role$;
+set local role service_role;
+do $market_v20_role_save$
+begin
+  update public.online_game_states set state=state
+    where account_id=pg_catalog.current_setting('market.v20_test_account')::uuid;
+  if not found then
+    raise exception 'market_v20_service_role_online_save_not_permitted';
+  end if;
+end
+$market_v20_role_save$;
+reset role;
 rollback;

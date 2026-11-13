@@ -345,6 +345,6 @@ begin
    or v_result->>'choice'<>'safe_pass'
    or v_result->>'reason'<>'timeout'
  then raise exception 'v17 6h deterministic fallback wrong';end if;
-end $;
+end $$;
 select 'PASS: v17 sealed 3-category orders, 2-vote majority and stage1->2->3 exact-once; no finale settlement' as result;
 rollback;

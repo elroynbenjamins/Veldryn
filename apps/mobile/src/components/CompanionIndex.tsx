@@ -100,7 +100,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
      <Text numberOfLines={2} style={s.caption}>{subtitle}</Text>
      {achievement?<View style={s.progressRail}><View style={[s.progressFill,{width:`${Math.max(0,Math.min(100,percent))}%`}]} /></View>:null}
      {achievement?<Text style={s.progressText}>{achievement.completeCount}/{achievement.totalCount} {t('requirements')} · {percent}%</Text>:null}
-     {equipped?<Text style={s.ownedStatus}>{t('EQUIPPED')}</Text>:owned&&status?<Text style={s.ownedStatus}>{status}</Text>:null}
+     {equipped?<Text style={s.ownedStatus}>{t('EQUIPPED')}</Text>:owned&&status?<Text style={s.ownedStatus}>{companionContent(language,status)}</Text>:null}
     </View>
     <Text style={s.chevron}>›</Text>
    </Pressable>;

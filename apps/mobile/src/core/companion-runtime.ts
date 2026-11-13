@@ -5,7 +5,7 @@ import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanion
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
-import {GATHERING} from '../content/skills';
+import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {simulateCombat} from '../../../../backend/src/server/combat/engine';
 import {startCompanionTrial,resolveCompanionTrialFloor,abandonCompanionTrial,claimMonthlyCompanionChallenge} from '../../../../backend/src/server/companions/trials';
@@ -164,8 +164,22 @@ export function reconcileCompanionDiscoveries(state:GameState):GameState{
   if(nextIds.length===(current.discoveredCompanionIds??[]).length&&nextIds.every(id=>(current.discoveredCompanionIds??[]).includes(id)))return state;
   return {...state,account:{...state.account,companionPhase2Profile:{...current,discoveredCompanionIds:nextIds}}};
 }
+const companionEquipmentRecipeIds=new Set(RECIPES.filter(recipe=>itemDef(recipe.output.itemId).type==='gear').map(recipe=>recipe.id));
+/** Older forge claims already created trusted per-recipe mastery records, but did
+ * not increment the recruitment counter. Recover only verifiable gear crafts.
+ * Max (not sum) prevents double counting crafts already tracked by the unlock. */
+function recoverVerifiedEquipmentCrafts(state:GameState):GameState {
+  const current=state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS??0;
+  if(current>=500)return state;
+  let recorded=0;
+  for(const [recipeId,progress] of Object.entries(state.account.professionMasteryByAction??{})){
+    if(companionEquipmentRecipeIds.has(recipeId)&&Number.isFinite(progress?.points)&&progress.points>0)recorded+=Math.floor(progress.points);
+  }
+  if(recorded<=current)return state;
+  return {...state,account:{...state.account,companionUnlockProgress:{...state.account.companionUnlockProgress,EQUIPMENT_CRAFTS:recorded}}};
+}
 export function refreshCompanions(state:GameState,now:number):GameState {
-  let next=reconcileCombatCompanionUnlocks(state,now);
+  let next=reconcileCombatCompanionUnlocks(recoverVerifiedEquipmentCrafts(state),now);
   next={...next,account:{...next.account,companionSchemaVersion:1,companionAssignments:rolloverCompanionAssignmentStatuses(next.account.companionAssignments??[],now),companionTrialProgress:projectCompanionTrial(next.account.companionTrialProgress,now).progress,companionProvingGround:projectCompanionProvingGrounds(next.account.companionProvingGround,now).state}};
   return reconcileCompanionDiscoveries(next);
 }

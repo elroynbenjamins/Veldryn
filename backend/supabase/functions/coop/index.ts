@@ -45017,6 +45017,7 @@ function companionOwned(state) {
     return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp) }]] : [];
   }));
 }
+var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));
 function assertCompanionIdle(state, id) {
   if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }

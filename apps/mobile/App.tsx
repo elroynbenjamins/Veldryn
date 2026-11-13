@@ -140,6 +140,7 @@ import {retireGoalPlanner} from './src/core/retired-goal-planner';
 import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
 import {dailySuppliesStatus} from './src/core/daily-supplies';
 import {weeklyOrderDestination,weeklyOrderIdleRule,weeklyOrderIdleRuleId,weeklyOrderQueueActivity} from './src/core/weekly-order-integrations-v41';
+import {weeklyOrderQuickStartPlan} from './src/core/weekly-order-quick-start';
 import type {WeeklyOrder} from './src/core/weekly-orders-v41';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 import {fetchActiveEventRuntime} from './src/online/live-events';
@@ -232,6 +233,7 @@ function VeldrynApp(){
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
   const [forgeClaimFeedback,setForgeClaimFeedback]=useState<{message:string;tone:'success'|'warning'}|null>(null);
   const forgeClaimAllInFlight=useRef(false);
+  const contractQuickStartInFlight=useRef(false);
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
   const [preparationNotices,setPreparationNotices]=useState<RecipePreparationTransitionNotice[]>([]);
@@ -697,7 +699,47 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     catch(error){showAlert('Action queue',error instanceof Error?error.message:'Please try again.');return false;}
   }
   function openQuestMode(mode:QuestMode,focusedOrderId?:string){const current=stateRef.current;if(mode==='contracts'&&current&&!earlyFeatureUnlocked(current,'contracts')){showAlert('Contract Board locked','Complete Into Ironwood to unlock regional and weekly Contracts.');return;}setQuestMode(mode);setQuestFocusOrderId(mode==='contracts'?focusedOrderId:undefined);setTab('Quests');}
-  function openWeeklyOrder(order:WeeklyOrder){openWorkingTowardDestination(weeklyOrderDestination(order));}
+  async function openWeeklyOrder(order:WeeklyOrder){
+    const current=stateRef.current;
+    if(!current||contractQuickStartInFlight.current)return;
+    const plan=weeklyOrderQuickStartPlan(current,order);
+    // Boss fights, regional problems and crafted work keep their existing manual route.
+    if(plan.status==='manual'){openWorkingTowardDestination(weeklyOrderDestination(order));return;}
+    if(plan.status==='blocked'){showAlert('Contract unavailable',plan.reason);return;}
+    contractQuickStartInFlight.current=true;
+    try{
+      if(plan.needsTravel){
+        // Complete travel first; never submit an activity start to an unconfirmed region.
+        if(serverGameplayEnabled){
+          if(!await perform({type:'travel',args:{id:plan.regionId}}))return;
+        }else{
+          const travelled=travelToRegion(current,plan.regionId,Date.now());
+          await commit(travelled.state);
+        }
+      }
+      const arrived=stateRef.current;
+      if(!arrived)return;
+      const start=weeklyOrderQuickStartPlan(arrived,order);
+      if(start.status!=='ready'||start.needsTravel){
+        showAlert('Contract unavailable',start.status==='blocked'?start.reason:'Unable to reach the contract activity.');
+        return;
+      }
+      const running=arrived.activity?.targetId===start.targetId
+        &&(start.kind==='combat'?arrived.activity.kind==='combat':['mining','woodcutting','fishing','herbalism'].includes(arrived.activity.kind));
+      if(!running){
+        if(serverGameplayEnabled){
+          if(!await perform({type:'start',args:{kind:start.kind,id:start.targetId}},false))return;
+        }else{
+          const launched=transitionActivity(arrived,Date.now(),{kind:start.kind,id:start.targetId});
+          await commit(launched.state);
+        }
+      }
+      // Land on the exact enemy or gathering node, with its activity already running.
+      openGoalAtCurrentRegion(weeklyOrderDestination(order));
+    }catch(error){
+      showAlert('Cannot start contract',error instanceof Error?error.message:'Please try again.');
+    }finally{contractQuickStartInFlight.current=false;}
+  }
   function queueWeeklyOrder(order:WeeklyOrder){
     const queued=weeklyOrderQueueActivity(order);
     if(!queued){showAlert('Action queue','This job needs manual actions and cannot be queued as one activity.');return;}

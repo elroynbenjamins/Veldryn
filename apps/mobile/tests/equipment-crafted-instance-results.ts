@@ -125,35 +125,35 @@ ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one 
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
 ok(auditCraftedGearOwnership(state).consistent,'New Forge claims must physically link both distinct equipment copies to their authoritative instance records');
 ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count account owned copies');
-const copiesAtCap=Array.from({length:7},(_,i)=>({
-  ...craftedGearInstances(state)[0],id:`fixture-seventh:${i}`,sourceReceiptKey:`fixture-seventh:${i}`,rarity:'mythic' as const,quality:100,locked:false,
+const copiesAtCap=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,i)=>({
+  ...craftedGearInstances(state)[0],id:`fixture-cap:${i}`,sourceReceiptKey:`fixture-cap:${i}`,rarity:'mythic' as const,quality:100,locked:false,
 }));
 const cappedInventory={...state.inventory,stacks:[
   ...state.inventory.stacks.filter(row=>row.itemId!==recipe.output.itemId),
   ...copiesAtCap.map(row=>({itemId:row.itemId,quantity:1,instanceId:row.id})),
 ]};
 const cappedSeed={...state,inventory:cappedInventory,account:{...state.account,craftedGearInstances:copiesAtCap,craftedGearAutoSellMode:'off' as const}};
-ok(auditCraftedGearOwnership(cappedSeed).consistent,'Seven physical tagged copies must be correctly linked before mass-crafting settlement');
+ok(auditCraftedGearOwnership(cappedSeed).consistent,'All 25 physical tagged copies must be correctly linked before mass-crafting settlement');
 const cappedStart=startEquipmentCraft(cappedSeed,recipe.id,job.completesAtMs+10000).state;
 const cappedJob=equipmentCraftingQueue(cappedStart)[0];
-let sevenLimitRefused=false;try{claimEquipmentCraft(cappedStart,cappedJob.id,cappedJob.completesAtMs,.5)}catch(error){sevenLimitRefused=error instanceof Error&&error.message.includes('copy limit')}
-ok(sevenLimitRefused,'Without opt-in, an eighth Forge copy must be held ready, never placed over the seven-copy cap');
+let copyLimitRefused=false;try{claimEquipmentCraft(cappedStart,cappedJob.id,cappedJob.completesAtMs,.5)}catch(error){copyLimitRefused=error instanceof Error&&error.message.includes('copy limit')}
+ok(copyLimitRefused,'Without opt-in, a 26th Forge copy must be held ready, never placed over the 25-copy cap');
 const opted=executeGameCommand(cappedStart,{type:'gear_autosell',args:{enabled:true}},cappedJob.completesAtMs-100).state;
 const beforeAutoGold=opted.character!.gold;
 const autoWeak=claimEquipmentCraft(opted,cappedJob.id,cappedJob.completesAtMs,.5);
-ok(autoWeak.result.autoSold==='incoming','Weaker eighth Forge copy should auto-vendor itself after explicit opt-in');
+ok(autoWeak.result.autoSold==='incoming','Weaker 26th Forge copy should auto-vendor itself after explicit opt-in');
 ok(autoWeak.state.character!.gold-beforeAutoGold===itemDef(recipe.output.itemId).value,'Selling weaker incoming gear must credit exactly its vendor Gold');
-ok(craftedGearCopyCapacity(autoWeak.state,recipe.output.itemId).count===7&&
-  auditCraftedGearOwnership(autoWeak.state).consistent,'Auto-vendoring a weak new copy must preserve the seven existing tagged physical items');
+ok(craftedGearCopyCapacity(autoWeak.state,recipe.output.itemId).count===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM&&
+  auditCraftedGearOwnership(autoWeak.state).consistent,'Auto-vendoring a weak new copy must preserve the 25 existing tagged physical items');
 ok(!equipmentCraftingQueue(autoWeak.state).some(row=>row.id===cappedJob.id),'Auto-vendored Forge jobs must complete and not claim twice');
 let autoReplayRejected=false;try{claimEquipmentCraft(autoWeak.state,cappedJob.id,cappedJob.completesAtMs,.5)}catch{autoReplayRejected=true}
 ok(autoReplayRejected,'Replaying auto-sale must never grant Gold twice');
 const replaceCopies=copiesAtCap.map(row=>({...row,rarity:'common' as const,quality:0}));
-const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_seven' as const}};
+const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_25' as const}};
 const upgradeStarted=startEquipmentCraft(upgradeSeed,recipe.id,job.completesAtMs+12000).state;
 const upgradeJob=equipmentCraftingQueue(upgradeStarted)[0];
 const upgraded=claimEquipmentCraft(upgradeStarted,upgradeJob.id,upgradeJob.completesAtMs,.002);
-ok(upgraded.result.autoSold==='existing'&&upgraded.state.account.craftedGearInstances?.length===7,'A stronger new Forge roll must replace one exact eligible existing copy');
+ok(upgraded.result.autoSold==='existing'&&upgraded.state.account.craftedGearInstances?.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,'A stronger new Forge roll must replace one exact eligible existing copy');
 ok(auditCraftedGearOwnership(upgraded.state).consistent,'Automatic replacement must not orphan, duplicate or silently erase another copy');
 ok(upgraded.state.inventory.stacks.some(row=>row.instanceId===upgraded.result.instanceId),'Better newly forged equipment must be physically delivered with its own exact instance ID');
 const protectedCopies=replaceCopies.map(row=>({...row,locked:true}));
@@ -170,7 +170,7 @@ ok(orphanAudit.minimumUnlocatedInstanceCount>=1,'Removing stack evidence must su
 const otherCharacterId='account-alt',otherCharacterAudit=craftedGearLegacyOwnershipAudit({...state,otherCharacters:[{character:{...state.character!,id:otherCharacterId,equipment:{weapon:recipe.output.itemId}},inventory:{stacks:[],capacity:10},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:state.skills,quests:state.quests,currentRegionId:'Greenfields'}]},recipe.output.itemId);
 ok(otherCharacterAudit.equippedCopies>=1&&otherCharacterAudit.physicalCopies===physicalAudit.physicalCopies+1,'Legacy audit must count equipment worn by an alternate account character');
 const accountWithExtraGear={...state,otherCharacters:[{character:{...state.character!,id:otherCharacterId,equipment:{weapon:recipe.output.itemId}},inventory:{stacks:[],capacity:10},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:state.skills,quests:state.quests,currentRegionId:'Greenfields'}]};
-ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).count===3,'Seven-copy projection must count legacy physical gear not yet linked to a Forge instance');
+ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).count===3,'25-copy projection must count legacy physical gear not yet linked to a Forge instance');
 ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).verified===false,'Legacy stock-count agreement must not be mistaken for verified item identity');
 
 
@@ -368,65 +368,65 @@ ok(safelyBlocked.claimed.length===0&&safelyBlocked.blocked.length===1,'Mass clai
 ok(equipmentCraftingQueue(safelyBlocked.state).map(row=>row.id).join(',')===beforeQueueIds.join(','),'A blocked Forge receipt must remain ready to claim after freeing space');
 ok(craftedGearInstances(safelyBlocked.state).length===oversized.length,'Mass-claim storage failure must never evict equipment');
 
-ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===7,'Players must be able to keep seven copies of each base equipment item');
+ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===25,'Players must be able to keep 25 copies of each base equipment item');
 const copyTemplate=craftedGearInstances(state)[0];
-const sevenCopies=Array.from({length:7},(_,i)=>({
-  instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*10},
+const atLimitCopies=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,i)=>({
+  instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*3},
   location:'inventory' as const,holderCharacterId:state.character!.id,ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
 }));
 const incomingLow={...copyTemplate,id:'new-low',quality:0,rarity:'common' as const};
 const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
-ok(planCraftedGearRetention(sevenCopies.slice(0,6),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below seven, even when auto-sell is disabled');
-ok(planCraftedGearRetention(sevenCopies.slice(0,6).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
-ok(planCraftedGearRetention(sevenCopies,incomingHigh,'off').action==='manual_review','Mass craft auto-sell must be opt-in, never default');
-const lowDecision=planCraftedGearRetention(sevenCopies,incomingLow,'keep_best_seven');
-ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all seven originals');
-const highDecision=planCraftedGearRetention(sevenCopies,incomingHigh,'keep_best_seven');
+ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below 25, even when auto-sell is disabled');
+ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_25').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
+ok(planCraftedGearRetention(atLimitCopies,incomingHigh,'off').action==='manual_review','Mass craft auto-sell must be opt-in, never default');
+const lowDecision=planCraftedGearRetention(atLimitCopies,incomingLow,'keep_best_25');
+ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all 25 originals');
+const highDecision=planCraftedGearRetention(atLimitCopies,incomingHigh,'keep_best_25');
 ok(highDecision.action==='sell_existing'&&highDecision.instanceId==='quality-0','A better new roll should replace the weakest unprotected copy');
-ok(compareCraftedGearRetentionPower(incomingHigh,sevenCopies[6].instance)>0,'High-quality Epic should beat mid-quality Common on actual stat multiplier');
+ok(compareCraftedGearRetentionPower(incomingHigh,atLimitCopies[6].instance)>0,'High-quality Epic should beat mid-quality Common on actual stat multiplier');
 ok(compareCraftedGearRetentionPower({...incomingLow,quality:100,rarity:'common'}, {...incomingLow,id:'low-uncommon',quality:0,rarity:'uncommon'})>0,
   'Expanded quality range can outweigh a minor rarity upgrade; auto-retention must compare actual stats');
-const tieDecision=planCraftedGearRetention(sevenCopies,{...sevenCopies[0].instance,id:'equal-new'},'keep_best_seven');
+const tieDecision=planCraftedGearRetention(atLimitCopies,{...atLimitCopies[0].instance,id:'equal-new'},'keep_best_25');
 ok(tieDecision.action==='sell_incoming','Equal-strength rolls must keep the older existing equipment');
-const partlyProtected=sevenCopies.map((entry,i)=>({...entry,locked:i===0}));
-const protectedDecision=planCraftedGearRetention(partlyProtected,incomingHigh,'keep_best_seven');
+const partlyProtected=atLimitCopies.map((entry,i)=>({...entry,locked:i===0}));
+const protectedDecision=planCraftedGearRetention(partlyProtected,incomingHigh,'keep_best_25');
 ok(protectedDecision.action==='sell_existing'&&protectedDecision.instanceId==='quality-1','Auto-sell must skip locked copies and target the next-lowest eligible item');
-const protectedUpgrade=planCraftedGearRetention(partlyProtected,{...incomingLow,quality:15},'keep_best_seven');
+const protectedUpgrade=planCraftedGearRetention(partlyProtected,{...incomingLow,quality:11},'keep_best_25');
 ok(protectedUpgrade.action==='manual_review','A new roll stronger than the weakest protected copy must not be auto-sold just because weaker eligible copies do not exist');
-const allProtected=sevenCopies.map(entry=>({...entry,locked:true}));
-const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_seven');
+const allProtected=atLimitCopies.map(entry=>({...entry,locked:true}));
+const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_25');
 ok(blockedDecision.action==='manual_review'&&blockedDecision.reason==='no_eligible_copy','Do not sell valuable new results if all existing copies are protected');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],ownershipVerified:undefined}),'Ownership must be independently verified before auto-sale');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],protectionsVerified:undefined}),'Missing protection verification must fail closed');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],locked:undefined}),'Missing lock state must fail closed');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],favorite:undefined}),'Missing favorite state must fail closed');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:undefined}),'Missing loadout state must fail closed');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],holderCharacterId:undefined}),'Unknown current inventory holder must prevent sale and misrouted Gold');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'equipped'}),'Equipped copies must never be auto-sold');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'unknown'}),'Legacy ambiguous storage must never be auto-sold');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:true}),'Saved loadout copies must never be auto-sold');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,locked:true}}),'Persisted per-instance locks must override an otherwise eligible auto-sale snapshot');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],favorite:true}),'Favorite copies must never be auto-sold');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,enhancement:{...sevenCopies[0].instance.enhancement,rank:1}}}),'Enhanced equipment must never be auto-sold');
-ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,enhancement:{...sevenCopies[0].instance.enhancement,effectGemId:'SWIFT_SIGIL'}}}),'Socketed equipment must never be auto-sold');
-ok(planCraftedGearRetention([...sevenCopies,sevenCopies[0]],incomingHigh,'keep_best_seven').action==='manual_review','Pre-existing over-limit records must require manual review instead of eviction');
-ok(planCraftedGearRetention(sevenCopies.map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='manual_review','Legacy unrolled quality must not be silently ranked or deleted');
-ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:'keep_best_seven'}} as any).account.craftedGearAutoSellMode==='keep_best_seven','Explicit Keep Best Seven preference must survive save normalization');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],ownershipVerified:undefined}),'Ownership must be independently verified before auto-sale');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],protectionsVerified:undefined}),'Missing protection verification must fail closed');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],locked:undefined}),'Missing lock state must fail closed');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],favorite:undefined}),'Missing favorite state must fail closed');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],savedLoadout:undefined}),'Missing loadout state must fail closed');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],holderCharacterId:undefined}),'Unknown current inventory holder must prevent sale and misrouted Gold');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],location:'equipped'}),'Equipped copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],location:'unknown'}),'Legacy ambiguous storage must never be auto-sold');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],savedLoadout:true}),'Saved loadout copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],instance:{...atLimitCopies[0].instance,locked:true}}),'Persisted per-instance locks must override an otherwise eligible auto-sale snapshot');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],favorite:true}),'Favorite copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],instance:{...atLimitCopies[0].instance,enhancement:{...atLimitCopies[0].instance.enhancement,rank:1}}}),'Enhanced equipment must never be auto-sold');
+ok(!craftedGearCanAutoSell({...atLimitCopies[0],instance:{...atLimitCopies[0].instance,enhancement:{...atLimitCopies[0].instance.enhancement,effectGemId:'SWIFT_SIGIL'}}}),'Socketed equipment must never be auto-sold');
+ok(planCraftedGearRetention([...atLimitCopies,atLimitCopies[0]],incomingHigh,'keep_best_25').action==='manual_review','Pre-existing over-limit records must require manual review instead of eviction');
+ok(planCraftedGearRetention(atLimitCopies.map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_25').action==='manual_review','Legacy unrolled quality must not be silently ranked or deleted');
+ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:'keep_best_25'}} as any).account.craftedGearAutoSellMode==='keep_best_25','Explicit Keep Best legacy preference must survive save normalization');
 ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:undefined}} as any).account.craftedGearAutoSellMode==='off','Older saves must default to auto-sell off');
 
-const settlementInput={existing:sevenCopies,incoming:incomingHigh,incomingStorage:'inventory' as const,incomingHolderCharacterId:state.character!.id,mode:'keep_best_seven' as const,committedReceiptKeys:[] as string[]};
+const settlementInput={existing:atLimitCopies,incoming:incomingHigh,incomingStorage:'inventory' as const,incomingHolderCharacterId:state.character!.id,mode:'keep_best_25' as const,committedReceiptKeys:[] as string[]};
 const proposedUpgrade=proposeCraftedGearSettlement(settlementInput);
-ok(proposedUpgrade.status==='ready'&&proposedUpgrade.instances.length===7,'Prepared settlement must preserve seven copies without mutating state');
+ok(proposedUpgrade.status==='ready'&&proposedUpgrade.instances.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,'Prepared settlement must preserve 25 copies without mutating state');
 ok(proposedUpgrade.status==='ready'&&proposedUpgrade.receipt.soldInstanceId==='quality-0'&&proposedUpgrade.receipt.action==='sell_existing','Prepared Forge proposal must select the exact weakest instance');
 ok(proposedUpgrade.status==='ready'&&proposedUpgrade.receipt.credit?.destination==='character'&&proposedUpgrade.receipt.credit?.characterId===state.character!.id,'Proposed vendor Gold must target the current verified item holder');
-ok(sevenCopies[0].instance.id==='quality-0'&&sevenCopies.length===7,'Preparing settlement must not mutate originals');
-const bankProposal=proposeCraftedGearSettlement({...settlementInput,existing:sevenCopies.map((entry,i)=>i===0?{...entry,location:'bank' as const,holderCharacterId:undefined}:entry)});
+ok(atLimitCopies[0].instance.id==='quality-0'&&atLimitCopies.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,'Preparing settlement must not mutate originals');
+const bankProposal=proposeCraftedGearSettlement({...settlementInput,existing:atLimitCopies.map((entry,i)=>i===0?{...entry,location:'bank' as const,holderCharacterId:undefined}:entry)});
 ok(bankProposal.status==='ready'&&bankProposal.receipt.credit?.destination==='bank','Selling a Bank-owned exact instance must credit Bank Gold');
 const incomingBankProposal=proposeCraftedGearSettlement({...settlementInput,incoming:incomingLow,incomingStorage:'bank',incomingHolderCharacterId:undefined});
 ok(incomingBankProposal.status==='ready'&&incomingBankProposal.receipt.action==='sell_incoming'&&incomingBankProposal.receipt.credit?.destination==='bank','A weak freshly forged Bank-bound copy should sell itself into Bank Gold');
 const manualProposal=proposeCraftedGearSettlement({...settlementInput,mode:'off'});
-ok(manualProposal.status==='blocked'&&manualProposal.instances.length===7,'Auto-sell off must prepare no disposal and retain original ownership');
-const unverifiedProposal=proposeCraftedGearSettlement({...settlementInput,existing:sevenCopies.map(entry=>({...entry,ownershipVerified:undefined}))});
+ok(manualProposal.status==='blocked'&&manualProposal.instances.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,'Auto-sell off must prepare no disposal and retain original ownership');
+const unverifiedProposal=proposeCraftedGearSettlement({...settlementInput,existing:atLimitCopies.map(entry=>({...entry,ownershipVerified:undefined}))});
 ok(unverifiedProposal.status==='blocked','Missing ownership proof must block an existing-copy replacement proposal');
 let duplicateReceiptDenied=false;
 try{proposeCraftedGearSettlement({...settlementInput,committedReceiptKeys:[incomingHigh.sourceReceiptKey]})}
@@ -438,4 +438,4 @@ catch(error){absentHolderDenied=error instanceof Error&&error.message.includes('
 ok(absentHolderDenied,'Proposed seller must not guess the incoming inventory Gold recipient');
 
 
-console.log('PASS: Forge rarity, unique quality, seven-copy policy, opt-in retention plan and no-loss bounds are covered');
+console.log('PASS: Forge rarity, unique quality, 25-copy policy, opt-in retention plan and no-loss bounds are covered');

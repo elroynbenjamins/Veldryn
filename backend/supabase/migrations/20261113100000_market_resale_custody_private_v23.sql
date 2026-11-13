@@ -47,6 +47,96 @@ alter table private.market_equipment_resale_offers_v23 enable row level security
 revoke all on private.market_equipment_resale_offers_v23
  from public,anon,authenticated,service_role;
 
+-- The first sale stays in V22. These rows append later successful sales
+-- without weakening the old lifetime-unique original escrow indexes.
+create table private.market_equipment_resale_chain_v23 (
+ resale_id uuid primary key references private.market_equipment_resale_offers_v23(resale_id)
+   on delete restrict,
+ first_source_hold_id uuid not null references
+   private.market_equipment_sale_chain_v22(source_hold_id) on delete restrict,
+ previous_resale_id uuid references
+   private.market_equipment_resale_chain_v23(resale_id) on delete restrict,
+ sale_ordinal integer not null check(sale_ordinal between 2 and 100),
+ exact_instance_id text not null check(length(exact_instance_id) between 1 and 180),
+ seller_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
+ buyer_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
+ buyer_character_id uuid not null,
+ item_id text not null,
+ receipt_payload jsonb not null check(pg_catalog.jsonb_typeof(receipt_payload)='object'),
+ gross_gold bigint not null check(gross_gold between 1 and 1000000000000000),
+ fee_gold bigint not null check(fee_gold between 1 and 999999999999999),
+ seller_payout_gold bigint not null check(seller_payout_gold>0),
+ recorded_at timestamptz not null default now(),
+ unique(exact_instance_id,sale_ordinal),
+ unique(previous_resale_id),
+ check(gross_gold=fee_gold+seller_payout_gold and seller_account_id<>buyer_account_id),
+ check((sale_ordinal=2 and previous_resale_id is null) or
+       (sale_ordinal>2 and previous_resale_id is not null))
+);
+create index market_resale_chain_by_instance_v23
+ on private.market_equipment_resale_chain_v23(exact_instance_id,sale_ordinal desc);
+alter table private.market_equipment_resale_chain_v23 enable row level security;
+revoke all on private.market_equipment_resale_chain_v23
+ from public,anon,authenticated,service_role;
+
+create table private.market_equipment_resale_deliveries_v23 (
+ delivery_id uuid primary key default pg_catalog.gen_random_uuid(),
+ resale_id uuid not null unique references
+   private.market_equipment_resale_offers_v23(resale_id) on delete restrict,
+ exact_instance_id text not null,
+ item_id text not null,
+ buyer_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
+ seller_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
+ buyer_character_id uuid not null,
+ stack_payload jsonb not null check(pg_catalog.jsonb_typeof(stack_payload)='object'),
+ receipt_payload jsonb not null check(pg_catalog.jsonb_typeof(receipt_payload)='object'),
+ status text not null default 'pending' check(status in ('pending','claimed')),
+ created_at timestamptz not null default now(),
+ claimed_at timestamptz,
+ destination_character_id text,
+ constraint market_resale_delivery_state_v23 check(
+  (status='pending' and claimed_at is null and destination_character_id is null)
+  or (status='claimed' and claimed_at is not null and destination_character_id is not null))
+);
+alter table private.market_equipment_resale_deliveries_v23 enable row level security;
+revoke all on private.market_equipment_resale_deliveries_v23
+ from public,anon,authenticated,service_role;
+
+create table private.market_resale_gold_intents_v23 (
+ resale_id uuid primary key references private.market_equipment_resale_offers_v23(resale_id)
+   on delete restrict,
+ buyer_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
+ seller_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
+ buyer_character_id uuid not null,
+ seller_character_id uuid not null,
+ gross_gold bigint not null check(gross_gold between 1 and 1000000000000000),
+ fee_gold bigint not null check(fee_gold>0),
+ seller_payout_gold bigint not null check(seller_payout_gold>0),
+ created_at timestamptz not null default now(),
+ check(gross_gold=fee_gold+seller_payout_gold),
+ check(buyer_account_id<>seller_account_id)
+);
+alter table private.market_resale_gold_intents_v23 enable row level security;
+revoke all on private.market_resale_gold_intents_v23
+ from public,anon,authenticated,service_role;
+
+-- Historical chain and settlement/delivery receipts are append-only.
+create function private.market_block_resale_audit_mutation_v23()
+returns trigger language plpgsql volatile security invoker set search_path=''
+as $resale_audit_nochange$
+begin
+ raise exception 'market_resale_audit_immutable';
+end;
+$resale_audit_nochange$;
+revoke all on function private.market_block_resale_audit_mutation_v23()
+ from public,anon,authenticated,service_role;
+create trigger market_resale_chain_immutable_v23
+ before update or delete on private.market_equipment_resale_chain_v23
+ for each row execute function private.market_block_resale_audit_mutation_v23();
+create trigger market_resale_gold_immutable_v23
+ before update or delete on private.market_resale_gold_intents_v23
+ for each row execute function private.market_block_resale_audit_mutation_v23();
+
 create table private.market_resale_action_receipts_v23 (
  actor_account_id uuid not null references public.online_game_states(account_id) on delete restrict,
  idempotency_key text not null check(idempotency_key ~ '^[A-Za-z0-9_-]{8,128}$'),

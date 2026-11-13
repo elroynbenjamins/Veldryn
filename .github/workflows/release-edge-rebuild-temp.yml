@@ -1,0 +1,59 @@
+name: Temporary release Edge parity rebuild
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    paths:
+      - 'apps/mobile/src/content/equipment-recipes-v33.ts'
+      - '.github/workflows/release-edge-rebuild-temp.yml'
+concurrency:
+  group: release-edge-rebuild-temp-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  rebuild:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'release/mobile-ci-baseline-20261113' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild generated gameplay and co-op artifacts only, no deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin "refs/heads/${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}"
+            git reset --hard "refs/remotes/origin/${GITHUB_HEAD_REF}"
+            pnpm --dir backend build:online
+            node tools/verify-gameplay-edge.mjs
+            git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+            if git diff --cached --quiet; then
+              echo "Gameplay/co-op artifacts already match shared source."
+              exit 0
+            fi
+            git commit -m "build(release): regenerate Edge bundles for T5 crafting parity"
+            if git push origin "HEAD:${GITHUB_HEAD_REF}"; then
+              echo "Committed build artifacts to release draft only."
+              exit 0
+            fi
+            echo "PR head advanced, retrying from newest sources."
+          done
+          echo "Failed to safely synchronize generated artifacts." >&2
+          exit 1

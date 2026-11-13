@@ -650,6 +650,19 @@ export const recentScreenTranslationRows = {
   "Fill the regional collection book": ["Regionales Sammelbuch vervollständigen","Completar el libro de colecciones regional","Vul het regionale verzamelboek","Completa il registro della collezione regionale","Compléter le registre de collection régional","Заполнить коллекционную книгу региона","Bölgesel koleksiyon defterini tamamla"],
   "Advance regional boss mastery": ["Regionale Bossmeisterschaft steigern","Mejorar la maestría de jefes regionales","Verbeter regionale baasbeheersing","Aumenta la maestria dei boss regionali","Améliorer la maîtrise des boss régionaux","Повысить мастерство сражений с боссами региона","Bölgesel boss ustalığını geliştir"],
   "Region complete": ["Region abgeschlossen","Región completada","Regio voltooid","Regione completata","Région terminée","Регион завершён","Bölge tamamlandı"],
+  "Combatant": ["Kämpfer","Combatiente","Strijder","Combattente","Combattant","Боец","Savaşçı"],
+  "Well-Rounded": ["Vielseitig","Polivalente","Allrounder","Versatile","Polyvalent","Универсал","Çok yönlü"],
+  "Artisan": ["Handwerker","Artesano","Ambachtsman","Artigiano","Artisan","Ремесленник","Zanaatkâr"],
+  "Mastery Hall": ["Meisterschaftshalle","Salón de maestría","Meesterschapshal","Sala della maestria","Hall de maîtrise","Зал мастерства","Ustalık Salonu"],
+  "Pathfinder": ["Pfadfinder","Explorador","Padvinder","Esploratore","Éclaireur","Следопыт","İz bulucu"],
+  "Delver": ["Tiefenforscher","Explorador de profundidades","Diepteverkenner","Esploratore di profondità","Explorateur des profondeurs","Исследователь глубин","Derinlik kâşifi"],
+  "Companion Keeper": ["Gefährtenhüter","Guardián de compañeros","Metgezelhoeder","Custode dei compagni","Gardien des compagnons","Хранитель спутников","Yoldaş koruyucusu"],
+  "Beast Scholar": ["Bestienkundler","Erudito de bestias","Beestengeleerde","Studioso delle bestie","Érudit des bêtes","Знаток зверей","Canavar bilgini"],
+  "Orderbound": ["Ordenstreu","Ligado a la Orden","Ordegebonden","Vincolato all'Ordine","Lié à l'Ordre","Верный Ордену","Düzene bağlı"],
+  "Novice": ["Anfänger","Novato","Beginner","Novizio","Novice","Новичок","Acemi"],
+  "Adventurer": ["Abenteurer","Aventurero","Avonturier","Avventuriero","Aventurier","Искатель приключений","Maceracı"],
+  "Master": ["Meister","Maestro","Meester","Maestro","Maître","Мастер","Usta"],
+  "Grandmaster": ["Großmeister","Gran maestro","Grootmeester","Gran maestro","Grand maître","Грандмастер","Büyük usta"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 
 export type RecentScreenKey=keyof typeof recentScreenTranslationRows;
@@ -663,4 +676,14 @@ export function recentScreenText(language:Language,source:string,params:Translat
  return Object.prototype.hasOwnProperty.call(recentScreenTranslationRows,source)
   ?t(language,source as RecentScreenKey,params)
   :accountText(language,source,params);
+}
+
+/** Localize only the exact achievement-title structure authored in adventurers-journal-v42.
+ * Unknown or future titles are preserved verbatim rather than rewriting player content. */
+const journalAchievementBases=new Set(['Combatant','Well-Rounded','Artisan','Mastery Hall','Pathfinder','Delver','Companion Keeper','Beast Scholar','Orderbound']);
+const journalAchievementTiers=new Set(['Novice','Adventurer','Veteran','Master','Grandmaster']);
+export function journalAchievementDisplayTitle(language:Language,source:string):string{
+ const parts=source.split(' — ');
+ if(parts.length!==2||!journalAchievementBases.has(parts[0])||!journalAchievementTiers.has(parts[1]))return source;
+ return recentScreenText(language,parts[0])+' — '+recentScreenText(language,parts[1]);
 }

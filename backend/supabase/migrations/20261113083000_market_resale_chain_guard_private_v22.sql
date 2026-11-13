@@ -56,7 +56,7 @@ create trigger market_sale_chain_no_mutation_v22
 -- The current V19 single-owner provenance is not a substitute for a permanent
 -- audit history. Each settled exact-sale delivery has one immutable cycle.
 create function private.market_record_sale_chain_v22()
-returns trigger language plpgsql volatile security invoker set search_path=''
+returns trigger language plpgsql volatile security definer set search_path=''
 as $market_chain_insert$
 declare
   v_gold private.market_gold_intents_v2%rowtype;
@@ -120,7 +120,7 @@ create trigger market_z_equipment_purchase_chain_v22
 -- remain unchanged. Once a reviewed new custody transition exists, replace
 -- this guard at the same time, never remove it in isolation.
 create function private.market_block_resale_asset_reservation_v22()
-returns trigger language plpgsql volatile security invoker set search_path=''
+returns trigger language plpgsql volatile security definer set search_path=''
 as $market_second_sale_block$
 begin
   if new.asset_kind='equipment' and exists(

@@ -76,11 +76,6 @@ begin
   from_stage_orders_hash,verified_ep)
  values('v21-stage-one',p,w,1,2,repeat('a',64),25),
        ('v21-stage-two',p,w,2,3,repeat('b',64),75);
- insert into private.party_event_stage_seals_v17(
-  party_id,event_starts_at,stage,required_orders_count,orders_hash,sealed_at)
- values(p,w,1,3,repeat('a',64),w+interval '8 hours'),
-       (p,w,2,3,repeat('b',64),w+interval '2 days'),
-       (p,w,3,3,repeat('e',64),w+interval '3 days');
  insert into private.party_event_supply_orders_v16(
   party_id,event_starts_at,stage,item_id,category,kind,
   target_quantity,donated_quantity,frozen_at)
@@ -90,6 +85,11 @@ begin
    ('GREENWOOD_LOG','wood'),
    ('COPPER_ORE','ore'),
    ('THORN_SAP','herb')) x(item_id,category);
+ insert into private.party_event_stage_seals_v17(
+  party_id,event_starts_at,stage,required_orders_count,orders_hash,sealed_at)
+ values(p,w,1,3,repeat('a',64),w+interval '8 hours'),
+       (p,w,2,3,repeat('b',64),w+interval '2 days'),
+       (p,w,3,3,repeat('e',64),w+interval '3 days');
  insert into private.party_event_finale_seals_v18(
   party_id,event_starts_at,finale_hash,loadout_hash,member_count,
   verified_points,stage3_orders_hash,stage3_vote_choice,sealed_at)

@@ -3,6 +3,7 @@
  */
 import {assert} from './test-assert';
 import {regionalCombatFixture,REGIONAL_COMBAT_FIXTURES} from '../src/core/regional-combat-fixtures';
+import {createWorldBossSupabaseAuthenticatorV19} from '../../../backend/online/world-boss-auth-v19';
 import type {GameState,GearSlot} from '../src/core/types';
 import {
  reserveAuthenticatedWorldBossV19,settleTrustedWorldBossV19,
@@ -216,6 +217,29 @@ async function main(){
   token:TOKEN,selection:{...selection('WB19_UNKNOWN'),attackPower:1000000} as WorldBossReserveSelectionV19,
  },t.deps),'invalid_selection');
 
+ // Auth must resolve the real user via the server-side Supabase user
+ // endpoint; never read account identity from a client-supplied JWT payload.
+ let observedUrl='',observedToken='';
+ const authenticate=createWorldBossSupabaseAuthenticatorV19({
+  supabaseUrl:'https://test-supabase.example',
+  publicApiKey:'test-public-key',
+  fetchUser:async (url,init)=>{
+   observedUrl=String(url);
+   observedToken=new Headers(init?.headers).get('authorization')??'';
+   return new Response(JSON.stringify({id:ACCOUNT,user_metadata:{account_id:FOREIGN}}),{
+    status:200,headers:{'Content-Type':'application/json'},
+   });
+  },
+ });
+ assert.equal(await authenticate(TOKEN),ACCOUNT);
+ assert.ok(observedUrl.endsWith('/auth/v1/user'));
+ assert.equal(observedToken,'Bearer '+TOKEN);
+ assert.equal(await authenticate('short'),null);
+ const rejectAuth=createWorldBossSupabaseAuthenticatorV19({
+  supabaseUrl:'https://test-supabase.example',publicApiKey:'test-public-key',
+  fetchUser:async()=>new Response(JSON.stringify({id:FOREIGN}),{status:401}),
+ });
+ assert.equal(await rejectAuth(TOKEN),null);
  // Parameterized private DB adapter must never splice actor IDs / damage into SQL.
  const queries:Array<{sql:string;args:readonly unknown[]}>= [];
  const adapter=createWorldBossPrivatePgV19({

@@ -2,6 +2,8 @@ import {newGame} from '../src/core/game';
 import {normalizeSave} from '../src/core/save-normalization';
 import {LANGUAGE_NAMES,MESSAGE_COUNT,OPERATIONAL_MESSAGE_COUNT,SUPPORTED_LANGUAGES,ot,t,translatedMessageCount} from '../src/i18n';
 import {GATHERING} from '../src/content/skills';
+import {GATHERING_TOOLS} from '../src/content/gathering-tools';
+import {itemDef} from '../src/content/items';
 import {HERB_NODES} from '../src/content/herbalism';
 import {activityProgressFeedback} from '../src/core/balance-projection';
 import {gameplayTranslate,localizeGameplay} from '../src/i18n/gameplay';
@@ -43,6 +45,13 @@ ok(localizeGameplay('de','Ironbloom Thicket')==='Eisenblütendickicht','Herbalis
 ok(localizedItemName('de','ROOTSTREAM_TROUT')==='Wurzelbachforelle','Inventory resource name should be German');
 ok(gameplayTranslate('de','Unlocks at {skill} level {level}',{skill:localizeGameplay('de','woodcutting'),level:15})==='Freigeschaltet ab Holzfällen-Stufe 15','German unlock requirement should use localized skill names');
 ok(gameplayTranslate('de','Have: {count} {resource} · {seconds}s',{count:103,resource:localizedItemName('de','ROOTSTREAM_TROUT'),seconds:74})==='Im Besitz: 103 Wurzelbachforelle · 74 s','German owned count should use localized resource names');
+for(const node of [...GATHERING,...HERB_NODES]){
+ ok(localizedItemName('de',node.itemId)!==itemDef(node.itemId).name,`Missing German gathering-item name: ${node.itemId}`);
+}
+for(const tool of GATHERING_TOOLS){
+ ok(localizedItemName('de',tool.id)!==tool.name,`Missing German gathering-tool name: ${tool.id}`);
+ if(tool.blueprint)ok(localizedItemName('de',tool.blueprint.itemId)!==(tool.name+' Blueprint'),`Missing German tool blueprint: ${tool.blueprint.itemId}`);
+}
 ok(localizeGameplay('de','Companion Mastery')==='Gefährtenmeisterschaft','Companion Mastery header should be German');
 ok(localizeGameplay('de','Claim Companion Training')==='Gefährtentraining abholen','Sanctuary action should be German');
 

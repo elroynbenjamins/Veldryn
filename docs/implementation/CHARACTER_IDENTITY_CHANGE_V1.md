@@ -1,33 +1,70 @@
-# Character identity changes — v1 foundation (not released)
+# Character Identity Changes — V1 development status
 
-## Approved product rules
+## Scope and player rules
 
-- **Rename:** a character may change its username with a one-use coupon credit or a verified Google Play one-use purchase. Staff can grant or execute a correction. All progress, gear, currencies, inventory, social identity and achievements survive.
-- **Class change:** requires a verified one-use Google Play purchase or an explicit staff-authorized action. A successful change removes **equipped character gear only**, including its exact crafted-gear instance records. It must not delete bank, inventory, equipped gathering tools, un-equipped gear or any account progression.
-- Transfer the two class combat skills by position, preserving XP and fractional remainder; derive levels using the current combat curve. Profession XP stays unchanged. Recalculate base HP/attack/defense from the target class.
-- Replace an equipped `class:OLD` portrait with `class:NEW`. The old portrait is no longer selectable through class access, while earned icons remain earned.
-- Unequip an active companion whose role becomes incompatible; never delete companion ownership, XP or Bond. Preserve existing saved loadout names and food but clear their equipment selections and incompatible companion selections.
-- Names must pass the shared identity-name rules (including reserved/offensive names). Require a **case-insensitive global uniqueness** check in the authoritative DB transaction, even though the legacy schema only has a per-account uniqueness constraint.
+- **Rename:** consume exactly one verified rename credit issued by a one-use coupon or a server-verified Google Play consumable. Character, inventory, progression, gold, companions, guild membership, cosmetics and social record survive.
+- **Class change:** consume exactly one verified class credit from an approved Google Play purchase or staff grant. Destroy **only equipped character gear** and corresponding exact crafted-gear receipts. Keep unequipped copies, bank, inventory, overflow, tools, currencies, profession XP and companions.
+- Transfer two class skills by position, preserving the accumulated XP and fractional remainders; recalculate levels from the existing combat XP curve. Rebase base statistics to the new class.
+- Update class portrait access and selected portrait. Earned non-class cosmetic icons remain available.
+- Unequip an incompatible companion but retain its ownership and Bond progress.
+- Require clean active activities, no active class drills, no unclaimed Forge queues, consistent crafted gear ownership and no active party/dungeon queue for a class change.
 
-## First implementation
+## Implemented in the draft PR
 
-`apps/mobile/src/core/character-identity-change.ts` contains the pure, auditable transition for either change type. It does not trust caller authorization and **must never** be exposed as a generic player-owned gameplay command. `apps/mobile/tests/character-identity-change.ts` covers loss isolation, stats, skill XP, icon access, compatible companions, loadouts, identity validation, and rejection of invalid equipment ownership.
+### Pure engine transition
 
-## Secure server workflow still needed
+`apps/mobile/src/core/character-identity-change.ts` is an auditable, pure function. It is deliberately not exposed through the normal gameplay command type. Core tests include loss isolation and skill XP conservation.
 
-1. Create a **private, RLS-protected credit ledger**: `rename` or `class`, account owner, one-use source (`coupon` / `google_play` / `admin`), non-secret source reference, created/consumed timestamps, character id and command receipt. Never expose free-form grants to player RPCs.
-2. Redeem hashed, expiring **rename-only coupon codes** using the authenticated account id, per-account/per-code limits, and atomic claim + credit issuance. Reuse the existing code-entry UI only after integrating its grant response.
-3. Add **consumable** Google Play product IDs for Rename and Class Change, product catalog/presentation, Play Console configuration, verified purchase-token and acknowledgement handling, and single-use credit issuance. Existing VIP purchase ownership cannot substitute for identity-change credits; clients never self-report paid status.
-4. Add one server-only transaction that locks account and `online_game_states`, verifies the current revision, ownership, no active activity/unfinished Forge jobs/active dungeon or party queue, validates the target class or unique name, consumes exactly one verified credit (except authorized admin), updates the authoritative save **and** `public.characters` / `player_profiles` / current display identity, increments game revision and writes an idempotency receipt/audit log. If *any* step fails, roll back the credit and all writes.
-5. For class changes, reconcile DB equipment instances, public equipment snapshot, legacy and coop loadouts, Echo and world-boss snapshots, role-bound queue registrations and profile combat power. Revalidate earned cosmetics and do not mutate shared character/account history.
-6. Build a preview and confirmation in **Account → Character Management**, showing exactly which equipped pieces are destroyed, which companion is unequipped and that combat skill XP is retained. Make purchase/claim unavailable without an issued credit; prevent accidental double confirmation.
-7. Tests: same request id is replayed without charging twice; two concurrent requests consume no more than one credit; stale revisions, taken names, forged client entitlements, busy characters, guest accounts, craft ownership conflicts, payment refunds, and cross-account IDs all fail closed.
-8. After staging DB migrations and Android testing, enable player-facing controls behind a remote feature flag. **No production migration, new paid products, or player-facing entitlement controls are enabled by this PR.**
+### Private single-use credit ledger
 
-## Admin policy
+`backend/supabase/migrations/20261113055000_character_identity_change_credits_v1.sql` adds:
 
-Keep admin tools separate from customer purchases. Require staff role confirmation, a change reason, and an audit entry containing a rollback snapshot. Do not grant admin rights by putting a `qa_` command in the user gameplay transport.
+- Private RLS-protected tables `character_change_credits_v1`, `character_change_coupons_v1`, `character_change_coupon_claims_v1` and `character_change_receipts_v1`.
+- An authenticated, one-account-per-code rename coupon claim, using *only* stored SHA-256 hashes and configurable expiry/global claim cap.
+- A service-role-only idempotent grant RPC for verified payments or administrator authorization. Its Google Play source reference is a **SHA-256 hash** of a verified purchase token, never the token itself.
+- An authenticated self-only credit balance RPC. **No player can directly grant or consume credits.**
+
+No rename codes have been seeded and no paid SKUs have been created.
+
+### Atomic transaction
+
+`backend/supabase/migrations/20261113060000_character_identity_change_commit_v1.sql` adds service-role-only raw-save loading, receipt lookup and one atomic change-commit RPC:
+
+- Locks the same account as the gameplay engine, then checks character/account ownership, save revision, existing request receipt and matching unconsumed credit.
+- Only accepts the *specific* name/class fields that the server-generated transition is allowed to mutate. Rejects all other progression, inventory, bank, gold or account changes.
+- Rejects conflicting character names across accounts, including case-insensitive matches.
+- Changes the authoritative save, character/profiles, relevant class-dependent co-op/echo snapshots, revision, consumed credit and audit receipt in one transaction. Failure rolls back everything.
+- Replayed requests cannot consume the credit again; a different action using the same request ID is rejected.
+- Class change fails closed if a live party/dungeon queue or legacy authoritative equipment representation needs manual reconciliation.
+
+**Existing duplicate usernames:** production contains legacy case-insensitive duplicates, so adding a global unique index immediately would break live data. V1 rejects currently taken names for new renames. A later name-reservation/cleanup pass is required to guarantee new character creations and renames cannot race on the same username.
+
+### Server transport and redeem UI
+
+- `backend/online/character-change.ts` authenticates the caller, checks strict request schemas, hashes the action, performs idempotent receipt lookup and invokes the trusted pure transition and service-only atomic SQL commit.
+- `backend/online/tests/character-change.ts` tests authentication, ownership, forged fields, credit failure, stale version and replay.
+- `apps/mobile/src/online/redeem-code.ts` routes `VEL-REN-<random>` coupons to the rename-credit RPC and shows a successful rename-credit message.
+- The **production gameplay Edge route is deliberately not changed**: Veldryn's release gate requires a regenerated, checked-in gameplay Edge bundle. Build and commit the bundle *before* enabling the route; no mobile class/rename screen is enabled today.
+
+## Validation
+
+- Staging PostgreSQL dry-run of both migrations: **PASS** (DDL and authenticated/service permissions).
+- Staging rollback test of atomic rename and receipt replay: **PASS**.
+- Staging rollback test of class transition with equipped gear removed: **PASS**.
+- Staging rollback test of cross-account credit isolation, taken-name denial, one-claim-per-account coupons, skill XP and resource preservation: **PASS**.
+- `backend/supabase/tests/character_identity_change_v1.sql` records the complete disposable fixture; it finishes in `ROLLBACK` and contains no real user IDs.
+- Mobile/backend TypeScript and GitHub CI validation are pending execution; a staging SQL pass is **not** a completed Android/Play Billing release test.
+
+## Still required before any player launch
+
+1. Create verified Google Play consumable products (proposed identifiers only; do not assume a price). Connect the existing Google Play verifier and acknowledgement flow to `issue_character_change_credit_server_v1`. Handle refunds and repeated purchases without minting duplicates.
+2. Add owner/staff admin UI with staff authorization verified server-side, required reason, account/character targeting and complete audit/rollback visibility.
+3. Add Account → Character Management preview and confirmation. The player must see selected new name/class, precise equipment to be destroyed, any companion unequip, retained XP and available credits. Mobile state should refetch after redemption or change.
+4. Expose the authenticated server route behind a disabled-by-default release switch, then build/commit the generated gameplay Edge bundle and verify its parity. Do **not** expose player-initiated mutations until all dependent migrations are deployed.
+5. Test against the exact live equipment and co-op schemas on staging (including Forge jobs, Echo sharing, party membership, active dungeons, credit contention, and old saved presets); test payment token replay, cancel/refund, staged release rollback, and multi-account name conflicts.
+6. Clean up legacy duplicate character names before enforcing a global unique index. Ensure creation also checks/reserves names.
+7. Run mobile core + online TypeScript suites, generated-bundle parity, Android integration checks, and apply migrations to staging. Only then propose enabling production.
 
 ## Operational note
 
-Erebus's one-time change on Nov 13, 2026 is already complete in production and is **not** re-applied by this design or test suite.
+The manual Errapel → Erebus change on November 13, 2026 is already completed and audited in production. This PR never re-applies that action.

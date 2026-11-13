@@ -12,6 +12,8 @@ import {SocialActionButton} from '../components/SocialActionButton';
 import {LoadingState} from '../components/LoadingState';
 import {useGameTheme} from '../theme/ThemeContext';
 import {accountText} from '../i18n/account';
+import {localizeGameplay} from '../i18n/gameplay';
+import {localizedItemName} from '../i18n/starter-item-names';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import type {GameState} from '../core/types';
 
@@ -21,7 +23,7 @@ export function MarketInboxPanel({state,online,onRefresh}:{
   state:GameState;online:boolean;onRefresh:()=>Promise<unknown>;
 }){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
-  const a=(str:string)=>accountText(state.settings.language,str);
+  const a=(str:string)=>localizeGameplay(state.settings.language,accountText(state.settings.language,str));
   const [history,setHistory]=useState(false);
   const [snapshot,setSnapshot]=useState<MarketInboxSnapshot>({entries:[],pendingCount:0,total:0});
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
@@ -84,18 +86,18 @@ export function MarketInboxPanel({state,online,onRefresh}:{
     {snapshot.entries.map(row=>{
       let itemName=row.itemId.replace(/_/g,' ');
       let isKnown=false;
-      try{itemName=itemDef(row.itemId).name;isKnown=true;}catch{ /* Unknown catalog entries display safely. */ }
+      try{itemDef(row.itemId);itemName=localizedItemName(state.settings.language,row.itemId);isKnown=true;}catch{ /* Unknown catalog entries display safely. */ }
       return <View style={s.entry} key={row.id}>
       <View style={s.entryTop}>
         {row.assetKind==='equipment'&&isKnown?<ItemArtwork itemId={row.itemId} size={36}/>:<ResourceIcon resourceId={row.itemId} size={36}/>}
         <View style={s.flex}>
           <Text style={s.kind}>{a(row.kind==='purchased'?'Purchased':row.kind==='sold'?'Sold':'Returned')}</Text>
-          <Text numberOfLines={2} style={s.itemName}>{itemName} ×{row.quantity.toLocaleString()}</Text>
+          <Text numberOfLines={2} style={s.itemName}>{itemName} ×{row.quantity.toLocaleString(state.settings.language)}</Text>
         </View>
         <Text style={s.status}>{a(row.status==='ready'?'READY':row.status==='claimed'?'CLAIMED':'PAID')}</Text>
       </View>
-      {row.kind==='sold'?<Text style={s.gold}>+{row.goldChange.toLocaleString()} {a('Gold credited')}</Text>
-        :row.kind==='purchased'?<Text style={s.muted}>{row.goldChange.toLocaleString()} {a('Gold · Item waiting in Inbox')}</Text>
+      {row.kind==='sold'?<Text style={s.gold}>+{row.goldChange.toLocaleString(state.settings.language)} {a('Gold credited')}</Text>
+        :row.kind==='purchased'?<Text style={s.muted}>{row.goldChange.toLocaleString(state.settings.language)} {a('Gold · Item waiting in Inbox')}</Text>
         :<Text style={s.muted}>{a('Unsold items returned safely')}</Text>}
       {row.status==='ready'&&row.deliveryId?
         <View style={s.actions}>

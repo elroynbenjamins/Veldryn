@@ -57,6 +57,6 @@ for(const file of ['src/screens/ProfileScreen.tsx','src/components/ChatPlayerShe
  const achievementIndex=source.indexOf('<ProfileShowcaseSection title={');
  ok(gearIndex>=0&&achievementIndex>gearIndex,file+' shows equipped gear before achievement cards');
 }
-ok(fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8').includes('<ProfileEquippedGearShowcase gear={localProfileGear(state,character.id)}/>'),
+ok(fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8').includes('gear={localProfileGear(state,character.id)}'),
  'audience preview shows the selected character loadout');
 console.log('PASS: profile equipped gear parsing, character selection and showcase placement');

@@ -46781,8 +46781,19 @@ function reconcileCompanionDiscoveries(state) {
   if (nextIds.length === (current.discoveredCompanionIds ?? []).length && nextIds.every((id) => (current.discoveredCompanionIds ?? []).includes(id))) return state;
   return { ...state, account: { ...state.account, companionPhase2Profile: { ...current, discoveredCompanionIds: nextIds } } };
 }
+var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));
+function recoverVerifiedEquipmentCrafts(state) {
+  const current = state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS ?? 0;
+  if (current >= 500) return state;
+  let recorded = 0;
+  for (const [recipeId, progress] of Object.entries(state.account.professionMasteryByAction ?? {})) {
+    if (companionEquipmentRecipeIds.has(recipeId) && Number.isFinite(progress?.points) && progress.points > 0) recorded += Math.floor(progress.points);
+  }
+  if (recorded <= current) return state;
+  return { ...state, account: { ...state.account, companionUnlockProgress: { ...state.account.companionUnlockProgress, EQUIPMENT_CRAFTS: recorded } } };
+}
 function refreshCompanions(state, now) {
-  let next = reconcileCombatCompanionUnlocks(state, now);
+  let next = reconcileCombatCompanionUnlocks(recoverVerifiedEquipmentCrafts(state), now);
   next = { ...next, account: { ...next.account, companionSchemaVersion: 1, companionAssignments: rolloverCompanionAssignmentStatuses(next.account.companionAssignments ?? [], now), companionTrialProgress: projectCompanionTrial(next.account.companionTrialProgress, now).progress, companionProvingGround: projectCompanionProvingGrounds(next.account.companionProvingGround, now).state } };
   return reconcileCompanionDiscoveries(next);
 }
@@ -57347,7 +57358,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (options.randomRoll === void 0) throw new Error("trusted_random_required");
       const result = claimForgeJob(state, text(a, "id", 160), now, options.randomRoll);
       state = result.state;
-      if (result.kind === "equipment") forgeResults = [result.result];
+      if (result.kind === "equipment") {
+        state = recordCompanionActivity(state, "crafting", result.recipe.output.itemId, 1, now);
+        forgeResults = [result.result];
+      }
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
       message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.gemAction === "refine" ? "Refined" : "Combined"} ${result.recipe.name} \xB7 Gem Pouch`;
       break;
@@ -57358,6 +57372,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       const result = claimAllReadyEquipmentCrafts(state, now, options.randomRoll);
       state = result.state;
       forgeResults = result.results;
+      if (result.results.length > 0) state = recordCompanionActivity(state, "crafting", "equipment-forge", result.results.length, now);
       for (const id of result.claimed) {
         if (!beforeIds.has(id)) continue;
         const job = previous.account.equipmentCraftingQueue?.find((row) => row.id === id);

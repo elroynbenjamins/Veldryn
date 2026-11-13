@@ -267,6 +267,12 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
       {recoveredPages.length===0?<Text style={[styles.footnote,{color:C.muted}]}>{p('No clues recovered yet. Claim story rewards to uncover the old oath.')}</Text>:null}
      </View>:null}
     </View>
+    {campaignFinished?<View style={[styles.featured,{backgroundColor:C.infoSurface,borderColor:C.info}]}>
+     <Text style={[styles.eyebrow,{color:C.accent}]}>{p('NEXT FRONTIER')}</Text>
+     <Text style={[styles.featuredTitle,{color:C.text}]}>{p('Follow the oathglass signal into Sunscar.')}</Text>
+     <Text style={[styles.subtitle,{color:C.muted}]}>{p('Regional story leads continue in the World.')}</Text>
+     <GameButton compact title={p('Open Sunscar')} onPress={()=>onNavigate({tab:'World',zoneId:'SUNSCAR',label:'Visit Sunscar',hint:'Follow the regional story leads beyond Asterfall.'})}/>
+    </View>:null}
     <JournalSkillPathsPanel state={state} onNavigate={onNavigate}/>
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
     <Rail C={C} selected={filter} onChange={setFilter} items={[{id:'current',label:p('Current')+' · '+journalEntries(state,'current','').length},{id:'all',label:p('All')},{id:'claimed',label:p('Completed')},{id:'locked',label:p('Locked')} ]}/>

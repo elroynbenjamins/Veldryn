@@ -912,6 +912,10 @@ begin
     or (select status from private.market_equipment_resale_offers_v23
       where resale_id=v_resale_id)<>'return_pending'
   then raise exception 'V23 cancellation did not create safe return entitlement';end if;
+  v_retry:=private.market_cancel_equipment_resale_v23(
+    v_buyer,v_resale_id,'v23-cancel-first',repeat('3',64));
+  if v_retry->>'replayed'<>'true'
+  then raise exception 'V23 cancel replay created second entitlement';end if;
   begin
     perform private.market_purchase_equipment_resale_v23(
       v_rival,v_resale_id,125,4,14,'v23-purchase-cancelled',repeat('4',64));
@@ -919,6 +923,27 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_offer_not_available' then raise;end if;
   end;
+  -- A cancelled resale is not lost when the original holder's pouch is
+  -- full. Its pending return entitlement survives until space is available.
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,equipmentPouch,stacks}',jsonb_build_array(
+      jsonb_build_object('itemId','COPPER_ORE','quantity',1),
+      jsonb_build_object('itemId','COPPER_ORE','quantity',2)),false)
+    where account_id=v_buyer;
+  begin
+    perform private.market_claim_resale_return_v23(
+      v_buyer,v_resale_id,14,v_buyer_main::text,'equipment_pouch',
+      'v23-full-return',repeat('4',64));
+    raise exception 'V23 returned Forge gear into a full pouch';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_destination_full' then raise;end if;
+  end;
+  if (select status from private.market_equipment_resale_offers_v23
+    where resale_id=v_resale_id)<>'return_pending'
+  then raise exception 'V23 full return lost escrow entitlement';end if;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,equipmentPouch,stacks}','[]'::jsonb,false)
+    where account_id=v_buyer;
   v_result:=private.market_claim_resale_return_v23(
     v_buyer,v_resale_id,14,v_buyer_main::text,'equipment_pouch',
     'v23-return-first',repeat('5',64));
@@ -934,6 +959,19 @@ begin
     or (select count(*) from private.market_resale_gold_intents_v23)<>0
   then raise exception 'V23 cancellation return lost original Forge copy';end if;
 
+  v_retry:=private.market_claim_resale_return_v23(
+    v_buyer,v_resale_id,14,v_buyer_main::text,'equipment_pouch',
+    'v23-return-first',repeat('5',64));
+  if v_retry->>'replayed'<>'true'
+  then raise exception 'V23 return replay duplicated Forge receipt';end if;
+  begin
+    perform private.market_claim_resale_return_v23(
+      v_buyer,v_resale_id,15,v_buyer_main::text,'equipment_pouch',
+      'v23-second-return',repeat('6',64));
+    raise exception 'V23 cancelled item returned twice';
+  exception when raise_exception then
+    if sqlerrm<>'market_resale_return_not_ready' then raise;end if;
+  end;
   v_result:=private.market_reserve_equipment_resale_v23(
     v_buyer,15,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
     'v23-resale-second-reserve',repeat('6',64));

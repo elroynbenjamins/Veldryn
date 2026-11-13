@@ -5,6 +5,8 @@ import {eventCandyStatus} from '../core/live-events';
 import type {GameState} from '../core/types';
 import {radii,spacing,typography} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {localizeGameplay} from '../i18n/gameplay';
 import {liveEventVisuals} from '../ui/live-event-visuals-active';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -17,23 +19,23 @@ function durationLabel(seconds:number){
 }
 
 export function EventCandyPanel({state,definition,eventActive,busy=false,pendingKind,onUse}:{state:GameState;definition:LiveEventDef;eventActive:boolean;busy?:boolean;pendingKind?:EventCandyKind;onUse:(kind:EventCandyKind,companionId?:string)=>unknown}){
- const C=useGameTheme(),[now,setNow]=useState(()=>Date.now()),candies=eventCandies(definition),visuals=liveEventVisuals(definition.visualKey);
+ const C=useGameTheme(),language=useGameLanguage(),gl=(text:string)=>localizeGameplay(language,text),[now,setNow]=useState(()=>Date.now()),candies=eventCandies(definition),visuals=liveEventVisuals(definition.visualKey);
  const {width,fontScale}=useWindowDimensions(),twoColumns=width>=410&&fontScale<1.35;
  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
  return <Panel>
-  <View style={s.heading}><View style={s.flex}><Text style={[s.kicker,{color:C.accent}]}>EVENT CANDY</Text><Text style={[s.title,{color:C.text}]}>Festival boosts</Text><Text style={[s.copy,{color:C.muted}]}>Boosts run offline and expire when the event ends.</Text></View>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.heroCandy}/>:null}</View>
+  <View style={s.heading}><View style={s.flex}><Text style={[s.kicker,{color:C.accent}]}>{gl('EVENT CANDY')}</Text><Text style={[s.title,{color:C.text}]}>{gl('Festival boosts')}</Text><Text style={[s.copy,{color:C.muted}]}>{gl('Boosts run offline and expire when the event ends.')}</Text></View>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.heroCandy}/>:null}</View>
   <View style={[s.list,twoColumns&&s.listTwo]}>{candies.map(candy=>{
    const owned=state.account.eventCandyChargesById?.[candy.id]??0,status=eventCandyStatus(state,now,candy.kind),timed=candy.kind!=='companion',durationFull=timed&&status.remainingSeconds>=candy.maxSeconds-1;
    const disabled=busy||!eventActive||owned<1||durationFull;
-   const button=owned<1?'None owned':!eventActive?'Event ended':durationFull?'Duration full':'Use · add '+durationLabel(candy.secondsPerUse);
+   const button=owned<1?gl('None owned'):!eventActive?gl('Event ended'):durationFull?gl('Duration full'):gl('Use · add')+' '+durationLabel(candy.secondsPerUse);
    return <View key={candy.kind} style={[s.card,twoColumns&&s.cardHalf,{borderColor:status.active?C.good:C.line,backgroundColor:status.active?C.goodSurface:C.panel2}]}>
-    <View style={s.row}>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.candy}/>:null}<View style={s.flex}><View style={s.nameRow}><Text style={[s.name,{color:C.text}]}>{candy.name}</Text><View style={[s.count,{backgroundColor:C.accentSurface}]}><Text style={[s.countText,{color:C.accent}]}>×{owned}</Text></View></View><Text style={[s.kind,{color:C.accent}]}>{kindLabels[candy.kind]}</Text></View></View>
-    <Text style={[s.copy,{color:C.muted}]}>{candy.description}</Text>
+    <View style={s.row}>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.candy}/>:null}<View style={s.flex}><View style={s.nameRow}><Text style={[s.name,{color:C.text}]}>{gl(candy.name)}</Text><View style={[s.count,{backgroundColor:C.accentSurface}]}><Text style={[s.countText,{color:C.accent}]}>×{owned}</Text></View></View><Text style={[s.kind,{color:C.accent}]}>{gl(kindLabels[candy.kind])}</Text></View></View>
+    <Text style={[s.copy,{color:C.muted}]}>{gl(candy.description)}</Text>
     {candy.kind==='companion'
      ?<EventBondCandySelector state={state} eventId={definition.id} ownedCharges={owned} active={eventActive} busy={busy} onUse={id=>onUse('companion',id)}/>
      :<>
-       {status.active?<Text accessibilityLiveRegion="polite" style={[s.status,{color:C.good}]}>ACTIVE · {durationLabel(status.remainingSeconds)} remaining</Text>:<Text style={[s.status,{color:C.muted}]}>Up to {durationLabel(candy.maxSeconds)} active time</Text>}
-       <GameButton compact title={pendingKind===candy.kind?'Using…':button} loading={pendingKind===candy.kind} disabled={disabled} onPress={()=>onUse(candy.kind)}/>
+       {status.active?<Text accessibilityLiveRegion="polite" style={[s.status,{color:C.good}]} >{gl('ACTIVE')} · {durationLabel(status.remainingSeconds)} {gl('remaining')}</Text>:<Text style={[s.status,{color:C.muted}]} >{gl('Up to')} {durationLabel(candy.maxSeconds)} {gl('active time')}</Text>}
+       <GameButton compact title={pendingKind===candy.kind?gl('Using…'):button} loading={pendingKind===candy.kind} disabled={disabled} onPress={()=>onUse(candy.kind)}/>
       </>}
    </View>;
   })}</View>

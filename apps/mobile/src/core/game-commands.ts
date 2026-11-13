@@ -383,7 +383,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
   case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
   case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
-  case 'bulk_salvage':{const ids=stringArray(a,'ids');state=recordSeasonalActivity(bulkSalvageSelected(state,ids),'salvage',ids.length,now);break;}
+  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'),now);break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
   case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}

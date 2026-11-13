@@ -55,7 +55,7 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
   // another full network round trip to opening a player's profile.
   // Optional gear failures must not block the existing identity/profile surface.
   const [gearResult,identities]=await Promise.all([
-   db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId}).catch(()=>null),
+   (async()=>{try{return await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});}catch{return null;}})(),
    guildIdentities([accountId]),
   ]);
   const gearRows=gearResult?.data;

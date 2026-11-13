@@ -13,6 +13,7 @@ function load(file,dependencies={}){const sandbox={exports:{},require:name=>depe
  const {RequestSingleflight}=load('core/request-singleflight.ts');
  const profiles=load('online/profile-extension-v43.ts',{
   '../core/request-singleflight':{RequestSingleflight},
+  '../core/profile-equipped-gear':{normalizeProfileGear:()=>[]},
   './supabase':{supabase:{auth:{getSession:async()=>({data:{session:{user:{id:'viewer'}}},error:null})},rpc:async()=>({data:profileResult,error:null})}},
   './social':{guildIdentities:async()=>new Map([['player',{guild_tag:tag,guild_tag_color_id:'tag_emerald'}]]),profileGuildByTag:async()=>{lookupCount++;if(fail)throw Error('offline');return gone?null:guild}},
  });

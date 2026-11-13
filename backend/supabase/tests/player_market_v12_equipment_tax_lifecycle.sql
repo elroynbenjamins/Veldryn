@@ -33,6 +33,9 @@ declare
   v_resale_delivery uuid;
   v_second_delivery uuid;
   v_second_resale_id uuid;
+  v_resource_asset uuid;
+  v_resource_hold uuid;
+  v_resource_offer uuid;
   v_chain_receipt jsonb;
 begin
   insert into auth.users(id,email) values
@@ -945,6 +948,62 @@ begin
       where e.value->>'id'='resale-list:'||v_resale_id::text
         and e.value->>'kind'='listed' and e.value->>'status'='listed')
   then raise exception 'V24 active resale absent from seller Inbox';end if;
+  -- V24 combined browse pagination is tested with a synthetic, server-only
+  -- resource escrow row and the REAL resale offer. The synthetic resource
+  -- does not represent actual inventory and is removed before any trade.
+  insert into private.market_item_policy_v1(item_id,asset_kind,tradable,binding_policy)
+    values('COPPER_ORE','resource',true,'unbound');
+  update private.market_price_bands_v10 set approved=true where item_id='COPPER_ORE';
+  update private.market_listing_lot_policies_v11
+    set approved=true where item_id='COPPER_ORE';
+  insert into private.market_custody_assets_v1(
+    owner_account_id,source_revision,source_location,source_character_id,
+    source_locator,item_id,asset_kind,quantity,held_quantity,
+    source_bound,verification_state,immutable_attributes)
+  values(v_seller,999,'inventory',v_seller_char::text,
+    'v24-mixed-resource','COPPER_ORE','resource',10,10,
+    false,'verified','{}'::jsonb)
+  returning asset_id into v_resource_asset;
+  insert into private.market_custody_holds_v1(
+    asset_id,owner_account_id,request_key,request_hash,
+    held_quantity,status,source_revision)
+  values(v_resource_asset,v_seller,'v24-mixed-resource-hold',repeat('a',64),
+    10,'held',999)
+  returning hold_id into v_resource_hold;
+  insert into private.market_sale_offers_v3(
+    source_hold_id,seller_account_id,unit_price,quantity,status)
+  values(v_resource_hold,v_seller,10,10,'active')
+  returning offer_id into v_resource_offer;
+  v_browse:=private.market_browse_combined_v24(
+    'all',null,null,'price_asc',null,null,1,0);
+  if v_browse->>'total'<>'2' or v_browse->>'hasMore'<>'true'
+    or v_browse#>>'{entries,0,offerId}'<>v_resource_offer::text
+    or v_browse#>>'{entries,0,sourceKind}'<>'original'
+  then raise exception 'V24 combined browse failed source-sort or first-page count';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'all',null,null,'price_asc',null,null,1,1);
+  if v_browse->>'total'<>'2' or v_browse->>'hasMore'<>'false'
+    or v_browse#>>'{entries,0,offerId}'<>v_resale_id::text
+    or v_browse#>>'{entries,0,sourceKind}'<>'resale'
+  then raise exception 'V24 combined browse failed second-page cursor';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'all',null,null,'price_asc',120,null,25,0);
+  if v_browse->>'total'<>'1'
+    or v_browse#>>'{entries,0,resaleId}'<>v_resale_id::text
+  then raise exception 'V24 mixed-origin total-price filtering failed';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'resource','COPPER_ORE',null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'1'
+    or v_browse#>>'{entries,0,offerId}'<>v_resource_offer::text
+  then raise exception 'V24 resource-only browsing lost original listing';end if;
+  -- Unit-test fixture cleanup, still within the global SQL ROLLBACK.
+  delete from private.market_sale_offers_v3 where offer_id=v_resource_offer;
+  delete from private.market_custody_holds_v1 where hold_id=v_resource_hold;
+  delete from private.market_custody_assets_v1 where asset_id=v_resource_asset;
+  delete from private.market_item_policy_v1 where item_id='COPPER_ORE';
+  update private.market_price_bands_v10 set approved=false where item_id='COPPER_ORE';
+  update private.market_listing_lot_policies_v11
+    set approved=false where item_id='COPPER_ORE';
   v_retry:=private.market_reserve_equipment_resale_v23(
     v_buyer,13,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
     'v23-resale-first-reserve',repeat('1',64));

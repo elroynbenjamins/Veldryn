@@ -50,7 +50,7 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
    :selected?'ON PROFILE '+(showcase.indexOf(id)+1):maxed?'FULL':'FEATURE';
   return <Pressable
    key={id} accessibilityRole="button"
-   accessibilityLabel={PLAYER_BADGE_LABELS[id]}
+   accessibilityLabel={PLAYER_BADGE_LABELS[id]} accessibilityValue={{text:status}}
    accessibilityHint={!unlocked?detail
     :slot==='name'?(selected?'Unequip this badge':'Wear this badge beside your name')
     :selected?'Remove this badge from your profile':maxed?'Remove a featured badge to make room':'Feature this badge on your profile'}
@@ -95,7 +95,7 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
    <View style={s.previewRow}>
     <View style={s.previewLabels}>
      <Text style={[s.sectionEyebrow,{color:C.accent}]}>ON YOUR PROFILE</Text>
-     <Text style={[s.note,{color:C.muted}]}>{showcase.length?showcase.map(id=>PLAYER_BADGE_LABELS[id]).join(' · '):'No badges featured yet'}</Text>
+     <Text numberOfLines={2} style={[s.note,{color:C.muted}]}>{showcase.length?showcase.map(id=>PLAYER_BADGE_LABELS[id]).join(' · '):'No badges featured yet'}</Text>
     </View>
     <PlayerBadgeShowcase identity={badges.identity} size={23}/>
    </View>
@@ -108,6 +108,8 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
   <Text style={[s.note,{color:C.muted}]}>{slot==='name'
    ?'Tap a badge to wear it beside your name in chat, parties, guilds and rankings.'
    :'Tap up to '+MAX_FEATURED_PLAYER_BADGES+' badges to feature on your profile, in the order you tap them. Tap a featured badge again to remove it.'}</Text>
+
+  {slot==='profile'&&full?<Text accessibilityLiveRegion="polite" style={[s.fullNotice,{color:C.info,backgroundColor:C.infoSurface,borderColor:C.selectionLine}]}>All three profile slots are filled. Remove a featured badge to choose another.</Text>:null}
 
   <View style={s.section}>
    <View style={s.sectionHeading}>
@@ -172,5 +174,6 @@ const s=StyleSheet.create({
  locked:{opacity:.62},
  pressed:{opacity:.78},
  footnote:{fontSize:10,lineHeight:15,marginTop:3},
+  fullNotice:{fontSize:11,lineHeight:16,paddingHorizontal:10,paddingVertical:8,borderWidth:1,borderRadius:8},
  errors:{gap:6},
 });

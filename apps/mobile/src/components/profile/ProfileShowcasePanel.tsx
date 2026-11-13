@@ -99,6 +99,8 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
  const pickerCount=picker==='achievements'?value.achievementShowcaseIds.length:picker==='records'?value.recordShowcaseIds.length
   :picker==='collections'?value.collectionShowcase.length:picker==='mastery'?value.masteryShowcaseActionIds.length:0;
  const pickerMaxed=multiPicker&&pickerCount>=3;
+ const pickerEmpty=(picker==='achievements'&&achievements.length===0)||(picker==='records'&&records.length===0)
+  ||(picker==='collections'&&collections.length===0)||(picker==='mastery'&&masteries.length===0);
 
  return <><View style={s.root}>
   {guest?<View style={s.warning}><Text style={s.warningTitle}>{profileT(language,"Secure this guest account first")}</Text>
@@ -149,23 +151,24 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   <GameModalHeader eyebrow={profileT(language,"SOCIAL PROFILE")} title={profileText(language,pickerTitle)} onClose={()=>setPicker(null)}/>
   <Text style={s.copy}>{multiPicker?profileT(language,'{count}/3 selected · tap a selected item to remove it.',{count:pickerCount}):profileT(language,"Choose one option.")}</Text>
   <ScrollView style={s.pickerList} contentContainerStyle={s.pickerContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+   {pickerEmpty?<Text style={s.pickerEmpty}>{profileT(language,"No entries unlocked for this showcase yet.")}</Text>:null}
    {picker==='character'?characters.map(row=>{const selected=(value.selectedCharacterId??state.character?.id)===row.id;
-    return <Pressable key={row.id} onPress={()=>{patch({selectedCharacterId:row.id});setPicker(null)}} style={[s.option,selected&&s.optionActive]}>
+    return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>{patch({selectedCharacterId:row.id});setPicker(null)}} style={[s.option,selected&&s.optionActive]}>
      <Text style={s.optionText}>{selected?'✓ ':''}{row.name}</Text>
      <Text style={s.optionSub}>{row.classId.replace(/_/g,' ')} · {profileT(language,'Level {level}',{level:row.level})}{row.id===state.character?.id?' · '+profileT(language,'currently active'):''}</Text></Pressable>}):null}
-   {picker==='skill'?<><Pressable onPress={()=>{patch({favoriteSkillId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteSkillId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>
-    {skills.map(row=><Pressable key={row.id} onPress={()=>{patch({favoriteSkillId:row.id});setPicker(null)}} style={[s.option,value.favoriteSkillId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteSkillId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
-   {picker==='companion'?<><Pressable onPress={()=>{patch({favoriteCompanionId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteCompanionId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>
-    {companions.map(row=><Pressable key={row.id} onPress={()=>{patch({favoriteCompanionId:row.id});setPicker(null)}} style={[s.option,value.favoriteCompanionId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteCompanionId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
+   {picker==='skill'?<><Pressable accessibilityRole="button" accessibilityState={{selected:!value.favoriteSkillId}} onPress={()=>{patch({favoriteSkillId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteSkillId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>
+    {skills.map(row=><Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected:value.favoriteSkillId===row.id}} onPress={()=>{patch({favoriteSkillId:row.id});setPicker(null)}} style={[s.option,value.favoriteSkillId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteSkillId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
+   {picker==='companion'?<><Pressable accessibilityRole="button" accessibilityState={{selected:!value.favoriteCompanionId}} onPress={()=>{patch({favoriteCompanionId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteCompanionId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>
+    {companions.map(row=><Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected:value.favoriteCompanionId===row.id}} onPress={()=>{patch({favoriteCompanionId:row.id});setPicker(null)}} style={[s.option,value.favoriteCompanionId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteCompanionId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
    {picker==='achievements'?achievements.map(row=>{const selected=value.achievementShowcaseIds.includes(row.id),disabled=pickerMaxed&&!selected;
-    return <Pressable key={row.id} disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({achievementShowcaseIds:toggle(value.achievementShowcaseIds,row.id)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}><Text style={s.optionText}>{selected?'✓ ':''}{row.label}</Text></Pressable>}):null}
+    return <Pressable key={row.id} accessibilityRole="button" disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({achievementShowcaseIds:toggle(value.achievementShowcaseIds,row.id)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}><Text style={s.optionText}>{selected?'✓ ':''}{row.label}</Text></Pressable>}):null}
    {picker==='records'?records.map(row=>{const selected=value.recordShowcaseIds.includes(row.id),disabled=pickerMaxed&&!selected;
-    return <Pressable key={row.id} disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({recordShowcaseIds:toggle(value.recordShowcaseIds,row.id)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}><Text style={s.optionText}>{selected?'✓ ':''}{row.label}</Text></Pressable>}):null}
+    return <Pressable key={row.id} accessibilityRole="button" disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({recordShowcaseIds:toggle(value.recordShowcaseIds,row.id)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}><Text style={s.optionText}>{selected?'✓ ':''}{row.label}</Text></Pressable>}):null}
    {picker==='collections'?collections.map(ref=>{const selected=value.collectionShowcase.some(row=>refKey(row)===refKey(ref)),disabled=pickerMaxed&&!selected;
-    return <Pressable key={refKey(ref)} disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({collectionShowcase:toggleCollection(value.collectionShowcase,ref)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}>
+    return <Pressable key={refKey(ref)} accessibilityRole="button" disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({collectionShowcase:toggleCollection(value.collectionShowcase,ref)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}>
      <Text style={s.optionText}>{selected?'✓ ':''}{profileCollectionLabel(ref)}</Text><Text style={s.optionSub}>{profileText(language,ref.kind).toUpperCase()}</Text></Pressable>}):null}
    {picker==='mastery'?masteries.map(row=>{const selected=value.masteryShowcaseActionIds.includes(row.id),disabled=pickerMaxed&&!selected;
-    return <Pressable key={row.id} disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({masteryShowcaseActionIds:toggle(value.masteryShowcaseActionIds,row.id)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}>
+    return <Pressable key={row.id} accessibilityRole="button" disabled={disabled} accessibilityState={{selected,disabled}} onPress={()=>patch({masteryShowcaseActionIds:toggle(value.masteryShowcaseActionIds,row.id)})} style={[s.option,selected&&s.optionActive,disabled&&s.optionDisabled]}>
      <View style={s.optionRow}><View style={s.flex}><Text style={s.optionText}>{selected?'✓ ':''}{row.label}</Text><Text style={s.optionSub}>{row.meta}</Text></View><Text style={s.masteredMark}>{profileT(language,"MASTERED")}</Text></View></Pressable>}):null}
   </ScrollView>
   <GameButton compact title={profileT(language,"Done")} onPress={()=>setPicker(null)}/>
@@ -188,7 +191,7 @@ function SlotTrio({label,slots,disabled,hint,onPress}:{label:string;slots:Slot[]
  return <View style={s.trioBlock}>
   <View style={s.head}><Text style={s.eyebrow}>{label}</Text><Text numberOfLines={1} style={s.hint}>{hint?hint+' · ':''}{slots.length}/3</Text></View>
   <View style={s.trio}>{cells.map((slot,index)=>slot
-   ?<Pressable key={slot.key} accessibilityRole="button" accessibilityLabel={slot.label} disabled={disabled} onPress={onPress} style={({pressed})=>[s.cell,pressed&&s.pressed]}>
+   ?<Pressable key={slot.key} accessibilityRole="button" accessibilityLabel={slot.label} accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[s.cell,pressed&&s.pressed,disabled&&s.disabled]}>
      <View style={s.cellArt}>{slot.icon??(slot.art?<Image source={slot.art} resizeMode="contain" style={s.cellImage}/>:<Text style={s.slotMark}>◆</Text>)}</View>
      <Text numberOfLines={2} style={s.cellName}>{slot.label}</Text>
      {slot.meta?<Text numberOfLines={1} style={s.cellMeta}>{slot.meta}</Text>:null}
@@ -244,6 +247,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  option:{paddingVertical:10,minHeight:48,justifyContent:'center',paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
  optionActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
  optionDisabled:{opacity:.4},
+ pickerEmpty:{...typography.caption,color:C.muted,textAlign:'center',paddingHorizontal:12,paddingVertical:18},
  optionRow:{flexDirection:'row',alignItems:'center',gap:8},
  optionText:{color:C.text,fontWeight:'800'},
  optionSub:{color:C.muted,fontSize:9,marginTop:2},

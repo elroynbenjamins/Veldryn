@@ -17,7 +17,7 @@ ok(confirm.includes('useWindowDimensions')&&confirm.includes("stackActions=width
 ok(confirm.includes('actionsStack')&&confirm.includes("actionStack:{flex:0,width:'100%'}"),'Confirm dialog actions must stack full-width instead of squeezing');
 
 const profilePreview=read('src/components/ProfileAudiencePreviewModal.tsx');
-ok(profilePreview.includes('useWindowDimensions')&&profilePreview.includes("stackLayout=width<360||fontScale>=1.25"),'Profile audience preview must adapt tabs and rows for narrow phones and large text');
+ok(profilePreview.includes('useWindowDimensions')&&profilePreview.includes("stackLayout=width<400||fontScale>=1.2"),'Profile audience preview must adapt tabs and rows for narrow phones and large text');
 ok(profilePreview.includes('audiencesStack')&&profilePreview.includes('rowValueStack'),'Profile audience tabs and highlight rows must stack when constrained');
 
 const modal=read('src/components/GameModalSurface.tsx');

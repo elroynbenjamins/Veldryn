@@ -43,7 +43,15 @@
 - The existing `shared_world_world_boss_final_ranks` table is an authoritative finalized snapshot. A separate **disabled-by-default** private history proposal reads historical final rank, impact, applied damage, attempts and display name per specific event.
 - A separate private feature gate is required even after global Leaderboards are enabled; current `RANKINGS_RELEASED=false` is unchanged. Only rows with valid attempts and positive impact are eligible; excluded echo-only/invalid rows cannot appear. Public profile visibility and mutual blocks are checked at read time; original event-wide ranks are preserved, so gaps are possible after filtering.
 - A staging transaction seeded synthetic final-rank rows and validated gate denial, hidden/unfinalized events, correct history and self-standing, private-profile removal, mutual blocks and zero-valid-attempt exclusion. All inserts, gate changes and profile changes were rolled back.
-- The function is **private** and not a public Data API endpoint. Its future authenticated server bridge must have a trusted database caller, include event authorization, and must never expose raw account IDs.
+- The private reader remains the scoring authority. The SQL proposal now also contains a **public, service-role-only RPC bridge** (anonymous/authenticated SQL roles are explicitly denied); both objects are undeployed. The new server-only `WorldBossHistoryService` checks global Rankings **and** World Boss History flags (both default false), validates inputs, and forwards only the authenticated account ID to that service RPC. No mobile/public HTTP route was registered.
+
+### 13 November follow-up — CI fixes and integration hardening
+- Fixed an unescaped apostrophe in the Achievement Score board description that previously broke TypeScript parsing and caused multiple CI workflows to fail.
+- Restored required localized Rankings pagination labels and no-results guidance in German, Spanish, Dutch, Italian, French, Russian and Turkish. Updated the localization count and UI density contract to assert that board changes reset page 1, clear stale snapshot, and close the picker.
+- Added the service-role-only **public RPC bridge** for the private World Boss final-history query. Current public profile name is used, so renamed accounts do not leak their old final-rank display name.
+- Added backend integration tests for disabled-by-default history, either server release flag disabled, UUID/bounded input validation, and the exact server RPC call payload.
+- Verified in staging inside a transaction that service role has execute access to the proposed bridge, neither anon nor authenticated does, the independent database gate denies access, and current name, final global rank, privacy, mutual blocks and invalid attempts remain correct. Synthetic fixtures and gates were rolled back.
+- Merged the two non-overlapping new main commits into the draft branch; GitHub subsequently reported the PR **mergeable**. Mergeability is **not** CI or product approval.
 
 ### Before release
 1. Reconcile tracked v2 migration provenance and convert the reviewed proposals into properly numbered migrations using the Supabase CLI; this PR's draft SQL files are **not deployed**.

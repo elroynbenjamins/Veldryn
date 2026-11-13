@@ -1,4 +1,4 @@
-import {useMemo,useRef} from 'react';
+import {useMemo,useRef,useState} from 'react';
 import {Animated,PanResponder,Pressable,StyleSheet,Text,View,type StyleProp,type ViewStyle} from 'react-native';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -29,13 +29,14 @@ export function OptionPager({options,value,onChange,accessibilityLabel,previousL
  const live=useRef({index,options,onChange});
  live.current={index,options,onChange};
  const drag=useRef(new Animated.Value(0)).current;
+ const [railWidth,setRailWidth]=useState(0);
  const step=(delta:number)=>{
   const {index:at,options:rows,onChange:commit}=live.current;
   if(rows.length<2)return;
   const next=rows[(at+delta+rows.length)%rows.length];
   if(next&&next.key!==rows[at]?.key)commit(next.key);
  };
- const settle=()=>Animated.spring(drag,{toValue:0,useNativeDriver:true,speed:24,bounciness:0}).start();
+ const settle=()=>{if(reduceMotion){drag.setValue(0);return;}Animated.spring(drag,{toValue:0,useNativeDriver:true,speed:24,bounciness:0}).start();};
  const pan=useMemo(()=>PanResponder.create({
   // Claim only clearly horizontal drags, so a vertical flick still scrolls the page behind.
   onMoveShouldSetPanResponder:(_event,gesture)=>live.current.options.length>1&&Math.abs(gesture.dx)>10&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.6,
@@ -48,6 +49,8 @@ export function OptionPager({options,value,onChange,accessibilityLabel,previousL
   onPanResponderTerminate:settle,
  }),[reduceMotion]);
 
+ // Nine 30px dot targets cannot fit on narrow panels. Fall back to a readable counter.
+ const showDots=options.length>1&&options.length<=MAX_DOTS&&railWidth>=options.length*30;
  if(!options.length)return null;
  const arrow=(mark:string,delta:number,label:string)=><Pressable
   accessibilityRole="button" accessibilityLabel={label} accessibilityState={{disabled:options.length<2}} disabled={options.length<2}
@@ -56,7 +59,7 @@ export function OptionPager({options,value,onChange,accessibilityLabel,previousL
   <Text style={s.arrowMark}>{mark}</Text>
  </Pressable>;
 
- return <View style={[s.root,style]}>
+ return <View style={[s.root,style]} onLayout={({nativeEvent:{layout}})=>{const next=Math.floor(layout.width);setRailWidth(previous=>previous===next?previous:next)}}>
   <View accessibilityRole="adjustable" accessibilityLabel={accessibilityLabel}
    accessibilityValue={{text:current?current.label+(current.meta?' '+current.meta:''):''}}
    accessibilityActions={[{name:'increment'},{name:'decrement'}]}
@@ -69,7 +72,7 @@ export function OptionPager({options,value,onChange,accessibilityLabel,previousL
    </Animated.View>
    {arrow('›',1,nextLabel)}
   </View>
-  {options.length<2?null:options.length<=MAX_DOTS
+  {options.length<2?null:showDots
    ?<View style={s.dots}>{options.map((row,at)=><Pressable key={row.key} accessibilityRole="button"
       accessibilityLabel={row.label} accessibilityState={{selected:at===index}}
       onPress={()=>onChange(row.key)} hitSlop={6} style={s.dotTarget}>

@@ -68,7 +68,7 @@ create or replace function private.credit_party_event_activity_v14(
 declare
  w private.party_event_weeks_v11%rowtype;
  s private.party_event_stages_v11%rowtype;
- m private.party_event_member_progress_v14%rowtype;
+ member_progress private.party_event_member_progress_v14%rowtype;
  existing private.party_event_activity_credits_v14%rowtype;
  v_account_id uuid;
  v_character_id uuid;
@@ -217,13 +217,13 @@ begin
   party_id,event_starts_at,account_id)
  values(p_party_id,p_event_starts_at,v_account_id)
  on conflict(party_id,event_starts_at,account_id) do nothing;
- select * into m from private.party_event_member_progress_v14
+ select * into member_progress from private.party_event_member_progress_v14
  where party_id=p_party_id and event_starts_at=p_event_starts_at
   and account_id=v_account_id for update;
- v_available:=greatest(0,40-m.activity_points);
- v_points:=least(v_available,floor((m.carried_seconds+v_seconds)/900.0)::integer);
+ v_available:=greatest(0,40-member_progress.activity_points);
+ v_points:=least(v_available,floor((member_progress.carried_seconds+v_seconds)/900.0)::integer);
  v_next_carry:=case when v_points>=v_available then 0
-  else mod(m.carried_seconds+v_seconds,900) end;
+  else mod(member_progress.carried_seconds+v_seconds,900) end;
 
  update private.party_event_member_progress_v14
   set activity_points=activity_points+v_points,
@@ -245,7 +245,7 @@ begin
 
  return jsonb_build_object(
   'replayed',false,'eventPointsGranted',v_points,
-  'totalMemberPoints',m.activity_points+v_points,
+  'totalMemberPoints',member_progress.activity_points+v_points,
   'totalPartyActivityPoints',v_total_points,
   'memberCarriedSeconds',v_next_carry,'stage',w.active_stage);
 end;$$;

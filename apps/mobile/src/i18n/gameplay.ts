@@ -1339,12 +1339,13 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
   const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
+  // German source labels take priority over generic interpolated templates.
+  if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}
   for(const template of templates){
     const match=template.pattern.exec(value);
     if(match){const params:Record<string,string>={};template.names.forEach((name,index)=>{params[name]=name==='skill'?localizeGameplay(language,match[index+1]):match[index+1];});return gameplayTranslate(language,template.key,params);}
   }
-  if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}
-   return battleText(language,value);
+  return battleText(language,value);
 }
 export function useGameplayText(){
   const language=useGameLanguage();

@@ -33,6 +33,13 @@ check(settled.character!.gold===state.character!.gold+summary.sellGold,'Preview 
 check(settled.account.craftedGearInstances?.length===1&&settled.account.craftedGearInstances[0].id===locked.id,
  'Bulk sale must never remove the locked forged record');
 check(state.inventory.stacks.length===3&&state.character!.gold===500,'Previous snapshot must remain unchanged');
+const salvageTime=Date.UTC(2026,8,5,12);
+const salvageIds=bulkSelectionSummary(state,ids,'inventory').salvageableIds;
+check(salvageIds.includes(ids[0])&&salvageIds.includes(ids[2])&&!salvageIds.includes(ids[1]),'Bulk salvage must respect exact copy locks');
+const salvaged=executeGameCommand(state,{type:'bulk_salvage',args:{ids:salvageIds}},salvageTime).state;
+check(salvaged.account.seasonalContractProgress?.daily?.counts.salvage===3,'One unique copy and two legacy units must credit exactly three salvages');
+check(!state.account.seasonalContractProgress?.daily?.counts.salvage,'Bulk salvage must not mutate old account progress');
+
 let rejected=false;
 try{bulkSellSelected(state,[ids[1]])}catch{rejected=true}
 check(rejected,'Locked copy alone cannot be sold');

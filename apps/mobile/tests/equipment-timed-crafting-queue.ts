@@ -3,6 +3,8 @@ import {NOVICE_RECIPES} from '../src/content/novice-sets';
 import {itemDef} from '../src/content/items';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {createCharacter,newGame} from '../src/core/game';
+import {refreshCompanions} from '../src/core/companion-runtime';
+import {RECIPES} from '../src/content/skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftAvailability,equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -134,6 +136,20 @@ ok(!nearAutomaton.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forg
 const automatonClaim=executeGameCommand(nearAutomaton,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(automatonClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'The 500th equipment claim reaches the exact recruitment threshold');
 ok(automatonClaim.state.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton unlocks automatically after 500 equipment claims and Smithing 30');
+
+// Existing players earned per-recipe profession mastery on their completed Forge
+// claims, even when the old companion counter was not updated.
+const oldHistory=prepared();
+const withOldHistory={...oldHistory,skills:oldHistory.skills.map(row=>row.skillId==='smithing'?{...row,level:30}:row),account:{...oldHistory.account,professionMasteryByAction:{[recipe.id]:{actionId:recipe.id,points:500,updatedAtMs:1000}}}};
+const recoveredHistory=refreshCompanions(withOldHistory,1001);
+ok(recoveredHistory.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'Existing verified forge history must restore missed recruitment progress');
+ok(recoveredHistory.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Verified historical forge crafts should unlock Forge Automaton automatically');
+ok(refreshCompanions(recoveredHistory,1002).account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'Historical recovery must be idempotent');
+const nonGearRecipe=RECIPES.find(row=>itemDef(row.output.itemId).type!=='gear')!;
+const withOtherHistory={...withOldHistory,account:{...withOldHistory.account,professionMasteryByAction:{[nonGearRecipe.id]:{actionId:nonGearRecipe.id,points:600,updatedAtMs:1000}}}};
+const otherRecovered=refreshCompanions(withOtherHistory,1001);
+ok((otherRecovered.account.companionUnlockProgress?.EQUIPMENT_CRAFTS??0)===0,'Non-equipment crafting must never count toward Forge Automaton');
+ok(!otherRecovered.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Non-equipment crafting alone must not recruit Forge Automaton');
 
 let tailor=createCharacter(newGame(0),tailoringRecipe.classId,'Tailor Queue','male');
 tailor={...tailor,character:{...tailor.character!,level:tailoringRecipe.characterLevel,gold:500000},skills:tailor.skills.map(row=>row.skillId==='tailoring'?{...row,level:tailoringRecipe.level,xp:0}:row),inventory:{...tailor.inventory,capacity:60,stacks:tailoringRecipe.inputs.map(input=>({...input,quantity:input.quantity*2}))},bank:{...tailor.bank,capacity:200,stacks:[]}};

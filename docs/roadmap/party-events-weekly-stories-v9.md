@@ -1238,3 +1238,116 @@ idempotency, migration-order, rollback, offline-user
 and Inbox-discovery test pass is still mandatory.
 Keep Party Events hidden, branch unmerged, PR draft,
 feature flags disabled and production untouched.
+
+## v25 — atomic-claim preflight and immutable account reward quote (13 Nov 2026)
+
+**Key implementation constraint:** Existing Veldryn payouts
+use different economic stores: `public.character_wallets.gold`
+is authoritative for character gold; the active character
+inventory is inside `public.online_game_states.state` with
+a revision counter. The Party Events v2 model also awards
+combat/skill XP, Companion Essence, Bondstones, Party Renown
+and `GEM_DUST`, whose **single atomic combined credit path
+has not yet been established or validated**. Sending only
+gold and marking an offer claimed would be a partial payout,
+and granting material stacks without capacity/locking
+review risks duplication or loss.
+
+**v25 deliberately implements the real claim PRECONDITIONS
+but cannot complete a live claim.** The draft migration
+`backend/supabase/migrations/20261113230000_party_event_reward_claim_quote_v25.sql`
+adds the RLS/private
+`party_event_reward_claim_quotes_v25` table with
+**one immutable quote per offer, per reservation/account,
+and per event-week/account**. It records the frozen member
+character, a server-generated deterministic request ID,
+reward model/version, locked selection, difficulty, frozen
+personal EP, boss reward band, full deterministic reward JSON,
+and a SHA-256 commitment over PostgreSQL's canonical JSONB
+representation. This is **not a spendable entitlement**,
+claim receipt or native Inbox item.
+
+`private.prepare_party_event_claim_quote_v25` is service-only,
+takes the server-authenticated account ID, v24 offer ID, frozen
+roster character and deterministic request ID, and **does not
+accept a caller-supplied reward amount**. It locks the week
+and immutable offer, checks v24's unique offer and v23's
+worker attestation and candidate hashes, validates the locked
+Warrior/Artisan/Companion choice or participation-only status,
+and **recomputes the complete v2 reward bundle** from
+server-owned difficulty/EP/performance band. All account-week
+IDs are unique and the exact same request replays identically;
+a different request, character or account fails closed.
+It verifies that the owned frozen character's gold wallet
+exists and has no numeric overflow, and locks the matching
+online game-state row and checks inventory/locked-items
+JSON structure. **No economic row is updated.**
+
+The SQL return explicitly reports
+`storageShapeVerified=true`,
+`inventoryCapacityVerified=false`,
+`claimEnabled=false`, `claimed=false`,
+`entitlementsCreated=false`, `economyApplied=false`,
+and `inboxDelivered=false`. Both the table and trigger
+prohibit any change in these flags.
+`private.party_event_claim_quote_inbox_v25` is a
+service-role-only **account-scoped quote preview** with
+status `blocked_economy_not_audited`, never a claim button.
+
+**TypeScript/online adapters:**
+`backend/src/server/party/weekly-party-reward-claim-v25.ts`
+exposes a release-gated, trusted-only prepare/read contract
+that checks the returned account/character ID, disabled
+grant flags and independently recomputes the full reward
+bundle using `partyEventRewardBundle` (including every
+material quantity), rejecting mismatched SQL/worker quotes.
+`backend/online/party-event-reward-claim-v25.ts`
+is a parameterized private PostgreSQL adapter, **not**
+a mobile route, scheduler or deployed worker.
+`PARTY_EVENT_REWARD_CLAIM_V25_RELEASED=false`.
+
+**Verification:**
+`backend/supabase/tests/party_event_reward_claim_quote_v25.sql`
+passed on staging. It tests forged cross-account/frozen
+character IDs, missing wallet/inventory state, standard
+1-band Artisan quote (1,700 gold, 2,250 skill XP,
+10 Party Renown and 4 GEM_DUST), participation quote
+(420 gold), unchanged pre/post wallet and inventory
+revision, exact idempotent retry, changed request conflicts,
+private account-only quote projection and immutable
+nonpaying status. New server regression
+`weekly-party-reward-claim-v25.ts` covers **144**
+reward model combinations across three difficulties,
+six performance bands, 5/14/15/60 EP cases and
+all appropriate choices, plus tampered bundle/identity/flags;
+`backend/online/tests/party-event-claim-quote-v25.ts`
+checks parameterized private reads/writes and fail-closed
+missing results. Both suites are **registered, but GitHub
+TypeScript CI has not yet executed/been confirmed**.
+
+The staging run executed **all 15** isolated SQL suites
+(v11–v19, v21–v25 and extra zero-EP) against the complete
+14-migration chain, in three savepoint-isolated
+`BEGIN ... ROLLBACK` transactions, all **PASS**.
+No migrations or fixture data were persisted.
+
+**Not an actual claim or a released reward:**
+Gold wallet limits are checked, but inventory capacity,
+stack merging, item locks, account-wide Companion Essence,
+Bondstones and Party Renown, combat/skill XP selection,
+actual Inbox delivery, crash/retry recovery and atomic
+exactly-once state mutation are **not yet proven**.
+No SQL routine to credit or claim exists in this migration.
+The next pass must implement one transactional economy
+settlement that either commits **every** reward field plus
+an immutable claim receipt and Inbox delivery or rolls
+back everything, under server-authenticated ownership.
+It must verify integer and stack capacity, stat/XP rules,
+game-state revision, item/XP account limits, duplicate
+requests and concurrently racing claim requests, and
+validate every reward-kind/difficulty/band against
+the canonical TypeScript model.
+
+Do not enable Party Events, activate grants,
+merge this draft PR, or write to production until the
+end-to-end credit path is audited and approved.

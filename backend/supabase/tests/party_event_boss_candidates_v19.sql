@@ -76,40 +76,40 @@ begin
  if r is null then raise exception 'V19 attempt reservation missing';end if;
 
  q:=jsonb_build_object(
-  'completedAtMs',now_ms,'tiersCleared',1,'highestTierReached',1,
-  'totalBossDamage',1000,'totalPossibleBossHp',1000,'rewardBand',1,
+  'completedAtMs',now_ms,'tiersCleared',0,'highestTierReached',1,
+  'totalBossDamage',600,'totalPossibleBossHp',1000,'rewardBand',1,
   'tiers',jsonb_build_array(jsonb_build_object(
-   'tier',1,'cleared',true,'bossMaxHp',1000,
-   'bossRemainingHp',0,'partyDamage',1000,
-   'durationMs',1100,'reason','victory')),
+   'tier',1,'cleared',false,'bossMaxHp',1000,
+   'bossRemainingHp',400,'partyDamage',600,
+   'durationMs',1100,'reason','wipe')),
   'contributions',jsonb_build_array(
    jsonb_build_object('accountId',a[1],'characterId',c[1],
     'role','tank','damage',300,'healing',0,'shielding',0,
     'absorbedDamage',10,'damageTaken',60,'interrupts',0,
     'meaningfulContribution',true),
    jsonb_build_object('accountId',a[2],'characterId',c[2],
-    'role','damage','damage',700,'healing',0,'shielding',0,
+    'role','damage','damage',300,'healing',0,'shielding',0,
     'absorbedDamage',0,'damageTaken',0,'interrupts',0,
     'meaningfulContribution',true)));
 
  begin
   perform private.record_party_event_boss_candidate_v19(
    gen_random_uuid(),'v19-no-attempt-0001',repeat('c',64),
-   'combat-engine-v19',q);
+   'party-event-day8-combat-v4',q);
   raise exception 'V19 accepted unknown attempt';
  exception when others then
   if sqlerrm<>'party_event_v19_reservation_missing' then raise;end if;
  end;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-wrong-finalehash',repeat('f',64),'combat-engine-v19',q);
+   r,'v19-wrong-finalehash',repeat('f',64),'party-event-day8-combat-v4',q);
   raise exception 'V19 accepted wrong finale hash';
  exception when others then
   if sqlerrm<>'party_event_v19_finale_hash_mismatch' then raise;end if;
  end;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-forged-damage',repeat('c',64),'combat-engine-v19',
+   r,'v19-forged-damage',repeat('c',64),'party-event-day8-combat-v4',
    jsonb_set(q,'{tiers,0,partyDamage}','999'::jsonb));
   raise exception 'V19 accepted inconsistent boss damage';
  exception when others then
@@ -117,7 +117,7 @@ begin
  end;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-fake-tier-count',repeat('c',64),'combat-engine-v19',
+   r,'v19-fake-tier-count',repeat('c',64),'party-event-day8-combat-v4',
    jsonb_set(q,'{tiersCleared}','12'::jsonb));
   raise exception 'V19 trusted client-provided tier score';
  exception when others then
@@ -125,7 +125,7 @@ begin
  end;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-duplicate-contributors',repeat('c',64),'combat-engine-v19',
+   r,'v19-duplicate-contributors',repeat('c',64),'party-event-day8-combat-v4',
    jsonb_set(q,'{contributions,1,accountId}',to_jsonb(a[1])));
   raise exception 'V19 accepted duplicated roster account';
  exception when others then
@@ -134,7 +134,27 @@ begin
  end;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-invalid-band',repeat('c',64),'combat-engine-v19',
+   r,'v19-truncated-win',repeat('c',64),'party-event-day8-combat-v4',
+   jsonb_set(jsonb_set(jsonb_set(jsonb_set(jsonb_set(q,
+     '{tiers,0,cleared}','true'::jsonb),
+     '{tiers,0,bossRemainingHp}','0'::jsonb),
+     '{tiers,0,partyDamage}','1000'::jsonb),
+     '{tiers,0,reason}','"victory"'::jsonb),
+     '{tiersCleared}','1'::jsonb));
+  raise exception 'V19 accepted a truncated winning tier as full result';
+ exception when others then
+  if sqlerrm<>'party_event_v19_invalid_tier_sequence' then raise;end if;
+ end;
+ begin
+  perform private.record_party_event_boss_candidate_v19(
+   r,'v19-unknown-engine',repeat('c',64),'client-fabricated-v99',q);
+  raise exception 'V19 accepted unknown combat engine version';
+ exception when others then
+  if sqlerrm<>'party_event_v19_invalid_candidate_request' then raise;end if;
+ end;
+ begin
+  perform private.record_party_event_boss_candidate_v19(
+   r,'v19-invalid-band',repeat('c',64),'party-event-day8-combat-v4',
    jsonb_set(q,'{rewardBand}','6'::jsonb));
   raise exception 'V19 accepted arbitrary reward band';
  exception when others then
@@ -142,27 +162,27 @@ begin
  end;
 
  response:=private.record_party_event_boss_candidate_v19(
-  r,'v19-valid-result-0001',repeat('c',64),'combat-engine-v19',q);
+  r,'v19-valid-result-0001',repeat('c',64),'party-event-day8-combat-v4',q);
  if response->>'replayed'<>'false'
   or response->>'combatVerified'<>'false'
   or response->>'rewardsGranted'<>'false'
   or (response->>'rewardBand')::int<>1
  then raise exception 'V19 candidate incorrectly settled or rewarded';end if;
  replay:=private.record_party_event_boss_candidate_v19(
-  r,'v19-valid-result-0001',repeat('c',64),'combat-engine-v19',q);
+  r,'v19-valid-result-0001',repeat('c',64),'party-event-day8-combat-v4',q);
  if replay->>'replayed'<>'true'
   or replay->>'candidateHash'<>response->>'candidateHash'
  then raise exception 'V19 exact replay changed result';end if;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-another-boss-result',repeat('c',64),'combat-engine-v19',q);
+   r,'v19-another-boss-result',repeat('c',64),'party-event-day8-combat-v4',q);
   raise exception 'V19 accepted second boss outcome';
  exception when others then
   if sqlerrm<>'party_event_v19_candidate_conflict' then raise;end if;
  end;
  begin
   perform private.record_party_event_boss_candidate_v19(
-   r,'v19-valid-result-0001',repeat('c',64),'combat-engine-v19',
+   r,'v19-valid-result-0001',repeat('c',64),'party-event-day8-combat-v4',
    jsonb_set(q,'{contributions,0,damage}','301'::jsonb));
   raise exception 'V19 mutated existing boss candidate';
  exception when others then
@@ -195,7 +215,7 @@ begin
  update private.party_event_weeks_v11 set status='closed'
  where party_id=p and event_starts_at=w;
  replay:=private.record_party_event_boss_candidate_v19(
-  r,'v19-valid-result-0001',repeat('c',64),'combat-engine-v19',q);
+  r,'v19-valid-result-0001',repeat('c',64),'party-event-day8-combat-v4',q);
  if replay->>'replayed'<>'true' then
   raise exception 'V19 post-close exact replay failed';end if;
  if (select count(*) from private.party_event_boss_candidates_v19)<>1

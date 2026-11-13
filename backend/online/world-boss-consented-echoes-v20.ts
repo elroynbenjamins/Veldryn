@@ -41,6 +41,7 @@ export interface WorldBossEchoResolutionV20 {
  candidates:readonly WorldBossAuthoritativeSnapshotV9[];
  consentBindings:readonly {
   eventId:string;ownerAccountId:string;characterId:string;consentRevision:number;
+  snapshotId:string;
  }[];
  reviewed:number;
  rejectedInactive:number;
@@ -116,6 +117,7 @@ export async function loadWorldBossConsentedEchoesV20(input:{
   consentBindings.push({
    eventId,ownerAccountId:row.ownerAccountId,
    characterId:row.characterId,consentRevision:row.consentRevision,
+   snapshotId:result.snapshot.snapshotId,
   });
  }
  return {candidates,consentBindings,reviewed:records.length,

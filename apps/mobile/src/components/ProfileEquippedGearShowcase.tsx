@@ -6,7 +6,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {ITEMS,type ItemDef} from '../content/items';
 import {displayStat} from '../core/stat-display';
 import type {GearSlot} from '../core/types';
-import {PROFILE_GEAR_SLOTS,type ProfileEquippedGear} from '../core/profile-equipped-gear';
+import {PROFILE_GEAR_SLOTS,profileGearColumnCount,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -44,7 +44,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
  const [selectedSlot,setSelectedSlot]=useState<GearSlot|null>(null);
  // Use the measured panel rather than device width: this also works in narrow chat sheets.
  const availableWidth=panelWidth||width-54;
- const columns=availableWidth<258||fontScale>=1.4?3:availableWidth<318||fontScale>=1.18?4:5;
+ const columns=profileGearColumnCount(availableWidth,fontScale);
  const tileWidth=columns===5?'18.5%':columns===4?'23.8%':'31.5%';
  const equipped=useMemo(()=>new Map(gear.map(row=>[row.slot,row])),[gear]);
  // Close stale inspection if the viewed player's gear or equipped copy changes.

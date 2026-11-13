@@ -11,13 +11,13 @@ values('DEWLEAF','herb',true)
 on conflict (item_id) do update
  set category='herb',enabled=true;
 
--- Only the three audited level-one resources are eligible for the initial
--- v22 plan. Existing unrelated catalog rows remain in place for later
--- audited expansions, but cannot be frozen into new orders through the v16
--- service-only writer while disabled.
+-- Preserve the existing v16 approved wood/ore IDs (including optional
+-- material variants) for backwards compatibility. The v22 deterministic
+-- starter planner itself only selects GREENWOOD_LOG and COPPER_ORE.
+-- Disable any herb other than the verified Level 1 Dewleaf node.
 update private.party_event_supply_catalogue_v16
- set enabled=(item_id in ('GREENWOOD_LOG','COPPER_ORE','DEWLEAF'))
- where enabled is distinct from (item_id in ('GREENWOOD_LOG','COPPER_ORE','DEWLEAF'));
+ set enabled=false
+ where category='herb' and item_id<>'DEWLEAF' and enabled=true;
 
 do $$
 declare v_approved integer;
@@ -30,11 +30,11 @@ begin
     or (item_id='DEWLEAF' and category='herb'));
  if v_approved<>3 or exists (
   select 1 from private.party_event_supply_catalogue_v16
-  where enabled and item_id not in ('GREENWOOD_LOG','COPPER_ORE','DEWLEAF')
+  where enabled and category='herb' and item_id<>'DEWLEAF'
  ) then raise exception 'party_event_v22_starter_catalog_not_audited';end if;
 end;$$;
 
 comment on table private.party_event_supply_catalogue_v16 is
- 'Hidden Party Events supply allowlist: v22 starts with Greenwood Log, Copper Ore, gatherable Dewleaf only. New item sources need a fresh independent gathering audit before enabling.';
+ 'Hidden Party Events supply allowlist: v22 starts with Greenwood Log, Copper Ore, gatherable Dewleaf only. Additional herbs need a fresh independent gathering audit before enabling. Existing v16 wood/ore sources remain approved; v22 starter planner chooses only Level 1 wood and ore.';
 
 commit;

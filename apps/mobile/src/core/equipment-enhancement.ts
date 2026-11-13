@@ -2,7 +2,6 @@ import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
 import {effectiveOwnedGearRarity,craftedGearInstances,craftedGearQualityMultiplier} from './crafted-gear-instances';
 import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
-import {recordSeasonalActivity} from './seasonal-quests';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
 import {gemRollPercentFromUnitV1,gemRolledValueV1,mobileGemFamilyV1,normalizeGemRollPercentV1} from '../content/gems-v1';
 import {v33EquipmentRecipeForItem} from '../content/equipment-recipes-v33';
@@ -134,7 +133,7 @@ function setEnhancement(state:GameState,itemId:string,value:GearEnhancementState
   return {...state,character:{...state.character!,gearEnhancements:{...(state.character!.gearEnhancements??{}),[itemId]:{...value,...slots}}}};
 }
 function requireEquipped(state:GameState,itemId:string){if(!state.character||!Object.values(state.character.equipment).includes(itemId))throw new Error('Equip this item first');}
-export function attemptEquipmentUpgrade(state:GameState,itemId:string,roll=Math.random(),nowMs=Date.now()){
+export function attemptEquipmentUpgrade(state:GameState,itemId:string,roll=Math.random()){
   requireEquipped(state,itemId);if(roll<0||roll>=1)throw new Error('Invalid upgrade roll');
   const quote=upgradeQuote(state,itemId);if(quote.maxed)throw new Error('This item already has all four regional improvements');
   if(state.character!.gold<quote.gold)throw new Error(`Need ${quote.gold} gold`);
@@ -144,7 +143,7 @@ export function attemptEquipmentUpgrade(state:GameState,itemId:string,roll=Math.
   const prior=gearEnhancement(state,itemId),success=roll<quote.successChance;
   const rank=success?quote.targetRank:prior.rank;
   next=setEnhancement(next,itemId,{...prior,rank,failures:success?0:prior.failures+1});
-  return {state:success?recordSeasonalActivity(next,'upgrade',1,nowMs):next,result:{success,oldRank:prior.rank,newRank:rank,successChance:quote.successChance,downgraded:!success&&rank<prior.rank}};
+  return {state:next,result:{success,oldRank:prior.rank,newRank:rank,successChance:quote.successChance,downgraded:!success&&rank<prior.rank}};
 }
 export function socketGem(state:GameState,itemId:string,gemId:string,randomRoll=Math.random()){
   requireEquipped(state,itemId);const gem=safeGem(gemId);if(!gem)throw new Error('That item is not a gem');

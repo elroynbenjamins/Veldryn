@@ -259,3 +259,77 @@ activity IDs. Finalize frozen-loadout saving, authoritative event week
 activation, resource donation sinks, credited EP progression/caps,
 Day 8 boss settlement and mobile pixel-art journal screens before any
 feature flag, CI promotion or deployment. Keep PR draft.
+
+## v14 — verified recurring Event Points and read-only stage readiness (13 Nov 2026)
+
+This new hidden backend pass adds
+`backend/supabase/migrations/20261113080000_party_event_verified_progress_v14.sql`
+and `backend/supabase/tests/party_event_verified_progress_v14.sql`,
+depending on the private v11–v13 ledgers. They are **committed to the
+draft branch only**, with no migration applied to staging or production.
+
+**What v14 credits:** Unique, server-verified gathering idle claims from
+the nine audited Stage 1 nodes; actual weighted crafting receipts during
+Stage 2 or 3; and successful co-op combat nodes with two or more human
+party members during Stage 2. Membership, character, activity and event
+times derive from server-committed tables. No client-provided seconds,
+units, totals, account, party role or source ID are accepted. This
+recurring activity ledger is **separate** from one-time v11 stage
+objective receipts, so later valid activity can continue to earn EP
+without creating duplicate objective completions.
+
+**Point rules:** One EP per 900 verified seconds (15 minutes), with
+integer seconds carried between receipts; a **40-EP verified-activity
+cap per member per event week**, serialized by a row lock on the
+private event-week record. A completed gathering claim uses actual
+settled elapsed seconds (and only if its entire interval occurred
+after enrollment/stage opening). Co-op combat grants at most one
+15-minute-equivalent EP per successful eligible shared node to each
+participating member. Crafting uses server-configured existing Party
+activity weights and is conservatively capped to one hour/four EP
+per crafting receipt to avoid bulk-prebanking abuse; its precise
+time-equivalence remains a gameplay calibration item.
+
+A unique canonical source ID and a unique request ID guarantee
+exact-once credit; replay of the same verified credit is stable
+even after the event or dungeon closes. Different requests cannot
+re-credit it. Each credit records stage, actor, source, verified time,
+points and the resulting carry in private append-only receipts.
+`service_role` has read-only table grants and EXECUTE access to
+`private.credit_party_event_activity_v14` only; player clients have no
+direct access. There are **no coin, material, rank or chest grants**.
+
+**Readiness:** `private.party_event_stage_readiness_v14` derives
+member-count-adjusted progress targets directly from the v2 rules
+(2/3/4 members: 100/135/170 EP). Stage thresholds use cumulative
+25% / 75% / 100% targets, with the same half-up rounding as
+`weeklyPartyBudget`. It reports verified activity points, the
+remaining EP, stage, locked vote and blockers. It **never advances
+a stage** and deliberately reports `requiredSuppliesVerified=false`,
+`finaleVerified=false` and `stageReadyToAdvance=false`, even
+when activity reaches its threshold. This is necessary because
+transactional supply donations, special-action EP (existing
+`PARTY_EVENT_SPECIAL_ACTION_LIMIT=20` per member) and the Day 8
+boss completion proof are not implemented yet. In particular,
+a 2-member group can reach at most 80 of its 100 target through
+the 40/member verified-activity cap alone; no fabricated
+completion or auto-advance is permitted.
+
+**Verified on staging:** v14's SQL suite passed; an additional
+**combined v11+v12+v13+v14 migration and regression run passed**
+on Veldryn Staging 20260924. Everything was run under one
+`BEGIN; ... ROLLBACK;` transaction, so there are no persistent
+schema updates, test users, point receipts or grants in staging,
+and no production deployment. It verifies 900-second carry,
+exact replay, outsider/forged-source denial, pre-enrollment
+banked gathering rejection, per-account cap, capped bulk craft,
+shared co-op contribution, stage thresholds and no rewards.
+
+**Still blocked:** Before enabling, route actual game activity to
+this private RPC from the server (not mobile clients), implement
+the separate verified objective/special EP and resource donation
+ledgers, freeze supply orders and loadouts, evaluate/advance
+stages transactionally only with satisfied proofs, and settle
+the Day 8 boss exactly once with independently tested rewards.
+Review the latest code/CI and real crafting-time data. Keep
+Party Events feature flags OFF and PR #1045 draft.

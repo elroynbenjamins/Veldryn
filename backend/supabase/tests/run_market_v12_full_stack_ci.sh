@@ -106,3 +106,8 @@ end
 $check$;
 SQL
 echo "PASS: no synthetic trades survive rollback; all launch flags, asset policies, prices, lot approvals and public access remain OFF"
+# The multi-session race requires a committed fixture visible to concurrent
+# PostgreSQL sessions; it runs LAST in this disposable CI-only database.
+# No fixture is ever created in staging, production, or a persistent DB.
+bash -n "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"
+bash "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"

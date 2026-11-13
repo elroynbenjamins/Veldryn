@@ -147,6 +147,11 @@ begin
   p,start_at,v_src,'scout_route','v17-obj-scout-01',repeat('a',64));
  v_receipt:=(v_result->>'receiptId')::uuid;
  perform private.credit_party_event_objective_v15(p,start_at,v_receipt);
+ v_replay:=private.party_event_stage_readiness_v17(p,start_at);
+ if (v_replay->>'stageReadyToAdvance')::boolean is distinct from true
+   or v_replay->>'status'<>'ready_to_advance'
+   or (v_replay->>'missingRequiredObjectives')::int<>0
+ then raise exception 'v17 Stage 1 readiness disagrees with transition';end if;
 
  v_result:=private.advance_party_event_stage_v17(
   p,start_at,1,'v17-advance-stage1');
@@ -251,6 +256,11 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v17_missing_objectives' then raise;end if;
  end;
+ v_replay:=private.party_event_stage_readiness_v17(p,start_at);
+ if (v_replay->>'stageReadyToAdvance')::boolean
+   or v_replay->>'status'<>'awaiting_objectives'
+   or (v_replay->>'missingRequiredObjectives')::int<>2
+ then raise exception 'v17 readiness allowed Stage 2 missing objectives';end if;
 
  for j in 1..2 loop
   v_action:=case j when 1 then 'secure_approach' else 'support_expedition' end;
@@ -266,11 +276,20 @@ begin
    p,start_at,(v_result->>'receiptId')::uuid);
  end loop;
 
+ v_replay:=private.party_event_stage_readiness_v17(p,start_at);
+ if (v_replay->>'stageReadyToAdvance')::boolean is distinct from true
+   or v_replay->>'status'<>'ready_to_advance' then
+  raise exception 'v17 Stage 2 readiness disagrees with transition';end if;
  v_result:=private.advance_party_event_stage_v17(
   p,start_at,2,'v17-advance-stage2');
  if v_result->>'replayed'<>'false' or
   (v_result->>'toStage')::int<>3 then
   raise exception 'v17 did not advance Stage 2 -> 3';end if;
+ v_replay:=private.party_event_stage_readiness_v17(p,start_at);
+ if (v_replay->>'stageReadyToAdvance')::boolean
+  or (v_replay->>'stage')::integer<>3
+  or (v_replay->>'finaleVerified')::boolean
+ then raise exception 'v17 Stage 3 appeared completed without boss proof';end if;
  if (select count(*) from private.party_event_stage_transitions_v17
   where party_id=p and event_starts_at=start_at)<>2 then
   raise exception 'v17 stage transitions not exactly once';end if;

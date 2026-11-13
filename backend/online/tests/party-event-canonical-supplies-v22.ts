@@ -1,4 +1,9 @@
 import {
+  PARTY_EVENT_CLAIM_SQL_V25_RELEASED,PARTY_EVENT_PREFLIGHT_SQL_V25,
+  createTrustedPartyClaimPreflightRepositoryV25,
+} from '../party-event-claim-preflight-v25';
+import {partyEventRewardBundle} from '../../src/server/party/weekly-party-rewards-v2';
+import {
   PARTY_EVENT_REWARD_SQL_ADAPTER_V24_RELEASED,
   PARTY_EVENT_PREPARE_OFFERS_SQL_V24,
   PARTY_EVENT_LOCK_CHOICE_SQL_V24,
@@ -229,6 +234,49 @@ async function runRepositoryChecks(){
   try{await missingReward.prepareOffers(id,'party-event-v24-offers:'+id);}
   catch(e){missingV24=String(e).includes('party_event_v24_missing_private_sql_result');}
   assert(missingV24,'v24 missing service SQL response must fail closed');
+
+  assert(PARTY_EVENT_CLAIM_SQL_V25_RELEASED===false,
+    'v25 private claim preflight is hidden and nonpaying');
+  let claimPreflightQueries=0;
+  const preflight=createTrustedPartyClaimPreflightRepositoryV25({
+    queryOne:async(sql,params)=>{
+      claimPreflightQueries++;
+      assert(sql===PARTY_EVENT_PREFLIGHT_SQL_V25
+        &&params.length===4&&params[0]===id
+        &&params[1]===id&&params[2]===id
+        &&params[3]==='party-event-v25-preflight:'+id,
+        'v25 must pass fixed offer/owner/character/dedupe parameters');
+      return {receipt:{
+        replayed:false,offerId:id,accountId:id,characterId:id,
+        difficulty:'standard',rewardHash:'f'.repeat(64),
+        reward:partyEventRewardBundle({
+          difficulty:'standard',performanceBand:1,personalPoints:5,
+        }),
+        inventoryRevision:0,conservativeSlotsNeeded:0,
+        needsSkillTarget:false,needsCombatXpRouter:false,
+        needsCompanionRouter:false,
+        preflightRecorded:true,payoutAuthorized:false,
+        claimable:false,claimed:false,rewardsGranted:false,
+      }};
+    },
+  });
+  const dryRun=await preflight.prepareClaimPreflight({
+    offerId:id,accountId:id,characterId:id,
+    requestId:'party-event-v25-preflight:'+id,
+  });
+  assert(claimPreflightQueries===1&&dryRun.reward.gold===420
+    &&dryRun.payoutAuthorized===false&&dryRun.claimed===false,
+    'v25 SQL adapter must never credit a grant');
+  const missingPreflight=createTrustedPartyClaimPreflightRepositoryV25({
+    queryOne:async()=>null,
+  });
+  let missingV25=false;
+  try{await missingPreflight.prepareClaimPreflight({
+    offerId:id,accountId:id,characterId:id,requestId:'party-event-v25-preflight:'+id,
+  });}
+  catch(e){missingV25=String(e).includes('party_event_v25_missing_private_preflight_receipt');}
+  assert(missingV25,'v25 missing private quote must fail closed');
+  console.log('Party Events v25: private one-shot SQL preflight quote, owner and hard-off payout validated');
   console.log('Party Events v24: prepared offers, locked selection and read-only Inbox SQL adapter validated');
   console.log('Party Events v23: private SQL attestation parameters and no-loot read/write adapter validated');
   console.log('Party Events v22: parameterized MVCC replay repository, private UUID gate and catalog validated');

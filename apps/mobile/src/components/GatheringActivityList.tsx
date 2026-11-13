@@ -5,7 +5,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,GatheringSkillId} from '../core/types';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
-import {itemDef} from '../content/items';
+import type {Language} from '../i18n/languages';
 import {currentRegionId} from '../core/combat-region';
 import {WORLD_ZONES} from '../content/world-map';
 import {formatGameNumber} from '../core/number-format';
@@ -61,7 +61,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       onPress={()=>setExpandedDropId(value=>value===activity.id?null:activity.id)}/>
     </View>
     {expanded?<View style={s.dropDetails}>
-     {drops.map(drop=><GatheringDropLine key={drop.id} drop={drop} gl={gl} s={s}
+     {drops.map(drop=><GatheringDropLine key={drop.id} drop={drop} gl={gl} language={language} s={s}
       suffix={drop.kind==='yield'?gt('per action'):drop.kind==='essence'?gt('base chance'):drop.kind==='event_discovery'?gt('per event minute'):drop.kind==='event_currency'?gt('Event'):''}
       petLabel={gt('Pet')} ownedLabel={gt('Owned')}/>)}
      {drops.some(drop=>drop.kind==='pet')?<Text style={s.dropHint}>{drops.some(drop=>drop.kind==='pet'&&drop.locked)?gt('Pet drops unlock with the Pet collection.'):gt('Pet chances are per completed gathering action.')}</Text>:null}
@@ -111,8 +111,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
 });}
 
 type GatheringDropStyles=ReturnType<typeof makeStyles>;
-function GatheringDropLine({drop,gl,s,suffix,petLabel,ownedLabel}:{
- drop:GatheringDropPreviewRow;gl:(text:string)=>string;s:GatheringDropStyles;
+function GatheringDropLine({drop,gl,language,s,suffix,petLabel,ownedLabel}:{
+ drop:GatheringDropPreviewRow;gl:(text:string)=>string;language:Language;s:GatheringDropStyles;
  suffix:string;petLabel:string;ownedLabel:string;
 }){
  const petSource=drop.petId?petArtSource(drop.petId):undefined;
@@ -121,7 +121,7 @@ function GatheringDropLine({drop,gl,s,suffix,petLabel,ownedLabel}:{
   :drop.chance!==undefined?`${gatheringDropPercent(drop.chance)}${suffix?' '+suffix:''}`:suffix;
  return <View style={s.dropRow}>
   {drop.itemId?<ResourceArtwork itemId={drop.itemId} size={20} framed={false}/>:petSource?<Image source={petSource} resizeMode="contain" style={s.dropIcon}/>:<Text style={s.dropSymbol}>✦</Text>}
-  <Text numberOfLines={1} style={s.dropName}>{gl(drop.name)}{drop.kind==='pet'?` · ${petLabel}${drop.owned?` (${ownedLabel})`:''}`:''}</Text>
+  <Text numberOfLines={1} style={s.dropName}>{drop.itemId?localizedItemName(language,drop.itemId):gl(drop.name)}{drop.kind==='pet'?` · ${petLabel}${drop.owned?` (${ownedLabel})`:''}`:''}</Text>
   <Text style={s.dropRate}>{rate}</Text>
  </View>;
 }

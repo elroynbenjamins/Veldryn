@@ -44,7 +44,7 @@ jobs:
             test "${#conflicts[@]}" -gt 0 || exit 1
             for file in "${conflicts[@]}"; do
               case "$file" in
-                apps/mobile/src/core/game-commands.ts|backend/supabase/functions/gameplay/index.ts|backend/supabase/functions/coop/index.ts)
+                apps/mobile/src/core/game-commands.ts|apps/mobile/tests/equipment-timed-crafting-queue.ts|backend/supabase/functions/gameplay/index.ts|backend/supabase/functions/coop/index.ts)
                   git checkout --theirs -- "$file"
                   git add -- "$file"
                   ;;

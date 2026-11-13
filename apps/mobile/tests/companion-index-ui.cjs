@@ -24,12 +24,21 @@ for(const needle of [
  "UNRELEASED_SEASONAL_COMPANION_COUNT",
  "def.unlockRequirements.map((req,index)",
  "achievement?.requirements[index]",
- "companionContent(language,req.description)",
+ "companionUnlockRequirement(language,req.description)",
+ "UiIcon name={sourceIcon[req.type]}",
  "GUILD_SHOP_CATALOGUE",
  "guildShopEntry.guildLevel",
  "guildShopEntry.tokenCost",
  "companionArtSource(def.id)",
 ])assert(index.includes(needle),'Companion category/requirement UI missing '+needle);
-assert(index.includes("setGroup(id);setScope('all');"),'Changing availability must reset owned filtering to show the selected group');
+assert(index.includes("setGroup(id);setScope('all');setRole('all');setQuery('');"),'Switching group clears stale filters to prevent empty results');
+assert(index.includes("group==='available'&&candidate"),'Next unlock panel must not crowd event or future tabs');
+assert(index.includes("formatLocalizedNumber(language,guildShopEntry.tokenCost)"),'Guild tokens must use the chosen language number format');
+assert(index.includes("complete?'✓':formatLocalizedNumber"),'Completed conditions show a check instead of misleading numeric status');
+assert(index.includes("accessibilityHint={requirementHint}"),'Unlock descriptions must remain available to screen readers');
+assert(index.includes("companionContent(language,status)"),'Owned companion status must be localized');
+assert(index.includes("sourceIcon:Record<CompanionUnlockRequirementType,UiIconName>"),'Requirement source icons must reuse existing pixel art assets');
+assert(index.includes("t('Planned unlocks')"),'Unreleased content must be labeled as planned');
+assert(index.includes("requirement?<Text"),'Unreleased content must not display fabricated 0/1 counters');
 assert(index.includes("hidden?'Unknown Prestige Companion':def.name"),'Unreleased Prestige identities stay hidden in searches');
 console.log('PASS: searchable Companion Index preserves spoiler privacy, portraits, group tabs and unlock progress');

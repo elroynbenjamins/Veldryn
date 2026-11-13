@@ -2,6 +2,9 @@ import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS} from '../content/combat-companions';
 import {WORLD_ZONES} from '../content/world-map';
+import {UiIcon} from './UiIcon';
+import type {UiIconName} from '../theme/ui-icons';
+import {formatLocalizedNumber} from '../i18n/translator';
 import {COMPANION_INDEX_COUNTS,UNRELEASED_SEASONAL_COMPANION_COUNT,companionIndexGroup,type CompanionIndexGroup} from '../core/companion-index-availability';
 import {GUILD_SHOP_CATALOGUE} from '../../../../packages/guild-shop/src/catalogue';
 import type {CombatCompanionRole,CompanionUnlockRequirementType} from '../core/combat-companion-types';
@@ -14,14 +17,15 @@ import {SearchField} from './SearchField';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {companionContent,companionLabel,companionTranslator} from '../i18n/companions';
+import {companionContent,companionLabel,companionTranslator,companionUnlockRequirement} from '../i18n/companions';
 
 type Scope='owned'|'missing'|'all';
 type Role='all'|CombatCompanionRole;
-const sourceIcon:Record<CompanionUnlockRequirementType,string>={
- quest:'✦',achievement:'★',boss_kills:'⚔',dungeon_clears:'◆',
- monster_mastery:'♜',skill_level:'✧',reputation:'◈',collection:'◇',
- event_currency:'◉',event_challenge:'⚔',meta:'✦',
+/** Reuse the game's pixel icons instead of platform-dependent Unicode symbols. */
+const sourceIcon:Record<CompanionUnlockRequirementType,UiIconName>={
+ quest:'quests',achievement:'rewards',boss_kills:'trials',dungeon_clears:'dungeon',
+ monster_mastery:'world',skill_level:'skills',reputation:'guild',collection:'inventory',
+ event_currency:'events',event_challenge:'trials',meta:'companions',
 };
 const groupOrder:readonly CompanionIndexGroup[]=['available','event','comingSoon'];
 export interface CompanionIndexProps{
@@ -80,7 +84,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     <Text style={s.codexText}>{t('Codex & rewards')} ›</Text>
    </Pressable>
   </View>
-  {candidate?<Pressable accessibilityRole="button" accessibilityLabel={t('Next unlock: {value0}',{value0:candidate.def.name})} onPress={()=>open(candidate.def.id)} style={({pressed})=>[s.nextUnlock,pressed&&s.pressed]}>
+  {group==='available'&&candidate?<Pressable accessibilityRole="button" accessibilityLabel={t('Next unlock: {value0}',{value0:candidate.def.name})} onPress={()=>open(candidate.def.id)} style={({pressed})=>[s.nextUnlock,pressed&&s.pressed]}>
     {candidateArt?<Image source={candidateArt} resizeMode="contain" style={s.nextArt}/>:null}
     <View style={s.nextCopy}>
      <Text style={s.overline}>{t('NEXT TO UNLOCK')}</Text>
@@ -92,9 +96,9 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
    </Pressable>:null}
   <View accessibilityRole="tablist" style={s.groupRow}>{groupOrder.map(id=>{
    const title=id==='available'?t('Available to earn'):id==='event'?t('Event / Past'):t('Coming soon');
-   return <Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:group===id}} accessibilityLabel={title+' · '+COMPANION_INDEX_COUNTS[id]} onPress={()=>{setGroup(id);setScope('all');}} style={[s.groupTab,group===id&&s.groupTabActive]}>
-    <Text numberOfLines={2} style={[s.groupText,group===id&&s.groupTextActive]}>{title}</Text>
+   return <Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:group===id}} accessibilityLabel={title+' · '+COMPANION_INDEX_COUNTS[id]} onPress={()=>{setGroup(id);setScope('all');setRole('all');setQuery('');}} style={[s.groupTab,group===id&&s.groupTabActive]}>
     <Text style={[s.groupCount,group===id&&s.groupTextActive]}>{COMPANION_INDEX_COUNTS[id]}</Text>
+    <Text numberOfLines={2} style={[s.groupText,group===id&&s.groupTextActive]}>{title}</Text>
    </Pressable>;
   })}</View>
   <SearchField value={query} onChangeText={setQuery} placeholder={t('Search companions')} accessibilityLabel={t('Search companions')}/>
@@ -117,27 +121,37 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
    const percent=achievement?Math.round(achievement.ratio*100):0;
    const label=hidden?t('Unknown Prestige Companion'):def.name,art=hidden?undefined:companionArtSource(def.id);
    const category=hidden?t('Undiscovered'):upcoming?t('Coming soon'):def.origin.type==='event'?t('Event reward'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Guild Token Shop'):companionLabel(language,def.rarity);
-   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):upcoming?t('Region in development'):def.origin.type==='event'?t('Previously available through {event}',{event:def.origin.name}):guildShopEntry?t('Guild Lv. {level} · {cost} tokens',{level:guildShopEntry.guildLevel,cost:guildShopEntry.tokenCost.toLocaleString()}):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):companionContent(language,guidance?.label??t('Complete unlock requirements'));
-   return <Pressable key={def.id} accessibilityRole="button" accessibilityLabel={label+' · '+(owned?t('Owned'):t('Locked'))+' · '+subtitle} onPress={()=>open(def.id)} style={({pressed})=>[s.entry,{width:wide?'48.9%':'100%',borderLeftColor:hidden?C.line:companionRarityBorder(def.rarity,C.dark)},pressed&&s.pressed]}>
+   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):upcoming?t('Region in development'):def.origin.type==='event'?t('Previously available through {event}',{event:def.origin.name}):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):companionContent(language,guidance?.label??t('Complete unlock requirements'));
+   const requirementHint=achievement?def.unlockRequirements.map((req,index)=>{
+    const p=achievement.requirements[index];
+    return companionUnlockRequirement(language,req.description)+' '+(p.complete?'✓':p.current+'/'+p.total);
+   }).join(' · '):undefined;
+   return <Pressable key={def.id} accessibilityRole="button" accessibilityLabel={label+' · '+(owned?t('Owned'):t('Locked'))+' · '+subtitle} accessibilityHint={requirementHint} onPress={()=>open(def.id)} style={({pressed})=>[s.entry,{width:wide?'48.9%':'100%',borderLeftColor:hidden?C.line:companionRarityBorder(def.rarity,C.dark)},pressed&&s.pressed]}>
     <View style={s.artBox}>{art?<Image source={art} resizeMode="contain" style={s.art}/>:<Text style={s.unknown}>?</Text>}</View>
     <View style={s.entryBody}>
      <Text numberOfLines={1} style={s.cardName}>{label}</Text>
      <Text numberOfLines={1} style={s.meta}>{companionLabel(language,def.role)} · {category}</Text>
      <Text numberOfLines={2} style={s.caption}>{subtitle}</Text>
+     {!owned&&!hidden&&guildShopEntry?<View style={s.requirementList}>
+      <Text style={s.requirementHeading}>{t('Unlock requirements')}</Text>
+      <View style={s.requirementRow}><View style={s.requirementIcon}><UiIcon name="guild" size={18}/></View>
+       <Text style={s.requirementLabel}>{t('Guild Lv. {level} · {cost} tokens',{level:guildShopEntry.guildLevel,cost:formatLocalizedNumber(language,guildShopEntry.tokenCost)})}</Text>
+      </View>
+     </View>:null}
      {!owned&&!hidden&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'&&def.unlockRequirements.length>0?<View style={s.requirementList}>
       <Text style={s.requirementHeading}>{upcoming?t('Planned unlocks'):t('Unlock requirements')}</Text>
       {def.unlockRequirements.map((req,index)=>{
        const requirement=achievement?.requirements[index],complete=requirement?.complete===true;
        return <View key={req.type+':'+(req.target??index)} style={s.requirementRow}>
-        <View style={[s.requirementIcon,complete&&s.requirementIconDone]}><Text style={[s.requirementGlyph,complete&&s.requirementGlyphDone]}>{complete?'✓':sourceIcon[req.type]}</Text></View>
-        <Text numberOfLines={2} style={[s.requirementLabel,complete&&s.requirementLabelDone]}>{companionContent(language,req.description)}</Text>
-        <Text style={[s.requirementValue,complete&&s.requirementValueDone]}>{requirement?Math.min(requirement.current,requirement.total)+'/'+requirement.total:'—'}</Text>
+        <View style={[s.requirementIcon,complete&&s.requirementIconDone]}>{complete?<Text style={s.requirementGlyphDone}>✓</Text>:<UiIcon name={sourceIcon[req.type]} size={18}/>}</View>
+        <Text numberOfLines={2} style={[s.requirementLabel,complete&&s.requirementLabelDone]}>{companionUnlockRequirement(language,req.description)}</Text>
+        {requirement?<Text style={[s.requirementValue,complete&&s.requirementValueDone]}>{complete?'✓':formatLocalizedNumber(language,Math.min(requirement.current,requirement.total))+'/'+formatLocalizedNumber(language,requirement.total)}</Text>:null}
        </View>;
       })}
      </View>:null}
      {achievement?<View style={s.progressRail}><View style={[s.progressFill,{width:`${Math.max(0,Math.min(100,percent))}%`}]} /></View>:null}
      {achievement?<Text style={s.progressText}>{achievement.completeCount}/{achievement.totalCount} {t('requirements')} · {percent}%</Text>:null}
-     {equipped?<Text style={s.ownedStatus}>{t('EQUIPPED')}</Text>:owned&&status?<Text style={s.ownedStatus}>{status}</Text>:null}
+     {equipped?<Text style={s.ownedStatus}>{t('EQUIPPED')}</Text>:owned&&status?<Text style={s.ownedStatus}>{companionContent(language,status)}</Text>:null}
     </View>
     <Text style={s.chevron}>›</Text>
    </Pressable>;
@@ -159,10 +173,10 @@ function styles(C:ThemeColors){return StyleSheet.create({
  nextName:{...typography.bodyStrong,color:C.text},nextDetail:{fontSize:11,color:C.muted},
  nextArrow:{fontSize:22,color:C.accent,paddingHorizontal:5},
  groupRow:{flexDirection:'row',gap:5,alignItems:'stretch'},
- groupTab:{flex:1,minWidth:0,minHeight:49,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5,paddingHorizontal:5,paddingVertical:7,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
+ groupTab:{flex:1,minWidth:0,minHeight:60,alignItems:'center',justifyContent:'center',gap:2,paddingHorizontal:5,paddingVertical:7,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  groupTabActive:{backgroundColor:C.selection,borderColor:C.selectionLine},
  groupText:{fontSize:10,lineHeight:13,flexShrink:1,textAlign:'center',fontWeight:'800',color:C.muted},
- groupTextActive:{color:C.text},groupCount:{fontSize:11,fontWeight:'900',color:C.accent},
+ groupTextActive:{color:C.text},groupCount:{fontSize:16,lineHeight:19,fontWeight:'900',color:C.accent},
  segmentRow:{flexDirection:'row',padding:3,backgroundColor:C.panel2,borderRadius:10,borderWidth:1,borderColor:C.line},
  segment:{flex:1,minHeight:40,alignItems:'center',justifyContent:'center',borderRadius:8,paddingHorizontal:3},
  segmentActive:{backgroundColor:C.selection},segmentText:{fontSize:11,color:C.muted,fontWeight:'800'},segmentTextActive:{color:C.text},
@@ -171,20 +185,20 @@ function styles(C:ThemeColors){return StyleSheet.create({
  resultsLabel:{fontSize:10,fontWeight:'700',color:C.muted},
  seasonPreview:{flexDirection:'row',alignItems:'center',gap:9,padding:10,borderRadius:9,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line},
  seasonSymbol:{fontSize:20,color:C.accent,fontWeight:'700'},seasonText:{flex:1,fontSize:11,lineHeight:16,color:C.muted},
- requirementList:{marginTop:4,gap:5},
- requirementHeading:{fontSize:9,fontWeight:'900',color:C.muted,letterSpacing:.45},
- requirementRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:22},
- requirementIcon:{width:20,height:20,alignItems:'center',justifyContent:'center',borderRadius:5,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
- requirementIconDone:{borderColor:C.good},requirementGlyph:{fontSize:11,fontWeight:'800',color:C.accent},requirementGlyphDone:{color:C.good},
- requirementLabel:{fontSize:10,lineHeight:14,color:C.text,flex:1,minWidth:0},
+ requirementList:{marginTop:6,paddingTop:7,borderTopWidth:1,borderTopColor:C.line,gap:6},
+ requirementHeading:{fontSize:10,lineHeight:13,fontWeight:'800',color:C.muted,letterSpacing:.3},
+ requirementRow:{flexDirection:'row',alignItems:'center',gap:7,minHeight:26},
+ requirementIcon:{width:24,height:24,alignItems:'center',justifyContent:'center',borderRadius:6,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ requirementIconDone:{borderColor:C.good,backgroundColor:C.goodSurface},requirementGlyphDone:{fontSize:13,fontWeight:'900',color:C.good},
+ requirementLabel:{fontSize:11,lineHeight:15,color:C.text,flex:1,minWidth:0},
  requirementLabelDone:{color:C.muted},requirementValue:{fontSize:10,fontWeight:'800',color:C.muted},requirementValueDone:{color:C.good},
  list:{flexDirection:'row',flexWrap:'wrap',gap:7,alignItems:'stretch'},
- entry:{minHeight:105,flexDirection:'row',alignItems:'center',gap:8,padding:8,borderWidth:1,borderLeftWidth:3,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
- artBox:{width:68,height:76,justifyContent:'center',alignItems:'center',backgroundColor:C.panel2,borderRadius:7},
+ entry:{minHeight:112,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderLeftWidth:3,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+ artBox:{width:68,height:76,justifyContent:'center',alignItems:'center',backgroundColor:C.panel2,borderRadius:7,overflow:'hidden'},
  art:{width:65,height:73},unknown:{fontSize:25,fontWeight:'700',color:C.muted},
  entryBody:{flex:1,minWidth:0,gap:3},cardName:{fontSize:12,lineHeight:16,color:C.text,fontWeight:'800'},
  meta:{fontSize:10,lineHeight:13,color:C.accent,fontWeight:'700'},
- progressRail:{height:4,borderRadius:4,backgroundColor:C.panelRaised,overflow:'hidden',marginTop:1},progressFill:{height:4,backgroundColor:C.accent},
+ progressRail:{height:5,borderRadius:4,backgroundColor:C.panelRaised,overflow:'hidden',marginTop:3},progressFill:{height:5,backgroundColor:C.accent},
  progressText:{fontSize:9,color:C.muted,fontWeight:'700'},ownedStatus:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.4},
  chevron:{fontSize:19,color:C.muted,paddingHorizontal:1},
  empty:{padding:16,alignItems:'center',gap:7,borderColor:C.line,borderWidth:1,borderRadius:10},

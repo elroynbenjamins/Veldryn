@@ -116,7 +116,7 @@ BEGIN
        pg_catalog.regexp_split_to_array(lower(v_new_name),$rx$[ '-]+$rx$)) AS token
        WHERE token=ANY(ARRAY[
        'admin','administrator','moderator','mod','developer','dev','staff','support',
-       'system','official','owner','gamemaster','game','master','gm','bot','null',
+       'system','official','owner','gamemaster','gm','bot','null',
        'undefined','deleted','veldryn','fuck','fucker','fucking','shit','shite',
        'bitch','cunt','dick','pussy','whore','slut','bastard','retard','rape',
        'rapist','pedo','porn','nazi','nigger','nigga']))

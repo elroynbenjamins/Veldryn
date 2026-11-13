@@ -5,7 +5,7 @@ import {GUILD_COMBAT_COMPANIONS} from '../src/content/guild-companions-v1';
 import {MONSTERS} from '../src/content/monsters';
 import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks} from '../src/core/combat-companions';
 import {companionRequirementProgress} from '../src/core/companion-presentation';
-import {classCombatSkillTotalXpAtLevel} from '../src/core/progression';
+import {classCombatSkillTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES} from '../../../backend/src/server/companions/content';
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message);};
@@ -42,7 +42,7 @@ ok(COMBAT_COMPANIONS.every(def=>ids.includes(def.id)),'All visible companions mu
 let main=createCharacter(newGame(0),'IRONWARDEN','Roster Main');
 const alt=createCharacter(newGame(0),'KNIFE_DANCER','Roster Alt');
 const boostedAlt={...alt.character!,classSkills:(alt.character?.classSkills??[]).map(row=>({...row,xp:classCombatSkillTotalXpAtLevel(45),level:45})),monsterMasteryPoints:{FOREST_TROLL:500}};
-main={...main,otherCharacters:[{character:boostedAlt,skills:alt.skills.map(s=>s.skillId==='smithing'?{...s,level:30}:s),quests:alt.quests,inventory:alt.inventory,overflow:alt.overflow,activity:null,currentRegionId:alt.currentRegionId}]};
+main={...main,otherCharacters:[{character:boostedAlt,skills:alt.skills.map(s=>s.skillId==='smithing'?{...s,level:30,xp:totalXpAtLevel(30)}:s),quests:alt.quests,inventory:alt.inventory,overflow:alt.overflow,activity:null,currentRegionId:alt.currentRegionId}]};
 const knifeRequirement=combatCompanionDef('UNIT_007')!.unlockRequirements[0];
 const trollRequirement=combatCompanionDef('UNIT_004')!.unlockRequirements[0];
 const automatonSkillRequirement=combatCompanionDef('UNIT_010')!.unlockRequirements[1];

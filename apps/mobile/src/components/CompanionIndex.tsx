@@ -100,7 +100,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     <Text numberOfLines={2} style={[s.tabLabel,tab===item.id&&s.tabLabelActive]}>{item.title}</Text>
    </Pressable>)}
   </View>
-  {tab==='unlock'&&candidate?<Pressable accessibilityRole="button" accessibilityLabel={t('Next unlock: {value0}',{value0:candidate.def.name})} onPress={()=>onOpen(candidate.def.id)} style={({pressed})=>[s.nextUnlock,pressed&&s.pressed]}>
+  {tab==='unlock'&&role==='all'&&!query.trim()&&candidate?<Pressable accessibilityRole="button" accessibilityLabel={t('Next unlock: {value0}',{value0:candidate.def.name})} onPress={()=>onOpen(candidate.def.id)} style={({pressed})=>[s.nextUnlock,pressed&&s.pressed]}>
     <View style={s.nextPortrait}>{candidateArt?<Image source={candidateArt} resizeMode="contain" style={s.nextArt}/>:<UiIcon name="companions" size={32}/>}</View>
     <View style={s.nextCopy}>
      <Text style={s.overline}>{t('NEXT TO UNLOCK')}</Text>
@@ -128,9 +128,18 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   </View>
   {visible.length===0?<View style={s.empty}>
    <UiIcon name="search" size={30}/>
-   <Text style={s.cardName}>{t('No companions found')}</Text>
-   <Text style={s.caption}>{t('Try another filter or search.')}</Text>
-   <Pressable onPress={resetFilters} accessibilityRole="button" style={s.resetAction}><Text style={s.codexText}>{t('Show all companions')}</Text></Pressable>
+   {tab==='owned'&&unlocked===0?<>
+    <Text style={s.cardName}>{t('No companions owned yet.')}</Text>
+    <Text style={s.caption}>{t('Unlock your first companion to see it here.')}</Text>
+    <Pressable onPress={()=>switchTab('unlock')} accessibilityRole="button" style={s.resetAction}><Text style={s.codexText}>{t('Unlock')} ›</Text></Pressable>
+   </>:tab==='unlock'&&unlockCount===0?<>
+    <Text style={s.cardName}>{t('All available companions unlocked.')}</Text>
+    <Pressable onPress={()=>switchTab('owned')} accessibilityRole="button" style={s.resetAction}><Text style={s.codexText}>{t('My companions')} ›</Text></Pressable>
+   </>:<>
+    <Text style={s.cardName}>{t('No companions found')}</Text>
+    <Text style={s.caption}>{t('Try another filter or search.')}</Text>
+    <Pressable onPress={resetFilters} accessibilityRole="button" style={s.resetAction}><Text style={s.codexText}>{t('Show all companions')}</Text></Pressable>
+   </>}
   </View>:null}
   <View style={s.list}>{visible.map(def=>{
    const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id),progress=state.account.combatCompanionProgress?.[def.id],equipped=state.character?.equippedCombatCompanionId===def.id;
@@ -184,7 +193,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     {owned&&status&&!equipped?<Text style={s.ownedStatus}>{companionContent(language,status)}</Text>:null}
    </Pressable>;
   })}</View>
-  {unlocked>0?<Pressable accessibilityRole="button" onPress={()=>{const equipped=state.character?.equippedCombatCompanionId;const first=equipped&&ownedIds.has(equipped)?equipped:inIndex.find(def=>ownedIds.has(def.id))?.id;if(first)onTrain(first);}} style={({pressed})=>[s.trainShortcut,pressed&&s.pressed]}>
+  {tab==='owned'&&unlocked>0?<Pressable accessibilityRole="button" onPress={()=>{const equipped=state.character?.equippedCombatCompanionId;const first=equipped&&ownedIds.has(equipped)?equipped:inIndex.find(def=>ownedIds.has(def.id))?.id;if(first)onTrain(first);}} style={({pressed})=>[s.trainShortcut,pressed&&s.pressed]}>
    <UiIcon name="training" size={21}/><Text style={s.codexText}>{t('Train & Bond your companions')}</Text><Text style={s.nextArrow}>›</Text>
   </Pressable>:null}
  </View>;

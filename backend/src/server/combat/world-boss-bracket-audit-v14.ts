@@ -58,7 +58,7 @@ export function auditWorldBossPowerBracketsV14(input:{
    throw Error('world_boss_v14_invalid_or_unowned_sample');
   ownerIds.add(sample.ownerAccountId);
  }
- const sorted=[...input.samples].sort((a,b)=>a.combatPower-b.combatPower||
+ const sorted:WorldBossPowerSampleV14[]=[...input.samples].sort((a,b)=>a.combatPower-b.combatPower||
   a.ownerAccountId.localeCompare(b.ownerAccountId));
  const n=sorted.length;
  const minimumGroup=Math.max(10,Math.floor(n*.1));

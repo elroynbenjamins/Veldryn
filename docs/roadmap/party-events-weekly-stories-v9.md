@@ -1119,3 +1119,122 @@ offers actual granted entitlements**.
 
 Keep Party Events hidden, the PR draft/unmerged,
 all migrations undeployed, and production untouched.
+
+## v25 — replay-bound, nonpaying claim preflight and canonical reward amounts (13 Nov 2026)
+
+**Trust boundary:** The private offer created in v24 is a *nonspendable
+preview*. v25 adds an immutable *claim preflight record*, **NOT** a claim
+or economy entitlement. A matching v23 worker replay attestation,
+v24 offer batch, v19 personal-EP preview, correct account/week and
+the event's original character are required. Only the trusted
+server-side identity can request the preflight. Public/anon/authenticated
+roles cannot execute these functions or read/insert the new table.
+
+**New draft migration:**
+`backend/supabase/migrations/20261113224500_party_event_claim_preflight_v25.sql`
+adds `private.party_event_reward_values_v25`, an immutable SQL
+implementation of the exact **v2 reward bundle model**, using
+the archived difficulty, boss performance band, verified personal
+Event Points and v24 locked choice. It accepts **no amount** from
+the client, and pins `party-event-rewards-v2`. Participation
+offers (5–14 EP) receive only the scaled gold bundle. Full
+offers (15–60 EP) must have a locked Warrior / Artisan /
+Companion choice. This quote contains canonical gold,
+combat XP, skill XP, Companion Essence, Bondstones, Party
+Renown, and—where relevant—GEM_DUST. It is *not* credited
+to any wallet or inventory. SQL v25 rejects unrecognized
+difficulty/band/kind/EP combinations.
+
+`private.party_event_claim_preflights_v25` is an append-only
+service-only RLS table with one row per offer ID and a unique
+account/event-week key. It records the original claim target,
+dedupe request, model, difficulty, full bundle/hash, source
+candidate/replay commitments, the online inventory revision,
+inventory capacity and used slots, estimated slots needed,
+and routing blockers for combat/skill/companion XP.
+`authorized_for_payout=false`, `claimed=false`,
+`currency_credited=false`, and `inventory_credited=false`
+are all enforced by SQL CHECKs. UPDATEs trigger immutable
+record exceptions, and service_role has SELECT permission
+only, not direct table writes.
+
+**Preflight transaction:**
+`private.prepare_party_event_claim_preflight_v25` serializes
+week → offer → recipient character → online game state.
+It requires the actual joined character ID, server-verified
+owner, a locked choice for full rewards, the v24 replay-bound
+batch, still-unaltered v19 EP preview, and a present online
+inventory. It checks the live `public.characters.inventory_capacity`
+constraint (currently **30–100 slots**) and the
+`online_game_states.state.inventory.stacks` array at a
+locked inventory revision. For the T1 Warrior/Artisan
+GEM_DUST bundle, the quote conservatively requires **one
+free slot even if an existing stack might merge**; for
+participation/companion, no new material slot is needed.
+This is intentionally fail-closed. It does not reserve a
+slot or promise that the inventory will remain available:
+a future payout must recheck capacity and revision **in the
+same transaction as the actual transfer**.
+
+The preflight is strictly once-per-offer: an identical
+request returns its frozen receipt (even after the online
+state changes), while changed request IDs, another
+recipient/character, cross-account offer claims or
+reused dedupe keys fail. v25 explicitly defines
+`private.claim_party_event_reward_v25` to **always raise**
+`party_event_v25_claim_disabled_pending_economy_audit`.
+No player-facing claim route or Inbox delivery exists.
+
+**TypeScript parity and private SQL adapter:**
+`backend/src/server/party/weekly-party-claim-preflight-v25.ts`
+uses the existing v2 `partyEventRewardBundle` independently
+to validate every numeric field, key, material ID and quantity
+returned by SQL. It also checks quote identity, routing needs,
+conservative material capacity and all no-payout flags.
+`backend/online/party-event-claim-preflight-v25.ts`
+provides the strict, parameterized, **service-only** SQL
+reader/writer interface. Neither module is exposed to
+players; the feature gate stays **false**.
+
+The new TS regression
+`backend/src/server/party/__tests__/weekly-party-claim-preflight-v25.ts`
+includes **72 reward choices across three difficulties,
+six boss bands and four eligible reward kinds**, malicious
+gold/XP/material inflation, replay idempotency, invalid
+ownership/identity, mismatched router fields and fake
+payout flags. The existing online adapter integration test
+was extended and the server test was added to
+`test:party-weekly-v2` and hidden CI file filters.
+**TS tests are committed but GitHub CI execution is
+not confirmed**.
+
+**Staging verification:** The focused
+`backend/supabase/tests/party_event_claim_preflight_v25.sql`
+passed under a full `BEGIN…ROLLBACK`. It verifies
+reward formula samples, 5/15 EP tiers, own-character
+restriction, choice lock, no online-state fallback,
+actual full 30-slot inventory, capacity rejection,
+a one-slot-free case, retry after a changed online
+revision, request reuse attacks, immutable receipt,
+hard-disabled claim endpoint, and zero character-wallet
+or other grants. **All 15** SQL regression suites
+(v11–v19, v21–v25, plus the independent 0-EP v24
+case) passed against the complete v25 migration chain,
+each run in an isolated savepoint, all rolled back.
+No Party Event staging migration or reward was persisted.
+
+**Critical next work (v26+):** Review and implement the
+actual economy transfer with a **single atomic claim
+transaction and an immutable paid receipt**. Gold lives
+in `public.character_wallets`, but several XP and
+Companion rewards have different online state paths;
+the correct authoritative skill XP target, combat XP
+route, companion inventory, Boundstones/Renown stores,
+material stack limits, account switching and inventory
+revision synchronization all require independent
+verification. The preflight records these blockers and
+is **not** enough to turn on payouts. A concurrency,
+idempotency, migration-order, rollback, offline-user
+and Inbox-discovery test pass is still mandatory.
+Keep Party Events hidden, branch unmerged, PR draft,
+feature flags disabled and production untouched.

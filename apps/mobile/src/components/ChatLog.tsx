@@ -92,11 +92,13 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
   const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;
   const near=layoutMeasurement.height+contentOffset.y>=contentSize.height-44;
   const was=nearBottomRef.current;
+  const viewportResized=viewportHeightRef.current>0&&Math.abs(layoutMeasurement.height-viewportHeightRef.current)>1;
   // A keyboard resize can make the viewport shorter without a user scroll.
   // Preserve bottom-follow in that case so the latest message rises above the IME.
-  // Only disengage when the player actually drags the conversation away.
+  // Drag callbacks are authoritative, while the viewport comparison preserves the
+  // older onScroll-only fallback used by accessibility and test renderers.
   if(near)nearBottomRef.current=true;
-  else if(userScrollingRef.current)nearBottomRef.current=false;
+  else if(userScrollingRef.current||!viewportResized)nearBottomRef.current=false;
   if(near&&!was)caughtUp();
  };
  const jumpLatest=()=>{nearBottomRef.current=true;setPendingNew(0);scrollRef.current?.scrollToEnd({animated:true});caughtUp();};

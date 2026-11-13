@@ -333,3 +333,87 @@ stages transactionally only with satisfied proofs, and settle
 the Day 8 boss exactly once with independently tested rewards.
 Review the latest code/CI and real crafting-time data. Keep
 Party Events feature flags OFF and PR #1045 draft.
+
+## v15–v16 — verified special EP and actual supply consumption (13 Nov 2026)
+
+These are **hidden draft-only** migrations and SQL regressions depending on
+v11–v14, committed to PR #1045 but **not deployed**:
+
+- `backend/supabase/migrations/20261113100500_party_event_objective_points_v15.sql`
+  and matching `backend/supabase/tests/party_event_objective_points_v15.sql`.
+- `backend/supabase/migrations/20261113114000_party_event_supply_donations_v16.sql`
+  and matching `backend/supabase/tests/party_event_supply_donations_v16.sql`.
+
+**Special objectives (v15):** A successful, immutable v11 receipt for
+`scout_route`, `secure_approach`, `support_expedition` or
+`prepare_finale` may be credited **exactly once**, granting a fixed
+**5 special EP** to the enrolled account. There are exactly four
+unique canonical slots per account per week, so the hard special
+allowance is **20 EP per player**. No caller can provide a points
+amount. Special EP credits are stored separately from the v11
+immutable zero-EP objective evidence and the v14 recurring
+activity ledger. Exact retries after week closure return the original
+credit without granting again; late/new credits are rejected.
+The v15 readiness projection combines recurring activity EP and
+special EP against 2/3/4-player 100/135/170-point targets, but
+cannot advance stages, complete a finale or mint a reward.
+
+**Supply plans and burning (v16):** A private, append-only server-authorized
+resource order fixes its item, category, required/optional status,
+stage and quantity. The full order schema is private with RLS;
+only the internal `freeze_party_event_supply_order_v16` function
+accepts **enabled, canonical** item IDs and refuses to rewrite an
+order's targets. Each material donation uses the private
+`donate_party_event_supply_v16` function and a globally unique
+request ID. It locks the event week, supply order and account's
+`public.online_game_states` inventory, validates a **frozen
+character enrollment**, consumes only unbound/unlocked inventory
+stacks, updates the `inventory.stacks` JSON and revision, increments
+the supply-order contribution and inserts an immutable donation
+receipt in **one SQL transaction**. Any failure rolls back the
+material burn, order progress and receipt together. It rejects
+overfill, insufficient inventory, stale stages, unauthorized actors,
+inconsistent retries, account-locked items and individually locked
+or bound stacks. Identical retries remain safe after event closure.
+It never awards Event Points for donated items (no double-counting),
+currency, equipment or chest grants.
+
+**Category integrity:** The current existing Guild supply catalogue
+verifies the canonical **wood** and **ore** items. A canonical
+`THORN_SAP` ingredient is present in Alchemy, but no audited
+gathering source and live level availability have yet been confirmed.
+The new private catalogue keeps that herb **disabled by default**.
+Stage readiness requires frozen, fully funded **wood, ore and herb**
+*required* categories before reporting
+`requiredSuppliesVerified=true`. A missing herb cannot silently be
+substituted by fish or ignored; optional preparation orders never
+block. The SQL regression temporarily enabled the herb **inside
+its rollback-only test transaction** to exercise a complete donation
+flow. **This does not enable it in any environment.**
+A stage can display `ready_for_manual_advance` when EP, supply
+and vote criteria would be met, but
+`stageReadyToAdvance` remains `false`: a reliable state-transition
+RPC, validated full-week supply plan and boss settlement are not yet
+shipped.
+
+**Verification:** The v15 and v16 focused suites each passed on
+Veldryn Staging 20260924. A **combined v11–v16 SQL suite** subsequently
+passed in a single `BEGIN; ... ROLLBACK;` transaction on that
+separate staging instance; it left no schema objects, user fixtures,
+donations, inventory changes, objective points or rewards behind.
+Regression cases cover objective 5-EP initial credit/zero-EP replay,
+four-objective 20-EP cap, immutable v11 source, canonical material
+availability, frozen targets, exact donation replay, request mutation,
+locked/bound inventory, insufficient materials, overflow rejection,
+private access, verified category coverage, threshold-only stage
+readiness and closed-week behavior.
+
+**Release blockers:** Match the 3-category resource catalogue to real,
+level-appropriate live gathering data and regenerate actual v2
+quantities for each family/difficulty/party size; connect gameplay
+server activity/objective/supply mutations to these internal functions;
+implement server-verified voting and safe stage transitions; finish
+Day 8 combat evidence and one-time reward settlement; reconcile
+staging/prod version compatibility, run GitHub CI and game balance
+simulations, and build/test the mobile interface. Keep release flags
+OFF, leave PR #1045 draft and do not run migrations on production.

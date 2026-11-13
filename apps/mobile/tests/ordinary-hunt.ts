@@ -15,7 +15,7 @@ const upgraded=regionalHuntPlan({...base,playerHit:200});
 assert.equal(regionalHuntPlan(base).cycleSeconds,novice.cycleSeconds,'seeded hunts must replay deterministically');
 assert.ok(upgraded.fightSeconds<novice.fightSeconds,'Attack should kill a weak enemy in fewer real strikes');
 assert.equal(upgraded.strikes.filter(hit=>hit.actor==='player').length,1,'overgeared character must one-shot a Moss Rat');
-assert.ok(upgraded.searchSeconds>=5&&upgraded.searchSeconds<=8,'Greenfields search is a bounded anti-farming delay');
+assert.ok(upgraded.searchSeconds>=3&&upgraded.searchSeconds<=6,'Greenfields search is a bounded anti-farming delay, reduced by 2 seconds');
 assert.ok(upgraded.cycleSeconds>upgraded.fightSeconds,'search must remain even after a one-shot');
 assert.ok(regionalHuntPlan({...base,playerHit:200,haste:1}).fightSeconds<upgraded.fightSeconds,'Haste increases attacks per second');
 const incoming=regionalHuntHits(upgraded,{monsterDamage:0,fatigueDamage:1.25,healingPerEncounter:.5});
@@ -24,8 +24,22 @@ assert.ok(incoming.some(hit=>hit.actor==='fatigue'&&hit.damage>0),'one-shot figh
 assert.equal(huntEnemyHpAt(30,incoming,upgraded.searchSeconds/upgraded.cycleSeconds),30,'searching does not damage enemies');
 assert.equal(huntEnemyHpAt(30,incoming,1),0,'actual final attack kills the monster');
 assert.equal(huntHitsBetween(incoming,0,.5).length+huntHitsBetween(incoming,.5,1).length,incoming.length,'split settlement must preserve real hit events');
-for(const zone of ['Greenfields','Silverbrook','Ironwood Forest','Old Mines',"King's Road",'Sunscar'])assert.ok(usesDamageDrivenHunts(zone),zone+' must use damage-driven hunts');
-for(const zone of ['Frostmarch','Ashlands'])assert.ok(!usesDamageDrivenHunts(zone),zone+' is intentionally unchanged');
+// Every ordinary-combat region has a two-second faster encounter search than the prior baseline.
+const searchWindows=[
+  ['Greenfields',3,6],['Silverbrook',3,6],['Ironwood Forest',4,7],
+  ['Old Mines',5,8],["King's Road",5,8],['Sunscar',6,10],
+  ['Frostmarch',7,11],['Ashlands',8,12],
+] as const;
+for(const [zone,min,max] of searchWindows){
+  assert.ok(usesDamageDrivenHunts(zone),zone+' must use damage-driven hunts');
+  for(const seed of ['encounter-a','encounter-b','encounter-c']){
+    const plan=regionalHuntPlan({...base,zone,seed});
+    assert.ok(plan.searchSeconds>=min&&plan.searchSeconds<=max,zone+' search should be '+min+'–'+max+' seconds');
+    assert.ok(plan.cycleSeconds>plan.searchSeconds,zone+' should retain actual attack time after searching');
+    const fastWeather=regionalHuntPlan({...base,zone,seed,environmentTimeMultiplier:.5});
+    assert.ok(fastWeather.searchSeconds>0,zone+' searches must stay positive under fast weather');
+  }
+}
 
 const T=1_700_000;
 const weakBase=createCharacter(newGame(T),'WAYFINDER','Weak Hunter');
@@ -37,7 +51,7 @@ const strong=startCombat(strongBase,'MOSS_RAT',T); // Representative overgeared 
 const weakRate=activeCombatRuntimeProjection(weak)!,strongRate=activeCombatRuntimeProjection(strong)!;
 assert.ok(strongRate.killCycleSeconds<weakRate.killCycleSeconds,'higher Attack must shorten the actual encounter');
 assert.ok(strongRate.killsPerHour>weakRate.killsPerHour,'stronger gear should improve farming up to the encounter-search ceiling');
-assert.ok(strongRate.killCycleSeconds>5,'even a one-shot hunt must still search for a new encounter');
+assert.ok(strongRate.killCycleSeconds>3,'even a one-shot hunt must still search for a new encounter');
 const sustain=combatSustainProjection(strong,'MOSS_RAT')!;
 assert.ok(Math.abs(sustain.killCycleSeconds-strongRate.killCycleSeconds)<.000001,'HUD combat rate and food forecast must use the same average');
 assert.ok(Math.abs(activityCycleSeconds(strong)-strongRate.killCycleSeconds)<.000001,'dashboard must no longer show the obsolete fixed combat timer');
@@ -63,4 +77,4 @@ const huntUi=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 const stageUi=fs.readFileSync('src/components/BattleStage.tsx','utf8');
 assert.ok(huntUi.includes('fight.searching')&&huntUi.includes("!fight?.searching&&fight?.lastHit"),'hunting UI must hide unencountered enemy HP and stale hit effects');
 assert.ok(stageUi.includes("!fight?.searching&&fight?.lastHit"),'live combat theater must hide leftover hits while searching');
-console.log('PASS damage-based launch hunts, search-state polish, consistent HUD estimates, stamina food, later-region exclusion and split claims');
+console.log('PASS damage-based regional hunts, search-state polish, consistent HUD estimates, stamina food and split claims');

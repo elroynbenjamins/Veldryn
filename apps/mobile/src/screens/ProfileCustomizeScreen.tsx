@@ -93,7 +93,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
      <Text style={[s.tabText,tab===value&&s.tabTextOn]}>{profileText(language,value)}</Text>
     </Pressable>)}
    </View>
-   {tab==='Look'?<ProfileWardrobeChips categories={categories} chip={chip} onChange={setChip}/>:null}
+   {tab==='Look'?<ProfileWardrobeChips categories={categories} chip={chip} onChange={setChip} reduceMotion={state.settings.reduceMotion}/>:null}
   </View>
 
   <View style={tab==='Look'?s.sectionShown:s.sectionHidden} pointerEvents={tab==='Look'?'auto':'none'}>

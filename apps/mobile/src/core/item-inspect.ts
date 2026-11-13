@@ -17,6 +17,7 @@ import {craftedGearDisplayQuality,craftedGearInstances,craftedInstancesForItem,e
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
+import {t5EquipmentAffixForItem} from './t5-equipment-affixes';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
@@ -170,6 +171,11 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
+    const t5Affix=t5EquipmentAffixForItem(itemId,selectedCopy);
+    if(t5Affix){
+      const label=t5Affix.stat==='critRate'?'Crit Rate':t5Affix.stat==='haste'?'Haste':'Evasion';
+      effectLines.push(`T5 forged affix · +${Math.round(t5Affix.percent*100)}% ${label} · ${t5Affix.rarity} Q${t5Affix.quality}`);
+    }
     if(item.passive)effectLines.push(item.passive);
   }else if(item.type==='food'){
     effectLines.push(`Restores ${displayStat(item.heal??0)} HP`);

@@ -1,3 +1,4 @@
+import {accountText} from '../i18n/account';
 import {profileT} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
@@ -18,6 +19,7 @@ import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
+import {PlayerBadgeShowcase} from './PlayerBadges';
 import {ProfileGuildAffiliation} from './ProfileGuildAffiliation';
 
 export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean}){
@@ -33,12 +35,15 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   <View style={[s.scene,{height}]}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
-  <View style={s.identityPlate}>
-   <Text style={s.eyebrow}>{profileT(language,"PLAYER SHOWCASE")}</Text>
+  <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>{profile.title}</Text>
-   <Text style={s.meta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>
-   {profile.combatPower!==undefined?<Text style={s.power}>COMBAT POWER · {profile.combatPower.toLocaleString()}</Text>:null}
+   <View style={s.metaRow}>
+    <Text numberOfLines={1} style={[s.meta,s.metaInRow]}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>
+    {profile.combatPower!==undefined?<Text numberOfLines={1} style={s.power}>{accountText(language,'COMBAT POWER')} {profile.combatPower.toLocaleString()}</Text>:null}
+   </View>
+   <View style={s.identityFill}/>
+   <PlayerBadgeShowcase identity={profile.playerBadges}/>
   </View>
   {showGuild&&guild?<View style={s.guildAnchor}><ProfileGuildAffiliation guild={guild}/></View>:null}
   <CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={s.character}/>
@@ -58,5 +63,10 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  guildAnchor:{position:'absolute',left:22,bottom:20,maxWidth:'58%',zIndex:4},
  character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},
  pet:{position:'absolute',right:22,bottom:20,width:58,height:58,zIndex:3},
- power:{fontSize:8,lineHeight:11,color:C.good,fontWeight:'900',letterSpacing:.55,marginTop:3},
+ /** Combat power rides on the level line rather than taking one of its own: a second line
+  * pushed the badge shelf past the portrait edge it is meant to finish level with. The class
+  * name gives way first, so the number a visitor came to read is never the part truncated. */
+ metaRow:{flexDirection:'row',alignItems:'baseline',gap:6,marginTop:3},
+ metaInRow:{flexShrink:1,minWidth:0,marginTop:0},
+ power:{flexShrink:0,fontSize:8,lineHeight:14,color:C.good,fontWeight:'900',letterSpacing:.55},
 });}

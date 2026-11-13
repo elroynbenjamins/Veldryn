@@ -6,14 +6,14 @@ Approved visual direction (Nov 9, 2026): six ornate, text-free pixel-art badges,
 
 | Badge | Eligibility / owner | Notes |
 | --- | --- | --- |
-| Founder | Manual trusted award | Early founding players; no automatic backfill. |
+| Founder | Trusted manual award or time-limited Discord redemption | Permanent account-wide collectible; does not expire after redemption. |
 | Beta Tester | Manual trusted award | Genuine pre-release participants. |
 | Veteran | Automatic after 90 days account age | Account-wide, recalculated on the server. |
 | Guild Leader | Current leader in `public.guild_members` | Recalculates immediately when leadership changes; no permanent role spoofing. |
 | Community Champion | Manual trusted award | Community merit. |
 | Event Champion | Manual trusted award | Event winners / special achievements; automated events can be integrated later. |
 
-This initial policy can be adjusted independently from the artwork, but **do not grant Founder/Beta/Community/Event badges en masse without explicit eligibility rules**.
+This policy can be adjusted independently from the artwork. The Discord Founder campaign is an explicit, time-limited public eligibility rule; do not grant Beta/Community/Event badges en masse without eligibility rules.
 
 All awards are cosmetic. Admin/Moderator identities remain separate and can never be conferred by collectible ownership. Supporter remains an existing commerce-derived badge and its visibility toggle remains intact.
 
@@ -29,6 +29,15 @@ All awards are cosmetic. Admin/Moderator identities remain separate and can neve
 
 Migration `backend/supabase/migrations/20261109222500_collectible_player_badges_v1.sql` creates a private, RLS-protected entitlement table and server-validated featured-badge selection. **Merging to GitHub does not deploy the migration**. Apply and verify staging, then production, separately; until then the new client should only be distributed after RPC rollout. Do not treat the code merge as a live grant.
 
-For manually awarded accounts, operations must use an authenticated trusted admin process and insert directly in `private.player_collectible_badges_v1`; no public RPC accepts badge grant requests. Never rely on `raw_user_meta_data`.
+For manually awarded accounts, operations must use an authenticated trusted admin process and insert directly in `private.player_collectible_badges_v1`. The only publicly redeemable Founder grant is the specifically scoped Discord Founder code in the existing `redeem_commerce_code_v1` RPC, expiring on 5 December 2026. Never rely on `raw_user_meta_data`.
 
 Tests: `apps/mobile/tests/player-badges.ts` covers spoofed IDs, entitlement filtering, compact display, expired projection, and server-function contracts.
+
+## Discord Founder campaign (2026)
+
+- **Code:** `DiscordFounder` (case-insensitive). It works in the existing mobile redemption screen, including builds already distributed.
+- **Redemption deadline:** 5 December 2026, 23:59:59.999 Europe/Amsterdam; rejects at 6 December 2026, 00:00 CET (2026-12-05 23:00 UTC).
+- **Reward:** permanent, cosmetic-only `founder` entry in `private.player_collectible_badges_v1`. Badge ownership never expires. It is not equipped automatically.
+- **Limits:** one successful redemption per linked account, unlimited total participating accounts; accounts that already own Founder cannot redeem a second grant.
+- **Enforcement:** server-side through `redeem_commerce_code_v1`, with a private RLS-enabled per-account redemption ledger. Direct client badge grants remain prohibited; no Admin/Moderator privilege is granted.
+- **Migration:** `backend/supabase/migrations/20261112221500_discord_founder_redeem_v1.sql`; verified on staging with a rollback test, then applied to production on 12 November 2026.

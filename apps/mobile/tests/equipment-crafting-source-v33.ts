@@ -22,8 +22,8 @@ ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a re
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
 ok(T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER===1.25,'T2–T4 equipment forge XP must be increased by exactly 25%');
 ok(T3_T4_DUNEWOOD_REDUCTION_FACTOR===0.8,'T3/T4 assembly Dunewood must be 20% below the recently tripled cost');
-const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
-const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
+const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
 for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
@@ -130,7 +130,7 @@ ok(t4.length===180,'Nine classes × two paths × ten slots must retain all 180 T
 for(const recipe of t4){
   const slot=itemDef(recipe.output.itemId).slot!;
   const woodBase=recipe.skillId==='tailoring'?7:8;
-  const previousWood=Math.max(1,Math.round(woodBase*2*originalSlotGold[slot]));
+  const previousWood=Math.max(1,Math.round(woodBase*1.5*originalSlotGold[slot]));
   const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
   ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR)),recipe.id+' must reduce recently tripled T4 Dunewood by 20% after slot rounding');
 }
@@ -140,7 +140,7 @@ for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
     const set=t4.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     ok(set.length===10&&set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='GLASSBOUND_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T4 set must cost precisely ten Glassbound Binders');
     const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
-    ok(woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?349:308),classId+' / '+path+' T4 set must reflect the 20% cut, rounded for every piece');
+    ok(woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?260:231),classId+' / '+path+' T4 set must reflect the 20% cut, rounded for every piece');
   }
 }
 const binderRoutes=RECIPES.filter(recipe=>recipe.output.itemId==='GLASSBOUND_BINDER');
@@ -193,6 +193,9 @@ for(const tier of Object.keys(highTierBands)){
     ok(hours<=maxHours,recipe.id+' regional materials exceed the grind ceiling for '+tier+': '+hours.toFixed(2)+'h baseline');
   }
 }
+const t5HeavyChest=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T5P_758')!;
+ok(itemDef(t5HeavyChest.output.itemId).slot==='chest','T5P_758 must remain a heavy chest piece');
+ok(projectedFarmHours(t5HeavyChest)<=highTierBands.T5[1],'Heavy T5 chest must respect the unchanged 5.4h ceiling without slot exemptions');
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
 const tailoringT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring')!;

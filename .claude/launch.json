@@ -7,6 +7,16 @@
       "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
       "port": 8081,
       "cwd": "apps/mobile"
+    },
+    {
+      "name": "veldryn-review",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "const env={...process.env,EXPO_PUBLIC_BROWSER_REVIEW:'1',EXPO_PUBLIC_SUPABASE_URL:'',EXPO_PUBLIC_SUPABASE_ANON_KEY:'',EXPO_PUBLIC_SERVER_GAMEPLAY:'',EXPO_PUBLIC_COOP_API_URL:'',EXPO_PUBLIC_COOP_LIVE_READY_V1:'',EXPO_PUBLIC_COOP_ROGUELITE_V1:''};require('child_process').spawn('npx.cmd',['expo','start','--web','--port','8083'],{stdio:'inherit',shell:true,env})"
+      ],
+      "port": 8083,
+      "cwd": "apps/mobile"
     }
   ]
 }

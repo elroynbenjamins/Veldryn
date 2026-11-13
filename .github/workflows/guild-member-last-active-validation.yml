@@ -1,0 +1,44 @@
+name: Guild Member Last Active validation
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/online/social.ts'
+      - 'apps/mobile/src/components/OnlineGuildManagement.tsx'
+      - 'apps/mobile/src/components/GuildMemberActivityLabel.tsx'
+      - 'apps/mobile/src/core/guild-member-last-active.ts'
+      - 'apps/mobile/src/i18n/guild-flow-ui.ts'
+      - 'apps/mobile/tests/guild-member-last-active.ts'
+      - 'apps/mobile/tests/guild-roster-interactions.cjs'
+      - 'backend/supabase/migrations/*guild_roster_last_active*'
+      - 'tools/test-guild-roster-last-active-db.mjs'
+      - '.github/workflows/guild-member-last-active-validation.yml'
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck mobile and core
+        run: pnpm typecheck:core && pnpm typecheck
+      - name: Compile core tests
+        run: pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+      - name: Verify activity formatting and roster contract
+        run: node .core-build/apps/mobile/tests/guild-member-last-active.js
+      - name: Verify interactive Guild roster
+        run: node tests/guild-roster-interactions.cjs
+      - name: Execute real SQL in disposable PostgreSQL
+        run: node ../../tools/test-guild-roster-last-active-db.mjs

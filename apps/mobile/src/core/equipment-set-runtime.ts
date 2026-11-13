@@ -1,6 +1,7 @@
 import {EQUIPMENT_SETS,equipmentSetDef,equippedSetPieceCount,type EquipmentSetDef} from '../content/equipment-sets';
 import {itemDef} from '../content/items';
 import {equippedCanonicalStatGemBonusesV1} from './equipment-enhancement';
+import {equippedT5EquipmentAffixStats} from './t5-equipment-affixes';
 import type {GameState} from './types';
 
 export type EquipmentSetStatKey=
@@ -107,6 +108,7 @@ export function equipmentSetBonusCoverage(){
 export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
   const sets=activeEquipmentSetRuntime(state).stats;
   const gems=equippedCanonicalStatGemBonusesV1(state);
+  const t5Affixes=equippedT5EquipmentAffixStats(state);
   const p=gems.statPercent,pp=gems.statPercentagePoints;
   const multiplied=(bonus:number,percent:number|undefined)=>(1+bonus)*(1+(percent??0))-1;
   return {
@@ -114,14 +116,14 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
     armor:multiplied(sets.armor,p.armor),
     ward:multiplied(sets.ward,p.ward),
     tenacity:multiplied(sets.tenacity,p.tenacity),
-    haste:multiplied(sets.haste,p.haste),
+    haste:multiplied(sets.haste,p.haste)+t5Affixes.haste,
     power:multiplied(sets.power,p.power),
     accuracy:sets.accuracy+(pp.accuracy??0),
     penetration:sets.penetration+(pp.penetration??0),
     potency:multiplied(sets.potency,p.potency),
-    critRate:sets.critRate+(pp.critRate??0),
+    critRate:sets.critRate+(pp.critRate??0)+t5Affixes.critRate,
     critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5,
-    evasion:sets.evasion+(pp.evasion??0),
+    evasion:sets.evasion+(pp.evasion??0)+t5Affixes.evasion,
   };
 }
 

@@ -177,9 +177,14 @@ REVOKE ALL ON private.world_boss_events_v17,
  private.world_boss_milestones_v17 FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.world_boss_v17_guard_attempt_update()
  FROM PUBLIC, anon, authenticated;
+-- Existing private-schema grants require separate deployment review; this
+-- draft grants only the server role usage, never client/anonymous roles.
+GRANT USAGE ON SCHEMA private TO service_role;
 GRANT SELECT,INSERT,UPDATE ON private.world_boss_events_v17,
  private.world_boss_attempts_v17,
  private.world_boss_milestones_v17 TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v17_guard_attempt_update()
+ TO service_role;
 -- No SECURITY DEFINER; no public or authenticated API/RPC grants.
 -- No event is inserted, activated or scheduled. No rewards/wallet.
 COMMIT;

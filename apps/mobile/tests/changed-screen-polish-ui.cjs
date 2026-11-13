@@ -7,6 +7,8 @@ const pager=read('src/components/OptionPager.tsx');
 assert.ok(pager.includes('live.current.options.length>1'),'A one-option pager must not steal scroll gestures');
 assert.ok(pager.includes('dotTarget:{width:30,height:30'),'Category dots need a usable touch surface');
 assert.ok(pager.includes('hitSlop={6}'),'Category dots should have a wider hit area');
+assert.ok(pager.includes('railWidth>=options.length*30'),'Nine tier dots must change to a counter rather than overflow a narrow panel');
+assert.ok(pager.includes('if(reduceMotion){drag.setValue(0);return;}'),'Reduced motion must settle instantly instead of springing');
 
 const wardrobe=read('src/components/profile/ProfileWardrobeChips.tsx');
 assert.ok(wardrobe.includes('accessibilityRole="progressbar"'),'Wardrobe completion needs a screen-reader progress value');
@@ -14,6 +16,13 @@ assert.ok(wardrobe.includes('accessibilityRole="progressbar"'),'Wardrobe complet
 const profile=read('src/screens/ProfileCustomizeScreen.tsx');
 assert.ok(profile.includes('minimumFontScale={0.8}'),'Compact profile tabs must adapt to large font settings');
 assert.ok(profile.includes('<Text numberOfLines={2} style={s.toastText}'),'Equipped cosmetic names must not be clipped to one line');
+
+const showcase=read('src/components/profile/ProfileShowcasePanel.tsx');
+assert.ok(showcase.includes('const pickerEmpty='),'Showcase pickers should show a helpful empty state');
+assert.ok(showcase.includes('accessibilityRole="button" disabled={disabled} accessibilityState={{selected,disabled}}'),'Multi-picker choices must announce selected and disabled states');
+assert.ok(showcase.includes('accessibilityState={{selected:value.favoriteCompanionId===row.id}}'),'Companion picker should announce the selected favorite');
+const profileCopy=read('src/i18n/profile.ts');
+assert.ok(profileCopy.includes('"No entries unlocked for this showcase yet."'),'Empty showcase copy must be translated');
 
 const badges=read('src/components/PlayerBadgeSettings.tsx');
 assert.ok(badges.includes("slot==='profile'&&full"),'Full profile showcases need guidance to free a slot');
@@ -28,5 +37,10 @@ assert.ok(shop.includes('const offerEligible='),'Purchase button visibility shou
 assert.ok(shop.includes('{offerEligible?<GameButton'),'An eligible purchase must retain its button while saving');
 assert.ok(shop.includes('loading={pending===item.id} disabled={!canPurchase}'),'Pending purchases must show loading and prevent duplicate submits');
 assert.ok(shop.includes('disabled={!!pending||refreshing}'),'Shop navigation must not hide active purchase feedback');
+assert.ok(shop.includes('requestLock.current=true')&&shop.includes('requestLock.current=false'),'Shop refresh and purchase requests must share one immediate re-entrancy lock');
+assert.ok(shop.includes('Processing purchase')&&shop.includes('Not available yet'),'Shop offers must display processing and offline states');
 
-console.log('PASS responsive profile and forge controls, accessible pager, and dungeon shop pending feedback');
+const chapters=read('src/components/WorldChapterNavigator.tsx');
+assert.ok(chapters.includes('<Text numberOfLines={2} style={s.meta}>'),'Current chapter progress metrics must wrap instead of truncating');
+
+console.log('PASS changed-screen responsive layout, showcase picker accessibility, and single-flight shop feedback');

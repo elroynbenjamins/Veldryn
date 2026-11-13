@@ -24,6 +24,9 @@ assert.ok(showcase.includes('accessibilityState={{selected:value.favoriteCompani
 const profileCopy=read('src/i18n/profile.ts');
 assert.ok(profileCopy.includes('"No entries unlocked for this showcase yet."'),'Empty showcase copy must be translated');
 
+const stage=read('src/components/profile/ProfileStage.tsx');
+assert.ok(stage.includes('tool:{width:44,height:44'),'Profile stage controls need minimum 44-point touch targets');
+
 const audience=read('src/components/ProfileAudiencePreviewModal.tsx');
 assert.ok(audience.includes('reduceMotion={state.settings.reduceMotion}'),'Audience preview modal must respect reduced motion');
 assert.ok(audience.includes('stackLayout=width<400||fontScale>=1.2'),'Audience tabs must stack before they collide on narrower phones');

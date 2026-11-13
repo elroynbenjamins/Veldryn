@@ -40,7 +40,7 @@ function source(overrides?:Partial<WorldBossServerOwnedCohortSourceV15>):
   async loadOwnedCharacterState({accountId,characterId}){
    loads++;
    const state=states.get(accountId);
-   assert.ok(state,'trusted selection exists in source');
+   if(!state)throw Error('missing_fixture_state');
    assert.equal(state.character?.id,characterId);
    return {ownerAccountId:accountId,gameVersion:2,updatedAtUtcMs:NOW-60000,serverState:state};
   },

@@ -3,6 +3,7 @@ import {NOVICE_RECIPES} from '../src/content/novice-sets';
 import {itemDef} from '../src/content/items';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {createCharacter,newGame} from '../src/core/game';
+import {combatCompanionDef} from '../src/content/combat-companions';
 import {refreshCompanions} from '../src/core/companion-runtime';
 import {RECIPES} from '../src/content/skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
@@ -13,6 +14,8 @@ import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
+const forgeAutomatonRequirements=combatCompanionDef('UNIT_010')!.unlockRequirements;
+ok(forgeAutomatonRequirements.some(req=>req.target==='EQUIPMENT_CRAFTS'&&req.amount===500)&&forgeAutomatonRequirements.some(req=>req.type==='skill_level'&&req.target==='smithing'&&req.amount===30),'Forge Automaton must require 500 equipment claims and Smithing 30');
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
 for(const sample of [{tier:'T1',slot:'helmet',gold:368},{tier:'T1',slot:'weapon',gold:584},{tier:'T9',slot:'weapon',gold:243000}]){

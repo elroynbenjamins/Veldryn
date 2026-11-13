@@ -33,5 +33,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies needed by mobile typecheck
+        run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Run complete mobile localization suite including focused Russian coverage
         run: pnpm test:localization

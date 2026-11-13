@@ -46753,11 +46753,6 @@ function coopRequiredLevel(baseMinimumLevel, tier) {
   if (!Number.isInteger(baseMinimumLevel) || baseMinimumLevel < 1) throw new Error("invalid_expedition_minimum_level");
   return rebaseLegacyCombatLevel(baseMinimumLevel + COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
 }
-function highestEligibleCoopTier(baseMinimumLevel, characterLevel) {
-  if (!Number.isInteger(characterLevel) || characterLevel < 1) throw new Error("invalid_character_level");
-  for (const tier of [...PUBLISHED_COOP_TIERS].reverse()) if (characterLevel >= coopRequiredLevel(baseMinimumLevel, tier)) return tier;
-  return void 0;
-}
 var COOP_CLASS_ABILITY_MULTIPLIERS = Object.freeze({
   STONECALLER: Object.freeze({ SC_SHIELD: 2, SC_HEAL: 2 })
 });
@@ -50871,11 +50866,11 @@ var OnlineCoopLfg = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
-    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
+    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel, record.combatPower);
     if (entryError) throw new GameplayError(entryError);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
-    const maxTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
-    if (!maxTier) throw new GameplayError("dungeon_level_requirement");
+    const maxTier = highestEligibleRegularDungeonTier(definition, record.characterLevel, record.combatPower);
+    if (!maxTier) throw new GameplayError("dungeon_power_requirement");
     const hash = createHash7("sha256").update(JSON.stringify({ dungeonId: definition.id, note })).digest("hex");
     return this.services.rpc("publish_online_coop_lfg_server_v1", { p_account_id: accountId, p_request_id: request.requestId, p_request_hash: hash, p_character_id: game.state.character.id, p_dungeon_id: definition.id, p_role: readiness.role, p_max_tier: maxTier, p_note: note });
   }

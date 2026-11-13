@@ -7,6 +7,7 @@ on:
       - 'apps/mobile/**'
       - 'backend/src/**'
       - '.github/workflows/android-native-validation.yml'
+      - '.github/scripts/android-release-smoke.sh'
   pull_request:
     paths:
       - 'apps/mobile/app.json'
@@ -18,6 +19,7 @@ on:
       - 'apps/mobile/src/online/google-signin.ts'
       - 'apps/mobile/src/online/play-games.ts'
       - '.github/workflows/android-native-validation.yml'
+      - '.github/scripts/android-release-smoke.sh'
   workflow_dispatch:
 
 jobs:
@@ -94,6 +96,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            .github/scripts
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -111,10 +117,20 @@ jobs:
           curl --fail --location --retry 3 --silent --show-error \
             https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
             --output release-aab/bundletool.jar
+          # CI-only self-signed certificate: never use this to distribute an app.
+          keytool -genkeypair -noprompt \
+            -keystore release-aab/ci-only-signing.jks \
+            -storepass android -keypass android \
+            -alias ci-smoke -keyalg RSA -keysize 2048 -validity 2 \
+            -dname 'CN=Veldryn cloud emulator test, OU=QA, O=Veldryn, C=NL'
           java -jar release-aab/bundletool.jar build-apks \
             --bundle=release-aab/app-release.aab \
             --output=release-aab/veldryn.apks \
-            --mode=universal --overwrite
+            --mode=universal --overwrite \
+            --ks=release-aab/ci-only-signing.jks \
+            --ks-pass=pass:android \
+            --ks-key-alias=ci-smoke \
+            --key-pass=pass:android
           unzip -p release-aab/veldryn.apks universal.apk > release-aab/veldryn-universal.apk
           test -s release-aab/veldryn-universal.apk
       - name: Enable hardware-accelerated emulator
@@ -131,26 +147,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            set -euo pipefail
-            adb wait-for-device
-            adb install -r release-aab/veldryn-universal.apk
-            adb logcat -c
-            adb shell am start -W -n com.elroybenjamins.veldryn/.MainActivity
-            sleep 25
-            adb exec-out screencap -p > release-aab/startup-screen.png
-            adb logcat -d -v brief -s AndroidRuntime:E ReactNativeJS:E ReactNative:E > release-aab/startup-errors.log || true
-            if ! adb shell pidof com.elroybenjamins.veldryn; then
-              echo "::error::Veldryn is not running 25 seconds after launch"
-              cat release-aab/startup-errors.log
-              exit 1
-            fi
-            if grep -q 'FATAL EXCEPTION' release-aab/startup-errors.log; then
-              echo "::error::Fatal Android runtime exception during startup"
-              cat release-aab/startup-errors.log
-              exit 1
-            fi
-            echo "Release AAB installed and Veldryn process survived Android 15 startup"
+          script: bash .github/scripts/android-release-smoke.sh
       - name: Retain emulator screenshot and error logs
         if: always()
         uses: actions/upload-artifact@v4

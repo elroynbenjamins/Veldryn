@@ -16,6 +16,9 @@ export const companionTranslationRows={
  "Manage":["Verwalten","Gestionar","Beheren","Gestisci","Gérer"],
  "Details":["Details","Detalles","Details","Dettagli","Détails"],
  "Filter roles":["Rollen filtern","Filtrar roles","Rollen filteren","Filtra ruoli","Filtrer les rôles"],
+ "No companions owned yet.":["Noch keine Begleiter freigeschaltet.","Todavía no tienes compañeros.","Je hebt nog geen metgezellen.","Non hai ancora compagni.","Vous n'avez pas encore de compagnons."],
+ "Unlock your first companion to see it here.":["Schalte deinen ersten Begleiter frei, damit er hier erscheint.","Desbloquea tu primer compañero para verlo aquí.","Ontgrendel je eerste metgezel om deze hier te zien.","Sblocca il tuo primo compagno per vederlo qui.","Débloquez votre premier compagnon pour le voir ici."],
+ "All available companions unlocked.":["Alle verfügbaren Begleiter freigeschaltet.","Has desbloqueado todos los compañeros disponibles.","Alle beschikbare metgezellen ontgrendeld.","Hai sbloccato tutti i compagni disponibili.","Tous les compagnons disponibles sont débloqués."],
 
  // Companion Index v2: complete localization for compact discovery and acquisition guidance.
  // Companion availability and unlock-status categories (keep upcoming event identities private).

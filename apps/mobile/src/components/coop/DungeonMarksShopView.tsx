@@ -57,7 +57,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   <View style={s.wallet}>
    <ExpeditionMarkIcon size={34}/>
    <View style={s.fill}>
-    <Text style={s.walletAmount}>{snapshot?snapshot.balance.toLocaleString():'—'} Expedition Marks</Text>
+    <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={s.walletAmount}>{snapshot?snapshot.balance.toLocaleString():'—'} Expedition Marks</Text>
     <Text style={s.meta}>{snapshot?'Permanent account currency':'Shop not available yet'}</Text>
    </View>
    {onRefresh?<GameButton compact title="Refresh" tone="secondary" loading={refreshing} disabled={busy||pending!==null||refreshing} onPress={()=>void refresh()}/>:null}
@@ -65,7 +65,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   <Text style={s.meta}>Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.</Text>
   <View accessibilityRole="tablist" style={s.tabs}>
    {(['Supplies','Collections','Owned'] as const).map(tab=><Pressable key={tab} accessibilityRole="tab"
-    accessibilityState={{selected:shelf===tab,disabled:!!pending||refreshing}} disabled={!!pending||refreshing} onPress={()=>{setShelf(tab);setSelected(null)}}
+    accessibilityState={{selected:shelf===tab,disabled:busy||!!pending||refreshing}} disabled={busy||!!pending||refreshing} onPress={()=>{setShelf(tab);setSelected(null)}}
     style={[s.tab,shelf===tab&&s.selectedTab]}><Text style={[s.tabLabel,shelf===tab&&s.activeLabel]}>{tab}</Text></Pressable>)}
   </View>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
@@ -76,13 +76,13 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const expanded=selected===item.id;
    const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
    const offerStatus=pending===item.id?'Processing purchase':item.owned||item.status==='already_owned'?'Owned'
-    :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?'Available'
+    :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?(onPurchase?'Available':'Preview only')
     :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
     :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.marks.toLocaleString()} Expedition Marks, ${offerStatus}`} accessibilityState={{expanded,disabled:!!pending||refreshing}}
-     disabled={!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.marks.toLocaleString()} Expedition Marks, ${offerStatus}`} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
+     disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
      <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{item.name}</Text>
@@ -110,7 +110,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:10,padding:spacing.md,paddingBottom:100},
  wallet:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:radii.md,borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.panelRaised},
  fill:{flex:1,minWidth:0},walletAmount:{...typography.bodyStrong,color:C.text,fontSize:16},meta:{...typography.caption,color:C.muted,lineHeight:17},
- tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:42,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
+ tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
  selectedTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabLabel:{...typography.caption,color:C.muted,fontWeight:'800'},activeLabel:{color:C.text},
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},

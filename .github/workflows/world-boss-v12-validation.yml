@@ -7,6 +7,7 @@ on:
       - 'backend/online/world-boss-loadout-v12.ts'
       - 'backend/online/world-boss-owned-cohort-v15.ts'
       - 'backend/online/world-boss-service-v19.ts'
+      - 'backend/online/world-boss-auth-v19.ts'
       - 'backend/online/world-boss-private-pg-v19.ts'
       - 'backend/src/server/combat/world-boss-bracket-audit-v14.ts'
       - 'backend/online/coop-loadout.ts'

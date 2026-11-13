@@ -122,7 +122,7 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
     const required=id==='supporter_12m'?12:id==='supporter_6m'?6:id==='supporter_3m'?3:0;
     const unlocked=canEquipSupporterBadge(id,badges.supporterAvailable,badges.supporterTierMonths);
     return row(id,unlocked,unlocked
-     ?required===0?'Active Supporter · first star':`Verified ${required}-month Supporter milestone`
+     ?required===0?'Active Supporter · first star':r('Verified {months}-month Supporter milestone',{months:required})
      :SUPPORTER_BADGE_UNLOCK_HINTS[id]);
    })}
    <Text style={[s.footnote,{color:C.muted}]}>{r('Time from separate verified subscription periods adds together. Pauses do not erase progress, and buying future months does not count early. Earlier history requires reliable billing proof.')}</Text>

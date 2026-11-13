@@ -56,7 +56,6 @@ import {ActiveGatheringScene} from '../components/ActiveGatheringScene';
 
 export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onCraft,onClaimCraft,onClaimAllCrafts,onCancelCraft,onMoveCraftWaiting,onCraftPrerequisites,onEquipTool,onCharacter,onInventory,onViewToolRecipes,onNavigateCraftingSource,onSelectSkill,onBackToHub,onOpenCombat,onCommand=async()=>{},initialMode='gathering',initialSkill,initialAreaId,initialActionId,initialRecipeId,forgeResults,onDismissForgeResults}:{state:GameState;now?:number;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string)=>void;onClaimCraft:(jobId:string)=>void;onClaimAllCrafts:()=>void;onCancelCraft:(jobId:string)=>void;onMoveCraftWaiting:(jobId:string,direction:'up'|'down')=>void;onCraftPrerequisites:(recipeId:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onViewToolRecipes:()=>void;onNavigateCraftingSource?:(destination:import('../core/working-toward').WorkingTowardDestination)=>void;onSelectSkill?:(id:string)=>void;onBackToHub?:()=>void;onOpenCombat?:()=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId|string;initialAreaId?:string;initialActionId?:string;initialRecipeId?:string;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
  const {gt,gl,language}=useGameplayText();
- const a=(source:string,params?:Record<string,string|number>)=>accountText(language,source,params);
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const {width:windowWidth,fontScale}=useWindowDimensions(),compactTools=windowWidth<420||fontScale>=1.25;
   const baseGatheringDefs=[...GATHERING,...HERB_NODES],gatheringDefs=initialActionId?[...baseGatheringDefs].sort((a,b)=>a.id===initialActionId?-1:b.id===initialActionId?1:0):baseGatheringDefs;
@@ -188,6 +187,7 @@ function makeHubStyles(C:ThemeColors){return StyleSheet.create({
 });}
 function SkillHub({state,now,onSelect,onCombat,onCommand}:{state:GameState;now:number;onSelect:(id:string)=>void;onCombat?:()=>void;onCommand:(command:import('../core/game-commands').GameCommand)=>Promise<void>}){
  const {gt,gl,language}=useGameplayText();
+ const a=(source:string,params?:Record<string,string|number>)=>accountText(language,source,params);
  const C=useGameTheme(),hubStyles=useMemo(()=>makeHubStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackCards=width<350||fontScale>=1.25;
  const [classSkillId,setClassSkillId]=useState<string>();
  const [trainingInfoOpen,setTrainingInfoOpen]=useState(false);

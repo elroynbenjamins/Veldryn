@@ -4,6 +4,13 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish are starter-only languages. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 13, 2026: recently changed screens
+
+- Added 107 reviewed eight-language source keys (English plus DE/ES/NL/IT/FR/RU/TR) in `src/i18n/recent-screens.ts` covering the Community Roadmap, the not-yet-released Market Inbox, and Player Badge settings, hints, names, and accessibility copy.
+- Roadmap entries from the four November 10 authoritative migrations have matching localized titles/descriptions and category labels. Unknown or changed server entries still display their original source text rather than being translated speculatively.
+- Added placeholder, locale coverage, badge metadata and authored Roadmap SQL source checks in `tests/recent-ui-localization.cjs`, wired into the localization test runner.
+- Russian and Turkish remain starter-level across the **rest** of the game. Unreviewed, data-driven, and new interface text may still fall back to English. Native-speaker review and narrow-screen text-expansion QA remain open.
+
 ## Implemented
 
 - Typed eight-language catalog with English as the default and fallback language.

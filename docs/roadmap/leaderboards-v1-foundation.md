@@ -23,7 +23,7 @@
 - **Scoring prototype:** `docs/roadmap/leaderboards-authoritative-scoring-v3-proposal.sql` creates a private service-only scoring projection and a service-only public v3 board RPC. Professions and Dungeons are calculated in SQL; legacy Arena/Guild and unfinished Achievement Score delegate to v2. Ties share a rank for identical primary + secondary metrics; stable display order uses name and account ID without exposing IDs.
 - **Opt-in backend support:** `SupabaseRankingRepository` now accepts a `useVerifiedV3` option, default **false**, so existing production calls remain on v2. No configuration or client gate was changed.
 - **Verified staging smoke:** v3 proposal plus `backend/supabase/tests/leaderboards_v3_scoring_contract.sql` executed inside one explicit `BEGIN ... ROLLBACK`, including 15 v3 board projections, guild delegation, pagination values, invalid input rejection, and client-grant denial. Both new functions were subsequently verified absent; **no schema was deployed**.
-- **Remaining blockers:** Achievement Score has no validated claimed-score ledger in the inspected schema; the v3 proposal deliberately leaves it unpopulated. Hunting has no production skill records; it will fill naturally if authoritative Hunting progress is later saved. Arena/Guild boards retain v2's rank/self-standing limitations. Evaluate cost/snapshot stability of large JSONB scans before launch, backfill actual durable achievements, and migrate the prototype with the project's Supabase CLI only after review.
+- **Updated:** Achievement Score now uses provisional earned-Journal milestone scoring in the v3 draft; do not present it as a claimed-achievement ledger. Hunting still has no production skill records and will fill naturally when authoritative Hunting progress is saved. Arena/Guild boards retain v2's rank/self-standing limitations. Evaluate cost/snapshot stability of large JSONB scans before launch, backfill actual durable achievements, and migrate the prototype with the project's Supabase CLI only after review.
 
 ### Proposed safe deployment sequence
 1. Reconcile the live v2 function's migration provenance in Git; keep current client and API behavior as-is.
@@ -31,8 +31,28 @@
 3. Run the scoring SQL integration test on staging, including meaningful fixture data, permission checks and performance plans, then use the explicit opt-in adapter flag for limited server QA.
 4. Build the missing Achievement Score source and cross-system/privacy tests; only then consider promoting the v3 endpoint and client feature gate.
 
+## Next pass: earned Journal Score + World Boss history (13 November 2026)
+
+### Earned Journal prestige
+- The Journal V42 catalog has **nine achievement families, each with five tiers**. Milestones unlock automatically; there is no achievement-claim requirement. Achievement Score therefore means **earned** achievements, not claimed reward entitlements.
+- The verified online command handler loads state server-side, validates a bounded command, computes its result with the game engine, and persists through service RPC. The snapshot still needs a focused end-to-end anti-tamper review before enabling a competitive ranking.
+- Hidden v3 SQL now calculates `achievement_score` with an explicit catalog allowlist (45 IDs), matching account ID and schema version 42, valid millisecond unlock timestamps, and provisional prestige weights **10 / 25 / 50 / 100 / 200** for Novice / Adventurer / Veteran / Master / Grandmaster. Unknown IDs and future timestamps contribute nothing. These are ranking-only weights, not earned currency or combat power.
+- Read-only production audit returned **95 accounts with 266 accepted earned unlocks**, scores 10–325, without exposing any personal data in the review. The staging contract and synthetic fixtures passed in an explicit transaction that was rolled back.
+
+### Historical World Boss rankings
+- The existing `shared_world_world_boss_final_ranks` table is an authoritative finalized snapshot. A separate **disabled-by-default** private history proposal reads historical final rank, impact, applied damage, attempts and display name per specific event.
+- A separate private feature gate is required even after global Leaderboards are enabled; current `RANKINGS_RELEASED=false` is unchanged. Only rows with valid attempts and positive impact are eligible; excluded echo-only/invalid rows cannot appear. Public profile visibility and mutual blocks are checked at read time; original event-wide ranks are preserved, so gaps are possible after filtering.
+- A staging transaction seeded synthetic final-rank rows and validated gate denial, hidden/unfinalized events, correct history and self-standing, private-profile removal, mutual blocks and zero-valid-attempt exclusion. All inserts, gate changes and profile changes were rolled back.
+- The function is **private** and not a public Data API endpoint. Its future authenticated server bridge must have a trusted database caller, include event authorization, and must never expose raw account IDs.
+
+### Before release
+1. Reconcile tracked v2 migration provenance and convert the reviewed proposals into properly numbered migrations using the Supabase CLI; this PR's draft SQL files are **not deployed**.
+2. Confirm long-term authoritative Journal snapshot integrity and verify the 45-ID catalog after gameplay updates. Add simulated duplicate/invalid saves and simultaneous ranking requests.
+3. Validate 19 existing boards + any new World Boss event-scope UI on realistic seeded accounts, including pagination stability, ties, all privacy modes, deleted/renamed users and Android accessibility.
+4. Review scoring performance and introduce server snapshot/keyset pagination before scale; keep event-specific World Boss history independently disabled until the overall Leaderboards launch is approved.
+
 ## Next implementation passes (not claimed complete)
-1. Complete the unfinished Achievement Score and Hunting source, reconcile v2 migration provenance, and validate the 19-board v3 architecture against actual trusted gameplay receipts. Verify self standings, privacy filters, blocks, deterministic ties and absolute ranks on later pages.
+1. Harden the new earned Journal Score source and Hunting data path, reconcile v2 migration provenance, and validate the 19-board v3 architecture against trusted gameplay receipts. Verify self standings, privacy filters, blocks, deterministic ties and absolute ranks on later pages.
 2. Prefer **stable keyset/snapshot pagination** for large boards: offset pagination can shift as scores update between requests. Until then, this UI remains behind the release gate.
 3. Define seasons and archive snapshots before Arena or World Boss competition is made public. Distinguish current season, previous season and all-time boards; no character-class or gear power rewards for rank.
 4. Integrate World Boss results only after authoritative settlement and anti-duplicate checks, with the established account-wide attempt cap and no echo/fake submissions. Guild PvE and Party Events should get independent category and permission gates, not auto-publish with general Rankings.
@@ -42,7 +62,8 @@
 ## Release checklist
 - [x] V2 RPC identity and permissions checked read-only on both staging and production (2026-11-13)
 - [x] Read-only staging v2 permissions preflight passed
-- [x] v3 scoring prototype and SQL contract dry-ran with full rollback on staging
+- [x] v3 scoring prototype, 16 scoped boards and earned Journal fixture dry-ran with full rollback on staging
+- [x] World Boss historical-result, hidden-gate, privacy, mutual-block and echo-exclusion staging fixtures passed with rollback
 - [ ] Long-form fixture tests for 19 boards, privacy, tie behavior and performance pass
 - [ ] All 19 boards return correct nonempty results from seeded fixtures where applicable
 - [ ] Stable global ranks, ties and self-standing are verified for >50 accounts

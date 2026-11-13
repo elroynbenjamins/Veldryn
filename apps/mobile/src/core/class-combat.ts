@@ -2,7 +2,8 @@ import {ClassId} from './types';
 export interface ClassCombatStyle{name:string;description:string;speedMultiplier:number;damageTakenMultiplier:number;recoveryPct:number;onKillAttackHealPct?:number;soloHuntDamageMultiplier:number;soloHuntTempoMultiplier:number}
 /** Ordinary solo hunts only: tanks convert counterpressure and supports convert idle
  * healing windows into offense. Dungeon, story-boss and PvP ability output is unchanged.
- * Keep these bonuses separate from global class stats and weapon upgrades. */\nexport const CLASS_COMBAT_STYLES:Record<ClassId,ClassCombatStyle>={
+ * Keep these bonuses separate from global class stats and weapon upgrades. */
+export const CLASS_COMBAT_STYLES:Record<ClassId,ClassCombatStyle>={
   IRONWARDEN:{name:'Runic Guard',description:'Reduces incoming damage by 12%.',speedMultiplier:.98,damageTakenMultiplier:.88,recoveryPct:.012,soloHuntDamageMultiplier:1.25,soloHuntTempoMultiplier:1.05},
   BASTION:{name:'Hold the Line',description:'Reduces incoming damage by 16%, but attacks more slowly.',speedMultiplier:.94,damageTakenMultiplier:.84,recoveryPct:.014,soloHuntDamageMultiplier:1.34,soloHuntTempoMultiplier:1.06},
   DREADGUARD:{name:'Dread Momentum',description:'Hunts 4% faster while retaining heavy protection.',speedMultiplier:1.04,damageTakenMultiplier:.94,recoveryPct:.010,soloHuntDamageMultiplier:1.12,soloHuntTempoMultiplier:1.02},

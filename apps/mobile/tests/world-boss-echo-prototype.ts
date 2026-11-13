@@ -76,6 +76,22 @@ for(let seed=0;seed<18;seed++){
 }
 assert.equal(differentSeeds.size,2,'tie-breaking should rotate suitable Echo owners across seeds');
 
+// Equal-priority pools larger than two must be sampled across ALL candidates.
+// CombatRng currently emits a half-range value; Echo selection rescales it.
+const rotatedEchoes=new Set<string>();
+const wideSupportPool=Array.from({length:8},(_,i)=>c('rotation-'+i,'Stonecaller'));
+for(let seed=0;seed<128;seed++){
+ const matched=matchWorldBossEchoesPrototype(request('wide-tie:'+seed,wideSupportPool));
+ rotatedEchoes.add(matched.squad.find(x=>x.resolvedCombatant.role==='support')!.snapshotId);
+}
+assert.ok(rotatedEchoes.size>=6,
+ 'equal-priority 8-player pool must rotate beyond the first two owners');
+assert.deepEqual(
+ matchWorldBossEchoesPrototype(request('order-independent',wideSupportPool)),
+ matchWorldBossEchoesPrototype(request('order-independent',[...wideSupportPool].reverse())),
+ 'candidate DB return order must not control tie-breaking'
+);
+
 const supportFirst:WorldBossSnapshotPrototype={
  snapshotId:'primary-support',ownerAccountId:'my-account',
  resolvedCombatant:launchPlayer('Dawnkeeper')

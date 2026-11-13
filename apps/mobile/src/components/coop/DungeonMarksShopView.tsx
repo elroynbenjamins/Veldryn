@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
@@ -26,17 +26,18 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
  const [selected,setSelected]=useState<string|null>(null);
  const [pending,setPending]=useState<string|null>(null);
  const [refreshing,setRefreshing]=useState(false);
+ const requestLock=useRef(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const refresh=async()=>{
-  if(!onRefresh||busy||pending||refreshing)return;
-  setRefreshing(true);setError('');
+  if(requestLock.current||!onRefresh||busy||pending||refreshing)return;
+  requestLock.current=true;setRefreshing(true);setError('');
   try{await onRefresh()}
   catch{setError('Unable to refresh the Dungeon Shop. Please retry.');}
-  finally{setRefreshing(false)}
+  finally{requestLock.current=false;setRefreshing(false)}
  };
  const purchase=async(id:string)=>{
-  if(!snapshot?.shopEnabled||!onPurchase||pending||busy)return;
-  setPending(id);setError('');setNotice('');
+  if(requestLock.current||!snapshot?.shopEnabled||!onPurchase||pending||busy)return;
+  requestLock.current=true;setPending(id);setError('');setNotice('');
   try{
    const status=await onPurchase(id);
    setNotice(status==='purchased'?'Purchase confirmed. Refresh to view your balance and reward.':'Already owned. No Marks spent.');
@@ -45,7 +46,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    catch{setError('Purchase confirmed, but refresh failed. Reopen the shop to synchronize your account.');}
   }catch(cause){
    setError(cause instanceof Error?cause.message:'Unable to confirm purchase. Refresh before retrying.');
-  }finally{setPending(null)}
+  }finally{requestLock.current=false;setPending(null)}
  };
  const items=(snapshot?.offers??[]).filter(item=>
   shelf==='Owned'?item.owned||item.status==='already_owned':
@@ -74,13 +75,17 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {items.map(item=>{
    const expanded=selected===item.id;
    const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
+   const offerStatus=item.owned||item.status==='already_owned'?'Owned':item.status==='eligible'?'Available'
+    :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
+    :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.marks.toLocaleString()} Expedition Marks`} accessibilityState={{expanded,disabled:!!pending||refreshing}}
+    <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.marks.toLocaleString()} Expedition Marks, ${offerStatus}`} accessibilityState={{expanded,disabled:!!pending||refreshing}}
      disabled={!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
      <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
      <View style={s.fill}>
-      <Text style={s.title}>{item.name}</Text>
+      <Text numberOfLines={2} style={s.title}>{item.name}</Text>
+      <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
       <Text style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).join(' · ')}</Text>
       <View style={s.price}><ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{item.marks.toLocaleString()}</Text></View>
      </View>
@@ -115,6 +120,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
  description:{...typography.body,color:C.text},
+ offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},
 });}

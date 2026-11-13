@@ -36,8 +36,8 @@ export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
   switch(cue.type){
     case 'action': {
       const suffix=`${cue.outcome==='critical'?' · CRIT':''}${cue.outcome==='miss'?' · MISS':''}${cue.absorbed&&cue.absorbed>0?` · ${Math.round(cue.absorbed)} absorbed`:''}${cue.gemProc?' · GEM PROC':''}`;
-      if(cue.actionKind==='heal')return `${actor??'Support'} heals ${target??'ally'}${amount}${suffix}`;
-      if(cue.actionKind==='shield')return `${actor??'Support'} shields ${target??'ally'}${amount}${suffix}`;
+      if(cue.actionKind==='heal')return `${actor??'Support'} heals ${target??'ally'}${ability&&ability!=='Basic Attack'?` with ${ability}`:''}${amount}${suffix}`;
+      if(cue.actionKind==='shield')return `${actor??'Support'} shields ${target??'ally'}${ability&&ability!=='Basic Attack'?` with ${ability}`:''}${amount}${suffix}`;
       if(cue.outcome==='miss')return `${actor??'Combatant'} misses ${target??'target'}${suffix}`;
       if(ability==='Basic Attack')return `${actor??'Combatant'} attacks ${target??'target'}${amount}${suffix}`;
       return `${actor??'Combatant'} uses ${ability??'an ability'}${target?` on ${target}`:''}${amount}${suffix}`;
@@ -51,6 +51,29 @@ export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
     case 'wipe': return 'Party defeated';
     case 'timeout': return 'Encounter timed out';
   }
+}
+
+/** Only server-recorded, named player ability events may create a skill banner.
+ * Solo-hunt bonuses and ordinary attacks are passive/basic and must never be
+ * presented as a triggered skill. An assist is a companion cast by its owner. */
+export interface DungeonSkillActivation {
+ kind:'class'|'companion';
+ name:string;
+ actorName?:string;
+ amount?:number;
+ actionKind?:'damage'|'heal'|'shield';
+ outcome?:'critical'|'miss';
+}
+export function playbackSkillActivation(cue:CoopCombatReplayCueView|undefined,isPartyActor:boolean):DungeonSkillActivation|undefined{
+ if(!cue||!isPartyActor)return undefined;
+ const name=cue.abilityName?.trim();
+ if(!name||cue.abilityId==='BASIC'||/^basic[\\s_-]*attack$/i.test(name))return undefined;
+ const companion=cue.type==='assist'||cue.abilityId?.endsWith(':assist')===true;
+ if(!companion&&cue.type!=='action'&&cue.type!=='cast'&&cue.type!=='interrupt')return undefined;
+ // The replay contains explicit abilities, not inferred procs or idle damage.
+ return {kind:companion?'companion':'class',name:dungeonEnemyAbilityDisplayName(name),
+  actorName:cue.actorName,amount:cue.type==='action'&&Number.isFinite(cue.amount)?cue.amount:undefined,
+  actionKind:cue.type==='action'?cue.actionKind:undefined,outcome:cue.outcome};
 }
 
 export function playbackCueDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView,speed:DungeonPlaybackSpeed=1):number{

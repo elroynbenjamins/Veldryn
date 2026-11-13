@@ -160,7 +160,7 @@ begin
     v_candidate,'$.**.equipmentInstanceIds.* ? (@ == $inst)',v_vars));
   if v_local_count<>1 then return false;end if;
   -- A physical stack must have the expected exact SKU and quantity 1.
-  for v_record in select value from pg_catalog.jsonb_path_query(
+  for v_record in select pg_catalog.jsonb_path_query(
     v_candidate,'$.**.stacks[*] ? (@.instanceId == $inst)',v_vars)
   ) loop
     if v_record->>'itemId' is distinct from p_item

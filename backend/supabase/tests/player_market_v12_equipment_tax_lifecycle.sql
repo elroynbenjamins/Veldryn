@@ -28,6 +28,11 @@ declare
   v_hold2 uuid;
   v_offer2 uuid;
   v_return_id uuid;
+  v_resale_id uuid;
+  v_resale_again uuid;
+  v_resale_delivery uuid;
+  v_second_delivery uuid;
+  v_chain_receipt jsonb;
 begin
   insert into auth.users(id,email) values
     (v_seller,'v9-seller-'||v_seller||'@example.invalid'),
@@ -862,6 +867,206 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_sale_chain_immutable' then raise;end if;
   end;
+
+  -- V23. Simulate a complete second-sale lifecycle using only synthetic
+  -- accounts, including cancelled listing, return, relist, pending buyer
+  -- claim and a third sale of the SAME immutable exact Forge instance.
+  v_result:=private.market_reserve_equipment_resale_v23(
+    v_buyer,13,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
+    'v23-resale-first-reserve',repeat('1',64));
+  v_resale_id:=(v_result->>'resaleId')::uuid;
+  if v_result->>'status'<>'active'
+    or (select storage_state from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'resale'
+    or (select state#>'{character,equipmentPouch,stacks}' from public.online_game_states
+      where account_id=v_buyer)<>'[]'::jsonb
+    or (select state#>'{account,craftedGearInstances}' from public.online_game_states
+      where account_id=v_buyer)<>'[]'::jsonb
+    or (select revision from public.online_game_states where account_id=v_buyer)<>14
+    or (select count(*) from private.market_equipment_resale_offers_v23)<>1
+  then raise exception 'V23 first resale reserve failed atomic Forge custody';end if;
+  v_retry:=private.market_reserve_equipment_resale_v23(
+    v_buyer,13,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
+    'v23-resale-first-reserve',repeat('1',64));
+  if v_retry->>'replayed'<>'true'
+  then raise exception 'V23 reserve retry double-listed';end if;
+  begin
+    update public.online_game_states set state=jsonb_set(state,
+      '{character,equipmentPouch,stacks}',jsonb_build_array(v_stack),false)
+      where account_id=v_buyer;
+    raise exception 'V23 regular save fabricated an escrowed copy';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_buyer,v_resale_id,125,14,14,'v23-self-buy',repeat('2',64));
+    raise exception 'V23 self-resale was permitted';
+  exception when raise_exception then
+    if sqlerrm<>'market_self_trade_denied' then raise;end if;
+  end;
+  v_result:=private.market_cancel_equipment_resale_v23(
+    v_buyer,v_resale_id,'v23-cancel-first',repeat('3',64));
+  if v_result->>'status'<>'return_pending'
+    or (select status from private.market_equipment_resale_offers_v23
+      where resale_id=v_resale_id)<>'return_pending'
+  then raise exception 'V23 cancellation did not create safe return entitlement';end if;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_id,125,4,14,'v23-purchase-cancelled',repeat('4',64));
+    raise exception 'V23 cancelled resale was bought';
+  exception when raise_exception then
+    if sqlerrm<>'market_offer_not_available' then raise;end if;
+  end;
+  v_result:=private.market_claim_resale_return_v23(
+    v_buyer,v_resale_id,14,v_buyer_main::text,'equipment_pouch',
+    'v23-return-first',repeat('5',64));
+  if v_result->>'status'<>'returned'
+    or (select storage_state from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'character'
+    or (select state#>'{character,equipmentPouch,stacks,0}' from public.online_game_states
+      where account_id=v_buyer) is distinct from v_stack
+    or (select state#>>'{account,craftedGearInstances,0,ownerCharacterId}'
+      from public.online_game_states where account_id=v_buyer)<>v_buyer_main::text
+    or (select revision from public.online_game_states where account_id=v_buyer)<>15
+    or (select count(*) from private.market_equipment_resale_chain_v23)<>0
+    or (select count(*) from private.market_resale_gold_intents_v23)<>0
+  then raise exception 'V23 cancellation return lost original Forge copy';end if;
+
+  v_result:=private.market_reserve_equipment_resale_v23(
+    v_buyer,15,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
+    'v23-resale-second-reserve',repeat('6',64));
+  v_resale_again:=(v_result->>'resaleId')::uuid;
+  if v_resale_again=v_resale_id or (select count(*) from
+     private.market_equipment_resale_offers_v23)<>2
+  then raise exception 'V23 cancelled generation was reused';end if;
+  -- Actual purchaser must be qualified. Rival's class and XP in relational
+  -- record + authoritative online state must match before charging Gold.
+  update public.online_game_states set state=jsonb_set(
+    jsonb_set(state,'{character,xp}','0'::jsonb,true),
+    '{character,classId}','"BASTION"'::jsonb,true)
+    where account_id=v_rival;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_again,125,4,16,'v23-low-level-buy',repeat('7',64));
+    raise exception 'V23 low-level reseller charged Gold';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','10000000'::jsonb,true) where account_id=v_rival;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_again,124,4,16,'v23-stale-price',repeat('8',64));
+    raise exception 'V23 accepted stale resale offer price';
+  exception when raise_exception then
+    if sqlerrm<>'market_offer_not_available' then raise;end if;
+  end;
+  v_result:=private.market_purchase_equipment_resale_v23(
+    v_rival,v_resale_again,125,4,16,'v23-second-purchase',repeat('9',64));
+  v_resale_delivery:=(v_result->>'deliveryId')::uuid;
+  if v_result->>'saleOrdinal'<>'2'
+    or v_result->>'goldSpent'<>'125' or v_result->>'feeGold'<>'7'
+    or v_result->>'sellerGoldReceived'<>'118'
+    or (select count(*) from private.market_equipment_resale_chain_v23
+      where exact_instance_id=v_instance and sale_ordinal=2
+        and resale_id=v_resale_again
+        and buyer_account_id=v_rival and seller_account_id=v_buyer
+        and previous_resale_id is null
+        and first_source_hold_id=v_hold)<>1
+    or (select status from private.market_equipment_resale_deliveries_v23
+      where delivery_id=v_resale_delivery)<>'pending'
+    or (select status from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'pending'
+    or (select buyer_account_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_rival
+    or (select gold from public.character_wallets where character_id=v_rival_char)<>175
+    or (select gold from public.character_wallets where character_id=v_buyer_main)<>493
+    or (select revision from public.online_game_states where account_id=v_buyer)<>17
+    or (select revision from public.online_game_states where account_id=v_rival)<>5
+  then raise exception 'V23 second sale did not preserve Gold, chain or pending claim';end if;
+  v_retry:=private.market_purchase_equipment_resale_v23(
+    v_rival,v_resale_again,125,4,16,'v23-second-purchase',repeat('9',64));
+  if v_retry->>'replayed'<>'true'
+    or (select count(*) from private.market_resale_gold_intents_v23)<>1
+  then raise exception 'V23 purchase replay caused duplicate Gold';end if;
+  begin
+    perform private.market_cancel_equipment_resale_v23(
+      v_buyer,v_resale_again,'v23-cancel-sold',repeat('a',64));
+    raise exception 'V23 sold resale was cancelled';
+  exception when raise_exception then
+    if sqlerrm<>'market_resale_not_cancelable' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','0'::jsonb,false) where account_id=v_rival;
+  begin
+    perform private.market_claim_equipment_resale_v23(
+      v_rival,v_resale_delivery,5,v_rival_char::text,'inventory',
+      'v23-underlevel-claim',repeat('b',64));
+    raise exception 'V23 pending resale ignored current recipient level';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','10000000'::jsonb,false) where account_id=v_rival;
+  v_result:=private.market_claim_equipment_resale_v23(
+    v_rival,v_resale_delivery,5,v_rival_char::text,'inventory',
+    'v23-second-claim',repeat('c',64));
+  if v_result->>'status'<>'claimed'
+    or (select state#>'{inventory,stacks,0}' from public.online_game_states
+      where account_id=v_rival) is distinct from v_stack
+    or (select state#>>'{account,craftedGearInstances,0,ownerCharacterId}'
+      from public.online_game_states where account_id=v_rival)<>v_rival_char::text
+    or (select status from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'claimed'
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_rival_char::text
+    or (select revision from public.online_game_states where account_id=v_rival)<>6
+  then raise exception 'V23 second buyer claim did not bind exact gear';end if;
+  v_retry:=private.market_claim_equipment_resale_v23(
+    v_rival,v_resale_delivery,5,v_rival_char::text,'inventory',
+    'v23-second-claim',repeat('c',64));
+  if v_retry->>'replayed'<>'true'
+  then raise exception 'V23 buyer claim replay duplicated exact instance';end if;
+
+  -- Third sale demonstrates the unbroken genealogy and atomic multi-cycle
+  -- settlement. The initial V22 sale record must remain untouched.
+  v_result:=private.market_reserve_equipment_resale_v23(
+    v_rival,6,v_instance,v_rival_char::text,'inventory',0,125,
+    'v23-third-reserve',repeat('d',64));
+  v_resale_again:=(v_result->>'resaleId')::uuid;
+  if v_result->>'lastSaleOrdinal'<>'2'
+  then raise exception 'V23 third offer ignored the preceding sale';end if;
+  v_result:=private.market_purchase_equipment_resale_v23(
+    v_buyer,v_resale_again,125,17,7,'v23-third-purchase',repeat('e',64));
+  v_second_delivery:=(v_result->>'deliveryId')::uuid;
+  if v_result->>'saleOrdinal'<>'3'
+    or (select count(*) from private.market_equipment_resale_chain_v23
+      where exact_instance_id=v_instance)<>2
+    or (select count(*) from private.market_equipment_resale_chain_v23
+      where resale_id=v_resale_again and sale_ordinal=3
+        and buyer_account_id=v_buyer and seller_account_id=v_rival
+        and previous_resale_id is not null)<>1
+    or (select count(*) from private.market_equipment_sale_chain_v22
+      where exact_instance_id=v_instance and sale_ordinal=1)<>1
+    or (select count(*) from private.market_resale_gold_intents_v23)<>2
+    or (select gold from public.character_wallets
+      where character_id=v_buyer_main)<>368
+    or (select gold from public.character_wallets
+      where character_id=v_rival_char)<>293
+  then raise exception 'V23 third sale broke the exact genealogy or fee conservation';end if;
+  v_result:=private.market_claim_equipment_resale_v23(
+    v_buyer,v_second_delivery,18,v_buyer_main::text,'equipment_pouch',
+    'v23-third-claim',repeat('f',64));
+  if v_result->>'status'<>'claimed'
+    or (select state#>'{character,equipmentPouch,stacks,0}'
+      from public.online_game_states where account_id=v_buyer)
+      is distinct from v_stack
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_main::text
+    or (select count(*) from private.market_equipment_sale_chain_v22
+      where exact_instance_id=v_instance)<>1
+  then raise exception 'V23 third-sale claim lost exact Forge copy';end if;
 
   -- Separate unsold listing: seller cancellation returns original copy.
   -- A sold listing can never enter this path.

@@ -25,7 +25,8 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(fixture=>selected.includes(fixt
   const rows=CLASSES.map(cls=>{
    const state=regionalCombatFixture(def,preparation,cls.id);
    const projected=combatSustainProjection(state,def.monsterId);
-   assert.ok(projected&&projected.killsPerHour>0&&Number.isFinite(projected.killsPerHour),
+   if(!projected)throw new Error(def.regionName+'/'+cls.name+' has no ordinary hunt projection');
+   assert.ok(projected.killsPerHour>0&&Number.isFinite(projected.killsPerHour),
     def.regionName+'/'+cls.name+' must simulate real ordinary hunts');
    assert.ok(projected.xpPerHour>0,def.regionName+'/'+cls.name+' must earn combat XP');
    return {id:cls.id,role:cls.role,killsPerHour:projected.killsPerHour};

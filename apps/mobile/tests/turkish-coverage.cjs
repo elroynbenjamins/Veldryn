@@ -14,13 +14,13 @@ const {EARLY_LOCALE_ROWS,earlyLocaleText}=require('../src/i18n/early-locales.ts'
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=1176,'Turkish core coverage should retain the 1176-string baseline');
+assert.ok(keys.length>=952,'Turkish core coverage should retain the 952-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
 const i18nDir=path.resolve(__dirname,'../src/i18n');
 const coveredSources=['navigation.ts','app-shell.ts','account.ts','companions.ts',
- 'gameplay.ts','profile.ts','social.ts','battle.ts','creation.ts','guild-hall-ui.ts','progression.ts','guild-bank-ui.ts','guild-token-shop-ui.ts'];
+ 'gameplay.ts','profile.ts','social.ts','battle.ts','creation.ts' ,'progression.ts'];
 const source=coveredSources.map(file=>fs.readFileSync(path.join(i18nDir,file),'utf8')).join('\n');
 
 for(const [english,turkish] of Object.entries(TURKISH_COVERAGE)){

@@ -273,6 +273,38 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   'Gloam Breach':'Dämmerbruch',
   'Aurora Hollow':'Aurorahöhle',
 
+  // Seasonal candy identity, durations and interactions.
+  'EVENT CANDY':'EREIGNISSÜSSIGKEITEN',
+  'Festival boosts':'Festboni',
+  'Boosts run offline and expire when the event ends.':'Boni wirken auch offline und enden mit dem Ereignis.',
+  'None owned':'Nicht im Besitz',
+  'Event ended':'Ereignis beendet',
+  'Duration full':'Maximale Dauer erreicht',
+  'Use · add':'Verwenden · plus',
+  'ACTIVE':'AKTIV',
+  'Up to':'Bis zu',
+  'active time':'Wirkungsdauer',
+  'Using…':'Wird verwendet…',
+  'SKILL':'FERTIGKEIT',
+  'BATTLE':'KAMPF',
+  'BOND':'BINDUNG',
+  'PET LUCK':'HAUSTIERGLÜCK',
+  'Less than 1m':'Weniger als 1 Min.',
+  'Harvest Taffy':'Erntekaramell',
+  'Gloam Candy':'Dämmersüßigkeit',
+  'Frostmint':'Frostminze',
+  'Chronicle Chew':'Chronik-Kaubonbon',
+  'Heartberry Drop':'Herzbeerenbonbon',
+  'Bloom Sugar':'Blütenzucker',
+  'Sunflare Toffee':'Sonnenfeuer-Toffee',
+  'Starshine Candy':'Sternenglanzbonbon',
+  'Guild Caramel':'Gildenkaramell',
+  'Battle':'Kampf',
+  'Bond':'Bindung',
+  'Pet Luck':'Haustierglück',
+  'Median price':'Medianpreis',
+  'purchased.':'gekauft.',
+
   // Unreleased Market Inbox and verified price history (UI only).
   'Purchases, sales and returned listings are kept here. Items stay safe until claimed.':'Käufe, Verkäufe und zurückgegebene Angebote werden hier aufbewahrt. Gegenstände bleiben bis zur Abholung sicher.',
   'Completed':'Abgeschlossen',
@@ -560,6 +592,12 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
 };
 const germanCoverageLowercase=new Map(Object.entries(germanGameplayCoverage).map(([english,german])=>[english.toLowerCase(),german]));
 export function germanCoverageText(source:string):string|undefined{
+ const candyParts=/^(.+) · (Battle|Bond|Pet Luck)$/.exec(source);
+ if(candyParts){
+  const base=germanGameplayCoverage[candyParts[1]];
+  const suffix=germanGameplayCoverage[candyParts[2]];
+  if(base&&suffix)return base+' · '+suffix;
+ }
  if(source.endsWith(' Blueprint')){
   const toolName=source.slice(0,-' Blueprint'.length);
   const localizedTool=germanGameplayCoverage[toolName];

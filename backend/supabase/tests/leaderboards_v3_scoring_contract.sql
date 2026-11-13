@@ -45,9 +45,12 @@ BEGIN
    END LOOP;
  END LOOP;
 
- SELECT public.rankings_board_server_v3(v_account,'guild',51,0) INTO v_out;
- IF v_out->>'board'<>'guild' THEN
-   RAISE EXCEPTION 'V3_BREAKS_EXISTING_GUILD_BOARD'; END IF;
+ FOREACH v_board IN ARRAY ARRAY['arena_rating','arena_wins','guild'] LOOP
+   SELECT public.rankings_board_server_v3(v_account,v_board,51,0) INTO v_out;
+   IF v_out->>'board'<>v_board OR jsonb_typeof(v_out->'entries')<>'array'
+     OR (v_out->>'prestigeOnly')::boolean IS NOT TRUE
+   THEN RAISE EXCEPTION 'V3_BREAKS_EXISTING_DELEGATED_BOARD: %',v_board; END IF;
+ END LOOP;
  BEGIN
    PERFORM public.rankings_board_server_v3(v_account,'mining',101,0);
    RAISE EXCEPTION 'V3_ACCEPTED_OVERSIZE_REQUEST';

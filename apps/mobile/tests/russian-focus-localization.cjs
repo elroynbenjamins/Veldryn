@@ -6,7 +6,7 @@ require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}
 }).outputText,f);
 const {RUSSIAN_FOCUS_ROWS}=require('../src/i18n/russian-focus.ts');
-const {earlyLocaleText}=require('../src/i18n/early-locales.ts');
+const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const keys=Object.keys(RUSSIAN_FOCUS_ROWS);
@@ -52,4 +52,8 @@ const typedTranslator=createTranslator({en:{a:'{count}/10 equipped'},de:{a:'{cou
 assert.equal(typedTranslator('ru','a',params),'Надето: 3/10');
 assert.equal(typedTranslator('de','a',params),'3/10 ausgerüstet');
 assert.equal(typedTranslator('ru','a',{count:1}),'Надето: 1/10');
+const russianOwned=new Set([...keys,...Object.keys(EARLY_LOCALE_ROWS)].filter(key=>owned.has(key)));
+const coverage=(100*russianOwned.size/owned.size).toFixed(1);
+assert.ok(russianOwned.size>=keys.length,'Coverage cannot be smaller than focused translations');
 console.log('PASS: '+keys.length+' focused Russian UI translations, source keys, placeholders, and language fallback');
+console.log('Russian catalog coverage: '+russianOwned.size+'/'+owned.size+' distinct authored keys ('+coverage+'%). Remaining keys fall back to English.');

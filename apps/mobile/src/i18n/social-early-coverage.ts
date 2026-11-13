@@ -2,6 +2,12 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  // Read-only Rankings pagination, Russian and Turkish.
+  "No further ranked entries": ["Больше записей в рейтинге нет","Başka sıralama kaydı yok"],
+  "Return to the previous page to view ranked entries.": ["Вернитесь на предыдущую страницу, чтобы увидеть рейтинг.","Sıralamayı görmek için önceki sayfaya dön."],
+  "Previous": ["Назад","Önceki"],
+  "Next": ["Далее","Sonraki"],
+  "Page": ["Страница","Sayfa"],
   "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
   "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],
   "{points} shared points left": ["Осталось {points} общих очков","{points} ortak puan kaldı"],

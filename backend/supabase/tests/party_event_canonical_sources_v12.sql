@@ -149,6 +149,20 @@ begin
  then raise exception 'V12 combat replay broken';end if;
  begin
   perform private.record_party_event_canonical_action_v12(
+   p,start_at,'coop_node',run_ok,'elite-one',a[1],
+   'secure_approach','v12-request-combat-01',context_hash);
+  raise exception 'V12 duplicate request ID accepted for a different member';
+ exception when others then
+  if sqlerrm<>'party_event_source_or_request_reused' then raise;end if;
+ end;
+ replay_result:=private.record_party_event_canonical_action_v12(
+  p,start_at,'coop_node',run_ok,'elite-one',a[1],
+  'secure_approach','v12-request-combat-other',context_hash);
+ if replay_result->>'replayed'<>'false'
+  or replay_result->>'receiptId'=combat_result->>'receiptId'
+ then raise exception 'V12 legitimate second party member was not credited independently';end if;
+ begin
+  perform private.record_party_event_canonical_action_v12(
    p,start_at,'coop_node',run_ok,'elite-failed',a[2],
    'secure_approach','v12-request-combat-02',context_hash);
   raise exception 'V12 failed fight accepted';
@@ -215,12 +229,34 @@ begin
  if finale_result->>'replayed'<>'false' then
   raise exception 'V12 final craft preparation rejected';end if;
  if (select count(*) from private.party_event_sources_v11
-   where party_id=p and event_starts_at=start_at)<>3
+   where party_id=p and event_starts_at=start_at)<>4
    or (select count(*) from private.party_event_receipts_v11
-     where party_id=p and event_starts_at=start_at)<>3
+     where party_id=p and event_starts_at=start_at)<>4
    or exists(select 1 from private.party_event_receipts_v11
      where party_id=p and event_points_awarded<>0)
  then raise exception 'V12 source-to-receipt ratio or zero-EP invariant broken';end if;
-end $$;
+
+ -- Co-op access is revoked when the run ends. Exact retries must still
+ -- replay the persisted, once-verified receipt (even after event close).
+ update public.coop_run_access_memberships set active=false where run_id=run_ok;
+ update private.party_event_weeks_v11 set status='closed'
+  where party_id=p and event_starts_at=start_at;
+ replay_result:=private.record_party_event_canonical_action_v12(
+  p,start_at,'coop_node',run_ok,'elite-one',a[2],
+  'secure_approach','v12-request-combat-01',context_hash);
+ if replay_result->>'replayed'<>'true'
+  or replay_result->>'receiptId'<>combat_result->>'receiptId'
+ then raise exception 'V12 replay fails after run/member/event close';end if;
+ begin
+  perform private.record_party_event_canonical_action_v12(
+   p,start_at,'coop_node',run_ok,'elite-one',a[2],
+   'secure_approach','v12-request-combat-new-after-close',context_hash);
+  raise exception 'V12 new request accepted after closure';
+ exception when others then
+  if sqlerrm not in ('party_event_v12_missing_canonical_combat','party_event_window_closed',
+     'party_event_action_already_claimed')
+  then raise;end if;
+ end;
+end $;
 select 'PASS: V12 canonical craft and co-op sources, role and source attestation, replay, zero EP' as result;
 rollback;

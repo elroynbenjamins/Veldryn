@@ -489,10 +489,11 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
     playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation),
+      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
-    tempo:style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed),
+    // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
+    tempo:style.speedMultiplier*style.soloHuntTempoMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed),
     environmentTimeMultiplier:environment?.actionTimeMultiplier??1,
     seed:regionalHuntSeed(state,monsterId,0),
   }:undefined;

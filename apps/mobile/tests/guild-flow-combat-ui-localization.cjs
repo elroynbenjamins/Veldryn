@@ -15,7 +15,7 @@ const {dungeonCombatUiRows,dungeonCombatUiText}=require('../src/i18n/dungeon-com
 const locales=['de','es','nl','it','fr','ru','tr'];
 const fields=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const [rows,label,translate,count] of [
- [guildFlowUiRows,'guild',guildFlowUiText,38],
+ [guildFlowUiRows,'guild',guildFlowUiText,46],
  [dungeonCombatUiRows,'combat',dungeonCombatUiText,12],
 ]){
  assert.equal(Object.keys(rows).length,count,'Missing '+label+' translations');
@@ -68,4 +68,4 @@ for(const marker of [
  "localizedDungeonEffectLabel(language,status)",
 ])assert.ok(combat.includes(marker),'Dungeon combat UI missing localization: '+marker);
 assert.ok(combat.includes('statusCode(status)'),'Combat gem status codes must remain intact');
-console.log('PASS: 38 Guild and 12 Dungeon combat keys x 7 target locales; placeholder parity, UI wiring, unknown server copy and authoritative replay values');
+console.log('PASS: 46 Guild and 12 Dungeon combat keys x 7 target locales; placeholder parity, UI wiring, unknown server copy and authoritative replay values');

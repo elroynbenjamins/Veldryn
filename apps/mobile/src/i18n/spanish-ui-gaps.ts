@@ -98,7 +98,8 @@ export const SPANISH_UI_GAPS = {
   "READY XP PER COMPANION": "EXP LISTA POR COMPAÑERO",
   "Claim Companion Training": "Recoger entrenamiento de compañeros",
   "Open Companions & Sanctuary": "Abrir Compañeros y Santuario",
-  "Individual companions become stronger through leveling, Bond, Ascension and abilities. This facility supports their XP growth; it does not directly increase combat stats.": "Los compañeros mejoran al subir de nivel, reforzar su vínculo, ascender y desarrollar habilidades. Esta instalación favorece su progreso de EXP, pero no aumenta directamente sus estadísticas de combate."
+  "Individual companions become stronger through leveling, Bond, Ascension and abilities. This facility supports their XP growth; it does not directly increase combat stats.": "Los compañeros mejoran al subir de nivel, reforzar su vínculo, ascender y desarrollar habilidades. Esta instalación favorece su progreso de EXP, pero no aumenta directamente sus estadísticas de combate.",
+  "Events": "Eventos"
 } as const satisfies Record<string,string>;
 
 export function spanishUiGap(source:string):string|undefined{

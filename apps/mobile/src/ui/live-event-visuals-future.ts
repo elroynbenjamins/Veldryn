@@ -26,3 +26,20 @@ export const MERCHANT_GUILD_FESTIVAL:LiveEventVisualBundle={
     guild:require('../../assets/events/merchant_guild/enemies/coinbound_beast.webp'),
   },
 };
+
+
+/** Approved source art prepared for the first Turning. Production imports
+ * this pack only alongside the explicitly released live-event definition. */
+export const TURNING_OF_THE_AGE:LiveEventVisualBundle={
+  heroBackground:require('../../assets/card-backgrounds/cosmic_gate_portrait.webp'),
+  showcaseBackground:require('../../assets/card-backgrounds/cosmic_gate_wide_v2.webp'),
+  badgeIcon:require('../../assets/events/turning_of_the_age/badge.png'),
+  commonCurrencyIcon:require('../../assets/events/turning_of_the_age/currency_age_token.png'),
+  prestigeCurrencyIcon:require('../../assets/events/turning_of_the_age/currency_first_dawn_seal.png'),
+  discoveryArt:{},
+  rewardArt:{
+    EVT_PET_001:require('../../assets/event_collectibles/turning_of_the_age/pets/EVT_PET_001_Chronicle_Wisp.png'),
+    EVT_PET_002:require('../../assets/event_collectibles/turning_of_the_age/pets/EVT_PET_002_Gilded_Hourling.png'),
+    EVT_UNIT_001:require('../../assets/event_collectibles/turning_of_the_age/companions/EVT_UNIT_001_Keeper_of_First_Dawn.png'),
+  },
+};

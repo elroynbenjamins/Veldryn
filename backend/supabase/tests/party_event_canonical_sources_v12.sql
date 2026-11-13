@@ -257,6 +257,6 @@ begin
      'party_event_action_already_claimed')
   then raise;end if;
  end;
-end $;
+end $$;
 select 'PASS: V12 canonical craft and co-op sources, role and source attestation, replay, zero EP' as result;
 rollback;

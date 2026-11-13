@@ -6,7 +6,9 @@ import {playerFacingGameplayError} from '../core/feature-unlocks';
 import {ActionFeedback,type FeedbackTone} from '../components/ActionFeedback';
 import {AnnualEventCalendarPanel} from '../components/AnnualEventCalendarPanel';
 import {FrostfallPreview} from '../components/FrostfallPreview';
+import {TurningOfTheAgePreview} from '../components/TurningOfTheAgePreview';
 import {frostfallPreviewPhase} from '../content/frostfall-preview';
+import {turningPreviewPhase} from '../content/turning-of-the-age-preview';
 import {GameButton} from '../components/GameButton';
 import {BoardTabs} from '../components/BoardTabs';
 import {EventShopCatalogue} from '../components/EventShopCatalogue';
@@ -59,9 +61,10 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
  if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>Events</Text><Text style={[s.muted,{color:C.muted}]}>Browse upcoming festivals and seasonal previews.</Text><AnnualEventCalendarPanel state={state} nowMs={now}/></ScrollView>;
  if(event.phase==='upcoming'){
   const frostfallTeaser=event.definition.visualKey==='frostfall'&&frostfallPreviewPhase(event.runtime.startsAtMs,now)!==null;
+  const turningTeaser=event.definition.visualKey==='turning_of_the_age'&&turningPreviewPhase(event.runtime.startsAtMs,now)!==null;
   return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-   {frostfallTeaser?<FrostfallPreview startsAtMs={event.runtime.startsAtMs} nowMs={now}/>:<><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>Coming soon</Text><Text style={[s.muted,{color:C.muted}]}>This event opens when its live window begins.</Text></Panel></>}
-   <AnnualEventCalendarPanel state={state} nowMs={now} highlightEventId={event.definition.id} showFrostfallPreview={!frostfallTeaser}/>
+   {turningTeaser?<TurningOfTheAgePreview startsAtMs={event.runtime.startsAtMs} nowMs={now}/>:frostfallTeaser?<FrostfallPreview startsAtMs={event.runtime.startsAtMs} nowMs={now}/>:<><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>Coming soon</Text><Text style={[s.muted,{color:C.muted}]}>This event opens when its live window begins.</Text></Panel></>}
+   <AnnualEventCalendarPanel state={state} nowMs={now} highlightEventId={event.definition.id} showFrostfallPreview={!frostfallTeaser} showTurningPreview={!turningTeaser}/>
   </ScrollView>;
  }
  const definition=event.definition,currency=eventCurrencyBalance(state,definition.id),prestige=eventPrestigeBalance(state,definition.id),daily=eventDailyGift(state,now),offers=eventShopOffers(state,now),readyClaims=eventRewardTabReadyClaimCount(state,now);

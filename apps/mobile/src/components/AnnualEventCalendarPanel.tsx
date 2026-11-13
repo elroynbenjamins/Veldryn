@@ -8,7 +8,9 @@ import {annualEventCalendar,annualCalendarMonths} from '../content/annual-event-
 import {annualEventSeriesId} from '../content/live-events';
 import {Panel} from './Panel';
 import {FrostfallPreview} from './FrostfallPreview';
+import {TurningOfTheAgePreview} from './TurningOfTheAgePreview';
 import {frostfallPreviewPhase} from '../content/frostfall-preview';
+import {turningPreviewPhase} from '../content/turning-of-the-age-preview';
 import {EventIdentityBadge} from './EventIdentityBadge';
 import {DisclosureMark} from './DisclosureControl';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -22,7 +24,7 @@ const hasExactSchedule=(schedule:PublicEventSchedule|undefined):schedule is Publ
 const displayEnd=(startsAtMs:number,endsAtMs:number)=>{const end=new Date(endsAtMs);return endsAtMs>startsAtMs&&end.getUTCHours()===0&&end.getUTCMinutes()===0&&end.getUTCSeconds()===0?endsAtMs-1:endsAtMs;};
 
 
-export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,showFrostfallPreview=true,nowMs=Date.now()}:{state:GameState;highlightEventId?:string;highlightLabel?:string;showFrostfallPreview?:boolean;nowMs?:number}){
+export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,showFrostfallPreview=true,showTurningPreview=true,nowMs=Date.now()}:{state:GameState;highlightEventId?:string;highlightLabel?:string;showFrostfallPreview?:boolean;showTurningPreview?:boolean;nowMs?:number}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -46,19 +48,32 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
   const highlightSeries=highlightEventId?annualEventSeriesId(highlightEventId):undefined;
   const [selectedDate,setSelectedDate]=useState(()=>initialDate);
   const selected=useMemo(()=>rowForMonth(selectedDate.month)??rows.reduce((best,row)=>Math.abs(row.order-selectedDate.month)<Math.abs(best.order-selectedDate.month)?row:best,rows[0]),[rows,selectedDate.month]);
-  const upcoming=rows.filter(row=>annualEventSeriesId(row.eventId)!==highlightSeries).map(row=>{const current=scheduleFor(row.eventId),futureExact=hasExactSchedule(current)&&current.startsAtMs>previewNow,year=futureExact||row.order>currentMonth?currentYear:currentYear+1;return {row,year,starts:futureExact?current.startsAtMs:Date.UTC(year,row.order-1,1)};}).sort((a,b)=>a.starts-b.starts);
+  // Turning is shown in January's annual collection but begins in the
+  // preceding December. Sort by the actual/planned start, never January 1.
+  const upcoming=rows.filter(row=>annualEventSeriesId(row.eventId)!==highlightSeries).map(row=>{
+    const turning=row.definition.visualKey==='turning_of_the_age';
+    const published=schedule.filter(item=>(annualEventSeriesId(item.eventId)??item.eventId)===(annualEventSeriesId(row.eventId)??row.eventId)&&hasExactSchedule(item)&&item.startsAtMs>previewNow).sort((a,b)=>(a.startsAtMs??0)-(b.startsAtMs??0))[0];
+    const startMonth=turning?11:row.order-1,startDay=turning?29:1;
+    const thisYearStart=Date.UTC(currentYear,startMonth,startDay);
+    const year=published?.startsAtMs!==undefined?new Date(published.startsAtMs).getUTCFullYear():(thisYearStart>previewNow?currentYear:currentYear+1);
+    return {row,year,starts:published?.startsAtMs??Date.UTC(year,startMonth,startDay)};
+  }).sort((a,b)=>a.starts-b.starts);
+  const detailEventYear=(row:typeof rows[number],calendarYear:number)=>row.definition.visualKey==='turning_of_the_age'?calendarYear-1:calendarYear;
+  const seasonLabel=(row:typeof rows[number],year:number)=>row.definition.visualKey==='turning_of_the_age'?`${year}/${String(year+1).slice(-2)}`:String(year);
   const timelineRows=rows.filter(row=>isVisibleMonth(selectedDate.year,monthForOrder(row.order)));
-  const featured=previewFestival?{row:selected,year:selectedDate.year}:!highlightEventId?upcoming[0]:undefined;
+  const featured=previewFestival?{row:selected,year:detailEventYear(selected,selectedDate.year)}:!highlightEventId?upcoming[0]:undefined;
   // Published server dates are the source of truth. A calendar planning label alone never opens the teaser.
   const frostfallWindow=showFrostfallPreview?schedule.find(item=>annualEventSeriesId(item.eventId)==='EVT_ANNUAL_012'&&frostfallPreviewPhase(item.startsAtMs,previewNow)!==null):undefined;
-  const distinctFeatured=featured?.row&&(!frostfallWindow||annualEventSeriesId(featured.row.eventId)!=='EVT_ANNUAL_012');
+  const turningWindow=showTurningPreview?schedule.find(item=>annualEventSeriesId(item.eventId)==='EVT_ANNUAL_001'&&turningPreviewPhase(item.startsAtMs,previewNow)!==null):undefined;
+  const distinctFeatured=featured?.row&&(!frostfallWindow||annualEventSeriesId(featured.row.eventId)!=='EVT_ANNUAL_012')&&(!turningWindow||annualEventSeriesId(featured.row.eventId)!=='EVT_ANNUAL_001');
   return <View style={s.hub}>
     {frostfallWindow?.startsAtMs!==undefined?<FrostfallPreview startsAtMs={frostfallWindow.startsAtMs} nowMs={previewNow}/>:null}
-    {distinctFeatured&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{featured.row.name}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {featured.year}</Text><Text style={s.heroSummary}>{p(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}
+    {turningWindow?.startsAtMs!==undefined?<TurningOfTheAgePreview startsAtMs={turningWindow.startsAtMs} nowMs={previewNow}/>:null}
+    {distinctFeatured&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{featured.row.name}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {seasonLabel(featured.row,featured.year)}</Text><Text style={s.heroSummary}>{p(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}
     <Panel>
     <Text style={s.kicker}>{p('COMING EVENTS')}</Text>
 
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.upcomingList} showsVerticalScrollIndicator={false}>{upcoming.map(({row,year})=><Pressable key={row.eventId} accessibilityRole="button" accessibilityLabel={row.name+', '+scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)+', '+year} onPress={()=>{setSelectedDate({year,month:monthForOrder(row.order)});setPreviewFestival(true)}} style={[s.upcomingCard,{borderColor:row.definition.accent}]}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={38}/><Text style={s.featureName}>{row.name}</Text><Text style={s.note}>{scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)} · {year}</Text><Text style={s.meta}>{p(hasExactSchedule(scheduleFor(row.eventId,year))?'Dates set':'Planned window')}</Text></Pressable>)}</ScrollView>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.upcomingList} showsVerticalScrollIndicator={false}>{upcoming.map(({row,year})=><Pressable key={row.eventId} accessibilityRole="button" accessibilityLabel={row.name+', '+scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)+', '+seasonLabel(row,year)} onPress={()=>{setSelectedDate({year:row.definition.visualKey==='turning_of_the_age'?year+1:year,month:monthForOrder(row.order)});setPreviewFestival(true)}} style={[s.upcomingCard,{borderColor:row.definition.accent}]}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={38}/><Text style={s.featureName}>{row.name}</Text><Text style={s.note}>{scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)} · {seasonLabel(row,year)}</Text><Text style={s.meta}>{p(hasExactSchedule(scheduleFor(row.eventId,year))?'Dates set':'Planned window')}</Text></Pressable>)}</ScrollView>
 
     </Panel>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:calendarOpen}} onPress={()=>setCalendarOpen(value=>!value)} style={s.calendarToggle}><View style={s.flex}><Text style={s.title}>{t('Festival calendar')}</Text><Text style={s.note}>{p('Browse festival months and dates')}</Text></View><DisclosureMark expanded={calendarOpen}/></Pressable>
@@ -68,7 +83,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
         if(!isVisibleMonth(year,index+1))return null;
         const localizedMonth=monthLabel(index),month=index+1,event=rowForMonth(month),selectedNow=selectedDate.year===year&&selectedDate.month===month;
         const highlighted=year===currentYear&&event&&(event.eventId===highlightEventId||!!highlightSeries&&annualEventSeriesId(event.eventId)===highlightSeries);
-        return <Pressable key={`${year}-${label}`} accessibilityRole="button" accessibilityLabel={event?`${localizedMonth} ${year}, ${event.name}, ${scheduleLabel(scheduleFor(event.eventId,year),event.windowLabel)}`:t("{month}, no annual festival",{month:`${localizedMonth} ${year}`})} accessibilityState={{selected:selectedNow}} onPress={()=>setSelectedDate({year,month})} style={[s.month,selectedNow&&s.monthSelected,selectedNow&&event&&{borderColor:event.definition.accent}]}>
+        return <Pressable key={`${year}-${label}`} accessibilityRole="button" accessibilityLabel={event?`${localizedMonth} ${year}, ${event.name}, ${scheduleLabel(scheduleFor(event.eventId,event.definition.visualKey==='turning_of_the_age'?year-1:year),event.windowLabel)}`:t("{month}, no annual festival",{month:`${localizedMonth} ${year}`})} accessibilityState={{selected:selectedNow}} onPress={()=>setSelectedDate({year,month})} style={[s.month,selectedNow&&s.monthSelected,selectedNow&&event&&{borderColor:event.definition.accent}]}>
           <Text style={[s.monthText,selectedNow&&s.monthTextSelected]}>{localizedMonth}</Text>
           {event?<View style={[s.monthArt,highlighted&&{borderColor:event.definition.accent}]}><EventIdentityBadge event={event.name} visualKey={event.definition.visualKey} accent={event.definition.accent} size={30}/></View>:<View style={s.monthDotEmpty}/>}
         </Pressable>;
@@ -77,7 +92,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
 
     {selected?<View style={[s.feature,{borderColor:selected.definition.accent}]}>
       <View style={s.featureTop}><EventIdentityBadge event={selected.name} visualKey={selected.definition.visualKey} accent={selected.definition.accent} size={46}/><View style={s.flex}><View style={s.row}><Text style={s.featureName}>{selected.name}</Text>{selected.eventId===highlightEventId||!!highlightSeries&&annualEventSeriesId(selected.eventId)===highlightSeries?<Text style={s.badge}>{highlightLabel??t("CURRENT")}</Text>:null}</View><Text style={[s.signature,{color:selected.definition.accent}]}>{selected.definition.signature.title}</Text></View></View>
-      <View style={s.scheduleRow}><Text style={[s.window,{color:selected.definition.accent}]}>{scheduleLabel(scheduleFor(selected.eventId,selectedDate.year),selected.windowLabel)}</Text>{hasExactSchedule(scheduleFor(selected.eventId,selectedDate.year))?<Text style={s.scheduled}>{t("DATES SET")}</Text>:null}</View>
+      <View style={s.scheduleRow}><Text style={[s.window,{color:selected.definition.accent}]}>{scheduleLabel(scheduleFor(selected.eventId,detailEventYear(selected,selectedDate.year)),selected.windowLabel)}</Text>{hasExactSchedule(scheduleFor(selected.eventId,detailEventYear(selected,selectedDate.year)))?<Text style={s.scheduled}>{t("DATES SET")}</Text>:null}</View>
       <Text style={s.meta}>{selected.hasHistory?t("Previously attended · {percent}% collection complete",{percent:selected.collectionPercent}):t("Annual festival · Not attended yet")}</Text>
     </View>:null}
 
@@ -85,7 +100,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
   </View>;
 }
 
-const FESTIVAL_ART:Record<string,number>={veilbreak:require('../../assets/profile-backgrounds/bg_veilbreak.webp'),frostfall:require('../../assets/profile-backgrounds/bg_frostfall.webp'),heartbond:require('../../assets/profile-backgrounds/bg_heartbond.webp'),bloomwake:require('../../assets/profile-backgrounds/bg_bloomwake.webp'),starfall:require('../../assets/profile-backgrounds/bg_starfall.webp'),merchant_guild:require('../../assets/profile-backgrounds/bg_merchant_guild.webp')};
+const FESTIVAL_ART:Record<string,number>={turning_of_the_age:require('../../assets/card-backgrounds/cosmic_gate_wide_v2.webp'),suncrest:require('../../assets/card-backgrounds/aurora_citadel_wide_v2.webp'),harvestwake:require('../../assets/card-backgrounds/harvestwake_wide_v2.webp'),veilbreak:require('../../assets/profile-backgrounds/bg_veilbreak.webp'),frostfall:require('../../assets/profile-backgrounds/bg_frostfall.webp'),heartbond:require('../../assets/profile-backgrounds/bg_heartbond.webp'),bloomwake:require('../../assets/profile-backgrounds/bg_bloomwake.webp'),starfall:require('../../assets/profile-backgrounds/bg_starfall.webp'),merchant_guild:require('../../assets/profile-backgrounds/bg_merchant_guild.webp')};
 function makeStyles(C:ThemeColors){return StyleSheet.create({hub:{gap:12},featureHero:{overflow:'hidden',borderRadius:14,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},featureImage:{opacity:.35},featureShade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,.35)'},featureContent:{padding:20,gap:10},heroName:{...typography.hero,color:'#f3f5f7'},heroSummary:{...typography.body,color:'#d3d8df',lineHeight:20},featureDate:{...typography.bodyStrong,fontWeight:'800'},calendarToggle:{flexDirection:'row',alignItems:'center',padding:14,gap:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},upcomingList:{gap:10,paddingVertical:10},upcomingCard:{width:170,minHeight:130,gap:7,padding:12,borderWidth:1,borderRadius:12,backgroundColor:C.panel2},
   header:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},
   flex:{flex:1,minWidth:0},

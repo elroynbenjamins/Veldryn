@@ -99,7 +99,8 @@ export const FROSTFALL_EVENT:LiveEventDef={
   accent:'#9be7ff',
   progressionName:'Frostfall Reputation',
   maxProgress:10000,
-  claimGraceDays:7,
+  // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
+  claimGraceDays:2,
   visualKey:'frostfall',
   signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Prepare a winter celebration across Asterfall',description:'Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.',highlights:['Personal winter festival milestones','Gift-and-aurora collectible chase','Aurora Hollow seasonal expedition']},
   ui:{

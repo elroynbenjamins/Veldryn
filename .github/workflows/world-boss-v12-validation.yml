@@ -93,8 +93,8 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y -qq postgresql-client
           fi
-          for f in \\
-            docs/roadmap/world-boss-postgres-contract-v17-fixture.sql \\
+          for f in \
+            docs/roadmap/world-boss-postgres-contract-v17-fixture.sql \
             docs/roadmap/world-boss-postgres-contract-v17.sql \\
             docs/roadmap/world-boss-postgres-contract-v17-smoke.sql
           do

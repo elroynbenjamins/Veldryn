@@ -90,7 +90,7 @@ begin
  if p_reservation_id is null or p_request_id is null
    or length(p_request_id) not between 8 and 180
    or p_finale_hash !~ '^[0-9a-f]{64}$'
-   or p_engine_version is null or length(p_engine_version) not between 3 and 80
+   or p_engine_version is distinct from 'party-event-day8-combat-v4'
    or p_result is null or jsonb_typeof(p_result)<>'object'
  then raise exception 'party_event_v19_invalid_candidate_request';end if;
 
@@ -169,8 +169,9 @@ begin
   v_damage:=v_damage+v_damage_this;
   v_total_hp:=v_total_hp+v_max_hp;
  end loop;
- if (v_cleared=12 and v_n<>12)
-   or (v_cleared=v_n and not v_last_cleared)
+ -- The canonical 12-tier server engine stops only on a failed tier.
+ -- A final victory before tier 12 is not a complete combat resolution.
+ if v_last_cleared and v_n<>12
  then raise exception 'party_event_v19_invalid_tier_sequence';end if;
  v_fraction:=case when v_last_cleared then 0
    else v_damage_this::numeric/greatest(1,v_max_hp)::numeric end;

@@ -1247,7 +1247,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
   return next;
 }
-export function salvageItem(state:GameState,itemId:string,nowMs=Date.now()):GameState{
+export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId),reward=equipmentSalvageReward(itemId);if(d.type!=='gear'||!reward)throw new Error('Cannot salvage');
@@ -1258,7 +1258,7 @@ export function salvageItem(state:GameState,itemId:string,nowMs=Date.now()):Game
   if(!existing&&remaining.length>=entitlementStorageCapacity(state,'inventory'))throw new Error('Inventory is full; make space for salvage');
   if(!Number.isSafeInteger((existing?.quantity??0)+reward.quantity))throw new Error('Salvage material quantity overflow');
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(remaining,[reward])}};
-  return recordSeasonalActivity(next,'salvage',1,nowMs);
+  return next;
 }
 
 function validBankGoldAmount(amount:number):void{

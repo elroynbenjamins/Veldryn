@@ -43735,9 +43735,10 @@ function isCombatCompanionMastered(def, progress) {
 }
 function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
-  if (target2 === "KNIFE_DANCER_SKILL_TOTAL" && state.character?.classId === "KNIFE_DANCER") return normalizeClassSkills("KNIFE_DANCER", state.character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount;
-  if (requirement.type === "monster_mastery" && state.character?.monsterMasteryPoints?.[target2] !== void 0) return Math.floor((normalizeMonsterMastery(state.character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount;
-  if (target2 === "ASTERFALL_MASTERY_20_ALL" && state.character?.monsterMasteryPoints) return Object.values(normalizeMonsterMastery(state.character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount;
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
+  if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
+  if (requirement.type === "monster_mastery") return characters.some((character) => Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
     const companionId = target2.slice("COMPANION_BOND:".length), progress = state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel ?? 0) >= amount;
@@ -43752,9 +43753,9 @@ function companionUnlockRequirementMet(state, requirement) {
     if ((progress.SILVERBROOK_NODES ?? 0) >= 1) return true;
     return SILVERBROOK_STARTER_FISHING_NODES.filter((id) => (progress[`node:${id}`] ?? 0) > 0).length >= 2;
   }
-  if (requirement.type === "quest") return (state.quests ?? []).some((entry2) => entry2.questId === target2 && entry2.status === "claimed");
+  if (requirement.type === "quest") return [state.quests ?? [], ...(state.otherCharacters ?? []).map((row) => row.quests ?? [])].some((quests) => quests.some((entry2) => entry2.questId === target2 && entry2.status === "claimed"));
   if (requirement.type === "boss_kills") return Math.max((state.defeatedBossIds ?? []).includes(target2) ? 1 : 0, state.account.companionBossClears?.[target2] ?? 0) >= amount;
-  if (requirement.type === "skill_level") return (state.skills ?? []).some((skill2) => skill2.skillId === target2 && skill2.level >= amount);
+  if (requirement.type === "skill_level") return [state.skills ?? [], ...(state.otherCharacters ?? []).map((row) => row.skills ?? [])].some((skills) => skills.some((skill2) => skill2.skillId === target2 && skill2.level >= amount));
   if (requirement.type === "event_challenge" && target2.startsWith("CHALLENGE_")) return state.account.companionSpecialClears?.includes(target2) === true;
   return (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
 }

@@ -309,7 +309,7 @@ async function verifyPrivateReaderV21():Promise<void> {
       replayed:false,reservationId:candidate.reservationId,
       replayHash:candidate.replayHash,workerReplayAttested:true as const,
       combatIndependentlyVerifiedBySql:false as const,
-      rewardsGranted:true as false,entitlementsCreated:false as const,
+      rewardsGranted:true as unknown as false,entitlementsCreated:false as const,
     })},
   }),'attestation_write_inconsistent');
   console.log('Party boss v23: independently replayed server proof, one-write attestation, idempotency and zero rewards validated');

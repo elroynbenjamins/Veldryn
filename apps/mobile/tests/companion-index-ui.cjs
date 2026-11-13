@@ -32,7 +32,7 @@ for(const needle of [
  "setRole(id);setRoleMenuOpen(false)",
  "roleOrder.map",
  "accessibilityLabel={t('Filter roles')}",
- "tab==='unlock'&&candidate",
+ "tab==='unlock'&&role==='all'&&!query.trim()&&candidate",
  "NEXT TO UNLOCK",
  "companionNextUnlockTargets",
  "hidden?'Unknown Prestige Companion':def.name",
@@ -68,4 +68,7 @@ assert(!index.includes("t('Coming soon')")&&!index.includes('UNRELEASED_SEASONAL
 assert(index.includes("tab==='event'&&group!=='event'"),'Past-event tab is limited to released event companions');
 assert(index.includes("tab==='owned'&&!owned"),'Owned tab must include acquired past-event companions');
 assert(index.includes('setRole(\'all\');setQuery(\'\');setRoleMenuOpen(false);'),'Switching tabs must clear stale filters');
+assert(index.includes("tab==='owned'&&unlocked===0"),'Empty owned roster must suggest recruiting instead of showing an unhelpful reset');
+assert(index.includes("tab==='unlock'&&unlockCount===0"),'Fully collected roster must offer owned companions');
+assert(index.includes("tab==='owned'&&unlocked>0"),'Training shortcut belongs to owned tab');
 console.log('PASS: Companion Index intent tabs, full unlock requirements, spoiler privacy and detail/training paths');

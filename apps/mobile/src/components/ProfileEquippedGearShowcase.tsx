@@ -55,6 +55,8 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
  const rarity=item?rarityMeta(selected?.rarity??itemRarity(item)):undefined;
  const statGem=selected?.statGemId?byItemId.get(selected.statGemId):undefined;
  const effectGem=selected?.effectGemId?byItemId.get(selected.effectGemId):undefined;
+ const extraGemIds=(selected?.gemIds??[]).filter(id=>id!==selected?.statGemId&&id!==selected?.effectGemId);
+ const hasGemDetails=!!(selected?.statGemId||selected?.effectGemId||extraGemIds.length);
  const baseStats=item?[{label:'ATK',value:item.attack??0},{label:'DEF',value:item.defense??0},{label:'HP',value:item.hp??0}].filter(row=>row.value!==0):[];
  return <View style={s.block}>
   <View style={s.heading}>
@@ -76,6 +78,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
       {entry?.rank?<Text style={s.rankText}>+{entry.rank}</Text>:null}
       {entry?.statGemId?<Text style={s.statGemMark}>S</Text>:null}
       {entry?.effectGemId?<Text style={s.effectGemMark}>E</Text>:null}
+      {entry?.gemIds?.some(id=>id!==entry.statGemId&&id!==entry.effectGemId)?<Text style={s.legacyGemMark}>G</Text>:null}
      </View>
     </Pressable>;
    })}
@@ -100,10 +103,11 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
      <View style={s.statRow}>{baseStats.map(row=><DetailStat key={row.label} label={row.label} value={row.value}/>)}</View>
      <Text style={s.help}>{profileT(language,'Rarity, quality, enhancements and gems can improve these stats.')}</Text>
     </View>:null}
-    {statGem||effectGem?<View style={s.gemBlock}>
+    {hasGemDetails?<View style={s.gemBlock}>
      <Text style={s.detailCaption}>{profileT(language,'SOCKETED GEMS')}</Text>
-     {statGem?<Text style={s.gemLine}>{profileT(language,'Stat gem')}: {localizedItemName(language,statGem.id)}</Text>:null}
-     {effectGem?<Text style={s.gemLine}>{profileT(language,'Effect gem')}: {localizedItemName(language,effectGem.id)}</Text>:null}
+     {selected.statGemId?<Text style={s.gemLine}>{profileT(language,'Stat gem')}: {statGem?localizedItemName(language,statGem.id):selected.statGemId.replace(/_/g,' ')}</Text>:null}
+     {selected.effectGemId?<Text style={s.gemLine}>{profileT(language,'Effect gem')}: {effectGem?localizedItemName(language,effectGem.id):selected.effectGemId.replace(/_/g,' ')}</Text>:null}
+     {extraGemIds.map(id=><Text key={id} style={s.gemLine}>{profileT(language,'Gems')}: {byItemId.has(id)?localizedItemName(language,id):id.replace(/_/g,' ')}</Text>)}
     </View>:null}
     <Text style={s.readOnly}>{profileT(language,'View only · Equipment belongs to this player')}</Text>
    </View>:null}
@@ -125,6 +129,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  rankText:{fontSize:8,fontWeight:'900',color:C.accent},
  statGemMark:{fontSize:8,fontWeight:'900',color:C.info},
  effectGemMark:{fontSize:8,fontWeight:'900',color:C.special},
+ legacyGemMark:{fontSize:8,fontWeight:'900',color:C.good},
  pressed:{opacity:.72},
  emptyText:{fontSize:9,color:C.muted,textAlign:'center'},
  detail:{gap:8},

@@ -61,3 +61,46 @@ These deliberately small proposed values **need balancing against actual gear ti
 5. Verify economy sinks and rewards separately, then plan a staged rollout.
 
 **No merge, production deployment or release switch by this document.**
+
+## v10 continuation — locked stage context and idempotent action plan (13 November 2026)
+
+**Still hidden; not live or release-approved.** A new read-only contract in
+`backend/src/server/party/weekly-party-stage-ledger-v10.ts` validates a single
+server-loaded week, deterministic family/variation, immutable roster identity,
+canonical class roles (maximum 1 Tank, 2 Damage, 1 Support), loadout checksums,
+ordered Stage 2/3 locked choices, and valid supply snapshots before calling the
+existing v9 preview. The Stage 1 preview never sees later ballots.
+
+The v10 objective planner accepts a **server-verified source row**, account,
+party, action slot and request ID and produces an INSERT *plan*, not an INSERT:
+it rejects wrong-week/stage sources, duplicates across slots, replay by different
+request ID, early combat-as-scout evidence and post-close actions. Exact retry
+of the same action/request/source returns the existing receipt. **It grants
+zero EP and zero rewards.** Four canonical slots are still Scout, Secure
+Approach, Support Expedition and Prepare Finale.
+
+**Not yet authoritative:** a SHA-256 checksum protects against accidental
+snapshot drift but does not establish server provenance. The integration
+must fetch enrollment, loadouts, votes, gameplay evidence, supplies and stored
+receipts from locked private tables in one transaction, and enforce unique
+`(party_id,event_starts_at,account_id,action_id)`,
+`(party_id,event_starts_at,source_event_id)` and request IDs in the database.
+The v10 layer is NOT connected to any mobile screen, REST endpoint, Supabase
+function, point ledger, inventory sink, reward grant or Day 8 worker.
+
+The new test covers 12 family/stage combinations, locked-ballot isolation,
+tampered snapshots, roster/supply validation, source provenance boundary
+checks and replay safety; included in the existing hidden Party Events CI.
+**Validation must be confirmed by CI before considering this pass complete.**
+
+### Next required work
+
+1. Persist a server-owned enrollment/choice/loadout/action source ledger with
+   transaction-safe idempotency constraints and stage locks (before any EP).
+2. Wire verified source actions and supply consumption atomically; enforce
+   the no-duplicate-source property under concurrent requests.
+3. Benchmark actual T1–T4 classes, companions and run-only potions against
+   the four stage engines and Day 8 boss tiers.
+4. Build the four polished compact pixel-stage screens and genuine art assets.
+5. Build and test Day 8 single-claim settlement and staged rollout. Keep all
+   release gates OFF until every blocker clears.

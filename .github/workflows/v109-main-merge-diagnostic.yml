@@ -36,13 +36,10 @@ jobs:
           paths=subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
           for path in paths:
               content=pathlib.Path(path).read_text(encoding='utf-8',errors='replace')
-              chunks=re.findall(r'(?ms)^<<<<<<< HEAD\n.*?^>>>>>>> .*?
-          fi
-          git merge --abort || true
-,content)
+              chunks=re.findall(r'(?ms)^<<<<<<< HEAD\n.*?^>>>>>>> .*?$',content)
               print('CONFLICT_BLOCKS',path,'count=',len(chunks))
               for i,chunk in enumerate(chunks[:8]):
-                  print('BLOCK',i+1,chunk[:5000])
+                  print('BLOCK',i+1,chunk[:3500])
           PY
             echo 'No files written to a remote branch.'
           fi

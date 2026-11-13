@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V17 validation
+name: Hidden World Boss V10–V18 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -15,6 +15,9 @@ on:
       - 'backend/src/server/combat/world-boss-*.ts'
       - 'apps/mobile/tests/world-boss-*.ts'
       - 'docs/roadmap/world-boss-postgres-contract-v17*.sql'
+      - 'docs/roadmap/world-boss-transactions-v18.sql'
+      - 'docs/roadmap/world-boss-v18-*.sql'
+      - 'docs/roadmap/world-boss-v18-*.sh'
       - '.github/workflows/world-boss-v12-validation.yml'
   workflow_dispatch:
 
@@ -80,7 +83,7 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - name: Verify draft V17 private schema in disposable PostgreSQL
+      - name: Verify private V17/V18 SQL and independent-session transaction recovery
         env:
           PGPASSWORD: world_boss_ci_only
           PGHOST: 127.0.0.1
@@ -100,3 +103,6 @@ jobs:
           do
             psql -X -v ON_ERROR_STOP=1 -f "$f"
           done
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-transactions-v18.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-v18-concurrent-fixture.sql
+          bash docs/roadmap/world-boss-v18-concurrency-ci.sh

@@ -21,7 +21,7 @@ assert(index.includes('unavailableOriginIds.has(def.origin.id)'),'Unavailable re
 for(const needle of [
  "companionIndexGroup(def)!==group",
  "COMPANION_INDEX_COUNTS[id]",
- "UNRELEASED_SEASONAL_COMPANION_COUNT",
+ "const publicTotal=COMPANION_INDEX_COUNTS.available+COMPANION_INDEX_COUNTS.event",
  "def.unlockRequirements.map((req,index)",
  "achievement?.requirements[index]",
  "companionUnlockRequirement(language,req.description)",
@@ -32,13 +32,16 @@ for(const needle of [
  "companionArtSource(def.id)",
 ])assert(index.includes(needle),'Companion category/requirement UI missing '+needle);
 assert(index.includes("setGroup(id);setScope('all');setRole('all');setQuery('');"),'Switching group clears stale filters to prevent empty results');
-assert(index.includes("group==='available'&&candidate"),'Next unlock panel must not crowd event or future tabs');
+assert(index.includes("group==='available'&&candidate"),'Next unlock panel must not crowd the past-event tab');
 assert(index.includes("formatLocalizedNumber(language,guildShopEntry.tokenCost)"),'Guild tokens must use the chosen language number format');
 assert(index.includes("complete?'✓':formatLocalizedNumber"),'Completed conditions show a check instead of misleading numeric status');
 assert(index.includes("accessibilityHint={requirementHint}"),'Unlock descriptions must remain available to screen readers');
 assert(index.includes("companionContent(language,status)"),'Owned companion status must be localized');
 assert(index.includes("sourceIcon:Record<CompanionUnlockRequirementType,UiIconName>"),'Requirement source icons must reuse existing pixel art assets');
-assert(index.includes("t('Planned unlocks')"),'Unreleased content must be labeled as planned');
-assert(index.includes("requirement?<Text"),'Unreleased content must not display fabricated 0/1 counters');
+assert(index.includes("groupOrder=['available','event']"),'Only available and past-event tabs should be displayed');
+assert(!index.includes("UNRELEASED_SEASONAL_COMPANION_COUNT")&&!index.includes("t('Coming soon')")&&!index.includes("t('Planned unlocks')"),'No coming-soon tab, teaser, or unreleased requirements may appear');
+assert(index.includes("companionIndexGroup(def)!=='comingSoon'&&ownedIds.has(def.id)"),'Collected count must omit hidden unreleased companions');
+assert(index.includes("{value0:unlocked,value1:publicTotal}"),'Collection total must count visible roster only');
+assert(index.includes("requirement?<Text"),'Requirement counters must appear only for tracked content');
 assert(index.includes("hidden?'Unknown Prestige Companion':def.name"),'Unreleased Prestige identities stay hidden in searches');
 console.log('PASS: searchable Companion Index preserves spoiler privacy, portraits, group tabs and unlock progress');

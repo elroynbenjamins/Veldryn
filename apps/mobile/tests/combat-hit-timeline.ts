@@ -7,6 +7,7 @@ import type {ClassId} from '../src/core/types';
 import {huntHitEvents,huntHitsBetween,huntEnemyHpAt} from '../src/core/combat-hit-timeline';
 import {activeCombatHitProjection,activeCombatRuntimeProjection,claimActivity,createCharacter,effectiveStats,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import type {ActiveCombatHitCursor} from '../src/core/game';
+import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 
 const events=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,healingPerEncounter:10,cycleSeconds:12,critChance:.25,seed:'replay-stable'});
 const again=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,healingPerEncounter:10,cycleSeconds:12,critChance:.25,seed:'replay-stable'});
@@ -69,6 +70,17 @@ for(let tick=0;tick<=halfSecondSteps;tick++){
  assert.ok(Math.abs(direct.progressFraction-incremental.progressFraction)<1e-7,'incremental combat phase must stay synced');
  cursor=incremental.cursor;
 }
+// Only a settled, mechanically earned Ravager recovery may be highlighted.
+const ravager=regionalCombatFixture(REGIONAL_COMBAT_FIXTURES[4],'prepared','RAVAGER');
+ravager.activity={kind:'combat',targetId:REGIONAL_COMBAT_FIXTURES[4].monsterId,combatTacticId:'balanced',startedAtMs:T,lastClaimAtMs:T};
+const recovered=activeCombatHitProjection(ravager,T+5*60_000)!;
+assert.equal(recovered.lastSkillEffect?.name,'Bloodrush','Ravager should expose its actual earned recovery after completing a hunt');
+assert.equal(recovered.lastSkillEffect?.kind,'recovery');
+assert.ok((recovered.lastSkillEffect?.atMs??0)<=T+5*60_000,'recovery must not precede its actual settlement');
+const wayfinder=regionalCombatFixture(REGIONAL_COMBAT_FIXTURES[4],'prepared','WAYFINDER');
+wayfinder.activity={kind:'combat',targetId:REGIONAL_COMBAT_FIXTURES[4].monsterId,combatTacticId:'balanced',startedAtMs:T,lastClaimAtMs:T};
+assert.equal(activeCombatHitProjection(wayfinder,T+5*60_000)?.lastSkillEffect,undefined,'classes without an on-kill recovery must never fabricate a skill activation');
+assert.equal(activeCombatHitProjection(state,T)?.lastSkillEffect,undefined,'no combat activation may appear before the first settled hit');
 assert.equal(liveState.character!.preparation!.remainingEncounters,3,'read-only live replay must not spend actual potion charges');
 assert.equal(liveState.character!.currentHp,state.character!.currentHp,'read-only live replay must not mutate player HP');
 // Narration is presentation only: it must match real hit events and never

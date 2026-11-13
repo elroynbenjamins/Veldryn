@@ -203,7 +203,9 @@ BEGIN
      a.squad_digest IS DISTINCT FROM p_squad_digest OR
      a.engine_version IS DISTINCT FROM p_engine OR
      a.replay_digest IS DISTINCT FROM p_replay_digest OR
-     a.replay_object_key IS DISTINCT FROM p_replay_key
+     a.replay_object_key IS DISTINCT FROM p_replay_key OR
+     a.raw_boss_damage IS DISTINCT FROM p_raw_damage OR
+     a.local_guard_damage IS DISTINCT FROM p_guard_damage
   THEN RAISE EXCEPTION 'WB18_SETTLEMENT_CONFLICT'; END IF;
   RETURN jsonb_build_object('status','committed','repeated',true,
    'ordinal',a.ordinal,'creditedHp',a.credited_hp,'hpAfter',a.hp_after,

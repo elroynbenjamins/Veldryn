@@ -1,5 +1,10 @@
 name: Russian localization validation
 
+# Avoid stacking outdated localization runs while authors continue updating one PR.
+concurrency:
+  group: russian-localization-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     paths:

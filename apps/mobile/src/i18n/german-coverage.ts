@@ -134,11 +134,11 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   'crafting':'Handwerk',
   'devotion':'Hingabe',
 };
+const germanCoverageLowercase=new Map(Object.entries(germanGameplayCoverage).map(([english,german])=>[english.toLowerCase(),german]));
 export function germanCoverageText(source:string):string|undefined{
  const exact=germanGameplayCoverage[source];
  if(exact!==undefined)return exact;
- const canonical=Object.keys(germanGameplayCoverage).find(key=>key.toLowerCase()===source.toLowerCase());
- if(!canonical)return undefined;
- const translated=germanGameplayCoverage[canonical];
+ const translated=germanCoverageLowercase.get(source.toLowerCase());
+ if(translated===undefined)return undefined;
  return source===source.toUpperCase()?translated.toLocaleUpperCase('de-DE'):translated;
 }

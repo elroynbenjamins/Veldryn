@@ -417,3 +417,83 @@ Day 8 combat evidence and one-time reward settlement; reconcile
 staging/prod version compatibility, run GitHub CI and game balance
 simulations, and build/test the mobile interface. Keep release flags
 OFF, leave PR #1045 draft and do not run migrations on production.
+
+## v17 — sealed supply plans, verified voting and transactional stages (13 Nov 2026)
+
+The hidden draft-only v17 migration and rollback regression are
+`backend/supabase/migrations/20261113131000_party_event_stage_transitions_v17.sql`
+and `backend/supabase/tests/party_event_stage_transitions_v17.sql`.
+They depend on private v11–v16 receipts and supply orders, and are not
+connected to mobile, deployed to staging, or deployed to production.
+
+**Closes the advancement bypass:** v11 initially granted `service_role`
+direct UPDATE on the event-week record and stage record. V17 revokes
+both direct UPDATE privileges, adds a guard to prohibit initial weeks
+starting in Stage 2/3 or already closed, and replaces direct stage
+advances with a single private service-only
+`private.advance_party_event_stage_v17` transaction. That operation
+locks the event week, supports exact replay from immutable transition
+receipts, rejects conflicting requests and closed/incorrect stages,
+and changes **only Stage 1→2 or Stage 2→3**. It checks the current
+sealed plan, fully funded required supply orders, cumulative verified
+EP (v14+v15), server-locked ballot where appropriate, and at least
+one canonical verified `scout_route` (Stage 1) or both
+`secure_approach` and `support_expedition` (Stage 2) receipt.
+It updates the week, inserts the next stage opening and stores
+the immutable transition proof in **one database transaction**.
+Stage 3 is **never marked completed, settled or reward-eligible**.
+
+**Sealed supply plans:** `private.seal_party_event_supplies_v17`
+requires that all required **wood, ore and herb** resource categories
+are represented by currently enabled canonical item IDs. It records
+a stable SHA-256 hash of the stage's frozen order set. Once sealed,
+the database blocks insertion of further required **or optional**
+orders for that stage, while legitimate donations to existing orders
+continue. No quantity can be redefined after sealing. The
+`THORN_SAP` herb remains **disabled** by default: full-stage
+transitions in SQL tests enable the herb **only in rollback-only test
+fixtures**; a normal environment cannot finish a herb-gated stage
+until audited live resource content exists. The order quantities
+still require an authoritative server-side v2 budget/availability
+planner and a full-plan correctness test before release.
+
+**Majority/timeout ballots:** `private.cast_party_event_ballot_v17`
+accepts one immutable ballot from a member of the frozen roster for
+a valid family-specific Stage 2/3 option. A changed vote is rejected;
+an exact retry is safe. `private.resolve_party_event_ballot_v17`
+locks the canonical week/stage, counts ballots against that frozen
+roster and only locks a choice upon strict majority (>50%) or an
+actual six-hour timeout, with the designed family/stage default
+choice at timeout. Direct stage-row UPDATE is no longer granted to
+`service_role`, preventing the server from accidentally locking
+an unsupported result. The service integration must still derive
+voter identity from an authenticated game session; this private
+function is not a public mobile endpoint.
+
+**Readiness projection:** `private.party_event_stage_readiness_v17`
+read-only output now agrees with the checked advance operation:
+it includes `stageSupplyPlanSealed`,
+`missingRequiredObjectives`, `stageReadyToAdvance` and detailed
+blockers. It only reports `ready_to_advance` for Stage 1/2 when
+the verified checklist is complete; Stage 3 stays
+`awaiting_finale` even if EP and materials are sufficient.
+It never grants items, currency, reputation, chests or completion.
+
+**Verification:** The v17 regression passed on separate staging
+inside a `BEGIN; ... ROLLBACK;` transaction. It covered unsealed
+and incomplete category plans; unauthorized herb; frozen order
+mutations; EP, supply and objective blockers; two-person majority;
+outsider, invalid and changed ballots; six-hour timeout default;
+exact transition retries after closure; Stage 1→2→3 flow; and
+never settling Stage 3. All seven v11–v17 regression suites also
+passed with **one SAVEPOINT per suite**, using a shared rolled-back
+migration schema. The savepoints prevent v16's temporary test-only
+herb enablement from leaking into later suite fixtures.
+
+**Still blocked:** Production rollout needs genuinely available,
+level-appropriate herb and other resource IDs; authoritative full
+quantity freezing from the deterministic v2 planner; game-server
+integration of service-only receipts, authenticated vote identity
+and EP events; a real Day 8 boss combat proof and one-time reward
+payout; app screens; and full CI/build review. Do not merge PR
+#1045, enable its feature flag, or apply migrations to production.

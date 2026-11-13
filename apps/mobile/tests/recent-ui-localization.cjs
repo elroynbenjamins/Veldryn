@@ -23,7 +23,7 @@ const languages=['en','de','es','nl','it','fr','ru','tr'];
 const paramsFor=text=>Object.fromEntries([...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>[m[1],'VALUE_'+m[1]]));
 const placeholders=text=>Object.keys(paramsFor(text)).sort();
 
-assert.ok(Object.keys(rows).length >=145,'new UI coverage');
+assert.ok(Object.keys(rows).length >=165,'new UI coverage');
 for(const [source,translations] of Object.entries(rows)){
  assert.equal(translations.length,7,source+' must cover seven target languages');
  for(const [index,translation] of translations.entries()){
@@ -55,6 +55,7 @@ for(const relative of [
  'components/MarketPriceHistoryChart.tsx',
  'screens/RewardsInboxScreen.tsx',
  'screens/SettingsScreen.tsx',
+ 'components/HomeCommandDeck.tsx',
 ]){
  const source=fs.readFileSync(path.join(root,relative),'utf8');
  const tree=ts.createSourceFile(relative,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
@@ -105,6 +106,12 @@ assert.equal(recentScreenText('ru','No verified daily price'),'Нет подтв
 assert.equal(recentScreenText('tr','{date}: {price} Gold median, {sales} completed sales',{date:'2026-11-13',price:1200,sales:4}),
  '2026-11-13: medyan 1200 altın, 4 tamamlanan satış');
 assert.equal(recentScreenText('nl','Market'),'Markt');
+assert.equal(recentScreenText('ru','QUICK ACTIONS'),'БЫСТРЫЕ ДЕЙСТВИЯ');
+assert.equal(recentScreenText('tr','Your next moves'),'Sonraki adımların');
+assert.equal(recentScreenText('nl','{count} / {capacity} queued',{count:2,capacity:4}),'2 / 4 in wachtrij');
+const homeDeck=fs.readFileSync(path.join(root,'components/HomeCommandDeck.tsx'),'utf8');
+assert.ok(homeDeck.includes("accessibilityLabel={member?a('Open Guild Hall'):a('Find a Guild')}"),'guild accessibility labels translated');
+assert.ok(homeDeck.includes('numberOfLines={2}'),'compact labels can wrap');
 assert.equal(recentScreenText('fr',"What's New & Updates"),'Nouveautés et mises à jour');
 
 // Roadmap titles/descriptions come from verified SQL definitions, not guessed client copy.

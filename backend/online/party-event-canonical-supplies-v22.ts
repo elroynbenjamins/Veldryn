@@ -95,8 +95,9 @@ export function canonicalPartyEventOrdersV22(input:{
   assert(orders.filter(x=>x.kind==='required').length===9
     &&orders.filter(x=>x.kind==='optional').length===3,
     'missing_required_or_optional_orders');
+  const allowlist=new Set<string>(PARTY_EVENT_V22_APPROVED_ITEM_IDS);
   assert(orders.every(x=>x.quantity>0&&x.estimatedGatherSeconds>0
-    &&PARTY_EVENT_V22_APPROVED_ITEM_IDS.includes(x.itemId)),
+    &&allowlist.has(x.itemId)),
     'unapproved_order_material');
   return {
     auditVersion:PARTY_EVENT_CANONICAL_SUPPLY_AUDIT_V22,

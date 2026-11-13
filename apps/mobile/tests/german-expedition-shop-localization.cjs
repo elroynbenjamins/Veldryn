@@ -12,8 +12,8 @@ const {
  germanDungeonShopCopy,germanDungeonShopOfferNames,dungeonShopText,
  dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason,
 }=require('../src/i18n/dungeon-shop.ts');
-const here=path.resolve(__dirname,'../..');
-const backend=fs.readFileSync(path.join(here,'../backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'),'utf8');
+const app=path.resolve(__dirname,'..');
+const backend=fs.readFileSync(path.join(app,'../../backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'),'utf8');
 const offers=[...backend.matchAll(/\{id:'(dshop_[^']+)',name:(?:"([^"]+)"|'([^']+)')/g)]
  .map(match=>({id:match[1],name:match[2]??match[3]}));
 assert.equal(offers.length,17,'Expected all 17 canonical Expedition Shop offers');
@@ -78,7 +78,7 @@ for(const region of ['Asterfall','Sunscar','Frostmarch'])
 assert.equal(dungeonShopLockReason('de','A player named Clear a Something dungeon first.'),'A player named Clear a Something dungeon first.');
 assert.equal(dungeonShopLockReason('en','Clear a Sunscar dungeon first.'),'Clear a Sunscar dungeon first.');
 
-const components=path.join(here,'src/components');
+const components=path.join(app,'src/components');
 const shop=fs.readFileSync(path.join(components,'coop/DungeonMarksShopView.tsx'),'utf8');
 const shell=fs.readFileSync(path.join(components,'ExpeditionShopPanel.tsx'),'utf8');
 for(const marker of [

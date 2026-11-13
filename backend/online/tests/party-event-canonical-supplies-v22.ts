@@ -1,4 +1,11 @@
 import {
+  PARTY_EVENT_ATTEST_SQL_V23,
+  PARTY_EVENT_REPLAY_ATTESTATION_SQL_V23_RELEASED,
+  createTrustedPartyReplayAttestationRepositoryV23,
+} from '../party-event-replay-attestation-v23';
+import {PARTY_EVENT_BOSS_RESOURCE_AUDIT_V23}
+  from '../../src/server/party/weekly-party-boss-attestation-v23';
+import {
   PARTY_EVENT_CANONICAL_SUPPLY_V22_RELEASED,
   PARTY_EVENT_CANONICAL_SUPPLY_AUDIT_V22,
   PARTY_EVENT_V22_APPROVED_ITEM_IDS,
@@ -116,6 +123,59 @@ async function runRepositoryChecks(){
   try{await missing.readReplayBundle(id);}
   catch(e){refused=String(e).includes('party_event_v22_missing_private_replay_bundle');}
   assert(refused,'missing SQL row cannot silently become a dummy boss');
+
+  assert(PARTY_EVENT_REPLAY_ATTESTATION_SQL_V23_RELEASED===false,
+    'v23 service attestation remains hidden');
+  let writes=0;
+  const attestRepo=createTrustedPartyReplayAttestationRepositoryV23(db,{
+    queryOne:async(sql,params)=>{
+      writes++;
+      assert(sql===PARTY_EVENT_ATTEST_SQL_V23&&params.length===9,
+        'must use single parameterized private attestation RPC');
+      assert(params[0]===id
+        &&params[1]==='party-event-v23-replay:'+id
+        &&params[2]==='a'.repeat(64)
+        &&params[3]==='b'.repeat(64)
+        &&params[4]==='c'.repeat(64)
+        &&params[5]==='d'.repeat(64)
+        &&params[6]===3&&params[7]===2
+        &&params[8]===PARTY_EVENT_BOSS_RESOURCE_AUDIT_V23,
+        'wrong service-only attestation parameter order');
+      return {attestation:{
+        replayed:false,reservationId:id,
+        replayHash:'c'.repeat(64),
+        workerReplayAttested:true,combatIndependentlyVerifiedBySql:false,
+        rewardsGranted:false,entitlementsCreated:false,
+      }};
+    },
+  });
+  const att=await attestRepo.attestReplayProof({
+    reservationId:id,requestId:'party-event-v23-replay:'+id,
+    sourceDigest:'a'.repeat(64),candidateHash:'b'.repeat(64),
+    replayHash:'c'.repeat(64),loadoutHash:'d'.repeat(64),
+    tiersCleared:3,rewardBand:2,
+    resourceAudit:PARTY_EVENT_BOSS_RESOURCE_AUDIT_V23,
+  });
+  assert(writes===1&&att.workerReplayAttested===true
+    &&att.rewardsGranted===false&&att.entitlementsCreated===false,
+    'v23 SQL repository must not grant or promise rewards');
+  const absent=createTrustedPartyReplayAttestationRepositoryV23(db,{
+    queryOne:async()=>null,
+  });
+  let missingAttestationRejected=false;
+  try{
+    await absent.attestReplayProof({
+      reservationId:id,requestId:'party-event-v23-replay:'+id,
+      sourceDigest:'a'.repeat(64),candidateHash:'b'.repeat(64),
+      replayHash:'c'.repeat(64),loadoutHash:'d'.repeat(64),
+      tiersCleared:3,rewardBand:2,
+      resourceAudit:PARTY_EVENT_BOSS_RESOURCE_AUDIT_V23,
+    });
+  }catch(e){
+    missingAttestationRejected=String(e).includes('party_event_v23_missing_database_attestation');
+  }
+  assert(missingAttestationRejected,'v23 missing private write must fail closed');
+  console.log('Party Events v23: private SQL attestation parameters and no-loot read/write adapter validated');
   console.log('Party Events v22: parameterized MVCC replay repository, private UUID gate and catalog validated');
 }
 void runRepositoryChecks().catch(error=>{console.error(error);process.exitCode=1;});

@@ -280,6 +280,7 @@
   ".core-build/apps/mobile/tests/profile-wardrobe.js",
   ".core-build/apps/mobile/tests/profile-attention.js",
   ".core-build/apps/mobile/tests/profile-showcase-prestige.js",
+  ".core-build/apps/mobile/tests/profile-equipped-gear.js",
   ".core-build/apps/mobile/tests/social-identity-presentation.js",
   ".core-build/apps/mobile/tests/social-member-management.js",
   ".core-build/apps/mobile/tests/social-player-card-ui-contract.js",

@@ -1,6 +1,13 @@
 name: Android native validation
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'backend/src/**'
+      - '.github/workflows/android-native-validation.yml'
+      - '.github/scripts/android-release-smoke.sh'
   pull_request:
     paths:
       - 'apps/mobile/app.json'
@@ -12,6 +19,7 @@ on:
       - 'apps/mobile/src/online/google-signin.ts'
       - 'apps/mobile/src/online/play-games.ts'
       - '.github/workflows/android-native-validation.yml'
+      - '.github/scripts/android-release-smoke.sh'
   workflow_dispatch:
 
 jobs:
@@ -79,3 +87,74 @@ jobs:
           path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 3
+
+  android-emulator-startup-smoke:
+    name: Install release AAB and boot on Android emulator
+    needs: android-release-bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            .github/scripts
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Download AAB built in this exact run
+        uses: actions/download-artifact@v4
+        with:
+          name: veldryn-native-validation-aab-${{ github.sha }}
+          path: release-aab
+      - name: Convert the AAB to an emulator-installable APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release-aab/app-release.aab
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            --output release-aab/bundletool.jar
+          # CI-only self-signed certificate: never use this to distribute an app.
+          keytool -genkeypair -noprompt \
+            -keystore release-aab/ci-only-signing.jks \
+            -storepass android -keypass android \
+            -alias ci-smoke -keyalg RSA -keysize 2048 -validity 2 \
+            -dname 'CN=Veldryn cloud emulator test, OU=QA, O=Veldryn, C=NL'
+          java -jar release-aab/bundletool.jar build-apks \
+            --bundle=release-aab/app-release.aab \
+            --output=release-aab/veldryn.apks \
+            --mode=universal --overwrite \
+            --ks=release-aab/ci-only-signing.jks \
+            --ks-pass=pass:android \
+            --ks-key-alias=ci-smoke \
+            --key-pass=pass:android
+          unzip -p release-aab/veldryn.apks universal.apk > release-aab/veldryn-universal.apk
+          test -s release-aab/veldryn-universal.apk
+      - name: Enable hardware-accelerated emulator
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot Android 15 emulator and check release startup
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/scripts/android-release-smoke.sh
+      - name: Retain emulator screenshot and error logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-android-emulator-smoke-${{ github.sha }}
+          path: |
+            release-aab/startup-screen.png
+            release-aab/startup-errors.log
+          if-no-files-found: warn
+          retention-days: 7

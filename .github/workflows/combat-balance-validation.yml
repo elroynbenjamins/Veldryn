@@ -10,6 +10,8 @@ on:
       - 'apps/mobile/src/core/combat-hit-timeline.ts'
       - 'apps/mobile/src/core/combat-timing.ts'
       - 'apps/mobile/tests/ordinary-hunt.ts'
+      - 'apps/mobile/src/core/class-combat.ts'
+      - 'apps/mobile/tests/solo-role-hunt-parity.ts'
       - 'apps/mobile/src/core/class-stat-identity.ts'
       - 'apps/mobile/tests/class-stat-identity.ts'
       - 'apps/mobile/src/core/story-boss.ts'
@@ -60,6 +62,7 @@ jobs:
             .core-build/apps/mobile/tests/combat-attrition.js \
             .core-build/apps/mobile/tests/combat-hit-timeline.js \
             .core-build/apps/mobile/tests/ordinary-hunt.js \
+            .core-build/apps/mobile/tests/solo-role-hunt-parity.js \
             .core-build/apps/mobile/tests/combat-buff-boundaries.js \
             .core-build/apps/mobile/tests/account-collectibles.js \
             .core-build/apps/mobile/tests/fallen-knight-gear-food.js \

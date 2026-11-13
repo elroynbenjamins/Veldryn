@@ -1,16 +1,16 @@
 import {random01} from './rng';
 
-/** Region-specific search time is the anti-farming floor; actual Attack,
+/** Region-specific search time is the anti-farming floor (2 seconds less than\n * the previous baseline in every region); actual Attack,
  * Defense, accuracy, crit and haste determine the fight itself. */
 const SEARCH_RANGES:Readonly<Record<string,readonly [number,number]>>={
-  Greenfields:[5,8],
-  Silverbrook:[5,8],
-  'Ironwood Forest':[6,9],
-  'Old Mines':[7,10],
-  "King's Road":[7,10],
-  Sunscar:[8,12],
-  Frostmarch:[9,13],
-  Ashlands:[10,14],
+  Greenfields:[3,6],
+  Silverbrook:[3,6],
+  'Ironwood Forest':[4,7],
+  'Old Mines':[5,8],
+  "King's Road":[5,8],
+  Sunscar:[6,10],
+  Frostmarch:[7,11],
+  Ashlands:[8,12],
 };
 export function usesDamageDrivenHunts(zone:string){return Object.prototype.hasOwnProperty.call(SEARCH_RANGES,zone);}
 

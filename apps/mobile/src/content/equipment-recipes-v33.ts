@@ -125,7 +125,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
     case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
     case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(8,multiplier)},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier)}]);
-    // Slightly lighter ingot demand keeps T5 weapon farming inside the existing 5.4h ceiling.
+    // Keep the T5 weapon's real processed-material farm time inside the 5.4h upper ceiling.
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(10,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];

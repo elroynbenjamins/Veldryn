@@ -23,7 +23,7 @@ const languages=['en','de','es','nl','it','fr','ru','tr'];
 const paramsFor=text=>Object.fromEntries([...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>[m[1],'VALUE_'+m[1]]));
 const placeholders=text=>Object.keys(paramsFor(text)).sort();
 
-assert.ok(Object.keys(rows).length>=70,'new UI coverage');
+assert.ok(Object.keys(rows).length >=100,'new UI coverage');
 for(const [source,translations] of Object.entries(rows)){
  assert.equal(translations.length,7,source+' must cover seven target languages');
  for(const [index,translation] of translations.entries()){
@@ -65,4 +65,23 @@ for(const relative of [
  }
  visit(tree);
 }
+// Roadmap titles/descriptions come from verified SQL definitions, not guessed client copy.
+const migrationNames=[
+ '20261110233600_community_roadmap_dungeons_in_progress.sql',
+ '20261110234500_community_roadmap_seasonal_companion_in_development.sql',
+ '20261110235000_community_roadmap_planned_features.sql',
+ '20261110235900_community_roadmap_major_workstreams.sql',
+];
+let verifiedRoadmapEntries=0;
+for(const migrationName of migrationNames){
+ const sql=fs.readFileSync(path.resolve(__dirname,'../../../backend/supabase/migrations',migrationName),'utf8');
+ for(const match of sql.matchAll(/\\('([a-z_]+)'\\s*,\\s*'([^']+)'\\s*,\\s*'([^']+)'/g)){
+  const [,id,title,description]=match;
+  assert.ok(Object.hasOwn(rows,title),'roadmap title missing: '+id+' / '+title);
+  assert.ok(Object.hasOwn(rows,description),'roadmap description missing: '+id+' / '+description);
+  verifiedRoadmapEntries++;
+ }
+}
+assert.equal(verifiedRoadmapEntries,10,'reviewed Roadmap migrations must have ten feature rows');
+
 console.log('Recent screen localization passed: '+Object.keys(rows).length+' strings x 8 languages, badges and key screens.');

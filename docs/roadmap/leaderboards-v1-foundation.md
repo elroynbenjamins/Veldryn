@@ -14,8 +14,25 @@
 - Pagination arithmetic is isolated and tested for full/partial/empty pages and maximum supported offset. There are **no client score writes, grants, or changes to ranking calculations**.
 - A **pre-release SQL contract gate** checks that the v2 routine exists and is service-role-only. This test is intentionally not part of live migrations.
 
+## Follow-up: verified server scoring foundation (13 November 2026)
+
+**Source correction — important:** live `public.character_skills` has **zero rows** in both environments; never derive production profession rankings from this legacy table. Production stores current `{skillId,level,xp}` rows in the service-written `public.online_game_states.state.skills` JSON array; existing extra characters can be present in `state.otherCharacters[].skills`. The proposed scoring query joins both shapes to `public.characters` by account and character ID to exclude deleted/unowned characters. This changes `profession_total` to use saved character skill levels rather than the legacy square-root-of-XP approximation.
+
+- **Verified production shapes (read-only):** 384 online game state rows, 239 with skill arrays; 11 observed profession IDs. Hunting exists in the staging skill catalog but has no production skill rows yet; do not invent leaderboard values for it.
+- **Dungeon integrity:** the `coop_reward_entitlements` table can have `participant/final` entitlements for **failed** runs. Require a matching `coop_run_private_state.state_json.run.phase='completed'` and participant/final entitlement, then count each distinct `run_id` at most once. Ignore echo-assistance and failure consolation. Highest tier gets the count of verified clears at that tier as a tiebreaker.
+- **Scoring prototype:** `docs/roadmap/leaderboards-authoritative-scoring-v3-proposal.sql` creates a private service-only scoring projection and a service-only public v3 board RPC. Professions and Dungeons are calculated in SQL; legacy Arena/Guild and unfinished Achievement Score delegate to v2. Ties share a rank for identical primary + secondary metrics; stable display order uses name and account ID without exposing IDs.
+- **Opt-in backend support:** `SupabaseRankingRepository` now accepts a `useVerifiedV3` option, default **false**, so existing production calls remain on v2. No configuration or client gate was changed.
+- **Verified staging smoke:** v3 proposal plus `backend/supabase/tests/leaderboards_v3_scoring_contract.sql` executed inside one explicit `BEGIN ... ROLLBACK`, including 15 v3 board projections, guild delegation, pagination values, invalid input rejection, and client-grant denial. Both new functions were subsequently verified absent; **no schema was deployed**.
+- **Remaining blockers:** Achievement Score has no validated claimed-score ledger in the inspected schema; the v3 proposal deliberately leaves it unpopulated. Hunting has no production skill records; it will fill naturally if authoritative Hunting progress is later saved. Arena/Guild boards retain v2's rank/self-standing limitations. Evaluate cost/snapshot stability of large JSONB scans before launch, backfill actual durable achievements, and migrate the prototype with the project's Supabase CLI only after review.
+
+### Proposed safe deployment sequence
+1. Reconcile the live v2 function's migration provenance in Git; keep current client and API behavior as-is.
+2. Create the numbered migration with `supabase migration new` in the real repo checkout, using the reviewed v3 proposal; do not paste the proposal's own `BEGIN/COMMIT` inside an outer migration transaction without review.
+3. Run the scoring SQL integration test on staging, including meaningful fixture data, permission checks and performance plans, then use the explicit opt-in adapter flag for limited server QA.
+4. Build the missing Achievement Score source and cross-system/privacy tests; only then consider promoting the v3 endpoint and client feature gate.
+
 ## Next implementation passes (not claimed complete)
-1. Audit the actual `rankings_board_server_v2` definition on staging. Confirm every one of the 19 boards derives from verified gameplay receipts, and that self standings, privacy filters, blocks and guild identity are consistently applied. Verify deterministic ties and absolute ranks on later pages.
+1. Complete the unfinished Achievement Score and Hunting source, reconcile v2 migration provenance, and validate the 19-board v3 architecture against actual trusted gameplay receipts. Verify self standings, privacy filters, blocks, deterministic ties and absolute ranks on later pages.
 2. Prefer **stable keyset/snapshot pagination** for large boards: offset pagination can shift as scores update between requests. Until then, this UI remains behind the release gate.
 3. Define seasons and archive snapshots before Arena or World Boss competition is made public. Distinguish current season, previous season and all-time boards; no character-class or gear power rewards for rank.
 4. Integrate World Boss results only after authoritative settlement and anti-duplicate checks, with the established account-wide attempt cap and no echo/fake submissions. Guild PvE and Party Events should get independent category and permission gates, not auto-publish with general Rankings.
@@ -24,7 +41,9 @@
 
 ## Release checklist
 - [x] V2 RPC identity and permissions checked read-only on both staging and production (2026-11-13)
-- [ ] Staging SQL preflight script and full board coverage/fixture tests pass
+- [x] Read-only staging v2 permissions preflight passed
+- [x] v3 scoring prototype and SQL contract dry-ran with full rollback on staging
+- [ ] Long-form fixture tests for 19 boards, privacy, tie behavior and performance pass
 - [ ] All 19 boards return correct nonempty results from seeded fixtures where applicable
 - [ ] Stable global ranks, ties and self-standing are verified for >50 accounts
 - [ ] All permission/privacy/blocks and rewards-free prestige policies pass

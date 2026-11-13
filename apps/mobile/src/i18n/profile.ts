@@ -7,6 +7,16 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  // Public profile equipment showcase.
+  "EQUIPPED GEAR": ["AUSGERÜSTETE AUSRÜSTUNG","EQUIPO EQUIPADO","UITGERUSTE UITRUSTING","EQUIPAGGIAMENTO INDOSSATO","ÉQUIPEMENT PORTÉ"],
+  "Tap an equipped item to inspect": ["Tippe auf einen Gegenstand für Details","Toca un objeto equipado para verlo","Tik op een uitgerust item voor details","Tocca un oggetto equipaggiato per i dettagli","Touchez un objet équipé pour l’inspecter"],
+  "{count}/10 equipped": ["{count}/10 ausgerüstet","{count}/10 equipados","{count}/10 uitgerust","{count}/10 equipaggiati","{count}/10 équipés"],
+  "No equipment equipped yet": ["Noch keine Ausrüstung angelegt","Aún no hay equipo equipado","Nog geen uitrusting uitgerust","Nessun equipaggiamento indossato","Aucun équipement porté"],
+  "Quality {quality}": ["Qualität {quality}","Calidad {quality}","Kwaliteit {quality}","Qualità {quality}","Qualité {quality}"],
+  "Enhancement +{rank}": ["Verbesserung +{rank}","Mejora +{rank}","Verbetering +{rank}","Potenziamento +{rank}","Amélioration +{rank}"],
+  "Stat gem": ["Werte-Edelstein","Gema de atributos","Stat-edelsteen","Gemma statistiche","Gemme de caractéristiques"],
+  "Effect gem": ["Effekt-Edelstein","Gema de efecto","Effect-edelsteen","Gemma effetto","Gemme d’effet"],
+  "Offhand": ["Nebenhand","Mano secundaria","Bijhand","Mano secondaria","Main secondaire"],
   // Character, Combat Power and profile UI: complete visible labels and explanatory copy.
   "Character": ["Charakter","Personaje","Personage","Personaggio","Personnage"],
   "Edit profile": ["Profil bearbeiten","Editar perfil","Profiel bewerken","Modifica profilo","Modifier le profil"],

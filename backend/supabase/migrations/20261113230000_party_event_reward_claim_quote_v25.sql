@@ -229,6 +229,7 @@ create or replace function private.party_event_claim_quote_inbox_v25(
   'quotes',coalesce(jsonb_agg(jsonb_build_object(
    'offerId',q.offer_id,'characterId',q.character_id,
    'eventStartsAt',q.event_starts_at,'rewardKind',q.reward_kind,
+   'difficulty',q.difficulty,
    'rewardBand',q.reward_band,'quote',q.reward_json,
    'quoteHash',q.reward_hash,'status','blocked_economy_not_audited',
    'claimable',false,'claimed',false,'inboxDelivered',false)

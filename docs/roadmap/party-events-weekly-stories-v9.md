@@ -216,3 +216,46 @@ configured database dependencies. Full CI must be checked separately.
 
 **Do not merge, deploy, grant EP or switch release flags** until the
 remaining verifiable gameplay and settlement integration is complete.
+
+## v13 — canonical Stage 1 gathering scout bridge (13 November 2026)
+
+V13 extends the hidden v11/v12 backend with Stage 1 `scout_route`.
+Its **private, service-only**
+`private.record_party_event_idle_scout_v13` function verifies a row
+in `public.idle_claim_receipts` using the immutable claim UUID,
+server-owned character, activity ID, elapsed time, output, and settlement
+time. It does not accept client-supplied quantities, actors, scores,
+timestamps or fabricated source identifiers.
+
+Scouting is valid only for an explicitly allowlisted mining, woodcutting
+or fishing node. Initially the list contains the nine existing canonical
+gathering node IDs; future node additions need separate canonical game
+content verification. A completed claim must contain at least **60 seconds**
+of activity, positive resources and nonnegative XP. The **entire claimed
+interval** must have started after both the event stage opened and the
+character enrolled, so players cannot bank pre-event AFK time and redeem it
+as party scouting. The event must still be in Stage 1 for new receipts.
+
+As with v12, v13 adds a unique evidence source and calls the v11 objective
+receipt function in **one transaction**. One verified claim can only mint
+one receipt, and one account gets one `scout_route` slot per event week.
+A previously recorded exact request can replay after closure. The bridge
+remains **0 EP and no reward grants**. Client roles cannot execute it;
+`service_role` has no direct INSERT grant on source evidence.
+
+**Validation:** V13 migration and its new SQL regressions passed on
+the isolated Veldryn staging project in a single transaction followed by
+`ROLLBACK`. Negative cases include 30-second attempts, zero output,
+alchemy/unsupported activity, outsiders, fabricated UUIDs, pre-enrollment
+banked time, duplicate claims and closed-week replays. A **combined test of
+all three migration/test pairs, v11+v12+v13**, also passed in a rolled-back
+staging transaction. No table or grant was permanently installed in staging
+or production.
+
+**Still to integrate before release:** The app/server currently does NOT
+invoke the v13 function as part of a live Party Event stage; the new
+allowlist must be checked against the active runtime's actual gathering
+activity IDs. Finalize frozen-loadout saving, authoritative event week
+activation, resource donation sinks, credited EP progression/caps,
+Day 8 boss settlement and mobile pixel-art journal screens before any
+feature flag, CI promotion or deployment. Keep PR draft.

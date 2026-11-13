@@ -1,5 +1,6 @@
 import type {Language} from './languages';
 import {createTranslator,interpolateTranslation} from './translator';
+import {spanishUiGap} from './spanish-ui-gaps';
 
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
@@ -1684,8 +1685,9 @@ export function accountText(language:Language,text:string,params?:Record<string,
     if(key==='Collection · {target}')values.target=accountText(language,values.target);
     return accountT(language,key,values);
   }
-  // Uncatalogued UI copy must still resolve provided values, even when it falls back to English.
-  return interpolateTranslation(text,params);
+  // Only source-reviewed application copy receives this Spanish catch-up overlay.
+  // Unknown, user-authored or server-provided text keeps the original safe fallback.
+  return interpolateTranslation(language==='es'?spanishUiGap(text)??text:text,params);
 }
 
 export function accountError(language:Language,error:unknown,fallback:AccountKey='The request could not be completed. Please try again.'):string{

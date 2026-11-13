@@ -6,6 +6,20 @@ import {companionDynamicText} from './companion-dynamic';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Simplified Companion Index: three intent-based views and a compact role picker.
+ "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],
+ "Unlock":["Freischalten","Desbloquear","Ontgrendelen","Sblocca","Débloquer"],
+ "Past events":["Vergangene Events","Eventos pasados","Eerdere evenementen","Eventi passati","Évènements passés"],
+ "Your companions":["Deine Begleiter","Tus compañeros","Jouw metgezellen","I tuoi compagni","Vos compagnons"],
+ "Companions to unlock":["Freischaltbare Begleiter","Compañeros por desbloquear","Metgezellen om te ontgrendelen","Compagni da sbloccare","Compagnons à débloquer"],
+ "Previously released companions":["Früher veröffentlichte Begleiter","Compañeros de eventos anteriores","Eerder uitgebrachte metgezellen","Compagni degli eventi passati","Compagnons des évènements précédents"],
+ "Manage":["Verwalten","Gestionar","Beheren","Gestisci","Gérer"],
+ "Details":["Details","Detalles","Details","Dettagli","Détails"],
+ "Filter roles":["Rollen filtern","Filtrar roles","Rollen filteren","Filtra ruoli","Filtrer les rôles"],
+ "No companions owned yet.":["Noch keine Begleiter freigeschaltet.","Todavía no tienes compañeros.","Je hebt nog geen metgezellen.","Non hai ancora compagni.","Vous n'avez pas encore de compagnons."],
+ "Unlock your first companion to see it here.":["Schalte deinen ersten Begleiter frei, damit er hier erscheint.","Desbloquea tu primer compañero para verlo aquí.","Ontgrendel je eerste metgezel om deze hier te zien.","Sblocca il tuo primo compagno per vederlo qui.","Débloquez votre premier compagnon pour le voir ici."],
+ "All available companions unlocked.":["Alle verfügbaren Begleiter freigeschaltet.","Has desbloqueado todos los compañeros disponibles.","Alle beschikbare metgezellen ontgrendeld.","Hai sbloccato tutti i compagni disponibili.","Tous les compagnons disponibles sont débloqués."],
+
  // Companion Index v2: complete localization for compact discovery and acquisition guidance.
  // Companion availability and unlock-status categories (keep upcoming event identities private).
  "Available to earn":["Jetzt freischaltbar","Disponible para conseguir","Nu vrij te spelen","Disponibili da ottenere","À débloquer maintenant"],

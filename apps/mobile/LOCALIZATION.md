@@ -4,6 +4,13 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish are starter-only languages. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## Spanish gap review · 2026-11-13
+
+- New exact-English-source Spanish translations cover Resource Codex searches/sources/recipes, Market Inbox deliveries and claim states, More navigation, release information, Settings, the Community Roadmap, the activity queue, Store headers and Event calendar/teasers.
+- The new food queue's Health and Auto-Eat headings and carry/empty-state helper copy are translated; Companion Mastery and Training Ground explanations, requirements and controls no longer show English in Spanish mode.
+- Reviewed strings pass through `accountText` and keep numeric placeholders intact. Proper names, player text, server identifiers and unrecognized messages remain unchanged; other languages retain their prior fallback behavior.
+- The localization-catalog validator now checks Spanish overlay placeholder parity and the relevant screens' static translation call sites.
+
 ## Implemented
 
 - Typed eight-language catalog with English as the default and fallback language.

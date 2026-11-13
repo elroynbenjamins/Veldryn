@@ -2519,6 +2519,21 @@ export const EARLY_LOCALE_ROWS={
   "Delete character only": ["Только удалить персонажа","Yalnızca karakteri sil"],
   "This is your only character. After deletion you return to class creation.": ["Это ваш единственный персонаж. После удаления откроется создание персонажа.","Bu tek karakterin. Sildikten sonra karakter oluşturma ekranına dönersin."],
   "Choosing a new class deletes this character first, frees the slot, and then opens class creation. Plain delete keeps you on the remaining roster.": ["Выбор нового класса сначала удалит этого персонажа и освободит ячейку, затем откроет создание персонажа. Простое удаление оставит вас в списке остальных персонажей.","Yeni sınıf seçmek önce bu karakteri siler, yuvayı boşaltır ve karakter oluşturmayı açar. Yalnızca silmek ise seni kalan karakter listesinde tutar."],
+  "ACCOUNT & CHARACTER": ["АККАУНТ И ПЕРСОНАЖ","HESAP VE KARAKTER"],
+  "Bonuses": ["Бонусы","Bonuslar"],
+  "A single view of modifiers that are actually active in gameplay right now. Collection ownership is account-wide; selected Faith and permanent boost sources follow the active character.": ["Здесь показаны только бонусы, которые сейчас реально действуют в игре. Коллекции общие для аккаунта, а выбранные бонусы Веры и постоянные усиления зависят от активного персонажа.","Şu anda oyunda gerçekten etkin olan bonusların tek görünümü. Koleksiyon sahipliği hesap genelindedir; seçilen İnanç ve kalıcı güçlendirme kaynakları etkin karaktere bağlıdır."],
+  "TEMPORARY BOOST": ["ВРЕМЕННОЕ УСИЛЕНИЕ","GEÇİCİ GÜÇLENDİRME"],
+  "{time} qualifying activity time remaining. The timer only consumes time from eligible activities.": ["Осталось {time} подходящих занятий. Время расходуется только во время занятий, на которые действует бонус.","{time} uygun etkinlik süresi kaldı. Sayaç yalnızca bonusun geçerli olduğu etkinliklerde ilerler."],
+  "EFFECTIVE PERMANENT MODIFIERS": ["ДЕЙСТВУЮЩИЕ ПОСТОЯННЫЕ БОНУСЫ","ETKİN KALICI BONUSLAR"],
+  "Less taken / consumed": ["Меньше урона / затрат","Daha az hasar / tüketim"],
+  "Effective increase": ["Фактическое увеличение","Geçerli artış"],
+  "No permanent gameplay modifiers are active on this character yet.": ["У этого персонажа пока нет действующих постоянных бонусов.","Bu karakterde henüz etkin kalıcı oyun bonusu yok."],
+  "ACTIVE SOURCES": ["АКТИВНЫЕ ИСТОЧНИКИ","ETKİN KAYNAKLAR"],
+  "ACCOUNT": ["АККАУНТ","HESAP"],
+  "CHARACTER": ["ПЕРСОНАЖ","KARAKTER"],
+  "No permanent source is contributing a bonus yet.": ["Ни один постоянный источник пока не даёт бонуса.","Henüz hiçbir kalıcı kaynak bonus sağlamıyor."],
+  "WHAT COUNTS HERE": ["ЧТО УЧИТЫВАЕТСЯ","BURADA NELER SAYILIR"],
+  "This screen reflects the same runtime multiplier calculation used by combat, skilling, rewards and other supported systems. Locked collectibles and inactive entitlements are not counted. Collection caps are already applied before the totals are shown.": ["Здесь используются те же расчёты множителей, что и в бою, навыках, наградах и других системах. Закрытые коллекционные предметы и неактивные привилегии не учитываются. Ограничения бонусов коллекций применяются до показа итогов.","Bu ekran savaşta, becerilerde, ödüllerde ve diğer desteklenen sistemlerde kullanılan gerçek bonus çarpanı hesabını gösterir. Kilitli koleksiyon eşyaları ve etkin olmayan haklar sayılmaz. Koleksiyon bonus sınırları toplamlar gösterilmeden önce uygulanır."],
 } satisfies Record<string,readonly [string,string]>;
 
 export function earlyLocaleText(language:Language,source:string):string|undefined{

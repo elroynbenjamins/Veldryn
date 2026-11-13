@@ -7,6 +7,14 @@ import {companionDynamicText} from './companion-dynamic';
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
  // Companion Index v2: complete localization for compact discovery and acquisition guidance.
+ // Companion availability and unlock-status categories (keep upcoming event identities private).
+ "Available to earn":["Jetzt freischaltbar","Disponible para conseguir","Nu vrij te spelen","Disponibili da ottenere","À débloquer maintenant"],
+ "Event / Past":["Event / Früher verfügbar","Evento / Anterior","Evenement / Eerder beschikbaar","Evento / Passati","Évènement / Passés"],
+ "{value0} more seasonal companions are hidden until their events release.":["{value0} weitere saisonale Begleiter bleiben bis zum Start ihrer Events verborgen.","{value0} compañeros de temporada más permanecerán ocultos hasta sus eventos.","Nog {value0} seizoensmetgezellen blijven verborgen tot hun evenementen beginnen.","Altri {value0} compagni stagionali restano nascosti fino all'uscita degli eventi.","{value0} autres compagnons saisonniers restent masqués jusqu'à leurs évènements."],
+ "Unlock requirements":["Freischaltbedingungen","Requisitos de desbloqueo","Ontgrendelvereisten","Requisiti di sblocco","Conditions de déblocage"],
+ "Planned unlocks":["Geplante Freischaltungen","Desbloqueos previstos","Geplande ontgrendelingen","Sblocchi previsti","Déblocages prévus"],
+ "Previously available through {event}":["Früher verfügbar bei {event}","Antes disponible en {event}","Eerder verkrijgbaar via {event}","Disponibile in passato durante {event}","Auparavant disponible pendant {event}"],
+ "Guild Lv. {level} · {cost} tokens":["Gildenstufe {level} · {cost} Marken","Gremio niv. {level} · {cost} fichas","Gildeniveau {level} · {cost} munten","Gilda liv. {level} · {cost} gettoni","Guilde niv. {level} · {cost} jetons"],
  "Companion Index":["Begleiterverzeichnis","Índice de compañeros","Metgezellenoverzicht","Indice dei compagni","Index des compagnons"],
  "{value0} collected · {value1} total":["{value0} gesammelt · {value1} insgesamt","{value0} obtenidos · {value1} en total","{value0} verzameld · {value1} totaal","{value0} raccolti · {value1} totali","{value0} obtenus · {value1} au total"],
  "Codex & rewards":["Kodex & Belohnungen","Códice y recompensas","Codex en beloningen","Codice e ricompense","Codex et récompenses"],

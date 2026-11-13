@@ -103,7 +103,7 @@ begin
   return jsonb_build_object(
    'replayed',true,'offerId',prior.offer_id,
    'accountId',prior.account_id,'characterId',prior.character_id,
-   'quote',prior.reward_json,'quoteHash',prior.reward_hash,
+   'difficulty',prior.difficulty,'quote',prior.reward_json,'quoteHash',prior.reward_hash,
    'storageShapeVerified',true,'inventoryCapacityVerified',false,
    'claimEnabled',false,'claimed',false,'entitlementsCreated',false,
    'economyApplied',false,'inboxDelivered',false);
@@ -212,7 +212,7 @@ begin
  return jsonb_build_object(
   'replayed',false,'offerId',o.id,
   'accountId',p_account_id,'characterId',p_character_id,
-  'quote',v_quote,'quoteHash',v_hash,
+  'difficulty',w.difficulty,'quote',v_quote,'quoteHash',v_hash,
   'storageShapeVerified',true,'inventoryCapacityVerified',false,
   'claimEnabled',false,'claimed',false,'entitlementsCreated',false,
   'economyApplied',false,'inboxDelivered',false);

@@ -10,7 +10,9 @@ revision), reads that character's server-owned GameState and reuses the exact
 online co-op equipment/stat/companion/gem Combat Power derivation. It does not
 accept any client-provided Combat Power, class role, equipment JSON or arbitrary
 selected bracket. The owner, character and expected revision must agree with
-the loaded GameState. It also validates forged-copy ownership, equipment
+the loaded GameState. The repository must supply the actual `updated_at` timestamp;
+future-dated and older-than-seven-day states are rejected, rather than stamping
+old states as fresh when the auditor reads them. It also validates forged-copy ownership, equipment
 legality and positive finite Combat Power before V14 consumes the sample.
 
 The only output is V14's **anonymous five-bracket report**: proposed CP
@@ -41,7 +43,7 @@ regional equipment rules. It verifies that the aggregate audit receives
 120 authenticated-by-fixture server-owned states, produces five *unapproved*
 brackets, and cannot return account IDs. It tests reject-on-failure behavior
 for duplicates, too-small populations, cross-account ownership, stale game
-revisions, forged equipped-copy IDs and invalid server clocks.
+revisions, stale/future database timestamps, forged equipped-copy IDs and invalid server clocks.
 
 This tests **code boundaries**, not live player balance or actual database
 authentication. The V15 focused CI extends V9–V14 tests without any deploy,

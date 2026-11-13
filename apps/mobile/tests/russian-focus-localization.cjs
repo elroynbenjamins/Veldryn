@@ -10,7 +10,7 @@ const {earlyLocaleText}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const keys=Object.keys(RUSSIAN_FOCUS_ROWS);
-assert.ok(keys.length>=280,'Expected broad Russian UI coverage');
+assert.ok(keys.length>=680,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];
 const sources=modules.map(name=>fs.readFileSync(path.join(__dirname,'../src/i18n/'+name+'.ts'),'utf8'));
@@ -24,6 +24,18 @@ for(const key of keys){
 }
 assert.equal(earlyLocaleText('ru','UNKNOWN LIVE SERVER COPY'),undefined,'Unknown server copy must remain untranslated');
 assert.equal(earlyLocaleText('tr','Companion Index'),undefined,'Turkish catalog fallback must be unchanged');
+for(const [key,expected] of Object.entries({
+  'Companion Index':'Каталог спутников',
+  'Tower of Companions':'Башня спутников',
+  'Choose a boon':'Выберите благословение',
+  'EQUIPMENT PREVIEW':'ПРОСМОТР СНАРЯЖЕНИЯ',
+  'LOCAL PROFILE':'ЛОКАЛЬНЫЙ ПРОФИЛЬ',
+  'World Regions':'Регионы мира',
+  'Your weekly assignments':'Ваши задания на неделю'
+})){
+  assert.equal(earlyLocaleText('ru',key),expected,'Focused Russian text missing for '+key);
+  assert.equal(earlyLocaleText('tr',key),undefined,'Other languages must not inherit Russian text: '+key);
+}
 assert.equal(earlyLocaleText('ru','Show breakdown'),'Показать подробности','Older Russian catalog entries still work');
 const params={count:3,name:'PLAYER-007',amount:2};
 const sourceTranslator=createSourceTranslator({'{name}, needs attention':['de','es','nl','it','fr']});

@@ -408,6 +408,7 @@ export const socialEarlyRows={
   "Grants a dungeon artifact": ["Даёт артефакт подземелья","Zindan eseri verir"],
   "Restores 35% HP": ["Восстанавливает 35% ОЗ","%35 Can yeniler"],
   "Merchant offers": ["Товары торговца","Tüccar teklifleri"],
+  "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Random passive effect for your party. Identity revealed on pickup.": ["Случайный пассивный эффект для группы. Он откроется после получения.","Grubun için rastgele pasif etki. Alındığında ortaya çıkar."],
   "Persistent run item. Effect triggers in combat.": ["Предмет на весь поход. Эффект срабатывает в бою.","Sefer boyunca kalan eşya. Etkisi savaşta tetiklenir."],
   "Instantly heals the chosen ally. No mystery here.": ["Мгновенно исцеляет выбранного союзника. Без сюрпризов.","Seçilen müttefiki anında iyileştirir. Sürpriz yok."],

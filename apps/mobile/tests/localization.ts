@@ -126,4 +126,28 @@ ok(companionIndex.includes('companionContent(language,status)'),'Companion avail
 ok(marketInbox.includes('localizedItemName(state.settings.language,row.itemId)'),'Market deliveries must display localized item names');
 ok(marketChart.includes("language==='de'?'de-DE'"),'German market chart must format Gold amounts with German grouping');
 
+
+// Annual calendar and Event reward surfaces must use translated authored
+// descriptions without mutating the original event keys or reward identities.
+for(const [english,german] of [
+ ['Gloam Candy','Dämmersüßigkeit'],
+ ['Gloam Candy · Battle','Dämmersüßigkeit · Kampf'],
+ ['Chronicle Chew · Bond','Chronik-Kaubonbon · Bindung'],
+ ['Frostmint · Pet Luck','Frostminze · Haustierglück'],
+ ['EVENT CANDY','EREIGNISSÜSSIGKEITEN'],
+ ['Festival boosts','Festboni'],
+ ['Build the winter celebration together','Gestaltet gemeinsam das Winterfest'],
+] as const){
+ ok(localizeGameplay('de',english)===german,`Missing German Event text: ${english}`);
+}
+for(const [path,expected] of [
+ ['src/components/AnnualEventCalendarPanel.tsx','gl(featured.row.definition.summary)'],
+ ['src/components/AnnualEventCalendarPanel.tsx','gl(selected.name)'],
+ ['src/components/EventCandyPanel.tsx','gl(candy.description)'],
+ ['src/components/EventAdditionalRewards.tsx','gl(discovery.reward.name)'],
+ ['src/components/EventRewardTrail.tsx','gl(row.reward.name)'],
+] as const){
+ ok(fs.readFileSync(path,'utf8').includes(expected),`German event rendering missing: ${path} ${expected}`);
+}
+
 console.log(`Localization tests passed (${SUPPORTED_LANGUAGES.length} languages, ${MESSAGE_COUNT} shared and ${OPERATIONAL_MESSAGE_COUNT} operational messages each).`);

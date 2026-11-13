@@ -161,8 +161,9 @@ begin
   if not found then raise exception 'party_event_v14_unverified_craft';end if;
   -- Existing v16 crafting weights are measured against roughly one minute
   -- of baseline effort. Convert those server-authoritative weights to
-  -- conservative whole seconds; keep a per-receipt daily-sized bound.
-  select least(86400::numeric, greatest(1::numeric,ceil(r.quantity*v_weight*60)))::integer
+  -- conservative whole seconds; cap one craft receipt at one hour of effort
+  -- to avoid minting 40 EP from a bulk claim banked before the event.
+  select least(3600::numeric, greatest(1::numeric,ceil(r.quantity*v_weight*60)))::integer
   into v_seconds from public.craft_receipts r where r.receipt_id=p_source_ref;
   v_begin_at:=v_occurred_at;
 

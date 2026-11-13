@@ -64,6 +64,24 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   'Ashen Myrrh Grove':'Aschenmyrrhenhain',
   'Ashen Myrrh Crown':'Aschenmyrrhenkrone',
 
+  // Equipment inventory controls and legacy Forge copy maintenance.
+  'To Equipment':'Zur Ausrüstung',
+  'LINK OLDER FORGE EQUIPMENT':'ÄLTERE SCHMIEDEAUSRÜSTUNG ZUORDNEN',
+  'Older forged copies were saved without a physical ID. Select which original roll belongs to an untagged copy. No new item is created.':'Ältere geschmiedete Exemplare wurden ohne eindeutige ID gespeichert. Wähle aus, welche ursprüngliche Ausführung zu einem nicht zugeordneten Exemplar gehört. Dabei entsteht kein neuer Gegenstand.',
+  'Link copy':'Exemplar zuordnen',
+  'Compare & Equip':'Vergleichen und ausrüsten',
+  'Sell copy':'Exemplar verkaufen',
+  'Salvage copy':'Exemplar zerlegen',
+  'To Bank':'Zur Bank',
+  'Withdraw':'Abheben',
+  'Gold transfer amount':'Goldübertragungsbetrag',
+  'Legacy baseline':'Alter Grundwert',
+  'Legacy':'Altbestand',
+  'Locked':'Gesperrt',
+  'UNIQUE EQUIPMENT':'EINZIGARTIGE AUSRÜSTUNG',
+  'COPY':'EXEMPLAR',
+  'COPIES':'EXEMPLARE',
+
   // Event screen and seasonal rewards feedback.
   'Events':'Ereignisse',
   'Browse upcoming festivals and seasonal previews.':'Entdecke kommende Feste und Vorschauen auf saisonale Ereignisse.',

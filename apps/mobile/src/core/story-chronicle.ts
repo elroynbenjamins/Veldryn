@@ -34,13 +34,13 @@ export const STORY_DISCOVERIES:readonly DiscoveryDefinition[] = [
   ]},
   {questId:'QST_009',text:[
     'The vault is no tomb. Its roots bind a cracked Oathglass lens, built to carry a command farther than any horn could reach.',
-    'Das Gewölbe ist keine Gruft. Seine Wurzeln umschließen eine gesprungene Eidglass-Linse, die Befehle weiter tragen konnte als jedes Horn.',
-    'La cámara no es una tumba. Sus raíces sujetan una lente de Cristal del Juramento agrietada, capaz de transmitir órdenes más allá de cualquier cuerno.',
-    'De kluis is geen graf. De wortels klemmen een gebarsten Eedglas-lens vast, gemaakt om bevelen verder te dragen dan een hoorn ooit kon.',
-    'Il sotterraneo non è una tomba. Le radici stringono una lente di Vetro del Giuramento incrinata, capace di trasmettere ordini oltre ogni corno.',
-    'Le caveau n’est pas une tombe. Ses racines retiennent une lentille de Verre du Serment fendue, conçue pour porter un ordre plus loin que tout cor.',
-    'Хранилище — не гробница. Корни сковали треснувшую линзу Клятвостекла, способную передавать приказ дальше любого рога.',
-    'Mahzen bir mezar değil. Kökleri, emirleri her borudan uzağa taşıyabilen çatlak bir Yemin Camı merceğini bağlıyor.'
+    'Das Gewölbe ist keine Gruft. Seine Wurzeln umschließen eine gesprungene Oathglass-Linse, die Befehle weiter tragen konnte als jedes Horn.',
+    'La cámara no es una tumba. Sus raíces sujetan una lente de Oathglass agrietada, capaz de transmitir órdenes más allá de cualquier cuerno.',
+    'De kluis is geen graf. De wortels klemmen een gebarsten Oathglass-lens vast, gemaakt om bevelen verder te dragen dan een hoorn ooit kon.',
+    'Il sotterraneo non è una tomba. Le radici stringono una lente di Oathglass incrinata, capace di trasmettere ordini oltre ogni corno.',
+    'Le caveau n’est pas une tombe. Ses racines retiennent une lentille de Oathglass fendue, conçue pour porter un ordre plus loin que tout cor.',
+    'Хранилище — не гробница. Корни сковали треснувшую линзу Oathglass, способную передавать приказ дальше любого рога.',
+    'Mahzen bir mezar değil. Kökleri, emirleri her borudan uzağa taşıyabilen çatlak bir Oathglass merceğini bağlıyor.'
   ]},
   {questId:'QST_010',text:[
     'When the lens pulses, lanterns turn toward the old royal road. The dead are not wandering: someone is still repeating their final order.',

@@ -19,7 +19,7 @@ ok(weeklyOrderQuickStartPlan(state,order('FALLEN_KNIGHT','hunt','KINGS_ROAD')).s
 const injured:GameState={...state,character:{...state.character!,currentHp:1}};
 ok(weeklyOrderQuickStartPlan(injured,rat).status==='blocked','An injured player cannot launch a hunt');
 
-const remote:GameState={...state,character:{...state.character!,level:25},exploredRouteIds:['SCOUT_OLD_MINES'],unlockedMonsterIds:[...state.unlockedMonsterIds,'LANTERN_WRETCH']};
+const remote:GameState={...state,character:{...state.character!,level:25},exploredRouteIds:['SCOUT_IRONWOOD'],unlockedMonsterIds:[...state.unlockedMonsterIds,'LANTERN_WRETCH']};
 const remoteHunt=weeklyOrderQuickStartPlan(remote,order('LANTERN_WRETCH','hunt','KINGS_ROAD'));
 ok(remoteHunt.status==='blocked','A destination behind its parent scouting route must not auto-travel');
 const scouted:GameState={...remote,exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES']};

@@ -150,7 +150,17 @@ export function replayAndVerifyPartyEventBossV20(input:PartyBossReplayInputV20):
   must(votes.length===2
     &&votes.some(x=>x.stage===2&&milliseconds(x.vote_locked_at)>=start)
     &&votes.some(x=>x.stage===3&&milliseconds(x.vote_locked_at)>=start),'missing_locked_votes');
+  const stage2Vote=votes.find(x=>x.stage===2)!;
   const stage3Vote=votes.find(x=>x.stage===3)!;
+  const allowedVotes:Record<WeeklyPartyFamily,readonly [readonly [string,string],readonly [string,string]]>={
+    broken_caravan:[['safe_pass','fast_pass'],['brace_wagons','disrupt_raiders']],
+    nightfall_hunt:[['clear_trail','shadow_trail'],['hold_ground','hunt_alpha']],
+    broken_wards:[['ground_spires','charge_sigils'],['protect_wards','overload_wards']],
+    lost_reliquary:[['quiet_passage','deep_passage'],['preserve_seals','break_seals']],
+  };
+  must(milliseconds(stage2Vote.vote_locked_at)<end&&milliseconds(stage3Vote.vote_locked_at)<end
+    &&allowedVotes[week.family][0].includes(stage2Vote.vote_choice)
+    &&allowedVotes[week.family][1].includes(stage3Vote.vote_choice),'invalid_stage_vote');
   must(stage3Vote.vote_choice===finale.stage3_vote_choice,'finale_vote_mismatch');
 
   must(finale.party_id===week.party_id
@@ -159,6 +169,7 @@ export function replayAndVerifyPartyEventBossV20(input:PartyBossReplayInputV20):
     &&finale.member_count===roster.length
     &&finale.verified_points>=weeklyPartyBudget(roster.length,week.difficulty).progressTarget,
     'invalid_finale_seal');
+  must(finale.stage3_vote_choice===stage3Vote.vote_choice,'finale_vote_mismatch');
   must(reservation.party_id===week.party_id
     &&milliseconds(reservation.event_starts_at)===start
     &&reservation.finale_hash===finale.finale_hash

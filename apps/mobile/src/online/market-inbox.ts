@@ -71,6 +71,10 @@ export async function claimMarketInboxEquipmentDelivery(
  if(!deliveryId||!characterId||!['purchased','returned'].includes(kind)
    ||!['inventory','bank','equipment_pouch'].includes(destination))
    throw new Error('Invalid equipment delivery.');
+ // V19: keep acquired Forge copies out of shared storage until an audited
+ // cross-character transfer path exists. The server enforces this independently.
+ if(kind==='purchased'&&destination==='bank')
+   throw new Error('Purchased equipment cannot enter the shared bank yet.');
  const {data,error}=await client.rpc('market_equipment_inbox_claim_v12',{
    p_kind:kind,p_delivery_id:deliveryId,
    p_destination:destination,p_destination_character_id:characterId,

@@ -34,7 +34,7 @@ BEGIN
   THEN RAISE EXCEPTION 'WORLD_BOSS_LEADERBOARDS_DISABLED'; END IF;
   SELECT b.id,b.name_snapshot,b.finalized_at INTO v_boss
   FROM public.shared_world_world_bosses b
-  WHERE b.id=p_boss_id AND b.finalized_at IS NOT NULL;
+  WHERE b.id=p_boss_id AND b.state='finalized' AND b.finalized_at IS NOT NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'WORLD_BOSS_NOT_FINALIZED'; END IF;
 
   -- The original final_rank is event-global and intentionally not recalculated

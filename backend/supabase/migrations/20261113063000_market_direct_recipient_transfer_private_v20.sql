@@ -70,8 +70,8 @@ begin
     or length(p_instance_id) not between 1 and 180
     or p_source_character_id is null or p_recipient_character_id is null
     or p_source_character_id=p_recipient_character_id
-    or p_source_location not in ('inventory','equipment_pouch')
-    or p_destination_location not in ('inventory','equipment_pouch')
+    or p_source_location is null or p_source_location not in ('inventory','equipment_pouch')
+    or p_destination_location is null or p_destination_location not in ('inventory','equipment_pouch')
     or p_source_index is null or p_source_index not between 0 and 10000
     or p_expected_revision is null or p_expected_revision<0
     or p_idempotency_key is null
@@ -189,14 +189,9 @@ begin
   v_receipts:=v_row.state#>'{account,craftedGearInstances}';
   if pg_catalog.jsonb_typeof(v_receipts) is distinct from 'array'
   then raise exception 'market_equipment_receipt_ledger_missing';end if;
-  for v_entry in
-    select value,ordinality from pg_catalog.jsonb_array_elements(v_receipts)
-      with ordinality as entries(value,ordinality)
-  loop
-    if v_entry->>'id'=p_instance_id then
-      v_receipt_matches:=v_receipt_matches+1;
-    end if;
-  end loop;
+  select count(*) into v_receipt_matches
+    from pg_catalog.jsonb_array_elements(v_receipts) entry(value)
+    where entry.value->>'id'=p_instance_id;
   if v_receipt_matches<>1
   then raise exception 'market_equipment_receipt_identity_conflict';end if;
   select entry.value,entry.ordinality-1 into v_receipt,v_receipt_index

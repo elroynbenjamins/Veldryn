@@ -68,10 +68,11 @@ begin
       'account',jsonb_build_object('craftedGearInstances','[]'::jsonb),
       'inventory',jsonb_build_object('capacity',1,'stacks',jsonb_build_array(
         jsonb_build_object('itemId','COPPER_ORE','quantity',1))),
-      'bank',jsonb_build_object('capacity',1,'stacks',jsonb_build_array(
+      'bank',jsonb_build_object('capacity',2,'stacks',jsonb_build_array(
         jsonb_build_object('itemId','COPPER_ORE','quantity',1))),
       'otherCharacters',jsonb_build_array(jsonb_build_object(
         'character',jsonb_build_object('id',v_buyer_alt::text,
+           'xp',0,'classId','BASTION',
            'equipmentPouch',jsonb_build_object('capacity',3,'stacks','[]'::jsonb),
            'equipment','{}'::jsonb),
         'inventory',jsonb_build_object('capacity',2,'stacks','[]'::jsonb))),
@@ -243,6 +244,11 @@ begin
   v_result:=private.market_purchase_equipment_offer_v9(
     v_buyer,v_offer,125,1,7,6,'gear-v9-purchase',repeat('1',64));
   v_delivery:=(v_result->>'deliveryId')::uuid;
+  if (select status from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'pending'
+    or (select required_character_level from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>14
+  then raise exception 'Market V19 purchase provenance not saved atomically';end if;
   if (select count(*) from private.market_completed_sale_history_v13
     where offer_id=v_offer and item_id=v_item and asset_kind='equipment'
       and rarity='mythic' and quality=93 and enchant_rank=3
@@ -336,10 +342,42 @@ begin
     or (select gold from public.character_wallets where character_id=v_buyer_main)<>375
   then raise exception 'failed buyer claim consumed equipment or moved Gold';end if;
 
+  -- V19: an eligible buyer main cannot deliver to a level-1 alt.
+  begin
+    perform private.market_claim_equipment_purchase_v9(
+      v_buyer,v_delivery,8,'equipment_pouch',v_buyer_alt::text,
+      'v19-claim-underlevel',repeat('7',64));
+    raise exception 'V19 low-level alt claim succeeded';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  if (select status from private.market_equipment_purchase_deliveries_v9
+      where delivery_id=v_delivery)<>'pending'
+    or (select status from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'pending'
+    or (select revision from public.online_game_states where account_id=v_buyer)<>8
+  then raise exception 'V19 under-level claim consumed delivery or changed state';end if;
+  -- V19: pending bought gear cannot enter a shared bank even with capacity.
+  begin
+    perform private.market_claim_equipment_purchase_v9(
+      v_buyer,v_delivery,8,'bank',v_buyer_main::text,
+      'v19-claim-bank',repeat('8',64));
+    raise exception 'V19 shared bank claim succeeded';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_shared_bank_restricted' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{otherCharacters,0,character,xp}','10000000'::jsonb,false)
+    where account_id=v_buyer;
   v_claim:=private.market_claim_equipment_purchase_v9(
     v_buyer,v_delivery,8,'equipment_pouch',v_buyer_alt::text,
     'gear-v9-claim-alt',repeat('6',64));
   v_rebound:=jsonb_set(v_receipt,'{ownerCharacterId}',to_jsonb(v_buyer_alt::text),false);
+  if (select status from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'claimed'
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_alt::text
+  then raise exception 'Market V19 provenance not tied to exact claim recipient';end if;
   if v_claim->>'status'<>'claimed'
     or v_claim->>'buyerCharacterId'<>v_buyer_alt::text
     or (select state#>'{account,craftedGearInstances,0}' from public.online_game_states
@@ -373,6 +411,36 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_equipment_delivery_already_claimed' then raise;end if;
   end;
+
+  -- V19: normal game-state writes must not bank-transfer or rebind gear.
+  begin
+    update public.online_game_states set state=jsonb_set(
+      jsonb_set(state,'{otherCharacters,0,character,equipmentPouch,stacks}',
+        '[]'::jsonb,false),'{bank,stacks}',
+      jsonb_build_array(v_stack),false) where account_id=v_buyer;
+    raise exception 'V19 bank transfer bypassed snapshot guard';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  begin
+    update public.online_game_states set state=jsonb_set(
+      jsonb_set(
+        jsonb_set(state,'{otherCharacters,0,character,equipmentPouch,stacks}',
+          '[]'::jsonb,false),'{inventory,stacks}',jsonb_build_array(v_stack),false),
+      '{account,craftedGearInstances,0,ownerCharacterId}',
+      to_jsonb(v_buyer_main::text),false) where account_id=v_buyer;
+    raise exception 'V19 owner transfer bypassed snapshot guard';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  if (select status from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'claimed'
+    or (select revision from public.online_game_states where account_id=v_buyer)<>9
+  then raise exception 'V19 rejected transfer changed snapshot/provenance';end if;
+  -- Benign account saves remain possible with the exact copy in its
+  -- validated recipient character's pouch.
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','11000000'::jsonb,false) where account_id=v_buyer;
 
   -- Separate unsold listing: seller cancellation returns original copy.
   -- A sold listing can never enter this path.

@@ -430,12 +430,14 @@ function huntEnemyHpAt(monsterHp, events, progressFraction) {
 
 // ../apps/mobile/src/core/ordinary-hunt.ts
 var SEARCH_RANGES = {
-  Greenfields: [5, 8],
-  Silverbrook: [5, 8],
-  "Ironwood Forest": [6, 9],
-  "Old Mines": [7, 10],
-  "King's Road": [7, 10],
-  Sunscar: [8, 12]
+  Greenfields: [3, 6],
+  Silverbrook: [3, 6],
+  "Ironwood Forest": [4, 7],
+  "Old Mines": [5, 8],
+  "King's Road": [5, 8],
+  Sunscar: [6, 10],
+  Frostmarch: [7, 11],
+  Ashlands: [8, 12]
 };
 function usesDamageDrivenHunts(zone) {
   return Object.prototype.hasOwnProperty.call(SEARCH_RANGES, zone);
@@ -42786,8 +42788,8 @@ var timerRange = {
   T9: { base: 2250, min: 1800, max: 2700 }
 };
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
-var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
-var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
+var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
@@ -42800,7 +42802,7 @@ var infusionByTier = {
   T8: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 },
   T9: { itemId: "CINDERHEART_ELIXIR", quantity: 3 }
 };
-var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 2, T5: 1, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
+var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 1.5, T5: 1.2, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
 var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 40, T5: 55, T6: 70, T7: 82, T8: 92, T9: 100 };
 var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
 var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
@@ -42877,8 +42879,9 @@ function ingredients(tier, path, multiplier, skillId) {
       return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
       return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+    // Keep the T5 weapon's real processed-material farm time inside the 5.4h upper ceiling.
     case "T5":
-      return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
+      return [{ itemId: "SUNSTONE_INGOT", quantity: q(10, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(15, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
     case "T7":
@@ -42996,11 +42999,11 @@ var GUILD_COMPONENT_ITEMS = [
 ];
 var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
-  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 4, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 560, gold: 475, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 10 }, { itemId: "IRONWOOD_LOG", quantity: 15 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
   { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 1120, gold: 1450, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
   { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 2900, gold: 5e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 10 }, { itemId: "WHITEPINE_LOG", quantity: 10 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
-  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 4, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 550, gold: 450, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 15 }, { itemId: "THORN_SAP", quantity: 5 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 1130, gold: 1500, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 2840, gold: 4750, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 10 }, { itemId: "WINTERMINT", quantity: 10 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
@@ -50532,6 +50535,45 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
+// ../apps/mobile/src/content/t5-equipment-affix-spec.ts
+var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
+  gloves: "haste",
+  amulet: "critRate",
+  boots: "evasion"
+});
+
+// ../apps/mobile/src/core/t5-equipment-affixes.ts
+var RARITY_SCORE = Object.freeze({
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythic: 5
+});
+function t5EquipmentAffixPercent(rarity, quality) {
+  const q2 = Math.max(0, Math.min(100, Math.floor(quality)));
+  const qualityScore = q2 >= 90 ? 4 : q2 >= 75 ? 3 : q2 >= 50 ? 2 : q2 >= 25 ? 1 : 0;
+  const score2 = RARITY_SCORE[rarity] + qualityScore;
+  return score2 >= 8 ? 0.05 : score2 >= 6 ? 0.04 : score2 >= 3 ? 0.03 : 0.02;
+}
+function t5EquipmentAffixForItem(itemId, instance) {
+  const item = itemDef(itemId), stat = item.slot ? T5_EQUIPMENT_AFFIX_BY_SLOT[item.slot] : void 0;
+  if (item.type !== "gear" || !item.equipmentSetId?.startsWith("T5_") || !stat) return void 0;
+  const rarity = instance?.rarity ?? itemRarity(item), quality = craftedGearDisplayQuality(instance ?? {});
+  return { stat, percent: t5EquipmentAffixPercent(rarity, quality), rarity, quality };
+}
+function equippedT5EquipmentAffixStats(state) {
+  const stats4 = { haste: 0, critRate: 0, evasion: 0 };
+  if (!state.character) return stats4;
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const affix = t5EquipmentAffixForItem(itemId, equippedCraftedInstance(state, itemId));
+    if (affix) stats4[affix.stat] += affix.percent;
+  }
+  return stats4;
+}
+
 // ../apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
@@ -50616,6 +50658,7 @@ function activeEquipmentSetRuntime(state) {
 function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
+  const t5Affixes = equippedT5EquipmentAffixStats(state);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
@@ -50623,14 +50666,14 @@ function activeEquipmentBuildStats(state) {
     armor: multiplied(sets.armor, p.armor),
     ward: multiplied(sets.ward, p.ward),
     tenacity: multiplied(sets.tenacity, p.tenacity),
-    haste: multiplied(sets.haste, p.haste),
+    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste,
     power: multiplied(sets.power, p.power),
     accuracy: sets.accuracy + (pp.accuracy ?? 0),
     penetration: sets.penetration + (pp.penetration ?? 0),
     potency: multiplied(sets.potency, p.potency),
-    critRate: sets.critRate + (pp.critRate ?? 0),
+    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate,
     critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0)
+    evasion: sets.evasion + (pp.evasion ?? 0) + t5Affixes.evasion
   };
 }
 function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy = 0.84) {
@@ -52523,9 +52566,9 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === c.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
   const secondary = regionalSecondaryExchange(stats4, m, baseCritChance);
-  const boostedDefense = Math.max(1, Math.round(stats4.defense * modifiers.combatPowerMultiplier));
+  const boostedDefense = Math.max(1, Math.round(stats4.defense));
   const bossPowerMultiplier = m.boss ? 1 + effectGems.boss_power : 1;
-  const boostedPower = Math.max(1, Math.round(stats4.power * modifiers.combatPowerMultiplier * bossPowerMultiplier));
+  const boostedPower = Math.max(1, Math.round(stats4.power * bossPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
@@ -52541,7 +52584,7 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
     zone: m.zone,
     monsterHp: m.hp,
     playerHit: huntBasePlayerHit(
-      Math.round(stats4.attack * modifiers.combatPowerMultiplier),
+      Math.round(stats4.attack),
       m.defense,
       setCombat.penetrationMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * progressionSpeedPenalty * outgoingPreparation
     ),
@@ -54666,7 +54709,7 @@ function deleteAccountCharacter(state, id, confirmation, now) {
 }
 
 // ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 4;
+var MAX_RELEASED_EQUIPMENT_TIER = 5;
 function isReleasedEquipmentItemId(itemId) {
   const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
   return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
@@ -58244,6 +58287,13 @@ import { createHash as createHash2 } from "node:crypto";
 
 // ../apps/mobile/src/core/combat-power.ts
 init_progression();
+var MAX_COMPANION_COMBAT_POWER_SHARE = 0.18;
+function redistributeCompanionCombatPower(personal, companion) {
+  const total = personal + companion;
+  const reweightedCompanion = Math.min(companion, Math.floor(total * MAX_COMPANION_COMBAT_POWER_SHARE));
+  const reallocated = companion - reweightedCompanion;
+  return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
+}
 var statScore = (stats4, level) => Math.max(0, Math.round(
   stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
 ));
@@ -58270,14 +58320,16 @@ function combatPowerRating(state) {
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
-  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rawCompanion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rating = redistributeCompanionCombatPower(player, rawCompanion);
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
-    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" }
   ];
-  return { total: player + companion, player, companion, rows: rows2 };
+  if (rating.reallocated > 0) rows2.push({ id: "allocation", label: "Personal power weighting", value: rating.reallocated, detail: "Combat Power shifted from the companion rating; actual stats and effects are unchanged" });
+  rows2.push({ id: "companion", label: "Combat companion", value: rating.companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" });
+  return { total: rating.total, player: rating.player, companion: rating.companion, rows: rows2 };
 }
 
 // src/server/equipment/gems/gem-runtime-v1.ts

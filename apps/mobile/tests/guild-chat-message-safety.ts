@@ -1,7 +1,15 @@
 import {normalizeGuildChatMessages} from '../src/core/guild-chat-message-safety';
+import {CHAT_RECENT_MESSAGE_LIMIT,GUILD_CHAT_RECENT_MESSAGE_LIMIT} from '../src/online/chat-history';
 
 function ok(value:unknown,message:string):asserts value {if(!value)throw new Error(message);}
 function eq(actual:unknown,expected:unknown,message:string){ok(JSON.stringify(actual)===JSON.stringify(expected),message+': '+JSON.stringify(actual));}
+
+ok(CHAT_RECENT_MESSAGE_LIMIT===25,'World and party chat must retain 25 recent messages.');
+ok(GUILD_CHAT_RECENT_MESSAGE_LIMIT===50,'Guild chat should request the 50 newest messages.');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const socialClient=fs.readFileSync('src/online/social.ts','utf8');
+ok(socialClient.includes('guildChatState(limit=GUILD_CHAT_RECENT_MESSAGE_LIMIT)'),
+  'Guild chat RPC must use its own 50-message default, independent of world/party history.');
 
 // Reproduce the known production shape: two members, an officer sending four
 // ordinary messages, and a leader receiving them; no private text is copied.
@@ -11,6 +19,8 @@ const history=Array.from({length:4},(_,index)=>({
  created_at:new Date(Date.UTC(2026,9,26,0,index,0)).toISOString(),
  guild_tag:'SOV',guild_tag_color_id:'tag_silver',guild_role:'officer',
 }));
+const fiftyMessages=Array.from({length:GUILD_CHAT_RECENT_MESSAGE_LIMIT},(_,index)=>({...history[0],id:'history-'+index,created_at:new Date(Date.UTC(2026,9,26,0,index,0)).toISOString()}));
+ok(normalizeGuildChatMessages(fiftyMessages).length===50,'Guild chat normalization must preserve all 50 authorized messages.');
 const normal=normalizeGuildChatMessages(history);
 ok(normal.length===4,'All authorized Sovereign-shaped messages remain visible.');
 eq(normal.map(row=>row.id),history.map(row=>row.id),'Message order and read-cursor IDs are preserved.');

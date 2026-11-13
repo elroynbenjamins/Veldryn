@@ -6,6 +6,17 @@ import {companionDynamicText} from './companion-dynamic';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Simplified Companion Index: three intent-based views and a compact role picker.
+ "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],
+ "Unlock":["Freischalten","Desbloquear","Ontgrendelen","Sblocca","Débloquer"],
+ "Past events":["Vergangene Events","Eventos pasados","Eerdere evenementen","Eventi passati","Évènements passés"],
+ "Your companions":["Deine Begleiter","Tus compañeros","Jouw metgezellen","I tuoi compagni","Vos compagnons"],
+ "Companions to unlock":["Freischaltbare Begleiter","Compañeros por desbloquear","Metgezellen om te ontgrendelen","Compagni da sbloccare","Compagnons à débloquer"],
+ "Previously released companions":["Früher veröffentlichte Begleiter","Compañeros de eventos anteriores","Eerder uitgebrachte metgezellen","Compagni degli eventi passati","Compagnons des évènements précédents"],
+ "Manage":["Verwalten","Gestionar","Beheren","Gestisci","Gérer"],
+ "Details":["Details","Detalles","Details","Dettagli","Détails"],
+ "Filter roles":["Rollen filtern","Filtrar roles","Rollen filteren","Filtra ruoli","Filtrer les rôles"],
+
  // Companion Index v2: complete localization for compact discovery and acquisition guidance.
  // Companion availability and unlock-status categories (keep upcoming event identities private).
  "Available to earn":["Jetzt freischaltbar","Disponible para conseguir","Nu vrij te spelen","Disponibili da ottenere","À débloquer maintenant"],

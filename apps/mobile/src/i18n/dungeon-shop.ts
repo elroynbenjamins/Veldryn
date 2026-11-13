@@ -109,7 +109,7 @@ export function dungeonShopOfferSummary(language:Language,source:string):string{
  const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
  if(material)return material[1]+' × '+materialNames[material[2]];
  const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);
- if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?'Bindungssteine':'Begleiteressenz');
+ if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?(essence[1]==='1'?'Bindungsstein':'Bindungssteine'):'Begleiteressenz');
  const bonus=/^\+ ([0-9]+\.[0-9]{2})% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+\.[0-9]{2})% owned$/.exec(source);
  if(bonus)return '+'+bonus[1].replace('.',',')+' % '+bonusNames[bonus[2]]+' ausgerüstet; +'+bonus[3].replace('.',',')+' % im Besitz';
  return dungeonShopText(language,source);

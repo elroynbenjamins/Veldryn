@@ -1002,3 +1002,120 @@ Never derive an entitlement directly from v19/v23 hashes
 without revalidating the trusted worker pipeline and event
 eligibility. Leave the PR draft, branch unmerged, public
 Party Events flags disabled, and production unchanged.
+
+## v24 — private non-spendable reward offers and locked choice (13 Nov 2026)
+
+**Purpose and economic boundary:** The v23 trusted-worker attestation
+is **not** a spendable reward. v24 introduces only an account-specific
+**offer**, an immutable personal cache choice, and a private Inbox
+**preview**. It does **not** create live account entitlements,
+gold, items, combat/skill XP, Companion Essence, Bondstones,
+Guild/Party Renown, a mail Inbox item, or any claim RPC.
+`rewards_granted=false`, `claimable=false` and
+`entitlementsCreated=false` remain enforced at every layer.
+No new public API, scheduled task, or feature gate is enabled.
+
+**Schema and one-time preparation:**
+`backend/supabase/migrations/20261113213000_party_event_reward_offers_v24.sql`
+adds three private/RLS tables:
+- `party_event_reward_batches_v24`: exactly one preparation
+  per reserved boss and party/week, tied by FK to the **v23
+  worker replay attestation**. It stores the v19 candidate hash,
+  replay hash, preview commitment, member/eligible counts,
+  and a server-only request ID. No rewards can be granted.
+- `party_event_reward_offers_v24`: **one** nonspendable offer
+  per eligible account/week (also unique per reservation/account),
+  FK-linked to the immutable **v19 EP preview**. The 5–14 EP
+  participation tier gets a fixed participation offer;
+  15–60 EP gets a full three-choice offer; 0–4 EP creates
+  **no offer**. The stored reward model is pinned to
+  `party-event-rewards-v2`; numeric economy amounts are not
+  persisted or promised at this stage.
+- `party_event_reward_choices_v24`: append-only, one per
+  full-offer ID, strictly one of **Warrior / Artisan / Companion**,
+  never available to participation-tier accounts.
+
+The `prepare_party_event_reward_offers_v24` service-only
+function locks the week, requires the corresponding v23
+attestation plus matching v19 candidate/tier/band, and
+independently recalculates every frozen roster member's
+personal EP from verified v14 progress and v15 special
+objective credits. Those totals must exactly match the
+immutable v19 previews. The entire batch is inserted in
+one SQL transaction, is idempotent for an **identical**
+request, and rejects changed/reused request IDs or
+stale/mismatched points. Crucially the function accepts
+**no client-provided personal EP, band, reward value or
+eligibility tier**.
+
+**Immutable reward selection:**
+`lock_party_event_reward_choice_v24` takes an offer ID,
+the verified owner account ID (resolved by the trusted
+server) and a choice. A full-offer owner can lock one
+selection. Exact retries return the same choice; every
+change of choice, replay request, or cross-account
+attempt fails closed. Participation offers cannot lock
+a choice. No money, experience, chest, or mail item
+is created by selecting.
+
+**Inbox preparation, not claiming:**
+`party_event_reward_inbox_preview_v24` is **private,
+service-role-only** and expects an account ID obtained
+from server authentication, never client JSON. It
+returns the account's offer status as
+`participation_preview`, `awaiting_choice_preview`
+or `choice_locked_preview`, always
+`claimEnabled=false`, `claimable=false` and
+`entitlement=false`. It never reads arbitrary player
+data through public roles and contains no claim mutation.
+
+**Server contracts and tests:**
+`backend/src/server/party/weekly-party-reward-offers-v24.ts`
+adds gated, typed prepare/selection/preview operations
+with deterministic server-generated request IDs and
+anti-claim return-value checks.
+`backend/online/party-event-reward-offers-v24.ts`
+provides parameterized private PostgreSQL service-role
+query adapters. The default release gate stays FALSE;
+none of these functions are connected to public mobile
+screens or a scheduled worker.
+
+`backend/supabase/tests/party_event_reward_offers_v24.sql`
+tests 5/15 EP tiers, no preparation without v23,
+source EP revalidation, duplicate event/batch prevention,
+cross-account theft, participation no-choice, invalid
+kind, immutable Warrior/Artisan/Companion selection,
+read-only Inbox preview, and zero payout; the separate
+`party_event_reward_none_v24.sql` checks that **0 EP**
+creates no offer/Inbox record.
+TypeScript regressions in
+`weekly-party-reward-offers-v24.ts` and the extended
+online `party-event-canonical-supplies-v22.ts` cover
+all 0/4/5/14/15/60 EP boundary values,
+idempotent server selection, private SQL parameter order,
+and malicious payout flags. Both were registered with the
+existing hidden backend Party Events test runner/CI filters.
+
+**Verification:** The focused v24 offer/choice SQL suite
+and zero-EP SQL suite passed on staging. All **14**
+isolated SQL regressions (v11–v19, v21–v24 and the
+extra 0-EP case) passed against the entire v24 migration
+chain in three savepoint-isolated transactions, all
+**ROLLED BACK**. TypeScript tests are committed but
+the GitHub CI result remains **unverified** (the
+repository cannot be fetched in this execution environment).
+
+**Next mandatory boundary:** Before making offers
+claimable, implement and review an atomic *single-account*
+economy/Inbox settlement that debits/credits existing
+server-owned state, validates available inventory
+capacity and quest/XP currency contracts, is exactly-once
+under concurrent/replayed requests, and records an
+immutable claim receipt with irreversible idempotency.
+Only attach it to a release-approved private worker with
+revalidated v23 replay evidence and an explicit product
+enablement decision. Until then **never call these
+offers actual granted entitlements**.
+
+Keep Party Events hidden, the PR draft/unmerged,
+all migrations undeployed, and production untouched.

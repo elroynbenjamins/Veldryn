@@ -129,38 +129,37 @@ rejects(()=>planPartyEventStageReceiptV10({context:stageTwo,
  requestId:'request-unique-0003',actionId:'support_expedition',
  existingReceipts:[second.receipt]}), 'reused_source_or_request');
 
-const changedRoster=structuredClone(week);
-changedRoster.roster[0]!.loadout.actor.stats.attackPower+=100;
+const changedRoster={...week,roster:week.roster.map((member,index)=>index===0
+ ?{...member,loadout:{...member.loadout,actor:{...member.loadout.actor,
+ stats:{...member.loadout.actor.stats,attackPower:member.loadout.actor.stats.attackPower+100}}}}
+ :member)};
 rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:changedRoster}),
  'loadout_checksum_mismatch');
-const duplicate=structuredClone(week);
-duplicate.roster[1]!.accountId=duplicate.roster[0]!.accountId;
+const duplicate={...week,roster:week.roster.map((member,index)=>index===1
+ ?{...member,accountId:week.roster[0]!.accountId}:member)};
 rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:duplicate}),
  'invalid_enrollment');
-const leaking=structuredClone(stageOne);
-leaking.stageRecord.stage3Vote={choice:'brace_wagons',lockedAtMs:stageOne.nowMs};
+const leaking={...stageOne,stageRecord:{...stageOne.stageRecord,
+ stage3Vote:{choice:'brace_wagons',lockedAtMs:stageOne.nowMs}}};
 rejects(()=>projectLockedPartyEventStageV10(leaking),'future_vote_leak');
-const missingVote=structuredClone(stageTwo);
-missingVote.stageRecord.stage2Vote=null;
+const missingVote={...stageTwo,stageRecord:{...stageTwo.stageRecord,stage2Vote:null}};
 rejects(()=>projectLockedPartyEventStageV10(missingVote),'vote_not_locked');
-const tamperedVote=structuredClone(stageTwo);
-tamperedVote.stageRecord.stage2Vote={choice:'fake_route',lockedAtMs:stageTwo.nowMs};
+const tamperedVote={...stageTwo,stageRecord:{...stageTwo.stageRecord,
+ stage2Vote:{choice:'fake_route',lockedAtMs:stageTwo.nowMs}}};
 rejects(()=>projectLockedPartyEventStageV10(tamperedVote),'vote_not_locked');
-const futureStage=structuredClone(stageTwo);
-futureStage.stageRecord.stage3Vote={choice:'brace_wagons',lockedAtMs:stageTwo.nowMs};
+const futureStage={...stageTwo,stageRecord:{...stageTwo.stageRecord,
+ stage3Vote:{choice:'brace_wagons',lockedAtMs:stageTwo.nowMs}}};
 rejects(()=>projectLockedPartyEventStageV10(futureStage),'future_vote_leak');
-const late=structuredClone(stageOne);
-late.nowMs=week.eventEndsAtMs;
+const late={...stageOne,nowMs:week.eventEndsAtMs};
 rejects(()=>projectLockedPartyEventStageV10(late),'closed_or_invalid_window');
-const wrongFamily=structuredClone(week);
-wrongFamily.family='lost_reliquary' as WeeklyPartyFamily;
+const wrongFamily={...week,family:'lost_reliquary' as WeeklyPartyFamily};
 rejects(()=>projectLockedPartyEventStageV10({...stageOne,week:wrongFamily}),
  'week_identity_mismatch');
-const duplicateSupply=structuredClone(stageOne);
 const supply={stage:1 as const,kind:'required' as const,itemId:'GREENWOOD_LOG',
  category:'wood' as const,tier:'common' as const,quantity:10,
  estimatedGatherSeconds:300,donatedQuantity:1};
-duplicateSupply.stageRecord.verifiedOrders=[supply,supply];
+const duplicateSupply={...stageOne,stageRecord:{...stageOne.stageRecord,
+ verifiedOrders:[supply,supply]}};
 rejects(()=>projectLockedPartyEventStageV10(duplicateSupply),
  'invalid_supply_ledger');
 

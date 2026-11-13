@@ -31,7 +31,7 @@ begin
    'account',jsonb_build_object('craftedGearInstances',jsonb_build_array(jsonb_build_object(
     'id',instance_id,'ownerCharacterId',owner_b::text,'itemId','basic_sword',
     'rarity','epic','quality',88,'enhancement',jsonb_build_object(
-      'rank',3,'statGemId','EMBER_SHARD','effectGemId','BOSSBANE_SIGIL'))))
+      'rank',3,'statGemId','EMBER_SHARD','effectGemId','BOSSBANE_SIGIL','gemIds',jsonb_build_array('EMBER_SHARD','BOSSBANE_SIGIL')))))
   )
  );
 
@@ -47,6 +47,7 @@ begin
  perform pg_temp.assert_equipped_gear(payload#>>'{items,0,quality}'='88','specific crafted instance quality');
  perform pg_temp.assert_equipped_gear(payload#>>'{items,0,rank}'='3','specific crafted instance enchant rank');
  perform pg_temp.assert_equipped_gear(payload#>>'{items,0,statGemId}'='EMBER_SHARD','equipped stat gem');
+ perform pg_temp.assert_equipped_gear(jsonb_array_length(payload#>'{items,0,gemIds}')=2,'legacy gem-array bridge');
  perform pg_temp.assert_equipped_gear(not (payload ? 'state') and not (payload ? 'inventory'),'no inventory or state disclosed');
  perform pg_temp.assert_equipped_gear(not (payload#>'{items,0}' ? 'ownerCharacterId'),'no internal owner IDs disclosed');
 

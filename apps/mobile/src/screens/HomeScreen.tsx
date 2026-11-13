@@ -1,4 +1,5 @@
-import {accountText,accountDuration} from '../i18n/account';
+import {accountDuration} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useState,useMemo} from 'react';
 import {GameState,RewardBundle,SkillId,type QueuedActivity,type ActivityQueueGoal} from '../core/types';
@@ -39,7 +40,7 @@ import {GuildDashboardCard} from '../components/GuildDashboardCard';
 
 export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onQueueAdd,onSetCurrentHandoff,onNavigate,onOpenCombat,onOpenSkill,onOpenContracts,onNavigateGoal,onOpenGuide}:{onOpenGuide?:()=>void;state:GameState;preview:RewardBundle;nowMs:number;onClaim:()=>void;onStop:()=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onQueueAdd:(entry:QueuedActivity,handoff?:{targetId:string;goal?:ActivityQueueGoal;keepCurrentRunning?:true})=>Promise<boolean>;onSetCurrentHandoff:()=>void;onNavigate:(tab:DashboardDestination|'Events'|'DailySupplies'|'Companions'|'Guild'|'Coop',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void;onOpenContracts:()=>void;onNavigateGoal:(destination:WorkingTowardDestination)=>void}){
  const language=state.settings.language;
- const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+ const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAfkSources,setShowAfkSources]=useState(false),[showEncounter,setShowEncounter]=useState(false),[showProgress,setShowProgress]=useState(false),[showLedger,setShowLedger]=useState(false),[queueSheetOpen,setQueueSheetOpen]=useState(false),[queueComposerOpen,setQueueComposerOpen]=useState(false);

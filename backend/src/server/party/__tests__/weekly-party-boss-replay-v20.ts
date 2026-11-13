@@ -1,4 +1,9 @@
 import {launchPlayer} from '../../combat/content/launch-combat';
+import {
+  PARTY_EVENT_BOSS_READER_V21_RELEASED,replayPrivatePartyEventBossV21,
+  PARTY_EVENT_REPLAY_SNAPSHOT_V21,
+  type PrivatePartyReplayBundleV21,type TrustedPartyReplayRepositoryV21,
+} from '../weekly-party-boss-reader-v21';
 import type {AuthoritativeLoadoutRecord,LoadoutRepository} from '../../coop/loadout-snapshots';
 import {freezePartyEventBossLoadout,resolvePartyEventDayEightBoss} from '../weekly-party-boss-v2';
 import {buildWeeklyPartySupplyOrders,selectPartyEventVariation,weeklyPartyBudget,type VerifiedSupplyItem} from '../weekly-party-events-v2';
@@ -173,3 +178,63 @@ reject(damagedReport,'combat_replay_mismatch');
 const mismatchedTime=clone(input);mismatchedTime.candidate.result_json.completedAtMs=end;
 reject(mismatchedTime,'invalid_candidate_completion');
 console.log('Party boss replay v20: canonical planner, frozen loadouts, 12-tier replay, tampering and no-grants passed');
+
+
+async function verifyPrivateReaderV21():Promise<void> {
+  assert(PARTY_EVENT_BOSS_READER_V21_RELEASED===false,'v21 stays hidden');
+  const {auditedCatalog:_catalog,serverNowMs:_now,...payload}=input;
+  const bundle:PrivatePartyReplayBundleV21={
+    version:PARTY_EVENT_REPLAY_SNAPSHOT_V21,
+    sourceDigest:'e'.repeat(64),serverNowMs:now,
+    auditedCatalogIncluded:false,combatReplayed:false,rewardGrantAllowed:false,
+    payload:clone(payload),
+  };
+  let bundleReads=0,catalogReads=0;
+  const repo:TrustedPartyReplayRepositoryV21={
+    readReplayBundle:async()=>{bundleReads++;return clone(bundle);},
+    loadCanonicalResourceCatalog:async()=>{catalogReads++;return clone(catalog);},
+  };
+  async function rejectAsync(run:()=>Promise<unknown>,needle:string):Promise<void>{
+    try{await run();throw Error('unexpected_success');}
+    catch(e){assert(String(e).includes(needle),'expected '+needle+'; got '+String(e));}
+  }
+  await rejectAsync(()=>replayPrivatePartyEventBossV21({
+    gateEnabled:false,reservationId:input.reservation.id,repository:repo,
+  }),'release_gate_disabled');
+  await rejectAsync(()=>replayPrivatePartyEventBossV21({
+    gateEnabled:true,reservationId:'arbitrary-client-key',repository:repo,
+  }),'invalid_reservation');
+  assert(bundleReads===0&&catalogReads===0,'disabled/invalid calls must not read private SQL');
+  const result=await replayPrivatePartyEventBossV21({
+    gateEnabled:true,reservationId:input.reservation.id,repository:repo,
+  });
+  assert(result.proof.combatReplayed&&result.proof.rewardGrantAllowed===false
+    &&result.rewardsGranted===false&&result.sourceDigest===bundle.sourceDigest,
+    'v21 read bridge must never award loot');
+  assert(bundleReads===1&&catalogReads===1,
+    'v21 exactly one snapshot read plus trusted resource catalogue read');
+
+  const falseClaim={...bundle,rewardGrantAllowed:true} as unknown as PrivatePartyReplayBundleV21;
+  await rejectAsync(()=>replayPrivatePartyEventBossV21({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:{...repo,readReplayBundle:async()=>falseClaim},
+  }),'invalid_sql_replay_bundle');
+  await rejectAsync(()=>replayPrivatePartyEventBossV21({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:{...repo,loadCanonicalResourceCatalog:async()=>[]},
+  }),'canonical_resource_catalog_missing');
+  const changedBundle=clone(bundle);
+  changedBundle.payload.candidate.result_json.totalBossDamage+=100;
+  await rejectAsync(()=>replayPrivatePartyEventBossV21({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:{...repo,readReplayBundle:async()=>changedBundle},
+  }),'combat_replay_mismatch');
+  const wrongReservation=clone(bundle);
+  wrongReservation.payload.reservation.id='77777777-7777-4777-8777-777777777777';
+  await rejectAsync(()=>replayPrivatePartyEventBossV21({
+    gateEnabled:true,reservationId:input.reservation.id,
+    repository:{...repo,readReplayBundle:async()=>wrongReservation},
+  }),'reservation_bundle_mismatch');
+  console.log('Party boss v21: one private snapshot, trusted catalogue, full replay and zero-grant gate validated');
+}
+void verifyPrivateReaderV21().catch(e=>{console.error(e);process.exitCode=1;});

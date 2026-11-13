@@ -110,7 +110,10 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
         {currentZones.map(zone=>{
           const artId=zone.areaId??zone.region?.id??zone.id;
           const siblingRegion=zone.region;
-          const here=siblingRegion?siblingRegion.id===current.id:zone.areaRegionId===current.id;
+          // The character travels between regions, not sub-areas. A regional chapter
+          // must not show every sub-area as HERE (including level-locked ones).
+          // Keep its area rows compact with their level gates and action states.
+          const here=!!siblingRegion&&siblingRegion.id===current.id;
           let access:boolean,subtitle:string;
           if(siblingRegion){
             const availability=regionTravelAvailability(state,siblingRegion);

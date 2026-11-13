@@ -576,7 +576,7 @@ export const recentScreenTranslationRows = {
   "Unlock after 3 total verified months of Supporter.": [
     "Nach insgesamt 3 bestätigten Unterstützermonaten freischalten.",
     "Se desbloquea tras 3 meses verificados como colaborador.",
-    "Ontgrendel na in totaal 3 geverifieerde supportermanden.",
+    "Ontgrendel na in totaal 3 geverifieerde supportermaanden.",
     "Sblocca dopo 3 mesi verificati da sostenitore.",
     "Débloqué après 3 mois de soutien vérifiés.",
     "Открывается после 3 подтверждённых месяцев поддержки.",
@@ -600,7 +600,6 @@ export const recentScreenTranslationRows = {
     "Открывается после 12 подтверждённых месяцев поддержки.",
     "Toplam 12 doğrulanmış destekçi ayından sonra açılır."
   ]
-,
   "Admin": ["Admin","Administrador","Beheerder","Amministratore","Administrateur","Администратор","Yönetici"],
   "Moderator": ["Moderator","Moderador","Moderator","Moderatore","Modérateur","Модератор","Moderatör"],
   "Founder": ["Gründer","Fundador","Oprichter","Fondatore","Fondateur","Основатель","Kurucu"],

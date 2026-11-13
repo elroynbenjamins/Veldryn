@@ -70,6 +70,7 @@ create table private.party_event_claim_preflights_v25 (
  character_id uuid not null,
  request_id text not null unique check(length(request_id) between 8 and 180),
  reward_model text not null check(reward_model='party-event-rewards-v2'),
+ difficulty text not null check(difficulty in ('standard','veteran','heroic')),
  reward_kind text not null check(reward_kind in
   ('participation','warrior','artisan','companion')),
  reward_json jsonb not null check(jsonb_typeof(reward_json)='object'),
@@ -166,6 +167,7 @@ begin
   then raise exception 'party_event_v25_preflight_conflict';end if;
   return jsonb_build_object('replayed',true,
    'offerId',prior.offer_id,'accountId',prior.account_id,
+   'characterId',prior.character_id,'difficulty',prior.difficulty,
    'rewardHash',prior.reward_hash,'reward',prior.reward_json,
    'inventoryRevision',prior.inventory_revision,
    'conservativeSlotsNeeded',prior.conservative_slots_needed,
@@ -233,19 +235,20 @@ begin
 
  insert into private.party_event_claim_preflights_v25(
   offer_id,reservation_id,party_id,event_starts_at,account_id,
-  character_id,request_id,reward_model,reward_kind,reward_json,
+  character_id,request_id,reward_model,difficulty,reward_kind,reward_json,
   reward_hash,source_candidate_hash,source_replay_hash,
   inventory_revision,inventory_capacity,inventory_stacks_used,
   conservative_slots_needed,requires_skill_target,
   requires_combat_xp_router,requires_companion_router)
  values(o.id,o.reservation_id,o.party_id,o.event_starts_at,p_account_id,
-  p_character_id,p_request_id,'party-event-rewards-v2',v_kind,v_reward,
+  p_character_id,p_request_id,'party-event-rewards-v2',w.difficulty,v_kind,v_reward,
   v_hash,b.candidate_hash,b.replay_hash,game.revision,v_cap,v_used,v_slots,
   v_kind='artisan',v_kind='warrior',v_kind='companion')
  returning * into v_row;
 
  return jsonb_build_object('replayed',false,
   'offerId',v_row.offer_id,'accountId',v_row.account_id,
+  'characterId',v_row.character_id,'difficulty',v_row.difficulty,
   'rewardHash',v_hash,'reward',v_reward,
   'inventoryRevision',v_row.inventory_revision,
   'conservativeSlotsNeeded',v_slots,

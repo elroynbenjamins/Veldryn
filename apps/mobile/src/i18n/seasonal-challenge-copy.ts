@@ -7,6 +7,26 @@ import {interpolateTranslation,type TranslationParams} from './translator';
  * Unknown server/custom text stays unchanged. DE/ES/NL/IT/FR/RU/TR columns. */
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const seasonalChallengeRows={
+  "Kitchen Duties": ["Küchenaufträge","Encargos de cocina","Keukenopdrachten","Incarichi di cucina","Tâches de cuisine","Кухонные поручения","Mutfak Görevleri"],
+  "Alchemist Orders": ["Alchemistenaufträge","Encargos de alquimia","Alchemieopdrachten","Ordini alchemici","Commandes d'alchimie","Заказы алхимика","Simya Siparişleri"],
+  "Forge Work": ["Schmiedearbeit","Trabajo de forja","Smeedwerk","Lavori di forgia","Travail de forge","Кузнечные работы","Demirci İşleri"],
+  "Tailoring Commission": ["Schneiderauftrag","Encargo de sastrería","Kleermakersopdracht","Commissione di sartoria","Commande de couture","Заказ портного","Terzilik Siparişi"],
+  "Enchanter Practice": ["Verzauberungsübung","Práctica de encantamiento","Betoveringsoefening","Esercizio di incantamento","Pratique d'enchantement","Практика зачарования","Büyüleme Çalışması"],
+  "Boss Hunt": ["Bossjagd","Caza de jefes","Bazenjacht","Caccia ai boss","Chasse aux boss","Охота на боссов","Boss Avı"],
+  "Complete {n} Cooking recipes this period.": ["Schließe in diesem Zeitraum {n} Kochrezepte ab.","Completa {n} recetas de cocina durante este período.","Voltooi in deze periode {n} kookrecepten.","Completa {n} ricette di cucina in questo periodo.","Réalisez {n} recettes de cuisine pendant cette période.","Приготовьте {n} блюд за этот период.","Bu dönemde {n} yemek tarifi tamamla."],
+  "Complete {n} Alchemy recipes this period.": ["Schließe in diesem Zeitraum {n} Alchemierezepte ab.","Completa {n} recetas de alquimia durante este período.","Voltooi in deze periode {n} alchemierecepten.","Completa {n} ricette di alchimia in questo periodo.","Réalisez {n} recettes d'alchimie pendant cette période.","Создайте {n} алхимических составов за этот период.","Bu dönemde {n} simya tarifi tamamla."],
+  "Complete {n} Smithing recipes this period.": ["Schließe in diesem Zeitraum {n} Schmiederezepte ab.","Completa {n} recetas de herrería durante este período.","Voltooi in deze periode {n} smeedrecepten.","Completa {n} ricette di forgiatura in questo periodo.","Réalisez {n} recettes de forge pendant cette période.","Выполните {n} кузнечных рецептов за этот период.","Bu dönemde {n} demircilik tarifi tamamla."],
+  "Complete {n} Tailoring recipes this period.": ["Schließe in diesem Zeitraum {n} Schneiderrezepte ab.","Completa {n} recetas de sastrería durante este período.","Voltooi in deze periode {n} kleermakersrecepten.","Completa {n} ricette di sartoria in questo periodo.","Réalisez {n} recettes de couture pendant cette période.","Выполните {n} портновских рецептов за этот период.","Bu dönemde {n} terzilik tarifi tamamla."],
+  "Complete {n} Enchanting recipes this period.": ["Schließe in diesem Zeitraum {n} Verzauberungsrezepte ab.","Completa {n} recetas de encantamiento durante este período.","Voltooi in deze periode {n} betoveringsrecepten.","Completa {n} ricette di incantamento in questo periodo.","Réalisez {n} recettes d'enchantement pendant cette période.","Выполните {n} рецептов зачарования за этот период.","Bu dönemde {n} büyüleme tarifi tamamla."],
+  "Defeat {n} bosses this period.": ["Besiege in diesem Zeitraum {n} Bosse.","Derrota a {n} jefes durante este período.","Versla in deze periode {n} bazen.","Sconfiggi {n} boss in questo periodo.","Vainquez {n} boss pendant cette période.","Победите {n} боссов за этот период.","Bu dönemde {n} boss yen."],
+  "COOKING": ["KOCHEN","COCINA","KOKEN","CUCINA","CUISINE","КУЛИНАРИЯ","YEMEK"],
+  "ALCHEMY": ["ALCHEMIE","ALQUIMIA","ALCHEMIE","ALCHIMIA","ALCHIMIE","АЛХИМИЯ","SİMYA"],
+  "SMITHING": ["SCHMIEDEN","HERRERÍA","SMEDEN","FORGIATURA","FORGE","КУЗНЕЧНОЕ ДЕЛО","DEMİRCİLİK"],
+  "TAILORING": ["SCHNEIDEREI","SASTRERÍA","KLEERMAKERIJ","SARTORIA","COUTURE","ПОРТНОЕ ДЕЛО","TERZİLİK"],
+  "ENCHANTING": ["VERZAUBERN","ENCANTAMIENTO","BETOVEREN","INCANTAMENTO","ENCHANTEMENT","ЗАЧАРОВАНИЕ","BÜYÜLEME"],
+  "Festival Service": ["Festdienst","Servicio del festival","Festivalwerk","Servizio del festival","Service du festival","Служба на празднике","Festival Hizmeti"],
+  "Claim {n} completed event objective this period.": ["Hole in diesem Zeitraum {n} abgeschlossene Eventaufgabe ab.","Reclama {n} objetivo de evento completado durante este período.","Claim in deze periode {n} voltooid evenementdoel.","Riscatta {n} obiettivo evento completato in questo periodo.","Récupérez {n} objectif d'événement terminé pendant cette période.","Заберите награду за {n} выполненное задание события за этот период.","Bu dönemde tamamlanan {n} etkinlik hedefinin ödülünü al."],
+  "EVENT": ["EVENT","EVENTO","EVENEMENT","EVENTO","ÉVÉNEMENT","СОБЫТИЕ","ETKİNLİK"],
   "Field Patrol": ["Feldpatrouille","Patrulla de campo","Veldpatrouille","Pattuglia sul campo","Patrouille de terrain","Полевой патруль","Saha Devriyesi"],
   "Gathering Run": ["Sammelrunde","Ruta de recolección","Verzamelronde","Giro di raccolta","Tournée de récolte","Сбор ресурсов","Toplama Turu"],
   "Crafting Orders": ["Handwerksaufträge","Encargos de fabricación","Productieopdrachten","Ordini di creazione","Commandes d'artisanat","Заказы на изготовление","Üretim Siparişleri"],
@@ -409,6 +429,13 @@ const objectiveTemplate:Partial<Record<SeasonalQuest['tag'],string>>={
  crafting:'Complete {n} crafts this period.',
  exploration:'Complete {n} exploration route actions this period.',
  faith:'Complete {n} Faith practices this period.',
+ cooking:'Complete {n} Cooking recipes this period.',
+ alchemy:'Complete {n} Alchemy recipes this period.',
+ smithing:'Complete {n} Smithing recipes this period.',
+ tailoring:'Complete {n} Tailoring recipes this period.',
+ enchanting:'Complete {n} Enchanting recipes this period.',
+ boss:'Defeat {n} bosses this period.',
+ event:'Claim {n} completed event objective this period.',
 };
 export function seasonalChallengeDescription(language:Language,quest:Pick<SeasonalQuest,'description'|'required'|'tag'>):string{
  const template=objectiveTemplate[quest.tag];

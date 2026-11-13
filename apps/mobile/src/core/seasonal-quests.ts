@@ -1,12 +1,14 @@
 import type {GameState} from './types';
 import {hash32} from './rng';
+import {RECIPES} from '../content/skills';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
-export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss';
+export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'event';
 export type SeasonalActivity=Exclude<ContractTag,'equipment'>;
-export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>}>>;
+export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>;tags?:SeasonalActivity[]}>>;
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
-const activityTags:SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss'];
+export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','event'];
+const activityTags=SEASONAL_ACTIVITY_TAGS;
 
 /** Additive save field: legacy saves start at zero rather than inheriting lifetime XP. */
 export function normalizeSeasonalProgress(raw:unknown):SeasonalProgress{
@@ -17,7 +19,8 @@ export function normalizeSeasonalProgress(raw:unknown):SeasonalProgress{
   if(!row||typeof row.key!=='string'||row.key.length>32)continue;
   const counts:Partial<Record<SeasonalActivity,number>>={};
   for(const tag of activityTags){const value=row.counts?.[tag];if(typeof value==='number'&&Number.isFinite(value)&&value>=0)counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value));}
-  result[period]={key:row.key,counts};
+  const tags=Array.isArray(row.tags)&&row.tags.length===(period==='daily'?2:period==='weekly'?3:4)&&row.tags.every((tag:unknown)=>typeof tag==='string'&&activityTags.includes(tag as SeasonalActivity))&&new Set(row.tags).size===row.tags.length?row.tags as SeasonalActivity[]:undefined;
+  result[period]={key:row.key,counts,...(tags?{tags:[...tags]}:{})};
  }
  return result;
 }
@@ -28,8 +31,11 @@ export function recordSeasonalActivity(state:GameState,tag:SeasonalActivity,unit
  const progress=normalizeSeasonalProgress(state.account.seasonalContractProgress),date=new Date(nowMs);
  for(const period of periods){
   const key=periodKey(period,date),old=progress[period],counts=old?.key===key?{...old.counts}:{};
+  // Freeze unlock-aware selections at the first credited action in a period.
+  // Further character level-ups must not replace a quest someone was progressing.
+  const tags=old?.key===key&&old.tags?.every(tag=>activityTags.includes(tag))?old.tags:selectSeasonalTags(state,period,key,nowMs);
   counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,(counts[tag]??0)+Math.floor(units));
-  progress[period]={key,counts};
+  progress[period]={key,counts,tags};
  }
  return {...state,account:{...state.account,seasonalContractProgress:progress}};
 }
@@ -39,16 +45,36 @@ export const QUEST_RARITIES:Record<QuestRarity,{label:string;color:string;multip
 };
 export interface SeasonalQuestReward {id:string;rewardItemId?:string;rewardItemQty?:number;rewardCompanionEssence?:number;rewardBondstones?:number;}
 export interface SeasonalQuest{ id:string;period:SeasonalPeriod;name:string;description:string;required:number;progress:number;rewardGold:number;rewardXp:number;rewardItemId?:string;rewardItemQty?:number;rewardCompanionEssence?:number;rewardOptions:SeasonalQuestReward[];className:string;tag:ContractTag;rarity:QuestRarity;}
-type Template=[string,ContractTag];
-/** Every class receives the same rotating pool, with no one-time equipment or boss objectives. */
-const sharedTemplates:readonly Template[]=[
- ['Field Patrol','combat'],
- ['Gathering Run','gathering'],
- ['Crafting Orders','crafting'],
- ['Trail Survey','exploration'],
- ['Faith Practice','faith'],
+/** Only actions with authoritative settlement hooks can appear in rotating objectives. */
+type Template={name:string;tag:SeasonalActivity;daily:number;weekly:number;monthly:number};
+const TEMPLATES:readonly Template[]=[
+ {name:'Field Patrol',tag:'combat',daily:30,weekly:150,monthly:450},
+ {name:'Gathering Run',tag:'gathering',daily:30,weekly:150,monthly:450},
+ {name:'Crafting Orders',tag:'crafting',daily:8,weekly:35,monthly:100},
+ {name:'Trail Survey',tag:'exploration',daily:12,weekly:55,monthly:150},
+ {name:'Faith Practice',tag:'faith',daily:3,weekly:15,monthly:40},
+ {name:'Kitchen Duties',tag:'cooking',daily:5,weekly:24,monthly:70},
+ {name:'Alchemist Orders',tag:'alchemy',daily:5,weekly:20,monthly:60},
+ {name:'Forge Work',tag:'smithing',daily:5,weekly:20,monthly:60},
+ {name:'Tailoring Commission',tag:'tailoring',daily:5,weekly:20,monthly:60},
+ {name:'Enchanter Practice',tag:'enchanting',daily:4,weekly:15,monthly:40},
+ {name:'Boss Hunt',tag:'boss',daily:0,weekly:1,monthly:3},
+ {name:'Festival Service',tag:'event',daily:0,weekly:0,monthly:1},
 ];
-const ACTION_TARGETS:Record<SeasonalPeriod,number>={daily:30,weekly:150,monthly:450};
+const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
+ combat:'Defeat {n} monsters this period.',
+ gathering:'Complete {n} gathering actions this period.',
+ crafting:'Complete {n} crafts this period.',
+ exploration:'Complete {n} exploration route actions this period.',
+ faith:'Complete {n} Faith practices this period.',
+ cooking:'Complete {n} Cooking recipes this period.',
+ alchemy:'Complete {n} Alchemy recipes this period.',
+ smithing:'Complete {n} Smithing recipes this period.',
+ tailoring:'Complete {n} Tailoring recipes this period.',
+ enchanting:'Complete {n} Enchanting recipes this period.',
+ boss:'Defeat {n} bosses this period.',
+ event:'Claim {n} completed event objective this period.',
+};
 const BASE_REWARD_ACTIONS=30;
 
 function periodKey(period:SeasonalPeriod,date=new Date()){
@@ -56,6 +82,33 @@ function periodKey(period:SeasonalPeriod,date=new Date()){
  if(period==='daily')return utc.toISOString().slice(0,10);
  if(period==='weekly'){const day=utc.getUTCDay()||7;utc.setUTCDate(utc.getUTCDate()-day+1);const yearStart=Date.UTC(utc.getUTCFullYear(),0,1);return `${utc.getUTCFullYear()}-W${Math.ceil(((utc.getTime()-yearStart)/86400000+1)/7)}`;}
  return `${utc.getUTCFullYear()}-${utc.getUTCMonth()+1}`;
+}
+function availableTemplate(state:GameState,tag:SeasonalActivity,atMs:number):boolean{
+ const level=state.character?.level??1;
+ if(['cooking','alchemy','smithing','tailoring','enchanting'].includes(tag)){
+  const skill=state.skills.find(row=>row.skillId===tag)?.level??0;
+  return RECIPES.some(recipe=>recipe.skillId===tag&&recipe.level<=skill&&(recipe.characterLevel??1)<=level&&(!recipe.classId||recipe.classId===state.character?.classId)&&(!recipe.requiresCraftedItemId||state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId))&&(!recipe.requiredKnowledgeId||state.account.unlockedKnowledgeIds?.includes(recipe.requiredKnowledgeId)||!!recipe.knowledgeItemId));
+ }
+ if(tag==='boss')return state.defeatedBossIds.includes('FALLEN_KNIGHT');
+ if(tag==='event'){const event=state.account.liveEvent;return !!event?.enabled&&atMs>=event.startsAtMs&&atMs<event.endsAtMs&&event.endsAtMs-atMs>=86400_000;}
+ return true;
+}
+function selectSeasonalTags(state:GameState,period:SeasonalPeriod,key:string,atMs:number):SeasonalActivity[]{
+ const count=period==='daily'?2:period==='weekly'?3:4;
+ const available=TEMPLATES.filter(row=>row[period]>0&&availableTemplate(state,row.tag,atMs));
+ const pool=[...available],selected:SeasonalActivity[]=[];
+ // The previous five accessible types always remain as fallbacks. Use a stable
+ // period rotation; account progression never affects rarity or cache quality.
+ for(let index=0;index<count&&pool.length;index++){
+  const pick=hash32(`${period}:${key}:quest:${index}`)%pool.length;
+  selected.push(pool.splice(pick,1)[0].tag);
+ }
+ return selected;
+}
+export function recordSeasonalCraftProfession(state:GameState,recipeId:string,units:number,nowMs:number,skillHint?:string):GameState{
+ const skill=skillHint??RECIPES.find(row=>row.id===recipeId)?.skillId;
+ const specialized=(['cooking','alchemy','smithing','tailoring','enchanting'] as const).find(tag=>tag===skill);
+ return specialized?recordSeasonalActivity(state,specialized,units,nowMs):state;
 }
 function rarityFor(period:SeasonalPeriod,key:string,index:number):QuestRarity{
  const roll=hash32(`${period}:${key}:${index}:rarity`)%100;
@@ -126,26 +179,15 @@ function contractProgress(state:GameState,tag:ContractTag,period:SeasonalPeriod,
 }
 export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=new Date()):SeasonalQuest[]{
  if(!state.character)return [];
- const key=periodKey(period,date),count=period==='daily'?2:period==='weekly'?3:4;
- // Stable UTC rotation shared by all classes. Each board contains distinct action types.
- const available=[...sharedTemplates];
- const rows=Array.from({length:count},(_,index)=>available.splice(hash32(`${period}:${key}:quest:${index}`)%available.length,1)[0]);
- const required=ACTION_TARGETS[period],base=BASE_REWARD_ACTIONS;
- return rows.map(([name,tag],index)=>{
-  const rarity=rarityFor(period,key,index),meta=QUEST_RARITIES[rarity];
+ const key=periodKey(period,date),frozen=state.account.seasonalContractProgress?.[period],tags=frozen?.key===key&&frozen.tags?.length===(period==='daily'?2:period==='weekly'?3:4)&&frozen.tags.every(tag=>activityTags.includes(tag))?frozen.tags:selectSeasonalTags(state,period,key,date.getTime());
+ const base=BASE_REWARD_ACTIONS;
+ return tags.map((tag,index)=>{
+  const template=TEMPLATES.find(row=>row.tag===tag)!;
+  const required=template[period],rarity=rarityFor(period,key,index),meta=QUEST_RARITIES[rarity];
   const progress=Math.min(required,contractProgress(state,tag,period,key));
   const reward=seasonalQuestCache(period,rarity),rewardOptions=seasonalQuestRewardOptions(state,period,rarity);
-  const descriptions:Record<Template[1],string>={
-   combat:'Defeat {n} monsters this period.',
-   gathering:'Complete {n} gathering actions this period.',
-   crafting:'Complete {n} crafts this period.',
-   exploration:'Complete {n} exploration route actions this period.',
-   faith:'Complete {n} Faith practices this period.',
-   equipment:'Equip {n} equipment pieces this period.',
-   boss:'Defeat {n} bosses this period.',
-  };
   const baseGold=period==='daily'?Math.max(20,base*2):period==='weekly'?base*8:Math.max(300,base*20);
   const baseXp=period==='daily'?Math.max(40,base*4):period==='weekly'?base*15:Math.max(600,base*40);
-  return {id:`${period.toUpperCase()}_${key}_${index}`,period,name,description:descriptions[tag].replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier*1.1),rewardXp:Math.round(baseXp*meta.multiplier*1.1),...reward,rewardOptions,className:'Adventurer',tag,rarity};
+  return {id:`${period.toUpperCase()}_${key}_${index}`,period,name:template.name,description:QUEST_DESCRIPTIONS[tag].replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier*1.1),rewardXp:Math.round(baseXp*meta.multiplier*1.1),...reward,rewardOptions,className:'Adventurer',tag,rarity};
  });
 }

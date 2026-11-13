@@ -38,6 +38,7 @@ import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 import {reconcileAccountCollections} from './account-collections';
+import {recordSeasonalActivity} from './seasonal-quests';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 import {eatMealForBonus,retimeReservedMealCraft} from './meal-buffs';
@@ -476,8 +477,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'event_discovery':state=events.claimEventDiscovery(state,text(a,'id'),now);break;
   case 'event_reward':state=events.claimEventReward(state,text(a,'id'),now);break;
   case 'event_accept':state=events.acceptEventContract(state,text(a,'id'),now);break;
-  case 'event_objective':state=events.claimEventObjective(state,text(a,'id'),now);break;
-  case 'event_weekly':state=events.claimEventWeeklyObjective(state,text(a,'id'),now);break;
+  case 'event_objective':state=recordSeasonalActivity(events.claimEventObjective(state,text(a,'id'),now),'event',1,now);break;
+  case 'event_weekly':state=recordSeasonalActivity(events.claimEventWeeklyObjective(state,text(a,'id'),now),'event',1,now);break;
   case 'event_project':state=events.chooseEventProject(state,text(a,'id'),now);break;
   case 'event_contribute':state=events.contributeEventCurrency(state,integer(a,'quantity'),now);break;
   case 'event_community':state=events.claimEventCommunityMilestone(state,integer(a,'percent',1,100),now);break;

@@ -64,7 +64,7 @@ begin
         'favoriteItemIds','[]'::jsonb))),
     (v_buyer,v_buyer_main,7,jsonb_build_object(
       'character',jsonb_build_object('id',v_buyer_main::text,'gold',500,
-        'equipment','{}'::jsonb),
+        'xp',10000000,'classId','BASTION','equipment','{}'::jsonb),
       'account',jsonb_build_object('craftedGearInstances','[]'::jsonb),
       'inventory',jsonb_build_object('capacity',1,'stacks',jsonb_build_array(
         jsonb_build_object('itemId','COPPER_ORE','quantity',1))),
@@ -112,6 +112,10 @@ begin
     values(v_item,'equipment',true,'unbound'),
       ('gem:stat_might:g2','gem',true,'unbound'),
       ('gem:effect_momentum:g1','gem',true,'unbound');
+  execute 'alter table private.market_acquisition_policy_v18 drop constraint market_acquisition_v18_approved_check';
+  insert into private.market_acquisition_policy_v18(
+    item_id,asset_kind,source_tier,item_required_level,required_class_id,approved)
+    values(v_item,'equipment','T1',2,'BASTION',true);
   insert into private.market_price_bands_v10
     (item_id,asset_kind,min_unit_price,max_unit_price,approved)
     values(v_item,'equipment',5,30,true);
@@ -220,6 +224,22 @@ begin
     '{account,craftedGearInstances}','[]'::jsonb,false)
     where account_id=v_buyer;
 
+  -- V18: exact Mythic gear must be rejected with a level-1 active buyer.
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','0'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_purchase_equipment_offer_v9(
+      v_buyer,v_offer,125,1,7,6,'gear-v18-level-denied',repeat('c',64));
+    raise exception 'under-level Mythic gear was purchased';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  if (select gold from public.character_wallets where character_id=v_buyer_main)<>500
+    or (select count(*) from private.market_purchase_receipts_v3)<>0
+    or (select status from private.market_sale_offers_v3 where offer_id=v_offer)<>'active'
+  then raise exception 'rejected Mythic purchase mutated Gold, offer, or receipts';end if;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','10000000'::jsonb,false) where account_id=v_buyer;
   v_result:=private.market_purchase_equipment_offer_v9(
     v_buyer,v_offer,125,1,7,6,'gear-v9-purchase',repeat('1',64));
   v_delivery:=(v_result->>'deliveryId')::uuid;

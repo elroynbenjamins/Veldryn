@@ -38,6 +38,7 @@ import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 import {reconcileAccountCollections} from './account-collections';
+import {recordSeasonalActivity} from './seasonal-quests';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 import {eatMealForBonus,retimeReservedMealCraft} from './meal-buffs';
@@ -362,10 +363,10 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equipment_pouch_equip':state=game.equipItemFromEquipmentPouch(state,text(a,'itemId'));message='Equipment equipped from Equipment Pouch';break;
   case 'equipment_pouch_upgrade':state=upgradeEquipmentPouch(state);message='Equipment Pouch capacity upgraded';break;
    case 'equipment_pouch_sell':{const ids=stringArray(a,'ids');state=sellEquipmentPouchSelected(state,ids);message=`Sold ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
-  case 'equipment_pouch_salvage':{const ids=stringArray(a,'ids');state=salvageEquipmentPouchSelected(state,ids);message=`Salvaged ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
+  case 'equipment_pouch_salvage':{const ids=stringArray(a,'ids');state=recordSeasonalActivity(salvageEquipmentPouchSelected(state,ids),'salvage',ids.length,now);message=`Salvaged ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
   case 'gear_lock':{if(typeof a.locked!=='boolean')throw new Error('invalid_locked');state=setCraftedGearInstanceLock(state,text(a,'instanceId',180),a.locked);message=a.locked?'Equipment copy locked':'Equipment copy unlocked';break;}
   case 'gear_sell':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'sell');message='Equipment copy sold';break;
-  case 'gear_salvage':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'salvage');message='Equipment copy salvaged';break;
+  case 'gear_salvage':state=recordSeasonalActivity(disposeCraftedGearInstance(state,text(a,'instanceId',180),'salvage'),'salvage',1,now);message='Equipment copy salvaged';break;
   case 'equip':state=game.equipItem(state,text(a,'id'));break;
   case 'unequip':state=game.unequipItem(state,oneOf(a.slot,['weapon','offhand','helmet','chest','legs','boots','gloves','cape','amulet','ring']) as GearSlot);break;
   case 'food':state=game.equipFood(state,text(a,'id'));break;
@@ -373,7 +374,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'eat':state=game.eatFood(state,a.id===undefined?undefined:text(a,'id'));break;
   case 'meal_bonus':{const prior=state.character;state=retimeReservedMealCraft(eatMealForBonus(state,text(a,'id')),prior);message='Meal bonus activated';break;}
   case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
-  case 'salvage':state=game.salvageItem(state,text(a,'id'));break;
+  case 'salvage':state=game.salvageItem(state,text(a,'id'),now);break;
   case 'bank_sell':state=game.sellBankItem(state,text(a,'id'),integer(a,'quantity'));break;
   case 'bank_gold_deposit':state=game.depositGoldToBank(state,integer(a,'amount'));break;
   case 'bank_gold_withdraw':state=game.withdrawGoldFromBank(state,integer(a,'amount'));break;
@@ -382,14 +383,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
   case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
   case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
-  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'));break;
+  case 'bulk_salvage':{const ids=stringArray(a,'ids');state=recordSeasonalActivity(bulkSalvageSelected(state,ids),'salvage',ids.length,now);break;}
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
   case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}
   case 'overflow':state=game.claimOverflowToBank(state);break;
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now);break;
   case 'equip_set':state=game.equipNoviceSet(state);break;
-  case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
+  case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll,now);state=result.state;upgrade=result.result;break;}
   case 'socket':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');state=socketGem(state,text(a,'id'),text(a,'gemId'),options.randomRoll);break;}
   case 'replace_socket':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');state=replaceGem(state,text(a,'id'),text(a,'gemId'),options.randomRoll);break;}
   case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1));break;

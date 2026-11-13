@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=1450,'Turkish core coverage should retain the 1450-string baseline');
+assert.ok(keys.length>=1539,'Turkish core coverage should retain the 1539-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -65,4 +65,9 @@ assert.equal(keyed('tr','Weekly rewards ready to claim: {count}',{count:3}),
 assert.equal(keyed('en','Weekly rewards ready to claim: {count}',{count:3}),
  'Weekly rewards ready to claim: 3');
 
-console.log('PASS: '+keys.length+' Turkish strings, domain source keys, placeholders, and runtime fallbacks.');
+const remaining=[...sourceKeys].filter(key=>!Object.hasOwn(TURKISH_COVERAGE,key)
+ &&!Object.hasOwn(EARLY_LOCALE_ROWS,key)&&!Object.hasOwn(socialEarlyRows,key)).length;
+assert.equal(earlyLocaleText('tr','PET COLLECTION'),'EVCİL HAYVAN KOLEKSİYONU');
+assert.equal(earlyLocaleText('tr','ADVENTURER\'S JOURNAL'),'MACERACI GÜNCESİ');
+console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
+ +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

@@ -610,6 +610,170 @@ begin
     if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
   end;
 
+  -- V21: the normal save path is still barred from sneaking bought gear
+  -- into shared storage without a matching private custody transition.
+  update public.online_game_states set state=jsonb_set(state,
+    '{bank,capacity}','1'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'deposit',v_buyer_alt::text,'equipment_pouch',
+      0,0,11,'v21-bank-full',repeat('1',64));
+    raise exception 'V21 deposited purchased equipment into full bank';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_destination_full' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{bank,capacity}','2'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'deposit',v_buyer_main::text,'equipment_pouch',
+      0,0,11,'v21-wrong-holder',repeat('2',64));
+    raise exception 'V21 non-owner made bank deposit';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_custody_state_invalid' then raise;end if;
+  end;
+  v_result:=private.market_move_purchased_equipment_bank_v21(
+    v_buyer,v_instance,'deposit',v_buyer_alt::text,'equipment_pouch',
+    0,0,11,'v21-deposit',repeat('3',64));
+  if v_result->>'revision'<>'12'
+    or v_result->>'storageState'<>'bank'
+    or (select storage_state from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'bank'
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_alt::text
+    or (select state#>'{bank,stacks,1}' from public.online_game_states
+      where account_id=v_buyer) is distinct from v_stack
+    or (select state#>'{otherCharacters,0,character,equipmentPouch,stacks}'
+      from public.online_game_states where account_id=v_buyer)<>'[]'::jsonb
+    or (select state#>>'{account,craftedGearInstances,0,ownerCharacterId}'
+      from public.online_game_states where account_id=v_buyer)<>v_buyer_alt::text
+    or (select count(*) from private.market_equipment_bank_actions_v21)<>1
+  then raise exception 'V21 deposit lost Forge copy, receipt or provenance';end if;
+  v_retry:=private.market_move_purchased_equipment_bank_v21(
+    v_buyer,v_instance,'deposit',v_buyer_alt::text,'equipment_pouch',
+    0,0,11,'v21-deposit',repeat('3',64));
+  if v_retry->>'replayed'<>'true'
+    or (select count(*) from private.market_equipment_bank_actions_v21)<>1
+  then raise exception 'V21 deposit replay duplicated bank copy';end if;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'deposit',v_buyer_alt::text,'equipment_pouch',
+      0,0,11,'v21-deposit',repeat('4',64));
+    raise exception 'V21 replay accepted conflicting request hash';
+  exception when raise_exception then
+    if sqlerrm<>'market_idempotency_conflict' then raise;end if;
+  end;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+      v_buyer_main::text,'equipment_pouch',12,'v21-bank-v20-blocked',repeat('5',64));
+    raise exception 'V21 banked gear bypassed V20 direct transfer';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_source_identity_invalid' then raise;end if;
+  end;
+  -- Only the bank may hold this exact copy in custody mode bank.
+  begin
+    update public.online_game_states set state=jsonb_set(
+      jsonb_set(state,'{bank,stacks}',jsonb_build_array(
+        jsonb_build_object('itemId','COPPER_ORE','quantity',1)),false),
+      '{otherCharacters,0,character,equipmentPouch,stacks}',
+        jsonb_build_array(v_stack),false) where account_id=v_buyer;
+    raise exception 'V21 unauthorized bank withdrawal bypassed snapshot guard';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  begin
+    update public.online_game_states set state=jsonb_set(state,
+      '{account,craftedGearInstances,0,rarity}','"common"'::jsonb,false)
+      where account_id=v_buyer;
+    raise exception 'V21 banked receipt rarity forgery accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  -- Withdrawal is checked at the time of release, NOT just the purchase
+  -- or bank deposit time. Main character's XP was previously 11M.
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','0'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'withdraw',v_buyer_main::text,'equipment_pouch',
+      0,1,12,'v21-underlevel-withdraw',repeat('6',64));
+    raise exception 'V21 bank released high-tier gear to level-1 main';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  if (select storage_state from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'bank'
+    or (select revision from public.online_game_states where account_id=v_buyer)<>12
+    or (select count(*) from private.market_equipment_bank_actions_v21)<>1
+  then raise exception 'V21 denied withdrawal consumed bank custody';end if;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','11000000'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'withdraw',v_buyer_main::text,'inventory',
+      0,1,12,'v21-inventory-full',repeat('7',64));
+    raise exception 'V21 withdrew into full main inventory';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_destination_full' then raise;end if;
+  end;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'withdraw',v_rival_char::text,'equipment_pouch',
+      0,1,12,'v21-foreign-target',repeat('8',64));
+    raise exception 'V21 bank withdrawal to foreign character';
+  exception when raise_exception then
+    if sqlerrm<>'market_class_or_recipient_required' then raise;end if;
+  end;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'withdraw',v_buyer_main::text,'equipment_pouch',
+      0,0,12,'v21-wrong-bank-index',repeat('9',64));
+    raise exception 'V21 withdrew wrong stack instead of exact Forge copy';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_storage_location_invalid' then raise;end if;
+  end;
+  v_result:=private.market_move_purchased_equipment_bank_v21(
+    v_buyer,v_instance,'withdraw',v_buyer_main::text,'equipment_pouch',
+    0,1,12,'v21-withdraw',repeat('a',64));
+  if v_result->>'revision'<>'13'
+    or v_result->>'storageState'<>'character'
+    or (select storage_state from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>'character'
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_main::text
+    or (select state#>'{character,equipmentPouch,stacks,0}' from public.online_game_states
+      where account_id=v_buyer) is distinct from v_stack
+    or (select state#>>'{account,craftedGearInstances,0,ownerCharacterId}'
+      from public.online_game_states where account_id=v_buyer)<>v_buyer_main::text
+    or (select state#>'{bank,stacks}' from public.online_game_states
+      where account_id=v_buyer) is distinct from jsonb_build_array(
+        jsonb_build_object('itemId','COPPER_ORE','quantity',1))
+    or (select count(*) from private.market_equipment_bank_actions_v21)<>2
+    or (select count(*) from private.market_gold_intents_v2 where status='settled')<>1
+  then raise exception 'V21 withdrawal lost copy, Forge receipt, Gold or provenance';end if;
+  v_retry:=private.market_move_purchased_equipment_bank_v21(
+    v_buyer,v_instance,'withdraw',v_buyer_main::text,'equipment_pouch',
+    0,1,12,'v21-withdraw',repeat('a',64));
+  if v_retry->>'replayed'<>'true'
+  then raise exception 'V21 withdrawal replay failed';end if;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'withdraw',v_buyer_main::text,'equipment_pouch',
+      0,0,13,'v21-double-withdraw',repeat('b',64));
+    raise exception 'V21 withdrew item already absent from bank';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_custody_state_invalid' then raise;end if;
+  end;
+  begin
+    perform private.market_move_purchased_equipment_bank_v21(
+      v_buyer,v_instance,'deposit',v_buyer_main::text,'equipment_pouch',
+      0,0,12,'v21-stale-revision',repeat('c',64));
+    raise exception 'V21 stale revision accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_stale_state' then raise;end if;
+  end;
+
   -- Separate unsold listing: seller cancellation returns original copy.
   -- A sold listing can never enter this path.
   update public.online_game_states set state=jsonb_set(

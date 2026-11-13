@@ -16,14 +16,14 @@ function load(relative){
  vm.runInNewContext('(function(exports,require){'+code+'\n})',{console})(exports,localRequire);
  return exports;
 }
-const {recentScreenTranslationRows:rows,recentScreenText}=load('i18n/recent-screens.ts');
+const {recentScreenTranslationRows:rows,recentScreenText,journalAchievementDisplayTitle}=load('i18n/recent-screens.ts');
 const {accountTranslationRows,accountText}=load('i18n/account.ts');
 const {PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,SUPPORTER_BADGE_UNLOCK_HINTS}=load('core/player-badges.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 const paramsFor=text=>Object.fromEntries([...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>[m[1],'VALUE_'+m[1]]));
 const placeholders=text=>Object.keys(paramsFor(text)).sort();
 
-assert.ok(Object.keys(rows).length >=100,'new UI coverage');
+assert.ok(Object.keys(rows).length >=125,'new UI coverage');
 for(const [source,translations] of Object.entries(rows)){
  assert.equal(translations.length,7,source+' must cover seven target languages');
  for(const [index,translation] of translations.entries()){
@@ -51,6 +51,7 @@ for(const relative of [
  'screens/MarketInboxPanel.tsx',
  'components/PlayerBadgeSettings.tsx',
  'components/PlayerBadges.tsx',
+ 'components/RegionalJournalPanel.tsx',
 ]){
  const source=fs.readFileSync(path.join(root,relative),'utf8');
  const tree=ts.createSourceFile(relative,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
@@ -65,6 +66,33 @@ for(const relative of [
  }
  visit(tree);
 }
+// Regional goals are a fixed authored progression enum, so source changes require new translations.
+const regionSource=fs.readFileSync(path.join(root,'core/region-content-v21.ts'),'utf8');
+const goalStart=regionSource.indexOf('export function nextRegionalGoalV21(');
+assert.ok(goalStart>=0,'regional goal function exists');
+const goalText=regionSource.slice(goalStart,regionSource.indexOf('import type {GameState}',goalStart));
+const goals=[...goalText.matchAll(/return '([^']+)'/g)].map(match=>match[1]);
+assert.equal(goals.length,8,'regional goal states');
+for(const goal of goals)assert.ok(Object.hasOwn(rows,goal),'untranslated regional goal '+goal);
+assert.equal(recentScreenText('nl','Echoes'),"Echo's");
+assert.equal(recentScreenText('tr','Region complete'),'Bölge tamamlandı');
+
+// Journal ladder names are generated from nine authored bases and five tiers.
+const journal=load('core/adventurers-journal-v42.ts').JOURNAL_ACHIEVEMENTS_V42;
+assert.equal(journal.length,45,'authored Journal ladder length');
+for(const achievement of journal){
+ assert.equal(journalAchievementDisplayTitle('en',achievement.title),achievement.title);
+ for(const language of ['nl','ru','tr'])assert.notEqual(journalAchievementDisplayTitle(language,achievement.title),achievement.title,language+' Journal title '+achievement.title);
+}
+assert.equal(journalAchievementDisplayTitle('nl','Unreviewed — Custom'),'Unreviewed — Custom');
+const journalScreen=fs.readFileSync(path.join(root,'screens/AdventurersJournalScreen.tsx'),'utf8');
+assert.ok(journalScreen.includes('journalAchievementDisplayTitle(language,nextAchievement.row.title)'));
+
+// The future market must use the already reviewed item registry and localized numbers.
+const marketScreen=fs.readFileSync(path.join(root,'screens/MarketInboxPanel.tsx'),'utf8');
+assert.ok(marketScreen.includes('localizedItemName(state.settings.language,row.itemId)'));
+assert.ok(marketScreen.includes('formatLocalizedNumber(state.settings.language,value)'));
+
 // Roadmap titles/descriptions come from verified SQL definitions, not guessed client copy.
 const migrationNames=[
  '20261110233600_community_roadmap_dungeons_in_progress.sql',

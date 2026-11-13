@@ -1109,4 +1109,10 @@ export const RUSSIAN_FOCUS_ROWS = {
   "Treat these as gear checks: weak offense makes them slow, while weak defense makes them expensive to farm.": "Считайте таких врагов проверкой снаряжения: слабая атака замедляет бой, слабая защита повышает расход ресурсов.",
   "Enter with a clear power advantage and enough food for variance during longer sessions.": "Начинайте с запасом боевой мощи и достаточным количеством еды для длительной охоты.",
   "Use upgraded gear, food, class progression and a comfortable readiness margin before committing.": "Подготовьте улучшенное снаряжение, еду, навыки класса и запас боевой мощи перед боем.",
+  "Reach character level 2.": "Достигните 2-го уровня персонажа.",
+  "Recruitment & player profiles": "Набор и профили игроков",
+  "Browse Party and Guild recruitment separately. Party Chat is available only to current Party members.": "Набор в группы и гильдии находится в разных разделах. Чат группы доступен только её участникам.",
+  "Create or join a persistent Party, manage members and claim shared rewards.": "Создайте постоянную группу или вступите в неё, управляйте составом и забирайте общие награды.",
+  "Available from Level 1. Obtain Holy Water to begin Faith practice.": "Доступно с 1-го уровня. Получите святую воду, чтобы развивать Веру.",
+  "Find a Guild, follow weekly Quests and Projects in Activities, and review shared Hall upgrades.": "Вступите в гильдию, выполняйте недельные задания и проекты и улучшайте общий зал.",
 } as const satisfies Record<string,string>;

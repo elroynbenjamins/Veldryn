@@ -61,7 +61,7 @@ reject(()=>auditWorldBossPowerBracketsV14({eventId:'WB_TEST',nowUtcMs:NOW,
  samples:samples.map(s=>({...s,combatPower:1234}))}),
  'power_distribution_cannot_form_five_brackets');
 const missingRoles=auditWorldBossPowerBracketsV14({eventId:'WB_TEST',nowUtcMs:NOW,
- samples:samples.map(s=>({...s,role:'damage'}))});
+ samples:samples.map(s=>({...s,role:'damage' as const}))});
 assert.ok(missingRoles.warnings.some(w=>w.includes('no_tank')));
 assert.ok(missingRoles.warnings.some(w=>w.includes('no_support')));
 assert.equal(missingRoles.approved,false);

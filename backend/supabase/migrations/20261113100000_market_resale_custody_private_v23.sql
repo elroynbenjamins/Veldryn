@@ -313,6 +313,15 @@ begin
  if exists(select 1 from private.market_equipment_resale_offers_v23 o
     where o.exact_instance_id=p_instance_id and o.status in ('active','return_pending'))
  then raise exception 'market_resale_escrow_already_open';end if;
+ -- A resale consumes the same global listing allowance as ordinary Market
+ -- offers: sellers may not bypass the existing twenty-open-offer cap by
+ -- splitting listings between the V9 and versioned-resale ledgers.
+ if (select count(*) from private.market_sale_offers_v3 o
+     where o.seller_account_id=p_account_id and o.status='active')
+    +(select count(*) from private.market_equipment_resale_offers_v23 o
+     where o.seller_account_id=p_account_id
+       and o.status in ('active','return_pending'))>=20
+ then raise exception 'market_offer_limit_reached';end if;
  v_path:=private.market_source_stack_path_v2(
    v_game.state,p_location,p_holder,p_index);
  v_stack:=v_game.state#>v_path;

@@ -18,6 +18,13 @@ export interface ProfileEquippedGear{
 }
 const rarities:readonly string[]=['common','uncommon','rare','epic','legendary','mythic'];
 const allowedSlots=new Set<string>(PROFILE_GEAR_SLOTS);
+
+/** Keep ten slots accessible in narrow modal sheets and with large system text. */
+export function profileGearColumnCount(width:number,fontScale:number):3|4|5{
+ if(!Number.isFinite(width)||width<258||fontScale>=1.4)return 3;
+ if(width<318||fontScale>=1.18)return 4;
+ return 5;
+}
 const cleanId=(value:unknown)=>typeof value==='string'&&value.length>0&&value.length<=160?value:undefined;
 const cleanRank=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=4?value:undefined;
 const cleanQuality=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=100?value:undefined;

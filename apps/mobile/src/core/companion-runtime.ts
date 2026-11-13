@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {recordSeasonalActivity} from './seasonal-quests';
 import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
@@ -351,7 +352,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state.account.companionTrialProgress=r.progress;state=reward(state,r.reward);
       state=companionMetricMany(state,{[`companions.trial.floor.${floor}.attempts`]:1,[`companions.trial.floor.${floor}.${r.result.victory?'wins':'losses'}`]:1,[`companions.trial.floor.${floor}.duration_ms_total`]:r.result.durationMs,[`companions.trial.floor.${floor}.team_power_total`]:power,'companions.trial.attempts':1,[r.result.victory?'companions.trial.wins':'companions.trial.losses']:1});
       if(floor%5===0)state=companionMetric(state,`companions.trial.boss.${floor}.${r.result.victory?'wins':'losses'}`);
-      if(r.result.victory){state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('trial',{floor,firstClear:r.firstClear,boss:floor%5===0}))};state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
+      if(r.result.victory){state=recordSeasonalActivity(state,'trial',1,now);state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('trial',{floor,firstClear:r.firstClear,boss:floor%5===0}))};state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
       state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now,mode:'trial',battleId:`trial:${sequence}:${now}`,runId:run.runId,floor,playback:companionBattlePlayback(r.result)};break;
     }
@@ -373,6 +374,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);
       state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('expedition',{hours:Math.max(0,(Date.parse(assignment.endsAt)-Date.parse(assignment.startedAt))/3600000),grade:r.assignment.performanceGrade}))};
       state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;
+      state=recordSeasonalActivity(state,'expedition',1,now);
       state=companionMetricMany(state,{[`companions.expedition.${assignment.missionId}.claims`]:1,[`companions.expedition.${assignment.missionId}.grade.${r.assignment.performanceGrade??'C'}`]:1,[`companions.expedition.${assignment.missionId}.essence_earned`]:r.reward.companionEssence,[`companions.expedition.${assignment.missionId}.bondstones_earned`]:r.reward.bondstones,[`companions.expedition.${assignment.missionId}.bonus_rewards`]:r.reward.bonusRewardGranted?1:0});
       break;
     }

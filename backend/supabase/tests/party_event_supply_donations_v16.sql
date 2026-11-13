@@ -13,7 +13,7 @@ begin
  if has_function_privilege('authenticated',
   'private.donate_party_event_supply_v16(uuid,timestamptz,uuid,uuid,integer,text)','execute')
   or has_function_privilege('anon',
-  'private.freeze_party_event_supply_order_v16(uuid,timestamptz,smallint,text,text,integer)','execute')
+  'private.freeze_party_event_supply_order_v16(uuid,timestamptz,integer,text,text,integer)','execute')
   or has_table_privilege('service_role','private.party_event_supply_orders_v16','insert')
   or has_table_privilege('service_role','private.party_event_supply_donations_v16','insert')
   or has_table_privilege('authenticated','private.party_event_supply_donations_v16','select')

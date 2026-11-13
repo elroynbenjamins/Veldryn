@@ -11,7 +11,7 @@ import {ItemArtwork} from '../components/ItemArtwork';
 import {SocialActionButton} from '../components/SocialActionButton';
 import {LoadingState} from '../components/LoadingState';
 import {useGameTheme} from '../theme/ThemeContext';
-import {accountText} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import type {GameState} from '../core/types';
 
@@ -21,7 +21,7 @@ export function MarketInboxPanel({state,online,onRefresh}:{
   state:GameState;online:boolean;onRefresh:()=>Promise<unknown>;
 }){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
-  const a=(str:string)=>accountText(state.settings.language,str);
+  const a=(str:string)=>recentScreenText(state.settings.language,str);
   const [history,setHistory]=useState(false);
   const [snapshot,setSnapshot]=useState<MarketInboxSnapshot>({entries:[],pendingCount:0,total:0});
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);

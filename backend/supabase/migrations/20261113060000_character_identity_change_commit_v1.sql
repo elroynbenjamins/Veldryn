@@ -293,6 +293,22 @@ BEGIN
  RETURN v_response;
 END $fn$;
 
+-- Idempotent retries must read their receipt before re-applying the pure
+-- change to a save that already contains the new name/class.
+CREATE OR REPLACE FUNCTION public.read_character_change_receipt_server_v1(
+ p_account_id uuid,p_request_id text)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path=''
+AS $fn$
+ SELECT jsonb_build_object('requestHash',r.request_hash,'response',r.response)
+ FROM private.character_change_receipts_v1 r
+ WHERE r.account_id=p_account_id AND r.request_id=p_request_id;
+$fn$;
+
+REVOKE ALL ON FUNCTION public.read_character_change_receipt_server_v1(uuid,text)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.read_character_change_receipt_server_v1(uuid,text)
+ TO service_role;
+
 REVOKE ALL ON FUNCTION public.load_character_change_server_v1(uuid),
  public.commit_character_change_server_v1(uuid,uuid,bigint,text,text,uuid,jsonb)
  FROM PUBLIC,anon,authenticated;

@@ -43735,9 +43735,10 @@ function isCombatCompanionMastered(def, progress) {
 }
 function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
-  if (target2 === "KNIFE_DANCER_SKILL_TOTAL" && state.character?.classId === "KNIFE_DANCER") return normalizeClassSkills("KNIFE_DANCER", state.character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount;
-  if (requirement.type === "monster_mastery" && state.character?.monsterMasteryPoints?.[target2] !== void 0) return Math.floor((normalizeMonsterMastery(state.character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount;
-  if (target2 === "ASTERFALL_MASTERY_20_ALL" && state.character?.monsterMasteryPoints) return Object.values(normalizeMonsterMastery(state.character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount;
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
+  if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
+  if (requirement.type === "monster_mastery") return characters.some((character) => Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
     const companionId = target2.slice("COMPANION_BOND:".length), progress = state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel ?? 0) >= amount;
@@ -43752,9 +43753,9 @@ function companionUnlockRequirementMet(state, requirement) {
     if ((progress.SILVERBROOK_NODES ?? 0) >= 1) return true;
     return SILVERBROOK_STARTER_FISHING_NODES.filter((id) => (progress[`node:${id}`] ?? 0) > 0).length >= 2;
   }
-  if (requirement.type === "quest") return (state.quests ?? []).some((entry2) => entry2.questId === target2 && entry2.status === "claimed");
+  if (requirement.type === "quest") return [state.quests ?? [], ...(state.otherCharacters ?? []).map((row) => row.quests ?? [])].some((quests) => quests.some((entry2) => entry2.questId === target2 && entry2.status === "claimed"));
   if (requirement.type === "boss_kills") return Math.max((state.defeatedBossIds ?? []).includes(target2) ? 1 : 0, state.account.companionBossClears?.[target2] ?? 0) >= amount;
-  if (requirement.type === "skill_level") return (state.skills ?? []).some((skill2) => skill2.skillId === target2 && skill2.level >= amount);
+  if (requirement.type === "skill_level") return [state.skills ?? [], ...(state.otherCharacters ?? []).map((row) => row.skills ?? [])].some((skills) => skills.some((skill2) => skill2.skillId === target2 && skill2.level >= amount));
   if (requirement.type === "event_challenge" && target2.startsWith("CHALLENGE_")) return state.account.companionSpecialClears?.includes(target2) === true;
   return (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
 }
@@ -46781,8 +46782,19 @@ function reconcileCompanionDiscoveries(state) {
   if (nextIds.length === (current.discoveredCompanionIds ?? []).length && nextIds.every((id) => (current.discoveredCompanionIds ?? []).includes(id))) return state;
   return { ...state, account: { ...state.account, companionPhase2Profile: { ...current, discoveredCompanionIds: nextIds } } };
 }
+var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));
+function recoverVerifiedEquipmentCrafts(state) {
+  const current = state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS ?? 0;
+  if (current >= 500) return state;
+  let recorded = 0;
+  for (const [recipeId, progress] of Object.entries(state.account.professionMasteryByAction ?? {})) {
+    if (companionEquipmentRecipeIds.has(recipeId) && Number.isFinite(progress?.points) && progress.points > 0) recorded += Math.floor(progress.points);
+  }
+  if (recorded <= current) return state;
+  return { ...state, account: { ...state.account, companionUnlockProgress: { ...state.account.companionUnlockProgress, EQUIPMENT_CRAFTS: recorded } } };
+}
 function refreshCompanions(state, now) {
-  let next = reconcileCombatCompanionUnlocks(state, now);
+  let next = reconcileCombatCompanionUnlocks(recoverVerifiedEquipmentCrafts(state), now);
   next = { ...next, account: { ...next.account, companionSchemaVersion: 1, companionAssignments: rolloverCompanionAssignmentStatuses(next.account.companionAssignments ?? [], now), companionTrialProgress: projectCompanionTrial(next.account.companionTrialProgress, now).progress, companionProvingGround: projectCompanionProvingGrounds(next.account.companionProvingGround, now).state } };
   return reconcileCompanionDiscoveries(next);
 }
@@ -57347,7 +57359,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (options.randomRoll === void 0) throw new Error("trusted_random_required");
       const result = claimForgeJob(state, text(a, "id", 160), now, options.randomRoll);
       state = result.state;
-      if (result.kind === "equipment") forgeResults = [result.result];
+      if (result.kind === "equipment") {
+        state = recordCompanionActivity(state, "crafting", result.recipe.output.itemId, 1, now);
+        forgeResults = [result.result];
+      }
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
       message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.gemAction === "refine" ? "Refined" : "Combined"} ${result.recipe.name} \xB7 Gem Pouch`;
       break;
@@ -57358,6 +57373,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       const result = claimAllReadyEquipmentCrafts(state, now, options.randomRoll);
       state = result.state;
       forgeResults = result.results;
+      if (result.results.length > 0) state = recordCompanionActivity(state, "crafting", "equipment-forge", result.results.length, now);
       for (const id of result.claimed) {
         if (!beforeIds.has(id)) continue;
         const job = previous.account.equipmentCraftingQueue?.find((row) => row.id === id);

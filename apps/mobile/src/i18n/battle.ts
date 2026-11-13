@@ -1,5 +1,10 @@
 import {createSourceTranslator,type TranslationRow} from './source-catalog';
 export const BATTLE_MESSAGES={
+ 'CLASS SKILLS · PASSIVE':['KLASSENFERTIGKEITEN · PASSIV','HABILIDADES DE CLASE · PASIVAS','KLASSEVAARDIGHEDEN · PASSIEF','ABILITÀ DI CLASSE · PASSIVE','COMPÉTENCES DE CLASSE · PASSIVES'],
+ 'COMBAT STYLE · PASSIVE':['KAMPFSTIL · PASSIV','ESTILO DE COMBATE · PASIVO','VECHTSTIJL · PASSIEF','STILE DI COMBATTIMENTO · PASSIVO','STYLE DE COMBAT · PASSIF'],
+ 'COMPANION · PASSIVE BONUS':['BEGLEITER · PASSIVER BONUS','COMPAÑERO · BONO PASIVO','METGEZEL · PASSIEVE BONUS','COMPAGNO · BONUS PASSIVO','COMPAGNON · BONUS PASSIF'],
+ 'Lv. {level}':['St. {level}','Nv. {level}','Niv. {level}','Liv. {level}','Niv. {level}'],
+ 'Combat bonus active':['Kampfbonus aktiv','Bono de combate activo','Gevechtsbonus actief','Bonus di combattimento attivo','Bonus de combat actif'],
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
 
  'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],

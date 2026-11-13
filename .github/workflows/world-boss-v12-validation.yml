@@ -95,7 +95,7 @@ jobs:
           fi
           for f in \
             docs/roadmap/world-boss-postgres-contract-v17-fixture.sql \
-            docs/roadmap/world-boss-postgres-contract-v17.sql \\
+            docs/roadmap/world-boss-postgres-contract-v17.sql \
             docs/roadmap/world-boss-postgres-contract-v17-smoke.sql
           do
             psql -X -v ON_ERROR_STOP=1 -f "$f"

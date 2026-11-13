@@ -52,7 +52,8 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
   // The companion RPC uses the same visibility/block gate, returning only equipped item facts.
   // Older servers that have not deployed it still render the public profile normally.
   const {data:gearRows,error:gearError}=await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});
-  const equippedGear=gearError?undefined:normalizeProfileGear(gearRows);
+  const gearPayload=gearRows&&typeof gearRows==='object'&&!Array.isArray(gearRows)?gearRows as {characterId?:unknown;items?:unknown}:null;
+  const equippedGear=!gearError&&gearPayload?.characterId===profile.character.id?normalizeProfileGear(gearPayload.items):undefined;
   const identity=(await guildIdentities([accountId])).get(accountId);
   const knownGuild=identity?.guild_tag?{tag:identity.guild_tag,tagColorId:identity.guild_tag_color_id}:null;
   const guild=knownGuild?await profileGuildByTag(knownGuild.tag).catch(()=>knownGuild):null;

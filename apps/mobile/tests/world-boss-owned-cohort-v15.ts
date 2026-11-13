@@ -42,7 +42,7 @@ function source(overrides?:Partial<WorldBossServerOwnedCohortSourceV15>):
    const state=states.get(accountId);
    assert.ok(state,'trusted selection exists in source');
    assert.equal(state.character?.id,characterId);
-   return {ownerAccountId:accountId,gameVersion:2,serverState:state};
+   return {ownerAccountId:accountId,gameVersion:2,updatedAtUtcMs:NOW-60000,serverState:state};
   },
   ...overrides,
  };
@@ -80,14 +80,14 @@ async function main(){
  await reject(()=>auditWorldBossOwnedCohortV15({
   eventId:'WB_V15_SYNTHETIC',source:source({
    loadOwnedCharacterState:async ({accountId})=>({
-    ownerAccountId:'WB15_FOREIGN_OWNER',gameVersion:2,serverState:states.get(accountId)!,
+    ownerAccountId:'WB15_FOREIGN_OWNER',gameVersion:2,updatedAtUtcMs:NOW-60000,serverState:states.get(accountId)!,
    }),
   }),
  }), 'owner_character_or_revision_mismatch');
  await reject(()=>auditWorldBossOwnedCohortV15({
   eventId:'WB_V15_SYNTHETIC',source:source({
    loadOwnedCharacterState:async ({accountId})=>({
-    ownerAccountId:accountId,gameVersion:3,serverState:states.get(accountId)!,
+    ownerAccountId:accountId,gameVersion:3,updatedAtUtcMs:NOW-60000,serverState:states.get(accountId)!,
    }),
   }),
  }), 'owner_character_or_revision_mismatch');
@@ -99,11 +99,27 @@ async function main(){
  await reject(()=>auditWorldBossOwnedCohortV15({
   eventId:'WB_V15_SYNTHETIC',source:source({
    loadOwnedCharacterState:async ({accountId})=>({
-    ownerAccountId:accountId,gameVersion:2,
+    ownerAccountId:accountId,gameVersion:2,updatedAtUtcMs:NOW-60000,
     serverState:accountId===selections[0].accountId?unsafe:states.get(accountId)!,
    }),
   }),
  }), 'equipment_copy_not_owned');
+ await reject(()=>auditWorldBossOwnedCohortV15({
+  eventId:'WB_V15_SYNTHETIC',source:source({
+   loadOwnedCharacterState:async ({accountId})=>({
+    ownerAccountId:accountId,gameVersion:2,
+    updatedAtUtcMs:NOW-8*86400000,serverState:states.get(accountId)!,
+   }),
+  }),
+ }), 'owner_character_or_revision_mismatch');
+ await reject(()=>auditWorldBossOwnedCohortV15({
+  eventId:'WB_V15_SYNTHETIC',source:source({
+   loadOwnedCharacterState:async ({accountId})=>({
+    ownerAccountId:accountId,gameVersion:2,
+    updatedAtUtcMs:NOW+1,serverState:states.get(accountId)!,
+   }),
+  }),
+ }), 'owner_character_or_revision_mismatch');
  await reject(()=>auditWorldBossOwnedCohortV15({
   eventId:'WB_V15_SYNTHETIC',source:source({nowUtcMs:()=>-1}),
  }), 'invalid_service_clock');

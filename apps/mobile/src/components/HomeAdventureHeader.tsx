@@ -4,7 +4,7 @@ import type {GameState} from '../core/types';
 import {CLASSES} from '../content/classes';
 import {WORLD_ZONES} from '../content/world-map';
 import {characterProgressWithinLevel} from '../core/progression';
-import {accountText} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {useGameTheme} from '../theme/ThemeContext';
 import {classCreationPresentation} from '../theme/class-creation-art';
 import {CharacterPortrait} from './CharacterVisual';
@@ -14,7 +14,7 @@ import {ZoneSceneArtwork} from './ZoneSceneArtwork';
 export function HomeAdventureHeader({state,compactHome=false}:{state:GameState;compactHome?:boolean}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const c=state.character;if(!c)return null;
- const a=(text:string,params?:Record<string,string|number>)=>accountText(state.settings.language,text,params);
+ const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(state.settings.language,text,params);
  const region=WORLD_ZONES.find(row=>row.id===state.currentRegionId)??WORLD_ZONES[0];
  const accent=classCreationPresentation[c.classId].accent,className=CLASSES.find(row=>row.id===c.classId)?.name??c.classId;
  const xp=characterProgressWithinLevel(c.xp,c.level),ratio=xp.need>0?Math.max(0,Math.min(1,xp.current/xp.need)):1;

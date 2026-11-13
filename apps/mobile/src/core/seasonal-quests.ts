@@ -3,11 +3,11 @@ import {hash32} from './rng';
 import {RECIPES} from '../content/skills';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
-export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'expedition'|'event';
+export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'event';
 export type SeasonalActivity=Exclude<ContractTag,'equipment'>;
 export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>;tags?:SeasonalActivity[]}>>;
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
-export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','expedition','event'];
+export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','event'];
 const activityTags=SEASONAL_ACTIVITY_TAGS;
 
 /** Additive save field: legacy saves start at zero rather than inheriting lifetime XP. */
@@ -59,7 +59,6 @@ const TEMPLATES:readonly Template[]=[
  {name:'Tailoring Commission',tag:'tailoring',daily:5,weekly:20,monthly:60},
  {name:'Enchanter Practice',tag:'enchanting',daily:4,weekly:15,monthly:40},
  {name:'Boss Hunt',tag:'boss',daily:0,weekly:1,monthly:3},
- {name:'Companion Expeditions',tag:'expedition',daily:0,weekly:2,monthly:7},
  {name:'Festival Service',tag:'event',daily:0,weekly:0,monthly:1},
 ];
 const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
@@ -74,7 +73,6 @@ const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
  tailoring:'Complete {n} Tailoring recipes this period.',
  enchanting:'Complete {n} Enchanting recipes this period.',
  boss:'Defeat {n} bosses this period.',
- expedition:'Claim {n} completed companion expeditions this period.',
  event:'Claim {n} completed event objective this period.',
 };
 const BASE_REWARD_ACTIONS=30;
@@ -93,7 +91,6 @@ function availableTemplate(state:GameState,tag:SeasonalActivity,atMs:number):boo
  }
  if(tag==='boss')return state.defeatedBossIds.includes('FALLEN_KNIGHT');
  if(tag==='event'){const event=state.account.liveEvent;return !!event?.enabled&&atMs>=event.startsAtMs&&atMs<event.endsAtMs&&event.endsAtMs-atMs>=86400_000;}
- if(tag==='expedition')return (state.account.companionSanctuary?.expeditionPensLevel??0)>0;
  return true;
 }
 function selectSeasonalTags(state:GameState,period:SeasonalPeriod,key:string,atMs:number):SeasonalActivity[]{

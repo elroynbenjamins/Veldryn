@@ -240,7 +240,7 @@ begin
  if (result_a->>'eventPointsGranted')::int<>0 then
   raise exception 'V14 overflowed weekly cap in final stage';end if;
  status:=private.party_event_stage_readiness_v14(p,start_at);
- if (status->>'status'<>'awaiting_progress'
+ if status->>'status'<>'awaiting_progress'
   or (status->>'missingPoints')::int<>20
   or (status->>'cumulativeStageTarget')::int<>100
   or (status->>'finaleVerified')::boolean
@@ -262,7 +262,7 @@ begin
   if sqlerrm<>'party_event_v14_closed' then raise;end if;
  end;
  if (select count(*) from private.party_event_activity_credits_v14
-   where party_id=p)<>7
+   where party_id=p)<>8
   or exists(select 1 from private.party_event_activity_credits_v14
     where party_id=p and (points_credited<0 or points_credited>40))
   or exists(select 1 from private.party_event_receipts_v11

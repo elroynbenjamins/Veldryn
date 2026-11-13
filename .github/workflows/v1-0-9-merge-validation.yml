@@ -28,41 +28,13 @@ jobs:
         run: pnpm --dir backend install --frozen-lockfile
       - name: Run real badge v2 and v3 SQL in PGlite
         run: node tools/test-player-badge-tenure-db.mjs
-      - name: Run full mobile core suite; reject new failures
+      - name: Run full mobile core suite; zero known failures accepted
         shell: bash
         run: |
-          set +e
-          node tools/run-mobile-core-tests.mjs > core-results.log 2>&1
-          result=$?
-          set -e
-          cat core-results.log
-          CORE_EXIT=$result node --input-type=module <<'EOF'
-          import {readFileSync} from 'node:fs';
-          const log=readFileSync('core-results.log','utf8');
-          const expected=[
-            'tests/online-loading-interactions.cjs',
-            'tests/localization-social.mjs',
-            '.core-build/apps/mobile/tests/gold-economy-costs.js',
-            '.core-build/apps/mobile/tests/event-pet-luck.js',
-            '.core-build/apps/mobile/tests/balance-projection.js',
-            '.core-build/apps/mobile/tests/guild-management-ui-contract.js',
-            '../../tools/validate-scroll-indicators.mjs',
-          ];
-          const m=log.match(/FAILED: (\d+)\/(\d+) mobile core checks:\s*([\s\S]*)$/);
-          if(!m){
-            if(process.env.CORE_EXIT==='0'&&log.includes('PASS: all 362 mobile core checks')) {
-              console.log('All 362 core checks passed.'); process.exit(0);
-            }
-            console.error('Mobile core compile or suite output failure');process.exit(1);
-          }
-          const actual=m[3].trim().split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-          const unexpected=actual.filter(x=>!expected.includes(x));
-          const missing=expected.filter(x=>!actual.includes(x));
-          if(Number(m[2])!==362||Number(m[1])!==actual.length||unexpected.length||missing.length){
-            console.error({unexpected,missing,reported:m[1],total:m[2],actual});process.exit(1);
-          }
-          console.log('Core baseline unchanged: 355/362; seven existing failures only.');
-          EOF
+          # Preserve the log as a CI artifact while failing the job on any test failure.
+          # Do not pin the test count: new checks must be executed, not silently skipped.
+          set -euo pipefail
+          node tools/run-mobile-core-tests.mjs 2>&1 | tee core-results.log
       - name: Upload regression results
         if: always()
         uses: actions/upload-artifact@v4

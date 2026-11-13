@@ -1,5 +1,5 @@
 # Temporary PR-only rebuild to verify server bundle before merge.
-# Re-run after measured tank class solo hunt calibration.
+# Re-run after final regional Tank/Support calibration.
 name: Solo hunt PR generated gameplay parity
 on:
   push:

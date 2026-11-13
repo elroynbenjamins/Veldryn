@@ -1,13 +1,14 @@
 import type {GameState} from './types';
 import {hash32} from './rng';
 import {RECIPES} from '../content/skills';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
-export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'salvage'|'upgrade'|'high_tier_craft';
+export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'salvage'|'upgrade'|'high_tier_craft'|'expedition'|'trial';
 export type SeasonalActivity=Exclude<ContractTag,'equipment'>;
 export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>;tags?:SeasonalActivity[]}>>;
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
-export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','salvage','upgrade','high_tier_craft'];
+export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','salvage','upgrade','high_tier_craft','expedition','trial'];
 const activityTags=SEASONAL_ACTIVITY_TAGS;
 
 /** Additive save field: legacy saves start at zero rather than inheriting lifetime XP. */
@@ -62,6 +63,8 @@ const TEMPLATES:readonly Template[]=[
  {name:'Salvage Workshop',tag:'salvage',daily:0,weekly:3,monthly:12},
  {name:'Equipment Improvements',tag:'upgrade',daily:0,weekly:1,monthly:3},
  {name:'Masterwork Commission',tag:'high_tier_craft',daily:0,weekly:0,monthly:3},
+ {name:'Companion Expeditions',tag:'expedition',daily:0,weekly:2,monthly:7},
+ {name:'Trial Victories',tag:'trial',daily:0,weekly:0,monthly:4},
 ];
 const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
  combat:'Defeat {n} monsters this period.',
@@ -78,6 +81,8 @@ const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
  salvage:'Salvage {n} equipment items this period.',
  upgrade:'Successfully upgrade equipment {n} times this period.',
  high_tier_craft:'Craft {n} Tier 3 or higher equipment pieces this period.',
+ expedition:'Claim {n} completed companion expeditions this period.',
+ trial:'Win {n} Companion Trial floors this period.',
 };
 const BASE_REWARD_ACTIONS=30;
 
@@ -94,6 +99,8 @@ function availableTemplate(state:GameState,tag:SeasonalActivity):boolean{
   return RECIPES.some(recipe=>recipe.skillId===tag&&recipe.level<=skill&&(recipe.characterLevel??1)<=level&&(!recipe.classId||recipe.classId===state.character?.classId)&&(!recipe.requiresCraftedItemId||state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId))&&(!recipe.requiredKnowledgeId||state.account.unlockedKnowledgeIds?.includes(recipe.requiredKnowledgeId)||!!recipe.knowledgeItemId));
  }
  if(tag==='boss')return state.defeatedBossIds.includes('FALLEN_KNIGHT');
+ if(tag==='expedition')return (state.account.companionSanctuary?.expeditionPensLevel??0)>0;
+ if(tag==='trial')return ['tank','damage','support'].every(role=>COMBAT_COMPANIONS.some(c=>c.role===role&&state.account.unlockedCombatCompanionIds?.includes(c.id)));
  if(tag==='salvage')return level>=12;
  if(tag==='upgrade')return level>=16&&Object.values(state.character?.equipment??{}).some(Boolean);
  if(tag==='high_tier_craft')return RECIPES.some(recipe=>Number(recipe.v33EquipmentTier?.replace('T',''))>=3&&(recipe.characterLevel??1)<=level&&(state.skills.find(skill=>skill.skillId===recipe.skillId)?.level??0)>=recipe.level&&(!recipe.classId||recipe.classId===state.character?.classId));

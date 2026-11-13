@@ -1,4 +1,11 @@
 import {
+  PARTY_EVENT_REWARD_SQL_ADAPTER_V24_RELEASED,
+  PARTY_EVENT_PREPARE_OFFERS_SQL_V24,
+  PARTY_EVENT_LOCK_CHOICE_SQL_V24,
+  PARTY_EVENT_INBOX_PREVIEW_SQL_V24,
+  createTrustedPartyRewardRepositoryV24,
+} from '../party-event-reward-offers-v24';
+import {
   PARTY_EVENT_ATTEST_SQL_V23,
   PARTY_EVENT_REPLAY_ATTESTATION_SQL_V23_RELEASED,
   createTrustedPartyReplayAttestationRepositoryV23,
@@ -175,6 +182,54 @@ async function runRepositoryChecks(){
     missingAttestationRejected=String(e).includes('party_event_v23_missing_database_attestation');
   }
   assert(missingAttestationRejected,'v23 missing private write must fail closed');
+
+  assert(PARTY_EVENT_REWARD_SQL_ADAPTER_V24_RELEASED===false,
+    'v24 offer SQL adapter must remain hidden');
+  let offersRead=0,choicesWritten=0,inboxesRead=0;
+  const rewarded=createTrustedPartyRewardRepositoryV24({
+    queryOne:async(sql,params)=>{
+      if(sql===PARTY_EVENT_PREPARE_OFFERS_SQL_V24){
+        offersRead++;
+        assert(params.length===2&&params[0]===id
+          &&params[1]==='party-event-v24-offers:'+id,
+          'v24 must only prepare a reservation with deterministic dedupe');
+        return {result:{replayed:false,reservationId:id,memberCount:2,
+          offerCount:1,offersPrepared:true,
+          entitlementsCreated:false,rewardsClaimable:false,rewardsGranted:false}};
+      }
+      if(sql===PARTY_EVENT_LOCK_CHOICE_SQL_V24){
+        choicesWritten++;
+        assert(params[0]===id&&params[1]===id
+          &&params[2]==='artisan'
+          &&params[3]==='party-event-v24-choice:'+id,
+          'v24 selection must bind trusted owner and fixed choice');
+        return {result:{replayed:false,offerId:id,choice:'artisan',
+          choiceLocked:true,rewardsClaimable:false,rewardsGranted:false}};
+      }
+      if(sql===PARTY_EVENT_INBOX_PREVIEW_SQL_V24){
+        inboxesRead++;
+        assert(params.length===1&&params[0]===id,
+          'v24 inbox read uses only trusted server account');
+        return {result:{offers:[],claimEnabled:false,
+          entitlementsCreated:false,rewardsGranted:false}};
+      }
+      throw Error('v24 unexpected SQL operation');
+    },
+  });
+  await rewarded.prepareOffers(id,'party-event-v24-offers:'+id);
+  await rewarded.lockChoice(id,id,'artisan','party-event-v24-choice:'+id);
+  const inbox=await rewarded.readInboxPreview(id);
+  assert(offersRead===1&&choicesWritten===1&&inboxesRead===1
+    &&inbox.claimEnabled===false&&inbox.offers.length===0,
+    'v24 adapter returns private no-claim projection');
+  const missingReward=createTrustedPartyRewardRepositoryV24({
+    queryOne:async()=>null,
+  });
+  let missingV24=false;
+  try{await missingReward.prepareOffers(id,'party-event-v24-offers:'+id);}
+  catch(e){missingV24=String(e).includes('party_event_v24_missing_private_sql_result');}
+  assert(missingV24,'v24 missing service SQL response must fail closed');
+  console.log('Party Events v24: prepared offers, locked selection and read-only Inbox SQL adapter validated');
   console.log('Party Events v23: private SQL attestation parameters and no-loot read/write adapter validated');
   console.log('Party Events v22: parameterized MVCC replay repository, private UUID gate and catalog validated');
 }

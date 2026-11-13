@@ -1,0 +1,64 @@
+name: Party Event PR-only generated Edge sync
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    paths:
+      - 'backend/src/server/party/**'
+      - '.github/workflows/party-event-edge-sync.yml'
+
+concurrency:
+  group: party-event-edge-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'party-events-v6-hazard-prototype' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and shared-engine dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild latest draft branch safely (no production deploy)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            # Never commit an out-of-date generated bundle if the PR changed.
+            git fetch origin "refs/heads/${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}"
+            git reset --hard "refs/remotes/origin/${GITHUB_HEAD_REF}"
+            pnpm --dir backend build:online
+            node tools/verify-gameplay-edge.mjs
+            git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+            if git diff --cached --quiet; then
+              echo 'Generated gameplay/co-op bundles already match this branch.'
+              exit 0
+            fi
+            git commit -m 'build(edge): sync hidden Party Event branch generated bundles'
+            if git push origin "HEAD:${GITHUB_HEAD_REF}"; then
+              echo 'Generated bundles committed to the draft feature branch only.'
+              exit 0
+            fi
+            echo "PR head moved while generating (attempt ${attempt}); rebuilding from latest."
+          done
+          echo 'Could not safely synchronize against the latest Party Event PR head.' >&2
+          exit 1

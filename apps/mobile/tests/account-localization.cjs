@@ -16,6 +16,7 @@ function load(relative){
  return exports;
 }
 const {accountCatalogs,accountTranslationRows,accountT,accountText,accountError,accountDuration}=load('i18n/account.ts');
+const {recentScreenTranslationRows}=load('i18n/recent-screens.ts');
 const languages=['en','de','es','nl','it','fr'];
 const placeholders=text=>Array.from(text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g),m=>m[1]).sort();
 const keys=Object.keys(accountTranslationRows);
@@ -72,7 +73,7 @@ for(const relative of files){
  function visit(node){
   if(ts.isCallExpression(node)&&node.expression.getText(tree)==='a'){
    displayCalls++;
-   if(ts.isStringLiteral(node.arguments[0]))assert.ok(Object.hasOwn(accountTranslationRows,node.arguments[0].text),relative+' missing '+node.arguments[0].text);
+   if(ts.isStringLiteral(node.arguments[0]))assert.ok(Object.hasOwn(accountTranslationRows,node.arguments[0].text)||Object.hasOwn(recentScreenTranslationRows,node.arguments[0].text),relative+' missing '+node.arguments[0].text);
   }
   if(ts.isJsxAttribute(node)&&technical.has(node.name.getText(tree)))assert.ok(!/\ba\(/.test(node.initializer?.getText(tree)||''),relative+' translated technical '+node.name.getText(tree));
   ts.forEachChild(node,visit);

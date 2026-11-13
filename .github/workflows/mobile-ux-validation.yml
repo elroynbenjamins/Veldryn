@@ -67,6 +67,8 @@ jobs:
         run: node tests/companion-codex-focused-ui.cjs
       - name: Validate Companion layout and upgrade resource icons
         run: node tests/companion-layout-refinement-ui.cjs
+      - name: Validate all Companion acquisition paths and redesigned Index
+        run: pnpm test:companions
       - name: Validate Account New Unlocks inbox
         run: node tests/account-unlock-inbox-ui.cjs
       - name: Typecheck Account unlock inbox UI

@@ -464,19 +464,19 @@ export function germanCoverageText(source:string):string|undefined{
  // Source-guarded dynamic Event Shop statuses; localize only authored UI,
  // never freeform chat, player names, or persistence identifiers.
  let match:RegExpExecArray|null;
- if((match=/^(\\d[\\d.,]*) \\/ (\\d[\\d.,]*) BOUGHT$/.exec(source)))return `${match[1]} / ${match[2]} GEKAUFT`;
- if((match=/^(\\d[\\d.,]*) AVAILABLE$/.exec(source)))return `${match[1]} VERFÜGBAR`;
- if((match=/^(\\d[\\d.,]*) purchased · (\\d[\\d.,]*) remaining$/.exec(source)))return `${match[1]} gekauft · ${match[2]} verbleibend`;
- if((match=/^(\\d[\\d.,]*) purchases available$/.exec(source)))return `${match[1]} Käufe verfügbar`;
- if((match=/^You have purchased all (\\d[\\d.,]*) allowed for this event\\.$/.exec(source)))return `Du hast alle ${match[1]} erlaubten Käufe für dieses Ereignis getätigt.`;
- if((match=/^Level (\\d+)\\+ required$/.exec(source)))return `Stufe ${match[1]}+ benötigt`;
- if((match=/^Need (\\d[\\d.,]*) more (.+)$/.exec(source)))return `Noch ${match[1]} ${match[2]} benötigt`;
- if((match=/^Adds (\\d[\\d.,]*) Gold to this character\\.$/.exec(source)))return `Fügt diesem Charakter ${match[1]} Gold hinzu.`;
- if((match=/^Adds (\\d[\\d.,]*) Companion Essence to your account\\.$/.exec(source)))return `Fügt deinem Konto ${match[1]} Gefährtenessenz hinzu.`;
- if((match=/^Adds (\\d[\\d.,]*) Bondstone to your account\\.$/.exec(source)))return `Fügt deinem Konto ${match[1]} Bindungssteine hinzu.`;
+ if((match=/^(\d[\d.,]*) \/ (\d[\d.,]*) BOUGHT$/.exec(source)))return `${match[1]} / ${match[2]} GEKAUFT`;
+ if((match=/^(\d[\d.,]*) AVAILABLE$/.exec(source)))return `${match[1]} VERFÜGBAR`;
+ if((match=/^(\d[\d.,]*) purchased · (\d[\d.,]*) remaining$/.exec(source)))return `${match[1]} gekauft · ${match[2]} verbleibend`;
+ if((match=/^(\d[\d.,]*) purchases available$/.exec(source)))return `${match[1]} Käufe verfügbar`;
+ if((match=/^You have purchased all (\d[\d.,]*) allowed for this event\.$/.exec(source)))return `Du hast alle ${match[1]} erlaubten Käufe für dieses Ereignis getätigt.`;
+ if((match=/^Level (\d+)\+ required$/.exec(source)))return `Stufe ${match[1]}+ benötigt`;
+ if((match=/^Need (\d[\d.,]*) more (.+)$/.exec(source)))return `Noch ${match[1]} ${match[2]} benötigt`;
+ if((match=/^Adds (\d[\d.,]*) Gold to this character\.$/.exec(source)))return `Fügt diesem Charakter ${match[1]} Gold hinzu.`;
+ if((match=/^Adds (\d[\d.,]*) Companion Essence to your account\.$/.exec(source)))return `Fügt deinem Konto ${match[1]} Gefährtenessenz hinzu.`;
+ if((match=/^Adds (\d[\d.,]*) Bondstone to your account\.$/.exec(source)))return `Fügt deinem Konto ${match[1]} Bindungssteine hinzu.`;
  if((match=/^Permanent (.+) · Account unlock$/.exec(source)))return `Dauerhafte Kontofreischaltung · ${match[1]}`;
- if((match=/^Show offers I can afford · (\\d+) available$/.exec(source)))return `Bezahlbare Angebote anzeigen · ${match[1]} verfügbar`;
- if((match=/^(\\d+) offers( · affordable)?$/.exec(source)))return `${match[1]} Angebote${match[2]?' · bezahlbar':''}`;
+ if((match=/^Show offers I can afford · (\d+) available$/.exec(source)))return `Bezahlbare Angebote anzeigen · ${match[1]} verfügbar`;
+ if((match=/^(\d+) offers( · affordable)?$/.exec(source)))return `${match[1]} Angebote${match[2]?' · bezahlbar':''}`;
  const translated=germanCoverageLowercase.get(source.toLowerCase());
  if(translated===undefined)return undefined;
  return source===source.toUpperCase()?translated.toLocaleUpperCase('de-DE'):translated;

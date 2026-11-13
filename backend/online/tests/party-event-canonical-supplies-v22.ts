@@ -1,4 +1,11 @@
 import {
+ PARTY_EVENT_CLAIM_SQL_V25_RELEASED,
+ PARTY_EVENT_CLAIM_QUOTE_SQL_V25,
+ PARTY_EVENT_PREPARE_INTENT_SQL_V25,
+ PARTY_EVENT_CLAIM_INBOX_SQL_V25,
+ createPrivatePartyClaimRepositoryV25,
+} from '../party-event-claim-intents-v25';
+import {
   PARTY_EVENT_CLAIM_SQL_V25_RELEASED,PARTY_EVENT_PREFLIGHT_SQL_V25,
   createTrustedPartyClaimPreflightRepositoryV25,
 } from '../party-event-claim-preflight-v25';
@@ -277,6 +284,47 @@ async function runRepositoryChecks(){
   catch(e){missingV25=String(e).includes('party_event_v25_missing_private_preflight_receipt');}
   assert(missingV25,'v25 missing private quote must fail closed');
   console.log('Party Events v25: private one-shot SQL preflight quote, owner and hard-off payout validated');
+
+  assert(PARTY_EVENT_CLAIM_SQL_V25_RELEASED===false,'v25 adapter hidden');
+  let v25Read=0,v25Write=0,v25Inbox=0;
+  const claimRepository=createPrivatePartyClaimRepositoryV25({
+   queryOne:async(sql,params)=>{
+    if(sql===PARTY_EVENT_CLAIM_QUOTE_SQL_V25){
+      v25Read++;assert(params.length===2&&params[0]===id&&params[1]===id,
+       'claim quote must bind offer and trusted account');
+      return {result:{version:'party-event-rewards-v2',kind:'participation',
+       performanceBand:1,personalPoints:5,gold:420,combatXp:0,skillXp:0,
+       companionEssence:0,bondstones:0,partyRenown:0,materials:{}}};
+    }
+    if(sql===PARTY_EVENT_PREPARE_INTENT_SQL_V25){
+      v25Write++;assert(params.length===3&&params[0]===id
+       &&params[1]===id&&params[2]==='party-event-v25-intent:'+id,
+       'claim intent must bind trusted account and deterministic dedupe ID');
+      return {result:{intentId:id,offerId:id,replayed:false,
+       claimReady:false,claimable:false,claimed:false,rewardsGranted:false}};
+    }
+    if(sql===PARTY_EVENT_CLAIM_INBOX_SQL_V25){
+      v25Inbox++;assert(params.length===1&&params[0]===id,
+       'claim Inbox must only read authenticated owner');
+      return {result:{items:[],claimEnabled:false,rewardsGranted:false,
+       economyTransfers:0}};
+    }
+    throw Error('unapproved_v25_private_sql');
+   }
+  });
+  const quote=await claimRepository.quoteOffer(id,id);
+  const intent=await claimRepository.reserveIntent(id,id,'party-event-v25-intent:'+id);
+  const preview=await claimRepository.readInbox(id);
+  assert(quote.kind==='participation'&&intent.rewardsGranted===false
+   &&preview.economyTransfers===0
+   &&v25Read===1&&v25Write===1&&v25Inbox===1,
+   'v25 service-only parameterized SQL statements and no payout');
+  const noRow=createPrivatePartyClaimRepositoryV25({queryOne:async()=>null});
+  let absentClaim=false;
+  try{await noRow.reserveIntent(id,id,'party-event-v25-intent:'+id);}
+  catch(e){absentClaim=String(e).includes('party_event_v25_private_result_missing');}
+  assert(absentClaim,'missing reservation result must fail closed');
+  console.log('Party Events v25: private parameterized quote/intent/inbox adapter and zero transfers validated');
   console.log('Party Events v24: prepared offers, locked selection and read-only Inbox SQL adapter validated');
   console.log('Party Events v23: private SQL attestation parameters and no-loot read/write adapter validated');
   console.log('Party Events v22: parameterized MVCC replay repository, private UUID gate and catalog validated');

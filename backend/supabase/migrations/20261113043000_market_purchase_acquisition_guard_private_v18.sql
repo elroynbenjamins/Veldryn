@@ -157,7 +157,7 @@ begin
     if v_premium is null then raise exception 'market_gear_receipt_invalid';end if;
     if v_policy.required_class_id is distinct from v_class_id
     then raise exception 'market_class_required';end if;
-    v_required:=pg_catalog.greatest(v_floor,v_policy.item_required_level)+v_premium;
+    v_required:=greatest(v_floor,v_policy.item_required_level)+v_premium;
   else
     -- Only an explicitly reviewed exact source SKU can be purchased.
     -- A T3 resource may also be consumed in T4 recipes without being

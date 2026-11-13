@@ -19,7 +19,7 @@ function durationLabel(seconds:number){
 }
 
 export function EventCandyPanel({state,definition,eventActive,busy=false,pendingKind,onUse}:{state:GameState;definition:LiveEventDef;eventActive:boolean;busy?:boolean;pendingKind?:EventCandyKind;onUse:(kind:EventCandyKind,companionId?:string)=>unknown}){
- const C=useGameTheme(),language=useGameLanguage(),gl=(text:string)=>localizeGameplay(language,text),[now,setNow]=useState(()=>Date.now()),candies=eventCandies(definition),visuals=liveEventVisuals(definition.visualKey);
+ const C=useGameTheme(),language=useGameLanguage(),gl=(text:string)=>localizeGameplay(language,text),duration=(seconds:number)=>gl(durationLabel(seconds)),[now,setNow]=useState(()=>Date.now()),candies=eventCandies(definition),visuals=liveEventVisuals(definition.visualKey);
  const {width,fontScale}=useWindowDimensions(),twoColumns=width>=410&&fontScale<1.35;
  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
  return <Panel>
@@ -27,14 +27,14 @@ export function EventCandyPanel({state,definition,eventActive,busy=false,pending
   <View style={[s.list,twoColumns&&s.listTwo]}>{candies.map(candy=>{
    const owned=state.account.eventCandyChargesById?.[candy.id]??0,status=eventCandyStatus(state,now,candy.kind),timed=candy.kind!=='companion',durationFull=timed&&status.remainingSeconds>=candy.maxSeconds-1;
    const disabled=busy||!eventActive||owned<1||durationFull;
-   const button=owned<1?gl('None owned'):!eventActive?gl('Event ended'):durationFull?gl('Duration full'):gl('Use · add')+' '+durationLabel(candy.secondsPerUse);
+   const button=owned<1?gl('None owned'):!eventActive?gl('Event ended'):durationFull?gl('Duration full'):gl('Use · add')+' '+duration(candy.secondsPerUse);
    return <View key={candy.kind} style={[s.card,twoColumns&&s.cardHalf,{borderColor:status.active?C.good:C.line,backgroundColor:status.active?C.goodSurface:C.panel2}]}>
     <View style={s.row}>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.candy}/>:null}<View style={s.flex}><View style={s.nameRow}><Text style={[s.name,{color:C.text}]}>{gl(candy.name)}</Text><View style={[s.count,{backgroundColor:C.accentSurface}]}><Text style={[s.countText,{color:C.accent}]}>×{owned}</Text></View></View><Text style={[s.kind,{color:C.accent}]}>{gl(kindLabels[candy.kind])}</Text></View></View>
     <Text style={[s.copy,{color:C.muted}]}>{gl(candy.description)}</Text>
     {candy.kind==='companion'
      ?<EventBondCandySelector state={state} eventId={definition.id} ownedCharges={owned} active={eventActive} busy={busy} onUse={id=>onUse('companion',id)}/>
      :<>
-       {status.active?<Text accessibilityLiveRegion="polite" style={[s.status,{color:C.good}]} >{gl('ACTIVE')} · {durationLabel(status.remainingSeconds)} {gl('remaining')}</Text>:<Text style={[s.status,{color:C.muted}]} >{gl('Up to')} {durationLabel(candy.maxSeconds)} {gl('active time')}</Text>}
+       {status.active?<Text accessibilityLiveRegion="polite" style={[s.status,{color:C.good}]} >{gl('ACTIVE')} · {duration(status.remainingSeconds)} {gl('remaining')}</Text>:<Text style={[s.status,{color:C.muted}]} >{gl('Up to')} {duration(candy.maxSeconds)} {gl('active time')}</Text>}
        <GameButton compact title={pendingKind===candy.kind?gl('Using…'):button} loading={pendingKind===candy.kind} disabled={disabled} onPress={()=>onUse(candy.kind)}/>
       </>}
    </View>;

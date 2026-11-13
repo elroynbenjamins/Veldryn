@@ -134,6 +134,19 @@ const cappedInventory={...state.inventory,stacks:[
 ]};
 const cappedSeed={...state,inventory:cappedInventory,account:{...state.account,craftedGearInstances:copiesAtCap,craftedGearAutoSellMode:'off' as const}};
 ok(auditCraftedGearOwnership(cappedSeed).consistent,'All 25 physical tagged copies must be correctly linked before mass-crafting settlement');
+
+const belowCapCopies=copiesAtCap.slice(0,-1);
+const belowCapSeed={...cappedSeed,
+  inventory:{...cappedInventory,stacks:cappedInventory.stacks.filter(row=>row.instanceId!==copiesAtCap[copiesAtCap.length-1].id)},
+  account:{...cappedSeed.account,craftedGearInstances:belowCapCopies},
+};
+const belowCapStart=startEquipmentCraft(belowCapSeed,recipe.id,job.completesAtMs+5000).state;
+const belowCapJob=equipmentCraftingQueue(belowCapStart)[0];
+const twentyFifthClaim=claimEquipmentCraft(belowCapStart,belowCapJob.id,belowCapJob.completesAtMs,.5);
+ok(craftedGearCopyCapacity(twentyFifthClaim.state,recipe.output.itemId).count===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM
+  &&auditCraftedGearOwnership(twentyFifthClaim.state).consistent,
+  'The 25th identical gear copy must remain claimable with auto-sell disabled');
+
 const cappedStart=startEquipmentCraft(cappedSeed,recipe.id,job.completesAtMs+10000).state;
 const cappedJob=equipmentCraftingQueue(cappedStart)[0];
 let copyLimitRefused=false;try{claimEquipmentCraft(cappedStart,cappedJob.id,cappedJob.completesAtMs,.5)}catch(error){copyLimitRefused=error instanceof Error&&error.message.includes('copy limit')}

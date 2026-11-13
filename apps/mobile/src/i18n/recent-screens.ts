@@ -600,6 +600,18 @@ export const recentScreenTranslationRows = {
     "Открывается после 12 подтверждённых месяцев поддержки.",
     "Toplam 12 doğrulanmış destekçi ayından sonra açılır."
   ]
+,
+  "Admin": ["Admin","Administrador","Beheerder","Amministratore","Administrateur","Администратор","Yönetici"],
+  "Moderator": ["Moderator","Moderador","Moderator","Moderatore","Modérateur","Модератор","Moderatör"],
+  "Founder": ["Gründer","Fundador","Oprichter","Fondatore","Fondateur","Основатель","Kurucu"],
+  "Beta Tester": ["Betatester","Probador beta","Bètatester","Beta tester","Bêta-testeur","Бета-тестер","Beta testçisi"],
+  "Veteran": ["Veteran","Veterano","Veteraan","Veterano","Vétéran","Ветеран","Emektar"],
+  "Guild Leader": ["Gildenleiter","Líder del gremio","Guildleider","Capogilda","Chef de guilde","Глава гильдии","Lonca lideri"],
+  "Community Champion": ["Community-Champion","Campeón de la comunidad","Communitykampioen","Campione della community","Champion de la communauté","Чемпион сообщества","Topluluk şampiyonu"],
+  "Event Champion": ["Event-Champion","Campeón de eventos","Evenementkampioen","Campione evento","Champion d'événement","Чемпион события","Etkinlik şampiyonu"],
+  "Supporter · 3 Months": ["Unterstützer · 3 Monate","Colaborador · 3 meses","Supporter · 3 maanden","Sostenitore · 3 mesi","Soutien · 3 mois","Поддержка · 3 месяца","Destekçi · 3 ay"],
+  "Supporter · 6 Months": ["Unterstützer · 6 Monate","Colaborador · 6 meses","Supporter · 6 maanden","Sostenitore · 6 mesi","Soutien · 6 mois","Поддержка · 6 месяцев","Destekçi · 6 ay"],
+  "Supporter · 12 Months": ["Unterstützer · 12 Monate","Colaborador · 12 meses","Supporter · 12 maanden","Sostenitore · 12 mesi","Soutien · 12 mois","Поддержка · 12 месяцев","Destekçi · 12 ay"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 
 export type RecentScreenKey=keyof typeof recentScreenTranslationRows;

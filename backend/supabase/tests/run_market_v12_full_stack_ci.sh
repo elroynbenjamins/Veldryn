@@ -36,14 +36,16 @@ for migration in \
   20261110112000_market_completed_sale_history_v13.sql \
   20261113043000_market_purchase_acquisition_guard_private_v18.sql \
   20261113050000_market_equipment_provenance_private_v19.sql \
-  20261113063000_market_direct_recipient_transfer_private_v20.sql
+  20261113063000_market_direct_recipient_transfer_private_v20.sql \
+  20261113073000_market_purchased_gear_bank_vault_private_v21.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 27 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 28 dependency-ordered private Market migrations compile on clean PG17"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_acquisition_v18.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_provenance_v19.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_recipient_transfer_v20.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_bank_vault_v21.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
@@ -63,12 +65,15 @@ begin
  or exists(select 1 from private.market_acquisition_policy_v18 where approved)
  or exists(select 1 from private.market_equipment_provenance_v19)
  or exists(select 1 from private.market_equipment_recipient_transfers_v20)
+ or exists(select 1 from private.market_equipment_bank_actions_v21)
  or has_function_privilege('authenticated','private.market_sale_tax_quote_v11(bigint)','EXECUTE')
  or has_function_privilege('anon','private.market_verified_completed_sales_v11(text,text,timestamptz)','EXECUTE')
  or has_function_privilege('authenticated','private.market_completed_price_chart_v13(text,text,integer,text)','EXECUTE')
  or has_table_privilege('authenticated','private.market_acquisition_policy_v18','SELECT')
  or has_table_privilege('authenticated','private.market_equipment_provenance_v19','SELECT')
  or has_table_privilege('authenticated','private.market_equipment_recipient_transfers_v20','SELECT')
+ or has_table_privilege('authenticated','private.market_equipment_bank_actions_v21','SELECT')
+ or has_function_privilege('authenticated','private.market_move_purchased_equipment_bank_v21(uuid,text,text,text,text,integer,integer,bigint,text,text)','EXECUTE')
  or has_function_privilege('authenticated','private.market_transfer_purchased_equipment_v20(uuid,text,text,text,integer,text,text,bigint,text,text)','EXECUTE')
  or has_function_privilege('service_role','private.market_owned_copy_valid_v19(jsonb,text,text,text,jsonb)','EXECUTE')
  then raise exception 'private_market_v12_post_rollback_release_gate_failure';end if;

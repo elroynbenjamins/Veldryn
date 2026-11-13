@@ -7,6 +7,11 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  // Equipped gear detail viewer.
+  "BASE ITEM STATS": ["BASISWERTE DES GEGENSTANDS","ATRIBUTOS BASE DEL OBJETO","BASISSTATISTIEKEN ITEM","STATISTICHE BASE OGGETTO","STATS DE BASE DE L'OBJET"],
+  "Rarity, quality, enhancements and gems can improve these stats.": ["Seltenheit, Qualität, Verbesserungen und Edelsteine können diese Werte erhöhen.","Rareza, calidad, mejoras y gemas pueden aumentar estos atributos.","Zeldzaamheid, kwaliteit, verbeteringen en edelstenen kunnen deze waarden verhogen.","Rarità, qualità, potenziamenti e gemme possono aumentare queste statistiche.","Rareté, qualité, améliorations et gemmes peuvent augmenter ces stats."],
+  "SOCKETED GEMS": ["EINGESETZTE EDELSTEINE","GEMAS ENGARZADAS","INGEZETTE EDELSTENEN","GEMME INCASTONATE","GEMMES SERTIES"],
+  "View only · Equipment belongs to this player": ["Nur ansehen · Diese Ausrüstung gehört diesem Spieler","Solo lectura · Este equipo pertenece a este jugador","Alleen bekijken · Deze uitrusting is van deze speler","Sola lettura · L'equipaggiamento appartiene a questo giocatore","Consultation uniquement · Cet équipement appartient à ce joueur"],
   // Public profile equipment showcase.
   "EQUIPPED GEAR": ["AUSGERÜSTETE AUSRÜSTUNG","EQUIPO EQUIPADO","UITGERUSTE UITRUSTING","EQUIPAGGIAMENTO INDOSSATO","ÉQUIPEMENT PORTÉ"],
   "Tap an equipped item to inspect": ["Tippe auf einen Gegenstand für Details","Toca un objeto equipado para verlo","Tik op een uitgerust item voor details","Tocca un oggetto equipaggiato per i dettagli","Touchez un objet équipé pour l’inspecter"],

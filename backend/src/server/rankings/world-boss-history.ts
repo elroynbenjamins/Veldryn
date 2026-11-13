@@ -16,14 +16,18 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Independently gated event history, in addition to the database gate.
- * Construct with released=true only once BOTH global Rankings and World Boss
- * historical-leaderboard releases are approved. Defaults to fail closed.
+ * Both global Rankings and World Boss History gates must be explicitly true.
+ * Defaults to fail closed, independent of the database gate.
  * Never create this service in the mobile client.
  */
 export class WorldBossHistoryService{
-  constructor(private readonly repository:WorldBossHistoryRepository,private readonly released=false){}
+  constructor(
+    private readonly repository:WorldBossHistoryRepository,
+    private readonly gates:{rankingsReleased:boolean;worldBossHistoryReleased:boolean}={rankingsReleased:false,worldBossHistoryReleased:false}
+  ){}
   event(accountId:string,bossId:string,limit=50,offset=0){
-    if(!this.released)throw new Error('WORLD_BOSS_HISTORY_DISABLED');
+    if(!this.gates.rankingsReleased||!this.gates.worldBossHistoryReleased)
+      throw new Error('WORLD_BOSS_HISTORY_DISABLED');
     if(typeof accountId!=='string'||!UUID.test(accountId))throw new Error('AUTH_REQUIRED');
     if(typeof bossId!=='string'||!UUID.test(bossId))throw new Error('INVALID_WORLD_BOSS_ID');
     if(!Number.isSafeInteger(limit)||limit<1||limit>100)throw new Error('INVALID_RANKING_LIMIT');

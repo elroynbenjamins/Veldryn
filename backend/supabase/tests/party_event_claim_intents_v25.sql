@@ -351,6 +351,40 @@ begin
  insert into public.character_wallets(character_id,gold)
  values(c[1],100),(c[2],40)
  on conflict(character_id) do update set gold=excluded.gold;
+
+ -- A material payout must not overflow a merged nine-digit inventory stack.
+ update public.online_game_states set state=jsonb_set(
+  state,'{inventory,stacks}',
+  '[{"itemId":"GEM_DUST","quantity":999999998}]'::jsonb)
+ where account_id=a[1];
+ begin
+  perform private.prepare_party_event_claim_intent_v25(
+   v_full_offer,a[1],'v25-own-intent-0001');
+  raise exception 'V25 accepted material stack overflow';
+ exception when others then
+  if sqlerrm<>'party_event_v25_material_stack_overflow' then raise;end if;
+ end;
+ update public.online_game_states set state=jsonb_set(
+  state,'{inventory,stacks}',
+  '[{"itemId":"COPPER_ORE","quantity":10}]'::jsonb)
+ where account_id=a[1];
+ -- Existing character wallet must not wrap a bigint on eventual credit.
+ update public.character_wallets set gold=9223372036854775805::bigint
+ where character_id=c[1];
+ update public.online_game_states set state=jsonb_set(
+  state,'{inventory,capacity}','2'::jsonb)
+ where account_id=a[1];
+ begin
+  perform private.prepare_party_event_claim_intent_v25(
+   v_full_offer,a[1],'v25-own-intent-0001');
+  raise exception 'V25 accepted bigint wallet overflow';
+ exception when others then
+  if sqlerrm<>'party_event_v25_wallet_overflow' then raise;end if;
+ end;
+ update public.character_wallets set gold=100 where character_id=c[1];
+ update public.online_game_states set state=jsonb_set(
+  state,'{inventory,capacity}','1'::jsonb)
+ where account_id=a[1];
  begin
   perform private.prepare_party_event_claim_intent_v25(
    v_full_offer,a[1],'v25-own-intent-0001');

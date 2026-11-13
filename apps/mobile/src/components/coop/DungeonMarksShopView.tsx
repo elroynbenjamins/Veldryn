@@ -52,7 +52,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   shelf==='Supplies'?item.category==='supply'||item.category==='companion':
   !['supply','companion'].includes(item.category)
  );
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.wallet}>
    <ExpeditionMarkIcon size={34}/>
    <View style={s.fill}>

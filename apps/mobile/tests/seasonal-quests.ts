@@ -17,7 +17,8 @@ if([...daily,...a,...m].some(q=>q.required<1))throw new Error('Seasonal targets 
 if([...daily,...a,...m].some(q=>q.tag==='combat'&&q.required!==({daily:30,weekly:150,monthly:450}[q.period])))throw new Error('Combat goals should retain familiar pacing');
 if([...daily,...a,...m].some(q=>q.tag==='crafting'&&q.required>=({daily:30,weekly:150,monthly:450}[q.period])))throw new Error('Crafting goals should be smaller than raw gathering goals');
 if([daily,a,m].flat().some(row=>row.tag==='equipment'))throw new Error('Challenges must use completed actions, not equipment slot counts');
-if([daily,a,m].flat().some(row=>row.tag==='boss'||row.tag==='salvage'||row.tag==='upgrade'||row.tag==='high_tier_craft'))throw new Error('Unprepared low-level players must never be assigned endgame objectives');
+if([daily,a,m].flat().some(row=>row.tag==='boss'))throw new Error('Unprepared low-level players must never be assigned bosses');
+if(SEASONAL_ACTIVITY_TAGS.some(tag=>['equipment','salvage','upgrade','high_tier_craft','trial'].includes(tag)))throw new Error('Removed equipment and Trial quest types must not appear in the available activity catalog');
 if([daily,a,m].some(board=>new Set(board.map(q=>q.tag)).size!==board.length))throw new Error('One period must not duplicate an action type');
 if(daily[0].rewardGold<60||a[0].rewardGold<260||m[0].rewardGold<660)throw new Error('Challenges should retain slightly improved but recognizable rewards');
 if(JSON.stringify(a)!==JSON.stringify(b))throw new Error('Same seasonal period must be deterministic');
@@ -78,6 +79,14 @@ const other=seasonalQuestBoard(createCharacter(newGame(0),'WAYFINDER','Scout'),'
 if(JSON.stringify(a.map(q=>[q.rarity,q.rewardGold]))!==JSON.stringify(other.map(q=>[q.rarity,q.rewardGold])))throw new Error('Quest rarity and cache quality must be class-independent');
 // New objectives use the exact paid/settled operation; raw XP and equipped slots never count.
 const highLevel={...state,character:{...state.character!,level:70,equipment:{...state.character!.equipment,weapon:'basic_sword'}},defeatedBossIds:['FALLEN_KNIGHT'],skills:state.skills.map(x=>({...x,level:70}))} as GameState;
+const forbiddenTags=new Set(['equipment','salvage','upgrade','high_tier_craft','trial']);
+for(let day=1;day<=35;day++){
+ const dt=new Date(Date.UTC(2026,8,day,12));
+ for(const period of ['daily','weekly','monthly'] as const){
+  const board=seasonalQuestBoard(highLevel,period,dt);
+  check(!board.some(quest=>forbiddenTags.has(quest.tag)),'Removed equipment and Trial quests must not return for progressed players');
+ }
+}
 const initiallyOffered=seasonalQuestBoard(state,'monthly',date);
 const frozen=recordSeasonalActivity(state,'combat',1,date.getTime());
 const improvedAfterStart={...frozen,character:{...frozen.character!,level:70,equipment:{...frozen.character!.equipment,weapon:'basic_sword'}},defeatedBossIds:['FALLEN_KNIGHT'],skills:frozen.skills.map(x=>({...x,level:70}))} as GameState;

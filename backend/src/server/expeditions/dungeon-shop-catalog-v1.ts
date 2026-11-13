@@ -1,14 +1,10 @@
 /**
- * Veldryn permanent Dungeon Marks Shop — hidden V1 catalogue / read-only policy.
- * Approved starting design: 2026-11-11. NOT a purchase implementation.
- *
- * The real wallet already exists as public.expedition_wallets.expedition_marks.
- * Never trust a mobile-supplied price or ownership flag. A future purchase RPC
- * must atomically debit that wallet and grant the server-validated reward.
- *
- * This module intentionally has no routes, database writes, or feature activation.
+ * Dungeon Marks Shop catalogue. Server validates IDs, while PostgreSQL owns
+ * live prices, weekly caps, entitlements and the global release switch.
+ * Only preverified account-bound SKUs can be enabled in the database; the
+ * remainder stay preview-only until art and reward provenance are complete.
  */
-export const DUNGEON_SHOP_LIVE_V1 = false as const;
+export const DUNGEON_SHOP_LIVE_V1 = true as const;
 export const DUNGEON_SHOP_CATALOG_VERSION = 'dungeon-marks-shop-v2-2026-11-11' as const;
 
 export type DungeonShopRegion = 'Asterfall' | 'Sunscar' | 'Frostmarch';
@@ -81,11 +77,13 @@ export interface DungeonShopAccountViewV1 {
   purchasesThisUtcWeek:Readonly<Record<string,number>>;
 }
 export type DungeonShopQuoteStatus='eligible'|'unknown_offer'|'region_locked'|'already_owned'|'weekly_limit'|'insufficient_marks';
-export function dungeonShopQuoteV1(itemId:string,account:DungeonShopAccountViewV1):{
+export function dungeonShopQuoteV1(itemId:string,account:DungeonShopAccountViewV1,serverPrice?:number):{
   status:DungeonShopQuoteStatus; marks:number; price:number; remaining:number|null;
 } {
   const offer=dungeonShopOfferV1(itemId);
   if(!offer)return {status:'unknown_offer',marks:account.marks,price:0,remaining:null};
+  const price=serverPrice??offer.marks;
+  if(!Number.isSafeInteger(price)||price<1||price>=1000000)throw new Error('invalid_server_shop_price');
   const purchased=account.purchasesThisUtcWeek[itemId]??0;
   const remaining=offer.perUtcWeek===undefined?null:Math.max(0,offer.perUtcWeek-purchased);
   const ownedId=offer.grant.kind==='profile_collectible'?offer.grant.rewardId:null;
@@ -93,11 +91,11 @@ export function dungeonShopQuoteV1(itemId:string,account:DungeonShopAccountViewV
     offer.firstClearRegion&&!account.clearedRegions.includes(offer.firstClearRegion)?'region_locked':
     ownedId&&account.ownedRewardIds.includes(ownedId)?'already_owned':
     remaining!==null&&remaining===0?'weekly_limit':
-    account.marks<offer.marks?'insufficient_marks':'eligible';
-  return {status,marks:account.marks,price:offer.marks,remaining};
+    account.marks<price?'insufficient_marks':'eligible';
+  return {status,marks:account.marks,price,remaining};
 }
 
-/** The V1 shop is purposely not live: no caller can grant via this predicate. */
+/** Database release settings and per-offer switches still gate all spending. */
 export function dungeonShopPurchasesEnabledV1():boolean{return DUNGEON_SHOP_LIVE_V1}
 
 export function validateDungeonShopCatalogV1():void {

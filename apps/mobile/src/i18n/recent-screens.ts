@@ -679,6 +679,8 @@ export const recentScreenTranslationRows = {
   "Development tools.": ["Entwicklerwerkzeuge.","Herramientas de desarrollo.","Ontwikkelaarshulpmiddelen.","Strumenti di sviluppo.","Outils de développement.","Инструменты разработчика.","Geliştirici araçları."],
   "Developer tools": ["Entwicklerwerkzeuge","Herramientas de desarrollo","Ontwikkelaarshulpmiddelen","Strumenti di sviluppo","Outils de développement","Инструменты разработчика","Geliştirici araçları"],
   "What's New & Updates": ["Neuigkeiten und Updates","Novedades y actualizaciones","Nieuw en updates","Novità e aggiornamenti","Nouveautés et mises à jour","Новости и обновления","Yenilikler ve güncellemeler"],
+  "ACTIVITY QUEUE": ["AKTIVITÄTSWARTESCHLANGE","COLA DE ACTIVIDADES","ACTIVITEITENWACHTRIJ","CODA ATTIVITÀ","FILE D'ACTIVITÉS","ОЧЕРЕДЬ ЗАНЯТИЙ","ETKİNLİK KUYRUĞU"],
+  "Manage waiting activities": ["Wartende Aktivitäten verwalten","Gestionar actividades en espera","Wachtende activiteiten beheren","Gestisci le attività in attesa","Gérer les activités en attente","Управление ожидающими занятиями","Bekleyen etkinlikleri yönet"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 
 export type RecentScreenKey=keyof typeof recentScreenTranslationRows;

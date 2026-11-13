@@ -45784,6 +45784,11 @@ init_progression();
 
 // ../apps/mobile/src/core/game.ts
 init_meal_buffs();
+
+// ../apps/mobile/src/core/food-queue.ts
+var foodIds = new Set(ITEMS.filter((item) => item.type === "food" && (item.heal ?? 0) > 0).map((item) => item.id));
+
+// ../apps/mobile/src/core/game.ts
 init_progression();
 
 // ../apps/mobile/src/core/identity-names.ts

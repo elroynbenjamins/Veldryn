@@ -92,16 +92,17 @@ export async function auditWorldBossOwnedCohortV15(input:{
   // and role derivation already used by online co-op and World Boss V12.
   verifyPartyEventEquippedCopyOwnershipV4(owned.serverState);
   const record=deriveOnlineCoopLoadout(selection.accountId,owned.serverState,owned.gameVersion);
+  const verifiedPower=record.combatPower;
   if(record.accountId!==selection.accountId||
    record.characterId!==selection.characterId||
    record.revision!==selection.expectedRevision||!record.legalEquipment||
-   !Number.isFinite(record.combatPower)||record.combatPower<=0||
-   record.combatPower>1e8)
+   typeof verifiedPower!=='number'||!Number.isFinite(verifiedPower)||verifiedPower<=0||
+   verifiedPower>1e8)
    throw Error('world_boss_v15_invalid_verified_loadout');
   samples.push({
    ownerAccountId:selection.accountId,
    role:deriveRole(record.classId),
-   combatPower:record.combatPower,
+   combatPower:verifiedPower,
    capturedAtUtcMs:owned.updatedAtUtcMs,
   });
  }

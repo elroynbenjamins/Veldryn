@@ -245,6 +245,16 @@ begin
   v_result:=private.market_purchase_equipment_offer_v9(
     v_buyer,v_offer,125,1,7,6,'gear-v9-purchase',repeat('1',64));
   v_delivery:=(v_result->>'deliveryId')::uuid;
+  -- V22 permanent first-sale history is tied to the exact settled Gold
+  -- intent and never replaces the current-owner provenance ledger.
+  if (select count(*) from private.market_equipment_sale_chain_v22
+      where exact_instance_id=v_instance and sale_ordinal=1
+        and source_hold_id=v_hold and previous_source_hold_id is null
+        and seller_account_id=v_seller and buyer_account_id=v_buyer
+        and buyer_character_id=v_buyer_main and item_id=v_item
+        and original_receipt=v_receipt and gross_gold=125
+        and fee_gold=7 and seller_payout_gold=118)<>1
+  then raise exception 'V22 exact first-sale chain was not recorded';end if;
   if (select status from private.market_equipment_provenance_v19
       where exact_instance_id=v_instance)<>'pending'
     or (select required_character_level from private.market_equipment_provenance_v19
@@ -802,6 +812,48 @@ begin
     raise exception 'V21 stale revision accepted';
   exception when raise_exception then
     if sqlerrm<>'market_stale_state' then raise;end if;
+  end;
+
+  -- V22 read-only resale preflight can verify the copy, but cannot grant
+  -- resale approval or mutate any character/escrow ownership.
+  v_result:=private.market_resale_preflight_v22(
+    v_buyer,v_instance,v_buyer_main::text,'equipment_pouch',0);
+  if v_result->>'candidate'<>'true'
+    or v_result->>'canRelistNow'<>'false'
+    or v_result->>'reason'<>'market_resale_escrow_not_ready'
+    or v_result->>'lastSaleOrdinal'<>'1'
+    or v_result->>'requiredCharacterLevel'<>'14'
+  then raise exception 'V22 resale preflight changed the release gate or copy eligibility';end if;
+  v_result:=private.market_resale_preflight_v22(
+    v_rival,v_instance,v_rival_char::text,'inventory',0);
+  if v_result->>'candidate'<>'false'
+    or v_result->>'canRelistNow'<>'false'
+  then raise exception 'V22 foreign account passed resale preflight';end if;
+  begin
+    perform private.market_reserve_exact_equipment_v8(
+      v_buyer,13,'equipment_pouch',v_buyer_main::text,0,v_item,v_instance,
+      'v22-resale-before-approval',repeat('d',64));
+    raise exception 'V22 second-sale reserved without lifecycle approval';
+  exception when raise_exception then
+    if sqlerrm<>'market_resale_escrow_not_ready' then raise;end if;
+  end;
+  if (select count(*) from private.market_equipment_sale_chain_v22
+        where exact_instance_id=v_instance)<>1
+    or (select count(*) from private.market_equipment_escrows_v8
+        where exact_instance_id=v_instance)<>1
+    or (select count(*) from private.market_gold_intents_v2
+        where status='settled')<>1
+    or (select count(*) from private.market_equipment_provenance_v19
+        where exact_instance_id=v_instance and status='claimed')<>1
+    or (select revision from public.online_game_states
+        where account_id=v_buyer)<>13
+  then raise exception 'V22 denied resale mutated custody, Gold, history or revision';end if;
+  begin
+    update private.market_equipment_sale_chain_v22
+      set gross_gold=200 where source_hold_id=v_hold;
+    raise exception 'V22 historical sale chain accepted mutation';
+  exception when raise_exception then
+    if sqlerrm<>'market_sale_chain_immutable' then raise;end if;
   end;
 
   -- Separate unsold listing: seller cancellation returns original copy.

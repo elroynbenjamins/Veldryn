@@ -20,7 +20,7 @@ const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
 const i18nDir=path.resolve(__dirname,'../src/i18n');
 const coveredSources=['navigation.ts','app-shell.ts','account.ts','companions.ts',
- 'gameplay.ts','profile.ts','social.ts','battle.ts','creation.ts' ,'progression.ts'];
+ 'gameplay.ts','profile.ts','social.ts','battle.ts','creation.ts','progression.ts'];
 const source=coveredSources.map(file=>fs.readFileSync(path.join(i18nDir,file),'utf8')).join('\n');
 
 for(const [english,turkish] of Object.entries(TURKISH_COVERAGE)){

@@ -5,7 +5,7 @@
 begin;
 
 create table private.party_event_weeks_v11 (
- party_id uuid not null references public.parties(id) on delete cascade,
+ party_id uuid not null,
  event_starts_at timestamptz not null,
  event_ends_at timestamptz not null,
  family text not null check(family in ('broken_caravan','nightfall_hunt','broken_wards','lost_reliquary')),
@@ -19,7 +19,7 @@ create table private.party_event_weeks_v11 (
  constraint party_event_v11_full_week check(event_ends_at=event_starts_at+interval '7 days')
 );
 comment on table private.party_event_weeks_v11 is
- 'Hidden: server-frozen event identity. Calendar, family, variation and party role validation also required in app service.';
+ 'Hidden: durable event snapshot remains after live Party disband; calendar, family and party role validation also required in app service.';
 
 create table private.party_event_roster_v11 (
  party_id uuid not null,
@@ -79,7 +79,7 @@ create table private.party_event_receipts_v11 (
  stage smallint not null check(stage between 1 and 3),
  action_id text not null check(action_id in
   ('scout_route','secure_approach','support_expedition','prepare_finale')),
- source_event_id text not null references private.party_event_sources_v11(source_event_id),
+ source_event_id text not null references private.party_event_sources_v11(source_event_id) on delete cascade,
  request_id text not null unique check(length(request_id) between 8 and 180),
  stage_context_hash text not null check(stage_context_hash ~ '^[0-9a-f]{64}$'),
  event_points_awarded smallint not null default 0 check(event_points_awarded=0),
@@ -158,7 +158,7 @@ begin
 end;$$;
 
 create trigger party_event_roster_guard_v11
- before insert or update or delete on private.party_event_roster_v11
+ before insert or update on private.party_event_roster_v11
  for each row execute function private.party_event_roster_guard_v11();
 
 -- Server choices lock once. The stage cannot be rewound, changed or reopened.
@@ -207,7 +207,7 @@ begin
 end;$$;
 
 create trigger party_event_stage_guard_v11
- before insert or update or delete on private.party_event_stages_v11
+ before insert or update on private.party_event_stages_v11
  for each row execute function private.party_event_stage_guard_v11();
 
 -- Week metadata and the active stage are monotone. This does not itself
@@ -215,7 +215,11 @@ create trigger party_event_stage_guard_v11
 create or replace function private.party_event_week_guard_v11()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin
- if tg_op<>'UPDATE' then return old;end if;
+ if tg_op='INSERT' then
+  if not exists(select 1 from public.parties where id=new.party_id)
+  then raise exception 'party_event_party_not_found';end if;
+  return new;
+ end if;
  if row(old.party_id,old.event_starts_at,old.event_ends_at,
      old.family,old.variation,old.seed,old.difficulty,old.created_at)
   is distinct from
@@ -239,16 +243,16 @@ create trigger party_event_week_guard_v11
  before update on private.party_event_weeks_v11
  for each row execute function private.party_event_week_guard_v11();
 
--- A source is append-only. No changing its actor, timing or gameplay kind
--- to re-credit a different action later.
+-- Sources and receipts cannot be changed in place. Service role has no
+-- DELETE grant; FK cascade remains possible for account erasure.
 create or replace function private.party_event_append_only_v11()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin raise exception 'party_event_record_immutable';end;$$;
 create trigger party_event_sources_immutable_v11
- before update or delete on private.party_event_sources_v11
+ before update on private.party_event_sources_v11
  for each row execute function private.party_event_append_only_v11();
 create trigger party_event_receipts_immutable_v11
- before update or delete on private.party_event_receipts_v11
+ before update on private.party_event_receipts_v11
  for each row execute function private.party_event_append_only_v11();
 
 -- Trusted service-only RPC: source MUST already exist from gameplay/outbox

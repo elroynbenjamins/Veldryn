@@ -1,6 +1,6 @@
 # Turning of the Age — New Year 2026/27 · implementation pass 1
 
-Status: **preview and calendar integration implemented in branch; gameplay NOT released, event NOT enabled, and production schedule NOT changed**.
+Status: **preview/calendar implementation committed; the approved exact UTC dates are now published to staging and production; both events remain disabled and Turning gameplay is not released.**
 
 ## 1. Theme and identity
 
@@ -39,19 +39,26 @@ The milestone numbers are **existing authored values**, not validated final earn
 
 No currency, collectible, server activation, migrations, reward command or player entitlement is changed in this pass.
 
-## 4. Launch blocker: Frostfall overlap
+## 4. Approved Frostfall → Turning handover (UTC)
 
-The original Turning planning window is **Dec 29, 2026 – Jan 4, 2027**, but the currently-authored Frostfall window runs **Dec 3–29** with a **claim-only period ending Jan 3, 2027 at 00:00 UTC**.
+This replaces the earlier overlapping windows. The player's approved schedule is:
 
-`enforce_single_visible_live_event` forbids *any* overlapping enabled player-event windows, **including grace/claim-only time**. Turning cannot be enabled Dec 29 while Frostfall remains enabled for outstanding claims. Moreover, the client currently presents one active/claimable event.
+| Phase | First included day | Last included day | Exclusive database end |
+| --- | --- | --- | --- |
+| Frostfall active | Dec 3, 2026 | Dec 26, 2026 | Dec 27, 2026 00:00Z |
+| Frostfall claim-only | Dec 27, 2026 | Dec 28, 2026 | Dec 29, 2026 00:00Z |
+| Turning active | Dec 29, 2026 | Jan 4, 2027 | Jan 5, 2027 00:00Z |
+| Turning claim-only | Jan 5, 2027 | Jan 11, 2027 | Jan 12, 2027 00:00Z |
 
-**Safe default:** preserve Frostfall's promised claims. Do not publish a definitive Turning start or auto-enable either event from this branch. An option that fits today's server architecture is **Jan 3–10, 2027 UTC** (the season guard permits the existing 2026 Turning ID for a Jan 1–7 restart), or else explicitly design multi-event claim UI and server visibility before returning to a Dec 29 start.
+The exact handover is **Dec 29, 2026 at 00:00:00 UTC**: Frostfall's claim grace ends at the same instant Turning opens. Since the server's single-visible-event trigger treats windows as half-open, equality is safe and no claim window overlaps the next event.
 
-The name and fantasy can stay New Year-themed, but the exact dates must be decided as a separate Live-Ops release change and verified in staging. Avoid silently shortening Frostfall claim grace.
+The source-of-truth data migration is `backend/supabase/migrations/20261113043200_frostfall_turning_of_the_age_2026_handover.sql`. It updates both festival records, sets Frostfall `claimGraceDays=2`, Turning `claimGraceDays=7`, and **does not change `enabled`**. The DML was executed and the values verified in staging and production on Nov 13, 2026. Both rows remained disabled. The Git migration is idempotent for pre-launch re-application, and may be reconciled with deployment migration history; do not run it against activated events without checking preflight.
+
+The public calendar now exposes the exact Turning date and Frostfall's shortened window even while disabled. The separate client release must include the Turning live catalog definition and all required art before Live-Ops enables it.
 
 ## 5. Next implementation passes
 
-- Finalize dates and add a **disabled** server schedule only after the overlap is resolved; verify 14-day teaser and that no reward is claimable early.
+- Verify the published 14-day Turning teaser begins Dec 15 and the second reveal Dec 22 at 00:00 UTC, without any rewards being claimable early.
 - Release the existing `TURNING_OF_THE_AGE_EVENT` into `LIVE_EVENT_CATALOG` and its dedicated visual bundle **together**; never add one without the other. Check all reward IDs, server-owned currency receipts, pre-existing account ownership, and event-series inheritance.
 - Connect Chronicle Vault stages, encounter balance, and The Last Hour boss to the actual event runtime; verify chapter progression, rewards, and anti-replay/cap rules.
 - Add polished discovery art, event enemies, and a unique First Dawn transition moment; keep them cosmetic until server settlement and economy checks are complete.
@@ -60,4 +67,4 @@ The name and fantasy can stay New Year-themed, but the exact dates must be decid
 
 ## 6. Rollback and safety
 
-The branch contains only presentation and tests, plus a parked visual bundle. With no approved published schedule, the new preview remains invisible; the existing Frostfall UI and reward flow are untouched. Revert the client commits to remove the preview. Do not enable live-event rows or apply server migrations as a side effect of merging this branch.
+The branch contains only presentation and tests, plus a parked visual bundle. The approved schedule is now published, so the read-only Turning teaser becomes eligible from Dec 15, 2026. Gameplay remains disabled until separately approved. Revert the client commits to remove the preview without affecting published dates. If rescheduling again, amend staging and production event records using an explicit, tested data migration. Do not enable either event as a side effect of merging this branch.

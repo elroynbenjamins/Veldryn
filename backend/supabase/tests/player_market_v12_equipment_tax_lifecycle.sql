@@ -32,6 +32,7 @@ declare
   v_resale_again uuid;
   v_resale_delivery uuid;
   v_second_delivery uuid;
+  v_second_resale_id uuid;
   v_chain_receipt jsonb;
 begin
   insert into auth.users(id,email) values
@@ -937,6 +938,7 @@ begin
     v_buyer,15,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
     'v23-resale-second-reserve',repeat('6',64));
   v_resale_again:=(v_result->>'resaleId')::uuid;
+  v_second_resale_id:=v_resale_again;
   if v_resale_again=v_resale_id or (select count(*) from
      private.market_equipment_resale_offers_v23)<>2
   then raise exception 'V23 cancelled generation was reused';end if;
@@ -962,6 +964,43 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_offer_not_available' then raise;end if;
   end;
+  -- Enforce class and socket eligibility just before settlement, even
+  -- though the listing was valid when created.
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,classId}','"IRONWARDEN"'::jsonb,false) where account_id=v_rival;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_again,125,4,16,'v23-wrong-class',repeat('0',64));
+    raise exception 'V23 class mismatch bought a resale';
+  exception when raise_exception then
+    if sqlerrm<>'market_class_required' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,classId}','"BASTION"'::jsonb,false) where account_id=v_rival;
+  update private.market_item_policy_v1 set tradable=false
+    where item_id='gem:stat_might:g2';
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_again,125,4,16,'v23-revoked-socket',repeat('1',64));
+    raise exception 'V23 revoked socket was sold in resale';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_socket_policy_changed' then raise;end if;
+  end;
+  update private.market_item_policy_v1 set tradable=true
+    where item_id='gem:stat_might:g2';
+  -- Before touching either Gold surface, reject a duplicate exact instance
+  -- already present in the buyer's authoritative saved game state.
+  update public.online_game_states set state=jsonb_set(state,
+    '{inventory,stacks}',jsonb_build_array(v_stack),false) where account_id=v_rival;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_again,125,4,16,'v23-buyer-copy-collision',repeat('2',64));
+    raise exception 'V23 duplicate buyer copy was charged';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_buyer_identity_collision' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{inventory,stacks}','[]'::jsonb,false) where account_id=v_rival;
   v_result:=private.market_purchase_equipment_resale_v23(
     v_rival,v_resale_again,125,4,16,'v23-second-purchase',repeat('9',64));
   v_resale_delivery:=(v_result->>'deliveryId')::uuid;
@@ -1046,7 +1085,7 @@ begin
     or (select count(*) from private.market_equipment_resale_chain_v23
       where resale_id=v_resale_again and sale_ordinal=3
         and buyer_account_id=v_buyer and seller_account_id=v_rival
-        and previous_resale_id is not null)<>1
+        and previous_resale_id=v_second_resale_id)<>1
     or (select count(*) from private.market_equipment_sale_chain_v22
       where exact_instance_id=v_instance and sale_ordinal=1)<>1
     or (select count(*) from private.market_resale_gold_intents_v23)<>2

@@ -599,7 +599,7 @@ export const recentScreenTranslationRows = {
     "Débloqué après 12 mois de soutien vérifiés.",
     "Открывается после 12 подтверждённых месяцев поддержки.",
     "Toplam 12 doğrulanmış destekçi ayından sonra açılır."
-  ]
+  ],
   "Admin": ["Admin","Administrador","Beheerder","Amministratore","Administrateur","Администратор","Yönetici"],
   "Moderator": ["Moderator","Moderador","Moderator","Moderatore","Modérateur","Модератор","Moderatör"],
   "Founder": ["Gründer","Fundador","Oprichter","Fondatore","Fondateur","Основатель","Kurucu"],

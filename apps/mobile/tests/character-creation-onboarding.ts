@@ -22,7 +22,7 @@ assert.ok(creation.includes('onSubmitEditing={goNext}')&&creation.includes('cons
 assert.ok(creation.includes("const THEME_IDS=['obsidian','ember','ivory']"),'all three interface themes remain selectable');
 assert.ok(creation.includes("onTheme?.(id)")&&creation.includes("activeTheme=UI_THEMES[activeThemeId]"),'theme selection uses live theme settings');
 assert.ok(creation.includes('You can change this anytime in Settings.'),'theme is explicitly reversible');
-assert.ok(app.includes('themeId={state.settings.uiTheme}')&&app.includes('onTheme={uiTheme=>void commit'),'first-character theme choice remains persisted');
+assert.ok(app.includes('themeId={displayedThemeId}')&&app.includes('onTheme={selectUiTheme}')&&app.includes('await flushThemeSave();if(serverGameplayEnabled)')&&app.includes('createCharacter(stateRef.current??state,id,name,body)'),'first-character theme previews immediately and persists before character creation');
 assert.ok(creation.includes('onSignInExisting')&&creation.includes("step==='welcome'"),'existing-player sign-in remains reachable');
 assert.ok(creation.includes("step==='class'&&!onCancel")&&creation.includes('onCancel?.()'),'roster cancellation returns to the roster without a welcome screen');
 assert.ok(creation.includes('WHAT HAPPENS NEXT')&&creation.includes('A small first hunt.'),'review retains a concise next action');

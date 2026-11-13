@@ -73,7 +73,7 @@ assert(expedition.includes("type:'companion_assignment_start'"),'Starting expedi
 assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');
 // The Skills hub Companion tile is a Sanctuary facility, not a fake levelable skill.
 assert(skills.includes("level:facilityLevel,kind:'Sanctuary facility'"),'Companion skill tile must describe the actual Training Ground facility level, including level zero');
-assert(skills.includes("Math.min(1,card.level/3)")&&skills.includes("'Facility Lv '+card.level+'/3'"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
+assert(skills.includes("Math.min(1,card.level/3)")&&skills.includes("gt('Facility Lv {level}/3',{level:card.level})"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
 assert(skills.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[facilityLevel]'),'Training XP/day must follow the authoritative Sanctuary values');
 assert(skills.includes('trainingDaysReady*facilityXpPerDay')&&skills.includes('idleCompanions.length'),'Companion training claim must show accrued XP and eligible companions');
 assert(skills.includes("type:'companion_training'")&&skills.includes('disabled={!trainingClaimReady}'),'Skills hub uses an existing authenticated companion training claim with readiness gating');

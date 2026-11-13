@@ -3,6 +3,7 @@ import {createTranslator} from './translator';
 import {useGameLanguage} from './GameLanguageProvider';
 import {battleText} from './battle';
 import {equipmentMaterialMetadataText} from './equipment-metadata';
+import {germanCoverageText} from './german-coverage';
 import {useMemo} from 'react';
 
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
@@ -32,7 +33,7 @@ const common={
 
  "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
  "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
- "Events":["Events","Events","Eventos","Evenementen","Eventi","Événements"],
+ "Events":["Events","Ereignisse","Eventos","Evenementen","Eventi","Événements"],
  "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],
  "Reserved · materials returned on cancel; no Gold":["Reserved · materials returned on cancel; no Gold","Reserviert · Materialien bei Abbruch zurück; kein Gold","Reservado · se devuelven los materiales al cancelar; sin oro","Gereserveerd · materialen terug bij annuleren; geen goud","Riservato · materiali restituiti all'annullamento; niente oro","Réservé · matériaux rendus en cas d'annulation ; aucun or"],
 
@@ -50,7 +51,20 @@ const common={
  "T2 equipment":["T2 equipment","T2-Ausrüstung","Equipo T2","T2-uitrusting","Equipaggiamento T2","Équipement T2"],
  "Alchemy Lv {level} · Crafted, not a Woodcutting drop":["Alchemy Lv {level} · Crafted, not a Woodcutting drop","Alchemie St. {level} · Hergestellt, kein Holzfällen-Fund","Alquimia niv. {level} · Se fabrica; no se obtiene talando","Alchemie niv. {level} · Gemaakt, geen houthakdrop","Alchimia liv. {level} · Si crea, non si ottiene tagliando","Alchimie niv. {level} · Fabriqué, non obtenu en bûcheronnage"],
 
- // Alchemy workshop: translate displayed effects from authoritative potion properties.
+ 
+  // Dynamic gathering messages; interpolate translated skill and item names.
+  "Gather {name}":["Gather {name}","{name} sammeln","Recolectar {name}","{name} verzamelen","Raccogli {name}","Récolter {name}"],
+  "Train to gather {name}":["Train to gather {name}","Trainiere, um {name} zu sammeln","Entrena para recolectar {name}","Train om {name} te verzamelen","Allenati per raccogliere {name}","Entraînez-vous pour récolter {name}"],
+  "{name} is currently gathering":["{name} is currently gathering","{name} wird gerade gesammelt","{name} se está recolectando","{name} wordt nu verzameld","Raccolta di {name} in corso","Récolte de {name} en cours"],
+  "{name} is in {region}":["{name} is in {region}","{name} befindet sich in {region}","{name} está en {region}","{name} bevindt zich in {region}","{name} si trova in {region}","{name} se trouve dans {region}"],
+  "Region: {name}":["Region: {name}","Region: {name}","Región: {name}","Regio: {name}","Regione: {name}","Région : {name}"],
+  "Have: {count} {resource} · {seconds}s":["Have: {count} {resource} · {seconds}s","Im Besitz: {count} {resource} · {seconds} s","Tienes: {count} {resource} · {seconds}s","In bezit: {count} {resource} · {seconds}s","Possiedi: {count} {resource} · {seconds}s","Possédé : {count} {resource} · {seconds}s"],
+  "Unlocks at {skill} level {level}":["Unlocks at {skill} level {level}","Freigeschaltet ab {skill}-Stufe {level}","Se desbloquea con {skill} nivel {level}","Ontgrendelt bij {skill} niveau {level}","Si sblocca con {skill} livello {level}","Débloqué au niveau {level} de {skill}"],
+  "No {skill} resources are configured.":["No {skill} resources are configured.","Für {skill} sind keine Ressourcen eingerichtet.","No hay recursos configurados para {skill}.","Geen grondstoffen ingesteld voor {skill}.","Nessuna risorsa configurata per {skill}.","Aucune ressource configurée pour {skill}."],
+  "Facility Lv {level}/3":["Facility Lv {level}/3","Anlage Stufe {level}/3","Instalación niv. {level}/3","Faciliteit niv. {level}/3","Struttura liv. {level}/3","Installation niv. {level}/3"],
+  "{xp} XP/day per idle companion":["{xp} XP/day per idle companion","{xp} EP/Tag je untätigem Gefährten","{xp} EXP/día por compañero inactivo","{xp} XP/dag per inactieve metgezel","{xp} PE/giorno per compagno inattivo","{xp} EXP/jour par compagnon inactif"],
+  "Next level: {xp} XP/day · {status}":["Next level: {xp} XP/day · {status}","Nächste Stufe: {xp} EP/Tag · {status}","Siguiente nivel: {xp} EXP/día · {status}","Volgend niveau: {xp} XP/dag · {status}","Livello successivo: {xp} PE/giorno · {status}","Niveau suivant : {xp} EXP/jour · {status}"],
+  // Alchemy workshop: translate displayed effects from authoritative potion properties.
  "Restores {percent}% maximum HP in boss fights or between dungeon rooms.":["Restores {percent}% maximum HP in boss fights or between dungeon rooms.","Stellt {percent} % der maximalen LP im Bosskampf oder zwischen Dungeonräumen wieder her.","Recupera un {percent} % de salud máxima contra jefes o entre salas de mazmorra.","Herstelt {percent}% maximale HP bij bazen of tussen kerkerkamers.","Ripristina il {percent}% dei PV massimi contro i boss o tra le stanze dei dungeon.","Rend {percent} % des PV max. contre les boss ou entre les salles de donjon."],
  "Deals {percent}% more damage for {count} ordinary encounters.":["Deals {percent}% more damage for {count} ordinary encounters.","Verursacht {percent} % mehr Schaden für {count} normale Kämpfe.","Inflige un {percent} % más de daño durante {count} encuentros normales.","Brengt {percent}% meer schade toe gedurende {count} gewone gevechten.","Infligge il {percent}% di danni in più per {count} incontri normali.","Inflige {percent} % de dégâts supplémentaires pendant {count} combats ordinaires."],
  "Takes {percent}% less damage for {count} ordinary encounters.":["Takes {percent}% less damage for {count} ordinary encounters.","Erleidet {percent} % weniger Schaden für {count} normale Kämpfe.","Recibe un {percent} % menos de daño durante {count} encuentros normales.","Ontvangt {percent}% minder schade gedurende {count} gewone gevechten.","Subisce il {percent}% di danni in meno per {count} incontri normali.","Subit {percent} % de dégâts en moins pendant {count} combats ordinaires."],
@@ -1325,6 +1339,8 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
   const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
+  // German source labels take priority over generic interpolated templates.
+  if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}
   for(const template of templates){
     const match=template.pattern.exec(value);
     if(match){const params:Record<string,string>={};template.names.forEach((name,index)=>{params[name]=name==='skill'?localizeGameplay(language,match[index+1]):match[index+1];});return gameplayTranslate(language,template.key,params);}

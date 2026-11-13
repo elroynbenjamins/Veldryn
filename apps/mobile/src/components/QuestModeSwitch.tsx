@@ -17,7 +17,7 @@ export function QuestModeSwitch({mode,onChange,storyMeta,contractMeta,challengeM
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const rows:[QuestMode,string,number][]=[['story',storyMeta,storyAttention],['contracts',contractMeta,contractAttention],['challenges',challengeMeta,challengeAttention]];
  return <View accessibilityRole="tablist" style={s.tabs}>
-  {rows.map(([id,meta,attention])=>{const selected=mode===id;return <Pressable key={id} accessibilityRole="tab" aria-selected={selected} accessibilityState={{selected}} accessibilityLabel={LABELS[id]+', '+meta} onPress={()=>onChange(id)} style={({pressed})=>[s.tab,selected&&s.tabSelected,pressed&&s.pressed]}>
+  {rows.map(([id,meta,attention])=>{const selected=mode===id;return <Pressable key={id} accessibilityRole="tab" aria-selected={selected} accessibilityState={{selected}} accessibilityLabel={p(LABELS[id])+', '+meta} onPress={()=>onChange(id)} style={({pressed})=>[s.tab,selected&&s.tabSelected,pressed&&s.pressed]}>
    <View pointerEvents="none" accessible={false} style={[s.indexMark,selected&&s.indexMarkSelected]}/>
    <View style={s.labelRow}><Text style={[s.label,selected&&s.labelSelected]}>{p(LABELS[id])}</Text>{attention>0?<View style={s.badge}><Text style={s.badgeText}>{attention>9?'9+':attention}</Text></View>:null}</View>
    <Text style={[s.meta,selected&&s.metaSelected]}>{meta}</Text>

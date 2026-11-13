@@ -87,7 +87,7 @@ ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,ki
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('Tap a resource to begin gathering.'),'Normal gathering skills must state their direct-tap interaction');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
-ok(gatheringSkills.includes('Have: ${formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
+ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
 ok(gatheringSkills.includes('gatheringBalanceProjection'),'Gathering duration must continue using the shared rate projection');
 const balanceProjection=read('src/core/balance-projection.ts');

@@ -2,6 +2,8 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {PLAYER_MARKET_RELEASED,MARKET_AUTHENTICATED_SERVICE_READY} from '../core/release-flags';
 import {itemDef} from '../content/items';
+import {localizedItemName} from '../i18n/starter-item-names';
+import {formatLocalizedNumber} from '../i18n/translator';
 import {
   loadMarketInbox,claimMarketInboxDelivery,claimMarketInboxEquipmentDelivery,
   type MarketInboxEntry,type MarketInboxDestination,type MarketInboxSnapshot,
@@ -22,6 +24,7 @@ export function MarketInboxPanel({state,online,onRefresh}:{
 }){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
   const a=(str:string)=>recentScreenText(state.settings.language,str);
+  const formatNumber=(value:number)=>formatLocalizedNumber(state.settings.language,value);
   const [history,setHistory]=useState(false);
   const [snapshot,setSnapshot]=useState<MarketInboxSnapshot>({entries:[],pendingCount:0,total:0});
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
@@ -82,20 +85,20 @@ export function MarketInboxPanel({state,online,onRefresh}:{
     {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
     {!!notice?<Text accessibilityRole="alert" style={s.success}>{notice}</Text>:null}
     {snapshot.entries.map(row=>{
-      let itemName=row.itemId.replace(/_/g,' ');
+      const itemName=localizedItemName(state.settings.language,row.itemId);
       let isKnown=false;
-      try{itemName=itemDef(row.itemId).name;isKnown=true;}catch{ /* Unknown catalog entries display safely. */ }
+      try{itemDef(row.itemId);isKnown=true;}catch{ /* Unknown catalog entries display safely. */ }
       return <View style={s.entry} key={row.id}>
       <View style={s.entryTop}>
         {row.assetKind==='equipment'&&isKnown?<ItemArtwork itemId={row.itemId} size={36}/>:<ResourceIcon resourceId={row.itemId} size={36}/>}
         <View style={s.flex}>
           <Text style={s.kind}>{a(row.kind==='purchased'?'Purchased':row.kind==='sold'?'Sold':'Returned')}</Text>
-          <Text numberOfLines={2} style={s.itemName}>{itemName} ×{row.quantity.toLocaleString()}</Text>
+          <Text numberOfLines={2} style={s.itemName}>{itemName} ×{formatNumber(row.quantity)}</Text>
         </View>
         <Text style={s.status}>{a(row.status==='ready'?'READY':row.status==='claimed'?'CLAIMED':'PAID')}</Text>
       </View>
-      {row.kind==='sold'?<Text style={s.gold}>+{row.goldChange.toLocaleString()} {a('Gold credited')}</Text>
-        :row.kind==='purchased'?<Text style={s.muted}>{row.goldChange.toLocaleString()} {a('Gold · Item waiting in Inbox')}</Text>
+      {row.kind==='sold'?<Text style={s.gold}>+{formatNumber(row.goldChange)} {a('Gold credited')}</Text>
+        :row.kind==='purchased'?<Text style={s.muted}>{formatNumber(row.goldChange)} {a('Gold · Item waiting in Inbox')}</Text>
         :<Text style={s.muted}>{a('Unsold items returned safely')}</Text>}
       {row.status==='ready'&&row.deliveryId?
         <View style={s.actions}>

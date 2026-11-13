@@ -659,6 +659,13 @@ begin
       from public.online_game_states where account_id=v_buyer)<>v_buyer_alt::text
     or (select count(*) from private.market_equipment_bank_actions_v21)<>1
   then raise exception 'V21 deposit lost Forge copy, receipt or provenance';end if;
+  -- Bank custody is never a saleable source, even though the same item
+  -- was previously purchased and has a valid historical sale chain.
+  v_result:=private.market_resale_preflight_v22(
+    v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0);
+  if v_result->>'candidate'<>'false'
+    or v_result->>'canRelistNow'<>'false'
+  then raise exception 'V22 treated bank-held Forge gear as a resale candidate';end if;
   v_retry:=private.market_move_purchased_equipment_bank_v21(
     v_buyer,v_instance,'deposit',v_buyer_alt::text,'equipment_pouch',
     0,0,11,'v21-deposit',repeat('3',64));
@@ -894,6 +901,11 @@ begin
     v_seller,v_offer2,'gear-v9-second-cancel',repeat('a',64));
   if v_retry->>'replayed'<>'true'
   then raise exception 'equipment offer cancellation not idempotent';end if;
+  if (select count(*) from private.market_equipment_sale_chain_v22
+      where exact_instance_id=v_instance)<>1
+    or exists(select 1 from private.market_equipment_sale_chain_v22
+      where exact_instance_id=v_other_instance)
+  then raise exception 'V22 cancelled/returned unsold Forge gear created false sale history';end if;
 end
 $v9_test$;
 select 'PASS V12: price-bound equipment sale with 5% tax, all Gold views, alternate-character receipt rebind, full storage and seller return and Inbox history' as result;

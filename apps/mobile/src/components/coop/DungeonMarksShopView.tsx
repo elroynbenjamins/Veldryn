@@ -64,7 +64,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   <Text style={s.meta}>Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.</Text>
   <View accessibilityRole="tablist" style={s.tabs}>
    {(['Supplies','Collections','Owned'] as const).map(tab=><Pressable key={tab} accessibilityRole="tab"
-    accessibilityState={{selected:shelf===tab}} onPress={()=>{setShelf(tab);setSelected(null)}}
+    accessibilityState={{selected:shelf===tab,disabled:!!pending||refreshing}} disabled={!!pending||refreshing} onPress={()=>{setShelf(tab);setSelected(null)}}
     style={[s.tab,shelf===tab&&s.selectedTab]}><Text style={[s.tabLabel,shelf===tab&&s.activeLabel]}>{tab}</Text></Pressable>)}
   </View>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
@@ -73,10 +73,11 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {snapshot&&!snapshot.shopEnabled?<Text style={s.meta}>Dungeon Shop is being prepared. Purchases are unavailable.</Text>:null}
   {items.map(item=>{
    const expanded=selected===item.id;
-   const canPurchase=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase&&!busy&&!pending&&!refreshing;
+   const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
+   const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={item.name} accessibilityState={{expanded}}
-     onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.marks.toLocaleString()} Expedition Marks`} accessibilityState={{expanded,disabled:!!pending||refreshing}}
+     disabled={!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
      <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
      <View style={s.fill}>
       <Text style={s.title}>{item.name}</Text>
@@ -91,7 +92,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
       <Text style={s.meta}>{item.remainingThisUtcWeek} purchases left this UTC week</Text>:null}
      {item.status==='already_owned'||item.owned?<Text style={s.owned}>Owned permanently</Text>:null}
      {item.lockReason?<Text style={s.meta}>{item.lockReason}</Text>:null}
-     {canPurchase?<GameButton title={pending===item.id?'Processing…':`Confirm purchase · ${item.marks.toLocaleString()} Marks`} loading={pending===item.id} disabled={pending!==null||busy} onPress={()=>void purchase(item.id)}/>:null}
+     {offerEligible?<GameButton title={pending===item.id?'Processing…':`Confirm purchase · ${item.marks.toLocaleString()} Marks`} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
      {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>Not enough Expedition Marks.</Text>:null}
     </View>:null}
    </View>;

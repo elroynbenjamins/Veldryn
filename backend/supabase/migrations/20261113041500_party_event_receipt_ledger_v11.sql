@@ -212,7 +212,7 @@ create trigger party_event_stage_guard_v11
 -- Week metadata and the active stage are monotone. This does not itself
 -- certify supply completion; the server must enforce v2 stage progression.
 create or replace function private.party_event_week_guard_v11()
-returns trigger language plpgsql security definer set search_path='' as $
+returns trigger language plpgsql security definer set search_path='' as $$
 begin
  if tg_op<>'UPDATE' then return old;end if;
  if row(old.party_id,old.event_starts_at,old.event_ends_at,
@@ -233,7 +233,7 @@ begin
     and stage=old.active_stage and (stage=1 or vote_locked_at is not null))
  then raise exception 'party_event_previous_stage_not_locked';end if;
  return new;
-end;$;
+end;$$;
 create trigger party_event_week_guard_v11
  before update on private.party_event_weeks_v11
  for each row execute function private.party_event_week_guard_v11();

@@ -425,6 +425,6 @@ begin
   or (select revision from public.online_game_states
    where account_id=a[2] and character_id=c[2])<>0
  then raise exception 'V25 quote created duplicate payment or edited inventory';end if;
-end $;
+end $$;
 select 'PASS: v25 immutable account quotes, canonical amounts, zero payout, wallet/inventory preflight' as result;
 rollback;

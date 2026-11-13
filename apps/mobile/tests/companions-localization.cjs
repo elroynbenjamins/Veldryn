@@ -198,6 +198,8 @@ const baseline={
     "setSection('Collection')",
     "setSection('Sanctuary')",
     "setSection('Training')",
+    "setSection('Training')",
+    "setSection('Training')",
     "setSection(source.section)",
     "setSection(source.section)",
     "setSection(tab)"

@@ -8,6 +8,12 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "PRIMARY":["PRIMARY","HAUPTNAHRUNG","PRINCIPAL","HOOFDVOEDSEL","PRINCIPALE","PRINCIPAL"],
+ "AVAILABLE FOOD":["AVAILABLE FOOD","VERFÜGBARES ESSEN","COMIDA DISPONIBLE","BESCHIKBAAR ETEN","CIBO DISPONIBILE","NOURRITURE DISPONIBLE"],
+ "Set primary":["Set primary","Als Hauptnahrung","Usar como principal","Als hoofdvoedsel","Imposta principale","Définir principal"],
+ "Eat 1":["Eat 1","1 essen","Comer 1","Eet 1","Mangia 1","Manger 1"],
+ "All carried food is already assigned.":["All carried food is already assigned.","Alle mitgeführten Speisen sind bereits zugewiesen.","Toda la comida disponible ya está asignada.","Al het meegenomen eten is al toegewezen.","Tutto il cibo trasportato è già assegnato.","Toute la nourriture transportée est déjà attribuée."],
+ "No food selected for auto-eat":["No food selected for auto-eat","Kein Essen für automatisches Essen gewählt","No hay comida para comer automáticamente","Geen eten geselecteerd voor automatisch eten","Nessun cibo selezionato per il consumo automatico","Aucune nourriture sélectionnée pour la consommation automatique"],
  "FOOD BACKUPS":["FOOD BACKUPS","ESSENSRESERVE","COMIDA DE RESERVA","ETENRESERVE","SCORTE DI CIBO","RÉSERVES DE NOURRITURE"],
  "Uses the selected food first, then each backup in order when it runs out. Only food carried in Inventory is used.":["Uses the selected food first, then each backup in order when it runs out. Only food carried in Inventory is used.","Verbraucht zuerst das gewählte Essen und dann die Reserve in Reihenfolge. Nur Essen im Inventar wird genutzt.","Usa primero la comida seleccionada y luego las reservas en orden. Solo se usa comida del inventario.","Gebruikt eerst het gekozen eten en daarna de reserve op volgorde. Alleen eten in je inventaris wordt gebruikt.","Usa prima il cibo selezionato, poi le scorte in ordine. Viene usato solo il cibo nell'inventario.","Utilise d'abord la nourriture choisie, puis les réserves dans l'ordre. Seule la nourriture de l'inventaire est utilisée."],
  "BACKUP":["BACKUP","RESERVE","RESERVA","RESERVE","SCORTA","RÉSERVE"],

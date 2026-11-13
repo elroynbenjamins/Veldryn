@@ -143,7 +143,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name} · {chance}% drop',{name:sourceMonster.name,chance:Math.round(tool.blueprint.dropChance*100)}):gt("blueprint required");
           return <View key={tool.id} style={[s.toolRow,compactTools&&s.toolRowCompact]}>
            <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
-            <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {tool.name}</Text>
+            <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
             <Text style={s.toolEffect}>{gt('{percent}% faster · {skill} {level} · Level {character}',{percent:Math.round((1-tool.actionTimeMultiplier)*100),skill:gl(tool.skillId),level:tool.unlockLevel,character:tool.requiredCharacterLevel})}</Text>
             <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
            </View></View>

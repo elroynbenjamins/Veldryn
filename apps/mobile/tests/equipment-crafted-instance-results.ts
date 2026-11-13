@@ -149,7 +149,7 @@ ok(!equipmentCraftingQueue(autoWeak.state).some(row=>row.id===cappedJob.id),'Aut
 let autoReplayRejected=false;try{claimEquipmentCraft(autoWeak.state,cappedJob.id,cappedJob.completesAtMs,.5)}catch{autoReplayRejected=true}
 ok(autoReplayRejected,'Replaying auto-sale must never grant Gold twice');
 const replaceCopies=copiesAtCap.map(row=>({...row,rarity:'common' as const,quality:0}));
-const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_25' as const}};
+const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_seven' as const}};
 const upgradeStarted=startEquipmentCraft(upgradeSeed,recipe.id,job.completesAtMs+12000).state;
 const upgradeJob=equipmentCraftingQueue(upgradeStarted)[0];
 const upgraded=claimEquipmentCraft(upgradeStarted,upgradeJob.id,upgradeJob.completesAtMs,.002);
@@ -377,24 +377,24 @@ const atLimitCopies=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,i
 const incomingLow={...copyTemplate,id:'new-low',quality:0,rarity:'common' as const};
 const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
 ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below 25, even when auto-sell is disabled');
-ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_25').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
+ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
 ok(planCraftedGearRetention(atLimitCopies,incomingHigh,'off').action==='manual_review','Mass craft auto-sell must be opt-in, never default');
-const lowDecision=planCraftedGearRetention(atLimitCopies,incomingLow,'keep_best_25');
+const lowDecision=planCraftedGearRetention(atLimitCopies,incomingLow,'keep_best_seven');
 ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all 25 originals');
-const highDecision=planCraftedGearRetention(atLimitCopies,incomingHigh,'keep_best_25');
+const highDecision=planCraftedGearRetention(atLimitCopies,incomingHigh,'keep_best_seven');
 ok(highDecision.action==='sell_existing'&&highDecision.instanceId==='quality-0','A better new roll should replace the weakest unprotected copy');
 ok(compareCraftedGearRetentionPower(incomingHigh,atLimitCopies[6].instance)>0,'High-quality Epic should beat mid-quality Common on actual stat multiplier');
 ok(compareCraftedGearRetentionPower({...incomingLow,quality:100,rarity:'common'}, {...incomingLow,id:'low-uncommon',quality:0,rarity:'uncommon'})>0,
   'Expanded quality range can outweigh a minor rarity upgrade; auto-retention must compare actual stats');
-const tieDecision=planCraftedGearRetention(atLimitCopies,{...atLimitCopies[0].instance,id:'equal-new'},'keep_best_25');
+const tieDecision=planCraftedGearRetention(atLimitCopies,{...atLimitCopies[0].instance,id:'equal-new'},'keep_best_seven');
 ok(tieDecision.action==='sell_incoming','Equal-strength rolls must keep the older existing equipment');
 const partlyProtected=atLimitCopies.map((entry,i)=>({...entry,locked:i===0}));
-const protectedDecision=planCraftedGearRetention(partlyProtected,incomingHigh,'keep_best_25');
+const protectedDecision=planCraftedGearRetention(partlyProtected,incomingHigh,'keep_best_seven');
 ok(protectedDecision.action==='sell_existing'&&protectedDecision.instanceId==='quality-1','Auto-sell must skip locked copies and target the next-lowest eligible item');
-const protectedUpgrade=planCraftedGearRetention(partlyProtected,{...incomingLow,quality:11},'keep_best_25');
+const protectedUpgrade=planCraftedGearRetention(partlyProtected,{...incomingLow,quality:11},'keep_best_seven');
 ok(protectedUpgrade.action==='manual_review','A new roll stronger than the weakest protected copy must not be auto-sold just because weaker eligible copies do not exist');
 const allProtected=atLimitCopies.map(entry=>({...entry,locked:true}));
-const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_25');
+const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_seven');
 ok(blockedDecision.action==='manual_review'&&blockedDecision.reason==='no_eligible_copy','Do not sell valuable new results if all existing copies are protected');
 ok(!craftedGearCanAutoSell({...atLimitCopies[0],ownershipVerified:undefined}),'Ownership must be independently verified before auto-sale');
 ok(!craftedGearCanAutoSell({...atLimitCopies[0],protectionsVerified:undefined}),'Missing protection verification must fail closed');
@@ -409,12 +409,12 @@ ok(!craftedGearCanAutoSell({...atLimitCopies[0],instance:{...atLimitCopies[0].in
 ok(!craftedGearCanAutoSell({...atLimitCopies[0],favorite:true}),'Favorite copies must never be auto-sold');
 ok(!craftedGearCanAutoSell({...atLimitCopies[0],instance:{...atLimitCopies[0].instance,enhancement:{...atLimitCopies[0].instance.enhancement,rank:1}}}),'Enhanced equipment must never be auto-sold');
 ok(!craftedGearCanAutoSell({...atLimitCopies[0],instance:{...atLimitCopies[0].instance,enhancement:{...atLimitCopies[0].instance.enhancement,effectGemId:'SWIFT_SIGIL'}}}),'Socketed equipment must never be auto-sold');
-ok(planCraftedGearRetention([...atLimitCopies,atLimitCopies[0]],incomingHigh,'keep_best_25').action==='manual_review','Pre-existing over-limit records must require manual review instead of eviction');
-ok(planCraftedGearRetention(atLimitCopies.map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_25').action==='manual_review','Legacy unrolled quality must not be silently ranked or deleted');
-ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:'keep_best_25'}} as any).account.craftedGearAutoSellMode==='keep_best_25','Explicit Keep Best legacy preference must survive save normalization');
+ok(planCraftedGearRetention([...atLimitCopies,atLimitCopies[0]],incomingHigh,'keep_best_seven').action==='manual_review','Pre-existing over-limit records must require manual review instead of eviction');
+ok(planCraftedGearRetention(atLimitCopies.map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='manual_review','Legacy unrolled quality must not be silently ranked or deleted');
+ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:'keep_best_seven'}} as any).account.craftedGearAutoSellMode==='keep_best_seven','Explicit Keep Best legacy preference must survive save normalization');
 ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:undefined}} as any).account.craftedGearAutoSellMode==='off','Older saves must default to auto-sell off');
 
-const settlementInput={existing:atLimitCopies,incoming:incomingHigh,incomingStorage:'inventory' as const,incomingHolderCharacterId:state.character!.id,mode:'keep_best_25' as const,committedReceiptKeys:[] as string[]};
+const settlementInput={existing:atLimitCopies,incoming:incomingHigh,incomingStorage:'inventory' as const,incomingHolderCharacterId:state.character!.id,mode:'keep_best_seven' as const,committedReceiptKeys:[] as string[]};
 const proposedUpgrade=proposeCraftedGearSettlement(settlementInput);
 ok(proposedUpgrade.status==='ready'&&proposedUpgrade.instances.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,'Prepared settlement must preserve 25 copies without mutating state');
 ok(proposedUpgrade.status==='ready'&&proposedUpgrade.receipt.soldInstanceId==='quality-0'&&proposedUpgrade.receipt.action==='sell_existing','Prepared Forge proposal must select the exact weakest instance');

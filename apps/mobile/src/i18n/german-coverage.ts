@@ -64,6 +64,29 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   'Ashen Myrrh Grove':'Aschenmyrrhenhain',
   'Ashen Myrrh Crown':'Aschenmyrrhenkrone',
 
+  // Gathering item names not covered by the shared item-name registry.
+  'Dewleaf':'Taublatt',
+  'River Mint':'Flussminze',
+  'Ironbloom':'Eisenblüte',
+  'Cavelichen':'Höhlenflechte',
+  'Crown Sage':'Kronensalbei',
+  'Oathblossom':'Eidblüte',
+  'Ashen Myrrh':'Aschenmyrrhe',
+
+  // Gathering tools and their blueprint-name stems.
+  'Copper Pickaxe':'Kupferspitzhacke',
+  'Greenwood Hatchet':'Grünholzbeil',
+  'Reedline Fishing Rod':'Schilfschnur-Angelrute',
+  'Aster-Iron Pickaxe':'Aster-Eisenspitzhacke',
+  'Aster-Iron Hatchet':'Aster-Eisenbeil',
+  'Ironwood Fishing Rod':'Eisenholz-Angelrute',
+  'Oathstone Pickaxe':'Eidsteinspitzhacke',
+  'Oathstone Hatchet':'Eidsteinbeil',
+  'Oathscale Fishing Rod':'Eidschuppen-Angelrute',
+  'Frostiron Pickaxe':'Frosteisenspitzhacke',
+  'Frostiron Hatchet':'Frosteisenbeil',
+  'Rimeglass Fishing Rod':'Reifglas-Angelrute',
+
   // Active-activity cycle status. The visible bar capitalizes these labels.
   'Tracking the target…':'Ziel wird verfolgt…',
   'Trading blows…':'Schläge werden ausgetauscht…',
@@ -136,6 +159,11 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
 };
 const germanCoverageLowercase=new Map(Object.entries(germanGameplayCoverage).map(([english,german])=>[english.toLowerCase(),german]));
 export function germanCoverageText(source:string):string|undefined{
+ if(source.endsWith(' Blueprint')){
+  const toolName=source.slice(0,-' Blueprint'.length);
+  const localizedTool=germanGameplayCoverage[toolName];
+  if(localizedTool)return localizedTool+'-Bauplan';
+ }
  const exact=germanGameplayCoverage[source];
  if(exact!==undefined)return exact;
  const translated=germanCoverageLowercase.get(source.toLowerCase());

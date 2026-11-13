@@ -23,7 +23,7 @@ const languages=['en','de','es','nl','it','fr','ru','tr'];
 const paramsFor=text=>Object.fromEntries([...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>[m[1],'VALUE_'+m[1]]));
 const placeholders=text=>Object.keys(paramsFor(text)).sort();
 
-assert.ok(Object.keys(rows).length >=125,'new UI coverage');
+assert.ok(Object.keys(rows).length >=145,'new UI coverage');
 for(const [source,translations] of Object.entries(rows)){
  assert.equal(translations.length,7,source+' must cover seven target languages');
  for(const [index,translation] of translations.entries()){
@@ -52,6 +52,9 @@ for(const relative of [
  'components/PlayerBadgeSettings.tsx',
  'components/PlayerBadges.tsx',
  'components/RegionalJournalPanel.tsx',
+ 'components/MarketPriceHistoryChart.tsx',
+ 'screens/RewardsInboxScreen.tsx',
+ 'screens/SettingsScreen.tsx',
 ]){
  const source=fs.readFileSync(path.join(root,relative),'utf8');
  const tree=ts.createSourceFile(relative,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
@@ -92,6 +95,17 @@ assert.ok(journalScreen.includes('journalAchievementDisplayTitle(language,nextAc
 const marketScreen=fs.readFileSync(path.join(root,'screens/MarketInboxPanel.tsx'),'utf8');
 assert.ok(marketScreen.includes('localizedItemName(state.settings.language,row.itemId)'));
 assert.ok(marketScreen.includes('formatLocalizedNumber(state.settings.language,value)'));
+
+// Market price histories keep gaps visible and translate accessibility text without changing the data.
+const chart=fs.readFileSync(path.join(root,'components/MarketPriceHistoryChart.tsx'),'utf8');
+assert.ok(chart.includes("formatLocalizedNumber(language,n)"),'chart uses selected language for all price units');
+assert.ok(chart.includes("a('{date}: {price} Gold median, {sales} completed sales'"),'chart screen-reader text localized');
+assert.equal(recentScreenText('fr','Price history'),'Historique des prix');
+assert.equal(recentScreenText('ru','No verified daily price'),'Нет подтверждённой цены за день');
+assert.equal(recentScreenText('tr','{date}: {price} Gold median, {sales} completed sales',{date:'2026-11-13',price:1200,sales:4}),
+ '2026-11-13: medyan 1200 altın, 4 tamamlanan satış');
+assert.equal(recentScreenText('nl','Market'),'Markt');
+assert.equal(recentScreenText('fr',"What's New & Updates"),'Nouveautés et mises à jour');
 
 // Roadmap titles/descriptions come from verified SQL definitions, not guessed client copy.
 const migrationNames=[

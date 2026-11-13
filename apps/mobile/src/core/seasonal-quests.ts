@@ -4,11 +4,11 @@ import {RECIPES} from '../content/skills';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
-export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'salvage'|'upgrade'|'high_tier_craft'|'expedition'|'trial';
+export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'salvage'|'upgrade'|'high_tier_craft'|'expedition'|'trial'|'event';
 export type SeasonalActivity=Exclude<ContractTag,'equipment'>;
 export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>;tags?:SeasonalActivity[]}>>;
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
-export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','salvage','upgrade','high_tier_craft','expedition','trial'];
+export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','salvage','upgrade','high_tier_craft','expedition','trial','event'];
 const activityTags=SEASONAL_ACTIVITY_TAGS;
 
 /** Additive save field: legacy saves start at zero rather than inheriting lifetime XP. */
@@ -34,7 +34,7 @@ export function recordSeasonalActivity(state:GameState,tag:SeasonalActivity,unit
   const key=periodKey(period,date),old=progress[period],counts=old?.key===key?{...old.counts}:{};
   // Freeze unlock-aware selections at the first credited action in a period.
   // Further character level-ups must not replace a quest someone was progressing.
-  const tags=old?.key===key&&old.tags?old.tags:selectSeasonalTags(state,period,key);
+  const tags=old?.key===key&&old.tags?old.tags:selectSeasonalTags(state,period,key,nowMs);
   counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,(counts[tag]??0)+Math.floor(units));
   progress[period]={key,counts,tags};
  }
@@ -65,6 +65,7 @@ const TEMPLATES:readonly Template[]=[
  {name:'Masterwork Commission',tag:'high_tier_craft',daily:0,weekly:0,monthly:3},
  {name:'Companion Expeditions',tag:'expedition',daily:0,weekly:2,monthly:7},
  {name:'Trial Victories',tag:'trial',daily:0,weekly:0,monthly:4},
+ {name:'Festival Service',tag:'event',daily:0,weekly:0,monthly:1},
 ];
 const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
  combat:'Defeat {n} monsters this period.',
@@ -83,6 +84,7 @@ const QUEST_DESCRIPTIONS:Record<SeasonalActivity,string>={
  high_tier_craft:'Craft {n} Tier 3 or higher equipment pieces this period.',
  expedition:'Claim {n} completed companion expeditions this period.',
  trial:'Win {n} Companion Trial floors this period.',
+ event:'Claim {n} completed event objective this period.',
 };
 const BASE_REWARD_ACTIONS=30;
 
@@ -92,13 +94,14 @@ function periodKey(period:SeasonalPeriod,date=new Date()){
  if(period==='weekly'){const day=utc.getUTCDay()||7;utc.setUTCDate(utc.getUTCDate()-day+1);const yearStart=Date.UTC(utc.getUTCFullYear(),0,1);return `${utc.getUTCFullYear()}-W${Math.ceil(((utc.getTime()-yearStart)/86400000+1)/7)}`;}
  return `${utc.getUTCFullYear()}-${utc.getUTCMonth()+1}`;
 }
-function availableTemplate(state:GameState,tag:SeasonalActivity):boolean{
+function availableTemplate(state:GameState,tag:SeasonalActivity,atMs:number):boolean{
  const level=state.character?.level??1;
  if(['cooking','alchemy','smithing','tailoring','enchanting'].includes(tag)){
   const skill=state.skills.find(row=>row.skillId===tag)?.level??0;
   return RECIPES.some(recipe=>recipe.skillId===tag&&recipe.level<=skill&&(recipe.characterLevel??1)<=level&&(!recipe.classId||recipe.classId===state.character?.classId)&&(!recipe.requiresCraftedItemId||state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId))&&(!recipe.requiredKnowledgeId||state.account.unlockedKnowledgeIds?.includes(recipe.requiredKnowledgeId)||!!recipe.knowledgeItemId));
  }
  if(tag==='boss')return state.defeatedBossIds.includes('FALLEN_KNIGHT');
+ if(tag==='event'){const event=state.account.liveEvent;return !!event?.enabled&&atMs>=event.startsAtMs&&atMs<event.endsAtMs&&event.endsAtMs-atMs>=86400_000;}
  if(tag==='expedition')return (state.account.companionSanctuary?.expeditionPensLevel??0)>0;
  if(tag==='trial')return ['tank','damage','support'].every(role=>COMBAT_COMPANIONS.some(c=>c.role===role&&state.account.unlockedCombatCompanionIds?.includes(c.id)));
  if(tag==='salvage')return level>=12;
@@ -106,9 +109,9 @@ function availableTemplate(state:GameState,tag:SeasonalActivity):boolean{
  if(tag==='high_tier_craft')return RECIPES.some(recipe=>Number(recipe.v33EquipmentTier?.replace('T',''))>=3&&(recipe.characterLevel??1)<=level&&(state.skills.find(skill=>skill.skillId===recipe.skillId)?.level??0)>=recipe.level&&(!recipe.classId||recipe.classId===state.character?.classId));
  return true;
 }
-function selectSeasonalTags(state:GameState,period:SeasonalPeriod,key:string):SeasonalActivity[]{
+function selectSeasonalTags(state:GameState,period:SeasonalPeriod,key:string,atMs:number):SeasonalActivity[]{
  const count=period==='daily'?2:period==='weekly'?3:4;
- const available=TEMPLATES.filter(row=>row[period]>0&&availableTemplate(state,row.tag));
+ const available=TEMPLATES.filter(row=>row[period]>0&&availableTemplate(state,row.tag,atMs));
  const pool=[...available],selected:SeasonalActivity[]=[];
  // The previous five accessible types always remain as fallbacks. Use a stable
  // period rotation; account progression never affects rarity or cache quality.
@@ -194,7 +197,7 @@ function contractProgress(state:GameState,tag:ContractTag,period:SeasonalPeriod,
 }
 export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=new Date()):SeasonalQuest[]{
  if(!state.character)return [];
- const key=periodKey(period,date),frozen=state.account.seasonalContractProgress?.[period],tags=frozen?.key===key&&frozen.tags?.length===(period==='daily'?2:period==='weekly'?3:4)?frozen.tags:selectSeasonalTags(state,period,key);
+ const key=periodKey(period,date),frozen=state.account.seasonalContractProgress?.[period],tags=frozen?.key===key&&frozen.tags?.length===(period==='daily'?2:period==='weekly'?3:4)?frozen.tags:selectSeasonalTags(state,period,key,date.getTime());
  const base=BASE_REWARD_ACTIONS;
  return tags.map((tag,index)=>{
   const template=TEMPLATES.find(row=>row.tag===tag)!;

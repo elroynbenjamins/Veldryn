@@ -42,7 +42,7 @@ BEGIN
   WITH eligible AS (
     SELECT r.account_id,r.final_rank,r.raid_impact,r.applied_global_damage,
       r.valid_attempts,
-      coalesce(nullif(btrim(r.display_name_snapshot),''),nullif(btrim(p.display_name),''),'Adventurer') AS display_name
+      coalesce(nullif(btrim(p.display_name),''),'Adventurer') AS display_name
     FROM public.shared_world_world_boss_final_ranks r
     JOIN public.player_profiles p ON p.account_id=r.account_id
     WHERE r.boss_id=p_boss_id AND r.valid_attempts>0 AND r.raid_impact>0
@@ -81,4 +81,20 @@ REVOKE ALL ON FUNCTION private.leaderboards_world_boss_event_v1(uuid,uuid,intege
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION private.leaderboards_world_boss_event_v1(uuid,uuid,integer,integer)
   TO service_role;
+-- Only server-side service clients can bridge the private schema through
+-- the explicitly granted public RPC. This does NOT bypass either release gate.
+CREATE OR REPLACE FUNCTION public.leaderboards_world_boss_event_server_v1(
+  p_requester uuid,p_boss_id uuid,p_limit integer DEFAULT 50,p_offset integer DEFAULT 0
+) RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''
+AS $server$
+  SELECT private.leaderboards_world_boss_event_v1(
+    p_requester,p_boss_id,p_limit,p_offset
+  )
+$server$;
+REVOKE ALL ON FUNCTION public.leaderboards_world_boss_event_server_v1(uuid,uuid,integer,integer)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.leaderboards_world_boss_event_server_v1(uuid,uuid,integer,integer)
+  TO service_role;
+
 COMMIT;

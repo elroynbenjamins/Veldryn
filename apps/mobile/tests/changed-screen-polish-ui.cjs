@@ -45,7 +45,7 @@ const shop=read('src/components/coop/DungeonMarksShopView.tsx');
 assert.ok(shop.includes('const offerEligible='),'Purchase button visibility should be separate from purchase availability');
 assert.ok(shop.includes('{offerEligible?<GameButton'),'An eligible purchase must retain its button while saving');
 assert.ok(shop.includes('loading={pending===item.id} disabled={!canPurchase}'),'Pending purchases must show loading and prevent duplicate submits');
-assert.ok(shop.includes('disabled={!!pending||refreshing}'),'Shop navigation must not hide active purchase feedback');
+assert.ok(shop.includes('disabled={busy||!!pending||refreshing}'),'Shop navigation must not hide active purchase feedback');
 assert.ok(shop.includes('requestLock.current=true')&&shop.includes('requestLock.current=false'),'Shop refresh and purchase requests must share one immediate re-entrancy lock');
 assert.ok(shop.includes('Processing purchase')&&shop.includes('Not available yet'),'Shop offers must display processing and offline states');
 

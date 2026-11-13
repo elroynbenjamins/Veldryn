@@ -4,6 +4,12 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish are starter-only languages. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## Russian focused coverage (November 2026)
+
+- A reviewed Russian-only expansion covers active Companion Index and acquisition guidance, Dungeon companion selection, Guild Rally notices, the food fallback queue, potion and Alchemy controls, account security and community roadmap actions, equipped-gear inspection, World Boss attempts, achievement and contract prompts, navigation alerts, local-save recovery, first-character guidance and combat status labels.
+- The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
+- The dedicated Russian regression test checks exact catalog membership, placeholders, fallback semantics and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+
 ## Implemented
 
 - Typed eight-language catalog with English as the default and fallback language.

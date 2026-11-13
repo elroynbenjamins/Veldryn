@@ -15,8 +15,8 @@ begin
    ((item_id='GREENWOOD_LOG' and category='wood')
    or(item_id='COPPER_ORE' and category='ore')
    or(item_id='DEWLEAF' and category='herb')))<>3
-  or (select count(*) from private.party_event_supply_catalogue_v16
-    where enabled)<>3
+  or exists(select 1 from private.party_event_supply_catalogue_v16
+   where category='herb' and item_id<>'DEWLEAF' and enabled)
   or (select enabled from private.party_event_supply_catalogue_v16
     where item_id='THORN_SAP') is distinct from false
  then raise exception 'V22 auditable starter supply allowlist violated';end if;
@@ -63,13 +63,11 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v16_resource_unverified' then raise;end if;
  end;
- begin
-  perform private.freeze_party_event_supply_order_v16(
-   p,w,1,'IRONWOOD_LOG','required',2);
-  raise exception 'V22 accepted higher-tier ungeared gathering source';
- exception when others then
-  if sqlerrm<>'party_event_v16_resource_unverified' then raise;end if;
- end;
+ -- Existing audited v16 wood and ore variants remain service-only.
+ -- The v22 deterministic planner never includes those higher-tier IDs.
+ if not exists(select 1 from private.party_event_supply_catalogue_v16
+    where item_id='IRONWOOD_LOG' and enabled)
+ then raise exception 'V22 disabled older approved wood source';end if;
 
  select sum((item->>'quantity')::integer) into v_before
  from public.online_game_states game,

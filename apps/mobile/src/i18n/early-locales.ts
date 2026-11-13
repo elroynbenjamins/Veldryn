@@ -22,7 +22,6 @@ export const EARLY_LOCALE_ROWS={
   "CLASS SKILLS · PASSIVE": ["НАВЫКИ КЛАССА · ПАССИВНО","SINIF BECERİLERİ · PASİF"],
   "COMBAT STYLE · PASSIVE": ["СТИЛЬ БОЯ · ПАССИВНО","SAVAŞ STİLİ · PASİF"],
   "COMPANION · PASSIVE BONUS": ["СПУТНИК · ПАССИВНЫЙ БОНУС","YOLDAŞ · PASİF BONUS"],
-  "Lv. {level}": ["Ур. {level}","Sv. {level}"],
   "Combat bonus active": ["Боевой бонус активен","Savaş bonusu etkin"],
   "Show breakdown": ["Показать подробности","Ayrıntıları göster"],
   "Hide breakdown": ["Скрыть подробности","Ayrıntıları gizle"],

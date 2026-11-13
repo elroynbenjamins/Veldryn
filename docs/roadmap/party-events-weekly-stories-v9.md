@@ -584,3 +584,86 @@ server-side and persist an immutable, independently validated
 victory/participation proof; implement one-time entitlements and
 chest redemption **only after** that proof and economic tests.
 Keep Party Events hidden and PR #1045 draft/unmerged.
+
+## v19 — Day 8 boss candidate and nonclaimable reward previews (13 Nov 2026)
+
+The hidden-only migration
+`backend/supabase/migrations/20261113160000_party_event_boss_candidates_v19.sql`
+and regression
+`backend/supabase/tests/party_event_boss_candidates_v19.sql`
+extend v11–v18 on the same draft PR #1045.
+
+**One immutable combat candidate:** A private service-only
+`private.record_party_event_boss_candidate_v19` accepts exactly
+one candidate per already-reserved Day 8 boss attempt and event
+week. It checks the reservation, its frozen preclose finale hash,
+Stage 3 status, the opening deadline, a bounded completion
+timestamp and the pinned `party-event-day8-combat-v4` ruleset.
+The candidate records the canonical SHA-256 digest of the
+result JSON, the tier count, clears and calculated reward band.
+A changed request, result, finale hash or engine version conflicts.
+An exact retry can return the immutable prior candidate after
+event closure. Direct service-role and client INSERT/UPDATE
+permissions are not granted on this table.
+
+**Structural verification, not victory verification:** Every
+reported boss tier must be contiguous from Tier 1 and contain
+valid boss HP, remaining HP, damage, a bounded fight duration,
+cleared status and reason. A first unsuccessful tier must
+terminate the sequence. A successful final tier can terminate
+only at **Tier 12**: a single invented Tier 1 victory cannot
+be mistaken for a full run. The backend recomputes damage
+totals, cleared tiers, reached tier and the shared 1–6 reward
+band, rejecting reported inconsistencies. The contributions
+array must exactly match the frozen 2–4-person account,
+character and role roster; duplicate/extra members, negative
+metrics or characters without a frozen v18 loadout are rejected.
+
+This SQL function **does not yet independently replay the
+combat simulation or cryptographically authenticate the worker
+which produced the result**. A syntactically consistent but
+fabricated *service-submitted* candidate is therefore **not**
+a verified win, and **cannot authorize a payout**. A future
+trusted server worker must reconstruct actors from canonical
+saved snapshots, validate the v18 hash commitments against
+the converted combat-engine actors, run the existing
+`resolvePartyEventDayEightBoss` 12-tier simulation, and
+replay/compare result digests before creating a settlement.
+
+**Nonclaimable personal forecasts:** Once a candidate is
+recorded, the same transaction derives a private, immutable
+`party_event_reward_previews_v19` row per frozen player from
+their real v14 activity EP and v15 objective EP. It follows
+the existing v2 reward policy: **0–4 EP = none, 5–14 =
+participation, 15–60 = full**. These previews store only
+personal points, eligibility and band. They contain no
+reward-bundle amounts, choice, inventory debit/credit or
+redeem operation; `granted=false` is enforced by a database
+CHECK constraint. A private read-only status explicitly reports
+`awaiting_independent_combat_replay`,
+`combatVerified=false`, `rewardEligible=false` and
+`rewardsGranted=false` even when a candidate exists.
+The v18 reservation and stage state remain unchanged.
+
+**Verification:** The focused v19 regression passed on
+isolated staging using `BEGIN; ... ROLLBACK;`. It covered
+unknown reservations, incorrect finale hashes, impossible
+damage totals, fabricated tier counts, prematurely terminated
+victories, unsupported engine versions, duplicated members,
+wrong reward bands, exact replay/changed-request conflicts,
+closed-week replay, immutable candidate rows, independent
+personal EP thresholds and zero granted rewards. The
+combined regression process also passed all nine v11–v19 SQL
+suites with a savepoint around every suite, then rolled back
+the outer migration/test transaction.
+
+**Still required for a release:** Independently rederive
+the authoritative combat actor snapshots and run the actual
+Day 8 simulator, reconcile v18 sealed preparation and optional
+buffs, implement protected/atomic final settlement and
+exactly-once inventory/Inbox payouts, approve the full
+reward economy and choice handling, wire the mobile event
+screens and game server, verify real herb resource sourcing,
+and validate CI. This v19 candidate mechanism by itself
+does not make rewards ready or the hidden game mode playable.
+Do not merge, deploy or enable any related release flags.

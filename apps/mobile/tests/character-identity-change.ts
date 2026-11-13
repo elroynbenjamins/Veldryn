@@ -66,6 +66,10 @@ const withCosmetic={...state,character:{...state.character!,profileIconId:'start
 ok(applyCharacterIdentityChange(withCosmetic,{kind:'class',characterId:id,newClassId:'KNIFE_DANCER'},NOW).state.character?.profileIconId==='starter:hooded-ranger','non-class cosmetic preserved');
 const withActivity={...state,activity:{kind:'combat' as const,targetId:'MOSS_RAT',startedAtMs:NOW,lastClaimAtMs:NOW}};
 rejects(()=>applyCharacterIdentityChange(withActivity,{kind:'class',characterId:id,newClassId:'KNIFE_DANCER'},NOW),'stop_activity_before_class_change');
+const withDrills={...state,character:{...state.character!,classTraining:{lastClaimAtMs:NOW,progressMs:0,focus:'balanced' as const,xpPerDrill:24}}};
+rejects(()=>applyCharacterIdentityChange(withDrills,{kind:'class',characterId:id,newClassId:'KNIFE_DANCER'},NOW),'stop_activity_before_class_change');
+const ambiguousCopies={...state,bank:{...state.bank,stacks:[...state.bank.stacks,{itemId:'T1P_149',quantity:1}]}};
+rejects(()=>applyCharacterIdentityChange(ambiguousCopies,{kind:'class',characterId:id,newClassId:'KNIFE_DANCER'},NOW),'equipment_ownership_audit_failed');
 rejects(()=>applyCharacterIdentityChange(state,{kind:'class',characterId:id,newClassId:'DAWNKEEPER'},NOW),'class_unchanged');
 const corrupt={...state,character:{...state.character!,equipmentInstanceIds:{chest:'unrecognized'}}};
 rejects(()=>applyCharacterIdentityChange(corrupt,{kind:'class',characterId:id,newClassId:'KNIFE_DANCER'},NOW),'equipment_ownership_audit_failed');

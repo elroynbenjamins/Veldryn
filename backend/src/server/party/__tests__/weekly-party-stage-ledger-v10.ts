@@ -163,6 +163,6 @@ const duplicateSupply={...stageOne,stageRecord:{...stageOne.stageRecord,
 rejects(()=>projectLockedPartyEventStageV10(duplicateSupply),
  'invalid_supply_ledger');
 
-const recorded:PartyEventStageReceiptV10[]=Object.freeze([plan.receipt]);
+const recorded:readonly PartyEventStageReceiptV10[]=Object.freeze([plan.receipt]);
 assert(recorded.length===1,'fixture tests plan output without storing anything');
 console.log('Party Events v10: 12 family/stage projections and receipt security cases passed');

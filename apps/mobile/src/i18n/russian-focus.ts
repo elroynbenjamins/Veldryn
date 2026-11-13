@@ -298,7 +298,7 @@ export const RUSSIAN_FOCUS_ROWS = {
   "You steady yourself after the blow.": "Вы восстанавливаете равновесие после удара.",
   "You reset your stance.": "Вы снова принимаете боевую стойку.",
   "You push through the pain.": "Вы продолжаете бой, превозмогая боль.",
-  "You force yourself upright.": "Вы заставляете себя подняться на ноги."
+  "You force yourself upright.": "Вы заставляете себя подняться на ноги.",
   "Available to earn": "Можно получить",
   "Event / Past": "События / ранее",
   "{value0} more seasonal companions are hidden until their events release.": "Ещё {value0} сезонных спутников скрыты до начала соответствующих событий.",

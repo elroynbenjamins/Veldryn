@@ -273,6 +273,21 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   'Gloam Breach':'Dämmerbruch',
   'Aurora Hollow':'Aurorahöhle',
 
+  // Festival signature headings and in-depth descriptions.
+  'Build the winter celebration together':'Gestaltet gemeinsam das Winterfest',
+  'Close one age and choose how the next begins':'Schließe ein Zeitalter ab und gestalte den Beginn des nächsten',
+  'Build a festival bond through the activities you prefer':'Schmiede Festbindungen durch deine Lieblingsaktivitäten',
+  'Restore the spring grove through your own adventures':'Stelle den Frühlingshain auf deinen Abenteuern wieder her',
+  'Treat the festival like a seasonal games circuit':'Bestreite die saisonalen Wettkämpfe des Festes',
+  'Chase short-lived astral opportunities across normal play':'Nutze flüchtige astrale Gelegenheiten in deinen Aktivitäten',
+  'Escort the Gilded Road and keep the guild fair moving':'Beschütze die Goldstraße und halte das Gildenfest am Laufen',
+  'Turning of the Age centers on reflection and renewal. Your chosen focus shapes where you earn the best event returns, while the Chronicle Vault provides the season’s persistent expedition.':'Die Zeitenwende steht für Rückblick und Erneuerung. Dein gewählter Schwerpunkt bestimmt, wo du die besten Ereignisbelohnungen erhältst. Das Chronikgewölbe bietet die fortlaufende Saisonexpedition.',
+  'Heartbond is a lighter cooperative festival built around choosing a vow focus, completing themed daily objectives, and entering the Vow Garden expedition for its strongest seasonal challenge.':'Das Herzbund-Fest ist ein gemeinschaftliches Ereignis: Wähle einen Gelübdeschwerpunkt, erfülle tägliche Ziele und stelle dich im Gelübdegarten der größten saisonalen Herausforderung.',
+  'Bloomwake turns normal gathering, crafting, combat, and boss activity into a personal spring-restoration journey. Collect Bloom Tokens for your own rewards and explore Thornheart Grove.':'Blütenerwachen verwandelt Sammeln, Herstellen, Kämpfe und Bossbegegnungen in deine persönliche Reise zur Wiederherstellung des Frühlings. Sammle Blütenmarken für Belohnungen und erkunde den Dornherzhain.',
+  'Suncrest emphasizes personal challenge and repeatable performance. Daily and weekly objectives act as the games card, while Shattered Isles provides the festival’s expedition challenge.':'Die Sonnenkamm-Spiele setzen auf persönliche Herausforderungen und wiederholbare Leistungen. Tägliche und wöchentliche Ziele bilden die Wettkampfaufgaben; die Zersplitterten Inseln bieten die Expedition.',
+  'Starfall is built around rare celestial finds. Combat, gathering, crafting, and bosses can reveal different astral discoveries, while the Astral Rift becomes the event’s high-intensity expedition.':'Sternenfall dreht sich um seltene himmlische Funde. Kampf, Sammeln, Herstellung und Bosse offenbaren unterschiedliche astrale Entdeckungen. Im Astralriss erwartet dich die anspruchsvolle Expedition.',
+  'Merchant & Guild Festival focuses on trade routes and guild-themed personal progression. Earn Guild Scrip through regular activities, choose a trade focus, and prepare for caravan challenges and the Gilded Road expedition.':'Das Händler- und Gildenfest dreht sich um Handelsrouten und persönlichen Gildenfortschritt. Verdiene Gildenscheine, wähle einen Handelsschwerpunkt und bereite dich auf Karawanenaufgaben und die Goldstraßen-Expedition vor.',
+
   // Seasonal candy identity, durations and interactions.
   'EVENT CANDY':'EREIGNISSÜSSIGKEITEN',
   'Festival boosts':'Festboni',

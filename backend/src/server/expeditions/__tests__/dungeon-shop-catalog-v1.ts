@@ -12,7 +12,7 @@ import {
 
 validateDungeonShopCatalogV1();
 assert.equal(DUNGEON_SHOP_CATALOG_VERSION,'dungeon-marks-shop-v2-2026-11-11');
-assert.equal(dungeonShopPurchasesEnabledV1(),false,'Catalog must not activate a public purchase route');
+assert.equal(dungeonShopPurchasesEnabledV1(),true,'The DB global gate and per-SKU enabled flags authorize releases, not the client');
 assert.equal(DUNGEON_SHOP_CATALOG_V1.length,17);
 assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.permanent).length,12);
 assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.perUtcWeek!==undefined).length,5);
@@ -48,6 +48,9 @@ assert.equal(dungeonShopQuoteV1('dshop_frostmarch_pet',initial).status,'region_l
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',{...initial,ownedRewardIds:['DUNGEON_PET_SUNSCAR_001']}).status,'already_owned');
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',{...initial,marks:1000}).status,'insufficient_marks');
 assert.equal(dungeonShopQuoteV1('dshop_bondstone',{...initial,marks:500}).status,'insufficient_marks');
+assert.equal(dungeonShopQuoteV1('dshop_bondstone',{...initial,marks:500},499).status,'eligible');
+assert.equal(dungeonShopQuoteV1('dshop_bondstone',initial,900).price,900);
+assert.throws(()=>dungeonShopQuoteV1('dshop_bondstone',initial,-1),/invalid_server_shop_price/);
 assert.equal(dungeonShopQuoteV1('dshop_tempering_satchel',{...initial,purchasesThisUtcWeek:{dshop_tempering_satchel:1}}).remaining,1);
 assert.equal(dungeonShopQuoteV1('dshop_tempering_satchel',{...initial,purchasesThisUtcWeek:{dshop_tempering_satchel:2}}).status,'weekly_limit');
 assert.equal(dungeonShopQuoteV1('not_real',initial).status,'unknown_offer');

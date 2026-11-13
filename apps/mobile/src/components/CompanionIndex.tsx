@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {WORLD_ZONES} from '../content/world-map';
 import type {CombatCompanionRole} from '../core/combat-companion-types';
 import type {GameState} from '../core/types';
 import {companionNextUnlockTargets,companionUnlockCompletion,companionUnlockGuidance} from '../core/companion-presentation';
@@ -11,7 +12,7 @@ import {SearchField} from './SearchField';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {companionLabel,companionTranslator} from '../i18n/companions';
+import {companionContent,companionLabel,companionTranslator} from '../i18n/companions';
 
 type Scope='owned'|'missing'|'all';
 type Role='all'|CombatCompanionRole;
@@ -23,6 +24,7 @@ export interface CompanionIndexProps{
  onCodex:()=>void;
 }
 const roleOrder:Role[]=['all','damage','tank','support'];
+const unavailableOriginIds=new Set(WORLD_ZONES.filter(zone=>zone.availability==='inDevelopment').map(zone=>`REG_${zone.id}`));
 
 export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:CompanionIndexProps){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),language=useGameLanguage(),t=companionTranslator(language);
@@ -54,7 +56,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   });
  },[state,scope,role,query,hiddenIds,language]);
  const candidate=companionNextUnlockTargets(state,COMBAT_COMPANIONS.length)
-  .find(({def})=>!hiddenIds.has(def.id)&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP');
+  .find(({def})=>!hiddenIds.has(def.id)&&!unavailableOriginIds.has(def.origin.id)&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP');
  const open=(id:string)=>onOpen(id);
  return <View style={s.root}>
   <View style={s.header}>
@@ -70,7 +72,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     <View style={s.nextCopy}>
      <Text style={s.overline}>{t('NEXT TO UNLOCK')}</Text>
      <Text style={s.nextName} numberOfLines={1}>{candidate.def.name}</Text>
-     <Text style={s.nextDetail} numberOfLines={2}>{companionUnlockGuidance(state,candidate.def).label}</Text>
+     <Text style={s.nextDetail} numberOfLines={2}>{companionContent(language,companionUnlockGuidance(state,candidate.def).label)}</Text>
     </View>
     <Text style={s.nextArrow}>›</Text>
    </Pressable>:null}
@@ -82,14 +84,14 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   <Text style={s.resultsLabel}>{t('{value0} companions shown',{value0:visible.length})}</Text>
   {visible.length===0?<View style={s.empty}><Text style={s.cardName}>{t('No companions found')}</Text><Text style={s.caption}>{t('Try another filter or search.')}</Text><Pressable onPress={()=>{setQuery('');setScope('all');setRole('all');}} accessibilityRole="button"><Text style={s.codexText}>{t('Show all companions')}</Text></Pressable></View>:null}
   <View style={s.list}>{visible.map(def=>{
-   const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id),progress=state.account.combatCompanionProgress?.[def.id],equipped=state.character?.equippedCombatCompanionId===def.id;
+   const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id),upcoming=!owned&&unavailableOriginIds.has(def.origin.id),progress=state.account.combatCompanionProgress?.[def.id],equipped=state.character?.equippedCombatCompanionId===def.id;
    const status=owned?companionAvailability(state,def.id).label:undefined;
-   const achievement=!owned&&!hidden&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'?companionUnlockCompletion(state,def):undefined;
+   const achievement=!owned&&!hidden&&!upcoming&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'?companionUnlockCompletion(state,def):undefined;
    const guidance=achievement?companionUnlockGuidance(state,def):undefined;
    const percent=achievement?Math.round(achievement.ratio*100):0;
    const label=hidden?t('Unknown Prestige Companion'):def.name,art=hidden?undefined:companionArtSource(def.id);
-   const category=hidden?t('Undiscovered'):def.origin.type==='event'?t('Event reward'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Guild Token Shop'):companionLabel(language,def.rarity);
-   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):def.origin.type==='event'?t('Earn during its event'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):guidance?.label??t('Complete unlock requirements');
+   const category=hidden?t('Undiscovered'):upcoming?t('Coming soon'):def.origin.type==='event'?t('Event reward'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Guild Token Shop'):companionLabel(language,def.rarity);
+   const subtitle=owned?t('Lv. {value0} · Bond {value1}',{value0:progress?.level??1,value1:progress?.bondLevel??1}):hidden?t('Discover through companion challenges'):upcoming?t('Region in development'):def.origin.type==='event'?t('Earn during its event'):def.origin.id==='GUILD_TOKEN_SHOP'?t('Purchase from the Guild Shop'):companionContent(language,guidance?.label??t('Complete unlock requirements'));
    return <Pressable key={def.id} accessibilityRole="button" accessibilityLabel={label+' · '+(owned?t('Owned'):t('Locked'))+' · '+subtitle} onPress={()=>open(def.id)} style={({pressed})=>[s.entry,{width:wide?'48.9%':'100%',borderLeftColor:hidden?C.line:companionRarityBorder(def.rarity,C.dark)},pressed&&s.pressed]}>
     <View style={s.artBox}>{art?<Image source={art} resizeMode="contain" style={s.art}/>:<Text style={s.unknown}>?</Text>}</View>
     <View style={s.entryBody}>

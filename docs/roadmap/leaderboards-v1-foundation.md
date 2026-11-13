@@ -53,6 +53,12 @@
 - Verified in staging inside a transaction that service role has execute access to the proposed bridge, neither anon nor authenticated does, the independent database gate denies access, and current name, final global rank, privacy, mutual blocks and invalid attempts remain correct. Synthetic fixtures and gates were rolled back.
 - Merged the two non-overlapping new main commits into the draft branch; GitHub subsequently reported the PR **mergeable**. Mergeability is **not** CI or product approval.
 
+### Additional global-board readiness (13 November 2026)
+- The staged v3 SQL contract now calls **all 19 canonical board IDs**, including Arena Rating, Arena Wins and Guild passthrough. This verifies permission, valid JSON projections, IDs and routing, not 19 populated production fixtures.
+- A new transaction-only global privacy fixture seeds no permanent data. It exercises current public profile visibility, private-profile removal, private self-standing, reciprocal player blocks and removal of account UUIDs from the response. It passed staging and was rolled back.
+- The new UI localization rows cover all five pagination strings in the eight supported languages. The pre-existing localization/social and UI density tests were updated rather than disabled, after investigating the actual failing GitHub job logs.
+- Latest GitHub Actions are still queued; **no claim is made that the full mobile/Android CI passes**.
+
 ### Before release
 1. Reconcile tracked v2 migration provenance and convert the reviewed proposals into properly numbered migrations using the Supabase CLI; this PR's draft SQL files are **not deployed**.
 2. Confirm long-term authoritative Journal snapshot integrity and verify the 45-ID catalog after gameplay updates. Add simulated duplicate/invalid saves and simultaneous ranking requests.
@@ -72,7 +78,9 @@
 - [x] Read-only staging v2 permissions preflight passed
 - [x] v3 scoring prototype, 16 scoped boards and earned Journal fixture dry-ran with full rollback on staging
 - [x] World Boss historical-result, hidden-gate, privacy, mutual-block and echo-exclusion staging fixtures passed with rollback
-- [ ] Long-form fixture tests for 19 boards, privacy, tie behavior and performance pass
+- [x] All 19 board dispatch/shape contract tests passed in rollback-only staging
+- [x] Global visibility, private self-standing, mutual block and account-ID privacy fixture passed in rollback-only staging
+- [ ] Long-form fixtures for 19 boards, ties, pagination drift and performance pass
 - [ ] All 19 boards return correct nonempty results from seeded fixtures where applicable
 - [ ] Stable global ranks, ties and self-standing are verified for >50 accounts
 - [ ] All permission/privacy/blocks and rewards-free prestige policies pass

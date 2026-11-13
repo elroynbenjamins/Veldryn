@@ -3,8 +3,8 @@
 begin;
 do $$
 declare
- a uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
- c uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
+ a uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
+ c uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid()];
  p uuid:=gen_random_uuid();
  start_at timestamptz:=date_trunc('week',now() at time zone 'UTC') at time zone 'UTC';
  good_claim uuid:=gen_random_uuid();
@@ -28,11 +28,11 @@ begin
   or has_table_privilege('authenticated','private.party_event_sources_v11','insert')
  then raise exception 'V13 raw source evidence can be fabricated';end if;
 
- for i in 1..3 loop
+ for i in 1..4 loop
   insert into auth.users(id,email) values(a[i],'v13-'||a[i]||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id)
   values(c[i],a[i],'Scout Tester '||chr(64+i),
-   case i when 1 then 'IRONWARDEN' when 2 then 'WAYFINDER' else 'BASTION' end);
+   case i when 1 then 'IRONWARDEN' when 2 then 'WAYFINDER' when 3 then 'RAVAGER' else 'BASTION' end);
  end loop;
  insert into public.parties(id,leader_account_id,leader_character_id)
  values(p,a[1],c[1]);
@@ -43,7 +43,8 @@ begin
  insert into private.party_event_roster_v11(
   party_id,event_starts_at,account_id,character_id,role,joined_at)
  values(p,start_at,a[1],c[1],'tank',start_at),
-       (p,start_at,a[2],c[2],'damage',start_at);
+       (p,start_at,a[2],c[2],'damage',now()-interval '30 seconds'),
+       (p,start_at,a[3],c[3],'damage',start_at);
  insert into private.party_event_stages_v11(
   party_id,event_starts_at,stage,opened_at)
  values(p,start_at,1,start_at);
@@ -77,7 +78,7 @@ begin
  values(short_claim,c[2],'v13-short-gathering','GREENWOOD_TREE',30,3,4),
        (zero_claim,c[2],'v13-zero-gathering','RIVER_EEL_POOL',90,0,4),
        (non_gather_claim,c[2],'v13-non-gathering','ALCHEMY_ACTION',120,3,4),
-       (outsider_claim,c[3],'v13-outsider-gather','COPPER_VEIN',120,5,10);
+       (outsider_claim,c[4],'v13-outsider-gather','COPPER_VEIN',120,5,10);
  begin
   perform private.record_party_event_idle_scout_v13(
    p,start_at,short_claim,'v13-request-short',req_hash);
@@ -115,8 +116,6 @@ begin
  end;
 
  -- A claim that started BEFORE the member joined must not become scouting.
- update private.party_event_roster_v11 set joined_at=now()-interval '30 seconds'
- where party_id=p and event_starts_at=start_at and account_id=a[2];
  insert into public.idle_claim_receipts(
   claim_id,character_id,idempotency_key,activity_id,
   elapsed_sec,resource_amount,xp_amount)
@@ -128,12 +127,10 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v13_invalid_gathering_evidence' then raise;end if;
  end;
- update private.party_event_roster_v11 set joined_at=start_at
- where party_id=p and event_starts_at=start_at and account_id=a[2];
  insert into public.idle_claim_receipts(
   claim_id,character_id,idempotency_key,activity_id,
   elapsed_sec,resource_amount,xp_amount)
- values(other_claim,c[2],'v13-other-gathering','SILVERBROOK_SHOAL',90,4,13);
+ values(other_claim,c[3],'v13-other-gathering','SILVERBROOK_SHOAL',90,4,13);
  replay_result:=private.record_party_event_idle_scout_v13(
   p,start_at,other_claim,'v13-request-scout-02',req_hash);
  if replay_result->>'replayed'<>'false'

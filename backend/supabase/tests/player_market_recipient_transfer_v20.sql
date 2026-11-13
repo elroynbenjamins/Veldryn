@@ -9,6 +9,14 @@ begin
    or not exists(select 1 from pg_catalog.pg_class
      where oid='private.market_equipment_recipient_transfers_v20'::regclass)
  then raise exception 'market_v20_schema_missing';end if;
+ -- A public.online_game_states write can run under service_role, but the
+ -- V19 trigger must read private provenance without granting API access.
+ if not (select prosecdef from pg_catalog.pg_proc
+   where oid='private.market_guard_owned_equipment_snapshot_v19()'::regprocedure)
+   or has_function_privilege('service_role',
+     'private.market_guard_owned_equipment_snapshot_v19()'::regprocedure,
+     'EXECUTE')
+ then raise exception 'market_v20_snapshot_definer_boundary_invalid';end if;
  if has_function_privilege('anon',
      'private.market_transfer_purchased_equipment_v20(uuid,text,text,text,integer,text,text,bigint,text,text)'::regprocedure,
      'EXECUTE')

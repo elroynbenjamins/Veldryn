@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=2040,'Turkish core coverage should retain the 2040-string baseline');
+assert.ok(keys.length>=2388,'Turkish core coverage should retain the 2388-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -68,6 +68,10 @@ assert.equal(keyed('en','Weekly rewards ready to claim: {count}',{count:3}),
 const remaining=[...sourceKeys].filter(key=>!Object.hasOwn(TURKISH_COVERAGE,key)
  &&!Object.hasOwn(EARLY_LOCALE_ROWS,key)&&!Object.hasOwn(socialEarlyRows,key)).length;
 assert.equal(earlyLocaleText('tr','PROFILE HIGHLIGHTS'),'PROFİLDE ÖNE ÇIKANLAR');
+assert.equal(earlyLocaleText('tr','Social updates'),'Sosyal güncellemeler');
+assert.equal(earlyLocaleText('tr','COMPANION EXPEDITIONS'),'YOLDAŞ SEFERLERİ');
+assert.equal(earlyLocaleText('tr','Claim daily gift'),'Günlük hediyeyi al');
+assert.equal(earlyLocaleText('tr','YOUR CONTRIBUTION'),'KATKIN');
 assert.equal(earlyLocaleText('tr','Companion Trial team ready'),'Yoldaş Denemesi takımı hazır');
 assert.equal(earlyLocaleText('tr','1 Tank · 2 Damage · 1 Support'),'1 Tank · 2 Hasar · 1 Destek');
 assert.equal(earlyLocaleText('tr','Auto-eat below {percent}% HP'),'Can %{percent} altındayken otomatik ye');

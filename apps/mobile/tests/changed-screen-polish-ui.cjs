@@ -57,5 +57,12 @@ assert.ok(expeditionShop.includes('accessibilityState={{disabled:busy}} disabled
 
 const chapters=read('src/components/WorldChapterNavigator.tsx');
 assert.ok(chapters.includes('<Text numberOfLines={2} style={s.meta}>'),'Current chapter progress metrics must wrap instead of truncating');
+assert.ok(chapters.includes('const here=!!siblingRegion&&siblingRegion.id===current.id;'),'Only a travelled-to sibling region should be marked HERE: chapter sub-areas need their own lock-aware compact rows');
+assert.ok(chapters.includes('disabled={!access} onPress={()=>onOpenCombat(zone.areaId)}'),'Locked regional areas must not expose active Combat actions');
+assert.ok(chapters.includes('disabled={!access} onPress={()=>onOpenSkills(zone.areaId)}'),'Locked regional areas must not expose active Gathering actions');
+assert.ok(shop.includes('minimumFontScale={0.85}'),'The Dungeon Shop balance should fit narrow wallet rows');
+assert.ok(shop.includes('tab:{flex:1,minHeight:44'),'Shop tabs must meet the 44-point touch minimum');
+assert.ok(shop.includes('disabled:busy||!!pending||refreshing'),'Shop tab and card actions must respect an externally busy state');
+assert.ok(shop.includes("onPurchase?'Available':'Preview only'"),'A catalogue without purchase wiring must not advertise a buyable offer');
 
 console.log('PASS changed-screen responsive layout, showcase picker accessibility, and single-flight shop feedback');

@@ -138,6 +138,7 @@ const nearAutomaton={...online,skills:online.skills.map(row=>row.skillId==='smit
 ok(!nearAutomaton.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton remains locked before the final equipment craft');
 const automatonClaim=executeGameCommand(nearAutomaton,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(automatonClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'The 500th equipment claim reaches the exact recruitment threshold');
+if(!automatonClaim.state.account.unlockedCombatCompanionIds?.includes('UNIT_010'))console.error('FORGE_UNLOCK_DIAGNOSTIC',JSON.stringify({smithing:automatonClaim.state.skills.find(row=>row.skillId==='smithing'),progress:automatonClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS,owned:automatonClaim.state.account.unlockedCombatCompanionIds,requirements:forgeAutomatonRequirements,preSkills:nearAutomaton.skills.find(row=>row.skillId==='smithing')}));
 ok(automatonClaim.state.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton unlocks automatically after 500 equipment claims and Smithing 30');
 
 // Existing players earned per-recipe profession mastery on their completed Forge

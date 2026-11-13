@@ -2,6 +2,8 @@ import {useEffect,useState} from 'react';
 import {Image,Platform,StyleSheet,Text,View,type StyleProp,type ViewStyle} from 'react-native';
 import {PLAYER_BADGE_LABELS,playerBadgeIds,profileBadgeIds,type PlayerBadgeIdentity,type PlayerBadgeId} from '../core/player-badges';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {recentScreenText} from '../i18n/recent-screens';
 
 // Static require paths allow Metro to bundle artwork offline. These badges are never remotely downloaded.
 const artwork:Record<PlayerBadgeId,number>={
@@ -19,7 +21,7 @@ const artwork:Record<PlayerBadgeId,number>={
  event_champion:require('../../assets/player-badges-v1/event_champion.webp'),
 };
 export function PlayerBadge({id,size=20,showLabel=false}:{id:PlayerBadgeId;size?:number;showLabel?:boolean}){
- const C=useGameTheme(),label=PLAYER_BADGE_LABELS[id];
+ const C=useGameTheme(),language=useGameLanguage(),label=recentScreenText(language,PLAYER_BADGE_LABELS[id]);
  return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}><Image accessible={false} source={artwork[id]} resizeMode="contain" style={{width:size,height:size}}/>{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</View>;
 }
 /** A cached identity stops being trustworthy at validUntilMs, so re-render exactly then. */

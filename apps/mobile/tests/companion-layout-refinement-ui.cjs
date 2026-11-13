@@ -10,8 +10,9 @@ const upgrade=read('CompanionUpgradePresentation.tsx');
 const resource=read('ResourceIcon.tsx');
 const skills=fs.readFileSync(path.join(root,'src/screens/SkillsScreen.tsx'),'utf8');
 
-// The everyday roster starts with owned companions; discovery remains available.
-assert(read('CompanionIndex.tsx').includes("useState<Scope>('owned')"),'Companion Index must default to owned companions');
+// Companion Index starts on available-to-earn, showing owned and locked progression.
+assert(read('CompanionIndex.tsx').includes("useState<Scope>('all')"),'Companion Index must show currently obtainable recruits by default');
+assert(read('CompanionIndex.tsx').includes("useState<CompanionIndexGroup>('available')"),'Index defaults to obtainable companion sources');
 assert(read('CompanionIndex.tsx').includes('onCodex}'),'Companion discovery remains available through the Index header');
 assert(panel.includes("Train equipped companion"),'Equipped companion should have a shortcut to Training');
 

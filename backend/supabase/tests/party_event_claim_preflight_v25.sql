@@ -240,7 +240,13 @@ begin
   '{"inventory":{"stacks":[{"itemId":"COPPER_ORE","quantity":5}]}}'::jsonb,0),
        (a[2],c[2],
   '{"inventory":{"stacks":[{"itemId":"DEWLEAF","quantity":2}]}}'::jsonb,0);
- update public.characters set inventory_capacity=1 where id in (c[1],c[2]);
+ -- Live character capacity is constrained to 30..100; simulate full
+ -- 30-slot inventory rather than altering the enforced character limit.
+ update public.online_game_states
+ set state=jsonb_set(state,'{inventory,stacks}',
+   (select jsonb_agg(jsonb_build_object('itemId','GEM_DUST','quantity',1))
+    from generate_series(1,30)))
+ where account_id=a[1] and character_id=c[1];
  begin
   perform private.prepare_party_event_claim_preflight_v25(
    v_full_offer,a[1],c[1],'v25-full-inventory');
@@ -248,7 +254,11 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v25_inventory_capacity_insufficient' then raise;end if;
  end;
- update public.characters set inventory_capacity=2 where id=c[1];
+ -- Free exactly one real inventory slot for the conservative quote.
+ update public.online_game_states set
+  state=jsonb_set(state,'{inventory,stacks}',
+   (state#>'{inventory,stacks}')-29)
+ where account_id=a[1] and character_id=c[1];
 
  response:=private.prepare_party_event_claim_preflight_v25(
   v_full_offer,a[1],c[1],'v25-artisan-preflight');

@@ -33,7 +33,7 @@ const common={
 
  "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
  "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
- "Events":["Events","Events","Eventos","Evenementen","Eventi","Événements"],
+ "Events":["Events","Ereignisse","Eventos","Evenementen","Eventi","Événements"],
  "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],
  "Reserved · materials returned on cancel; no Gold":["Reserved · materials returned on cancel; no Gold","Reserviert · Materialien bei Abbruch zurück; kein Gold","Reservado · se devuelven los materiales al cancelar; sin oro","Gereserveerd · materialen terug bij annuleren; geen goud","Riservato · materiali restituiti all'annullamento; niente oro","Réservé · matériaux rendus en cas d'annulation ; aucun or"],
 

@@ -152,6 +152,7 @@ const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
 assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
 assert.ok(combatTab.includes('liveHuntNarration('),'Combat tab must show event-driven class and encounter narration');
+assert.ok(combatTab.includes('recentSkillEffect')&&combatTab.includes('ON-KILL RECOVERY'),'Live combat must surface only settled class recovery cues');
 assert.ok(combatTab.includes('playerHp:fight.playerHp')&&combatTab.includes('enemyHp:fight.enemyHp'),'HP-based narration must use real projected combat values');
 assert.ok(!combatTab.includes("tr('Progress · {percent}%"),'Live combat must not show a progress percentage');
 assert.ok(!combatTab.includes('Damage updates on hit. Rewards are granted on defeat.'),'Static live combat instruction must be removed');

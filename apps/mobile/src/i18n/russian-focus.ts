@@ -1649,4 +1649,7 @@ export const RUSSIAN_FOCUS_ROWS = {
   "LFM": "Набор в группу",
   "GUILD SEEKER": "ИЩУ ГИЛЬДИЮ",
   "GUILD RECRUITING": "НАБОР В ГИЛЬДИЮ",
+  "Reach Level 10": "Достигните уровня 10",
+  "Reach Level 25 and defeat the Fallen Knight (Chapter I).": "Достигните уровня 25 и победите Павшего рыцаря (глава I).",
+  "Dungeons begin at Level 25 after you defeat the Fallen Knight; new runs start in Sunscar or later. Choose Solo Echo or Live and review the dungeon requirements before entering.": "Подземелья открываются на 25-м уровне после победы над Павшим рыцарем. Новые забеги начинаются в Sunscar и следующих регионах. Перед входом выберите одиночное Эхо или онлайн-режим и проверьте требования.",
 } as const satisfies Record<string,string>;

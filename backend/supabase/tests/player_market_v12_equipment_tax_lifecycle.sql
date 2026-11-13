@@ -366,8 +366,23 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_equipment_shared_bank_restricted' then raise;end if;
   end;
+  -- Verify a spoofed class in the inactive roster cannot pass the
+  -- canonical relational owner/class check even with adequate XP.
+  update public.online_game_states set state=jsonb_set(
+    jsonb_set(state,'{otherCharacters,0,character,xp}',
+      '10000000'::jsonb,false),
+    '{otherCharacters,0,character,classId}','"IRONWARDEN"'::jsonb,false)
+    where account_id=v_buyer;
+  begin
+    perform private.market_claim_equipment_purchase_v9(
+      v_buyer,v_delivery,8,'equipment_pouch',v_buyer_alt::text,
+      'v19-claim-wrong-class',repeat('a',64));
+    raise exception 'V19 class-mismatch alt claim succeeded';
+  exception when raise_exception then
+    if sqlerrm<>'market_class_or_recipient_required' then raise;end if;
+  end;
   update public.online_game_states set state=jsonb_set(state,
-    '{otherCharacters,0,character,xp}','10000000'::jsonb,false)
+    '{otherCharacters,0,character,classId}','"BASTION"'::jsonb,false)
     where account_id=v_buyer;
   v_claim:=private.market_claim_equipment_purchase_v9(
     v_buyer,v_delivery,8,'equipment_pouch',v_buyer_alt::text,
@@ -437,8 +452,27 @@ begin
       where exact_instance_id=v_instance)<>'claimed'
     or (select revision from public.online_game_states where account_id=v_buyer)<>9
   then raise exception 'V19 rejected transfer changed snapshot/provenance';end if;
-  -- Benign account saves remain possible with the exact copy in its
-  -- validated recipient character's pouch.
+  -- Forged rarity is rejected even when instance ID and current owner match.
+  begin
+    update public.online_game_states set state=jsonb_set(state,
+      '{account,craftedGearInstances,0,rarity}','"common"'::jsonb,false)
+      where account_id=v_buyer;
+    raise exception 'V19 rarity forgery passed saved-state guard';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
+  -- A legitimate same-character pouch-to-inventory move preserves custody.
+  update public.online_game_states set state=jsonb_set(
+    jsonb_set(state,'{otherCharacters,0,character,equipmentPouch,stacks}',
+      '[]'::jsonb,false),
+    '{otherCharacters,0,inventory,stacks}',jsonb_build_array(v_stack),false)
+    where account_id=v_buyer;
+  update public.online_game_states set state=jsonb_set(
+    jsonb_set(state,'{otherCharacters,0,inventory,stacks}',
+      '[]'::jsonb,false),
+    '{otherCharacters,0,character,equipmentPouch,stacks}',
+    jsonb_build_array(v_stack),false) where account_id=v_buyer;
+  -- Benign XP updates remain possible, even when another character holds it.
   update public.online_game_states set state=jsonb_set(state,
     '{character,xp}','11000000'::jsonb,false) where account_id=v_buyer;
 

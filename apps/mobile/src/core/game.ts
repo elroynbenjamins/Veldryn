@@ -614,7 +614,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    cycleSecondsForEncounter:dynamic?(index,isPrepared)=>planFor(index,isPrepared).cycleSeconds:undefined,
    candy:eventCandyWindow(state,'combat'),trackSegments:true});
  const foodOrder=autoEatFoodOrder(c).map(id=>({id,heal:itemDef(id).heal??0})),threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
- const foodLeft=new Map(foodOrder.map(row=>[row.id,stackQty(state.inventory.stacks,row.id)])),foodSpent=new Map<string,number>();
+ const foodLeft=new Map<string,number>(foodOrder.map(row=>[row.id,stackQty(state.inventory.stacks,row.id)] as const)),foodSpent=new Map<string,number>();
  let foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;

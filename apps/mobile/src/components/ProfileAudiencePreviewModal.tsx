@@ -78,7 +78,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
      {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>{profileT(language,"Profile hidden from this viewer")}</Text><Text style={s.hiddenCopy}>{profileText(language,hiddenReason)}</Text></View>:<>
       <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
       {profile.bio?<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.muted}>{profileT(language,"No biography selected.")}</Text></View>}
-      <ProfileEquippedGearShowcase gear={localProfileGear(state,character.id)}/>
+      <ProfileEquippedGearShowcase key={character.id} gear={localProfileGear(state,character.id)} reduceMotion={state.settings.reduceMotion}/>
       <View style={s.card}>
        <Text style={s.section}>{profileT(language,"PROFILE HIGHLIGHTS")}</Text>
        <PreviewRow stack={stackLayout} label={profileT(language,"Favorite skill")} value={profileText(language,words(profile.favoriteSkillId))}/>

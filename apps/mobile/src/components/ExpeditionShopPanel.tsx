@@ -18,7 +18,7 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
 }){
  const C=useGameTheme(),mounted=useRef(true);
  const [snapshot,setSnapshot]=useState<DungeonMarksShopSnapshot|null>(null);
- const [loading,setLoading]=useState(true);
+ const [loading,setLoading]=useState(true),[purchasing,setPurchasing]=useState(false);
  const [error,setError]=useState(''),[syncWarning,setSyncWarning]=useState('');
  const refresh=async()=>{
   setLoading(true);setError('');
@@ -31,20 +31,23 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
  };
  useEffect(()=>{mounted.current=true;void refresh();return()=>{mounted.current=false};},[]);
  const purchase=async(id:string):Promise<'purchased'|'already_owned'>=>{
-  const status=await api.buy(id);
-  if(status==='purchased'){
-   try{await onRewardsChanged?.();}
-   catch{if(mounted.current)setSyncWarning('Purchase confirmed. Reopen your inventory to refresh rewards.');}
-  }
-  return status;
+  setPurchasing(true);
+  try{
+   const status=await api.buy(id);
+   if(status==='purchased'){
+    try{await onRewardsChanged?.();}
+    catch{if(mounted.current)setSyncWarning('Purchase confirmed. Reopen your inventory to refresh rewards.');}
+   }
+   return status;
+  }finally{if(mounted.current)setPurchasing(false);}
  };
  return <View style={{flex:1,gap:8}}>
-  {onBack?<GameButton compact title="‹ Back to Dungeons" tone="secondary" disabled={loading} onPress={onBack}/>:null}
+  {onBack?<GameButton compact title="‹ Back to Dungeons" tone="secondary" disabled={loading||purchasing} onPress={onBack}/>:null}
   {!!error?<Text accessibilityRole="alert" style={{color:C.bad,fontSize:13}}>{error}</Text>:null}
   {!!syncWarning?<Text accessibilityLiveRegion="polite" style={{color:C.warning,fontSize:12}}>{syncWarning}</Text>:null}
   {loading&&!snapshot?<View style={{paddingVertical:24,alignItems:'center',gap:8}}><ActivityIndicator color={C.accent}/><Text style={{color:C.muted}}>Loading Expedition Shop…</Text></View>:null}
   <DungeonMarksShopView snapshot={snapshot}
-   onRefresh={refresh} busy={loading}
+   onRefresh={refresh} busy={loading||purchasing}
    onPurchase={snapshot?.shopEnabled?purchase:undefined}/>
  </View>;
 }

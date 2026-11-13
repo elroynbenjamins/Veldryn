@@ -25,7 +25,15 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
  const [shelf,setShelf]=useState<Shelf>('Supplies');
  const [selected,setSelected]=useState<string|null>(null);
  const [pending,setPending]=useState<string|null>(null);
+ const [refreshing,setRefreshing]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
+ const refresh=async()=>{
+  if(!onRefresh||busy||pending||refreshing)return;
+  setRefreshing(true);setError('');
+  try{await onRefresh()}
+  catch{setError('Unable to refresh the Dungeon Shop. Please retry.');}
+  finally{setRefreshing(false)}
+ };
  const purchase=async(id:string)=>{
   if(!snapshot?.shopEnabled||!onPurchase||pending||busy)return;
   setPending(id);setError('');setNotice('');
@@ -51,7 +59,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
     <Text style={s.walletAmount}>{snapshot?snapshot.balance.toLocaleString():'—'} Expedition Marks</Text>
     <Text style={s.meta}>{snapshot?'Permanent account currency':'Shop not available yet'}</Text>
    </View>
-   {onRefresh?<GameButton compact title="Refresh" tone="secondary" disabled={busy||pending!==null} onPress={()=>void onRefresh()}/>:null}
+   {onRefresh?<GameButton compact title="Refresh" tone="secondary" loading={refreshing} disabled={busy||pending!==null||refreshing} onPress={()=>void refresh()}/>:null}
   </View>
   <Text style={s.meta}>Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.</Text>
   <View accessibilityRole="tablist" style={s.tabs}>
@@ -65,7 +73,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {snapshot&&!snapshot.shopEnabled?<Text style={s.meta}>Dungeon Shop is being prepared. Purchases are unavailable.</Text>:null}
   {items.map(item=>{
    const expanded=selected===item.id;
-   const canPurchase=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase&&!busy&&!pending;
+   const canPurchase=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={item.name} accessibilityState={{expanded}}
      onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>

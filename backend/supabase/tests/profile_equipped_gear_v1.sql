@@ -13,6 +13,8 @@ declare
  instance_id text:='profile-gear-fixture-1';
  payload jsonb;
 begin
+ perform pg_temp.assert_equipped_gear(not has_function_privilege('anon','public.profile_equipped_gear_v1(uuid)','EXECUTE'),'anonymous callers cannot execute gear read');
+ perform pg_temp.assert_equipped_gear(has_function_privilege('authenticated','public.profile_equipped_gear_v1(uuid)','EXECUTE'),'authenticated callers may use privacy-gated read');
  insert into auth.users(id,email) values
   (owner_id,'profile-gear-owner-'||owner_id||'@example.invalid'),
   (viewer_id,'profile-gear-viewer-'||viewer_id||'@example.invalid');

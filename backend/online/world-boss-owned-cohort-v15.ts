@@ -32,6 +32,8 @@ export interface WorldBossCohortSelectionV15{
 export interface WorldBossCohortOwnedStateV15{
  ownerAccountId:string;
  gameVersion:number;
+ /** Repository updated_at, not the time this auditor read the row. */
+ updatedAtUtcMs:number;
  serverState:GameState;
 }
 /** A service-only repository abstraction; no real database is implemented here. */
@@ -82,6 +84,8 @@ export async function auditWorldBossOwnedCohortV15(input:{
   });
   if(!owned||owned.ownerAccountId!==selection.accountId||
    !Number.isSafeInteger(owned.gameVersion)||owned.gameVersion!==selection.expectedRevision||
+   !Number.isSafeInteger(owned.updatedAtUtcMs)||owned.updatedAtUtcMs>now||
+   now-owned.updatedAtUtcMs>7*86400000||
    owned.serverState?.character?.id!==selection.characterId)
    throw Error('world_boss_v15_owner_character_or_revision_mismatch');
   // Reuse the same forged-equipment verifier, gem/companion-backed CP resolver,
@@ -98,7 +102,7 @@ export async function auditWorldBossOwnedCohortV15(input:{
    ownerAccountId:selection.accountId,
    role:deriveRole(record.classId),
    combatPower:record.combatPower,
-   capturedAtUtcMs:now,
+   capturedAtUtcMs:owned.updatedAtUtcMs,
   });
  }
  const report=auditWorldBossPowerBracketsV14({eventId,nowUtcMs:now,samples});

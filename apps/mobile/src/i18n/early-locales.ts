@@ -23,6 +23,7 @@ export const EARLY_LOCALE_ROWS={
   "COMBAT STYLE · PASSIVE": ["СТИЛЬ БОЯ · ПАССИВНО","SAVAŞ STİLİ · PASİF"],
   "COMPANION · PASSIVE BONUS": ["СПУТНИК · ПАССИВНЫЙ БОНУС","YOLDAŞ · PASİF BONUS"],
   "Combat bonus active": ["Боевой бонус активен","Savaş bonusu etkin"],
+  "ON-KILL RECOVERY": ["ВОССТАНОВЛЕНИЕ ПОСЛЕ ПОБЕДЫ","DÜŞMANI YENDİKTEN SONRA İYİLEŞME"],
   "Show breakdown": ["Показать подробности","Ayrıntıları göster"],
   "Hide breakdown": ["Скрыть подробности","Ayrıntıları gizle"],
   "Combat Power breakdown": ["Подробности боевой мощи","Savaş gücü ayrıntıları"],

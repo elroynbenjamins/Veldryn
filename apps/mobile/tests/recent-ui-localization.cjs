@@ -75,7 +75,7 @@ const migrationNames=[
 let verifiedRoadmapEntries=0;
 for(const migrationName of migrationNames){
  const sql=fs.readFileSync(path.resolve(__dirname,'../../../backend/supabase/migrations',migrationName),'utf8');
- for(const match of sql.matchAll(/\\('([a-z_]+)'\\s*,\\s*'([^']+)'\\s*,\\s*'([^']+)'/g)){
+ for(const match of sql.matchAll(/\('([a-z_]+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'/g)){
   const [,id,title,description]=match;
   assert.ok(Object.hasOwn(rows,title),'roadmap title missing: '+id+' / '+title);
   assert.ok(Object.hasOwn(rows,description),'roadmap description missing: '+id+' / '+description);

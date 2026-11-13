@@ -111,7 +111,13 @@ export async function prepareOrResumeWorldBossAttemptV16(input:{
  const now=loader.nowUtcMs();
  if(!Number.isSafeInteger(now)||now<=0)
   throw Error('world_boss_v16_invalid_server_clock');
- const prepared=await prepareWorldBossRosterV9(loader,command);
+ // V9 includes the request object in JSON.stringify before SHA256; normalize
+ // the exact property order expected by V10's canonical digest verifier.
+ const canonicalCommand:WorldBossRosterRequestV9={
+  eventId:command.eventId,characterId:command.characterId,
+  requestId:command.requestId,order:command.order,
+ };
+ const prepared=await prepareWorldBossRosterV9(loader,canonicalCommand);
  if(prepared.command.accountId!==accountId||
   prepared.command.characterId!==command.characterId)
   throw Error('world_boss_v16_preparation_identity_mismatch');

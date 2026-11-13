@@ -11,6 +11,15 @@ DECLARE
   v_rows jsonb;
   v_result jsonb;
 BEGIN
+  -- Public PostgREST bridge is *only* callable with the server role.
+  IF has_function_privilege('anon',
+       'public.leaderboards_world_boss_event_server_v1(uuid,uuid,integer,integer)','EXECUTE')
+     OR has_function_privilege('authenticated',
+       'public.leaderboards_world_boss_event_server_v1(uuid,uuid,integer,integer)','EXECUTE')
+     OR NOT has_function_privilege('service_role',
+       'public.leaderboards_world_boss_event_server_v1(uuid,uuid,integer,integer)','EXECUTE')
+  THEN RAISE EXCEPTION 'WORLD_BOSS_PUBLIC_BRIDGE_PERMISSIONS_INVALID'; END IF;
+
   SELECT p.account_id INTO v_one FROM public.player_profiles p
   WHERE p.profile_visibility='public' ORDER BY p.account_id LIMIT 1;
   SELECT p.account_id INTO v_two FROM public.player_profiles p
@@ -51,7 +60,7 @@ BEGIN
 
   -- Disabled by default, regardless of whether the event has final ranks.
   BEGIN
-    PERFORM private.leaderboards_world_boss_event_v1(v_one,v_boss,51,0);
+    PERFORM public.leaderboards_world_boss_event_server_v1(v_one,v_boss,51,0);
     RAISE EXCEPTION 'HIDDEN_WORLD_BOSS_READ_ALLOWED';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM <> 'WORLD_BOSS_LEADERBOARDS_DISABLED' THEN RAISE; END IF;

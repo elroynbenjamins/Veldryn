@@ -51,6 +51,35 @@ begin
   where party_id=p_party_id and event_starts_at=p_event_starts_at for update;
  if not found then raise exception 'party_event_v12_week_not_found';end if;
 
+ -- An exact previously committed request is replayed from the *verified*
+ -- private receipt, not re-attested against mutable co-op presence or pruned
+ -- gameplay logs. This is vital after a run ends or a weekly event closes.
+ -- New requests still require the full source proof below.
+ if p_source_type='craft' and
+   p_action_id in ('support_expedition','prepare_finale') and
+   p_node_id is null and p_actor_account_id is null
+ then
+  v_source_event_id:='craft:'||p_source_id::text;
+ elsif p_source_type='coop_node' and p_action_id='secure_approach'
+   and p_node_id is not null and length(p_node_id) between 1 and 100
+   and p_actor_account_id is not null
+ then
+  v_source_event_id:='coop:'||encode(sha256(convert_to(
+    p_source_id::text||':'||p_node_id||':'||p_actor_account_id::text,'UTF8')),'hex');
+ else
+  raise exception 'party_event_v12_wrong_source_for_action';
+ end if;
+ if exists (
+  select 1 from private.party_event_receipts_v11 r
+  where r.party_id=p_party_id and r.event_starts_at=p_event_starts_at
+   and r.source_event_id=v_source_event_id and r.action_id=p_action_id
+   and r.request_id=p_request_id
+ ) then
+  return private.record_party_event_action_v11(
+   p_party_id,p_event_starts_at,v_source_event_id,p_action_id,
+   p_request_id,p_stage_context_hash);
+ end if;
+
  if p_source_type='craft' then
   -- Craft receipts are inserted by the authoritative crafting settlement
   -- pipeline, and only recipes with positive server-configured Party activity

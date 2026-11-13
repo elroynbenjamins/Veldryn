@@ -81,6 +81,7 @@ require_eq 3 "$(psql_q "SELECT count(*) FROM private.world_boss_milestones_v17 W
 require_eq true "$(psql_q "$(settle_sql 1 WB18_SAME_KEY | sed "s/->>'creditedHp'/->>'repeated'/")")" "completed retry returns same receipt"
 require_eq 12 "$(psql_q "SELECT revision FROM private.world_boss_events_v17 WHERE id='$EVENT'")" "retry cannot re-credit"
 expect_error WB18_SETTLEMENT_CONFLICT "SELECT private.world_boss_v18_settle('$EVENT','$(acct 1)','WB18_SAME_KEY','WB18_WORKER_001',1,repeat('a',64),'wb18-combat-v1',repeat('f',64),'WB18_REPLAY_001',4,0)"
+expect_error WB18_SETTLEMENT_CONFLICT "SELECT private.world_boss_v18_settle('$EVENT','$(acct 1)','WB18_SAME_KEY','WB18_WORKER_001',1,repeat('a',64),'wb18-combat-v1',repeat('d',64),'WB18_REPLAY_001',999,0)"
 
 # Old-generation worker cannot settle after a lease takeover.
 psql_q "INSERT INTO private.world_boss_attempts_v17(event_id,account_id,request_id,ordinal,character_id,war_order,phase,rules_version,engine_version,server_seed,squad_digest,frozen_squad,reserved_at,lease_owner,lease_expires_at,hard_expires_at) VALUES('$EVENT','$(acct 13)','WB18_OLD_LEASE',1,'$(char_id 13)','hold_line','armored','wb18-review-fixture','wb18-combat-v1',repeat('S',32),repeat('a',64),jsonb_build_object('snapshot',repeat('X',150)),clock_timestamp()-interval '4 minutes','WB18_OLD_WORKER',clock_timestamp()-interval '1 minute',clock_timestamp()+interval '10 minutes')"

@@ -31,6 +31,19 @@ jobs:
             echo 'CURRENT_MAIN_CONFLICTS_BEGIN'
             git diff --name-only --diff-filter=U
             echo 'CURRENT_MAIN_CONFLICTS_END'
+            python3 - <<'PY'
+          import pathlib,re,subprocess
+          paths=subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
+          for path in paths:
+              content=pathlib.Path(path).read_text(encoding='utf-8',errors='replace')
+              chunks=re.findall(r'(?ms)^<<<<<<< HEAD\n.*?^>>>>>>> .*?
+          fi
+          git merge --abort || true
+,content)
+              print('CONFLICT_BLOCKS',path,'count=',len(chunks))
+              for i,chunk in enumerate(chunks[:8]):
+                  print('BLOCK',i+1,chunk[:5000])
+          PY
             echo 'No files written to a remote branch.'
           fi
           git merge --abort || true

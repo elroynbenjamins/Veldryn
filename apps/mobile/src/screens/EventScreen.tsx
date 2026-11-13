@@ -2,6 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {Image,ImageBackground,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameCommand} from '../core/game-commands';
 import type {GameState} from '../core/types';
+import {localizeGameplay} from '../i18n/gameplay';
 import {playerFacingGameplayError} from '../core/feature-unlocks';
 import {ActionFeedback,type FeedbackTone} from '../components/ActionFeedback';
 import {AnnualEventCalendarPanel} from '../components/AnnualEventCalendarPanel';
@@ -23,7 +24,7 @@ import {radii,spacing,typography} from '../theme/theme';
 import {EventRewardTrail} from '../components/EventRewardTrail';
 import {EventOverview} from '../components/EventOverview';
 import {eventRewardText} from '../i18n/event-rewards';
-import {localizeGameplay} from '../i18n/gameplay';
+import {accountText} from '../i18n/account';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {guildPveBoard} from '../online/social';
 import type {GuildPveEncounter} from '../core/guild-pve-encounters';
@@ -38,7 +39,7 @@ function CurrencyBalance({amount,name,source}:{amount:number;name:string;source?
 }
 function EventHero({definition,endsAtMs,compact=false,section}:{definition:LiveEventDef;endsAtMs:number;compact?:boolean;section?:Tab}){
  const C=useGameTheme(),language=useGameLanguage(),visuals=liveEventVisuals(definition.visualKey),remaining=Math.max(0,Math.ceil((endsAtMs-Date.now())/36e5));
- return <ImageBackground source={visuals.showcaseBackground??visuals.heroBackground} imageStyle={s.heroImage} style={[s.hero,compact&&s.heroCompact]}><View style={s.heroShade}/><View style={[s.heroContent,compact&&s.heroContentCompact]}><Text style={[s.kicker,{color:C.accent}]}>{section&&section!=='Overview'?localizeGameplay(language,section==='Shop'?'EVENT SHOP':section==='Activities'?'WEEKLY ACTIVITIES':'REWARD TRAIL'):localizeGameplay(language,definition.signature.label)}</Text><Text style={[s.heroTitle,compact&&s.heroTitleCompact]}>{localizeGameplay(language,definition.name)}</Text>{compact?null:<Text style={s.heroCopy}>{localizeGameplay(language,definition.summary)}</Text>}<Text style={s.heroTime}>{remaining>0?remaining>=24?`${Math.floor(remaining/24)}d${remaining%24?` ${remaining%24}h`:''} ${localizeGameplay(language,'remaining')}`:`${remaining}h ${localizeGameplay(language,'remaining')}`:eventRewardText(language,'Claim window')}</Text></View></ImageBackground>;
+ return <ImageBackground source={visuals.showcaseBackground??visuals.heroBackground} imageStyle={s.heroImage} style={[s.hero,compact&&s.heroCompact]}><View style={s.heroShade}/><View style={[s.heroContent,compact&&s.heroContentCompact]}><Text style={[s.kicker,{color:C.accent}]}>{section&&section!=='Overview'?section==='Shop'?accountText(language,'EVENT SHOP'):section==='Activities'?accountText(language,'WEEKLY ACTIVITIES'):accountText(language,'REWARD TRAIL'):definition.signature.label}</Text><Text style={[s.heroTitle,compact&&s.heroTitleCompact]}>{definition.name}</Text>{compact?null:<Text style={s.heroCopy}>{definition.summary}</Text>}<Text style={s.heroTime}>{remaining>0?remaining>=24?remaining%24?accountText(language,'{days}d {hours}h remaining',{days:Math.floor(remaining/24),hours:remaining%24}):accountText(language,'{days}d remaining',{days:Math.floor(remaining/24)}):accountText(language,'{hours}h remaining',{hours:remaining}):eventRewardText(language,'Claim window')}</Text></View></ImageBackground>;
 }
 export function EventScreen(props:Props){
  const base=useGameTheme(),[now,setNow]=useState(Date.now());
@@ -58,11 +59,11 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
   return()=>{live=false};
  },[authoritativeGuildPve,event?.definition.id,event?.phase,tab]);
  const act=async(message:string,local:()=>GameState,command:GameCommand,pendingId:string=command.type)=>{if(busy.current)return;busy.current=true;setPendingAction(pendingId);setNotice('');try{if(onCommand){if(!await onCommand(command))throw new Error(command.type==='event_reward'?eventRewardText(language,'Reward could not be confirmed. Please retry.') :localizeGameplay(language,'Action could not be confirmed. Please retry.'));}else await onChange(local());setTone('success');setNotice(localizeGameplay(language,message));}catch(error){setTone('error');setNotice(playerFacingGameplayError(error instanceof Error?error.message:localizeGameplay(language,'Action could not be completed.')));}finally{busy.current=false;setPendingAction(null);}};
- if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>{localizeGameplay(language,'Events')}</Text><Text style={[s.muted,{color:C.muted}]}>{localizeGameplay(language,'Browse upcoming festivals and seasonal previews.')}</Text><AnnualEventCalendarPanel state={state} nowMs={now}/></ScrollView>;
+ if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>{accountText(language,'Events')}</Text><Text style={[s.muted,{color:C.muted}]}>{accountText(language,'Browse upcoming festivals and seasonal previews.')}</Text><AnnualEventCalendarPanel state={state} nowMs={now}/></ScrollView>;
  if(event.phase==='upcoming'){
   const frostfallTeaser=event.definition.visualKey==='frostfall'&&frostfallPreviewPhase(event.runtime.startsAtMs,now)!==null;
   return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-   {frostfallTeaser?<FrostfallPreview startsAtMs={event.runtime.startsAtMs} nowMs={now}/>:<><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>{localizeGameplay(language,'Coming soon')}</Text><Text style={[s.muted,{color:C.muted}]}>{localizeGameplay(language,'This event opens when its live window begins.')}</Text></Panel></>}
+   {frostfallTeaser?<FrostfallPreview startsAtMs={event.runtime.startsAtMs} nowMs={now}/>:<><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>{accountText(language,'Coming soon')}</Text><Text style={[s.muted,{color:C.muted}]}>{accountText(language,'This event opens when its live window begins.')}</Text></Panel></>}
    <AnnualEventCalendarPanel state={state} nowMs={now} highlightEventId={event.definition.id} showFrostfallPreview={!frostfallTeaser}/>
   </ScrollView>;
  }

@@ -10,6 +10,7 @@ import {huntGoalIdFromSnapshot} from '../core/hunt-goals';
 import {itemDef} from '../content/items';
 import {potionDef} from '../content/alchemy';
 import {useGameplayText} from '../i18n/gameplay';
+import {accountText} from '../i18n/account';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GameButton} from './GameButton';
@@ -18,7 +19,7 @@ import {ItemArtwork} from './ItemArtwork';
 const displayHealHp=(value:number)=>displayStat(Math.max(0,Math.round(value)));
 
 export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory}:{state:GameState;hunt:ActiveActivity|null;stopped:boolean;onCommand:(command:GameCommand)=>Promise<void>;onClose:()=>void;onInventory:()=>void}){
- const {gt,gl}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[section,setSection]=useState<'food'|'potions'>('food'),inFlight=useRef(false);
+ const {gt,gl,language}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[section,setSection]=useState<'food'|'potions'>('food'),inFlight=useRef(false);
  const foods=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&itemDef(stack.itemId).type==='food'),[state.inventory.stacks]);
  const healingPotions=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&potionDef(stack.itemId)?.effect.kind==='healing'),[state.inventory.stacks]);
  const selectedPotionId=state.character?.equippedHealingPotionId,selectedPotion=selectedPotionId?potionDef(selectedPotionId):undefined;
@@ -31,7 +32,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
  const updateQueue=(ids:string[])=>void run({type:'food_queue',args:{ids}});
  return <GameModalSurface visible onClose={()=>{if(!busy)onClose();}} reduceMotion={state.settings.reduceMotion} surfaceStyle={s.surface}>
   <GameModalHeader title={gt('Food & potions')} onClose={onClose} closeDisabled={busy}/>
-  <View style={s.healthCard}><View style={s.healthHead}><View><Text style={s.healthLabel}>HEALTH</Text><Text style={s.healthValue}>{displayStat(Math.floor(hp))} <Text style={s.healthMax}>/ {displayStat(Math.floor(maxHp))}</Text></Text></View><View style={s.percentBadge}><Text style={s.percentText}>{hpPct}%</Text></View></View><View style={s.track}><View style={[s.fill,{width:`${hpPct}%`,backgroundColor:hpPct<=25?C.bad:hpPct<=50?C.warning:C.good}]}/></View>{equippedFood?<Text style={s.healthHint}>{equippedFood.name} · {equippedStack?.quantity??0} carried · {gt('Restores up to {hp} HP',{hp:equippedHealLabel})}</Text>:<Text style={[s.healthHint,{color:C.warning}]}>No food selected for auto-eat</Text>}</View>
+  <View style={s.healthCard}><View style={s.healthHead}><View><Text style={s.healthLabel}>{accountText(language,'HEALTH')}</Text><Text style={s.healthValue}>{displayStat(Math.floor(hp))} <Text style={s.healthMax}>/ {displayStat(Math.floor(maxHp))}</Text></Text></View><View style={s.percentBadge}><Text style={s.percentText}>{hpPct}%</Text></View></View><View style={s.track}><View style={[s.fill,{width:`${hpPct}%`,backgroundColor:hpPct<=25?C.bad:hpPct<=50?C.warning:C.good}]}/></View>{equippedFood?<Text style={s.healthHint}>{equippedFood.name} · {equippedStack?.quantity??0} {gt('carried')} · {gt('Restores up to {hp} HP',{hp:equippedHealLabel})}</Text>:<Text style={[s.healthHint,{color:C.warning}]}>{gt('No food selected for auto-eat')}</Text>}</View>
   <View style={s.tabBar}>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='food'}} onPress={()=>setSection('food')} style={[s.tab,section==='food'&&s.tabActive]}>
     <Text style={[s.tabText,section==='food'&&s.tabTextActive]}>{gt('Food')}</Text>
@@ -44,7 +45,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
   <ScrollView style={s.foodScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.foodList}>
    {section==='food'?<>
     <View style={s.autoCard}>
-     <View style={s.sectionHeading}><Text style={s.autoTitle}>AUTO-EAT</Text><Text style={s.autoHint}>{gt('Food auto-heals during ordinary hunts. Selected healing potions trigger at this threshold during boss fights instead.')}</Text></View>
+     <View style={s.sectionHeading}><Text style={s.autoTitle}>{accountText(language,'AUTO-EAT')}</Text><Text style={s.autoHint}>{gt('Food auto-heals during ordinary hunts. Selected healing potions trigger at this threshold during boss fights instead.')}</Text></View>
      <View style={s.thresholds}>{([20,40,60,80] as const).map(threshold=><Pressable key={threshold} accessibilityRole="radio" accessibilityState={{selected:state.settings.autoEatThresholdPct===threshold,disabled:busy}} disabled={busy} onPress={()=>updateSettings({autoEatThresholdPct:threshold})} style={({pressed})=>[s.threshold,state.settings.autoEatThresholdPct===threshold&&s.thresholdSelected,pressed&&s.pressed]}><Text style={[s.thresholdText,state.settings.autoEatThresholdPct===threshold&&s.thresholdTextSelected]}>{threshold}%</Text></Pressable>)}</View>
      <Pressable accessibilityRole="switch" accessibilityState={{checked:state.settings.stopCombatWhenOutOfFood,disabled:busy}} disabled={busy} onPress={()=>updateSettings({stopCombatWhenOutOfFood:!state.settings.stopCombatWhenOutOfFood})} style={({pressed})=>[s.safetyRow,pressed&&s.pressed]}>
       <View style={s.safetyCopy}><Text style={s.safetyTitle}>{gt('Stop combat when out of food')}</Text></View>

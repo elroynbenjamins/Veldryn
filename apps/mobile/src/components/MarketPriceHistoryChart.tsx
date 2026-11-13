@@ -2,8 +2,8 @@ import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {accountText} from '../i18n/account';
-import {localizeGameplay} from '../i18n/gameplay';
+import {recentScreenText} from '../i18n/recent-screens';
+import {formatLocalizedNumber} from '../i18n/translator';
 import {marketPriceGraphBarsV13,marketPriceGraphHasVisibleSalesV13,
   type MarketPriceGraphSnapshotV13,type MarketPriceGraphPeriodV13,
 } from '../core/market-price-history-v13';
@@ -21,7 +21,7 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
  loading?:boolean;
 }){
  const C=useGameTheme(),language=useGameLanguage();
- const a=(label:string)=>localizeGameplay(language,accountText(language,label));
+ const a=(label:string,params?:Record<string,string|number>)=>recentScreenText(language,label,params);
  const styles=useMemo(()=>makeStyles(C),[C]);
  const [selectedDate,setSelectedDate]=useState<string|null>(null);
  const periodMatches=snapshot?.periodDays===periodDays;
@@ -33,7 +33,7 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
  const min=Math.min(...withSales.map(row=>row.point?.lowGold??max));
  const chosen=withSales.find(row=>row.date===selectedDate)
    ??withSales[withSales.length-1]??{date:'',label:'',point:null};
- const price=(n:number)=>n.toLocaleString(language==='de'?'de-DE':language==='nl'?'nl-NL':'en-US');
+ const price=(n:number)=>formatLocalizedNumber(language,n);
  return <View style={styles.root}>
   <View style={styles.headingRow}>
    <View style={styles.titleGroup}>
@@ -66,7 +66,7 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
      <View style={styles.statRight}><Text style={styles.caption}>
        {a('Sales / Units')}
       </Text><Text style={styles.valueSmall}>
-       {chosen.point!.sales} / {price(chosen.point!.units)}
+       {price(chosen.point!.sales)} / {price(chosen.point!.units)}
       </Text></View>
     </View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}
@@ -81,8 +81,9 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
         accessibilityRole="button"
         accessibilityState={{disabled:!bar.point,selected:chosen.date===bar.date}}
         accessibilityLabel={bar.point
-          ?bar.date+': '+price(bar.point.medianGold)+' '+a('Gold median')+', '+
-           bar.point.sales+' '+a('completed sales')
+          ?a('{date}: {price} Gold median, {sales} completed sales',{
+             date:bar.date,price:price(bar.point.medianGold),sales:price(bar.point.sales),
+           })
           :bar.date+': '+a('No verified daily price')}
         style={styles.day}>
         <View style={styles.barArea}>

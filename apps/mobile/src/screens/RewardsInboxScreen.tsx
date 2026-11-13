@@ -8,7 +8,7 @@ import {liveEventDef} from '../content/live-events';
 import {liveEventVisuals} from '../ui/live-event-visuals-active';
 import {loadRewardInbox,claimInboxReward,claimAllInboxRewards,type InboxEntry,type InboxSnapshot,type InboxAttachment} from '../online/reward-inbox';
 import {useGameTheme} from '../theme/ThemeContext';
-import {accountText} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {SocialActionButton} from '../components/SocialActionButton';
 import {ResourceIcon} from '../components/ResourceIcon';
 import {UiIcon} from '../components/UiIcon';
@@ -17,7 +17,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 
 export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}:{state:GameState;online:boolean;onRefresh:()=>Promise<unknown>;onEventClaim:(id:string)=>Promise<unknown>;preview?:InboxSnapshot}){
  const language=state.settings.language;
- const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+ const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[marketTab,setMarketTab]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[blockedClaims,setBlockedClaims]=useState<Record<string,string>>({});
  const running=useRef(false),generation=useRef(0);
  const load=useCallback(async(append=false)=>{const token=++generation.current;if(preview)return;if(!online){setError(a('Sign in to receive rewards and gifts.'));return;}setLoading(true);try{const next=await loadRewardInbox(history,append?snapshot.entries.length:0);if(token===generation.current){setSnapshot(previous=>({...next,entries:append?[...previous.entries,...next.entries]:next.entries}));setError('');}}catch(e){if(token===generation.current)setError(e instanceof Error?e.message:a('Inbox unavailable.'));}finally{if(token===generation.current)setLoading(false);}},[history,online,preview,snapshot.entries.length]);

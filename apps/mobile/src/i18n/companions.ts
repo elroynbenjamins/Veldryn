@@ -6,7 +6,29 @@ import {companionDynamicText} from './companion-dynamic';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Simplified Companion Index: three intent-based views and a compact role picker.
+ "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],
+ "Unlock":["Freischalten","Desbloquear","Ontgrendelen","Sblocca","Débloquer"],
+ "Past events":["Vergangene Events","Eventos pasados","Eerdere evenementen","Eventi passati","Évènements passés"],
+ "Your companions":["Deine Begleiter","Tus compañeros","Jouw metgezellen","I tuoi compagni","Vos compagnons"],
+ "Companions to unlock":["Freischaltbare Begleiter","Compañeros por desbloquear","Metgezellen om te ontgrendelen","Compagni da sbloccare","Compagnons à débloquer"],
+ "Previously released companions":["Früher veröffentlichte Begleiter","Compañeros de eventos anteriores","Eerder uitgebrachte metgezellen","Compagni degli eventi passati","Compagnons des évènements précédents"],
+ "Manage":["Verwalten","Gestionar","Beheren","Gestisci","Gérer"],
+ "Details":["Details","Detalles","Details","Dettagli","Détails"],
+ "Filter roles":["Rollen filtern","Filtrar roles","Rollen filteren","Filtra ruoli","Filtrer les rôles"],
+ "No companions owned yet.":["Noch keine Begleiter freigeschaltet.","Todavía no tienes compañeros.","Je hebt nog geen metgezellen.","Non hai ancora compagni.","Vous n'avez pas encore de compagnons."],
+ "Unlock your first companion to see it here.":["Schalte deinen ersten Begleiter frei, damit er hier erscheint.","Desbloquea tu primer compañero para verlo aquí.","Ontgrendel je eerste metgezel om deze hier te zien.","Sblocca il tuo primo compagno per vederlo qui.","Débloquez votre premier compagnon pour le voir ici."],
+ "All available companions unlocked.":["Alle verfügbaren Begleiter freigeschaltet.","Has desbloqueado todos los compañeros disponibles.","Alle beschikbare metgezellen ontgrendeld.","Hai sbloccato tutti i compagni disponibili.","Tous les compagnons disponibles sont débloqués."],
+
  // Companion Index v2: complete localization for compact discovery and acquisition guidance.
+ // Companion availability and unlock-status categories (keep upcoming event identities private).
+ "Available to earn":["Jetzt freischaltbar","Disponible para conseguir","Nu vrij te spelen","Disponibili da ottenere","À débloquer maintenant"],
+ "Event / Past":["Event / Früher verfügbar","Evento / Anterior","Evenement / Eerder beschikbaar","Evento / Passati","Évènement / Passés"],
+ "{value0} more seasonal companions are hidden until their events release.":["{value0} weitere saisonale Begleiter bleiben bis zum Start ihrer Events verborgen.","{value0} compañeros de temporada más permanecerán ocultos hasta sus eventos.","Nog {value0} seizoensmetgezellen blijven verborgen tot hun evenementen beginnen.","Altri {value0} compagni stagionali restano nascosti fino all'uscita degli eventi.","{value0} autres compagnons saisonniers restent masqués jusqu'à leurs évènements."],
+ "Unlock requirements":["Freischaltbedingungen","Requisitos de desbloqueo","Ontgrendelvereisten","Requisiti di sblocco","Conditions de déblocage"],
+ "Planned unlocks":["Geplante Freischaltungen","Desbloqueos previstos","Geplande ontgrendelingen","Sblocchi previsti","Déblocages prévus"],
+ "Previously available through {event}":["Früher verfügbar bei {event}","Antes disponible en {event}","Eerder verkrijgbaar via {event}","Disponibile in passato durante {event}","Auparavant disponible pendant {event}"],
+ "Guild Lv. {level} · {cost} tokens":["Gildenstufe {level} · {cost} Marken","Gremio niv. {level} · {cost} fichas","Gildeniveau {level} · {cost} munten","Gilda liv. {level} · {cost} gettoni","Guilde niv. {level} · {cost} jetons"],
  "Companion Index":["Begleiterverzeichnis","Índice de compañeros","Metgezellenoverzicht","Indice dei compagni","Index des compagnons"],
  "{value0} collected · {value1} total":["{value0} gesammelt · {value1} insgesamt","{value0} obtenidos · {value1} en total","{value0} verzameld · {value1} totaal","{value0} raccolti · {value1} totali","{value0} obtenus · {value1} au total"],
  "Codex & rewards":["Kodex & Belohnungen","Códice y recompensas","Codex en beloningen","Codice e ricompense","Codex et récompenses"],
@@ -357,7 +379,6 @@ export const companionTranslationRows={
  "Bond 10: {value0}": ["Bindung 10: {value0}","Vínculo 10: {value0}","Band 10: {value0}","Legame 10: {value0}","Lien 10 : {value0}"],
  "Ready to recruit": ["Bereit zur Rekrutierung","Listo para reclutar","Gereed om te rekruteren","Pronto per il reclutamento","Prêt à recruter"],
  "Recommended next step": ["Empfohlener nächster Schritt","Siguiente paso recomendado","Aanbevolen volgende stap","Prossimo passo consigliato","Prochaine étape recommandée"],
- "Unlock requirements": ["Freischaltbedingungen","Requisitos de desbloqueo","Ontgrendelvereisten","Requisiti di sblocco","Conditions de déblocage"],
  "Unlocks when all requirements are met. Requirements tied to unreleased game content remain locked.": ["Wird freigeschaltet, sobald alle Bedingungen erfüllt sind. Bedingungen für unveröffentlichte Inhalte bleiben gesperrt.","Se desbloquea al cumplir todos los requisitos. Los vinculados a contenido no publicado permanecen bloqueados.","Ontgrendelt zodra aan alle vereisten is voldaan. Vereisten voor niet-uitgebrachte inhoud blijven vergrendeld.","Si sblocca quando tutti i requisiti sono soddisfatti. Quelli legati a contenuti non pubblicati restano bloccati.","Se débloque quand toutes les conditions sont remplies. Celles liées au contenu non publié restent verrouillées."],
  "ASCENSION MATERIAL": ["AUFSTIEGSMATERIAL","MATERIAL DE ASCENSIÓN","VERHEFFINGSMATERIAAL","MATERIALE D'ASCESA","MATÉRIAU D'ASCENSION"],
  "{value0} owned · choose a source to continue progression.": ["{value0} im Besitz · wähle eine Quelle, um fortzufahren.","{value0} en posesión · elige una fuente para seguir progresando.","{value0} in bezit · kies een bron om verder te gaan.","{value0} posseduti · scegli una fonte per progredire.","{value0} possédés · choisissez une source pour progresser."],

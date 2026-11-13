@@ -174,6 +174,29 @@ begin
  exception when others then
   if sqlerrm<>'party_event_lifecycle_regression' then raise;end if;
  end;
+ -- Final planning stage must follow the Stage 2 locked route. No
+ -- combat reward is granted for preparing the finale.
+ update private.party_event_weeks_v11 set active_stage=3
+  where party_id=p and event_starts_at=start_at;
+ insert into private.party_event_stages_v11
+  (party_id,event_starts_at,stage,opened_at)
+ values(p,start_at,3,now());
+ insert into private.party_event_sources_v11
+  (source_event_id,party_id,event_starts_at,account_id,stage,kind,occurred_at,committed_at)
+ values('party-v11-source-006',p,start_at,a[3],3,'verified_noncombat',now(),now());
+ begin
+  perform private.record_party_event_action_v11(p,start_at,'party-v11-source-006',
+   'prepare_finale','party-v11-request-009',hash);
+  raise exception 'V11 stage 3 accepted before final vote';
+ exception when others then
+  if sqlerrm<>'party_event_vote_not_locked' then raise;end if;
+ end;
+ update private.party_event_stages_v11
+ set vote_choice='brace_wagons',vote_locked_at=now()
+ where party_id=p and event_starts_at=start_at and stage=3;
+ result2:=private.record_party_event_action_v11(
+  p,start_at,'party-v11-source-006','prepare_finale','party-v11-request-009',hash);
+ if result2->>'replayed'<>'false' then raise exception 'V11 final preparation rejected';end if;
  update private.party_event_weeks_v11 set status='closed'
   where party_id=p and event_starts_at=start_at;
  begin
@@ -194,7 +217,7 @@ begin
  exception when others then
   if sqlerrm<>'party_event_window_closed' then raise;end if;
  end;
- if (select count(*) from private.party_event_receipts_v11 where party_id=p)<>3
+ if (select count(*) from private.party_event_receipts_v11 where party_id=p)<>4
  then raise exception 'V11 receipt count incorrect';end if;
  if exists(select 1 from private.party_event_receipts_v11 where event_points_awarded<>0)
  then raise exception 'V11 granted event points';end if;

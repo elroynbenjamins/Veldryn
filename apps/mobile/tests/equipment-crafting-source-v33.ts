@@ -221,6 +221,8 @@ for(const tier of Object.keys(highTierBands)){
 const t5HeavyChest=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T5P_758')!;
 ok(itemDef(t5HeavyChest.output.itemId).slot==='chest','T5P_758 must remain a heavy chest piece');
 ok(projectedFarmHours(t5HeavyChest)<=highTierBands.T5[1],'Heavy T5 chest must respect the unchanged 5.4h ceiling without slot exemptions');
+const t5SmithingWeapon=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T5P_762')!;
+ok(projectedFarmHours(t5SmithingWeapon)<=highTierBands.T5[1],'T5 smithing weapon must respect the unchanged 5.4h ceiling with the preserved 1.20 tier material multiplier');
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
 const tailoringT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring')!;

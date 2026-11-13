@@ -1,6 +1,6 @@
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {COMBAT_COMPANIONS,COMPANION_RARITY_CONFIG} from '../content/combat-companions';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import type {CombatCompanionRole} from '../core/combat-companion-types';
 import type {GameState} from '../core/types';
 import {companionUnlockCompletion,companionUnlockGuidance} from '../core/companion-presentation';

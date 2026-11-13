@@ -51,10 +51,17 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
   const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
   // The companion RPC uses the same visibility/block gate, returning only equipped item facts.
   // Older servers that have not deployed it still render the public profile normally.
-  const {data:gearRows,error:gearError}=await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});
+  // Fetch profile extras concurrently so the new read-only gallery does not add
+  // another full network round trip to opening a player's profile.
+  // Optional gear failures must not block the existing identity/profile surface.
+  const [gearResult,identities]=await Promise.all([
+   db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId}).catch(()=>null),
+   guildIdentities([accountId]),
+  ]);
+  const gearRows=gearResult?.data;
   const gearPayload=gearRows&&typeof gearRows==='object'&&!Array.isArray(gearRows)?gearRows as {characterId?:unknown;items?:unknown}:null;
-  const equippedGear=!gearError&&gearPayload?.characterId===profile.character.id?normalizeProfileGear(gearPayload.items):undefined;
-  const identity=(await guildIdentities([accountId])).get(accountId);
+  const equippedGear=gearResult&&!gearResult.error&&gearPayload?.characterId===profile.character.id?normalizeProfileGear(gearPayload.items):undefined;
+  const identity=identities.get(accountId);
   const knownGuild=identity?.guild_tag?{tag:identity.guild_tag,tagColorId:identity.guild_tag_color_id}:null;
   const guild=knownGuild?await profileGuildByTag(knownGuild.tag).catch(()=>knownGuild):null;
   return {...profile,guild,equippedGear,masteryShowcaseActionIds:Array.isArray(profile.masteryShowcaseActionIds)?profile.masteryShowcaseActionIds:[],guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,nameStyle:identity?.player_name_style??null,playerBadges:identity?.player_badges};

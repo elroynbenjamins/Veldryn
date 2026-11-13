@@ -75,7 +75,30 @@ export const SPANISH_UI_GAPS = {
   "DAYS READY TO CLAIM": "DÍAS LISTOS PARA RECOGER",
   "ELIGIBLE COMPANIONS": "COMPAÑEROS APTOS",
   "HEALTH": "SALUD",
-  "AUTO-EAT": "COMIDA AUTOMÁTICA"
+  "AUTO-EAT": "COMIDA AUTOMÁTICA",
+  "ACCOUNT-WIDE SKILL": "HABILIDAD DE CUENTA",
+  "SANCTUARY FACILITY": "INSTALACIÓN DEL SANTUARIO",
+  "Companion Mastery": "Maestría de compañeros",
+  "Companion Training": "Entrenamiento de compañeros",
+  "Strengthen all companions through completed Expeditions, successful Trial floors and claimed Training Ground rewards. Mastery is shared across your characters.": "Fortalece a todos tus compañeros completando expediciones, superando pisos de las Pruebas y recogiendo recompensas del Campo de Entrenamiento. La maestría se comparte entre tus personajes.",
+  "{current} / {need} XP to next level": "{current} / {need} EXP para el siguiente nivel",
+  "Mastery reached · all bonuses unlocked": "Maestría máxima · todas las bonificaciones desbloqueadas",
+  "+5% HP, Attack and Defense for all companions · +10% companion XP · +5% companion assist effectiveness. These are bonuses to companion values, not an extra 5% of your character's raw stats.": "+5 % de PV, ataque y defensa para todos los compañeros · +10 % de EXP de compañeros · +5 % de eficacia de su ayuda. Estas bonificaciones afectan a los compañeros, no añaden un 5 % a las estadísticas básicas de tu personaje.",
+  "Claim finished Expeditions, defeat Trial floors and collect completed Training Ground days. Failed or abandoned activities grant no Mastery XP. Repeated claims cannot earn the same reward twice.": "Recoge las recompensas de expediciones completadas, supera pisos de las Pruebas y reclama los días terminados del Campo de Entrenamiento. Las actividades fallidas o abandonadas no otorgan EXP de maestría. No puedes obtener dos veces una misma recompensa.",
+  "Training Ground upgrades are separate from this skill. Combat bonuses also apply to companions fighting in Trials and are reflected in Expedition Power previews.": "Las mejoras del Campo de Entrenamiento son independientes de esta habilidad. Las bonificaciones de combate también afectan a los compañeros en las Pruebas y aparecen en las previsiones de poder de expedición.",
+  "The Training Ground is a Sanctuary upgrade, not a separate XP-based skill. Upgrade it to gain more Companion XP from each daily training claim.": "El Campo de Entrenamiento es una mejora del Santuario, no una habilidad independiente que suba con EXP. Mejóralo para obtener más EXP de compañeros en cada recompensa diaria de entrenamiento.",
+  "Training accrues every 24 hours, up to seven days. Companions on Expeditions or active Trials do not receive this claim.": "El entrenamiento se acumula cada 24 horas, hasta un máximo de siete días. Los compañeros que estén en expediciones o Pruebas activas no reciben esta recompensa.",
+  "Next Training Ground upgrade": "Siguiente mejora del Campo de Entrenamiento",
+  "Next level: {amount} XP/day · {status}": "Siguiente nivel: {amount} EXP/día · {status}",
+  "Materials ready": "Materiales preparados",
+  "Collect the listed materials first": "Recoge primero los materiales indicados",
+  "Upgrade Training Ground": "Mejorar Campo de Entrenamiento",
+  "Training Ground fully upgraded": "Campo de Entrenamiento al máximo",
+  "Build a Training Ground in your Sanctuary": "Construye un Campo de Entrenamiento en tu Santuario",
+  "READY XP PER COMPANION": "EXP LISTA POR COMPAÑERO",
+  "Claim Companion Training": "Recoger entrenamiento de compañeros",
+  "Open Companions & Sanctuary": "Abrir Compañeros y Santuario",
+  "Individual companions become stronger through leveling, Bond, Ascension and abilities. This facility supports their XP growth; it does not directly increase combat stats.": "Los compañeros mejoran al subir de nivel, reforzar su vínculo, ascender y desarrollar habilidades. Esta instalación favorece su progreso de EXP, pero no aumenta directamente sus estadísticas de combate."
 } as const satisfies Record<string,string>;
 
 export function spanishUiGap(source:string):string|undefined{

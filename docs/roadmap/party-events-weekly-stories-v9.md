@@ -754,3 +754,74 @@ reads to the replay module and defend concurrent updates,
 persist an immutable outcome only after replay, implement
 atomic/one-time personal entitlements and Inbox claiming,
 and complete balance and client presentation.
+
+## v21 — single-MVCC database snapshot for private Day 8 replay (13 Nov 2026)
+
+The hidden migration
+`backend/supabase/migrations/20261113173000_party_event_replay_snapshot_v21.sql`
+adds the service-only, read-only function
+`private.read_party_event_boss_replay_snapshot_v21(reservation_id)`.
+The new SQL regression is
+`backend/supabase/tests/party_event_replay_snapshot_v21.sql`.
+
+**One consistent source bundle:** The `STABLE SECURITY DEFINER`
+function makes every source-table read in the same PostgreSQL
+statement/MVCC snapshot. It retrieves the exact authoritative
+week, frozen 2–4-person role roster, copied v18 loadouts
+(with stat and ability snapshots), stage 1–3 supply orders and
+donated quantities, v17 immutable supply seals and Stage 2/3
+locked votes, both stage transitions, the preclose v18 finale
+commitment, its Day 8 reservation and the v19 candidate/result.
+Every nested source has a known party/week/reservation
+identity and ordering. The JSON includes a SHA-256
+`sourceDigest` over its snapshot `payload` as an
+**integrity diagnostic, not a cryptographic signature or proof
+of trusted combat**. It uses the database statement's
+`serverNowMs`; server and client clocks cannot override it.
+
+**Read-boundary safety:** The function is kept under
+`private` and `EXECUTE` is explicitly limited to
+`service_role`. Unknown reservations, unrecorded candidates,
+unsealed/incomplete rosters, missing stage seals/transitions,
+mismatched finale links, unsupported combat rules, premature
+Day 8 windows, unsealed-before-close errors and previously
+settled weeks fail closed. No database row is created or
+modified by this function. It always reports
+`auditedCatalogIncluded=false`,
+`combatReplayed=false` and `rewardGrantAllowed=false`;
+the SQL reader cannot confer victory, a chest, gold or renown.
+
+**TypeScript adapter:**
+`backend/src/server/party/weekly-party-boss-reader-v21.ts`
+takes only a reservation ID and a trusted server-side
+repository. It validates a single private SQL bundle and
+requires a separate server-audited, level-accessible resource
+catalogue before calling v20's actual deterministic combat
+replay. It cannot accept a client-submitted loadout/result
+and always returns `rewardsGranted=false`. The
+reader's contract and security checks are exercised from
+`backend/src/server/party/__tests__/weekly-party-boss-replay-v20.ts`.
+The v21 SQL migration/test files and v21 TS reader are
+included in the hidden Party Event CI path filters.
+
+**Verification performed:** The focused v21 SQL regression
+passed against staging with a full outer `ROLLBACK`. It
+tests service-only execution permissions, absent reservations,
+missing candidates, correctly joined ordered source arrays,
+stable repeated MVCC reads, no reward flags and fail-closed
+missing stage seals. Nine earlier+v21 isolated regression
+suites (v12–v19 and v21) also passed under all ten migrations
+v11–v19/v21, with independent savepoint rollbacks and no
+staging schema persisted. The v11 suite passed in the earlier
+v11–v19 full regression run.
+
+**Not yet release-ready:** The TypeScript worker and test
+are committed but **external CI execution remains unconfirmed**.
+The repository interface is a *contract*, not a deployed
+Supabase client implementation or scheduled job. Source
+catalogue auditing (especially gatherable herbs) and
+server-side access verification remain mandatory, followed
+by persisted replay-verified settlement and economy-safe
+once-per-account Inbox grants. The v19 candidate alone
+must never authorize a payout. Leave the PR draft,
+unmerged, game mode hidden, and production untouched.

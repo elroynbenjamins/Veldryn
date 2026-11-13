@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS} from '../src/core/profile-equipped-gear';
+import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount} from '../src/core/profile-equipped-gear';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){
@@ -7,6 +7,10 @@ function equal(actual:unknown,expected:unknown,message:string){
 }
 
 equal(PROFILE_GEAR_SLOTS.length,10,'the profile has ten stable equipment slots');
+equal(profileGearColumnCount(400,1),5,'normal mobile panel uses five columns');
+equal(profileGearColumnCount(300,1),4,'narrow profile sheet uses four columns');
+equal(profileGearColumnCount(240,1),3,'very narrow sheet uses three columns');
+equal(profileGearColumnCount(400,1.5),3,'large accessibility text reduces columns');
 const parsed=normalizeProfileGear([
  {slot:'weapon',itemId:'basic_sword',rarity:'epic',quality:88,rank:3,statGemId:'EMBER_SHARD',gemIds:['EMBER_SHARD','SWIFT_SIGIL','IGNORED']},
  {slot:'weapon',itemId:'forged_duplicate'},

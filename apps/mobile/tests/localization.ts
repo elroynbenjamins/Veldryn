@@ -55,4 +55,37 @@ for(const tool of GATHERING_TOOLS){
 ok(localizeGameplay('de','Companion Mastery')==='Gefährtenmeisterschaft','Companion Mastery header should be German');
 ok(localizeGameplay('de','Claim Companion Training')==='Gefährtentraining abholen','Sanctuary action should be German');
 
+
+// German system UI coverage: owned text is translated, player-authored text is never passed here.
+for(const [english,german] of [
+ ['Party events','Gruppenereignisse'],
+ ['Party Chat','Gruppenchat'],
+ ['Your Party is ready','Deine Gruppe ist bereit'],
+ ['Find members','Mitglieder suchen'],
+ ['Guild Roster','Gildenmitglieder'],
+ ['Guild Bank','Gildenbank'],
+ ['Daily donation cap','Tägliches Spendenlimit'],
+ ['Events','Ereignisse'],
+ ['Frostfall Festival','Frostfall-Fest'],
+ ['Turning of the Age','Zeitenwende'],
+ ['Veil Shards','Schleiersplitter'],
+ ['Frostbell Tokens','Frostglocken-Marken'],
+ ['The event has ended. Candy purchases and activation are closed; collectibles and other supplies remain available during the claim window.','Das Ereignis ist beendet. Süßigkeiten können nicht mehr gekauft oder aktiviert werden. Sammlerstücke und andere Vorräte sind während der Abholfrist weiterhin erhältlich.'],
+] as const){
+ ok(localizeGameplay('de',english)===german,`German UI text missing: ${english}`);
+ ok(localizeGameplay('en',english)===english,`English UI fallback unexpectedly changed: ${english}`);
+}
+for(const summary of [
+ 'The boundary between Asterfall and the Gloam thins. Reinforce lantern wards, hunt escaped shades, and recover what crossed the veil.',
+ 'Winter bells ring across Asterfall. Gather provisions, light the roads, and earn gifts beneath the aurora.',
+ 'A new year begins under strange celestial signs. Chronicle the old age, gather time-touched relics, and welcome the first dawn.',
+ 'Bonds of friendship and loyalty are celebrated across Asterfall. Help travelers, craft gifts, and strengthen the ties between adventurers.',
+ 'Spring returns to Asterfall in a burst of living magic. Gather fresh growth, restore old groves, and drive back creatures feeding on the awakening bloom.',
+ 'Champions gather beneath bright summer banners. Compete, train, craft ceremonial gear, and prove your strength in the Suncrest Games.',
+ 'Meteor trails and strange lights cross the late-summer sky. Gather star-touched materials, study arcane traces, and keep Asterfall safe beneath the falling stars.',
+ 'Caravans crowd the roads and guild halls open their doors. Complete orders, protect trade routes, and contribute to shared guild efforts.'
+]){
+ ok(localizeGameplay('de',summary)!==summary,`German festival description missing: ${summary}`);
+}
+
 console.log(`Localization tests passed (${SUPPORTED_LANGUAGES.length} languages, ${MESSAGE_COUNT} shared and ${OPERATIONAL_MESSAGE_COUNT} operational messages each).`);

@@ -359,7 +359,7 @@ begin
      where p.item_id=v_receipt#>>'{enhancement,effectGemId}'
        and p.asset_kind='gem' and p.tradable and p.binding_policy='unbound'))
  then raise exception 'market_equipment_socket_unverified';end if;
- select pg_catalog.coalesce(pg_catalog.jsonb_agg(e.value order by e.ordinality),'[]'::jsonb)
+ select coalesce(pg_catalog.jsonb_agg(e.value order by e.ordinality),'[]'::jsonb)
    into v_remaining from pg_catalog.jsonb_array_elements(v_ledger)
      with ordinality e(value,ordinality)
    where e.value->>'id' is distinct from p_instance_id;

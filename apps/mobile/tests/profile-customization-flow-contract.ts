@@ -49,7 +49,7 @@ ok(look.includes('onNotice?.({name:row.name,undo:'),'Equipping must offer an und
 ok(look.includes('row.lockTag')&&look.includes('<ProfileUnlockSheet'),'Locked tiles must print their unlock tag and open the unlock sheet');
 ok(look.includes('JOURNAL_TITLES_V42')||fs.readFileSync('src/core/profile-wardrobe.ts','utf8').includes('JOURNAL_TITLES_V42'),"Earned Adventurer's Journal titles must remain selectable from Profile customization");
 ok(unlock.includes('Try it on')&&unlock.includes('onNavigateSource'),'The unlock sheet must offer both a try-on and a route to the source');
-ok(stage.includes('ProfileFrameOverlay')&&stage.includes('minCorner={46}'),'The stage must render the equipped frame at stage proportions');
+ok(stage.includes('ProfileFrameOverlay')&&!stage.includes('minCorner={46}'),'The stage frame must use responsive corner proportions instead of a fixed large corner size');
 
 // The Character screen keeps its own inline editor, so its contract still holds.
 ok(appearance.includes("['All','Starter','Class','Combat','Event']")&&!appearance.includes("['All','Starter','Class','Companion','Combat','Event']"),'Profile icon filters must not expose the retired Companion tab');

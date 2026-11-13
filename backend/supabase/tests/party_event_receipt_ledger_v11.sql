@@ -20,6 +20,11 @@ begin
  if has_function_privilege('anon','private.record_party_event_action_v11(uuid,timestamptz,text,text,text,text)','execute')
   or has_function_privilege('authenticated','private.record_party_event_action_v11(uuid,timestamptz,text,text,text,text)','execute')
  then raise exception 'V11 client can call internal receipt RPC';end if;
+ if not has_function_privilege('service_role',
+  'private.record_party_event_action_v11(uuid,timestamptz,text,text,text,text)','execute')
+  or has_table_privilege('service_role','private.party_event_receipts_v11','insert')
+  or has_table_privilege('service_role','private.party_event_receipts_v11','delete')
+ then raise exception 'V11 privileged insert path not restricted to internal function';end if;
  if has_table_privilege('authenticated','private.party_event_receipts_v11','insert')
   or has_table_privilege('authenticated','private.party_event_sources_v11','select')
   or has_table_privilege('anon','private.party_event_weeks_v11','select')
@@ -221,6 +226,11 @@ begin
  then raise exception 'V11 receipt count incorrect';end if;
  if exists(select 1 from private.party_event_receipts_v11 where event_points_awarded<>0)
  then raise exception 'V11 granted event points';end if;
+ delete from public.parties where id=p;
+ if (select count(*) from private.party_event_weeks_v11 where party_id=p)<>1
+  or (select count(*) from private.party_event_receipts_v11 where party_id=p)<>4
+ then raise exception 'V11 party disband removed historical event';end if;
+
 end $$;
 select 'PASS: V11 private ledger, role guards, vote lock, idempotency, replay, no EP' result;
 rollback;

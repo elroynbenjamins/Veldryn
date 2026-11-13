@@ -205,6 +205,86 @@ begin
   from jsonb_each_text(v_materials) loop
   if v_material<>'GEM_DUST' or v_quantity not between 1 and 999
   then raise exception 'party_event_v25_unapproved_reward_material';end if;
+  -- A merged material stack must also remain within the inventory
+  -- quantity shape supported by the live online state.
+  if exists(select 1 from jsonb_array_elements(v_inv) st
+      where st->>'itemId'=v_material
+       and (st->>'quantity') ~ '^[0-9]{1,9}
+       and (st->>'quantity') ~ '^[0-9]{1,9}$'
+       and (st->>'quantity')::bigint>0)
+  then v_extra:=v_extra+1;end if;
+ end loop;
+ if v_used+v_extra>v_capacity
+ then raise exception 'party_event_v25_inventory_full';end if;
+
+ select gold into v_wallet from public.character_wallets
+  where character_id=v_character_id for update;
+ if v_wallet is null or v_wallet<0
+ then raise exception 'party_event_v25_wallet_missing';end if;
+ if v_wallet>9223372036854775807::bigint-(v_quote->>'gold')::bigint
+ then raise exception 'party_event_v25_wallet_overflow';end if;
+
+ insert into private.party_event_claim_intents_v25(
+  offer_id,event_starts_at,reservation_id,account_id,character_id,
+  request_id,reward_model,reward_kind,reward_quote,quote_hash,
+  online_revision,wallet_gold_before,inventory_used_slots,
+  inventory_capacity,inventory_extra_slots)
+ values(o.id,o.event_starts_at,o.reservation_id,p_account_id,v_character_id,
+  p_request_id,'party-event-rewards-v2',v_quote->>'kind',v_quote,v_hash,
+  g.revision,v_wallet,v_used,v_capacity,v_extra)
+ returning * into v_new;
+ return jsonb_build_object('intentId',v_new.id,'replayed',false,
+  'offerId',p_offer_id,'quoteHash',v_new.quote_hash,
+  'claimReady',false,'claimable',false,'claimed',false,'rewardsGranted',false);
+end;$$;
+
+-- Even after intent creation, there is NO server-side method to claim it.
+-- This explicit blocked endpoint is an intentional release guard and
+-- cannot be bypassed with an untrusted request payload.
+create or replace function private.claim_party_event_reward_v25(
+ p_offer_id uuid,p_account_id uuid,p_request_id text
+) returns jsonb language plpgsql security definer set search_path='' as $$
+begin
+ raise exception 'party_event_v25_payout_not_released';
+end;$$;
+
+-- Account-scoped status only, no reward balances or private cross-account data.
+create or replace function private.party_event_claim_intents_inbox_v25(
+ p_account_id uuid
+) returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare v_items jsonb;
+begin
+ if p_account_id is null then
+  raise exception 'party_event_v25_invalid_account';end if;
+ select coalesce(jsonb_agg(jsonb_build_object(
+  'intentId',i.id,'offerId',i.offer_id,'reservationId',i.reservation_id,
+  'rewardKind',i.reward_kind,'quoteHash',i.quote_hash,
+  'state','blocked_unreleased','claimable',false,
+  'claimed',false,'rewardsGranted',false)
+  order by i.prepared_at desc,i.id),'[]'::jsonb) into v_items
+ from private.party_event_claim_intents_v25 i
+ where i.account_id=p_account_id;
+ return jsonb_build_object('items',v_items,'claimEnabled',false,
+  'rewardsGranted',false,'economyTransfers',0);
+end;$$;
+
+revoke all on function
+ private.party_event_reward_quote_v25(uuid,uuid),
+ private.prepare_party_event_claim_intent_v25(uuid,uuid,text),
+ private.claim_party_event_reward_v25(uuid,uuid,text),
+ private.party_event_claim_intents_inbox_v25(uuid)
+ from public,anon,authenticated;
+grant execute on function
+ private.party_event_reward_quote_v25(uuid,uuid),
+ private.prepare_party_event_claim_intent_v25(uuid,uuid,text),
+ private.claim_party_event_reward_v25(uuid,uuid,text),
+ private.party_event_claim_intents_inbox_v25(uuid)
+ to service_role;
+
+commit;
+
+       and (st->>'quantity')::bigint>999999999-v_quantity)
+  then raise exception 'party_event_v25_material_stack_overflow';end if;
   if not exists(select 1 from jsonb_array_elements(v_inv) st
      where st->>'itemId'=v_material
        and (st->>'quantity') ~ '^[0-9]{1,9}$'
@@ -218,7 +298,7 @@ begin
   where character_id=v_character_id for update;
  if v_wallet is null or v_wallet<0
  then raise exception 'party_event_v25_wallet_missing';end if;
- if v_wallet+(v_quote->>'gold')::bigint>9223372036854775807::bigint
+ if v_wallet>9223372036854775807::bigint-(v_quote->>'gold')::bigint
  then raise exception 'party_event_v25_wallet_overflow';end if;
 
  insert into private.party_event_claim_intents_v25(

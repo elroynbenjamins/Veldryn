@@ -8,7 +8,7 @@ function equal(actual:unknown,expected:unknown,message:string){
 
 equal(PROFILE_GEAR_SLOTS.length,10,'the profile has ten stable equipment slots');
 const parsed=normalizeProfileGear([
- {slot:'weapon',itemId:'basic_sword',rarity:'epic',quality:88,rank:3,statGemId:'EMBER_SHARD'},
+ {slot:'weapon',itemId:'basic_sword',rarity:'epic',quality:88,rank:3,statGemId:'EMBER_SHARD',gemIds:['EMBER_SHARD','SWIFT_SIGIL','IGNORED']},
  {slot:'weapon',itemId:'forged_duplicate'},
  {slot:'unknown',itemId:'secret'},
  {slot:'ring',itemId:'basic_sword',rarity:'not_a_rarity',quality:101,rank:99},
@@ -19,6 +19,7 @@ equal(parsed!.length,2,'invalid/duplicate slots are ignored');
 equal(parsed![0].slot,'weapon','canonical order is retained');
 equal(parsed![0].rarity,'epic','valid rarity is retained');
 equal(parsed![0].quality,88,'valid quality is retained');
+equal(parsed![0].gemIds?.join(','),'EMBER_SHARD,SWIFT_SIGIL','legacy gem arrays are bounded to two sockets');
 equal(parsed![1].rarity,undefined,'invalid rarity is stripped');
 equal(parsed![1].rank,undefined,'out-of-range rank is stripped');
 equal(parsed![1].quality,undefined,'out-of-range quality is stripped');
@@ -44,6 +45,7 @@ equal(activeGear[0].slot,'weapon','active weapon shown');
 equal(activeGear[0].rarity,'rare','exact crafted copy rarity shown');
 equal(activeGear[0].quality,75,'exact crafted copy quality shown');
 equal(activeGear[0].rank,2,'exact crafted copy upgrade shown');
+equal(activeGear[0].gemIds?.join(','),'EMBER_SHARD','local legacy sockets remain visible');
 const otherGear=localProfileGear(state,otherId);
 equal(otherGear.length,1,'selected inactive character gets own loadout');
 equal(otherGear[0].slot,'ring','selected inactive character does not leak active gear');

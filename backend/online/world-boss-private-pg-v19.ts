@@ -28,6 +28,8 @@ export interface WorldBossReservePayloadV19 {
  eventId:string;accountId:string;characterId:string;requestId:string;
  order:WorldBossOrder;seed:string;digest:string;frozenPacket:object;
  engineVersion:string;workerId:string;
+ /** Optional V20 War Camp binding, never supplied by the mobile client. */
+ warCampDigest?:string;
 }
 export interface WorldBossLeaseV19 {
  status:WorldBossAttemptStatusV19;ordinal:number;generation:number;repeated:boolean;
@@ -106,10 +108,15 @@ export function createWorldBossPrivatePgV19(pg:WorldBossPgExecutorV19):WorldBoss
   },
   async reserve(input){
    requireIdentity(input.eventId,input.accountId,input.requestId);
+   const isV20=(input.frozenPacket as {schema?:unknown})?.schema===
+    'world-boss-v20-serialized-v9';
+   // Names are fixed server-side literals; values remain parameterized.
+   const routine=isV20?'world_boss_v20_reserve':'world_boss_v18_reserve';
    const r=await pg.query<{receipt:WorldBossLeaseV19}>(
-    'SELECT private.world_boss_v18_reserve($1::uuid,$2::uuid,$3::uuid,$4::text,$5::text,$6::text,$7::text,$8::jsonb,$9::text,$10::text,$11::text,$12::text) AS receipt',
+    'SELECT private.'+routine+'($1::uuid,$2::uuid,$3::uuid,$4::text,$5::text,$6::text,$7::text,$8::jsonb,$9::text,$10::text,$11::text,$12::text) AS receipt',
     [input.eventId,input.accountId,input.characterId,input.requestId,input.order,
-     input.seed,input.digest,JSON.stringify(input.frozenPacket),input.engineVersion,input.workerId,null,null]);
+     input.seed,input.digest,JSON.stringify(input.frozenPacket),input.engineVersion,
+     input.workerId,input.warCampDigest??null,null]);
    return one(r.rows,'world_boss_v19_reserve_empty').receipt;
   },
   async checkout(eventId,accountId,requestId,workerId){

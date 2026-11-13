@@ -919,3 +919,86 @@ replay transaction, build **once-per-account atomic reward
 entitlements and Inbox delivery**, and finish mobile UI.
 Keep `PARTY_WEEKLY_EVENTS_RELEASED=false`, all drafts
 unmerged, and production untouched.
+
+## v23 — immutable trusted-worker Day 8 replay attestation (13 Nov 2026)
+
+**Nonpaying backend SQL ledger:**
+`backend/supabase/migrations/20261113200000_party_event_boss_replay_attestation_v23.sql`
+adds a private `party_event_boss_replay_attestations_v23` table,
+with immutable one-row-per-reservation and one-row-per-party-week
+keys. RLS is enabled; clients have no grants; `service_role`
+can SELECT but cannot directly INSERT, UPDATE or DELETE. The
+only writer is the private service-executable
+`private.attest_party_event_boss_replay_v23` function. Its
+status reader remains service-only.
+
+**Fresh source and event chain:** The writer locks the event week
+using the same transactional lock used by donation/stage code.
+It confirms the Day 8 reservation, v18 finale commitment,
+v19 candidate hash, pinned `party-event-day8-combat-v4`
+ruleset, frozen loadout hash, cleared tiers and reward band.
+It then calls the v21 single-MVCC snapshot reader and checks
+the **fresh source digest** against the exact snapshot
+passed to the worker. A stale or forged source digest fails
+closed. Changed requests, proofs or result metadata conflict,
+while an identical retry returns the original attestation,
+even after a later week closure.
+
+**Important security limitation:** PostgreSQL **does not execute
+the combat simulator** and **cannot establish that a service-role
+caller actually ran the engine**. The `replay_hash` is an
+assertion made by the privileged trusted worker, not an
+independently verified SQL fact. Do **not** allow any client
+route or untrusted service to call the writer, and do not
+interpret the table as automatic proof of victory. The
+`combatIndependentlyVerifiedBySql=false` response is explicit.
+
+**Worker-side proof pipeline:** The draft-only
+`backend/src/server/party/weekly-party-boss-attestation-v23.ts`
+accepts only a reserved UUID; it calls the v21 private replay
+adapter, which uses the v22 server-audited resource catalogue
+to rebuild every order and the v20 deterministic boss engine
+to reproduce the full outcome. Only after that succeeds does
+the worker call the v23 writer with its source digest,
+replayed-result hash, candidate/loadout commitments, tiers,
+band and the pinned
+`greenfields-verified-gathering-v22` audit version.
+The request ID is deterministic per reservation for safe
+retry. `backend/online/party-event-replay-attestation-v23.ts`
+supplies the concrete parameterized private PostgreSQL writer,
+reusing the v22 internal reader and content-derived catalogue.
+There is **no public route, scheduler or deployed worker**.
+`PARTY_EVENT_BOSS_ATTESTATION_V23_RELEASED=false`.
+
+**No economy effect whatsoever:** Both the SQL table and RPC
+enforce `rewards_granted=false` and
+`reward_entitlement_created=false`; worker return values
+explicitly report no payouts. The private status remains
+`worker_replay_attested_no_rewards`, never claimable.
+Existing v19 member reward previews are unchanged and
+remain nonclaimable. A future separate, independently reviewed
+settlement transaction will be required to credit anything.
+
+**Verification:** The focused v23 SQL test passed on isolated
+staging. It checks unknown attempts, invalid resource audit,
+wrong candidate and band, stale digest following a source
+change, immutable row mutation, changed request/replay hash,
+exact replay and no reward grants. **All twelve** SQL suites
+(v11–v19, v21–v23) passed against the complete v23 migration
+chain across two savepoint-isolated rollback-only batches;
+no migration or test data was persisted. TypeScript tests
+were expanded for the v23 worker and parameterized SQL writer,
+and are included in the existing backend Party Events test
+commands and CI path filters. **GitHub CI execution is
+not yet confirmed**, and v23 cannot be considered release ready.
+
+**Next release gates:** Confirm TypeScript CI, implement a truly
+private scheduled worker and least-privilege SQL connection,
+test concurrency/reservation locking under load, validate
+the actual replay content version after every combat change,
+and then separately design atomic **one-time** account rewards,
+Inbox claim, choices, rollback handling and economic limits.
+Never derive an entitlement directly from v19/v23 hashes
+without revalidating the trusted worker pipeline and event
+eligibility. Leave the PR draft, branch unmerged, public
+Party Events flags disabled, and production unchanged.

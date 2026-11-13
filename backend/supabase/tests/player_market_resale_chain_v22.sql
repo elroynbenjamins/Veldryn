@@ -13,6 +13,11 @@ begin
       where tgname='market_sale_chain_no_mutation_v22' and not tgisinternal)
   then raise exception 'market_v22_schema_or_triggers_missing';end if;
 
+  if not (select prosecdef from pg_catalog.pg_proc
+     where oid='private.market_record_sale_chain_v22()'::regprocedure)
+    or not (select prosecdef from pg_catalog.pg_proc
+     where oid='private.market_block_resale_asset_reservation_v22()'::regprocedure)
+  then raise exception 'market_v22_private_trigger_cannot_read_restricted_chain';end if;
   if has_function_privilege('anon',
        'private.market_resale_preflight_v22(uuid,text,text,text,integer)'::regprocedure,
        'EXECUTE')

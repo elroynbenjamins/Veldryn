@@ -204,6 +204,14 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   'COPY':'EXEMPLAR',
   'COPIES':'EXEMPLARE',
 
+  // Event candies and seasonal progression guidance.
+  'Grants +10% gathering speed and +10% non-combat skill XP.':'Gewährt +10 % Sammelgeschwindigkeit und +10 % EP für Fertigkeiten außerhalb des Kampfes.',
+  'Grants +10% combat XP and +10% damage against ordinary regional PvE enemies only. No PvP, guild, dungeon, or expedition effect.':'Gewährt +10 % Kampf-EP und +10 % Schaden gegen gewöhnliche regionale PvE-Gegner. Keine Wirkung in PvP, Gildenkämpfen, Dungeons oder Expeditionen.',
+  'Awards 75 Companion XP to your selected owned combat companion, equipped or not. It does not increase combat power directly.':'Gewährt deinem ausgewählten Kampfgefährten 75 EP, auch wenn er nicht ausgerüstet ist. Die Kampfkraft steigt dadurch nicht direkt.',
+  'Doubles the base chance of eligible regional pet drops from combat, gathering and exploration for 2 hours. For example, 0.10% becomes 0.20%.':'Verdoppelt für 2 Stunden die Grundchance auf geeignete regionale Haustierfunde aus Kampf, Sammeln und Erkundung. Beispiel: Aus 0,10 % werden 0,20 %.',
+  'Veil Vigil':'Schleierwache',
+  'Frostfall Cheer':'Frostfall-Freude',
+
   // Event overview, drop rates, boss participation and seasonal instructions.
   'DAILY FESTIVAL GIFT · DAY':'TÄGLICHES FESTGESCHENK · TAG',
   'Return to the event each day':'Kehre jeden Tag zum Ereignis zurück',
@@ -538,6 +546,11 @@ export function germanCoverageText(source:string):string|undefined{
  if((match=/^Permanent (.+) · Account unlock$/.exec(source)))return `Dauerhafte Kontofreischaltung · ${match[1]}`;
  if((match=/^Show offers I can afford · (\d+) available$/.exec(source)))return `Bezahlbare Angebote anzeigen · ${match[1]} verfügbar`;
  if((match=/^(\d+) offers( · affordable)?$/.exec(source)))return `${match[1]} Angebote${match[2]?' · bezahlbar':''}`;
+ if((match=/^([\d.,]+)% chance$/.exec(source)))return `${match[1]} % Chance`;
+ if((match=/^([\d.,]+) avg\.$/.exec(source)))return `Ø ${match[1]}`;
+ if((match=/^Guild Level (\d+) required · current (\d+)\.$/.exec(source)))return `Gildenstufe ${match[1]} benötigt · aktuell ${match[2]}.`;
+ if((match=/^Guild Level (\d+)\+ · three-minute attempts\.$/.exec(source)))return `Gildenstufe ${match[1]}+ · dreiminütige Versuche.`;
+ if((match=/^Requires Guild Level (\d+)$/.exec(source)))return `Benötigt Gildenstufe ${match[1]}`;
  const translated=germanCoverageLowercase.get(source.toLowerCase());
  if(translated===undefined)return undefined;
  return source===source.toUpperCase()?translated.toLocaleUpperCase('de-DE'):translated;

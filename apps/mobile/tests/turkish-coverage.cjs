@@ -13,23 +13,36 @@ const {TURKISH_COVERAGE}=require('../src/i18n/turkish-coverage.ts');
 const {EARLY_LOCALE_ROWS,earlyLocaleText}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
+const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=952,'Turkish core coverage should retain the 952-string baseline');
+assert.ok(keys.length>=1450,'Turkish core coverage should retain the 1450-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
 const i18nDir=path.resolve(__dirname,'../src/i18n');
 const coveredSources=['navigation.ts','app-shell.ts','account.ts','companions.ts',
  'gameplay.ts','profile.ts','social.ts','battle.ts','creation.ts','progression.ts'];
-const source=coveredSources.map(file=>fs.readFileSync(path.join(i18nDir,file),'utf8')).join('\n');
+const sourceKeys=new Set();
+for(const file of coveredSources){
+ const content=fs.readFileSync(path.join(i18nDir,file),'utf8');
+ const tree=ts.createSourceFile(file,content,ts.ScriptTarget.Latest,true);
+ assert.equal(tree.parseDiagnostics.length,0,file+' parses without errors');
+ function visit(node){
+  if(ts.isPropertyAssignment(node)&&ts.isStringLiteral(node.name)&&ts.isArrayLiteralExpression(node.initializer)){
+   sourceKeys.add(node.name.text);
+  }
+  ts.forEachChild(node,visit);
+ }
+ visit(tree);
+}
 
 for(const [english,turkish] of Object.entries(TURKISH_COVERAGE)){
  assert.ok(english.trim()&&turkish.trim(),'Empty Turkish translation: '+english);
  assert.ok(!Object.hasOwn(EARLY_LOCALE_ROWS,english),'Duplicate early translation: '+english);
+ assert.ok(!Object.hasOwn(socialEarlyRows,english),'Do not override pre-existing Social Turkish translation: '+english);
  assert.deepEqual(placeholders(turkish),placeholders(english),'Placeholder mismatch: '+english);
  assert.equal(earlyLocaleText('tr',english),turkish,'Turkish runtime lookup: '+english);
- assert.ok(source.includes(JSON.stringify(english))||source.includes("'"+english+"'"),
-  'Missing source catalog entry: '+english);
+ assert.ok(sourceKeys.has(english),'Missing authored source catalog key: '+english);
 }
 
 assert.equal(earlyLocaleText('ru','Secured'),undefined,'Do not change Russian fallbacks');

@@ -231,7 +231,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
       <Text style={s.sourceButtonText}>{t('Train')} ›</Text>
      </Pressable>:null}
      <CompanionIndex state={state} hiddenIds={new Set(codexEntries.filter(entry=>entry.state==='unknown').map(entry=>entry.companionId))} onOpen={id=>{setSelection(id);setDetailOpen(true)}} onTrain={id=>{setSelection(id);setSection('Training')}} onCodex={()=>setSection('Codex')}/>
-     <GameButton title={t("Companion Codex")} tone="secondary" onPress={()=>setSection('Codex')}/>
+
     </>}
     {section==='Sanctuary'&&<View style={s.group}>
       {model?.owned?<CompanionDisclosure title={t("Upgrade Quarters")} summary={model.def.name} icon="home">{housingView}</CompanionDisclosure>:null}

@@ -10,7 +10,7 @@ import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import * as companions from './combat-companions';
 import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
-import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
+import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining,recordCompanionActivity} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
@@ -310,7 +310,13 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'craft_claim':{
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');
-   const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
+   const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;
+   // Companion recruitment counts only settled equipment, never queued jobs or gem recipes.
+   if(result.kind==='equipment'){
+    state=recordCompanionActivity(state,'crafting',result.recipe.output.itemId,1,now);
+    forgeResults=[result.result];
+   }
+   contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
     :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
@@ -319,6 +325,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'craft_claim_all':{
    const beforeIds=new Set((state.account.equipmentCraftingQueue??[]).map(job=>job.id));
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;forgeResults=result.results;
+   // Bulk settlement is one atomic command. Count each successfully claimed equipment
+   // copy exactly once, excluding blocked jobs and gem combine/refinement claims.
+   if(result.results.length>0)state=recordCompanionActivity(state,'crafting','equipment-forge',result.results.length,now);
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
    const equipmentCount=result.claimed.length-result.gemClaims,procCount=result.results.filter(row=>row.qualityProc).length;
    const blockedCount=result.blocked.length;

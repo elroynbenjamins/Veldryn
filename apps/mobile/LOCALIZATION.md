@@ -6,9 +6,10 @@ Russian and Turkish are starter-only languages. English remains the fallback for
 
 ## November 13, 2026: recently changed screens
 
-- Added 129 reviewed eight-language source keys (English plus DE/ES/NL/IT/FR/RU/TR) in `src/i18n/recent-screens.ts` covering the Community Roadmap, the not-yet-released Market Inbox, Player Badge settings, and authored regional Journal goals/achievement ladders.
+- Added 145 reviewed eight-language source keys (English plus DE/ES/NL/IT/FR/RU/TR) in `src/i18n/recent-screens.ts` covering the Community Roadmap, the not-yet-released Market Inbox, Player Badge settings, and authored regional Journal goals/achievement ladders.
 - Roadmap entries from the four November 10 authoritative migrations have matching localized titles/descriptions and category labels. Unknown or changed server entries still display their original source text rather than being translated speculatively.
 - Added placeholder, locale coverage, badge metadata, authored Journal source, and Roadmap SQL source checks in `tests/recent-ui-localization.cjs`, wired into the localization test runner.
+- The hidden Market price-history chart has localized period labels, price/sale explanations and screen-reader descriptions, with number formatting for every supported language; this does not change sample requirements or generated data. The Rewards Inbox Market tab and remaining Settings update/developer labels are translated.
 - The Market Inbox now uses the existing item-name locale registry and language-aware number formatting. Regional Journal objectives/Echo labels and the generated nine-by-five achievement ladder display reviewed translations while unknown names remain untouched.
 - Russian and Turkish remain starter-level across the **rest** of the game. Unreviewed, data-driven, and new interface text may still fall back to English. Native-speaker review and narrow-screen text-expansion QA remain open.
 

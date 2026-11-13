@@ -1267,7 +1267,7 @@ begin
   then raise exception 'V24 due expiry worker failed to find open expired item';end if;
   begin
     perform private.market_purchase_equipment_resale_v23(
-      v_rival,v_resale_again,125,7,20,'v24-expired-buy',repeat('2',64));
+      v_rival,v_resale_again,125,8,20,'v24-expired-buy',repeat('2',64));
     raise exception 'V24 expired resale was purchased';
   exception when raise_exception then
     if sqlerrm<>'market_offer_not_available' then raise;end if;

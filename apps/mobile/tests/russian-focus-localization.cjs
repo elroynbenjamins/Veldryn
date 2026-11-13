@@ -62,3 +62,9 @@ const coverage=(100*russianOwned.size/owned.size).toFixed(1);
 assert.ok(russianOwned.size>=keys.length,'Coverage cannot be smaller than focused translations');
 console.log('PASS: '+keys.length+' focused Russian UI translations, source keys, placeholders, and language fallback');
 console.log('Russian catalog coverage: '+russianOwned.size+'/'+owned.size+' distinct authored keys ('+coverage+'%). Remaining keys fall back to English.');
+for(let i=0;i<modules.length;i++){
+  const keysInModule=new Set([...sources[i].matchAll(/^\s*(['"])(.*?)\1\s*:\s*\[/gm)].map(match=>match[2]));
+  const localCount=[...keysInModule].filter(key=>russianOwned.has(key)).length;
+  const percentage=keysInModule.size?(100*localCount/keysInModule.size).toFixed(1):'100.0';
+  console.log('  '+modules[i]+': '+localCount+'/'+keysInModule.size+' ('+percentage+'% RU)');
+}

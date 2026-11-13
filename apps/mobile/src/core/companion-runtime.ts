@@ -1,5 +1,4 @@
 import type {GameState} from './types';
-import {recordSeasonalActivity} from './seasonal-quests';
 import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
@@ -374,7 +373,6 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);
       state={...state,account:awardCompanionMasteryXp(state.account,companionMasteryAward('expedition',{hours:Math.max(0,(Date.parse(assignment.endsAt)-Date.parse(assignment.startedAt))/3600000),grade:r.assignment.performanceGrade}))};
       state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;
-      state=recordSeasonalActivity(state,'expedition',1,now);
       state=companionMetricMany(state,{[`companions.expedition.${assignment.missionId}.claims`]:1,[`companions.expedition.${assignment.missionId}.grade.${r.assignment.performanceGrade??'C'}`]:1,[`companions.expedition.${assignment.missionId}.essence_earned`]:r.reward.companionEssence,[`companions.expedition.${assignment.missionId}.bondstones_earned`]:r.reward.bondstones,[`companions.expedition.${assignment.missionId}.bonus_rewards`]:r.reward.bonusRewardGranted?1:0});
       break;
     }

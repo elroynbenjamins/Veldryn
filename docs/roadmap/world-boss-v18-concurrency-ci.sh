@@ -105,6 +105,6 @@ psql_q "UPDATE private.world_boss_events_v17 SET status='closed' WHERE id='$EVEN
 expect_error WB18_EVENT_CLOSED "$(reserve_sql 2 WB18_NEW_AFTER_CLOSE)"
 require_eq true "$(psql_q "$(reserve_sql 1 WB18_SAME_KEY)")" "read prior after close"
 
-require_eq false "$(psql_q "SELECT has_function_privilege('anon','private.world_boss_v18_settle(uuid,uuid,text,text,bigint,text,text,text,text,numeric,numeric)','EXECUTE')")" "no anon settlement"
-require_eq false "$(psql_q "SELECT has_function_privilege('authenticated','private.world_boss_v18_reserve(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)','EXECUTE')")" "no authenticated reserve"
+require_eq f "$(psql_q "SELECT has_function_privilege('anon','private.world_boss_v18_settle(uuid,uuid,text,text,bigint,text,text,text,text,numeric,numeric)','EXECUTE')")" "no anon settlement"
+require_eq f "$(psql_q "SELECT has_function_privilege('authenticated','private.world_boss_v18_reserve(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)','EXECUTE')")" "no authenticated reserve"
 echo 'PASS V18: 16 duplicate request racers, 12 independent last-HP commits, fenced leases, void tombstones, 3-slot cap, private-only functions; NO LIVE DATABASE.'

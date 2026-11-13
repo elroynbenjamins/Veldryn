@@ -159,6 +159,18 @@ begin
   snapshot->'payload'->'finale'->>'loadout_hash',0,1,
   'greenfields-verified-gathering-v22');
 
+ -- Even an internal actor changing progress after candidate capture cannot
+ -- make v19's immutable personal EP preview an accepted payout offer.
+ begin
+  update private.party_event_member_progress_v14
+   set activity_points=16 where party_id=p and event_starts_at=w
+    and account_id=a[1];
+  perform private.prepare_party_event_reward_offers_v24(r,'v24-batch-0001');
+  raise exception 'V24 trusted altered EP after candidate was recorded';
+ exception when others then
+  if sqlerrm<>'party_event_v24_verified_points_mismatch' then raise;end if;
+ end;
+
  -- Do not trust caller-supplied EP or choice. v24 recomputes from verified
  -- v14 progress + v15 special credits against immutable v19 previews.
  response:=private.prepare_party_event_reward_offers_v24(r,'v24-batch-0001');

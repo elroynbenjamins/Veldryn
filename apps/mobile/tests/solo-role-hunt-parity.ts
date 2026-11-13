@@ -40,7 +40,8 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(fixture=>selected.includes(fixt
   report.push({region:def.regionName,preparation,tankPct:Number(tankPct.toFixed(3)),supportPct:Number(supportPct.toFixed(3)),minRolePct:Number(Math.min(tankPct,supportPct).toFixed(3)),damageKillsPerHour:Number(reference.toFixed(2)),roleRates});
   // Search time creates a hard floor in overgeared regions. Do not artificially
   // slow one-hit kills to force a perfect role ratio at the search ceiling.
-  if(tankPct<.80||supportPct<.75||tankPct>1.15||supportPct>1.15)
+  // 85–95% Tank / 80–90% Support are targets; allow a narrow search-floor tolerance.
+  if(tankPct<.83||supportPct<.79||tankPct>.99||supportPct>.95)
    violations.push(def.regionName+'/'+preparation+': '+JSON.stringify({tankPct,supportPct}));
  }
 }

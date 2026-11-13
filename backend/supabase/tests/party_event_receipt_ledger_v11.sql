@@ -117,6 +117,14 @@ begin
  exception when others then
   if sqlerrm<>'party_event_vote_not_locked' then raise;end if;
  end;
+ begin
+  update private.party_event_stages_v11
+   set vote_choice='overload_wards',vote_locked_at=now()
+   where party_id=p and event_starts_at=start_at and stage=2;
+  raise exception 'V11 wrong-family route was locked';
+ exception when others then
+  if sqlerrm<>'party_event_invalid_family_vote' then raise;end if;
+ end;
  update private.party_event_stages_v11
  set vote_choice='safe_pass',vote_locked_at=now()
  where party_id=p and event_starts_at=start_at and stage=2;
@@ -159,8 +167,22 @@ begin
  perform private.record_party_event_action_v11(
   p,start_at,source5,'support_expedition','party-v11-request-007',hash);
 
+ begin
+  update private.party_event_weeks_v11 set active_stage=1
+   where party_id=p and event_starts_at=start_at;
+  raise exception 'V11 stage was rewound';
+ exception when others then
+  if sqlerrm<>'party_event_lifecycle_regression' then raise;end if;
+ end;
  update private.party_event_weeks_v11 set status='closed'
   where party_id=p and event_starts_at=start_at;
+ begin
+  update private.party_event_weeks_v11 set status='active'
+   where party_id=p and event_starts_at=start_at;
+  raise exception 'V11 closed event was reopened';
+ exception when others then
+  if sqlerrm<>'party_event_lifecycle_regression' then raise;end if;
+ end;
  replayed:=private.record_party_event_action_v11(
   p,start_at,source1,'scout_route','party-v11-request-001',hash);
  if replayed->>'replayed'<>'true' then

@@ -213,7 +213,9 @@ create or replace function private.resolve_party_event_ballot_v17(
 declare
  w private.party_event_weeks_v11%rowtype;
  s private.party_event_stages_v11%rowtype;
- v_now timestamptz:=clock_timestamp();
+ v_now timestamptz:=now();
+ -- v11 stage vote guard compares vote_locked_at to transaction_timestamp().
+ -- A consistent transaction timestamp avoids false future-vote rejection.
  v_members integer;v_choice text;v_count integer;v_default text;
  v_reason text;
 begin
@@ -273,7 +275,8 @@ declare
  w private.party_event_weeks_v11%rowtype;
  existing private.party_event_stage_transitions_v17%rowtype;
  seal private.party_event_stage_seals_v17%rowtype;
- v_readiness jsonb;v_now timestamptz:=clock_timestamp();
+ v_readiness jsonb;v_now timestamptz:=now();
+ -- Use the same transactional clock as v11's opened_at/vote guards.
  v_next integer;v_required_actions text[];
  v_missing_actions integer;v_done integer;
 begin

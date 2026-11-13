@@ -45,7 +45,7 @@ begin
       where c.account_id=p_target_account_id and c.id::text=v_profile#>>'{character,id}'
       limit 1;
   end if;
-  if v_character is null then return '[]'::jsonb;end if;
+  if v_character is null then return jsonb_build_object('characterId',v_profile#>>'{character,id}','items','[]'::jsonb);end if;
 
   foreach v_slot in array array['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'] loop
     v_item_id:=nullif(v_character->'equipment'->>v_slot,'');
@@ -72,7 +72,7 @@ begin
       'effectGemId',v_enhancement->>'effectGemId'
     ));
   end loop;
-  return v_rows;
+  return jsonb_build_object('characterId',v_profile#>>'{character,id}','items',v_rows);
 end $$;
 
 revoke all on function public.profile_equipped_gear_v1(uuid) from public,anon;

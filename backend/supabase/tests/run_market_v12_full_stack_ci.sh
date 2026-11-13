@@ -40,17 +40,22 @@ for migration in \
   20261113073000_market_purchased_gear_bank_vault_private_v21.sql \
   20261113083000_market_resale_chain_guard_private_v22.sql \
   20261113100000_market_resale_custody_private_v23.sql \
-  20261113103000_market_resale_settlement_private_v23.sql
+  20261113103000_market_resale_settlement_private_v23.sql \
+  20261113110000_market_unified_browse_private_v24.sql \
+  20261113111000_market_unified_inbox_private_v24.sql \
+  20261113112000_market_resale_expiry_private_v24.sql \
+  20261113112500_market_v12_browser_reconciliation_private_v24.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 31 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 35 dependency-ordered private Market migrations compile on clean PG17"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_acquisition_v18.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_provenance_v19.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_recipient_transfer_v20.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_bank_vault_v21.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_resale_chain_v22.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_resale_lifecycle_v23.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_visibility_expiry_v24.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
@@ -88,6 +93,10 @@ begin
  or has_table_privilege('authenticated','private.market_equipment_resale_offers_v23','SELECT')
  or has_table_privilege('authenticated','private.market_equipment_resale_chain_v23','SELECT')
  or has_function_privilege('authenticated','private.market_purchase_equipment_resale_v23(uuid,uuid,bigint,bigint,bigint,text,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_browse_combined_v24(text,text,text,text,bigint,bigint,integer,integer)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_inbox_unified_v24(uuid,boolean,integer)','EXECUTE')
+ or has_function_privilege('service_role','private.market_due_resales_v24(integer)','EXECUTE')
+ or has_function_privilege('service_role','private.market_expire_resale_v24(uuid,text,text)','EXECUTE')
  or has_function_privilege('authenticated','private.market_resale_preflight_v22(uuid,text,text,text,integer)','EXECUTE')
  or has_function_privilege('authenticated','private.market_move_purchased_equipment_bank_v21(uuid,text,text,text,text,integer,integer,bigint,text,text)','EXECUTE')
  or has_function_privilege('authenticated','private.market_transfer_purchased_equipment_v20(uuid,text,text,text,integer,text,text,bigint,text,text)','EXECUTE')

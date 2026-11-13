@@ -1,10 +1,11 @@
 import type {Language} from './languages';
 import {createTranslator,interpolateTranslation} from './translator';
+import {spanishUiGap} from './spanish-ui-gaps';
 
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
-  // Game Guide entries introduced with newer onboarding flows.
+  // Russian guide coverage: authored six-language catalog labels.
   "Reach Level 10": ["Reach Level 10","Erreiche Stufe 10","Alcanza el nivel 10","Bereik niveau 10","Raggiungi il livello 10","Atteignez le niveau 10"],
   "Reach Level 25 and defeat the Fallen Knight (Chapter I).": ["Reach Level 25 and defeat the Fallen Knight (Chapter I).","Erreiche Stufe 25 und besiege den Gefallenen Ritter (Kapitel I).","Alcanza el nivel 25 y derrota al Caballero Caído (capítulo I).","Bereik niveau 25 en versla de Gevallen Ridder (hoofdstuk I).","Raggiungi il livello 25 e sconfiggi il Cavaliere Caduto (Capitolo I).","Atteignez le niveau 25 et battez le Chevalier déchu (chapitre I)."],
   "Dungeons begin at Level 25 after you defeat the Fallen Knight; new runs start in Sunscar or later. Choose Solo Echo or Live and review the dungeon requirements before entering.": ["Dungeons begin at Level 25 after you defeat the Fallen Knight; new runs start in Sunscar or later. Choose Solo Echo or Live and review the dungeon requirements before entering.","Dungeons werden nach Stufe 25 und dem Sieg über den Gefallenen Ritter verfügbar. Neue Läufe starten in Sunscar oder später. Wähle Solo-Echo oder Live und prüfe die Anforderungen vor dem Eintritt.","Las mazmorras comienzan en el nivel 25 tras derrotar al Caballero Caído. Las nuevas expediciones parten de Sunscar o regiones posteriores. Elige Eco en solitario o En vivo y revisa los requisitos antes de entrar.","Kerkeravonturen beginnen op niveau 25 nadat je de Gevallen Ridder hebt verslagen. Nieuwe pogingen starten in Sunscar of latere regio's. Kies Solo-Echo of Live en controleer de eisen.","I dungeon si sbloccano al livello 25 dopo aver sconfitto il Cavaliere Caduto. Le nuove spedizioni iniziano a Sunscar o nelle regioni successive. Scegli Eco singolo o Live e controlla i requisiti.","Les donjons s'ouvrent au niveau 25 après avoir vaincu le Chevalier déchu. Les nouvelles expéditions commencent à Sunscar ou plus loin. Choisissez Écho solo ou Live et vérifiez les conditions."],
@@ -1694,8 +1695,9 @@ export function accountText(language:Language,text:string,params?:Record<string,
     if(key==='Collection · {target}')values.target=accountText(language,values.target);
     return accountT(language,key,values);
   }
-  // Uncatalogued UI copy must still resolve provided values, even when it falls back to English.
-  return interpolateTranslation(text,params);
+  // Only source-reviewed application copy receives this Spanish catch-up overlay.
+  // Unknown, user-authored or server-provided text keeps the original safe fallback.
+  return interpolateTranslation(language==='es'?spanishUiGap(text)??text:text,params);
 }
 
 export function accountError(language:Language,error:unknown,fallback:AccountKey='The request could not be completed. Please try again.'):string{

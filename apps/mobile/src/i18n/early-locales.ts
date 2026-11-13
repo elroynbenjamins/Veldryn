@@ -1,7 +1,8 @@
 import type {Language} from './languages';
+import {TURKISH_COVERAGE} from './turkish-coverage';
 import {RUSSIAN_FOCUS_ROWS} from './russian-focus';
 
-// RU/TR starter copy plus reviewed Russian expansion; unknown phrases fall back to English.
+// Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
   // Profile showcase empty states and selection guidance.
   "Choose an earned achievement": ["Выберите полученное достижение","Kazanılmış bir başarı seçin"],
@@ -2468,5 +2469,5 @@ export function earlyLocaleText(language:Language,source:string):string|undefine
     return RUSSIAN_FOCUS_ROWS[source as keyof typeof RUSSIAN_FOCUS_ROWS];
   const row=Object.prototype.hasOwnProperty.call(EARLY_LOCALE_ROWS,source)
     ? EARLY_LOCALE_ROWS[source as keyof typeof EARLY_LOCALE_ROWS]:undefined;
-  return row?.[language==='ru'?0:1];
+  return row?.[language==='ru'?0:1]??(language==='tr'?TURKISH_COVERAGE[source as keyof typeof TURKISH_COVERAGE]:undefined);
 }

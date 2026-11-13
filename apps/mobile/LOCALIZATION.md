@@ -2,7 +2,7 @@
 
 Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`), Italian (`it`), French (`fr`), Russian (`ru`), and Turkish (`tr`).
 
-Russian has expanded but still incomplete coverage; Turkish remains starter-only. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
+Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
 ## Russian focused coverage (November 2026)
 
@@ -11,6 +11,14 @@ Russian has expanded but still incomplete coverage; Turkish remains starter-only
 - A focused Russian expansion now adds **2,081 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy.
 - The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
 - The dedicated Russian regression test checks all 2,081 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+
+
+## Spanish gap review · 2026-11-13
+
+- New exact-English-source Spanish translations cover Resource Codex searches/sources/recipes, Market Inbox deliveries and claim states, More navigation, release information, Settings, the Community Roadmap, the activity queue, Store headers and Event calendar/teasers.
+- The new food queue's Health and Auto-Eat headings and carry/empty-state helper copy are translated; Companion Mastery and Training Ground explanations, requirements and controls no longer show English in Spanish mode.
+- Reviewed strings pass through `accountText` and keep numeric placeholders intact. Proper names, player text, server identifiers and unrecognized messages remain unchanged; other languages retain their prior fallback behavior.
+- The localization-catalog validator now checks Spanish overlay placeholder parity and the relevant screens' static translation call sites.
 
 ## Implemented
 

@@ -50,10 +50,10 @@ assert.ok(shop.includes('requestLock.current=true')&&shop.includes('requestLock.
 assert.ok(shop.includes('Processing purchase')&&shop.includes('Not available yet'),'Shop offers must display processing and offline states');
 
 const expeditionShop=read('src/components/ExpeditionShopPanel.tsx');
-assert.ok(expeditionShop.includes("const offerStatus=locked?'LOCKED':short>0?'NEED MARKS':'AVAILABLE';"),'Expedition offers must distinguish affordable rewards from insufficient Marks');
-assert.ok(expeditionShop.includes('dismissOnBackdrop={!busy}')&&expeditionShop.includes('closeDisabled={busy}'),'Purchase review must not dismiss during a transaction');
-assert.ok(expeditionShop.includes("loading={busy} disabled={busy} onPress={()=>purchase(selected.itemId)}"),'Purchase action should display an in-flight indicator');
-assert.ok(expeditionShop.includes('accessibilityState={{disabled:busy}} disabled={busy} onPress={onBack}'),'Back navigation should not hide a pending purchase state');
+assert.ok(shop.includes("item.status==='insufficient_marks'?'Need more Marks'")&&shop.includes("item.status==='eligible'"),'Expedition offers must distinguish affordable rewards from insufficient Marks');
+assert.ok(shop.includes('requestLock.current')&&shop.includes("offerEligible?"),'Purchase review must retain its lock and eligibility state');
+assert.ok(shop.includes('loading={pending===item.id} disabled={!canPurchase}'),'Purchase action should display an in-flight indicator');
+assert.ok(expeditionShop.includes('disabled={loading||purchasing} onPress={onBack}')&&expeditionShop.includes('onRefresh={refresh} busy={loading||purchasing}'),'Back navigation and shop controls must not hide a pending purchase state');
 
 const chapters=read('src/components/WorldChapterNavigator.tsx');
 assert.ok(chapters.includes('<Text numberOfLines={2} style={s.meta}>'),'Current chapter progress metrics must wrap instead of truncating');

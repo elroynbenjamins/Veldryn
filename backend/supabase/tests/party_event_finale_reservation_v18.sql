@@ -253,8 +253,8 @@ begin
   or (select count(*) from private.party_event_finale_seals_v18)<>2
   or exists(select 1 from private.party_event_receipts_v11
     where event_points_awarded<>0)
-  or (select status from private.party_event_weeks_v11
-      where party_id=p and event_starts_at=w)<>'active'
+  or (select week.status from private.party_event_weeks_v11 week
+      where week.party_id=p and week.event_starts_at=w)<>'active'
  then raise exception 'V18 exactly-once, zero reward or no-settlement invariant broken';end if;
 end $$;
 select 'PASS: v18 canonical loadouts, stage3 seal, +1h Day8 attempt, exact replay, zero reward' as result;

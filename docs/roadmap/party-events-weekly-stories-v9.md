@@ -104,3 +104,54 @@ checks and replay safety; included in the existing hidden Party Events CI.
 4. Build the four polished compact pixel-stage screens and genuine art assets.
 5. Build and test Day 8 single-claim settlement and staged rollout. Keep all
    release gates OFF until every blocker clears.
+
+## v11 — private atomic objective receipt ledger (13 November 2026)
+
+The hidden implementation now has a **migration staged in git only**:
+`backend/supabase/migrations/20261113041500_party_event_receipt_ledger_v11.sql`.
+It defines five `private` tables: immutable event week/roster identities,
+monotone stage opens and one-time family-appropriate locked votes,
+server-authored gameplay evidence sources, and one receipt per account/week/action.
+The source ID and client request ID are globally unique; a separate account/week
+enrollment uniqueness constraint prevents switching parties to duplicate actions.
+
+`private.record_party_event_action_v11` is **service-role-only** and locks the
+week and verified evidence row, then the current stage, before admitting a
+receipt. Unique DB constraints enforce one slot, one source and one request
+even if two workers race. An identical retry replays the original receipt,
+including after event close; a different retry cannot remint it.
+Only noncombat evidence may satisfy scouting; Stage 2 and 3 sources must
+postdate their own locked votes. Invalid class roles, impossible full-party
+composition and out-of-window sources are rejected. All recorded
+`event_points_awarded` values are constrained to **0**.
+
+The event week is a durable snapshot and does not disappear if the live Party
+disbands. Auth account deletion can still cascade and erase that account's
+private rows. SQL grants are restricted to `service_role`, with RLS enabled
+and no client grants. The RPC has no mobile/API exposure.
+
+**Validation:** Executed both this migration and
+`backend/supabase/tests/party_event_receipt_ledger_v11.sql`
+inside **one transaction on Veldryn Staging 20260924**, ending in
+`ROLLBACK`. The SQL regression returned **PASS** after testing roles,
+unauthorized grants, vote locks, three stages, forged/reused receipts,
+exact retries, closing and disband safety. No changes were persisted to
+staging; production has not been touched. The migration is **not applied** in
+either environment, and normal GitHub Actions cannot execute the SQL suite
+without a configured temporary DB. The workflow watches the new files but
+does **not** claim database test execution.
+
+**Critical remaining integration:** Nobody yet inserts real source rows from
+the canonical gather/craft/combat transaction. Only a server-verified gameplay
+or outbox record may populate `party_event_sources_v11`; never trust a
+client-supplied source ID, time, count, actor, class or role. Verify source
+provenance in the **same transaction** as gameplay settlement, with a
+source-to-event origin check. Before live use, lock enrollment/ballots,
+supply consumption and final loadouts on authoritative rows, couple v2
+progression and event-point ledger to completed receipts exactly once,
+and implement Day 8 single-claim settlement.
+
+**No release activation:** All v2–v10 flags remain FALSE; v11 adds no new
+public endpoint, EP, inventory grant or live worker. Keep PR #1045 a draft
+until CI, transactional gameplay-source integration, actual T1–T4 balance,
+independent reward tests, mobile UI and reviewed staged promotion pass.

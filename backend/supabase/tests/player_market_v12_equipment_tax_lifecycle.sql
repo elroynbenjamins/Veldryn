@@ -943,6 +943,10 @@ begin
     'equipment',v_item,null,'price_asc',126,null,25,0);
   if v_browse->>'total'<>'0'
   then raise exception 'V24 price floor filter ignored on resale';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_rival,false,0);
+  if exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+    where e.value->>'id'='resale-list:'||v_resale_id::text)
+  then raise exception 'V24 private seller listing leaked to foreign Inbox';end if;
   v_inbox:=private.market_inbox_unified_v24(v_buyer,false,0);
   if not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
       where e.value->>'id'='resale-list:'||v_resale_id::text
@@ -1150,6 +1154,10 @@ begin
     '{character,classId}','"BASTION"'::jsonb,false) where account_id=v_rival;
   update private.market_item_policy_v1 set tradable=false
     where item_id='gem:stat_might:g2';
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'0'
+  then raise exception 'V24 revoked socket gem remained in resale browse';end if;
   begin
     perform private.market_purchase_equipment_resale_v23(
       v_rival,v_resale_again,125,4,16,'v23-revoked-socket',repeat('1',64));
@@ -1159,6 +1167,11 @@ begin
   end;
   update private.market_item_policy_v1 set tradable=true
     where item_id='gem:stat_might:g2';
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'1'
+    or v_browse#>>'{entries,0,resaleId}'<>v_resale_again::text
+  then raise exception 'V24 valid resale did not reappear after socket approval';end if;
   -- Before touching either Gold surface, reject a duplicate exact instance
   -- already present in the buyer's authoritative saved game state.
   update public.online_game_states set state=jsonb_set(state,

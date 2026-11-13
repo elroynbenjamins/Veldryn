@@ -213,17 +213,19 @@ begin
 
  result_b:=private.credit_party_event_activity_v14(
   p,start_at,'craft',craft_large,null,null,'v14-credit-craft-large');
- if (result_b->>'totalMemberPoints')::int<>40
- then raise exception 'V14 second account cap violated';end if;
+ if (result_b->>'eventPointsGranted')::int>4
+  or (result_b->>'totalMemberPoints')::int>5
+ then raise exception 'V14 bulk crafting produced excessive EP';end if;
  status:=private.party_event_stage_readiness_v14(p,start_at);
- if (status->>'status')<>'awaiting_supplies'
-  or (status->>'verifiedActivityPoints')::int<>80
+ if (status->>'status')<>'awaiting_progress'
+  or (status->>'verifiedActivityPoints')::int<>45
   or (status->>'cumulativeStageTarget')::int<>75
+  or (status->>'missingPoints')::int<>30
   or (status->>'stageReadyToAdvance')::boolean
- then raise exception 'V14 Stage 2 threshold or supply guard incorrect';end if;
+ then raise exception 'V14 Stage 2 progress or threshold incorrect';end if;
 
- -- The 2-person weekly target is 100; with 40 verified activity EP per
- -- member, Stage 3 requires separate special-action or supply EP (future).
+ -- The 2-person weekly target is 100; verified source EP is capped and
+ -- Stage 3 needs substantial additional repeated activity/special objectives.
  update private.party_event_weeks_v11 set active_stage=3
  where party_id=p and event_starts_at=start_at;
  insert into private.party_event_stages_v11(
@@ -241,7 +243,7 @@ begin
   raise exception 'V14 overflowed weekly cap in final stage';end if;
  status:=private.party_event_stage_readiness_v14(p,start_at);
  if status->>'status'<>'awaiting_progress'
-  or (status->>'missingPoints')::int<>20
+  or (status->>'missingPoints')::int<>55
   or (status->>'cumulativeStageTarget')::int<>100
   or (status->>'finaleVerified')::boolean
  then raise exception 'V14 finale readiness falsely completed';end if;

@@ -1,0 +1,40 @@
+name: Diagnose v1.0.9 polish restack (read-only)
+
+on:
+  push:
+    branches: [codex/v109-changed-screen-polish-20261113]
+    paths: ['.github/workflows/v109-polish-restack-diagnostic.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.ref_name == 'codex/v109-changed-screen-polish-20261113'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/v109-changed-screen-polish-20261113
+          fetch-depth: 0
+      - name: Identify integration conflicts without writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin integration/v1-0-9-badges-pager-tier-memory-20261112
+          if git -c user.name='QA' -c user.email='qa@users.noreply.github.com' merge --no-commit --no-ff FETCH_HEAD; then
+            echo "RESTACK_HAS_NO_CONFLICTS"
+          else
+            git diff --name-only --diff-filter=U
+            python3 - <<'PY'
+          import pathlib,re,subprocess
+          paths=subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
+          marker=re.compile(r'(?ms)^<<<<<<< HEAD\n.*?^>>>>>>> .*?$')
+          for path in paths:
+              blocks=marker.findall(pathlib.Path(path).read_text())
+              print('CONFLICT',path,'blocks',len(blocks))
+              for i,b in enumerate(blocks):
+                  print('BLOCK',i+1,b[:2500])
+          PY
+          fi
+          git merge --abort || true

@@ -3,6 +3,16 @@
 -- Intended to run only on the complete V1-V19 private custody schema.
 begin;
 
+-- Normal online snapshot commits may execute as service_role, which has
+-- deliberately been REVOKED from reading all private Market ledgers.
+-- Keep the V19 validation trigger private while giving that trigger the
+-- trusted owner's read permissions; its search_path is pinned to '' and it
+-- performs no writes, dynamic SQL, or externally readable data projection.
+alter function private.market_guard_owned_equipment_snapshot_v19()
+  security definer;
+revoke all on function private.market_guard_owned_equipment_snapshot_v19()
+  from public,anon,authenticated,service_role;
+
 create table private.market_equipment_recipient_transfers_v20 (
   account_id uuid not null references public.online_game_states(account_id)
     on delete restrict,

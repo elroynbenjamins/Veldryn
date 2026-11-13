@@ -18,4 +18,18 @@ assert(index.includes("const q=query.trim()"),'Search must run against the displ
 assert(index.includes("def.origin.type==='event'"),'Event acquisition must be shown distinctly');
 assert(index.includes("def.origin.id==='GUILD_TOKEN_SHOP'"),'Guild Shop acquisition must be shown distinctly');
 assert(index.includes('unavailableOriginIds.has(def.origin.id)'),'Unavailable regional companions must be marked coming soon');
-console.log('PASS: concise searchable Companion Index preserves detail, training, Codex, and discovery privacy');
+for(const needle of [
+ "companionIndexGroup(def)!==group",
+ "COMPANION_INDEX_COUNTS[id]",
+ "UNRELEASED_SEASONAL_COMPANION_COUNT",
+ "def.unlockRequirements.map((req,index)",
+ "achievement?.requirements[index]",
+ "companionContent(language,req.description)",
+ "GUILD_SHOP_CATALOGUE",
+ "guildShopEntry.guildLevel",
+ "guildShopEntry.tokenCost",
+ "companionArtSource(def.id)",
+])assert(index.includes(needle),'Companion category/requirement UI missing '+needle);
+assert(index.includes("setGroup(id);setScope('all');"),'Changing availability must reset owned filtering to show the selected group');
+assert(index.includes("hidden?'Unknown Prestige Companion':def.name"),'Unreleased Prestige identities stay hidden in searches');
+console.log('PASS: searchable Companion Index preserves spoiler privacy, portraits, group tabs and unlock progress');

@@ -5,6 +5,10 @@ import type {MonsterDef} from '../content/monsters';
 import {combatBaselineProjection} from '../core/balance-projection';
 import {activeCombatHitProjection,combatSustainProjection} from '../core/game';
 import {liveHuntNarration} from '../core/combat-narration';
+import {classSkillsFor} from '../content/class-skills';
+import {characterClassSkills} from '../core/class-skills';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {companionCombatContribution} from '../core/combat-companions';
 import {dungeonCombatClassFx} from '../core/dungeon-combat-fx';
 import {huntStrikePresentation} from '../core/hunt-strike-presentation';
 import {itemDef} from '../content/items';
@@ -33,6 +37,13 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const fight=useMemo(()=>active?activeCombatHitProjection(state,clock,replayCursor.current):undefined,[state,active,clock]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const lastHit=!fight?.searching&&fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
+ const recentSkillEffect=active&&fight?.lastSkillEffect&&clock-fight.lastSkillEffect.atMs>=0&&clock-fight.lastSkillEffect.atMs<2700?fight.lastSkillEffect:undefined;
+ const classSkillLevels=useMemo(()=>state.character?characterClassSkills(state.character):[],[state.character]);
+ const classSkillDefs=state.character?classSkillsFor(state.character.classId):[];
+ const equippedCompanion=useMemo(()=>{
+  const contribution=companionCombatContribution(state);
+  return contribution.contributionPct>0?COMBAT_COMPANIONS.find(def=>def.id===state.character?.equippedCombatCompanionId):undefined;
+ },[state]);
  // Every effect below replays a strike the hit projection already resolved. Nothing here
  // rolls damage, predicts an outcome or delays the hunt.
  const animate=useMotionEnabled(state.settings.reduceMotion,active);
@@ -142,9 +153,18 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
      <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
     </View>
    </View>)}
+   {recentSkillEffect?<View accessibilityLiveRegion="polite" style={{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.good,borderRadius:8,backgroundColor:C.panel2}}>
+    <Text style={{fontFamily:font,fontSize:9,fontWeight:'900',color:C.good}}>{tr('ON-KILL RECOVERY')}</Text>
+    <Text numberOfLines={1} style={{fontFamily:font,fontSize:11,fontWeight:'800',color:C.text,flex:1}}>{tr(recentSkillEffect.name)}</Text>
+   </View>:null}
    {narration&&!fight.stoppedReason&&!fight.searching?<Text accessibilityLiveRegion={narration.hit?'polite':'none'} numberOfLines={2} style={{fontFamily:font,fontSize:12,lineHeight:17,fontWeight:narration.hit?'700':'600',color:narration.tone==='danger'?C.bad:narration.tone==='accent'?C.accent:C.muted}}>
     {tr(narration.key,narration.params)}{narration.critical&&fight.lastHit?.actor==='player'?` · ${tr('CRITICAL!')}`:''}
    </Text>:null}
+   {state.character?<View style={{gap:3,borderTopWidth:1,borderTopColor:C.line,paddingTop:5}}>
+    <Text style={{fontFamily:font,fontSize:9,fontWeight:'800',color:C.muted}}>{tr('CLASS SKILLS · PASSIVE')}</Text>
+    <Text numberOfLines={2} style={{fontFamily:font,fontSize:10,color:C.text}}>{classSkillLevels.map((skill,index)=>tr(classSkillDefs[index]?.name??skill.skillId)+' · '+tr('Lv. {level}',{level:skill.level})).join('  |  ')}</Text>
+    {equippedCompanion?<Text numberOfLines={1} style={{fontFamily:font,fontSize:10,color:C.muted}}>{tr('COMPANION · PASSIVE BONUS')} · {equippedCompanion.name}</Text>:null}
+   </View>:null}
   </View>:null}
   {!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
    <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:6}}>{[[pace.killsPerHour,'kills/hr'],[pace.xpPerHour,'XP/hr'],[pace.goldPerHour,'Gold/hr']].map(([value,label],index)=><Text key={label} style={{fontFamily:font,color:C.text,fontWeight:'600',fontSize:13}}>{index?'·  ':''}~{number(value as number)} {label}</Text>)}</View>

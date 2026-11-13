@@ -145,6 +145,18 @@ begin
   v_result:=private.market_publish_equipment_offer_v9(
     v_seller,v_hold,125,1,'gear-v9-list',repeat('c',64));
   v_offer:=(v_result->>'offerId')::uuid;
+  -- V24 unified source displays the existing first-sale listing exactly once.
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if (v_browse->>'total')::integer<>1
+    or v_browse#>>'{entries,0,sourceKind}'<>'original'
+    or v_browse#>>'{entries,0,offerId}'<>v_offer::text
+    or v_browse#>>'{entries,0,rarity}'<>'mythic'
+    or v_browse#>>'{entries,0,quality}'<>'93'
+    or v_browse::text like '%sourceReceiptKey%'
+    or v_browse::text like '%ownerCharacterId%'
+    or v_browse::text like '%sellerAccountId%'
+  then raise exception 'V24 unified browse broke original Forge listing';end if;
   v_browse:=private.market_browse_verified_offers_v12(
     'equipment',v_item,'T1','newest',null,null,25,0);
   if (v_browse->>'total')::integer<>1
@@ -907,6 +919,32 @@ begin
     or (select revision from public.online_game_states where account_id=v_buyer)<>14
     or (select count(*) from private.market_equipment_resale_offers_v23)<>1
   then raise exception 'V23 first resale reserve failed atomic Forge custody';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'1'
+    or v_browse#>>'{entries,0,sourceKind}'<>'resale'
+    or v_browse#>>'{entries,0,resaleId}'<>v_resale_id::text
+    or v_browse#>>'{entries,0,offerId}'<>v_resale_id::text
+    or v_browse#>>'{entries,0,rarity}'<>'mythic'
+    or v_browse#>>'{entries,0,statGemRollPercent}'<>'115'
+    or v_browse::text like '%sourceReceiptKey%'
+    or v_browse::text like '%ownerCharacterId%'
+    or v_browse::text like '%sellerAccountId%'
+    or v_browse::text like '%firstSourceHoldId%'
+  then raise exception 'V24 unified resale browse lost display data or leaked receipt';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'resource',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'0'
+  then raise exception 'V24 equipment resale visible in resource browse';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',126,null,25,0);
+  if v_browse->>'total'<>'0'
+  then raise exception 'V24 price floor filter ignored on resale';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_buyer,false,0);
+  if not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+      where e.value->>'id'='resale-list:'||v_resale_id::text
+        and e.value->>'kind'='listed' and e.value->>'status'='listed')
+  then raise exception 'V24 active resale absent from seller Inbox';end if;
   v_retry:=private.market_reserve_equipment_resale_v23(
     v_buyer,13,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
     'v23-resale-first-reserve',repeat('1',64));
@@ -933,6 +971,16 @@ begin
     or (select status from private.market_equipment_resale_offers_v23
       where resale_id=v_resale_id)<>'return_pending'
   then raise exception 'V23 cancellation did not create safe return entitlement';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'0'
+  then raise exception 'V24 cancelled resale visible in browse';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_buyer,false,0);
+  if (v_inbox->>'pendingCount')::integer<1
+    or not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+      where e.value->>'id'='resale-return:'||v_resale_id::text
+        and e.value->>'status'='ready')
+  then raise exception 'V24 cancelled resale return not claimable from Inbox';end if;
   v_retry:=private.market_cancel_equipment_resale_v23(
     v_buyer,v_resale_id,'v23-cancel-first',repeat('3',64));
   if v_retry->>'replayed'<>'true'
@@ -979,6 +1027,11 @@ begin
     or (select count(*) from private.market_equipment_resale_chain_v23)<>0
     or (select count(*) from private.market_resale_gold_intents_v23)<>0
   then raise exception 'V23 cancellation return lost original Forge copy';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_buyer,true,0);
+  if not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+    where e.value->>'id'='resale-return:'||v_resale_id::text
+      and e.value->>'status'='claimed')
+  then raise exception 'V24 claimed return missing from historical Inbox';end if;
 
   v_retry:=private.market_claim_resale_return_v23(
     v_buyer,v_resale_id,14,v_buyer_main::text,'equipment_pouch',
@@ -1083,6 +1136,24 @@ begin
     or (select revision from public.online_game_states where account_id=v_buyer)<>17
     or (select revision from public.online_game_states where account_id=v_rival)<>5
   then raise exception 'V23 second sale did not preserve Gold, chain or pending claim';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_rival,false,0);
+  if not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+    where e.value->>'id'='resale-purchase:'||v_resale_delivery::text
+      and e.value->>'kind'='purchased'
+      and e.value->>'status'='ready'
+      and e.value->>'goldChange'='-125')
+  then raise exception 'V24 resale buyer delivery missing or Gold wrong in Inbox';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_buyer,true,0);
+  if not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+    where e.value->>'id'='resale-sale:'||v_resale_again::text
+      and e.value->>'kind'='sold'
+      and e.value->>'goldChange'='118'
+      and e.value->>'status'='credited')
+  then raise exception 'V24 seller resale fee payout missing from Inbox';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'0'
+  then raise exception 'V24 settled resale still visible as active';end if;
   v_retry:=private.market_purchase_equipment_resale_v23(
     v_rival,v_resale_again,125,4,16,'v23-second-purchase',repeat('9',64));
   if v_retry->>'replayed'<>'true'

@@ -123,9 +123,9 @@ for(const family of families){
  if(family==='broken_wards'){
   const shield=(b:CombatantDefinition)=>b.phases!.filter(p=>p.id.startsWith('PE_V8_'))
    .flatMap(p=>p.effects).filter(e=>e.kind==='shield').reduce((n,e)=>n+(e.flat??0),0);
-  assert(shield(safe)>shield(risky),'overload route breaks enemy wards but is riskier');
+  assert(shield(safe.boss)>shield(risky.boss),'overload route breaks enemy wards but is riskier');
   const burn=(b:CombatantDefinition)=>b.abilities[0]!.effects.find(e=>e.kind==='dot')?.durationMs;
-  assert(burn(safe)!<burn(risky)!,'grounded spires shorten actual rune burn');
+  assert(burn(safe.boss)!<burn(risky.boss)!,'grounded spires shorten actual rune burn');
  }
  if(family==='lost_reliquary'){
   assert(risky.boss.abilities.some(a=>a.effects.some(e=>e.kind==='dot'&&e.damageType==='true')),

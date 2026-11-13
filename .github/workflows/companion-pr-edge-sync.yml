@@ -1,0 +1,47 @@
+name: Temporary Companion PR generated Edge sync
+on:
+  push:
+    branches:
+      - feat/companion-index-unlock-audit-20261113
+    paths:
+      - '.github/workflows/companion-pr-edge-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/companion-index-unlock-audit-20261113
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install build dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Regenerate and verify Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated artifacts only to this companion development branch and remove this temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "feat/companion-index-unlock-audit-20261113"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git rm .github/workflows/companion-pr-edge-sync.yml
+          git commit -m "build(edge): sync companion gameplay and co-op bundles on feature branch"
+          git push origin HEAD:refs/heads/feat/companion-index-unlock-audit-20261113

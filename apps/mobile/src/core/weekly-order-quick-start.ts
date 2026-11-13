@@ -19,7 +19,7 @@ export type WeeklyOrderQuickStartPlan =
 
 export function weeklyOrderQuickStartPlan(state:GameState,order:WeeklyOrder):WeeklyOrderQuickStartPlan{
  const queued=weeklyOrderQueueActivity(order);
- if(!queued)return {status:'manual'};
+ if(!queued||queued.kind!=='combat'&&queued.kind!=='gathering')return {status:'manual'};
  if(order.claimed||order.progress>=order.target)return {status:'blocked',reason:'This contract is already complete.'};
  if(!state.character)return {status:'blocked',reason:'Create a character before starting a contract.'};
 

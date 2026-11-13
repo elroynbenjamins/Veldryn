@@ -62,7 +62,8 @@ assert.equal(dungeonShopOfferSummary('de','10 × TEMPERING DUST'),'10 × Härtun
 assert.equal(dungeonShopOfferSummary('de','8 × GEM DUST'),'8 × Edelsteinstaub');
 assert.equal(dungeonShopOfferSummary('de','2 × TEMPERING CORE'),'2 × Härtekern');
 assert.equal(dungeonShopOfferSummary('de','100 Companion Essence'),'100 Begleiteressenz');
-assert.equal(dungeonShopOfferSummary('de','1 Bondstones'),'1 Bindungssteine');
+assert.equal(dungeonShopOfferSummary('de','1 Bondstones'),'1 Bindungsstein');
+assert.equal(dungeonShopOfferSummary('de','2 Bondstones'),'2 Bindungssteine');
 assert.equal(dungeonShopOfferSummary('de','Profile icon · visual only'),'Profilsymbol · nur optisch');
 for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp','healingEffectiveness','fishingSpeed','defense','actionSpeed']){
  const source='+ 2.00% '+target+' equipped; +0.50% owned';

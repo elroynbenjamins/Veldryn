@@ -70,7 +70,7 @@ ok(oddsGuide.includes('const usableWidth=trackWidth-2*SLIDER_INSET')&&oddsGuide.
  'Quality slider taps must account for its inset so Q0 and Q100 can be reached accurately');
 ok(oddsGuide.includes("gt('Decrease quality')")&&oddsGuide.includes("gt('Increase quality')")&&oddsGuide.includes('accessibilityState={{disabled:quality===CRAFTED_GEAR_QUALITY_MAX}}'),
  'Quality preview must have touch-friendly step controls with bounded disabled states');
-ok(collection.includes('tileColumns=width<345||fontScale>=1.3?4:5')&&collection.includes("gt('Previous set')")&&collection.includes("gt('Next set')"),
+ok(collection.includes('tileColumns=width<295||fontScale>=1.6?3:width<345||fontScale>=1.3?4:5')&&collection.includes("gt('Previous set')")&&collection.includes("gt('Next set')"),
  'Crafting set tiles must support narrow phones / font scaling and accessible set navigation');
 const forgeLocalizations=read('src/i18n/gameplay.ts');
 ok(['Decrease quality','Increase quality','Previous set','Next set'].every(key=>forgeLocalizations.includes('"'+key+'":')),

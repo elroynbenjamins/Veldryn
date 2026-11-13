@@ -14,6 +14,7 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost} from '../src/content/crafting-gold-cost';
+import {isT5EquipmentAffixSlot,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -22,6 +23,8 @@ ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a re
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
 ok(T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER===1.25,'T2–T4 equipment forge XP must be increased by exactly 25%');
 ok(T3_T4_DUNEWOOD_REDUCTION_FACTOR===0.8,'T3/T4 assembly Dunewood must be 20% below the recently tripled cost');
+// T5 was deliberately repriced (3500 → 6000 Gold, 1100 → 1200 XP) when the T5 affix
+// slots landed; every other tier stays pinned to its original baseline.
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
@@ -33,7 +36,10 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
   const previousXp=baselineXp+(highSunscar?20:0);
   const boostedTier=['T2','T3','T4'].includes(recipe.v33EquipmentTier);
-  ok(recipe.xp===(boostedTier?Math.round(previousXp*1.25):previousXp),recipe.id+' must apply 25% more equipment crafting XP only to T2–T4, retaining the T3/T4 +20 baseline');
+  const standardXp=boostedTier?Math.round(previousXp*1.25):previousXp;
+  // Three of the ten T5 slots carry a secondary stat and pay for it in profession XP.
+  const t5Affix=recipe.v33EquipmentTier==='T5'&&isT5EquipmentAffixSlot(slot);
+  ok(recipe.xp===(t5Affix?Math.round(standardXp*T5_AFFIX_XP_MULTIPLIER):standardXp),recipe.id+' must apply 25% more equipment crafting XP only to T2–T4 and the T5 affix bonus only to affix slots, retaining the T3/T4 +20 baseline');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
@@ -61,6 +67,23 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v3
 const infusionByTier={T1:'VERDANT_BINDING_RESIN',T2:'IRONWOOD_BINDING_RESIN',T3:'SUNSCAR_DUNE_BINDER',T4:'GLASSBOUND_BINDER',T5:'SUNFUSED_FIXATIVE',T6:'SUNFUSED_FIXATIVE',T7:'RIMEWARD_DISTILLATE',T8:'RIMEWARD_DISTILLATE',T9:'CINDERHEART_ELIXIR'} as const;
 ok(ALCHEMY_EQUIPMENT_INFUSIONS.every(infusion=>V33_EQUIPMENT_RECIPES.some(recipe=>recipe.inputs.some(input=>input.itemId===infusion.id))||RECIPES.some(refine=>refine.inputs.some(input=>input.itemId===infusion.id)&&V33_EQUIPMENT_RECIPES.some(gear=>gear.inputs.some(input=>input.itemId===refine.output.itemId)))),'Every crafted infusion must feed equipment directly or through a verified conversion');
 for(const [tier,infusionId] of Object.entries(infusionByTier))ok(V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier===tier).every(recipe=>recipe.inputs.some(input=>input.itemId===infusionId)),tier+' equipment must require its regional Alchemy infusion');
+function fullSetGold(tier:string,skillId:'smithing'|'tailoring'){
+  return V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier&&row.skillId===skillId&&row.v33Path==='Foundation').slice(0,10).reduce((sum,row)=>sum+row.gold,0);
+}
+for(const skillId of ['smithing','tailoring'] as const){
+  ok(fullSetGold('T4',skillId)<fullSetGold('T5',skillId),skillId+' full-set Gold must increase from T4 to T5');
+  ok(fullSetGold('T5',skillId)<fullSetGold('T6',skillId),skillId+' full-set Gold must increase from T5 to T6');
+}
+for(const recipe of V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T5')){
+  const slot=itemDef(recipe.output.itemId).slot!;
+  const fixative=recipe.inputs.find(input=>input.itemId==='SUNFUSED_FIXATIVE');
+  ok(fixative,'T5 '+recipe.id+' must require Sunfused Fixative');
+  if(isT5EquipmentAffixSlot(slot)){
+    ok(fixative!.quantity===2,recipe.id+' affix slot must require 2 Sunfused Fixative (base + extra)');
+  }else{
+    ok(fixative!.quantity===1,recipe.id+' non-affix slot must require exactly 1 Sunfused Fixative');
+  }
+}
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
 ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');
@@ -130,6 +153,7 @@ ok(t4.length===180,'Nine classes × two paths × ten slots must retain all 180 T
 for(const recipe of t4){
   const slot=itemDef(recipe.output.itemId).slot!;
   const woodBase=recipe.skillId==='tailoring'?7:8;
+  // T4's regional-material multiplier was lowered from 2 to 1.5 alongside the T5 repricing.
   const previousWood=Math.max(1,Math.round(woodBase*1.5*originalSlotGold[slot]));
   const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
   ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR)),recipe.id+' must reduce recently tripled T4 Dunewood by 20% after slot rounding');
@@ -140,6 +164,7 @@ for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
     const set=t4.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     ok(set.length===10&&set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='GLASSBOUND_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T4 set must cost precisely ten Glassbound Binders');
     const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
+    // Lowering the T4 multiplier from 2 to 1.5 takes a full set from 349/308 to 260/231.
     ok(woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?260:231),classId+' / '+path+' T4 set must reflect the 20% cut, rounded for every piece');
   }
 }
@@ -196,6 +221,8 @@ for(const tier of Object.keys(highTierBands)){
 const t5HeavyChest=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T5P_758')!;
 ok(itemDef(t5HeavyChest.output.itemId).slot==='chest','T5P_758 must remain a heavy chest piece');
 ok(projectedFarmHours(t5HeavyChest)<=highTierBands.T5[1],'Heavy T5 chest must respect the unchanged 5.4h ceiling without slot exemptions');
+const t5SmithingWeapon=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T5P_762')!;
+ok(projectedFarmHours(t5SmithingWeapon)<=highTierBands.T5[1],'T5 smithing weapon must respect the unchanged 5.4h ceiling with the preserved 1.20 tier material multiplier');
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
 const tailoringT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring')!;

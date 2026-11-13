@@ -1227,6 +1227,20 @@ function increasedCraftingGoldCost(baseGold) {
   return Math.ceil(baseGold * 6 / 5);
 }
 
+// ../apps/mobile/src/content/t5-equipment-affix-spec.ts
+var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
+  gloves: "haste",
+  amulet: "critRate",
+  boots: "evasion"
+});
+var T5_AFFIX_MATERIAL_MULTIPLIER = 1.15;
+var T5_AFFIX_TIME_MULTIPLIER = 1.1;
+var T5_AFFIX_XP_MULTIPLIER = 1.2;
+var T5_AFFIX_EXTRA_FIXATIVE = 1;
+function isT5EquipmentAffixSlot(slot) {
+  return Boolean(T5_EQUIPMENT_AFFIX_BY_SLOT[slot]);
+}
+
 // ../apps/mobile/src/content/equipment-recipes-v33.ts
 init_progression();
 
@@ -42899,11 +42913,15 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const setId = String(piece["Set ID"]), set = setById.get(setId);
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
   const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
+  const t5Affix = tier === "T5" && isT5EquipmentAffixSlot(slot);
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
-  const craftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
+  const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
+  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
+  const baseSeconds = clamp3(Math.round(range.base * multiplier), range.min, range.max);
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
@@ -42911,8 +42929,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     level,
     xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
-    seconds: clamp3(Math.round(range.base * multiplier), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
+    seconds: clamp3(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
+    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -50591,13 +50609,6 @@ function equipmentSetDef(id) {
 function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
-
-// ../apps/mobile/src/content/t5-equipment-affix-spec.ts
-var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
-  gloves: "haste",
-  amulet: "critRate",
-  boots: "evasion"
-});
 
 // ../apps/mobile/src/core/t5-equipment-affixes.ts
 var RARITY_SCORE = Object.freeze({

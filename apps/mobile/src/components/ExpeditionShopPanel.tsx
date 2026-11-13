@@ -72,14 +72,14 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
  const heading={color:C.text,fontSize:18,fontWeight:'600' as const};
  const row={flexDirection:'row' as const,alignItems:'center' as const,gap:8};
  return <View style={{gap:12}}>
-  {onBack?<Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} style={({pressed})=>({paddingVertical:8,opacity:pressed?.6:1})}><Text style={{color:C.accent,fontSize:14,fontWeight:'600'}}>‹ Back</Text></Pressable>:null}
+  {onBack?<Pressable accessibilityRole="button" accessibilityLabel="Back" accessibilityState={{disabled:busy}} disabled={busy} onPress={onBack} style={({pressed})=>({minHeight:44,justifyContent:'center',alignItems:'flex-start',opacity:busy?.5:pressed?.6:1})}><Text style={{color:C.accent,fontSize:14,fontWeight:'600'}}>‹ Back</Text></Pressable>:null}
   <Panel>
    <Text style={{color:C.accent,fontSize:11,fontWeight:'600',letterSpacing:1}}>EXPEDITION QUARTERMASTER</Text>
    <Text style={heading}>Spend your Expedition Marks</Text>
    <View style={{...row,backgroundColor:C.panel2,borderRadius:10,padding:12,marginVertical:4}}>
     <ExpeditionMarkIcon size={28}/>
-    <Text style={{color:C.accent,fontSize:26,fontWeight:'600'}}>{data?.balance.toLocaleString()??'—'}</Text>
-    <Text style={copy}>Expedition Marks</Text>
+    <View style={{flex:1,minWidth:0}}><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{color:C.accent,fontSize:26,fontWeight:'600'}}>{data?.balance.toLocaleString()??'—'}</Text>
+     <Text style={copy}>Expedition Marks</Text></View>
    </View>
    <Text style={copy}>Earned by clearing dungeons and seasonal expeditions.</Text>
   </Panel>
@@ -88,7 +88,7 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
   {pending?<Panel>
    <Text style={heading}>Purchase awaiting confirmation</Text>
    <Text style={copy}>A previous purchase needs checking. Retry uses the same receipt and cannot charge you twice.</Text>
-   <GameButton title={busy?'Checking…':'Resolve purchase'} disabled={busy} onPress={()=>purchase(pending.itemId)}/>
+   <GameButton title={busy?'Checking…':'Resolve purchase'} loading={busy} disabled={busy} onPress={()=>purchase(pending.itemId)}/>
   </Panel>:null}
   {busy&&!data?<View style={{alignItems:'center',paddingVertical:24}}><ActivityIndicator color={C.accent}/><Text style={{...copy,marginTop:8}}>Loading the shop…</Text></View>:null}
   {data&&data.offers.length===0&&!busy?<Panel>
@@ -99,12 +99,13 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
    {data?.offers.map(offer=>{
     const info=offerCopy(offer.itemId),locked=!!offer.lockedReason;
     const short=Math.max(0,offer.markCost-(data?.balance??0));
+     const offerStatus=locked?'LOCKED':short>0?'NEED MARKS':'AVAILABLE';
     const remaining=offer.weeklyLimit>0?Math.max(0,offer.weeklyLimit-offer.weeklyPurchased):undefined;
     return <View key={offer.itemId} style={{padding:12,gap:8,borderWidth:1,borderColor:locked?C.line:C.selectionLine,borderRadius:14,backgroundColor:C.panel}}>
      <View style={row}>
       <Text style={{color:C.accent,fontSize:10,fontWeight:'700',letterSpacing:.8,textTransform:'uppercase'}}>{CATEGORY_LABEL[offer.category]}</Text>
       <View style={{flex:1}}/>
-      <Text style={{color:locked?C.warning:C.good,fontSize:11,fontWeight:'700'}}>{locked?'LOCKED':'AVAILABLE'}</Text>
+      <Text style={{color:locked||short>0?C.warning:C.good,fontSize:11,fontWeight:'700'}}>{offerStatus}</Text>
      </View>
      <Text style={{color:C.text,fontSize:15,lineHeight:20,fontWeight:'600'}}>{info.name}</Text>
      <Text style={copy}>{info.description}</Text>
@@ -120,9 +121,9 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
     </View>;
    })}
   </View>
-  <GameButton title={busy?'Syncing…':'Refresh shop'} tone="secondary" disabled={busy} onPress={()=>refresh(true)}/>
-  <GameModalSurface visible={!!selected} onClose={()=>{if(!busy)setSelected(null);}}>
-   <GameModalHeader title="Confirm purchase" onClose={()=>{if(!busy)setSelected(null);}}/>
+  <GameButton title={busy?'Syncing…':'Refresh shop'} tone="secondary" loading={busy} disabled={busy} onPress={()=>refresh(true)}/>
+  <GameModalSurface visible={!!selected} dismissOnBackdrop={!busy} onClose={()=>{if(!busy)setSelected(null);}}>
+   <GameModalHeader title="Confirm purchase" closeDisabled={busy} onClose={()=>{if(!busy)setSelected(null);}}/>
    {selected?<ScrollView contentContainerStyle={{gap:14}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text style={heading}>{offerCopy(selected.itemId).name}</Text>
     <Text style={copy}>{offerCopy(selected.itemId).description}</Text>
@@ -132,7 +133,7 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
     </View>
     <Text style={copy}>{selected.weeklyLimit>0?'Weekly purchase. Restocks Monday 00:00 UTC.':'One-time purchase. Final.'}</Text>
     {error?<Text accessibilityRole="alert" style={{color:C.bad}}>{error}</Text>:null}
-    <GameButton title={busy?'Purchasing…':'Buy'} disabled={busy} onPress={()=>purchase(selected.itemId)}/>
+    <GameButton title={busy?'Purchasing…':'Buy'} loading={busy} disabled={busy} onPress={()=>purchase(selected.itemId)}/>
     <GameButton title="Cancel" tone="secondary" disabled={busy} onPress={()=>setSelected(null)}/>
    </ScrollView>:null}
   </GameModalSurface>

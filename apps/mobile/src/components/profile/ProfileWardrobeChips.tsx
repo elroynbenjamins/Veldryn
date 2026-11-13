@@ -26,7 +26,7 @@ export function ProfileWardrobeChips({categories,chip,onChange,reduceMotion}:{
    accessibilityLabel={profileT(language,"Cosmetic category")}
    previousLabel={profileT(language,"Previous category")} nextLabel={profileT(language,"Next category")}
    reduceMotion={reduceMotion}/>
-  {selected?<View accessibilityLabel={profileT(language,'{owned} of {total} unlocked',{owned:selected.owned,total:selected.total})} style={s.bar}>
+  {selected?<View accessible accessibilityRole="progressbar" accessibilityValue={{min:0,max:Math.max(1,selected.total),now:Math.min(selected.owned,selected.total)}} accessibilityLabel={profileT(language,'{owned} of {total} unlocked',{owned:selected.owned,total:selected.total})} style={s.bar}>
    <View style={[s.barFill,{width:`${selected.total?Math.round(selected.owned/selected.total*100):0}%`}]}/>
   </View>:null}
  </View>;

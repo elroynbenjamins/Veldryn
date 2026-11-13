@@ -1,0 +1,45 @@
+name: Veldryn v1.0.9 merge regression
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'backend/supabase/migrations/*badge*'
+      - 'backend/supabase/tests/profile_badges_tenure_fixture.sql'
+      - 'tools/**'
+      - '.github/workflows/v1-0-9-merge-validation.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies (including PGlite)
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Run real badge v2 and v3 SQL in PGlite
+        run: node tools/test-player-badge-tenure-db.mjs
+      - name: Run full mobile core suite; zero known failures accepted
+        shell: bash
+        run: |
+          # Preserve the log as a CI artifact while failing the job on any test failure.
+          # Do not pin the test count: new checks must be executed, not silently skipped.
+          set -euo pipefail
+          node tools/run-mobile-core-tests.mjs 2>&1 | tee core-results.log
+      - name: Upload regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v109-mobile-core-results
+          path: core-results.log
+          if-no-files-found: ignore
+          retention-days: 7

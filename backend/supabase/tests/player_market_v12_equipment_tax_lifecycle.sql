@@ -64,7 +64,8 @@ begin
         'favoriteItemIds','[]'::jsonb))),
     (v_buyer,v_buyer_main,7,jsonb_build_object(
       'character',jsonb_build_object('id',v_buyer_main::text,'gold',500,
-        'xp',10000000,'classId','BASTION','equipment','{}'::jsonb),
+        'xp',10000000,'classId','BASTION','equipment','{}'::jsonb,
+        'equipmentPouch',jsonb_build_object('capacity',2,'stacks','[]'::jsonb)),
       'account',jsonb_build_object('craftedGearInstances','[]'::jsonb),
       'inventory',jsonb_build_object('capacity',1,'stacks',jsonb_build_array(
         jsonb_build_object('itemId','COPPER_ORE','quantity',1))),
@@ -475,6 +476,139 @@ begin
   -- Benign XP updates remain possible, even when another character holds it.
   update public.online_game_states set state=jsonb_set(state,
     '{character,xp}','11000000'::jsonb,false) where account_id=v_buyer;
+
+  -- V20: exact-copy transfers are private and never a public Market RPC.
+  if has_function_privilege('authenticated',
+      'private.market_transfer_purchased_equipment_v20(uuid,text,text,text,integer,text,text,bigint,text,text)'::regprocedure,
+      'EXECUTE')
+    or has_table_privilege('service_role',
+      'private.market_equipment_recipient_transfers_v20','SELECT')
+  then raise exception 'V20 recipient-transfer privilege leaked';end if;
+  -- The active main has an unusable (level-1) state; the purchased exact
+  -- Mythic copy must remain held by the high-level alternate character.
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','0'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+      v_buyer_main::text,'equipment_pouch',9,'v20-low-level',repeat('1',64));
+    raise exception 'V20 transferred to a lower-level character';
+  exception when raise_exception then
+    if sqlerrm<>'market_level_required' then raise;end if;
+  end;
+  if (select count(*) from private.market_equipment_recipient_transfers_v20)<>0
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_alt::text
+    or (select revision from public.online_game_states
+      where account_id=v_buyer)<>9
+  then raise exception 'V20 denied transfer changed state, ledger or revision';end if;
+  update public.online_game_states set state=jsonb_set(state,
+    '{character,xp}','11000000'::jsonb,false) where account_id=v_buyer;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+      v_buyer_main::text,'inventory',9,'v20-dest-full',repeat('2',64));
+    raise exception 'V20 transferred into a full inventory';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_destination_full' then raise;end if;
+  end;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_main::text,'inventory',0,
+      v_buyer_alt::text,'equipment_pouch',9,'v20-not-owner',repeat('3',64));
+    raise exception 'V20 transferred from a non-owner character';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_source_not_owned' then raise;end if;
+  end;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+      v_buyer_main::text,'bank',9,'v20-bank-blocked',repeat('4',64));
+    raise exception 'V20 transferred via shared Bank';
+  exception when raise_exception then
+    if sqlerrm<>'market_transfer_invalid_request' then raise;end if;
+  end;
+  -- Saved loadouts that reference the item type must not be detached.
+  update public.online_game_states set state=jsonb_set(state,
+    '{otherCharacters,0,character,savedLoadouts}',
+    jsonb_build_array(jsonb_build_object(
+      'equipment',jsonb_build_object('weapon',v_item))),
+    true) where account_id=v_buyer;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+      v_buyer_main::text,'equipment_pouch',9,'v20-reserved',repeat('5',64));
+    raise exception 'V20 transferred equipment reserved in a loadout';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_transfer_reserved' then raise;end if;
+  end;
+  update public.online_game_states set state=state
+    #- '{otherCharacters,0,character,savedLoadouts}'
+    where account_id=v_buyer;
+  -- Locked, strictly owned, idempotent transfer of one instance, its Forge
+  -- receipt and the provenance recipient in the SAME SQL transaction.
+  v_result:=private.market_transfer_purchased_equipment_v20(
+    v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+    v_buyer_main::text,'equipment_pouch',9,'v20-first-transfer',repeat('6',64));
+  if v_result->>'status'<>'transferred' or v_result->>'revision'<>'10'
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_main::text
+    or (select state#>>'{account,craftedGearInstances,0,ownerCharacterId}'
+      from public.online_game_states where account_id=v_buyer)<>v_buyer_main::text
+    or (select state#>'{character,equipmentPouch,stacks,0}'
+      from public.online_game_states where account_id=v_buyer)
+       is distinct from v_stack
+    or (select state#>'{otherCharacters,0,character,equipmentPouch,stacks}'
+      from public.online_game_states where account_id=v_buyer)<>'[]'::jsonb
+    or (select revision from public.online_game_states where account_id=v_buyer)<>10
+    or (select count(*) from private.market_equipment_recipient_transfers_v20)<>1
+  then raise exception 'V20 valid transfer lost copy or exact Forge receipt';end if;
+  v_retry:=private.market_transfer_purchased_equipment_v20(
+    v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+    v_buyer_main::text,'equipment_pouch',9,'v20-first-transfer',repeat('6',64));
+  if v_retry->>'replayed'<>'true' or
+    (select count(*) from private.market_equipment_recipient_transfers_v20)<>1
+  then raise exception 'V20 transfer idempotency duplicated equipment';end if;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_alt::text,'equipment_pouch',0,
+      v_buyer_main::text,'equipment_pouch',9,'v20-first-transfer',repeat('7',64));
+    raise exception 'V20 request hash collision accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_idempotency_conflict' then raise;end if;
+  end;
+  begin
+    perform private.market_transfer_purchased_equipment_v20(
+      v_buyer,v_instance,v_buyer_main::text,'equipment_pouch',0,
+      v_buyer_alt::text,'equipment_pouch',9,'v20-stale-revision',repeat('8',64));
+    raise exception 'V20 stale revision accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_stale_state' then raise;end if;
+  end;
+  -- Both characters meet the policy; a second direct transfer is allowed.
+  v_result:=private.market_transfer_purchased_equipment_v20(
+    v_buyer,v_instance,v_buyer_main::text,'equipment_pouch',0,
+    v_buyer_alt::text,'equipment_pouch',10,'v20-second-transfer',repeat('9',64));
+  if v_result->>'revision'<>'11'
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_alt::text
+    or (select state#>'{otherCharacters,0,character,equipmentPouch,stacks,0}'
+      from public.online_game_states where account_id=v_buyer)
+      is distinct from v_stack
+    or (select state#>'{character,equipmentPouch,stacks}'
+      from public.online_game_states where account_id=v_buyer)<>'[]'::jsonb
+    or (select count(*) from private.market_equipment_recipient_transfers_v20)<>2
+  then raise exception 'V20 second eligible direct transfer failed';end if;
+  -- Even after legitimate owner transfers, direct bank bypass is still denied.
+  begin
+    update public.online_game_states set state=jsonb_set(
+      jsonb_set(state,'{otherCharacters,0,character,equipmentPouch,stacks}',
+        '[]'::jsonb,false),'{bank,stacks}',jsonb_build_array(v_stack),false)
+      where account_id=v_buyer;
+    raise exception 'V20 normal bank save bypassed recipient provenance';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_provenance_transfer_blocked' then raise;end if;
+  end;
 
   -- Separate unsold listing: seller cancellation returns original copy.
   -- A sold listing can never enter this path.

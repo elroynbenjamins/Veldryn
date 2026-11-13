@@ -141,7 +141,7 @@ async function test(){
 
   const corrupt:TrustedPartyRewardOfferRepositoryV24={
     ...repo,
-    readInboxPreview:async()=>({...structuredClone(sample),rewardsGranted:true as false}),
+    readInboxPreview:async()=>({...structuredClone(sample),rewardsGranted:true as unknown as false}),
   };
   await rejects(()=>readPrivatePartyRewardInboxV24({
     gateEnabled:true,trustedAccountId:owner,repository:corrupt,
@@ -160,7 +160,7 @@ async function test(){
     prepareOffers:async()=>({
       replayed:false,reservationId,memberCount:2,offerCount:1,
       offersPrepared:true,entitlementsCreated:false,
-      rewardsClaimable:true as false,rewardsGranted:false,
+      rewardsClaimable:true as unknown as false,rewardsGranted:false,
     }),
   };
   await rejects(()=>preparePrivatePartyRewardOffersV24({

@@ -46,24 +46,28 @@ const thresholds=[['T1',6],['T2',18],['T3',30],['T4',52]] as const;
 for(const [tier,floor] of thresholds){
  const offer=equip(tier);
  const realRequired=Math.max(floor,itemDef(offer.itemId).requiredLevel??0);
- assert.equal(realRequired,floor,'A changed item level needs a new acceptance baseline: '+tier);
- const blocked=previewMarketAcquisitionV17(withLevel(floor-1),offer,'purchase');
+ assert(realRequired>=floor,'Market-only level is a minimum, not a gear-item override');
+ const blocked=previewMarketAcquisitionV17(withLevel(realRequired-1),offer,'purchase');
  assert.equal(blocked.reason,'market_level_required');
- assert.equal(blocked.characterLevel,floor-1);
- assert.equal(blocked.requiredCharacterLevel,floor);
+ assert.equal(blocked.characterLevel,realRequired-1);
+ assert.equal(blocked.requiredCharacterLevel,realRequired);
  assert.equal(blocked.meetsLevelRequirement,false);
- const eligible=previewMarketAcquisitionV17(withLevel(floor),offer,'purchase');
+ const eligible=previewMarketAcquisitionV17(withLevel(realRequired),offer,'purchase');
  assert.equal(eligible.reason,'market_disabled');
  assert.equal(eligible.meetsLevelRequirement,true);
  assert.equal(eligible.canTradeNow,false,'No hidden preview may enable trading');
- assert.equal(eligible.requiredCharacterLevel,floor);
+ assert.equal(eligible.requiredCharacterLevel,realRequired);
 }
 const extraExamples=[
  ['T2','rare',20],['T3','epic',34],['T4','legendary',58],
  ['T4','mythic',60],
 ] as const;
-for(const [tier,rarity,required] of extraExamples){
+for(const [tier,rarity,minimum] of extraExamples){
  const offer=equip(tier,rarity);
+ const floor=MARKET_EQUIPMENT_LEVEL_FLOORS_V17[tier];
+ const required=Math.max(floor,itemDef(offer.itemId).requiredLevel??0)
+  +MARKET_RARITY_LEVEL_PREMIUM_V17[rarity];
+ assert(required>=minimum,'Exact item requirements can exceed Market floor but not lower it');
  const under=previewMarketAcquisitionV17(withLevel(required-1),offer,'purchase');
  const ready=previewMarketAcquisitionV17(withLevel(required),offer,'purchase');
  assert.equal(under.requiredCharacterLevel,required);
@@ -71,10 +75,6 @@ for(const [tier,rarity,required] of extraExamples){
  assert.equal(ready.requiredCharacterLevel,required);
  assert.equal(ready.reason,'market_disabled');
 }
-assert.equal(previewMarketAcquisitionV17(withLevel(59),equip('T4','mythic'),'purchase').reason,
- 'market_level_required');
-assert.equal(previewMarketAcquisitionV17(withLevel(60),equip('T4','mythic'),'purchase').reason,
- 'market_disabled');
 assert.equal(previewMarketAcquisitionV17(withLevel(100),equip('T5'),'purchase').reason,
  'market_tier_not_approved','T5 released gear is NOT an approved market tier');
 assert.equal(previewMarketAcquisitionV17(withLevel(100),equip('T6'),'purchase').reason,

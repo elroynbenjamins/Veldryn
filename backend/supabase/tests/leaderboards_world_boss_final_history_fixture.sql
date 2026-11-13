@@ -22,6 +22,13 @@ BEGIN
   IF v_one IS NULL OR v_two IS NULL OR v_three IS NULL
   THEN RAISE EXCEPTION 'WORLD_BOSS_FIXTURE_REQUIRES_THREE_PUBLIC_STAGING_ACCOUNTS'; END IF;
 
+  -- Simulate a rename after the final snapshot was taken. Current public
+  -- profile names must win over stale historic snapshots.
+  UPDATE public.player_profiles SET display_name='Current Champion'
+  WHERE account_id=v_one;
+  UPDATE public.player_profiles SET display_name='Current Defender'
+  WHERE account_id=v_two;
+
   INSERT INTO public.shared_world_world_bosses(
     definition_id,definition_version,definition_snapshot,definition_hash,
     name_snapshot,region_id,state,starts_at,ends_at,max_hp,remaining_hp,
@@ -51,11 +58,11 @@ BEGIN
   END;
 
   UPDATE private.leaderboards_world_boss_gate_v1 SET enabled=true WHERE id=1;
-  SELECT private.leaderboards_world_boss_event_v1(v_one,v_boss,51,0)
+  SELECT public.leaderboards_world_boss_event_server_v1(v_one,v_boss,51,0)
     INTO v_result;
   v_rows:=v_result->'entries';
   IF jsonb_array_length(v_rows)<>2
-    OR v_rows->0->>'displayName'<>'Historical Champion'
+    OR v_rows->0->>'displayName'<>'Current Champion'
     OR (v_rows->0->>'rank')::integer<>1
     OR (v_rows->1->>'rank')::integer<>2
     OR (v_result->'self'->>'rank')::integer<>1
@@ -64,7 +71,7 @@ BEGIN
 
   UPDATE public.player_profiles SET profile_visibility='private'
   WHERE account_id=v_two;
-  SELECT private.leaderboards_world_boss_event_v1(v_one,v_boss,51,0)
+  SELECT public.leaderboards_world_boss_event_server_v1(v_one,v_boss,51,0)
     INTO v_result;
   IF jsonb_array_length(v_result->'entries')<>1
   THEN RAISE EXCEPTION 'WORLD_BOSS_PRIVATE_PROFILE_VISIBLE'; END IF;
@@ -85,7 +92,7 @@ BEGIN
   WHERE account_id=v_one;
   INSERT INTO public.player_blocks(blocker_id,blocked_id)
   VALUES(v_two,v_one) ON CONFLICT DO NOTHING;
-  SELECT private.leaderboards_world_boss_event_v1(v_one,v_boss,51,0)
+  SELECT public.leaderboards_world_boss_event_server_v1(v_one,v_boss,51,0)
     INTO v_result;
   IF jsonb_array_length(v_result->'entries')<>1
   THEN RAISE EXCEPTION 'WORLD_BOSS_MUTUAL_BLOCK_IGNORED'; END IF;

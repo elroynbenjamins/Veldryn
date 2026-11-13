@@ -123,7 +123,7 @@ export function ExpeditionShopPanel({onRewardsChanged,api=expeditionShopApi,onBa
   <GameButton title={busy?'Syncing…':'Refresh shop'} tone="secondary" disabled={busy} onPress={()=>refresh(true)}/>
   <GameModalSurface visible={!!selected} onClose={()=>{if(!busy)setSelected(null);}}>
    <GameModalHeader title="Confirm purchase" onClose={()=>{if(!busy)setSelected(null);}}/>
-   {selected?<ScrollView contentContainerStyle={{gap:14}} showsVerticalScrollIndicator={false}>
+   {selected?<ScrollView contentContainerStyle={{gap:14}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text style={heading}>{offerCopy(selected.itemId).name}</Text>
     <Text style={copy}>{offerCopy(selected.itemId).description}</Text>
     <View style={row}>

@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V19 validation
+name: Hidden World Boss V10–V20 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -7,6 +7,8 @@ on:
       - 'backend/online/world-boss-loadout-v12.ts'
       - 'backend/online/world-boss-owned-cohort-v15.ts'
       - 'backend/online/world-boss-service-v19.ts'
+      - 'backend/online/world-boss-consented-echoes-v20.ts'
+      - 'backend/online/world-boss-frozen-modifiers-v20.ts'
       - 'backend/online/world-boss-auth-v19.ts'
       - 'backend/online/world-boss-private-pg-v19.ts'
       - 'backend/src/server/combat/world-boss-bracket-audit-v14.ts'
@@ -21,6 +23,7 @@ on:
       - 'docs/roadmap/world-boss-transactions-v18.sql'
       - 'docs/roadmap/world-boss-v18-*.sql'
       - 'docs/roadmap/world-boss-v18-*.sh'
+      - 'docs/roadmap/world-boss-consent-guard-v20*.sql'
       - '.github/workflows/world-boss-v12-validation.yml'
   workflow_dispatch:
 
@@ -50,7 +53,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v19 World Boss tests
+      - name: Run v7-v20 World Boss tests
         run: |
           set -e
           for suite in \
@@ -65,7 +68,8 @@ jobs:
             world-boss-bracket-audit-v14 \
             world-boss-owned-cohort-v15 \
             world-boss-attempt-command-v16 \
-            world-boss-server-service-v19
+            world-boss-server-service-v19 \
+            world-boss-consented-echoes-v20
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done
@@ -110,3 +114,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-transactions-v18.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-v18-concurrent-fixture.sql
           bash docs/roadmap/world-boss-v18-concurrency-ci.sh
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-guard-v20.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-guard-v20-smoke.sql

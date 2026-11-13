@@ -8,7 +8,7 @@ import {progressionText} from './progression';
  * Columns: de, es, nl, it, fr, ru, tr. */
 type SevenLocales=readonly [string,string,string,string,string,string,string];
 export const questJournalUiRows={
-  "Open Sunscar": ["Sunscar öffnen","Abrir Sunscar","Open Sunscar","Apri Sunscar","Ouvrir Sunscar","Открыть Sunscar","Sunscar'ı aç"],
+  "Open Sunscar": ["Sunscar öffnen","Abrir Sunscar","Sunscar openen","Apri Sunscar","Ouvrir Sunscar","Открыть Sunscar","Sunscar'ı aç"],
   "Regional story leads continue in the World.": ["Die regionale Geschichte geht in der Welt weiter.","Las pistas de la historia regional continúan en el Mundo.","Regionale verhaalsporen gaan verder in de Wereld.","Gli indizi della storia regionale continuano nel Mondo.","Les pistes de l'histoire régionale se poursuivent dans le Monde.","Региональные сюжетные следы продолжаются в разделе «Мир».","Bölgesel hikâye ipuçları Dünya bölümünde devam ediyor."],
   "Follow the oathglass signal into Sunscar.": ["Folge dem Oathglass-Signal nach Sunscar.","Sigue la señal del Oathglass hasta Sunscar.","Volg het Oathglass-signaal naar Sunscar.","Segui il segnale del Oathglass fino a Sunscar.","Suivez le signal du Oathglass jusqu’à Sunscar.","Следуйте сигналу Oathglass в Sunscar.","Oathglass sinyalini Sunscar'a kadar izle."],
   "NEXT FRONTIER": ["NÄCHSTE GRENZE","SIGUIENTE FRONTERA","VOLGEND GRENSGEBIED","PROSSIMA FRONTIERA","PROCHAINE FRONTIÈRE","НОВЫЙ РУБЕЖ","SONRAKİ SINIR"],

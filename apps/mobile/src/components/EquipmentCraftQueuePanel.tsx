@@ -4,6 +4,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {equipmentCraftQueueModel} from '../core/equipment-crafting-queue';
+import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../core/crafted-gear-instances';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
@@ -42,10 +43,10 @@ export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMo
     {activeJobs.length+waitingJobs.length>0?<Text style={s.cancelNote}>{gt("Cancelling returns all reserved materials and no Gold.")}</Text>:null}
 
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showAutoSell}} onPress={()=>setShowAutoSell(value=>!value)} style={s.unlockToggle}>
-      <View style={s.flex}><Text style={s.unlockTitle}>{gt("Auto-sell settings")}</Text><Text style={s.meta}>{state.account.craftedGearAutoSellMode==='keep_best_seven'?gt("Auto-sell ON"):gt("Auto-sell OFF")} · {gt("Keep best 7")}</Text></View>
+      <View style={s.flex}><Text style={s.unlockTitle}>{gt("Auto-sell settings")}</Text><Text style={s.meta}>{state.account.craftedGearAutoSellMode==='keep_best_seven'?gt("Auto-sell ON"):gt("Auto-sell OFF")} · {gt("Keep best {count}",{count:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM})}</Text></View>
       <Text style={s.chevron}>{showAutoSell?'−':'+'}</Text>
     </Pressable>
-    {showAutoSell?<View style={s.settingsContent}><Text style={s.groupLabel}>KEEP BEST 7 · PER EQUIPMENT TYPE</Text><Text style={s.meta}>Optional auto-sell. Keeps stronger stat rolls; equipped, locked, upgraded and saved-loadout gear remain protected.</Text><GameButton compact tone={state.account.craftedGearAutoSellMode==='keep_best_seven'?'primary':'secondary'} title={state.account.craftedGearAutoSellMode==='keep_best_seven'?'Auto-sell ON':'Auto-sell OFF'} disabled={!onSetAutoSell} onPress={()=>onSetAutoSell?.(state.account.craftedGearAutoSellMode!=='keep_best_seven')}/></View>:null}
+    {showAutoSell?<View style={s.settingsContent}><Text style={s.groupLabel}>{gt('Keep best {count}',{count:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM}).toLocaleUpperCase(language)} · {gt('Per equipment type').toLocaleUpperCase(language)}</Text><Text style={s.meta}>Optional auto-sell. Keeps stronger stat rolls; equipped, locked, upgraded and saved-loadout gear remain protected.</Text><GameButton compact tone={state.account.craftedGearAutoSellMode==='keep_best_seven'?'primary':'secondary'} title={state.account.craftedGearAutoSellMode==='keep_best_seven'?'Auto-sell ON':'Auto-sell OFF'} disabled={!onSetAutoSell} onPress={()=>onSetAutoSell?.(state.account.craftedGearAutoSellMode!=='keep_best_seven')}/></View>:null}
 
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showUnlocks}} onPress={()=>setShowUnlocks(value=>!value)} style={s.unlockToggle}><View style={s.flex}><Text style={s.unlockTitle}>Forge capacity · {model.slotInfo.capacity}/{model.slotInfo.max} active + {model.waitingCapacity} waiting</Text><Text style={s.meta}>{earnedBonus?earnedBonus+' bonus source'+(earnedBonus===1?'':'s')+' active':'3 base slots active'}</Text></View><Text style={s.chevron}>{showUnlocks?'−':'+'}</Text></Pressable>
     {showUnlocks&&<View style={s.sources}>{model.slotInfo.sources.map(row=><View key={row.id} style={s.source}><Text style={[s.sourceMark,row.earned?s.earned:s.locked]}>{row.earned?'✓':'○'}</Text><View style={s.flex}><Text style={s.sourceName}>{row.label}</Text><Text style={s.meta}>{row.id==='base'?'+3 base slots':'+1 active slot'+(model.slotInfo.capacity>=model.slotInfo.max&&row.earned?' · active cap reached':'')}</Text></View></View>)}<Text style={s.capNote}>{gt("Forge supports up to {active} active slots and {waiting} waiting jobs.",{active:model.slotInfo.max,waiting:model.waitingCapacity})}</Text></View>}

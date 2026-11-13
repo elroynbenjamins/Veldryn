@@ -42879,8 +42879,9 @@ function ingredients(tier, path, multiplier, skillId) {
       return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
       return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+    // Keep the T5 weapon's real processed-material farm time inside the 5.4h upper ceiling.
     case "T5":
-      return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
+      return [{ itemId: "SUNSTONE_INGOT", quantity: q(10, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(15, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
     case "T7":

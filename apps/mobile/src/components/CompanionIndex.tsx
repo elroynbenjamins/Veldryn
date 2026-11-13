@@ -68,6 +68,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
  },[state,scope,group,role,query,hiddenIds,language]);
  const candidate=companionNextUnlockTargets(state,COMBAT_COMPANIONS.length)
   .find(({def})=>!hiddenIds.has(def.id)&&!unavailableOriginIds.has(def.origin.id)&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP');
+ const candidateArt=candidate?companionArtSource(candidate.def.id):undefined;
  const open=(id:string)=>onOpen(id);
  return <View style={s.root}>
   <View style={s.header}>
@@ -80,10 +81,12 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
    </Pressable>
   </View>
   {candidate?<Pressable accessibilityRole="button" accessibilityLabel={t('Next unlock: {value0}',{value0:candidate.def.name})} onPress={()=>open(candidate.def.id)} style={({pressed})=>[s.nextUnlock,pressed&&s.pressed]}>
+    {candidateArt?<Image source={candidateArt} resizeMode="contain" style={s.nextArt}/>:null}
     <View style={s.nextCopy}>
      <Text style={s.overline}>{t('NEXT TO UNLOCK')}</Text>
      <Text style={s.nextName} numberOfLines={1}>{candidate.def.name}</Text>
      <Text style={s.nextDetail} numberOfLines={2}>{companionContent(language,companionUnlockGuidance(state,candidate.def).label)}</Text>
+     <Text style={s.nextProgress}>{candidate.progress.completeCount}/{candidate.progress.totalCount} {t('requirements')}</Text>
     </View>
     <Text style={s.nextArrow}>›</Text>
    </Pressable>:null}
@@ -151,6 +154,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  codexAction:{minHeight:40,paddingHorizontal:10,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
  codexText:{fontSize:11,color:C.accent,fontWeight:'800'},
  nextUnlock:{flexDirection:'row',alignItems:'center',padding:10,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.panel2},
+ nextArt:{width:50,height:54},nextProgress:{fontSize:10,color:C.accent,fontWeight:'800'},
  nextCopy:{flex:1,gap:3},overline:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.8},
  nextName:{...typography.bodyStrong,color:C.text},nextDetail:{fontSize:11,color:C.muted},
  nextArrow:{fontSize:22,color:C.accent,paddingHorizontal:5},

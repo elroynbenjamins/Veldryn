@@ -169,6 +169,8 @@ begin
     or p_character_location not in ('inventory','equipment_pouch')
     or p_character_index is null or p_character_index not between 0 and 10000
     or p_bank_index is null or p_bank_index not between 0 and 10000
+    or (p_action='deposit' and p_bank_index<>0)
+    or (p_action='withdraw' and p_character_index<>0)
     or p_expected_revision is null or p_expected_revision<0
     or p_idempotency_key is null or p_idempotency_key !~ '^[A-Za-z0-9_-]{8,128}$'
     or p_request_hash is null or p_request_hash !~ '^[a-f0-9]{64}$'

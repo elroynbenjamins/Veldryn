@@ -303,7 +303,7 @@ begin
  if has_function_privilege('authenticated',
     'private.prepare_party_event_claim_intent_v25(uuid,uuid,text)','execute')
   or has_function_privilege('anon',
-    'private.claim_party_event_reward_v25(uuid,uuid,text)','execute')
+    'private.claim_party_event_reward_from_intent_v25(uuid,uuid,text)','execute')
   or has_table_privilege('service_role',
     'private.party_event_claim_intents_v25','insert')
   or has_table_privilege('authenticated',
@@ -426,7 +426,7 @@ begin
     where offer_id=v_participation_offer)<>0
  then raise exception 'V25 participation quote wrongly requires a slot';end if;
  begin
-  perform private.claim_party_event_reward_v25(
+  perform private.claim_party_event_reward_from_intent_v25(
    v_full_offer,a[1],'v25-attempt-payout');
   raise exception 'V25 hard-blocked payout executed';
  exception when others then

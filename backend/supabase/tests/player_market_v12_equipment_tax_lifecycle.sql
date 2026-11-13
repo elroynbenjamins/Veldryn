@@ -1237,6 +1237,78 @@ begin
       where exact_instance_id=v_instance)<>1
   then raise exception 'V23 third-sale claim lost exact Forge copy';end if;
 
+  -- V24: expired resale is hidden, cannot settle, and can be safely moved
+  -- to an actionable return. No automatic worker is activated in this test.
+  v_result:=private.market_reserve_equipment_resale_v23(
+    v_buyer,19,v_instance,v_buyer_main::text,'equipment_pouch',0,125,
+    'v24-expiring-reserve',repeat('0',64));
+  v_resale_again:=(v_result->>'resaleId')::uuid;
+  if v_result->>'sellerRevision'<>'20'
+  then raise exception 'V24 expiry precondition source revision wrong';end if;
+  begin
+    perform private.market_expire_resale_v24(
+      v_resale_again,'v24-too-early',repeat('1',64));
+    raise exception 'V24 prematurely expired an active resale';
+  exception when raise_exception then
+    if sqlerrm<>'market_resale_not_expired_or_not_open' then raise;end if;
+  end;
+  update private.market_equipment_resale_offers_v23
+    set expires_at=now()-interval '1 second'
+    where resale_id=v_resale_again and status='active';
+  if not found then raise exception 'V24 expiry test offer missing';end if;
+  v_browse:=private.market_browse_combined_v24(
+    'equipment',v_item,null,'price_asc',null,null,25,0);
+  if v_browse->>'total'<>'0'
+  then raise exception 'V24 expired item visible in unified browse';end if;
+  v_browse:=private.market_due_resales_v24(10);
+  if not exists(select 1 from jsonb_array_elements(v_browse->'entries') e(value)
+      where e.value->>'resaleId'=v_resale_again::text
+        and e.value->>'sellerAccountId'=v_buyer::text)
+  then raise exception 'V24 due expiry worker failed to find open expired item';end if;
+  begin
+    perform private.market_purchase_equipment_resale_v23(
+      v_rival,v_resale_again,125,7,20,'v24-expired-buy',repeat('2',64));
+    raise exception 'V24 expired resale was purchased';
+  exception when raise_exception then
+    if sqlerrm<>'market_offer_not_available' then raise;end if;
+  end;
+  v_result:=private.market_expire_resale_v24(
+    v_resale_again,'v24-expire-now',repeat('3',64));
+  if v_result->>'expired'<>'true'
+    or v_result->>'status'<>'return_pending'
+    or (select status from private.market_equipment_resale_offers_v23
+      where resale_id=v_resale_again)<>'return_pending'
+    or (select count(*) from private.market_resale_gold_intents_v23)<>2
+    or (select count(*) from private.market_equipment_resale_chain_v23)<>2
+    or (select revision from public.online_game_states where account_id=v_buyer)<>20
+  then raise exception 'V24 expired resale consumed Gold or lost return';end if;
+  v_retry:=private.market_expire_resale_v24(
+    v_resale_again,'v24-expire-now',repeat('3',64));
+  if v_retry->>'replayed'<>'true'
+  then raise exception 'V24 expiry did not replay idempotently';end if;
+  v_browse:=private.market_due_resales_v24(10);
+  if exists(select 1 from jsonb_array_elements(v_browse->'entries') e(value)
+       where e.value->>'resaleId'=v_resale_again::text)
+  then raise exception 'V24 expired return still selected for worker';end if;
+  v_inbox:=private.market_inbox_unified_v24(v_buyer,false,0);
+  if not exists(select 1 from jsonb_array_elements(v_inbox->'entries') e(value)
+     where e.value->>'id'='resale-return:'||v_resale_again::text
+       and e.value->>'status'='ready')
+  then raise exception 'V24 expired resale return not visible in Inbox';end if;
+  v_result:=private.market_claim_resale_return_v23(
+    v_buyer,v_resale_again,20,v_buyer_main::text,'equipment_pouch',
+    'v24-expire-return',repeat('4',64));
+  if v_result->>'status'<>'returned'
+    or (select state#>'{character,equipmentPouch,stacks,0}'
+      from public.online_game_states where account_id=v_buyer) is distinct from v_stack
+    or (select recipient_character_id from private.market_equipment_provenance_v19
+      where exact_instance_id=v_instance)<>v_buyer_main::text
+    or (select count(*) from private.market_equipment_resale_chain_v23)<>2
+    or (select count(*) from private.market_equipment_sale_chain_v22
+      where exact_instance_id=v_instance)<>1
+    or (select revision from public.online_game_states where account_id=v_buyer)<>21
+  then raise exception 'V24 expired seller return lost Forge copy or history';end if;
+
   -- Separate unsold listing: seller cancellation returns original copy.
   -- A sold listing can never enter this path.
   update public.online_game_states set state=jsonb_set(

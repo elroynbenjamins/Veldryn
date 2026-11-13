@@ -1323,6 +1323,15 @@ for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
+// The Forge copy cap is interpolated, and the legacy auto-sell setting persists across all locales.
+const forgeCopyLimitEarlyLocales={
+  "Keep best {count}":["Сохранять лучшие {count}","En iyi {count} tanesini tut"],
+  "Per equipment type":["Для каждого типа снаряжения","Ekipman türü başına"],
+} as const;
+for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{

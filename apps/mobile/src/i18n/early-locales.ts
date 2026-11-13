@@ -2534,6 +2534,22 @@ export const EARLY_LOCALE_ROWS={
   "No permanent source is contributing a bonus yet.": ["Ни один постоянный источник пока не даёт бонуса.","Henüz hiçbir kalıcı kaynak bonus sağlamıyor."],
   "WHAT COUNTS HERE": ["ЧТО УЧИТЫВАЕТСЯ","BURADA NELER SAYILIR"],
   "This screen reflects the same runtime multiplier calculation used by combat, skilling, rewards and other supported systems. Locked collectibles and inactive entitlements are not counted. Collection caps are already applied before the totals are shown.": ["Здесь используются те же расчёты множителей, что и в бою, навыках, наградах и других системах. Закрытые коллекционные предметы и неактивные привилегии не учитываются. Ограничения бонусов коллекций применяются до показа итогов.","Bu ekran savaşta, becerilerde, ödüllerde ve diğer desteklenen sistemlerde kullanılan gerçek bonus çarpanı hesabını gösterir. Kilitli koleksiyon eşyaları ve etkin olmayan haklar sayılmaz. Koleksiyon bonus sınırları toplamlar gösterilmeden önce uygulanır."],
+  "{count} story": ["Сюжет: {count}","Hikâye: {count}"],
+  "daily claim": ["ежедневная награда","günlük ödül"],
+  "{count} event": ["События: {count}","Etkinlik: {count}"],
+  "{count} forge": ["Кузница: {count}","Demirhane: {count}"],
+  "{count} contract": ["Контракты: {count}","Sözleşme: {count}"],
+  "{count} companion": ["Спутники: {count}","Yoldaş: {count}"],
+  "READY": ["ГОТОВО","HAZIR"],
+  "SESSION OVERVIEW": ["ОБЗОР СЕССИИ","OTURUM ÖZETİ"],
+  "{count} READY": ["ГОТОВО: {count}","{count} HAZIR"],
+  "CLEAR": ["ПУСТО","TEMİZ"],
+  "WEEKLY": ["ЕЖЕНЕДЕЛЬНО","HAFTALIK"],
+  "{count} ready": ["Готово: {count}","{count} hazır"],
+  "LOCKED": ["ЗАКРЫТО","KİLİTLİ"],
+  "NEW": ["НОВОЕ","YENİ"],
+  "Ready now · {items}{more}": ["Готово сейчас · {items}{more}","Şimdi hazır · {items}{more}"],
+  " · +{count} more": [" · ещё {count}"," · +{count} daha"],
 } satisfies Record<string,readonly [string,string]>;
 
 export function earlyLocaleText(language:Language,source:string):string|undefined{

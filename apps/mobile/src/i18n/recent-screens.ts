@@ -641,6 +641,15 @@ export const recentScreenTranslationRows = {
   "Exploration": ["Erkundung","Exploración","Verkenning","Esplorazione","Exploration","Исследование","Keşif"],
   "World": ["Welt","Mundo","Wereld","Mondo","Monde","Мир","Dünya"],
   "Co-op": ["Koop","Cooperativo","Co-op","Cooperativa","Coopératif","Совместная игра","Eşli oyun"],
+  "Echoes": ["Echos","Ecos","Echo's","Echi","Échos","Эхо","Yankılar"],
+  "Regional progress unavailable": ["Regionalfortschritt nicht verfügbar","Progreso regional no disponible","Regiovoortgang niet beschikbaar","Progressi regionali non disponibili","Progression régionale indisponible","Прогресс региона недоступен","Bölgesel ilerleme kullanılamıyor"],
+  "Continue regional story": ["Regionale Geschichte fortsetzen","Continuar la historia regional","Ga verder met het regioverhaal","Continua la storia regionale","Poursuivre l'histoire régionale","Продолжить историю региона","Bölge hikâyesine devam et"],
+  "Complete regional side quests": ["Regionale Nebenquests abschließen","Completar las misiones secundarias regionales","Voltooi de regionale zijmissies","Completa le missioni secondarie regionali","Terminer les quêtes secondaires régionales","Завершить побочные задания региона","Bölgenin yan görevlerini tamamla"],
+  "Resolve remaining Echo conditions": ["Verbleibende Echo-Bedingungen erfüllen","Resolver las condiciones de Eco restantes","Vervul de resterende Echovoorwaarden","Soddisfa le condizioni Eco rimanenti","Remplir les conditions d'Écho restantes","Выполнить оставшиеся условия Эхо","Kalan Yankı koşullarını tamamla"],
+  "Complete regional co-op content": ["Regionale Koop-Inhalte abschließen","Completar el contenido cooperativo regional","Voltooi regionale co-opinhoud","Completa i contenuti cooperativi regionali","Terminer le contenu coopératif régional","Завершить совместные задания региона","Bölgesel eşli içerikleri tamamla"],
+  "Fill the regional collection book": ["Regionales Sammelbuch vervollständigen","Completar el libro de colecciones regional","Vul het regionale verzamelboek","Completa il registro della collezione regionale","Compléter le registre de collection régional","Заполнить коллекционную книгу региона","Bölgesel koleksiyon defterini tamamla"],
+  "Advance regional boss mastery": ["Regionale Bossmeisterschaft steigern","Mejorar la maestría de jefes regionales","Verbeter regionale baasbeheersing","Aumenta la maestria dei boss regionali","Améliorer la maîtrise des boss régionaux","Повысить мастерство сражений с боссами региона","Bölgesel boss ustalığını geliştir"],
+  "Region complete": ["Region abgeschlossen","Región completada","Regio voltooid","Regione completata","Région terminée","Регион завершён","Bölge tamamlandı"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 
 export type RecentScreenKey=keyof typeof recentScreenTranslationRows;

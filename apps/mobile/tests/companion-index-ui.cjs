@@ -17,4 +17,5 @@ assert(index.includes("const label=hidden?t('Unknown Prestige Companion'):def.na
 assert(index.includes("const q=query.trim()"),'Search must run against the displayed identity');
 assert(index.includes("def.origin.type==='event'"),'Event acquisition must be shown distinctly');
 assert(index.includes("def.origin.id==='GUILD_TOKEN_SHOP'"),'Guild Shop acquisition must be shown distinctly');
+assert(index.includes('unavailableOriginIds.has(def.origin.id)'),'Unavailable regional companions must be marked coming soon');
 console.log('PASS: concise searchable Companion Index preserves detail, training, Codex, and discovery privacy');

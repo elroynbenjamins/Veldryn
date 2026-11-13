@@ -31,6 +31,7 @@ jobs:
       - name: Build updated authenticated co-op Edge handlers
         run: |
           pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
           pnpm --dir backend build:online
           node tools/verify-gameplay-edge.mjs
       - name: Run shop-specific backend test

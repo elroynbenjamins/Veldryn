@@ -49329,7 +49329,8 @@ function environmentEffectForActivity(activity) {
 
 // ../apps/mobile/src/core/seasonal-quests.ts
 var periods = ["daily", "weekly", "monthly"];
-var activityTags = ["combat", "gathering", "crafting", "exploration", "faith", "boss"];
+var SEASONAL_ACTIVITY_TAGS = ["combat", "gathering", "crafting", "exploration", "faith", "boss", "cooking", "alchemy", "smithing", "tailoring", "enchanting", "event"];
+var activityTags = SEASONAL_ACTIVITY_TAGS;
 function normalizeSeasonalProgress(raw2) {
   const result = {};
   if (!raw2 || typeof raw2 !== "object") return result;
@@ -49341,7 +49342,8 @@ function normalizeSeasonalProgress(raw2) {
       const value = row.counts?.[tag];
       if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value));
     }
-    result[period] = { key: row.key, counts };
+    const tags = Array.isArray(row.tags) && row.tags.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
+    result[period] = { key: row.key, counts, ...tags ? { tags: [...tags] } : {} };
   }
   return result;
 }
@@ -49350,8 +49352,9 @@ function recordSeasonalActivity(state, tag, units, nowMs) {
   const progress = normalizeSeasonalProgress(state.account.seasonalContractProgress), date = new Date(nowMs);
   for (const period of periods) {
     const key = periodKey(period, date), old = progress[period], counts = old?.key === key ? { ...old.counts } : {};
+    const tags = old?.key === key && old.tags?.every((tag2) => activityTags.includes(tag2)) ? old.tags : selectSeasonalTags(state, period, key, nowMs);
     counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, (counts[tag] ?? 0) + Math.floor(units));
-    progress[period] = { key, counts };
+    progress[period] = { key, counts, tags };
   }
   return { ...state, account: { ...state.account, seasonalContractProgress: progress } };
 }
@@ -49362,14 +49365,34 @@ var QUEST_RARITIES = {
   epic: { label: "Epic", color: "#c79cff", multiplier: 2.25, cache: "Oathbound cache" },
   legendary: { label: "Legendary", color: "#f0a24b", multiplier: 3, cache: "Crown cache" }
 };
-var sharedTemplates = [
-  ["Field Patrol", "combat"],
-  ["Gathering Run", "gathering"],
-  ["Crafting Orders", "crafting"],
-  ["Trail Survey", "exploration"],
-  ["Faith Practice", "faith"]
+var TEMPLATES = [
+  { name: "Field Patrol", tag: "combat", daily: 30, weekly: 150, monthly: 450 },
+  { name: "Gathering Run", tag: "gathering", daily: 30, weekly: 150, monthly: 450 },
+  { name: "Crafting Orders", tag: "crafting", daily: 8, weekly: 35, monthly: 100 },
+  { name: "Trail Survey", tag: "exploration", daily: 12, weekly: 55, monthly: 150 },
+  { name: "Faith Practice", tag: "faith", daily: 3, weekly: 15, monthly: 40 },
+  { name: "Kitchen Duties", tag: "cooking", daily: 5, weekly: 24, monthly: 70 },
+  { name: "Alchemist Orders", tag: "alchemy", daily: 5, weekly: 20, monthly: 60 },
+  { name: "Forge Work", tag: "smithing", daily: 5, weekly: 20, monthly: 60 },
+  { name: "Tailoring Commission", tag: "tailoring", daily: 5, weekly: 20, monthly: 60 },
+  { name: "Enchanter Practice", tag: "enchanting", daily: 4, weekly: 15, monthly: 40 },
+  { name: "Boss Hunt", tag: "boss", daily: 0, weekly: 1, monthly: 3 },
+  { name: "Festival Service", tag: "event", daily: 0, weekly: 0, monthly: 1 }
 ];
-var ACTION_TARGETS = { daily: 30, weekly: 150, monthly: 450 };
+var QUEST_DESCRIPTIONS = {
+  combat: "Defeat {n} monsters this period.",
+  gathering: "Complete {n} gathering actions this period.",
+  crafting: "Complete {n} crafts this period.",
+  exploration: "Complete {n} exploration route actions this period.",
+  faith: "Complete {n} Faith practices this period.",
+  cooking: "Complete {n} Cooking recipes this period.",
+  alchemy: "Complete {n} Alchemy recipes this period.",
+  smithing: "Complete {n} Smithing recipes this period.",
+  tailoring: "Complete {n} Tailoring recipes this period.",
+  enchanting: "Complete {n} Enchanting recipes this period.",
+  boss: "Defeat {n} bosses this period.",
+  event: "Claim {n} completed event objective this period."
+};
 var BASE_REWARD_ACTIONS = 30;
 function periodKey(period, date = /* @__PURE__ */ new Date()) {
   const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -49381,6 +49404,34 @@ function periodKey(period, date = /* @__PURE__ */ new Date()) {
     return `${utc.getUTCFullYear()}-W${Math.ceil(((utc.getTime() - yearStart) / 864e5 + 1) / 7)}`;
   }
   return `${utc.getUTCFullYear()}-${utc.getUTCMonth() + 1}`;
+}
+function availableTemplate(state, tag, atMs) {
+  const level = state.character?.level ?? 1;
+  if (["cooking", "alchemy", "smithing", "tailoring", "enchanting"].includes(tag)) {
+    const skill2 = state.skills.find((row) => row.skillId === tag)?.level ?? 0;
+    return RECIPES.some((recipe2) => recipe2.skillId === tag && recipe2.level <= skill2 && (recipe2.characterLevel ?? 1) <= level && (!recipe2.classId || recipe2.classId === state.character?.classId) && (!recipe2.requiresCraftedItemId || state.character?.craftedNoviceItemIds?.includes(recipe2.requiresCraftedItemId)) && (!recipe2.requiredKnowledgeId || state.account.unlockedKnowledgeIds?.includes(recipe2.requiredKnowledgeId) || !!recipe2.knowledgeItemId));
+  }
+  if (tag === "boss") return state.defeatedBossIds.includes("FALLEN_KNIGHT");
+  if (tag === "event") {
+    const event = state.account.liveEvent;
+    return !!event?.enabled && atMs >= event.startsAtMs && atMs < event.endsAtMs && event.endsAtMs - atMs >= 864e5;
+  }
+  return true;
+}
+function selectSeasonalTags(state, period, key, atMs) {
+  const count = period === "daily" ? 2 : period === "weekly" ? 3 : 4;
+  const available = TEMPLATES.filter((row) => row[period] > 0 && availableTemplate(state, row.tag, atMs));
+  const pool = [...available], selected2 = [];
+  for (let index = 0; index < count && pool.length; index++) {
+    const pick = hash32(`${period}:${key}:quest:${index}`) % pool.length;
+    selected2.push(pool.splice(pick, 1)[0].tag);
+  }
+  return selected2;
+}
+function recordSeasonalCraftProfession(state, recipeId, units, nowMs, skillHint) {
+  const skill2 = skillHint ?? RECIPES.find((row) => row.id === recipeId)?.skillId;
+  const specialized = ["cooking", "alchemy", "smithing", "tailoring", "enchanting"].find((tag) => tag === skill2);
+  return specialized ? recordSeasonalActivity(state, specialized, units, nowMs) : state;
 }
 function rarityFor(period, key, index) {
   const roll = hash32(`${period}:${key}:${index}:rarity`) % 100;
@@ -49457,26 +49508,16 @@ function contractProgress(state, tag, period, key) {
 }
 function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   if (!state.character) return [];
-  const key = periodKey(period, date), count = period === "daily" ? 2 : period === "weekly" ? 3 : 4;
-  const available = [...sharedTemplates];
-  const rows2 = Array.from({ length: count }, (_, index) => available.splice(hash32(`${period}:${key}:quest:${index}`) % available.length, 1)[0]);
-  const required = ACTION_TARGETS[period], base = BASE_REWARD_ACTIONS;
-  return rows2.map(([name, tag], index) => {
-    const rarity = rarityFor(period, key, index), meta = QUEST_RARITIES[rarity];
+  const key = periodKey(period, date), frozen = state.account.seasonalContractProgress?.[period], tags = frozen?.key === key && frozen.tags?.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && frozen.tags.every((tag) => activityTags.includes(tag)) ? frozen.tags : selectSeasonalTags(state, period, key, date.getTime());
+  const base = BASE_REWARD_ACTIONS;
+  return tags.map((tag, index) => {
+    const template = TEMPLATES.find((row) => row.tag === tag);
+    const required = template[period], rarity = rarityFor(period, key, index), meta = QUEST_RARITIES[rarity];
     const progress = Math.min(required, contractProgress(state, tag, period, key));
     const reward3 = seasonalQuestCache(period, rarity), rewardOptions = seasonalQuestRewardOptions(state, period, rarity);
-    const descriptions = {
-      combat: "Defeat {n} monsters this period.",
-      gathering: "Complete {n} gathering actions this period.",
-      crafting: "Complete {n} crafts this period.",
-      exploration: "Complete {n} exploration route actions this period.",
-      faith: "Complete {n} Faith practices this period.",
-      equipment: "Equip {n} equipment pieces this period.",
-      boss: "Defeat {n} bosses this period."
-    };
     const baseGold = period === "daily" ? Math.max(20, base * 2) : period === "weekly" ? base * 8 : Math.max(300, base * 20);
     const baseXp = period === "daily" ? Math.max(40, base * 4) : period === "weekly" ? base * 15 : Math.max(600, base * 40);
-    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name, description: descriptions[tag].replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward3, rewardOptions, className: "Adventurer", tag, rarity };
+    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name: template.name, description: QUEST_DESCRIPTIONS[tag].replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward3, rewardOptions, className: "Adventurer", tag, rarity };
   });
 }
 
@@ -51508,6 +51549,7 @@ function applyTrustedLongTermProgression(input, events, reward3, nowMs, options)
     const units = integerUnits(event.units);
     if (!units) continue;
     state = recordSeasonalActivity(state, event.kind === "gathering" && explorationRoute(event.contentId) ? "exploration" : event.kind, units, nowMs);
+    if (event.kind === "crafting") state = recordSeasonalCraftProfession(state, event.contentId, units, nowMs, event.skillId);
     if (event.kind === "combat" || event.kind === "boss") metrics["combat.total_kills"] = (metrics["combat.total_kills"] ?? 0) + units;
     if (event.kind === "gathering" || event.kind === "crafting") {
       metrics["profession.actions_completed"] = (metrics["profession.actions_completed"] ?? 0) + units;
@@ -53162,7 +53204,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0))) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, brew: { ...brew, remainingBatches: reward4.nextBrewRemaining } } : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward4.craftingActions ?? 0;
-    const progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: brew.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `alchemy:${state.character?.id ?? "unknown"}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
+    const progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: brew.recipeId, units: actions, skillId: "alchemy", startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `alchemy:${state.character?.id ?? "unknown"}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
     const eventApplied = applyEventDiscoveries(applyEventDrops(progressed2, reward4.eventDrops ?? []), reward4.eventDiscoveries ?? []);
     const queuedState2 = !reward4.nextBrewRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(eventApplied, nowMs) : eventApplied;
     return { state: queuedState2, reward: reward4 };
@@ -53175,7 +53217,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward4.craftingActions ?? 0;
-    let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
+    let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, skillId: processing.skillId, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
     progressed2 = applyEventDiscoveries(applyEventDrops(progressed2, reward4.eventDrops ?? []), reward4.eventDiscoveries ?? []);
     progressed2 = refreshQuests(progressed2);
     const finalState2 = reconcileCombatCompanionUnlocks(progressed2, nowMs);
@@ -57758,10 +57800,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = acceptEventContract(state, text(a, "id"), now);
       break;
     case "event_objective":
-      state = claimEventObjective(state, text(a, "id"), now);
+      state = recordSeasonalActivity(claimEventObjective(state, text(a, "id"), now), "event", 1, now);
       break;
     case "event_weekly":
-      state = claimEventWeeklyObjective(state, text(a, "id"), now);
+      state = recordSeasonalActivity(claimEventWeeklyObjective(state, text(a, "id"), now), "event", 1, now);
       break;
     case "event_project":
       state = chooseEventProject(state, text(a, "id"), now);

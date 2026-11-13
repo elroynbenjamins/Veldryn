@@ -681,6 +681,22 @@ export const recentScreenTranslationRows = {
   "What's New & Updates": ["Neuigkeiten und Updates","Novedades y actualizaciones","Nieuw en updates","Novità e aggiornamenti","Nouveautés et mises à jour","Новости и обновления","Yenilikler ve güncellemeler"],
   "ACTIVITY QUEUE": ["AKTIVITÄTSWARTESCHLANGE","COLA DE ACTIVIDADES","ACTIVITEITENWACHTRIJ","CODA ATTIVITÀ","FILE D'ACTIVITÉS","ОЧЕРЕДЬ ЗАНЯТИЙ","ETKİNLİK KUYRUĞU"],
   "Manage waiting activities": ["Wartende Aktivitäten verwalten","Gestionar actividades en espera","Wachtende activiteiten beheren","Gestisci le attività in attesa","Gérer les activités en attente","Управление ожидающими занятиями","Bekleyen etkinlikleri yönet"],
+  "QUICK ACTIONS": ["SCHNELLAKTIONEN","ACCIONES RÁPIDAS","SNELLE ACTIES","AZIONI RAPIDE","ACTIONS RAPIDES","БЫСТРЫЕ ДЕЙСТВИЯ","HIZLI İŞLEMLER"],
+  "Your next moves": ["Deine nächsten Schritte","Tus próximos pasos","Je volgende stappen","Le tue prossime mosse","Vos prochaines actions","Ваши следующие шаги","Sonraki adımların"],
+  "QUICK ACCESS": ["SCHNELLZUGRIFF","ACCESO RÁPIDO","SNELTOEGANG","ACCESSO RAPIDO","ACCÈS RAPIDE","БЫСТРЫЙ ДОСТУП","HIZLI ERİŞİM"],
+  "Open Guild Hall": ["Gildenhalle öffnen","Abrir sala del gremio","Gildehal openen","Apri la sede della gilda","Ouvrir la salle de guilde","Открыть зал гильдии","Lonca Salonunu aç"],
+  "Find a Guild": ["Gilde finden","Buscar gremio","Gilde zoeken","Trova una gilda","Trouver une guilde","Найти гильдию","Lonca bul"],
+  "Guild Hall": ["Gildenhalle","Sala del gremio","Gildehal","Sede della gilda","Salle de guilde","Зал гильдии","Lonca Salonu"],
+  "Find your Guild": ["Finde deine Gilde","Encuentra tu gremio","Vind je gilde","Trova la tua gilda","Trouvez votre guilde","Найдите свою гильдию","Loncanı bul"],
+  "Projects · Guild Shop · Chat": ["Projekte · Gildenladen · Chat","Proyectos · Tienda · Chat","Projecten · Gildewinkel · Chat","Progetti · Negozio · Chat","Projets · Boutique · Chat","Проекты · Магазин · Чат","Projeler · Lonca dükkânı · Sohbet"],
+  "Guild projects, events and co-op rewards": ["Gildenprojekte, Events und Koopbelohnungen","Proyectos, eventos y recompensas cooperativas","Gildeprojecten, evenementen en co-opbeloningen","Progetti di gilda, eventi e ricompense cooperative","Projets de guilde, événements et récompenses coop","Проекты гильдии, события и награды за совместную игру","Lonca projeleri, etkinlikler ve ortak oyun ödülleri"],
+  "Activity queue": ["Aktivitätsliste","Cola de actividades","Activiteitenwachtrij","Coda attività","File d'activités","Очередь занятий","Etkinlik kuyruğu"],
+  "{count} / {capacity} queued": ["{count} / {capacity} in Warteschlange","{count} / {capacity} en cola","{count} / {capacity} in wachtrij","{count} / {capacity} in coda","{count} / {capacity} en attente","В очереди {count} / {capacity}","Sırada {count} / {capacity}"],
+  "Co-op expeditions": ["Koop-Expeditionen","Expediciones cooperativas","Co-op-expedities","Spedizioni cooperative","Expéditions coopératives","Совместные экспедиции","Ortak keşif seferleri"],
+  "Contracts": ["Verträge","Contratos","Contracten","Contratti","Contrats","Контракты","Sözleşmeler"],
+  "Weekly objectives": ["Wöchentliche Ziele","Objetivos semanales","Weekdoelen","Obiettivi settimanali","Objectifs hebdomadaires","Еженедельные цели","Haftalık hedefler"],
+  "Forge": ["Schmiede","Forja","Smederij","Forgia","Forge","Кузница","Demirhane"],
+  "Crafting & upgrades": ["Herstellung und Verbesserungen","Fabricación y mejoras","Maken en verbeteren","Creazione e miglioramenti","Fabrication et améliorations","Создание и улучшения","Üretim ve geliştirmeler"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 
 export type RecentScreenKey=keyof typeof recentScreenTranslationRows;

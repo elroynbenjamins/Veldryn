@@ -697,6 +697,11 @@ export const recentScreenTranslationRows = {
   "Weekly objectives": ["Wöchentliche Ziele","Objetivos semanales","Weekdoelen","Obiettivi settimanali","Objectifs hebdomadaires","Еженедельные цели","Haftalık hedefler"],
   "Forge": ["Schmiede","Forja","Smederij","Forgia","Forge","Кузница","Demirhane"],
   "Crafting & upgrades": ["Herstellung und Verbesserungen","Fabricación y mejoras","Maken en verbeteren","Creazione e miglioramenti","Fabrication et améliorations","Создание и улучшения","Üretim ve geliştirmeler"],
+  "READY NOW": ["JETZT BEREIT","LISTO AHORA","NU KLAAR","PRONTO ORA","PRÊT MAINTENANT","ГОТОВО СЕЙЧАС","ŞİMDİ HAZIR"],
+  "{count} actions need attention": ["{count} Aktionen benötigen Aufmerksamkeit","{count} acciones requieren atención","{count} acties vragen aandacht","{count} azioni richiedono attenzione","{count} actions nécessitent votre attention","Требуют внимания: {count}","{count} eylem ilgini bekliyor"],
+  "Show fewer": ["Weniger anzeigen","Mostrar menos","Minder tonen","Mostra meno","Afficher moins","Свернуть","Daha az göster"],
+  "Show {count} more": ["{count} weitere anzeigen","Mostrar {count} más","Toon nog {count}","Mostra altri {count}","Afficher {count} de plus","Показать ещё {count}","{count} tane daha göster"],
+  "Your adventure": ["Dein Abenteuer","Tu aventura","Jouw avontuur","La tua avventura","Votre aventure","Ваше приключение","Maceran"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 
 export type RecentScreenKey=keyof typeof recentScreenTranslationRows;

@@ -42,6 +42,7 @@ export interface PartyRewardQuoteInboxV25 {
     characterId:string;
     eventStartsAt:string;
     rewardKind:string;
+    difficulty:WeeklyPartyDifficulty;
     rewardBand:number;
     quote:PartyEventRewardBundle;
     quoteHash:string;
@@ -153,12 +154,14 @@ export async function readPrivatePartyClaimQuoteInboxV25(input:{
       &&HEX.test(row.quoteHash)
       &&row.rewardKind===row.quote.kind
       &&row.rewardBand===row.quote.performanceBand
+      &&DIFFICULTIES.includes(row.difficulty)
       &&row.status==='blocked_economy_not_audited'
       &&row.claimable===false
       &&row.claimed===false
       &&row.inboxDelivered===false
       &&!seen.has(row.offerId),
       'invalid_quote_inbox_row');
+    checkQuoteModel(row.quote,row.difficulty);
     seen.add(row.offerId);
   }
   return inbox;

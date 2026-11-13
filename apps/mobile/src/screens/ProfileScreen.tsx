@@ -8,6 +8,8 @@ import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from '../components/ProfileFavoriteHighlights';
+import {ProfileEquippedGearShowcase} from '../components/ProfileEquippedGearShowcase';
+import {localProfileGear} from '../core/profile-equipped-gear';
 import {MasteryHallPanel} from '../components/MasteryHallPanel';
 import type {GameState} from '../core/types';
 import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
@@ -87,6 +89,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?profileT(language,'Highest current skill · Lv. {level}',{level:summary.highestSkill.level}):favoriteSkillId?profileT(language,'Showcased by player'):undefined} favoriteCompanionId={favoriteCompanionId}/>
   </View>
 
+  <ProfileEquippedGearShowcase gear={publicSelf?.equippedGear??localProfileGear(state,publicSelf?.character.id)}/>
   <ProfileShowcaseSection title={profileT(language,"ACHIEVEMENT SHOWCASE")} entries={achievementEntries} emptyLabel="Choose an earned achievement"/>
   <ProfileShowcaseSection title={profileT(language,"PERSONAL RECORDS")} entries={recordEntries} emptyLabel="Choose a personal record"/>
   <ProfileShowcaseSection title={profileT(language,"COLLECTION SHOWCASE")} entries={collectionEntries} emptyLabel="Choose a collectible"/>

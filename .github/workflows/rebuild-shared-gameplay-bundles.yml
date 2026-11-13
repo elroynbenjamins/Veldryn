@@ -46,6 +46,8 @@ on:
       - 'backend/online/live-ready.ts'
       - 'backend/online/live-queue.ts'
       - 'apps/mobile/src/core/combat-power.ts'
+      - 'apps/mobile/src/core/class-combat.ts'
+      - 'apps/mobile/src/core/game.ts'
 
 permissions:
   contents: write

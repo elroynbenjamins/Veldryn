@@ -63,6 +63,8 @@ assert.ok(screen.includes("moment.source==='story'&&storyDiscoveryText(language,
   'New lore is only displayed with a confirmed story reward receipt');
 assert.ok(screen.includes("selectedStatus==='locked'?<Text")&&screen.includes('Complete earlier chapters to read this story page.'),
   'Locked chapter story pages cannot disclose future plot');
+assert.ok(screen.includes("campaignFinished?<View")&&screen.includes("zoneId:'SUNSCAR'")&&screen.includes("p('Open Sunscar')"),
+  'Claiming all Asterfall chapters offers a clear, region-safe Sunscar story handoff');
 assert.ok(screen.includes('accessibilityState={{expanded:chronicleExpanded}}')&&screen.includes('chronicleToggle:{minHeight:touchTargetMin'),
   'Chronicle archive is accessible and touch-friendly');
 assert.ok(tabs.includes('minHeight:50'),'mode tabs should be compact');

@@ -26,7 +26,7 @@ ok(quickNav.includes("([...QUICK_NAV_DESTINATIONS,'Events'] as QuickNavDestinati
 ok(!account.includes("const attentionPriority:MoreDestination[]=['Quests','Events'")&&account.includes("const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies'")&&account.includes("attentionDestinations.slice(0,3)"),
  'Event rewards no longer enter the Account attention rail');
 
-ok(eventHub.includes('Rewards (${readyClaims})')&&eventHub.includes('<EventRewardTrail'),
+ok(eventHub.includes("localizeGameplay(language,'Rewards')")&&eventHub.includes('(${readyClaims})')&&eventHub.includes('<EventRewardTrail'),
  'Event rewards remain discoverable and claimable in the Event Hub');
 
 ok(inspector.includes('<GameModalSurface visible={true}')&&inspector.includes('reduceMotion={state.settings.reduceMotion}'),

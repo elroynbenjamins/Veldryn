@@ -3,6 +3,7 @@ import {NOVICE_RECIPES} from '../src/content/novice-sets';
 import {itemDef} from '../src/content/items';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {createCharacter,newGame} from '../src/core/game';
+import {totalXpAtLevel} from '../src/core/progression';
 import {refreshCompanions} from '../src/core/companion-runtime';
 import {RECIPES} from '../src/content/skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
@@ -131,7 +132,7 @@ const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:comman
 ok(commandClaim.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative claim command must grant finished equipment');
 ok(commandClaim.contributions.some(row=>row.kind==='crafting'&&row.contentId===recipe.id),'Verified crafting contribution must occur on completion');
 ok(commandClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===1,'Claiming one completed equipment craft must advance Forge Automaton recruitment');
-const nearAutomaton={...online,skills:online.skills.map(row=>row.skillId==='smithing'?{...row,level:30}:row),account:{...online.account,companionUnlockProgress:{...online.account.companionUnlockProgress,EQUIPMENT_CRAFTS:499}}};
+const nearAutomaton={...online,skills:online.skills.map(row=>row.skillId==='smithing'?{...row,level:30,xp:totalXpAtLevel(30)}:row),account:{...online.account,companionUnlockProgress:{...online.account.companionUnlockProgress,EQUIPMENT_CRAFTS:499}}};
 ok(!nearAutomaton.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton remains locked before the final equipment craft');
 const automatonClaim=executeGameCommand(nearAutomaton,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(automatonClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'The 500th equipment claim reaches the exact recruitment threshold');
@@ -140,7 +141,7 @@ ok(automatonClaim.state.account.unlockedCombatCompanionIds?.includes('UNIT_010')
 // Existing players earned per-recipe profession mastery on their completed Forge
 // claims, even when the old companion counter was not updated.
 const oldHistory=prepared();
-const withOldHistory={...oldHistory,skills:oldHistory.skills.map(row=>row.skillId==='smithing'?{...row,level:30}:row),account:{...oldHistory.account,professionMasteryByAction:{[recipe.id]:{actionId:recipe.id,points:500,updatedAtMs:1000}}}};
+const withOldHistory={...oldHistory,skills:oldHistory.skills.map(row=>row.skillId==='smithing'?{...row,level:30,xp:totalXpAtLevel(30)}:row),account:{...oldHistory.account,professionMasteryByAction:{[recipe.id]:{actionId:recipe.id,points:500,updatedAtMs:1000}}}};
 const recoveredHistory=refreshCompanions(withOldHistory,1001);
 ok(recoveredHistory.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'Existing verified forge history must restore missed recruitment progress');
 ok(recoveredHistory.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Verified historical forge crafts should unlock Forge Automaton automatically');

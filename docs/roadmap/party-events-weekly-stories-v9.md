@@ -155,3 +155,64 @@ and implement Day 8 single-claim settlement.
 public endpoint, EP, inventory grant or live worker. Keep PR #1045 a draft
 until CI, transactional gameplay-source integration, actual T1–T4 balance,
 independent reward tests, mobile UI and reviewed staged promotion pass.
+
+## v12 — canonical gameplay receipt bridge (13 November 2026)
+
+**Still hidden, branch-only, no migration applied to either environment.**
+The companion migration
+\`backend/supabase/migrations/20261113052000_party_event_canonical_sources_v12.sql\`
+depends on v11 and adds a server-only atomic bridge
+\`private.record_party_event_canonical_action_v12\`. This bridges the
+v11 objective receipt ledger to **actual committed gameplay evidence**, not
+caller-supplied time, quantity, account, role or performance reports.
+
+- **Stage 2 — Secure Approach:** a successful recognized combat node from
+  \`public.coop_node_results\` with the event's frozen character enrolled,
+  real human participant ownership, current co-op access and at least two
+  real party humans in the same run. Echo members, unsuccessful or
+  noncombat nodes, outsiders and one-player runs cannot create evidence.
+  A shared node may credit **one receipt per participating member** but never
+  twice per member/source.
+- **Stage 2 — Support Expedition** and **Stage 3 — Prepare Finale:**
+  a canonical \`public.craft_receipts\` row for the same frozen member and
+  a recipe with positive existing \`party_activity_weights_v16\` crafting
+  weight. Craft receipts cannot impersonate Stage 1 scouting.
+- **Stage 1 — Scout Route** remains **unwired** until we have an immutable
+  server-verifiable scouting/gathering/exploration record. Do not substitute
+  random client action buttons or fabricated evidence.
+
+The v12 migration **revokes the service role's temporary direct INSERT**
+on \`private.party_event_sources_v11\`. It grants the service role only
+EXECUTE on the internal, private bridge; public/anon/authenticated have no
+EXECUTE privilege. The bridge first locks the event week, derives canonical
+source identity and real account from gameplay tables, verifies frozen
+enrollment, inserts the unique source, and calls the existing v11 objective
+receipt function within **one atomic SQL transaction**. A rejected call
+rolls back the source insert as well.
+
+An **exact retry** uses the already verified private receipt, so retries keep
+working after co-op access expires, a run ends, a source is pruned or the event
+closes. Changed source/action/request combinations are not accepted.
+No event points, progress grants, rewards, inventory or cosmetics can be
+created by this bridge: v11 still enforces \`event_points_awarded = 0\`.
+
+**Verification:** On the separate Veldryn Staging 20260924 project, we
+executed v11 migration + v12 migration + the dedicated v12 SQL regression
+in a single transaction followed by \`ROLLBACK\`. The regression returned
+**PASS**. It covers actual crafting and co-op source attribution, a shared
+node credited separately to two real party members, wrong-member requests,
+unsupported recipes, failed/merchant/solo encounters, unauthorized grants,
+duplicate requests and replay after the run and event close. The v11 SQL
+regression was also previously independently green in rollback-only staging.
+Neither migration was permanently applied to staging or production.
+
+**Remaining release blockers:** The application does **not yet call**
+this bridge from any verified Party Event stage service; there are no live
+Stage 1 source receipts, no atomic resource donations/EP ledger update,
+no Day 8 once-only boss payout, no released pixel-art stage screens, and
+no validated real T1–T4 class/companion/potion balance. The GitHub workflow
+watches v12 files, but does not itself run a Supabase database suite without
+configured database dependencies. Full CI must be checked separately.
+
+**Do not merge, deploy, grant EP or switch release flags** until the
+remaining verifiable gameplay and settlement integration is complete.

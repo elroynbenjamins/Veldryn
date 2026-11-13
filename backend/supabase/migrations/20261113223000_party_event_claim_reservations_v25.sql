@@ -245,7 +245,7 @@ end;$$;
 -- Even after intent creation, there is NO server-side method to claim it.
 -- This explicit blocked endpoint is an intentional release guard and
 -- cannot be bypassed with an untrusted request payload.
-create or replace function private.claim_party_event_reward_v25(
+create or replace function private.claim_party_event_reward_from_intent_v25(
  p_offer_id uuid,p_account_id uuid,p_request_id text
 ) returns jsonb language plpgsql security definer set search_path='' as $$
 begin
@@ -275,13 +275,13 @@ end;$$;
 revoke all on function
  private.party_event_reward_quote_v25(uuid,uuid),
  private.prepare_party_event_claim_intent_v25(uuid,uuid,text),
- private.claim_party_event_reward_v25(uuid,uuid,text),
+ private.claim_party_event_reward_from_intent_v25(uuid,uuid,text),
  private.party_event_claim_intents_inbox_v25(uuid)
  from public,anon,authenticated;
 grant execute on function
  private.party_event_reward_quote_v25(uuid,uuid),
  private.prepare_party_event_claim_intent_v25(uuid,uuid,text),
- private.claim_party_event_reward_v25(uuid,uuid,text),
+ private.claim_party_event_reward_from_intent_v25(uuid,uuid,text),
  private.party_event_claim_intents_inbox_v25(uuid)
  to service_role;
 

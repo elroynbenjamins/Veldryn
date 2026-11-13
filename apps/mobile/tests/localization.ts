@@ -88,4 +88,42 @@ for(const summary of [
  ok(localizeGameplay('de',summary)!==summary,`German festival description missing: ${summary}`);
 }
 
+
+// Keep localizable names and status labels in source UI; translated player UI
+// must not alter canonical IDs, activity values, or free-form chat messages.
+for(const english of [
+ 'Purchases, sales and returned listings are kept here. Items stay safe until claimed.',
+ 'No completed market activity yet.',
+ 'No market deliveries waiting.',
+ 'Loading market inbox…',
+ 'Gold credited',
+ 'Claim to Inventory',
+ 'Price history',
+ 'Completed sales · Gold per unit',
+ 'No verified daily price',
+ 'Only actual completed sales are shown; missing days have no price.',
+]){
+ ok(localizeGameplay('de',english)!==english,`Missing German market UI: ${english}`);
+}
+for(const [english,expected] of [
+ ['3 AVAILABLE','3 VERFÜGBAR'],
+ ['2 / 4 BOUGHT','2 / 4 GEKAUFT'],
+ ['4 purchased · 1 remaining','4 gekauft · 1 verbleibend'],
+ ['Level 15+ required','Stufe 15+ benötigt'],
+ ['5 offers · affordable','5 Angebote · bezahlbar'],
+] as const){
+ ok(localizeGameplay('de',english)===expected,`Missing German dynamic market/shop status: ${english}`);
+}
+ok(gameplayTranslate('de','Events')==='Ereignisse','Shared Events category must display in German');
+
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const questMode=fs.readFileSync('src/components/QuestModeSwitch.tsx','utf8');
+const companionIndex=fs.readFileSync('src/components/CompanionIndex.tsx','utf8');
+const marketInbox=fs.readFileSync('src/screens/MarketInboxPanel.tsx','utf8');
+const marketChart=fs.readFileSync('src/components/MarketPriceHistoryChart.tsx','utf8');
+ok(questMode.includes("accessibilityLabel={p(LABELS[id])+', '+meta}"),'Quest screen-reader labels must use the visible translated tab labels');
+ok(companionIndex.includes('companionContent(language,status)'),'Companion availability must use the translated status');
+ok(marketInbox.includes('localizedItemName(state.settings.language,row.itemId)'),'Market deliveries must display localized item names');
+ok(marketChart.includes("language==='de'?'de-DE'"),'German market chart must format Gold amounts with German grouping');
+
 console.log(`Localization tests passed (${SUPPORTED_LANGUAGES.length} languages, ${MESSAGE_COUNT} shared and ${OPERATIONAL_MESSAGE_COUNT} operational messages each).`);

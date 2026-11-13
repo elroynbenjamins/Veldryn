@@ -1,6 +1,10 @@
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import {MonsterDef} from '../content/monsters';
+import {classSkillsFor} from '../content/class-skills';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {characterClassSkills} from '../core/class-skills';
+import {companionCombatContribution} from '../core/combat-companions';
 import {WORLD_ZONES} from '../content/world-map';
 import {combatMotionProfile} from '../core/combat-motion';
 import {combatPresentation} from '../core/combat-presentation';
@@ -21,6 +25,11 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  // meaningful inputs skip the recompute.
  const view=useMemo(()=>combatPresentation(state,monster,elapsedSeconds,cycleSeconds),[state,monster,elapsedSeconds,cycleSeconds]);
  const stats=useMemo(()=>effectiveStats(state),[state]);
+ // Solo hunts apply passive combat bonuses. Do not fabricate per-hit skill casts.
+ const classSkills=useMemo(()=>characterClassSkills(state.character!),[state.character]);
+ const skillDefinitions=classSkillsFor(state.character!.classId);
+ const companionBonus=useMemo(()=>companionCombatContribution(state),[state]);
+ const combatCompanion=companionBonus.contributionPct>0?COMBAT_COMPANIONS.find(def=>def.id===state.character?.equippedCombatCompanionId):undefined;
  const isLive=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
  const effectiveNowMs=(state.activity?.lastClaimAtMs??0)+elapsedSeconds*1000;
  const replayCursor=useRef<import('../core/game').ActiveCombatHitCursor|undefined>(undefined);
@@ -110,7 +119,10 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
     </Animated.View>
    </View>
   </Animated.View>
-  <View style={s.details}><Text style={s.ability}>{view.style.name}</Text><Text style={s.sub}>{tr(view.style.description)}</Text>
+  <View style={s.details}>
+    <View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('COMBAT STYLE · PASSIVE')}</Text><Text style={s.ability}>{tr(view.style.name)}</Text><Text style={s.sub}>{tr(view.style.description)}</Text></View>
+    <View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('CLASS SKILLS · PASSIVE')}</Text><View style={s.passiveChips}>{classSkills.map((skill,index)=><View key={skill.skillId} style={s.passiveChip}><Text style={s.passiveChipText}>{tr(skillDefinitions[index]?.name??skill.skillId)} · {tr('Lv. {level}',{level:skill.level})}</Text></View>)}</View></View>
+    {combatCompanion?<View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('COMPANION · PASSIVE BONUS')}</Text><Text style={s.companionPassive}>{combatCompanion.name} · {tr('Combat bonus active')}</Text></View>:null}
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>{tr('ENCOUNTER · {type}',{type:tr(view.encounter.archetype).toUpperCase()})}</Text><Text style={s.pressure}>{tr(view.encounter.pressure).toUpperCase()}</Text></View><Text style={s.sub}>{tr(view.encounter.summary)}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{tr(mechanic)}</Text></View>)}</View><Text style={s.tactic}>{tr('Tactic: {tactic}',{tactic:tr(view.encounter.tactic)})}</Text></View>
    <StatBar label={tr("Current health")} current={displayStat(fight?.playerHp??state.character!.currentHp)} max={displayStat(fight?.playerMaxHp??stats.hp)} reduceMotion={state.settings.reduceMotion}/>
    <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={displayStat(fight?.enemyHp??view.enemyHp)} max={displayStat(fight?.enemyMaxHp??view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
@@ -130,5 +142,10 @@ const s=StyleSheet.create({
  damageTaken:{fontSize:17,lineHeight:21,color:'#ff8790',fontWeight:'900',textShadowColor:'#180508',textShadowRadius:3},
  name:{...typography.bodyStrong,color:C.text,textAlign:'center'},hit:{...typography.caption,color:'#d5e0ec',textAlign:'center'},
  versus:{width:34,paddingTop:53,alignItems:'center',gap:4},vs:{...typography.caption,color:C.accent,fontWeight:'600'},motionHint:{fontSize:7,lineHeight:9,color:C.muted,fontWeight:'900',letterSpacing:.4,textAlign:'center'},
- details:{padding:12,gap:10},ability:{...typography.bodyStrong,color:C.accent},sub:{...typography.body,color:C.muted},identity:{gap:6,padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},identityHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},identityLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.7},pressure:{fontSize:9,lineHeight:12,color:C.warning,fontWeight:'900',letterSpacing:.5},mechanics:{flexDirection:'row',flexWrap:'wrap',gap:5},mechanic:{paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},mechanicText:{fontSize:9,color:C.text,fontWeight:'800'},tactic:{...typography.caption,color:C.info,lineHeight:16},note:{...typography.caption,color:C.muted}
+ details:{padding:12,gap:10},ability:{...typography.bodyStrong,color:C.accent},sub:{...typography.body,color:C.muted},
+ passiveGroup:{gap:4},passiveLabel:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'900',letterSpacing:.65},
+ passiveChips:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ passiveChip:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
+ passiveChipText:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'700'},
+ companionPassive:{...typography.caption,color:C.text},identity:{gap:6,padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},identityHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},identityLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.7},pressure:{fontSize:9,lineHeight:12,color:C.warning,fontWeight:'900',letterSpacing:.5},mechanics:{flexDirection:'row',flexWrap:'wrap',gap:5},mechanic:{paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},mechanicText:{fontSize:9,color:C.text,fontWeight:'800'},tactic:{...typography.caption,color:C.info,lineHeight:16},note:{...typography.caption,color:C.muted}
 });

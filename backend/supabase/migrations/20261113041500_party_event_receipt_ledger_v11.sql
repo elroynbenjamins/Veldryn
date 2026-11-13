@@ -177,8 +177,9 @@ begin
   if new.stage>1 and not exists(
    select 1 from private.party_event_stages_v11
     where party_id=new.party_id and event_starts_at=new.event_starts_at
-     and stage=new.stage-1
-     and (stage=1 or vote_locked_at is not null))
+     and stage=new.stage-1 and opened_at<=new.opened_at
+     and (stage=1 or (vote_locked_at is not null
+      and vote_locked_at<=new.opened_at)))
   then raise exception 'party_event_prior_stage_not_locked';end if;
   return new;
  end if;

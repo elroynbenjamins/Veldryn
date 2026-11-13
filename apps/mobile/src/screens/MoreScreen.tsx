@@ -4,6 +4,7 @@ import {DiscordButton} from '../components/DiscordButton';
 import {LineworkIcon} from '../components/LineworkIcon';
 import {navigationLinework} from '../components/NavigationLinework';
 import {accountText} from '../i18n/account';
+import {skillGuideUi} from '../i18n/skill-guide-ui';
 import {useMemo,useState} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {TutorialBeacon} from '../components/TutorialBeacon';
@@ -18,11 +19,11 @@ import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Dungeon'|'Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
+export type MoreDestination='Dungeon'|'Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'SkillGuide'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Dungeon','Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Party','Recruitment','Friends','Guild','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','Store','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','SkillGuide','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
@@ -33,7 +34,7 @@ function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Recruitment')return 'Social';
   if(id==='Collections'||id==='ResourceCodex')return 'Inventory';
   if(id==='Store')return 'Inventory';
-  if(id==='MasteryHall')return 'Skills';
+  if(id==='MasteryHall'||id==='SkillGuide')return 'Skills';
   if(id==='AdventurersJournal')return 'Quests';
   if(id==='Bestiary'||id==='WorldMilestones')return 'World';
   return id;
@@ -66,6 +67,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
     case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
     case 'ResourceCodex':return {title:a('Codex'),description:a('Browse resources, companion materials and crafting recipes')};
+    case 'SkillGuide':return {title:skillGuideUi(language,'Skill Guide'),description:skillGuideUi(language,'Browse skills, training and unlocks.')};
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
     case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};

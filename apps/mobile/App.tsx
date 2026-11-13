@@ -107,6 +107,8 @@ import {ArenaScreen} from './src/screens/ArenaScreen';
 import {RankingsScreen} from './src/screens/RankingsScreen';
 import {CollectionsScreen} from './src/screens/CollectionsScreen';
 import {ResourceCodexScreen} from './src/screens/ResourceCodexScreen';
+import {SkillGuideScreen} from './src/screens/SkillGuideScreen';
+import {skillGuideUi} from './src/i18n/skill-guide-ui';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {ProfileCustomizeScreen} from './src/screens/ProfileCustomizeScreen';
 import {ProfileDiscardChangesModal} from './src/components/ProfileDiscardChangesModal';
@@ -154,7 +156,7 @@ import {TutorialHighlightProvider} from './src/components/TutorialBeacon';
 import {completeFirstSessionTutorialStep,loadFirstSessionTutorialCompleted} from './src/storage/first-session-tutorial';
 import {eventAnnouncementStore} from './src/storage/event-announcement';
 
-type Tab=QuickNavDestination|'Recruitment'|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'ProfileCustomize'|'Combat'|'Coop'|'Store'|'Roadmap';
+type Tab=QuickNavDestination|'Recruitment'|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'SkillGuide'|'Profile'|'ProfileCustomize'|'Combat'|'Coop'|'Store'|'Roadmap';
 type PrimaryTab='Home'|'Skills'|'World'|'Character'|'Inventory'|'More';
 type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selectedSkill?:string;goalActionId?:string;goalRecipeId?:string;questMode:QuestMode;questFocusOrderId?:string;settingsSection?:SettingsSection;socialInitialTab:SocialHubTab;profileCustomizeSection:'Look'|'Identity'|'Showcase';goalMonsterId?:string;goalRegionId?:string;goalDungeonId?:string};
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
@@ -169,6 +171,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Rankings':return appText(language,'Rankings');
     case 'Collections':return appText(language,'Collections');
      case 'ResourceCodex':return appText(language,'Codex');
+     case 'SkillGuide':return skillGuideUi(language,'Skill Guide');
     case 'Profile':return appText(language,'Profile');
     case 'ProfileCustomize':return appText(language,'Customize Profile');case 'NewUnlocks':return appText(language,'New Unlocks');
   }
@@ -962,6 +965,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
      {tab==='ResourceCodex'&&<ResourceCodexScreen state={state} onNavigateSource={openWorkingTowardDestination} onOpenCompanions={()=>setTab('Companions')}/>}
+     {tab==='SkillGuide'&&<SkillGuideScreen state={state} onClose={()=>setTab('More')} onOpenSkill={id=>{if(id==='companion'){setTab('Companions');return;}setSelectedSkill(id);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(id)?'gathering':'crafting');setTab('Skills');}} onOpenCombat={()=>setTab('Combat')} onOpenMastery={()=>{setSelectedSkill('companion-mastery');setSkillsMode('gathering');setTab('Skills');}}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Look');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
   </View>

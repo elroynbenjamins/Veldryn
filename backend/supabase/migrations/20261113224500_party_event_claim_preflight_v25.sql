@@ -92,9 +92,11 @@ create table private.party_event_claim_preflights_v25 (
  currency_credited boolean not null default false check(currency_credited=false),
  inventory_credited boolean not null default false check(inventory_credited=false),
  unique(event_starts_at,account_id),
- foreign key(party_id,event_starts_at,account_id)
+ -- v24 uniquely identifies each account/week; that key is the
+ -- enforceable SQL FK (the party_id is checked against the offer in writer).
+ foreign key(event_starts_at,account_id)
   references private.party_event_reward_offers_v24(
-   party_id,event_starts_at,account_id) on delete cascade,
+   event_starts_at,account_id) on delete cascade,
  foreign key(character_id,account_id)
   references public.characters(id,account_id) on delete cascade
 );

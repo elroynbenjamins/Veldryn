@@ -312,7 +312,7 @@ begin
  for j in 4..5 loop
   insert into auth.users(id,email) values(a[j],'v17-'||a[j]||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id)
-   values(c[j],a[j],'Timeout Tester '||chr(60+j),
+   values(c[j],a[j],'Timeout Tester '||chr(61+j),
     case j when 4 then 'IRONWARDEN' else 'WAYFINDER' end);
  end loop;
  insert into public.parties(id,leader_account_id,leader_character_id)

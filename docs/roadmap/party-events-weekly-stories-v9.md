@@ -667,3 +667,90 @@ screens and game server, verify real herb resource sourcing,
 and validate CI. This v19 candidate mechanism by itself
 does not make rewards ready or the hidden game mode playable.
 Do not merge, deploy or enable any related release flags.
+
+## v20 — independent deterministic Day 8 replay gate (13 Nov 2026)
+
+**Draft-only code:** `backend/src/server/party/weekly-party-boss-replay-v20.ts`
+and its negative-path regression
+`backend/src/server/party/__tests__/weekly-party-boss-replay-v20.ts`.
+They are registered in `backend/package.json`'s
+`test:party-weekly-v2` runner and watched by the hidden
+Party Events GitHub workflow. No public routes, live jobs, SQL
+mutations or reward grants are added. The explicit
+`PARTY_EVENT_BOSS_REPLAY_V20_RELEASED=false` gate remains disabled.
+
+**Trusted snapshot contract:** The verifier must be called only by
+the server with one internally consistent snapshot of private
+Party Events weeks, roster, v18 copied canonical published loadouts,
+v16 supply orders, v17 stage seals and votes, both transition
+receipts, the v18 finale seal and Day 8 reservation, and the v19
+candidate. Event family/variation/seed, dates, 2–4-person frozen
+membership and roles, valid Stage 3 votes, both stage transitions,
+the party-size EP target and the pinned
+`party-event-day8-combat-v4` version are checked before replay.
+The loadout identity hash recomputes the same SHA-256 input as
+the SQL v18 aggregate; stage resource hashes recompute the v17
+SQL order digest.
+
+**Full deterministic planner check:** v16 SQL supply orders do not
+record their resource tier, gather rate or optional preparation
+label, so SQL alone cannot reconstruct the true supply effects.
+The v20 verifier instead calls the existing
+`buildWeeklyPartySupplyOrders` with the canonical, *server-audited*
+item IDs, unlock flags, gathering times and tiers. It checks the
+complete set of required and optional orders, item IDs,
+quantities and stage seals **exactly**. Missing, extra, duplicated,
+inaccessible or modified rows fail closed. Every required order
+must be fully funded; optional order progress is included exactly
+as donated. Optional combat benefits are derived from the planner's
+own `reinforced`, `provisions`, `specialist` labels; they are
+never guessed from missing SQL metadata. An unaudited herb
+catalogue remains an absolute release blocker.
+
+**Independent combat reproduction:** From each server-frozen v18
+published snapshot's stats/abilities, the verifier rebuilds an
+`AuthoritativeLoadoutRecord` in memory and calls the existing
+`freezePartyEventBossLoadout` adapter. This reconstitutes a
+legal class/role-specific combat actor with server-derived
+equipment/companion effects. It then invokes the actual
+`resolvePartyEventDayEightBoss` deterministic combat engine
+using the same canonical party ID, seed, frozen member order,
+donation-derived preparations and completion time. It
+compares the **complete** canonical simulated result JSON to
+the v19 candidate result, not just the cleared tiers or
+reward band. Any tampered stats, altered optional buffs,
+misreported HP/damage, wrong route vote or different boss
+outcome makes the replay fail.
+
+**Proof is not a payout:** A successful in-memory replay returns
+`kind='server_replayed_combat_not_reward_grant'` with the
+reservation ID, v19 candidate hash, independent replay hash,
+frozen loadout hash, tiers and band. It **always** returns
+`rewardGrantAllowed=false`. This module is not yet called by
+a deployed server worker and does not persist an authorized
+settlement record. Do not let a client supply the replay inputs
+or treat the v19 candidate alone as a win. Full backend
+integration still requires a single-snapshot trusted repository,
+a fixed combat-engine build/version and a separate auditable
+exactly-once settlement/claim transaction.
+
+**Verification status:** The TypeScript test covers successful
+deterministic replay, stable SHA-256 proof, post-freeze loadout
+changes, roster/vote/seed mismatches, missing resources,
+tampered supply quantities/seals, missing required
+donations, optional preparation effects, altered stat snapshots,
+changed winner/band, and false completion times. It has been
+added to the Party Events TypeScript CI command; the linked
+GitHub workflow's outcome is **not yet confirmed** in this
+session. Earlier v11–v19 rollback-only SQL suites had passed;
+v20 introduces no new SQL objects, so there was no staging
+schema deployment. Keep the PR **draft**, feature flag **off**,
+and all production migration jobs **untouched**.
+
+**Next release blockers:** Run and resolve TypeScript CI, verify
+the real resource catalogue including a gatherable herb and
+level-accessible quantities, connect trusted SQL snapshot
+reads to the replay module and defend concurrent updates,
+persist an immutable outcome only after replay, implement
+atomic/one-time personal entitlements and Inbox claiming,
+and complete balance and client presentation.

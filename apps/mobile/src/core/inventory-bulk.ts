@@ -5,6 +5,7 @@ import type {GameState,ItemStack} from './types';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from './equipment-enhancement';
 import {depositToBank,salvageItem,sellItem,withdrawFromBank} from './game';
+import {recordSeasonalActivity} from './seasonal-quests';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
 export type BulkStorageLocation='inventory'|'bank';
@@ -101,14 +102,14 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[]):Game
   return next;
 }
 
-export function bulkSalvageSelected(state:GameState,itemIds:readonly string[]):GameState{
+export function bulkSalvageSelected(state:GameState,itemIds:readonly string[],nowMs=Date.now()):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
   if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.');
   let next=state;
   for(const id of summary.salvageableIds){
-    if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'salvage');continue;}
+    if(id.startsWith('copy:')){next=recordSeasonalActivity(disposeCraftedGearInstance(next,id.slice(5),'salvage'),'salvage',1,nowMs);continue;}
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
-    for(let count=0;count<quantity;count++)next=salvageItem(next,id);
+    for(let count=0;count<quantity;count++)next=salvageItem(next,id,nowMs);
   }
   return next;
 }

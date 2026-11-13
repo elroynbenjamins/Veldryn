@@ -161,6 +161,18 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v18_missing_frozen_loadouts' then raise;end if;
  end;
+ -- An illegal published loadout cannot become a Party Event snapshot,
+ -- even when the account and loadout ID are otherwise valid.
+ update public.coop_saved_loadouts set legal_equipment=false
+ where account_id=a[2] and character_id=c[2];
+ begin
+  perform private.save_party_event_boss_loadout_v18(p,w,a[2],'current',1);
+  raise exception 'V18 illegal equipment accepted into finale';
+ exception when others then
+  if sqlerrm<>'party_event_v18_unverified_loadout' then raise;end if;
+ end;
+ update public.coop_saved_loadouts set legal_equipment=true
+ where account_id=a[2] and character_id=c[2];
  result:=private.save_party_event_boss_loadout_v18(p,w,a[2],'current',1);
  if result->>'snapshotHash'<>repeat('b',64)
  then raise exception 'V18 second loadout wrong';end if;
@@ -179,6 +191,23 @@ begin
  exception when others then
   if sqlerrm<>'party_event_v18_loadouts_sealed' then raise;end if;
  end;
+ begin
+  update private.party_event_boss_loadouts_v18
+   set revision=revision+1
+  where party_id=p and event_starts_at=w and account_id=a[1];
+  raise exception 'V18 sealed snapshot rewritable by internal SQL';
+ exception when others then
+  if sqlerrm<>'party_event_v18_loadouts_sealed' then raise;end if;
+ end;
+ -- Current published record can change after the event has frozen its
+ -- private copy; Day8 consumes only the original sealed snapshot.
+ update public.coop_saved_loadouts set
+  revision=3,snapshot_hash=repeat('f',64),verified_at=now()
+ where account_id=a[1] and character_id=c[1];
+ if (select snapshot_hash from private.party_event_boss_loadouts_v18
+    where party_id=p and event_starts_at=w and account_id=a[1])
+    is distinct from repeat('c',64)
+ then raise exception 'V18 sealed event snapshot mutated with live loadout';end if;
  status:=private.party_event_day_eight_readiness_v18(p,w);
  if status->>'status'<>'waiting_for_day_eight'
   or (status->>'finaleSealed')::boolean is distinct from true

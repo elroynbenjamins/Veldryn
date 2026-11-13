@@ -424,6 +424,6 @@ begin
     where claimed or claimable or rewards_granted or entitlement_created)<>0
  then raise exception 'V25 intent changed live economy state';end if;
 
-end $;
+end $$;
 select 'PASS: v25 claim quote, account isolation, capacity, exact retry, no payout' result;
 rollback;

@@ -2,7 +2,16 @@
 
 Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`), Italian (`it`), French (`fr`), Russian (`ru`), and Turkish (`tr`).
 
-Russian and Turkish are starter-only languages. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
+Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
+
+## Russian focused coverage (November 2026)
+
+- Across the 10 authored source catalogs, **2,630 of 7,202 unique messages (36.5%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.
+
+- A focused Russian expansion now adds **2,081 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy.
+- The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
+- The dedicated Russian regression test checks all 2,081 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+
 
 ## Spanish gap review · 2026-11-13
 

@@ -25,7 +25,6 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
  const queuedFoodIds=state.character?.foodQueueIds??[];
  const maxHp=useMemo(()=>effectiveStats(state).hp,[state]);
  const hp=state.character?.currentHp??0,canResume=!!hunt&&!state.activity&&hp>1,hpPct=Math.max(0,Math.min(100,Math.round(hp/Math.max(1,maxHp)*100))),equippedFoodId=state.character?.equippedFoodId,equippedStack=equippedFoodId?state.inventory.stacks.find(stack=>stack.itemId===equippedFoodId):undefined,equippedFood=equippedFoodId?itemDef(equippedFoodId):undefined,equippedHeal=equippedFoodId?recoveryAmount(state,equippedFoodId):0,equippedHealLabel=equippedFoodId?displayHealHp(foodHealingAmount(state,equippedFoodId)):'0';
- const equippedActionLabel=equippedHeal>0&&equippedFood?gt('Eat {name} · restore up to {hp} HP',{name:equippedFood.name,hp:equippedHealLabel}):gt('Health is full');
  const s=useMemo(()=>makeStyles(C),[C]);
  async function run(command:GameCommand,close=false){if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');try{await onCommand(command);if(close)onClose();}catch(e){setError(e instanceof Error?e.message:gt('Action failed. Please try again.'));}finally{inFlight.current=false;setBusy(false);}}
  const updateSettings=(patch:Partial<GameState["settings"]>)=>void run({type:'settings',args:{settings:{...state.settings,...patch}}});

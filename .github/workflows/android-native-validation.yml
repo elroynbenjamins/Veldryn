@@ -85,3 +85,79 @@ jobs:
           path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 3
+
+  android-emulator-startup-smoke:
+    name: Install release AAB and boot on Android emulator
+    needs: android-release-bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Download AAB built in this exact run
+        uses: actions/download-artifact@v4
+        with:
+          name: veldryn-native-validation-aab-${{ github.sha }}
+          path: release-aab
+      - name: Convert the AAB to an emulator-installable APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release-aab/app-release.aab
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            --output release-aab/bundletool.jar
+          java -jar release-aab/bundletool.jar build-apks \
+            --bundle=release-aab/app-release.aab \
+            --output=release-aab/veldryn.apks \
+            --mode=universal --overwrite
+          unzip -p release-aab/veldryn.apks universal.apk > release-aab/veldryn-universal.apk
+          test -s release-aab/veldryn-universal.apk
+      - name: Enable hardware-accelerated emulator
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot Android 15 emulator and check release startup
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -euo pipefail
+            adb wait-for-device
+            adb install -r release-aab/veldryn-universal.apk
+            adb logcat -c
+            adb shell am start -W -n com.elroybenjamins.veldryn/.MainActivity
+            sleep 25
+            adb exec-out screencap -p > release-aab/startup-screen.png
+            adb logcat -d -v brief -s AndroidRuntime:E ReactNativeJS:E ReactNative:E > release-aab/startup-errors.log || true
+            if ! adb shell pidof com.elroybenjamins.veldryn; then
+              echo "::error::Veldryn is not running 25 seconds after launch"
+              cat release-aab/startup-errors.log
+              exit 1
+            fi
+            if grep -q 'FATAL EXCEPTION' release-aab/startup-errors.log; then
+              echo "::error::Fatal Android runtime exception during startup"
+              cat release-aab/startup-errors.log
+              exit 1
+            fi
+            echo "Release AAB installed and Veldryn process survived Android 15 startup"
+      - name: Retain emulator screenshot and error logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-android-emulator-smoke-${{ github.sha }}
+          path: |
+            release-aab/startup-screen.png
+            release-aab/startup-errors.log
+          if-no-files-found: warn
+          retention-days: 7

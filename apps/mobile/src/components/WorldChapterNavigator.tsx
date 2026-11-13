@@ -101,7 +101,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
         <View style={s.flex}>
           <Text style={s.eyebrow}>{p('CURRENT REGION')} · {p('Chapter')} {currentChapter.numeral}</Text>
           <Text numberOfLines={1} style={s.currentTitle}>{p(currentChapter.name)}</Text>
-          <Text numberOfLines={1} style={s.meta}>{p(current.name)} · {t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
+          <Text numberOfLines={2} style={s.meta}>{p(current.name)} · {t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
             ready:summary.combatReady,total:summary.combatTotal,gatherReady:summary.gatheringReady,gatherTotal:summary.gatheringTotal,
           })}</Text>
         </View>

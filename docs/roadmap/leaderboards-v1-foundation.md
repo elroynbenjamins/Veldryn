@@ -3,7 +3,8 @@
 ## Verified source baseline
 - The native Rankings screen and authenticated `rankingsClient` already exist, with 19 board definitions in Account, Professions, Competitive, Dungeons and Guilds.
 - **`RANKINGS_RELEASED=false` must remain unchanged.** The app routing already respects this.
-- The backend repository calls `rankings_board_server_v2`. The original tracked `20261005000000_rankings_v1.sql` declares `rankings_board_server_v1`, so verify the v2 routine **in a real staging database** before release. Do not substitute v1: that legacy body does not populate every declared board.
+- **Staging and production inspected read-only on 2026-11-13:** `rankings_board_server_v2(uuid,text,integer,integer)` exists, returns `jsonb`, and is executable by `service_role` but not `anon` or `authenticated`. This confirms the connection contract, not feature completeness. The original tracked `20261005000000_rankings_v1.sql` defines v1; the live v2 routine needs its full migration provenance reconciled with Git.
+- **Verified release blocker:** the installed v2 routine only has scoring branches for `profession_total`, `arena_rating`, `arena_wins` and `guild`. The other **15 accepted board IDs currently return empty arrays** even when eligible data exists; 12 are individual Professions plus `dungeon_tier`, `dungeon_clears`, and `achievement_score`. Do not enable Rankings until these have server-authoritative scoring and fixture-based verification.
 - Hidden Day 8 Party Event rankings already have their own independent gate. A Party Events release must not automatically expose those rankings.
 - World Boss ranking projections exist independently; echo attempts must never count as competitive results.
 
@@ -22,7 +23,8 @@
 6. Verify staging and device behavior, locale coverage, rendering for large font scale and poor network, then deliberately enable server/client gates in a separate release.
 
 ## Release checklist
-- [ ] Staging SQL contract test passes, including v2 RPC existence and permission checks
+- [x] V2 RPC identity and permissions checked read-only on both staging and production (2026-11-13)
+- [ ] Staging SQL preflight script and full board coverage/fixture tests pass
 - [ ] All 19 boards return correct nonempty results from seeded fixtures where applicable
 - [ ] Stable global ranks, ties and self-standing are verified for >50 accounts
 - [ ] All permission/privacy/blocks and rewards-free prestige policies pass

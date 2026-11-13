@@ -96,6 +96,6 @@ export function applyCharacterIdentityChange(state:GameState,change:CharacterIde
  return {
   state:{...state,character:characterAfter,account:{...state.account,craftedGearInstances:remainingRecords}},
   summary:{characterId:character.id,kind:'class',before:character.classId,after:newClass.id,
-   destroyedEquipmentCopies:Object.keys(character.equipment).length,companionUnequipped},
+   destroyedEquipmentCopies:Object.values(character.equipment).filter(id=>typeof id==='string'&&!!id).length,companionUnequipped},
  };
 }

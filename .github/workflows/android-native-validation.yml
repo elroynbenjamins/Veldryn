@@ -1,6 +1,12 @@
 name: Android native validation
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'backend/src/**'
+      - '.github/workflows/android-native-validation.yml'
   pull_request:
     paths:
       - 'apps/mobile/app.json'

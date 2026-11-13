@@ -1,6 +1,12 @@
 name: Mobile UX validation
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'tools/mobile-core-tests.json'
+      - '.github/workflows/mobile-ux-validation.yml'
   pull_request:
     paths:
       - 'apps/mobile/**'

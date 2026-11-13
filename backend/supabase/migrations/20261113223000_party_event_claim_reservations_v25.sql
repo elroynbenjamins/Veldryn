@@ -209,7 +209,11 @@ begin
   -- quantity shape supported by the live online state.
   if exists(select 1 from jsonb_array_elements(v_inv) st
       where st->>'itemId'=v_material
-       and (st->>'quantity') ~ '^[0-9]{1,9}
+       and (st->>'quantity') ~ '^[0-9]{1,9}$'
+       and (st->>'quantity')::bigint>999999999-v_quantity)
+  then raise exception 'party_event_v25_material_stack_overflow';end if;
+  if not exists(select 1 from jsonb_array_elements(v_inv) st
+     where st->>'itemId'=v_material
        and (st->>'quantity') ~ '^[0-9]{1,9}$'
        and (st->>'quantity')::bigint>0)
   then v_extra:=v_extra+1;end if;

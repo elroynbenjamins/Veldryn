@@ -115,7 +115,7 @@ export function ChatPlayerSheet({
     {loading?<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={st("LOADING PROFILE")}/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={{...profile,combatPower}}/>{socialActions}
     {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>{st("PROFILE BIO")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
     {(profile.favoriteSkillId||profile.favoriteCompanionId)?<ProfileFavoriteHighlights favoriteSkillId={profile.favoriteSkillId} favoriteCompanionId={profile.favoriteCompanionId}/>:null}
-    {profile.equippedGear?<ProfileEquippedGearShowcase gear={profile.equippedGear}/>:null}
+    {profile.equippedGear?<ProfileEquippedGearShowcase key={profile.accountId+':'+profile.character.id} gear={profile.equippedGear} reduceMotion={reduceMotion}/>:null}
     <ProfileShowcaseSection title={st("ACHIEVEMENT SHOWCASE")} entries={achievementEntries} emptyLabel="No achievement selected"/>
     <ProfileShowcaseSection title={st("PERSONAL RECORDS")} entries={recordEntries} emptyLabel="No record selected"/>
     <ProfileShowcaseSection title={st("COLLECTION SHOWCASE")} entries={collectionEntries} emptyLabel="No collectible selected"/>

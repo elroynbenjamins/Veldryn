@@ -497,3 +497,90 @@ integration of service-only receipts, authenticated vote identity
 and EP events; a real Day 8 boss combat proof and one-time reward
 payout; app screens; and full CI/build review. Do not merge PR
 #1045, enable its feature flag, or apply migrations to production.
+
+## v18 — authoritative loadout freezing and Day 8 reservation (13 Nov 2026)
+
+The draft-only hidden migration
+`backend/supabase/migrations/20261113144000_party_event_finale_reservation_v18.sql`
+and test
+`backend/supabase/tests/party_event_finale_reservation_v18.sql`
+extend v11–v17 without exposing a mobile route, granting any rewards,
+claiming any victory or applying a migration to production or staging.
+
+**Canonical member loadouts:** `private.save_party_event_boss_loadout_v18`
+copies each frozen-roster character's published, active,
+legal-equipment `public.coop_saved_loadouts` record. This source
+is published by the authoritative gameplay service; normal
+`authenticated` players cannot insert or update its underlying
+database table. The private RPC accepts only party/week, the
+enrolled account, existing loadout ID and expected revision;
+it rejects stale/missing revisions, outsiders, unverified or illegal
+gear, wrong character or class, mismatched source hashes and
+post-close writes. It stores the copied canonical `stat_snapshot`,
+`ability_snapshot`, capability tags, metadata, level and published
+SHA-256 hash for every participant. Members can reselect a valid
+source loadout before finale sealing, with exact-replay stability;
+the private sealed copy is never changed by later edits to a
+normal loadout. **The published snapshot hash is not yet the
+runtime `FrozenPartyBossLoadout.snapshotHash`: the future boss
+worker must independently adapt and verify its combat-engine
+actor before simulation.**
+
+**Preclose finale seal:** `private.seal_party_event_finale_v18`
+can run only in active Stage 3 before the seven-day event closes.
+It demands both v17 Stage 1/2 transition receipts, all three sealed
+and fully funded required supply plans, the locked Stage 3 vote,
+at least one verified `prepare_finale` objective receipt, cumulative
+EP at the full party-size budget target, and one legal copied
+loadout for every member of the frozen 2–4-person event roster.
+It creates one append-only finale seal including party/week,
+Stage 3 resource hash, vote, verified EP, roster count and a
+stable aggregate of the copied loadout identities and hashes.
+A replay returns the existing seal even after close; a later
+change of normal game equipment cannot rewrite it. Incomplete
+parties and partial-finalist reward policy are **not authorized**.
+
+**Day 8 reservation without rewards:** The separate
+`private.reserve_party_event_day_eight_v18` is the only
+server-only attempt-reservation function. It requires that
+the event has reached Stage 3, an immutable **preclose** finale
+seal exists, and the clock is at least
+`event_ends_at + 60 minutes`, matching the existing hidden
+TypeScript boss engine's minimum settlement grace.
+Exactly one attempt reservation per party/event is possible;
+the same request can safely replay after closure, and a different
+request conflicts. It does **not** accept a dungeon run,
+player-victory flag, forged combat metrics, payout parameters
+or a user-provided reward tier. There is **no boss win or
+settlement RPC in this version**. The returned
+`bossResultCommitted=false` and `rewardsGranted=false`
+are intentional, not placeholders for granted rewards.
+
+**Read-only Day 8 readiness** reports `preparing`,
+`incomplete_at_close`, `waiting_for_day_eight`,
+`ready_for_server_reservation` or
+`reserved_for_server_boss`, plus the open timestamp and
+permanently false reward-claim flags in this draft.
+No client permissions are granted on any new private table.
+
+**Verification:** The focused v18 SQL suite passed on Veldryn
+staging inside a rolled-back transaction; it covers real staged
+source-copy and change protection, illegal gear and outsiders,
+per-player freeze, complete Stage 1→2→3 requirements, mandatory
+resource burn, 2-person EP threshold, incomplete-roster rejection,
+freeze replay, pre-Day-8 rejection, Day 8 one-attempt reservation,
+post-close replay, and **no reward** invariants. All **eight**
+migrations and isolated regression suites v11–v18 then passed
+under one outer `BEGIN;` with a `SAVEPOINT` and rollback
+per suite, and a final `ROLLBACK;` for the entire run.
+Nothing persisted on staging; production was untouched.
+
+**Next blockers:** Validate actual herb availability and party-specific
+deterministic order quantities; connect the native game service to
+the private v14–v18 functions with authenticated account identity;
+convert canonical published loadouts to the verified combat-engine
+snapshot contract; run the real **12-tier Day 8 combat simulation**
+server-side and persist an immutable, independently validated
+victory/participation proof; implement one-time entitlements and
+chest redemption **only after** that proof and economic tests.
+Keep Party Events hidden and PR #1045 draft/unmerged.

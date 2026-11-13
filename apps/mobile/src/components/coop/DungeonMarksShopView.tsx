@@ -75,7 +75,8 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {items.map(item=>{
    const expanded=selected===item.id;
    const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
-   const offerStatus=item.owned||item.status==='already_owned'?'Owned':item.status==='eligible'?'Available'
+   const offerStatus=pending===item.id?'Processing purchase':item.owned||item.status==='already_owned'?'Owned'
+    :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?'Available'
     :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
     :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;

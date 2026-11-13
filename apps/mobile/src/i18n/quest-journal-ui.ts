@@ -8,6 +8,10 @@ import {progressionText} from './progression';
  * Columns: de, es, nl, it, fr, ru, tr. */
 type SevenLocales=readonly [string,string,string,string,string,string,string];
 export const questJournalUiRows={
+  "Open Sunscar": ["Sunscar öffnen","Abrir Sunscar","Open Sunscar","Apri Sunscar","Ouvrir Sunscar","Открыть Sunscar","Sunscar'ı aç"],
+  "Regional story leads continue in the World.": ["Die regionale Geschichte geht in der Welt weiter.","Las pistas de la historia regional continúan en el Mundo.","Regionale verhaalsporen gaan verder in de Wereld.","Gli indizi della storia regionale continuano nel Mondo.","Les pistes de l'histoire régionale se poursuivent dans le Monde.","Региональные сюжетные следы продолжаются в разделе «Мир».","Bölgesel hikâye ipuçları Dünya bölümünde devam ediyor."],
+  "Follow the oathglass signal into Sunscar.": ["Folge dem Eidglas-Signal nach Sunscar.","Sigue la señal del Cristal del Juramento hasta Sunscar.","Volg het Eedglas-signaal naar Sunscar.","Segui il segnale del Vetro del Giuramento fino a Sunscar.","Suivez le signal du Verre du Serment jusqu’à Sunscar.","Следуйте сигналу Клятвостекла в Sunscar.","Yemin Camı sinyalini Sunscar'a kadar izle."],
+  "NEXT FRONTIER": ["NÄCHSTE GRENZE","SIGUIENTE FRONTERA","VOLGEND GRENSGEBIED","PROSSIMA FRONTIERA","PROCHAINE FRONTIÈRE","НОВЫЙ РУБЕЖ","SONRAKİ SINIR"],
   "ACT PROGRESS": ["AKTFORTSCHRITT","PROGRESO DEL ACTO","VOORTGANG AKTE","PROGRESSO ATTO","PROGRESSION DE L'ACTE","ПРОГРЕСС АКТА","PERDE İLERLEMESİ"],
   "STORY PROGRESS": ["STORYFORTSCHRITT","PROGRESO DE LA HISTORIA","VERHAALVOORTGANG","PROGRESSO STORIA","PROGRESSION DE L'HISTOIRE","ПРОГРЕСС ИСТОРИИ","HİKÂYE İLERLEMESİ"],
   "The Asterfall chronicle is complete": ["Die Chronik von Asterfall ist abgeschlossen","La crónica de Asterfall está completa","De kroniek van Asterfall is voltooid","La cronaca di Asterfall è completa","La chronique d’Asterfall est terminée","Хроника Астерфолла завершена","Asterfall Güncesi tamamlandı"],

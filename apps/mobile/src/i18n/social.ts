@@ -7,6 +7,7 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "Back to Dungeons": ["Zurück zu den Dungeons","Volver a las mazmorras","Terug naar kerkers","Torna ai dungeon","Retour aux donjons"],
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],
   "Damage assist": ["Schadenshilfe","Ayuda de daño","Hulp bij schade","Assistenza ai danni","Assistance offensive"],
@@ -108,6 +109,10 @@ export const socialTranslationRows = {
  "Progress and rewards": ["Fortschritt und Belohnungen","Progreso y recompensas","Voortgang en beloningen","Progressi e ricompense","Progression et récompenses"],
  "Choose activity, language and minimum level.": ["Wähle Aktivität, Sprache und Mindestlevel.","Elige actividad, idioma y nivel mínimo.","Kies activiteit, taal en minimumniveau.","Scegli attività, lingua e livello minimo.","Choisissez une activité, une langue et un niveau minimum."],
  "Merchant offers": ["Händlerangebote","Ofertas del mercader","Aanbiedingen van handelaar","Offerte del mercante","Offres du marchand"],
+  "Random passive effect for your party. Identity revealed on pickup.": ["Zufälliger passiver Effekt für deine Gruppe. Wird beim Aufheben enthüllt.","Efecto pasivo aleatorio para tu grupo. Se revela al recogerlo.","Willekeurig passief effect voor je groep. Onthuld bij het oppakken.","Effetto passivo casuale per il gruppo. Si rivela alla raccolta.","Effet passif aléatoire pour votre groupe. Révélé à la récupération."],
+  "Persistent run item. Effect triggers in combat.": ["Bleibt für diesen Durchlauf erhalten. Der Effekt löst im Kampf aus.","Objeto permanente durante esta expedición. Su efecto se activa en combate.","Blijft tijdens deze tocht behouden. Het effect treedt op in gevechten.","Oggetto valido per tutta la spedizione. L'effetto si attiva in combattimento.","Objet conservé pendant cette expédition. Son effet s'active au combat."],
+  "Instantly heals the chosen ally. No mystery here.": ["Heilt den gewählten Verbündeten sofort. Keine Überraschung.","Cura al instante al aliado elegido. Sin sorpresas.","Geneest de gekozen bondgenoot direct. Geen verrassingen.","Cura subito l'alleato scelto. Nessuna sorpresa.","Soigne aussitôt l'allié choisi. Sans surprise."],
+  "Spend at Expedition Shop": ["Im Expeditionsladen ausgeben","Gastar en la tienda de expedición","Uitgeven in de expeditieshop","Spendi nel negozio spedizione","Dépenser à la boutique d'expédition"],
  "Dungeon resources": ["Dungeon-Ressourcen","Recursos de mazmorra","Dungeongrondstoffen","Risorse del dungeon","Ressources du donjon"],
  "Sealed boon": ["Versiegelter Segen","Bendición sellada","Verzegende zegen","Bonus sigillato","Bénédiction scellée"],
  "Run artifact": ["Dungeon-Artefakt","Artefacto de incursión","Dungeonartefact","Artefatto del dungeon","Artefact du donjon"],
@@ -208,6 +213,19 @@ export const socialTranslationRows = {
  "Opening exchange":["Kampfauftakt","Primer intercambio","Openingsgevecht","Scambio iniziale","Premier échange"],
  "Preparing expedition rewards. You can retry if they have not appeared yet.":["Expeditionsbelohnungen werden vorbereitet. Erneut versuchen, falls sie noch nicht angezeigt werden.","Preparando recompensas. Vuelve a intentarlo si aún no aparecen.","Expeditiebeloningen voorbereiden. Probeer opnieuw als ze nog niet verschijnen.","Preparazione delle ricompense. Riprova se non sono ancora visibili.","Préparation des récompenses. Réessayez si elles n'apparaissent pas encore."],
  "Expedition Marks":["Expeditionsmarken","Marcas de expedición","Expeditiemarken","Marchi di spedizione","Marques d'expédition"],
+ "Open Expedition shop":["Expeditionsladen öffnen","Abrir la tienda de expedición","Expeditiewinkel openen","Apri il negozio spedizione","Ouvrir la boutique d'expédition"],
+ "Expedition Shop":["Expeditionsladen","Tienda de expedición","Expeditiewinkel","Negozio spedizione","Boutique d'expédition"],
+ "Dungeon Marks Shop (Preview)":["Dungeonmarken-Laden (Vorschau)","Tienda de marcas de mazmorra (vista previa)","Kerkermarkenwinkel (preview)","Negozio Marchi del dungeon (anteprima)","Boutique de marques de donjon (aperçu)"],
+ "Spend your Expedition Marks on cosmetics, boons and supplies.":["Gib deine Expeditionsmarken für Kosmetik, Segen und Vorräte aus.","Gasta tus marcas de expedición en cosméticos, ventajas y suministros.","Besteed je expeditiemarken aan cosmetica, zegeningen en voorraden.","Spendi i Marchi di spedizione in cosmetici, benefici e provviste.","Dépensez vos marques d'expédition en cosmétiques, bonus et provisions."],
+ "Requires level {level}":["Erfordert Stufe {level}","Requiere nivel {level}","Vereist niveau {level}","Richiede livello {level}","Niveau {level} requis"],
+ "Route progress: room {current} of {total}":["Routenfortschritt: Raum {current} von {total}","Progreso de ruta: sala {current} de {total}","Routevoortgang: kamer {current} van {total}","Avanzamento percorso: stanza {current} di {total}","Progression : salle {current} sur {total}"],
+ "ROUTE":["ROUTE","RUTA","ROUTE","PERCORSO","PARCOURS"],
+ "Join a guild to participate in the active festival boss.":["Tritt einer Gilde bei, um am aktiven Festivalboss teilzunehmen.","Únete a un gremio para participar en el jefe de festival activo.","Word lid van een gilde om mee te doen aan de actieve festivalbaas.","Unisciti a una gilda per partecipare al boss del festival attivo.","Rejoignez une guilde pour participer au boss de festival actif."],
+ "Regions":["Regionen","Regiones","Regio's","Regioni","Régions"],
+ "Soon":["Bald","Pronto","Binnenkort","Presto","Bientôt"],
+ "guild_recruiting":["Gildenrekrutierung","Reclutamiento de gremio","Gildewerving","Reclutamento gilda","Recrutement de guilde"],
+ "looking_for_guild":["Sucht eine Gilde","Buscando gremio","Zoekt een gilde","In cerca di una gilda","Recherche une guilde"],
+ "party_recruiting":["Gruppenrekrutierung","Reclutamiento de grupo","Groepswerving","Reclutamento gruppo","Recrutement de groupe"],
  "CLAIMED":["ABGEHOLT","RECLAMADO","GECLAIMD","RISCATTATO","RÉCUPÉRÉ"],
  "Seasonal reward collected.":["Saisonbelohnung abgeholt.","Recompensa de temporada reclamada.","Seizoensbeloning geclaimd.","Ricompensa stagionale riscattata.","Récompense saisonnière récupérée."],
  "Rematch with this party":["Mit dieser Gruppe erneut starten","Revancha con este grupo","Opnieuw met deze groep","Rivincita con questo gruppo","Rejouer avec ce groupe"],

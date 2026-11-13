@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
@@ -25,10 +25,19 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
  const [shelf,setShelf]=useState<Shelf>('Supplies');
  const [selected,setSelected]=useState<string|null>(null);
  const [pending,setPending]=useState<string|null>(null);
+ const [refreshing,setRefreshing]=useState(false);
+ const requestLock=useRef(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
+ const refresh=async()=>{
+  if(requestLock.current||!onRefresh||busy||pending||refreshing)return;
+  requestLock.current=true;setRefreshing(true);setError('');
+  try{await onRefresh()}
+  catch{setError('Unable to refresh the Dungeon Shop. Please retry.');}
+  finally{requestLock.current=false;setRefreshing(false)}
+ };
  const purchase=async(id:string)=>{
-  if(!snapshot?.shopEnabled||!onPurchase||pending||busy)return;
-  setPending(id);setError('');setNotice('');
+  if(requestLock.current||!snapshot?.shopEnabled||!onPurchase||pending||busy)return;
+  requestLock.current=true;setPending(id);setError('');setNotice('');
   try{
    const status=await onPurchase(id);
    setNotice(status==='purchased'?'Purchase confirmed. Refresh to view your balance and reward.':'Already owned. No Marks spent.');
@@ -37,26 +46,26 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    catch{setError('Purchase confirmed, but refresh failed. Reopen the shop to synchronize your account.');}
   }catch(cause){
    setError(cause instanceof Error?cause.message:'Unable to confirm purchase. Refresh before retrying.');
-  }finally{setPending(null)}
+  }finally{requestLock.current=false;setPending(null)}
  };
  const items=(snapshot?.offers??[]).filter(item=>
   shelf==='Owned'?item.owned||item.status==='already_owned':
   shelf==='Supplies'?item.category==='supply'||item.category==='companion':
   !['supply','companion'].includes(item.category)
  );
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.wallet}>
    <ExpeditionMarkIcon size={34}/>
    <View style={s.fill}>
-    <Text style={s.walletAmount}>{snapshot?snapshot.balance.toLocaleString():'—'} Expedition Marks</Text>
+    <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={s.walletAmount}>{snapshot?snapshot.balance.toLocaleString():'—'} Expedition Marks</Text>
     <Text style={s.meta}>{snapshot?'Permanent account currency':'Shop not available yet'}</Text>
    </View>
-   {onRefresh?<GameButton compact title="Refresh" tone="secondary" disabled={busy||pending!==null} onPress={()=>void onRefresh()}/>:null}
+   {onRefresh?<GameButton compact title="Refresh" tone="secondary" loading={refreshing} disabled={busy||pending!==null||refreshing} onPress={()=>void refresh()}/>:null}
   </View>
   <Text style={s.meta}>Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.</Text>
   <View accessibilityRole="tablist" style={s.tabs}>
    {(['Supplies','Collections','Owned'] as const).map(tab=><Pressable key={tab} accessibilityRole="tab"
-    accessibilityState={{selected:shelf===tab}} onPress={()=>{setShelf(tab);setSelected(null)}}
+    accessibilityState={{selected:shelf===tab,disabled:busy||!!pending||refreshing}} disabled={busy||!!pending||refreshing} onPress={()=>{setShelf(tab);setSelected(null)}}
     style={[s.tab,shelf===tab&&s.selectedTab]}><Text style={[s.tabLabel,shelf===tab&&s.activeLabel]}>{tab}</Text></Pressable>)}
   </View>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
@@ -65,13 +74,19 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {snapshot&&!snapshot.shopEnabled?<Text style={s.meta}>Dungeon Shop is being prepared. Purchases are unavailable.</Text>:null}
   {items.map(item=>{
    const expanded=selected===item.id;
-   const canPurchase=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase&&!busy&&!pending;
+   const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
+   const offerStatus=pending===item.id?'Processing purchase':item.owned||item.status==='already_owned'?'Owned'
+    :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?(onPurchase?'Available':'Preview only')
+    :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
+    :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
+   const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={item.name} accessibilityState={{expanded}}
-     onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.marks.toLocaleString()} Expedition Marks, ${offerStatus}`} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
+     disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
      <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
      <View style={s.fill}>
-      <Text style={s.title}>{item.name}</Text>
+      <Text numberOfLines={2} style={s.title}>{item.name}</Text>
+      <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
       <Text style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).join(' · ')}</Text>
       <View style={s.price}><ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{item.marks.toLocaleString()}</Text></View>
      </View>
@@ -83,7 +98,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
       <Text style={s.meta}>{item.remainingThisUtcWeek} purchases left this UTC week</Text>:null}
      {item.status==='already_owned'||item.owned?<Text style={s.owned}>Owned permanently</Text>:null}
      {item.lockReason?<Text style={s.meta}>{item.lockReason}</Text>:null}
-     {canPurchase?<GameButton title={pending===item.id?'Processing…':`Confirm purchase · ${item.marks.toLocaleString()} Marks`} loading={pending===item.id} disabled={pending!==null||busy} onPress={()=>void purchase(item.id)}/>:null}
+     {offerEligible?<GameButton title={pending===item.id?'Processing…':`Confirm purchase · ${item.marks.toLocaleString()} Marks`} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
      {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>Not enough Expedition Marks.</Text>:null}
     </View>:null}
    </View>;
@@ -95,7 +110,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:10,padding:spacing.md,paddingBottom:100},
  wallet:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:radii.md,borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.panelRaised},
  fill:{flex:1,minWidth:0},walletAmount:{...typography.bodyStrong,color:C.text,fontSize:16},meta:{...typography.caption,color:C.muted,lineHeight:17},
- tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:42,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
+ tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
  selectedTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabLabel:{...typography.caption,color:C.muted,fontWeight:'800'},activeLabel:{color:C.text},
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
@@ -106,6 +121,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
  description:{...typography.body,color:C.text},
+ offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},
 });}

@@ -20,6 +20,7 @@ import {normalizeProcessingBatch} from './processing';
 import {normalizeMealBuff} from './meal-buffs';
 import {normalizeCollectionPreferences} from './collection-preferences';
 import {normalizeCharacterLoadouts} from './character-loadouts';
+import {normalizeFoodQueueIds} from './food-queue';
 import {normalizeOnboardingGuideState} from './onboarding';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
@@ -109,6 +110,7 @@ export function normalizeSave(input:any):GameState{
     gearEnhancements,
     currentHp:Math.max(1,Number(input.character.currentHp ?? input.character.hp ?? classDef?.hp ?? 100)),
     equippedFoodId:input.character.equippedFoodId,
+    foodQueueIds:normalizeFoodQueueIds(input.character.foodQueueIds,input.character.equippedFoodId),
     equippedHealingPotionId:potionDef(input.character.equippedHealingPotionId)?.effect.kind==='healing'?input.character.equippedHealingPotionId:undefined
     ,profileTitle:typeof input.character.profileTitle==='string'&&input.character.profileTitle.trim()?input.character.profileTitle.trim():'New Adventurer'
     ,profileBackgroundId:typeof input.character.profileBackgroundId==='string'&&input.character.profileBackgroundId.trim()?input.character.profileBackgroundId:'asterfall-night'
@@ -235,7 +237,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeDailySupplyBoosts:activeDailySupplyBoosts(entry.character),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),foodQueueIds:normalizeFoodQueueIds(entry.character.foodQueueIds,entry.character.equippedFoodId),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeDailySupplyBoosts:activeDailySupplyBoosts(entry.character),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));

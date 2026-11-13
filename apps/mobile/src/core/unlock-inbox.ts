@@ -7,6 +7,7 @@ import {PROFILE_TITLES} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {CLASSES} from '../content/classes';
+import {CORE_PET_COLLECTIBLES} from '../content/core-pets';
 
 export type UnlockInboxEntry=CosmeticUnlockNotice&{unlockedAtMs:number;seen:boolean};
 export const UNLOCK_INBOX_LIMIT=100;
@@ -55,6 +56,12 @@ const eventCosmeticRewards=LIVE_EVENT_CATALOG.flatMap(event=>{
  return rewards.map(reward=>({reward,eventName:event.name}));
 });
 const cosmeticNames=new Map(eventCosmeticRewards.map(({reward,eventName})=>[reward.kind+':'+reward.id,{name:reward.name,source:eventName}]));
+const corePetNames=new Map(CORE_PET_COLLECTIBLES.map(pet=>[pet.id,pet.name]));
+/** Resolves pet display names at render time so older saved inbox entries also show the real pet name. */
+export function unlockInboxDisplayName(row:Pick<CosmeticUnlockNotice,'kind'|'key'|'name'>):string{
+ if(row.kind!=='pet'||!row.key.startsWith('pet:'))return row.name;
+ return corePetNames.get(row.key.slice('pet:'.length))??row.name;
+}
 function cosmeticLabel(id:string){return id.replace(/[_:-]+/g,' ').replace(/\b\w/g,char=>char.toUpperCase());}
 function extraCosmeticEntries(before:GameState,after:GameState):CosmeticUnlockNotice[]{
  const groups=[
@@ -66,7 +73,7 @@ function extraCosmeticEntries(before:GameState,after:GameState):CosmeticUnlockNo
   const owned=new Set(previous??[]);
   return (current??[]).filter(id=>!owned.has(id)).map(id=>{
    const reward=cosmeticNames.get(kind+':'+id)??(kind==='guild_cosmetic'?cosmeticNames.get('guild_frame:'+id)??cosmeticNames.get('guild_banner:'+id)??cosmeticNames.get('guild_name_color:'+id):undefined);
-   return {key:kind+':'+id,kind,name:reward?.name??cosmeticLabel(id),detail:reward?.source};
+   return {key:kind+':'+id,kind,name:reward?.name??(kind==='pet'?corePetNames.get(id):undefined)??cosmeticLabel(id),detail:reward?.source};
   });
  });
 }
@@ -84,7 +91,7 @@ export function legacyUnreadUnlockEntries(keys:readonly string[],state:GameState
   if(!kinds.has(kind)||!id)return [];
   if(kind==='pet'||kind==='emote'||kind==='guild_cosmetic'){
    const reward=cosmeticNames.get(kind+':'+id);
-   return [{key,kind,name:reward?.name??cosmeticLabel(id),detail:reward?.source,unlockedAtMs:atMs,seen:false}];
+   return [{key,kind,name:reward?.name??(kind==='pet'?corePetNames.get(id):undefined)??cosmeticLabel(id),detail:reward?.source,unlockedAtMs:atMs,seen:false}];
   }
   if(kind==='profile_icon'){
    const icon=icons.get(id);

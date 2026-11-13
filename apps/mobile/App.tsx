@@ -68,7 +68,7 @@ import {MainScreenTourPopup} from './src/components/MainScreenTourPopup';
 import {ForgeRarityRevealModal,isExceptionalForgeResult} from './src/components/ForgeResultFeedback';
 import {StoryBossBattleModal} from './src/components/StoryBossBattleModal';
 import type {FallenKnightBattleResult} from './src/core/story-boss';
-import {C,resolveTheme} from './src/theme/theme';
+import {C,resolveTheme,type UiThemeId} from './src/theme/theme';
 import {GameThemeProvider} from './src/theme/ThemeContext';
 import {GameLanguageProvider} from './src/i18n/GameLanguageProvider';
 import {appText} from './src/i18n/app-shell';
@@ -140,6 +140,7 @@ import {retireGoalPlanner} from './src/core/retired-goal-planner';
 import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
 import {dailySuppliesStatus} from './src/core/daily-supplies';
 import {weeklyOrderDestination,weeklyOrderIdleRule,weeklyOrderIdleRuleId,weeklyOrderQueueActivity} from './src/core/weekly-order-integrations-v41';
+import {weeklyOrderQuickStartPlan} from './src/core/weekly-order-quick-start';
 import type {WeeklyOrder} from './src/core/weekly-orders-v41';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 import {fetchActiveEventRuntime} from './src/online/live-events';
@@ -190,11 +191,17 @@ function VeldrynApp(){
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
   const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
+  // A visual-only preview must not wait for server settings or full-save serialization.
+  const [themePreviewId,setThemePreviewId]=useState<UiThemeId|undefined>();
+  const requestedThemeRef=useRef<UiThemeId|undefined>(undefined);
+  const themeSaveTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const themeSavingRef=useRef(false);
+  const displayedThemeId=themePreviewId??state?.settings.uiTheme;
   const [ready,setReady]=useState(false);
   const [startupScene]=useState(pickStartupScene);
   const [loadError,setLoadError]=useState('');
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
-  useEffect(()=>{gameAlerts.configure({themeId:state?.settings.uiTheme,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[state?.settings.uiTheme,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
+  useEffect(()=>{gameAlerts.configure({themeId:displayedThemeId,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[displayedThemeId,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
@@ -232,6 +239,7 @@ function VeldrynApp(){
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
   const [forgeClaimFeedback,setForgeClaimFeedback]=useState<{message:string;tone:'success'|'warning'}|null>(null);
   const forgeClaimAllInFlight=useRef(false);
+  const contractQuickStartInFlight=useRef(false);
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
   const [preparationNotices,setPreparationNotices]=useState<RecipePreparationTransitionNotice[]>([]);
@@ -649,6 +657,54 @@ function VeldrynApp(){
     if(!startsActivity){if(feedback.collected)setCollected(feedback.collected);else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
     if(command.type==='companion_boss_rematch'&&result.won===false)throw new Error(result.message??'Fallen Knight rematch lost.');
   }
+  // Coalesce rapid palette taps and save only the latest choice. Gameplay stays
+  // server-owned, while the selected colors are visible immediately.
+  function scheduleThemeSave(delay=140){
+    if(themeSaveTimerRef.current!==null)clearTimeout(themeSaveTimerRef.current);
+    themeSaveTimerRef.current=setTimeout(()=>{themeSaveTimerRef.current=null;void flushThemeSave();},delay);
+  }
+  async function flushThemeSave(){
+    const requested=requestedThemeRef.current;
+    if(!requested||themeSavingRef.current||(serverGameplayEnabled&&(online.busy||online.pending)))return;
+    const current=stateRef.current;
+    if(!current)return;
+    themeSavingRef.current=true;
+    try{
+      if(current.settings.uiTheme!==requested){
+        if(serverGameplayEnabled){
+          // Only settings are sent, never a full gameplay-state save.
+          await perform({type:'settings',args:{settings:settingsForOnlineCommand({...current.settings,uiTheme:requested})}},false);
+        }else{
+          // Skip gameplay migrations, reward checks and unlock scans for a palette preference.
+          const next={...current,settings:{...current.settings,uiTheme:requested}};
+          stateRef.current=next;setState(next);
+          try{await repo.save(next);}
+          catch{
+            const latest=stateRef.current;
+            if(latest?.settings.uiTheme===requested){
+              const rollback={...latest,settings:{...latest.settings,uiTheme:current.settings.uiTheme}};
+              stateRef.current=rollback;setState(rollback);
+            }
+            showAlert('Local save failed','Theme was not saved. Please try again.');
+          }
+        }
+      }
+    }finally{
+      themeSavingRef.current=false;
+      if(requestedThemeRef.current!==requested)scheduleThemeSave(0);
+      else{requestedThemeRef.current=undefined;setThemePreviewId(undefined);}
+    }
+  }
+  function selectUiTheme(id:UiThemeId){
+    if((requestedThemeRef.current??stateRef.current?.settings.uiTheme)===id)return;
+    requestedThemeRef.current=id;
+    setThemePreviewId(id);
+    scheduleThemeSave();
+  }
+  // An online gameplay action can already be saving when the player requests a
+  // palette. Retry once that action clears rather than issuing a competing command.
+  useEffect(()=>{if(!online.busy&&!online.pending&&requestedThemeRef.current&&!themeSavingRef.current)scheduleThemeSave(0);},[online.busy,online.pending]);
+  useEffect(()=>()=>{if(themeSaveTimerRef.current!==null)clearTimeout(themeSaveTimerRef.current);},[]);
   async function commit(candidate:GameState){
     const current=stateRef.current;
     if(serverGameplayEnabled){
@@ -697,7 +753,47 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     catch(error){showAlert('Action queue',error instanceof Error?error.message:'Please try again.');return false;}
   }
   function openQuestMode(mode:QuestMode,focusedOrderId?:string){const current=stateRef.current;if(mode==='contracts'&&current&&!earlyFeatureUnlocked(current,'contracts')){showAlert('Contract Board locked','Complete Into Ironwood to unlock regional and weekly Contracts.');return;}setQuestMode(mode);setQuestFocusOrderId(mode==='contracts'?focusedOrderId:undefined);setTab('Quests');}
-  function openWeeklyOrder(order:WeeklyOrder){openWorkingTowardDestination(weeklyOrderDestination(order));}
+  async function openWeeklyOrder(order:WeeklyOrder){
+    const current=stateRef.current;
+    if(!current||contractQuickStartInFlight.current)return;
+    const plan=weeklyOrderQuickStartPlan(current,order);
+    // Boss fights, regional problems and crafted work keep their existing manual route.
+    if(plan.status==='manual'){openWorkingTowardDestination(weeklyOrderDestination(order));return;}
+    if(plan.status==='blocked'){showAlert('Contract unavailable',plan.reason);return;}
+    contractQuickStartInFlight.current=true;
+    try{
+      if(plan.needsTravel){
+        // Complete travel first; never submit an activity start to an unconfirmed region.
+        if(serverGameplayEnabled){
+          if(!await perform({type:'travel',args:{id:plan.regionId}}))return;
+        }else{
+          const travelled=travelToRegion(current,plan.regionId,Date.now());
+          await commit(travelled.state);
+        }
+      }
+      const arrived=stateRef.current;
+      if(!arrived)return;
+      const start=weeklyOrderQuickStartPlan(arrived,order);
+      if(start.status!=='ready'||start.needsTravel){
+        showAlert('Contract unavailable',start.status==='blocked'?start.reason:'Unable to reach the contract activity.');
+        return;
+      }
+      const running=arrived.activity?.targetId===start.targetId
+        &&(start.kind==='combat'?arrived.activity.kind==='combat':['mining','woodcutting','fishing','herbalism'].includes(arrived.activity.kind));
+      if(!running){
+        if(serverGameplayEnabled){
+          if(!await perform({type:'start',args:{kind:start.kind,id:start.targetId}},false))return;
+        }else{
+          const launched=transitionActivity(arrived,Date.now(),{kind:start.kind,id:start.targetId});
+          await commit(launched.state);
+        }
+      }
+      // Land on the exact enemy or gathering node, with its activity already running.
+      openGoalAtCurrentRegion(weeklyOrderDestination(order));
+    }catch(error){
+      showAlert('Cannot start contract',error instanceof Error?error.message:'Please try again.');
+    }finally{contractQuickStartInFlight.current=false;}
+  }
   function queueWeeklyOrder(order:WeeklyOrder){
     const queued=weeklyOrderQueueActivity(order);
     if(!queued){showAlert('Action queue','This job needs manual actions and cannot be queued as one activity.');return;}
@@ -776,11 +872,11 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   if(serverGameplayEnabled&&!online.snapshot)return <SafeAreaView style={s.center}><Text style={s.txt}>{online.error||appText(languageRef.current,'Connecting…')}</Text><GameButton title={appText(languageRef.current,"Retry connection")} onPress={()=>online.refresh()}/><OnlineAccountPanel state={newGame(Date.now())}/></SafeAreaView>;
   if(!ready)return <View style={s.startupUnderlay}/>;
   if(loadError||!state)return <SafeAreaView style={s.safe}><StatusBar style="light"/><SaveRecoveryScreen language={recoveryLanguage} message={loadError||'No readable save state was returned.'} onRetry={()=>void loadGame()} onStartFresh={()=>showAlert('Delete unreadable local save?','This permanently removes the existing local data and starts a new game.',[{text:'Cancel'},{text:'Start fresh',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setLoadError('');setCurrentTab('Home');setTabHistory([])}}])}/></SafeAreaView>;
-  if(!state.character){const theme=resolveTheme(state.settings.uiTheme);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} themeId={state.settings.uiTheme} onTheme={uiTheme=>void commit({...state,settings:{...state.settings,uiTheme}})} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{setGuestBooting(false);void signOut()}:undefined} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
-  if(creatingRoster){const theme=resolveTheme(state.settings.uiTheme);return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView></GameThemeProvider>;}
+  if(!state.character){const theme=resolveTheme(displayedThemeId);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} themeId={displayedThemeId} onTheme={selectUiTheme} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{setGuestBooting(false);void signOut()}:undefined} onSelect={async(id,name,body)=>{await flushThemeSave();if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(stateRef.current??state,id,name,body);await repo.save(next);stateRef.current=next;setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
+  if(creatingRoster){const theme=resolveTheme(displayedThemeId);return <GameThemeProvider themeId={displayedThemeId}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView></GameThemeProvider>;}
   if(showAdminQa&&(adminQa||(__DEV__&&!serverGameplayEnabled)))return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><AdminQaScreen state={state} onChange={!serverGameplayEnabled?commit:undefined} onApplyQa={serverGameplayEnabled&&adminQa?applyOnlineAdminQa:undefined} onRefillQa={serverGameplayEnabled&&adminQa?refillOnlineAdminQa:undefined} onClose={()=>setShowAdminQa(false)} onOpenDungeon={()=>{setShowAdminQa(false);setTab('Coop')}}/></SafeAreaView>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
-  const theme=resolveTheme(state.settings.uiTheme);
+  const theme=resolveTheme(displayedThemeId);
   const preview=activityPreview??previewActivityReward(state,now);
   const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
   const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
@@ -820,7 +916,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   // begin immediately with its Q-Mode / Live status and room decisions.
   const immersiveDungeonFlow=dungeonFlowActive&&tab==='Coop';
   const mainTabGuide=MAIN_TAB_GUIDANCE[tab];
-  return <GameThemeProvider themeId={state.settings.uiTheme}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}>
+  return <GameThemeProvider themeId={displayedThemeId}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}>
     {!immersiveDungeonFlow&&mainTabGuide&&!mainScreenTour&&!visibleTutorialStep?<SectionGuide scope={auth.session?.user.id??state.character.id} area="main" section={tab} guide={mainTabGuide} showReplay={false}/>:null}
     {tab==='Home'&&<HomeScreen onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onSetCurrentHandoff={()=>{const id=stateRef.current?.activity?.targetId;if(id)void submitHomeQueueCommand({type:'queue_set_goal',args:{id,goal:{kind:'duration_seconds',value:14400}}});}} onQueueAdd={(entry,handoff)=>submitHomeQueueCommand({type:'queue_add',args:{kind:entry.kind,id:entry.targetId,...(entry.combatTacticId?{tacticId:entry.combatTacticId}:{}),...(entry.huntGoalId?{goalId:entry.huntGoalId}:{}),...(entry.faithPracticeCount?{count:entry.faithPracticeCount}:{}),...(entry.goal?{goal:entry.goal}:{}),...(handoff?.goal?{handoffGoal:handoff.goal,handoffTargetId:handoff.targetId}:{}),...(handoff?.keepCurrentRunning?{keepCurrentRunning:true}:{})}})} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
     {tab==='Combat'&&<CombatScreen state={state} onCommand={runCompanionCommand} initialMonsterId={goalMonsterId} initialAreaId={selectedRegionalAreaId} onChangeRegion={()=>setTab('World')} onStart={(id,tacticId,goalId)=>changeActivity({kind:'combat',id,...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})})} onQueue={(id,tacticId,goalId)=>queueActivity({kind:'combat',targetId:id,...(tacticId?{combatTacticId:tacticId}:{}),...(goalId?{huntGoalId:goalId}:{})})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onBoss={()=>{const now=Date.now();if(serverGameplayEnabled){void perform({type:'boss'}).then(result=>{if(!result)return;if(result.storyBossBattle){setStoryBossBattle({battle:result.storyBossBattle,message:result.message??(result.won?'Victory':'Defeat')});return;}showAlert(result.won?'Victory':'Not ready',result.message)});return;}const settled=claimActivity(state,now);const result=challengeFallenKnight(settled.state,now);void commit(result.state);if(result.battle){setStoryBossBattle({battle:result.battle,message:result.message});return;}showAlert(ot(state.settings.language,result.won?'combat.victory':'combat.notReady'),result.message)}}/>}
@@ -857,7 +953,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   setSkillsMode(activity==='gathering'?'gathering':'crafting');
   setTab('Skills');
  }}/>}  onTokenRewardsChanged={()=>online.refresh()} onlinePve={<OnlineGuildPve initialEncounterKind={guildInitialPve?'event':'weekly'} state={state} onCombat={()=>setTab('Combat')} onRewardsChanged={()=>online.refresh()} authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} onManageEmotes={openChatEmoteSettings} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>}
-    {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} focusChatEmotes={focusChatEmotes} onChatEmotesFocusHandled={()=>setFocusChatEmotes(false)} onSectionChange={setSettingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
+    {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} focusChatEmotes={focusChatEmotes} onChatEmotesFocusHandled={()=>setFocusChatEmotes(false)} onSectionChange={setSettingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onUiThemeChange={selectUiTheme} uiThemeId={displayedThemeId} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
     {tab==='Store'&&<StoreScreen state={state} onChange={commit} online={serverGameplayEnabled} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined}/>}
     {tab==='NewUnlocks'&&<NewUnlocksScreen language={state.settings.language} entries={unlockInbox} onBack={()=>setTab('More')} onCustomize={()=>{setProfileCustomizeSection('Look');setTab('ProfileCustomize')}}/>}
     {tab==='More'&&<MoreScreen character={state.character} accountStatus={serverGameplayEnabled?(auth.session?(accountLinkStep(auth.session.user)==='linked'?'linked':accountLinkStep(auth.session.user)==='guest'?'guest':'pending'):'guest'):'local'} onOpenUpdates={()=>setShowWhatsNew(true)} onOpenRoadmap={()=>setTab('Roadmap')} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Settings'){setSettingsSection(undefined);}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} storyRewardCount={storyClaimCount} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild+notificationCounts.guildChatUnread} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.partyChatUnread} newUnlockCount={unreadUnlockCount(unlockInbox)} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
@@ -892,7 +988,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}><View style={s.appRoot}>
     <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}>{renderedApp}</Animated.View>
     {(startupOverlayVisible||startupBlocking)&&<Animated.View pointerEvents={startupBlocking?'auto':'none'} style={[s.startupOverlay,{opacity:startupBlocking?1:startupOpacity}]}>
-      <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={state?.settings.uiTheme}/>
+      <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={displayedThemeId}/>
     </Animated.View>}
   </View></GameLanguageProvider>;
 }

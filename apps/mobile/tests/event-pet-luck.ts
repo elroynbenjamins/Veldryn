@@ -17,11 +17,11 @@ const boosted:PetDropBoostWindow={startsAtMs:window.startsAtMs,endsAtMs:window.e
 const expired:PetDropBoostWindow={...boosted,settlementStartsAtMs:now+7200000,settlementEndsAtMs:now+10800000};
 const partlyBoosted:PetDropBoostWindow={...boosted,settlementEndsAtMs:now+4*3600000};
 const unowned={...state,quests:state.quests.map(row=>row.questId==='QST_003'?{...row,status:'claimed' as const}:row),account:{...state.account,unlockedCosmeticPetIds:[]}};
-ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',1,'wolf',()=>0.0015,boosted).includes('PET_004'),'Base 0.10% combat pet chance must double to 0.20%');
-ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',1,'wolf',()=>0.0015,expired).length===0,'Pet luck must not work after expiry');
-ok(resolveCorePetCombatDrops(unowned,'OATHGLASS_REVENANT',1,'oath',()=>0.00075,boosted).includes('PET_018'),'0.05% signature chance doubles to 0.10%');
+ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',1,'wolf',()=>0.0014,boosted).includes('PET_004'),'Base 0.075% combat pet chance must double to 0.15%');
+ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',1,'wolf',()=>0.0014,expired).length===0,'Pet luck must not work after expiry');
+ok(resolveCorePetCombatDrops(unowned,'OATHGLASS_REVENANT',1,'oath',()=>0.0004,boosted).includes('PET_018'),'0.025% signature chance doubles to 0.05%');
 ok(resolveCorePetActivityDrops(unowned,'gathering','COPPER_VEIN',1,'ore',()=>0.002,boosted).includes('PET_001'),'Gathering pet chance doubles from 0.12% to 0.24%');
 ok(resolveCorePetActivityDrops(unowned,'exploration','SCOUT_GREENFIELDS',1,'scout',()=>0.003,boosted).includes('PET_010'),'Exploration pet chance doubles from 0.20% to 0.40%');
-ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',4,'partial',(_,i)=>i===0?0.0015:1,partlyBoosted).includes('PET_004'),'Attempts in the first half of an offline settlement retain pet luck');
-ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',4,'partial',(_,i)=>i===3?0.0015:1,partlyBoosted).length===0,'Attempts after pet candy expiry must remain at baseline chance');
+ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',4,'partial',(_,i)=>i===0?0.0014:1,partlyBoosted).includes('PET_004'),'Attempts in the first half of an offline settlement retain pet luck');
+ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',4,'partial',(_,i)=>i===3?0.0014:1,partlyBoosted).length===0,'Attempts after pet candy expiry must remain at baseline chance');
 console.log('PASS: timed Pet Luck doubles configured regional pet drop rates, including signature, gathering, exploration and offline time boundaries.');

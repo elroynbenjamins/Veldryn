@@ -724,6 +724,20 @@ function increasedCraftingGoldCost(baseGold) {
   return Math.ceil(baseGold * 6 / 5);
 }
 
+// ../apps/mobile/src/content/t5-equipment-affix-spec.ts
+var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
+  gloves: "haste",
+  amulet: "critRate",
+  boots: "evasion"
+});
+var T5_AFFIX_MATERIAL_MULTIPLIER = 1.15;
+var T5_AFFIX_TIME_MULTIPLIER = 1.1;
+var T5_AFFIX_XP_MULTIPLIER = 1.2;
+var T5_AFFIX_EXTRA_FIXATIVE = 1;
+function isT5EquipmentAffixSlot(slot) {
+  return Boolean(T5_EQUIPMENT_AFFIX_BY_SLOT[slot]);
+}
+
 // ../apps/mobile/src/content/equipment-recipes-v33.ts
 init_progression();
 
@@ -42285,8 +42299,8 @@ var timerRange = {
   T9: { base: 2250, min: 1800, max: 2700 }
 };
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
-var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
-var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
+var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
@@ -42299,7 +42313,7 @@ var infusionByTier = {
   T8: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 },
   T9: { itemId: "CINDERHEART_ELIXIR", quantity: 3 }
 };
-var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 2, T5: 1, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
+var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 1.5, T5: 1.2, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
 var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 40, T5: 55, T6: 70, T7: 82, T8: 92, T9: 100 };
 var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
 var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
@@ -42376,8 +42390,9 @@ function ingredients(tier, path, multiplier, skillId) {
       return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
       return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+    // Keep the T5 weapon's real processed-material farm time inside the 5.4h upper ceiling.
     case "T5":
-      return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
+      return [{ itemId: "SUNSTONE_INGOT", quantity: q(10, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(15, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
     case "T7":
@@ -42395,11 +42410,15 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const setId = String(piece["Set ID"]), set = setById.get(setId);
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
   const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
+  const t5Affix = tier === "T5" && isT5EquipmentAffixSlot(slot);
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
-  const craftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
+  const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
+  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
+  const baseSeconds = clamp(Math.round(range.base * multiplier), range.min, range.max);
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
@@ -42407,8 +42426,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     level,
     xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
-    seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
+    seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
+    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42492,11 +42511,11 @@ var GUILD_COMPONENT_ITEMS = [
 ];
 var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
-  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 4, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 560, gold: 475, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 10 }, { itemId: "IRONWOOD_LOG", quantity: 15 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
   { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 1120, gold: 1450, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
   { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 2900, gold: 5e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 10 }, { itemId: "WHITEPINE_LOG", quantity: 10 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
-  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 4, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 550, gold: 450, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 15 }, { itemId: "THORN_SAP", quantity: 5 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 1130, gold: 1500, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 2840, gold: 4750, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 10 }, { itemId: "WINTERMINT", quantity: 10 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
@@ -45016,6 +45035,7 @@ function companionOwned(state) {
     return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp) }]] : [];
   }));
 }
+var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));
 function assertCompanionIdle(state, id) {
   if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }
@@ -45783,6 +45803,11 @@ init_progression();
 
 // ../apps/mobile/src/core/game.ts
 init_meal_buffs();
+
+// ../apps/mobile/src/core/food-queue.ts
+var foodIds = new Set(ITEMS.filter((item) => item.type === "food" && (item.heal ?? 0) > 0).map((item) => item.id));
+
+// ../apps/mobile/src/core/game.ts
 init_progression();
 
 // ../apps/mobile/src/core/identity-names.ts
@@ -46148,6 +46173,38 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
+// ../apps/mobile/src/core/t5-equipment-affixes.ts
+var RARITY_SCORE = Object.freeze({
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythic: 5
+});
+function t5EquipmentAffixPercent(rarity, quality) {
+  const q2 = Math.max(0, Math.min(100, Math.floor(quality)));
+  const qualityScore = q2 >= 90 ? 4 : q2 >= 75 ? 3 : q2 >= 50 ? 2 : q2 >= 25 ? 1 : 0;
+  const score = RARITY_SCORE[rarity] + qualityScore;
+  return score >= 8 ? 0.05 : score >= 6 ? 0.04 : score >= 3 ? 0.03 : 0.02;
+}
+function t5EquipmentAffixForItem(itemId, instance) {
+  const item = itemDef(itemId), stat = item.slot ? T5_EQUIPMENT_AFFIX_BY_SLOT[item.slot] : void 0;
+  if (item.type !== "gear" || !item.equipmentSetId?.startsWith("T5_") || !stat) return void 0;
+  const rarity = instance?.rarity ?? itemRarity(item), quality = craftedGearDisplayQuality(instance ?? {});
+  return { stat, percent: t5EquipmentAffixPercent(rarity, quality), rarity, quality };
+}
+function equippedT5EquipmentAffixStats(state) {
+  const stats6 = { haste: 0, critRate: 0, evasion: 0 };
+  if (!state.character) return stats6;
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const affix = t5EquipmentAffixForItem(itemId, equippedCraftedInstance(state, itemId));
+    if (affix) stats6[affix.stat] += affix.percent;
+  }
+  return stats6;
+}
+
 // ../apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
@@ -46232,6 +46289,7 @@ function activeEquipmentSetRuntime(state) {
 function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
+  const t5Affixes = equippedT5EquipmentAffixStats(state);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
@@ -46239,14 +46297,14 @@ function activeEquipmentBuildStats(state) {
     armor: multiplied(sets.armor, p.armor),
     ward: multiplied(sets.ward, p.ward),
     tenacity: multiplied(sets.tenacity, p.tenacity),
-    haste: multiplied(sets.haste, p.haste),
+    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste,
     power: multiplied(sets.power, p.power),
     accuracy: sets.accuracy + (pp.accuracy ?? 0),
     penetration: sets.penetration + (pp.penetration ?? 0),
     potency: multiplied(sets.potency, p.potency),
-    critRate: sets.critRate + (pp.critRate ?? 0),
+    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate,
     critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0)
+    evasion: sets.evasion + (pp.evasion ?? 0) + t5Affixes.evasion
   };
 }
 
@@ -46421,6 +46479,13 @@ function effectiveStats(state) {
 
 // ../apps/mobile/src/core/combat-power.ts
 init_progression();
+var MAX_COMPANION_COMBAT_POWER_SHARE = 0.18;
+function redistributeCompanionCombatPower(personal, companion) {
+  const total = personal + companion;
+  const reweightedCompanion = Math.min(companion, Math.floor(total * MAX_COMPANION_COMBAT_POWER_SHARE));
+  const reallocated = companion - reweightedCompanion;
+  return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
+}
 var statScore = (stats6, level) => Math.max(0, Math.round(
   stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135
 ));
@@ -46447,14 +46512,16 @@ function combatPowerRating(state) {
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
-  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player2 * contribution.contributionPct) : 0;
+  const rawCompanion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player2 * contribution.contributionPct) : 0;
+  const rating = redistributeCompanionCombatPower(player2, rawCompanion);
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
-    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" }
   ];
-  return { total: player2 + companion, player: player2, companion, rows: rows2 };
+  if (rating.reallocated > 0) rows2.push({ id: "allocation", label: "Personal power weighting", value: rating.reallocated, detail: "Combat Power shifted from the companion rating; actual stats and effects are unchanged" });
+  rows2.push({ id: "companion", label: "Combat companion", value: rating.companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" });
+  return { total: rating.total, player: rating.player, companion: rating.companion, rows: rows2 };
 }
 
 // src/server/expeditions/content/event-expeditions.ts
@@ -46702,11 +46769,6 @@ function isPublishedCoopTier(tier) {
 function coopRequiredLevel(baseMinimumLevel, tier) {
   if (!Number.isInteger(baseMinimumLevel) || baseMinimumLevel < 1) throw new Error("invalid_expedition_minimum_level");
   return rebaseLegacyCombatLevel(baseMinimumLevel + COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
-}
-function highestEligibleCoopTier(baseMinimumLevel, characterLevel) {
-  if (!Number.isInteger(characterLevel) || characterLevel < 1) throw new Error("invalid_character_level");
-  for (const tier of [...PUBLISHED_COOP_TIERS].reverse()) if (characterLevel >= coopRequiredLevel(baseMinimumLevel, tier)) return tier;
-  return void 0;
 }
 var COOP_CLASS_ABILITY_MULTIPLIERS = Object.freeze({
   STONECALLER: Object.freeze({ SC_SHIELD: 2, SC_HEAL: 2 })
@@ -48826,7 +48888,7 @@ function coopEntryHandler(services) {
 }
 
 // src/server/expeditions/dungeon-shop-catalog-v1.ts
-var DUNGEON_SHOP_LIVE_V1 = false;
+var DUNGEON_SHOP_LIVE_V1 = true;
 var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v2-2026-11-11";
 var DUNGEON_SHOP_CATALOG_V1 = Object.freeze([
   { id: "dshop_tempering_satchel", name: "Delver Tempering Satchel", category: "supply", marks: 120, perUtcWeek: 2, grant: { kind: "material", itemId: "TEMPERING_DUST", quantity: 10, accountBound: true } },
@@ -48858,14 +48920,16 @@ function dungeonShopUtcWeekKey(nowMs) {
   date.setUTCDate(date.getUTCDate() - (day === 0 ? 6 : day - 1));
   return date.toISOString().slice(0, 10);
 }
-function dungeonShopQuoteV1(itemId, account) {
+function dungeonShopQuoteV1(itemId, account, serverPrice) {
   const offer = dungeonShopOfferV1(itemId);
   if (!offer) return { status: "unknown_offer", marks: account.marks, price: 0, remaining: null };
+  const price = serverPrice ?? offer.marks;
+  if (!Number.isSafeInteger(price) || price < 1 || price >= 1e6) throw new Error("invalid_server_shop_price");
   const purchased = account.purchasesThisUtcWeek[itemId] ?? 0;
   const remaining = offer.perUtcWeek === void 0 ? null : Math.max(0, offer.perUtcWeek - purchased);
   const ownedId = offer.grant.kind === "profile_collectible" ? offer.grant.rewardId : null;
-  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < offer.marks ? "insufficient_marks" : "eligible";
-  return { status, marks: account.marks, price: offer.marks, remaining };
+  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < price ? "insufficient_marks" : "eligible";
+  return { status, marks: account.marks, price, remaining };
 }
 function dungeonShopPurchasesEnabledV1() {
   return DUNGEON_SHOP_LIVE_V1;
@@ -48898,7 +48962,10 @@ function sanitizedSnapshot(raw2) {
   if (s2.clearedRegions.some((v) => !regions.includes(v)) || s2.ownedRewardIds.some((v) => typeof v !== "string")) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const purchases = s2.purchasesThisUtcWeek;
   if (Object.entries(purchases).some(([key, value]) => !/^dshop_[a-z0-9_]{1,80}$/.test(key) || !Number.isSafeInteger(value) || Number(value) < 0)) throw new GameplayError("invalid_dungeon_shop_snapshot");
-  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, purchasesThisUtcWeek: purchases };
+  if (typeof s2.shopEnabled !== "boolean" || !s2.releasedPrices || typeof s2.releasedPrices !== "object" || Array.isArray(s2.releasedPrices)) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  const released = s2.releasedPrices;
+  if (Object.entries(released).some(([key, value]) => !DUNGEON_SHOP_CATALOG_V1.some((offer) => offer.id === key) || !Number.isSafeInteger(value) || Number(value) < 1 || Number(value) >= 1e6)) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, purchasesThisUtcWeek: purchases, releasedPrices: released, shopEnabled: s2.shopEnabled };
 }
 function nextUtcMonday(nowMs) {
   const week = dungeonShopUtcWeekKey(nowMs);
@@ -48932,22 +48999,25 @@ function makeDungeonShopController(services) {
         currency: "expedition_mark",
         catalogueVersion: DUNGEON_SHOP_CATALOG_VERSION,
         balance: account.marks,
-        shopEnabled: dungeonShopPurchasesEnabledV1(),
+        shopEnabled: account.shopEnabled,
         nextUtcWeekReset: nextUtcMonday(nowMs),
         offers: DUNGEON_SHOP_CATALOG_V1.map((offer) => {
-          const quote = dungeonShopQuoteV1(offer.id, account);
+          const published = account.shopEnabled && account.releasedPrices[offer.id] !== void 0;
+          const price = account.releasedPrices[offer.id] ?? offer.marks;
+          const quote = dungeonShopQuoteV1(offer.id, account, price);
+          const owned = offer.grant.kind === "profile_collectible" && account.ownedRewardIds.includes(offer.grant.rewardId);
           return {
             id: offer.id,
             name: offer.name,
             category: offer.category,
-            marks: offer.marks,
+            marks: price,
             summary: category(offer),
-            status: quote.status,
+            status: published ? quote.status : "unreleased",
             rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
             region: offer.firstClearRegion,
             remainingThisUtcWeek: quote.remaining,
-            owned: quote.status === "already_owned",
-            lockReason: quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
+            owned,
+            lockReason: !published ? "Not yet released \u2014 no Marks can be spent on this offer." : quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
           };
         })
       };
@@ -50821,11 +50891,11 @@ var OnlineCoopLfg = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
-    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
+    const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel, record.combatPower);
     if (entryError) throw new GameplayError(entryError);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
-    const maxTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
-    if (!maxTier) throw new GameplayError("dungeon_level_requirement");
+    const maxTier = highestEligibleRegularDungeonTier(definition, record.characterLevel, record.combatPower);
+    if (!maxTier) throw new GameplayError("dungeon_power_requirement");
     const hash = createHash7("sha256").update(JSON.stringify({ dungeonId: definition.id, note })).digest("hex");
     return this.services.rpc("publish_online_coop_lfg_server_v1", { p_account_id: accountId, p_request_id: request.requestId, p_request_hash: hash, p_character_id: game.state.character.id, p_dungeon_id: definition.id, p_role: readiness.role, p_max_tier: maxTier, p_note: note });
   }

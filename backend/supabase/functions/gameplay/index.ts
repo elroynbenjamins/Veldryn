@@ -430,12 +430,14 @@ function huntEnemyHpAt(monsterHp, events, progressFraction) {
 
 // ../apps/mobile/src/core/ordinary-hunt.ts
 var SEARCH_RANGES = {
-  Greenfields: [5, 8],
-  Silverbrook: [5, 8],
-  "Ironwood Forest": [6, 9],
-  "Old Mines": [7, 10],
-  "King's Road": [7, 10],
-  Sunscar: [8, 12]
+  Greenfields: [3, 6],
+  Silverbrook: [3, 6],
+  "Ironwood Forest": [4, 7],
+  "Old Mines": [5, 8],
+  "King's Road": [5, 8],
+  Sunscar: [6, 10],
+  Frostmarch: [7, 11],
+  Ashlands: [8, 12]
 };
 function usesDamageDrivenHunts(zone) {
   return Object.prototype.hasOwnProperty.call(SEARCH_RANGES, zone);
@@ -1223,6 +1225,20 @@ init_progression();
 function increasedCraftingGoldCost(baseGold) {
   if (!Number.isSafeInteger(baseGold) || baseGold < 0) throw new Error("invalid_crafting_gold");
   return Math.ceil(baseGold * 6 / 5);
+}
+
+// ../apps/mobile/src/content/t5-equipment-affix-spec.ts
+var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
+  gloves: "haste",
+  amulet: "critRate",
+  boots: "evasion"
+});
+var T5_AFFIX_MATERIAL_MULTIPLIER = 1.15;
+var T5_AFFIX_TIME_MULTIPLIER = 1.1;
+var T5_AFFIX_XP_MULTIPLIER = 1.2;
+var T5_AFFIX_EXTRA_FIXATIVE = 1;
+function isT5EquipmentAffixSlot(slot) {
+  return Boolean(T5_EQUIPMENT_AFFIX_BY_SLOT[slot]);
 }
 
 // ../apps/mobile/src/content/equipment-recipes-v33.ts
@@ -42786,8 +42802,8 @@ var timerRange = {
   T9: { base: 2250, min: 1800, max: 2700 }
 };
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
-var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
-var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
+var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
@@ -42800,7 +42816,7 @@ var infusionByTier = {
   T8: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 },
   T9: { itemId: "CINDERHEART_ELIXIR", quantity: 3 }
 };
-var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 2, T5: 1, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
+var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 1.5, T5: 1.2, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
 var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 40, T5: 55, T6: 70, T7: 82, T8: 92, T9: 100 };
 var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
 var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
@@ -42877,8 +42893,9 @@ function ingredients(tier, path, multiplier, skillId) {
       return mergeInputs([{ itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
       return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "DUNEWOOD", quantity: reducedSunscarDunewood(8, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
+    // Keep the T5 weapon's real processed-material farm time inside the 5.4h upper ceiling.
     case "T5":
-      return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
+      return [{ itemId: "SUNSTONE_INGOT", quantity: q(10, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(15, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
     case "T7":
@@ -42896,11 +42913,15 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const setId = String(piece["Set ID"]), set = setById.get(setId);
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
   const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
+  const t5Affix = tier === "T5" && isT5EquipmentAffixSlot(slot);
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
-  const craftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
+  const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
+  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
+  const baseSeconds = clamp3(Math.round(range.base * multiplier), range.min, range.max);
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
@@ -42908,8 +42929,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     level,
     xp: craftXp,
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
-    seconds: clamp3(Math.round(range.base * multiplier), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
+    seconds: clamp3(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
+    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42996,11 +43017,11 @@ var GUILD_COMPONENT_ITEMS = [
 ];
 var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
-  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 4, xp: 220, gold: 150, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 15 }, { itemId: "GREENWOOD_LOG", quantity: 10 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 560, gold: 475, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 10 }, { itemId: "IRONWOOD_LOG", quantity: 15 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
   { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 1120, gold: 1450, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
   { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 2900, gold: 5e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 10 }, { itemId: "WHITEPINE_LOG", quantity: 10 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
-  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 4, xp: 200, gold: 125, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 25 }, { itemId: "BOAR_HIDE", quantity: 10 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 550, gold: 450, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 15 }, { itemId: "THORN_SAP", quantity: 5 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 1130, gold: 1500, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 2840, gold: 4750, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 10 }, { itemId: "WINTERMINT", quantity: 10 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
@@ -43732,9 +43753,10 @@ function isCombatCompanionMastered(def, progress) {
 }
 function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
-  if (target2 === "KNIFE_DANCER_SKILL_TOTAL" && state.character?.classId === "KNIFE_DANCER") return normalizeClassSkills("KNIFE_DANCER", state.character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount;
-  if (requirement.type === "monster_mastery" && state.character?.monsterMasteryPoints?.[target2] !== void 0) return Math.floor((normalizeMonsterMastery(state.character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount;
-  if (target2 === "ASTERFALL_MASTERY_20_ALL" && state.character?.monsterMasteryPoints) return Object.values(normalizeMonsterMastery(state.character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount;
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
+  if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
+  if (requirement.type === "monster_mastery") return characters.some((character) => Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
     const companionId = target2.slice("COMPANION_BOND:".length), progress = state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel ?? 0) >= amount;
@@ -43749,9 +43771,9 @@ function companionUnlockRequirementMet(state, requirement) {
     if ((progress.SILVERBROOK_NODES ?? 0) >= 1) return true;
     return SILVERBROOK_STARTER_FISHING_NODES.filter((id) => (progress[`node:${id}`] ?? 0) > 0).length >= 2;
   }
-  if (requirement.type === "quest") return (state.quests ?? []).some((entry2) => entry2.questId === target2 && entry2.status === "claimed");
+  if (requirement.type === "quest") return [state.quests ?? [], ...(state.otherCharacters ?? []).map((row) => row.quests ?? [])].some((quests) => quests.some((entry2) => entry2.questId === target2 && entry2.status === "claimed"));
   if (requirement.type === "boss_kills") return Math.max((state.defeatedBossIds ?? []).includes(target2) ? 1 : 0, state.account.companionBossClears?.[target2] ?? 0) >= amount;
-  if (requirement.type === "skill_level") return (state.skills ?? []).some((skill2) => skill2.skillId === target2 && skill2.level >= amount);
+  if (requirement.type === "skill_level") return [state.skills ?? [], ...(state.otherCharacters ?? []).map((row) => row.skills ?? [])].some((skills) => skills.some((skill2) => skill2.skillId === target2 && skill2.level >= amount));
   if (requirement.type === "event_challenge" && target2.startsWith("CHALLENGE_")) return state.account.companionSpecialClears?.includes(target2) === true;
   return (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
 }
@@ -46778,8 +46800,19 @@ function reconcileCompanionDiscoveries(state) {
   if (nextIds.length === (current.discoveredCompanionIds ?? []).length && nextIds.every((id) => (current.discoveredCompanionIds ?? []).includes(id))) return state;
   return { ...state, account: { ...state.account, companionPhase2Profile: { ...current, discoveredCompanionIds: nextIds } } };
 }
+var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));
+function recoverVerifiedEquipmentCrafts(state) {
+  const current = state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS ?? 0;
+  if (current >= 500) return state;
+  let recorded = 0;
+  for (const [recipeId, progress] of Object.entries(state.account.professionMasteryByAction ?? {})) {
+    if (companionEquipmentRecipeIds.has(recipeId) && Number.isFinite(progress?.points) && progress.points > 0) recorded += Math.floor(progress.points);
+  }
+  if (recorded <= current) return state;
+  return { ...state, account: { ...state.account, companionUnlockProgress: { ...state.account.companionUnlockProgress, EQUIPMENT_CRAFTS: recorded } } };
+}
 function refreshCompanions(state, now) {
-  let next = reconcileCombatCompanionUnlocks(state, now);
+  let next = reconcileCombatCompanionUnlocks(recoverVerifiedEquipmentCrafts(state), now);
   next = { ...next, account: { ...next.account, companionSchemaVersion: 1, companionAssignments: rolloverCompanionAssignmentStatuses(next.account.companionAssignments ?? [], now), companionTrialProgress: projectCompanionTrial(next.account.companionTrialProgress, now).progress, companionProvingGround: projectCompanionProvingGrounds(next.account.companionProvingGround, now).state } };
   return reconcileCompanionDiscoveries(next);
 }
@@ -49012,6 +49045,7 @@ function combineActivityRewards(results) {
     qualifyingActivitySeconds: sum("qualifyingActivitySeconds"),
     items: sumRows(rewards.flatMap((row) => row.items), (row) => row.itemId, "quantity"),
     foodConsumed: sum("foodConsumed"),
+    foodConsumedById: sumRows(rewards.flatMap((row) => row.foodConsumedById ?? []), (row) => row.itemId, "quantity"),
     explorationXp: sum("explorationXp"),
     craftingActions: sum("craftingActions"),
     trainingActions: sum("trainingActions"),
@@ -49031,6 +49065,50 @@ function combineActivityRewards(results) {
 
 // ../apps/mobile/src/core/game.ts
 init_meal_buffs();
+
+// ../apps/mobile/src/core/food-queue.ts
+var MAX_FOOD_BACKUPS = 4;
+var foodIds = new Set(ITEMS.filter((item) => item.type === "food" && (item.heal ?? 0) > 0).map((item) => item.id));
+function normalizeFoodQueueIds(value, selectedId) {
+  if (value === void 0 || value === null) return [];
+  if (!Array.isArray(value) || value.length > MAX_FOOD_BACKUPS) throw new Error("Invalid food queue.");
+  const seen = new Set(selectedId ? [selectedId] : []);
+  const ids2 = [];
+  for (const id of value) {
+    if (typeof id !== "string" || !foodIds.has(id) || seen.has(id)) throw new Error("Invalid food queue.");
+    seen.add(id);
+    ids2.push(id);
+  }
+  if (ids2.length && !selectedId) throw new Error("Select an auto-eat food before adding backups.");
+  return ids2;
+}
+function autoEatFoodOrder(character) {
+  const selected2 = character?.equippedFoodId;
+  if (!selected2 || !foodIds.has(selected2)) return [];
+  return [selected2, ...normalizeFoodQueueIds(character?.foodQueueIds, selected2)];
+}
+function queuedFoodQuantity(character, stacks, consumed = []) {
+  const ids2 = new Set(autoEatFoodOrder(character));
+  const spent = /* @__PURE__ */ new Map();
+  for (const row of consumed) spent.set(row.itemId, (spent.get(row.itemId) ?? 0) + row.quantity);
+  return Math.max(0, stacks.reduce((sum, row) => sum + (ids2.has(row.itemId) ? row.quantity : 0), 0) - [...spent].reduce((sum, [id, quantity2]) => sum + (ids2.has(id) ? quantity2 : 0), 0));
+}
+function advanceAutoEatFoodSelection(character, stacks) {
+  const order = autoEatFoodOrder(character);
+  const available = new Set(stacks.filter((row) => row.quantity > 0).map((row) => row.itemId));
+  const next = order.findIndex((id) => available.has(id));
+  if (next < 0) return { equippedFoodId: order[order.length - 1] ?? character.equippedFoodId, foodQueueIds: [] };
+  return { equippedFoodId: order[next], foodQueueIds: order.slice(next + 1).filter((id) => available.has(id)) };
+}
+function setAutoEatFoodQueue(state, value) {
+  if (!state.character) throw new Error("Create a character first.");
+  const ids2 = normalizeFoodQueueIds(value, state.character.equippedFoodId);
+  for (const id of ids2) if (!state.inventory.stacks.some((row) => row.itemId === id && row.quantity > 0))
+    throw new Error("Queued food must be carried in Inventory.");
+  return { ...state, character: { ...state.character, foodQueueIds: ids2 } };
+}
+
+// ../apps/mobile/src/core/game.ts
 init_progression();
 
 // ../apps/mobile/src/core/identity-names.ts
@@ -49060,15 +49138,15 @@ function characterNameError(value) {
 
 // ../apps/mobile/src/core/class-combat.ts
 var CLASS_COMBAT_STYLES = {
-  IRONWARDEN: { name: "Runic Guard", description: "Reduces incoming damage by 12%.", speedMultiplier: 0.98, damageTakenMultiplier: 0.88, recoveryPct: 0.012 },
-  BASTION: { name: "Hold the Line", description: "Reduces incoming damage by 16%, but attacks more slowly.", speedMultiplier: 0.94, damageTakenMultiplier: 0.84, recoveryPct: 0.014 },
-  DREADGUARD: { name: "Dread Momentum", description: "Hunts 4% faster while retaining heavy protection.", speedMultiplier: 1.04, damageTakenMultiplier: 0.94, recoveryPct: 0.01 },
-  DAWNKEEPER: { name: "Sunlit Guard", description: "Trades stronger protection for a slightly faster, steadier hunt.", speedMultiplier: 1.03, damageTakenMultiplier: 0.94, recoveryPct: 1e-3 },
-  WAYFINDER: { name: "Marked Quarry", description: "Hunts 8% faster through careful targeting.", speedMultiplier: 1.08, damageTakenMultiplier: 1, recoveryPct: 0.01 },
-  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, onKillAttackHealPct: 0.01 },
-  HEXWEAVER: { name: "Withering Hex", description: "Hunts 7% faster and weakens incoming attacks.", speedMultiplier: 1.07, damageTakenMultiplier: 0.95, recoveryPct: 0.01 },
-  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 12% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.88, recoveryPct: 0.01 },
-  STONECALLER: { name: "Earthen Ward", description: "Strong damage reduction and offense at the cost of a slower hunt.", speedMultiplier: 0.95, damageTakenMultiplier: 0.91, recoveryPct: 1e-3 }
+  IRONWARDEN: { name: "Runic Guard", description: "Reduces incoming damage by 12%.", speedMultiplier: 0.98, damageTakenMultiplier: 0.88, recoveryPct: 0.012, soloHuntDamageMultiplier: 1.85, soloHuntTempoMultiplier: 1.08 },
+  BASTION: { name: "Hold the Line", description: "Reduces incoming damage by 16%, but attacks more slowly.", speedMultiplier: 0.94, damageTakenMultiplier: 0.84, recoveryPct: 0.014, soloHuntDamageMultiplier: 1.9, soloHuntTempoMultiplier: 1.08 },
+  DREADGUARD: { name: "Dread Momentum", description: "Hunts 4% faster while retaining heavy protection.", speedMultiplier: 1.04, damageTakenMultiplier: 0.94, recoveryPct: 0.01, soloHuntDamageMultiplier: 1.6, soloHuntTempoMultiplier: 1.05 },
+  DAWNKEEPER: { name: "Sunlit Guard", description: "Trades stronger protection for a slightly faster, steadier hunt.", speedMultiplier: 1.03, damageTakenMultiplier: 0.94, recoveryPct: 1e-3, soloHuntDamageMultiplier: 1.22, soloHuntTempoMultiplier: 1.04 },
+  WAYFINDER: { name: "Marked Quarry", description: "Hunts 8% faster through careful targeting.", speedMultiplier: 1.08, damageTakenMultiplier: 1, recoveryPct: 0.01, soloHuntDamageMultiplier: 1, soloHuntTempoMultiplier: 1 },
+  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, soloHuntDamageMultiplier: 1, soloHuntTempoMultiplier: 1, onKillAttackHealPct: 0.01 },
+  HEXWEAVER: { name: "Withering Hex", description: "Hunts 7% faster and weakens incoming attacks.", speedMultiplier: 1.07, damageTakenMultiplier: 0.95, recoveryPct: 0.01, soloHuntDamageMultiplier: 1, soloHuntTempoMultiplier: 1 },
+  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 12% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.88, recoveryPct: 0.01, soloHuntDamageMultiplier: 1, soloHuntTempoMultiplier: 1 },
+  STONECALLER: { name: "Earthen Ward", description: "Strong damage reduction and offense at the cost of a slower hunt.", speedMultiplier: 0.95, damageTakenMultiplier: 0.91, recoveryPct: 1e-3, soloHuntDamageMultiplier: 1.04, soloHuntTempoMultiplier: 1.06 }
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
 
@@ -50532,6 +50610,38 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
+// ../apps/mobile/src/core/t5-equipment-affixes.ts
+var RARITY_SCORE = Object.freeze({
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythic: 5
+});
+function t5EquipmentAffixPercent(rarity, quality) {
+  const q2 = Math.max(0, Math.min(100, Math.floor(quality)));
+  const qualityScore = q2 >= 90 ? 4 : q2 >= 75 ? 3 : q2 >= 50 ? 2 : q2 >= 25 ? 1 : 0;
+  const score2 = RARITY_SCORE[rarity] + qualityScore;
+  return score2 >= 8 ? 0.05 : score2 >= 6 ? 0.04 : score2 >= 3 ? 0.03 : 0.02;
+}
+function t5EquipmentAffixForItem(itemId, instance) {
+  const item = itemDef(itemId), stat = item.slot ? T5_EQUIPMENT_AFFIX_BY_SLOT[item.slot] : void 0;
+  if (item.type !== "gear" || !item.equipmentSetId?.startsWith("T5_") || !stat) return void 0;
+  const rarity = instance?.rarity ?? itemRarity(item), quality = craftedGearDisplayQuality(instance ?? {});
+  return { stat, percent: t5EquipmentAffixPercent(rarity, quality), rarity, quality };
+}
+function equippedT5EquipmentAffixStats(state) {
+  const stats4 = { haste: 0, critRate: 0, evasion: 0 };
+  if (!state.character) return stats4;
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const affix = t5EquipmentAffixForItem(itemId, equippedCraftedInstance(state, itemId));
+    if (affix) stats4[affix.stat] += affix.percent;
+  }
+  return stats4;
+}
+
 // ../apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
@@ -50616,6 +50726,7 @@ function activeEquipmentSetRuntime(state) {
 function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
+  const t5Affixes = equippedT5EquipmentAffixStats(state);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
@@ -50623,14 +50734,14 @@ function activeEquipmentBuildStats(state) {
     armor: multiplied(sets.armor, p.armor),
     ward: multiplied(sets.ward, p.ward),
     tenacity: multiplied(sets.tenacity, p.tenacity),
-    haste: multiplied(sets.haste, p.haste),
+    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste,
     power: multiplied(sets.power, p.power),
     accuracy: sets.accuracy + (pp.accuracy ?? 0),
     penetration: sets.penetration + (pp.penetration ?? 0),
     potency: multiplied(sets.potency, p.potency),
-    critRate: sets.critRate + (pp.critRate ?? 0),
+    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate,
     critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0)
+    evasion: sets.evasion + (pp.evasion ?? 0) + t5Affixes.evasion
   };
 }
 function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy = 0.84) {
@@ -52523,9 +52634,9 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === c.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
   const secondary = regionalSecondaryExchange(stats4, m, baseCritChance);
-  const boostedDefense = Math.max(1, Math.round(stats4.defense * modifiers.combatPowerMultiplier));
+  const boostedDefense = Math.max(1, Math.round(stats4.defense));
   const bossPowerMultiplier = m.boss ? 1 + effectGems.boss_power : 1;
-  const boostedPower = Math.max(1, Math.round(stats4.power * modifiers.combatPowerMultiplier * bossPowerMultiplier));
+  const boostedPower = Math.max(1, Math.round(stats4.power * bossPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
@@ -52541,16 +52652,17 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
     zone: m.zone,
     monsterHp: m.hp,
     playerHit: huntBasePlayerHit(
-      Math.round(stats4.attack * modifiers.combatPowerMultiplier),
+      Math.round(stats4.attack),
       m.defense,
       setCombat.penetrationMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * progressionSpeedPenalty * outgoingPreparation
-    ),
+    ) * style.soloHuntDamageMultiplier,
     hitChance: secondary.playerHitChance,
     critChance: stats4.critChance,
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
     enemyHaste: secondary.enemy.haste,
-    tempo: style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed),
+    // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
+    tempo: style.speedMultiplier * style.soloHuntTempoMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed),
     environmentTimeMultiplier: environment?.actionTimeMultiplier ?? 1,
     seed: regionalHuntSeed(state, monsterId, 0)
   } : void 0;
@@ -52603,8 +52715,9 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     candy: eventCandyWindow(state, "combat"),
     trackSegments: true
   });
-  const food = c.equippedFoodId ? itemDef(c.equippedFoodId) : void 0, threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
-  let foodLeft = stackQty2(state.inventory.stacks, c.equippedFoodId), foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
+  const foodOrder = autoEatFoodOrder(c).map((id) => ({ id, heal: itemDef(id).heal ?? 0 })), threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
+  const foodLeft = new Map(foodOrder.map((row) => [row.id, stackQty2(state.inventory.stacks, row.id)])), foodSpent = /* @__PURE__ */ new Map();
+  let foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
   const completed = [];
   let activeEncounterIndex = 0, enemyHp = activity?.combatEnemyHp;
   let lastHit;
@@ -52623,7 +52736,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     enemyHp = huntEnemyHpAt(prepared.m.hp, hitsFor(firstPrepared ? prepared : plain, 0, champion, void 0, firstPrepared), activity?.progressFraction ?? 0);
   }
   enemyHp = Math.max(0, Math.min(prepared.m.hp, enemyHp));
-  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit };
+  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, foodConsumedById: [], endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit };
   for (const segment of timeline.segments) {
     const runtime = { ...segment.prepared ? prepared : plain, killCycleSeconds: segment.cycleSeconds };
     if (segment.encounterIndex !== activeEncounterIndex) {
@@ -52639,16 +52752,19 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
         enemyHp = Math.max(0, enemyHp - hit.damage);
       } else {
         hp = hp - hit.damage <= 0 ? 0 : Math.min(runtime.stats.hp, hp - hit.damage + hit.healing);
-        while (food?.heal && foodLeft > 0 && hp > 0 && hp / runtime.stats.hp <= threshold) {
-          hp = Math.min(runtime.stats.hp, hp + Math.max(1, Math.ceil(food.heal * runtime.modifiers.healingEffectivenessMultiplier)));
-          foodLeft--;
+        while (hp > 0 && hp / runtime.stats.hp <= threshold) {
+          const nextFood = foodOrder.find((row) => row.heal > 0 && (foodLeft.get(row.id) ?? 0) > 0);
+          if (!nextFood) break;
+          hp = Math.min(runtime.stats.hp, hp + Math.max(1, Math.ceil(nextFood.heal * runtime.modifiers.healingEffectivenessMultiplier)));
+          foodLeft.set(nextFood.id, (foodLeft.get(nextFood.id) ?? 0) - 1);
+          foodSpent.set(nextFood.id, (foodSpent.get(nextFood.id) ?? 0) + 1);
           foodConsumed++;
         }
       }
       if (hit.actor !== "fatigue") lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical };
       if (hp <= 1) {
         hp = 1;
-        stoppedReason = food && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";
+        stoppedReason = foodOrder.length && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";
         qualifyingActivitySeconds = Math.max(0, (hitAtMs - startsAtMs) / 1e3);
         break;
       }
@@ -52662,7 +52778,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       activeEncounterIndex = segment.encounterIndex + 1;
     }
   }
-  return { kills: completed.length, completed, championKills, foodConsumed, endHp: hp, enemyHp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters, lastHit };
+  return { kills: completed.length, completed, championKills, foodConsumed, foodConsumedById: [...foodSpent].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })), endHp: hp, enemyHp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters, lastHit };
 }
 function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -52779,7 +52895,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, foodConsumedById: sim.foodConsumedById, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward3, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
@@ -52799,6 +52915,7 @@ function projectedStoredQuantities(state, reward3) {
   const quantities2 = {};
   for (const stack of [...state.inventory.stacks, ...state.bank.stacks, ...state.overflow.stacks, ...gemPouch(state).stacks, ...state.character?.equipmentPouch?.stacks ?? []]) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
   for (const stack of reward3.items) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
+  for (const stack of reward3.foodConsumedById ?? []) quantities2[stack.itemId] = Math.max(0, (quantities2[stack.itemId] ?? 0) - stack.quantity);
   return quantities2;
 }
 function projectedIdleContext(state, reward3, settleAtMs) {
@@ -52823,7 +52940,7 @@ function projectedIdleContext(state, reward3, settleAtMs) {
     if (direct || regional2) progress = Math.min(order.target, progress + reward3.kills);
     weeklyOrderProgress[order.id] = progress;
   }
-  const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward3.foodConsumed ?? 0));
+  const foodRemaining = queuedFoodQuantity(state.character, state.inventory.stacks, reward3.foodConsumedById ?? []);
   const routed = routeRewards(state, reward3.items, settleAtMs);
   const beforeOverflow = state.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0), afterOverflow = routed.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0);
   return {
@@ -53093,7 +53210,8 @@ function claimActivitySegmentRaw(state, nowMs) {
   const activeRegion = currentRegionId(state);
   const unlocked = MONSTERS.filter((m) => !m.boss && m.unlockLevel <= level && zoneIdForTarget(m.id) === activeRegion).map((m) => m.id);
   let baseInventory = state.inventory.stacks;
-  if (reward3.foodConsumed && state.character.equippedFoodId) baseInventory = consume2(baseInventory, state.character.equippedFoodId, reward3.foodConsumed);
+  for (const row of reward3.foodConsumedById ?? []) baseInventory = consume2(baseInventory, row.itemId, row.quantity);
+  const nextFood = advanceAutoEatFoodSelection(state.character, baseInventory);
   const routed = routeRewards({ ...state, inventory: { ...state.inventory, stacks: baseInventory } }, reward3.items, settledAtMs);
   const shouldStop = !!reward3.stoppedReason || idleWindow.shouldStop;
   const combatStoppedAtMs = reward3.stoppedReason ? Math.min(settledAtMs, state.activity.lastClaimAtMs + Math.max(0, reward3.qualifyingActivitySeconds ?? reward3.elapsedSeconds) * 1e3) : settledAtMs;
@@ -53104,7 +53222,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward3.explorationXp ?? 0));
     return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
   });
-  const nextBase = { ...state, skills, ...routed, rewardRemainders: reward3.nextRewardRemainders ?? state.rewardRemainders, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward3.gold, currentHp: reward3.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward3.nextProgressFraction, combatEnemyHp: reward3.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward3.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward3.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
+  const nextBase = { ...state, skills, ...routed, rewardRemainders: reward3.nextRewardRemainders ?? state.rewardRemainders, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, ...nextFood, xp, level, gold: state.character.gold + reward3.gold, currentHp: reward3.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward3.nextProgressFraction, combatEnemyHp: reward3.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward3.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward3.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
   let next = commitDailySupplyTimedBoost(nextBase, supply);
   next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward3.masteryMaterialRemainders };
   if (next.character.preparation && (reward3.preparationEncounters ?? reward3.kills) > 0) {
@@ -53200,7 +53318,7 @@ function equipFood(state, itemId) {
   const d = itemDef(itemId);
   if (d.type !== "food") throw new Error("Not food");
   if (stackQty2(state.inventory.stacks, itemId) <= 0) throw new Error("No food available");
-  return { ...state, character: { ...state.character, equippedFoodId: itemId } };
+  return { ...state, character: { ...state.character, equippedFoodId: itemId, foodQueueIds: (state.character.foodQueueIds ?? []).filter((id) => id !== itemId) } };
 }
 function eatFood(state, itemId) {
   if (!state.character) return state;
@@ -54666,7 +54784,7 @@ function deleteAccountCharacter(state, id, confirmation, now) {
 }
 
 // ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 4;
+var MAX_RELEASED_EQUIPMENT_TIER = 5;
 function isReleasedEquipmentItemId(itemId) {
   const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
   return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
@@ -56870,6 +56988,7 @@ var fields = {
   gear_autosell: ["enabled"],
   gear_link_legacy: ["instanceId", "from", "stackIndex"],
   food: ["id"],
+  food_queue: ["ids"],
   eat: ["id"],
   meal_bonus: ["id"],
   sell: ["id", "quantity"],
@@ -57303,7 +57422,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (options.randomRoll === void 0) throw new Error("trusted_random_required");
       const result = claimForgeJob(state, text(a, "id", 160), now, options.randomRoll);
       state = result.state;
-      if (result.kind === "equipment") forgeResults = [result.result];
+      if (result.kind === "equipment") {
+        state = recordCompanionActivity(state, "crafting", result.recipe.output.itemId, 1, now);
+        forgeResults = [result.result];
+      }
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
       message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.gemAction === "refine" ? "Refined" : "Combined"} ${result.recipe.name} \xB7 Gem Pouch`;
       break;
@@ -57314,6 +57436,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       const result = claimAllReadyEquipmentCrafts(state, now, options.randomRoll);
       state = result.state;
       forgeResults = result.results;
+      if (result.results.length > 0) state = recordCompanionActivity(state, "crafting", "equipment-forge", result.results.length, now);
       for (const id of result.claimed) {
         if (!beforeIds.has(id)) continue;
         const job = previous.account.equipmentCraftingQueue?.find((row) => row.id === id);
@@ -57419,6 +57542,9 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "food":
       state = equipFood(state, text(a, "id"));
+      break;
+    case "food_queue":
+      state = setAutoEatFoodQueue(state, a.ids);
       break;
     case "eat":
       state = eatFood(state, a.id === void 0 ? void 0 : text(a, "id"));
@@ -58244,6 +58370,13 @@ import { createHash as createHash2 } from "node:crypto";
 
 // ../apps/mobile/src/core/combat-power.ts
 init_progression();
+var MAX_COMPANION_COMBAT_POWER_SHARE = 0.18;
+function redistributeCompanionCombatPower(personal, companion) {
+  const total = personal + companion;
+  const reweightedCompanion = Math.min(companion, Math.floor(total * MAX_COMPANION_COMBAT_POWER_SHARE));
+  const reallocated = companion - reweightedCompanion;
+  return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
+}
 var statScore = (stats4, level) => Math.max(0, Math.round(
   stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
 ));
@@ -58270,14 +58403,16 @@ function combatPowerRating(state) {
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
-  const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rawCompanion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player * contribution.contributionPct) : 0;
+  const rating = redistributeCompanionCombatPower(player, rawCompanion);
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
-    { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" }
   ];
-  return { total: player + companion, player, companion, rows: rows2 };
+  if (rating.reallocated > 0) rows2.push({ id: "allocation", label: "Personal power weighting", value: rating.reallocated, detail: "Combat Power shifted from the companion rating; actual stats and effects are unchanged" });
+  rows2.push({ id: "companion", label: "Combat companion", value: rating.companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" });
+  return { total: rating.total, player: rating.player, companion: rating.companion, rows: rows2 };
 }
 
 // src/server/equipment/gems/gem-runtime-v1.ts

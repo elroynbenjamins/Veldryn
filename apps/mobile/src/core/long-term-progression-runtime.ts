@@ -16,10 +16,10 @@ import {HERB_NODES} from '../content/herbalism';
 import {WORLD_ZONES} from '../content/world-map';
 import {random01} from './rng';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
-import {recordSeasonalActivity} from './seasonal-quests';
+import {recordSeasonalActivity,recordSeasonalCraftProfession} from './seasonal-quests';
 import {explorationRoute} from '../content/exploration';
 
-export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;weeklyEligible?:boolean}
+export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;weeklyEligible?:boolean;skillId?:string}
 export interface TrustedProgressionOptions{accountId:string;eventId:string}
 export interface TrustedProgressionResult{
  state:GameState;
@@ -173,6 +173,7 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
  const wasComplete=new Set(weekly.orders.filter(row=>row.progress>=row.target).map(row=>row.id));
  for(const event of events){const units=integerUnits(event.units);if(!units)continue;
   state=recordSeasonalActivity(state,event.kind==='gathering'&&explorationRoute(event.contentId)?'exploration':event.kind,units,nowMs);
+  if(event.kind==='crafting')state=recordSeasonalCraftProfession(state,event.contentId,units,nowMs,event.skillId);
   if(event.kind==='combat'||event.kind==='boss')metrics['combat.total_kills']=(metrics['combat.total_kills']??0)+units;
   if(event.kind==='gathering'||event.kind==='crafting'){metrics['profession.actions_completed']=(metrics['profession.actions_completed']??0)+units;mastery[event.contentId]=grantProfessionMastery(mastery[event.contentId] as ProfessionMasteryRecord|undefined,event.contentId,units,nowMs)}
   if(event.kind==='combat')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});

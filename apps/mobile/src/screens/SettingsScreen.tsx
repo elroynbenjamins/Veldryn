@@ -37,6 +37,9 @@ type Props={
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
   onChange:(next:GameState)=>void;
+  /** Preview a palette immediately; persist it independently of gameplay state updates. */
+  onUiThemeChange?:(themeId:UiThemeId)=>void;
+  uiThemeId?:UiThemeId;
   /** Legacy caller compatibility; activity Stop is available on the activity bar instead. */
   onStopActivity?:()=>Promise<void>;
   onExport:()=>Promise<void>;
@@ -52,7 +55,7 @@ function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onP
 function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){
 const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityLabel={p.name} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,onUiThemeChange,uiThemeId,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
@@ -97,7 +100,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
         <Text style={navigationStyles.shortcutText}>{a('Help & Guide')}</Text>
       </Pressable>
     </View>
-    {section==='display'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(state.settings.uiTheme??'obsidian')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel>}
+    {section==='display'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(uiThemeId??state.settings.uiTheme??'obsidian')===id} onPress={()=>onUiThemeChange?onUiThemeChange(id):update({uiTheme:id})}/>)}</View></Panel>}
     {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>

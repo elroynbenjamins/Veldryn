@@ -47,6 +47,8 @@ export interface CharacterState {
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
   equippedFoodId?:string;
+  /** Auto-eat backup order (up to four different food types); never consumes bank food. */
+  foodQueueIds?:string[];
   /** Character-bound boss healing potion; selected in the HP menu, consumed only in eligible boss battles. */
   equippedHealingPotionId?:string;
   bodyPresentation?:BodyPresentation;
@@ -164,7 +166,7 @@ export interface RewardBundle {
   classSkillXp?:Array<{skillId:string;xp:number}>;
   trainingActions?:number;
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
-  preparationEncounters?:number; foodConsumed?:number; endHp?:number; stoppedReason?:string;
+  preparationEncounters?:number; foodConsumed?:number; foodConsumedById?:ItemStack[]; endHp?:number; stoppedReason?:string;
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];
   petDrops?:{petId:string;name:string;sourceId:string}[];

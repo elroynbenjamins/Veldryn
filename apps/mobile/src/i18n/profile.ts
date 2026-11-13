@@ -7,6 +7,21 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  // Equipped gear detail viewer.
+  "BASE ITEM STATS": ["BASISWERTE DES GEGENSTANDS","ATRIBUTOS BASE DEL OBJETO","BASISSTATISTIEKEN ITEM","STATISTICHE BASE OGGETTO","STATS DE BASE DE L'OBJET"],
+  "Rarity, quality, enhancements and gems can improve these stats.": ["Seltenheit, Qualität, Verbesserungen und Edelsteine können diese Werte erhöhen.","Rareza, calidad, mejoras y gemas pueden aumentar estos atributos.","Zeldzaamheid, kwaliteit, verbeteringen en edelstenen kunnen deze waarden verhogen.","Rarità, qualità, potenziamenti e gemme possono aumentare queste statistiche.","Rareté, qualité, améliorations et gemmes peuvent augmenter ces stats."],
+  "SOCKETED GEMS": ["EINGESETZTE EDELSTEINE","GEMAS ENGARZADAS","INGEZETTE EDELSTENEN","GEMME INCASTONATE","GEMMES SERTIES"],
+  "View only · Equipment belongs to this player": ["Nur ansehen · Diese Ausrüstung gehört diesem Spieler","Solo lectura · Este equipo pertenece a este jugador","Alleen bekijken · Deze uitrusting is van deze speler","Sola lettura · L'equipaggiamento appartiene a questo giocatore","Consultation uniquement · Cet équipement appartient à ce joueur"],
+  // Public profile equipment showcase.
+  "EQUIPPED GEAR": ["AUSGERÜSTETE AUSRÜSTUNG","EQUIPO EQUIPADO","UITGERUSTE UITRUSTING","EQUIPAGGIAMENTO INDOSSATO","ÉQUIPEMENT PORTÉ"],
+  "Tap an equipped item to inspect": ["Tippe auf einen Gegenstand für Details","Toca un objeto equipado para verlo","Tik op een uitgerust item voor details","Tocca un oggetto equipaggiato per i dettagli","Touchez un objet équipé pour l’inspecter"],
+  "{count}/10 equipped": ["{count}/10 ausgerüstet","{count}/10 equipados","{count}/10 uitgerust","{count}/10 equipaggiati","{count}/10 équipés"],
+  "No equipment equipped yet": ["Noch keine Ausrüstung angelegt","Aún no hay equipo equipado","Nog geen uitrusting uitgerust","Nessun equipaggiamento indossato","Aucun équipement porté"],
+  "Quality {quality}": ["Qualität {quality}","Calidad {quality}","Kwaliteit {quality}","Qualità {quality}","Qualité {quality}"],
+  "Enhancement +{rank}": ["Verbesserung +{rank}","Mejora +{rank}","Verbetering +{rank}","Potenziamento +{rank}","Amélioration +{rank}"],
+  "Stat gem": ["Werte-Edelstein","Gema de atributos","Stat-edelsteen","Gemma statistiche","Gemme de caractéristiques"],
+  "Effect gem": ["Effekt-Edelstein","Gema de efecto","Effect-edelsteen","Gemma effetto","Gemme d’effet"],
+  "Offhand": ["Nebenhand","Mano secundaria","Bijhand","Mano secondaria","Main secondaire"],
   // Character, Combat Power and profile UI: complete visible labels and explanatory copy.
   "Character": ["Charakter","Personaje","Personage","Personaggio","Personnage"],
   "Edit profile": ["Profil bearbeiten","Editar perfil","Profiel bewerken","Modifica profilo","Modifier le profil"],
@@ -411,6 +426,7 @@ export const profileTranslationRows = {
   "Close profile picker": ["Profilauswahl schließen","Cerrar selector de perfil","Profielkiezer sluiten","Chiudi selettore profilo","Fermer le sélecteur de profil"],
   "{count}/3 selected · tap a selected item to remove it.": ["{count}/3 ausgewählt · Zum Entfernen antippen.","{count}/3 seleccionados · Toca uno seleccionado para quitarlo.","{count}/3 geselecteerd · Tik op een selectie om te verwijderen.","{count}/3 selezionati · Tocca un elemento selezionato per rimuoverlo.","{count}/3 sélectionnés · Touchez un élément sélectionné pour le retirer."],
   "Choose one option.": ["Wähle eine Option.","Elige una opción.","Kies één optie.","Scegli un'opzione.","Choisissez une option."],
+  "No entries unlocked for this showcase yet.": ["Noch keine Einträge für diese Vitrine freigeschaltet.","Aún no hay elementos desbloqueados para esta vitrina.","Nog geen onderdelen vrijgespeeld voor deze vitrine.","Nessun elemento ancora sbloccato per questa vetrina.","Aucun élément débloqué pour cette vitrine."],
   "Visible to signed-in players": ["Für angemeldete Spieler sichtbar","Visible para jugadores conectados","Zichtbaar voor aangemelde spelers","Visibile ai giocatori connessi","Visible par les joueurs connectés"],
   "Visible to members of your guild": ["Für Mitglieder deiner Gilde sichtbar","Visible para miembros de tu gremio","Zichtbaar voor je gildeleden","Visibile ai membri della tua gilda","Visible par les membres de votre guilde"],
   "Visible only to you": ["Nur für dich sichtbar","Visible solo para ti","Alleen voor jou zichtbaar","Visibile solo a te","Visible uniquement par vous"],

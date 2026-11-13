@@ -52,7 +52,7 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
    :selected?r('ON PROFILE {slot}',{slot:showcase.indexOf(id)+1}):maxed?r('FULL'):r('FEATURE');
   return <Pressable
    key={id} accessibilityRole="button"
-   accessibilityLabel={r(PLAYER_BADGE_LABELS[id])}
+   accessibilityLabel={r(PLAYER_BADGE_LABELS[id])} accessibilityValue={{text:status}}
    accessibilityHint={!unlocked?r(detail)
     :slot==='name'?(selected?r('Unequip this badge'):r('Wear this badge beside your name'))
     :selected?r('Remove this badge from your profile'):maxed?r('Remove a featured badge to make room'):r('Feature this badge on your profile')}
@@ -97,7 +97,7 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
    <View style={s.previewRow}>
     <View style={s.previewLabels}>
      <Text style={[s.sectionEyebrow,{color:C.accent}]}>{r('ON YOUR PROFILE')}</Text>
-     <Text style={[s.note,{color:C.muted}]}>{showcase.length?showcase.map(id=>r(PLAYER_BADGE_LABELS[id])).join(' · '):r('No badges featured yet')}</Text>
+     <Text numberOfLines={2} style={[s.note,{color:C.muted}]}>{showcase.length?showcase.map(id=>r(PLAYER_BADGE_LABELS[id])).join(' · '):r('No badges featured yet')}</Text>
     </View>
     <PlayerBadgeShowcase identity={badges.identity} size={23}/>
    </View>
@@ -110,6 +110,8 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
   <Text style={[s.note,{color:C.muted}]}>{slot==='name'
    ?r('Tap a badge to wear it beside your name in chat, parties, guilds and rankings.')
    :r('Tap up to {count} badges to feature on your profile, in the order you tap them. Tap a featured badge again to remove it.',{count:MAX_FEATURED_PLAYER_BADGES})}</Text>
+
+  {slot==='profile'&&full?<Text accessibilityLiveRegion="polite" style={[s.fullNotice,{color:C.info,backgroundColor:C.infoSurface,borderColor:C.selectionLine}]}>All three profile slots are filled. Remove a featured badge to choose another.</Text>:null}
 
   <View style={s.section}>
    <View style={s.sectionHeading}>
@@ -174,5 +176,6 @@ const s=StyleSheet.create({
  locked:{opacity:.62},
  pressed:{opacity:.78},
  footnote:{fontSize:10,lineHeight:15,marginTop:3},
+  fullNotice:{fontSize:11,lineHeight:16,paddingHorizontal:10,paddingVertical:8,borderWidth:1,borderRadius:8},
  errors:{gap:6},
 });

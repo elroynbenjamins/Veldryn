@@ -55,6 +55,18 @@ assert.ok(screen.includes('Rewards process automatically')&&screen.includes('cho
   'contract rewards remain automatic without a manual claim action');
 assert.ok(screen.includes('onClose={closeSheet}')&&screen.includes("sheetScroll:{flexShrink:1,minHeight:0}"),
   'native detail sheet must close and scroll on smaller devices');
+assert.ok(screen.includes('recoveredStoryDiscoveries(state,language)')&&screen.includes('storyActProgress(state)'),
+  'Story hero and recovered archive derive from current claimed quest state');
+assert.ok(screen.includes("campaignFinished?p('The Asterfall chronicle is complete')"),
+  'Completed Asterfall campaigns show a real ending rather than a perpetual next chapter');
+assert.ok(screen.includes("moment.source==='story'&&storyDiscoveryText(language,moment.id)"),
+  'New lore is only displayed with a confirmed story reward receipt');
+assert.ok(screen.includes("selectedStatus==='locked'?<Text")&&screen.includes('Complete earlier chapters to read this story page.'),
+  'Locked chapter story pages cannot disclose future plot');
+assert.ok(screen.includes("campaignFinished?<View")&&screen.includes("zoneId:'SUNSCAR'")&&screen.includes("p('Open Sunscar')"),
+  'Claiming all Asterfall chapters offers a clear, region-safe Sunscar story handoff');
+assert.ok(screen.includes('accessibilityState={{expanded:chronicleExpanded}}')&&screen.includes('chronicleToggle:{minHeight:touchTargetMin'),
+  'Chronicle archive is accessible and touch-friendly');
 assert.ok(tabs.includes('minHeight:50'),'mode tabs should be compact');
 const lessonPanel=fs.readFileSync(path.join(__dirname,'../src/components/JournalSkillPathsPanel.tsx'),'utf8');
 const lessonModel=fs.readFileSync(path.join(__dirname,'../src/core/journal-skill-lessons.ts'),'utf8');

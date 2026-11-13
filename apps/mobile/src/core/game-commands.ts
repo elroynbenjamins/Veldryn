@@ -10,7 +10,7 @@ import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import * as companions from './combat-companions';
 import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
-import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
+import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining,recordCompanionActivity} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
@@ -38,6 +38,7 @@ import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 import {reconcileAccountCollections} from './account-collections';
+import {recordSeasonalActivity} from './seasonal-quests';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 import {eatMealForBonus,retimeReservedMealCraft} from './meal-buffs';
@@ -53,7 +54,7 @@ const fields:Record<string,readonly string[]>={
  companion_trial_formation:['ids'],companion_trial_fight:['ids','requestId'],companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
  create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
- equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
+ equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
@@ -310,7 +311,13 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'craft_claim':{
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');
-   const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
+   const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;
+   // Companion recruitment counts only settled equipment, never queued jobs or gem recipes.
+   if(result.kind==='equipment'){
+    state=recordCompanionActivity(state,'crafting',result.recipe.output.itemId,1,now);
+    forgeResults=[result.result];
+   }
+   contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
     :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
@@ -319,6 +326,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'craft_claim_all':{
    const beforeIds=new Set((state.account.equipmentCraftingQueue??[]).map(job=>job.id));
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;forgeResults=result.results;
+   // Bulk settlement is one atomic command. Count each successfully claimed equipment
+   // copy exactly once, excluding blocked jobs and gem combine/refinement claims.
+   if(result.results.length>0)state=recordCompanionActivity(state,'crafting','equipment-forge',result.results.length,now);
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
    const equipmentCount=result.claimed.length-result.gemClaims,procCount=result.results.filter(row=>row.qualityProc).length;
    const blockedCount=result.blocked.length;
@@ -360,6 +370,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equip':state=game.equipItem(state,text(a,'id'));break;
   case 'unequip':state=game.unequipItem(state,oneOf(a.slot,['weapon','offhand','helmet','chest','legs','boots','gloves','cape','amulet','ring']) as GearSlot);break;
   case 'food':state=game.equipFood(state,text(a,'id'));break;
+  case 'food_queue':state=game.setAutoEatFoodQueue(state,a.ids);break;
   case 'eat':state=game.eatFood(state,a.id===undefined?undefined:text(a,'id'));break;
   case 'meal_bonus':{const prior=state.character;state=retimeReservedMealCraft(eatMealForBonus(state,text(a,'id')),prior);message='Meal bonus activated';break;}
   case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
@@ -466,8 +477,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'event_discovery':state=events.claimEventDiscovery(state,text(a,'id'),now);break;
   case 'event_reward':state=events.claimEventReward(state,text(a,'id'),now);break;
   case 'event_accept':state=events.acceptEventContract(state,text(a,'id'),now);break;
-  case 'event_objective':state=events.claimEventObjective(state,text(a,'id'),now);break;
-  case 'event_weekly':state=events.claimEventWeeklyObjective(state,text(a,'id'),now);break;
+  case 'event_objective':state=recordSeasonalActivity(events.claimEventObjective(state,text(a,'id'),now),'event',1,now);break;
+  case 'event_weekly':state=recordSeasonalActivity(events.claimEventWeeklyObjective(state,text(a,'id'),now),'event',1,now);break;
   case 'event_project':state=events.chooseEventProject(state,text(a,'id'),now);break;
   case 'event_contribute':state=events.contributeEventCurrency(state,integer(a,'quantity'),now);break;
   case 'event_community':state=events.claimEventCommunityMilestone(state,integer(a,'percent',1,100),now);break;

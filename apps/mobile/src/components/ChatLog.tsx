@@ -8,7 +8,7 @@ export interface ChatLogItem{id:string}
 
 export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp,active=true,expanded=false}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:(messageId:string)=>void|Promise<void>;active?:boolean;expanded?:boolean}){
  const st=useSocialText();
- const C=useGameTheme(),scrollRef=useRef<ScrollViewInstance>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp);
+ const C=useGameTheme(),scrollRef=useRef<ScrollViewInstance>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),userScrollingRef=useRef(false),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp);
  const [dividerId,setDividerId]=useState(firstUnreadMessageId),[dividerCleared,setDividerCleared]=useState(false),[pendingNew,setPendingNew]=useState(0),[foreground,setForeground]=useState(()=>AppState.currentState==='active'||AppState.currentState===null);
  activeRef.current=active&&foreground;onCaughtUpRef.current=onCaughtUp;
  const hasMessages=items.length>0,latestId=hasMessages?items[items.length-1].id:undefined;
@@ -32,7 +32,7 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  // A hidden panel can still receive an in-flight history result. Do not consume
  // its caught-up message ID until the player can actually see the conversation.
  const caughtUp=()=>{if(!visible())return;setPendingNew(0);if(latestId){setDividerCleared(true);readAck.caughtUp(latestId);}};
- useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;initializedRef.current=false;previousIdsRef.current=new Set();setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
+ useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;userScrollingRef.current=false;initializedRef.current=false;previousIdsRef.current=new Set();setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
  useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId){nearBottomRef.current=false;setDividerId(firstUnreadMessageId)}},[firstUnreadMessageId,dividerId]);
  useEffect(()=>{if(!initializedRef.current&&dividerId&&items.length&&!items.some(item=>item.id===dividerId))setDividerId(items[0].id);},[items,dividerId]);
  useEffect(()=>{
@@ -91,13 +91,20 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  const onScroll=(event:NativeSyntheticEvent<NativeScrollEvent>)=>{
   const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;
   const near=layoutMeasurement.height+contentOffset.y>=contentSize.height-44;
-  const was=nearBottomRef.current;nearBottomRef.current=near;
+  const was=nearBottomRef.current;
+  const viewportResized=viewportHeightRef.current>0&&Math.abs(layoutMeasurement.height-viewportHeightRef.current)>1;
+  // A keyboard resize can make the viewport shorter without a user scroll.
+  // Preserve bottom-follow in that case so the latest message rises above the IME.
+  // Drag callbacks are authoritative, while the viewport comparison preserves the
+  // older onScroll-only fallback used by accessibility and test renderers.
+  if(near)nearBottomRef.current=true;
+  else if(userScrollingRef.current||!viewportResized)nearBottomRef.current=false;
   if(near&&!was)caughtUp();
  };
  const jumpLatest=()=>{nearBottomRef.current=true;setPendingNew(0);scrollRef.current?.scrollToEnd({animated:true});caughtUp();};
 
  return <View style={[s.root,expanded&&s.expandedRoot]}>
-  <ScrollView ref={scrollRef} style={[s.log,expanded&&s.expandedLog]} contentContainerStyle={[s.inner,expanded&&!hasMessages&&s.emptyInner]} keyboardShouldPersistTaps="handled" scrollEventThrottle={80} onLayout={onViewportLayout} onScroll={onScroll} onContentSizeChange={onContentSizeChange} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  <ScrollView ref={scrollRef} style={[s.log,expanded&&s.expandedLog]} contentContainerStyle={[s.inner,expanded&&!hasMessages&&s.emptyInner]} keyboardShouldPersistTaps="handled" scrollEventThrottle={80} onLayout={onViewportLayout} onScroll={onScroll} onScrollBeginDrag={()=>{userScrollingRef.current=true;}} onScrollEndDrag={()=>{userScrollingRef.current=false;}} onMomentumScrollBegin={()=>{userScrollingRef.current=true;}} onMomentumScrollEnd={()=>{userScrollingRef.current=false;}} onContentSizeChange={onContentSizeChange} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {items.length?items.map((item,index)=>{const createdAt=typeof (item as {created_at?:unknown}).created_at==='string'?(item as unknown as {created_at:string}).created_at:undefined;const previous=items[index-1];const previousAt=previous&&typeof (previous as {created_at?:unknown}).created_at==='string'?(previous as unknown as {created_at:string}).created_at:undefined;const date=createdAt?new Date(createdAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;const previousDate=previousAt?new Date(previousAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;return <View key={item.id} onLayout={!dividerCleared&&dividerId===item.id?onDividerLayout:undefined}>{date&&date!==previousDate?<View style={s.dateDivider}><View style={s.line}/><Text style={s.dateText}>{date}</Text><View style={s.line}/></View>:null}{!dividerCleared&&dividerId===item.id?<View style={s.divider}><View style={[s.line,{backgroundColor:C.warning}]}/><Text style={[s.dividerText,{color:C.warning}]}>{st("NEW MESSAGES")}</Text><View style={[s.line,{backgroundColor:C.warning}]}/></View>:null}{renderItem(item)}</View>;}):<Text style={[s.empty,{color:C.muted}]}>{emptyText}</Text>}
   </ScrollView>
   {pendingNew>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Jump to {count} new messages',{count:pendingNew})} onPress={jumpLatest} style={({pressed})=>[s.jump,{backgroundColor:C.selection,borderColor:C.selectionLine},pressed&&s.pressed]}><Text style={[s.jumpText,{color:C.info}]}>{st('↓ {count} NEW',{count:pendingNew>99?'99+':pendingNew})}</Text></Pressable>:null}

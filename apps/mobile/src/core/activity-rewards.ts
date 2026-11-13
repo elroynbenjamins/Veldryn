@@ -20,7 +20,7 @@ export function combineActivityRewards(results:NonNullable<RewardBundle['activit
  const sum=(key:keyof RewardBundle)=>rewards.reduce((total,row)=>total+(typeof row[key]==='number'?row[key] as number:0),0);
  return {...last,xp:sum('xp'),gold:sum('gold'),kills:sum('kills'),elapsedSeconds:sum('elapsedSeconds'),qualifyingActivitySeconds:sum('qualifyingActivitySeconds'),
   items:sumRows(rewards.flatMap(row=>row.items),row=>row.itemId,'quantity'),
-  foodConsumed:sum('foodConsumed'),explorationXp:sum('explorationXp'),
+  foodConsumed:sum('foodConsumed'),foodConsumedById:sumRows(rewards.flatMap(row=>row.foodConsumedById??[]),row=>row.itemId,'quantity'),explorationXp:sum('explorationXp'),
   craftingActions:sum('craftingActions'),trainingActions:sum('trainingActions'),faithActions:sum('faithActions'),faithXp:sum('faithXp'),holyWaterConsumed:sum('holyWaterConsumed'),
   craftingCompletedAtMs:rewards.flatMap(row=>row.craftingCompletedAtMs??[]),
   classSkillXp:sumRows(rewards.flatMap(row=>row.classSkillXp??[]),row=>row.skillId,'xp'),

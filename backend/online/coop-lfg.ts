@@ -1,8 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {highestEligibleCoopTier} from '../src/server/coop/config';
-import {publishedRegularDungeon,regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
+import {highestEligibleRegularDungeonTier,publishedRegularDungeon,regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 
@@ -23,10 +22,10 @@ export class OnlineCoopLfg{
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
-  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower);
   if(entryError)throw new GameplayError(entryError);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
-  const maxTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maxTier)throw new GameplayError('dungeon_level_requirement');
+  const maxTier=highestEligibleRegularDungeonTier(definition,record.characterLevel,record.combatPower);if(!maxTier)throw new GameplayError('dungeon_power_requirement');
   const hash=createHash('sha256').update(JSON.stringify({dungeonId:definition.id,note})).digest('hex');
   return this.services.rpc<CoopLiveLfgPost>('publish_online_coop_lfg_server_v1',{p_account_id:accountId,p_request_id:request.requestId,p_request_hash:hash,p_character_id:game.state.character.id,p_dungeon_id:definition.id,p_role:readiness.role,p_max_tier:maxTier,p_note:note});
  }

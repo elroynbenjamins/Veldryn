@@ -93,23 +93,24 @@ const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:cli
 const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./social':social,'../core/party-social':{},'../core/feature-unlocks':{PARTY_UNLOCK_LEVEL:10}});
 
 assert.equal(chatHistory.CHAT_RECENT_MESSAGE_LIMIT,25);
-const expectedIds=first=>Array.from({length:25},(_,index)=>String(first+index).padStart(3,'0'));
+const expectedIds=(first,count=25)=>Array.from({length:count},(_,index)=>String(first+index).padStart(3,'0'));
 for(const channel of [
  {name:'World',rows,read:()=>social.worldMessages('world-1'),send:()=>social.postWorldMessage('world-1',' new message ','Client name','world-message-056')},
  {name:'Party',rows:partyRows,read:()=>party.partyChatMessages('party-a'),send:()=>party.sendPartyChat('party-a',' new message ','party-message-056')},
  {name:'Guild',rows:guildRows,read:async()=>(await social.guildChatState()).messages,send:()=>social.sendGuildChat(' new message ','guild-message-056')},
 ]){
+ const pageSize=channel.name==='Guild'?50:25;
  const initial=await channel.read();
- assert.deepEqual(initial.map(row=>row.id),expectedIds(31),`${channel.name}: newest 25 of 55 messages appear chronologically`);
+ assert.deepEqual(initial.map(row=>row.id),expectedIds(56-pageSize,pageSize),`${channel.name}: newest ${pageSize} of 55 messages appear chronologically`);
  assert.equal(await channel.send(),'056');
  const afterSend=await channel.read();
- assert.deepEqual(afterSend.map(row=>row.id),expectedIds(32),`${channel.name}: confirmed send replaces the oldest message without duplication`);
+ assert.deepEqual(afterSend.map(row=>row.id),expectedIds(57-pageSize,pageSize),`${channel.name}: confirmed send replaces the oldest message without duplication`);
  assert.equal(afterSend.at(-1).body,'new message');assert.equal(afterSend.at(-1).sender_name,'Authoritative name');
  channel.rows.at(-1).created_at=channel.rows.at(-2).created_at;
  const tied=await channel.read();
- assert.deepEqual(tied.map(row=>row.id),expectedIds(32),`${channel.name}: equal timestamps retain a stable order and page size`);
+ assert.deepEqual(tied.map(row=>row.id),expectedIds(57-pageSize,pageSize),`${channel.name}: equal timestamps retain a stable order and page size`);
  identityFails=true;
- assert.deepEqual((await channel.read()).map(row=>row.id),expectedIds(32),`${channel.name}: cosmetic lookup failure must not hide an accepted message`);
+ assert.deepEqual((await channel.read()).map(row=>row.id),expectedIds(57-pageSize,pageSize),`${channel.name}: cosmetic lookup failure must not hide an accepted message`);
  identityFails=false;
 }
 for(const query of queries.filter(query=>query.table==='chat_messages')){
@@ -120,7 +121,7 @@ for(const query of queries.filter(query=>query.table==='chat_messages')){
  assert.deepEqual(query.filters,[['channel_type',channelType],['channel_id',channelType==='world'?'world-1':'party-a']],'History queries must retain channel type and channel ID restrictions');
 }
 assert.equal(guildRequests.length,4);
-assert.ok(guildRequests.every(args=>args.p_limit===25),'Guild must explicitly request the default 25, overriding the server default');
+assert.ok(guildRequests.every(args=>args.p_limit===50),'Guild must explicitly request its 50-message default, overriding the server default');
 assert.deepEqual((await social.guildChatState(7)).messages.map(row=>row.id),['050','051','052','053','054','055','056'],'An explicit Guild limit remains supported');
 assert.equal(guildRequests.at(-1).p_limit,7);
 

@@ -46,10 +46,10 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
  return <ScrollView ref={scrollRef} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.hero}>
    <View pointerEvents="none" style={s.heroAccent}><Text style={[s.heroSymbol,{color:C.accentSoft}]}>✦</Text></View>
-   <Text style={s.eyebrow}>SUPPORT THE ADVENTURE</Text>
-   <Text accessibilityRole="header" style={s.heroTitle}>The Realm Store</Text>
-   <Text style={s.heroDescription}>Permanent upgrades and optional Supporter benefits.</Text>
-   <Text style={s.heroFooter}>NO PAID PREMIUM CURRENCY · NO PAID PVP POWER</Text>
+   <Text style={s.eyebrow}>{a('SUPPORT THE ADVENTURE')}</Text>
+   <Text accessibilityRole="header" style={s.heroTitle}>{a('The Realm Store')}</Text>
+   <Text style={s.heroDescription}>{a('Permanent upgrades and optional Supporter benefits.')}</Text>
+   <Text style={s.heroFooter}>{a('NO PAID PREMIUM CURRENCY · NO PAID PVP POWER')}</Text>
   </View>
   {STORE_COLLECTIONS_VISIBLE?<BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Collections',label:'Collections · Concept'}] as const} value={section} onChange={changeSection}/>:null}
   <View style={section==='Memberships'?s.visible:s.hidden}>

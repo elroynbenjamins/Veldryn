@@ -43,10 +43,13 @@ export function companionMaterialSources(id:string):string[]{return companionMat
 export function companionRequirementProgress(state:GameState,req:CompanionDefinition['unlockRequirements'][number]){
  const target=req.target??req.description,total=Math.max(1,req.amount??1);
  let current=state.account.companionUnlockProgress?.[target]??0;
- if(target==='KNIFE_DANCER_SKILL_TOTAL'&&state.character?.classId==='KNIFE_DANCER')current=characterClassSkills(state.character).reduce((sum,s)=>sum+s.level,0);
- if(req.type==='monster_mastery'&&MONSTERS.some(m=>m.id===target))current=monsterMastery(state,target).rank;
- if(req.type==='quest')current=state.quests.some(q=>q.questId===target&&q.status==='claimed')?1:0;
- if(req.type==='skill_level')current=state.skills.find(s=>s.skillId===target)?.level??0;
+ const rosterCharacters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is NonNullable<GameState['character']>=>!!row);
+ if(target==='KNIFE_DANCER_SKILL_TOTAL')current=Math.max(0,...rosterCharacters.filter(character=>character.classId==='KNIFE_DANCER').map(character=>characterClassSkills(character).reduce((sum,s)=>sum+s.level,0)));
+
+ if(req.type==='monster_mastery'&&MONSTERS.some(m=>m.id===target))current=Math.max(monsterMastery(state,target).rank,...rosterCharacters.map(character=>Math.floor((character.monsterMasteryPoints?.[target]??0)/25)));
+
+ if(req.type==='quest')current=[state.quests,...(state.otherCharacters??[]).map(row=>row.quests)].some(quests=>quests.some(q=>q.questId===target&&q.status==='claimed'))?1:0;
+ if(req.type==='skill_level')current=Math.max(0,...[state.skills,...(state.otherCharacters??[]).map(row=>row.skills)].map(skills=>skills.find(s=>s.skillId===target)?.level??0));
  if(req.type==='boss_kills')current=Math.max(state.defeatedBossIds.includes(target)?1:0,state.account.companionBossClears?.[target]??0);
  if(req.type==='meta'&&target.startsWith('COMPANION_BOND:')){
    const companionId=target.slice('COMPANION_BOND:'.length);

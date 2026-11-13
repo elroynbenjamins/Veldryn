@@ -2,6 +2,7 @@ import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/prog
 import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
+import {STORY_DISCOVERIES,recoveredStoryDiscoveries,storyActProgress,storyDiscoveryText} from '../src/core/story-chronicle';
 import {itemDef} from '../src/content/items';
 import {JOURNAL_TITLES_V42} from '../src/core/adventurers-journal-v42';
 import {migrateRetiredStoryRewards} from '../src/core/retired-story-rewards';
@@ -90,5 +91,26 @@ const learned={...state,quests:state.quests.map(row=>row.questId==='QST_002'?{..
 ok(journalSkillLessonProgress(learned).find(row=>row.lesson.skillId==='cooking')?.introduced===true,'Crafting becomes introduced after the second story reward');
 ok(journalSkillLessonProgress(state).find(row=>row.lesson.skillId==='enchanting')?.status==='preview','Advanced skills can be previewed without progression gates changing');
 ok(QUESTS.length===15,'Optional lessons must not insert or reorder campaign chapters');
+// Chronicle discoveries are localized presentation only and never grant progress or spoil future chapters.
+ok(STORY_DISCOVERIES.length===6,'Six meaningful revelations are authored across the existing Asterfall campaign');
+ok(new Set(STORY_DISCOVERIES.map(entry=>entry.questId)).size===STORY_DISCOVERIES.length,'Discovery quest identifiers are unique');
+ok(STORY_DISCOVERIES.every(entry=>QUESTS.some(q=>q.id===entry.questId)),'Every discovery maps to a current main-story quest');
+const chronicleLanguages=['en','de','es','nl','it','fr','ru','tr'] as const;
+for(const discovery of STORY_DISCOVERIES)for(const language of chronicleLanguages){
+ const copy=storyDiscoveryText(language,discovery.questId);
+ ok(!!copy&&copy.trim().length>45,discovery.questId+' has authored '+language+' lore');
+}
+ok(storyDiscoveryText('en','UNKNOWN')===undefined,'Unknown quests never synthesize lore');
+ok(recoveredStoryDiscoveries(state,'en').length===0,'Unclaimed story pages are never revealed');
+const prematureClue={...state,quests:state.quests.map(row=>row.questId==='QST_003'?{...row,status:'complete' as const}:row)};
+ok(recoveredStoryDiscoveries(prematureClue,'en').length===0,'Objective complete is not an authoritative story claim');
+const earnedClue={...state,quests:state.quests.map(row=>row.questId==='QST_003'?{...row,status:'claimed' as const}:row)};
+const foundClues=recoveredStoryDiscoveries(earnedClue,'nl');
+ok(foundClues.length===1&&foundClues[0].questId==='QST_003'&&foundClues[0].chapter===3,'Claimed clue is readable in the selected language');
+ok(foundClues[0].text===storyDiscoveryText('nl','QST_003'),'Discovery uses the Dutch lore copy');
+ok(storyActProgress(state).every(row=>row.completed===0&&row.total===5),'New characters have three empty acts');
+ok(storyActProgress(finished).every(row=>row.finished&&row.completed===5),'Finished accounts retain every completed act without migration');
+ok(recoveredStoryDiscoveries(finished,'en').length===6,'Completed accounts retroactively recover every past clue');
+
 
 console.log('PASS: quest story acts, filters, search, destinations, claim advancement and finished campaign');

@@ -1,5 +1,6 @@
 import {supabase} from './supabase';
 import {RequestSingleflight} from '../core/request-singleflight';
+import {normalizeProfileGear,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import {guildIdentities,profileGuildByTag} from './social';
 import type {ProfileGuildIdentity} from '../core/profile-guild';
@@ -16,6 +17,7 @@ export interface PublicPlayerProfileV43{
  guild?:ProfileGuildIdentity|null;
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
  combatPower?:number;
+ equippedGear?:ProfileEquippedGear[];
  guildTag?:string|null;guildTagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;playerBadges?:PlayerBadgeIdentity;
  character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';profileIconId:string};
  title:string;backgroundId:string;borderId?:string|null;petId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
@@ -47,9 +49,21 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
  return pendingPublicProfiles.run(viewer+':'+accountId,async()=>{
   const {data,error}=await db.rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;
   const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
-  const identity=(await guildIdentities([accountId])).get(accountId);
+  // The companion RPC uses the same visibility/block gate, returning only equipped item facts.
+  // Older servers that have not deployed it still render the public profile normally.
+  // Fetch profile extras concurrently so the new read-only gallery does not add
+  // another full network round trip to opening a player's profile.
+  // Optional gear failures must not block the existing identity/profile surface.
+  const [gearResult,identities]=await Promise.all([
+   (async()=>{try{return await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});}catch{return null;}})(),
+   guildIdentities([accountId]),
+  ]);
+  const gearRows=gearResult?.data;
+  const gearPayload=gearRows&&typeof gearRows==='object'&&!Array.isArray(gearRows)?gearRows as {characterId?:unknown;items?:unknown}:null;
+  const equippedGear=gearResult&&!gearResult.error&&gearPayload?.characterId===profile.character.id?normalizeProfileGear(gearPayload.items):undefined;
+  const identity=identities.get(accountId);
   const knownGuild=identity?.guild_tag?{tag:identity.guild_tag,tagColorId:identity.guild_tag_color_id}:null;
   const guild=knownGuild?await profileGuildByTag(knownGuild.tag).catch(()=>knownGuild):null;
-  return {...profile,guild,masteryShowcaseActionIds:Array.isArray(profile.masteryShowcaseActionIds)?profile.masteryShowcaseActionIds:[],guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,nameStyle:identity?.player_name_style??null,playerBadges:identity?.player_badges};
+  return {...profile,guild,equippedGear,masteryShowcaseActionIds:Array.isArray(profile.masteryShowcaseActionIds)?profile.masteryShowcaseActionIds:[],guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,nameStyle:identity?.player_name_style??null,playerBadges:identity?.player_badges};
  });
 }

@@ -23,6 +23,8 @@ import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,nor
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
 import {commitMealActivityTime,mealSpeedFactor,retimeReservedMealCraft} from './meal-buffs';
+import {autoEatFoodOrder,advanceAutoEatFoodSelection,queuedFoodQuantity} from './food-queue';
+export {setAutoEatFoodQueue} from './food-queue';
 import {characterLevelFromXp,legacyCharacterLevelFromXp,rebasedCombatLevelFromLegacyLevel,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -489,10 +491,11 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
     playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation),
+      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
-    tempo:style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed),
+    // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
+    tempo:style.speedMultiplier*style.soloHuntTempoMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed),
     environmentTimeMultiplier:environment?.actionTimeMultiplier??1,
     seed:regionalHuntSeed(state,monsterId,0),
   }:undefined;
@@ -552,7 +555,7 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
 }
 export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
  if(!state.character)return undefined;
- const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
+ const runtime=combatRuntimeDetails(state,monsterId),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
  const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
@@ -611,8 +614,9 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    cycleSeconds:plain.killCycleSeconds*(dynamic?1:startCandy),preparedCycleSeconds:prepared.killCycleSeconds*(dynamic?1:startCandy),
    cycleSecondsForEncounter:dynamic?(index,isPrepared)=>planFor(index,isPrepared).cycleSeconds:undefined,
    candy:eventCandyWindow(state,'combat'),trackSegments:true});
- const food=c.equippedFoodId?itemDef(c.equippedFoodId):undefined,threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
- let foodLeft=stackQty(state.inventory.stacks,c.equippedFoodId),foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
+ const foodOrder=autoEatFoodOrder(c).map(id=>({id,heal:itemDef(id).heal??0})),threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
+ const foodLeft=new Map<string,number>(foodOrder.map(row=>[row.id,stackQty(state.inventory.stacks,row.id)] as const)),foodSpent=new Map<string,number>();
+ let foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
@@ -631,7 +635,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    enemyHp=huntEnemyHpAt(prepared.m.hp,hitsFor(firstPrepared?prepared:plain,0,champion,undefined,firstPrepared),activity?.progressFraction??0);
  }
  enemyHp=Math.max(0,Math.min(prepared.m.hp,enemyHp));
- if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit};
+ if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,foodConsumedById:[] as ItemStack[],endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit};
  for(const segment of timeline.segments){
    const runtime={...(segment.prepared?prepared:plain),killCycleSeconds:segment.cycleSeconds};
    if(segment.encounterIndex!==activeEncounterIndex){enemyHp=runtime.m.hp;activeEncounterIndex=segment.encounterIndex;}
@@ -647,14 +651,18 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
        // Incoming damage is applied on the strike, not at the kill/claim boundary.
        // Healing cannot retroactively prevent a lethal hit.
        hp=hp-hit.damage<=0?0:Math.min(runtime.stats.hp,hp-hit.damage+hit.healing);
-       while(food?.heal&&foodLeft>0&&hp>0&&hp/runtime.stats.hp<=threshold){
-         hp=Math.min(runtime.stats.hp,hp+Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)));
-         foodLeft--;foodConsumed++;
+       while(hp>0&&hp/runtime.stats.hp<=threshold){
+         const nextFood=foodOrder.find(row=>row.heal>0&&(foodLeft.get(row.id)??0)>0);
+         if(!nextFood)break;
+         hp=Math.min(runtime.stats.hp,hp+Math.max(1,Math.ceil(nextFood.heal*runtime.modifiers.healingEffectivenessMultiplier)));
+         foodLeft.set(nextFood.id,(foodLeft.get(nextFood.id)??0)-1);
+         foodSpent.set(nextFood.id,(foodSpent.get(nextFood.id)??0)+1);
+         foodConsumed++;
        }
      }
      if(hit.actor!=='fatigue')lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical};
      if(hp<=1){
-       hp=1;stoppedReason=food&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
+       hp=1;stoppedReason=foodOrder.length&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
        qualifyingActivitySeconds=Math.max(0,(hitAtMs-startsAtMs)/1000);
        break;
      }
@@ -669,7 +677,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      activeEncounterIndex=segment.encounterIndex+1;
    }
  }
- return {kills:completed.length,completed,championKills,foodConsumed,endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit};
+ return {kills:completed.length,completed,championKills,foodConsumed,foodConsumedById:[...foodSpent].map(([itemId,quantity])=>({itemId,quantity})),endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit};
 }
 
 /** A UI-only replay cursor. The underlying saved GameState remains unchanged;
@@ -701,12 +709,14 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const sourceCharacter=source.character!;
  let preparation=sourceCharacter.preparation;
  for(let i=0;i<current.preparationEncounters&&preparation;i++)preparation=spendPreparationEncounter(preparation,preparation.itemId);
- const inventory=current.foodConsumed&&sourceCharacter.equippedFoodId
-   ?{...source.inventory,stacks:consume(source.inventory.stacks,sourceCharacter.equippedFoodId,current.foodConsumed)}
+ const consumedFood=current.foodConsumedById??[];
+ const inventory=consumedFood.length
+   ?{...source.inventory,stacks:consumedFood.reduce((stacks,row)=>consume(stacks,row.itemId,row.quantity),source.inventory.stacks)}
    :source.inventory;
+ const nextFood=advanceAutoEatFoodSelection(sourceCharacter,inventory.stacks);
  const projected:GameState={
    ...source,inventory,
-   character:{...sourceCharacter,currentHp:current.endHp,preparation},
+   character:{...sourceCharacter,...nextFood,currentHp:current.endHp,preparation},
    activity:{...source.activity!,lastClaimAtMs:atMs,progressFraction:current.nextProgressFraction,
      combatEnemyHp:current.enemyHp,sessionKills:(source.activity!.sessionKills??0)+current.kills},
  };
@@ -799,7 +809,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   let momentumXp=0;
   for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
   const momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,foodConsumedById:sim.foodConsumedById,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
@@ -819,6 +829,7 @@ function projectedStoredQuantities(state:GameState,reward:RewardBundle){
   const quantities:Record<string,number>={};
   for(const stack of [...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks,...gemPouch(state).stacks,...(state.character?.equipmentPouch?.stacks??[])])quantities[stack.itemId]=(quantities[stack.itemId]??0)+stack.quantity;
   for(const stack of reward.items)quantities[stack.itemId]=(quantities[stack.itemId]??0)+stack.quantity;
+  for(const stack of reward.foodConsumedById??[])quantities[stack.itemId]=Math.max(0,(quantities[stack.itemId]??0)-stack.quantity);
   return quantities;
 }
 function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:number):IdleEvaluationContext{
@@ -842,7 +853,7 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
     if(direct||regional)progress=Math.min(order.target,progress+reward.kills);
     weeklyOrderProgress[order.id]=progress;
   }
-  const foodRemaining=Math.max(0,stackQty(state.inventory.stacks,state.character?.equippedFoodId)-(reward.foodConsumed??0));
+  const foodRemaining=queuedFoodQuantity(state.character,state.inventory.stacks,reward.foodConsumedById??[]);
   const routed=routeRewards(state,reward.items,settleAtMs);
   const beforeOverflow=state.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0),afterOverflow=routed.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0);
   return {
@@ -1066,7 +1077,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
-    const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
+    const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,skillId:'alchemy',startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     const eventApplied=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     const queuedState=!reward.nextBrewRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(eventApplied,nowMs):eventApplied;
     return {state:queuedState,reward};
@@ -1079,7 +1090,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
-    let progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:processing.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`processing:${state.character?.id??'unknown'}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
+    let progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:processing.recipeId,units:actions,skillId:processing.skillId,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`processing:${state.character?.id??'unknown'}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     progressed=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     progressed=refreshQuests(progressed);
     const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
@@ -1108,7 +1119,8 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   const activeRegion=currentRegionId(state);
   const unlocked=MONSTERS.filter(m=>!m.boss&&m.unlockLevel<=level&&zoneIdForTarget(m.id)===activeRegion).map(m=>m.id);
   let baseInventory=state.inventory.stacks;
-  if(reward.foodConsumed && state.character.equippedFoodId)baseInventory=consume(baseInventory,state.character.equippedFoodId,reward.foodConsumed);
+  for(const row of reward.foodConsumedById??[])baseInventory=consume(baseInventory,row.itemId,row.quantity);
+  const nextFood=advanceAutoEatFoodSelection(state.character,baseInventory);
   const routed=routeRewards({...state,inventory:{...state.inventory,stacks:baseInventory}} as GameState,reward.items,settledAtMs);
   const shouldStop=!!reward.stoppedReason||idleWindow.shouldStop;
   const combatStoppedAtMs=reward.stoppedReason?Math.min(settledAtMs,state.activity.lastClaimAtMs+Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds)*1000):settledAtMs;
@@ -1119,7 +1131,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.explorationXp??0));
     return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
   });
-  const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders??state.rewardRemainders,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,combatEnemyHp:reward.nextCombatEnemyHp,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders??state.rewardRemainders,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),...nextFood,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,combatEnemyHp:reward.nextCombatEnemyHp,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   let next=commitDailySupplyTimedBoost(nextBase,supply);
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&(reward.preparationEncounters??reward.kills)>0){let prep=next.character.preparation;for(let i=0;i<(reward.preparationEncounters??reward.kills);i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
@@ -1202,7 +1214,7 @@ export function equipItem(state:GameState,itemId:string):GameState{
   const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now())
 }
-export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
+export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId,foodQueueIds:(state.character.foodQueueIds??[]).filter(id=>id!==itemId)}}}
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp,heal=Math.max(1,Math.ceil(d.heal*characterPermanentMultipliers(state).healingEffectivenessMultiplier));return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+heal)}}}
 export function selectHealingPotion(state:GameState,itemId:string):GameState{
  if(!state.character)throw new Error('Create a character first.');

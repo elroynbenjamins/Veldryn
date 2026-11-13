@@ -161,7 +161,7 @@ ok(petBonus.includes('accessibilityRole="radio"')&&petBonus.includes('accessibil
 
 const characterManage=read('src/screens/ActivityOverviewScreen.tsx');
 ok(characterManage.includes('<GameModalSurface')&&characterManage.includes('<ScrollView style={s.modalScroll}'),'Character management must keep long destructive-flow content inside reachable scroll content');
-ok(characterManage.includes('keyboardShouldPersistTaps="handled"')&&characterManage.includes('keyboardDismissMode="on-drag"'),'Character management actions must stay tappable with the confirmation keyboard open');
+ok(characterManage.includes('keyboardShouldPersistTaps="handled"')&&characterManage.includes('keyboardDismissMode="none"'),'Character management actions must stay tappable without dismissing the confirmation keyboard');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 const moreScreen=read('src/screens/MoreScreen.tsx');

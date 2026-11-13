@@ -14,7 +14,9 @@ ok(screen.includes('Delete character only'),'Multi-character accounts must be ab
 ok(screen.includes('characterDeleteConfirmation'),'Delete UI must use the shared typed-confirmation contract');
 ok(screen.includes('Character deletion confirmation'),'Delete confirmation input must have an accessibility label');
 ok(screen.includes('<GameTextInput')&&!screen.includes('<TextInput'),'Character delete confirmation must use the shared theme-aware input');
-ok(screen.includes('keyboardShouldPersistTaps="handled"')&&screen.includes('keyboardDismissMode="on-drag"'),'Character management dialog must keep delete actions reachable while the keyboard is open');
+ok(screen.includes('keyboardShouldPersistTaps="handled"')&&screen.includes('keyboardDismissMode="none"'),'Character management must not dismiss the Android keyboard when scrolling to its confirmation field');
+ok(screen.includes('showSoftInputOnFocus')&&screen.includes('editable={!busy}')&&!screen.includes('editable={!busy&&!blockReason}'),'Safety prerequisites must not disable the confirmation keyboard');
+ok(screen.includes('disabled={!onDelete||!confirmed||!!blockReason||busy}'),'Deleting must remain blocked until the confirmation is exact and prerequisites are cleared');
 ok(screen.includes("modalScroll:{maxHeight:'78%'"),'Character management content must scroll inside the constrained dialog');
 ok(screen.includes('ACCOUNT PROGRESS STAYS'),'Delete UI must distinguish account-wide progress from character-bound progress');
 ok(screen.includes('enhancement/temper ranks and pity progress are also removed'),'Delete UI must explicitly disclose that recovered gear loses character-bound upgrade progress');

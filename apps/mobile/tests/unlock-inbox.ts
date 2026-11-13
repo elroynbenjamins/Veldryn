@@ -1,5 +1,5 @@
 import type {GameState} from '../src/core/types';
-import {markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,newlyUnlockedOtherCosmetics,normalizeUnlockInbox,unreadUnlockCount,UNLOCK_INBOX_LIMIT} from '../src/core/unlock-inbox';
+import {markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,newlyUnlockedOtherCosmetics,normalizeUnlockInbox,unreadUnlockCount,unlockInboxDisplayName,UNLOCK_INBOX_LIMIT} from '../src/core/unlock-inbox';
 
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(message+': '+JSON.stringify(actual));};
 const ok=(value:unknown,message:string)=>{if(!value)throw new Error(message)};
@@ -30,4 +30,14 @@ equal(extra.length,3,'pets, emotes and guild cosmetics join the same inbox');
 ok(extra.some(entry=>entry.key==='pet:pet:new'),'new cosmetic pet is detected');
 ok(!extra.some(entry=>entry.key==='pet:pet:owned'),'old pet is not re-announced');
 ok(extra.some(entry=>entry.kind==='emote')&&extra.some(entry=>entry.kind==='guild_cosmetic'),'other permanent cosmetics are detected');
-console.log('PASS account unlock inbox dedupe, persistence normalization, read state and cap');
+const corePets=newlyUnlockedOtherCosmetics(
+ {account:{unlockedCosmeticPetIds:[]}} as unknown as GameState,
+ {account:{unlockedCosmeticPetIds:['PET_022','PET_001','PET_009']}} as unknown as GameState,
+);
+equal(corePets.find(entry=>entry.key==='pet:PET_022')?.name,'Tiny Sphinx','new pet unlocks use canonical pet name');
+equal(corePets.find(entry=>entry.key==='pet:PET_001')?.name,'Pebblemole','early-game pet unlocks use canonical pet name');
+equal(corePets.find(entry=>entry.key==='pet:PET_009')?.name,'Tusklet','common drop pet unlocks use canonical pet name');
+equal(unlockInboxDisplayName({kind:'pet',key:'pet:PET_022',name:'PET 022'}),'Tiny Sphinx','older saved pet inbox entries display canonical names');
+equal(unlockInboxDisplayName({kind:'pet',key:'pet:custom-pet',name:'Event Pet'}),'Event Pet','unknown or event pets preserve their recorded name');
+equal(unlockInboxDisplayName({kind:'title',key:'title:pathfinder',name:'Pathfinder'}),'Pathfinder','other unlock kinds are unchanged');
+console.log('PASS account unlock inbox dedupe, persistence normalization, read state, canonical pet names and cap');

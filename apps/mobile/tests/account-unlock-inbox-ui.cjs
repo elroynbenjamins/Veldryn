@@ -30,7 +30,8 @@ assert(more.includes('newUnlockCount={')===false&&more.includes("id==='NewUnlock
 assert(app.includes('newUnlockCount={unreadUnlockCount(unlockInbox)}'),'The badge count uses saved inbox entries');
 assert(screen.includes('filtered.slice(0,20)')&&screen.includes('Show older unlocks')&&screen.includes('setShowAll(false)'),'History remains bounded after category filtering and resets the page on filter changes');
 assert(screen.includes("onCustomize"),'Unlock list links to existing profile customization');
-assert(screen.includes("pet:'COSMETIC PET'")&&screen.includes("emote:'EMOTE'")&&screen.includes("guild_cosmetic:'GUILD COSMETIC'"),'More cosmetic kinds have readable labels');
+assert(!screen.includes("pet:'COSMETIC PET'")&&screen.includes("row.kind!=='pet'?<Text style={s.kind}")&&screen.includes('unlockInboxDisplayName(row)'),'Pet cards show the canonical pet name without the redundant cosmetic pet label');
+assert(screen.includes("emote:'EMOTE'")&&screen.includes("guild_cosmetic:'GUILD COSMETIC'"),'Other cosmetic kinds retain readable labels');
 
 assert(screen.includes("import {unlockInboxArtwork} from '../theme/unlock-inbox-art'")&&screen.includes('const art=unlockInboxArtwork(row)'),'Each unlock row looks up the earned cosmetic artwork');
 assert(screen.includes("art?<Image accessible={false} source={art}")&&screen.includes('<UiIcon name={icons[row.kind]} size={27}/>'),'Actual cosmetic art renders first and a themed icon remains the fallback');

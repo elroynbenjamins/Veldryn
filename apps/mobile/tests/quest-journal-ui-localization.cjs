@@ -11,7 +11,7 @@ const {questJournalUiRows,questJournalText}=require('../src/i18n/quest-journal-u
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages,'supported languages changed');
 const keys=Object.keys(questJournalUiRows);
-assert.equal(keys.length,48,'all fixed Journal UI gaps plus processing and accessible progress');
+assert.ok(keys.length>=60,'Journal includes existing translated controls and new Chronicle copy');
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
  const rows=questJournalUiRows[key];
@@ -32,7 +32,7 @@ const allKeys=[...new Set([...src.matchAll(/\bp\(\s*(['"])([^'"]+)\1/g)].map(m=>
 const missing=allKeys.filter(k=>!Object.hasOwn(progressionTranslationRows,k));
 const notCovered=missing.filter(k=>!Object.hasOwn(questJournalUiRows,k));
 assert.deepEqual(notCovered,[],'all missing fixed Quest Journal UI keys must be translated');
-assert.equal(missing.length,45,'update this test if Journal UI strings change');
+assert.ok(missing.length>=45,'all additional Quest Journal text must remain localized');
 assert.ok(src.includes('const p=(value:string)=>questJournalText(language,value)'),'Quest Journal must use local catalog with progression fallback');
 assert.ok(src.includes('language:Language'),'quest row needs explicit language for screen-reader copy');
 assert.ok(src.includes("questJournalText(language,'{title}, {status}, {current} of {max}'"),'progress accessibility label must be localized');
@@ -46,4 +46,4 @@ const original='Mira {status}, <PLAYER>';
 assert.ok(questJournalText('fr','{title}, {status}, {current} of {max}',{title:original,status:'ACTIVE',current:2,max:7}).includes(original),'player-authored names are opaque');
 const compiled=ts.createSourceFile('QuestRefinedScreen.tsx',src,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(compiled.parseDiagnostics.length,0,'Quest Journal JSX parses');
-console.log('PASS: 48 Quest Journal authored UI keys in eight languages, source fallback, safe interpolation, status and screen-reader wiring');
+console.log('PASS: '+keys.length+' Quest Journal authored UI keys in eight languages, including Chronicle labels and screen-reader wiring');

@@ -1,5 +1,6 @@
 import type {ClassId,GearSlot} from '../core/types';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
+import {isT5EquipmentAffixSlot,T5_AFFIX_EXTRA_FIXATIVE,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_TIME_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from './t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 
@@ -62,7 +63,7 @@ const infusionByTier:Record<string,{itemId:string;quantity:number}>={
  * This curve keeps early tiers meaningful while allowing late regional
  * materials to stay usable after standard combat drops were reduced.
  */
-// Keep heavy T5 pieces within the 5.4h baseline gathering ceiling without flattening slot differences.
+// Keep heavy T5 pieces inside the unchanged 5.4h baseline grinding ceiling.
 const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:1.5,T5:1.2,T6:.8,T7:.8,T8:.75,T9:.75};
 /**
  * Tier pacing deliberately leaves room for a player to finish a meaningful
@@ -124,7 +125,8 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
     case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
     case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'DUNEWOOD',quantity:reducedSunscarDunewood(8,multiplier)},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier)}]);
-    case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
+    // Keep the T5 weapon's real processed-material farm time inside the 5.4h upper ceiling.
+    case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(10,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
     case 'T8':return [{itemId:'FROSTIRON_INGOT',quantity:q(18,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
@@ -139,11 +141,15 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const setId=String(piece['Set ID']),set=setById.get(setId);
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
   const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
+  const t5Affix=tier==='T5'&&isT5EquipmentAffixSlot(slot);
   const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1),level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   const baseCraftXp=q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0);
-  const craftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
+  const standardCraftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
+  const craftXp=t5Affix?Math.round(standardCraftXp*T5_AFFIX_XP_MULTIPLIER):standardCraftXp;
+  const infusion={...infusionByTier[tier],quantity:infusionByTier[tier].quantity+(t5Affix?T5_AFFIX_EXTRA_FIXATIVE:0)};
+  const baseSeconds=clamp(Math.round(range.base*multiplier),range.min,range.max);
   return {
     id:`CRAFT_V33_${String(piece['Piece ID'])}`,
     name:String(piece['Item Name']),
@@ -151,8 +157,8 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     level,
     xp:craftXp,
     gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1),
-    seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
+    seconds:clamp(Math.round(baseSeconds*(t5Affix?T5_AFFIX_TIME_MULTIPLIER:1)),range.min,range.max),
+    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier*(t5Affix?T5_AFFIX_MATERIAL_MULTIPLIER:1),skillId),infusion]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

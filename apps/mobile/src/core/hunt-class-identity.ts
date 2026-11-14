@@ -55,8 +55,13 @@ export function huntClassSurvivalEvents(events:readonly HuntHit[],input:{
  hit.classGuardAbility={source:'class',id:ability.id,name:ability.name,kind:'shield',amount:prevented};
  if(profile.recoveryOfPreventedPct>0){
   const siphon=prevented*profile.recoveryOfPreventedPct;
-  hit.healing+=siphon;
-  hit.classHealingBudget=(hit.classHealingBudget??0)+siphon;
+  if(siphon>1e-6){
+   hit.healing+=siphon;
+   hit.classHealingBudget=(hit.classHealingBudget??0)+siphon;
+   // Settlement only displays the recovery after HP is actually restored.
+   // This can coexist with the protection event on the same landed strike.
+   hit.classHealAbility={source:'class',id:ability.id,name:ability.name,kind:'heal',amount:siphon};
+  }
  }
  if(profile.followupGuardPct>0){
   const followup=eligible.find(event=>event!==first&&event.actor==='enemy');

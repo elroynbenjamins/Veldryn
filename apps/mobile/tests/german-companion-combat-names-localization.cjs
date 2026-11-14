@@ -50,10 +50,10 @@ for(const {id,active,bond} of rows){
  assert.equal(companionCombatAbilityName('de',id,'New server skill $&'),'New server skill $&');
  assert.equal(companionCombatBondName('de',id,'New server trait $&'),'New server trait $&');
 }
-assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');'),'My skill assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');');
+assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');
 
-const asterServerNames=[...backend.matchAll(/\['(UNIT_\d{3})',(?:"([^"]+)"|'([^']+)')/g)]
- .filter(m=>Number(m[1].slice(-3))<=12).map(m=>({id:m[1],name:m[2]||m[3]}));
+const asterServerNames=[...backend.matchAll(/\['(UNIT_\d{3})',(?:"([^"]+)"|'([^']+)'),'(?:damage|tank|support)'/g)]
+ .filter(m=>Number(m[1].slice(-3))<=12&&!/^UNIT_\d{3}$/.test(m[2]||m[3])).map(m=>({id:m[1],name:m[2]||m[3]}));
 assert.equal(asterServerNames.length,12,'Expected 12 original server companion signatures');
 assert.deepEqual(Object.keys(germanCompanionLegacySignatures).sort(),asterServerNames.map(row=>row.id).sort());
 for(const {id,name} of asterServerNames){
@@ -73,7 +73,7 @@ for(const [english,german] of descriptions){
  assert.equal(companionContent('de',english),german,'German content display missing: '+english);
  assert.equal(companionContent('en',english),english);
 }
-assert.equal(companionCombatDescriptionText('de','Untrusted text assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');'),undefined);
+assert.equal(companionCombatDescriptionText('de','Untrusted text $&'),undefined);
 
 const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
 assert.equal(customTechniques.length,52);
@@ -99,7 +99,7 @@ for(const [english,german] of trialNames){
  for(const language of ['en','es','nl','it','fr','ru','tr'])
   assert.equal(companionTrialAbilityName(language,english),english);
 }
-assert.equal(companionTrialAbilityName('de','Unknown server boss spell const components={'),'Unknown server boss spell const components={');
+assert.equal(companionTrialAbilityName('de','Unknown server boss spell $&'),'Unknown server boss spell $&');
 
 const components={
  training:source(path.join(app,'src/components/CompanionTrainingV50Panel.tsx')),

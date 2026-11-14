@@ -173,3 +173,37 @@ export function companionCombatDescriptionText(language:Language,source:string):
  return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionCombatDescriptions,source)
   ?germanCompanionCombatDescriptions[source]:undefined;
 }
+
+
+/** Authored Companion Trial enemy abilities and phase names.
+ * Applied only inside Trial preview/replay UI, never to gameplay identifiers.
+ */
+export const germanCompanionTrialAbilities:Readonly<Record<string,string>>={
+ 'Guarded Ward':'Schutzbarriere',
+ 'Predatory Rush':'Raubtieransturm',
+ 'Arc Pulse':'Arkaner Impuls',
+ 'Runic Bastion':'Runenbollwerk',
+ "Tyrant's Ascendance":'Aufstieg des Tyrannen',
+ 'Glass Fracture':'Glasbruch',
+ 'White Silence Toll':'Glockenschlag der weißen Stille',
+ 'Crucible Overheat':'Überhitzter Schmelztiegel',
+ 'Rift Unbound':'Entfesselter Riss',
+ 'Riftfire Frenzy':'Rissfeuer-Raserei',
+ 'Final Decree':'Letzter Erlass',
+ 'Echo Crown':'Echokrone',
+ 'Runic Shockwave':'Runenschockwelle',
+ 'Stone Brace':'Steinschutz',
+ 'Tyrant Glass Spear':'Glasspeer des Tyrannen',
+ "Tyrant's Fury":'Zorn des Tyrannen',
+ 'Bell of White Silence':'Glocke der weißen Stille',
+ 'Crucible Hammer':'Schmelztiegelhammer',
+ 'Riftfire Sweep':'Rissfeuer-Schlag',
+ 'Riftfire Focus':'Rissfeuer-Fokus',
+ 'Regent Decree':'Erlass des Regenten',
+ "Crown's Judgment":'Urteil der Krone',
+};
+
+export function companionTrialAbilityName(language:Language,source:string):string{
+ return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionTrialAbilities,source)
+  ?germanCompanionTrialAbilities[source]:source;
+}

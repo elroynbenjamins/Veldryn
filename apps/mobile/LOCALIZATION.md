@@ -4,6 +4,13 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Expedition Shop and Sanctuary missions
+
+- Localized the Expedition Shop UI, 17 ID/source-guarded shop offers, verified offer descriptions and eligibility messages; German currency counts and prices use local number grouping.
+- Completed German display names for all 17 authored Sanctuary Expedition missions, including the active mission list, mission board, preparation, confirmation, claim receipts and accessibility labels. Source IDs and mission names in server state are not mutated.
+- Reused existing localized item names for mission food and reward materials, with explicit German display names for two mission-only resource IDs. Companion names, arbitrary server responses, and player-authored content remain protected from automatic translation.
+- Added independent German catalog/source-drift checks to the existing mobile localization suite. Full TypeScript/CI validation and Android narrow-screen visual review are still required; German is not yet release-complete.
+
 ## Russian focused coverage (November 2026)
 
 - Across the 10 authored source catalogs, **2,630 of 7,202 unique messages (36.5%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.

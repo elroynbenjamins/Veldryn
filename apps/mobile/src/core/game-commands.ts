@@ -145,7 +145,7 @@ export function settingsForOnlineCommand(value:GameState['settings']):GameState[
 }
 
 /** The caller provides a trusted clock, character ID and random roll on the server. */
-export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean}={}):GameCommandResult{
+export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean;legacySeasonalClient?:boolean}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
@@ -439,7 +439,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const type=oneOf(a.type,DAILY_SUPPLY_BOOST_TYPES);state=activateDailySupplyBoost(state,type);message=`+10% ${dailySupplyBoostLabel(type)} active for 2 hours of qualifying activity.`;break;
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
-  case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now,a.choiceId===undefined?undefined:text(a,'choiceId',100));break;
+  case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now,a.choiceId===undefined?undefined:text(a,'choiceId',100),options.legacySeasonalClient===true);break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;
   case 'inventory_preference':{
     // Only the requested preference changes; legacy settings cannot break locks.

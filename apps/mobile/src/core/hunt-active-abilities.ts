@@ -1,0 +1,71 @@
+import type {ClassId} from './types';
+import type {HuntHit} from './combat-hit-timeline';
+
+/** Single-target solo-hunt techniques share names with their existing dungeon
+ * counterparts. This is a separate, budget-neutral hunt ruleset, not the
+ * dungeon cooldown / status engine. */
+export const HUNT_CLASS_TECHNIQUES:Readonly<Record<ClassId,{id:string;name:string}>>={
+ IRONWARDEN:{id:'IW_BASH',name:'Rune Bash'},
+ BASTION:{id:'BT_REBUFF',name:'Fortress Rebuff'},
+ DREADGUARD:{id:'DG_BIND',name:'Binding Chain'},
+ DAWNKEEPER:{id:'DK_SMITE',name:'Sun Smite'},
+ WAYFINDER:{id:'WF_SHOT',name:'Windshot'},
+ RAVAGER:{id:'RV_SWING',name:'Titan Swing'},
+ HEXWEAVER:{id:'HX_CURSE',name:'Black Thread'},
+ KNIFE_DANCER:{id:'KD_LOOP',name:'Scarlet Loop'},
+ STONECALLER:{id:'SC_THUNDER',name:'Thunder Totem'},
+};
+
+export interface HuntActiveAbility {
+ source:'class'|'companion';
+ id:string;
+ name:string;
+ kind:'damage'|'heal';
+ amount:number;
+}
+
+/** A damage-role companion contributes part of an already budgeted landed
+ * attack, never free extra damage or an extra kill. Healer units receive their
+ * own event from the effective recovery applied in the settlement loop.
+ *
+ * Class burst skills move damage from an earlier landed hit to the final hit.
+ * Real intermediate enemy HP changes; the encounter's total damage, finish
+ * time and rewards are identical. No abilities fire during searching/misses,
+ * and none are invented when only a single attack lands.
+ *
+ * All input events are cloned; consecutive / partial / offline settlements
+ * therefore see the same results for the same encounter.
+ */
+export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
+ classId:ClassId;
+ classSkillLevel:number;
+ encounterNumber:number;
+ companion?:{id:string;name:string;abilityId:string;abilityName:string;role:'damage'|'tank'|'support';contributionPct:number};
+}):HuntHit[]{
+ const result=events.map(hit=>({...hit}));
+ const playerIndices=result.map((hit,index)=>hit.actor==='player'&&hit.damage>0?index:-1).filter(index=>index>=0);
+ if(playerIndices.length<2)return result;
+ const first=result[playerIndices[0]],last=result[playerIndices[playerIndices.length-1]];
+ // Technique rank controls how much of the encounter budget is concentrated
+ // into the finisher. Minimum 1 HP is left on the donor's attack.
+ const rank=Math.max(1,Math.min(100,Math.floor(input.classSkillLevel||1)));
+ const fraction=.10+.10*(rank-1)/99;
+ const shifted=Math.min(first.damage-1,Math.max(1,Math.floor(first.damage*fraction)));
+ if(shifted>0){
+  first.damage-=shifted;
+  last.damage+=shifted;
+  const ability=HUNT_CLASS_TECHNIQUES[input.classId];
+  last.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:last.damage};
+ }
+ // A single companion assist is taken from an actual landed hit, limited to
+ // its already-applied power budget. Not all companion roles are damage roles.
+ const companion=input.companion;
+ if(companion?.role==='damage'&&companion.contributionPct>0&&input.encounterNumber%2===0){
+  const hit=result[playerIndices[Math.floor((playerIndices.length-1)/2)]];
+  const portion=Math.min(hit.damage-1,Math.max(1,Math.floor(hit.damage*Math.min(.12,companion.contributionPct))));
+  if(portion>0){
+   hit.companionAssist={source:'companion',id:companion.abilityId,name:companion.name+': '+companion.abilityName,kind:'damage',amount:portion};
+  }
+ }
+ return result;
+}

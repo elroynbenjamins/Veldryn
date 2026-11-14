@@ -15,7 +15,7 @@ export function createOnlineGameRepository(accountId:string){
   const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;
   if(!session||session.user.id!==accountId)throw new Error('Please sign in again.');
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);
-  try{const response=await fetch(`${url}/functions/v1/gameplay`,{method:body?'POST':'GET',signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  try{const response=await fetch(`${url}/functions/v1/gameplay`,{method:body?'POST':'GET',signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:key,'Content-Type':'application/json','x-veldryn-contract-catalog':'2'},body:body?JSON.stringify(body):undefined});
    const payload=await response.json();if(!response.ok)throw new OnlineCommandError(payload.error??payload.message??'Online service unavailable.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));return payload as OnlineSnapshot;
   }finally{clearTimeout(timeout);}
  }

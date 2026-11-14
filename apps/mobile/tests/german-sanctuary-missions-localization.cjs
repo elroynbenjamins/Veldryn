@@ -10,7 +10,7 @@ require.extensions['.ts']=function(mod,filename){
  }).outputText;
  mod._compile(out,filename);
 };
-const {germanCompanionMissionNames,companionMissionDisplayName}=require('../src/i18n/companion-missions-de.ts');
+const {germanCompanionMissionNames,companionMissionDisplayName,companionMissionMaterialName}=require('../src/i18n/companion-missions-de.ts');
 const catalog=fs.readFileSync(path.join(root,'backend/src/server/companions/content.ts'),'utf8');
 const missionList=catalog.slice(catalog.indexOf('export const COMPANION_MISSIONS:'),catalog.indexOf('export const companionMission='));
 assert.ok(missionList.startsWith('export const COMPANION_MISSIONS:'),'Mission source catalogue missing');
@@ -28,6 +28,11 @@ for(const {id,name} of missions){
 }
 assert.equal(companionMissionDisplayName('de','CUSTOM_USER_MISSION','Player mission $&'),'Player mission $&');
 assert.equal(companionMissionDisplayName('de','MISSION_UNKNOWN','Unknown server mission'),'Unknown server mission');
+assert.equal(companionMissionMaterialName('de','SUPPLIES'),'Vorräte');
+assert.equal(companionMissionMaterialName('de','TRIAL_SANCTUARY_MATERIAL'),'Material der Begleiterzuflucht');
+assert.equal(companionMissionMaterialName('en','SUPPLIES'),'SUPPLIES');
+assert.equal(companionMissionMaterialName('en','TRIAL_SANCTUARY_MATERIAL'),'TRIAL SANCTUARY MATERIAL');
+
 const panel=fs.readFileSync(path.join(app,'src/components/CompanionExpeditionsV50Panel.tsx'),'utf8');
 for(const marker of [
  "import {companionMissionDisplayName} from '../i18n/companion-missions-de';",
@@ -38,7 +43,7 @@ for(const marker of [
  "{missionName(mission.id,mission.name)}</Text>",
  "missionName(claimedReward.missionId,claimedReward.name)",
  "setClaimedReward({missionId:row.missionId,name:def?.name??row.missionId",
- "localizedItemName(language,id)",
+ "companionMissionMaterialName(language,id)",
  "localizedItemName(language,option.itemId)",
  "formatLocalizedNumber(language,value)",
  "label('Affinity')",
@@ -47,6 +52,7 @@ assert.equal((panel.match(/missionName\(mission.id,mission.name\)/g)||[]).length
 assert.ok(!panel.includes('{mission.name}</Text>'),'Raw mission name still rendered in a German screen');
 assert.ok(!panel.includes("{row.name}</Text>"),'Raw mission board name still rendered in a German screen');
 assert.ok(!panel.includes("id.replace(/_/g,' ')"),'Raw material IDs still rendered in a German screen');
+assert.equal((panel.match(/companionMissionMaterialName\(language,id\)/g)||[]).length,2,'Base and claim rewards must localize materials');
 const companions=fs.readFileSync(path.join(app,'src/i18n/companions.ts'),'utf8');
 assert.ok(companions.includes('"Affinity":["Affinität","Afinidad","Affiniteit","Affinità","Affinité"]'));
 console.log('PASS: 17 source-guarded German Sanctuary missions; board, active assignments, preparation, confirmation, receipts, a11y and items wired');

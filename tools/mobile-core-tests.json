@@ -226,6 +226,8 @@
   ".core-build/apps/mobile/tests/early-onboarding-exposure.js",
   ".core-build/apps/mobile/tests/onboarding-guide-v1.js",
   ".core-build/apps/mobile/tests/seasonal-quests.js",
+  ".core-build/apps/mobile/tests/personal-seasonal-character-scope.js",
+  ".core-build/apps/mobile/tests/seasonal-legacy-claim-compatibility.js",
   ".core-build/apps/mobile/tests/live-event-catalog.js",
   ".core-build/apps/mobile/tests/annual-event-calendar.js",
   ".core-build/apps/mobile/tests/annual-events-v3.js",

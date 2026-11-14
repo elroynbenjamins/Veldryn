@@ -95,6 +95,6 @@ const supportThird=reconcileCombatCompanionUnlocks(oldMinesReady(supportWithHoun
 equal(supportThird.account.starterThirdCombatCompanionId,'UNIT_002','support class receives the missing Tank starter');
 deepEqual(supportThird.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_002','UNIT_003'],'support class can collect all three starters');
 const thirdReload=parseSaveBackup(createSaveBackup(supportThird));
-equal(thirdReload.account.starterThirdCombatCompanionId,'UNIT_003','resolved third-companion reward survives save normalization');
+equal(thirdReload.account.starterThirdCombatCompanionId,'UNIT_002','resolved third-companion reward survives save normalization');
 
 console.log('PASS: unrestricted starter choice with guided follow-up roles');

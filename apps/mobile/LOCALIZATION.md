@@ -1,5 +1,13 @@
 # Localization status
 
+## November 14, 2026: Russian localization release validation and dynamic Sanctuary names
+
+- Fixed a stale Turkish regression expectation for `Secured`: Russian now correctly translates it to `Защищено`, and Turkish/German locale separation remains unchanged.
+- Translated two new Forge labels, `Keep best {count}` and `Per equipment type`, found in the expanded authored gameplay catalog. The authored Russian source inventory now covers all nontechnical player-facing source keys on this branch; the existing server identifiers and canonical names remain unchanged.
+- Added source-guarded Russian display names for **all 17 Sanctuary Expedition missions**, plus the two expedition-only material labels (`SUPPLIES` and `TRIAL_SANCTUARY_MATERIAL`). Unknown or renamed mission text remains verbatim.
+- Kept the live Sanctuary UI's existing shared name/material helper; German outputs and all other locales remain isolated. Added the focused Russian mission regression to the complete localization CI suite.
+- This documents source coverage and static wiring only. Native-speaker proofreading and Android small-screen verification remain necessary before claiming all Russian copy is polished.
+
 ## November 14, 2026: Russian near-complete authored UI coverage
 
 - Added **539** additional exact-source Russian translations across Account and records (**187**), Companion expeditions and profile showcase (**88**), Inventory/Gem/crafting/forging (**120**), World progression and seasonal UI (**92**), and Party/dungeon feedback (**52**).

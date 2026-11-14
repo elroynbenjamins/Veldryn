@@ -19,13 +19,14 @@ export function HuntAbilityCues({effects,language,formatAmount}:{
   {effects.slice(-2).map((effect,index)=>{
    const color=effect.kind==='damage'?(effect.source==='companion'?C.info:C.accent):C.good;
    const label=effect.kind==='recovery'?'ON-KILL RECOVERY':effect.source==='companion'?'COMPANION SKILL':'CLASS ABILITY';
-   const amount=effect.kind!=='recovery'&&effect.amount!==undefined&&effect.amount>0
-    ?tr(effect.kind==='heal'?'SKILL HEAL · {amount}':'SKILL DAMAGE · {amount}',{amount:formatAmount(effect.amount)})
+   const amount=effect.amount!==undefined&&effect.amount>0
+    ?tr(effect.kind==='damage'?'SKILL DAMAGE · {amount}':'SKILL HEAL · {amount}',{amount:formatAmount(effect.amount)})
     :undefined;
-   return <View key={effect.name+':'+Math.round(effect.atMs)+':'+index} accessibilityLiveRegion="polite"
+   return <View key={effect.name+':'+Math.round(effect.atMs)+':'+index} accessible accessibilityLiveRegion="polite"
+     accessibilityLabel={tr(label)+': '+tr(effect.name)+(amount?' · '+amount:'')}
      style={{borderLeftWidth:3,borderLeftColor:color,borderWidth:1,borderColor:C.line,borderRadius:6,backgroundColor:C.panel2,paddingHorizontal:8,paddingVertical:5,gap:2}}>
-    <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
-     <Text numberOfLines={1} style={{fontSize:9,lineHeight:12,color,fontWeight:'900',letterSpacing:.3,flexShrink:1}}>{tr(label)}</Text>
+    <View style={{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6}}>
+     <Text numberOfLines={2} style={{fontSize:9,lineHeight:12,color,fontWeight:'900',letterSpacing:.3,flexShrink:1}}>{tr(label)}</Text>
      {amount?<Text numberOfLines={1} style={{fontSize:10,lineHeight:13,color:C.text,fontWeight:'800',marginLeft:'auto',flexShrink:1}}>{amount}</Text>:null}
     </View>
     <Text numberOfLines={1} style={{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'}}>{tr(effect.name)}</Text>

@@ -124,7 +124,7 @@ const marketChart=fs.readFileSync('src/components/MarketPriceHistoryChart.tsx','
 ok(questMode.includes("accessibilityLabel={p(LABELS[id])+', '+meta}"),'Quest screen-reader labels must use the visible translated tab labels');
 ok(companionIndex.includes('companionContent(language,status)'),'Companion availability must use the translated status');
 ok(marketInbox.includes('localizedItemName(state.settings.language,row.itemId)'),'Market deliveries must display localized item names');
-ok(marketChart.includes("language==='de'?'de-DE'"),'German market chart must format Gold amounts with German grouping');
+ok(marketChart.includes("formatLocalizedNumber(language,n)"),'Market chart must use the centralized locale-aware number formatter (including German grouping)');
 
 
 // Annual calendar and Event reward surfaces must use translated authored

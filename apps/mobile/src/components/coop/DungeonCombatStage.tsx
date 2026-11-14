@@ -1,4 +1,8 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
+import {useGameTheme} from '../../theme/ThemeContext';
+import {CLASS_ICON_ACCENT} from '../../content/class-icon-colors';
+import {battleText} from '../../i18n/battle';
+import type {ClassId} from '../../core/types';
 import {useSocialText} from '../../i18n/social';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import type {Language} from '../../i18n/languages';
@@ -98,6 +102,7 @@ function openingEnemyFx(archetype:string|undefined){
 }
 export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,entryNodeId,previewArchetypes,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;entryNodeId?:string;previewArchetypes?:Array<{id:string;label:string}>;onPresentationComplete?:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
+ const theme=useGameTheme();
  const backdrop=combatBackdrop(seasonal,eventName);
  const st=useSocialText(),language=useGameLanguage();
  const {width:windowWidth}=useWindowDimensions(),layout=useMemo(()=>dungeonCombatLayout(windowWidth),[windowWidth]);
@@ -151,6 +156,9 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId);
  const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
  const skillActivation=playbackSkillActivation(currentCue,actorIsParty===true);
+ const skillClassAccent=skillActivation?.kind==='class'&&actorSlot?.classId&&Object.prototype.hasOwnProperty.call(CLASS_ICON_ACCENT,actorSlot.classId)
+  ?CLASS_ICON_ACCENT[actorSlot.classId as ClassId]:undefined;
+ const localizedSkillName=skillActivation?.kind==='class'?battleText(language,skillActivation.name):skillActivation?.name;
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
  const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,1):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),1,120):0;
  useEffect(()=>{
@@ -237,9 +245,9 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={dungeonDynamicUiText(language,'{count} combat events',{count:replay.cues.length})} reduceMotion={reduceMotion}/>:null}
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?localizedDungeonPlaybackCue(language,currentCue):pending?st("Battle in progress"):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={localizedDungeonCueType(language,currentCue?.type??(pending?undefined:replay.reason))} tone={currentCue?playbackCueTone(currentCue):pending?'selected':replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
    
-   {skillActivation?<View accessibilityLiveRegion="polite" style={[s.skillBanner,skillActivation.kind==='companion'&&s.companionSkillBanner]}>
-    <Text style={[s.skillBannerLabel,skillActivation.kind==='companion'&&s.companionSkillLabel]}>{dungeonDynamicUiText(language,skillActivation.kind==='companion'?'COMPANION SKILL':'CLASS ABILITY')}</Text>
-    <View style={s.skillBannerRow}><Text numberOfLines={1} style={s.skillBannerName}>{skillActivation.name}</Text>
+   {skillActivation?<View accessibilityLiveRegion="polite" style={[s.skillBanner,skillActivation.kind==='companion'&&s.companionSkillBanner,skillClassAccent&&{borderColor:skillClassAccent}]}>
+    <Text style={[s.skillBannerLabel,skillActivation.kind==='companion'&&s.companionSkillLabel,skillClassAccent&&{color:skillClassAccent}]}>{dungeonDynamicUiText(language,skillActivation.kind==='companion'?'COMPANION SKILL':'CLASS ABILITY')}</Text>
+    <View style={s.skillBannerRow}><Text numberOfLines={2} style={[s.skillBannerName,skillClassAccent&&theme.dark&&{color:skillClassAccent}]}>{localizedSkillName}</Text>
      {skillActivation.outcome==='miss'?<Text style={s.skillBannerResult}>{dungeonDynamicUiText(language,'MISS')}</Text>:skillActivation.amount!==undefined&&skillActivation.actionKind?<Text style={s.skillBannerResult}>{dungeonDynamicUiText(language,skillActivation.actionKind==='heal'?'HEAL {amount}':skillActivation.actionKind==='shield'?'SHIELD {amount}':'DMG {amount}',{amount:Math.round(skillActivation.amount)})}</Text>:null}
     </View>
    </View>:null}

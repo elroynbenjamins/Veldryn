@@ -78,7 +78,7 @@ assert.equal(socialText('ru','Bought {item}',{item:'Player $&'}),'Куплено
 assert.equal(socialText('tr','Live Fellowship bonus: +{marks} Marks',{marks:27}),'Canlı Yoldaşlık bonusu: +27 Nişan');
 assert.equal(socialLabel('tr','Unknown merchant server note'),'Unknown merchant server note');
 
-assert.equal(socialText('ru','Auto Tier ≤ {tier}',{tier:3}),'Автоуровень ≤ 3');
+assert.equal(socialText('ru','Auto Tier ≤ {tier}',{tier:3}),'Авторанг ≤ 3');
 assert.equal(socialText('tr','{count}/140 · expires 30 minutes after posting',{count:15}),'15/140 · yayımlandıktan 30 dakika sonra sona erer');
 assert.equal(socialText('nl','Your post · {name} · {time}',{name:'Ironwood Wolf',time:'5m'}),'Jouw oproep · Ironwood Wolf · 5m');
 assert.equal(socialText('de','Combat details for {name}',{name:'Person {count}'}),'Kampfdetails für Person {count}');

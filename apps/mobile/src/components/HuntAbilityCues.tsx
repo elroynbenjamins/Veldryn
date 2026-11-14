@@ -1,7 +1,7 @@
 import {Text,View} from 'react-native';
 import type {ActiveHuntSkillEffect} from '../core/game';
 import type {ClassId} from '../core/types';
-import {dungeonCombatClassFx} from '../core/dungeon-combat-fx';
+import {classEmblemAccent} from '../theme/class-emblem-colors';
 import type {Language} from '../i18n/languages';
 import {battleText} from '../i18n/battle';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -16,10 +16,8 @@ export function HuntAbilityCues({effects,language,formatAmount,classId}:{
  classId?:ClassId;
 }){
  const C=useGameTheme();
- const classAccent=dungeonCombatClassFx(classId)?.damageAccent;
- // Match each class's existing combat VFX accent, rather than assigning a
- // different cosmetic color to the same ability on the hunt screen.
- const classColor=classAccent==='gold'?C.warning:classAccent==='cyan'?C.info:classAccent==='danger'?C.bad:classAccent==='violet'?C.special:classAccent==='success'?C.good:C.accent;
+ // Use the unique color in the equipped class emblem, not a role/VFX color.
+ const classColor=classEmblemAccent(classId,C.dark)??C.accent;
  if(!effects.length)return null;
  const tr=(key:string,params?:Record<string,string|number>)=>battleText(language,key,params);
  return <View style={{gap:5}}>

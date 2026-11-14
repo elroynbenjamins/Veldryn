@@ -430,54 +430,73 @@ function huntEnemyHpAt(monsterHp, events, progressFraction) {
 
 // ../apps/mobile/src/core/hunt-active-abilities.ts
 var HUNT_CLASS_TECHNIQUES = {
-  IRONWARDEN: { id: "IW_BASH", name: "Rune Bash" },
-  BASTION: { id: "BT_REBUFF", name: "Fortress Rebuff" },
-  DREADGUARD: { id: "DG_BIND", name: "Binding Chain" },
-  DAWNKEEPER: { id: "DK_SMITE", name: "Sun Smite" },
-  WAYFINDER: { id: "WF_SHOT", name: "Windshot" },
-  RAVAGER: { id: "RV_SWING", name: "Titan Swing" },
-  HEXWEAVER: { id: "HX_CURSE", name: "Black Thread" },
-  KNIFE_DANCER: { id: "KD_LOOP", name: "Scarlet Loop" },
-  STONECALLER: { id: "SC_THUNDER", name: "Thunder Totem" }
+  IRONWARDEN: { id: "IW_BASH", name: "Rune Bash", cooldownSeconds: 6.5 },
+  BASTION: { id: "BT_REBUFF", name: "Fortress Rebuff", cooldownSeconds: 7.5 },
+  DREADGUARD: { id: "DG_BIND", name: "Binding Chain", cooldownSeconds: 6.5 },
+  DAWNKEEPER: { id: "DK_SMITE", name: "Sun Smite", cooldownSeconds: 5.5 },
+  WAYFINDER: { id: "WF_SHOT", name: "Windshot", cooldownSeconds: 4.5 },
+  RAVAGER: { id: "RV_SWING", name: "Titan Swing", cooldownSeconds: 4.2 },
+  HEXWEAVER: { id: "HX_CURSE", name: "Black Thread", cooldownSeconds: 6.5 },
+  KNIFE_DANCER: { id: "KD_LOOP", name: "Scarlet Loop", cooldownSeconds: 5 },
+  STONECALLER: { id: "SC_THUNDER", name: "Thunder Totem", cooldownSeconds: 6 }
 };
+function huntCooldownPulseAt(input) {
+  const { combatStartedAtMs: session, encounterStartedAtMs: start, cycleSeconds, cooldownSeconds } = input;
+  if (![session, start, cycleSeconds, cooldownSeconds].every(Number.isFinite) || cycleSeconds <= 0 || cooldownSeconds <= 0 || start < session - 1e-3) return void 0;
+  const period = Math.max(1e3, Math.round(cooldownSeconds * 1e3));
+  const count = Math.max(0, Math.ceil((start - session - 1e-5) / period));
+  const pulse = session + count * period;
+  return pulse >= start - 1e-3 && pulse < start + cycleSeconds * 1e3 - 1e-3 ? pulse : void 0;
+}
+var timeOf = (hit, start, cycleSeconds) => start + hit.fraction * cycleSeconds * 1e3;
 function huntActiveDamageEvents(events, input) {
   const result = events.map((hit) => ({ ...hit }));
-  const playerIndices = result.map((hit, index) => hit.actor === "player" && hit.damage > 0 ? index : -1).filter((index) => index >= 0);
-  if (playerIndices.length < 2) return result;
-  const first = result[playerIndices[0]], last = result[playerIndices[playerIndices.length - 1]];
-  const rank = Math.max(1, Math.min(100, Math.floor(input.classSkillLevel || 1)));
-  const fraction = 0.1 + 0.1 * (rank - 1) / 99;
-  const shifted = Math.min(first.damage - 1, Math.max(1, Math.floor(first.damage * fraction)));
-  if (shifted > 0) {
-    first.damage -= shifted;
-    last.damage += shifted;
-    const ability2 = HUNT_CLASS_TECHNIQUES[input.classId];
-    last.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: last.damage };
-  }
-  const companion = input.companion;
-  if (companion?.role === "damage" && companion.contributionPct > 0 && input.encounterNumber % 2 === 0) {
-    const hit = result[playerIndices[Math.floor((playerIndices.length - 1) / 2)]];
-    const portion = Math.min(hit.damage - 1, Math.max(1, Math.floor(hit.damage * Math.min(0.12, companion.contributionPct))));
-    if (portion > 0) {
-      hit.companionAssist = { source: "companion", id: companion.abilityId, name: companion.name + ": " + companion.abilityName, kind: "damage", amount: portion };
+  const landed = result.filter((hit) => hit.actor === "player" && hit.damage > 0);
+  if (landed.length < 2) return result;
+  const ability2 = HUNT_CLASS_TECHNIQUES[input.classId];
+  const classPulse = huntCooldownPulseAt({ ...input, cooldownSeconds: ability2.cooldownSeconds });
+  const first = landed[0], last = landed[landed.length - 1];
+  if (classPulse !== void 0 && timeOf(last, input.encounterStartedAtMs, input.cycleSeconds) >= classPulse - 1e-3) {
+    const rank = Math.max(1, Math.min(100, Math.floor(input.classSkillLevel || 1)));
+    const fraction = 0.1 + 0.1 * (rank - 1) / 99;
+    const shifted = Math.min(first.damage - 1, Math.max(1, Math.floor(first.damage * fraction)));
+    if (shifted > 0) {
+      first.damage -= shifted;
+      last.damage += shifted;
+      last.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: last.damage };
     }
   }
+  const companion = input.companion;
+  if (companion?.role === "damage" && companion.contributionPct > 0) {
+    const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: companion.cooldownSeconds });
+    if (pulse !== void 0) {
+      const eligible = landed.filter((hit2) => timeOf(hit2, input.encounterStartedAtMs, input.cycleSeconds) >= pulse - 1e-3);
+      const hit = eligible[Math.floor((eligible.length - 1) / 2)];
+      if (hit) {
+        const portion = Math.min(hit.damage - 1, Math.max(1, Math.floor(hit.damage * Math.min(0.12, companion.contributionPct))));
+        if (portion > 0) hit.companionAssist = { source: "companion", id: companion.abilityId, name: companion.name + ": " + companion.abilityName, kind: "damage", amount: portion };
+      }
+    }
+  }
+  return result;
+}
+function huntSupportHealEvents(events, input) {
+  const result = events.map((hit) => ({ ...hit }));
+  const c = input.companion;
+  if (!c || c.role !== "support" || c.activeKind !== "heal" || c.healingPctPerHour <= 0) return result;
+  const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: c.cooldownSeconds });
+  if (pulse === void 0) return result;
+  const first = result.find((hit) => (hit.actor === "enemy" || hit.actor === "fatigue") && hit.healing > 0 && timeOf(hit, input.encounterStartedAtMs, input.cycleSeconds) >= pulse - 1e-3);
+  if (first) first.supportAbility = { source: "companion", id: c.abilityId, name: c.name + ": " + c.abilityName, kind: "heal", amount: 0 };
   return result;
 }
 function huntTankGuardEvents(events, input) {
   const result = events.map((hit) => ({ ...hit }));
   const unit = input.companion;
   if (!unit || unit.role !== "tank" || unit.activeKind !== "shield" && unit.activeKind !== "damage_reduction") return result;
-  const cooldown2 = Math.max(1e3, Math.round(unit.cooldownSeconds * 1e3));
-  const session = Number.isFinite(input.combatStartedAtMs) ? input.combatStartedAtMs : 0;
-  const start = Number.isFinite(input.encounterStartedAtMs) ? input.encounterStartedAtMs : session;
-  const cycle = Math.max(0, Number.isFinite(input.cycleSeconds) ? input.cycleSeconds : 0) * 1e3;
-  if (cycle <= 0) return result;
-  const pulseIndex = Math.max(0, Math.ceil((start - session - 1e-5) / cooldown2));
-  const pulseAt = session + pulseIndex * cooldown2;
-  const end = start + cycle;
-  if (pulseAt < start - 1e-3 || pulseAt >= end - 1e-3) return result;
-  const first = result.find((hit) => hit.actor === "enemy" && hit.damage > 0 && start + hit.fraction * cycle >= pulseAt - 1e-3);
+  const pulseAt = huntCooldownPulseAt({ ...input, cooldownSeconds: unit.cooldownSeconds });
+  if (pulseAt === void 0) return result;
+  const first = result.find((hit) => hit.actor === "enemy" && hit.damage > 0 && timeOf(hit, input.encounterStartedAtMs, input.cycleSeconds) >= pulseAt - 1e-3);
   if (!first) return result;
   const passiveMitigation = Math.max(0, 1 - Math.min(1, unit.incomingDamageMultiplier));
   const rate = Math.min(0.025, passiveMitigation * 0.35);
@@ -52831,18 +52850,16 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     if (lastSkillEffects.length > 4) lastSkillEffects.shift();
   };
   const equippedAbilityCompanion = prepared.companion.contributionPct > 0 ? COMBAT_COMPANIONS.find((def) => def.id === c.equippedCombatCompanionId) : void 0;
-  const techniqueInput = {
-    classId: c.classId,
-    classSkillLevel: characterClassSkills(c)[0]?.level ?? 1,
-    companion: equippedAbilityCompanion ? {
-      id: equippedAbilityCompanion.id,
-      name: equippedAbilityCompanion.name,
-      abilityId: equippedAbilityCompanion.activeAbility.id,
-      abilityName: equippedAbilityCompanion.activeAbility.name,
-      role: equippedAbilityCompanion.role,
-      contributionPct: Math.max(0, 1 - 1 / prepared.companion.outputMultiplier)
-    } : void 0
-  };
+  const classTechniqueInput = { classId: c.classId, classSkillLevel: characterClassSkills(c)[0]?.level ?? 1 };
+  const commonCompanion = equippedAbilityCompanion ? {
+    id: equippedAbilityCompanion.id,
+    name: equippedAbilityCompanion.name,
+    abilityId: equippedAbilityCompanion.activeAbility.id,
+    abilityName: equippedAbilityCompanion.activeAbility.name,
+    role: equippedAbilityCompanion.role,
+    activeKind: equippedAbilityCompanion.activeAbility.effect.kind,
+    cooldownSeconds: equippedAbilityCompanion.activeAbility.cooldownSeconds
+  } : void 0;
   const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds, isPrepared = false, encounterStartedAtMs = startsAtMs) => {
     let hits;
     if (runtime.huntOptions) {
@@ -52853,21 +52870,19 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       const exchange = combatEncounterDamage(runtime, champion);
       hits = huntHitEvents({ monsterHp: runtime.m.hp, basePlayerHit: huntBasePlayerHit(runtime.stats.attack, runtime.m.defense, runtime.secondary.playerOutputMultiplier), incomingDamage: exchange.damage, healingPerEncounter: exchange.healing, cycleSeconds: attackCadenceSeconds, critChance: runtime.stats.critChance, seed: seedFor(index) });
     }
-    const offensive = huntActiveDamageEvents(hits, { ...techniqueInput, encounterNumber: (activity.sessionKills ?? 0) + index });
-    return huntTankGuardEvents(offensive, {
-      combatStartedAtMs: activity.startedAtMs ?? startsAtMs,
-      encounterStartedAtMs,
-      cycleSeconds: runtime.killCycleSeconds,
-      companion: equippedAbilityCompanion ? {
-        id: equippedAbilityCompanion.id,
-        name: equippedAbilityCompanion.name,
-        abilityId: equippedAbilityCompanion.activeAbility.id,
-        abilityName: equippedAbilityCompanion.activeAbility.name,
-        role: equippedAbilityCompanion.role,
-        activeKind: equippedAbilityCompanion.activeAbility.effect.kind,
-        cooldownSeconds: equippedAbilityCompanion.activeAbility.cooldownSeconds,
-        incomingDamageMultiplier: runtime.companion.incomingDamageMultiplier
-      } : void 0
+    const cooldownTiming = { combatStartedAtMs: activity.startedAtMs ?? startsAtMs, encounterStartedAtMs, cycleSeconds: runtime.killCycleSeconds };
+    const offensive = huntActiveDamageEvents(hits, {
+      ...classTechniqueInput,
+      ...cooldownTiming,
+      companion: commonCompanion ? { ...commonCompanion, contributionPct: Math.max(0, 1 - 1 / runtime.companion.outputMultiplier) } : void 0
+    });
+    const heals = huntSupportHealEvents(offensive, {
+      ...cooldownTiming,
+      companion: commonCompanion ? { ...commonCompanion, healingPctPerHour: runtime.companion.directHealingPctPerHour } : void 0
+    });
+    return huntTankGuardEvents(heals, {
+      ...cooldownTiming,
+      companion: commonCompanion ? { ...commonCompanion, incomingDamageMultiplier: runtime.companion.incomingDamageMultiplier } : void 0
     });
   };
   if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
@@ -52904,12 +52919,12 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
           const classPortion = appliedHealing * classBase / (companionBase + classBase || 1);
           if (classPortion > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: runtime.style.name, kind: "recovery", amount: classPortion, source: "class" });
         }
-        if (appliedHealing > 0 && equippedAbilityCompanion?.role === "support" && equippedAbilityCompanion.activeAbility.effect.kind === "heal" && encounterNumber % 2 === 0) {
+        if (appliedHealing > 0 && hit.supportAbility) {
           const companionHeal = runtime.stats.hp * runtime.companion.directHealingPctPerHour * runtime.killCycleSeconds / 3600;
           const classHeal = runtime.stats.attack * (runtime.style.onKillAttackHealPct ?? 0);
           const share = companionHeal / (companionHeal + classHeal || 1);
           const credited = Math.min(appliedHealing, appliedHealing * share);
-          if (credited > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: equippedAbilityCompanion.name + ": " + equippedAbilityCompanion.activeAbility.name, kind: "heal", amount: credited, source: "companion" });
+          if (credited > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: hit.supportAbility.name, kind: "heal", amount: credited, source: "companion" });
         }
         while (hp > 0 && hp / runtime.stats.hp <= threshold) {
           const nextFood = foodOrder.find((row) => row.heal > 0 && (foodLeft.get(row.id) ?? 0) > 0);

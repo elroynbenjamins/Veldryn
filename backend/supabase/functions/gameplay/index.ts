@@ -52301,6 +52301,11 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
   let bossHp = bossMaxHp, playerHp = clamp8(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp8(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
+  const classId = Object.prototype.hasOwnProperty.call(HUNT_CLASS_TECHNIQUES, player.classId) ? player.classId : void 0;
+  const classAbility = classId ? HUNT_CLASS_TECHNIQUES[classId] : void 0;
+  const classRank = Number.isFinite(player.classSkillLevel) ? Math.max(1, Math.min(100, Math.floor(player.classSkillLevel))) : 1;
+  const classScale = 1 + 0.3 * (classRank - 1) / 99;
+  let nextClassReadyAtMs = 0, fortressFollowup = false, hexMarkPending = false;
   const phasesReached = [1], events = [];
   const playerHitChance = clamp8(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
   const playerAttackIntervalMs = clamp8(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
@@ -52344,13 +52349,31 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
         const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
-        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1)));
+        const offensive = !!classAbility && now >= nextClassReadyAtMs && (classId === "WAYFINDER" || classId === "RAVAGER" || classId === "HEXWEAVER" || classId === "KNIFE_DANCER");
+        const bonus = offensive ? classId === "WAYFINDER" ? 0.025 : classId === "RAVAGER" ? 0.045 : classId === "HEXWEAVER" ? 0.02 : 0.025 : 0;
+        const markedBonus = hexMarkPending ? 0.02 : 0;
+        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1) * (1 + Math.min(0.05, bonus * classScale) + markedBonus)));
         let nextBossHp = Math.max(0, bossHp - rolledAmount);
         if (mode === "story" && phase === 1 && nextBossHp <= bossMaxHp * 0.65) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.65));
         else if (mode === "story" && phase === 2 && nextBossHp <= bossMaxHp * 0.3) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.3));
         const amount = Math.max(1, bossHp - nextBossHp);
         bossHp = nextBossHp;
-        push({ atMs: now, type: "player_hit", label: critical ? "Critical strike!" : "Strike", abilityId: "PLAYER_STRIKE", amount, critical });
+        const castName = offensive ? classAbility.name : void 0;
+        push({
+          atMs: now,
+          type: "player_hit",
+          label: castName ?? (critical ? "Critical strike!" : "Strike"),
+          abilityId: offensive ? classAbility.id : "PLAYER_STRIKE",
+          skillKind: offensive ? "damage" : void 0,
+          amount,
+          critical
+        });
+        if (hexMarkPending) hexMarkPending = false;
+        if (offensive) {
+          nextClassReadyAtMs = now + Math.round(classAbility.cooldownSeconds * 1e3);
+          if (classId === "HEXWEAVER") hexMarkPending = true;
+          if (classId === "KNIFE_DANCER") nextPlayerAt -= Math.min(140, Math.round(playerAttackIntervalMs * 0.055));
+        }
         const hpPct2 = bossHp / bossMaxHp;
         if (phase === 1 && hpPct2 <= 0.65 && bossHp > 0) enterPhase(now, 2);
         else if (phase === 2 && hpPct2 <= 0.3 && bossHp > 0) enterPhase(now, 3);
@@ -52385,9 +52408,59 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
       const raw2 = monster.attack * 0.29 + monster.level * 0.14;
       const phaseDamage = phase === 3 ? 1.18 : phase === 2 ? 1.06 : 1;
-      const amount = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
+      const incoming = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
+      let amount = incoming, prevented = 0, restored = 0;
+      const defensive = !!classAbility && now >= nextClassReadyAtMs && (classId === "IRONWARDEN" || classId === "BASTION" || classId === "DREADGUARD" || classId === "DAWNKEEPER" || classId === "STONECALLER");
+      if (defensive && classId !== "DAWNKEEPER") {
+        const guardPct = classId === "IRONWARDEN" ? 0.055 : classId === "BASTION" ? 0.065 : classId === "DREADGUARD" ? 0.05 : 0.06;
+        amount = Math.max(1, incoming - Math.round(incoming * Math.min(0.09, guardPct * classScale)));
+        prevented = incoming - amount;
+        if (classId === "BASTION") fortressFollowup = true;
+      } else if (fortressFollowup && classId === "BASTION" && !defensive) {
+        amount = Math.max(1, incoming - Math.round(incoming * Math.min(0.04, 0.025 * classScale)));
+        prevented = incoming - amount;
+        fortressFollowup = false;
+      }
       playerHp = Math.max(0, playerHp - amount);
       push({ atMs: now, type: "boss_hit", label, abilityId, amount, critical });
+      if (defensive) {
+        const restorationPct = classId === "DAWNKEEPER" ? 0.12 : classId === "DREADGUARD" ? 0.3 : classId === "STONECALLER" ? 0.2 : 0;
+        const restorationBase = classId === "DAWNKEEPER" ? amount : prevented;
+        if (playerHp > 0 && restorationPct > 0) {
+          const healBudget = Math.floor(restorationBase * (classId === "DAWNKEEPER" ? Math.min(0.15, restorationPct * classScale) : restorationPct * classScale));
+          restored = Math.max(0, Math.min(playerMaxHp - playerHp, healBudget));
+          if (restored > 0) playerHp += restored;
+        }
+        if (prevented > 0 || restored > 0) {
+          nextClassReadyAtMs = now + Math.round(classAbility.cooldownSeconds * 1e3);
+          push({
+            atMs: now + 1,
+            type: "class_skill",
+            label: classAbility.name,
+            abilityId: classAbility.id,
+            skillKind: prevented > 0 ? "shield" : "heal",
+            amount: prevented > 0 ? prevented : restored
+          });
+          if (prevented > 0 && restored > 0)
+            push({
+              atMs: now + 2,
+              type: "class_skill",
+              label: classAbility.name,
+              abilityId: classAbility.id,
+              skillKind: "heal",
+              amount: restored
+            });
+        }
+      } else if (prevented > 0 && classId === "BASTION") {
+        push({
+          atMs: now + 1,
+          type: "class_skill",
+          label: classAbility.name,
+          abilityId: classAbility.id,
+          skillKind: "shield",
+          amount: prevented
+        });
+      }
       maybePotion(now);
     }
     nextBossAt += attackInterval;
@@ -53948,6 +54021,7 @@ function fallenKnightPlayerSnapshot(state) {
   return {
     name: character.name,
     classId: character.classId,
+    classSkillLevel: characterClassSkills(character)[0]?.level ?? 1,
     maxHp: stats4.hp,
     currentHp: Math.max(1, Math.min(stats4.hp, character.currentHp || stats4.hp)),
     attack: stats4.attack,

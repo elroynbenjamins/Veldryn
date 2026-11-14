@@ -4,6 +4,10 @@
  * Unknown text still falls back to English, never an invented translation.
  */
 export const TURKISH_COVERAGE = {
+  "+{defense} DEF and +{hp} HP while the full set is equipped.": "Tam set kuşanıldığında +{defense} SAV ve +{hp} CAN.",
+  "+{attack} ATK and +{hp} HP while the full set is equipped.": "Tam set kuşanıldığında +{attack} SAL ve +{hp} CAN.",
+  "+{hp} HP and +{attack} ATK while the full set is equipped.": "Tam set kuşanıldığında +{hp} CAN ve +{attack} SAL.",
+  "+{attack} ATK while the full set is equipped.": "Tam set kuşanıldığında +{attack} SAL.",
   "FOOD ROTATION": "YİYECEK SIRASI",
   "Food actions": "Yiyecek işlemleri",
   "Food running low": "Yiyecek azalıyor",

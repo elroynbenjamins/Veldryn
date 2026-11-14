@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+      - name: Use latest repair branch tip
+        run: |
+          git fetch origin fix/character-world-progress-sunscar-20261114
+          git checkout -B fix/character-world-progress-sunscar-20261114 origin/fix/character-world-progress-sunscar-20261114
       - uses: pnpm/action-setup@v4
         with:
           version: 10

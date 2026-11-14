@@ -14,6 +14,17 @@ import {RUSSIAN_FINAL_ACCOUNT_ROWS} from './russian-final-account';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  // More navigation and release status in RU/TR.
+  "Browse dungeons, prepare Echoes and join expeditions": ["Исследуйте подземелья, готовьте эхо и присоединяйтесь к экспедициям","Zindanları keşfet, Yankıları hazırla ve seferlere katıl"],
+  "Your team, weekly contracts, invites and chat": ["Ваша команда, еженедельные контракты, приглашения и чат","Ekibin, haftalık sözleşmeler, davetler ve sohbet"],
+  "Find Parties, players and Guilds": ["Найдите группы, игроков и гильдии","Grupları, oyuncuları ve loncaları bul"],
+  "Codex": ["Кодекс","Kodeks"],
+  "Browse resources, companion materials and crafting recipes": ["Просматривайте ресурсы, материалы для спутников и рецепты создания","Kaynaklara, yoldaş malzemelerine ve üretim tariflerine göz at"],
+  "{count} Party updates": ["{count} обновлений группы","{count} grup güncellemesi"],
+  "Party updates": ["Обновления группы","Grup güncellemeleri"],
+  "New release information available": ["Доступна новая информация о выпуске","Yeni sürüm bilgileri mevcut"],
+  "Release notes and app versions": ["Примечания к выпуску и версии приложения","Sürüm notları ve uygulama sürümleri"],
+  "New update available": ["Доступно новое обновление","Yeni güncelleme mevcut"],
   "Start main screen tour": ["Начать обзор главного экрана","Ana ekran turunu başlat"],
   // Profile showcase empty states and selection guidance.
   "Choose an earned achievement": ["Выберите полученное достижение","Kazanılmış bir başarı seçin"],

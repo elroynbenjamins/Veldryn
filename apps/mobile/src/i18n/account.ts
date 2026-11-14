@@ -5,6 +5,17 @@ import {spanishUiGap} from './spanish-ui-gaps';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  // More destination summaries, badge prompts and release notices.
+  "Browse dungeons, prepare Echoes and join expeditions": ["Browse dungeons, prepare Echoes and join expeditions","Dungeons erkunden, Echos vorbereiten und Expeditionen beitreten","Explora mazmorras, prepara ecos y únete a expediciones","Verken kerkers, bereid echo's voor en sluit je aan bij expedities","Esplora i dungeon, prepara gli Echi e unisciti alle spedizioni","Explorez les donjons, préparez les Échos et rejoignez des expéditions"],
+  "Your team, weekly contracts, invites and chat": ["Your team, weekly contracts, invites and chat","Dein Team, Wochenaufträge, Einladungen und Chat","Tu equipo, contratos semanales, invitaciones y chat","Je team, weekcontracten, uitnodigingen en chat","La tua squadra, contratti settimanali, inviti e chat","Votre équipe, contrats hebdomadaires, invitations et discussion"],
+  "Find Parties, players and Guilds": ["Find Parties, players and Guilds","Gruppen, Spieler und Gilden finden","Encuentra grupos, jugadores y gremios","Vind groepen, spelers en gildes","Trova gruppi, giocatori e gilde","Trouvez des groupes, des joueurs et des guildes"],
+  "Codex": ["Codex","Kodex","Códice","Codex","Codice","Codex"],
+  "Browse resources, companion materials and crafting recipes": ["Browse resources, companion materials and crafting recipes","Ressourcen, Gefährtenmaterialien und Herstellungsrezepte durchsuchen","Consulta recursos, materiales de compañeros y recetas de fabricación","Bekijk grondstoffen, metgezelmaterialen en maakrecepten","Consulta risorse, materiali per compagni e ricette di creazione","Parcourez les ressources, matériaux de compagnons et recettes d'artisanat"],
+  "{count} Party updates": ["{count} Party updates","{count} Gruppenupdates","{count} novedades del grupo","{count} groepsupdates","{count} aggiornamenti del gruppo","{count} actualités de groupe"],
+  "Party updates": ["Party updates","Gruppenupdates","Novedades del grupo","Groepsupdates","Aggiornamenti del gruppo","Actualités de groupe"],
+  "New release information available": ["New release information available","Neue Versionsinformationen verfügbar","Hay nueva información de la versión","Nieuwe release-informatie beschikbaar","Nuove informazioni sulla versione disponibili","Nouvelles informations de version disponibles"],
+  "Release notes and app versions": ["Release notes and app versions","Versionshinweise und App-Versionen","Notas de versión y versiones de la app","Releaseopmerkingen en appversies","Note di rilascio e versioni dell'app","Notes de version et versions de l’application"],
+  "New update available": ["New update available","Neues Update verfügbar","Nueva actualización disponible","Nieuwe update beschikbaar","Nuovo aggiornamento disponibile","Nouvelle mise à jour disponible"],
   "Start main screen tour": ["Start main screen tour","Hauptbildschirm-Tour starten","Iniciar recorrido por la pantalla principal","Rondleiding door het hoofdscherm starten","Avvia il tour della schermata principale","Lancer la visite de l’écran principal"],
   // Russian guide coverage: authored six-language catalog labels.
   "Reach Level 10": ["Reach Level 10","Erreiche Stufe 10","Alcanza el nivel 10","Bereik niveau 10","Raggiungi il livello 10","Atteignez le niveau 10"],

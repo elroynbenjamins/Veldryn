@@ -112,6 +112,10 @@ for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.
  visit(tree);
 }
 assert.ok(earlyScreenKeys>=100,'dashboard/roster/bonus/home-card coverage');
+assert.equal(accountText('de','Browse dungeons, prepare Echoes and join expeditions'),'Dungeons erkunden, Echos vorbereiten und Expeditionen beitreten');
+assert.equal(accountText('ru','New update available'),'Доступно новое обновление');
+assert.equal(accountText('tr','Codex'),'Kodeks');
+assert.ok(accountText('de','{count} Party updates',{count:3}).includes('3'),'More Party badge placeholders must survive translation');
 assert.equal(accountText('de','Start main screen tour'),'Hauptbildschirm-Tour starten');
 assert.equal(accountText('ru','Start main screen tour'),'Начать обзор главного экрана');
 assert.equal(accountText('tr','Start main screen tour'),'Ana ekran turunu başlat');

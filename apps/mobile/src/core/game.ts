@@ -955,7 +955,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   state=ensurePersonalSeasonalState(state);
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
   if(!contract)throw new Error('This contract has expired.');
-  if((state.character!.personalSeasonal?.claimIds??[]).includes(contract.id))throw new Error('This character has already claimed this contract reward.');
+  if((state.character!.personalSeasonal?.claimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
   if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
   // Recompute the allowed rewards from authoritative character progression; never trust client amounts.
   const chosen=choiceId===undefined?contract.rewardOptions[0]:contract.rewardOptions.find(reward=>reward.id===choiceId);

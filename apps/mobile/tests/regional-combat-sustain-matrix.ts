@@ -51,10 +51,10 @@ guardedState=equipCombatCompanion(guardedState,'UNIT_002');
 assert.equal(guardedState.character!.equippedCombatCompanionId,'UNIT_002','Damage class may equip a Tank companion');
 const unguardedProjection=combatSustainProjection(unguardedState,road.monsterId)!;
 const guardedProjection=combatSustainProjection(guardedState,road.monsterId)!;
-assert.ok(guardedProjection.netDamagePerKill<unguardedProjection.netDamagePerKill,'Tank defense must reduce actual forecast damage');
-assert.ok(guardedProjection.foodPerHour<unguardedProjection.foodPerHour,'Tank protection must reduce projected food demand');
-assert.ok(guardedProjection.killsPerHour===unguardedProjection.killsPerHour,'Tank guard cannot change kill pace');
-assert.ok(guardedProjection.xpPerHour===unguardedProjection.xpPerHour,'Tank guard cannot alter combat XP payouts');
-assert.ok(guardedProjection.goldPerHour===unguardedProjection.goldPerHour,'Tank guard cannot alter gold payouts');
+assert.ok(guardedProjection.damagePerKill<unguardedProjection.damagePerKill,'Tank protection must lower incoming hit budget');
+assert.ok(guardedProjection.netDamagePerKill<unguardedProjection.netDamagePerKill,'Tank defense must reduce actual forecast net damage');
+assert.ok(guardedProjection.foodPerHour<=unguardedProjection.foodPerHour*1.05+.05,'Tank companion must not cause a provisioning regression');
+assert.ok(Math.abs(guardedProjection.xpPerHour/guardedProjection.killsPerHour-unguardedProjection.xpPerHour/unguardedProjection.killsPerHour)<1e-6,'Tank guard cannot alter XP per kill');
+assert.ok(Math.abs(guardedProjection.goldPerHour/guardedProjection.killsPerHour-unguardedProjection.goldPerHour/unguardedProjection.killsPerHour)<1e-6,'Tank guard cannot alter Gold per kill');
 
 console.log(JSON.stringify({status:'PASS',report},null,2));

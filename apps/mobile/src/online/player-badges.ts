@@ -1,10 +1,12 @@
-import {COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,canEquipSupporterBadge,isCollectiblePlayerBadgeId,isEquippablePlayerBadgeId,normalizePlayerBadges,supporterTierMonths,validatedFeaturedBadges,type CollectiblePlayerBadgeId,type EquippablePlayerBadgeId,type PlayerBadgeIdentity,type SupporterTenureTier} from '../core/player-badges';
+import {COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,canEquipSupporterBadge,isCollectiblePlayerBadgeId,isEquippablePlayerBadgeId,normalizePlayerBadges,supporterTierMonths,validatedFeaturedBadges,type CollectiblePlayerBadgeId,type EquippablePlayerBadgeId,type PlayerBadgeIdentity,type SupporterTenureTier} from '../core/player-badges';
 import {supabase} from './supabase';
 
 export interface PlayerBadgePreferences{
  identity?:PlayerBadgeIdentity;
  showSupporter:boolean;
  supporterAvailable:boolean;
+ vipAvailable:boolean;
+ vipPlusAvailable:boolean;
  supporterTierMonths:SupporterTenureTier;
  supporterTotalDays:number;
  equippedBadgeId:EquippablePlayerBadgeId|null;
@@ -23,11 +25,14 @@ async function request(name:string,args:Record<string,unknown>={}):Promise<Playe
  const owned:CollectiblePlayerBadgeId[]=providedExtras.filter(isCollectiblePlayerBadgeId);
  const identity=normalizePlayerBadges(data?.identity);
  const available=data?.supporterAvailable===true;
+ const vipPlusAvailable=data?.vipPlusAvailable===true;
+ const vipAvailable=data?.vipAvailable===true||vipPlusAvailable;
  const equipped=data?.equippedBadgeId??identity?.equippedBadgeId;
  const selected=isEquippablePlayerBadgeId(equipped)?equipped:null;
  const tier=supporterTierMonths(data?.supporterTierMonths,available);
  const ownedCollectibles=[...new Set(owned)].sort((a,b)=>COLLECTIBLE_PLAYER_BADGE_IDS.indexOf(a)-COLLECTIBLE_PLAYER_BADGE_IDS.indexOf(b));
  const selectable:EquippablePlayerBadgeId[]=[
+  ...VIP_BADGE_IDS.filter(id=>id==='vip'?vipAvailable:vipPlusAvailable),
   ...SUPPORTER_BADGE_IDS.filter(id=>canEquipSupporterBadge(id,available,tier)),
   ...ownedCollectibles,
  ];
@@ -35,6 +40,8 @@ async function request(name:string,args:Record<string,unknown>={}):Promise<Playe
   identity,
   showSupporter:data?.showSupporter===true,
   supporterAvailable:available,
+  vipAvailable,
+  vipPlusAvailable,
   supporterTierMonths:tier,
   supporterTotalDays:typeof data?.supporterTotalDays==='number'&&Number.isSafeInteger(data.supporterTotalDays)&&data.supporterTotalDays>=0?data.supporterTotalDays:0,
   equippedBadgeId:selected,
@@ -60,7 +67,7 @@ const missingBadgeRpc=(error:unknown)=>error instanceof Error&&error.message==='
 export async function updatePlayerEquippedBadge(id:EquippablePlayerBadgeId|null):Promise<PlayerBadgePreferences>{
  try{return await request('update_player_equipped_badge_v2',{p_badge_id:id});}
  catch(error){
-  if(!missingBadgeRpc(error)||id==='supporter_3m'||id==='supporter_6m'||id==='supporter_12m')throw error;
+  if(!missingBadgeRpc(error)||id==='vip'||id==='vip_plus'||id==='supporter_3m'||id==='supporter_6m'||id==='supporter_12m')throw error;
   if(isCollectiblePlayerBadgeId(id))return updateLegacyFeaturedBadges([id]);
   try{await updateLegacyFeaturedBadges([]);}
   catch(legacyError){if(!missingBadgeRpc(legacyError))throw legacyError;}

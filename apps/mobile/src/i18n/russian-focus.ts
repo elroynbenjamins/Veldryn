@@ -1,6 +1,9 @@
 /** Russian translations for active player-facing UI; only exact authored keys are translated.
  * Canonical names, server-owned values, and player-authored text are not translated. */
 export const RUSSIAN_FOCUS_ROWS = {
+  "FOOD ROTATION": "ОЧЕРЕДЬ ЕДЫ",
+  "Food actions": "Действия с едой",
+  "Food running low": "Еда заканчивается",
   "Companion Index": "Каталог спутников",
   "{value0} collected · {value1} total": "Получено: {value0} из {value1}",
   "Codex & rewards": "Справочник и награды",

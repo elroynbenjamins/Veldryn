@@ -353,6 +353,7 @@
   ".core-build/apps/mobile/tests/combat-attrition.js",
   ".core-build/apps/mobile/tests/fallen-knight-gear-food.js",
   ".core-build/apps/mobile/tests/story-boss-class-abilities.js",
+  ".core-build/apps/mobile/tests/story-boss-playback.js",
   ".core-build/apps/mobile/tests/chat-feed-cache.js",
   "../../tools/validate-chat-transport.mjs",
   "tests/auth-account-link.cjs",

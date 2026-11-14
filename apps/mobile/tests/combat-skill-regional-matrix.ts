@@ -36,6 +36,10 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
    assert.equal(early.reward.kills+late.reward.kills,single.reward.kills,'Split hunting cannot multiply kills: '+context);
    assert.equal(early.reward.xp+late.reward.xp,single.reward.xp,'Split hunting cannot multiply XP: '+context);
    assert.equal(early.reward.gold+late.reward.gold,single.reward.gold,'Split hunting cannot multiply Gold: '+context);
+   for(const fractionKey of ['combat:base-xp-fraction','combat:base-gold-fraction']){
+    const fraction=late.state.rewardRemainders?.[fractionKey];
+    assert.ok(typeof fraction==='number'&&fraction>=0&&fraction<1,'Fractional combat rewards must remain bounded after split claims: '+context+'/'+fractionKey);
+   }
    assert.ok(Math.abs(late.state.character!.currentHp-single.state.character!.currentHp)<1e-4,'Split hunt must preserve actual HP after real class skills: '+context);
    assert.ok(Math.abs((late.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,'Split hunt must preserve enemy HP: '+context);
    const live=activeCombatHitProjection(state,end)!;

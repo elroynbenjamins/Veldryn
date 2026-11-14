@@ -52475,15 +52475,21 @@ function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05)
 var clamp8 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
 var FALLEN_KNIGHT_MAX_POTION_UNITS = 5;
+var FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS = 4500;
 function mitigation(defense) {
   return clamp8(defense / Math.max(1, defense + 110), 0, 0.72);
 }
-function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
+function simulateFallenKnightStoryBattle(player, seed, mode = "story", manualPotionAtMs) {
   const monster = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
   if (!monster) throw new Error("fallen_knight_missing");
   const bossSecondary = regionalEnemySecondaryStats(monster);
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
   let bossHp = bossMaxHp, playerHp = clamp8(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp8(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
+  const manualMode = manualPotionAtMs !== void 0;
+  const manualTimes = manualPotionAtMs ? [...manualPotionAtMs] : [];
+  if (manualTimes.length > FALLEN_KNIGHT_MAX_POTION_UNITS || manualTimes.some((at, i) => !Number.isSafeInteger(at) || at < 0 || at >= FALLEN_KNIGHT_MAX_DURATION_MS || i > 0 && at - manualTimes[i - 1] < FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS))
+    throw new Error("invalid_boss_potion_schedule");
+  let nextManual = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
   const classId = Object.prototype.hasOwnProperty.call(HUNT_CLASS_TECHNIQUES, player.classId) ? player.classId : void 0;
   const classAbility = classId ? HUNT_CLASS_TECHNIQUES[classId] : void 0;
@@ -52496,7 +52502,20 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   let nextPlayerAt = 650, nextBossAt = 1800;
   const push = (event) => events.push({ ...event, playerHp: Math.max(0, Math.round(playerHp)), bossHp: Math.max(0, Math.round(bossHp)), phase });
   push({ atMs: 0, type: "battle_start", label: "The Fallen Knight raises the oathglass blade." });
+  const applyManualPotionsThrough = (atMs) => {
+    while (nextManual < manualTimes.length && manualTimes[nextManual] <= atMs) {
+      const requestedAt = manualTimes[nextManual++];
+      if (playerHp <= 0 || bossHp <= 0 || potionLeft <= 0 || player.potionHeal <= 0) continue;
+      const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.potionHeal)));
+      if (healed <= 0) continue;
+      playerHp += healed;
+      potionLeft--;
+      potionConsumed++;
+      push({ atMs: requestedAt, type: "heal", label: "Manual healing potion", amount: healed });
+    }
+  };
   const maybePotion = (atMs) => {
+    if (manualMode) return;
     const threshold = clamp8(player.autoEatThresholdPct, 10, 90) / 100;
     if (player.potionHeal <= 0) return;
     if (playerHp > 0 && playerHp / playerMaxHp <= threshold && potionLeft > 0) {
@@ -52525,6 +52544,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   while (now < FALLEN_KNIGHT_MAX_DURATION_MS && bossHp > 0 && playerHp > 0) {
     if (nextPlayerAt <= nextBossAt) {
       now = nextPlayerAt;
+      applyManualPotionsThrough(now);
       const hit = random01(seed, rngIndex++) <= playerHitChance;
       if (!hit) {
         push({ atMs: now, type: "player_miss", label: "Your strike misses.", abilityId: "PLAYER_STRIKE" });
@@ -52566,6 +52586,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       continue;
     }
     now = nextBossAt;
+    applyManualPotionsThrough(now);
     bossAttackCount++;
     const phaseHaste = phase === 3 ? 0.18 : phase === 2 ? 0.07 : 0;
     const attackInterval = clamp8(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
@@ -52658,7 +52679,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   }
   const won = bossHp <= 0 && playerHp > 0;
   push({ atMs: Math.min(FALLEN_KNIGHT_MAX_DURATION_MS, now + 450), type: won ? "victory" : "defeat", label: won ? "The Fallen Knight falls." : "You are forced back from the oathglass road." });
-  events.sort((a, b) => a.atMs - b.atMs || a.type.localeCompare(b.type));
+  events.sort((a, b) => a.atMs - b.atMs || (a.type === "heal" ? -1 : b.type === "heal" ? 1 : a.type.localeCompare(b.type)));
   return {
     bossId: "FALLEN_KNIGHT",
     bossName: "Fallen Knight",
@@ -54250,13 +54271,13 @@ function previewFallenKnightBattle(state, nowMs = Date.now(), mode = "story") {
   if (!state.character) throw new Error("No character");
   return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state), `${state.character.id}:FALLEN_KNIGHT_${mode.toUpperCase()}:${nowMs}`, mode);
 }
-function challengeFallenKnightRematch(state, nowMs) {
+function challengeFallenKnightRematch(state, nowMs, battleOverride) {
   if (!state.character || state.character.level < rebasedCombatLevelFromLegacyLevel(25) || !state.defeatedBossIds.includes("FALLEN_KNIGHT")) throw new Error("Defeat the Fallen Knight in the story first.");
-  state = settleOutOfCombatRecovery(state, nowMs);
+  if (!battleOverride) state = settleOutOfCombatRecovery(state, nowMs);
   if (!state.character) throw new Error("No character");
   const weekly = fallenKnightWeeklyStatus(state, nowMs);
   if (weekly.remaining <= 0) throw new Error("Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.");
-  const battle = previewFallenKnightBattle(state, nowMs, "rematch"), potionId = state.character.equippedHealingPotionId, stats4 = effectiveStats(state);
+  const battle = battleOverride ?? previewFallenKnightBattle(state, nowMs, "rematch"), potionId = state.character.equippedHealingPotionId, stats4 = effectiveStats(state);
   let inventory = state.inventory.stacks;
   if (battle.potionConsumed && potionId) inventory = consume2(inventory, potionId, battle.potionConsumed);
   const postFightCharacter = { ...state.character, preparation: void 0, currentHp: Math.max(1, Math.min(stats4.hp, battle.finalPlayerHp || 1)) };
@@ -54290,15 +54311,15 @@ function challengeFallenKnightRematch(state, nowMs) {
   const strikes = battle.events.filter((event) => event.type === "player_hit").length, stoneText = stone.reward ? "+1 Bondstone" : `Bondstone weekly cap already reached`, dropText = bossDrops.length ? bossDrops.map((row) => `${row.quantity}\xD7 ${itemDef(row.itemId).name}`).join(", ") : "no bonus drop";
   return { state: next, won: true, battle, message: `Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes === 1 ? " in one hit" : ` in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered ? " \xB7 Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst" : ""} \xB7 Boss drops: ${dropText} \xB7 ${stoneText}.` };
 }
-function challengeFallenKnight(state, nowMs = Date.now()) {
+function challengeFallenKnight(state, nowMs = Date.now(), battleOverride) {
   if (!state.character) throw new Error("No character");
-  state = settleOutOfCombatRecovery(state, nowMs);
+  if (!battleOverride) state = settleOutOfCombatRecovery(state, nowMs);
   if (!state.character) throw new Error("No character");
   if (state.character.level < rebasedCombatLevelFromLegacyLevel(25)) return { state, won: false, message: `Reach level ${rebasedCombatLevelFromLegacyLevel(25)} first.` };
-  if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return challengeFallenKnightRematch(state, nowMs);
+  if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return challengeFallenKnightRematch(state, nowMs, battleOverride);
   const q14 = state.quests.find((q2) => q2.questId === "QST_014");
   if (q14 && q14.status === "locked") return { state, won: false, message: "Advance the Asterfall questline before challenging the Fallen Knight." };
-  const battle = previewFallenKnightBattle(state, nowMs), potionId = state.character.equippedHealingPotionId;
+  const battle = battleOverride ?? previewFallenKnightBattle(state, nowMs), potionId = state.character.equippedHealingPotionId;
   let inventory = state.inventory.stacks;
   if (battle.potionConsumed && potionId) inventory = consume2(inventory, potionId, battle.potionConsumed);
   const postFightCharacter = { ...state.character, preparation: void 0, currentHp: Math.max(1, Math.min(effectiveStats(state).hp, battle.finalPlayerHp || 1)) };
@@ -57408,6 +57429,95 @@ function refillAdminQaResources(state) {
   return debugPrepareFullQaSandbox(state);
 }
 
+// ../apps/mobile/src/core/story-boss-session.ts
+init_progression();
+
+// ../apps/mobile/src/core/story-boss-playback.ts
+function storyBossPlaybackEvents(battle) {
+  const events = [...battle.events].sort((a, b) => a.atMs - b.atMs || (a.type === "heal" ? -1 : b.type === "heal" ? 1 : a.type.localeCompare(b.type)));
+  const initial = events.find((event) => event.type === "battle_start");
+  const clampHp = (value, max) => Math.max(0, Math.min(max, value));
+  let playerHp = clampHp(initial?.playerHp ?? battle.playerMaxHp, battle.playerMaxHp);
+  let bossHp = clampHp(initial?.bossHp ?? battle.bossMaxHp, battle.bossMaxHp);
+  let phase = 1;
+  return events.map((event) => {
+    const amount = Number.isFinite(event.amount) ? Math.max(0, event.amount) : 0;
+    if (event.type === "player_hit") bossHp = clampHp(bossHp - amount, battle.bossMaxHp);
+    else if (event.type === "boss_hit") playerHp = clampHp(playerHp - amount, battle.playerMaxHp);
+    else if (event.type === "heal" || event.type === "class_skill" && event.skillKind === "heal")
+      playerHp = clampHp(playerHp + amount, battle.playerMaxHp);
+    if (event.type === "phase") phase = event.phase;
+    return { ...event, playerHp, bossHp, phase };
+  });
+}
+
+// ../apps/mobile/src/core/story-boss-session.ts
+function projectStoryBossSession(session) {
+  return simulateFallenKnightStoryBattle(session.snapshot, session.seed, session.mode, session.manualPotionAtMs);
+}
+function requireSession(state) {
+  const session = state.storyBossSession;
+  if (!session || session.kind !== "fallen_knight" || !state.character || session.characterId !== state.character.id)
+    throw new Error("No active Fallen Knight battle for this character.");
+  return session;
+}
+function startStoryBossSession(state, nowMs) {
+  if (state.storyBossSession) throw new Error("Finish the active battle first.");
+  state = settleOutOfCombatRecovery(state, nowMs);
+  const character = state.character;
+  if (!character) throw new Error("No character.");
+  if (character.level < rebasedCombatLevelFromLegacyLevel(25)) throw new Error("Reach the Fallen Knight minimum level first.");
+  const mode = state.defeatedBossIds.includes("FALLEN_KNIGHT") ? "rematch" : "story";
+  if (mode === "story" && state.quests.some((q2) => q2.questId === "QST_014" && q2.status === "locked"))
+    throw new Error("Advance the Asterfall questline before challenging the Fallen Knight.");
+  if (mode === "rematch" && fallenKnightWeeklyStatus(state, nowMs).remaining <= 0)
+    throw new Error("Fallen Knight weekly rematches are complete.");
+  const snapshot2 = fallenKnightPlayerSnapshot(state);
+  const session = {
+    kind: "fallen_knight",
+    characterId: character.id,
+    startedAtMs: nowMs,
+    seed: character.id + ":FALLEN_KNIGHT_" + mode.toUpperCase() + ":" + nowMs,
+    mode,
+    snapshot: snapshot2,
+    potionId: character.equippedHealingPotionId,
+    manualPotionAtMs: []
+  };
+  return { state: { ...state, storyBossSession: session }, battle: projectStoryBossSession(session) };
+}
+function healStoryBossSession(state, nowMs) {
+  const session = requireSession(state), elapsed = nowMs - session.startedAtMs;
+  const before = projectStoryBossSession(session);
+  if (!Number.isSafeInteger(elapsed) || elapsed < 0 || elapsed >= before.durationMs)
+    throw new Error("The battle has already ended.");
+  if (!session.potionId || session.snapshot.potionHeal <= 0)
+    throw new Error("Equip a healing potion before the battle.");
+  const available = state.inventory.stacks.filter((row) => row.itemId === session.potionId).reduce((total, row) => total + row.quantity, 0);
+  if (before.potionConsumed >= FALLEN_KNIGHT_MAX_POTION_UNITS || before.potionConsumed >= available)
+    throw new Error("No healing potions remaining for this battle.");
+  const last = session.manualPotionAtMs[session.manualPotionAtMs.length - 1];
+  if (last !== void 0 && elapsed - last < FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS)
+    throw new Error("Healing potion is on cooldown.");
+  const visible = storyBossPlaybackEvents(before).filter((event) => event.atMs <= elapsed);
+  const current = visible[visible.length - 1];
+  if (!current || current.playerHp <= 0 || current.bossHp <= 0)
+    throw new Error("You cannot heal after the battle has ended.");
+  if (current.playerHp >= before.playerMaxHp) throw new Error("HP is already full.");
+  const updated = { ...session, manualPotionAtMs: [...session.manualPotionAtMs, elapsed] };
+  const battle = projectStoryBossSession(updated);
+  if (battle.potionConsumed !== before.potionConsumed + 1 || !battle.events.some((event) => event.type === "heal" && event.atMs === elapsed))
+    throw new Error("The potion could not be applied at that combat moment.");
+  return { state: { ...state, storyBossSession: updated }, battle };
+}
+function finishStoryBossSession(state, nowMs) {
+  const session = requireSession(state), battle = projectStoryBossSession(session);
+  if (nowMs - session.startedAtMs < battle.durationMs)
+    throw new Error("The boss battle is still in progress.");
+  const result = challengeFallenKnight({ ...state, storyBossSession: void 0 }, nowMs, battle);
+  if (!result.battle) throw new Error("Boss resolution unavailable.");
+  return { ...result, battle: result.battle };
+}
+
 // ../apps/mobile/src/core/skill-progression-navigation.ts
 var gatheringDefs = [...GATHERING, ...HERB_NODES];
 
@@ -57540,6 +57650,9 @@ var fields = {
   stop: [],
   travel: ["id"],
   boss: [],
+  boss_start: [],
+  boss_heal: [],
+  boss_finish: [],
   craft: ["id"],
   craft_claim: ["id"],
   craft_claim_all: [],
@@ -57725,6 +57838,7 @@ function executeGameCommand(previous, value, now, options = {}) {
   const command = validateGameCommand(value), a = command.args ?? {}, activity = previous.activity, contributions = [];
   let state = ensurePersonalSeasonalState(snapshotEarnedLegacySeasonalClaims(structuredClone(previous), now)), reward3, message, won, storyBossBattle, upgrade, forgeResults;
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
+  if (state.storyBossSession && !["boss_heal", "boss_finish"].includes(command.type)) throw new Error("Finish the active Fallen Knight battle first.");
   if (options.accountId) state.account.longTermAccountScopeId = options.accountId;
   state = migrateRetiredStoryRewards(state, now);
   const credit = (source, earned) => {
@@ -57982,6 +58096,29 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "boss": {
       const result = challengeFallenKnight(state, now);
+      state = result.state;
+      message = result.message;
+      won = result.won;
+      storyBossBattle = result.battle;
+      if (won) contributions.push({ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 });
+      break;
+    }
+    case "boss_start": {
+      const result = startStoryBossSession(state, now);
+      state = result.state;
+      message = "The Fallen Knight battle has begun. Press Heal during combat.";
+      storyBossBattle = result.battle;
+      break;
+    }
+    case "boss_heal": {
+      const result = healStoryBossSession(state, now);
+      state = result.state;
+      storyBossBattle = result.battle;
+      message = "Healing potion activated.";
+      break;
+    }
+    case "boss_finish": {
+      const result = finishStoryBossSession(state, now);
       state = result.state;
       message = result.message;
       won = result.won;

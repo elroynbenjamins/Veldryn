@@ -48774,6 +48774,9 @@ var known = new Set(catalog.keys());
 // ../apps/mobile/src/dev/debug-tools.ts
 init_progression();
 
+// ../apps/mobile/src/core/story-boss-session.ts
+init_progression();
+
 // ../apps/mobile/src/core/skill-progression-navigation.ts
 var gatheringDefs = [...GATHERING, ...HERB_NODES];
 

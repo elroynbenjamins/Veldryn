@@ -1,0 +1,43 @@
+name: Temporary v1.0.9 quest Edge parity after character identity fix
+
+on:
+  push:
+    branches: [release/v109-personal-quests-consolidation-20261114]
+    paths:
+      - '.github/workflows/v109-quest-edge-resync-temporary.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install and regenerate canonical bundles
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles to integration branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'build(edge): sync character identity claim-fix bundle'
+          git push origin HEAD:release/v109-personal-quests-consolidation-20261114

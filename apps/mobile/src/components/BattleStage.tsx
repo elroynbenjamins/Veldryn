@@ -151,14 +151,11 @@ const s=StyleSheet.create({
  damageTaken:{fontSize:17,lineHeight:21,color:'#ff8790',fontWeight:'900',textShadowColor:'#180508',textShadowRadius:3},
  name:{...typography.bodyStrong,color:C.text,textAlign:'center'},hit:{...typography.caption,color:'#d5e0ec',textAlign:'center'},
  versus:{width:34,paddingTop:53,alignItems:'center',gap:4},vs:{...typography.caption,color:C.accent,fontWeight:'600'},motionHint:{fontSize:7,lineHeight:9,color:C.muted,fontWeight:'900',letterSpacing:.4,textAlign:'center'},
- details:{padding:12,gap:10},ability:{...typography.bodyStrong,color:C.accent},sub:{...typography.body,color:C.muted},
+ details:{padding:10,gap:8},sub:{...typography.body,color:C.muted},
  passiveSummary:{gap:5},passiveLabel:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'900',letterSpacing:.65},
  passiveChips:{flexDirection:'row',flexWrap:'wrap',gap:6},
  passiveChip:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
  passiveChipText:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'700'},
  companionPassive:{...typography.caption,color:C.text},
- recoveryCue:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:7,paddingHorizontal:9,borderColor:C.good,borderWidth:1,borderRadius:radii.sm,backgroundColor:C.panel2},
- recoveryCueLabel:{fontSize:9,lineHeight:13,color:C.good,fontWeight:'900',letterSpacing:.5},
- recoveryCueName:{flex:1,minWidth:0,...typography.caption,color:C.text,fontWeight:'800'},
- recoveryCueAmount:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'700'},identity:{gap:6,padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},identityHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},identityLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.7},pressure:{fontSize:9,lineHeight:12,color:C.warning,fontWeight:'900',letterSpacing:.5},mechanics:{flexDirection:'row',flexWrap:'wrap',gap:5},mechanic:{paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},mechanicText:{fontSize:9,color:C.text,fontWeight:'800'},tactic:{...typography.caption,color:C.info,lineHeight:16},note:{...typography.caption,color:C.muted}
+identity:{gap:6,padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},identityHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},identityLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.7},pressure:{fontSize:9,lineHeight:12,color:C.warning,fontWeight:'900',letterSpacing:.5},mechanics:{flexDirection:'row',flexWrap:'wrap',gap:5},mechanic:{paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},mechanicText:{fontSize:9,color:C.text,fontWeight:'800'},tactic:{...typography.caption,color:C.info,lineHeight:16},note:{...typography.caption,color:C.muted}
 });

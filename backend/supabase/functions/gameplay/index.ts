@@ -44371,29 +44371,33 @@ function chooseStarterCombatCompanion(state, id, nowMs = Date.now()) {
 }
 function starterFollowupCandidate(state) {
   const owned = new Set(state.account.unlockedCombatCompanionIds ?? []);
-  const candidates = STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).filter((def) => !owned.has(def.id));
-  const role = state.character ? classCompanionRole(state.character.classId) : void 0;
-  return candidates.find((def) => def.role !== role) ?? candidates[0];
+  return STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).find((def) => !owned.has(def.id));
 }
 function reconcileCombatCompanionUnlocks(state, nowMs = Date.now()) {
   let next = sanitizeCombatCompanionState(state);
   for (const def of COMBAT_COMPANIONS) {
     if (isStarterCompanionId(def.id) || (next.account.unlockedCombatCompanionIds ?? []).includes(def.id)) continue;
-    if (def.unlockRequirements.length && def.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) next = unlockCombatCompanion(next, def.id, nowMs);
+    if (companionCanRecruitFromRequirements(def) && def.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement)))
+      next = unlockCombatCompanion(next, def.id, nowMs);
   }
   const sprite = combatCompanionDef("UNIT_003"), sentry = combatCompanionDef("UNIT_002");
-  if (next.account.starterCombatCompanionId && !next.account.starterFollowupCombatCompanionId && sprite.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
-    const candidate = starterFollowupCandidate(next);
-    if (candidate) {
-      next = unlockCombatCompanion(next, candidate.id, nowMs);
-      next = { ...next, account: { ...next.account, starterFollowupCombatCompanionId: candidate.id } };
+  if (next.account.starterCombatCompanionId && sprite.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
+    next = unlockCombatCompanion(next, sprite.id, nowMs);
+    if (!next.account.starterFollowupCombatCompanionId) {
+      const candidate = next.account.starterCombatCompanionId === sprite.id ? starterFollowupCandidate(next) : sprite;
+      if (candidate) {
+        next = unlockCombatCompanion(next, candidate.id, nowMs);
+        next = { ...next, account: { ...next.account, starterFollowupCombatCompanionId: candidate.id } };
+      }
     }
   }
   if (next.account.starterFollowupCombatCompanionId && !next.account.starterThirdCombatCompanionId && sentry.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
-    const owned = new Set(next.account.unlockedCombatCompanionIds ?? []), candidate = STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).find((def) => !owned.has(def.id));
-    if (candidate) {
-      next = unlockCombatCompanion(next, candidate.id, nowMs);
-      next = { ...next, account: { ...next.account, starterThirdCombatCompanionId: candidate.id } };
+    const owned = new Set(next.account.unlockedCombatCompanionIds ?? []);
+    const missing = STARTER_COMPANION_IDS.find((id) => !owned.has(id));
+    const thirdId = missing ?? STARTER_COMPANION_IDS.find((id) => id !== next.account.starterCombatCompanionId && id !== next.account.starterFollowupCombatCompanionId);
+    if (thirdId) {
+      next = unlockCombatCompanion(next, thirdId, nowMs);
+      next = { ...next, account: { ...next.account, starterThirdCombatCompanionId: thirdId } };
     }
   }
   return next;
@@ -57121,6 +57125,7 @@ function normalizeChatEmoteTrayIds(value) {
 }
 
 // ../apps/mobile/src/core/equipment-pouch-selling.ts
+var EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH = 180;
 function equipmentPouchSaleId(stack, index) {
   return stack.instanceId ? "copy:" + stack.instanceId : "legacy:" + index + ":" + stack.itemId;
 }
@@ -57148,7 +57153,7 @@ function sellLegacySlot(state, index, itemId) {
 }
 function sellEquipmentPouchSelected(state, ids2) {
   if (!state.character) throw new Error("Choose a character before selling equipment");
-  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || new Set(ids2).size !== ids2.length || ids2.some((id) => typeof id !== "string" || !id || id.length > 120))
+  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || new Set(ids2).size !== ids2.length || ids2.some((id) => typeof id !== "string" || !id || id.length > EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH))
     throw new Error("Select 1\u2013100 equipment copies");
   const original = equipmentPouch(state).stacks;
   const byId = new Map(original.map((stack, index) => [equipmentPouchSaleId(stack, index), { index, stack }]));
@@ -57205,7 +57210,7 @@ function salvageLegacySlot(state, index, itemId) {
 }
 function salvageEquipmentPouchSelected(state, ids2) {
   if (!state.character) throw new Error("Choose a character before salvaging equipment");
-  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || new Set(ids2).size !== ids2.length || ids2.some((id) => typeof id !== "string" || !id || id.length > 120))
+  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || new Set(ids2).size !== ids2.length || ids2.some((id) => typeof id !== "string" || !id || id.length > EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH))
     throw new Error("Select 1\u2013100 equipment copies");
   const original = equipmentPouch(state).stacks;
   const byId = new Map(original.map((stack, index) => [equipmentPouchSaleId(stack, index), { index, stack }]));
@@ -57635,9 +57640,9 @@ function oneOf(value, choices) {
   if (typeof value !== "string" || !choices.includes(value)) throw new Error("invalid_choice");
   return value;
 }
-function stringArray(args, key, max = 100) {
+function stringArray(args, key, max = 100, maxEntryLength = 120) {
   const value = args[key];
-  if (!Array.isArray(value) || value.length < 1 || value.length > max || value.some((entry2) => typeof entry2 !== "string" || !entry2.trim() || entry2.length > 120)) throw new Error(`invalid_${key}`);
+  if (!Array.isArray(value) || value.length < 1 || value.length > max || value.some((entry2) => typeof entry2 !== "string" || !entry2.trim() || entry2.length > maxEntryLength)) throw new Error(`invalid_${key}`);
   return [...new Set(value.map((entry2) => entry2.trim()))];
 }
 function companionCommandEconomySnapshot(state) {
@@ -58049,13 +58054,13 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = "Equipment Pouch capacity upgraded";
       break;
     case "equipment_pouch_sell": {
-      const ids2 = stringArray(a, "ids");
+      const ids2 = stringArray(a, "ids", 100, EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH);
       state = sellEquipmentPouchSelected(state, ids2);
       message = `Sold ${ids2.length} equipment ${ids2.length === 1 ? "copy" : "copies"} from Equipment Pouch`;
       break;
     }
     case "equipment_pouch_salvage": {
-      const ids2 = stringArray(a, "ids");
+      const ids2 = stringArray(a, "ids", 100, EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH);
       state = salvageEquipmentPouchSelected(state, ids2);
       message = `Salvaged ${ids2.length} equipment ${ids2.length === 1 ? "copy" : "copies"} from Equipment Pouch`;
       break;
@@ -58322,7 +58327,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       throw new Error("invalid_command");
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
-  state = reconcileAccountCollections(migrateGemPouch(state));
+  state = reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now));
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
   return { state, reward: reward3, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }

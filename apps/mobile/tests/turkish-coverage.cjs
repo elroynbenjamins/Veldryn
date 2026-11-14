@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=3638,'Turkish core coverage should retain the 3638-string baseline');
+assert.ok(keys.length>=4088,'Turkish core coverage should retain the 4088-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -104,5 +104,14 @@ assert.equal(earlyLocaleText('tr',"Open sockets on {slot}"),"{slot} üzerindeki 
 assert.equal(earlyLocaleText('tr',"Highest Contract contribution"),"En yüksek Sözleşme katkısı");
 assert.equal(earlyLocaleText('tr',"PERSONAL BEST"),"KİŞİSEL REKOR");
 assert.equal(earlyLocaleText('tr',"A title earned through an exceptional companion collection."),"Olağanüstü yoldaş koleksiyonuyla kazanılan unvan.");
+assert.equal(earlyLocaleText('tr',"Not enough Companion Essence."),"Yeterli Yoldaş Özü yok.");
+assert.equal(earlyLocaleText('tr',"Missing companion materials."),"Yoldaş malzemeleri eksik.");
+assert.equal(earlyLocaleText('tr',"INVENTORY VIEW"),"ENVANTER GÖRÜNÜMÜ");
+assert.equal(earlyLocaleText('tr',"OFFLINE PROGRESS"),"ÇEVRİMDIŞI İLERLEME");
+assert.equal(earlyLocaleText('tr',"No recipes match your search."),"Aramanla eşleşen tarif yok.");
+assert.equal(earlyLocaleText('tr',"WEEKLY PROJECT BOARD"),"HAFTALIK PROJE PANOSU");
+assert.equal(earlyLocaleText('tr',"No active Guild Project"),"Etkin Lonca Projesi yok");
+assert.equal(earlyLocaleText('tr',"The purchase could not be verified. Restore purchases or try again later."),"Satın alım doğrulanamadı. Satın alımları geri yükle veya daha sonra tekrar dene.");
+assert.equal(earlyLocaleText('tr',"Email is not verified yet. Open the latest confirmation email, then check again."),"E-posta henüz doğrulanmadı. Son doğrulama e-postasını açıp tekrar kontrol et.");
 console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
  +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

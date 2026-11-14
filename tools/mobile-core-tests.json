@@ -22,6 +22,7 @@
   ".core-build/apps/mobile/tests/world-boss-supply-economy-v12.js",
   "../../tools/validate-world-boss-rounds-v5.cjs",
   "tests/online-loading-interactions.cjs",
+  "tests/metro-shared-packages.cjs",
   ".core-build/apps/mobile/tests/coop-sync-policy.js",
   "tests/coop-sync-runtime.cjs",
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",

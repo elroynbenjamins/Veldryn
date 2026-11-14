@@ -33,6 +33,7 @@ import {normalizeEquipmentCraftingQueue} from './equipment-crafting-queue';
 import {normalizeEnhancementGemSlots} from './equipment-enhancement';
 import {normalizeCraftedGearInstances} from './crafted-gear-instances';
 import {normalizeSeasonalProgress} from './seasonal-quests';
+import {ensurePersonalSeasonalState} from './personal-seasonal-state';
 import {migrateGemPouch,normalizeGemPouch} from './gem-pouch';
 
 function normalizeGearEnhancements(raw:unknown){
@@ -241,5 +242,5 @@ export function normalizeSave(input:any):GameState{
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));
-  return rebaseCombatGameState(normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs))));
+  return ensurePersonalSeasonalState(rebaseCombatGameState(normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs)))));
 }

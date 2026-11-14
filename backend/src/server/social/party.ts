@@ -162,21 +162,38 @@ export function persistentPartyCanExistWithCurrentRoles(members: readonly Persis
     && !hasDuplicateCharacters(members);
 }
 
-
 /**
- * A Persistent Party slot belongs to an account, not to a class or character.
- * The caller must derive ownedCharacterIds, role and activityLocked from trusted
- * server state; never pass unvalidated client-provided values to this helper.
- *
- * Character changes cannot mutate an in-progress dungeon/event snapshot.
- * Instead, select the new character before creating the next combat snapshot.
+ * A Persistent Party slot belongs to an account, not to a character.
+ * Character ownership and class ID must be resolved from trusted server
+ * state before calling this pure helper. Combat snapshots remain immutable
+ * once an activity's ready check has locked them.
  */
 export interface PersistentPartyCharacterSwitch {
   accountId: string;
   characterId: string;
-  role: PartyRole;
+  /** Authoritative class ID of the selected, owned character. */
+  classId: string;
   ownedCharacterIds: readonly string[];
   activityLocked?: boolean;
+}
+
+export function persistentPartyRoleForClass(classId: string): PartyRole {
+  switch (classId) {
+    case 'IRONWARDEN':
+    case 'BASTION':
+    case 'DREADGUARD':
+      return 'tank';
+    case 'DAWNKEEPER':
+    case 'STONECALLER':
+      return 'support';
+    case 'WAYFINDER':
+    case 'RAVAGER':
+    case 'HEXWEAVER':
+    case 'KNIFE_DANCER':
+      return 'damage';
+    default:
+      throw new Error('party_unknown_character_class');
+  }
 }
 
 export function switchPersistentPartyCharacter(
@@ -185,16 +202,20 @@ export function switchPersistentPartyCharacter(
 ): PersistentPartyState {
   validatePersistentParty(state);
   if (state.status === 'disbanded') throw new Error('party_inactive');
-  const index = state.members.findIndex(member => member.accountId === selection.accountId);
-  if (index < 0) throw new Error('party_member_not_found');
+  if (!state.members.some(member => member.accountId === selection.accountId)) {
+    throw new Error('party_member_not_found');
+  }
   if (selection.activityLocked) throw new Error('party_character_switch_activity_locked');
   if (!selection.characterId || !selection.ownedCharacterIds.includes(selection.characterId)) {
     throw new Error('party_character_not_owned');
   }
-  if (state.members.some(member => member.accountId !== selection.accountId && member.characterId === selection.characterId)) {
+  if (state.members.some(member =>
+    member.accountId !== selection.accountId && member.characterId === selection.characterId)) {
     throw new Error('party_duplicate_character');
   }
-  if (!['tank', 'damage', 'support'].includes(selection.role)) throw new Error('invalid_party_role');
+  const role = persistentPartyRoleForClass(selection.classId);
+  const oldMember = state.members.find(member => member.accountId === selection.accountId)!;
+  if (oldMember.characterId === selection.characterId && oldMember.role === role) return state;
 
   const next: PersistentPartyState = {
     ...state,
@@ -202,7 +223,7 @@ export function switchPersistentPartyCharacter(
       ? selection.characterId
       : state.leaderCharacterId,
     members: state.members.map(member => member.accountId === selection.accountId
-      ? { ...member, characterId: selection.characterId, role: selection.role }
+      ? { ...member, characterId: selection.characterId, role }
       : member),
   };
   validatePersistentParty(next);

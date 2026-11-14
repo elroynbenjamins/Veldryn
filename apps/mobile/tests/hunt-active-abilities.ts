@@ -45,7 +45,7 @@ const off=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:101_000});
 assert.equal(off[2].companionAssist,undefined,'Companion assist must not fire before its next 14-second cooldown pulse');
 const support=huntActiveDamageEvents(hits,{...input,companion:{...input.companion,role:'support'}});
 assert.equal(support[2].companionAssist,undefined,'Do not turn a healing companion into a damage cast');
-const classOnCooldown=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:101_000});
+const classOnCooldown=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:101_000,cycleSeconds:3});
 assert.ok(classOnCooldown.every(hit=>!hit.activeAbility),'Class skill cannot activate when no class cooldown pulse occurs inside the encounter');
 const classReady=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:106_000});
 assert.ok(classReady.some(hit=>hit.activeAbility?.name==='Rune Bash'),'Class skill activates on next real cooldown pulse');

@@ -112,6 +112,9 @@ for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.
  visit(tree);
 }
 assert.ok(earlyScreenKeys>=100,'dashboard/roster/bonus/home-card coverage');
+assert.equal(accountText('de','Start main screen tour'),'Hauptbildschirm-Tour starten');
+assert.equal(accountText('ru','Start main screen tour'),'Начать обзор главного экрана');
+assert.equal(accountText('tr','Start main screen tour'),'Ana ekran turunu başlat');
 assert.equal(accountText('ru','Delete character only'),'Только удалить персонажа');
 assert.equal(accountText('tr','ACCOUNT SKILL'),'HESAP BEC.');
 assert.equal(recentScreenText('ru','ACTIVITY QUEUE'),'ОЧЕРЕДЬ ЗАНЯТИЙ');

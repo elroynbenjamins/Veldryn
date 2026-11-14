@@ -5,6 +5,7 @@ import {spanishUiGap} from './spanish-ui-gaps';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  "Start main screen tour": ["Start main screen tour","Hauptbildschirm-Tour starten","Iniciar recorrido por la pantalla principal","Rondleiding door het hoofdscherm starten","Avvia il tour della schermata principale","Lancer la visite de l’écran principal"],
   // Russian guide coverage: authored six-language catalog labels.
   "Reach Level 10": ["Reach Level 10","Erreiche Stufe 10","Alcanza el nivel 10","Bereik niveau 10","Raggiungi il livello 10","Atteignez le niveau 10"],
   "Reach Level 25 and defeat the Fallen Knight (Chapter I).": ["Reach Level 25 and defeat the Fallen Knight (Chapter I).","Erreiche Stufe 25 und besiege den Gefallenen Ritter (Kapitel I).","Alcanza el nivel 25 y derrota al Caballero Caído (capítulo I).","Bereik niveau 25 en versla de Gevallen Ridder (hoofdstuk I).","Raggiungi il livello 25 e sconfiggi il Cavaliere Caduto (Capitolo I).","Atteignez le niveau 25 et battez le Chevalier déchu (chapitre I)."],

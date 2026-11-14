@@ -14,6 +14,7 @@ import {RUSSIAN_FINAL_ACCOUNT_ROWS} from './russian-final-account';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  "Start main screen tour": ["Начать обзор главного экрана","Ana ekran turunu başlat"],
   // Profile showcase empty states and selection guidance.
   "Choose an earned achievement": ["Выберите полученное достижение","Kazanılmış bir başarı seçin"],
   "Choose a personal record": ["Выберите личный рекорд","Bir kişisel rekor seçin"],

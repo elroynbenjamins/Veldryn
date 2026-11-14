@@ -1,4 +1,5 @@
 import type {Language} from './languages';
+import {localizedItemName} from './starter-item-names';
 
 /**
  * German display names for server-authored Sanctuary Expeditions.
@@ -28,4 +29,16 @@ export const germanCompanionMissionNames:Readonly<Record<string,readonly [string
 export function companionMissionDisplayName(language:Language,missionId:string,source:string):string{
  const entry=germanCompanionMissionNames[missionId];
  return language==='de'&&entry?.[0]===source?entry[1]:source;
+}
+
+/** Two mission-only backend resource IDs are not part of the item-name registry. */
+const germanMissionOnlyMaterials:Readonly<Record<string,string>>={
+ SUPPLIES:'Vorräte',
+ TRIAL_SANCTUARY_MATERIAL:'Material der Begleiterzuflucht',
+};
+
+export function companionMissionMaterialName(language:Language,itemId:string):string{
+ if(language==='de'&&Object.prototype.hasOwnProperty.call(germanMissionOnlyMaterials,itemId))
+  return germanMissionOnlyMaterials[itemId];
+ return localizedItemName(language,itemId);
 }

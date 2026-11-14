@@ -1203,7 +1203,7 @@ export function companionMessage(language:Language,message:string):string{
  if(match)return t("{name}'s combat choice is ready.",{name:match[1]});
  match=/^(.*) · Bond (\d+) · (.*)\.$/.exec(message);
  if(match){const essence=/^(\d+) Essence$/.exec(match[3]);return t('{name} · Bond {level} · {reward}.',{name:match[1],level:match[2],reward:essence?essence[1]+' × '+t('Essence'):companionLabel(language,match[3])});}
- const recruited=/^(.*) joined your permanent roster\\.$/.exec(message);
+ const recruited=/^(.*) joined your permanent roster\.$/.exec(message);
  if(recruited)return t('{value0} joined your permanent roster.',{value0:recruited[1]});
  const content=companionContent(language,message);
  return content!==message||Object.prototype.hasOwnProperty.call(companionTranslationRows,message)?content:companionError(language,message);

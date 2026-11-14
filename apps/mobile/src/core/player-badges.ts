@@ -1,9 +1,11 @@
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
 export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','beta_tester','veteran','guild_leader','community_champion','event_champion'] as const;
+export const VIP_BADGE_IDS=['vip','vip_plus'] as const;
 export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m','supporter_12m'] as const;
 export type CollectiblePlayerBadgeId=typeof COLLECTIBLE_PLAYER_BADGE_IDS[number];
 export type SupporterBadgeId=typeof SUPPORTER_BADGE_IDS[number];
-export type EquippablePlayerBadgeId=SupporterBadgeId|CollectiblePlayerBadgeId;
+export type VipBadgeId=typeof VIP_BADGE_IDS[number];
+export type EquippablePlayerBadgeId=SupporterBadgeId|CollectiblePlayerBadgeId|VipBadgeId;
 export type PlayerBadgeId='admin'|'moderator'|EquippablePlayerBadgeId;
 export type SupporterTenureTier=0|1|3|6|12;
 export interface PlayerBadgeIdentity{
@@ -23,6 +25,7 @@ export interface PlayerBadgeIdentity{
 }
 export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  admin:'Admin',moderator:'Moderator',
+ vip:'VIP',vip_plus:'VIP+',
  supporter:'Supporter',supporter_3m:'Supporter · 3 Months',supporter_6m:'Supporter · 6 Months',supporter_12m:'Supporter · 12 Months',
  founder:'Founder',beta_tester:'Beta Tester',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
@@ -34,6 +37,10 @@ export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  guild_leader:'Lead an active guild.',
  community_champion:'Awarded for outstanding community contributions.',
  event_champion:'Awarded for special event achievements.',
+};
+export const VIP_BADGE_UNLOCK_HINTS:Record<VipBadgeId,string>={
+ vip:'Unlock with VIP or VIP+ on your account.',
+ vip_plus:'Unlock with VIP+ on your account.',
 };
 export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter:'Unlock with an active Supporter entitlement.',
@@ -54,8 +61,11 @@ export function isCollectiblePlayerBadgeId(value:unknown):value is CollectiblePl
 export function isSupporterBadgeId(value:unknown):value is SupporterBadgeId{
  return typeof value==='string'&&(SUPPORTER_BADGE_IDS as readonly string[]).includes(value);
 }
+export function isVipBadgeId(value:unknown):value is VipBadgeId{
+ return typeof value==='string'&&(VIP_BADGE_IDS as readonly string[]).includes(value);
+}
 export function isEquippablePlayerBadgeId(value:unknown):value is EquippablePlayerBadgeId{
- return isCollectiblePlayerBadgeId(value)||isSupporterBadgeId(value);
+ return isCollectiblePlayerBadgeId(value)||isSupporterBadgeId(value)||isVipBadgeId(value);
 }
 function cleanExtras(value:unknown):CollectiblePlayerBadgeId[]{
  if(!Array.isArray(value))return [];

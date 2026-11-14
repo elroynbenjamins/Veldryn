@@ -6,7 +6,7 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {recentScreenText} from '../i18n/recent-screens';
 
 // Static require paths allow Metro to bundle artwork offline. These badges are never remotely downloaded.
-const artwork:Record<PlayerBadgeId,number>={
+const artwork:Record<Exclude<PlayerBadgeId,'vip'|'vip_plus'>,number>={
  admin:require('../../assets/player-badges-v1/admin.webp'),
  moderator:require('../../assets/player-badges-v1/moderator.webp'),
  supporter:require('../../assets/player-badges-v1/supporter.webp'),
@@ -22,7 +22,13 @@ const artwork:Record<PlayerBadgeId,number>={
 };
 export function PlayerBadge({id,size=20,showLabel=false}:{id:PlayerBadgeId;size?:number;showLabel?:boolean}){
  const C=useGameTheme(),language=useGameLanguage(),label=recentScreenText(language,PLAYER_BADGE_LABELS[id]);
- return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}><Image accessible={false} source={artwork[id]} resizeMode="contain" style={{width:size,height:size}}/>{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</View>;
+ const vip=id==='vip'||id==='vip_plus';
+ return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>
+  {vip?<View style={[s.vipMark,{width:size,height:size,borderColor:id==='vip_plus'?'#C9A2FC':'#E6C365',backgroundColor:id==='vip_plus'?'#312044':'#3D3017'}]}>
+   <Text numberOfLines={1} adjustsFontSizeToFit style={{color:id==='vip_plus'?'#F0DFFF':'#FFECB0',fontWeight:'900',fontSize:size*.31,letterSpacing:-.25}}>{id==='vip_plus'?'VIP+':'VIP'}</Text>
+  </View>:<Image accessible={false} source={artwork[id as Exclude<PlayerBadgeId,'vip'|'vip_plus'>]} resizeMode="contain" style={{width:size,height:size}}/>}
+  {showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}
+ </View>;
 }
 /** A cached identity stops being trustworthy at validUntilMs, so re-render exactly then. */
 function useBadgeClock(identity?:PlayerBadgeIdentity){
@@ -49,5 +55,6 @@ export function PlayerBadgeShowcase({identity,size=17,style}:{identity?:PlayerBa
 const s=StyleSheet.create({
  row:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
  badge:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
+ vipMark:{alignItems:'center',justifyContent:'center',borderWidth:2,borderRadius:3},
  showcase:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:5,paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99},
 });

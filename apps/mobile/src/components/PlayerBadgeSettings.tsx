@@ -7,8 +7,8 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {usePlayerBadges,type BadgeState} from '../online/PlayerBadgeProvider';
 import {PlayerBadge,PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
 import {
- COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,MAX_FEATURED_PLAYER_BADGES,
- PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,
+ COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_FEATURED_PLAYER_BADGES,
+ PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,VIP_BADGE_UNLOCK_HINTS,
  SUPPORTER_BADGE_UNLOCK_HINTS,canEquipSupporterBadge,type EquippablePlayerBadgeId,
  type SupporterBadgeId,
 } from '../core/player-badges';
@@ -128,6 +128,15 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
      :SUPPORTER_BADGE_UNLOCK_HINTS[id]);
    })}
    <Text style={[s.footnote,{color:C.muted}]}>{r('Time from separate verified subscription periods adds together. Pauses do not erase progress, and buying future months does not count early. Earlier history requires reliable billing proof.')}</Text>
+  </View>
+
+  <View style={s.section}>
+   <View style={s.sectionHeading}>
+    <Text style={[s.sectionTitle,{color:C.text}]}>{r('VIP badges')}</Text>
+    <Text style={[s.counter,{color:C.muted}]}>{badges.vipPlusAvailable?'VIP+':badges.vipAvailable?'VIP':r('LOCKED')}</Text>
+   </View>
+   {VIP_BADGE_IDS.map(id=>row(id,id==='vip'?badges.vipAvailable:badges.vipPlusAvailable,
+    VIP_BADGE_UNLOCK_HINTS[id]))}
   </View>
 
   <View style={s.section}>

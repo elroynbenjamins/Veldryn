@@ -1,5 +1,5 @@
 import {
- COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,MAX_EQUIPPED_PLAYER_BADGES,MAX_FEATURED_PLAYER_BADGES,
+ COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_EQUIPPED_PLAYER_BADGES,MAX_FEATURED_PLAYER_BADGES,
  normalizePlayerBadges,playerBadgeIds,profileBadgeIds,validatedFeaturedBadges,supporterTierMonths,
  canEquipSupporterBadge,type PlayerBadgeIdentity,
 } from '../src/core/player-badges';
@@ -14,6 +14,11 @@ ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails c
 ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
 ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===6,'all current earned badges still exist');
 ok(SUPPORTER_BADGE_IDS.join(',')==='supporter,supporter_3m,supporter_6m,supporter_12m','four cosmetic Supporter tiers');
+ok(VIP_BADGE_IDS.join(',')==='vip,vip_plus','VIP and VIP+ belong to the elective badge catalog');
+ok(playerBadgeIds(normalizePlayerBadges({staff:'admin',supporter:false,equippedBadgeId:'vip',validUntilMs:2000}),now).join(',')==='admin,vip','verified VIP can display beside the automatic staff badge');
+ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'vip_plus',validUntilMs:2000}),now).join(',')==='vip_plus','verified VIP+ can display beside the name');
+ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['vip_plus','vip','founder'],validUntilMs:2000}),now).join(',')==='vip_plus,vip,founder','VIP and VIP+ work as profile showcase selections');
+ok(validatedFeaturedBadges(['vip_plus','vip','admin'],VIP_BADGE_IDS).join(',')==='vip_plus,vip','VIP badges are valid choices while staff roles are not');
 
 ok(playerBadgeIds({...snapshot(null,false),extras:['founder','beta_tester']},now).join(',')==='founder','legacy double selection collapses safely to one');
 ok(playerBadgeIds({...snapshot('admin',true),extras:['founder','beta_tester']},now).join(',')==='admin,founder','staff badge appears separately');
@@ -126,6 +131,10 @@ ok(!sql.includes('raw_user_meta_data')&&!sql.includes('user_metadata'),'Supporte
 ok(!sql.includes('grant execute on function public.update_player_equipped_badge_v2(text) to anon'),'badge mutation requires authenticated identity');
 ok(sql.includes("cardinality(p_badge_ids)>2")&&sql.includes("p_badge_ids[1]"),'legacy 2-badge clients get one stored badge');
 
+const vipSql=read('../../backend/supabase/migrations/20261114223000_vip_vip_plus_profile_badges.sql');
+ok(vipSql.includes("'vip','vip_plus'")&&vipSql.includes("id='vip_plus' and v_vip_plus_active"),'VIP and VIP+ are SQL allowlisted only with matching verified entitlements');
+ok(vipSql.includes("select vip,vip_plus,supporter")&&vipSql.includes("BADGE_NOT_OWNED"),'VIP badge ownership is checked against commerce rather than client input');
+ok(!vipSql.includes('raw_user_meta_data')&&!vipSql.includes('user_metadata'),'VIP identity is never claimed from editable user metadata');
 const shelfSql=read('../../backend/supabase/migrations/20261111113000_profile_badge_showcase_v3.sql');
 ok(provider.includes('setProfileBadges')&&transport.includes("request('update_player_profile_badges_v3'"),'the profile shelf is saved through its own authenticated RPC');
 ok(transport.includes('updateLegacyFeaturedBadges')&&transport.includes("request('update_player_featured_badges_v1'"),'the legacy single-badge writer stays for servers without the shelf');

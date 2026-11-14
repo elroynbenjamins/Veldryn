@@ -17,10 +17,10 @@ export function HuntAbilityCues({effects,language,formatAmount}:{
  const tr=(key:string,params?:Record<string,string|number>)=>battleText(language,key,params);
  return <View style={{gap:5}}>
   {effects.slice(-2).map((effect,index)=>{
-   const color=effect.kind==='damage'?(effect.source==='companion'?C.info:C.accent):C.good;
+   const color=effect.kind==='shield'?C.info:effect.kind==='damage'?(effect.source==='companion'?C.info:C.accent):C.good;
    const label=effect.kind==='recovery'?'ON-KILL RECOVERY':effect.source==='companion'?'COMPANION SKILL':'CLASS ABILITY';
    const amount=effect.amount!==undefined&&effect.amount>0
-    ?tr(effect.kind==='damage'?'SKILL DAMAGE · {amount}':'SKILL HEAL · {amount}',{amount:formatAmount(effect.amount)})
+    ?tr(effect.kind==='damage'?'SKILL DAMAGE · {amount}':effect.kind==='shield'?'SHIELD · {amount}':'SKILL HEAL · {amount}',{amount:formatAmount(effect.amount)})
     :undefined;
    return <View key={effect.name+':'+Math.round(effect.atMs)+':'+index} accessible accessibilityLiveRegion="polite"
      accessibilityLabel={tr(label)+': '+tr(effect.name)+(amount?' · '+amount:'')}

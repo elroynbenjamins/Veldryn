@@ -1,5 +1,5 @@
 import {assert} from './test-assert';
-import {huntActiveDamageEvents,HUNT_CLASS_TECHNIQUES} from '../src/core/hunt-active-abilities';
+import {huntActiveDamageEvents,huntTankGuardEvents,HUNT_CLASS_TECHNIQUES} from '../src/core/hunt-active-abilities';
 import {huntEnemyHpAt,type HuntHit} from '../src/core/combat-hit-timeline';
 import type {ClassId} from '../src/core/types';
 import {battleText} from '../src/i18n/battle';
@@ -51,4 +51,33 @@ assert.equal(one[0].companionAssist,undefined,'One-shot hunts cannot invent a co
 const weak=huntActiveDamageEvents([{...hits[0],damage:1},{...hits[3],damage:1}],input);
 assert.equal(weak[1].activeAbility,undefined,'Cannot borrow HP from a one-point hit');
 assert.equal(total(weak),2);
-console.log('PASS solo hunt named class techniques, bounded companion assists, no extra DPS, deterministic split accounting, and single-hit safety');
+const guardInput={combatStartedAtMs:100_000,encounterStartedAtMs:100_000,cycleSeconds:10,
+ companion:{id:'UNIT_002',name:'Runebound Sentry',abilityId:'UABL_002',abilityName:'Rune Brace',role:'tank' as const,activeKind:'damage_reduction',cooldownSeconds:18,incomingDamageMultiplier:.94}};
+const enemyHits:HuntHit[]=[
+ {fraction:.3,actor:'enemy',damage:30,healing:0,critical:false,index:0},
+ {fraction:.6,actor:'enemy',damage:20,healing:0,critical:false,index:1},
+ {fraction:.999,actor:'fatigue',damage:3,healing:0,critical:false,index:2},
+];
+const guarded=huntTankGuardEvents(enemyHits,guardInput);
+assert.equal(guarded[0].guardAbility?.name,'Runebound Sentry: Rune Brace','Tank guard must identify the real equipped ability');
+assert.equal(guarded[0].guardAbility?.kind,'shield');
+assert.ok((guarded[0].guardAbility?.amount??0)>0,'Guard needs real nonzero prevented damage');
+assert.ok((guarded[0].guardAbility?.amount??0)<=enemyHits[0].damage*.025+1e-6,'Tank shield must stay below 2.5% of one incoming strike');
+assert.ok(guarded[0].damage<enemyHits[0].damage,'The skill must mechanically prevent damage');
+assert.equal(guarded[1].damage,enemyHits[1].damage,'Unprotected strikes must remain unchanged');
+assert.equal(guarded[2].damage,enemyHits[2].damage,'A tank shield must not erase authored fatigue');
+assert.ok(enemyHits.every(hit=>!hit.guardAbility),'Tank skill must not mutate source events');
+assert.equal(JSON.stringify(guarded),JSON.stringify(huntTankGuardEvents(enemyHits,guardInput)),'Tank cooldown and mitigation must replay deterministically');
+assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,encounterStartedAtMs:110_000}).every(hit=>!hit.guardAbility),'No tank cast before the next cooldown pulse');
+const lateGuard=huntTankGuardEvents(enemyHits,{...guardInput,encounterStartedAtMs:130_000});
+assert.equal(lateGuard[0].guardAbility,undefined,'A shield cannot trigger before its scheduled pulse');
+assert.ok(!!lateGuard[1].guardAbility,'The first enemy hit after a cooldown pulse must consume the tank shield');
+assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,companion:{...guardInput.companion,incomingDamageMultiplier:1}}).every(hit=>!hit.guardAbility),'No defensive effect may appear without a real defensive companion bonus');
+assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,companion:{...guardInput.companion,role:'support'}}).every(hit=>!hit.guardAbility),'Support companions must not gain tank skills');
+assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,companion:{...guardInput.companion,activeKind:'heal'}}).every(hit=>!hit.guardAbility),'Only real shield or damage reduction abilities can guard');
+for(const language of SUPPORTED_LANGUAGES){
+ const shield=battleText(language,'SHIELD · {amount}',{amount:12});
+ assert.ok(shield.includes('12'),'Shield amount must remain localized without losing its numeric amount: '+language);
+}
+
+console.log('PASS solo hunt named class techniques, bounded companion assists, no extra DPS, deterministic split accounting, single-hit safety, and real cooldown-gated tank mitigation');

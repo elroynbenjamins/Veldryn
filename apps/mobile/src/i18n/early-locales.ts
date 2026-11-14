@@ -18,7 +18,6 @@ export const EARLY_LOCALE_ROWS={
   "Browse dungeons, prepare Echoes and join expeditions": ["Исследуйте подземелья, готовьте эхо и присоединяйтесь к экспедициям","Zindanları keşfet, Yankıları hazırla ve seferlere katıl"],
   "Your team, weekly contracts, invites and chat": ["Ваша команда, еженедельные контракты, приглашения и чат","Ekibin, haftalık sözleşmeler, davetler ve sohbet"],
   "Find Parties, players and Guilds": ["Найдите группы, игроков и гильдии","Grupları, oyuncuları ve loncaları bul"],
-  "Codex": ["Кодекс","Kodeks"],
   "Browse resources, companion materials and crafting recipes": ["Просматривайте ресурсы, материалы для спутников и рецепты создания","Kaynaklara, yoldaş malzemelerine ve üretim tariflerine göz at"],
   "{count} Party updates": ["{count} обновлений группы","{count} grup güncellemesi"],
   "Party updates": ["Обновления группы","Grup güncellemeleri"],

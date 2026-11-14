@@ -4,6 +4,13 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Sunscar special encounters
+
+- Localized **five** authored optional Sunscar encounters (name and gameplay summary), and added German-only labels for gem grade, pity guarantee, cooldown/daily limits, combat and replay cues, reward outcomes and accessibility hints.
+- Connected the source-guarded gameplay translation to the Regional Combat panel's displayed encounter names, replay cue types, item rewards, confirmation messages and button/status copy. Player and opponent names from replay receipts remain unchanged.
+- Server-calculated combat outcomes, random rewards, cadence limits, pity progress, receipt identity and persisted encounter/zone IDs remain untouched.
+- Added a regression test for exact parity with the five authored catalog entries, UI translations, and the server-authoritative call boundaries; registered it in the mobile localization suite. GitHub CI and device QA remain the release gate.
+
 ## November 14, 2026: German World Boss and Regional Crisis content
 
 - Added exact-source German translations for the **two authored World Boss names/descriptions**, **three boss phases**, **three Regional Crisis names/descriptions**, and **three crisis stages** (22 authored strings), plus five status/counter labels.

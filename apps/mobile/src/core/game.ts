@@ -551,18 +551,24 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
   ?state.activity.startedAtMs??0:0;
  let encounterStart=sessionStart;
  const classSkillLevel=characterClassSkills(runtime.c)[0]?.level??1;
+ const equippedGuardCompanion=runtime.companion.contributionPct>0
+  ?COMBAT_COMPANIONS.find(unit=>unit.id===runtime.c.equippedCombatCompanionId):undefined;
  for(let index=0;index<count;index++){
    const plan=regionalHuntPlan({...runtime.huntOptions,seed:regionalHuntSeed(state,monsterId,index)});
    const exchange=combatEncounterDamage({...runtime,killCycleSeconds:plan.cycleSeconds},false,plan.enemyAttackCount,plan.fightSeconds);
-   // Match the class's actual per-hit protection and recovery instead of
-   // forecasting every class as if it had no active skills. We do not alter
-   // enemy HP, reward rates, or the mandatory fatigue/provisioning floor.
-   const cast=huntClassSurvivalEvents(regionalHuntHits(plan,{
+   // Forecast actual companion and class protection from the same original
+   // session clock as settlement. Never adjust enemy HP, XP, Gold or fatigue.
+   const timing={combatStartedAtMs:sessionStart,encounterStartedAtMs:encounterStart,cycleSeconds:plan.cycleSeconds};
+   const guarded=huntTankGuardEvents(regionalHuntHits(plan,{
     monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing,
-   }),{
-    classId:runtime.c.classId,classSkillLevel,combatStartedAtMs:sessionStart,
-    encounterStartedAtMs:encounterStart,cycleSeconds:plan.cycleSeconds,
-   });
+   }),{...timing,companion:equippedGuardCompanion?{
+    id:equippedGuardCompanion.id,name:equippedGuardCompanion.name,
+    abilityId:equippedGuardCompanion.activeAbility.id,abilityName:equippedGuardCompanion.activeAbility.name,
+    role:equippedGuardCompanion.role,activeKind:equippedGuardCompanion.activeAbility.effect.kind,
+    cooldownSeconds:equippedGuardCompanion.activeAbility.cooldownSeconds,
+    incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier,
+   }:undefined});
+   const cast=huntClassSurvivalEvents(guarded,{classId:runtime.c.classId,classSkillLevel,...timing});
    seconds+=plan.cycleSeconds;
    damage+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.damage,0);
    healing+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.healing,0);

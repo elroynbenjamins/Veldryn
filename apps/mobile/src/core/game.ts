@@ -1,7 +1,7 @@
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
-import {huntActiveDamageEvents,huntTankGuardEvents} from './hunt-active-abilities';
+import {huntActiveDamageEvents,huntSupportHealEvents,huntTankGuardEvents} from './hunt-active-abilities';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -632,10 +632,12 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  };
  const equippedAbilityCompanion=prepared.companion.contributionPct>0
   ?COMBAT_COMPANIONS.find(def=>def.id===c.equippedCombatCompanionId):undefined;
- const techniqueInput={classId:c.classId,classSkillLevel:characterClassSkills(c)[0]?.level??1,
-  companion:equippedAbilityCompanion?{id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
-   abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
-   role:equippedAbilityCompanion.role,contributionPct:Math.max(0,1-1/prepared.companion.outputMultiplier)}:undefined};
+ const classTechniqueInput={classId:c.classId,classSkillLevel:characterClassSkills(c)[0]?.level??1};
+ const commonCompanion=equippedAbilityCompanion?{
+  id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
+  abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
+  role:equippedAbilityCompanion.role,activeKind:equippedAbilityCompanion.activeAbility.effect.kind,
+  cooldownSeconds:equippedAbilityCompanion.activeAbility.cooldownSeconds}:undefined;
  const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false,encounterStartedAtMs=startsAtMs)=>{
    let hits;
    if(runtime.huntOptions){
@@ -646,14 +648,13 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      const exchange=combatEncounterDamage(runtime,champion);
      hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
-   const offensive=huntActiveDamageEvents(hits,{...techniqueInput,encounterNumber:(activity.sessionKills??0)+index});
-   return huntTankGuardEvents(offensive,{combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds,
-    companion:equippedAbilityCompanion?{id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
-      abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
-      role:equippedAbilityCompanion.role,activeKind:equippedAbilityCompanion.activeAbility.effect.kind,
-      cooldownSeconds:equippedAbilityCompanion.activeAbility.cooldownSeconds,
-      incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
-
+   const cooldownTiming={combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds};
+   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,
+     companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
+   const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
+     companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
+   return huntTankGuardEvents(heals,{...cooldownTiming,
+     companion:commonCompanion?{...commonCompanion,incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -695,12 +696,12 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
          const classPortion=appliedHealing*classBase/(companionBase+classBase||1);
          if(classPortion>1e-5)recordSkillEffect({atMs:hitAtMs,name:runtime.style.name,kind:'recovery',amount:classPortion,source:'class'});
        }
-       if(appliedHealing>0&&equippedAbilityCompanion?.role==='support'&&equippedAbilityCompanion.activeAbility.effect.kind==='heal'&&encounterNumber%2===0){
+       if(appliedHealing>0&&hit.supportAbility){
          const companionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600;
          const classHeal=runtime.stats.attack*(runtime.style.onKillAttackHealPct??0);
          const share=companionHeal/(companionHeal+classHeal||1);
          const credited=Math.min(appliedHealing,appliedHealing*share);
-         if(credited>0.00001)recordSkillEffect({atMs:hitAtMs,name:equippedAbilityCompanion.name+': '+equippedAbilityCompanion.activeAbility.name,kind:'heal',amount:credited,source:'companion'});
+         if(credited>0.00001)recordSkillEffect({atMs:hitAtMs,name:hit.supportAbility.name,kind:'heal',amount:credited,source:'companion'});
        }
        while(hp>0&&hp/runtime.stats.hp<=threshold){
          const nextFood=foodOrder.find(row=>row.heal>0&&(foodLeft.get(row.id)??0)>0);

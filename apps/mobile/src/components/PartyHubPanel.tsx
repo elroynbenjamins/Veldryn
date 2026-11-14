@@ -30,6 +30,7 @@ import {PartyWeeklyLadder} from './PartyWeeklyLadder';
 import {PartyContractContributions} from './PartyContractContributions';
 import {partyContractClaimableRewardIds} from '../core/party-social';
 import {usePartyProgressUiText} from '../i18n/party-progress-ui';
+import {germanPartySurfaceText,partyMinimumLevelLabel} from '../i18n/party-surface-de';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
 
 export interface PartyHubPanelProps {
@@ -100,7 +101,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  const focusedMember=selectedMember&&props.party?.members.find(member=>member.accountId===selectedMember.accountId);
  const permissions=focusedMember?partyMemberManagement(canManageParty,props.accountId,focusedMember.accountId):null;
  const title=props.party?st('My Party'):st('Find or Create a Party');
- const preferences=normalizedPartyPreferences(props.party),languageLabel=PARTY_LANGUAGES.find(row=>row.id===preferences.language)?.label??'Any language';
+ const preferences=normalizedPartyPreferences(props.party),languageLabel=PARTY_LANGUAGES.find(row=>row.id===preferences.language)?.label??st('Any language');
  if(!inParty&&props.partyUnlocked===false)return <View style={s.content}><PartyLockedNotice level={props.partyUnlockLevel}/></View>;
  return <View style={s.content}>
   <View style={s.heading}>
@@ -110,13 +111,13 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    {inParty?<View style={s.memberCount}><Text style={s.memberCountValue}>{props.party!.members.length}/4</Text><Text style={s.memberCountLabel}>{st('Members')}</Text></View>:null}
   </View>
 
-  <SectionGuide scope={props.accountId} area="social-party" section={inParty?section:'solo'} translate={value=>socialLabel(language,value)} guide={inParty&&section==='party'?
+  <SectionGuide scope={props.accountId} area="social-party" section={inParty?section:'solo'} translate={value=>socialLabel(language,germanPartySurfaceText(language,value))} guide={inParty&&section==='party'?
      {title:'My Party',body:'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.',detail:'Use Party options for invitations or to leave. Open Recruitment to find new members.'}:
      inParty?{title:'Recruitment',body:'Find players or publish an advert for your Party here.',detail:'Search and filters narrow the list. Your adverts and matching players appear below.'}:
      {title:'Find or create a Party',body:'Create or find a Party.',detail:'Create a Party or post in Recruitment.'}} header={inParty&&!props.dedicated?<View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('My Party')} selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label={st('Recruitment')} selected={section==='find'} onPress={()=>setSection('find')}/></View>:undefined} showReplay={false}/>
   {inParty&&section==='party'?<>
    {(!props.dedicated||props.activeView!=='Contracts')?<View style={s.summaryCard}>
-    <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('ACTIVE PARTY')}</Text><Text style={s.sectionTitle}>{partyActivityLabel(preferences.activityLevel)} {st('Party')}</Text></View>
+    <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('ACTIVE PARTY')}</Text><Text style={s.sectionTitle}>{socialLabel(language,partyActivityLabel(preferences.activityLevel))} {st('Party')}</Text></View>
       <Text style={[s.statusPill,openSpots===0?s.fullPill:s.openPill]}>{openSpots>0?st('{count} open spots',{count:openSpots}):st('Full')}</Text></View>
     <View style={[s.actions,narrow&&s.actionsStack]}>{canManageParty&&openSpots>0?<View style={[s.actionFlex,narrow&&s.actionFlexNarrow]}><GameButton compact title={st('Find members')} onPress={()=>props.dedicated?props.onOpenRecruitment?.():(setBrowseMode('players'),setSection('find'))}/></View>:null}
       <View style={[s.actionFlex,narrow&&s.actionFlexNarrow]}><GameButton compact tone="secondary" title={props.invitationCount?st('Party options · {count}',{count:props.invitationCount}):st('Party options')} onPress={()=>setShowSettings(true)}/></View></View>
@@ -128,7 +129,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
      const canOpenManagement=manage.canTransfer&&!!props.onTransferLeadership||manage.canRemove&&!!props.onRemoveMember;
      return <View key={member.accountId} style={s.memberRow}>
       <Pressable accessibilityRole="button" accessibilityLabel={st('Open {name} profile',{name:member.characterName})} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.pressed]}>
-       <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.characterName} className={member.className} status={member.isLeader?st('PARTY LEADER'):socialLabel(language,member.role).toUpperCase()} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st('VIEW PROFILE ›'):undefined}/>
+       <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.characterName} className={member.className} status={member.isLeader?st('PARTY LEADER'):socialLabel(language,member.role).toLocaleUpperCase(language)} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st('VIEW PROFILE ›'):undefined}/>
       </Pressable>
       {canOpenManagement?<Pressable accessibilityRole="button" accessibilityLabel={st('Manage {name}',{name:member.characterName})} onPress={()=>setSelectedMember(member)} style={({pressed})=>[s.iconAction,pressed&&s.pressed]}><Text style={s.iconActionText}>•••</Text></Pressable>:null}
      </View>;
@@ -136,19 +137,19 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     {openSpots>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Find members')} onPress={()=>{if(props.dedicated){props.onOpenRecruitment?.();}else{setBrowseMode('players');setSection('find');}}} style={({pressed})=>[s.emptySlots,pressed&&s.pressed]}>
      <Text style={s.emptyPlus}>+</Text><Text style={[s.muted,s.flex]}>{st('{count} available party slots',{count:openSpots})}</Text><Text style={s.link}>{st('Recruit')} ›</Text>
     </Pressable>:null}
-    {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact tone="secondary" title="Invite friends privately" onPress={()=>props.onInviteFriends?.()}/>:null}
+    {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact tone="secondary" title={st("Invite friends privately")} onPress={()=>props.onInviteFriends?.()}/>:null}
    </View>:null}
    {(!props.dedicated||props.activeView==='Contracts')?<View style={s.panel}>
     <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('PARTY CONTRACTS')}</Text><Text style={s.muted}>{st('Progress and rewards')}</Text></View><Text style={readyContractRewards?s.good:s.metaCount}>{readyContractRewards?pt('{count} rewards ready',{count:readyContractRewards}):props.contracts.length}</Text></View>
     {props.contracts.map(contract=><View key={contract.id} style={s.contractOverview}>
       {contract.tiers?.length?<><PartyWeeklyLadder compact={!expandedContracts.includes(contract.id)} contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>
-       {contract.minimumPersonalPoints!==undefined?<View style={s.contributionRow}><Text style={s.muted}>{st('Your contribution')}</Text><Text style={personalContributionEligible(contract)?s.good:s.warning}>{(contract.personalPoints??0).toLocaleString()} / {contract.minimumPersonalPoints.toLocaleString()}{personalContributionEligible(contract)?' ✓':''}</Text></View>:null}
+       {contract.minimumPersonalPoints!==undefined?<View style={s.contributionRow}><Text style={s.muted}>{st('Your contribution')}</Text><Text style={personalContributionEligible(contract)?s.good:s.warning}>{(contract.personalPoints??0).toLocaleString(language)} / {contract.minimumPersonalPoints.toLocaleString(language)}{personalContributionEligible(contract)?' ✓':''}</Text></View>:null}
        <GameButton compact tone="secondary" title={expandedContracts.includes(contract.id)?st('Hide reward details'):st('View reward details')} onPress={()=>setExpandedContracts(items=>items.includes(contract.id)?items.filter(id=>id!==contract.id):[...items,contract.id])}/></>:
        <ContractCard contract={contract} nowMs={props.nowMs}/>}
       <PartyContractContributions contract={contract} party={props.party!} accountId={props.accountId}/>
       {!contract.tiers?.length?contract.rewards?.map(reward=><GameButton key={reward.id} compact title={reward.claimed?st('Reward claimed'):st('Claim {gold} Gold',{gold:reward.reward.gold})} disabled={reward.claimed||!props.onClaimReward} onPress={()=>props.onClaimReward?.(reward.id)}/>):null}
     </View>)}
-    {!props.contracts.length&&<Text style={s.muted}>No active weekly contract.</Text>}
+    {!props.contracts.length&&<Text style={s.muted}>{germanPartySurfaceText(language,"No active weekly contract.")}</Text>}
    </View>:null}
    {(!props.dedicated||props.activeView!=='Contracts')?props.partyExtras:null}
   </>:null}
@@ -157,7 +158,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    <Text style={s.muted}>{st('Choose activity, language and minimum level.')}</Text>
    {!props.dedicated?props.recruitmentPreferences:null}
    <GameButton title={st('Create Party')} disabled={!props.onCreateParty} onPress={()=>props.onCreateParty?.()}/>
-   {props.dedicated?<GameButton tone="secondary" title="Find a Party" onPress={()=>props.onOpenRecruitment?.()}/>:null}
+   {props.dedicated?<GameButton tone="secondary" title={germanPartySurfaceText(language,"Find a Party")} onPress={()=>props.onOpenRecruitment?.()}/>:null}
   </View>:null}
   {!props.dedicated&&(section==='find'||!inParty)&&<View style={s.recruitPanel}>
    <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('Recruitment')}</Text><Text style={s.muted}>{inParty?st('Discover available players and recruiting teams.'):st('Browse recruiting parties or advertise yourself.')}</Text></View><Text style={s.metaCount}>{cards.length}</Text></View>
@@ -175,11 +176,11 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   <GameModalSurface visible={showSettings&&inParty} presentation="sheet" onClose={()=>setShowSettings(false)} surfaceStyle={{maxHeight:windowHeight*.90}}>
    <GameModalHeader eyebrow={st('ACTIVE PARTY')} title={st('Party options')} onClose={()=>setShowSettings(false)}/>
    <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody}>
-    <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{partyActivityLabel(preferences.activityLevel)} · {languageLabel}{preferences.minimumLevel?' · Lv. '+preferences.minimumLevel+'+':''}</Text></View>
+    <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{partyActivityLabel(preferences.activityLevel)} · {languageLabel}{preferences.minimumLevel?' · '+partyMinimumLevelLabel(language,preferences.minimumLevel):''}</Text></View>
     {(props.invitationCount??0)>0?props.partyInvitations:<Text style={s.muted}>{st('No pending invitations.')}</Text>}
     {canManageParty&&openSpots>0?<GameButton compact tone="secondary" title={st('Find members')} onPress={()=>{setShowSettings(false);if(props.dedicated)props.onOpenRecruitment?.();else{setBrowseMode('players');setSection('find');}}}/>:null}
 
-    {canManageParty&&props.onEditPreferences?<GameButton compact tone="secondary" title="Edit Party preferences" onPress={()=>{setShowSettings(false);props.onEditPreferences?.()}}/>:null}
+    {canManageParty&&props.onEditPreferences?<GameButton compact tone="secondary" title={germanPartySurfaceText(language,"Edit Party preferences")} onPress={()=>{setShowSettings(false);props.onEditPreferences?.()}}/>:null}
     <View style={s.divider}/><Text style={s.eyebrow}>{st('PARTY MANAGEMENT')}</Text>
     <GameButton tone="secondary" title={st('Leave Party')} disabled={!props.onLeaveParty} onPress={()=>{setShowSettings(false);props.onLeaveParty?.();}}/>
     {canManageParty&&props.party!.members.length>1?<GameButton tone="danger" title={st('Disband Party')} disabled={!props.onDisbandParty} onPress={()=>{setShowSettings(false);props.onDisbandParty?.();}}/>:null}
@@ -189,7 +190,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   <GameModalSurface visible={!!focusedMember&&inParty} presentation="dialog" onClose={()=>setSelectedMember(null)}>
    <GameModalHeader eyebrow={st('PARTY MEMBERS')} title={st('Manage member')} onClose={()=>setSelectedMember(null)}/>
    {focusedMember?<View style={s.modalBody}>
-     <CompactPlayerIdentity accountId={focusedMember.accountId} badges={focusedMember.playerBadges} name={focusedMember.characterName} className={focusedMember.className} status={socialLabel(language,focusedMember.role).toUpperCase()} statusTone="info"/>
+     <CompactPlayerIdentity accountId={focusedMember.accountId} badges={focusedMember.playerBadges} name={focusedMember.characterName} className={focusedMember.className} status={socialLabel(language,focusedMember.role).toLocaleUpperCase(language)} statusTone="info"/>
      <View style={s.divider}/>
      {permissions?.canTransfer?<GameButton tone="secondary" title={st('Transfer leadership')} disabled={!props.onTransferLeadership} onPress={()=>{setSelectedMember(null);props.onTransferLeadership?.(focusedMember);}}/>:null}
      {permissions?.canRemove?<GameButton tone="danger" title={st('Remove member')} disabled={!props.onRemoveMember} onPress={()=>{setSelectedMember(null);props.onRemoveMember?.(focusedMember);}}/>:null}
@@ -204,15 +205,15 @@ function BrowseChip({label,selected,onPress}:{label:string;selected:boolean;onPr
  return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.browseChip,selected&&s.browseChipSelected,pressed&&s.pressed]}><Text numberOfLines={2} style={[s.browseText,selected&&s.browseTextSelected]}>{label}</Text></Pressable>;
 }
 function ContractCard({contract,nowMs}:{contract:PartyContractView;nowMs:number}){
- const st=useSocialText(),C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
+ const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
  const ratio=contractProgressRatio(contract),eligible=personalContributionEligible(contract);
  const deadline=contract.endsAtMs??(contract.expiresAt?Date.parse(contract.expiresAt):nowMs);
  const hours=Math.max(0,Math.ceil((deadline-nowMs)/3600000));
  return <View style={s.contractCard}>
-  <View style={s.between}><Text style={[s.itemTitle,s.flex]}>{contract.name}</Text><Text style={s.eyebrow}>{(contract.category??contract.focus??'mixed').toUpperCase()}</Text></View>
+  <View style={s.between}><Text style={[s.itemTitle,s.flex]}>{contract.name}</Text><Text style={s.eyebrow}>{socialLabel(language,contract.category??contract.focus??'mixed').toLocaleUpperCase(language)}</Text></View>
   <Text style={s.muted}>{contract.cadence==='weekly'?st('Weekly Contract'):st('Ranked Mini-Event')} · {st('{count}h left',{count:hours})}</Text>
   <View style={s.progressTrack}><View style={[s.progressFill,{width:Math.round(ratio*100)+'%'}]}/></View>
-  <Text style={s.muted}>{contract.totalPoints.toLocaleString()} / {contract.targetPoints.toLocaleString()} {st('points')}</Text>
+  <Text style={s.muted}>{contract.totalPoints.toLocaleString(language)} / {contract.targetPoints.toLocaleString(language)} {st('points')}</Text>
   <Text style={eligible?s.good:s.warning}>{st('Your contribution')}: {contract.personalPoints??0} / {contract.minimumPersonalPoints??0} {eligible?'✓':''}</Text>
   {(contract.objectives??[]).map(objective=><Text key={objective.id} style={s.muted}>• {objective.label}: {objective.progressUnits}/{objective.targetUnits}</Text>)}
  </View>;

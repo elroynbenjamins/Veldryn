@@ -40,4 +40,5 @@ const frostmarch=MONSTERS.find(m=>m.id==='FROSTWOLF');
 check(frostmarch&&encounterLockRequirement(state,frostmarch)?.kind==='level','An unreached later region must remain locked');
 check(regionEncounters(state,'Sunscar','',false,'ZONE_006').length===2,'Area-filtered hunting should only show its own two enemies');
 check(regionEncounters(state,'Sunscar','',false,'ZONE_009').length===2,'Legacy area selection must map to the final area');
+check(regionEncounters(state,'Sunscar','',true,'ZONE_010').length===2,'Cumulative zone progress must expose both later-area encounters in the Combat picker');
 console.log('PASS 4x2 regional areas, 8 enemies, 10 gathering nodes, old IDs and cumulative zone gates');

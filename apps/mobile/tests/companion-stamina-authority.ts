@@ -34,6 +34,15 @@ assert.equal(started.inventory.stacks.filter(s=>s.itemId==='TRAVEL_RATION').redu
 assert.equal(started.bank.stacks.filter(s=>s.itemId==='TRAVEL_RATION').reduce((n,s)=>n+s.quantity,0),0);
 assert.equal(started.account.longTermMetrics?.['companions.expedition.stamina_supplied'],50);
 
+const partial=fixture();
+partial.inventory.stacks=[{itemId:'ASHLANDS_EMBER_STEW',quantity:2},{itemId:'ASHLANDS_EMBER_STEW',quantity:2}];
+partial.bank.stacks=[];
+const partialAuto=companionAutoStaminaSelection(partial,required);
+assert.equal(partialAuto.ready,true);
+assert.equal(partialAuto.selection[0].quantity,2);
+const partialStarted=executeGameCommand(partial,{type:'companion_assignment_start',args:{id:missionId,ids:['UNIT_001'],food:partialAuto.selection}},now).state;
+assert.equal(partialStarted.inventory.stacks.filter(s=>s.itemId==='ASHLANDS_EMBER_STEW').reduce((n,s)=>n+s.quantity,0),2,'unselected food from repeated stacks must remain untouched');
+
 const insufficient=fixture();
 let failure='';
 try{

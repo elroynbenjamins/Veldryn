@@ -45,6 +45,7 @@ export const germanSocialManagementCopy:Readonly<Record<string,string>>={
  ' · comma separated':' · durch Kommas trennen',
  'Current · {objective}':'Aktuell · {objective}',
  'Posted by {name}':'Von {name}',
+ 'posted by':'von',
 } as const;
 
 export function germanSocialManagementText(language:Language,source:string):string{
@@ -57,5 +58,5 @@ export function germanSocialManagementFormat(
  language:Language,source:string,values:Readonly<Record<string,string>>={}
 ):string{
  const template=germanSocialManagementText(language,source);
- return template.replace(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g,(match,key)=>Object.prototype.hasOwnProperty.call(values,key)?values[key]:match);
+ return template.replace(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g,(match,key)=>Object.prototype.hasOwnProperty.call(values,key)?values[key]??match:match);
 }

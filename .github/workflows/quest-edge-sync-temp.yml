@@ -43,3 +43,5 @@ jobs:
           fi
           git commit -m 'build(quests): synchronize per-character quest Edge bundles'
           git push origin HEAD:release/v109-per-character-quests-final-20261114
+
+# Rebuild after trusted migration snapshot ordering fix.

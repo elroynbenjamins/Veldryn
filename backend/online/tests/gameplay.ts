@@ -8,7 +8,7 @@ import {COMBAT_COMPANIONS} from '../../../apps/mobile/src/content/combat-compani
 import {EQUIPMENT_ITEMS_V33} from '../../../apps/mobile/src/content/equipment-items-v33';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
 import {alchemyRecipeDef} from '../../../apps/mobile/src/content/alchemy';
-import {effectiveStats} from '../../../apps/mobile/src/core/game';
+import {createCharacter,effectiveStats} from '../../../apps/mobile/src/core/game';
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
 import {gemRefineRecipeIdV1,gemRefineRecipeV1} from '../../../apps/mobile/src/core/gem-progression-v1';
@@ -261,6 +261,28 @@ async function main(){
  assert.equal(claim.status,200,'online gem Forge claim settles');
  const claimPayload=await claim.json();
  assert.ok(claimPayload.state.account.gemPouch.stacks.some((stack:{itemId:string;quantity:number})=>stack.itemId===gemRecipe.output.itemId&&stack.quantity>=1),'online gem Forge claim delivers to Gem Pouch');
+ // Legacy stored account quest data must create an entitlement only from the
+ // server's trusted snapshot, before account-to-character normalization.
+ const legacyBase=createCharacter(newGame(0),'STONECALLER','Legacy Returner');
+ clock=Date.UTC(2026,10,14,7,20);
+ state={...legacyBase,skills:legacyBase.skills.map(skill=>({...skill,xp:10000})),
+  account:{...legacyBase.account,seasonalContractClaimIds:['DAILY_2026-11-13_0'],
+   seasonalContractProgress:{daily:{key:'2026-11-14',counts:{gathering:12}}}}};
+ const beforeLegacy=commits;
+ const legacyOnline=await request({type:'seasonal',args:{period:'daily',id:'DAILY_2026-11-14_1'}},'online-legacy-seasonal-1',version);
+ const legacyPayload=await legacyOnline.json();
+ assert.equal(legacyOnline.status,200,'HTTP must preserve earned old quest before migration: '+JSON.stringify(legacyPayload).slice(0,320));
+ assert.equal(commits,beforeLegacy+1,'Legacy claim commits once');
+ assert.ok(legacyPayload.state.character.personalSeasonal.claimIds.includes('DAILY_2026-11-14_1'),'Grant is scoped to claiming character');
+ assert.equal(legacyPayload.state.account.legacySeasonalGrantSnapshot?.ownerCharacterId,legacyPayload.state.character.id,'Legacy entitlement owner is authoritative');
+ const duplicateLegacy=await request({type:'seasonal',args:{period:'daily',id:'DAILY_2026-11-14_1'}},'online-legacy-seasonal-2',version);
+ assert.equal(duplicateLegacy.status,400,'Different request key cannot claim same entitlement again');
+ assert.equal(commits,beforeLegacy+1,'Double claim does not commit');
+ state={...legacyBase,skills:legacyBase.skills.map(skill=>({...skill,xp:10000})),
+  account:{...legacyBase.account,seasonalContractProgress:{daily:{key:'2026-11-14',counts:{gathering:12}}}}};
+ const forgedLegacy=await request({type:'seasonal',args:{period:'daily',id:'DAILY_2026-11-14_1'}},'online-legacy-no-history-1',version);
+ assert.equal(forgedLegacy.status,400,'No old historical claims means no entitlement');
+ assert.equal(commits,beforeLegacy+1,'Forged migration cannot commit');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -38,7 +38,7 @@ assert.equal(appText('nl','Cannot travel'),'Reizen niet mogelijk');
 assert.equal(appText('ru','Account'),'Аккаунт');
 assert.equal(appText('tr','Guild'),'Lonca');
 assert.equal(appText('ru','Cannot travel'),'Переход недоступен');
-assert.equal(appText('tr','Cannot reorder backlog'),'Cannot reorder backlog');
+assert.equal(appText('tr','Cannot reorder backlog'),'Bekleme sırası yeniden düzenlenemiyor');
 assert.equal(appText('ru','{name} is ready.',{name:'Ironwarden'}),'Ironwarden готов.');
 assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden hazır.');
 assert.equal(appBuildText('ru','version',{version:'1.0.6'}),'Version 1.0.6');

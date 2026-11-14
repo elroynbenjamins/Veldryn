@@ -76,6 +76,11 @@ assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,companion:{...guardInput.
 assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,companion:{...guardInput.companion,role:'support'}}).every(hit=>!hit.guardAbility),'Support companions must not gain tank skills');
 assert.ok(huntTankGuardEvents(enemyHits,{...guardInput,companion:{...guardInput.companion,activeKind:'heal'}}).every(hit=>!hit.guardAbility),'Only real shield or damage reduction abilities can guard');
 for(const language of SUPPORTED_LANGUAGES){
+ for(const name of ['Rune Brace',"Page's Vow",'Hamstring Pounce','Silver Current']){
+  const translated=battleText(language,name);
+  assert.ok(translated.length>0,'Starter companion techniques need a visible name: '+language+' '+name);
+  if(language!=='en')assert.ok(translated!==name,'Starter companion technique must be localized: '+language+' '+name);
+ }
  const shield=battleText(language,'SHIELD · {amount}',{amount:12});
  assert.ok(shield.includes('12'),'Shield amount must remain localized without losing its numeric amount: '+language);
 }

@@ -165,6 +165,7 @@
   ".core-build/apps/mobile/tests/screen-navigation-history.js",
   ".core-build/apps/mobile/tests/release-notes.js",
   ".core-build/apps/mobile/tests/combat-power.js",
+  ".core-build/apps/mobile/tests/cumulative-monster-access.js",
   ".core-build/apps/mobile/tests/combat-region.js",
   ".core-build/apps/mobile/tests/combat-presentation.js",
   ".core-build/apps/mobile/tests/combat-hit-timeline.js",

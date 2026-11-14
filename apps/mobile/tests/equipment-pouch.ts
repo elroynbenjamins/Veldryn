@@ -74,7 +74,7 @@ const inactiveForge:GameState={...started.state,character:backgroundCharacter,in
 const backgroundClaim=claimEquipmentCraft(inactiveForge,job.id,job.completesAtMs,.004);
 ok(backgroundClaim.state.otherCharacters?.[0].character.equipmentPouch?.stacks.some(row=>row.instanceId===backgroundClaim.result.instanceId)
  &&equipmentPouch(backgroundClaim.state).stacks.length===0,'Claiming a different character\'s finished Forge job must deliver to its owner\'s pouch');
-const maxedCopies=Array.from({length:7},(_,index)=>draftCraftedGearInstance({
+const maxedCopies=Array.from({length:25},(_,index)=>draftCraftedGearInstance({
  itemId:output,ownerCharacterId:started.state.character!.id,jobId:'owner-autosell-'+index,createdAtMs:1000,roll:.00005,
 }));
 const sevenBank:GameState={...inactiveForge,bank:{...inactiveForge.bank,capacity:30,stacks:maxedCopies.map(instance=>({itemId:output,quantity:1,instanceId:instance.id}))},

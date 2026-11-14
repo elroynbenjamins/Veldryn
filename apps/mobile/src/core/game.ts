@@ -593,6 +593,7 @@ export function activeCombatRuntimeProjection(state:GameState){
   };
 }
 
+export interface ActiveHuntSkillEffect {atMs:number;name:string;kind:'recovery'|'damage'|'heal';amount?:number;source?:'class'|'companion'}
 function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Date.now()){
  const c=state.character!,activity=state.activity!,startsAtMs=activity?.lastClaimAtMs??nowMs-elapsed*1000;
  const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs),prepared=combatRuntimeDetails(state,monsterId,startsAtMs);
@@ -623,7 +624,12 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
  // Only report a completed, genuinely applied recovery benefit; ordinary
  // class training and companion stat multipliers are not active casts.
- let lastSkillEffect:undefined|{atMs:number;name:string;kind:'recovery'|'damage'|'heal';amount?:number;source?:'class'|'companion'};
+ let lastSkillEffect:ActiveHuntSkillEffect|undefined;
+ const lastSkillEffects:ActiveHuntSkillEffect[]=[];
+ const recordSkillEffect=(effect:ActiveHuntSkillEffect)=>{
+  lastSkillEffect=effect;lastSkillEffects.push(effect);
+  if(lastSkillEffects.length>4)lastSkillEffects.shift();
+ };
  const equippedAbilityCompanion=prepared.companion.contributionPct>0
   ?COMBAT_COMPANIONS.find(def=>def.id===c.equippedCombatCompanionId):undefined;
  const techniqueInput={classId:c.classId,classSkillLevel:characterClassSkills(c)[0]?.level??1,
@@ -648,7 +654,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    enemyHp=huntEnemyHpAt(prepared.m.hp,hitsFor(firstPrepared?prepared:plain,0,champion,undefined,firstPrepared),activity?.progressFraction??0);
  }
  enemyHp=Math.max(0,Math.min(prepared.m.hp,enemyHp));
- if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,foodConsumedById:[] as ItemStack[],endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit,lastSkillEffect};
+ if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,foodConsumedById:[] as ItemStack[],endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit,lastSkillEffect,lastSkillEffects};
  for(const segment of timeline.segments){
    const runtime={...(segment.prepared?prepared:plain),killCycleSeconds:segment.cycleSeconds};
    if(segment.encounterIndex!==activeEncounterIndex){enemyHp=runtime.m.hp;activeEncounterIndex=segment.encounterIndex;}
@@ -662,8 +668,10 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
        enemyHp=Math.max(0,enemyHp-hit.damage);
        // This class technique actually concentrates the damage of a landed
        // strike. Companion damage shares the same resolved strike budget.
-       const effect=hit.activeAbility??hit.companionAssist;
-       if(effect)lastSkillEffect={atMs:hitAtMs,name:effect.name,kind:'damage',amount:effect.amount,source:effect.source};
+       // Preserve both casts when they share one landed strike, rather than
+       // hiding the companion behind the character's class technique.
+       for(const effect of [hit.companionAssist,hit.activeAbility])if(effect)
+         recordSkillEffect({atMs:hitAtMs,name:effect.name,kind:'damage',amount:effect.amount,source:effect.source});
      }else{
        // Incoming damage is applied on the strike, not at the kill/claim boundary.
        // Healing cannot retroactively prevent a lethal hit.
@@ -675,7 +683,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
          const classHeal=runtime.stats.attack*(runtime.style.onKillAttackHealPct??0);
          const share=companionHeal/(companionHeal+classHeal||1);
          const credited=Math.min(appliedHealing,appliedHealing*share);
-         if(credited>0.00001)lastSkillEffect={atMs:hitAtMs,name:equippedAbilityCompanion.name+': '+equippedAbilityCompanion.activeAbility.name,kind:'heal',amount:credited,source:'companion'};
+         if(credited>0.00001)recordSkillEffect({atMs:hitAtMs,name:equippedAbilityCompanion.name+': '+equippedAbilityCompanion.activeAbility.name,kind:'heal',amount:credited,source:'companion'});
        }
        while(hp>0&&hp/runtime.stats.hp<=threshold){
          const nextFood=foodOrder.find(row=>row.heal>0&&(foodLeft.get(row.id)??0)>0);
@@ -707,14 +715,14 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
        const baseCompanionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600*(runtime.c.preparation?preparationEffects(runtime.c.preparation).healing:1);
        const companionOnly=runtime.huntOptions?Math.min(baseCompanionHeal,exchange.monsterDamage+exchange.fatigue*.65):baseCompanionHeal;
        if(exchange.healing>companionOnly+1e-5){
-         lastSkillEffect={atMs:segment.endsAtMs,name:runtime.style.name,kind:'recovery'};
+         recordSkillEffect({atMs:segment.endsAtMs,name:runtime.style.name,kind:'recovery'});
        }
      }
      enemyHp=runtime.m.hp;
      activeEncounterIndex=segment.encounterIndex+1;
    }
  }
- return {kills:completed.length,completed,championKills,foodConsumed,foodConsumedById:[...foodSpent].map(([itemId,quantity])=>({itemId,quantity})),endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit,lastSkillEffect};
+ return {kills:completed.length,completed,championKills,foodConsumed,foodConsumedById:[...foodSpent].map(([itemId,quantity])=>({itemId,quantity})),endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit,lastSkillEffect,lastSkillEffects};
 }
 
 /** A UI-only replay cursor. The underlying saved GameState remains unchanged;
@@ -725,7 +733,8 @@ export interface ActiveCombatHitCursor{
  atMs:number;
  stoppedReason:string;
  lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
- lastSkillEffect?:{atMs:number;name:string;kind:'recovery'|'damage'|'heal';amount?:number;source?:'class'|'companion'};
+ lastSkillEffect?:ActiveHuntSkillEffect;
+ lastSkillEffects?:ActiveHuntSkillEffect[];
 }
 /** Exact hit projection, with optional incremental replay so a foreground clock
  * never recalculates a full 24-hour AFK backlog every animation tick. */
@@ -739,12 +748,14 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const runtime=combatRuntimeDetails(state,original.targetId);
  if(usable&&previous.stoppedReason){
    return {searching:false,playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
-     progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,lastSkillEffect:previous.lastSkillEffect,cursor:previous};
+     progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,lastSkillEffect:previous.lastSkillEffect,lastSkillEffects:previous.lastSkillEffects??[],cursor:previous};
  }
  const elapsed=Math.max(0,(atMs-source.activity!.lastClaimAtMs)/1000);
  const current=simulateCombat(source,original.targetId,elapsed,atMs);
  const lastHit=current.lastHit??(usable?previous.lastHit:undefined);
- const lastSkillEffect=current.lastSkillEffect??(usable?previous.lastSkillEffect:undefined);
+ const allSkillEffects=[...(usable?previous.lastSkillEffects??[]:[]),...current.lastSkillEffects];
+ const lastSkillEffects=allSkillEffects.filter((effect,index)=>allSkillEffects.findIndex(item=>item.atMs===effect.atMs&&item.name===effect.name&&item.kind===effect.kind)===index).slice(-4);
+ const lastSkillEffect=lastSkillEffects[lastSkillEffects.length-1]??(usable?previous.lastSkillEffect:undefined);
  const sourceCharacter=source.character!;
  let preparation=sourceCharacter.preparation;
  for(let i=0;i<current.preparationEncounters&&preparation;i++)preparation=spendPreparationEncounter(preparation,preparation.itemId);
@@ -762,9 +773,9 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const nextRuntime=combatRuntimeDetails(projected,original.targetId);
  const nextPlan=nextRuntime.huntOptions?regionalHuntPlan(nextRuntime.huntOptions):undefined;
  const searching=!!nextPlan&&current.nextProgressFraction<nextPlan.searchSeconds/nextPlan.cycleSeconds;
- const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect};
+ const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects};
  return {searching,playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
-   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,cursor};
+   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects,cursor};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{

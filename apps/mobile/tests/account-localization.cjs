@@ -82,7 +82,14 @@ for(const relative of files){
  visit(tree);
 }
 const more=fs.readFileSync(path.join(root,'screens/MoreScreen.tsx'),'utf8');
-assert.ok(more.includes("const attentionPriority:MoreDestination[]=['DailySupplies','Progression','Companions','Social','Friends','Guild','Profile'];"));
+const attentionOrderMatch=more.match(/const attentionPriority:MoreDestination\[\]=\[([^\]]+)\];/);
+assert.ok(attentionOrderMatch,'More screen must define the attention navigation order');
+const attentionOrder=[...attentionOrderMatch[1].matchAll(/'([^']+)'/g)].map(match=>match[1]);
+assert.equal(new Set(attentionOrder).size,attentionOrder.length,'Attention navigation cannot repeat a destination');
+for(const destination of ['NewUnlocks','Quests','DailySupplies','Companions','Party','Friends','Guild']){
+ assert.ok(attentionOrder.includes(destination),'Account attention order must include '+destination);
+}
+
 // Russian/Turkish coverage for the frequently used dashboard, roster and bonuses.
 // Scan actual call sites so future copy edits cannot silently revert to English.
 let earlyScreenKeys=0;

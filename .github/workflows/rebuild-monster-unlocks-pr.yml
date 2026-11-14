@@ -1,0 +1,47 @@
+name: One-time rebuild cumulative monster gameplay Edge
+on:
+  push:
+    branches:
+      - fix/cumulative-monster-zone-unlocks-20261114
+    paths:
+      - '.github/workflows/rebuild-monster-unlocks-pr.yml'
+permissions:
+  contents: write
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cumulative-monster-zone-unlocks-20261114
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Validate new cumulative monster rules with TypeScript
+        run: |
+          node apps/mobile/node_modules/typescript/lib/tsc.js -p apps/mobile/tsconfig.core.json --noEmit
+      - name: Rebuild and verify canonical gameplay Edge bundle
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit canonical generated bundle to fix branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Edge artifacts already in sync'
+          else
+            git commit -m 'build(edge): synchronize cumulative monster progression runtime'
+            git push origin HEAD:fix/cumulative-monster-zone-unlocks-20261114
+          fi

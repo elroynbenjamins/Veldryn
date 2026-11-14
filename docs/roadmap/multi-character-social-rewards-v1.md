@@ -1,7 +1,7 @@
 # Veldryn — Multi-character social identity and reward ownership v1
 
 **Date:** 14 November 2026  
-**Status:** implementation specification; party domain helper/tests drafted on feature branch. **Not a production migration.**
+**Status:** account/Party integration implemented on a feature branch and database migrations tested on staging; **not merged or deployed to production**. World Boss and broader reward systems remain to be release-verified.
 
 ## Contract
 
@@ -53,10 +53,10 @@ Every character can participate **in turn**, provided that character meets the c
 ## Rollout / completion gates
 
 1. **Pure domain model/tests (this branch):** introduce `switchPersistentPartyCharacter`, preserving account slot and leader ownership, recomputing role, checking trusted character ownership and denying switches during locked activity.
-2. **Database migration (not implemented by the helper alone):** decouple Party membership identity from currently selected character; update both online and receipt-based contribution attribution, plus Party roster projection. Preserve existing rows and joined-at timestamps. Test historical party joins, inactive members, rollback, concurrent switches/settlement, and pre-selection banked work before deploy.
-3. **Server endpoint and client wiring (pending):** invoke the authoritative selection flow when roster changes. Refresh Party/Guild panels, ready-check and profile display. Show a concise `Character changed` toast, not a membership leave/join.
+2. **Database migration (staging applied; production pending):** three additive migrations (20261114022052 / 20261114022500 / 20261114022609) preserve the existing membership primary key, move contribution attribution to account, show the current character name/class/role/ID, synchronize leader display identity and allow verified role-only changes under the optional role guard. Existing joined_at and active membership rows are retained. Production has a weekly-tier wrapper and is handled separately.
+3. **Online switch wiring (implemented for Party, further UX checks pending):** the existing authoritative online roster command updates player_profiles and online_game_states; a trigger syncs leader identity and role, and App.tsx refreshes the Party snapshot after confirmed character change. No leave/rejoin or new Party entry is generated. Ready-check UI and cross-system Guild/World Boss display still require release checks.
 4. **Unified reward entitlements (pending):** audit daily, weekly, monthly, guild, Party Event and World Boss claim paths. Guard concurrency and delivery idempotency at the database level.
-5. **Staging verification (pending):** two-character same-account checks; character switching while in guild/party; two simultaneous claim requests; boss attempts split across characters; role restrictions; out-of-order receipts; Guild leadership; fail/rollback recovery. No production deployment without staging pass.
+5. **Staging verification (partially passed):** `backend/supabase/tests/party_alt_character_account_identity_v1.sql` was run successfully in a rolled-back staging transaction on 14 Nov 2026. It verifies active character ID/name/role, account-owned Party Contract credit, preserved join time and membership PK, one Party slot and leader identity. A subsequent query confirmed no temporary QA records remain. Unverified: concurrent claims/switches, live Dungeon snapshots, Party Events, World Boss loadouts and production data compatibility beyond read-only schema preflight. CI checks must complete before merge.
 
 ## Acceptance scenarios
 

@@ -5,6 +5,7 @@ import {spanishUiGap} from './spanish-ui-gaps';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  "Start main screen tour": ["Start main screen tour","Tour auf dem Hauptbildschirm starten","Iniciar recorrido por la pantalla principal","Rondleiding op het hoofdscherm starten","Avvia il tour della schermata principale","Commencer la visite de l'écran principal"],
   // Account menu metadata: keep descriptions translated for all navigation destinations.
   "Browse dungeons, prepare Echoes and join expeditions": ["Browse dungeons, prepare Echoes and join expeditions","Dungeons erkunden, Echos vorbereiten und Expeditionen beitreten","Explora mazmorras, prepara Ecos y únete a expediciones","Verken kerkers, bereid Echo's voor en doe mee aan expedities","Esplora i dungeon, prepara gli Echi e unisciti alle spedizioni","Explorez les donjons, préparez les Échos et rejoignez les expéditions"],
   "Your team, weekly contracts, invites and chat": ["Your team, weekly contracts, invites and chat","Dein Team, Wochenaufträge, Einladungen und Chat","Tu equipo, contratos semanales, invitaciones y chat","Je team, wekelijkse contracten, uitnodigingen en chat","La tua squadra, contratti settimanali, inviti e chat","Votre équipe, contrats hebdomadaires, invitations et chat"],

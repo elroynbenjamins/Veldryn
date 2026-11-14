@@ -3,8 +3,21 @@ import {huntActiveDamageEvents,huntSupportHealEvents,huntTankGuardEvents,huntCoo
 import {huntEnemyHpAt,huntHitsBetween,type HuntHit} from '../src/core/combat-hit-timeline';
 import {huntClassSurvivalEvents,HUNT_CLASS_SURVIVAL_PROFILES} from '../src/core/hunt-class-identity';
 import type {ClassId} from '../src/core/types';
+import {CLASS_EMBLEM_ACCENTS,classEmblemAccent} from '../src/theme/class-emblem-colors';
 import {battleText} from '../src/i18n/battle';
 import {SUPPORTED_LANGUAGES} from '../src/i18n/languages';
+
+// Class activations must use the class icon identity, not shared role/VFX colors.
+const iconAccents=Object.keys(CLASS_EMBLEM_ACCENTS) as ClassId[];
+assert.equal(iconAccents.length,9,'Every playable class must define an icon-derived accent');
+for(const dark of [true,false]){
+ const colors=iconAccents.map(classId=>classEmblemAccent(classId,dark));
+ assert.equal(new Set(colors).size,9,'Each class needs its own distinct emblem hue');
+ assert.ok(colors.every(color=>typeof color==='string'&&/^#[0-9a-f]{6}$/i.test(color)),'Class icon colors must be valid hex colors');
+}
+assert.equal(classEmblemAccent(undefined),undefined,'Unknown class has no fabricated emblem color');
+assert.equal(classEmblemAccent('WAYFINDER',true),CLASS_EMBLEM_ACCENTS.WAYFINDER.dark);
+assert.equal(classEmblemAccent('WAYFINDER',false),CLASS_EMBLEM_ACCENTS.WAYFINDER.light);
 
 const hits:HuntHit[]=[
  {fraction:.15,actor:'player',damage:30,healing:0,critical:false,index:0},

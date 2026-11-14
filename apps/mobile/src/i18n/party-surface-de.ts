@@ -6,7 +6,7 @@ import type {Language} from './languages';
  * authored party names, or arbitrary server messages.
  */
 export const germanPartySurfaceCopy:Readonly<Record<string,string>>={
-  'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.':'Hier findest du deine Mitglieder und wöchentlichen Belohnungen. Bereite Belohnungen direkt hier zur Abholung vor.',
+  'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.':'Hier findest du deine Mitglieder und wöchentlichen Belohnungen. Verfügbare Belohnungen kannst du direkt hier abholen.',
   'Use Party options for invitations or to leave. Open Recruitment to find new members.':'Öffne die Gruppenoptionen für Einladungen oder um die Gruppe zu verlassen. Unter Rekrutierung findest du neue Mitglieder.',
   'Find players or publish an advert for your Party here.':'Finde hier Mitspieler oder veröffentliche eine Anzeige für deine Gruppe.',
   'Search and filters narrow the list. Your adverts and matching players appear below.':'Mit Suche und Filtern grenzt du die Ergebnisse ein. Deine Anzeigen und passende Spieler erscheinen darunter.',

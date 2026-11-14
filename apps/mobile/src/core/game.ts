@@ -1,3 +1,4 @@
+import {legacySeasonalObjectiveComplete} from './legacy-seasonal-claim';
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
@@ -949,14 +950,15 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next),nowMs),nowMs)
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */
-export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string):GameState{
+export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string,allowLegacy=false):GameState{
   if(!state.character)throw new Error('Create a character first');
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
   if(!contract)throw new Error('This contract has expired.');
   if((state.account.seasonalContractClaimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
-  if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
+  const legacyEligible=allowLegacy&&legacySeasonalObjectiveComplete(state,period,contract.id,nowMs);
+  if(contract.progress<contract.required&&!legacyEligible)throw new Error('Complete the contract before claiming its cache.');
   // Recompute the allowed rewards from authoritative character progression; never trust client amounts.
-  const chosen=choiceId===undefined?contract.rewardOptions[0]:contract.rewardOptions.find(reward=>reward.id===choiceId);
+  const chosen=choiceId===undefined?contract.rewardOptions[0]:(contract.rewardOptions.find(reward=>reward.id===choiceId)??(legacyEligible?contract.rewardOptions[0]:undefined));
   if(!chosen)throw new Error('Invalid or unavailable Quest reward choice.');
   const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
   const routed=chosen.rewardItemId&&chosen.rewardItemQty

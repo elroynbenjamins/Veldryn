@@ -34,6 +34,7 @@ import {equipCraftedGearInstance,unequipCraftedGearInstance,moveCraftedGearInsta
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
+import {startStoryBossSession,healStoryBossSession,finishStoryBossSession} from './story-boss-session';
 import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
@@ -54,7 +55,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_starter:['id'],companion_recruit:['id'],companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_formation:['ids'],companion_trial_fight:['ids','requestId'],companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],boss_start:[],boss_heal:[],boss_finish:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
@@ -151,6 +152,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=ensurePersonalSeasonalState(snapshotEarnedLegacySeasonalClaims(structuredClone(previous),now)),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
+ if(state.storyBossSession&&!['boss_heal','boss_finish'].includes(command.type))throw new Error('Finish the active Fallen Knight battle first.');
  // The trusted account ID must be present before converting legacy rewards or
  // granting account-bound titles, including on a quest-only command.
  if(options.accountId)state.account.longTermAccountScopeId=options.accountId;
@@ -305,6 +307,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'stop':state=game.stopActivity(state,now);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
   case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
+  case 'boss_start':{const result=startStoryBossSession(state,now);state=result.state;message='The Fallen Knight battle has begun. Press Heal during combat.';storyBossBattle=result.battle;break;}
+  case 'boss_heal':{const result=healStoryBossSession(state,now);state=result.state;storyBossBattle=result.battle;message='Healing potion activated.';break;}
+  case 'boss_finish':{const result=finishStoryBossSession(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'craft':{
    const id=text(a,'id'),timed=timedEquipmentRecipe(id);
    if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');

@@ -77,6 +77,7 @@ const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,valu
 const FALLEN_KNIGHT_MAX_DURATION_MS=100_000;
 /** Boss fights use limited Alchemy healing potions, never ordinary food. */
 export const FALLEN_KNIGHT_MAX_POTION_UNITS=5;
+export const FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS=4_500;
 /** Legacy compatibility: no food charges are permitted in boss encounters. */
 export const FALLEN_KNIGHT_MAX_FOOD_UNITS=0;
 
@@ -84,12 +85,21 @@ function mitigation(defense:number){
   return clamp(defense/Math.max(1,defense+110),0,.72);
 }
 
-export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapshot,seed:string,mode:'story'|'rematch'='story'):FallenKnightBattleResult{
+export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapshot,seed:string,mode:'story'|'rematch'='story',manualPotionAtMs?:readonly number[]):FallenKnightBattleResult{
   const monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT');
   if(!monster)throw new Error('fallen_knight_missing');
   const bossSecondary=regionalEnemySecondaryStats(monster);
   const bossMaxHp=monster.hp,playerMaxHp=Math.max(1,Math.round(player.maxHp));
   let bossHp=bossMaxHp,playerHp=clamp(Math.round(player.currentHp||playerMaxHp),1,playerMaxHp),potionLeft=clamp(Math.floor(player.potionQuantity),0,FALLEN_KNIGHT_MAX_POTION_UNITS),potionConsumed=0;
+  // An explicit schedule, including [], disables legacy automatic healing.
+  // These timestamps are persisted by trusted server commands only.
+  const manualMode=manualPotionAtMs!==undefined;
+  const manualTimes=manualPotionAtMs?[...manualPotionAtMs]:[];
+  if(manualTimes.length>FALLEN_KNIGHT_MAX_POTION_UNITS||
+     manualTimes.some((at,i)=>!Number.isSafeInteger(at)||at<0||at>=FALLEN_KNIGHT_MAX_DURATION_MS||
+       (i>0&&at-manualTimes[i-1]<FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS)))
+    throw new Error('invalid_boss_potion_schedule');
+  let nextManual=0;
   let phase=1,phaseWardUntilMs=0,rngIndex=0,bossAttackCount=0;
   // Boss techniques use the same authored identities as ordinary hunts and
   // dungeons, but cooldowns are anchored to this encounter's own clock.
@@ -105,7 +115,18 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   const push=(event:Omit<StoryBossEvent,'playerHp'|'bossHp'|'phase'>)=>events.push({...event,playerHp:Math.max(0,Math.round(playerHp)),bossHp:Math.max(0,Math.round(bossHp)),phase:phase as 1|2|3});
   push({atMs:0,type:'battle_start',label:'The Fallen Knight raises the oathglass blade.'});
 
+  const applyManualPotionsThrough=(atMs:number)=>{
+    while(nextManual<manualTimes.length&&manualTimes[nextManual]<=atMs){
+      const requestedAt=manualTimes[nextManual++];
+      if(playerHp<=0||bossHp<=0||potionLeft<=0||player.potionHeal<=0)continue;
+      const healed=Math.min(playerMaxHp-playerHp,Math.max(1,Math.round(player.potionHeal)));
+      if(healed<=0)continue;
+      playerHp+=healed;potionLeft--;potionConsumed++;
+      push({atMs:requestedAt,type:'heal',label:'Manual healing potion',amount:healed});
+    }
+  };
   const maybePotion=(atMs:number)=>{
+    if(manualMode)return;
     const threshold=clamp(player.autoEatThresholdPct,10,90)/100;
     if(player.potionHeal<=0)return;
     // No more than one potion after a boss hit, with a strict fight-wide cap.
@@ -134,6 +155,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   while(now<FALLEN_KNIGHT_MAX_DURATION_MS&&bossHp>0&&playerHp>0){
     if(nextPlayerAt<=nextBossAt){
       now=nextPlayerAt;
+      applyManualPotionsThrough(now);
       const hit=random01(seed,rngIndex++)<=playerHitChance;
       if(!hit){
         push({atMs:now,type:'player_miss',label:'Your strike misses.',abilityId:'PLAYER_STRIKE'});
@@ -175,7 +197,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
       continue;
     }
 
-    now=nextBossAt;bossAttackCount++;
+    now=nextBossAt;applyManualPotionsThrough(now);bossAttackCount++;
     const phaseHaste=phase===3?.18:phase===2?.07:0;
     const attackInterval=clamp(Math.round(2850/(1+bossSecondary.haste+phaseHaste)),1450,3400);
     let abilityId='FALLEN_SLASH',label='Fallen Slash',coeff=1,telegraph=0;

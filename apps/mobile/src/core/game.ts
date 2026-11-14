@@ -1628,13 +1628,13 @@ export function previewFallenKnightBattle(state:GameState,nowMs=Date.now(),mode:
 
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
 /** Rewarded rematches stay capped weekly; all valid attempts return the same battle timeline for cinematic playback. */
-export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string;battle:FallenKnightBattleResult}{
+export function challengeFallenKnightRematch(state:GameState,nowMs:number,battleOverride?:FallenKnightBattleResult):{state:GameState;won:boolean;message:string;battle:FallenKnightBattleResult}{
   if(!state.character||state.character.level<rebasedCombatLevelFromLegacyLevel(25)||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
-  state=settleOutOfCombatRecovery(state,nowMs);
+  if(!battleOverride)state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
   const weekly=fallenKnightWeeklyStatus(state,nowMs);
   if(weekly.remaining<=0)throw new Error('Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.');
-  const battle=previewFallenKnightBattle(state,nowMs,'rematch'),potionId=state.character.equippedHealingPotionId,stats=effectiveStats(state);
+  const battle=battleOverride??previewFallenKnightBattle(state,nowMs,'rematch'),potionId=state.character.equippedHealingPotionId,stats=effectiveStats(state);
   let inventory=state.inventory.stacks;
   if(battle.potionConsumed&&potionId)inventory=consume(inventory,potionId,battle.potionConsumed);
   // One prepared enhancement lasts one boss attempt, not unlimited weekly rematches.
@@ -1669,14 +1669,14 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   return {state:next,won:true,battle,message:`Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered?' · Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst':''} · Boss drops: ${dropText} · ${stoneText}.`};
 }
 
-export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string;battle?:FallenKnightBattleResult}{
+export function challengeFallenKnight(state:GameState,nowMs=Date.now(),battleOverride?:FallenKnightBattleResult):{state:GameState;won:boolean;message:string;battle?:FallenKnightBattleResult}{
   if(!state.character)throw new Error('No character');
-  state=settleOutOfCombatRecovery(state,nowMs);
+  if(!battleOverride)state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
   if(state.character.level<rebasedCombatLevelFromLegacyLevel(25))return {state,won:false,message:`Reach level ${rebasedCombatLevelFromLegacyLevel(25)} first.`};
-  if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return challengeFallenKnightRematch(state,nowMs);
+  if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return challengeFallenKnightRematch(state,nowMs,battleOverride);
   const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
-  const battle=previewFallenKnightBattle(state,nowMs),potionId=state.character.equippedHealingPotionId;
+  const battle=battleOverride??previewFallenKnightBattle(state,nowMs),potionId=state.character.equippedHealingPotionId;
   let inventory=state.inventory.stacks;
   if(battle.potionConsumed&&potionId)inventory=consume(inventory,potionId,battle.potionConsumed);
   // One prepared enhancement lasts one boss attempt, not unlimited weekly rematches.

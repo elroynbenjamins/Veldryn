@@ -10,7 +10,7 @@ const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts'
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const keys=Object.keys(RUSSIAN_FOCUS_ROWS);
-assert.ok(keys.length>=4330,'Expected expanded Russian UI coverage');
+assert.ok(keys.length>=4920,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];
 const sources=modules.map(name=>fs.readFileSync(path.join(__dirname,'../src/i18n/'+name+'.ts'),'utf8'));
@@ -92,7 +92,19 @@ for(const [key,expected] of Object.entries({
   'BUY BOTH':'КУПИТЬ ОБА',
   'No tool equipped':'Инструмент не выбран',
   'Queued monster is no longer available.':'Враг из очереди больше недоступен.',
-  'NEXT LV {level} · {title}':'СЛЕД. УР. {level} · {title}'
+  'NEXT LV {level} · {title}':'СЛЕД. УР. {level} · {title}',
+  'VELDRYN Rankings':'Рейтинги VELDRYN',
+  'Arena is coming later':'Арена появится позже',
+  'Share my Echo':'Поделиться моим Эхо',
+  'Google Play purchases':'Покупки Google Play',
+  'Import save backup':'Импорт резервной копии',
+  'Highest companion hit':'Самый сильный удар спутника',
+  'Shield strength +15%.':'Прочность щита +15%.',
+  'Complete {count} {region} Sanctuary assignments':'Выполните {count} поручений святилища региона {region}',
+  'WORLD BOSS ATTEMPT COMPLETE':'ПОПЫТКА МИРОВОГО БОССА ЗАВЕРШЕНА',
+  'Idle Rule deleted.':'Правило AFK удалено.',
+  'OFFLINE PROGRESS':'ОФЛАЙН-ПРОГРЕСС',
+  'Search recipes…':'Поиск рецептов…'
 })){
   assert.equal(earlyLocaleText('ru',key),expected,'Focused Russian text missing for '+key);
   assert.notEqual(earlyLocaleText('tr',key),expected,'Turkish UI must never inherit Russian text: '+key);

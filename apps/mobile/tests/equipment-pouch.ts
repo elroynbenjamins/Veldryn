@@ -130,6 +130,26 @@ ok(!equipmentPouch(soldExact).stacks.length&&!soldExact.account.craftedGearInsta
  &&soldExact.character!.gold===tagged.character!.gold+itemDef(output).value
  &&auditCraftedGearOwnership(soldExact).consistent,
  'Selling exact Forge receipt must remove its one owned instance and credit only its original character');
+// Production Forge receipts can be 120 characters before the "copy:" selector
+// prefix. The resulting 125-character selector must pass both command and
+// settlement validation without weakening exact-copy ownership checks.
+const longReceiptPrefix=`eqcraft:${base.character!.id}:CRAFT_V33_${output}:1794263998325:7`;
+const longReceipt=longReceiptPrefix.padEnd(120-(`gear:${base.character!.id}:`).length,'x');
+const longRecord=draftCraftedGearInstance({itemId:output,ownerCharacterId:base.character!.id,jobId:longReceipt,createdAtMs:1000,roll:.003});
+ok(longRecord.id.length===120,'Regression Forge ID should match production 120-character receipts');
+const longTagged:GameState={...tagged,character:{...tagged.character!,equipmentPouch:{capacity:30,stacks:[{itemId:output,quantity:1,instanceId:longRecord.id}]}},
+ account:{...tagged.account,craftedGearInstances:[longRecord]}};
+const longSelector=equipmentPouchSaleId(longTagged.character!.equipmentPouch!.stacks[0],0);
+ok(longSelector.length===125,'Exact forged-copy selection adds the 5-character prefix');
+ok(equipmentPouchSaleCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy sale must be eligible');
+ok(equipmentPouchSalvageCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy salvage must be eligible');
+const longSold=executeGameCommand(longTagged,{type:'equipment_pouch_sell',args:{ids:[longSelector]}},1007).state;
+ok(equipmentPouch(longSold).stacks.length===0&&longSold.character!.gold===longTagged.character!.gold+itemDef(output).value,
+ 'Long forged-copy sale settles once, credits Gold and removes the exact pouch instance');
+const longSalvaged=executeGameCommand(longTagged,{type:'equipment_pouch_salvage',args:{ids:[longSelector]}},1011).state;
+ok(equipmentPouch(longSalvaged).stacks.length===0&&
+ (longSalvaged.inventory.stacks.find(row=>row.itemId===equipmentSalvageReward(output)!.itemId)?.quantity??0)===(longTagged.inventory.stacks.find(row=>row.itemId===equipmentSalvageReward(output)!.itemId)?.quantity??0)+equipmentSalvageReward(output)!.quantity,
+ 'Long forged-copy salvage settles once and grants authored materials');
 const protectedExact:GameState={...tagged,account:{...tagged.account,craftedGearInstances:[{...record,locked:true}]}};
 ok(!equipmentPouchSaleCandidates(protectedExact)[0].eligible,'Exact locked Forge gear must be blocked from safe selection');
 let protectedExactRejected=false;try{sellEquipmentPouchSelected(protectedExact,[exactCandidate.id])}catch{protectedExactRejected=true}

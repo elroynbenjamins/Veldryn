@@ -1,5 +1,5 @@
 import {assert} from './test-assert';
-import {huntActiveDamageEvents,huntTankGuardEvents,HUNT_CLASS_TECHNIQUES} from '../src/core/hunt-active-abilities';
+import {huntActiveDamageEvents,huntSupportHealEvents,huntTankGuardEvents,huntCooldownPulseAt,HUNT_CLASS_TECHNIQUES} from '../src/core/hunt-active-abilities';
 import {huntEnemyHpAt,type HuntHit} from '../src/core/combat-hit-timeline';
 import type {ClassId} from '../src/core/types';
 import {battleText} from '../src/i18n/battle';
@@ -12,8 +12,8 @@ const hits:HuntHit[]=[
  {fraction:1,actor:'player',damage:45,healing:0,critical:true,index:3},
 ];
 const total=(xs:readonly HuntHit[])=>xs.filter(x=>x.actor==='player').reduce((sum,x)=>sum+x.damage,0);
-const input={classId:'IRONWARDEN' as const,classSkillLevel:20,encounterNumber:2,
- companion:{id:'UNIT_001',name:'Ironwood Hound',abilityId:'UABL_001',abilityName:'Hamstring Pounce',role:'damage' as const,contributionPct:.1}};
+const input={classId:'IRONWARDEN' as const,classSkillLevel:20,combatStartedAtMs:100_000,encounterStartedAtMs:100_000,cycleSeconds:10,
+ companion:{id:'UNIT_001',name:'Ironwood Hound',abilityId:'UABL_001',abilityName:'Hamstring Pounce',role:'damage' as const,contributionPct:.1,cooldownSeconds:14}};
 const output=huntActiveDamageEvents(hits,input);
 assert.equal(total(output),total(hits),'Class burst and assist cannot create extra damage');
 assert.equal(huntEnemyHpAt(100,output,1),0,'Class and companion effects must not change a completed kill');
@@ -41,10 +41,39 @@ for(const language of SUPPORTED_LANGUAGES){
  }
  assert.ok(battleText(language,'Bloodrush').length>0,'On-kill healing must have an accessible name');
 }
-const off=huntActiveDamageEvents(hits,{...input,encounterNumber:3});
-assert.equal(off[2].companionAssist,undefined,'Companion assist obeys the per-encounter action gate');
+const off=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:101_000});
+assert.equal(off[2].companionAssist,undefined,'Companion assist must not fire before its next 14-second cooldown pulse');
 const support=huntActiveDamageEvents(hits,{...input,companion:{...input.companion,role:'support'}});
 assert.equal(support[2].companionAssist,undefined,'Do not turn a healing companion into a damage cast');
+const classOnCooldown=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:101_000});
+assert.ok(classOnCooldown.every(hit=>!hit.activeAbility),'Class skill cannot activate when no class cooldown pulse occurs inside the encounter');
+const classReady=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:106_000});
+assert.ok(classReady.some(hit=>hit.activeAbility?.name==='Rune Bash'),'Class skill activates on next real cooldown pulse');
+const companionReady=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:114_000});
+assert.ok(companionReady.some(hit=>hit.companionAssist?.name==='Ironwood Hound: Hamstring Pounce'),'Companion assist activates on its next real cooldown pulse');
+const seconds=(start:number,cooldown:number)=>huntCooldownPulseAt({combatStartedAtMs:100_000,encounterStartedAtMs:start,cycleSeconds:3,cooldownSeconds:cooldown});
+assert.equal(seconds(100_000,14),100_000,'First pulse is ready when a hunting session starts');
+assert.equal(seconds(101_000,14),undefined,'Restarting a partial claim cannot refresh a cooldown');
+assert.equal(seconds(112_000,14),114_000,'Cooldown pulses follow the original session clock');
+assert.equal(seconds(114_000,14),114_000,'Adjacent encounters share one absolute cooldown timeline');
+assert.equal(huntCooldownPulseAt({combatStartedAtMs:100_000,encounterStartedAtMs:100_000,cycleSeconds:0,cooldownSeconds:14}),undefined,'Invalid zero-length encounters cannot trigger abilities');
+const baseHeal:HuntHit[]=[
+ {fraction:.2,actor:'enemy',damage:4,healing:5,critical:false,index:0},
+ {fraction:.7,actor:'fatigue',damage:6,healing:5,critical:false,index:1},
+];
+const supportInput={combatStartedAtMs:100_000,encounterStartedAtMs:100_000,cycleSeconds:10,
+ companion:{id:'UNIT_003',name:'Silverbrook Sprite',abilityId:'UABL_003',abilityName:'Silver Current',role:'support' as const,activeKind:'heal',cooldownSeconds:20,healingPctPerHour:.08}};
+const firstHeal=huntSupportHealEvents(baseHeal,supportInput);
+assert.equal(firstHeal[0].supportAbility?.name,'Silverbrook Sprite: Silver Current','Real support heal is attributed to the first eligible healing tick');
+assert.equal(firstHeal[0].healing,baseHeal[0].healing,'Support attribution cannot add extra health');
+assert.equal(firstHeal[1].supportAbility,undefined,'Only one support cast per cooldown pulse');
+assert.ok(huntSupportHealEvents(baseHeal,{...supportInput,encounterStartedAtMs:110_000}).every(hit=>!hit.supportAbility),'Support cannot cast until its next pulse');
+const secondHeal=huntSupportHealEvents(baseHeal,{...supportInput,encounterStartedAtMs:120_000});
+assert.equal(secondHeal[0].supportAbility?.id,'UABL_003','Support can cast again after cooldown');
+assert.ok(huntSupportHealEvents(baseHeal,{...supportInput,companion:{...supportInput.companion,role:'tank'}}).every(hit=>!hit.supportAbility),'A tank must not be labeled as a healing support skill');
+assert.ok(huntSupportHealEvents(baseHeal,{...supportInput,companion:{...supportInput.companion,healingPctPerHour:0}}).every(hit=>!hit.supportAbility),'No visible heal without an actual restorative companion effect');
+assert.ok(baseHeal.every(hit=>!hit.supportAbility),'Pure cooldown attribution must not mutate source heals');
+
 const one=huntActiveDamageEvents([hits[0]],input);
 assert.equal(one[0].activeAbility,undefined,'One-shot hunts cannot invent a class burst');
 assert.equal(one[0].companionAssist,undefined,'One-shot hunts cannot invent a companion hit');
@@ -85,4 +114,4 @@ for(const language of SUPPORTED_LANGUAGES){
  assert.ok(shield.includes('12'),'Shield amount must remain localized without losing its numeric amount: '+language);
 }
 
-console.log('PASS solo hunt named class techniques, bounded companion assists, no extra DPS, deterministic split accounting, single-hit safety, and real cooldown-gated tank mitigation');
+console.log('PASS session-based class, damage, tank and support cooldowns, budget limits, deterministic effects, claim-safe schedules, and translations');

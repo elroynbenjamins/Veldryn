@@ -34,7 +34,7 @@ equal(world.otherCharacters?.[0].defeatedBossIds?.[0],'FALLEN_KNIGHT','first cha
 equal(world.otherCharacters?.[0].exploredRouteIds?.includes('SCOUT_KINGS_ROAD'),true,'first character retains Sunscar route');
 world=executeGameCommand(world,{type:'roster_switch',args:{id:firstId}},3).state;
 equal(world.defeatedBossIds.includes('FALLEN_KNIGHT'),true,'switch restores veteran boss');
-equal(world.exploredRouteIds.includes('SCOUT_KINGS_ROAD'),true,'switch restores veteran scouting');
+equal((world.exploredRouteIds??[]).includes('SCOUT_KINGS_ROAD'),true,'switch restores veteran scouting');
 equal(world.unlockedMonsterIds.includes('THORNLING'),true,'switch restores veteran monster discoveries');
 world=executeGameCommand(world,{type:'roster_switch',args:{id:secondId}},4).state;
 equal(world.defeatedBossIds.length,0,'switch back does not leak veteran boss');
@@ -46,7 +46,7 @@ legacy=executeGameCommand(legacy,{type:'roster_switch',args:{id:secondId}},6).st
 legacy={...legacy,otherCharacters:legacy.otherCharacters?.map(entry=>entry.character.id===firstId?{...entry,exploredRouteIds:undefined,defeatedBossIds:undefined,unlockedMonsterIds:undefined}:entry)};
 legacy=executeGameCommand(legacy,{type:'roster_switch',args:{id:firstId}},7).state;
 equal(legacy.defeatedBossIds.includes('FALLEN_KNIGHT'),true,'legacy claimed Fallen Knight quest proves boss clear');
-equal(legacy.exploredRouteIds.includes('SCOUT_KINGS_ROAD'),true,'legacy Sunscar location proves prior scout access');
+equal((legacy.exploredRouteIds??[]).includes('SCOUT_KINGS_ROAD'),true,'legacy Sunscar location proves prior scout access');
 
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const eas=JSON.parse(fs.readFileSync('eas.json','utf8')) as {build:Record<string,{env?:Record<string,string>} >};

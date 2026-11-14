@@ -20,6 +20,14 @@ Russian and Turkish have expanded but still incomplete coverage. English remains
 - Localized **4 Guild identity loading/error/retry labels** and existing Guild roster role names, and formatted roster contribution numbers according to the selected language.
 - Registered two focused regression tests that verify content parity against server/client source catalogues, other-language fallback, stale-source protection and render-path wiring. Full CI and Android visual QA are still required.
 
+## November 14, 2026: German Party Hub and Guild Muster refinement
+
+- Added nine exact-English-keyed German Party Hub guide and control translations, including section help, empty weekly contract, Party search and preference controls. Other locales and player-authored text retain their existing wording.
+- Localized Party activity labels in the header and options, existing private-invite copy, member roles and contract categories using the reviewed social catalog.
+- Shortened German minimum-level presentation from "Lv." to "St." in the Party Hub and recruitment editor without changing level requirements or submit payloads.
+- Applied locale-specific number grouping to Party Contract progress, personal contributions and large Guild Muster daily/weekly totals; point calculations remain numeric and unchanged.
+- Registered a focused static/runtime regression for language isolation, source fallback, UI wiring and preserved gameplay guards. TypeScript, full CI and Android layout checks remain pending.
+
 ## November 14, 2026: German Guild Bank and Project detail polish
 
 - Added ID- and exact-English-source-guarded German display names and short labels for all eight published Guild Construction materials in the Guild Bank, without changing storage, crafting or donation IDs.

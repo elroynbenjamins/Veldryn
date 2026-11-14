@@ -547,10 +547,27 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
  if(!runtime.huntOptions)return undefined;
  const count=48;
  let seconds=0,damage=0,healing=0,onKillHealing=0;
+ const sessionStart=state.activity?.kind==='combat'&&state.activity.targetId===monsterId
+  ?state.activity.startedAtMs??0:0;
+ let encounterStart=sessionStart;
+ const classSkillLevel=characterClassSkills(runtime.c)[0]?.level??1;
  for(let index=0;index<count;index++){
    const plan=regionalHuntPlan({...runtime.huntOptions,seed:regionalHuntSeed(state,monsterId,index)});
    const exchange=combatEncounterDamage({...runtime,killCycleSeconds:plan.cycleSeconds},false,plan.enemyAttackCount,plan.fightSeconds);
-   seconds+=plan.cycleSeconds;damage+=exchange.damage;healing+=exchange.healing;onKillHealing+=exchange.onKillHealing;
+   // Match the class's actual per-hit protection and recovery instead of
+   // forecasting every class as if it had no active skills. We do not alter
+   // enemy HP, reward rates, or the mandatory fatigue/provisioning floor.
+   const cast=huntClassSurvivalEvents(regionalHuntHits(plan,{
+    monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing,
+   }),{
+    classId:runtime.c.classId,classSkillLevel,combatStartedAtMs:sessionStart,
+    encounterStartedAtMs:encounterStart,cycleSeconds:plan.cycleSeconds,
+   });
+   seconds+=plan.cycleSeconds;
+   damage+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.damage,0);
+   healing+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.healing,0);
+   onKillHealing+=exchange.onKillHealing;
+   encounterStart+=plan.cycleSeconds*1000;
  }
  const killCycleSeconds=seconds/count;
  return {killCycleSeconds,damage:damage/count,healing:healing/count,onKillHealing:onKillHealing/count,net:(damage-healing)/count};

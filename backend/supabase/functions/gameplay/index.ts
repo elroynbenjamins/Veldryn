@@ -49623,6 +49623,46 @@ var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
 // ../apps/mobile/src/core/account-roster.ts
 init_progression();
+
+// ../apps/mobile/src/core/character-world-progress.ts
+var COMPLETED = /* @__PURE__ */ new Set(["complete", "claimed"]);
+function hasCompletedQuest(entry2, questId) {
+  return entry2.quests.some((quest) => quest.questId === questId && COMPLETED.has(quest.status));
+}
+function snapshotCharacterWorldProgress(state) {
+  return {
+    unlockedMonsterIds: [...state.unlockedMonsterIds],
+    exploredRouteIds: [...state.exploredRouteIds ?? []],
+    defeatedBossIds: [...state.defeatedBossIds]
+  };
+}
+function legacyWorldProgress(entry2) {
+  const routes = /* @__PURE__ */ new Set();
+  const region = entry2.currentRegionId;
+  if (hasCompletedQuest(entry2, "QST_003") || ["OLD_MINES", "KINGS_ROAD", "SUNSCAR", "FROSTMARCH"].includes(region)) routes.add("SCOUT_IRONWOOD");
+  if (["KINGS_ROAD", "SUNSCAR", "FROSTMARCH"].includes(region) || ["QST_012", "QST_013", "QST_014"].some((id) => hasCompletedQuest(entry2, id))) routes.add("SCOUT_OLD_MINES");
+  if (["SUNSCAR", "FROSTMARCH"].includes(region) || hasCompletedQuest(entry2, "QST_010")) routes.add("SCOUT_KINGS_ROAD");
+  if (region === "FROSTMARCH") routes.add("SCOUT_SUNSCAR");
+  const defeatedBossIds = hasCompletedQuest(entry2, "QST_014") ? ["FALLEN_KNIGHT"] : [];
+  const unlocked = /* @__PURE__ */ new Set(["MOSS_RAT"]);
+  for (const quest of QUESTS) {
+    if (quest.kind === "kills" && quest.targetId && hasCompletedQuest(entry2, quest.id)) unlocked.add(quest.targetId);
+  }
+  for (const route of EXPLORATION_ROUTES) {
+    if (routes.has(route.id) && route.unlockMonsterId) unlocked.add(route.unlockMonsterId);
+  }
+  return { unlockedMonsterIds: [...unlocked], exploredRouteIds: [...routes], defeatedBossIds };
+}
+function restoreCharacterWorldProgress(entry2) {
+  const legacy = legacyWorldProgress(entry2);
+  return {
+    unlockedMonsterIds: Array.isArray(entry2.unlockedMonsterIds) ? [...entry2.unlockedMonsterIds] : legacy.unlockedMonsterIds,
+    exploredRouteIds: Array.isArray(entry2.exploredRouteIds) ? [...entry2.exploredRouteIds] : legacy.exploredRouteIds,
+    defeatedBossIds: Array.isArray(entry2.defeatedBossIds) ? [...entry2.defeatedBossIds] : legacy.defeatedBossIds
+  };
+}
+
+// ../apps/mobile/src/core/account-roster.ts
 var CHARACTER_SLOT_THRESHOLDS = [0, 250, 500, 950, 1600];
 var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
 var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;
@@ -54822,7 +54862,7 @@ function reconcileAccountCollections(state) {
 
 // ../apps/mobile/src/core/account-actions.ts
 function snapshot(state) {
-  return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId };
+  return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId, ...snapshotCharacterWorldProgress(state) };
 }
 function createAccountCharacter(state, classId, name, body, now) {
   state = reconcileAccountCollections(state);
@@ -54842,7 +54882,7 @@ function switchAccountCharacter(state, id, now) {
   if (!target2) throw new Error("Character is not owned.");
   const remaining = (state.otherCharacters ?? []).filter((x) => x.character.id !== id);
   const active2 = snapshot(state);
-  return { ...state, character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2] };
+  return { ...state, ...restoreCharacterWorldProgress(target2), character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2] };
 }
 function stackCap(itemId) {
   try {
@@ -54952,9 +54992,9 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   const replacement = other[0], remaining = replacement ? other.slice(1) : [];
   const baseOverflow = replacement?.overflow ?? { stacks: [], expiresAtMs: null };
   const recovery = routeToBank(state.bank, baseOverflow, deletionRecoveryItems(stored, state.bank), now);
-  if (replacement) return { ...state, character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account };
+  if (replacement) return { ...state, ...restoreCharacterWorldProgress(replacement), character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account };
   const fresh = newGame(now);
-  return { ...state, character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
+  return { ...state, ...snapshotCharacterWorldProgress(fresh), character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
 }
 
 // ../apps/mobile/src/content/equipment-release.ts

@@ -30,6 +30,11 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
    const halfway=START+Math.max(1000,cycleMs+137);
    const end=START+Math.max(3000,cycleMs*3+251);
    const single=claimActivity(state,end);
+   // A split before the first kill cannot level up class skills, so this
+   // must preserve exactly the same combat damage and ability schedule.
+   const preKillAt=START+Math.max(1,Math.floor(cycleMs*.25));
+   const beforeKill=claimActivity(state,preKillAt);
+   const preKillFinish=claimActivity(beforeKill.state,end);
    const early=claimActivity(state,halfway);
    const late=claimActivity(early.state,end);
    const context=def.regionName+'/'+preparation+'/'+cls.id;
@@ -40,14 +45,27 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
     const fraction=late.state.rewardRemainders?.[fractionKey];
     assert.ok(typeof fraction==='number'&&fraction>=0&&fraction<1,'Fractional combat rewards must remain bounded after split claims: '+context+'/'+fractionKey);
    }
-   assert.ok(Math.abs(late.state.character!.currentHp-single.state.character!.currentHp)<1e-4,
-    'Split hunt must preserve actual HP after real class skills: '+context+' '+
-    JSON.stringify({singleHp:single.state.character!.currentHp,splitHp:late.state.character!.currentHp,
-      initialStats:effectiveStats(state),afterFirstStats:effectiveStats(early.state),
-      initialLevel:state.character!.level,afterFirstLevel:early.state.character!.level,
-      initialSkills:state.character!.classSkills,afterFirstSkills:early.state.character!.classSkills,
-      splitKills:early.reward.kills,allKills:single.reward.kills,
-      stop:single.reward.stoppedReason,splitStop:late.reward.stoppedReason}));
+   assert.equal(beforeKill.reward.kills,0,'The early no-progression split must occur before the first kill: '+context);
+   assert.ok(Math.abs(preKillFinish.state.character!.currentHp-single.state.character!.currentHp)<1e-4,
+    'Claiming before the first kill cannot alter later survival or class skill pulses: '+context);
+   assert.ok(Math.abs((preKillFinish.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,
+    'Claiming before the first kill must preserve monster hit replay: '+context);
+   assert.equal(beforeKill.reward.xp+preKillFinish.reward.xp,single.reward.xp,'Prekill claim cannot change earned XP: '+context);
+   assert.equal(beforeKill.reward.gold+preKillFinish.reward.gold,single.reward.gold,'Prekill claim cannot change earned Gold: '+context);
+   // A *completed* early claim legitimately awards class skill XP and can
+   // change defense/HP before the next encounter. Comparing its final HP to a
+   // single 3-kill snapshot as an invariant would reject real progression.
+   const evolved=JSON.stringify(effectiveStats(state))!==JSON.stringify(effectiveStats(early.state))||
+    state.character!.level!==early.state.character!.level||
+    JSON.stringify(state.character!.classSkills)!==JSON.stringify(early.state.character!.classSkills);
+   if(!evolved){
+    assert.ok(Math.abs(late.state.character!.currentHp-single.state.character!.currentHp)<1e-4,
+     'Split hunt with unchanged character stats must preserve HP: '+context);
+   }else{
+    assert.ok(Number.isFinite(late.state.character!.currentHp)&&late.state.character!.currentHp>=1&&
+     late.state.character!.currentHp<=effectiveStats(late.state).hp,
+     'Claim-triggered class progression cannot create invalid HP: '+context);
+   }
    assert.ok(Math.abs((late.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,'Split hunt must preserve enemy HP: '+context);
    const live=activeCombatHitProjection(state,end)!;
    assert.ok(live.playerHp>=1&&live.playerHp<=live.playerMaxHp,'Combat replay must bound HP: '+context);

@@ -4,8 +4,6 @@
 -- The four existing functions are patched against their installed definitions so
 -- newer behavior from other migrations is preserved. Refuse unknown definition
 -- shapes rather than silently dropping fixes.
-begin;
-
 do $patch$
 declare
   v_old text;

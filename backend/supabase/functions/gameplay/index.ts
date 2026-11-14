@@ -452,22 +452,51 @@ var timeOf = (hit, start, cycleSeconds) => start + hit.fraction * cycleSeconds *
 function huntActiveDamageEvents(events, input) {
   const result = events.map((hit) => ({ ...hit }));
   const landed = result.filter((hit) => hit.actor === "player" && hit.damage > 0);
-  if (landed.length < 2) return result;
   const ability2 = HUNT_CLASS_TECHNIQUES[input.classId];
   const classPulse = huntCooldownPulseAt({ ...input, cooldownSeconds: ability2.cooldownSeconds });
-  const first = landed[0], last = landed[landed.length - 1];
-  if (classPulse !== void 0 && timeOf(last, input.encounterStartedAtMs, input.cycleSeconds) >= classPulse - 1e-3) {
+  if (landed.length >= 2 && classPulse !== void 0) {
+    const eligible = landed.filter((hit) => timeOf(hit, input.encounterStartedAtMs, input.cycleSeconds) >= classPulse - 1e-3);
+    const first = landed[0], last = landed[landed.length - 1];
+    const penultimate = landed[landed.length - 2];
     const rank = Math.max(1, Math.min(100, Math.floor(input.classSkillLevel || 1)));
-    const fraction = 0.1 + 0.1 * (rank - 1) / 99;
-    const shifted = Math.min(first.damage - 1, Math.max(1, Math.floor(first.damage * fraction)));
-    if (shifted > 0) {
-      first.damage -= shifted;
-      last.damage += shifted;
-      last.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: last.damage };
+    const scale = (rank - 1) / 99;
+    const shift = (source, target2, fraction) => {
+      if (source === target2) return 0;
+      const amount = Math.min(source.damage - 1, Math.max(1, Math.floor(source.damage * fraction)));
+      if (!(amount > 0)) return 0;
+      source.damage -= amount;
+      target2.damage += amount;
+      return amount;
+    };
+    let activation;
+    switch (input.classId) {
+      case "WAYFINDER": {
+        const target2 = eligible.find((hit) => hit !== last);
+        if (target2 && shift(last, target2, 0.08 + 0.07 * scale) > 0) activation = target2;
+        break;
+      }
+      case "RAVAGER": {
+        if (eligible.includes(last) && shift(first, last, 0.18 + 0.14 * scale) > 0) activation = last;
+        break;
+      }
+      case "HEXWEAVER": {
+        if (eligible.includes(last)) {
+          const middle = penultimate !== first && eligible.includes(penultimate) ? penultimate : void 0;
+          const moved = middle ? shift(first, middle, 0.055 + 0.035 * scale) : 0;
+          if (shift(first, last, 0.11 + 0.07 * scale) > 0 || moved > 0) activation = last;
+        }
+        break;
+      }
+      case "KNIFE_DANCER": {
+        const target2 = eligible.includes(penultimate) ? penultimate : eligible.find((hit) => hit !== last);
+        if (target2 && shift(last, target2, 0.1 + 0.1 * scale) > 0) activation = target2;
+        break;
+      }
     }
+    if (activation) activation.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: activation.damage };
   }
   const companion = input.companion;
-  if (companion?.role === "damage" && companion.contributionPct > 0) {
+  if (landed.length >= 2 && companion?.role === "damage" && companion.contributionPct > 0) {
     const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: companion.cooldownSeconds });
     if (pulse !== void 0) {
       const eligible = landed.filter((hit2) => timeOf(hit2, input.encounterStartedAtMs, input.cycleSeconds) >= pulse - 1e-3);
@@ -504,6 +533,55 @@ function huntTankGuardEvents(events, input) {
   if (!(prevented > 1e-6)) return result;
   first.damage = Math.max(0, first.damage - prevented);
   first.guardAbility = { source: "companion", id: unit.abilityId, name: unit.name + ": " + unit.abilityName, kind: "shield", amount: prevented };
+  return result;
+}
+
+// ../apps/mobile/src/core/hunt-class-identity.ts
+var HUNT_CLASS_SURVIVAL_PROFILES = {
+  IRONWARDEN: { mechanic: "counter_guard", firstGuardPct: 0.055, followupGuardPct: 0, recoveryOfPreventedPct: 0, healingOfIncomingPct: 0 },
+  BASTION: { mechanic: "fortress", firstGuardPct: 0.065, followupGuardPct: 0.025, recoveryOfPreventedPct: 0, healingOfIncomingPct: 0 },
+  DREADGUARD: { mechanic: "dread_leech", firstGuardPct: 0.05, followupGuardPct: 0, recoveryOfPreventedPct: 0.3, healingOfIncomingPct: 0 },
+  DAWNKEEPER: { mechanic: "sun_heal", firstGuardPct: 0, followupGuardPct: 0, recoveryOfPreventedPct: 0, healingOfIncomingPct: 0.12 },
+  STONECALLER: { mechanic: "storm_totem", firstGuardPct: 0.06, followupGuardPct: 0, recoveryOfPreventedPct: 0.2, healingOfIncomingPct: 0 }
+};
+function isHuntDefensiveClass(id) {
+  return Object.prototype.hasOwnProperty.call(HUNT_CLASS_SURVIVAL_PROFILES, id);
+}
+function huntClassSurvivalEvents(events, input) {
+  const result = events.map((event) => ({ ...event }));
+  if (!isHuntDefensiveClass(input.classId)) return result;
+  const profile = HUNT_CLASS_SURVIVAL_PROFILES[input.classId];
+  const ability2 = HUNT_CLASS_TECHNIQUES[input.classId];
+  const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: ability2.cooldownSeconds });
+  if (pulse === void 0) return result;
+  const rank = Math.min(100, Math.max(1, Math.floor(Number.isFinite(input.classSkillLevel) ? input.classSkillLevel : 1)));
+  const scale = 1 + 0.3 * (rank - 1) / 99;
+  const eligible = result.filter((event) => (event.actor === "enemy" || profile.mechanic === "sun_heal" && event.actor === "fatigue") && event.damage > 0 && input.encounterStartedAtMs + event.fraction * input.cycleSeconds * 1e3 >= pulse - 1e-3);
+  const first = eligible[0];
+  if (!first) return result;
+  if (profile.mechanic === "sun_heal") {
+    const bonus = Math.max(0, Math.min(first.damage * 0.15, first.damage * profile.healingOfIncomingPct * scale));
+    if (bonus > 1e-6) {
+      first.healing += bonus;
+      first.classHealingBudget = (first.classHealingBudget ?? 0) + bonus;
+      first.classHealAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "heal", amount: bonus };
+    }
+    return result;
+  }
+  const hit = first;
+  const prevented = hit.damage * Math.min(0.09, profile.firstGuardPct * scale);
+  if (prevented <= 1e-6) return result;
+  hit.damage = Math.max(0, hit.damage - prevented);
+  hit.classGuardAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "shield", amount: prevented };
+  if (profile.recoveryOfPreventedPct > 0) {
+    const siphon = prevented * profile.recoveryOfPreventedPct;
+    hit.healing += siphon;
+    hit.classHealingBudget = (hit.classHealingBudget ?? 0) + siphon;
+  }
+  if (profile.followupGuardPct > 0) {
+    const followup = eligible.find((event) => event !== first && event.actor === "enemy");
+    if (followup) followup.damage = Math.max(0, followup.damage * (1 - Math.min(0.04, profile.followupGuardPct * scale)));
+  }
   return result;
 }
 
@@ -52920,10 +52998,11 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       ...cooldownTiming,
       companion: commonCompanion ? { ...commonCompanion, healingPctPerHour: runtime.companion.directHealingPctPerHour } : void 0
     });
-    return huntTankGuardEvents(heals, {
+    const guarded = huntTankGuardEvents(heals, {
       ...cooldownTiming,
       companion: commonCompanion ? { ...commonCompanion, incomingDamageMultiplier: runtime.companion.incomingDamageMultiplier } : void 0
     });
+    return huntClassSurvivalEvents(guarded, { ...classTechniqueInput, ...cooldownTiming });
   };
   if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
@@ -52951,19 +53030,25 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       } else {
         const hpAfterDamage = hp - hit.damage;
         if (hit.guardAbility) recordSkillEffect({ atMs: hitAtMs, name: hit.guardAbility.name, kind: "shield", amount: hit.guardAbility.amount, source: "companion" });
+        if (hit.classGuardAbility) recordSkillEffect({ atMs: hitAtMs, name: hit.classGuardAbility.name, kind: "shield", amount: hit.classGuardAbility.amount, source: "class" });
         const appliedHealing = hpAfterDamage > 0 ? Math.min(hit.healing, Math.max(0, runtime.stats.hp - hpAfterDamage)) : 0;
+        const classBudget = Math.max(0, hit.classHealingBudget ?? 0);
+        const appliedBaseHealing = Math.min(appliedHealing, Math.max(0, hit.healing - classBudget));
+        const appliedClassHealing = Math.max(0, appliedHealing - appliedBaseHealing);
         hp = hpAfterDamage <= 0 ? 0 : Math.min(runtime.stats.hp, hpAfterDamage + hit.healing);
-        if (hit.actor === "fatigue" && appliedHealing > 0 && runtime.style.onKillAttackHealPct) {
+        if (hit.classHealAbility && appliedClassHealing > 1e-5)
+          recordSkillEffect({ atMs: hitAtMs, name: hit.classHealAbility.name, kind: "heal", amount: appliedClassHealing, source: "class" });
+        if (hit.actor === "fatigue" && appliedBaseHealing > 0 && runtime.style.onKillAttackHealPct) {
           const companionBase = runtime.stats.hp * runtime.companion.directHealingPctPerHour * runtime.killCycleSeconds / 3600 * (runtime.c.preparation ? preparationEffects(runtime.c.preparation).healing : 1);
           const classBase = runtime.stats.attack * runtime.style.onKillAttackHealPct;
-          const classPortion = appliedHealing * classBase / (companionBase + classBase || 1);
+          const classPortion = appliedBaseHealing * classBase / (companionBase + classBase || 1);
           if (classPortion > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: runtime.style.name, kind: "recovery", amount: classPortion, source: "class" });
         }
-        if (appliedHealing > 0 && hit.supportAbility) {
+        if (appliedBaseHealing > 0 && hit.supportAbility) {
           const companionHeal = runtime.stats.hp * runtime.companion.directHealingPctPerHour * runtime.killCycleSeconds / 3600;
           const classHeal = runtime.stats.attack * (runtime.style.onKillAttackHealPct ?? 0);
           const share = companionHeal / (companionHeal + classHeal || 1);
-          const credited = Math.min(appliedHealing, appliedHealing * share);
+          const credited = Math.min(appliedBaseHealing, appliedBaseHealing * share);
           if (credited > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: hit.supportAbility.name, kind: "heal", amount: credited, source: "companion" });
         }
         while (hp > 0 && hp / runtime.stats.hp <= threshold) {

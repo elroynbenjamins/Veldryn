@@ -197,7 +197,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
        {run.roleSlots.map((slot,index)=><View key={`${slot.role}-${index}`} accessible accessibilityLabel={`${slot.name}, ${t(language,`coopUi.${slot.role}`)}`} style={s.partyMiniMember}><IdentityArtwork name={slot.name} profileIconId={slot.profileIconId} className={slot.iconClassId??slot.classId} size={28}/><Text numberOfLines={1} style={s.partyMiniName}>{slot.name}</Text><Text numberOfLines={1} style={s.partyMiniRole}>{t(language,`coopUi.${slot.role}`)}</Text></View>)}
       </View>
      </View>:run.phase!=='resolving_node'&&!terminal&&!enteringUtility?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
-    {!seasonal&&(dungeonTonic||healingPotion)&&run.phase==='awaiting_choice'?<DungeonDisclosure title={st('Dungeon supplies')} initiallyOpen={Boolean(healingPotion?.canUse||dungeonTonic?.open)}>
+    {!seasonal&&(dungeonTonic||healingPotion)&&run.phase==='awaiting_choice'?<DungeonDisclosure title={`${gt('DUNGEON HEALING')} · ${gt('DUNGEON TONIC')}`} initiallyOpen={Boolean(healingPotion?.canUse||dungeonTonic?.open)}>
     {!seasonal&&dungeonTonic&&run.phase==='awaiting_choice'?<FantasyPanel>
       <View style={s.summary}>
        <View style={s.grow}>
@@ -263,7 +263,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     <View style={s.rewardOverlay}>
      <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
-      <Text style={s.rewardRunCaption}>{run.region?`${run.region} · `:''}{modeLabel}{run.routePath?` · ${run.routePath.totalDepth} ${st('rooms')}`:''}</Text>
+      <Text style={s.rewardRunCaption}>{run.region?`${run.region} · `:''}{modeLabel}{run.routePath?` · ${st('ROUTE')} ${run.routePath.totalDepth}`:''}</Text>
       {!rewardSurfaceReady?<Text style={s.copy}>{run.phase==='failed'
        ?st("No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.")
        :st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}

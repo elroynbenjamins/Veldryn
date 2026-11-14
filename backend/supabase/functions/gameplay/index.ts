@@ -55189,9 +55189,10 @@ function createAccountCharacter(state, classId, name, body, now) {
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
   const next = createCharacter(newGame(now), classId, name, body);
   const active2 = snapshot(state);
-  const id = `LOCAL_CHAR_${accountCharacters(state).length + 1}`;
+  const sequence = Math.max(state.account.createdCharacterCount ?? 0, accountCharacters(state).length) + 1;
+  const id = `LOCAL_CHAR_${sequence}`;
   next.character.id = id;
-  const account = { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) };
+  const account = { ...state.account, createdCharacterCount: sequence };
   return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] };
 }
 function switchAccountCharacter(state, id, now) {

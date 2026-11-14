@@ -43040,7 +43040,7 @@ var CLASS_COMPANION_ROLE = {
   KNIFE_DANCER: "damage"
 };
 var classCompanionRole = (classId) => CLASS_COMPANION_ROLE[classId];
-var canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
+var canUseCharacterCombatCompanion = (_characterRole, _companionRole, _mode) => true;
 var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatCompanion(characterRole, companionRole, "normal_combat");
 var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
@@ -44984,7 +44984,7 @@ var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => 
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
 var RARITY_MAX_LEVEL = COMPANION_RARITY_MAX_LEVEL;
 var STAGE_CAPS = { standard: [10, 20, 20, 20], rare: [10, 20, 25, 25], elite: [10, 20, 25, 30], prestige: [10, 20, 25, 35] };
-var canUseCharacterCombatCompanion2 = (characterRole, companionRole, _mode) => characterRole !== companionRole;
+var canUseCharacterCombatCompanion2 = (_characterRole, _companionRole, _mode) => true;
 function validateCompanionLoadout(input) {
   if (!input.companionId) return { ok: true, companionId: null };
   const role2 = COMPANION_ROLE[input.companionId];
@@ -44993,7 +44993,6 @@ function validateCompanionLoadout(input) {
   if (input.busyCompanionIds?.includes(input.companionId)) return { ok: false, reason: "companion_busy" };
   const characterRole = CLASS_ROLE[input.classId];
   if (!characterRole) return { ok: false, reason: "unknown_character_class" };
-  if (!canUseCharacterCombatCompanion2(characterRole, role2, input.combatMode ?? "normal_combat")) return { ok: false, reason: "same_role_restricted" };
   return { ok: true, companionId: input.companionId };
 }
 function companionLevelCap(companionId, ascensionTier) {

@@ -43601,7 +43601,7 @@ var CLASS_COMPANION_ROLE = {
   KNIFE_DANCER: "damage"
 };
 var classCompanionRole = (classId) => CLASS_COMPANION_ROLE[classId];
-var canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
+var canUseCharacterCombatCompanion = (_characterRole, _companionRole, _mode) => true;
 var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatCompanion(characterRole, companionRole, "normal_combat");
 var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
@@ -43704,9 +43704,8 @@ function migrateLegacyCombatCompanionAccount(input) {
     const def = combatCompanionDef(id);
     progress[id] = normalizeProgress(def, merged[id], legacyOwnedCompanionProgress());
   }
-  const characterRole = input?.character?.classId && CLASS_COMPANION_ROLE[input.character.classId];
   const explicitStarter = isStarterCompanionId(account.starterCombatCompanionId) && legacyOwned.includes(account.starterCombatCompanionId) ? account.starterCombatCompanionId : void 0;
-  const legacyStarter = explicitStarter ?? legacyOwned.find((id) => isStarterCompanionId(id) && (!characterRole || combatCompanionDef(id)?.role !== characterRole));
+  const legacyStarter = explicitStarter ?? legacyOwned.find(isStarterCompanionId);
   const followup = isStarterCompanionId(account.starterFollowupCombatCompanionId) && legacyOwned.includes(account.starterFollowupCombatCompanionId) ? account.starterFollowupCombatCompanionId : void 0;
   const third = isStarterCompanionId(account.starterThirdCombatCompanionId) && legacyOwned.includes(account.starterThirdCombatCompanionId) ? account.starterThirdCombatCompanionId : void 0;
   return {
@@ -43744,7 +43743,7 @@ function sanitizeCombatCompanionState(state) {
   const cleanCharacter = (character) => {
     if (!character) return character;
     const id = legacyEquippedCombatCompanionId(character), def = id ? combatCompanionDef(id) : void 0;
-    const valid = !!id && !!def && owned.includes(id) && canEquipCompanion(classCompanionRole(character.classId), def.role);
+    const valid = !!id && !!def && owned.includes(id);
     return { ...character, equippedCombatCompanionId: valid ? id : void 0 };
   };
   return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress } };
@@ -43783,8 +43782,7 @@ function companionUnlockRequirementMet(state, requirement) {
 function starterCombatCompanionChoices(state) {
   const clean2 = sanitizeCombatCompanionState(state);
   if (!clean2.character) return [];
-  const role = classCompanionRole(clean2.character.classId);
-  return STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).filter((def) => def.role !== role);
+  return STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id));
 }
 function chooseStarterCombatCompanion(state, id, nowMs = Date.now()) {
   const clean2 = sanitizeCombatCompanionState(state);
@@ -43792,7 +43790,7 @@ function chooseStarterCombatCompanion(state, id, nowMs = Date.now()) {
   if (clean2.account.starterCombatCompanionId) throw new Error("A starter companion has already been chosen.");
   if (!claimedQuest(clean2, "QST_005")) throw new Error("Complete Into Ironwood before choosing a companion.");
   const choice = starterCombatCompanionChoices(clean2).find((def) => def.id === id);
-  if (!choice) throw new Error("Choose a companion with a different role.");
+  if (!choice) throw new Error("Choose an available starter companion.");
   const unlocked = unlockCombatCompanion(clean2, choice.id, nowMs);
   return { ...unlocked, character: { ...unlocked.character, equippedCombatCompanionId: choice.id }, account: { ...unlocked.account, starterCombatCompanionId: choice.id } };
 }
@@ -43846,8 +43844,6 @@ function equipCombatCompanion(state, id) {
   if (!def) throw new Error("Unknown combat companion.");
   if (!(clean2.account.unlockedCombatCompanionIds ?? []).includes(id)) throw new Error("This combat companion is locked.");
   if ((clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds?.includes(id))) throw new Error("This combat companion is on a Sanctuary Expedition.");
-  const characterRole = classCompanionRole(clean2.character.classId);
-  if (!canEquipCompanion(characterRole, def.role)) throw new Error(`Cannot equip: ${def.role} companions cannot be used by a ${characterRole} character.`);
   return { ...clean2, character: { ...clean2.character, equippedCombatCompanionId: id } };
 }
 function unequipCombatCompanion(state) {
@@ -46321,7 +46317,7 @@ var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => 
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
 var RARITY_MAX_LEVEL = COMPANION_RARITY_MAX_LEVEL;
 var STAGE_CAPS = { standard: [10, 20, 20, 20], rare: [10, 20, 25, 25], elite: [10, 20, 25, 30], prestige: [10, 20, 25, 35] };
-var canUseCharacterCombatCompanion2 = (characterRole, companionRole, _mode) => characterRole !== companionRole;
+var canUseCharacterCombatCompanion2 = (_characterRole, _companionRole, _mode) => true;
 function validateCompanionLoadout(input) {
   if (!input.companionId) return { ok: true, companionId: null };
   const role = COMPANION_ROLE[input.companionId];
@@ -46330,7 +46326,6 @@ function validateCompanionLoadout(input) {
   if (input.busyCompanionIds?.includes(input.companionId)) return { ok: false, reason: "companion_busy" };
   const characterRole = CLASS_ROLE[input.classId];
   if (!characterRole) return { ok: false, reason: "unknown_character_class" };
-  if (!canUseCharacterCombatCompanion2(characterRole, role, input.combatMode ?? "normal_combat")) return { ok: false, reason: "same_role_restricted" };
   return { ok: true, companionId: input.companionId };
 }
 function companionLevelCap(companionId, ascensionTier) {

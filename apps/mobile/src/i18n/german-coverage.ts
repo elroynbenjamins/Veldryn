@@ -7,6 +7,37 @@
  * player-entered names must never pass through this table.
  */
 export const germanGameplayCoverage: Readonly<Record<string,string>>={
+  // Authored class disciplines and Skill Guide descriptions. Display-only: IDs stay canonical.
+  'Guardcraft':'Schutzkunst',
+  'Physical protection':'Physischer Schutz',
+  'Warding':'Schutzmagie',
+  'Magical protection':'Magischer Schutz',
+  'Might':'Stärke',
+  'Weapon power':'Waffenkraft',
+  'Restoration':'Wiederherstellung',
+  'Healing and recovery':'Heilung und Regeneration',
+  'Sanctity':'Heiligkeit',
+  'Protection and cleansing':'Schutz und Läuterung',
+  'Marksmanship':'Schießkunst',
+  'Ranged power':'Fernkampfkraft',
+  'Tracking':'Spurenlesen',
+  'Hunting precision':'Präzision bei der Jagd',
+  'Breaking':'Durchbrechen',
+  'Armor pressure':'Rüstungsdurchdringung',
+  'Spellcraft':'Zauberkunst',
+  'Magical power':'Magische Kraft',
+  'Hexcraft':'Fluchkunst',
+  'Hex potency':'Fluchstärke',
+  'Blade Rhythm':'Klingenrhythmus',
+  'Attack rhythm':'Angriffsrhythmus',
+  'Precision':'Präzision',
+  'Accuracy and evasion':'Treffsicherheit und Ausweichen',
+  'Resonance':'Resonanz',
+  'Support and recovery':'Unterstützung und Regeneration',
+  'Geomancy':'Geomantie',
+  'Protection and resilience':'Schutz und Widerstandskraft',
+  'Max HP':'Maximale LP',
+
   // Mining nodes
   'Copper Outcrop':'Kupfervorkommen',
   'Copper Vein':'Kupferader',

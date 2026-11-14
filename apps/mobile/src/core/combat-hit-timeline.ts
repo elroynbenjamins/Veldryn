@@ -21,6 +21,12 @@ export interface HuntHit {
   guardAbility?:HuntActiveAbility;
   /** Healing assist tagged at the first eligible real heal tick after cooldown. */
   supportAbility?:HuntActiveAbility;
+  /** Actual damage prevented by a class guard/control/totem technique. */
+  classGuardAbility?:HuntActiveAbility;
+  /** A real extra healing budget from the class technique (never food). */
+  classHealingBudget?:number;
+  /** Restorative cast to display only after health is truly restored. */
+  classHealAbility?:HuntActiveAbility;
 }
 export interface HuntHitInput {
   monsterHp:number;

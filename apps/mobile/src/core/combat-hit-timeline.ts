@@ -1,5 +1,6 @@
 import {random01} from './rng';
 import type {RegionalHuntPlan} from './ordinary-hunt';
+import type {HuntActiveAbility} from './hunt-active-abilities';
 
 /** Discrete, deterministic attacks for an ordinary idle hunt.
  * Timing is derived from the existing kill cycle so XP, drops and AFK pacing
@@ -12,6 +13,10 @@ export interface HuntHit {
   healing:number;
   critical:boolean;
   index:number;
+  /** Budgeted skill that landed on this real player hit. */
+  activeAbility?:HuntActiveAbility;
+  /** Portion of this landed hit contributed by an equipped companion. */
+  companionAssist?:HuntActiveAbility;
 }
 export interface HuntHitInput {
   monsterHp:number;

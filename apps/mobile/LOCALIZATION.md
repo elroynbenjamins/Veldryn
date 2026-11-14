@@ -4,6 +4,12 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German class disciplines and Combat XP split
+
+- Added exact-source German display translations for all **14 authored class disciplines**, their **14 skill themes**, and the **Max HP** label in the Skill Guide. Class skill IDs, experience calculation, combat balance and saved character state remain unchanged.
+- Localized the two discipline labels in the Combat XP allocation panel, including its radiogroup and radio-option accessibility labels. Non-German locales retain their established translations or source fallback.
+- Registered a focused regression for authored catalog parity, Skill Guide and XP split UI wiring, and safe fallback for unknown server text. Full TypeScript/CI checks and device text-expansion QA remain to be performed.
+
 ## November 14, 2026: German Companion combat descriptions and Trials
 
 - Translated the 16 remaining authored Event companion and custom technique descriptions not yet covered by the shared companion catalog. The shared `companionContent` path only resolves exact authored German text, preserving English and all other locales.

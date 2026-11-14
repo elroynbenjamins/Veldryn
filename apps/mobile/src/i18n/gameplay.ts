@@ -926,7 +926,8 @@ const crafting={
 "Auto-sell settings":["Auto-sell settings","Automatischer Verkauf","Ajustes de venta automática","Instellingen automatisch verkopen","Impostazioni vendita automatica","Paramètres de vente automatique"],
 "Auto-sell ON":["Auto-sell ON","Autoverkauf AN","Venta automática ACTIVADA","Automatisch verkopen AAN","Vendita automatica ATTIVA","Vente automatique ACTIVÉE"],
 "Auto-sell OFF":["Auto-sell OFF","Autoverkauf AUS","Venta automática DESACTIVADA","Automatisch verkopen UIT","Vendita automatica DISATTIVA","Vente automatique DÉSACTIVÉE"],
-"Keep best 7":["Keep best 7","Beste 7 behalten","Conservar los 7 mejores","Beste 7 bewaren","Tieni i 7 migliori","Conserver les 7 meilleurs"],
+"Keep best {count}":["Keep best {count}","Die besten {count} behalten","Conservar los {count} mejores","Beste {count} bewaren","Tieni i {count} migliori","Conserver les {count} meilleurs"],
+"Per equipment type":["Per equipment type","Pro Ausrüstungstyp","Por tipo de equipo","Per uitrustingstype","Per tipo di equipaggiamento","Par type d’équipement"],
 "Collect finished equipment":["Collect finished equipment","Fertige Ausrüstung abholen","Recoger equipo terminado","Voltooide uitrusting ophalen","Ritira equipaggiamento finito","Récupérer l’équipement terminé"],
 "Back to crafting":["Back to crafting","Zurück zur Herstellung","Volver a fabricar","Terug naar maken","Torna alla creazione","Retour à la fabrication"],
 "Manage & collect":["Manage & collect","Verwalten und abholen","Gestionar y recoger","Beheren en ophalen","Gestisci e ritira","Gérer et récupérer"],
@@ -1322,6 +1323,15 @@ export const gameplayCatalogs=catalogsFor(rows);
 // Russian and Turkish support for recently added enhancement-popup controls.
 const enhancementPopupEarlyLocales={"Equipment enhancement":["Улучшение снаряжения","Ekipman geliştirme"],"Confirm below to apply this change.":["Подтвердите ниже, чтобы применить изменение.","Değişikliği uygulamak için aşağıdan onayla."],"Confirm replacement":["Подтвердить замену","Değiştirmeyi onayla"],"Confirm extraction":["Подтвердить извлечение","Çıkarmayı onayla"],"Gear stat gains":["Прирост характеристик снаряжения","Ekipman özellik artışları"]} as const;
 for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// The Forge copy cap is interpolated, and the legacy auto-sell setting persists across all locales.
+const forgeCopyLimitEarlyLocales={
+  "Keep best {count}":["Сохранять лучшие {count}","En iyi {count} tanesini tut"],
+  "Per equipment type":["Для каждого типа снаряжения","Ekipman türü başına"],
+} as const;
+for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

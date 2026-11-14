@@ -50081,7 +50081,7 @@ function isValidCraftedGearQuality(quality) {
 function craftedGearDisplayQuality(instance) {
   return instance.quality ?? LEGACY_CRAFTED_GEAR_QUALITY;
 }
-var TARGET_CRAFTED_GEAR_COPIES_PER_ITEM = 7;
+var TARGET_CRAFTED_GEAR_COPIES_PER_ITEM = 25;
 function craftedGearQualityFromUnitRoll(roll) {
   if (!Number.isFinite(roll) || roll < 0 || roll >= 1) throw new Error("Invalid crafted quality roll");
   return Math.min(CRAFTED_GEAR_QUALITY_MAX, Math.floor(Math.pow(roll, CRAFTED_GEAR_QUALITY_POWER) * (CRAFTED_GEAR_QUALITY_MAX + 1)));
@@ -54768,7 +54768,7 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
     const draft = draftCraftedGearInstance(args), capacity = craftedGearCopyCapacity(next, itemId), mode = next.account.craftedGearAutoSellMode ?? "off";
     let saleGold = 0, autoSold;
     if (capacity.count >= capacity.limit) {
-      if (mode !== "keep_best_seven") throw new Error("Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies");
+      if (mode !== "keep_best_seven") throw new Error(`Equipment copy limit reached (${capacity.count}/${capacity.limit}); enable Keep Best ${capacity.limit} or manage copies`);
       const entries = forgeOwnedCopyLocations(next, itemId);
       if (!entries) throw new Error("Equipment copy ownership requires manual review before auto-selling");
       const delivery = forgeIncomingDelivery(next, job.ownerCharacterId);

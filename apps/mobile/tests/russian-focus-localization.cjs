@@ -6,17 +6,37 @@ require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}
 }).outputText,f);
 const {RUSSIAN_FOCUS_ROWS}=require('../src/i18n/russian-focus.ts');
+const {RUSSIAN_CONTINUATION_ROWS}=require('../src/i18n/russian-continuation.ts');
+const {RUSSIAN_PROGRESS_ROWS}=require('../src/i18n/russian-progress.ts');
+const {RUSSIAN_FINAL_SOCIAL_ROWS}=require('../src/i18n/russian-final-social.ts');
+const {RUSSIAN_FINAL_PROGRESSION_ROWS}=require('../src/i18n/russian-final-progression.ts');
+const {RUSSIAN_FINAL_GAMEPLAY_ROWS}=require('../src/i18n/russian-final-gameplay.ts');
+const {RUSSIAN_FINAL_COMPANION_ROWS}=require('../src/i18n/russian-final-companions.ts');
+const {RUSSIAN_FINAL_ACCOUNT_ROWS}=require('../src/i18n/russian-final-account.ts');
+const {RUSSIAN_PROFILE_ROWS}=require('../src/i18n/russian-profile.ts');
+const {RUSSIAN_ACCOUNT_ROWS}=require('../src/i18n/russian-account.ts');
+const {RUSSIAN_SOCIAL_ROWS}=require('../src/i18n/russian-social.ts');
+const continuationKeys=Object.keys(RUSSIAN_CONTINUATION_ROWS);
+for(const key of continuationKeys)assert.ok(!Object.prototype.hasOwnProperty.call(RUSSIAN_FOCUS_ROWS,key),'Duplicate focused/continuation RU key: '+key);
 const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
-const keys=Object.keys(RUSSIAN_FOCUS_ROWS);
-assert.ok(keys.length>=4330,'Expected expanded Russian UI coverage');
+const russianCatalogs=[RUSSIAN_FOCUS_ROWS,RUSSIAN_CONTINUATION_ROWS,RUSSIAN_PROGRESS_ROWS,RUSSIAN_PROFILE_ROWS,RUSSIAN_ACCOUNT_ROWS,RUSSIAN_SOCIAL_ROWS,RUSSIAN_FINAL_ACCOUNT_ROWS,RUSSIAN_FINAL_COMPANION_ROWS,RUSSIAN_FINAL_GAMEPLAY_ROWS,RUSSIAN_FINAL_PROGRESSION_ROWS,RUSSIAN_FINAL_SOCIAL_ROWS];
+const seen=new Set();
+for(const catalog of russianCatalogs)for(const key of Object.keys(catalog)){
+  assert.ok(!seen.has(key),'Duplicate Russian translation: '+key);
+  seen.add(key);
+}
+const combined=Object.assign({},...russianCatalogs);
+const keys=Object.keys(combined);
+assert.ok(keys.length>=6200,'Expected near-complete Russian authored coverage');
+assert.ok(keys.length>=4925,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];
 const sources=modules.map(name=>fs.readFileSync(path.join(__dirname,'../src/i18n/'+name+'.ts'),'utf8'));
 const owned=new Set(sources.flatMap(source=>[...source.matchAll(/^\s*(['"])(.*?)\1\s*:\s*\[/gm)].map(match=>match[2])));
 for(const key of keys){
-  const translated=RUSSIAN_FOCUS_ROWS[key];
+  const translated=combined[key];
   assert.ok(owned.has(key),'Missing exact source key '+key);
   assert.ok(translated.trim(),'Empty Russian translation for '+key);
   assert.deepEqual(tokens(translated),tokens(key),'Placeholder mismatch: '+key);
@@ -92,7 +112,17 @@ for(const [key,expected] of Object.entries({
   'BUY BOTH':'КУПИТЬ ОБА',
   'No tool equipped':'Инструмент не выбран',
   'Queued monster is no longer available.':'Враг из очереди больше недоступен.',
-  'NEXT LV {level} · {title}':'СЛЕД. УР. {level} · {title}'
+  'NEXT LV {level} · {title}':'СЛЕД. УР. {level} · {title}',
+  'VELDRYN Rankings':'Рейтинги VELDRYN',
+  'Share my Echo':'Поделиться моим Эхо',
+  'Google Play purchases':'Покупки Google Play',
+  'Import save backup':'Импорт резервной копии',
+  'Shield strength +15%.':'Прочность щита +15%.',
+  'Complete {count} {region} Sanctuary assignments':'Выполните {count} поручений святилища региона {region}',
+  'WORLD BOSS ATTEMPT COMPLETE':'ПОПЫТКА МИРОВОГО БОССА ЗАВЕРШЕНА',
+  'Idle Rule deleted.':'Правило AFK удалено.',
+  'OFFLINE PROGRESS':'ОФЛАЙН-ПРОГРЕСС',
+  'Search recipes…':'Поиск рецептов…'
 })){
   assert.equal(earlyLocaleText('ru',key),expected,'Focused Russian text missing for '+key);
   assert.notEqual(earlyLocaleText('tr',key),expected,'Turkish UI must never inherit Russian text: '+key);
@@ -109,8 +139,13 @@ assert.equal(typedTranslator('ru','a',{count:1}),'Надето: 1/10');
 for(const key of keys)assert.ok(!Object.hasOwn(EARLY_LOCALE_ROWS,key),'Duplicate RU entry in starter catalog: '+key);
 const russianOwned=new Set([...keys,...Object.keys(EARLY_LOCALE_ROWS)].filter(key=>owned.has(key)));
 const coverage=(100*russianOwned.size/owned.size).toFixed(1);
+assert.ok(Number(coverage)>=99.0,'Russian authored UI coverage dropped below 99%');
+for(const key of ['guild_recruiting','looking_for_guild','party_recruiting','NPC','Rootbound Colossus']){
+  assert.ok(owned.has(key),'Expected canonical or technical key '+key);
+  assert.equal(earlyLocaleText('ru',key),undefined,'Technical ID or canonical name should retain source '+key);
+}
 assert.ok(russianOwned.size>=keys.length,'Coverage cannot be smaller than focused translations');
-console.log('PASS: '+keys.length+' focused Russian UI translations, source keys, placeholders, and language fallback');
+console.log('PASS: '+keys.length+' focused and continuation Russian UI translations, source keys, placeholders, and language fallback');
 console.log('Russian catalog coverage: '+russianOwned.size+'/'+owned.size+' distinct authored keys ('+coverage+'%). Remaining keys fall back to English.');
 for(let i=0;i<modules.length;i++){
   const keysInModule=new Set([...sources[i].matchAll(/^\s*(['"])(.*?)\1\s*:\s*\[/gm)].map(match=>match[2]));

@@ -18,8 +18,8 @@ export function isValidCraftedGearQuality(quality:unknown):quality is number{
 export function craftedGearDisplayQuality(instance:Pick<CraftedGearInstance,'quality'>):number{
   return instance.quality??LEGACY_CRAFTED_GEAR_QUALITY;
 }
-/** Proposed account-wide, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
-export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7;
+/** Account-wide cap per base equipment item, counting every physical copy and every character. */
+export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=25;
 
 /** Quality is persisted on each instance; new rolls gently favor lower grades. */
 export function craftedGearQualityFromUnitRoll(roll:number){
@@ -80,7 +80,7 @@ export function craftedInstancesForItem(state:GameState,itemId:string,ownerChara
 export function craftedGearCopyCapacity(state:GameState,itemId:string){
   // Existing equipment may predate unique Forge instances or originate from
   // non-Forge rewards. Never undercount those physical copies while projecting
-  // the eventual seven-copy account-wide cap.
+  // the 25-copy account-wide cap.
   const audit=craftedGearLegacyOwnershipAudit(state,itemId);
   const count=Math.max(audit.physicalCopies,audit.recordedCraftedCopies);
   return {count,limit:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,remaining:Math.max(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-count),verified:false as const};

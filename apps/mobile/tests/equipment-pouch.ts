@@ -74,19 +74,19 @@ const inactiveForge:GameState={...started.state,character:backgroundCharacter,in
 const backgroundClaim=claimEquipmentCraft(inactiveForge,job.id,job.completesAtMs,.004);
 ok(backgroundClaim.state.otherCharacters?.[0].character.equipmentPouch?.stacks.some(row=>row.instanceId===backgroundClaim.result.instanceId)
  &&equipmentPouch(backgroundClaim.state).stacks.length===0,'Claiming a different character\'s finished Forge job must deliver to its owner\'s pouch');
-const maxedCopies=Array.from({length:7},(_,index)=>draftCraftedGearInstance({
+const maxedCopies=Array.from({length:25},(_,index)=>draftCraftedGearInstance({
  itemId:output,ownerCharacterId:started.state.character!.id,jobId:'owner-autosell-'+index,createdAtMs:1000,roll:.00005,
 }));
-const sevenBank:GameState={...inactiveForge,bank:{...inactiveForge.bank,capacity:30,stacks:maxedCopies.map(instance=>({itemId:output,quantity:1,instanceId:instance.id}))},
+const cappedBank:GameState={...inactiveForge,bank:{...inactiveForge.bank,capacity:30,stacks:maxedCopies.map(instance=>({itemId:output,quantity:1,instanceId:instance.id}))},
  account:{...inactiveForge.account,craftedGearInstances:maxedCopies,craftedGearAutoSellMode:'keep_best_seven'}};
-ok(auditCraftedGearOwnership(sevenBank).consistent,'Inactive owner auto-sale fixture needs exact existing physical copies');
-const priorOwnerGold=sevenBank.otherCharacters![0].character.gold,priorBankGold=sevenBank.bank.gold??0;
-const autoSale=claimEquipmentCraft(sevenBank,job.id,job.completesAtMs,.9);
-ok(autoSale.result.autoSold==='incoming','An eighth weaker forged copy must honor the opt-in Keep Best 7 mode');
+ok(auditCraftedGearOwnership(cappedBank).consistent,'Inactive owner auto-sale fixture needs exact existing physical copies');
+const priorOwnerGold=cappedBank.otherCharacters![0].character.gold,priorBankGold=cappedBank.bank.gold??0;
+const autoSale=claimEquipmentCraft(cappedBank,job.id,job.completesAtMs,.9);
+ok(autoSale.result.autoSold==='incoming','The 26th weaker forged copy must honor the opt-in 25-copy auto-sell setting');
 ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemDef(output).value
  &&(autoSale.state.bank.gold??0)===priorBankGold,
  'Auto-sale of an inactive character\'s would-be Equipment Pouch item must credit that character, never the shared Bank');
-ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve seven exact physical copies');
+ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve 25 exact physical copies');
 
 // Sales must be explicit, copy-specific and atomic. No item IDs or prices can be
 // supplied as a substitute for a physical pouch entry or its exact Forge receipt.

@@ -40,7 +40,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  onRewardsChanged?:()=>void|Promise<unknown>;
  onNavigateActivity?:(activity:Activity)=>void;
 }){
- const st=useSocialText(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const st=useSocialText(),language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [showHistory,setShowHistory]=useState(false),[expandedProjectId,setExpandedProjectId]=useState<string|null>(null),[busy,setBusy]=useState('');
@@ -115,7 +115,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
   {pendingDonation?<Panel>
    <Text style={s.sectionTitle}>{ui('Saved Guild donation')}</Text>
    <Text style={s.copy}>{ui('Retry the saved request before donating anything else.')}</Text>
-   <Text style={s.meta}>{pendingDonation.itemId} · {pendingDonation.quantity.toLocaleString()}</Text>
+   <Text style={s.meta}>{pendingDonation.itemId} · {pendingDonation.quantity.toLocaleString(language)}</Text>
    <View style={s.actions}>
     <View style={s.flex}><GameButton compact disabled={!!busy} loading={!!busy} title={ui('Retry saved donation')}
       onPress={()=>void donate({projectId:pendingDonation.projectId,itemId:pendingDonation.itemId,quantity:pendingDonation.quantity})}/></View>
@@ -129,7 +129,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
   {snapshot.choiceAvailable?<Panel>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Vote for next week's project")}</Text><View style={s.actions}>{snapshot.candidates.length>0&&!snapshot.candidates.some(candidate=>candidate.myVote)?<StatusPill label={ui("VOTE")} tone="info"/>:null}<Text style={s.meta}>{ui("One vote per member")}</Text></View></View>
    {snapshot.candidates.length?<>
-    <Text style={s.meta}>{ui('Voting closes {date}',{date:new Date(snapshot.candidates[0].expiresAt).toLocaleString()})}</Text>
+    <Text style={s.meta}>{ui('Voting closes {date}',{date:new Date(snapshot.candidates[0].expiresAt).toLocaleString(language)})}</Text>
     {snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy}
      onVote={()=>void act('vote',candidate.id)}/>)}
     <Text style={s.meta}>{ui('If nobody votes, the Medium project starts automatically.')}</Text>
@@ -180,10 +180,10 @@ function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCand
   </View>
   <Text style={s.copy}>{authored.description}</Text>
   <View style={s.sectionHead}>
-   <Text style={[s.meta,s.flex]}>{candidate.mode==='donation'?ui('Donate common supplies'):`${ui('{count} effort per active member',{count:candidate.effortPerMember.toLocaleString()})}${candidate.mode==='hybrid'?' · '+ui('Plus common supplies'):''}`}</Text>
+   <Text style={[s.meta,s.flex]}>{candidate.mode==='donation'?ui('Donate common supplies'):`${ui('{count} effort per active member',{count:candidate.effortPerMember.toLocaleString(language)})}${candidate.mode==='hybrid'?' · '+ui('Plus common supplies'):''}`}</Text>
    <Text style={s.meta}>{guildFlowUiText(language,candidate.voteCount===1?'{count} vote':'{count} votes',{count:candidate.voteCount})}</Text>
   </View>
-  <Text style={s.rewardTitle}>{ui('{xp} Guild XP · {gold} Bank Gold per qualifying member',{xp:candidate.guildXpReward.toLocaleString(),gold:candidate.rewardGold.toLocaleString()})}</Text>
+  <Text style={s.rewardTitle}>{ui('{xp} Guild XP · {gold} Bank Gold per qualifying member',{xp:candidate.guildXpReward.toLocaleString(language),gold:candidate.rewardGold.toLocaleString(language)})}</Text>
   <View style={s.actions}><View style={s.flex}><GameButton compact title={ui(candidate.myVote?'Your vote':'Vote')} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/></View></View>
  </View>;
 }
@@ -217,7 +217,7 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
   :Number.isFinite(claimDeadline)&&Date.now()>=claimDeadline?ui('Reward claim period ended')
   :!Number.isFinite(claimDeadline)?ui('Reward claim timing unavailable')
   :qualifying?ui('Ready to claim')
-  :project.personalRewardThreshold>0?ui('{count} personal effort short of reward eligibility',{count:personalShortfall.toLocaleString()})
+  :project.personalRewardThreshold>0?ui('{count} personal effort short of reward eligibility',{count:personalShortfall.toLocaleString(language)})
   :ui('Not eligible for this reward');
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
   <View style={s.projectPress}>
@@ -226,12 +226,12 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
     <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{weekly?(ui(project.slotIndex===2?"Guild's Choice":'Standard weekly')+(project.difficulty?' · '+ui(project.difficulty==='easy'?'Easy':project.difficulty==='medium'?'Medium':'Hard'):'')+' · '):''}{guildFlowFocusText(language,project.focus)}{weekly?'':' · '+ui(project.kind==='development'?'Development':'Event')}</Text></View>
     <StatusPill label={ui(project.status==='completed'?'DONE':'ACTIVE')} tone={project.status==='completed'?'good':'info'}/>
    </View>
-   <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
+   <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString(language)} / ${project.targetPoints.toLocaleString(language)}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
    <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text></View>
    {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
    {weekly&&project.status==='active'&&!summaryOnly?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
-   {summaryOnly?<Text style={s.meta}>{ui('Your contribution')}: {project.personalPoints.toLocaleString()}{project.personalRewardThreshold>0?' / '+project.personalRewardThreshold.toLocaleString():''}</Text>:null}
+   {summaryOnly?<Text style={s.meta}>{ui('Your contribution')}: {project.personalPoints.toLocaleString(language)}{project.personalRewardThreshold>0?' / '+project.personalRewardThreshold.toLocaleString(language):''}</Text>:null}
    {onToggle?<Pressable accessibilityRole="button" accessibilityState={{expanded:!summaryOnly}} onPress={onToggle} style={s.accordion}>
     <Text style={s.expandLabel}>{ui(summaryOnly?'View project details':'Hide project details')}</Text><Text style={s.chevron}>{summaryOnly?'▾':'▴'}</Text>
    </Pressable>:null}
@@ -240,13 +240,13 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Your contribution')}</Text>
     {qualifying&&project.personalRewardThreshold>0?<StatusPill label={ui("QUALIFIED")} tone="good"/>:null}
    </View>
-   <View style={s.sectionHead}><Text style={s.personalPoints}>{project.personalPoints.toLocaleString()}</Text>
-    <Text style={s.meta}>{project.personalRewardThreshold>0?ui('/ {count} needed',{count:project.personalRewardThreshold.toLocaleString()}):ui('Shared contribution')}</Text></View>
-   {weekly&&project.status==='active'&&personalShortfall>0?<Text style={s.meta}>{ui('{count} more personal effort to qualify for the reward',{count:personalShortfall.toLocaleString()})}</Text>:null}
+   <View style={s.sectionHead}><Text style={s.personalPoints}>{project.personalPoints.toLocaleString(language)}</Text>
+    <Text style={s.meta}>{project.personalRewardThreshold>0?ui('/ {count} needed',{count:project.personalRewardThreshold.toLocaleString(language)}):ui('Shared contribution')}</Text></View>
+   {weekly&&project.status==='active'&&personalShortfall>0?<Text style={s.meta}>{ui('{count} more personal effort to qualify for the reward',{count:personalShortfall.toLocaleString(language)})}</Text>:null}
    {project.personalRewardThreshold>0?<View style={s.smallTrack}><View style={[s.fill,{width:`${Math.min(100,project.personalPoints/project.personalRewardThreshold*100)}%` as any}]}/></View>:null}
    {weekly?<View style={s.reward}>
     <Text style={s.rewardIcon}>🪙</Text>
-    <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString()}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{rewardStatus}</Text></View>
+    <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString(language)}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{rewardStatus}</Text></View>
    </View>:null}
    {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text>
      <View style={s.flex}>

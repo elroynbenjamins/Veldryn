@@ -4,6 +4,14 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Party Events and Guild identity
+
+- Added guarded German names and descriptions for all **5 authored Party Live Ops event templates**. Both the English event name and description must match the backend template; unknown, modified and player-authored Party names remain unmodified.
+- Localized **9 template event tags**, **4 server-defined ranked-eligibility reasons**, and **8 Party Event activity names**. Event contribution points, scoring, party IDs and reward eligibility remain unchanged.
+- Wired the German copy into the Party Event hub and event contribution breakdown; all displayed breakdown totals use locale-aware number grouping.
+- Localized **4 Guild identity loading/error/retry labels** and existing Guild roster role names, and formatted roster contribution numbers according to the selected language.
+- Registered two focused regression tests that verify content parity against server/client source catalogues, other-language fallback, stale-source protection and render-path wiring. Full CI and Android visual QA are still required.
+
 ## November 14, 2026: German Companion combat terminology
 
 - Added exact-source, per-companion German display names for **38 authored combat companion active abilities** and **38 Bond traits** across Asterfall, Sunscar, Frostmarch, Ashlands, Guild and released/event companion content.

@@ -26,7 +26,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
    <Pressable accessibilityRole="button" accessibilityLabel={st('Companion')+': '+(setup.companion?.name??st('None equipped'))}
     accessibilityState={{expanded:!onChooseCompanion&&expanded==='companion',disabled:Boolean(onChooseCompanion&&companionDisabled)}} accessibilityHint={onChooseCompanion?st('Choose dungeon companion'):st('Tap to view companion')}
     disabled={Boolean(onChooseCompanion&&companionDisabled)}
-    onPress={onChooseCompanion??(()=>toggle('companion'))} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
+    onPress={onChooseCompanion??(()=>toggle('companion'))} style={({pressed})=>[s.tile,compact&&s.compactTile,pressed&&s.pressed]}>
     <View style={s.itemTop}>
      <View style={s.artFrame}>
       {art?<Image source={art} resizeMode="contain" style={s.art}/>:<UiIcon name="companions" size={30}/>}
@@ -43,7 +43,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
    </Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Healing potion')+': '+(setup.healing?.name??st('None selected'))}
     accessibilityState={{expanded:expanded==='healing'}} accessibilityHint={st('Healing uses carried potions; food is disabled in dungeons.')}
-    onPress={()=>toggle('healing')} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
+    onPress={()=>toggle('healing')} style={({pressed})=>[s.tile,compact&&s.compactTile,pressed&&s.pressed]}>
     <View style={s.itemTop}>
      <View style={s.artFrame}>{setup.healing?<ItemArtwork itemId={setup.healing.id} size={30}/>:<UiIcon name="inventory" size={30}/>}</View>
      <View style={s.itemContent}>
@@ -58,7 +58,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
   </View>
   <Pressable accessibilityRole="button" accessibilityLabel={st('Enhancement tonics')}
    accessibilityState={{expanded:expanded==='tonics'}} onPress={()=>toggle('tonics')}
-   style={({pressed})=>[s.tonicRow,pressed&&s.pressed]}>
+   style={({pressed})=>[s.tonicRow,compact&&s.compactTonic,pressed&&s.pressed]}>
    <View style={s.tonicIcon}>{setup.tonicPreviewId?<ItemArtwork itemId={setup.tonicPreviewId} size={26}/>:<UiIcon name="skills" size={23}/>}</View>
    <View style={s.tonicText}>
     <Text style={s.tonicTitle}>{st('Enhancement tonics')}</Text>
@@ -78,7 +78,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
  panel:{padding:12,gap:10,borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.surface},
- compactPanel:{padding:10,gap:8},
+ compactPanel:{padding:9,gap:7},compactTile:{minHeight:76,padding:7,gap:4},compactTonic:{minHeight:44,paddingHorizontal:7},
  heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  headingText:{color:C.text,fontSize:14,lineHeight:19,fontWeight:'700',flexShrink:1},
  caption:{color:C.textMuted,fontSize:11,lineHeight:16},

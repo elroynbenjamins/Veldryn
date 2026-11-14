@@ -38,6 +38,7 @@ export const EARLY_LOCALE_ROWS={
   "COMPANION SKILL": ["УМЕНИЕ СПУТНИКА","YOLDAŞ YETENEĞİ"],
   "SKILL DAMAGE · {amount}": ["УРОН УМЕНИЯ · {amount}","YETENEK HASARI · {amount}"],
   "SKILL HEAL · {amount}": ["ЛЕЧЕНИЕ УМЕНИЕМ · {amount}","YETENEK İYİLEŞTİRMESİ · {amount}"],
+  "SHIELD · {amount}": ["ЩИТ · {amount}","KALKAN · {amount}"],
   "Show breakdown": ["Показать подробности","Ayrıntıları göster"],
   "Hide breakdown": ["Скрыть подробности","Ayrıntıları gizle"],
   "Combat Power breakdown": ["Подробности боевой мощи","Savaş gücü ayrıntıları"],

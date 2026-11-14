@@ -17,6 +17,8 @@ export interface HuntHit {
   activeAbility?:HuntActiveAbility;
   /** Portion of this landed hit contributed by an equipped companion. */
   companionAssist?:HuntActiveAbility;
+  /** Genuine damage blocked by a cooldown-scheduled tank companion guard. */
+  guardAbility?:HuntActiveAbility;
 }
 export interface HuntHitInput {
   monsterHp:number;

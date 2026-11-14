@@ -8,6 +8,8 @@ import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatClassFx,dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
+import {classEmblemAccent} from '../../theme/class-emblem-colors';
+import {useGameTheme} from '../../theme/ThemeContext';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
 import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackSkillActivation,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
@@ -98,6 +100,7 @@ function openingEnemyFx(archetype:string|undefined){
 }
 export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,entryNodeId,previewArchetypes,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;entryNodeId?:string;previewArchetypes?:Array<{id:string;label:string}>;onPresentationComplete?:()=>void}){
  const {styles:s,colors:C}=useCoopStyles(makeStyles);
+ const theme=useGameTheme();
  const backdrop=combatBackdrop(seasonal,eventName);
  const st=useSocialText(),language=useGameLanguage();
  const {width:windowWidth}=useWindowDimensions(),layout=useMemo(()=>dungeonCombatLayout(windowWidth),[windowWidth]);
@@ -151,8 +154,8 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId);
  const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
  const skillActivation=playbackSkillActivation(currentCue,actorIsParty===true);
- const skillClassAccent=dungeonCombatClassFx(actorSlot?.classId)?.damageAccent;
- const skillColor=skillActivation?.kind==='companion'?C.violet:skillClassAccent==='gold'?C.gold:skillClassAccent==='cyan'?C.cyan:skillClassAccent==='danger'?C.danger:skillClassAccent==='violet'?C.violet:skillClassAccent==='success'?C.success:C.cyan;
+ // A class skill follows the actor's class icon; companions stay violet.
+ const skillColor=skillActivation?.kind==='companion'?C.violet:classEmblemAccent(actorSlot?.classId,theme.dark)??C.cyan;
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
  const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,1):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),1,120):0;
  useEffect(()=>{

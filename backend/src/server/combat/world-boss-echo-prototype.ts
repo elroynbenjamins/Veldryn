@@ -111,6 +111,8 @@ export function matchWorldBossEchoesPrototype(input:WorldBossEchoQueryPrototype)
    const best=sorted[0];
    const ties=sorted.filter(c=>Math.abs(c.bracket-input.bracket)===Math.abs(best.bracket-input.bracket)&&
     c.uses===best.uses&&Boolean(c.affinity==='guild'||c.affinity==='friend')===Boolean(best.affinity==='guild'||best.affinity==='friend'));
+   // CombatRng.next currently yields [0, 0.5); preserve legacy replay RNG
+   // semantics while rescaling the full tie pool, not just its first two.
    const random=rng.next(requiredRole+':'+slot+':echo')*2;
    const chosen=ties[Math.min(ties.length-1,Math.floor(random*ties.length))];
    selected.push(chosen);

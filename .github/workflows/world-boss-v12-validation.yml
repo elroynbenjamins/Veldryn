@@ -1,17 +1,18 @@
-name: Hidden World Boss V10–V13 validation
+name: Hidden World Boss V10–V14 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
   pull_request:
     paths:
       - 'backend/online/world-boss-loadout-v12.ts'
+      - 'backend/src/server/combat/world-boss-bracket-audit-v14.ts'
       - 'backend/online/coop-loadout.ts'
       - 'backend/online/party-event-loadout-v4.ts'
       - 'apps/mobile/src/core/regional-combat-fixtures.ts'
       - 'apps/mobile/tsconfig.world-boss-v12.json'
+      - 'apps/mobile/tsconfig.core.json'
       - 'backend/src/server/combat/world-boss-*.ts'
       - 'apps/mobile/tests/world-boss-*.ts'
-      - 'apps/mobile/tsconfig.core.json'
       - '.github/workflows/world-boss-v12-validation.yml'
   workflow_dispatch:
 
@@ -41,17 +42,19 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v9-v13 World Boss tests
+      - name: Run v7-v14 World Boss tests
         run: |
           set -e
           for suite in \
+            world-boss-echo-prototype \
             world-boss-verified-roster-v9 \
             world-boss-atomic-emulator-v9 \
             world-boss-reservation-v10 \
             world-boss-war-camp-v11 \
             world-boss-real-loadout-v12 \
             world-boss-supply-economy-v12 \
-            world-boss-guard-role-v13
+            world-boss-guard-role-v13 \
+            world-boss-bracket-audit-v14
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done

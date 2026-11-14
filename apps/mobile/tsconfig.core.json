@@ -19,6 +19,7 @@
   ],
   "exclude": [
     "tests/world-boss-real-loadout-v12.ts",
-    "tests/world-boss-guard-role-v13.ts"
+    "tests/world-boss-guard-role-v13.ts",
+    "tests/world-boss-bracket-audit-v14.ts"
   ]
 }

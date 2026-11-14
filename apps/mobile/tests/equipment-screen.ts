@@ -139,8 +139,8 @@ try{equipItem(uniqueBlockingLegacy,forgeWeapon.id)}catch{rejectedActual=true}
 if(!rejectedPreview||!rejectedActual)
  throw new Error('Comparison must reject legacy swaps when a unique equipped copy blocks the real equip');
 
-// The same six-piece set milestone that appears visually must not be labelled
-// as an active combat trigger; only 2/4/8/10 have runtime static bonuses.
+// Released T1–T4 six-piece set milestones are now always-on combat stats.
+// Higher-tier conditional triggers remain pending until their hooks exist.
 const setId=itemDef(forgeWeapon.id).equipmentSetId;
 const setItems=EQUIPMENT_ITEMS_V33.filter(item=>item.equipmentSetId===setId&&item.classRestriction==='IRONWARDEN');
 if(setItems.length>=6){
@@ -151,8 +151,8 @@ if(setItems.length>=6){
  const sixPiecePreview=previewEquipment(fivePiece,sixth.id);
  assertPreviewEqualsActual(sixPiecePreview,equipItem(fivePiece,sixth.id),'6-piece set transition');
  const diff=equipmentComparison(fivePiece,sixPiecePreview);
- if(!diff.sets.some(row=>row.id===setId&&row.milestones.some(m=>m.threshold===6&&m.status==='pending')))
-  throw new Error('Six-piece set milestone must be marked pending, not active');
+ if(!diff.sets.some(row=>row.id===setId&&row.milestones.some(m=>m.threshold===6&&m.status==='active')))
+  throw new Error('Released T1–T4 six-piece set milestone must be active');
 }
 // Verify the percentage bonuses in the comparison come from the actual
 // capped effect-gem totals, rather than raw gem IDs or guessed item values.

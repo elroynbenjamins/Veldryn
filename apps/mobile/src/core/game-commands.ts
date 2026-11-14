@@ -39,6 +39,7 @@ import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 import {reconcileAccountCollections} from './account-collections';
 import {recordSeasonalActivity} from './seasonal-quests';
+import {ensurePersonalSeasonalState} from './personal-seasonal-state';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 import {eatMealForBonus,retimeReservedMealCraft} from './meal-buffs';
@@ -147,7 +148,7 @@ export function settingsForOnlineCommand(value:GameState['settings']):GameState[
 /** The caller provides a trusted clock, character ID and random roll on the server. */
 export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
- let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
+ let state=ensurePersonalSeasonalState(structuredClone(previous)),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
  // The trusted account ID must be present before converting legacy rewards or
  // granting account-bound titles, including on a quest-only command.

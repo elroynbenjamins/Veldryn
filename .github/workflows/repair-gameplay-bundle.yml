@@ -26,8 +26,10 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
-      - name: Install backend dependencies
-        run: pnpm --dir backend install --frozen-lockfile
+      - name: Install backend and mobile dependencies for shared TypeScript imports
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
       - name: Build generated gameplay and coop Edge bundles from canonical engine
         run: pnpm --dir backend build:online
       - name: Commit deterministic generated artifacts to repair branch

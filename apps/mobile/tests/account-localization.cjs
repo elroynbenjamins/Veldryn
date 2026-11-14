@@ -124,6 +124,10 @@ assert.equal(accountText('tr','ACCOUNT SKILL'),'HESAP BEC.');
 assert.equal(recentScreenText('ru','ACTIVITY QUEUE'),'ОЧЕРЕДЬ ЗАНЯТИЙ');
 assert.equal(recentScreenText('tr','Your adventure'),'Maceran');
 assert.equal(recentScreenText('ru','READY NOW'),'ГОТОВО СЕЙЧАС');
+assert.equal(earlyLocaleText('ru','READY NOW'),'ГОТОВО К ИЗГОТОВЛЕНИЮ',
+ 'Crafting may retain the generic early Russian translation when it does not use the Home screen catalog');
+assert.equal(recentScreenText('tr','READY NOW'),'ŞİMDİ HAZIR',
+ 'The Home screen must prefer its reviewed Turkish translation over a shared fallback');
 console.log('RU/TR account screen coverage: '+earlyScreenKeys+' authored display calls.');
 
 console.log('Account localization passed: '+keys.length+' keys x 6 languages; '+guides.length+' guides; '+records.length+' records; '+files.length+' owned files; '+displayCalls+' display calls.');

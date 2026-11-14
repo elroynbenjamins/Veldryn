@@ -161,3 +161,50 @@ export function persistentPartyCanExistWithCurrentRoles(members: readonly Persis
     && !hasDuplicateAccounts(members)
     && !hasDuplicateCharacters(members);
 }
+
+
+/**
+ * A Persistent Party slot belongs to an account, not to a class or character.
+ * The caller must derive ownedCharacterIds, role and activityLocked from trusted
+ * server state; never pass unvalidated client-provided values to this helper.
+ *
+ * Character changes cannot mutate an in-progress dungeon/event snapshot.
+ * Instead, select the new character before creating the next combat snapshot.
+ */
+export interface PersistentPartyCharacterSwitch {
+  accountId: string;
+  characterId: string;
+  role: PartyRole;
+  ownedCharacterIds: readonly string[];
+  activityLocked?: boolean;
+}
+
+export function switchPersistentPartyCharacter(
+  state: PersistentPartyState,
+  selection: PersistentPartyCharacterSwitch,
+): PersistentPartyState {
+  validatePersistentParty(state);
+  if (state.status === 'disbanded') throw new Error('party_inactive');
+  const index = state.members.findIndex(member => member.accountId === selection.accountId);
+  if (index < 0) throw new Error('party_member_not_found');
+  if (selection.activityLocked) throw new Error('party_character_switch_activity_locked');
+  if (!selection.characterId || !selection.ownedCharacterIds.includes(selection.characterId)) {
+    throw new Error('party_character_not_owned');
+  }
+  if (state.members.some(member => member.accountId !== selection.accountId && member.characterId === selection.characterId)) {
+    throw new Error('party_duplicate_character');
+  }
+  if (!['tank', 'damage', 'support'].includes(selection.role)) throw new Error('invalid_party_role');
+
+  const next: PersistentPartyState = {
+    ...state,
+    leaderCharacterId: state.leaderAccountId === selection.accountId
+      ? selection.characterId
+      : state.leaderCharacterId,
+    members: state.members.map(member => member.accountId === selection.accountId
+      ? { ...member, characterId: selection.characterId, role: selection.role }
+      : member),
+  };
+  validatePersistentParty(next);
+  return next;
+}

@@ -1586,7 +1586,7 @@ export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSn
   const potionId=character.equippedHealingPotionId,potion=potionDef(potionId),potionQuantity=potion?.effect.kind==='healing'?stackQty(state.inventory.stacks,potionId):0;
   const prep=character.preparation?preparationEffects(character.preparation):undefined,gear=fallenKnightGearReadiness(state);
   return {
-    name:character.name,classId:character.classId,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
+    name:character.name,classId:character.classId,classSkillLevel:characterClassSkills(character)[0]?.level??1,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
     attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
     damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier*(prep?.outgoing??1),
     // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.

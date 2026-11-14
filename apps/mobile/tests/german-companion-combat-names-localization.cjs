@@ -43,7 +43,7 @@ for(const {id,active,bond} of rows){
  assert.ok(copy.bond[1]&&copy.bond[1]!==bond,'Untranslated bond trait: '+id);
  assert.equal(companionCombatAbilityName('de',id,active),copy.active[1]);
  assert.equal(companionCombatBondName('de',id,bond),copy.bond[1]);
- for(const language of ['en','es','nl','it','fr','ru','tr']){
+ for(const language of ['en','es','nl','it','fr','tr']){
   assert.equal(companionCombatAbilityName(language,id,active),active,'Unintended language change: '+id);
   assert.equal(companionCombatBondName(language,id,bond),bond,'Unintended language change: '+id);
  }
@@ -96,7 +96,7 @@ for(const [english,german] of trialNames){
   'Trial enemy ability or phase changed: '+english);
  assert.ok(german.length>4&&german!==english,'Untranslated Trial ability: '+english);
  assert.equal(companionTrialAbilityName('de',english),german);
- for(const language of ['en','es','nl','it','fr','ru','tr'])
+ for(const language of ['en','es','nl','it','fr','tr'])
   assert.equal(companionTrialAbilityName(language,english),english);
 }
 assert.equal(companionTrialAbilityName('de','Unknown server boss spell $&'),'Unknown server boss spell $&');

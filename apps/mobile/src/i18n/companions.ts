@@ -3,9 +3,12 @@ import {createTranslator} from './translator';
 import {companionObjectiveText} from './companion-objectives';
 import {companionGuidanceText} from './companion-guidance';
 import {companionDynamicText} from './companion-dynamic';
+import {companionCombatDescriptionText} from './companion-combat-names-de';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Affinity":["Affinität","Afinidad","Affiniteit","Affinità","Affinité"],
+ "Shield":["Schild","Escudo","Schild","Scudo","Bouclier"],
  // Simplified Companion Index: three intent-based views and a compact role picker.
  "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],
  "Unlock":["Freischalten","Desbloquear","Ontgrendelen","Sblocca","Débloquer"],
@@ -1227,6 +1230,8 @@ export function companionContent(language:Language,value:string):string{
  if(guidance!==undefined)return guidance;
  const dynamic=companionDynamicText(language,value);
  if(dynamic!==undefined)return dynamic;
+ const combat=companionCombatDescriptionText(language,value);
+ if(combat!==undefined)return combat;
  for(const {key,names,pattern} of contentPatterns){
   const match=pattern.exec(value);
   if(match)return translateCompanion(language,key,Object.fromEntries(names.map((name,index)=>[name,match[index+1]])));

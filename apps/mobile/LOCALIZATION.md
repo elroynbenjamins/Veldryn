@@ -4,13 +4,37 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Companion combat descriptions and Trials
+
+- Translated the 16 remaining authored Event companion and custom technique descriptions not yet covered by the shared companion catalog. The shared `companionContent` path only resolves exact authored German text, preserving English and all other locales.
+- Translated 22 authored Companion Trial enemy abilities and boss phase labels in both preview cards and live combat/cast cues. Boss phase effect descriptions use the shared localized companion catalog.
+- Normalized the 12 original server-defined `Signature` ability labels to German during Trial replay. Player and unknown server text remains untouched; combat IDs and mechanics are unchanged.
+- Localized shield accessibility labels, German battle number formatting, and German player-market price-chart grouping (`de-DE`), resolving the chart's German formatting assertion.
+- Added content-parity and UI-wiring assertions. Other existing mobile CI checks still require separate fixes; these tests have not been validated on an Android build.
+
+## November 14, 2026: German Companion combat terminology
+
+- Added exact-source, per-companion German display names for **38 authored combat companion active abilities** and **38 Bond traits** across Asterfall, Sunscar, Frostmarch, Ashlands, Guild and released/event companion content.
+- Translated the **52 custom authored Companion technique names** and **6 shared fallback techniques**, leaving the technique IDs, equip actions, progression, stat modifiers and online combat data untouched.
+- Wired the translations into Training's Skills/Bond panels, the Companion Codex active-ability heading and the Trial formation preview. Unknown or renamed ability names retain the source wording.
+- Added a new dedicated regression that compares every named ability/trait and technique against authored content, checks language isolation and guards the UI call sites; full CI and narrow-screen device visual tests are still required.
+
+## November 14, 2026: German Expedition Shop and Sanctuary missions
+
+- Localized the Expedition Shop UI, 17 ID/source-guarded shop offers, verified offer descriptions and eligibility messages; German currency counts and prices use local number grouping.
+- Completed German display names for all 17 authored Sanctuary Expedition missions, including the active mission list, mission board, preparation, confirmation, claim receipts and accessibility labels. Source IDs and mission names in server state are not mutated.
+- Reused existing localized item names for mission food and reward materials, with explicit German display names for two mission-only resource IDs. Companion names, arbitrary server responses, and player-authored content remain protected from automatic translation.
+- Added independent German catalog/source-drift checks to the existing mobile localization suite. Full TypeScript/CI validation and Android narrow-screen visual review are still required; German is not yet release-complete.
+
 ## Russian focused coverage (November 2026)
 
-- Across the 10 authored source catalogs, **2,630 of 7,202 unique messages (36.5%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.
+- This follow-up also aligns Russian focus entries with the expanded RU/TR starter catalog (19 duplicate strings removed). The Russian test now verifies Turkish translations remain independent, even when Turkish has a valid translation rather than an English fallback.
 
-- A focused Russian expansion now adds **2,081 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy.
+- Across the 10 authored source catalogs, **3,120 of 7,223 unique messages (43.2%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.
+
+- A focused Russian expansion now adds **2,480 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy, companion missions/training and Tower battles, online dungeon matchmaking, guild moderation and account sign-in/security.
 - The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
-- The dedicated Russian regression test checks all 2,081 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+- The dedicated Russian regression test checks all 2,480 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
 
 
 ## November 13, 2026: recently changed screens

@@ -87,7 +87,7 @@ ok(settings.includes("Staff badges appear automatically"),'staff identity is exp
 // One gallery, two destinations: the name row takes one badge, the profile takes three.
 ok(settings.includes("type Slot='name'|'profile'")&&settings.includes('accessibilityRole="radiogroup"'),'the chooser must name its two destinations as a single-choice control');
 ok(settings.includes('badges.setProfileBadges([...showcase,id])')&&settings.includes('badges.setProfileBadges(showcase.filter(row=>row!==id))'),'a profile slot is filled and emptied by the same tap');
-ok(settings.includes('if(!full)void badges.setProfileBadges')&&settings.includes("maxed?'FULL'"),'a full shelf explains itself instead of silently ignoring taps');
+ok(settings.includes('if(!full)void badges.setProfileBadges')&&settings.includes("maxed?r('FULL')")&&settings.includes('All three profile slots are filled'),'a full shelf explains itself instead of silently ignoring taps');
 ok(settings.includes('BESIDE YOUR NAME')&&settings.includes('ON YOUR PROFILE'),'both previews are shown, so the two choices are never confused');
 ok(settings.includes('<PlayerBadgeShowcase identity={badges.identity}'),'the profile preview renders the shelf, not the name row');
 

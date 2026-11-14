@@ -83,7 +83,12 @@ const offline=await gate(build(),{connected:false}).fetchAppVersionGate();
 assert.deepEqual(offline,{currentVersion:appConfig.expo.version,policy:null,updateRequired:false,updateAvailable:false,maintenanceMode:false,verificationFailed:true});
 console.log('PASS legacy release-channel policies and unavailable online configuration');
 
-const earlyLocales=load('apps/mobile/src/i18n/early-locales.ts',{});
+const turkishCoverage=load('apps/mobile/src/i18n/turkish-coverage.ts',{});
+const russianFocus=load('apps/mobile/src/i18n/russian-focus.ts',{});
+const earlyLocales=load('apps/mobile/src/i18n/early-locales.ts',{
+  './turkish-coverage':turkishCoverage,
+  './russian-focus':russianFocus,
+});
 const translator=load('apps/mobile/src/i18n/translator.ts',{'./early-locales':earlyLocales});
 const {SUPPORTED_LANGUAGES}=load('apps/mobile/src/i18n/languages.ts',{});
 const {appBuildCatalogs,appBuildText}=load('apps/mobile/src/i18n/app-build.ts',{'./translator':translator});

@@ -1,5 +1,8 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
+import {companionMissionDisplayName,companionMissionMaterialName} from '../i18n/companion-missions-de';
+import {localizedItemName} from '../i18n/starter-item-names';
+import {formatLocalizedNumber} from '../i18n/translator';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameCommand} from '../core/game-commands';
@@ -26,11 +29,10 @@ function remaining(end:string,now:number){const sec=Math.max(0,Math.ceil((Date.p
 
 
 type ExpeditionFilter='all'|'short'|'long';
-type ClaimedReward={name:string;grade?:string;reward:{companionEssence:number;gold:number;companionXp:number;bondXp:number;bondstones:number;materials:Record<string,number>;bonusRewardGranted?:boolean}};
-const fmt=(n:number)=>n.toLocaleString();
-function missionRequirements(req:CompanionMissionRequirement,t:ReturnType<typeof companionTranslator>,label:(value:string)=>string){
+type ClaimedReward={missionId:string;name:string;grade?:string;reward:{companionEssence:number;gold:number;companionXp:number;bondXp:number;bondstones:number;materials:Record<string,number>;bonusRewardGranted?:boolean}};
+function missionRequirements(req:CompanionMissionRequirement,t:ReturnType<typeof companionTranslator>,label:(value:string)=>string,fmt:(value:number)=>string){
  if(req.type==='role_count')return (req.count??1)+'× '+label(String(req.role));
- if(req.type==='affinity_count')return (req.count??1)+'× '+label(String(req.affinity))+' Affinity';
+ if(req.type==='affinity_count')return (req.count??1)+'× '+label(String(req.affinity))+' '+label('Affinity');
  if(req.type==='affinity_diversity')return (req.count??2)+'+ '+t('different Affinities');
  if(req.type==='affinity_unique')return t('All Affinities unique');
  if(req.type==='min_level')return (req.count===undefined?t('All')+' ':req.count+'× ')+t('Level {level}+',{level:req.value});
@@ -46,6 +48,8 @@ function missionRequirements(req:CompanionMissionRequirement,t:ReturnType<typeof
 }
 export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>}){
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
+ const fmt=(value:number)=>formatLocalizedNumber(language,value);
+ const missionName=(id:string,name:string)=>companionMissionDisplayName(language,id,name);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {height:windowHeight}=useWindowDimensions();
  const view=companionView(state,now);
@@ -79,14 +83,14 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
   for(const [role,count] of Object.entries(row.requiredRoles??{})){
    if(count&&!row.requirements?.some(req=>req.type==='role_count'&&req.role===role&&req.count>=count)){
     const req:CompanionMissionRequirement={type:'role_count',role:role as 'tank'|'damage'|'support',count};
-    checks.push({text:missionRequirements(req,t,label),met:companionMissionRequirementSatisfied(req,ids,view.owned)});
+    checks.push({text:missionRequirements(req,t,label,fmt),met:companionMissionRequirementSatisfied(req,ids,view.owned)});
    }
   }
-  for(const req of row.requirements??[])checks.push({text:missionRequirements(req,t,label),met:ids.length>0&&companionMissionRequirementSatisfied(req,ids,view.owned)});
+  for(const req of row.requirements??[])checks.push({text:missionRequirements(req,t,label,fmt),met:ids.length>0&&companionMissionRequirementSatisfied(req,ids,view.owned)});
   return checks;
  };
  const mandatory=mission?requirementChecks(mission,safeTeam):[];
- const bonusChecks=mission?(mission.bonusRequirements??[]).map(req=>({text:missionRequirements(req,t,label),met:safeTeam.length>0&&companionMissionRequirementSatisfied(req,safeTeam,view.owned)})):[];
+ const bonusChecks=mission?(mission.bonusRequirements??[]).map(req=>({text:missionRequirements(req,t,label,fmt),met:safeTeam.length>0&&companionMissionRequirementSatisfied(req,safeTeam,view.owned)})):[];
  const suggestion=mission?recommendedCompanionMissionTeam(state,mission.id,now):undefined;
  const check=mission?validateCompanionMissionTeam({missionId:mission.id,companionIds:safeTeam,owned:view.owned,assignments:view.assignments,equippedCompanionIds:new Set(equipped?[equipped]:[]),lockedTrialCompanionIds:new Set(trialRun?.teamCompanionIds??[]),expeditionPensLevel:pens}):{ok:false,reason:'NO_MISSION'};
  const power=companionTeamPower(safeTeam,view.owned);
@@ -117,7 +121,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
    if(row?.status==='claimed'&&row.rewardSnapshot){
      const def=COMPANION_MISSIONS.find(item=>item.id===row.missionId);
      pendingClaim.current=null;
-     setClaimedReward({name:def?.name??row.missionId,grade:row.performanceGrade,reward:row.rewardSnapshot});
+     setClaimedReward({missionId:row.missionId,name:def?.name??row.missionId,grade:row.performanceGrade,reward:row.rewardSnapshot});
    }
  },[state]);
  const start=async()=>{
@@ -155,7 +159,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
     const elapsed=now-Date.parse(row.startedAt);
     const percentage=Number.isFinite(elapsed)&&Number.isFinite(total)?Math.max(0,Math.min(100,elapsed/total*100)):0;
     return <View key={row.assignmentId} style={[s.assignment,completed&&s.claimPanel]}>
-     <View style={s.between}><View style={s.flex}><Text style={[s.eyebrow,completed&&s.good]}>{completed?t('EXPEDITION COMPLETE'):t('IN PROGRESS')}</Text><Text numberOfLines={2} style={s.itemTitle}>{def?.name??row.missionId}</Text></View>
+     <View style={s.between}><View style={s.flex}><Text style={[s.eyebrow,completed&&s.good]}>{completed?t('EXPEDITION COMPLETE'):t('IN PROGRESS')}</Text><Text numberOfLines={2} style={s.itemTitle}>{def?missionName(def.id,def.name):row.missionId}</Text></View>
       {completed?<GameButton compact title={t('Claim')} loading={busy&&pendingClaim.current===row.assignmentId} disabled={busy} onPress={()=>claim(row.assignmentId)}/>:<Text style={s.timer}>{remaining(row.endsAt,now)}</Text>}</View>
      {completed?<Text style={s.meta}>{t('Ready to claim')}</Text>:<><View style={s.progress}><View style={[s.progressFill,{width:(percentage+'%') as any}]}/></View><Text numberOfLines={1} style={s.meta}>{row.companionIds.map(id=>COMBAT_COMPANIONS.find(d=>d.id===id)?.name??id).join(' · ')}</Text></>}
     </View>;
@@ -165,16 +169,16 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
   <View style={s.filters}>{([{id:'all',title:t('All')},{id:'short',title:t('Short')+' · 2–4h'},{id:'long',title:t('Long')+' · 6h+'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:filter===option.id}} onPress={()=>setFilter(option.id)} style={({pressed})=>[s.filter,filter===option.id&&s.filterSelected,pressed&&s.pressed]}><Text style={[s.filterText,filter===option.id&&s.filterTextSelected]}>{option.title}</Text></Pressable>)}</View>
   <View style={s.missionList}>{visible.map(row=>{
    const selected=row.id===mission?.id,locked=pens<(row.minimumPenLevel??1);
-   return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected,disabled:busy}} accessibilityLabel={row.name+' · '+duration(row.durationMs)} disabled={busy} onPress={()=>selectMission(row.id)} style={({pressed})=>[s.missionRow,selected&&s.selectedMission,pressed&&s.pressed]}>
-    <View style={s.between}><Text style={[s.itemTitle,s.flex]} numberOfLines={2}>{selected?'◉  ':'○  '}{row.name}</Text><Text style={s.duration}>{duration(row.durationMs)}</Text></View>
+   return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected,disabled:busy}} accessibilityLabel={missionName(row.id,row.name)+' · '+duration(row.durationMs)} disabled={busy} onPress={()=>selectMission(row.id)} style={({pressed})=>[s.missionRow,selected&&s.selectedMission,pressed&&s.pressed]}>
+    <View style={s.between}><Text style={[s.itemTitle,s.flex]} numberOfLines={2}>{selected?'◉  ':'○  '}{missionName(row.id,row.name)}</Text><Text style={s.duration}>{duration(row.durationMs)}</Text></View>
     <View style={s.between}><Text style={s.meta}>{row.minCompanions}–{row.maxCompanions} {t('companions')} · {t('Power')} {fmt(row.recommendedPower)}</Text><Text style={[s.rewardHint,locked&&s.warning]}>{locked?t('Locked'):fmt(row.baseRewards.companionEssence)+' '+t('Essence')}</Text></View>
-    <View style={s.missionRequirementsRow}>{(row.requirements??[]).slice(0,3).map((req,index)=><Text key={index} numberOfLines={1} style={s.missionRequirementChip}>{missionRequirements(req,t,label)}</Text>)}</View>
+    <View style={s.missionRequirementsRow}>{(row.requirements??[]).slice(0,3).map((req,index)=><Text key={index} numberOfLines={1} style={s.missionRequirementChip}>{missionRequirements(req,t,label,fmt)}</Text>)}</View>
     <View style={s.between}>{cost(row)}{locked?<Text style={s.warning}>{t('Pens Lv {value0}',{value0:row.minimumPenLevel??1})}</Text>:null}</View>
    </Pressable>;
   })}</View>
   {mission?<><View style={s.headingRow}><Text style={s.sectionTitle}>{t('Prepare Expedition')}</Text><Text style={[s.status,check.ok?s.good:s.warning]}>{check.ok?'✓ '+t('Team ready'):t('Not ready')}</Text></View>
    <View style={s.prepareCard}>
-    <View style={s.between}><View style={s.flex}><Text style={s.itemTitle}>{mission.name}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {mission.minCompanions}–{mission.maxCompanions} {t('companions')}</Text></View><Text style={s.duration}>{duration(mission.durationMs)}</Text></View>
+    <View style={s.between}><View style={s.flex}><Text style={s.itemTitle}>{missionName(mission.id,mission.name)}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {mission.minCompanions}–{mission.maxCompanions} {t('companions')}</Text></View><Text style={s.duration}>{duration(mission.durationMs)}</Text></View>
     <View style={s.divider}/>
     <View style={s.between}><Text style={s.fieldTitle}>{t('Entry requirements')}</Text><Text style={[s.status,mandatory.every(req=>req.met)?s.good:s.warning]}>{t('{value0}/{value1} met',{value0:mandatory.filter(req=>req.met).length,value1:mandatory.length})}</Text></View>
     <View style={s.missionRequirementsRow}>{mandatory.map((req,index)=><Text key={index} style={[s.requirementChip,req.met?s.requirementMet:s.requirementMissing]}>{req.met?'✓ ':'○ '}{req.text}</Text>)}</View>
@@ -197,7 +201,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
     <View style={s.between}><View style={s.flex}><Text style={s.fieldTitle}>{t('Expedition Supplies')}</Text><Text style={[s.meta,foodReady?s.good:s.warning]}>{Math.min(staminaTotal,requiredStamina).toFixed(1)} / {requiredStamina} {t('Stamina')}</Text></View><GameButton compact tone="secondary" title={t('Edit Food')} disabled={busy} onPress={()=>setFoodOpen(true)}/></View>
     {!foodReady?<GameButton compact tone="secondary" title={t('Auto Select Food')} disabled={busy} onPress={()=>setFoodSelection(companionAutoStaminaSelection(state,requiredStamina).selection)}/>:null}
    </View>
-   <View style={s.prepareCard}><Text style={s.eyebrow}>{t('BASE REWARDS')}</Text>{rewards(mission)}<View style={s.materials}>{Object.entries(mission.baseRewards.materials??{}).map(([id,amount])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={19}/><Text style={s.meta}>{amount} {id.replace(/_/g,' ')}</Text></View>)}</View><View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View></View>
+   <View style={s.prepareCard}><Text style={s.eyebrow}>{t('BASE REWARDS')}</Text>{rewards(mission)}<View style={s.materials}>{Object.entries(mission.baseRewards.materials??{}).map(([id,amount])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={19}/><Text style={s.meta}>{amount} {companionMissionMaterialName(language,id)}</Text></View>)}</View><View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View></View>
    <GameButton title={busy?t('Sending…'):t('Start Expedition')+' · '+duration(mission.durationMs)} disabled={!canSend} loading={busy} onPress={()=>setConfirmOpen(true)}/>
    {!hasCapacity?<Text style={s.warning}>{capacity===0?t('Build Expedition Pens to unlock missions.'):t('All expedition slots are occupied.')}</Text>:null}
    <CompanionDisclosure title={t('Mission Details')} summary={t('Requirements')+' · '+t('Bonus Team')} icon="inventory"><View style={s.details}>
@@ -225,22 +229,22 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
    <View style={s.modalContent}><View style={s.between}><Text style={s.fieldTitle}>{t('COMPANION STAMINA')}</Text><Text style={foodReady?s.good:s.warning}>{Math.min(staminaTotal,requiredStamina).toFixed(1)} / {requiredStamina}</Text></View>
     <Text style={s.meta}>{t('Food from Inventory or Bank · Extra stamina gives no bonus.')}</Text>
     <ScrollView style={{flexShrink:1}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalScroll}>
-      {foodOptions.map(option=>{const quantity=foodSelection.find(item=>item.itemId===option.itemId)?.quantity??0;return <View key={option.itemId} style={s.foodRow}><View style={s.flex}><Text style={s.itemTitle}>{option.name}</Text><Text style={s.meta}>{option.stamina} {t('Stamina')} · {option.owned} {t('owned')}</Text></View><View style={s.stepper}><Pressable accessibilityRole="button" accessibilityLabel={t('Remove')+' '+option.name} accessibilityState={{disabled:quantity===0}} disabled={quantity===0} onPress={()=>setFoodQuantity(option.itemId,quantity-1)} style={s.stepperButton}><Text style={s.stepperText}>−</Text></Pressable><Text style={s.stepperNumber}>{quantity}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('Add')+' '+option.name} accessibilityState={{disabled:quantity>=option.owned}} disabled={quantity>=option.owned} onPress={()=>setFoodQuantity(option.itemId,quantity+1)} style={s.stepperButton}><Text style={s.stepperText}>+</Text></Pressable></View></View>})}
+      {foodOptions.map(option=>{const quantity=foodSelection.find(item=>item.itemId===option.itemId)?.quantity??0;return <View key={option.itemId} style={s.foodRow}><View style={s.flex}><Text style={s.itemTitle}>{localizedItemName(language,option.itemId)}</Text><Text style={s.meta}>{option.stamina} {t('Stamina')} · {option.owned} {t('owned')}</Text></View><View style={s.stepper}><Pressable accessibilityRole="button" accessibilityLabel={t('Remove')+' '+localizedItemName(language,option.itemId)} accessibilityState={{disabled:quantity===0}} disabled={quantity===0} onPress={()=>setFoodQuantity(option.itemId,quantity-1)} style={s.stepperButton}><Text style={s.stepperText}>−</Text></Pressable><Text style={s.stepperNumber}>{quantity}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('Add')+' '+localizedItemName(language,option.itemId)} accessibilityState={{disabled:quantity>=option.owned}} disabled={quantity>=option.owned} onPress={()=>setFoodQuantity(option.itemId,quantity+1)} style={s.stepperButton}><Text style={s.stepperText}>+</Text></Pressable></View></View>})}
       {!foodOptions.length?<Text style={s.warning}>{t('No available food. Cook food before starting an expedition.')}</Text>:null}
     </ScrollView><View style={s.modalActions}><GameButton compact tone="secondary" title={t('Clear')} disabled={busy} onPress={()=>setFoodSelection([])}/><GameButton compact tone="secondary" title={t('Auto Select Food')} disabled={busy} onPress={()=>setFoodSelection(companionAutoStaminaSelection(state,requiredStamina).selection)}/><GameButton title={t('Done')} disabled={busy} onPress={()=>setFoodOpen(false)}/></View>
    </View>
   </GameModalSurface>
   <GameModalSurface visible={confirmOpen} presentation="dialog" dismissOnBackdrop={!busy} onClose={()=>!busy&&setConfirmOpen(false)} reduceMotion={state.settings.reduceMotion}>
    <GameModalHeader title={t('Confirm Expedition')} onClose={()=>!busy&&setConfirmOpen(false)} closeDisabled={busy}/>
-   <View style={s.modalContent}><Text style={s.itemTitle}>{mission.name}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {safeTeam.length} {t('companions')} · {requiredStamina} {t('Stamina')}</Text>
+   <View style={s.modalContent}><Text style={s.itemTitle}>{missionName(mission.id,mission.name)}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {safeTeam.length} {t('companions')} · {requiredStamina} {t('Stamina')}</Text>
     {rewards(mission)}<View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View>{message?<Text accessibilityLiveRegion="polite" style={s.warning}>{companionMessage(language,message)}</Text>:null}<View style={s.modalActions}><GameButton tone="secondary" title={t('Cancel')} disabled={busy} onPress={()=>setConfirmOpen(false)}/><GameButton title={t('Start Expedition')} loading={busy} disabled={!canSend} onPress={start}/></View>
    </View>
   </GameModalSurface>
   <GameModalSurface visible={!!claimedReward} presentation="dialog" onClose={()=>setClaimedReward(null)} reduceMotion={state.settings.reduceMotion}>
    <GameModalHeader title={t('Expedition Complete')} onClose={()=>setClaimedReward(null)}/>
-   {claimedReward?<View style={s.modalContent}><Text style={s.itemTitle}>{claimedReward.name}</Text><Text style={[s.good,s.itemTitle]}>{t('Rewards Collected')}{claimedReward.grade?' · '+t('Grade')+' '+claimedReward.grade:''}</Text>
+   {claimedReward?<View style={s.modalContent}><Text style={s.itemTitle}>{missionName(claimedReward.missionId,claimedReward.name)}</Text><Text style={[s.good,s.itemTitle]}>{t('Rewards Collected')}{claimedReward.grade?' · '+t('Grade')+' '+claimedReward.grade:''}</Text>
     <View style={s.rewardWrap}><Text style={s.rewardText}>{fmt(claimedReward.reward.companionEssence)} {t('Essence')}</Text><Text style={s.rewardText}>{fmt(claimedReward.reward.companionXp)} {t('Companion XP')}</Text><Text style={s.rewardText}>{fmt(claimedReward.reward.bondXp)} {t('Bond XP')}</Text><Text style={s.rewardText}>{fmt(claimedReward.reward.gold)} {t('Gold')}</Text>{claimedReward.reward.bondstones>0?<Text style={s.rewardText}>{claimedReward.reward.bondstones} {t('Bondstones')}</Text>:null}</View>
-    {Object.entries(claimedReward.reward.materials).map(([id,quantity])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={22}/><Text style={s.value}>{quantity} {id.replace(/_/g,' ')}</Text></View>)}
+    {Object.entries(claimedReward.reward.materials).map(([id,quantity])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={22}/><Text style={s.value}>{quantity} {companionMissionMaterialName(language,id)}</Text></View>)}
     {claimedReward.reward.bonusRewardGranted?<Text style={s.good}>{t('✓ Bonus reward received')}</Text>:null}
     <GameButton title={t('Continue')} onPress={()=>setClaimedReward(null)}/></View>:null}
   </GameModalSurface>

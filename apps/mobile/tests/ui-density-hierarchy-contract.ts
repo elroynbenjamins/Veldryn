@@ -363,7 +363,7 @@ ok(account.includes("items:['Activity','Profile','NewUnlocks','AdventurersJourna
 ok(account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']}")&&!account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings','WorldMilestones']"),"World Milestones button is hidden from Account Social & Competition until re-enabled");
 ok(mobileRouter.includes("RANKINGS_RELEASED&&tab==='Rankings'")&&!mobileRouter.includes("tab==='Achievements'&&"),"Unfinished Achievements and Rankings must remain release-gated");
 const rewardsScreen=read('src/screens/RewardsInboxScreen.tsx');
-ok(rewardsScreen.includes("accountText(language,text,params)")&&rewardsScreen.includes("label={a('Claim reward')}")&&rewardsScreen.includes("a('Claimed history')"),"Rewards Inbox must translate claims, tabs and feedback");
+ok(rewardsScreen.includes("recentScreenText(language,text,params)")&&rewardsScreen.includes("label={a('Claim reward')}")&&rewardsScreen.includes("a('Claimed history')"),"Rewards Inbox must translate claims, tabs and feedback");
 
 
 

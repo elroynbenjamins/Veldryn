@@ -889,6 +889,13 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
   const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
+  // Carry fractional per-kill rewards across claims of the same hunt clock.
+  // Without this, two offline claims can floor the same earned XP/Gold twice.
+  const xpFractionKey='combat:base-xp-fraction',goldFractionKey='combat:base-gold-fraction';
+  const storedFraction=(key:string)=>{const value=state.rewardRemainders?.[key];return typeof value==='number'&&Number.isFinite(value)?Math.max(0,Math.min(.999999999,value)):0;};
+  const rawBaseXp=sim.kills*baseXpPerKill+storedFraction(xpFractionKey),rawBaseGold=sim.kills*baseGoldPerKill+storedFraction(goldFractionKey);
+  const earnedBaseXp=Math.floor(rawBaseXp+1e-9),earnedBaseGold=Math.floor(rawBaseGold+1e-9);
+  const nextXpFraction=Math.max(0,Math.min(.999999999,rawBaseXp-earnedBaseXp)),nextGoldFraction=Math.max(0,Math.min(.999999999,rawBaseGold-earnedBaseGold));
   const explorationSkill=state.skills.find(skill=>skill.skillId==='exploration');
   const explorationRaw=sim.kills*Math.max(1,Math.ceil(m.level/12));
   const explorationRemainderKey='combat:passive-exploration-xp-tenths';
@@ -899,7 +906,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   let momentumXp=0;
   for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
   const momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,foodConsumedById:sim.foodConsumedById,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder,[xpFractionKey]:nextXpFraction,[goldFractionKey]:nextGoldFraction},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:earnedBaseXp+momentumXp+champion.xp,gold:earnedBaseGold+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,foodConsumedById:sim.foodConsumedById,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){

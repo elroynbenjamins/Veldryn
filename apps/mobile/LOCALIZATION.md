@@ -1,5 +1,20 @@
 # Localization status
 
+## November 14, 2026: Russian authored Companion combat skills and Trial names
+
+- Localized **38 Combat Companion active ability names, 38 Bond traits, 58 authored technique names, 22 Trial attack/phase names, and 16 authored combat descriptions** that previously used English in Russian display paths.
+- Retained the original companion's proper name and translated only the generic `Signature` label for 12 legacy companion battle-replay abilities.
+- All active/Bond names require immutable companion ID and exact original source text; custom techniques are restricted to known companion-technique IDs. Unknown/player/server-renamed copy stays unchanged. German and other languages are unaffected.
+- Added regression coverage for source parity, other-locale isolation, Trial UI wiring and source-drift fallbacks; this is a dynamic-content extension beyond the source-catalog coverage percentage.
+
+## November 14, 2026: Russian localization release validation and dynamic Sanctuary names
+
+- Fixed a stale Turkish regression expectation for `Secured`: Russian now correctly translates it to `Защищено`, and Turkish/German locale separation remains unchanged.
+- Translated two new Forge labels, `Keep best {count}` and `Per equipment type`, found in the expanded authored gameplay catalog. The authored Russian source inventory now covers all nontechnical player-facing source keys on this branch; the existing server identifiers and canonical names remain unchanged.
+- Added source-guarded Russian display names for **all 17 Sanctuary Expedition missions**, plus the two expedition-only material labels (`SUPPLIES` and `TRIAL_SANCTUARY_MATERIAL`). Unknown or renamed mission text remains verbatim.
+- Kept the live Sanctuary UI's existing shared name/material helper; German outputs and all other locales remain isolated. Added the focused Russian mission regression to the complete localization CI suite.
+- This documents source coverage and static wiring only. Native-speaker proofreading and Android small-screen verification remain necessary before claiming all Russian copy is polished.
+
 ## November 14, 2026: German Guild Skills and upgrade guidance
 
 - Localized all **three Guild Skill branches** and **nine authored Guild Skill nodes** (names, scopes, descriptions and effect labels). Node IDs and all server-owned values remain canonical.

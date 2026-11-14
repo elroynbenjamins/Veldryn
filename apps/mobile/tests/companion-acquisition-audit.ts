@@ -3,7 +3,8 @@ import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,combatCompanionDef} from '../src
 import {EVENT_COMPANIONS} from '../src/content/event-companions-v2';
 import {GUILD_COMBAT_COMPANIONS} from '../src/content/guild-companions-v1';
 import {MONSTERS} from '../src/content/monsters';
-import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks} from '../src/core/combat-companions';
+import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks,companionCanRecruitFromRequirements,recruitEligibleCombatCompanion,starterCombatCompanionChoicePending,chooseStarterCombatCompanion} from '../src/core/combat-companions';
+import {validateGameCommand} from '../src/core/game-commands';
 import {companionRequirementProgress} from '../src/core/companion-presentation';
 import {classCombatSkillTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES} from '../../../backend/src/server/companions/content';
@@ -50,7 +51,28 @@ for(const [req,label] of [[knifeRequirement,'Knife Dancer skill total'],[trollRe
  ok(companionUnlockRequirementMet(main,req),'Inactive character should satisfy '+label);
  ok(companionRequirementProgress(main,req).complete,'Index should show completed '+label);
 }
+// The manual recovery action must re-evaluate authoritative progress, not
+// accept the client Index's percentage or an arbitrary companion ID.
+ok(validateGameCommand({type:'companion_recruit',args:{id:'UNIT_004'}}).type==='companion_recruit','Recruit command must be accepted by the command validator');
+ok(companionCanRecruitFromRequirements(combatCompanionDef('UNIT_004')!),'Normal progression companion should be recruitable');
+const recruited=recruitEligibleCombatCompanion(main,'UNIT_004',1000);
+ok(recruited.account.unlockedCombatCompanionIds?.includes('UNIT_004'),'Completed requirements must grant permanent ownership');
+ok(recruitEligibleCombatCompanion(recruited,'UNIT_004',1001).account.unlockedCombatCompanionIds?.filter(id=>id==='UNIT_004').length===1,'Recruit retry must not duplicate an owned companion');
+const reject=(state:typeof main,id:string)=>{try{recruitEligibleCombatCompanion(state,id,1000);return false;}catch{return true;}};
+ok(reject(createCharacter(newGame(0),'IRONWARDEN','Not Ready'),'UNIT_004'),'Ineligible companion must not be granted');
+ok(reject(main,'UNIT_001'),'Starter choice cannot bypass the initial recruitment choice');
+ok(reject(main,GUILD_COMBAT_COMPANIONS[0].id),'Guild shop rewards cannot be granted via recruitment');
+ok(reject(main,EVENT_COMPANIONS[0].id),'Event rewards cannot be granted via recruitment');
+
+// Account-wide starter entitlement must be honoured when the story milestone
+// belongs to an inactive character after a roster switch.
+const questProof={questId:'QST_005',status:'claimed' as const};
+const rosterReady={...main,quests:main.quests.filter(q=>q.questId!=='QST_005'),otherCharacters:(main.otherCharacters??[]).map(row=>({...row,quests:[...row.quests.filter(q=>q.questId!=='QST_005'),questProof]}))};
+ok(starterCombatCompanionChoicePending(rosterReady),'Completed quest on the inactive character must offer starter selection');
+const starter=chooseStarterCombatCompanion(rosterReady,'UNIT_001',1000);
+ok(starter.account.starterCombatCompanionId==='UNIT_001'&&starter.account.unlockedCombatCompanionIds?.includes('UNIT_001'),'Starter choice must work using inactive character quest proof');
+
 main=reconcileCombatCompanionUnlocks(main,1000);
 ok(main.account.unlockedCombatCompanionIds?.includes('UNIT_007'),'Gloamknife Shade should recruit from the account roster');
 ok(main.account.unlockedCombatCompanionIds?.includes('UNIT_004'),'Briarhorn Cub should recruit from the account roster');
-console.log('PASS: all 38 companion definitions have valid unlock sources and inactive character progress is honored');
+console.log('PASS: companion definitions, roster-wide proof, eligible recruit retry, and reward-source gates');

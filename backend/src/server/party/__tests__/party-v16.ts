@@ -5,6 +5,7 @@ import {
   joinPersistentParty,
   leavePersistentParty,
   persistentPartyCanExistWithCurrentRoles,
+  persistentPartyRoleForClass,
   switchPersistentPartyCharacter,
   type PersistentPartyState,
 } from '../../social/party';
@@ -116,7 +117,7 @@ assert(disbanded.disbanded&&!canAccessPersistentPartyChat(disbanded.state,'a1'),
 
 // A second character changes the active fighter, not the account's Party slot.
 const switchedLeader = switchPersistentPartyCharacter(party, {
-  accountId: 'a1', characterId: 'c1-alt', role: 'support',
+  accountId: 'a1', characterId: 'c1-alt', classId: 'DAWNKEEPER',
   ownedCharacterIds: ['c1', 'c1-alt'],
 });
 assert(switchedLeader.leaderAccountId === 'a1' && switchedLeader.leaderCharacterId === 'c1-alt',
@@ -128,7 +129,7 @@ assert(switchedLeader.members[0].role === 'support'
   && !evaluateLiveDungeonComposition(switchedLeader.members).valid,
   'switch recomputes role and cannot bypass exact dungeon composition');
 const switchedMember = switchPersistentPartyCharacter(party, {
-  accountId: 'a2', characterId: 'c2-alt', role: 'damage',
+  accountId: 'a2', characterId: 'c2-alt', classId: 'KNIFE_DANCER',
   ownedCharacterIds: ['c2', 'c2-alt'],
 });
 assert(switchedMember.leaderCharacterId === 'c1'
@@ -142,11 +143,23 @@ function switchRejected(input: Parameters<typeof switchPersistentPartyCharacter>
   }
   assert(caught, `switch must reject ${reason}`);
 }
-switchRejected({accountId: 'a2', characterId: 'c3', role: 'damage',
+switchRejected({accountId: 'a2', characterId: 'c3', classId: 'KNIFE_DANCER',
   ownedCharacterIds: ['c2']}, 'party_character_not_owned');
-switchRejected({accountId: 'a2', characterId: 'c2-alt', role: 'damage',
+switchRejected({accountId: 'a2', characterId: 'c2-alt', classId: 'KNIFE_DANCER',
   ownedCharacterIds: ['c2-alt'], activityLocked: true}, 'party_character_switch_activity_locked');
-switchRejected({accountId: 'outsider', characterId: 'c-out', role: 'tank',
+switchRejected({accountId: 'outsider', characterId: 'c-out', classId: 'IRONWARDEN',
   ownedCharacterIds: ['c-out']}, 'party_member_not_found');
-switchRejected({accountId: 'a2', characterId: 'c3', role: 'damage',
+switchRejected({accountId: 'a2', characterId: 'c3', classId: 'KNIFE_DANCER',
   ownedCharacterIds: ['c2', 'c3']}, 'party_duplicate_character');
+
+assert(persistentPartyRoleForClass('IRONWARDEN') === 'tank'
+  && persistentPartyRoleForClass('DAWNKEEPER') === 'support'
+  && persistentPartyRoleForClass('KNIFE_DANCER') === 'damage',
+  'class roles are derived from the selected character rather than UI-provided role');
+const noChange = switchPersistentPartyCharacter(party, {
+  accountId: 'a1', characterId: 'c1', classId: 'KNIFE_DANCER',
+  ownedCharacterIds: ['c1'],
+});
+assert(noChange === party, 'switching to the same fighter and role avoids a needless roster update');
+switchRejected({accountId: 'a2', characterId: 'c2-alt', classId: 'UNKNOWN',
+  ownedCharacterIds: ['c2', 'c2-alt']}, 'party_unknown_character_class');

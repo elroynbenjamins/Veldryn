@@ -67,6 +67,7 @@ for(let tick=0;tick<=halfSecondSteps;tick++){
  assert.ok(Math.abs(direct.playerHp-incremental.playerHp)<1e-5,'incremental combat must keep exact HP parity');
  assert.ok(Math.abs(direct.enemyHp-incremental.enemyHp)<1e-5,'incremental combat must keep enemy HP parity');
  assert.equal(direct.stoppedReason,incremental.stoppedReason,'incremental combat stop must remain deterministic');
+ assert.equal(JSON.stringify(direct.lastSkillEffects??[]),JSON.stringify(incremental.lastSkillEffects??[]),'incremental and full combat must record identical real skill events');
  assert.ok(Math.abs(direct.progressFraction-incremental.progressFraction)<1e-7,'incremental combat phase must stay synced');
  cursor=incremental.cursor;
 }
@@ -76,6 +77,7 @@ ravager.activity={kind:'combat',targetId:REGIONAL_COMBAT_FIXTURES[4].monsterId,c
 const recovered=activeCombatHitProjection(ravager,T+5*60_000)!;
 assert.equal(recovered.lastSkillEffect?.name,'Bloodrush','Ravager should expose its actual earned recovery after completing a hunt');
 assert.equal(recovered.lastSkillEffect?.kind,'recovery');
+assert.ok((recovered.lastSkillEffects??[]).some(effect=>effect.name==='Bloodrush'&&effect.kind==='recovery'),'Bloodrush must coexist with other class and companion cues');
 assert.ok((recovered.lastSkillEffect?.atMs??0)<=T+5*60_000,'recovery must not precede its actual settlement');
 const wayfinder=regionalCombatFixture(REGIONAL_COMBAT_FIXTURES[4],'prepared','WAYFINDER');
 wayfinder.activity={kind:'combat',targetId:REGIONAL_COMBAT_FIXTURES[4].monsterId,combatTacticId:'balanced',startedAtMs:T,lastClaimAtMs:T};

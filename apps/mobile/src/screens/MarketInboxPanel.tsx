@@ -108,9 +108,11 @@ export function MarketInboxPanel({state,online,onRefresh}:{
           <SocialActionButton primary={row.assetKind!=='equipment'} label={a('Claim to Inventory')}
             disabled={busy||!online||row.assetKind==='equipment'&&!state.character?.id}
             busy={busy} onPress={()=>void claim(row,'inventory')}/>
-          <SocialActionButton label={a('Bank')} busy={busy}
-            disabled={busy||!online||row.assetKind==='equipment'&&!state.character?.id}
-            onPress={()=>void claim(row,'bank')}/>
+          {row.assetKind==='equipment'&&row.kind==='purchased'
+            ?<Text style={s.muted}>{a('Purchased equipment cannot enter the shared bank yet.')}</Text>
+            :<SocialActionButton label={a('Bank')} busy={busy}
+              disabled={busy||!online||row.assetKind==='equipment'&&!state.character?.id}
+              onPress={()=>void claim(row,'bank')}/>
           {row.assetKind==='gem'?<SocialActionButton label={a('Gem Pouch')} busy={busy}
             disabled={busy||!online} onPress={()=>void claim(row,'gem_pouch')}/>:null}
         </View>:null}

@@ -43,6 +43,7 @@ for(let i=0;i<periods.length;i++){
  second=claimSeasonalContract(second,period,quest.id,now);
 }
 check(second.character?.personalSeasonal?.claimIds.length===3,'Second character must claim independently');
+check(second.account.personalSeasonalClaimLedger?.[ids[0]]?.length===2,'Account must retain the two legitimate character claim receipts');
 const firstReturn=switchAccountCharacter(second,firstId,now);
 check(firstReturn.character?.personalSeasonal?.claimIds.length===3,'First character must keep all receipts after switching back');
 check(firstReturn.account.seasonalContractClaimIds?.length===3,'Account projection must return to first character');
@@ -61,4 +62,9 @@ check(migrated.character?.personalSeasonal?.claimIds.includes('DAILY_2026-11-14_
 check(!switchAccountCharacter(migrated,secondId,now).account.seasonalContractClaimIds?.includes('DAILY_2026-11-14_0'),'Legacy claims must not overwrite another character');
 const deleted=deleteAccountCharacter(firstReturn,secondId,'DELETE Second',now);
 check(deleted.character?.id===firstId&&deleted.character?.personalSeasonal?.claimIds.length===3,'Deleting an alt cannot remove the active character quest receipts');
+check(deleted.account.personalSeasonalClaimLedger?.[ids[0]]?.length===2,'Deleting an alt must not erase anti-farming receipts');
+const replacement=earned(createAccountCharacter(deleted,'STONECALLER','Replacement','male',now));
+let farmBlocked=false;
+try{claimSeasonalContract(replacement,'daily',ids[0],now);}catch(e){farmBlocked=e instanceof Error&&e.message.includes('claim limit');}
+check(farmBlocked,'Deleting and recreating an alt must not farm the same daily objective again');
 console.log('PASS: per-character daily/weekly/monthly progress, independent claims, roster switches, normalization, migration and deletion');

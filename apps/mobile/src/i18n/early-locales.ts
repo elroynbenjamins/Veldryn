@@ -1,6 +1,7 @@
 import type {Language} from './languages';
 import {TURKISH_COVERAGE} from './turkish-coverage';
 import {RUSSIAN_FOCUS_ROWS} from './russian-focus';
+import {RUSSIAN_CONTINUATION_ROWS} from './russian-continuation';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
@@ -2558,6 +2559,8 @@ export function earlyLocaleText(language:Language,source:string):string|undefine
   if(language!=='ru'&&language!=='tr')return undefined;
   if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FOCUS_ROWS,source))
     return RUSSIAN_FOCUS_ROWS[source as keyof typeof RUSSIAN_FOCUS_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_CONTINUATION_ROWS,source))
+    return RUSSIAN_CONTINUATION_ROWS[source as keyof typeof RUSSIAN_CONTINUATION_ROWS];
   const row=Object.prototype.hasOwnProperty.call(EARLY_LOCALE_ROWS,source)
     ? EARLY_LOCALE_ROWS[source as keyof typeof EARLY_LOCALE_ROWS]:undefined;
   return row?.[language==='ru'?0:1]??(language==='tr'?TURKISH_COVERAGE[source as keyof typeof TURKISH_COVERAGE]:undefined);

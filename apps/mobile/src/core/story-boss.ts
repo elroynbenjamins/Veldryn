@@ -150,7 +150,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
           ?classId==='WAYFINDER'?.025:classId==='RAVAGER'?.045:classId==='HEXWEAVER'?.020:.025:0;
         const markedBonus=hexMarkPending?.02:0;
         const rolledAmount=Math.max(1,Math.round(base*variance*player.damageMultiplier*bossWard*
-          (critical?player.critMultiplier:1)*(1+bonus*classScale+markedBonus)));
+          (critical?player.critMultiplier:1)*(1+Math.min(.05,bonus*classScale)+markedBonus)));
         let nextBossHp=Math.max(0,bossHp-rolledAmount);
         if(mode==='story'&&phase===1&&nextBossHp<=bossMaxHp*.65)nextBossHp=Math.max(1,Math.ceil(bossMaxHp*.65));
         else if(mode==='story'&&phase===2&&nextBossHp<=bossMaxHp*.30)nextBossHp=Math.max(1,Math.ceil(bossMaxHp*.30));
@@ -215,7 +215,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
         const restorationPct=classId==='DAWNKEEPER'?.12:classId==='DREADGUARD'?.3:classId==='STONECALLER'?.2:0;
         const restorationBase=classId==='DAWNKEEPER'?amount:prevented;
         if(playerHp>0&&restorationPct>0){
-          const healBudget=Math.floor(restorationBase*restorationPct*classScale);
+          const healBudget=Math.floor(restorationBase*(classId==='DAWNKEEPER'?Math.min(.15,restorationPct*classScale):restorationPct*classScale));
           restored=Math.max(0,Math.min(playerMaxHp-playerHp,healBudget));
           if(restored>0)playerHp+=restored;
         }

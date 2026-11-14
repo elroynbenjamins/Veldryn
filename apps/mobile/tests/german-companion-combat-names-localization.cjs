@@ -11,14 +11,15 @@ require.extensions['.ts']=function(mod,filename){
  mod._compile(out,filename);
 };
 const {
- germanCompanionCombatNames,germanCompanionTechniqueNames,germanCompanionCombatDescriptions,germanCompanionLegacySignatures,
- companionCombatAbilityName,companionCombatBondName,companionTechniqueName,companionCombatDescriptionText,
+ germanCompanionCombatNames,germanCompanionTechniqueNames,germanCompanionCombatDescriptions,germanCompanionLegacySignatures,germanCompanionTrialAbilities,
+ companionCombatAbilityName,companionCombatBondName,companionTechniqueName,companionCombatDescriptionText,companionTrialAbilityName,
 }=require('../src/i18n/companion-combat-names-de.ts');
 const source=path=>fs.readFileSync(path,'utf8');
 const core=source(path.join(app,'src/content/combat-companions.ts'));
 const event=source(path.join(app,'src/content/event-companions-v2.ts'));
 const guild=source(path.join(app,'src/content/guild-companions-v1.ts'));
 const backend=source(path.join(root,'backend/src/server/companions/content.ts'));
+const trialSource=source(path.join(root,'backend/src/server/companions/trials.ts'));
 const aster=core.slice(core.indexOf('const ASTERFALL_COMPANIONS:'),core.indexOf('const REGIONAL_ASCENSION_MATERIALS'));
 const asterRows=[...aster.matchAll(/\{id:'(UNIT_\d+)'[\s\S]*?activeAbility:ability\('([^']+)',(?:"([^"]+)"|'([^']+)')[\s\S]*?bondTrait:trait\('([^']+)',(?:"([^"]+)"|'([^']+)')/g)]
  .map(m=>({id:m[1],active:m[3]||m[4],bond:m[6]||m[7]}));
@@ -87,6 +88,19 @@ for(const name of names){
 }
 assert.equal(companionTechniqueName('de','UNKNOWN_ID','Venom Ambush'),'Venom Ambush');
 assert.equal(companionTechniqueName('de','UNIT_013_EXECUTIONER','Unknown server technique $&'),'Unknown server technique $&');
+
+const trialNames=Object.entries(germanCompanionTrialAbilities);
+assert.equal(trialNames.length,22,'Expected 22 authored Trial ability and phase names');
+for(const [english,german] of trialNames){
+ assert.ok(trialSource.includes('name:\''+english+'\'')||trialSource.includes('name:"'+english+'"'),
+  'Trial enemy ability or phase changed: '+english);
+ assert.ok(german.length>4&&german!==english,'Untranslated Trial ability: '+english);
+ assert.equal(companionTrialAbilityName('de',english),german);
+ for(const language of ['en','es','nl','it','fr','ru','tr'])
+  assert.equal(companionTrialAbilityName(language,english),english);
+}
+assert.equal(companionTrialAbilityName('de','Unknown server boss spell const components={'),'Unknown server boss spell const components={');
+
 const components={
  training:source(path.join(app,'src/components/CompanionTrainingV50Panel.tsx')),
  codex:source(path.join(app,'src/components/CombatCompanionPanel.tsx')),
@@ -101,11 +115,13 @@ const markers={
  codex:[
   'summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}',
   '{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>',
+  'companionTrialAbilityName(language,phase.name)',
+  'phase.effects.map(effect=>companionContent(language,effect))',
  ],
- trials:['companionCombatAbilityName(language,def.id,def.activeAbility.name)',"companionCombatAbilityName(language,event.actorId??'',playback.abilityNames[event.abilityId??'']",'companionCombatAbilityName(language,unit.id,unit.casting)','Math.round(unit.hp).toLocaleString(language)'],
+ trials:['companionCombatAbilityName(language,def.id,def.activeAbility.name)',"companionCombatAbilityName(language,event.actorId??'',playback.abilityNames[event.abilityId??'']",'companionCombatAbilityName(language,unit.id,unit.casting)','companionTrialAbilityName(language,ability.name)','Math.round(unit.hp).toLocaleString(language)'],
 };
 for(const [component,needed] of Object.entries(markers)){
  for(const marker of needed)
   assert.ok(components[component].includes(marker),component+' lost German combat name integration: '+marker);
 }
-console.log('PASS: 38 German companion active abilities and Bond traits, 58 techniques, 12 replay signatures, 16 missing combat descriptions and battle presentation wiring');
+console.log('PASS: 38 German companion active abilities and Bond traits, 58 techniques, 12 replay signatures, 16 missing descriptions, 22 Trial enemy abilities/phases and battle presentation wiring');

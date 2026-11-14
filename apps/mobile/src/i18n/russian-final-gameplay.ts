@@ -119,7 +119,7 @@ export const RUSSIAN_FINAL_GAMEPLAY_ROWS = {
   "Base gear is enough for normal progression. Improve it for bosses, faster clears, and safer AFK combat.": "Для обычного прогресса достаточно базового снаряжения. Улучшайте его ради боссов, быстрых побед и безопасного АФК-боя.",
   "A failed tempering consumes its cost but protects your rank. Each miss adds 2% success chance, up to 10%. A newer tier remains stronger than a fully improved older piece.": "Неудачная закалка расходует материалы, но сохраняет ранг. Каждая неудача прибавляет 2% к шансу успеха, максимум 10%. Новый ранг снаряжения остаётся сильнее полностью улучшенного старого.",
   "FINAL IMPROVEMENT": "ПОСЛЕДНЕЕ УЛУЧШЕНИЕ",
-  "Rare discovery · {name}": "Редкая находка · {name}"
+  "Rare discovery · {name}": "Редкая находка · {name}",
   "Keep best {count}": "Оставить лучшие: {count}",
   "Per equipment type": "Для каждого типа снаряжения",
 } as const satisfies Record<string,string>;

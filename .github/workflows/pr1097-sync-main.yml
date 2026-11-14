@@ -1,0 +1,50 @@
+name: Integrate current main and refresh PR 1097 gameplay bundle
+
+# One-time branch-only verification step. Does not deploy to production.
+on:
+  push:
+    branches:
+      - feature/combat-skill-activation-feedback-20261114
+    paths:
+      - '.github/workflows/pr1097-sync-main.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Merge latest main into the PR branch without touching main
+        run: |
+          test "$GITHUB_REF_NAME" = 'feature/combat-skill-activation-feedback-20261114'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Install latest merged dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Build and verify generated gameplay and coop Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles and push the feature branch only
+        run: |
+          test "$GITHUB_REF_NAME" = 'feature/combat-skill-activation-feedback-20261114'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'build: align generated Edge bundles with merged combat engine'
+          fi
+          git push origin 'HEAD:refs/heads/feature/combat-skill-activation-feedback-20261114'

@@ -4,6 +4,14 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Guild Skills and upgrade guidance
+
+- Localized all **three Guild Skill branches** and **nine authored Guild Skill nodes** (names, scopes, descriptions and effect labels). Node IDs and all server-owned values remain canonical.
+- Localized Guild Skill overview, active effects, rank comparison, bank costs, warning copy, unreleased-state guidance and the **second-step upgrade confirmation modal**, including accessibility labels.
+- Localized the live Guild Skills panel's loading/update prompts, guild permissions, upgrade errors and success messages; the result notice color now depends on explicit success state rather than English substrings.
+- Kept English and other non-German locales unchanged by applying exact-source translations only when the active language is German. Server-verified rank values, Guild Bank material counts, permissions, idempotency keys and upgrade requests are unmodified.
+- Registered a focused regression check for the 9-node skill catalog, authored UI messages, localization wiring and the upgrade safety boundaries. CI and handset layout checks remain necessary.
+
 ## November 14, 2026: German Sunscar special encounters
 
 - Localized **five** authored optional Sunscar encounters (name and gameplay summary), and added German-only labels for gem grade, pity guarantee, cooldown/daily limits, combat and replay cues, reward outcomes and accessibility hints.

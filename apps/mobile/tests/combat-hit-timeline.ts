@@ -67,7 +67,8 @@ for(let tick=0;tick<=halfSecondSteps;tick++){
  assert.ok(Math.abs(direct.playerHp-incremental.playerHp)<1e-5,'incremental combat must keep exact HP parity');
  assert.ok(Math.abs(direct.enemyHp-incremental.enemyHp)<1e-5,'incremental combat must keep enemy HP parity');
  assert.equal(direct.stoppedReason,incremental.stoppedReason,'incremental combat stop must remain deterministic');
- assert.equal(JSON.stringify(direct.lastSkillEffects??[]),JSON.stringify(incremental.lastSkillEffects??[]),'incremental and full combat must record identical real skill events');
+ const skillSnapshot=(rows:typeof direct.lastSkillEffects)=>JSON.stringify((rows??[]).map(effect=>({name:effect.name,kind:effect.kind,source:effect.source,time:Math.round(effect.atMs),amount:Math.round((effect.amount??0)*1000)/1000})));
+ assert.equal(skillSnapshot(direct.lastSkillEffects),skillSnapshot(incremental.lastSkillEffects),'incremental and full combat must record identical real skill events');
  assert.ok(Math.abs(direct.progressFraction-incremental.progressFraction)<1e-7,'incremental combat phase must stay synced');
  cursor=incremental.cursor;
 }

@@ -1,5 +1,13 @@
 # Localization status
 
+## November 14, 2026: Russian Guild, Party, Account and gameplay continuation
+
+- Added **376** new exact-source Russian UI translations, increasing authored coverage from **5,570 / 7,228 (77.1%)** to **5,946 / 7,228 (82.3%)**; **1,282** authored strings remain English fallback.
+- Covered Account error and daily-claim states, Help & Game Guide, Guild discovery/management/projects, Party invitations/contracts, player reports, equipment actions, Gem Codex/refinement, saved loadouts, boss/region labels, and combat/profile descriptions.
+- Added `russian-continuation.ts`, wired its entries into the shared RU translator and expanded localization regression assertions; existing Russian, Turkish and other locale entries remain intact.
+- Audited all added keys against the 10 authored source catalogs: no missing keys, blank values, starter overlaps, or placeholder mismatches. Full app CI, native-language review and narrow-screen testing remain pending.
+
+
 Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`), Italian (`it`), French (`fr`), Russian (`ru`), and Turkish (`tr`).
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.

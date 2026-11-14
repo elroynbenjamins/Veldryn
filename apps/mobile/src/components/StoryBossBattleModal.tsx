@@ -35,17 +35,17 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
   const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current,phasePulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
     let lastTick=Date.now();
-    setPlayhead(session?Math.min(battle.durationMs,Math.max(0,lastTick-session.startedAtMs)):0);
+    setPlayhead(manual&&session?Math.min(battle.durationMs,Math.max(0,lastTick-session.startedAtMs)):0);
     const id=setInterval(()=>{
       const now=Date.now(),delta=Math.max(0,Math.min(250,now-lastTick));lastTick=now;
       // Live fights advance on the server's wall clock; a backgrounded app
       // must not freeze or replay time and allow a late healing command.
-      if(session){setPlayhead(Math.min(battle.durationMs,Math.max(0,now-session.startedAtMs)));return;}
+      if(manual&&session){setPlayhead(Math.min(battle.durationMs,Math.max(0,now-session.startedAtMs)));return;}
       if(AppState.currentState!=='background'&&AppState.currentState!=='inactive')
         setPlayhead(previous=>Math.min(battle.durationMs,previous+delta*simPerRealMs));
     },80);
     return()=>clearInterval(id);
-  },[battle.durationMs,simPerRealMs,session?.startedAtMs]);
+  },[battle.durationMs,simPerRealMs,manual,session?.startedAtMs]);
   // Retroactive telegraphs retain their labels, but must never reveal HP from
   // an attack that has not yet appeared in the on-screen replay.
   const playbackEvents=useMemo(()=>storyBossPlaybackEvents(battle),[battle]);
@@ -141,10 +141,6 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
           <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>{state.character?.name?.toUpperCase()??gt("PLAYER")}</Text><Text style={s.barValue}>{displayStat(playerHp).toLocaleString()} / {displayStat(battle.playerMaxHp).toLocaleString()}</Text></View><View style={s.track}><View style={[s.playerFill,{width:`${pct(playerHp,battle.playerMaxHp)}%` as `${number}%`}]}/></View></View>
         </View>
 
-        {manual&&!finished?<View style={s.healRow}>
-          <GameButton compact title={'HEAL NOW · '+potionRemaining+' left'} onPress={()=>onHeal?.()} disabled={potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0}/>
-          <Text style={s.healHint}>{cooldownRemaining>0?'Cooldown '+(cooldownRemaining/1000).toFixed(1)+'s':'Restores '+Math.round(session?.snapshot.potionHeal??0)+' HP · manual'}</Text>
-        </View>:null}
         <View style={s.log}>
           <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{potionsUsedSoFar>0?`${potionsUsedSoFar} ${potionsUsedSoFar===1?'potion':'potions'} used · `:''}{phasesReachedSoFar}/3 phases</Text></View>
           {recent.length?recent.map((event,index)=>{
@@ -158,13 +154,19 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
 
         {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{manual?'Confirm to settle this battle and its rewards on the server.':gl(message)}</Text></View>:null}
 
-        <View style={s.actions}>{finished?<GameButton title={manual?'Confirm result':gt("Continue")} onPress={manual&&onFinish?onFinish:onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>
+        {!manual?<View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>:null}
       </ScrollView>
+      {manual?<View style={s.fixedHealFooter}>
+        {finished?<GameButton title="Confirm result" onPress={onFinish!}/>:<View style={s.healRow}>
+          <GameButton compact title={'HEAL NOW · '+potionRemaining+' left'} onPress={()=>onHeal?.()} disabled={potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0}/>
+          <Text style={s.healHint}>{cooldownRemaining>0?'Cooldown '+(cooldownRemaining/1000).toFixed(1)+'s':'Restores '+Math.round(session?.snapshot.potionHeal??0)+' HP · manual'}</Text>
+        </View>}
+      </View>:null}
   </GameModalSurface>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  modal:{maxHeight:'94%',overflow:'hidden',padding:0,borderColor:C.lineStrong,backgroundColor:C.bg},scroll:{maxHeight:'100%'},modalContent:{gap:10,padding:12},
+  modal:{maxHeight:'94%',overflow:'hidden',padding:0,borderColor:C.lineStrong,backgroundColor:C.bg},scroll:{flexShrink:1,maxHeight:'100%'},modalContent:{gap:10,padding:12},
   top:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   kicker:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},title:{...typography.hero,color:C.text},
   phaseBadge:{paddingHorizontal:9,paddingVertical:5,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},phaseDanger:{borderColor:C.bad,backgroundColor:C.badSurface},phaseText:{fontSize:9,color:C.text,fontWeight:'900',letterSpacing:.7},
@@ -177,6 +179,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   bars:{gap:7},barBlock:{gap:3},barHead:{flexDirection:'row',justifyContent:'space-between',gap:8},barLabel:{fontSize:9,color:C.text,fontWeight:'900',letterSpacing:.6},barValue:{fontSize:9,color:C.muted,fontWeight:'800',fontVariant:['tabular-nums']},track:{height:8,overflow:'hidden',borderRadius:99,backgroundColor:C.panel2},bossFill:{height:'100%',backgroundColor:C.bad},playerFill:{height:'100%',backgroundColor:C.good},
   log:{gap:4,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},logHead:{flexDirection:'row',justifyContent:'space-between',gap:8},logTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.7},logMeta:{fontSize:9,color:C.muted,fontWeight:'800'},logRow:{flexDirection:'row',gap:8},logTime:{width:34,fontSize:9,color:C.muted,fontVariant:['tabular-nums']},logText:{flex:1,fontSize:10,color:C.text,fontWeight:'700'},warn:{color:C.warning},phaseLog:{color:C.info,fontWeight:'900'},critLog:{color:C.warning,fontWeight:'900'},
   result:{gap:4,padding:9,borderLeftWidth:4,borderRadius:radii.sm},win:{borderLeftColor:C.good,backgroundColor:C.goodSurface},loss:{borderLeftColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.title,color:C.text},resultCopy:{...typography.body,color:C.text},
+  fixedHealFooter:{padding:8,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.bg},
   healRow:{flexDirection:'row',alignItems:'center',gap:10,padding:7,borderWidth:1,borderColor:C.good,borderRadius:radii.sm,backgroundColor:C.goodSurface},healHint:{flex:1,fontSize:10,color:C.text},
   actions:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10},live:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:1.2},
 });}

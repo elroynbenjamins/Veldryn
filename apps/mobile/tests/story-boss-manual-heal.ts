@@ -18,7 +18,7 @@ state.character!.currentHp=Math.round(effectiveStats(state).hp*.5);
 state.character!.equippedHealingPotionId='RIVERHEART_DRAUGHT';
 state.inventory.stacks=state.inventory.stacks.filter(x=>x.itemId!=='RIVERHEART_DRAUGHT');
 state.inventory.stacks.push({itemId:'RIVERHEART_DRAUGHT',quantity:5});
-state.quests=state.quests.map(q=>q.questId==='QST_014'?{...q,status:'active'}:q);
+state.quests=state.quests.map(q=>q.questId==='QST_014'?{...q,status:'active' as const}:q);
 assert.ok(effectiveStats(state).hp>state.character!.currentHp,'fixture must be wounded');
 
 // In manual mode an empty schedule consumes no potions; the signed command
@@ -58,7 +58,7 @@ assert.ok(rejected,'healing impossible after settlement');
 
 // Tied heal and hit timestamps must retain the actual action order,
 // ensuring the HP presented to the player matches the authoritative fight.
-const snapshot={...initiated.state.storyBossSession!.snapshot,currentHp:Math.max(1,Math.round(effectiveStats(state).hp*.5))};
+const snapshot={...initiated.state.storyBossSession!.snapshot,maxHp:100_000,currentHp:30_000,potionHeal:5_000,potionQuantity:5,attack:1,power:1,damageMultiplier:.1,defense:1_000};
 const two=simulateFallenKnightStoryBattle(snapshot,'MANUAL_BOSS_HEAL_ORDER','rematch',[1800,1800+FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS]);
 const playback=storyBossPlaybackEvents(two);
 assert.equal(two.potionConsumed,2,'manual potion schedule respects action cap and cooldown');

@@ -6,6 +6,7 @@ import {companionDynamicText} from './companion-dynamic';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Affinity":["Affinität","Afinidad","Affiniteit","Affinità","Affinité"],
  // Simplified Companion Index: three intent-based views and a compact role picker.
  "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],
  "Unlock":["Freischalten","Desbloquear","Ontgrendelen","Sblocca","Débloquer"],

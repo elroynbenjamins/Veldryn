@@ -126,6 +126,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly');
  const allChallenges=[...daily,...weekly,...monthly];
  const challengeClaimed=new Set(state.account.seasonalContractClaimIds??[]);
+  const currentChallengeClaimedCount=allChallenges.filter(q=>challengeClaimed.has(q.id)).length;
  const challengeReady=allChallenges.filter(q=>q.progress>=q.required&&!challengeClaimed.has(q.id));
  const board=weeklyOrderBoardForState(state);
  const boardCompleted=board.orders.filter(q=>q.progress>=q.target).length;
@@ -226,7 +227,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
    </View>
    <QuestModeSwitch mode={mode} onChange={changeMode} storyMeta={storyReady?t('{count} ready',{count:storyReady}):t('{current}/{total} claimed',{current:storyClaimed,total:QUESTS.length})}
     contractMeta={t('{current}/{total} complete',{current:boardCompleted,total:board.orders.length})}
-    challengeMeta={challengeReady.length?t('{count} ready',{count:challengeReady.length}):t('{current}/{total} claimed',{current:challengeClaimed.size,total:allChallenges.length})}
+    challengeMeta={challengeReady.length?t('{count} ready',{count:challengeReady.length}):t('{current}/{total} claimed',{current:currentChallengeClaimedCount,total:allChallenges.length})}
     storyAttention={storyReady} challengeAttention={challengeReady.length}/>
    {notice?<ActionFeedback compact tone="error" message={notice} reduceMotion={state.settings.reduceMotion} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/>:null}
    {moment?.source===mode&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} titleName={moment.titleName} essence={moment.essence} bondstones={moment.bondstones} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
@@ -311,7 +312,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('CLASS OBJECTIVES')}</Text><StatusPill label={p('CLASS')} tone="special"/></View>
      <View style={styles.statRow}>
-      {[{label:p('READY'),value:challengeReady.length},{label:p('CLAIMED'),value:challengeClaimed.size},{label:p('TOTAL'),value:allChallenges.length}].map(item=><View key={item.label} style={[styles.stat,{backgroundColor:C.panel2,borderColor:C.line}]}><Text style={[styles.statNumber,{color:item.label===p('READY')&&challengeReady.length?C.good:C.text}]}>{item.value}</Text><Text style={[styles.eyebrow,{color:C.muted}]}>{item.label}</Text></View>)}
+      {[{label:p('READY'),value:challengeReady.length},{label:p('CLAIMED'),value:currentChallengeClaimedCount},{label:p('TOTAL'),value:allChallenges.length}].map(item=><View key={item.label} style={[styles.stat,{backgroundColor:C.panel2,borderColor:C.line}]}><Text style={[styles.statNumber,{color:item.label===p('READY')&&challengeReady.length?C.good:C.text}]}>{item.value}</Text><Text style={[styles.eyebrow,{color:C.muted}]}>{item.label}</Text></View>)}
      </View>
      <ProgressLine current={completeChallengeCount} max={allChallenges.length} C={C}/>
     </View>

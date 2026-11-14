@@ -49,4 +49,24 @@ assert.ok(posting.includes('guildProjectAuthoredCopy(language,project.templateId
 const contributions=fs.readFileSync(path.resolve(__dirname,'../src/components/GuildProjectContributionsPanel.tsx'),'utf8');
 assert.ok(posting.includes('<GuildProjectContributionsPanel projects={active}/>')&&contributions.includes('guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)'),'Inline Guild contribution panel must localize selected project names and descriptions');
 assert.ok(posting.includes('project.templateId')&&posting.includes('project.status'),'No change to project mechanics');
+
+// Project progress, donation copy, and leaderboards share locale-aware numbers
+// and only translate authored Guild material labels by exact ID and source text.
+const projectDetail=fs.readFileSync(path.resolve(__dirname,'../src/components/GuildProjectDetailPanel.tsx'),'utf8');
+const supplyDonation=fs.readFileSync(path.resolve(__dirname,'../src/components/GuildProjectSupplyDonationPanel.tsx'),'utf8');
+for(const [name,content] of [
+ ['Project posts',posting],
+ ['Contributor breakdown',contributions],
+ ['Project detail',projectDetail],
+ ['Supply donations',supplyDonation],
+]){
+ assert.ok(!content.includes('.toLocaleString()'),name+': numeric content must use player language');
+}
+for(const [name,content] of [['Contributor breakdown',contributions],['Project detail',projectDetail]]){
+ assert.ok(content.includes('guildBankResourceName(language,goal.resourceId,goal.label)'),name+': Guild Project resource labels must be locale-guarded');
+}
+assert.ok(contributions.includes('sourceSummary(member,ui,language)'), 'activity breakdown must share the selected locale');
+assert.ok(projectDetail.includes('socialLabel(language,member.role)'), 'Guild Project member roles should reuse reviewed translations');
+assert.ok(supplyDonation.includes('item.available.toLocaleString(language)'), 'supply counts must respect German grouping');
+
 console.log('PASS: 14 authored Guild Project title/description pairs in 8 languages (196 non-English translations), exact server/SQL matching, fallback and both board surfaces');

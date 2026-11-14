@@ -2,6 +2,8 @@ import {assert} from './test-assert';
 import {huntActiveDamageEvents,HUNT_CLASS_TECHNIQUES} from '../src/core/hunt-active-abilities';
 import {huntEnemyHpAt,type HuntHit} from '../src/core/combat-hit-timeline';
 import type {ClassId} from '../src/core/types';
+import {battleText} from '../src/i18n/battle';
+import {SUPPORTED_LANGUAGES} from '../src/i18n/languages';
 
 const hits:HuntHit[]=[
  {fraction:.15,actor:'player',damage:30,healing:0,critical:false,index:0},
@@ -31,6 +33,13 @@ for(const classId of Object.keys(HUNT_CLASS_TECHNIQUES) as ClassId[]){
  const run=huntActiveDamageEvents(hits,{...input,classId,companion:undefined});
  assert.equal(run[3].activeAbility?.name,HUNT_CLASS_TECHNIQUES[classId].name,'All nine classes have a named real attack');
  assert.equal(total(run),total(hits),'Class ability must remain balance neutral');
+}
+for(const language of SUPPORTED_LANGUAGES){
+ for(const technique of Object.values(HUNT_CLASS_TECHNIQUES)){
+  assert.ok(battleText(language,technique.name).length>0,'Named abilities need visible copy in '+language);
+  if(language!=='en')assert.ok(battleText(language,technique.name)!==technique.name,'Class technique name should be localized: '+language+' '+technique.name);
+ }
+ assert.ok(battleText(language,'Bloodrush').length>0,'On-kill healing must have an accessible name');
 }
 const off=huntActiveDamageEvents(hits,{...input,encounterNumber:3});
 assert.equal(off[2].companionAssist,undefined,'Companion assist obeys the per-encounter action gate');

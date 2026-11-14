@@ -1,6 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
-import {companionCombatAbilityName} from '../i18n/companion-combat-names-de';
+import {companionCombatAbilityName,companionTrialAbilityName} from '../i18n/companion-combat-names-de';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -46,7 +46,7 @@ function playbackState(playback:CompanionBattlePlaybackSnapshot,playhead:number)
 function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattlePlaybackSnapshot['events'][number],language:import('../i18n/languages').Language){
  const t=companionTranslator(language),names=new Map(playback.units.map(unit=>[unit.id,unit.name]));
  const actor=event.actorId?names.get(event.actorId):undefined,target=event.targetId?names.get(event.targetId):undefined;
- const ability=companionCombatAbilityName(language,event.actorId??'',playback.abilityNames[event.abilityId??'']??t('Ability')),amount=Math.round(event.amount??0).toLocaleString(language);
+ const ability=companionTrialAbilityName(language,companionCombatAbilityName(language,event.actorId??'',playback.abilityNames[event.abilityId??'']??t('Ability'))),amount=Math.round(event.amount??0).toLocaleString(language);
  if(event.type==='damage')return (actor??t('Attack'))+' · '+ability+' → '+(target??t('Target'))+' −'+amount+(event.critical?t(' CRIT'):'');
  if(event.type==='dot_tick')return event.abilityId==='TRIAL_VENOM_BLOOM'?t('{target} suffers {amount} poison damage through shields',{target:target??t('Target'),amount}):t('{target} suffers {amount} periodic damage',{target:target??t('Target'),amount});
  if(event.type==='status_apply'&&event.statusKind==='dot')return t('{target} is poisoned',{target:target??t('Target')});
@@ -123,7 +123,7 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
     <View style={s.unitHead}><Text numberOfLines={1} style={s.unitName}>{unit.name}</Text></View>
     <View style={[s.shieldTrack,unit.shield<=0&&s.shieldTrackEmpty]} accessibilityLabel={unit.shield>0?`${Math.round(unit.shield).toLocaleString(language)} ${t('Shield')}`:undefined}>{unit.shield>0?<><View style={[s.shieldFill,{width:(Math.min(100,unit.shield/unit.maxHp*100)+'%') as any}]}/><Text style={s.shieldBarText}>{Math.round(unit.shield).toLocaleString(language)}</Text></>:null}</View>
     <View style={s.hpTrack}><View style={[s.hpFill,unit.poisonUntil!==undefined&&unit.poisonUntil>playhead&&s.poisonHpFill,{width:(pct(unit.hp,unit.maxHp)+'%') as any}]}/><Text style={s.hpBarText}>{Math.round(unit.hp).toLocaleString(language)} / {Math.round(unit.maxHp).toLocaleString(language)}</Text></View>
-    {unit.casting?<Text style={s.castText}>{t("CASTING · {value0}", {value0: companionCombatAbilityName(language,unit.id,unit.casting)})}</Text>:null}</View>{impactLabel?<Animated.Text style={[s.impactNumber,(current?.type==='heal'||current?.type==='hot_tick'||current?.type==='shield')&&s.impactPositive,current?.critical&&s.impactCritical,current?.type==='dot_tick'&&current.abilityId==='TRIAL_VENOM_BLOOM'&&{color:C.special},hitMotion]}>{impactLabel}</Animated.Text>:null}</View></View>;
+    {unit.casting?<Text style={s.castText}>{t("CASTING · {value0}", {value0: companionTrialAbilityName(language,companionCombatAbilityName(language,unit.id,unit.casting))})}</Text>:null}</View>{impactLabel?<Animated.Text style={[s.impactNumber,(current?.type==='heal'||current?.type==='hot_tick'||current?.type==='shield')&&s.impactPositive,current?.critical&&s.impactCritical,current?.type==='dot_tick'&&current.abilityId==='TRIAL_VENOM_BLOOM'&&{color:C.special},hitMotion]}>{impactLabel}</Animated.Text>:null}</View></View>;
   };
   return <Animated.View style={[s.stage,{transform:[{scale}]}]}>
    <View style={s.stageHeader}><View style={s.flex}><Text style={s.title}>{playbackTitle}</Text></View></View>
@@ -144,7 +144,7 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
   <View style={s.arena}>
    <View style={s.teamColumn}><Text style={s.sideLabel}>{t("YOUR FORMATION")}</Text>{team.length?team.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),progress=view.owned[id];if(!def)return null;const affinity=COMPANION_AFFINITIES[companionAffinity(def)];const art=companionArtSource(id);return <View key={id} style={[s.unit,{borderColor:companionRarityBorder(def.rarity,C.dark)}]}><View style={s.previewIcon}>{art?<Image source={art} resizeMode="contain" style={s.previewArt}/>:<Text style={s.unitGlyph}>{roleGlyph[def.role]}</Text>}</View><View style={s.unitCopy}><Text numberOfLines={1} style={s.unitName}>{def.name}</Text><Text style={s.unitMeta}>{t("{value0} · {value1} {value2} · LV {value3} · B{value4}", {value0: label(def.role).toLocaleUpperCase(language), value1: affinity.glyph, value2: companionContent(language,affinity.label), value3: progress.level, value4: progress.bondLevel})}</Text><Text numberOfLines={1} style={s.ability}>{t("{value0} · {value1}s", {value0: companionCombatAbilityName(language,def.id,def.activeAbility.name), value1: def.activeAbility.cooldownSeconds})}</Text></View></View>}):<View style={s.empty}><Text style={s.emptyText}>{t("Choose Tank · Damage · Support below to preview the formation.")}</Text></View>}</View>
    <View style={s.vs}><Text style={s.vsText}>{t("VS")}</Text></View>
-   <View style={s.enemyColumn}><Text style={s.sideLabel}>{boss ? t("BOSS ENCOUNTER") : t("TRIAL ENCOUNTER")}</Text>{(boss?[theme.bossName]:TRIAL_FORMATION_NAMES.slice(Math.floor((floor-1)/5)*3,Math.floor((floor-1)/5)*3+3)).map(name=><View key={name} style={{alignItems:'center',gap:4}}><Image source={trialEnemyPortrait(name)} resizeMode="cover" style={{width:40,height:40,borderRadius:8}}/><Text style={s.enemyName}>{name}</Text></View>)}{preview?.abilities.slice(0,2).map(ability=><Text key={ability.name} numberOfLines={1} style={s.enemyAbility}>• {ability.name}{ability.interruptible ? t(" · interruptible") : ''}</Text>)}</View>
+   <View style={s.enemyColumn}><Text style={s.sideLabel}>{boss ? t("BOSS ENCOUNTER") : t("TRIAL ENCOUNTER")}</Text>{(boss?[theme.bossName]:TRIAL_FORMATION_NAMES.slice(Math.floor((floor-1)/5)*3,Math.floor((floor-1)/5)*3+3)).map(name=><View key={name} style={{alignItems:'center',gap:4}}><Image source={trialEnemyPortrait(name)} resizeMode="cover" style={{width:40,height:40,borderRadius:8}}/><Text style={s.enemyName}>{name}</Text></View>)}{preview?.abilities.slice(0,2).map(ability=><Text key={ability.name} numberOfLines={1} style={s.enemyAbility}>• {companionTrialAbilityName(language,ability.name)}{ability.interruptible ? t(" · interruptible") : ''}</Text>)}</View>
   </View>
  </View>;
 }

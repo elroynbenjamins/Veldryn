@@ -1,4 +1,5 @@
 import type {Language} from './languages';
+import type {LiveOpsActivityKind} from '../core/party-social';
 
 /**
  * Display-only German translations for the five authored Party Live Ops event
@@ -71,4 +72,24 @@ export function partyEventRankReasonText(language:Language,reason:string):string
  const fallback=reason.replace(/_/g,' ');
  return language==='de'&&Object.prototype.hasOwnProperty.call(germanPartyEventRankReasons,reason)
   ?germanPartyEventRankReasons[reason]:fallback;
+}
+
+
+/** Fixed activity enum names used by the Party Event contribution breakdown.
+ * Activity IDs, content IDs and scored points remain untouched.
+ */
+export const germanPartyEventActivityNames:Readonly<Record<LiveOpsActivityKind,readonly [string,string]>>={
+ combat:['Combat','Kampf'],
+ gathering:['Gathering','Sammeln'],
+ processing:['Processing','Verarbeitung'],
+ crafting:['Crafting','Handwerk'],
+ fishing:['Fishing','Angeln'],
+ hunting:['Hunting','Jagd'],
+ alchemy:['Alchemy','Alchemie'],
+ delivery:['Deliveries','Lieferungen'],
+};
+
+export function partyEventActivityText(language:Language,activity:LiveOpsActivityKind):string{
+ const names=germanPartyEventActivityNames[activity];
+ return language==='de'?names[1]:names[0];
 }

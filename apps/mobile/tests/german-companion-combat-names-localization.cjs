@@ -11,8 +11,8 @@ require.extensions['.ts']=function(mod,filename){
  mod._compile(out,filename);
 };
 const {
- germanCompanionCombatNames,germanCompanionTechniqueNames,
- companionCombatAbilityName,companionCombatBondName,companionTechniqueName,
+ germanCompanionCombatNames,germanCompanionTechniqueNames,germanCompanionCombatDescriptions,germanCompanionLegacySignatures,
+ companionCombatAbilityName,companionCombatBondName,companionTechniqueName,companionCombatDescriptionText,
 }=require('../src/i18n/companion-combat-names-de.ts');
 const source=path=>fs.readFileSync(path,'utf8');
 const core=source(path.join(app,'src/content/combat-companions.ts'));
@@ -49,7 +49,31 @@ for(const {id,active,bond} of rows){
  assert.equal(companionCombatAbilityName('de',id,'New server skill $&'),'New server skill $&');
  assert.equal(companionCombatBondName('de',id,'New server trait $&'),'New server trait $&');
 }
-assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');
+assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');'),'My skill assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');');
+
+const asterServerNames=[...backend.matchAll(/\['(UNIT_\d{3})',(?:"([^"]+)"|'([^']+)')/g)]
+ .filter(m=>Number(m[1].slice(-3))<=12).map(m=>({id:m[1],name:m[2]||m[3]}));
+assert.equal(asterServerNames.length,12,'Expected 12 original server companion signatures');
+assert.deepEqual(Object.keys(germanCompanionLegacySignatures).sort(),asterServerNames.map(row=>row.id).sort());
+for(const {id,name} of asterServerNames){
+ assert.equal(germanCompanionLegacySignatures[id],name,'Source companion signature drift: '+id);
+ assert.equal(companionCombatAbilityName('de',id,name+' Signature'),'Spezialfähigkeit: '+name);
+ assert.equal(companionCombatAbilityName('en',id,name+' Signature'),name+' Signature');
+ assert.equal(companionCombatAbilityName('de',id,name+' New Signature'),name+' New Signature');
+}
+const {companionContent}=require('../src/i18n/companions.ts');
+const descriptions=Object.entries(germanCompanionCombatDescriptions);
+assert.equal(descriptions.length,16,'Expected 16 new German authored descriptions');
+for(const [english,german] of descriptions){
+ assert.ok((core+event+guild+backend).includes(english),'Source description drift: '+english);
+ assert.ok(german.length>20&&german!==english,'Description has not been translated: '+english);
+ assert.equal(companionCombatDescriptionText('de',english),german);
+ assert.equal(companionCombatDescriptionText('en',english),undefined);
+ assert.equal(companionContent('de',english),german,'German content display missing: '+english);
+ assert.equal(companionContent('en',english),english);
+}
+assert.equal(companionCombatDescriptionText('de','Untrusted text assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');'),undefined);
+
 const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
 assert.equal(customTechniques.length,52);
 const defaults=['Fortified Shell','Reflective Shell','Executioner','Relentless','Deep Restoration','Rapid Aid'];
@@ -78,10 +102,10 @@ const markers={
   'summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}',
   '{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>',
  ],
- trials:['companionCombatAbilityName(language,def.id,def.activeAbility.name)'],
+ trials:['companionCombatAbilityName(language,def.id,def.activeAbility.name)',"companionCombatAbilityName(language,event.actorId??'',playback.abilityNames[event.abilityId??'']",'companionCombatAbilityName(language,unit.id,unit.casting)','Math.round(unit.hp).toLocaleString(language)'],
 };
 for(const [component,needed] of Object.entries(markers)){
  for(const marker of needed)
   assert.ok(components[component].includes(marker),component+' lost German combat name integration: '+marker);
 }
-console.log('PASS: 38 source-guarded German companion abilities and Bond traits, 58 fixed technique names, Training/Codex/Trial wiring');
+console.log('PASS: 38 German companion active abilities and Bond traits, 58 techniques, 12 replay signatures, 16 missing combat descriptions and battle presentation wiring');

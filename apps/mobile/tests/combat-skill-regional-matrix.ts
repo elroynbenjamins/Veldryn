@@ -38,6 +38,8 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
    const early=claimActivity(state,halfway);
    const late=claimActivity(early.state,end);
    const context=def.regionName+'/'+preparation+'/'+cls.id;
+   assert.equal(early.state.activity?.startedAtMs,START,'A partial claim must not reset the original combat skill session clock: '+context);
+   assert.equal(late.state.activity?.startedAtMs,START,'A subsequent claim must preserve the original combat session clock: '+context);
    assert.equal(early.reward.kills+late.reward.kills,single.reward.kills,'Split hunting cannot multiply kills: '+context);
    assert.equal(early.reward.xp+late.reward.xp,single.reward.xp,'Split hunting cannot multiply XP: '+context);
    assert.equal(early.reward.gold+late.reward.gold,single.reward.gold,'Split hunting cannot multiply Gold: '+context);

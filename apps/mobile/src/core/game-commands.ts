@@ -27,7 +27,7 @@ import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {migrateGemPouch,sellPouchGem,upgradeGemPouch} from './gem-pouch';
 import {upgradeEquipmentPouch,moveLegacyEquipmentPouchStack} from './equipment-pouch';
-import {salvageEquipmentPouchSelected,sellEquipmentPouchSelected} from './equipment-pouch-selling';
+import {EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH,salvageEquipmentPouchSelected,sellEquipmentPouchSelected} from './equipment-pouch-selling';
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,researchEffectGemV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {equipCraftedGearInstance,unequipCraftedGearInstance,moveCraftedGearInstance,setCraftedGearInstanceLock,disposeCraftedGearInstance,linkLegacyCraftedGearInstance} from './crafted-gear-ownership';
@@ -89,7 +89,7 @@ export function validateGameCommand(value:unknown):GameCommand{
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}
 function integer(args:Record<string,unknown>,key:string,min=1,max=100000):number{const value=args[key];if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min||value>max)throw new Error(`invalid_${key}`);return value;}
 function oneOf<T extends string>(value:unknown,choices:readonly T[]):T{if(typeof value!=='string'||!choices.includes(value as T))throw new Error('invalid_choice');return value as T;}
-function stringArray(args:Record<string,unknown>,key:string,max=100):string[]{const value=args[key];if(!Array.isArray(value)||value.length<1||value.length>max||value.some(entry=>typeof entry!=='string'||!entry.trim()||entry.length>120))throw new Error(`invalid_${key}`);return [...new Set(value.map(entry=>(entry as string).trim()))];}
+function stringArray(args:Record<string,unknown>,key:string,max=100,maxEntryLength=120):string[]{const value=args[key];if(!Array.isArray(value)||value.length<1||value.length>max||value.some(entry=>typeof entry!=='string'||!entry.trim()||entry.length>maxEntryLength))throw new Error(`invalid_${key}`);return [...new Set(value.map(entry=>(entry as string).trim()))];}
 interface CompanionCommandEconomySnapshot{gold:number;companionEssence:number;bondstones:number;}
 function companionCommandEconomySnapshot(state:GameState):CompanionCommandEconomySnapshot{return {gold:state.character?.gold??0,companionEssence:state.account.companionEssence??0,bondstones:state.account.bondstones??0};}
 function recordCompanionCommandMetrics(state:GameState,type:string,before:CompanionCommandEconomySnapshot):GameState{
@@ -365,8 +365,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equipment_pouch_move':state=moveLegacyEquipmentPouchStack(state,text(a,'itemId'),integer(a,'quantity',1,100),oneOf(a.from,['inventory','bank','equipment_pouch']),oneOf(a.to,['inventory','bank','equipment_pouch']));message='Equipment moved';break;
   case 'equipment_pouch_equip':state=game.equipItemFromEquipmentPouch(state,text(a,'itemId'));message='Equipment equipped from Equipment Pouch';break;
   case 'equipment_pouch_upgrade':state=upgradeEquipmentPouch(state);message='Equipment Pouch capacity upgraded';break;
-   case 'equipment_pouch_sell':{const ids=stringArray(a,'ids');state=sellEquipmentPouchSelected(state,ids);message=`Sold ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
-  case 'equipment_pouch_salvage':{const ids=stringArray(a,'ids');state=salvageEquipmentPouchSelected(state,ids);message=`Salvaged ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
+   case 'equipment_pouch_sell':{const ids=stringArray(a,'ids',100,EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH);state=sellEquipmentPouchSelected(state,ids);message=`Sold ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
+  case 'equipment_pouch_salvage':{const ids=stringArray(a,'ids',100,EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH);state=salvageEquipmentPouchSelected(state,ids);message=`Salvaged ${ids.length} equipment ${ids.length===1?'copy':'copies'} from Equipment Pouch`;break;}
   case 'gear_lock':{if(typeof a.locked!=='boolean')throw new Error('invalid_locked');state=setCraftedGearInstanceLock(state,text(a,'instanceId',180),a.locked);message=a.locked?'Equipment copy locked':'Equipment copy unlocked';break;}
   case 'gear_sell':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'sell');message='Equipment copy sold';break;
   case 'gear_salvage':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'salvage');message='Equipment copy salvaged';break;

@@ -53,7 +53,7 @@ for(const {id,active,bond} of rows){
 assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');
 
 const asterServerNames=[...backend.matchAll(/\['(UNIT_\d{3})',(?:"([^"]+)"|'([^']+)'),'(?:damage|tank|support)'/g)]
- .filter(m=>Number(m[1].slice(-3))<=12).map(m=>({id:m[1],name:m[2]||m[3]}));
+ .filter(m=>Number(m[1].slice(-3))<=12&&!/^UNIT_\d{3}$/.test(m[2]||m[3])).map(m=>({id:m[1],name:m[2]||m[3]}));
 assert.equal(asterServerNames.length,12,'Expected 12 original server companion signatures');
 assert.deepEqual(Object.keys(germanCompanionLegacySignatures).sort(),asterServerNames.map(row=>row.id).sort());
 for(const {id,name} of asterServerNames){

@@ -1,5 +1,5 @@
 import {ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
-import {legacySeasonalObjectiveComplete} from './legacy-seasonal-claim';
+import {hasFrozenLegacySeasonalGrant} from './legacy-seasonal-claim';
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
@@ -951,7 +951,7 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next),nowMs),nowMs)
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */
-export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string,allowLegacy=false):GameState{
+export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string):GameState{
   state=ensurePersonalSeasonalState(state);
   if(!state.character)throw new Error('Create a character first');
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
@@ -961,7 +961,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const maximumClaims=Math.max(1,Math.min(5,Math.max(state.account.unlockedCharacterSlots??1,1+(state.otherCharacters?.length??0))));
   if(previousClaimants.includes(state.character!.id))throw new Error('This contract reward was already claimed.');
   if(previousClaimants.length>=maximumClaims)throw new Error('The account has reached its character claim limit for this objective.');
-  const legacyEligible=allowLegacy&&legacySeasonalObjectiveComplete(state,period,contract.id,nowMs);
+  const legacyEligible=hasFrozenLegacySeasonalGrant(state,contract.id,nowMs);
   if(contract.progress<contract.required&&!legacyEligible)throw new Error('Complete the contract before claiming its cache.');
   // Recompute the allowed rewards from authoritative character progression; never trust client amounts.
   const chosen=choiceId===undefined?contract.rewardOptions[0]:(contract.rewardOptions.find(reward=>reward.id===choiceId)??(legacyEligible?contract.rewardOptions[0]:undefined));

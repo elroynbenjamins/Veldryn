@@ -9,6 +9,9 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "FOOD ROTATION":["FOOD ROTATION","ESSENSREIHENFOLGE","ROTACIÓN DE COMIDA","VOEDSELVOLGORDE","ROTAZIONE CIBO","ORDRE DES ALIMENTS"],
+ "Food actions":["Food actions","Essensaktionen","Opciones de comida","Voedselacties","Azioni cibo","Actions de nourriture"],
+ "Food running low":["Food running low","Essensvorrat fast leer","Queda poca comida","Voedsel raakt op","Scorte di cibo in esaurimento","Réserve de nourriture faible"],
  "PRIMARY":["PRIMARY","HAUPTNAHRUNG","PRINCIPAL","HOOFDVOEDSEL","PRINCIPALE","PRINCIPAL"],
  "AVAILABLE FOOD":["AVAILABLE FOOD","VERFÜGBARES ESSEN","COMIDA DISPONIBLE","BESCHIKBAAR ETEN","CIBO DISPONIBILE","NOURRITURE DISPONIBLE"],
  "Set primary":["Set primary","Als Hauptnahrung","Usar como principal","Als hoofdvoedsel","Imposta principale","Définir principal"],

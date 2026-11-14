@@ -10,7 +10,7 @@ const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts'
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const keys=Object.keys(RUSSIAN_FOCUS_ROWS);
-assert.ok(keys.length>=2470,'Expected expanded Russian UI coverage');
+assert.ok(keys.length>=4330,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];
 const sources=modules.map(name=>fs.readFileSync(path.join(__dirname,'../src/i18n/'+name+'.ts'),'utf8'));
@@ -55,7 +55,44 @@ for(const [key,expected] of Object.entries({
   'LIVE MATCHMAKING':'ПОИСК ОНЛАЙН-ГРУППЫ',
   'Password requirements':'Требования к паролю',
   'Sign out':'Выйти из аккаунта',
-  'COMPANION TRAINING':'ТРЕНИРОВКА СПУТНИКОВ'
+  'COMPANION TRAINING':'ТРЕНИРОВКА СПУТНИКОВ',
+  'Begin Journey':'Начать приключение',
+  'FIRST HUNT':'ПЕРВАЯ ОХОТА',
+  'MATCHES FOUND':'ГРУППЫ НАЙДЕНЫ',
+  'Raid in progress · resolves at {time}':'Рейд идёт · итоги в {time}',
+  'ACCOUNT PRESTIGE':'ПРЕСТИЖ АККАУНТА',
+  'Auto-travel between queued activities':'Автопереход между занятиями в очереди',
+  'Start brewing':'Начать варку',
+  'My companions':'Мои спутники',
+  'Companion Codex':'Справочник спутников',
+  'Floor {value0} · Recommended Power {value1}':'Этаж {value0} · рекомендуемая мощь {value1}',
+  'PROFILE CUSTOMIZATION':'НАСТРОЙКА ПРОФИЛЯ',
+  'EQUIPMENT READINESS':'ГОТОВНОСТЬ СНАРЯЖЕНИЯ',
+  'Apply name style':'Применить стиль имени',
+  'COMBAT SKILL XP SPLIT':'РАСПРЕДЕЛЕНИЕ БОЕВОГО ОПЫТА',
+  'Activity queue':'Очередь занятий',
+  'Auto-eat below {percent}% HP':'Автоеда при здоровье ниже {percent}%',
+  'STORAGE MANAGEMENT':'УПРАВЛЕНИЕ ХРАНИЛИЩЕМ',
+  'Sell selected items?':'Продать выбранные предметы?',
+  'Working Toward is using this item for {goal}. Additional goals: {count}.':'Предмет нужен для цели {goal}. Других целей: {count}.',
+  'DAILY SUPPLIES':'ЕЖЕДНЕВНЫЕ ПРИПАСЫ',
+  'Claim Daily Supplies':'Забрать ежедневные припасы',
+  'Missing companion materials.':'Не хватает материалов для спутников.',
+  'Trial run is no longer active.':'Попытка испытания уже не активна.',
+  'EQUIPMENT FORGE':'КУЗНИЦА СНАРЯЖЕНИЯ',
+  'GEM SOCKETED':'САМОЦВЕТ ВСТАВЛЕН',
+  'HOLY WATER':'СВЯТАЯ ВОДА',
+  'AUDIENCE PREVIEW':'ПРОСМОТР ДЛЯ ДРУГИХ',
+  'Name style saved.':'Стиль имени сохранён.',
+  'Profile hidden from this viewer':'Профиль скрыт от этого зрителя',
+  'Bond 10 improves the Djinnling’s restorative tempo.':'Связь 10 ускоряет лечение Djinnling.',
+  'PAST FESTIVALS':'ПРОШЕДШИЕ ФЕСТИВАЛИ',
+  'FINAL CLAIM CHECKLIST':'СПИСОК НАГРАД ПЕРЕД ЗАВЕРШЕНИЕМ',
+  'CHARACTER DELETION CONFIRMATION':'ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ ПЕРСОНАЖА',
+  'BUY BOTH':'КУПИТЬ ОБА',
+  'No tool equipped':'Инструмент не выбран',
+  'Queued monster is no longer available.':'Враг из очереди больше недоступен.',
+  'NEXT LV {level} · {title}':'СЛЕД. УР. {level} · {title}'
 })){
   assert.equal(earlyLocaleText('ru',key),expected,'Focused Russian text missing for '+key);
   assert.notEqual(earlyLocaleText('tr',key),expected,'Turkish UI must never inherit Russian text: '+key);

@@ -41,9 +41,10 @@ type Props={
   onFoodCommand?:(command:GameCommand)=>Promise<void>;
   attention?:Partial<Record<QuickNavDestination,NavigationBadge>>;
   online?:boolean;
+  showActivityBar?:boolean;
 };
 
-export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,onRecoverCombat,onFoodCommand,attention={},online=onlineConfigured}:Props){
+export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,onRecoverCombat,onFoodCommand,attention={},online=onlineConfigured,showActivityBar=true}:Props){
   const {gt}=useGameplayText();
   const [foodOpen,setFoodOpen]=useState(false),[recoveryHunt,setRecoveryHunt]=useState<ActiveActivity|null>(null);
   // Expensive offline-combat sim runs on bucketed time to keep per-second ticks cheap.
@@ -91,7 +92,7 @@ export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,on
         <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>{attentionTotal>0?<View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{attentionTotal>9?'9+':attentionTotal}</Text></View>:null}
       </Pressable>
     </View>
-    <ActiveActivityBar state={state} nowMs={nowMs} reward={combatReward} onOpen={onOpenActivity} onRecoverCombat={onFoodCommand?openFood:onRecoverCombat}/>
+    {showActivityBar&&<ActiveActivityBar state={state} nowMs={nowMs} reward={combatReward} onOpen={onOpenActivity} onRecoverCombat={onFoodCommand?openFood:onRecoverCombat}/>}
     {foodOpen&&onFoodCommand?<QuickFoodSheet key={state.character?.id} state={healthState} hunt={recoveryHunt} stopped={!!combatReward?.stoppedReason} onCommand={onFoodCommand} onClose={()=>setFoodOpen(false)} onInventory={()=>{setFoodOpen(false);if(onRecoverCombat)onRecoverCombat();else onNavigate('Inventory');}}/>:null}
     <EnvironmentDetailsModal visible={environmentOpen} environment={environment} nowMs={nowMs} locked={!!activity} activityKind={activity?.kind} reduceMotion={state.settings.reduceMotion} onClose={()=>setEnvironmentOpen(false)}/>
     <GameModalSurface visible={open} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={tr("Close quick navigation")} surfaceStyle={styles.sheet}>

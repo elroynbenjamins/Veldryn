@@ -1,0 +1,62 @@
+name: Temporary combat skill branch gameplay bundle sync
+
+on:
+  push:
+    branches:
+      - feature/combat-skill-activation-feedback-20261114
+    paths:
+      - '.github/workflows/combat-skill-edge-sync-temporary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: combat-skill-edge-sync-feature
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    if: github.ref == 'refs/heads/feature/combat-skill-activation-feedback-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install reproducible shared-engine dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Build and verify both generated shared gameplay Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit only generated bundles on the feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='feature/combat-skill-activation-feedback-20261114'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Feature branch generated Edge bundles already match shared source.'
+            exit 0
+          fi
+          git fetch origin "$branch"
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$branch")" ]]; then
+            echo 'Feature branch moved during compilation; refusing to publish stale bundles.'
+            exit 1
+          fi
+          git commit -m 'build(edge): regenerate shared gameplay and co-op bundles for combat skills'
+          git push origin "HEAD:refs/heads/$branch"

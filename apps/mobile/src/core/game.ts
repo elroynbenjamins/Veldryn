@@ -678,6 +678,14 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
        const hpAfterDamage=hp-hit.damage;
        const appliedHealing=hpAfterDamage>0?Math.min(hit.healing,Math.max(0,runtime.stats.hp-hpAfterDamage)):0;
        hp=hpAfterDamage<=0?0:Math.min(runtime.stats.hp,hpAfterDamage+hit.healing);
+       // Bloodrush recovery was already included in the resolved healing of
+       // this hit. Only credit the class for the proportion actually restored.
+       if(hit.actor==='fatigue'&&appliedHealing>0&&runtime.style.onKillAttackHealPct){
+         const companionBase=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600*(runtime.c.preparation?preparationEffects(runtime.c.preparation).healing:1);
+         const classBase=runtime.stats.attack*runtime.style.onKillAttackHealPct;
+         const classPortion=appliedHealing*classBase/(companionBase+classBase||1);
+         if(classPortion>1e-5)recordSkillEffect({atMs:hitAtMs,name:runtime.style.name,kind:'recovery',amount:classPortion,source:'class'});
+       }
        if(appliedHealing>0&&equippedAbilityCompanion?.role==='support'&&equippedAbilityCompanion.activeAbility.effect.kind==='heal'&&encounterNumber%2===0){
          const companionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600;
          const classHeal=runtime.stats.attack*(runtime.style.onKillAttackHealPct??0);
@@ -707,17 +715,6 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      completed.push({atMs:segment.endsAtMs,candy:segment.candy});
      if(segment.prepared)preparationEncounters++;
      if(champion)championKills++;
-     if(runtime.style.onKillAttackHealPct){
-       const plan=runtime.huntOptions?planFor(segment.encounterIndex,segment.prepared):undefined;
-       const exchange=combatEncounterDamage(runtime,champion,plan?.enemyAttackCount,plan?.fightSeconds);
-       // Compare the effective capped heal with what the companion alone
-       // would provide. Do not announce Bloodrush when it was fully capped.
-       const baseCompanionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600*(runtime.c.preparation?preparationEffects(runtime.c.preparation).healing:1);
-       const companionOnly=runtime.huntOptions?Math.min(baseCompanionHeal,exchange.monsterDamage+exchange.fatigue*.65):baseCompanionHeal;
-       if(exchange.healing>companionOnly+1e-5){
-         recordSkillEffect({atMs:segment.endsAtMs,name:runtime.style.name,kind:'recovery'});
-       }
-     }
      enemyHp=runtime.m.hp;
      activeEncounterIndex=segment.encounterIndex+1;
    }

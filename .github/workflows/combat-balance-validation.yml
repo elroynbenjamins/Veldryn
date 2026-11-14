@@ -20,6 +20,7 @@ on:
       - 'apps/mobile/src/core/class-stat-identity.ts'
       - 'apps/mobile/tests/class-stat-identity.ts'
       - 'apps/mobile/src/core/story-boss.ts'
+      - 'apps/mobile/tests/story-boss-class-abilities.ts'
       - 'apps/mobile/src/core/account-collections.ts'
       - 'apps/mobile/src/core/profile-unlocks.ts'
       - 'apps/mobile/tests/regional-*.ts'
@@ -73,6 +74,7 @@ jobs:
             .core-build/apps/mobile/tests/combat-buff-boundaries.js \
             .core-build/apps/mobile/tests/account-collectibles.js \
             .core-build/apps/mobile/tests/fallen-knight-gear-food.js \
+            .core-build/apps/mobile/tests/story-boss-class-abilities.js \
             .core-build/apps/mobile/tests/class-stat-identity.js
           do
             if [ -f "$test" ]; then

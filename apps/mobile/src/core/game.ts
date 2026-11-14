@@ -1,7 +1,7 @@
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
-import {huntActiveDamageEvents} from './hunt-active-abilities';
+import {huntActiveDamageEvents,huntTankGuardEvents} from './hunt-active-abilities';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -593,7 +593,7 @@ export function activeCombatRuntimeProjection(state:GameState){
   };
 }
 
-export interface ActiveHuntSkillEffect {atMs:number;name:string;kind:'recovery'|'damage'|'heal';amount?:number;source?:'class'|'companion'}
+export interface ActiveHuntSkillEffect {atMs:number;name:string;kind:'recovery'|'damage'|'heal'|'shield';amount?:number;source?:'class'|'companion'}
 function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Date.now()){
  const c=state.character!,activity=state.activity!,startsAtMs=activity?.lastClaimAtMs??nowMs-elapsed*1000;
  const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs),prepared=combatRuntimeDetails(state,monsterId,startsAtMs);
@@ -636,7 +636,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
   companion:equippedAbilityCompanion?{id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
    abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
    role:equippedAbilityCompanion.role,contributionPct:Math.max(0,1-1/prepared.companion.outputMultiplier)}:undefined};
- const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false)=>{
+ const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false,encounterStartedAtMs=startsAtMs)=>{
    let hits;
    if(runtime.huntOptions){
      const plan=planFor(index,isPrepared);
@@ -646,7 +646,14 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      const exchange=combatEncounterDamage(runtime,champion);
      hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
-   return huntActiveDamageEvents(hits,{...techniqueInput,encounterNumber:(activity.sessionKills??0)+index});
+   const offensive=huntActiveDamageEvents(hits,{...techniqueInput,encounterNumber:(activity.sessionKills??0)+index});
+   return huntTankGuardEvents(offensive,{combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds,
+    companion:equippedAbilityCompanion?{id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
+      abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
+      role:equippedAbilityCompanion.role,activeKind:equippedAbilityCompanion.activeAbility.effect.kind,
+      cooldownSeconds:equippedAbilityCompanion.activeAbility.cooldownSeconds,
+      incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
+
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -661,7 +668,8 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    const encounterNumber=(activity?.sessionKills??0)+segment.encounterIndex;
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,encounterNumber);
    // Candy accelerates the clock, but cannot rearrange attack indices mid-fight.
-   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds,segment.prepared);
+   const encounterStartedAtMs=segment.startsAtMs-segment.fromFraction*segment.cycleSeconds*1000;
+   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds,segment.prepared,encounterStartedAtMs);
    for(const hit of huntHitsBetween(hits,segment.fromFraction,segment.toFraction)){
      const hitAtMs=segment.startsAtMs+(hit.fraction-segment.fromFraction)*segment.cycleSeconds*1000;
      if(hit.actor==='player'){
@@ -676,6 +684,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
        // Incoming damage is applied on the strike, not at the kill/claim boundary.
        // Healing cannot retroactively prevent a lethal hit.
        const hpAfterDamage=hp-hit.damage;
+       if(hit.guardAbility)recordSkillEffect({atMs:hitAtMs,name:hit.guardAbility.name,kind:'shield',amount:hit.guardAbility.amount,source:'companion'});
        const appliedHealing=hpAfterDamage>0?Math.min(hit.healing,Math.max(0,runtime.stats.hp-hpAfterDamage)):0;
        hp=hpAfterDamage<=0?0:Math.min(runtime.stats.hp,hpAfterDamage+hit.healing);
        // Bloodrush recovery was already included in the resolved healing of

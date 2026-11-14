@@ -82,7 +82,8 @@ export function cumulativeMonsterUnlockIds(state:GameState):string[]{
 /** Heal old persisted flags on loading and on every character switch/commit. */
 export function restoreCumulativeMonsterUnlocks(state:GameState):GameState{
   const ids=cumulativeMonsterUnlockIds(state);
-  return ids.length===(state.unlockedMonsterIds??[]).length?state:{...state,unlockedMonsterIds:ids};
+  const old=state.unlockedMonsterIds??[];
+  return ids.length===old.length&&ids.every((id,index)=>id===old[index])?state:{...state,unlockedMonsterIds:ids};
 }
 
 export function nextRegionUnlock(level:number){

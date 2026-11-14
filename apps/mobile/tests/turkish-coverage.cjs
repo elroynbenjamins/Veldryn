@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=4088,'Turkish core coverage should retain the 4088-string baseline');
+assert.ok(keys.length>=4516,'Turkish core coverage should retain the 4516-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -113,5 +113,15 @@ assert.equal(earlyLocaleText('tr',"WEEKLY PROJECT BOARD"),"HAFTALIK PROJE PANOSU
 assert.equal(earlyLocaleText('tr',"No active Guild Project"),"Etkin Lonca Projesi yok");
 assert.equal(earlyLocaleText('tr',"The purchase could not be verified. Restore purchases or try again later."),"Satın alım doğrulanamadı. Satın alımları geri yükle veya daha sonra tekrar dene.");
 assert.equal(earlyLocaleText('tr',"Email is not verified yet. Open the latest confirmation email, then check again."),"E-posta henüz doğrulanmadı. Son doğrulama e-postasını açıp tekrar kontrol et.");
+assert.equal(earlyLocaleText('tr',"Pack Instinct: +4% damage against enemies below 35% HP."),"Sürü İçgüdüsü: Canı %35'in altındaki düşmanlara +%4 hasar.");
+assert.equal(earlyLocaleText('tr',"Bond 10 improves the Djinnling’s restorative tempo."),"Bağ 10, Djinnling'in iyileştirme temposunu geliştirir.");
+assert.equal(earlyLocaleText('tr',"Runic shields and interrupts. Strong protection, slower hunting."),"Rün kalkanları ve yetenek kesmeler. Güçlü koruma, daha yavaş avlanma.");
+assert.equal(earlyLocaleText('tr',"Companion Sanctuary Unlocked"),"Yoldaş Sığınağı Açıldı");
+assert.equal(earlyLocaleText('tr',"Shared Progress"),"Ortak İlerleme");
+assert.equal(earlyLocaleText('tr',"Your party search has ended. You can safely return to the expedition menu and start again."),"Grup araman sona erdi. Sefer menüsüne dönüp güvenle tekrar başlayabilirsin.");
+assert.equal(earlyLocaleText('tr',"Sign out of guest account?"),"Misafir hesabından çıkış yapılsın mı?");
+assert.equal(earlyLocaleText('tr',"Forgot password"),"Şifremi unuttum");
+assert.equal(earlyLocaleText('tr',"The opening exchange is the dangerous part; surviving it usually stabilizes the hunt."),"İlk çarpışma tehlikelidir; bundan sağ çıkmak avı genellikle dengeler.");
+assert.equal(earlyLocaleText('tr',"Use upgraded gear, food, class progression and a comfortable readiness margin before committing."),"Başlamadan önce geliştirilmiş ekipman, yiyecek, sınıf ilerlemesi ve güvenli bir güç payı sağla.");
 console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
  +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

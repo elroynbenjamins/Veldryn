@@ -19,6 +19,8 @@ export interface HuntHit {
   companionAssist?:HuntActiveAbility;
   /** Genuine damage blocked by a cooldown-scheduled tank companion guard. */
   guardAbility?:HuntActiveAbility;
+  /** Healing assist tagged at the first eligible real heal tick after cooldown. */
+  supportAbility?:HuntActiveAbility;
 }
 export interface HuntHitInput {
   monsterHp:number;

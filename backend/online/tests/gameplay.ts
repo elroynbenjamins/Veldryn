@@ -8,7 +8,7 @@ import {COMBAT_COMPANIONS} from '../../../apps/mobile/src/content/combat-compani
 import {EQUIPMENT_ITEMS_V33} from '../../../apps/mobile/src/content/equipment-items-v33';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
 import {alchemyRecipeDef} from '../../../apps/mobile/src/content/alchemy';
-import {createCharacter,effectiveStats} from '../../../apps/mobile/src/core/game';
+import {createCharacter,effectiveStats,newGame} from '../../../apps/mobile/src/core/game';
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
 import {gemRefineRecipeIdV1,gemRefineRecipeV1} from '../../../apps/mobile/src/core/gem-progression-v1';

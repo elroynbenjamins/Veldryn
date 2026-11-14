@@ -54,6 +54,9 @@ legacyBacktracked={...legacyBacktracked,otherCharacters:legacyBacktracked.otherC
 legacyBacktracked=executeGameCommand(legacyBacktracked,{type:'roster_switch',args:{id:firstId}},9).state;
 equal((legacyBacktracked.exploredRouteIds??[]).includes('SCOUT_KINGS_ROAD'),true,'backtracked veteran restores Kings Road survey from claimed Lantern Wretches quest');
 equal(legacyBacktracked.defeatedBossIds.includes('FALLEN_KNIGHT'),true,'backtracked veteran restores boss clear from claimed Fallen Knight quest');
+const travelReady={...legacyBacktracked,character:{...legacyBacktracked.character!,level:30,xp:1000000000}};
+const reachedSunscar=executeGameCommand(travelReady,{type:'travel',args:{id:'SUNSCAR'}},10).state;
+equal(reachedSunscar.currentRegionId,'SUNSCAR','backtracked veteran can travel to Sunscar after legacy recovery');
 
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const eas=JSON.parse(fs.readFileSync('eas.json','utf8')) as {build:Record<string,{env?:Record<string,string>} >};

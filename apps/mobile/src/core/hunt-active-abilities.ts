@@ -20,7 +20,7 @@ export interface HuntActiveAbility {
  source:'class'|'companion';
  id:string;
  name:string;
- kind:'damage'|'heal';
+ kind:'damage'|'heal'|'shield';
  amount:number;
 }
 
@@ -67,5 +67,54 @@ export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
    hit.companionAssist={source:'companion',id:companion.abilityId,name:companion.name+': '+companion.abilityName,kind:'damage',amount:portion};
   }
  }
+ return result;
+}
+
+/** Tank companion combat guard. The companion's passive damage reduction has
+ * already been applied by combatEncounterDamage; this *active* guard prevents
+ * a further, tightly capped portion of a real incoming monster strike.
+ *
+ * Cooldown pulses are anchored to the original combat session clock, not the
+ * current claim tick. The first monster strike after a pulse in that encounter
+ * consumes its shield. A pulse during an encounter with no monster hit is
+ * skipped. This makes offline claims and foreground replay use the same
+ * ability schedule without persisted cooldown state.
+ *
+ * The effect is intentionally small (at most 2.5% of one monster strike):
+ * fatigue, search time, enemy HP, kill count and reward pace do not change.
+ */
+export function huntTankGuardEvents(events:readonly HuntHit[],input:{
+ combatStartedAtMs:number;
+ encounterStartedAtMs:number;
+ cycleSeconds:number;
+ companion?:{
+  id:string;name:string;abilityId:string;abilityName:string;
+  role:'damage'|'tank'|'support';activeKind:string;
+  cooldownSeconds:number;incomingDamageMultiplier:number;
+ };
+}):HuntHit[]{
+ const result=events.map(hit=>({...hit}));
+ const unit=input.companion;
+ if(!unit||unit.role!=='tank'||(unit.activeKind!=='shield'&&unit.activeKind!=='damage_reduction'))return result;
+ const cooldown=Math.max(1000,Math.round(unit.cooldownSeconds*1000));
+ const session=Number.isFinite(input.combatStartedAtMs)?input.combatStartedAtMs:0;
+ const start=Number.isFinite(input.encounterStartedAtMs)?input.encounterStartedAtMs:session;
+ const cycle=Math.max(0,Number.isFinite(input.cycleSeconds)?input.cycleSeconds:0)*1000;
+ if(cycle<=0)return result;
+ // Only a pulse that starts during this encounter can arm its shield. The
+ // upper limit is exclusive, so adjacent encounters never claim the same pulse.
+ const pulseIndex=Math.max(0,Math.ceil((start-session-0.00001)/cooldown));
+ const pulseAt=session+pulseIndex*cooldown;
+ const end=start+cycle;
+ if(pulseAt<start-1e-3||pulseAt>=end-1e-3)return result;
+ const first=result.find(hit=>hit.actor==='enemy'&&hit.damage>0&&start+hit.fraction*cycle>=pulseAt-1e-3);
+ if(!first)return result;
+ const passiveMitigation=Math.max(0,1-Math.min(1,unit.incomingDamageMultiplier));
+ // No defensive contribution means no active guard or false shield number.
+ const rate=Math.min(.025,passiveMitigation*.35);
+ const prevented=Math.min(first.damage*.025,first.damage*rate);
+ if(!(prevented>1e-6))return result;
+ first.damage=Math.max(0,first.damage-prevented);
+ first.guardAbility={source:'companion',id:unit.abilityId,name:unit.name+': '+unit.abilityName,kind:'shield',amount:prevented};
  return result;
 }

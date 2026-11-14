@@ -2600,10 +2600,6 @@ export const EARLY_LOCALE_ROWS={
   "Finish the scouting route": ["Завершите разведку маршрута","Keşif rotasını tamamla"],
   "Trace Ironwood paths is revealing the encounter. Exploration progress is awarded when you collect the completed route.": ["Исследование троп Железного леса открывает встречу с волками. Опыт исследования начисляется после получения награды за завершённый маршрут.","Ironwood patikalarını izlemek karşılaşmayı ortaya çıkarır. Keşif ilerlemesi, tamamlanan rotayı topladığında verilir."],
   "Let the 96-second route finish, then collect it to discover Ironwood Wolves and complete this objective.": ["Дождитесь завершения 96-секундного маршрута, затем заберите награду, чтобы обнаружить волков Железного леса и выполнить цель.","96 saniyelik rotanın bitmesini bekle, ardından ödülü toplayarak Ironwood Kurtları'nı keşfet ve hedefi tamamla."],
-  "+{defense} DEF and +{hp} HP while the full set is equipped.": ["+{defense} ЗАЩ и +{hp} ОЗ при полном комплекте.","Tam set kuşanıldığında +{defense} SAV ve +{hp} CAN."],
-  "+{attack} ATK and +{hp} HP while the full set is equipped.": ["+{attack} АТК и +{hp} ОЗ при полном комплекте.","Tam set kuşanıldığında +{attack} SAL ve +{hp} CAN."],
-  "+{hp} HP and +{attack} ATK while the full set is equipped.": ["+{hp} ОЗ и +{attack} АТК при полном комплекте.","Tam set kuşanıldığında +{hp} CAN ve +{attack} SAL."],
-  "+{attack} ATK while the full set is equipped.": ["+{attack} АТК при полном комплекте.","Tam set kuşanıldığında +{attack} SAL."],
   "Ready now · {items}{more}": ["Готово сейчас · {items}{more}","Şimdi hazır · {items}{more}"],
   " · +{count} more": [" · ещё {count}"," · +{count} daha"],
 } satisfies Record<string,readonly [string,string]>;

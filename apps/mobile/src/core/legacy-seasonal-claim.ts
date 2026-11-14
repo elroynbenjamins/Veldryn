@@ -51,7 +51,14 @@ export function legacySeasonalObjectiveComplete(state:GameState,period:SeasonalP
  const tail=id.slice(prefix.length),separator=tail.lastIndexOf('_');
  if(separator<=0)return false;
  const key=tail.slice(0,separator),indexText=tail.slice(separator+1);
- if(!/^(0|[1-9][0-9]*)$/.test(indexText))return false;
+ const utc=new Date(serverNowMs),periodStart=new Date(Date.UTC(utc.getUTCFullYear(),utc.getUTCMonth(),utc.getUTCDate()));
+ let expectedKey=periodStart.toISOString().slice(0,10);
+ if(period==='weekly'){
+  periodStart.setUTCDate(periodStart.getUTCDate()-(periodStart.getUTCDay()||7)+1);
+  const yearStart=Date.UTC(periodStart.getUTCFullYear(),0,1);
+  expectedKey=`${periodStart.getUTCFullYear()}-W${Math.ceil(((periodStart.getTime()-yearStart)/86400000+1)/7)}`;
+ }else if(period==='monthly')expectedKey=`${periodStart.getUTCFullYear()}-${periodStart.getUTCMonth()+1}`;
+ if(key!==expectedKey||!/^(0|[1-9][0-9]*)$/.test(indexText))return false;
  const index=Number(indexText),count=period==='daily'?2:period==='weekly'?3:4;
  if(index>=count)return false;
  const classDef=CLASSES.find(row=>row.id===state.character!.classId);

@@ -25,7 +25,8 @@ export function HuntAbilityCues({effects,language,formatAmount}:{
    const divider=effect.source==='companion'?effect.name.indexOf(': '):-1;
    const skillName=divider>=0?tr(effect.name.slice(0,divider))+': '+tr(effect.name.slice(divider+2)):tr(effect.name);
    const amount=effect.amount!==undefined&&effect.amount>0
-    ?tr(effect.kind==='damage'?'SKILL DAMAGE · {amount}':effect.kind==='shield'?'SHIELD · {amount}':'SKILL HEAL · {amount}',{amount:formatAmount(effect.amount)})
+    ?effect.kind==='recovery'?tr('ON-KILL RECOVERY')+' · '+formatAmount(effect.amount)
+     :tr(effect.kind==='damage'?'SKILL DAMAGE · {amount}':effect.kind==='shield'?'SHIELD · {amount}':'SKILL HEAL · {amount}',{amount:formatAmount(effect.amount)})
     :undefined;
    return <View key={effect.name+':'+Math.round(effect.atMs)+':'+index} accessible accessibilityLiveRegion="polite"
      accessibilityLabel={tr(label)+': '+skillName+(amount?' · '+amount:'')}
@@ -34,7 +35,7 @@ export function HuntAbilityCues({effects,language,formatAmount}:{
      <Text numberOfLines={2} style={{fontSize:9,lineHeight:12,color,fontWeight:'900',letterSpacing:.3,flexShrink:1}}>{tr(label)}</Text>
      {amount?<Text numberOfLines={1} style={{fontSize:10,lineHeight:13,color:C.text,fontWeight:'800',marginLeft:'auto',flexShrink:1}}>{amount}</Text>:null}
     </View>
-    <Text numberOfLines={1} style={{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'}}>{skillName}</Text>
+    <Text numberOfLines={2} style={{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700',flexShrink:1}}>{skillName}</Text>
    </View>;
   })}
  </View>;

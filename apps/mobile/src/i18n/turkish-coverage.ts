@@ -3839,7 +3839,6 @@ export const TURKISH_COVERAGE = {
   "Auto-sell settings": "Otomatik satış ayarları",
   "Auto-sell ON": "Otomatik satış AÇIK",
   "Auto-sell OFF": "Otomatik satış KAPALI",
-  "Keep best 7": "En iyi 7 tanesini tut",
   "Collect finished equipment": "Bitmiş ekipmanı al",
   "Back to crafting": "Üretime dön",
   "Manage & collect": "Yönet ve al",

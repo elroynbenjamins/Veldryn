@@ -58,7 +58,7 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
        <View style={s.regionBandHead}><Text style={[s.regionName,s[('regionName_'+accent) as 'regionName_gold']]}>{group.region}</Text><Text style={s.regionProgress}>{group.availableCount} {st('Ready')}</Text></View>
        {REGION_TAGLINE[group.region]?<Text style={s.regionTagline}>{st(REGION_TAGLINE[group.region])}</Text>:null}
      </View>
-     {group.dungeons.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}
+     {group.dungeons.map((dungeon,index)=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} featured={index===0} onPress={()=>onSelect(dungeon)}/>)}
    </View>;})}
    {showCatalog&&eventExpeditions.length>0?<View style={s.eventSection}><Text style={s.section}>{ct(language,'event.section')}</Text>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}</View>:null}
    {showCatalog&&mode==='qmode'&&echoTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoTools}} onPress={()=>setShowEchoTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("My Echo & sharing")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showEchoTools?'−':'+'}</Text></Pressable>{showEchoTools?echoTools:null}</>:null}
@@ -72,18 +72,18 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
  </ExpeditionScreenShell>;
 }
 
-function DungeonCard({language,dungeon,onPress}:{language:Language;dungeon:CoopDungeonView;onPress:()=>void}){
+function DungeonCard({language,dungeon,onPress,featured=false}:{language:Language;dungeon:CoopDungeonView;onPress:()=>void;featured?:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
   const status=dungeon.available?ct(language,'browse.available'):`${ct(language,'browse.locked')}: ${dungeon.lockedReason}`;
   const inDev=dungeon.lockedReason==='In Development';
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${dungeon.name}. ${status}. ${ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})}`} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.questCard,!dungeon.available&&s.lockedQuest,pressed&&s.pressed]}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${dungeon.name}. ${status}. ${ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})}`} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.questCard,featured&&dungeon.available&&s.featuredQuest,!dungeon.available&&s.lockedQuest,pressed&&s.pressed]}>
     <View style={s.cardRow}>
       <View style={s.cardThumbHolder}>
         <CoopImageSlot assetId={dungeon.id==='EXP_001'?'rootbound_hero':dungeon.artId} size="thumbnail" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>
         {inDev?<View style={s.ribbon}><Text style={s.ribbonText}>{st('Soon')}</Text></View>:null}
       </View>
-      <View style={s.cardCopy}><Text numberOfLines={2} style={s.cardTitle}>{dungeon.name}</Text><Text style={s.questMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {accountText(language,'min')}</Text><Text numberOfLines={2} style={dungeon.available?s.routeHint:s.lock}>{dungeon.available?`${dungeon.preBossRoomMin===dungeon.preBossRoomMax?dungeon.preBossRoomMin:`${dungeon.preBossRoomMin}–${dungeon.preBossRoomMax}`} ${accountText(language,'rooms before the boss')}${dungeon.expectedMarksByTier?.[1]?` · ~${dungeon.expectedMarksByTier[1]} ${accountText(language,'Expedition Marks')}`:''}`:dungeon.lockedReason}</Text></View>
+      <View style={s.cardCopy}><View style={s.cardNameRow}><Text numberOfLines={2} style={[s.cardTitle,s.flex]}>{dungeon.name}</Text>{featured&&dungeon.available?<StateChip label={ct(language,'browse.available')} tone="success"/>:null}</View><Text style={s.questMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {accountText(language,'min')}</Text><Text numberOfLines={2} style={dungeon.available?s.routeHint:s.lock}>{dungeon.available?`${dungeon.preBossRoomMin===dungeon.preBossRoomMax?dungeon.preBossRoomMin:`${dungeon.preBossRoomMin}–${dungeon.preBossRoomMax}`} ${accountText(language,'rooms before the boss')}${dungeon.expectedMarksByTier?.[1]?` · ~${dungeon.expectedMarksByTier[1]} ${accountText(language,'Expedition Marks')}`:''}`:dungeon.lockedReason}</Text></View>
       <Text style={s.cardChevron}>›</Text>
     </View>
   </Pressable>;
@@ -223,7 +223,7 @@ function RoomTile({language,room}:{language:Language;room:CoopRoomType}){
  const {styles:s}=useCoopStyles(makeStyles);return <View style={s.room}><CoopImageSlot assetId={roomAsset[room]} size="node" accessibilityLabel={ct(language,roomKey[room])}/><Text numberOfLines={2} style={s.roomLabel}>{ct(language,roomKey[room])}</Text></View>}
 
 const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
-  catalogIntro:{...coopTypography.body,color:coopColors.textSecondary},catalogHeading:{flexDirection:'row',alignItems:'baseline',justifyContent:'space-between',gap:8},catalogCount:{...coopTypography.meta,color:coopColors.textMuted},questCard:{minHeight:88,padding:10,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},lockedQuest:{opacity:.65},questMeta:{...coopTypography.meta,color:coopColors.textSecondary},routeHint:{fontSize:12,lineHeight:17,color:coopColors.gold,fontWeight:'600'},
+  catalogIntro:{...coopTypography.body,color:coopColors.textSecondary},catalogHeading:{flexDirection:'row',alignItems:'baseline',justifyContent:'space-between',gap:8},catalogCount:{...coopTypography.meta,color:coopColors.textMuted},questCard:{minHeight:88,padding:10,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},featuredQuest:{borderColor:coopColors.goldDim,backgroundColor:coopColors.surfaceRaised},cardNameRow:{flexDirection:'row',alignItems:'center',gap:6,minWidth:0},lockedQuest:{opacity:.65},questMeta:{...coopTypography.meta,color:coopColors.textSecondary},routeHint:{fontSize:12,lineHeight:17,color:coopColors.gold,fontWeight:'600'},
   skeletonList:{gap:coopSpacing.sm},
   skeletonCard:{minHeight:88,padding:10,flexDirection:'row',gap:coopSpacing.md,alignItems:'center',borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface,opacity:.55},
   skeletonThumb:{width:72,height:72,borderRadius:10,backgroundColor:coopColors.surfaceRaised},

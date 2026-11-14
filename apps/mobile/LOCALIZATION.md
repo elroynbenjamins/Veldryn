@@ -1,5 +1,13 @@
 # Localization status
 
+## November 14, 2026: Russian near-complete authored UI coverage
+
+- Added **539** additional exact-source Russian translations across Account and records (**187**), Companion expeditions and profile showcase (**88**), Inventory/Gem/crafting/forging (**120**), World progression and seasonal UI (**92**), and Party/dungeon feedback (**52**).
+- Authored source coverage is now **7,223 / 7,228 (99.9%)**, compared with 6,684 / 7,228 (92.5%) before this pass. The five remaining English keys are technical category identifiers (`guild_recruiting`, `looking_for_guild`, `party_recruiting`) and canonical names (`NPC`, `Rootbound Colossus`), deliberately not reworded.
+- All new catalogs are loaded through `earlyLocaleText`; Russian source regression tests now validate their exact keys, nonblank translations, duplicate isolation and interpolation token parity. No gameplay identifiers, server-owned fields or reward logic changed.
+- Full GitHub CI and in-app narrow-screen/native-speaker proofreading are still required before marking the locale release-ready.
+
+
 ## November 14, 2026: Russian progression, weather, profiles and co-op follow-up
 
 - Added **738** exact-source Russian UI strings across four focused catalogs: **165** progression/weather/events, **199** profile/build guides, **199** Account actions/goal prompts, and **175** social/Guild/Party/live dungeon states.

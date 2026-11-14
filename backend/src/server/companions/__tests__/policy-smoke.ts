@@ -1,13 +1,18 @@
-import {CHARACTER_COMPANION_COMBAT_MODES,companionLevelCap,sanitizePersistedCompanionLoadout,validateCompanionLoadout,validateProgressionSnapshot} from '../policy';
+import {CHARACTER_COMPANION_COMBAT_MODES,CLASS_ROLE,companionLevelCap,sanitizePersistedCompanionLoadout,validateCompanionLoadout,validateProgressionSnapshot,type CharacterClassId} from '../policy';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};
-for(const [classId,companionId] of [['WAYFINDER','UNIT_001'],['IRONWARDEN','UNIT_002'],['DAWNKEEPER','UNIT_003']] as const)ok(validateCompanionLoadout({classId,companionId,ownedCompanionIds:[companionId]}).ok===false,'Same-role server validation failed');
-for(const combatMode of CHARACTER_COMPANION_COMBAT_MODES){
- ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_001',ownedCompanionIds:['UNIT_001'],combatMode}).ok===false,`Same-role companion accepted in ${combatMode}`);
- ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:['UNIT_002'],combatMode}).ok,`Cross-role companion rejected in ${combatMode}`);
+for(const classId of Object.keys(CLASS_ROLE) as CharacterClassId[]){
+ for(const companionId of ['UNIT_001','UNIT_002','UNIT_003']){
+  for(const combatMode of CHARACTER_COMPANION_COMBAT_MODES){
+   ok(validateCompanionLoadout({classId,companionId,ownedCompanionIds:[companionId],combatMode}).ok,`Owned ${companionId} rejected for ${classId} in ${combatMode}`);
+  }
+ }
 }
-ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:['UNIT_002']}).ok,'Cross-role server validation failed');
-ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:[]}).ok===false,'Locked companion server validation failed');
-ok(sanitizePersistedCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_001',ownedCompanionIds:['UNIT_001']})===null,'Invalid persisted loadout was not cleared');
+ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:[]}).reason==='companion_not_owned','Locked companion server validation failed');
+ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:['UNIT_002'],busyCompanionIds:['UNIT_002']}).reason==='companion_busy','Busy companion server validation failed');
+ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNKNOWN_COMPANION',ownedCompanionIds:['UNKNOWN_COMPANION']}).reason==='unknown_companion','Unknown companion server validation failed');
+ok(validateCompanionLoadout({classId:'UNKNOWN_CLASS' as CharacterClassId,companionId:'UNIT_001',ownedCompanionIds:['UNIT_001']}).reason==='unknown_character_class','Unknown class server validation failed');
+ok(sanitizePersistedCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_001',ownedCompanionIds:['UNIT_001']})==='UNIT_001','Same-role persisted loadout was cleared');
+ok(sanitizePersistedCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_001',ownedCompanionIds:[]})===null,'Unowned persisted loadout was not cleared');
 ok(companionLevelCap('UNIT_001',3)===20&&companionLevelCap('UNIT_004',3)===25&&companionLevelCap('UNIT_007',3)===30&&companionLevelCap('UNIT_012',3)===35,'Rarity caps mismatch');
 const normalized=validateProgressionSnapshot('UNIT_004',{level:99,xp:-1,ascensionTier:1,bondLevel:99,bondXp:-4});ok(normalized.level===20&&normalized.bondLevel===10&&normalized.xp===0&&normalized.bondXp===0,'Progression sanitization failed');
 console.log('companion-policy: PASS');

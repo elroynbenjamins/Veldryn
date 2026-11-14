@@ -13,7 +13,7 @@ export const COMPANION_ROLE=Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map(
 export const COMPANION_RARITY=Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map(x=>[x.id,x.rarity])) as Record<string,CompanionRarity>;
 export const RARITY_MAX_LEVEL=COMPANION_RARITY_MAX_LEVEL;
 export const STAGE_CAPS:Record<CompanionRarity,readonly [number,number,number,number]>={standard:[10,20,20,20],rare:[10,20,25,25],elite:[10,20,25,30],prestige:[10,20,25,35]};
-export const canUseCharacterCombatCompanion=(characterRole:CompanionRole,companionRole:CompanionRole,_mode:CharacterCompanionCombatMode)=>characterRole!==companionRole;
+export const canUseCharacterCombatCompanion=(_characterRole:CompanionRole,_companionRole:CompanionRole,_mode:CharacterCompanionCombatMode)=>true;
 export const canEquipCompanion=(characterRole:CompanionRole,companionRole:CompanionRole)=>canUseCharacterCombatCompanion(characterRole,companionRole,'normal_combat');
 
 export interface AuthoritativeCompanionLoadoutInput{classId:CharacterClassId;companionId?:string|null;ownedCompanionIds:readonly string[];busyCompanionIds?:readonly string[];combatMode?:CharacterCompanionCombatMode;}
@@ -23,7 +23,6 @@ export function validateCompanionLoadout(input:AuthoritativeCompanionLoadoutInpu
   if(!input.ownedCompanionIds.includes(input.companionId))return {ok:false as const,reason:'companion_not_owned'};
   if(input.busyCompanionIds?.includes(input.companionId))return {ok:false as const,reason:'companion_busy'};
   const characterRole=CLASS_ROLE[input.classId];if(!characterRole)return {ok:false as const,reason:'unknown_character_class'};
-  if(!canUseCharacterCombatCompanion(characterRole,role,input.combatMode??'normal_combat'))return {ok:false as const,reason:'same_role_restricted'};
   return {ok:true as const,companionId:input.companionId};
 }
 export function sanitizePersistedCompanionLoadout(input:AuthoritativeCompanionLoadoutInput){const checked=validateCompanionLoadout(input);return checked.ok?checked.companionId:null;}

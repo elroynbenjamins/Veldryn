@@ -62,7 +62,7 @@ const hiddenPrestige=companionView(fixture(),now).codex.entries.find(entry=>entr
 const unlockGuidance=companionNextUnlockTargets(fixture(),3);ok(unlockGuidance.length>0&&unlockGuidance.every(entry=>!ids.includes(entry.def.id)&&entry.def.origin.type!=='event'),'Codex guidance prioritizes locked permanent companion unlocks');ok(unlockGuidance.every(entry=>entry.progress.ratio>=0&&entry.progress.ratio<=1),'unlock guidance progress remains normalized');const masteryGuidance=companionNextMasteryTargets(fixture(),3);ok(masteryGuidance.length===3&&masteryGuidance.every(entry=>entry.nextStep.startsWith('Train')),'Codex mastery guidance gives concrete next training steps');
 let s=fixture();
 for(const d of ALL_COMBAT_COMPANIONS){const server=companionServerDefinition(d.id);ok(server?.name===d.name,`${d.id} identity agrees`);ok(server?.role===d.role,`${d.id} role agrees`);ok(server?.rarity===d.rarity,`${d.id} rarity agrees`);ok(server?.originId===d.origin.id,`${d.id} origin agrees`);}
-rejects(()=>command(s,'companion_equip',{id:'UNIT_002'}),'same role rejected');
+s=command(s,'companion_equip',{id:'UNIT_002'});ok(s.character!.equippedCombatCompanionId==='UNIT_002','Same-role Tank companion can equip on Tank class');
 rejects(()=>command(s,'companion_equip',{id:'UNIT_024'}),'unowned rejected');
 s=command(s,'companion_equip',{id:'UNIT_001'});ok(s.character!.equippedCombatCompanionId==='UNIT_001','equip persists');
 ok(companionCombatContribution(s).outputMultiplier>1,'assist output applied');

@@ -12,7 +12,7 @@ exports.COMPANION_ROLE = Object.fromEntries(content_1.COMPANION_SERVER_DEFINITIO
 exports.COMPANION_RARITY = Object.fromEntries(content_1.COMPANION_SERVER_DEFINITIONS.map(x => [x.id, x.rarity]));
 exports.RARITY_MAX_LEVEL = content_1.COMPANION_RARITY_MAX_LEVEL;
 exports.STAGE_CAPS = { standard: [10, 20, 20, 20], rare: [10, 20, 25, 25], elite: [10, 20, 25, 30], prestige: [10, 20, 25, 35] };
-const canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
+const canUseCharacterCombatCompanion = (_characterRole, _companionRole, _mode) => true;
 exports.canUseCharacterCombatCompanion = canUseCharacterCombatCompanion;
 const canEquipCompanion = (characterRole, companionRole) => (0, exports.canUseCharacterCombatCompanion)(characterRole, companionRole, 'normal_combat');
 exports.canEquipCompanion = canEquipCompanion;
@@ -29,8 +29,6 @@ function validateCompanionLoadout(input) {
     const characterRole = exports.CLASS_ROLE[input.classId];
     if (!characterRole)
         return { ok: false, reason: 'unknown_character_class' };
-    if (!(0, exports.canUseCharacterCombatCompanion)(characterRole, role, input.combatMode ?? 'normal_combat'))
-        return { ok: false, reason: 'same_role_restricted' };
     return { ok: true, companionId: input.companionId };
 }
 function sanitizePersistedCompanionLoadout(input) { const checked = validateCompanionLoadout(input); return checked.ok ? checked.companionId : null; }

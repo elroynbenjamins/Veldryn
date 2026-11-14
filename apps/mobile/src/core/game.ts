@@ -754,7 +754,7 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const current=simulateCombat(source,original.targetId,elapsed,atMs);
  const lastHit=current.lastHit??(usable?previous.lastHit:undefined);
  const allSkillEffects=[...(usable?previous.lastSkillEffects??[]:[]),...current.lastSkillEffects];
- const lastSkillEffects=allSkillEffects.filter((effect,index)=>allSkillEffects.findIndex(item=>item.atMs===effect.atMs&&item.name===effect.name&&item.kind===effect.kind)===index).slice(-4);
+ const lastSkillEffects=allSkillEffects.filter((effect,index)=>allSkillEffects.findIndex(item=>Math.round(item.atMs)===Math.round(effect.atMs)&&item.name===effect.name&&item.kind===effect.kind)===index).slice(-4);
  const lastSkillEffect=lastSkillEffects[lastSkillEffects.length-1]??(usable?previous.lastSkillEffect:undefined);
  const sourceCharacter=source.character!;
  let preparation=sourceCharacter.preparation;

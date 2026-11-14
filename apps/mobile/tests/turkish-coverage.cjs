@@ -51,7 +51,7 @@ for(const [english,turkish] of Object.entries(TURKISH_COVERAGE)){
  assert.ok(sourceKeys.has(english),'Missing authored source catalog key: '+english);
 }
 
-assert.equal(earlyLocaleText('ru','Secured'),undefined,'Do not change Russian fallbacks');
+assert.equal(earlyLocaleText('ru','Secured'),'Защищено','Retain the now-authored Russian translation independently of Turkish');
 assert.equal(earlyLocaleText('de','Secured'),undefined,'Do not affect completed locales');
 assert.equal(earlyLocaleText('tr','Combat Power'),'Savaş gücü','Keep established Turkish translations');
 assert.equal(earlyLocaleText('tr','Unknown server detail'),undefined,'Unknown player/server data stays untranslated');

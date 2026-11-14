@@ -6,11 +6,13 @@ Russian and Turkish have expanded but still incomplete coverage. English remains
 
 ## Russian focused coverage (November 2026)
 
-- Across the 10 authored source catalogs, **2,630 of 7,202 unique messages (36.5%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.
+- This follow-up also aligns Russian focus entries with the expanded RU/TR starter catalog (19 duplicate strings removed). The Russian test now verifies Turkish translations remain independent, even when Turkish has a valid translation rather than an English fallback.
 
-- A focused Russian expansion now adds **2,081 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy.
+- Across the 10 authored source catalogs, **3,120 of 7,223 unique messages (43.2%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.
+
+- A focused Russian expansion now adds **2,480 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy, companion missions/training and Tower battles, online dungeon matchmaking, guild moderation and account sign-in/security.
 - The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
-- The dedicated Russian regression test checks all 2,081 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+- The dedicated Russian regression test checks all 2,480 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
 
 
 ## November 13, 2026: recently changed screens

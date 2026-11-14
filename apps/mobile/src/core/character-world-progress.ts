@@ -26,7 +26,8 @@ function legacyWorldProgress(entry:CharacterSnapshot):WorldProgress{
  const region=entry.currentRegionId;
  if(hasCompletedQuest(entry,'QST_003')||['OLD_MINES','KINGS_ROAD','SUNSCAR','FROSTMARCH'].includes(region))routes.add('SCOUT_IRONWOOD');
  if(['KINGS_ROAD','SUNSCAR','FROSTMARCH'].includes(region)||['QST_012','QST_013','QST_014'].some(id=>hasCompletedQuest(entry,id)))routes.add('SCOUT_OLD_MINES');
- if(['SUNSCAR','FROSTMARCH'].includes(region))routes.add('SCOUT_KINGS_ROAD');
+ // Defeating Lantern Wretches in the story quest proves the King's Road survey unlocked them.
+ if(['SUNSCAR','FROSTMARCH'].includes(region)||hasCompletedQuest(entry,'QST_010'))routes.add('SCOUT_KINGS_ROAD');
  if(region==='FROSTMARCH')routes.add('SCOUT_SUNSCAR');
 
  const defeatedBossIds=hasCompletedQuest(entry,'QST_014')?['FALLEN_KNIGHT']:[];

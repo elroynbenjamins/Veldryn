@@ -112,9 +112,22 @@ export const germanCompanionTechniqueNames:Readonly<Record<string,string>>={
  'Rapid Aid':'Schnelle Hilfe',
 };
 
+/** The first 12 server companions still use default Signature names in combat replays.
+ * Preserve the proper companion name and localize only the generic ability type.
+ */
+export const germanCompanionLegacySignatures:Readonly<Record<string,string>>={
+ UNIT_001:'Ironwood Hound',UNIT_002:'Runebound Sentry',UNIT_003:'Silverbrook Sprite',
+ UNIT_004:'Briarhorn Cub',UNIT_005:'Lantern Wisp',UNIT_006:'Oathbound Page',
+ UNIT_007:'Gloamknife Shade',UNIT_008:'Dawnwing',UNIT_009:'Echo Stalker',
+ UNIT_010:'Forge Automaton',UNIT_011:"Veyren's Memory",UNIT_012:'Oathglass Knightling',
+};
+
 export function companionCombatAbilityName(language:Language,companionId:string,source:string):string{
+ if(language!=='de')return source;
  const entry=germanCompanionCombatNames[companionId]?.active;
- return language==='de'&&entry?.[0]===source?entry[1]:source;
+ if(entry?.[0]===source)return entry[1];
+ const signature=germanCompanionLegacySignatures[companionId];
+ return signature&&source===signature+' Signature'?'Spezialfähigkeit: '+signature:source;
 }
 
 export function companionCombatBondName(language:Language,companionId:string,source:string):string{
@@ -159,4 +172,38 @@ export const germanCompanionCombatDescriptions:Readonly<Record<string,string>>={
 export function companionCombatDescriptionText(language:Language,source:string):string|undefined{
  return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionCombatDescriptions,source)
   ?germanCompanionCombatDescriptions[source]:undefined;
+}
+
+
+/** Authored Companion Trial enemy abilities and phase names.
+ * Applied only inside Trial preview/replay UI, never to gameplay identifiers.
+ */
+export const germanCompanionTrialAbilities:Readonly<Record<string,string>>={
+ 'Guarded Ward':'Schutzbarriere',
+ 'Predatory Rush':'Raubtieransturm',
+ 'Arc Pulse':'Arkaner Impuls',
+ 'Runic Bastion':'Runenbollwerk',
+ "Tyrant's Ascendance":'Aufstieg des Tyrannen',
+ 'Glass Fracture':'Glasbruch',
+ 'White Silence Toll':'Glockenschlag der weißen Stille',
+ 'Crucible Overheat':'Überhitzter Schmelztiegel',
+ 'Rift Unbound':'Entfesselter Riss',
+ 'Riftfire Frenzy':'Rissfeuer-Raserei',
+ 'Final Decree':'Letzter Erlass',
+ 'Echo Crown':'Echokrone',
+ 'Runic Shockwave':'Runenschockwelle',
+ 'Stone Brace':'Steinschutz',
+ 'Tyrant Glass Spear':'Glasspeer des Tyrannen',
+ "Tyrant's Fury":'Zorn des Tyrannen',
+ 'Bell of White Silence':'Glocke der weißen Stille',
+ 'Crucible Hammer':'Schmelztiegelhammer',
+ 'Riftfire Sweep':'Rissfeuer-Schlag',
+ 'Riftfire Focus':'Rissfeuer-Fokus',
+ 'Regent Decree':'Erlass des Regenten',
+ "Crown's Judgment":'Urteil der Krone',
+};
+
+export function companionTrialAbilityName(language:Language,source:string):string{
+ return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionTrialAbilities,source)
+  ?germanCompanionTrialAbilities[source]:source;
 }

@@ -7,19 +7,31 @@ require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f
 }).outputText,f);
 const {RUSSIAN_FOCUS_ROWS}=require('../src/i18n/russian-focus.ts');
 const {RUSSIAN_CONTINUATION_ROWS}=require('../src/i18n/russian-continuation.ts');
+const {RUSSIAN_PROGRESS_ROWS}=require('../src/i18n/russian-progress.ts');
+const {RUSSIAN_PROFILE_ROWS}=require('../src/i18n/russian-profile.ts');
+const {RUSSIAN_ACCOUNT_ROWS}=require('../src/i18n/russian-account.ts');
+const {RUSSIAN_SOCIAL_ROWS}=require('../src/i18n/russian-social.ts');
 const continuationKeys=Object.keys(RUSSIAN_CONTINUATION_ROWS);
 for(const key of continuationKeys)assert.ok(!Object.prototype.hasOwnProperty.call(RUSSIAN_FOCUS_ROWS,key),'Duplicate focused/continuation RU key: '+key);
 const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
-const keys=Object.keys({...RUSSIAN_FOCUS_ROWS,...RUSSIAN_CONTINUATION_ROWS});
+const russianCatalogs=[RUSSIAN_FOCUS_ROWS,RUSSIAN_CONTINUATION_ROWS,RUSSIAN_PROGRESS_ROWS,RUSSIAN_PROFILE_ROWS,RUSSIAN_ACCOUNT_ROWS,RUSSIAN_SOCIAL_ROWS];
+const seen=new Set();
+for(const catalog of russianCatalogs)for(const key of Object.keys(catalog)){
+  assert.ok(!seen.has(key),'Duplicate Russian translation: '+key);
+  seen.add(key);
+}
+const combined=Object.assign({},...russianCatalogs);
+const keys=Object.keys(combined);
+assert.ok(keys.length>=5660,'Expected continued Russian UI coverage');
 assert.ok(keys.length>=4925,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];
 const sources=modules.map(name=>fs.readFileSync(path.join(__dirname,'../src/i18n/'+name+'.ts'),'utf8'));
 const owned=new Set(sources.flatMap(source=>[...source.matchAll(/^\s*(['"])(.*?)\1\s*:\s*\[/gm)].map(match=>match[2])));
 for(const key of keys){
-  const translated=RUSSIAN_FOCUS_ROWS[key]??RUSSIAN_CONTINUATION_ROWS[key];
+  const translated=combined[key];
   assert.ok(owned.has(key),'Missing exact source key '+key);
   assert.ok(translated.trim(),'Empty Russian translation for '+key);
   assert.deepEqual(tokens(translated),tokens(key),'Placeholder mismatch: '+key);

@@ -1,0 +1,47 @@
+name: Refresh PR 1097 generated gameplay Edge bundle
+
+# One-off branch-only packaging repair. Remove after the generated artifact
+# is committed and validated; never deploys or alters production data.
+on:
+  push:
+    branches:
+      - feature/combat-skill-activation-feedback-20261114
+    paths:
+      - '.github/workflows/pr1097-refresh-gameplay-edge.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-generated-gameplay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install shared engine and bundler dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild deterministic Edge artifacts
+        run: |
+          node tools/build-online.mjs
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated gameplay bundle on the feature branch only
+        run: |
+          test "$GITHUB_REF_NAME" = "feature/combat-skill-activation-feedback-20261114"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts
+          if git diff --cached --quiet; then
+            echo 'Generated gameplay bundle was already current.'
+            exit 0
+          fi
+          git commit -m "build(gameplay): regenerate Edge bundle from shared combat engine"
+          git push origin "HEAD:refs/heads/feature/combat-skill-activation-feedback-20261114"

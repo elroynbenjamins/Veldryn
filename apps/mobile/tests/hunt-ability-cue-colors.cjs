@@ -28,5 +28,9 @@ const dungeon=source('components/coop/DungeonCombatStage.tsx');
 assert.ok(dungeon.includes('CLASS_ICON_ACCENT[actorSlot.classId as ClassId]'),'Dungeon banners must use the actual acting class color');
 assert.ok(dungeon.includes("skillActivation?.kind==='class'"),'Companion casts must never take the class accent');
 assert.ok(dungeon.includes('battleText(language,skillActivation.name)'),'Real dungeon class techniques must be localized');
+assert.ok(dungeon.includes("skillClassAccent&&theme.dark&&{color:skillClassAccent}"),'Dungeon class skill label must keep text contrast in light mode');
+assert.ok(dungeon.includes("skillClassAccent&&{borderColor:skillClassAccent}"),'Dungeon class skill banner must keep the emblem-colored edge in every theme');
+assert.ok(boss.includes("classCast&&C.dark&&{color:classTint}"),'Story boss class skill text must stay readable in light mode');
+assert.ok(boss.includes("borderLeftColor:classTint"),'Story boss skill markers must retain emblem colors in both themes');
 
 console.log('PASS: all nine class icon accents drive real hunt skill labels in both combat views');

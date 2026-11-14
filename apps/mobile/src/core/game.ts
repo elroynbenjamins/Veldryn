@@ -2,6 +2,7 @@ import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
 import {huntActiveDamageEvents,huntSupportHealEvents,huntTankGuardEvents} from './hunt-active-abilities';
+import {huntClassSurvivalEvents} from './hunt-class-identity';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -653,8 +654,9 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
    const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
-   return huntTankGuardEvents(heals,{...cooldownTiming,
+   const guarded=huntTankGuardEvents(heals,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
+   return huntClassSurvivalEvents(guarded,{...classTechniqueInput,...cooldownTiming});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -686,21 +688,29 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
        // Healing cannot retroactively prevent a lethal hit.
        const hpAfterDamage=hp-hit.damage;
        if(hit.guardAbility)recordSkillEffect({atMs:hitAtMs,name:hit.guardAbility.name,kind:'shield',amount:hit.guardAbility.amount,source:'companion'});
+       if(hit.classGuardAbility)recordSkillEffect({atMs:hitAtMs,name:hit.classGuardAbility.name,kind:'shield',amount:hit.classGuardAbility.amount,source:'class'});
        const appliedHealing=hpAfterDamage>0?Math.min(hit.healing,Math.max(0,runtime.stats.hp-hpAfterDamage)):0;
+       // Base restorative effects apply before this class's extra healing;
+       // each source is only credited for the HP it actually restores.
+       const classBudget=Math.max(0,hit.classHealingBudget??0);
+       const appliedBaseHealing=Math.min(appliedHealing,Math.max(0,hit.healing-classBudget));
+       const appliedClassHealing=Math.max(0,appliedHealing-appliedBaseHealing);
        hp=hpAfterDamage<=0?0:Math.min(runtime.stats.hp,hpAfterDamage+hit.healing);
+       if(hit.classHealAbility&&appliedClassHealing>1e-5)
+         recordSkillEffect({atMs:hitAtMs,name:hit.classHealAbility.name,kind:'heal',amount:appliedClassHealing,source:'class'});
        // Bloodrush recovery was already included in the resolved healing of
        // this hit. Only credit the class for the proportion actually restored.
-       if(hit.actor==='fatigue'&&appliedHealing>0&&runtime.style.onKillAttackHealPct){
+       if(hit.actor==='fatigue'&&appliedBaseHealing>0&&runtime.style.onKillAttackHealPct){
          const companionBase=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600*(runtime.c.preparation?preparationEffects(runtime.c.preparation).healing:1);
          const classBase=runtime.stats.attack*runtime.style.onKillAttackHealPct;
-         const classPortion=appliedHealing*classBase/(companionBase+classBase||1);
+         const classPortion=appliedBaseHealing*classBase/(companionBase+classBase||1);
          if(classPortion>1e-5)recordSkillEffect({atMs:hitAtMs,name:runtime.style.name,kind:'recovery',amount:classPortion,source:'class'});
        }
-       if(appliedHealing>0&&hit.supportAbility){
+       if(appliedBaseHealing>0&&hit.supportAbility){
          const companionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600;
          const classHeal=runtime.stats.attack*(runtime.style.onKillAttackHealPct??0);
          const share=companionHeal/(companionHeal+classHeal||1);
-         const credited=Math.min(appliedHealing,appliedHealing*share);
+         const credited=Math.min(appliedBaseHealing,appliedBaseHealing*share);
          if(credited>0.00001)recordSkillEffect({atMs:hitAtMs,name:hit.supportAbility.name,kind:'heal',amount:credited,source:'companion'});
        }
        while(hp>0&&hp/runtime.stats.hp<=threshold){

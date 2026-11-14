@@ -122,7 +122,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    </View>
   </Animated.View>
   <View style={s.details}>
-    <HuntAbilityCues effects={recentSkillEffects} language={state.settings.language} formatAmount={damageValue}/>
+    <HuntAbilityCues effects={recentSkillEffects} language={state.settings.language} formatAmount={damageValue} classId={state.character?.classId}/>
     <View style={s.passiveSummary}>
      <Text numberOfLines={1} style={s.passiveLabel}>{tr('COMBAT STYLE · PASSIVE')} · {tr(view.style.name)}</Text>
      <Text numberOfLines={2} style={s.sub}>{tr(view.style.description)}</Text>

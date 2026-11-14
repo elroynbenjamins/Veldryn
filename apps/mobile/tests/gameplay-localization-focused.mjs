@@ -87,7 +87,7 @@ for(const language of languages){
   const result=gameplayTranslate(language,'{name}, {kind}, level {level}',params);
   assert.ok(result.includes(params.name));assert.ok(result.includes(params.kind));assert.ok(result.includes('42'));
   assert.equal(localizeGameplay(language,'My loadout {name}'),'My loadout {name}');
-  assert.equal(localizeGameplay(language,'Marksmanship'),'Marksmanship');
+  assert.equal(localizeGameplay(language,'Marksmanship'),language==='de'?'Schießkunst':'Marksmanship');
   const blocked=localizeGameplay(language,'Requires mining level 42 in Asterfall.');
   assert.ok(blocked.includes('42'));assert.ok(blocked.includes('Asterfall'));
   assert.ok(!blocked.includes('{level}'));

@@ -17,29 +17,35 @@ import {CombatEffectShape} from './CombatAttackSprite';
 import {CLASS_ICON_ACCENT} from '../content/class-icon-colors';
 import {battleText} from '../i18n/battle';
 import {storyBossPlaybackEvents} from '../core/story-boss-playback';
+import {FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS,FALLEN_KNIGHT_MAX_POTION_UNITS} from '../core/story-boss';
 
 function pct(current:number,max:number){return Math.max(0,Math.min(100,max>0?current/max*100:0));}
 function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
 
-export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameState;battle:FallenKnightBattleResult;message:string;onClose:()=>void}){
+export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFinish}:{state:GameState;battle:FallenKnightBattleResult;message:string;onClose:()=>void;onHeal?:()=>Promise<void>;onFinish?:()=>Promise<void>}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!,region=WORLD_ZONES.find(row=>row.name==="King's Road");
   const reduceMotion=state.settings.reduceMotion;
   const classTint=state.character?CLASS_ICON_ACCENT[state.character.classId]:C.accent;
-  const playbackRealMs=Math.min(38_000,Math.max(12_000,battle.durationMs));
+  const session=state.storyBossSession;
+  const manual=Boolean(session&&onHeal&&onFinish);
+  const playbackRealMs=manual?battle.durationMs:Math.min(38_000,Math.max(12_000,battle.durationMs));
   const simPerRealMs=battle.durationMs/playbackRealMs;
   const [playhead,setPlayhead]=useState(0);
   const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current,phasePulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
-    let lastTick=Date.now();setPlayhead(0);
-    // Pause when backgrounded and clamp stalled JS ticks so leaving the app cannot skip the fight.
+    let lastTick=Date.now();
+    setPlayhead(session?Math.min(battle.durationMs,Math.max(0,lastTick-session.startedAtMs)):0);
     const id=setInterval(()=>{
       const now=Date.now(),delta=Math.max(0,Math.min(250,now-lastTick));lastTick=now;
+      // Live fights advance on the server's wall clock; a backgrounded app
+      // must not freeze or replay time and allow a late healing command.
+      if(session){setPlayhead(Math.min(battle.durationMs,Math.max(0,now-session.startedAtMs)));return;}
       if(AppState.currentState!=='background'&&AppState.currentState!=='inactive')
         setPlayhead(previous=>Math.min(battle.durationMs,previous+delta*simPerRealMs));
     },80);
     return()=>clearInterval(id);
-  },[battle.durationMs,simPerRealMs]);
+  },[battle.durationMs,simPerRealMs,session?.startedAtMs]);
   // Retroactive telegraphs retain their labels, but must never reveal HP from
   // an attack that has not yet appeared in the on-screen replay.
   const playbackEvents=useMemo(()=>storyBossPlaybackEvents(battle),[battle]);
@@ -52,6 +58,10 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   const recent=visible.filter(event=>!['battle_start'].includes(event.type)).slice(-4).reverse();
   // Follow events that have actually played; do not reveal the precomputed fight totals.
   const potionsUsedSoFar=visible.filter(event=>event.type==='heal').length;
+  const potionCapacity=session?Math.min(FALLEN_KNIGHT_MAX_POTION_UNITS,session.snapshot.potionQuantity):0;
+  const potionRemaining=Math.max(0,potionCapacity-potionsUsedSoFar);
+  const lastUse=session?.manualPotionAtMs[session.manualPotionAtMs.length-1];
+  const cooldownRemaining=lastUse===undefined?0:Math.max(0,FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS-(playhead-lastUse));
   const phasesReachedSoFar=Math.min(3,1+visible.filter(event=>event.type==='phase').length);
 
   useEffect(()=>{
@@ -75,7 +85,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   const damageEvent=current?.type==='player_hit'||current?.type==='boss_hit'?current:undefined;
 
   // Android Back and accessibility Escape cannot bypass the fight; Continue unlocks after the full timeline.
-  const closeAfterBattle=()=>{if(finished)onClose();};
+  const closeAfterBattle=()=>{if(finished){if(manual&&onFinish)void onFinish();else onClose();}};
   const eventText=(event:StoryBossEvent)=>{
     if(event.type==='player_hit')return event.skillKind==='damage'
       ?`${battleText(language,event.label)} · ${battleText(language,'SKILL DAMAGE · {amount}',{amount:displayStat(event.amount??0).toLocaleString()})}`
@@ -131,6 +141,10 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
           <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>{state.character?.name?.toUpperCase()??gt("PLAYER")}</Text><Text style={s.barValue}>{displayStat(playerHp).toLocaleString()} / {displayStat(battle.playerMaxHp).toLocaleString()}</Text></View><View style={s.track}><View style={[s.playerFill,{width:`${pct(playerHp,battle.playerMaxHp)}%` as `${number}%`}]}/></View></View>
         </View>
 
+        {manual&&!finished?<View style={s.healRow}>
+          <GameButton compact title={'HEAL NOW · '+potionRemaining+' left'} onPress={()=>onHeal?.()} disabled={potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0}/>
+          <Text style={s.healHint}>{cooldownRemaining>0?'Cooldown '+(cooldownRemaining/1000).toFixed(1)+'s':'Restores '+Math.round(session?.snapshot.potionHeal??0)+' HP · manual'}</Text>
+        </View>:null}
         <View style={s.log}>
           <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{potionsUsedSoFar>0?`${potionsUsedSoFar} ${potionsUsedSoFar===1?'potion':'potions'} used · `:''}{phasesReachedSoFar}/3 phases</Text></View>
           {recent.length?recent.map((event,index)=>{
@@ -142,9 +156,9 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
           }):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 
-        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{gl(message)}</Text></View>:null}
+        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{manual?'Confirm to settle this battle and its rewards on the server.':gl(message)}</Text></View>:null}
 
-        <View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>
+        <View style={s.actions}>{finished?<GameButton title={manual?'Confirm result':gt("Continue")} onPress={manual&&onFinish?onFinish:onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>
       </ScrollView>
   </GameModalSurface>;
 }
@@ -163,5 +177,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   bars:{gap:7},barBlock:{gap:3},barHead:{flexDirection:'row',justifyContent:'space-between',gap:8},barLabel:{fontSize:9,color:C.text,fontWeight:'900',letterSpacing:.6},barValue:{fontSize:9,color:C.muted,fontWeight:'800',fontVariant:['tabular-nums']},track:{height:8,overflow:'hidden',borderRadius:99,backgroundColor:C.panel2},bossFill:{height:'100%',backgroundColor:C.bad},playerFill:{height:'100%',backgroundColor:C.good},
   log:{gap:4,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},logHead:{flexDirection:'row',justifyContent:'space-between',gap:8},logTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.7},logMeta:{fontSize:9,color:C.muted,fontWeight:'800'},logRow:{flexDirection:'row',gap:8},logTime:{width:34,fontSize:9,color:C.muted,fontVariant:['tabular-nums']},logText:{flex:1,fontSize:10,color:C.text,fontWeight:'700'},warn:{color:C.warning},phaseLog:{color:C.info,fontWeight:'900'},critLog:{color:C.warning,fontWeight:'900'},
   result:{gap:4,padding:9,borderLeftWidth:4,borderRadius:radii.sm},win:{borderLeftColor:C.good,backgroundColor:C.goodSurface},loss:{borderLeftColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.title,color:C.text},resultCopy:{...typography.body,color:C.text},
+  healRow:{flexDirection:'row',alignItems:'center',gap:10,padding:7,borderWidth:1,borderColor:C.good,borderRadius:radii.sm,backgroundColor:C.goodSurface},healHint:{flex:1,fontSize:10,color:C.text},
   actions:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10},live:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:1.2},
 });}

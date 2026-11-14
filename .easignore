@@ -38,7 +38,9 @@ review-screens/
 .codex-tmp/
 .codex-attachments/
 .wrangler/
-packages/
+# The mobile Companion Index imports the Guild Shop catalogue at runtime.
+# Preserve packages/guild-shop/src in EAS archives; only omit package tests.
+packages/guild-shop/tests/
 
 # Codex / historical / generated material
 .codex/

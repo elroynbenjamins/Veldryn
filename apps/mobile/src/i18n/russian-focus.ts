@@ -3742,7 +3742,6 @@ export const RUSSIAN_FOCUS_ROWS = {
   "Auto-sell settings": "Настройки автопродажи",
   "Auto-sell ON": "Автопродажа ВКЛ.",
   "Auto-sell OFF": "Автопродажа ВЫКЛ.",
-  "Keep best 7": "Оставлять 7 лучших",
   "Collect finished equipment": "Забрать готовое снаряжение",
   "Back to crafting": "Назад к изготовлению",
   "Manage & collect": "Управление и получение",

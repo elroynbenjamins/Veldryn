@@ -3,6 +3,7 @@ import {localizedSeasonalDungeonPreviewCopy} from '../../i18n/seasonal-dungeon-e
 import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
 import {DungeonHero,DungeonBossPreview,DungeonDisclosure,DungeonPartyRoles,DungeonReward} from './DungeonPreparation';
 import {coopUiAssets} from '../../theme/coop-ui-assets';
+import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {liveEventDef} from '../../content/live-events';
 import {liveEventVisuals} from '../../ui/live-event-visuals-active';
 import {dungeonText as accountText} from '../../i18n/dungeon-preparation';
@@ -12,7 +13,7 @@ import {useSocialText} from '../../i18n/social';
 import {useState,type ReactNode} from 'react';
 import {ActivityIndicator,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopDungeonView,CoopRoomType,CoopTier} from '../../core/coop-dungeon-browsing';
-import {coopTierEligibility,groupCoopDungeonsByRegion,highestEligibleCoopTier} from '../../core/coop-dungeon-browsing';
+import {coopTierEligibility,highestEligibleCoopTier} from '../../core/coop-dungeon-browsing';
 import type {CoopEventExpeditionPreview} from '../../core/coop-event-expeditions';
 import type {CoopMode,CoopRunView} from '../../core/coop-presentation';
 import {clt,coopPolicyText,ct,type CoopMessageKey,type Language} from '../../i18n';
@@ -29,78 +30,100 @@ const REGION_TAGLINE:Record<string,string>={
 const REGION_ACCENT:Record<string,'gold'|'cyan'|'violet'|'danger'>={
  Asterfall:'gold',Sunscar:'danger',Frostmarch:'cyan',Ashlands:'violet',
 };
-type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
-export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onSelect,onSelectEvent,onResume}:BrowseProps){
+
+type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+
+/** Single unfiltered list: seasonal events first, all currently available dungeons next. */
+export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onSelect,onSelectEvent,onResume}:BrowseProps){
  const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
  const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false),[showEchoTools,setShowEchoTools]=useState(false);
- const available=dungeons.filter(dungeon=>dungeon.available),locked=dungeons.filter(dungeon=>!dungeon.available);
+ const [expandedId,setExpandedId]=useState<string|null>(null);
+ const [quickTier,setQuickTier]=useState<CoopTier>(1);
+ const available=dungeons.filter(dungeon=>dungeon.available).sort((a,b)=>a.minLevel-b.minLevel||a.name.localeCompare(b.name));
+ const locked=dungeons.filter(dungeon=>!dungeon.available);
+ const sortedEvents=[...eventExpeditions].sort((a,b)=>(a.status==='available'?0:1)-(b.status==='available'?0:1)||a.name.localeCompare(b.name));
  const hasUsableSnapshot=dungeons.length>0||eventExpeditions.length>0||!!activeRun;
  const showCatalog=(!loading&&!error)||hasUsableSnapshot;
  return <ExpeditionScreenShell compactHeader eyebrow="" title={st("Dungeons")} onBack={onBack} backLabel={a("Back")}>
    {notice?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{notice}</Text></FantasyPanel>:null}
    {activeRun?<FantasyPanel variant="selected"><View style={s.modeHead}><Text style={[s.cardTitle,s.flex]}>{ct(language,'browse.resumeTitle')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></View></FantasyPanel>:null}
-   {showCatalog?<><Text style={s.catalogIntro}>{a('Choose a dungeon and plan your route.')}</Text><View style={s.filters}>
-     <View style={s.flex}><PrimaryAction label={a("Solo")} tone="secondary" selected={mode==='qmode'} onPress={()=>onMode('qmode')}/></View>
-     <View style={s.flex}><PrimaryAction label={a("Live")} tone="secondary" selected={mode==='live'} disabled={!liveAvailable} onPress={()=>onMode('live')}/></View>
-   </View>
-   <Text style={s.modeHint}>{mode==='live'?a("Play with three other players"):a("NPC or Echo allies fill the missing roles")}</Text>
-   {mode==='live'&&onQuickMatch?<FantasyPanel variant="selected"><View style={s.quickMatch}><View style={s.flex}><Text style={s.cardTitle}>{st("Quick Match")}</Text><Text style={s.copy}>{a("Find an eligible party automatically")}</Text></View><PrimaryAction label={st("Find Party")} loading={quickMatchBusy} disabled={quickMatchBusy} onPress={onQuickMatch}/></View></FantasyPanel>:null}
-   {mode==='live'&&liveTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLiveTools}} onPress={()=>setShowLiveTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("Group finder & options")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLiveTools?'−':'+'}</Text></Pressable>{showLiveTools?liveTools:null}</>:null}
+   {showCatalog?<>
+     <View style={s.finderHeader}>
+       <View style={s.flex}><Text style={s.finderTitle}>{st("Dungeon Finder")}</Text><Text style={s.finderSubtitle}>{a("Choose a dungeon and plan your route.")}</Text></View>
+       <Pressable accessibilityRole="button" accessibilityLabel={st("Open Expedition shop")} onPress={onShop} style={({pressed})=>[s.shopShortcut,pressed&&s.pressed]}><ExpeditionMarkIcon size={21}/><Text style={s.shopShortcutText}>{st("Shop")}</Text></Pressable>
+     </View>
+     <View style={s.modeSegment}>
+       <Pressable accessibilityRole="button" accessibilityState={{selected:mode==='qmode'}} onPress={()=>onMode('qmode')} style={({pressed})=>[s.modeOption,mode==='qmode'&&s.modeOptionSelected,pressed&&s.pressed]}><Text style={[s.modeOptionText,mode==='qmode'&&s.modeOptionTextSelected]}>{a("Solo")}</Text></Pressable>
+       <Pressable accessibilityRole="button" accessibilityState={{selected:mode==='live',disabled:!liveAvailable}} disabled={!liveAvailable} onPress={()=>onMode('live')} style={({pressed})=>[s.modeOption,mode==='live'&&s.modeOptionSelected,!liveAvailable&&s.lockedQuest,pressed&&s.pressed]}><Text style={[s.modeOptionText,mode==='live'&&s.modeOptionTextSelected]}>{a("Live")}</Text></Pressable>
+     </View>
+     <Text style={s.compactHint}>{mode==='live'?a("Play with three other players"):a("NPC or Echo allies fill the missing roles")}</Text>
+     {mode==='live'&&onQuickMatch?<View style={s.inlineTool}><View style={s.flex}><Text style={s.cardTitle}>{st("Quick Match")}</Text><Text style={s.copy}>{a("Find an eligible party automatically")}</Text></View><PrimaryAction label={st("Find Party")} loading={quickMatchBusy} disabled={quickMatchBusy} onPress={onQuickMatch}/></View>:null}
+     {mode==='live'&&liveTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLiveTools}} onPress={()=>setShowLiveTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("Group finder & options")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLiveTools?'−':'+'}</Text></Pressable>{showLiveTools?liveTools:null}</>:null}
    </>:null}
    {loading?<View accessibilityLiveRegion="polite" style={s.loading}><ActivityIndicator color={coopColors.cyan}/><Text style={s.copy}>{hasUsableSnapshot?a('Refreshing dungeon availability…'):ct(language,'browse.loading')}</Text></View>:null}
    {loading&&!hasUsableSnapshot?<View style={s.skeletonList}>{[0,1,2].map(index=><View key={index} style={s.skeletonCard}><View style={s.skeletonThumb}/><View style={s.skeletonCopy}><View style={s.skeletonLine}/><View style={[s.skeletonLine,s.skeletonLineShort]}/><View style={[s.skeletonLine,s.skeletonLineMid]}/></View></View>)}</View>:null}
    {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{hasUsableSnapshot?a('Could not refresh. Showing previously loaded dungeons.')+' '+error:error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}
-   {showCatalog&&available.length===0&&locked.length===0&&eventExpeditions.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
-   {showCatalog&&available.length>0?<View style={s.catalogHeading}><Text style={s.section}>{a('Ready now')}</Text><Text style={s.catalogCount}>{available.length} {st('Dungeons')} · {groupCoopDungeonsByRegion(available).length} {st('Regions')}</Text></View>:null}
-   {showCatalog&&groupCoopDungeonsByRegion(available).map(group=>{const accent=REGION_ACCENT[group.region]??'gold';return <View key={group.region} style={s.regionGroup}>
-     <View style={[s.regionBand,s[('regionBand_'+accent) as 'regionBand_gold']]}>
-       <View style={s.regionBandHead}><Text style={[s.regionName,s[('regionName_'+accent) as 'regionName_gold']]}>{group.region}</Text><Text style={s.regionProgress}>{group.availableCount} {st('Ready')}</Text></View>
-       {REGION_TAGLINE[group.region]?<Text style={s.regionTagline}>{st(REGION_TAGLINE[group.region])}</Text>:null}
-     </View>
-     {group.dungeons.map((dungeon,index)=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} featured={index===0} onPress={()=>onSelect(dungeon)}/>)}
-   </View>;})}
-   {showCatalog&&eventExpeditions.length>0?<View style={s.eventSection}><Text style={s.section}>{ct(language,'event.section')}</Text>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}</View>:null}
+   {showCatalog&&available.length===0&&locked.length===0&&sortedEvents.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
+   {showCatalog&&sortedEvents.length>0?<View style={s.eventSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{ct(language,'event.section')}</Text><View style={s.dividerLine}/></View>
+     {sortedEvents.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}
+   </View>:null}
+   {showCatalog&&available.length>0?<View style={s.availableSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{a("Available dungeons")}</Text><View style={s.dividerLine}/></View>
+     {available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} expanded={expandedId===dungeon.id} selectedTier={quickTier} onTier={setQuickTier} onPress={()=>{setExpandedId(current=>current===dungeon.id?null:dungeon.id);setQuickTier(dungeon.difficulties[0]??1);}} onPrepare={tier=>onSelect(dungeon,tier)}/>)}
+   </View>:null}
    {showCatalog&&mode==='qmode'&&echoTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoTools}} onPress={()=>setShowEchoTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("My Echo & sharing")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showEchoTools?'−':'+'}</Text></Pressable>{showEchoTools?echoTools:null}</>:null}
-   {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?groupCoopDungeonsByRegion(locked).map(group=>{const accent=REGION_ACCENT[group.region]??'gold';return <View key={group.region} style={s.regionGroup}>
-     <View style={[s.regionBand,s[('regionBand_'+accent) as 'regionBand_gold']]}>
-       <View style={s.regionBandHead}><Text style={[s.regionName,s[('regionName_'+accent) as 'regionName_gold']]}>{group.region}</Text><Text style={s.regionProgress}>{group.dungeons.length} {st('Locked')}</Text></View>
-       {REGION_TAGLINE[group.region]?<Text style={s.regionTagline}>{st(REGION_TAGLINE[group.region])}</Text>:null}
-     </View>
-     {group.dungeons.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}
-   </View>;}):null}</>:null}
+   {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?<View style={s.availableSection}>{locked.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} expanded={false} selectedTier={1} onTier={()=>{}} onPress={()=>onSelect(dungeon)} onPrepare={()=>onSelect(dungeon)}/>)}</View>:null}</>:null}
  </ExpeditionScreenShell>;
 }
 
-function DungeonCard({language,dungeon,onPress,featured=false}:{language:Language;dungeon:CoopDungeonView;onPress:()=>void;featured?:boolean}){
+function DungeonCard({language,dungeon,onPress,onPrepare,onTier,selectedTier,expanded}:{language:Language;dungeon:CoopDungeonView;onPress:()=>void;onPrepare:(tier:CoopTier)=>void;onTier:(tier:CoopTier)=>void;selectedTier:CoopTier;expanded:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
- const st=useSocialText();
-  const status=dungeon.available?ct(language,'browse.available'):`${ct(language,'browse.locked')}: ${dungeon.lockedReason}`;
-  const inDev=dungeon.lockedReason==='In Development';
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${dungeon.name}. ${status}. ${ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})}`} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.questCard,featured&&dungeon.available&&s.featuredQuest,!dungeon.available&&s.lockedQuest,pressed&&s.pressed]}>
-    <View style={s.cardRow}>
-      <View style={s.cardThumbHolder}>
-        <CoopImageSlot assetId={dungeon.id==='EXP_001'?'rootbound_hero':dungeon.artId} size="thumbnail" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>
-        {inDev?<View style={s.ribbon}><Text style={s.ribbonText}>{st('Soon')}</Text></View>:null}
-      </View>
-      <View style={s.cardCopy}><View style={s.cardNameRow}><Text numberOfLines={2} style={[s.cardTitle,s.flex]}>{dungeon.name}</Text>{featured&&dungeon.available?<StateChip label={ct(language,'browse.available')} tone="success"/>:null}</View><Text style={s.questMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {accountText(language,'min')}</Text><Text numberOfLines={2} style={dungeon.available?s.routeHint:s.lock}>{dungeon.available?`${dungeon.preBossRoomMin===dungeon.preBossRoomMax?dungeon.preBossRoomMin:`${dungeon.preBossRoomMin}–${dungeon.preBossRoomMax}`} ${accountText(language,'rooms before the boss')}${dungeon.expectedMarksByTier?.[1]?` · ~${dungeon.expectedMarksByTier[1]} ${accountText(language,'Expedition Marks')}`:''}`:dungeon.lockedReason}</Text></View>
-      <Text style={s.cardChevron}>›</Text>
-    </View>
-  </Pressable>;
+ const st=useSocialText(),a=(value:string)=>accountText(language,value);
+ const status=dungeon.available?ct(language,'browse.available'):ct(language,'browse.locked')+': '+dungeon.lockedReason;
+ const inDev=dungeon.lockedReason==='In Development';
+ const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
+ return <View style={[s.questCard,expanded&&s.expandedQuest,!dungeon.available&&s.lockedQuest]}>
+   <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={dungeon.name+'. '+status+'. '+ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.cardPressArea,pressed&&s.pressed]}>
+     <View style={s.cardRow}><View style={s.cardThumbHolder}><CoopImageSlot assetId={dungeon.id==='EXP_001'?'rootbound_hero':dungeon.artId} size="thumbnail" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>{inDev?<View style={s.ribbon}><Text style={s.ribbonText}>{st('Soon')}</Text></View>:null}</View>
+       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {a('min')}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?roomCount+' '+a('rooms before the boss')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
+       <Text style={s.compactChevron}>{expanded?'⌄':'›'}</Text>
+     </View>
+   </Pressable>
+   {expanded&&dungeon.available?<View style={s.expandArea}><Text style={s.tierHeading}>{ct(language,'details.difficulty')}</Text><View style={s.quickTierRow}>{dungeon.difficulties.map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:selectedTier===value}} onPress={()=>onTier(value)} style={[s.quickTierButton,selectedTier===value&&s.quickTierSelected]}><Text style={[s.quickTierText,selectedTier===value&&s.quickTierTextSelected]}>{ct(language,'details.difficulty')} {value}</Text></Pressable>)}</View><PrimaryAction label={a("Prepare Loadout")} onPress={()=>onPrepare(dungeon.difficulties.includes(selectedTier)?selectedTier:dungeon.difficulties[0])}/></View>:null}
+ </View>;
+}
+
+/** Use event-defined accents when published; previews fall back to their known festival palette. */
+function expeditionAccent(event:CoopEventExpeditionPreview){
+ const published=liveEventDef(event.liveEventId??'');
+ if(published?.accent&&/^#[\da-fA-F]{6}$/.test(published.accent))return published.accent;
+ const id=(event.liveEventId??event.id).toUpperCase(),name=event.eventName.toLowerCase();
+ if(id.includes('FROSTFALL')||id.includes('ANNUAL_012')||name.includes('frostfall'))return '#79c9ec';
+ if(id.includes('VEILBREAK')||id.includes('ANNUAL_010')||name.includes('veilbreak'))return '#f47a36';
+ if(id.includes('HEARTBOND')||name.includes('heartbond'))return '#ef91b8';
+ if(id.includes('BLOOMWAKE')||name.includes('bloomwake'))return '#8fd69b';
+ if(id.includes('SUNCREST')||name.includes('suncrest'))return '#e4b45f';
+ if(id.includes('STARFALL')||name.includes('starfall'))return '#b7a1fa';
+ if(id.includes('TURNING')||name.includes('turning'))return '#e2c58a';
+ return '#b7a1fa';
 }
 
 function EventExpeditionCard({language,event,onPress}:{language:Language;event:CoopEventExpeditionPreview;onPress:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
- const st=useSocialText();
-  const available=event.status==='available',definition=liveEventDef(event.liveEventId??''),visuals=definition?liveEventVisuals(definition.visualKey):seasonalIdentity(event)?liveEventVisuals('veilbreak'):undefined;
-  return <Pressable accessibilityRole="button" accessibilityLabel={event.name+'. '+(available?ct(language,'browse.available'):event.lockedReason??ct(language,'event.preview'))} onPress={onPress} style={({pressed})=>[s.cardPress,pressed&&s.pressed]}>
-   <FantasyPanel><View style={s.cardRow}>{visuals?<Image source={seasonalDungeonArtwork(event.id,visuals.heroBackground)} resizeMode="cover" style={{width:72,height:88,borderRadius:10}}/>:null}<View style={s.cardCopy}><Text style={s.eventName}>{event.eventName}</Text><Text style={s.cardTitle}>{event.name}</Text><Text style={s.levels}>{ct(language,'browse.requiresLevel',{level:event.minLevel})}</Text></View></View><View style={s.modeHead}><View style={s.flex}><DungeonReward source={visuals?.commonCurrencyIcon} title={event.rewardMarks+' '+(definition?.currencyName??accountText(language,'event currency'))}/></View><StateChip label={available?st('LIVE'):ct(language,'event.preview')} tone={available?'success':'warning'}/></View>{!available&&event.lockedReason?<Text style={s.lock}>{event.lockedReason}</Text>:null}</FantasyPanel>
-  </Pressable>;
+ const st=useSocialText(),available=event.status==='available',definition=liveEventDef(event.liveEventId??''),visuals=definition?liveEventVisuals(definition.visualKey):seasonalIdentity(event)?liveEventVisuals('veilbreak'):undefined;
+ const accent=expeditionAccent(event);
+ return <Pressable accessibilityRole="button" accessibilityLabel={event.name+'. '+(available?ct(language,'browse.available'):event.lockedReason??ct(language,'event.preview'))} onPress={onPress} style={({pressed})=>[s.eventCard,{borderColor:accent,backgroundColor:accent+'13'},pressed&&s.pressed]}>
+   <View style={s.cardRow}>
+     {visuals?<Image source={seasonalDungeonArtwork(event.id,visuals.heroBackground)} resizeMode="cover" style={s.eventThumb}/>:<View style={[s.eventFallback,{borderColor:accent}]}><Text style={{color:accent,fontSize:24}}>✦</Text></View>}
+     <View style={s.cardCopy}><Text style={[s.eventName,{color:accent}]}>{event.eventName}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{event.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:event.minLevel})} · {event.rewardMarks} {definition?.currencyName??accountText(language,'event currency')}</Text><Text style={[s.eventStatus,{color:accent}]}>{available?st('LIVE'):ct(language,'event.preview')}</Text></View>
+     <Text style={[s.compactChevron,{color:accent}]}>›</Text>
+   </View>
+ </Pressable>;
 }
 
 function seasonalIdentity(event:CoopEventExpeditionPreview){
-  if(event.id.includes('VEILBREAK')||event.eventName.toLowerCase().includes('veilbreak')) return {label:'GLOAM BREACH',short:'Ward lanterns weaken Blackout phases'};
-  return undefined;
+ if(event.id.includes('VEILBREAK')||event.eventName.toLowerCase().includes('veilbreak'))return {label:'GLOAM BREACH',short:'Ward lanterns weaken Blackout phases'};
+ return undefined;
 }
 
 type EventDetailsProps={language:Language;event:CoopEventExpeditionPreview;currentLevel?:number;loadoutReady?:boolean;notice?:string;busy?:boolean;onBack:()=>void;onLaunch:(tier:1|2|3|4|5)=>void;onRefresh?:()=>void};
@@ -223,6 +246,40 @@ function RoomTile({language,room}:{language:Language;room:CoopRoomType}){
  const {styles:s}=useCoopStyles(makeStyles);return <View style={s.room}><CoopImageSlot assetId={roomAsset[room]} size="node" accessibilityLabel={ct(language,roomKey[room])}/><Text numberOfLines={2} style={s.roomLabel}>{ct(language,roomKey[room])}</Text></View>}
 
 const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
+  finderHeader:{flexDirection:'row',alignItems:'center',gap:12,marginTop:2},
+  finderTitle:{fontSize:23,lineHeight:28,fontWeight:'800',color:coopColors.text},
+  finderSubtitle:{fontSize:12,lineHeight:17,color:coopColors.textMuted,marginTop:3},
+  shopShortcut:{minWidth:94,minHeight:42,paddingHorizontal:10,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,borderWidth:1,borderColor:coopColors.cyan,borderRadius:10,backgroundColor:coopColors.surfaceRaised},
+  shopShortcutText:{fontSize:13,fontWeight:'800',color:coopColors.text},
+  modeSegment:{flexDirection:'row',gap:4,padding:4,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},
+  modeOption:{flex:1,minHeight:42,justifyContent:'center',alignItems:'center',borderRadius:9},
+  modeOptionSelected:{backgroundColor:coopColors.selection,borderWidth:1,borderColor:coopColors.cyan},
+  modeOptionText:{fontSize:14,fontWeight:'700',color:coopColors.textMuted},
+  modeOptionTextSelected:{color:coopColors.text},
+  compactHint:{fontSize:12,lineHeight:16,color:coopColors.textMuted,marginTop:-7},
+  inlineTool:{flexDirection:'row',alignItems:'center',gap:8,padding:10,borderWidth:1,borderColor:coopColors.line,borderRadius:10,backgroundColor:coopColors.surface},
+  sectionDivider:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:1},
+  dividerLine:{flex:1,height:1,backgroundColor:coopColors.lineStrong,opacity:.7},
+  sectionLabel:{fontSize:12,lineHeight:18,fontWeight:'800',letterSpacing:.7,color:coopColors.textSecondary,textTransform:'uppercase'},
+  availableSection:{gap:9,marginTop:6},
+  cardPressArea:{minHeight:86,padding:10,justifyContent:'center'},
+  expandedQuest:{borderColor:coopColors.cyan,backgroundColor:coopColors.surfaceRaised},
+  regionMini:{fontSize:10,lineHeight:13,letterSpacing:.7,fontWeight:'700',textTransform:'uppercase',color:coopColors.cyan},
+  compactCardTitle:{fontSize:16,lineHeight:21,fontWeight:'800',color:coopColors.text},
+  compactCardMeta:{fontSize:12,lineHeight:17,color:coopColors.textSecondary},
+  compactCardReward:{fontSize:11,lineHeight:15,color:coopColors.gold,fontWeight:'600'},
+  compactChevron:{fontSize:22,lineHeight:25,color:coopColors.cyan},
+  expandArea:{gap:9,padding:12,paddingTop:8,borderTopWidth:1,borderTopColor:coopColors.line},
+  tierHeading:{fontSize:12,lineHeight:17,color:coopColors.textSecondary,fontWeight:'700'},
+  quickTierRow:{flexDirection:'row',gap:7},
+  quickTierButton:{flex:1,minHeight:40,paddingHorizontal:4,justifyContent:'center',alignItems:'center',borderRadius:8,borderWidth:1,borderColor:coopColors.line,backgroundColor:coopColors.surface},
+  quickTierSelected:{borderColor:coopColors.cyan,backgroundColor:coopColors.selection},
+  quickTierText:{fontSize:11,fontWeight:'700',color:coopColors.textMuted},
+  quickTierTextSelected:{color:coopColors.text},
+  eventCard:{minHeight:88,padding:10,borderRadius:12,borderWidth:2,borderLeftWidth:4},
+  eventThumb:{width:65,height:69,borderRadius:8},
+  eventFallback:{width:65,height:69,borderWidth:1,borderRadius:8,backgroundColor:coopColors.surface,alignItems:'center',justifyContent:'center'},
+  eventStatus:{fontSize:10,lineHeight:13,fontWeight:'800',letterSpacing:.7},
   catalogIntro:{...coopTypography.body,color:coopColors.textSecondary},catalogHeading:{flexDirection:'row',alignItems:'baseline',justifyContent:'space-between',gap:8},catalogCount:{...coopTypography.meta,color:coopColors.textMuted},questCard:{minHeight:88,padding:10,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},featuredQuest:{borderColor:coopColors.goldDim,backgroundColor:coopColors.surfaceRaised},cardNameRow:{flexDirection:'row',alignItems:'center',gap:6,minWidth:0},lockedQuest:{opacity:.65},questMeta:{...coopTypography.meta,color:coopColors.textSecondary},routeHint:{fontSize:12,lineHeight:17,color:coopColors.gold,fontWeight:'600'},
   skeletonList:{gap:coopSpacing.sm},
   skeletonCard:{minHeight:88,padding:10,flexDirection:'row',gap:coopSpacing.md,alignItems:'center',borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface,opacity:.55},

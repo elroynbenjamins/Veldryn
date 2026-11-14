@@ -33,7 +33,7 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
  const min=Math.min(...withSales.map(row=>row.point?.lowGold??max));
  const chosen=withSales.find(row=>row.date===selectedDate)
    ??withSales[withSales.length-1]??{date:'',label:'',point:null};
- const price=(n:number)=>formatLocalizedNumber(language,n);
+ const price=(n:number)=>language==='de'?n.toLocaleString(language==='de'?'de-DE':'en-US'):formatLocalizedNumber(language,n);
  return <View style={styles.root}>
   <View style={styles.headingRow}>
    <View style={styles.titleGroup}>

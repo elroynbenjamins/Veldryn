@@ -1,6 +1,7 @@
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
+import {huntActiveDamageEvents} from './hunt-active-abilities';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -622,15 +623,24 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
  // Only report a completed, genuinely applied recovery benefit; ordinary
  // class training and companion stat multipliers are not active casts.
- let lastSkillEffect:undefined|{atMs:number;name:string;kind:'recovery'};
+ let lastSkillEffect:undefined|{atMs:number;name:string;kind:'recovery'|'damage'|'heal';amount?:number;source?:'class'|'companion'};
+ const equippedAbilityCompanion=prepared.companion.contributionPct>0
+  ?COMBAT_COMPANIONS.find(def=>def.id===c.equippedCombatCompanionId):undefined;
+ const techniqueInput={classId:c.classId,classSkillLevel:characterClassSkills(c)[0]?.level??1,
+  companion:equippedAbilityCompanion?{id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
+   abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
+   role:equippedAbilityCompanion.role,contributionPct:prepared.companion.contributionPct}:undefined};
  const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false)=>{
+   let hits;
    if(runtime.huntOptions){
      const plan=planFor(index,isPrepared);
      const exchange=combatEncounterDamage(runtime,champion,plan.enemyAttackCount,plan.fightSeconds);
-     return regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
+     hits=regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
+   }else{
+     const exchange=combatEncounterDamage(runtime,champion);
+     hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
-   const exchange=combatEncounterDamage(runtime,champion);
-   return huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
+   return huntActiveDamageEvents(hits,{...techniqueInput,encounterNumber:(activity.sessionKills??0)+index});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -650,10 +660,23 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      const hitAtMs=segment.startsAtMs+(hit.fraction-segment.fromFraction)*segment.cycleSeconds*1000;
      if(hit.actor==='player'){
        enemyHp=Math.max(0,enemyHp-hit.damage);
+       // This class technique actually concentrates the damage of a landed
+       // strike. Companion damage shares the same resolved strike budget.
+       const effect=hit.activeAbility??hit.companionAssist;
+       if(effect)lastSkillEffect={atMs:hitAtMs,name:effect.name,kind:'damage',amount:effect.amount,source:effect.source};
      }else{
        // Incoming damage is applied on the strike, not at the kill/claim boundary.
        // Healing cannot retroactively prevent a lethal hit.
-       hp=hp-hit.damage<=0?0:Math.min(runtime.stats.hp,hp-hit.damage+hit.healing);
+       const hpAfterDamage=hp-hit.damage;
+       const appliedHealing=hpAfterDamage>0?Math.min(hit.healing,Math.max(0,runtime.stats.hp-hpAfterDamage)):0;
+       hp=hpAfterDamage<=0?0:Math.min(runtime.stats.hp,hpAfterDamage+hit.healing);
+       if(appliedHealing>0&&equippedAbilityCompanion?.role==='support'&&equippedAbilityCompanion.activeAbility.effect.kind==='heal'&&encounterNumber%2===0){
+         const companionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600;
+         const classHeal=runtime.stats.attack*(runtime.style.onKillAttackHealPct??0);
+         const share=companionHeal/(companionHeal+classHeal||1);
+         const credited=Math.min(appliedHealing,appliedHealing*share);
+         if(credited>0.00001)lastSkillEffect={atMs:hitAtMs,name:equippedAbilityCompanion.name+': '+equippedAbilityCompanion.activeAbility.name,kind:'heal',amount:credited,source:'companion'};
+       }
        while(hp>0&&hp/runtime.stats.hp<=threshold){
          const nextFood=foodOrder.find(row=>row.heal>0&&(foodLeft.get(row.id)??0)>0);
          if(!nextFood)break;
@@ -702,7 +725,7 @@ export interface ActiveCombatHitCursor{
  atMs:number;
  stoppedReason:string;
  lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
- lastSkillEffect?:{atMs:number;name:string;kind:'recovery'};
+ lastSkillEffect?:{atMs:number;name:string;kind:'recovery'|'damage'|'heal';amount?:number;source?:'class'|'companion'};
 }
 /** Exact hit projection, with optional incremental replay so a foreground clock
  * never recalculates a full 24-hour AFK backlog every animation tick. */

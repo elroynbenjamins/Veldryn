@@ -271,7 +271,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
 
   const won=bossHp<=0&&playerHp>0;
   push({atMs:Math.min(FALLEN_KNIGHT_MAX_DURATION_MS,now+450),type:won?'victory':'defeat',label:won?'The Fallen Knight falls.':'You are forced back from the oathglass road.'});
-  events.sort((a,b)=>a.atMs-b.atMs||a.type.localeCompare(b.type));
+  events.sort((a,b)=>a.atMs-b.atMs||(a.type==='heal'?-1:b.type==='heal'?1:a.type.localeCompare(b.type)));
   return {
     bossId:'FALLEN_KNIGHT',bossName:'Fallen Knight',mode,won,
     durationMs:Math.min(FALLEN_KNIGHT_MAX_DURATION_MS,now+450),

@@ -7,7 +7,7 @@ import type {FallenKnightBattleResult,StoryBossEvent} from './story-boss';
  * This is presentation-only: never feed these projections into settlement.
  */
 export function storyBossPlaybackEvents(battle:Pick<FallenKnightBattleResult,'events'|'playerMaxHp'|'bossMaxHp'>):StoryBossEvent[]{
- const events=[...battle.events].sort((a,b)=>a.atMs-b.atMs||a.type.localeCompare(b.type));
+ const events=[...battle.events].sort((a,b)=>a.atMs-b.atMs||(a.type==='heal'?-1:b.type==='heal'?1:a.type.localeCompare(b.type)));
  const initial=events.find(event=>event.type==='battle_start');
  const clampHp=(value:number,max:number)=>Math.max(0,Math.min(max,value));
  let playerHp=clampHp(initial?.playerHp??battle.playerMaxHp,battle.playerMaxHp);

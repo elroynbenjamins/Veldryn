@@ -575,8 +575,11 @@ function huntClassSurvivalEvents(events, input) {
   hit.classGuardAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "shield", amount: prevented };
   if (profile.recoveryOfPreventedPct > 0) {
     const siphon = prevented * profile.recoveryOfPreventedPct;
-    hit.healing += siphon;
-    hit.classHealingBudget = (hit.classHealingBudget ?? 0) + siphon;
+    if (siphon > 1e-6) {
+      hit.healing += siphon;
+      hit.classHealingBudget = (hit.classHealingBudget ?? 0) + siphon;
+      hit.classHealAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "heal", amount: siphon };
+    }
   }
   if (profile.followupGuardPct > 0) {
     const followup = eligible.find((event) => event !== first && event.actor === "enemy");
@@ -53179,6 +53182,14 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   const combatXpScale = characterCombatXpScale(m.level, m.boss);
   const rewardItems = items, champion = championBonus(Math.floor(m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
   const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
+  const xpFractionKey = "combat:base-xp-fraction", goldFractionKey = "combat:base-gold-fraction";
+  const storedFraction = (key) => {
+    const value = state.rewardRemainders?.[key];
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(0.999999999, value)) : 0;
+  };
+  const rawBaseXp = sim.kills * baseXpPerKill + storedFraction(xpFractionKey), rawBaseGold = sim.kills * baseGoldPerKill + storedFraction(goldFractionKey);
+  const earnedBaseXp = Math.floor(rawBaseXp + 1e-9), earnedBaseGold = Math.floor(rawBaseGold + 1e-9);
+  const nextXpFraction = Math.max(0, Math.min(0.999999999, rawBaseXp - earnedBaseXp)), nextGoldFraction = Math.max(0, Math.min(0.999999999, rawBaseGold - earnedBaseGold));
   const explorationSkill = state.skills.find((skill2) => skill2.skillId === "exploration");
   const explorationRaw = sim.kills * Math.max(1, Math.ceil(m.level / 12));
   const explorationRemainderKey = "combat:passive-exploration-xp-tenths";
@@ -53194,7 +53205,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, foodConsumedById: sim.foodConsumedById, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder, [xpFractionKey]: nextXpFraction, [goldFractionKey]: nextGoldFraction }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: earnedBaseXp + momentumXp + champion.xp, gold: earnedBaseGold + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, foodConsumedById: sim.foodConsumedById, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward3, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {

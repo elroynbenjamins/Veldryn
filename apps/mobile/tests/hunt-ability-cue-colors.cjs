@@ -21,4 +21,12 @@ for(const file of ['components/BattleStage.tsx','components/HuntingPreview.tsx']
  assert.ok(screen.includes('classId={state.character!.classId}'),file+' must pass the selected class to the shared skill renderer');
  assert.ok(screen.includes('<HuntAbilityCues'),file+' must render authoritative skill feedback');
 }
+const boss=source('components/StoryBossBattleModal.tsx');
+assert.ok(boss.includes('CLASS_ICON_ACCENT[state.character.classId]'),'Story boss class effects must use approved class colors');
+assert.ok(boss.includes("event.type==='class_skill'"),'Story boss should display only real defensive or healing events');
+const dungeon=source('components/coop/DungeonCombatStage.tsx');
+assert.ok(dungeon.includes('CLASS_ICON_ACCENT[actorSlot.classId as ClassId]'),'Dungeon banners must use the actual acting class color');
+assert.ok(dungeon.includes("skillActivation?.kind==='class'"),'Companion casts must never take the class accent');
+assert.ok(dungeon.includes('battleText(language,skillActivation.name)'),'Real dungeon class techniques must be localized');
+
 console.log('PASS: all nine class icon accents drive real hunt skill labels in both combat views');

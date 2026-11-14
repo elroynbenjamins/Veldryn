@@ -85,7 +85,7 @@ for(const [id,row] of Object.entries(germanGuildBankResources)){
   assert.equal(guildBankResourceName(locale,id,row.source),row.source,'do not change other-language names');
  assert.equal(guildBankResourceName('de',id,'Server-renamed '+row.source),'Server-renamed '+row.source,'unverified source must pass through');
 }
-assert.equal(guildBankResourceName('de','user_authored','Custom timber assert.equal(guildBankResourceName('de','user_authored','Custom console.log('PASS: Guild Bank (104)'),'Custom console.log('PASS: Guild Bank (104)');'),'Custom timber assert.equal(guildBankResourceName('de','user_authored','Custom console.log('PASS: Guild Bank (104)'),'Custom console.log('PASS: Guild Bank (104)');');
+assert.equal(guildBankResourceName('de','user_authored','Custom timber $&'),'Custom timber $&');
 assert.equal(guildBankResourceName('de','gold','Gold'),'Gold');
 assert.equal(guildBankResourceShortName('en','GUILD_REINFORCED_TIMBER','Reinforced Timber Bundle'),'Timber Bundle');
 assert.ok(bank.includes('guildBankResourceName(language,id,english)'),'Guild Bank must use locale-guarded material names');

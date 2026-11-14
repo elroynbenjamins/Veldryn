@@ -1,5 +1,12 @@
 # Localization status
 
+## November 14, 2026: Russian progression, weather, profiles and co-op follow-up
+
+- Added **738** exact-source Russian UI strings across four focused catalogs: **165** progression/weather/events, **199** profile/build guides, **199** Account actions/goal prompts, and **175** social/Guild/Party/live dungeon states.
+- Total authored Russian coverage increased to **6,684 / 7,228 (92.5%)** with **544** authored strings still falling back to English. This includes the prior continuation pass and existing starter translations.
+- Source audit found no duplicate catalog keys, missing authored keys in the new catalogs, blank translations or interpolation-token mismatches; canonical/server-owned values continue to bypass translation.
+- Loaded each catalog through `earlyLocaleText` and extended `russian-focus-localization.cjs` to reject future cross-catalog collisions and validate runtime lookup. Full CI, native-speaker review and narrow-screen UI verification remain pending.
+
 ## November 14, 2026: Russian Guild, Party, Account and gameplay continuation
 
 - Added **376** new exact-source Russian UI translations, increasing authored coverage from **5,570 / 7,228 (77.1%)** to **5,946 / 7,228 (82.3%)**; **1,282** authored strings remain English fallback.

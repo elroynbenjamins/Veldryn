@@ -117,7 +117,7 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initi
     if(type==='companion_ascend'&&target?.nextAscensionTier){const cap=COMPANION_STAGE_CAPS[target.def.rarity][target.nextAscensionTier];return `ASCENSION COMPLETE · ${name} reached Tier ${target.nextAscensionTier}. Level cap ${cap} is now available.`;}
     if(type==='companion_master')return `PRESTIGE MASTERY COMPLETE · ${name} reached its final mastery milestone.`;
     if(type==='companion_bond_reward'){const level=Number(args?.level??0),essence=COMPANION_BOND_ESSENCE_REWARDS[level as keyof typeof COMPANION_BOND_ESSENCE_REWARDS],reward=essence===undefined?'Bond reward':essence+' Essence';return `BOND REWARD CLAIMED · ${name} · Bond ${level} · ${reward}.`;}
-    if(type==='companion_recruit')return `RECRUITED · ${name} joined your roster.`;
+    if(type==='companion_recruit')return `${name} joined your permanent roster.`;
     if(type==='companion_technique')return `TECHNIQUE UPDATED · ${name}'s combat choice is ready.`;
     if(type==='companion_boss_rematch')return 'FALLEN KNIGHT REMATCH · Weekly boss rewards and progression updated.';
     return 'Companion progress saved.';

@@ -77,6 +77,7 @@ export const companionTranslationRows={
  "Choose a companion outside your class role. Your other two starter roles will join through Silverbrook and Old Mines progress.":["Wähle einen Begleiter mit einer anderen Rolle als deine Klasse. Die beiden übrigen Startrollen schließen sich durch Fortschritte in Silverbrook und Old Mines an.","Elige un compañero con un rol distinto al de tu clase. Los otros dos roles iniciales se unirán al avanzar en Silverbrook y Old Mines.","Kies een metgezel met een andere rol dan je klasse. De andere twee startrollen komen vrij via voortgang in Silverbrook en Old Mines.","Scegli un compagno con un ruolo diverso dalla tua classe. Gli altri due ruoli iniziali si uniranno progredendo a Silverbrook e nelle Old Mines.","Choisis un compagnon dont le rôle diffère de celui de ta classe. Les deux autres rôles de départ se débloquent en progressant à Silverbrook et Old Mines."],
  "Choose {name}, {role}":["{name} wählen, Rolle: {role}","Elegir a {name}, rol: {role}","Kies {name}, rol: {role}","Scegli {name}, ruolo: {role}","Choisir {name}, rôle : {role}"],
  "Recruiting…":["Wird rekrutiert…","Reclutando…","Rekruteren…","Reclutamento…","Recrutement…"],
+ "Recruit companion":["Begleiter rekrutieren","Reclutar compañero","Metgezel rekruteren","Recluta compagno","Recruter un compagnon"],
  "Choose companion":["Begleiter wählen","Elegir compañero","Kies metgezel","Scegli compagno","Choisir un compagnon"],
 
  "Complete Into Ironwood and choose your starter companion.":["Schließe Into Ironwood ab und wähle deinen ersten Begleiter.","Completa Into Ironwood y elige a tu primer compañero.","Voltooi Into Ironwood en kies je eerste metgezel.","Completa Into Ironwood e scegli il tuo primo compagno.","Terminez Into Ironwood et choisissez votre premier compagnon."],
@@ -1110,6 +1111,8 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
  companionCatalogs.ru[key]=key;
  companionCatalogs.tr[key]=key;
 }
+companionCatalogs.ru["Recruit companion"]="Нанять спутника";
+companionCatalogs.tr["Recruit companion"]="Yoldaş edin";
 export const translateCompanion=createTranslator(companionCatalogs);
 export const companionTranslator=(language:Language)=>(key:CompanionMessageKey,params?:Record<string,string|number>)=>translateCompanion(language,key,params);
 
@@ -1200,6 +1203,8 @@ export function companionMessage(language:Language,message:string):string{
  if(match)return t("{name}'s combat choice is ready.",{name:match[1]});
  match=/^(.*) · Bond (\d+) · (.*)\.$/.exec(message);
  if(match){const essence=/^(\d+) Essence$/.exec(match[3]);return t('{name} · Bond {level} · {reward}.',{name:match[1],level:match[2],reward:essence?essence[1]+' × '+t('Essence'):companionLabel(language,match[3])});}
+ const recruited=/^(.*) joined your permanent roster\.$/.exec(message);
+ if(recruited)return t('{value0} joined your permanent roster.',{value0:recruited[1]});
  const content=companionContent(language,message);
  return content!==message||Object.prototype.hasOwnProperty.call(companionTranslationRows,message)?content:companionError(language,message);
 }

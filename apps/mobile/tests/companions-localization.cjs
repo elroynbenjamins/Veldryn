@@ -182,6 +182,7 @@ const baseline={
     "btn('companion_codex',{ id: m.id },m.claimed || !m.complete)",
     "btn('companion_equip',{ id: selection },!model.compatible || !idle(selection))",
     "btn('companion_monthly',{ id },claimed || !completed)",
+    "btn('companion_recruit',{ id: model.def.id })",
     "btn('companion_showcase',{ id, ids: view.codex.showcaseCompanionIds },view.codex.favoriteCompanionId === id)",
     "btn('companion_showcase',{ id: view.codex.favoriteCompanionId, ids: view.codex.showcaseCompanionIds.includes(id) ? view.codex.showcaseCompanionIds.filter(x => x !== id) : [...view.codex.showcaseCompanionIds, id] },!view.codex.showcaseCompanionIds.includes(id) && view.codex.showcaseCompanionIds.length >= view.codex.showcaseSlotsUnlocked)",
     "btn('companion_special',{ id: c.id, ids: safeTeam },!valid.ok || completed)",

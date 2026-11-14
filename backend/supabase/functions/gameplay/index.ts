@@ -43606,7 +43606,10 @@ var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatC
 var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
 var isStarterCompanionId = (id) => typeof id === "string" && starterCompanionIds.has(id);
-var claimedQuest = (state, id) => (state.quests ?? []).some((entry2) => entry2.questId === id && entry2.status === "claimed");
+function companionCanRecruitFromRequirements(def) {
+  return COMBAT_COMPANIONS.some((row) => row.id === def.id) && !isStarterCompanionId(def.id) && def.origin.type !== "event" && def.origin.id !== "GUILD_TOKEN_SHOP" && def.unlockRequirements.length > 0;
+}
+var claimedQuest = (state, id) => [state.quests ?? [], ...(state.otherCharacters ?? []).map((row) => row.quests ?? [])].some((quests) => quests.some((entry2) => entry2.questId === id && entry2.status === "claimed"));
 var defaultCompanionSanctuary = () => ({ trainingGroundLevel: 0, essenceBasinLevel: 0, bondHallLevel: 0, expeditionPensLevel: 0, masteryChamberLevel: 0 });
 var defaultOwnedCompanionProgress = (nowMs = Date.now()) => ({ level: 1, xp: 0, ascensionTier: 0, bondLevel: 1, bondXp: 0, bondTraitUnlocked: false, obtainedAtMs: nowMs });
 var legacyOwnedCompanionProgress = () => ({ level: 10, xp: 0, ascensionTier: 0, bondLevel: 2, bondXp: 0, bondTraitUnlocked: false });
@@ -43819,6 +43822,15 @@ function reconcileCombatCompanionUnlocks(state, nowMs = Date.now()) {
     }
   }
   return next;
+}
+function recruitEligibleCombatCompanion(state, id, nowMs = Date.now()) {
+  const def = combatCompanionDef(id);
+  if (!def || !companionCanRecruitFromRequirements(def)) throw new Error("companion_recruitment_requires_original_source");
+  const clean2 = sanitizeCombatCompanionState(state);
+  if (clean2.account.unlockedCombatCompanionIds?.includes(id)) return clean2;
+  if (!def.unlockRequirements.every((requirement) => companionUnlockRequirementMet(clean2, requirement)))
+    throw new Error("companion_recruitment_requirements_incomplete");
+  return unlockCombatCompanion(clean2, id, nowMs);
 }
 function unlockCombatCompanion(state, id, nowMs = Date.now()) {
   const def = combatCompanionDef(id);
@@ -57008,6 +57020,7 @@ var fields = {
   companion_bond_reward: ["id", "level"],
   companion_boss_rematch: [],
   companion_starter: ["id"],
+  companion_recruit: ["id"],
   companion_equip: ["id"],
   companion_unequip: [],
   companion_housing_upgrade: ["id"],
@@ -57349,6 +57362,10 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "companion_starter":
       state = chooseStarterCombatCompanion(state, text(a, "id"), now);
       message = "Starter companion recruited";
+      break;
+    case "companion_recruit":
+      state = recruitEligibleCombatCompanion(state, text(a, "id"), now);
+      message = "Companion recruited";
       break;
     case "companion_equip":
       state = equipCombatCompanion(state, text(a, "id"));

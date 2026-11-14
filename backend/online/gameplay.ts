@@ -3,6 +3,7 @@ import {newGame} from '../../apps/mobile/src/core/game';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
 import {ensurePersonalSeasonalState} from '../../apps/mobile/src/core/personal-seasonal-state';
+import {snapshotEarnedLegacySeasonalClaims} from '../../apps/mobile/src/core/legacy-seasonal-claim';
 import {GATHERING,RECIPES} from '../../apps/mobile/src/content/skills';
 import {HERB_NODES} from '../../apps/mobile/src/content/herbalism';
 import {MONSTERS} from '../../apps/mobile/src/content/monsters';
@@ -48,7 +49,13 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    if(prior){if(prior.requestHash!==requestHash){await recordOutcome('conflict');return json({error:'idempotency_key_conflict'},409);}await recordOutcome('replayed');return json(prior.response);}
   }
   const loaded=await services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
-  const state=ensurePersonalSeasonalState(rebaseCombatGameState(loaded.state??newGame(loaded.serverNow)));
+  // A stored legacy claim must be frozen using trusted server data BEFORE the
+  // old account projection is migrated to the currently active character.
+  const storedState=rebaseCombatGameState(loaded.state??newGame(loaded.serverNow));
+  const trustedState=request.method==='POST'
+    ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
+    :storedState;
+  const state=ensurePersonalSeasonalState(trustedState);
   state.account.longTermAccountScopeId=accountId;
   state.account.guildMember=loaded.guildMember;
   // Retain an already-ended event's server-issued timestamps for one-time

@@ -53,18 +53,54 @@ export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
 }):HuntHit[]{
  const result=events.map(hit=>({...hit}));
  const landed=result.filter(hit=>hit.actor==='player'&&hit.damage>0);
- if(landed.length<2)return result;
  const ability=HUNT_CLASS_TECHNIQUES[input.classId];
  const classPulse=huntCooldownPulseAt({...input,cooldownSeconds:ability.cooldownSeconds});
- const first=landed[0],last=landed[landed.length-1];
- if(classPulse!==undefined&&timeOf(last,input.encounterStartedAtMs,input.cycleSeconds)>=classPulse-1e-3){
+ // The damage classes have different deterministic hit patterns, not a
+ // universal finisher with nine renamed labels. No extra enemy HP is removed.
+ // Defensive and restorative classes cast from genuine incoming-hit events.
+ if(landed.length>=2&&classPulse!==undefined){
+  const eligible=landed.filter(hit=>timeOf(hit,input.encounterStartedAtMs,input.cycleSeconds)>=classPulse-1e-3);
+  const first=landed[0],last=landed[landed.length-1];
+  const penultimate=landed[landed.length-2];
   const rank=Math.max(1,Math.min(100,Math.floor(input.classSkillLevel||1)));
-  const fraction=.10+.10*(rank-1)/99;
-  const shifted=Math.min(first.damage-1,Math.max(1,Math.floor(first.damage*fraction)));
-  if(shifted>0){
-   first.damage-=shifted;last.damage+=shifted;
-   last.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:last.damage};
+  const scale=(rank-1)/99;
+  const shift=(source:HuntHit,target:HuntHit,fraction:number)=>{
+   if(source===target)return 0;
+   const amount=Math.min(source.damage-1,Math.max(1,Math.floor(source.damage*fraction)));
+   if(!(amount>0))return 0;
+   source.damage-=amount;target.damage+=amount;
+   return amount;
+  };
+  let activation:HuntHit|undefined;
+  switch(input.classId){
+   case 'WAYFINDER': {
+    // Windshot front-loads a real later strike into the earliest ready shot.
+    const target=eligible.find(hit=>hit!==last);
+    if(target&&shift(last,target,.08+.07*scale)>0)activation=target;
+    break;
+   }
+   case 'RAVAGER': {
+    // Titan Swing concentrates a larger strike into the final blow.
+    if(eligible.includes(last)&&shift(first,last,.18+.14*scale)>0)activation=last;
+    break;
+   }
+   case 'HEXWEAVER': {
+    // Black Thread links a portion of the opener to two later strikes.
+    if(eligible.includes(last)){
+     const middle=penultimate!==first&&eligible.includes(penultimate)?penultimate:undefined;
+     const moved=middle?shift(first,middle,.055+.035*scale):0;
+     if(shift(first,last,.11+.07*scale)>0||moved>0)activation=last;
+    }
+    break;
+   }
+   case 'KNIFE_DANCER': {
+    // Scarlet Loop brings the finishing strike forward as a fast repeat.
+    const target=eligible.includes(penultimate)?penultimate:eligible.find(hit=>hit!==last);
+    if(target&&shift(last,target,.10+.10*scale)>0)activation=target;
+    break;
+   }
   }
+  if(activation)activation.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:activation.damage};
  }
  const companion=input.companion;
  if(companion?.role==='damage'&&companion.contributionPct>0){

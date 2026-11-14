@@ -18,6 +18,7 @@ import {RegionArtwork} from './RegionArtwork';
 import {StatBar} from './StatBar';
 import {battleText} from '../i18n/battle';
 import {CombatEffectShape} from './CombatAttackSprite';
+import {HuntAbilityCues} from './HuntAbilityCues';
 
 export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:GameState;monster:MonsterDef;elapsedSeconds:number;cycleSeconds:number}){
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
@@ -121,14 +122,16 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    </View>
   </Animated.View>
   <View style={s.details}>
-    <View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('COMBAT STYLE · PASSIVE')}</Text><Text style={s.ability}>{tr(view.style.name)}</Text><Text style={s.sub}>{tr(view.style.description)}</Text></View>
-    <View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('CLASS SKILLS · PASSIVE')}</Text><View style={s.passiveChips}>{classSkills.map((skill,index)=><View key={skill.skillId} style={s.passiveChip}><Text style={s.passiveChipText}>{tr(skillDefinitions[index]?.name??skill.skillId)} · {tr('Lv. {level}',{level:skill.level})}</Text></View>)}</View></View>
-    {combatCompanion?<View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('COMPANION · PASSIVE BONUS')}</Text><Text style={s.companionPassive}>{combatCompanion.name} · {tr('Combat bonus active')}</Text></View>:null}
-    {recentSkillEffects.map((recentSkillEffect,index)=><View key={recentSkillEffect.name+':'+recentSkillEffect.atMs+':'+index} accessibilityLiveRegion="polite" style={[s.recoveryCue,recentSkillEffect.kind==='damage'&&{borderColor:C.accent}]}>
-     <Text style={[s.recoveryCueLabel,recentSkillEffect.kind==='damage'&&{color:C.accent}]}>{tr(recentSkillEffect.kind==='recovery'?'ON-KILL RECOVERY':recentSkillEffect.source==='companion'?'COMPANION SKILL':'CLASS ABILITY')}</Text>
-     <Text numberOfLines={1} style={s.recoveryCueName}>{tr(recentSkillEffect.name)}</Text>
-     {recentSkillEffect.amount!==undefined&&recentSkillEffect.kind!=='recovery'?<Text style={s.recoveryCueAmount}>{tr(recentSkillEffect.kind==='heal'?'SKILL HEAL · {amount}':'SKILL DAMAGE · {amount}',{amount:displayStatPrecise(recentSkillEffect.amount)})}</Text>:null}
-    </View>)}
+    <HuntAbilityCues effects={recentSkillEffects} language={state.settings.language} formatAmount={damageValue}/>
+    <View style={s.passiveSummary}>
+     <Text numberOfLines={1} style={s.passiveLabel}>{tr('COMBAT STYLE · PASSIVE')} · {tr(view.style.name)}</Text>
+     <Text numberOfLines={2} style={s.sub}>{tr(view.style.description)}</Text>
+     <View style={s.passiveChips}>
+      <Text style={s.passiveLabel}>{tr('CLASS SKILLS · PASSIVE')}</Text>
+      {classSkills.map((skill,index)=><View key={skill.skillId} style={s.passiveChip}><Text style={s.passiveChipText}>{tr(skillDefinitions[index]?.name??skill.skillId)} · {tr('Lv. {level}',{level:skill.level})}</Text></View>)}
+     </View>
+     {combatCompanion?<Text numberOfLines={1} style={s.companionPassive}>{tr('COMPANION · PASSIVE BONUS')} · {combatCompanion.name}</Text>:null}
+    </View>
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>{tr('ENCOUNTER · {type}',{type:tr(view.encounter.archetype).toUpperCase()})}</Text><Text style={s.pressure}>{tr(view.encounter.pressure).toUpperCase()}</Text></View><Text style={s.sub}>{tr(view.encounter.summary)}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{tr(mechanic)}</Text></View>)}</View><Text style={s.tactic}>{tr('Tactic: {tactic}',{tactic:tr(view.encounter.tactic)})}</Text></View>
    <StatBar label={tr("Current health")} current={displayStat(fight?.playerHp??state.character!.currentHp)} max={displayStat(fight?.playerMaxHp??stats.hp)} reduceMotion={state.settings.reduceMotion}/>
    <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={displayStat(fight?.enemyHp??view.enemyHp)} max={displayStat(fight?.enemyMaxHp??view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
@@ -149,7 +152,7 @@ const s=StyleSheet.create({
  name:{...typography.bodyStrong,color:C.text,textAlign:'center'},hit:{...typography.caption,color:'#d5e0ec',textAlign:'center'},
  versus:{width:34,paddingTop:53,alignItems:'center',gap:4},vs:{...typography.caption,color:C.accent,fontWeight:'600'},motionHint:{fontSize:7,lineHeight:9,color:C.muted,fontWeight:'900',letterSpacing:.4,textAlign:'center'},
  details:{padding:12,gap:10},ability:{...typography.bodyStrong,color:C.accent},sub:{...typography.body,color:C.muted},
- passiveGroup:{gap:4},passiveLabel:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'900',letterSpacing:.65},
+ passiveSummary:{gap:5},passiveLabel:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'900',letterSpacing:.65},
  passiveChips:{flexDirection:'row',flexWrap:'wrap',gap:6},
  passiveChip:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
  passiveChipText:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'700'},

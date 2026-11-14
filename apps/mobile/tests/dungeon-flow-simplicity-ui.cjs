@@ -21,6 +21,12 @@ assert(browser.includes('onQuickMatch?<View style={s.inlineTool}'),'Live Quick M
 assert(browser.includes("mode==='live'&&liveTools?"),'Advanced group search remains accessible');
 assert(browser.includes("mode==='qmode'&&echoTools?"),'Echo sharing must not crowd primary browsing');
 assert(browser.includes('NPC or Echo allies fill the missing roles'),'Solo ally description must account for NPC fallback');
+const topBar=read('components/GameTopBar.tsx'),activityBar=read('components/ActiveActivityBar.tsx');
+const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
+assert(app.includes("compactActivityBar={tab==='Coop'}")&&topBar.includes('compact={compactActivityBar}')&&activityBar.includes('if(compact)return <Pressable'),'Dungeon browser uses a compact but interactive activity strip');
+assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'}")&&app.includes('onOpenChat={()=>{setChatInitialChannel')&&browser.includes('accessibilityLabel={st("World Chat")}'),'Dungeon chat dock becomes a header shortcut without losing chat access');
+assert(screen.includes('onShop={()=>setShowShop(true)}')&&browser.includes('s.shopShortcut'),'Shop shortcut uses the existing live Expedition Shop handler');
+
 assert(board.includes('showQuickMatch?<FantasyPanel'),'Optional group finder must avoid duplicate primary quick match action');
 assert(screen.includes("?quickLiveMatch:undefined"),'Quick Match must retain its server command when Live matchmaking is enabled');
 assert(screen.includes("coopClient.quickLive("),'Live Quick Match must use the server queue');

@@ -168,6 +168,7 @@
   ".core-build/apps/mobile/tests/combat-presentation.js",
   ".core-build/apps/mobile/tests/combat-hit-timeline.js",
   ".core-build/apps/mobile/tests/hunt-active-abilities.js",
+  ".core-build/apps/mobile/tests/combat-skill-regional-matrix.js",
   ".core-build/apps/mobile/tests/ordinary-hunt.js",
   ".core-build/apps/mobile/tests/solo-role-hunt-parity.js",
   ".core-build/apps/mobile/tests/combat-tactics.js",

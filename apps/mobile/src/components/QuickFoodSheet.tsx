@@ -19,7 +19,7 @@ import {ItemArtwork} from './ItemArtwork';
 const displayHealHp=(value:number)=>displayStat(Math.max(0,Math.round(value)));
 
 export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory}:{state:GameState;hunt:ActiveActivity|null;stopped:boolean;onCommand:(command:GameCommand)=>Promise<void>;onClose:()=>void;onInventory:()=>void}){
- const {gt,gl,language}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[section,setSection]=useState<'food'|'potions'>('food'),[expandedFoodId,setExpandedFoodId]=useState<string|null>(null),[showQueueHelp,setShowQueueHelp]=useState(false),inFlight=useRef(false);
+ const {gt,gl,language}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[section,setSection]=useState<'food'|'potions'>('food'),[expandedFoodId,setExpandedFoodId]=useState<string|null>(null),[showQueueHelp,setShowQueueHelp]=useState(false),[showAutoHelp,setShowAutoHelp]=useState(false),inFlight=useRef(false);
  const foods=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&itemDef(stack.itemId).type==='food'),[state.inventory.stacks]);
  const healingPotions=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&potionDef(stack.itemId)?.effect.kind==='healing'),[state.inventory.stacks]);
  const selectedPotionId=state.character?.equippedHealingPotionId,selectedPotion=selectedPotionId?potionDef(selectedPotionId):undefined;
@@ -51,7 +51,8 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
   <ScrollView style={s.foodScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.foodList}>
    {section==='food'?<>
     <View style={s.autoCard}>
-     <Text style={s.queueTitle}>{accountText(language,'AUTO-EAT')}</Text>
+     <View style={s.cardHeading}><Text style={s.queueTitle}>{accountText(language,'AUTO-EAT')}</Text><Pressable accessibilityRole="button" accessibilityLabel={gt('Food auto-heals during ordinary hunts. Selected healing potions trigger at this threshold during boss fights instead.')} accessibilityState={{expanded:showAutoHelp}} onPress={()=>setShowAutoHelp(value=>!value)} style={s.infoAction}><Text style={s.infoText}>?</Text></Pressable></View>
+     {showAutoHelp?<Text style={s.queueHint}>{gt('Food auto-heals during ordinary hunts. Selected healing potions trigger at this threshold during boss fights instead.')}</Text>:null}
      <View style={s.thresholds}>{([20,40,60,80] as const).map(threshold=><Pressable key={threshold} accessibilityRole="radio" accessibilityState={{selected:state.settings.autoEatThresholdPct===threshold,disabled:busy}} disabled={busy} onPress={()=>updateSettings({autoEatThresholdPct:threshold})} style={({pressed})=>[s.threshold,state.settings.autoEatThresholdPct===threshold&&s.thresholdSelected,pressed&&s.pressed]}><Text style={[s.thresholdText,state.settings.autoEatThresholdPct===threshold&&s.thresholdTextSelected]}>{threshold}%</Text></Pressable>)}</View>
      <Pressable accessibilityRole="switch" accessibilityState={{checked:state.settings.stopCombatWhenOutOfFood,disabled:busy}} disabled={busy} onPress={()=>updateSettings({stopCombatWhenOutOfFood:!state.settings.stopCombatWhenOutOfFood})} style={({pressed})=>[s.safetyRow,pressed&&s.pressed]}>
       <Text style={s.safetyTitle}>{gt('Stop combat when out of food')}</Text><View style={[s.switchTrack,state.settings.stopCombatWhenOutOfFood&&s.switchTrackOn]}><View style={[s.switchThumb,state.settings.stopCombatWhenOutOfFood&&s.switchThumbOn]}/></View>
@@ -111,16 +112,21 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
     <View style={s.queueCard}>
      <Text style={s.queueTitle}>{gt('BOSS HEALING POTIONS')}</Text>
      <Text style={s.queueHint}>{gt('Food is disabled in bosses and dungeons. Boss fights use your selected Alchemy healing potion (up to 5 per fight); dungeon runs have their own limited potion charges.')}</Text>
-     {selectedPotion?<View style={s.primaryRow}><ItemArtwork itemId={selectedPotion.id} size={42}/><View style={s.foodCopy}><Text style={s.queueEyebrow}>{gt('SELECTED')}</Text><Text style={s.foodName} numberOfLines={1}>{selectedPotion.name}</Text><Text style={s.foodHeal}>{state.inventory.stacks.find(row=>row.itemId===selectedPotion.id)?.quantity??0} {gt('carried')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gt('Clear boss potion choice')} accessibilityState={{disabled:busy}} disabled={busy} onPress={()=>run({type:'select_healing_potion',args:{id:'none'}})} style={[s.iconAction,busy&&s.iconDisabled]}><Text style={[s.iconActionText,{color:C.bad}]}>×</Text></Pressable></View>:null}
-    </View>
-    {healingPotions.filter(stack=>stack.itemId!==selectedPotionId).map(stack=>{
-      const potion=potionDef(stack.itemId)!;
-      return <View key={potion.id} style={s.availableRow}>
-       <View style={s.foodHead}><ItemArtwork itemId={potion.id} size={38}/><View style={s.foodCopy}><Text style={s.foodName} numberOfLines={1}>{potion.name} ×{stack.quantity}</Text><Text style={s.foodHeal}>{potion.effect.kind==='healing'?Math.round(potion.effect.maxHpFraction*100):0}% {gt('max HP per charge')}</Text></View></View>
-       <GameButton compact title={gt('Select for bosses')} disabled={busy} onPress={()=>run({type:'select_healing_potion',args:{id:potion.id}})}/>
+     {selectedPotion&&!healingPotions.some(stack=>stack.itemId===selectedPotion.id)?<View style={[s.rotationRow,s.primaryRow]}>
+      <ItemArtwork itemId={selectedPotion.id} size={34}/>
+      <View style={s.foodCopy}><Text style={s.queueEyebrow}>{gt('SELECTED')}</Text><Text style={s.foodName} numberOfLines={1}>{selectedPotion.name}</Text><Text style={s.foodHeal}>×0 {gt('carried')}</Text></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={gt('Clear boss potion choice')} accessibilityState={{disabled:busy}} disabled={busy} onPress={()=>run({type:'select_healing_potion',args:{id:'none'}})} style={[s.iconAction,busy&&s.iconDisabled]}><Text style={[s.iconActionText,{color:C.bad}]}>×</Text></Pressable>
+     </View>:null}
+     {healingPotions.map(stack=>{
+      const potion=potionDef(stack.itemId)!,selected=potion.id===selectedPotionId;
+      return <View key={potion.id} style={[s.rotationRow,selected&&s.primaryRow]}>
+       <ItemArtwork itemId={potion.id} size={34}/>
+       <View style={s.foodCopy}>{selected?<Text style={s.queueEyebrow}>{gt('SELECTED')}</Text>:null}<Text style={s.foodName} numberOfLines={1}>{potion.name}</Text><Text style={s.foodHeal}>×{stack.quantity} · {potion.effect.kind==='healing'?Math.round(potion.effect.maxHpFraction*100):0}% {gt('max HP per charge')}</Text></View>
+       {selected?<Pressable accessibilityRole="button" accessibilityLabel={gt('Clear boss potion choice')} accessibilityState={{disabled:busy}} disabled={busy} onPress={()=>run({type:'select_healing_potion',args:{id:'none'}})} style={[s.iconAction,busy&&s.iconDisabled]}><Text style={[s.iconActionText,{color:C.bad}]}>×</Text></Pressable>:<GameButton compact title={gt('Select for bosses')} disabled={busy} onPress={()=>run({type:'select_healing_potion',args:{id:potion.id}})} style={s.potionSelect}/>}
       </View>;
-    })}
-    {!healingPotions.length?<Text style={s.empty}>{gt('No healing potions carried. Brew them in Alchemy or withdraw from Bank.')}</Text>:null}
+     })}
+     {!healingPotions.length?<Text style={s.empty}>{gt('No healing potions carried. Brew them in Alchemy or withdraw from Bank.')}</Text>:null}
+    </View>
    </>}
   </ScrollView>
   {stopped?<GameButton title={gt('Stop and recover')} tone="secondary" disabled={busy} onPress={()=>run({type:'stop'})}/>:null}
@@ -156,7 +162,7 @@ function makeStyles(C:ReturnType<typeof useGameTheme>){return StyleSheet.create(
  queueCount:{fontSize:10,fontWeight:'800',color:C.muted},
  queueEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:.3,color:C.good},
  queueHint:{fontSize:10,lineHeight:14,color:C.muted},
- infoAction:{width:30,height:30,alignItems:'center',justifyContent:'center',borderRadius:15,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ infoAction:{width:38,height:38,alignItems:'center',justifyContent:'center',borderRadius:19,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  infoText:{fontSize:12,color:C.info,fontWeight:'900'},
  thresholds:{flexDirection:'row',gap:6},
  threshold:{flex:1,minWidth:0,minHeight:36,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:20,backgroundColor:C.panel},
@@ -170,7 +176,7 @@ function makeStyles(C:ReturnType<typeof useGameTheme>){return StyleSheet.create(
  switchThumb:{width:16,height:16,borderRadius:8,backgroundColor:C.muted},
  switchThumbOn:{alignSelf:'flex-end',backgroundColor:C.good},
  rotationRow:{minHeight:48,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:4,paddingHorizontal:4},
- primaryRow:{borderWidth:1,borderColor:C.selectionLine,borderRadius:7,backgroundColor:C.selection},
+ primaryRow:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:4,paddingVertical:4,minHeight:48,borderWidth:1,borderColor:C.selectionLine,borderRadius:7,backgroundColor:C.selection},
  foodBlock:{borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
  foodCopy:{flex:1,minWidth:0,gap:1},
  foodName:{fontSize:12,color:C.text,fontWeight:'800',flexShrink:1},
@@ -183,6 +189,7 @@ function makeStyles(C:ReturnType<typeof useGameTheme>){return StyleSheet.create(
  addText:{fontSize:22,fontWeight:'700',color:C.good},
  primaryEat:{minWidth:72,paddingHorizontal:6},
  primaryChoice:{minWidth:0,paddingHorizontal:6,maxWidth:122},
+ potionSelect:{minWidth:0,maxWidth:132,paddingHorizontal:6},
  inlineActions:{flexDirection:'row',gap:6,paddingLeft:36,paddingBottom:7},
  inlineButton:{flex:1,minWidth:0},
  availableRow:{gap:6,padding:8,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},

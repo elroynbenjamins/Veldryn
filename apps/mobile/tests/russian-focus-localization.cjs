@@ -8,6 +8,11 @@ require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f
 const {RUSSIAN_FOCUS_ROWS}=require('../src/i18n/russian-focus.ts');
 const {RUSSIAN_CONTINUATION_ROWS}=require('../src/i18n/russian-continuation.ts');
 const {RUSSIAN_PROGRESS_ROWS}=require('../src/i18n/russian-progress.ts');
+const {RUSSIAN_FINAL_SOCIAL_ROWS}=require('../src/i18n/russian-final-social.ts');
+const {RUSSIAN_FINAL_PROGRESSION_ROWS}=require('../src/i18n/russian-final-progression.ts');
+const {RUSSIAN_FINAL_GAMEPLAY_ROWS}=require('../src/i18n/russian-final-gameplay.ts');
+const {RUSSIAN_FINAL_COMPANION_ROWS}=require('../src/i18n/russian-final-companions.ts');
+const {RUSSIAN_FINAL_ACCOUNT_ROWS}=require('../src/i18n/russian-final-account.ts');
 const {RUSSIAN_PROFILE_ROWS}=require('../src/i18n/russian-profile.ts');
 const {RUSSIAN_ACCOUNT_ROWS}=require('../src/i18n/russian-account.ts');
 const {RUSSIAN_SOCIAL_ROWS}=require('../src/i18n/russian-social.ts');
@@ -16,7 +21,7 @@ for(const key of continuationKeys)assert.ok(!Object.prototype.hasOwnProperty.cal
 const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
-const russianCatalogs=[RUSSIAN_FOCUS_ROWS,RUSSIAN_CONTINUATION_ROWS,RUSSIAN_PROGRESS_ROWS,RUSSIAN_PROFILE_ROWS,RUSSIAN_ACCOUNT_ROWS,RUSSIAN_SOCIAL_ROWS];
+const russianCatalogs=[RUSSIAN_FOCUS_ROWS,RUSSIAN_CONTINUATION_ROWS,RUSSIAN_PROGRESS_ROWS,RUSSIAN_PROFILE_ROWS,RUSSIAN_ACCOUNT_ROWS,RUSSIAN_SOCIAL_ROWS,RUSSIAN_FINAL_ACCOUNT_ROWS,RUSSIAN_FINAL_COMPANION_ROWS,RUSSIAN_FINAL_GAMEPLAY_ROWS,RUSSIAN_FINAL_PROGRESSION_ROWS,RUSSIAN_FINAL_SOCIAL_ROWS];
 const seen=new Set();
 for(const catalog of russianCatalogs)for(const key of Object.keys(catalog)){
   assert.ok(!seen.has(key),'Duplicate Russian translation: '+key);
@@ -24,7 +29,7 @@ for(const catalog of russianCatalogs)for(const key of Object.keys(catalog)){
 }
 const combined=Object.assign({},...russianCatalogs);
 const keys=Object.keys(combined);
-assert.ok(keys.length>=5660,'Expected continued Russian UI coverage');
+assert.ok(keys.length>=6200,'Expected near-complete Russian authored coverage');
 assert.ok(keys.length>=4925,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];

@@ -1,5 +1,7 @@
 import {Text,View} from 'react-native';
 import type {ActiveHuntSkillEffect} from '../core/game';
+import type {ClassId} from '../core/types';
+import {dungeonCombatClassFx} from '../core/dungeon-combat-fx';
 import type {Language} from '../i18n/languages';
 import {battleText} from '../i18n/battle';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -7,17 +9,22 @@ import {useGameTheme} from '../theme/ThemeContext';
 /** Compact, accessible feedback shared by both live-hunting surfaces.
  * Render only events emitted by the settlement timeline, never a cosmetic
  * animation timer. Keep the two newest skills visible at most. */
-export function HuntAbilityCues({effects,language,formatAmount}:{
+export function HuntAbilityCues({effects,language,formatAmount,classId}:{
  effects:readonly ActiveHuntSkillEffect[];
  language:Language;
  formatAmount:(amount:number)=>string;
+ classId?:ClassId;
 }){
  const C=useGameTheme();
+ const classAccent=dungeonCombatClassFx(classId)?.damageAccent;
+ // Match each class's existing combat VFX accent, rather than assigning a
+ // different cosmetic color to the same ability on the hunt screen.
+ const classColor=classAccent==='gold'?C.warning:classAccent==='cyan'?C.info:classAccent==='danger'?C.bad:classAccent==='violet'?C.special:classAccent==='success'?C.good:C.accent;
  if(!effects.length)return null;
  const tr=(key:string,params?:Record<string,string|number>)=>battleText(language,key,params);
  return <View style={{gap:5}}>
   {effects.slice(-2).map((effect,index)=>{
-   const color=effect.kind==='shield'?C.info:effect.kind==='damage'?(effect.source==='companion'?C.info:C.accent):C.good;
+   const color=effect.kind==='recovery'?C.good:effect.source==='class'?classColor:C.special;
    const label=effect.kind==='recovery'?'ON-KILL RECOVERY':effect.source==='companion'?'COMPANION SKILL':'CLASS ABILITY';
    // Companion names are stable entities, while their ability can be
    // translated separately. The server emits "Companion: Ability" and a
@@ -35,7 +42,7 @@ export function HuntAbilityCues({effects,language,formatAmount}:{
      <Text numberOfLines={2} style={{fontSize:9,lineHeight:12,color,fontWeight:'900',letterSpacing:.3,flexShrink:1}}>{tr(label)}</Text>
      {amount?<Text numberOfLines={1} style={{fontSize:10,lineHeight:13,color:C.text,fontWeight:'800',marginLeft:'auto',flexShrink:1}}>{amount}</Text>:null}
     </View>
-    <Text numberOfLines={2} style={{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700',flexShrink:1}}>{skillName}</Text>
+    <Text numberOfLines={2} style={{fontSize:12,lineHeight:16,color:effect.kind==='recovery'?C.text:color,fontWeight:'700',flexShrink:1}}>{skillName}</Text>
    </View>;
   })}
  </View>;

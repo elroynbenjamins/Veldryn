@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=2899,'Turkish core coverage should retain the 2899-string baseline');
+assert.ok(keys.length>=3527,'Turkish core coverage should retain the 3527-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -87,5 +87,17 @@ assert.equal(earlyLocaleText('tr',"Guild Projects"),"Lonca Projeleri");
 assert.equal(earlyLocaleText('tr',"COMBAT SKILL XP SPLIT"),"SAVAŞ BECERİSİ XP DAĞILIMI");
 assert.equal(earlyLocaleText('tr',"Idle Rule"),"Boşta Kalma Kuralı");
 assert.equal(earlyLocaleText('tr',"Show chat"),"Sohbeti göster");
+assert.equal(earlyLocaleText('tr',"Affinity"),"Uyum");
+assert.equal(earlyLocaleText('tr',"Monster mastery"),"Canavar ustalığı");
+assert.equal(earlyLocaleText('tr',"Choose the required number of companions."),"Gerekli sayıda yoldaş seç.");
+assert.equal(earlyLocaleText('tr',"Activity queue"),"Etkinlik kuyruğu");
+assert.equal(earlyLocaleText('tr',"STORAGE MANAGEMENT"),"DEPO YÖNETİMİ");
+assert.equal(earlyLocaleText('tr',"SET BONUS ACTIVATED"),"SET BONUSU ETKİNLEŞTİRİLDİ");
+assert.equal(earlyLocaleText('tr',"No items to show"),"Gösterilecek eşya yok");
+assert.equal(earlyLocaleText('tr',"Current character boosts"),"Mevcut karakter güçlendirmeleri");
+assert.equal(earlyLocaleText('tr',"CHARACTER DELETION CONFIRMATION"),"KARAKTER SİLME ONAYI");
+assert.equal(earlyLocaleText('tr',"YOUR STANDING"),"SIRALAMADAKİ YERİN");
+assert.equal(earlyLocaleText('tr',"Join a Party to use Party Chat. World and Guild chat remain available in the chat overlay."),"Grup Sohbetini kullanmak için bir Gruba katıl. Dünya ve Lonca sohbetleri sohbet penceresinde kullanılabilir.");
+assert.equal(earlyLocaleText('tr',"Guild Chat requires online services. No simulated chat is shown."),"Lonca Sohbeti çevrimiçi hizmet gerektirir. Sahte sohbet gösterilmez.");
 console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
  +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

@@ -43186,6 +43186,9 @@ function companionCombatContribution(state) {
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
 
+// ../apps/mobile/src/core/legacy-seasonal-claim.ts
+var LEGACY_SEASONAL_CLAIM_CUTOFF_MS = Date.UTC(2026, 11, 1);
+
 // ../apps/mobile/src/core/class-stat-identity.ts
 var CLASS_EQUIPMENT_ATTACK_SHARE = Object.freeze({
   IRONWARDEN: 0.45,

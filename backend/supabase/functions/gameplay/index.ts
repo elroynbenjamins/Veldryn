@@ -304,6 +304,148 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/personal-seasonal-state.ts
+var periods = ["daily", "weekly", "monthly"];
+var SEASONAL_ACTIVITY_TAGS = ["combat", "gathering", "crafting", "exploration", "faith", "boss", "cooking", "alchemy", "smithing", "tailoring", "enchanting", "event"];
+var activityTags = SEASONAL_ACTIVITY_TAGS;
+function normalizeSeasonalProgress(raw2) {
+  const result = {};
+  if (!raw2 || typeof raw2 !== "object") return result;
+  for (const period of periods) {
+    const row = raw2[period];
+    if (!row || typeof row.key !== "string" || row.key.length > 32) continue;
+    const counts = {};
+    for (const tag of activityTags) {
+      const value = row.counts?.[tag];
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value));
+    }
+    const tags = Array.isArray(row.tags) && row.tags.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
+    result[period] = { key: row.key, counts, ...tags ? { tags: [...tags] } : {} };
+  }
+  return result;
+}
+function normalizePersonalSeasonalState(raw2) {
+  const row = raw2 && typeof raw2 === "object" ? raw2 : {};
+  const claimIds = Array.isArray(row.claimIds) ? [...new Set(row.claimIds.filter((id) => typeof id === "string" && /^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id)))].slice(-120) : [];
+  const choices = row.rewardChoices && typeof row.rewardChoices === "object" && !Array.isArray(row.rewardChoices) ? Object.fromEntries(Object.entries(row.rewardChoices).filter(([id, choice]) => claimIds.includes(id) && typeof choice === "string" && choice.length <= 100)) : {};
+  return { progress: normalizeSeasonalProgress(row.progress), claimIds, rewardChoices: choices };
+}
+function normalizePersonalSeasonalClaimLedger(raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
+  return Object.fromEntries(Object.entries(raw2).filter(([id, characters]) => /^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id) && Array.isArray(characters)).slice(-240).map(([id, characters]) => [id, [...new Set(characters.filter((value) => typeof value === "string" && value.length > 0 && value.length <= 100))].slice(0, 5)]));
+}
+function personalSeasonalAccountView(account, character) {
+  const data = normalizePersonalSeasonalState(character?.personalSeasonal);
+  return { ...account, seasonalContractProgress: data.progress, seasonalContractClaimIds: data.claimIds, seasonalContractRewardChoices: data.rewardChoices };
+}
+function ensurePersonalSeasonalState(state) {
+  if (!state.character) return state;
+  const source = state.character.personalSeasonal ?? {
+    progress: state.account.seasonalContractProgress,
+    claimIds: state.account.seasonalContractClaimIds,
+    rewardChoices: state.account.seasonalContractRewardChoices
+  };
+  const personalSeasonal = normalizePersonalSeasonalState(source);
+  const character = { ...state.character, personalSeasonal };
+  const ledger = state.account.personalSeasonalClaimLedger ? normalizePersonalSeasonalClaimLedger(state.account.personalSeasonalClaimLedger) : Object.fromEntries(personalSeasonal.claimIds.map((id) => [id, [character.id]]));
+  return { ...state, character, account: { ...personalSeasonalAccountView(state.account, character), personalSeasonalClaimLedger: ledger } };
+}
+function updatePersonalSeasonalState(state, changes) {
+  const ready = ensurePersonalSeasonalState(state);
+  if (!ready.character) return ready;
+  const character = { ...ready.character, personalSeasonal: normalizePersonalSeasonalState({ ...ready.character.personalSeasonal, ...changes }) };
+  return { ...ready, character, account: personalSeasonalAccountView(ready.account, character) };
+}
+
+// ../apps/mobile/src/content/classes.ts
+var CLASSES = [
+  { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
+  { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
+  { id: "DREADGUARD", name: "Dreadguard", role: "Tank", description: "Aggressive control tank using threat, dread and self-sustain.", hp: 150, attack: 17, defense: 17, roleRatings: { tank: 4, damage: 3, support: 1 }, starterEquipment: { weapon: "basic_chained_weapon" } },
+  { id: "WAYFINDER", name: "Wayfinder", role: "Damage", description: "Precise ranged hunter with reliable sustained damage.", hp: 110, attack: 21, defense: 11, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_bow" } },
+  { id: "RAVAGER", name: "Ravager", role: "Damage", description: "Aggressive heavy melee fighter built around breaking defenses.", hp: 128, attack: 22, defense: 10, roleRatings: { tank: 2, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_two_handed_weapon" } },
+  { id: "HEXWEAVER", name: "Hexweaver", role: "Damage", description: "Arcane damage caster weaving hexes through wand and focus.", hp: 108, attack: 17, defense: 11, roleRatings: { tank: 1, damage: 4, support: 2 }, starterEquipment: { weapon: "basic_wand" } },
+  { id: "KNIFE_DANCER", name: "Knife Dancer", role: "Damage", description: "Fast melee attacker built around precision, crits and execution.", hp: 106, attack: 22, defense: 10, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_main_hand_blade" } },
+  { id: "DAWNKEEPER", name: "Dawnkeeper", role: "Support", description: "Solar support focused on healing, cleansing and protection.", hp: 118, attack: 14, defense: 13, roleRatings: { tank: 2, damage: 1, support: 5 }, starterEquipment: { weapon: "basic_mace" } },
+  { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
+];
+
+// ../apps/mobile/src/core/rng.ts
+function hash32(input) {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function random01(seed, index) {
+  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return (x >>> 0) / 4294967296;
+}
+
+// ../apps/mobile/src/core/legacy-seasonal-claim.ts
+var LEGACY_SEASONAL_CLAIM_CUTOFF_MS = Date.UTC(2026, 11, 1);
+var roleObjectives = {
+  Tank: [["combat", 24], ["gathering", 12], ["equipment", 6], ["exploration", 5]],
+  Support: [["gathering", 30], ["crafting", 12], ["combat", 20], ["exploration", 5]],
+  Damage: [["combat", 18], ["crafting", 14], ["combat", 30], ["exploration", 5]]
+};
+var classObjectives = {
+  IRONWARDEN: ["equipment", 6],
+  BASTION: ["combat", 30],
+  DREADGUARD: ["combat", 28],
+  DAWNKEEPER: ["crafting", 15],
+  WAYFINDER: ["exploration", 5],
+  RAVAGER: ["combat", 40],
+  HEXWEAVER: ["gathering", 22],
+  KNIFE_DANCER: ["exploration", 6],
+  STONECALLER: ["gathering", 24]
+};
+function legacyProgress(state, tag) {
+  const character = state.character;
+  switch (tag) {
+    case "combat":
+      return Math.floor(character.xp / 80);
+    case "gathering":
+      return Math.floor(state.skills.reduce((sum, skill2) => sum + skill2.xp, 0) / 40);
+    case "crafting":
+      return Object.values(character.equipment).filter(Boolean).length + (character.craftedNoviceItemIds ?? []).length;
+    case "equipment":
+      return Object.values(character.equipment).filter(Boolean).length;
+    case "exploration":
+      return state.unlockedMonsterIds.length;
+  }
+}
+function legacySeasonalObjectiveComplete(state, period, id, serverNowMs) {
+  if (!state.character || serverNowMs >= LEGACY_SEASONAL_CLAIM_CUTOFF_MS) return false;
+  const prefix = period.toUpperCase() + "_";
+  if (!id.startsWith(prefix)) return false;
+  const tail = id.slice(prefix.length), separator = tail.lastIndexOf("_");
+  if (separator <= 0) return false;
+  const key = tail.slice(0, separator), indexText = tail.slice(separator + 1);
+  const utc = new Date(serverNowMs), periodStart = new Date(Date.UTC(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate()));
+  let expectedKey = periodStart.toISOString().slice(0, 10);
+  if (period === "weekly") {
+    periodStart.setUTCDate(periodStart.getUTCDate() - (periodStart.getUTCDay() || 7) + 1);
+    const yearStart = Date.UTC(periodStart.getUTCFullYear(), 0, 1);
+    expectedKey = `${periodStart.getUTCFullYear()}-W${Math.ceil(((periodStart.getTime() - yearStart) / 864e5 + 1) / 7)}`;
+  } else if (period === "monthly") expectedKey = `${periodStart.getUTCFullYear()}-${periodStart.getUTCMonth() + 1}`;
+  if (key !== expectedKey || !/^(0|[1-9][0-9]*)$/.test(indexText)) return false;
+  const index = Number(indexText), count = period === "daily" ? 2 : period === "weekly" ? 3 : 4;
+  if (index >= count) return false;
+  const classDef = CLASSES.find((row) => row.id === state.character.classId);
+  if (!classDef || !classObjectives[classDef.id]) return false;
+  const tasks = roleObjectives[classDef.role];
+  const task = index === 0 ? classObjectives[classDef.id] : tasks[hash32(`${key}:${index - 1}`) % tasks.length];
+  if (!task) return false;
+  const volume = period === "daily" ? 0.45 : period === "weekly" ? 1 : 2;
+  return legacyProgress(state, task[0]) >= Math.max(1, Math.round(task[1] * volume));
+}
+
 // ../apps/mobile/src/core/class-stat-identity.ts
 var CLASS_EQUIPMENT_ATTACK_SHARE = Object.freeze({
   IRONWARDEN: 0.45,
@@ -353,23 +495,6 @@ function combatTimeline(input) {
     }
   }
   return { encounters, nextProgressFraction: progress, segments };
-}
-
-// ../apps/mobile/src/core/rng.ts
-function hash32(input) {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function random01(seed, index) {
-  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
-  x ^= x << 13;
-  x ^= x >>> 17;
-  x ^= x << 5;
-  return (x >>> 0) / 4294967296;
 }
 
 // ../apps/mobile/src/core/combat-hit-timeline.ts
@@ -43968,9 +44093,9 @@ function claimSanctuaryEssence(state, nowMs) {
   if (!level) return clean2;
   const week = 7 * 864e5, last = sanctuary.lastEssenceClaimAtMs;
   if (last === void 0) return { ...clean2, account: { ...clean2.account, companionSanctuary: { ...sanctuary, lastEssenceClaimAtMs: nowMs } } };
-  const periods2 = Math.min(2, Math.floor(Math.max(0, nowMs - last) / week));
-  if (periods2 < 1) return clean2;
-  return { ...clean2, account: { ...clean2.account, companionEssence: (clean2.account.companionEssence ?? 0) + COMPANION_SANCTUARY_WEEKLY_ESSENCE[level] * periods2, companionSanctuary: { ...sanctuary, lastEssenceClaimAtMs: nowMs - Math.max(0, nowMs - last) % week } } };
+  const periods3 = Math.min(2, Math.floor(Math.max(0, nowMs - last) / week));
+  if (periods3 < 1) return clean2;
+  return { ...clean2, account: { ...clean2.account, companionEssence: (clean2.account.companionEssence ?? 0) + COMPANION_SANCTUARY_WEEKLY_ESSENCE[level] * periods3, companionSanctuary: { ...sanctuary, lastEssenceClaimAtMs: nowMs - Math.max(0, nowMs - last) % week } } };
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
 function grantCompanionEssence(state, amount) {
@@ -47291,7 +47416,7 @@ function activityEventDiscoveries(state, source, units, nowMs) {
 }
 function applyEventDrops(state, drops) {
   if (!drops.length) return state;
-  const progress = { ...state.account.eventProgressById ?? {} }, currency = { ...state.account.eventCurrencyBalanceById ?? {} }, activity = { ...state.account.eventActivityById ?? {} }, periods2 = { ...state.account.eventPeriodActivityById ?? {} };
+  const progress = { ...state.account.eventProgressById ?? {} }, currency = { ...state.account.eventCurrencyBalanceById ?? {} }, activity = { ...state.account.eventActivityById ?? {} }, periods3 = { ...state.account.eventPeriodActivityById ?? {} };
   for (const drop of drops) {
     progress[drop.eventId] = (progress[drop.eventId] ?? 0) + drop.quantity;
     currency[drop.eventId] = (currency[drop.eventId] ?? 0) + drop.quantity;
@@ -47300,13 +47425,13 @@ function applyEventDrops(state, drops) {
       prior[drop.source] = (prior[drop.source] ?? 0) + units;
       activity[drop.eventId] = prior;
       for (const key of [`${drop.eventId}:day:${utcDayKey(drop.recordedAtMs ?? Date.now())}`, `${drop.eventId}:week:${utcWeekKey(drop.recordedAtMs ?? Date.now())}`]) {
-        const bucket = { ...periods2[key] ?? {} };
+        const bucket = { ...periods3[key] ?? {} };
         bucket[drop.source] = (bucket[drop.source] ?? 0) + units;
-        periods2[key] = bucket;
+        periods3[key] = bucket;
       }
     }
   }
-  return { ...state, account: { ...state.account, eventProgressById: Object.fromEntries(Object.entries(progress).slice(-12)), eventCurrencyBalanceById: Object.fromEntries(Object.entries(currency).slice(-12)), eventActivityById: Object.fromEntries(Object.entries(activity).slice(-12)), eventPeriodActivityById: Object.fromEntries(Object.entries(periods2).slice(-90)) } };
+  return { ...state, account: { ...state.account, eventProgressById: Object.fromEntries(Object.entries(progress).slice(-12)), eventCurrencyBalanceById: Object.fromEntries(Object.entries(currency).slice(-12)), eventActivityById: Object.fromEntries(Object.entries(activity).slice(-12)), eventPeriodActivityById: Object.fromEntries(Object.entries(periods3).slice(-90)) } };
 }
 function applyEventDiscoveries(state, finds) {
   if (!finds.length) return state;
@@ -48234,19 +48359,6 @@ function professionActionPace(state, recipe2, mode) {
   const cycleSeconds = mode === "instant" ? 0 : mode === "forge" ? Math.max(1, Math.ceil(rawSeconds)) : Math.max(1, rawSeconds);
   return { cycleSeconds, xpPerAction, affinity, mastery, speed };
 }
-
-// ../apps/mobile/src/content/classes.ts
-var CLASSES = [
-  { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
-  { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
-  { id: "DREADGUARD", name: "Dreadguard", role: "Tank", description: "Aggressive control tank using threat, dread and self-sustain.", hp: 150, attack: 17, defense: 17, roleRatings: { tank: 4, damage: 3, support: 1 }, starterEquipment: { weapon: "basic_chained_weapon" } },
-  { id: "WAYFINDER", name: "Wayfinder", role: "Damage", description: "Precise ranged hunter with reliable sustained damage.", hp: 110, attack: 21, defense: 11, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_bow" } },
-  { id: "RAVAGER", name: "Ravager", role: "Damage", description: "Aggressive heavy melee fighter built around breaking defenses.", hp: 128, attack: 22, defense: 10, roleRatings: { tank: 2, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_two_handed_weapon" } },
-  { id: "HEXWEAVER", name: "Hexweaver", role: "Damage", description: "Arcane damage caster weaving hexes through wand and focus.", hp: 108, attack: 17, defense: 11, roleRatings: { tank: 1, damage: 4, support: 2 }, starterEquipment: { weapon: "basic_wand" } },
-  { id: "KNIFE_DANCER", name: "Knife Dancer", role: "Damage", description: "Fast melee attacker built around precision, crits and execution.", hp: 106, attack: 22, defense: 10, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_main_hand_blade" } },
-  { id: "DAWNKEEPER", name: "Dawnkeeper", role: "Support", description: "Solar support focused on healing, cleansing and protection.", hp: 118, attack: 14, defense: 13, roleRatings: { tank: 2, damage: 1, support: 5 }, starterEquipment: { weapon: "basic_mace" } },
-  { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
-];
 
 // ../apps/mobile/src/content/regional-areas.ts
 init_progression();
@@ -49328,35 +49440,19 @@ function environmentEffectForActivity(activity) {
 }
 
 // ../apps/mobile/src/core/seasonal-quests.ts
-var periods = ["daily", "weekly", "monthly"];
-var SEASONAL_ACTIVITY_TAGS = ["combat", "gathering", "crafting", "exploration", "faith", "boss", "cooking", "alchemy", "smithing", "tailoring", "enchanting", "event"];
-var activityTags = SEASONAL_ACTIVITY_TAGS;
-function normalizeSeasonalProgress(raw2) {
-  const result = {};
-  if (!raw2 || typeof raw2 !== "object") return result;
-  for (const period of periods) {
-    const row = raw2[period];
-    if (!row || typeof row.key !== "string" || row.key.length > 32) continue;
-    const counts = {};
-    for (const tag of activityTags) {
-      const value = row.counts?.[tag];
-      if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value));
-    }
-    const tags = Array.isArray(row.tags) && row.tags.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
-    result[period] = { key: row.key, counts, ...tags ? { tags: [...tags] } : {} };
-  }
-  return result;
-}
+var periods2 = ["daily", "weekly", "monthly"];
+var activityTags2 = SEASONAL_ACTIVITY_TAGS;
 function recordSeasonalActivity(state, tag, units, nowMs) {
   if (!state.character || !Number.isFinite(units) || units < 1) return state;
-  const progress = normalizeSeasonalProgress(state.account.seasonalContractProgress), date = new Date(nowMs);
-  for (const period of periods) {
+  const ready = ensurePersonalSeasonalState(state);
+  const progress = normalizeSeasonalProgress(ready.character?.personalSeasonal?.progress), date = new Date(nowMs);
+  for (const period of periods2) {
     const key = periodKey(period, date), old = progress[period], counts = old?.key === key ? { ...old.counts } : {};
-    const tags = old?.key === key && old.tags?.every((tag2) => activityTags.includes(tag2)) ? old.tags : selectSeasonalTags(state, period, key, nowMs);
+    const tags = old?.key === key && old.tags?.every((tag2) => activityTags2.includes(tag2)) ? old.tags : selectSeasonalTags(ready, period, key, nowMs);
     counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, (counts[tag] ?? 0) + Math.floor(units));
     progress[period] = { key, counts, tags };
   }
-  return { ...state, account: { ...state.account, seasonalContractProgress: progress } };
+  return updatePersonalSeasonalState(ready, { progress });
 }
 var QUEST_RARITIES = {
   common: { label: "Common", color: "#93a4ba", multiplier: 1, cache: "Field cache" },
@@ -49503,12 +49599,12 @@ function seasonalQuestRewardOptions(state, period, rarity) {
 }
 function contractProgress(state, tag, period, key) {
   if (tag === "equipment") return Object.values(state.character.equipment).filter(Boolean).length;
-  const progress = state.account.seasonalContractProgress?.[period];
+  const progress = (state.character?.personalSeasonal?.progress ?? state.account.seasonalContractProgress)?.[period];
   return progress?.key === key ? progress.counts[tag] ?? 0 : 0;
 }
 function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   if (!state.character) return [];
-  const key = periodKey(period, date), frozen = state.account.seasonalContractProgress?.[period], tags = frozen?.key === key && frozen.tags?.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && frozen.tags.every((tag) => activityTags.includes(tag)) ? frozen.tags : selectSeasonalTags(state, period, key, date.getTime());
+  const key = periodKey(period, date), frozen = (state.character.personalSeasonal?.progress ?? state.account.seasonalContractProgress)?.[period], tags = frozen?.key === key && frozen.tags?.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && frozen.tags.every((tag) => activityTags2.includes(tag)) ? frozen.tags : selectSeasonalTags(state, period, key, date.getTime());
   const base = BASE_REWARD_ACTIONS;
   return tags.map((tag, index) => {
     const template = TEMPLATES.find((row) => row.tag === tag);
@@ -49921,7 +50017,7 @@ function isValidCraftedGearQuality(quality) {
 function craftedGearDisplayQuality(instance) {
   return instance.quality ?? LEGACY_CRAFTED_GEAR_QUALITY;
 }
-var TARGET_CRAFTED_GEAR_COPIES_PER_ITEM = 7;
+var TARGET_CRAFTED_GEAR_COPIES_PER_ITEM = 25;
 function craftedGearQualityFromUnitRoll(roll) {
   if (!Number.isFinite(roll) || roll < 0 || roll >= 1) throw new Error("Invalid crafted quality roll");
   return Math.min(CRAFTED_GEAR_QUALITY_MAX, Math.floor(Math.pow(roll, CRAFTED_GEAR_QUALITY_POWER) * (CRAFTED_GEAR_QUALITY_MAX + 1)));
@@ -53129,22 +53225,29 @@ function claimQuest(state, questId, nowMs = Date.now()) {
   const next = { ...state, ...routed, account, character: { ...state.character, ...routed.character ?? {}, gold: state.character.gold + d.rewardGold }, quests: state.quests.map((x) => x.questId === questId ? { ...x, status: "claimed" } : x) };
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next), nowMs), nowMs);
 }
-function claimSeasonalContract(state, period, contractId2, nowMs = Date.now(), choiceId) {
+function claimSeasonalContract(state, period, contractId2, nowMs = Date.now(), choiceId, allowLegacy = false) {
+  state = ensurePersonalSeasonalState(state);
   if (!state.character) throw new Error("Create a character first");
   const contract = seasonalQuestBoard(state, period, new Date(nowMs)).find((entry2) => entry2.id === contractId2);
   if (!contract) throw new Error("This contract has expired.");
-  if ((state.account.seasonalContractClaimIds ?? []).includes(contract.id)) throw new Error("This contract reward was already claimed.");
-  if (contract.progress < contract.required) throw new Error("Complete the contract before claiming its cache.");
-  const chosen = choiceId === void 0 ? contract.rewardOptions[0] : contract.rewardOptions.find((reward3) => reward3.id === choiceId);
+  if ((state.character.personalSeasonal?.claimIds ?? []).includes(contract.id)) throw new Error("This contract reward was already claimed.");
+  const ledger = state.account.personalSeasonalClaimLedger ?? {}, previousClaimants = ledger[contract.id] ?? [];
+  const maximumClaims = Math.max(1, Math.min(5, Math.max(state.account.unlockedCharacterSlots ?? 1, 1 + (state.otherCharacters?.length ?? 0))));
+  if (previousClaimants.includes(state.character.id)) throw new Error("This contract reward was already claimed.");
+  if (previousClaimants.length >= maximumClaims) throw new Error("The account has reached its character claim limit for this objective.");
+  const legacyEligible = allowLegacy && legacySeasonalObjectiveComplete(state, period, contract.id, nowMs);
+  if (contract.progress < contract.required && !legacyEligible) throw new Error("Complete the contract before claiming its cache.");
+  const chosen = choiceId === void 0 ? contract.rewardOptions[0] : contract.rewardOptions.find((reward3) => reward3.id === choiceId) ?? (legacyEligible ? contract.rewardOptions[0] : void 0);
   if (!chosen) throw new Error("Invalid or unavailable Quest reward choice.");
   const xp = state.character.xp + contract.rewardXp, level = characterLevelFromXp(xp);
   const routed = chosen.rewardItemId && chosen.rewardItemQty ? routeRewards(state, [{ itemId: chosen.rewardItemId, quantity: chosen.rewardItemQty }], nowMs) : state;
-  const claimed = [...state.account.seasonalContractClaimIds ?? [], contract.id].slice(-120);
-  const previousChoices = state.account.seasonalContractRewardChoices ?? {};
+  const claimed = [...state.character.personalSeasonal?.claimIds ?? [], contract.id].slice(-120);
+  const previousChoices = state.character.personalSeasonal?.rewardChoices ?? {};
   const recordedChoices = Object.fromEntries([...Object.entries(previousChoices), [contract.id, chosen.id]].filter(([id]) => claimed.includes(id)));
-  const withRewards = { ...state, ...routed, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + contract.rewardGold }, account: { ...state.account, ...routed.account ?? {}, seasonalContractClaimIds: claimed, seasonalContractRewardChoices: recordedChoices } };
+  const updatedLedger = Object.fromEntries([...Object.entries(ledger), [contract.id, [...previousClaimants, state.character.id]]].slice(-240));
+  const withRewards = { ...state, ...routed, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + contract.rewardGold }, account: { ...state.account, ...routed.account ?? {}, personalSeasonalClaimLedger: updatedLedger, seasonalContractClaimIds: claimed, seasonalContractRewardChoices: recordedChoices } };
   const withEssence = grantCompanionEssence(withRewards, chosen.rewardCompanionEssence ?? 0);
-  return applyLocalBalanceSnapshot(refreshQuests(grantBondstones(withEssence, chosen.rewardBondstones ?? 0)), nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence, chosen.rewardBondstones ?? 0), { claimIds: claimed, rewardChoices: recordedChoices })), nowMs);
 }
 function queuedReservationEnd(state) {
   const activity = state.activity;
@@ -54540,7 +54643,7 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
     const draft = draftCraftedGearInstance(args), capacity = craftedGearCopyCapacity(next, itemId), mode = next.account.craftedGearAutoSellMode ?? "off";
     let saleGold = 0, autoSold;
     if (capacity.count >= capacity.limit) {
-      if (mode !== "keep_best_seven") throw new Error("Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies");
+      if (mode !== "keep_best_seven") throw new Error(`Equipment copy limit reached (${capacity.count}/${capacity.limit}); enable Keep Best ${capacity.limit} or manage copies`);
       const entries = forgeOwnedCopyLocations(next, itemId);
       if (!entries) throw new Error("Equipment copy ownership requires manual review before auto-selling");
       const delivery = forgeIncomingDelivery(next, job.ownerCharacterId);
@@ -54733,24 +54836,25 @@ function snapshot(state) {
   return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId, ...snapshotCharacterWorldProgress(state) };
 }
 function createAccountCharacter(state, classId, name, body, now) {
-  state = reconcileAccountCollections(state);
+  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
   if (!state.character) return createCharacter(state, classId, name, body);
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
   const next = createCharacter(newGame(now), classId, name, body);
   const active2 = snapshot(state);
   const id = `LOCAL_CHAR_${accountCharacters(state).length + 1}`;
   next.character.id = id;
-  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) }, otherCharacters: [...state.otherCharacters ?? [], active2] };
+  const account = { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) };
+  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] };
 }
 function switchAccountCharacter(state, id, now) {
-  state = reconcileAccountCollections(state);
+  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
   if (!state.character) return state;
   if (state.character.id === id) return state;
   const target2 = state.otherCharacters?.find((x) => x.character.id === id);
   if (!target2) throw new Error("Character is not owned.");
   const remaining = (state.otherCharacters ?? []).filter((x) => x.character.id !== id);
   const active2 = snapshot(state);
-  return { ...state, ...restoreCharacterWorldProgress(target2), character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2] };
+  return { ...state, ...restoreCharacterWorldProgress(target2), character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2], account: personalSeasonalAccountView(state.account, target2.character) };
 }
 function stackCap(itemId) {
   try {
@@ -54843,7 +54947,7 @@ function characterDeleteBlockReason(state, id) {
   return void 0;
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
-  state = reconcileAccountCollections(state);
+  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
   if (!state.character) throw new Error("Create a character first.");
   const active2 = state.character.id === id;
   const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
@@ -54860,9 +54964,9 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   const replacement = other[0], remaining = replacement ? other.slice(1) : [];
   const baseOverflow = replacement?.overflow ?? { stacks: [], expiresAtMs: null };
   const recovery = routeToBank(state.bank, baseOverflow, deletionRecoveryItems(stored, state.bank), now);
-  if (replacement) return { ...state, ...restoreCharacterWorldProgress(replacement), character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account };
+  if (replacement) return { ...state, ...restoreCharacterWorldProgress(replacement), character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account: personalSeasonalAccountView(account, replacement.character) };
   const fresh = newGame(now);
-  return { ...state, ...snapshotCharacterWorldProgress(fresh), character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
+  return { ...state, ...snapshotCharacterWorldProgress(fresh), character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account: personalSeasonalAccountView(account, null) };
 }
 
 // ../apps/mobile/src/content/equipment-release.ts
@@ -57225,7 +57329,7 @@ function validateGameSettings(value) {
 }
 function executeGameCommand(previous, value, now, options = {}) {
   const command = validateGameCommand(value), a = command.args ?? {}, activity = previous.activity, contributions = [];
-  let state = structuredClone(previous), reward3, message, won, storyBossBattle, upgrade, forgeResults;
+  let state = ensurePersonalSeasonalState(structuredClone(previous)), reward3, message, won, storyBossBattle, upgrade, forgeResults;
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
   if (options.accountId) state.account.longTermAccountScopeId = options.accountId;
   state = migrateRetiredStoryRewards(state, now);
@@ -57782,7 +57886,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = claimQuest(state, text(a, "id"));
       break;
     case "seasonal":
-      state = claimSeasonalContract(state, oneOf(a.period, ["daily", "weekly", "monthly"]), text(a, "id"), now, a.choiceId === void 0 ? void 0 : text(a, "choiceId", 100));
+      state = claimSeasonalContract(state, oneOf(a.period, ["daily", "weekly", "monthly"]), text(a, "id"), now, a.choiceId === void 0 ? void 0 : text(a, "choiceId", 100), options.legacySeasonalClient === true);
       break;
     case "settings":
       state = { ...state, settings: validateGameSettings(a.settings) };
@@ -57878,7 +57982,7 @@ var GameplayError = class extends Error {
   }
   status;
 };
-var headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
+var headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info,x-veldryn-contract-catalog", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
 var json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers });
 var hash2 = async (value) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 function canonical(value) {
@@ -57943,7 +58047,7 @@ function gameplayHandler(services2) {
         }
       }
       const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
-      const state = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
+      const state = ensurePersonalSeasonalState(rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow)));
       state.account.longTermAccountScopeId = accountId;
       state.account.guildMember = loaded.guildMember;
       const previousEvent = state.account.liveEvent;
@@ -57978,7 +58082,7 @@ function gameplayHandler(services2) {
       }
       let result;
       try {
-        result = executeGameCommand(state, command, loaded.serverNow, { characterId: command.type === "create" || command.type === "roster_create" || command.type === "qa_prepare" && !loaded.characterId ? services2.randomId() : loaded.characterId ?? services2.randomId(), randomRoll: services2.randomRoll(), accountId, eventId: String(body.requestId), adminQa });
+        result = executeGameCommand(state, command, loaded.serverNow, { characterId: command.type === "create" || command.type === "roster_create" || command.type === "qa_prepare" && !loaded.characterId ? services2.randomId() : loaded.characterId ?? services2.randomId(), randomRoll: services2.randomRoll(), accountId, eventId: String(body.requestId), adminQa, legacySeasonalClient: request.headers.get("x-veldryn-contract-catalog") !== "2" });
       } catch (e) {
         throw new GameplayError(e instanceof Error ? e.message : "invalid_command");
       }

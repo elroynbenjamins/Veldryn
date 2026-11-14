@@ -15,7 +15,13 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=5096,'Turkish core coverage should retain the 5096-string baseline');
+// The obsolete fixed "Keep best 7" source was replaced by a translated
+// parameterized label in gameplay.ts; this retires one overlay key without
+// removing player-visible Turkish coverage.
+assert.ok(keys.length>=5095,'Turkish authored overlay should retain at least 5095 current-source strings');
+const forgeGameplayCatalog=fs.readFileSync(path.resolve(__dirname,'../src/i18n/gameplay.ts'),'utf8');
+assert.ok(forgeGameplayCatalog.includes('"Keep best {count}"')&&forgeGameplayCatalog.includes('En iyi {count} tanesini tut'),
+ 'The former fixed-count Forge label must remain translated dynamically');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();

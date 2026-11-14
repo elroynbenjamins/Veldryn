@@ -47,8 +47,8 @@ assert.equal(progressionEnvironmentText('de', '+8% combat XP · −5% combat spe
 assert.equal(progressionEnvironmentText('fr', 'Clear Skies'), 'Ciel dégagé');
 assert.equal(progressionError('fr', new Error('raw_server_failure_123'), 'Could not update goals.'), progressionT('fr', 'Could not update goals.'));
 
-const screens = ['WorldScreen','QuestScreen','EventScreen','ProgressionPlannerScreen','MasteryHallScreen','AchievementsScreen','AdventurersJournalScreen','WorldMilestoneFeedScreen'];
-const components = ["AnnualEventCalendarPanel","ContractBoardSummary","CrossSkillDiscoveriesPanel","EventContributionBreakdownPanel","ExplorationPanel","EnvironmentBanner","EnvironmentDetailsModal","FrostmarchRegionPanel","SunscarRegionPanel","MasteryHallPanel","MasteryDiscoveryPanel","RegionalContractFocus","RegionalCrisisPanel","RegionalJournalPanel","RegionalStoryLeadsPanel","RegionCompletionPanel","RegionEncounterList","TravelRegionModal","WorldBossPanel","WorldBossResultPanel","WorkingTowardFocusPanel","WorkingTowardSummary","IdleRulesEditorV40","QuestModeSwitch","QuestReward"];
+const screens = ['WorldScreen','QuestScreen','EventScreen','MasteryHallScreen','AchievementsScreen','AdventurersJournalScreen','WorldMilestoneFeedScreen'];
+const components = ["AnnualEventCalendarPanel","ContractBoardSummary","CrossSkillDiscoveriesPanel","EventContributionBreakdownPanel","ExplorationPanel","EnvironmentBanner","EnvironmentDetailsModal","FrostmarchRegionPanel","SunscarRegionPanel","MasteryHallPanel","MasteryDiscoveryPanel","RegionalContractFocus","RegionalCrisisPanel","RegionalJournalPanel","RegionalStoryLeadsPanel","RegionCompletionPanel","RegionEncounterList","TravelRegionModal","WorldBossPanel","WorldBossResultPanel","IdleRulesEditorV40","QuestModeSwitch","QuestReward"];
 const ownedFiles = [...screens.map(name => 'screens/' + name), ...components.map(name => 'components/' + name)];
 for (const relative of ownedFiles) {
   const filename = path.join(app, 'src', relative + '.tsx');

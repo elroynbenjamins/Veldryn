@@ -972,7 +972,10 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const claimed=[...(state.character!.personalSeasonal?.claimIds??[]),contract.id].slice(-120);
   const previousChoices=state.character!.personalSeasonal?.rewardChoices??{};
   const recordedChoices=Object.fromEntries([...Object.entries(previousChoices),[contract.id,chosen.id]].filter(([id])=>claimed.includes(id)));
-  const updatedLedger=Object.fromEntries([...Object.entries(ledger),[contract.id,[...previousClaimants,state.character.id]]].slice(-240));
+  // Only unexpired cadence IDs matter for anti-farming. Keep the monthly
+  // receipt even after dozens of daily claims; never evict it by insertion order.
+  const activeIds=new Set((['daily','weekly','monthly'] as const).flatMap(cadence=>seasonalQuestBoard(state,cadence,new Date(nowMs)).map(entry=>entry.id)));
+  const updatedLedger=Object.fromEntries([...Object.entries(ledger).filter(([id])=>activeIds.has(id)),[contract.id,[...previousClaimants,state.character.id]]]);
   const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),personalSeasonalClaimLedger:updatedLedger,seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
   const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
   return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices})),nowMs);

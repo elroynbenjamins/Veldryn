@@ -34,8 +34,8 @@ assert.equal(companionMissionMaterialName('en','SUPPLIES'),'SUPPLIES');
 assert.equal(companionMissionMaterialName('en','TRIAL_SANCTUARY_MATERIAL'),'TRIAL SANCTUARY MATERIAL');
 
 const panel=fs.readFileSync(path.join(app,'src/components/CompanionExpeditionsV50Panel.tsx'),'utf8');
+assert.match(panel,/import\s*\{[^}]*\bcompanionMissionDisplayName\b[^}]*\}\s*from\s*['\"]\.\.\/i18n\/companion-missions-de['\"]/,'Mission-name helper must be imported from the localized mission catalog');
 for(const marker of [
- "import {companionMissionDisplayName} from '../i18n/companion-missions-de';",
  "const missionName=(id:string,name:string)=>companionMissionDisplayName(language,id,name)",
  "def?missionName(def.id,def.name):row.missionId",
  "missionName(row.id,row.name)+' · '+duration(row.durationMs)",

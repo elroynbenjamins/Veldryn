@@ -4925,7 +4925,7 @@ export const RUSSIAN_FOCUS_ROWS = {
   "Search recipes": "Поиск рецептов",
   "Search recipes…": "Поиск рецептов…",
   "Stop the current activity before brewing.": "Остановите текущее занятие перед варкой.",
-  "READY NOW": "ГОТОВО СЕЙЧАС",
+  "READY NOW": "ГОТОВО К ИЗГОТОВЛЕНИЮ",
   "NEEDS REQUIREMENTS": "НЕ ХВАТАЕТ УСЛОВИЙ",
   "Craftable only": "Только доступные рецепты",
   "Hide locked and missing-requirement recipes.": "Скрыть закрытые рецепты и рецепты с невыполненными условиями.",

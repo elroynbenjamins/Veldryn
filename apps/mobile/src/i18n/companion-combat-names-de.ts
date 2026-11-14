@@ -1,4 +1,5 @@
 import type {Language} from './languages';
+import {russianCompanionCombatNames,russianCompanionTechniqueNames,russianCompanionTrialAbilities,russianCompanionCombatDescriptions} from './companion-combat-names-ru';
 
 /** Authoritative combat ability and bond trait names are display-only.
  * Verify BOTH immutable companion ID and exact English source before localizing.
@@ -123,24 +124,25 @@ export const germanCompanionLegacySignatures:Readonly<Record<string,string>>={
 };
 
 export function companionCombatAbilityName(language:Language,companionId:string,source:string):string{
- if(language!=='de')return source;
- const entry=germanCompanionCombatNames[companionId]?.active;
+ if(language!=='de'&&language!=='ru')return source;
+ const names=language==='ru'?russianCompanionCombatNames:germanCompanionCombatNames;
+ const entry=names[companionId]?.active;
  if(entry?.[0]===source)return entry[1];
  const signature=germanCompanionLegacySignatures[companionId];
- return signature&&source===signature+' Signature'?'Spezialfähigkeit: '+signature:source;
+ return signature&&source===signature+' Signature'?(language==='ru'?'Особый приём: ':'Spezialfähigkeit: ')+signature:source;
 }
 
 export function companionCombatBondName(language:Language,companionId:string,source:string):string{
- const entry=germanCompanionCombatNames[companionId]?.bond;
- return language==='de'&&entry?.[0]===source?entry[1]:source;
+ const entry=(language==='ru'?russianCompanionCombatNames:language==='de'?germanCompanionCombatNames:undefined)?.[companionId]?.bond;
+ return entry?.[0]===source?entry[1]:source;
 }
 
 export function companionTechniqueName(language:Language,techniqueId:string,source:string):string{
  // IDs are authored per companion and never accepted from player input.
- if(language!=='de'||!/^(?:UNIT_\d{3}|GUILD_UNIT_\d{3}|EVT_UNIT_\d{3})_(?:FORTIFIED|REFLECTIVE|EXECUTIONER|RELENTLESS|DEEP_RESTORATION|RAPID_AID)$/.test(techniqueId))
+ if((language!=='de'&&language!=='ru')||!/^(?:UNIT_\d{3}|GUILD_UNIT_\d{3}|EVT_UNIT_\d{3})_(?:FORTIFIED|REFLECTIVE|EXECUTIONER|RELENTLESS|DEEP_RESTORATION|RAPID_AID)$/.test(techniqueId))
   return source;
- return Object.prototype.hasOwnProperty.call(germanCompanionTechniqueNames,source)
-  ?germanCompanionTechniqueNames[source]:source;
+ const names=language==='ru'?russianCompanionTechniqueNames:germanCompanionTechniqueNames;
+ return Object.prototype.hasOwnProperty.call(names,source)?names[source]:source;
 }
 
 
@@ -170,8 +172,8 @@ export const germanCompanionCombatDescriptions:Readonly<Record<string,string>>={
 };
 
 export function companionCombatDescriptionText(language:Language,source:string):string|undefined{
- return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionCombatDescriptions,source)
-  ?germanCompanionCombatDescriptions[source]:undefined;
+ const names=language==='de'?germanCompanionCombatDescriptions:language==='ru'?russianCompanionCombatDescriptions:undefined;
+ return names&&Object.prototype.hasOwnProperty.call(names,source)?names[source]:undefined;
 }
 
 
@@ -204,6 +206,6 @@ export const germanCompanionTrialAbilities:Readonly<Record<string,string>>={
 };
 
 export function companionTrialAbilityName(language:Language,source:string):string{
- return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionTrialAbilities,source)
-  ?germanCompanionTrialAbilities[source]:source;
+ const names=language==='de'?germanCompanionTrialAbilities:language==='ru'?russianCompanionTrialAbilities:undefined;
+ return names&&Object.prototype.hasOwnProperty.call(names,source)?names[source]:source;
 }

@@ -22,7 +22,7 @@ for(const {id,name} of missions){
  assert.equal(entry?.[0],name,'Source changed; review German mission name: '+id);
  assert.ok(entry[1].length>5&&entry[1]!==name,'German mission translation missing: '+id);
  assert.equal(companionMissionDisplayName('de',id,name),entry[1],'German output missing: '+id);
- for(const language of ['en','es','nl','it','fr','ru','tr'])
+ for(const language of ['en','es','nl','it','fr','tr'])
   assert.equal(companionMissionDisplayName(language,id,name),name,'Other locale changed: '+id+' / '+language);
  assert.equal(companionMissionDisplayName('de',id,'Newly renamed source $&'),'Newly renamed source $&','Source drift should fall back verbatim: '+id);
 }

@@ -22,11 +22,11 @@ Russian and Turkish have expanded but still incomplete coverage. English remains
 
 ## November 14, 2026: German Guild membership and recruitment discovery
 
-- Added **39 reviewed German UI translations** for Guild member management and recruitment discovery, covering promotions, demotions, leadership transfer, removal confirmations, safety explanations, filter headings, chips, advanced filters and listing labels.
+- Added **40 reviewed German UI translations** for Guild member management and recruitment discovery, covering promotions, demotions, leadership transfer, removal confirmations, safety explanations, filter headings, chips, advanced filters and listing labels.
 - Guarded source strings and substituted player names/objectives by safe placeholder callbacks; user-authored Party/Guild names, recruitment descriptions, tags and backend permission rules are unchanged.
 - Localized the Guild member join date and role presentation, extended management action descriptions to three lines for longer German wording, and preserved the existing scrollable confirmation sheet.
 - Localized recruitment activity/focus badges and expiry labels in German, leaving the existing card ranking, search/filter IDs, expiry calculations and non-German locale behavior unchanged.
-- Registered a dedicated German social-management regression test for 39 reviewed strings, source fallback, runtime substitution and critical UI/permission paths. Full TypeScript/CI and Android visual QA remain outstanding.
+- Registered a dedicated German social-management regression test for 40 reviewed strings, source fallback, runtime substitution and critical UI/permission paths. Full TypeScript/CI and Android visual QA remain outstanding.
 
 ## November 14, 2026: German Party Hub and Guild Muster refinement
 

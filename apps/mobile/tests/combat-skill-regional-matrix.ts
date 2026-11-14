@@ -67,7 +67,18 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
      'Claim-triggered class progression cannot create invalid HP: '+context);
    }
    if(!evolved){
-    assert.ok(Math.abs((late.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,
+    const splitEnemyHp=late.state.activity?.combatEnemyHp??0;
+    const singleEnemyHp=single.state.activity?.combatEnemyHp??0;
+    if(Math.abs(splitEnemyHp-singleEnemyHp)>=1e-4){
+     console.error('COMBAT_SPLIT_DIAGNOSTIC '+JSON.stringify({
+      context,splitEnemyHp,singleEnemyHp,
+      early:{kills:early.reward.kills,elapsed:early.reward.elapsedSeconds,progress:early.state.activity?.progressFraction,enemyHp:early.state.activity?.combatEnemyHp,started:early.state.activity?.startedAtMs,lastClaimAt:early.state.activity?.lastClaimAtMs,preparation:early.state.character?.preparation,monsterMastery:early.state.character?.monsterMasteryPoints?.[def.monsterId]},
+      late:{kills:late.reward.kills,progress:late.state.activity?.progressFraction,enemyHp:late.state.activity?.combatEnemyHp,remaining:late.state.character?.preparation},
+      single:{kills:single.reward.kills,progress:single.state.activity?.progressFraction,enemyHp:single.state.activity?.combatEnemyHp,remaining:single.state.character?.preparation},
+      preKill:{kills:beforeKill.reward.kills,enemyHp:beforeKill.state.activity?.combatEnemyHp},
+     }));
+    }
+    assert.ok(Math.abs(splitEnemyHp-singleEnemyHp)<1e-4,
      'With unchanged class stats, split claims must preserve exact enemy HP: '+context);
    }else{
     // Skill XP earned at the first claim may change the next real damage

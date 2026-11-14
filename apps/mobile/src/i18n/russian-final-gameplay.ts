@@ -120,4 +120,6 @@ export const RUSSIAN_FINAL_GAMEPLAY_ROWS = {
   "A failed tempering consumes its cost but protects your rank. Each miss adds 2% success chance, up to 10%. A newer tier remains stronger than a fully improved older piece.": "Неудачная закалка расходует материалы, но сохраняет ранг. Каждая неудача прибавляет 2% к шансу успеха, максимум 10%. Новый ранг снаряжения остаётся сильнее полностью улучшенного старого.",
   "FINAL IMPROVEMENT": "ПОСЛЕДНЕЕ УЛУЧШЕНИЕ",
   "Rare discovery · {name}": "Редкая находка · {name}"
+  "Keep best {count}": "Оставить лучшие: {count}",
+  "Per equipment type": "Для каждого типа снаряжения",
 } as const satisfies Record<string,string>;

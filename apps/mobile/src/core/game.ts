@@ -635,7 +635,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  const techniqueInput={classId:c.classId,classSkillLevel:characterClassSkills(c)[0]?.level??1,
   companion:equippedAbilityCompanion?{id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
    abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
-   role:equippedAbilityCompanion.role,contributionPct:prepared.companion.contributionPct}:undefined};
+   role:equippedAbilityCompanion.role,contributionPct:Math.max(0,1-1/prepared.companion.outputMultiplier)}:undefined};
  const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false)=>{
    let hits;
    if(runtime.huntOptions){

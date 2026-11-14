@@ -561,6 +561,13 @@ function VeldrynApp(){
   // If a source link opened a specific skill, Back returns to that source; if the player
   // chose a skill within Skills, Back first returns to the skill hub.
   useEffect(()=>{setSkillsOpenedAsLink(tab==='Skills'&&Boolean(selectedSkill));},[tab]);
+  // Refresh the account-owned Party roster as soon as an online character switch
+  // has committed; otherwise the Party panel would retain the old class/role
+  // until its periodic 30-second refresh. Never refresh for a failed switch.
+  useEffect(()=>{
+    if(!serverGameplayEnabled||!auth.session?.user.id||!state?.character?.id)return;
+    void partySocial.refresh();
+  },[auth.session?.user.id,state?.character?.id]);
   // Do not return into another character's detail history after a roster switch.
   useEffect(()=>{setTabHistory([]);},[state?.character?.id]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);

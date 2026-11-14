@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=3527,'Turkish core coverage should retain the 3527-string baseline');
+assert.ok(keys.length>=3638,'Turkish core coverage should retain the 3638-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -99,5 +99,10 @@ assert.equal(earlyLocaleText('tr',"CHARACTER DELETION CONFIRMATION"),"KARAKTER S
 assert.equal(earlyLocaleText('tr',"YOUR STANDING"),"SIRALAMADAKİ YERİN");
 assert.equal(earlyLocaleText('tr',"Join a Party to use Party Chat. World and Guild chat remain available in the chat overlay."),"Grup Sohbetini kullanmak için bir Gruba katıl. Dünya ve Lonca sohbetleri sohbet penceresinde kullanılabilir.");
 assert.equal(earlyLocaleText('tr',"Guild Chat requires online services. No simulated chat is shown."),"Lonca Sohbeti çevrimiçi hizmet gerektirir. Sahte sohbet gösterilmez.");
+assert.equal(earlyLocaleText('tr',"Optimize a completed loadout"),"Tamamlanmış donanımı iyileştir");
+assert.equal(earlyLocaleText('tr',"Open sockets on {slot}"),"{slot} üzerindeki yuvaları aç");
+assert.equal(earlyLocaleText('tr',"Highest Contract contribution"),"En yüksek Sözleşme katkısı");
+assert.equal(earlyLocaleText('tr',"PERSONAL BEST"),"KİŞİSEL REKOR");
+assert.equal(earlyLocaleText('tr',"A title earned through an exceptional companion collection."),"Olağanüstü yoldaş koleksiyonuyla kazanılan unvan.");
 console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
  +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

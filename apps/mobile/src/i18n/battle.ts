@@ -6,6 +6,10 @@ export const BATTLE_MESSAGES={
  'Lv. {level}':['St. {level}','Nv. {level}','Niv. {level}','Liv. {level}','Niv. {level}'],
  'Combat bonus active':['Kampfbonus aktiv','Bono de combate activo','Gevechtsbonus actief','Bonus di combattimento attivo','Bonus de combat actif'],
  'ON-KILL RECOVERY':['HEILUNG NACH SIEG','RECUPERACIÓN TRAS VENCER','HERSTEL NA OVERWINNING','RECUPERO DOPO LA VITTORIA','SOIN APRÈS LA VICTOIRE'],
+ 'CLASS ABILITY':['KLASSENFÄHIGKEIT','HABILIDAD DE CLASE','KLASSEVAARDIGHEID','ABILITÀ DI CLASSE','CAPACITÉ DE CLASSE'],
+ 'COMPANION SKILL':['BEGLEITERFÄHIGKEIT','HABILIDAD DE COMPAÑERO','METGEZELVAARDIGHEID','ABILITÀ COMPAGNO','CAPACITÉ DU COMPAGNON'],
+ 'SKILL DAMAGE · {amount}':['FÄHIGKEITSSCHADEN · {amount}','DAÑO DE HABILIDAD · {amount}','VAARDIGHEIDSSCHADE · {amount}','DANNO ABILITÀ · {amount}','DÉGÂTS DE CAPACITÉ · {amount}'],
+ 'SKILL HEAL · {amount}':['FÄHIGKEITSHEILUNG · {amount}','CURA DE HABILIDAD · {amount}','VAARDIGHEIDSHELING · {amount}','CURA ABILITÀ · {amount}','SOIN DE CAPACITÉ · {amount}'],
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
 
  'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],

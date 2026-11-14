@@ -13,7 +13,7 @@ const {
  germanSocialManagementCopy,germanSocialManagementText,germanSocialManagementFormat
 }=require('../src/i18n/social-management-de.ts');
 const keys=Object.keys(germanSocialManagementCopy);
-assert.equal(keys.length,39,'German Guild action and recruitment review coverage changed');
+assert.equal(keys.length,40,'German Guild action and recruitment review coverage changed');
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(x=>x[1]).sort();
 for(const english of keys){
  const german=germanSocialManagementCopy[english];
@@ -66,4 +66,4 @@ for(const marker of [
  '{tag}',
  'card.focus',
 ])assert.ok(listing.includes(marker),'Recruitment listing lost display safety or locale handling: '+marker);
-console.log('PASS: 39 German social-management/recruitment strings, locale fallback, safe dynamic values and UI wiring');
+console.log('PASS: 40 German social-management/recruitment strings, locale fallback, safe dynamic values and UI wiring');

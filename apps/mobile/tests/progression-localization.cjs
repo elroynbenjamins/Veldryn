@@ -47,8 +47,8 @@ assert.equal(progressionEnvironmentText('de', '+8% combat XP · −5% combat spe
 assert.equal(progressionEnvironmentText('fr', 'Clear Skies'), 'Ciel dégagé');
 assert.equal(progressionError('fr', new Error('raw_server_failure_123'), 'Could not update goals.'), progressionT('fr', 'Could not update goals.'));
 
-const screens = ['WorldScreen','QuestScreen','EventScreen','ProgressionPlannerScreen','MasteryHallScreen','AchievementsScreen','AdventurersJournalScreen','WorldMilestoneFeedScreen'];
-const components = ["AnnualEventCalendarPanel","ContractBoardSummary","CrossSkillDiscoveriesPanel","EventContributionBreakdownPanel","ExplorationPanel","EnvironmentBanner","EnvironmentDetailsModal","FrostmarchRegionPanel","SunscarRegionPanel","MasteryHallPanel","MasteryDiscoveryPanel","RegionalContractFocus","RegionalCrisisPanel","RegionalJournalPanel","RegionalStoryLeadsPanel","RegionCompletionPanel","RegionEncounterList","TravelRegionModal","WorldBossPanel","WorldBossResultPanel","WorkingTowardFocusPanel","WorkingTowardSummary","IdleRulesEditorV40","QuestModeSwitch","QuestReward"];
+const screens = ['WorldScreen','QuestScreen','EventScreen','MasteryHallScreen','AchievementsScreen','AdventurersJournalScreen','WorldMilestoneFeedScreen'];
+const components = ["AnnualEventCalendarPanel","ContractBoardSummary","CrossSkillDiscoveriesPanel","EventContributionBreakdownPanel","ExplorationPanel","EnvironmentBanner","EnvironmentDetailsModal","FrostmarchRegionPanel","SunscarRegionPanel","MasteryHallPanel","MasteryDiscoveryPanel","RegionalContractFocus","RegionalCrisisPanel","RegionalJournalPanel","RegionalStoryLeadsPanel","RegionCompletionPanel","RegionEncounterList","TravelRegionModal","WorldBossPanel","WorldBossResultPanel","IdleRulesEditorV40","QuestModeSwitch","QuestReward"];
 const ownedFiles = [...screens.map(name => 'screens/' + name), ...components.map(name => 'components/' + name)];
 for (const relative of ownedFiles) {
   const filename = path.join(app, 'src', relative + '.tsx');
@@ -85,8 +85,11 @@ function renderComponent(name, language, props) {
     if (id.endsWith('/progression')) return progression;
     if (id.endsWith('/shared-world-v19')) return {formatCompact:value=>String(value)};
     if (id.endsWith('/items')) return {itemDef:()=>({name:'Clear'})};
-    if (id.endsWith('/theme')) return {C:{},radii:{md:4},typography:{}};
+    if (id.endsWith('/starter-item-names')) return {localizedItemName:(_lang,itemId)=>itemId==='unchanged_item_id'?'Clear':itemId};
+    if (id.endsWith('/theme')) return {C:{},radii:{md:4},typography:{caption:{},bodyStrong:{},body:{}}};
+    if (id.endsWith('/ThemeContext')) return {useGameTheme:()=>({panel:'',line:'',muted:'',accent:'',info:'',text:''})};
     if (id === './ItemArtwork') return {ItemArtwork:()=>null};
+    if (id === './ResourceIcon') return {ResourceIcon:()=>null};
     return normalRequire(id);
   };
   loaded._compile(compile(fs.readFileSync(filename,'utf8'),filename),filename);

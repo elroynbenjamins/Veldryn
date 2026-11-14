@@ -38,6 +38,7 @@ jobs:
           sparse-checkout: |
             apps/mobile
             backend/src
+            packages/guild-shop/src
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -69,6 +70,7 @@ jobs:
         run: |
           test -f ../../backend/src/server/companions/trial-season.ts
           test -f ../../backend/src/server/companions/content.ts
+          test -f ../../packages/guild-shop/src/catalogue.ts
       - name: Generate Android native project
         run: npx expo prebuild --platform android --clean --no-install
       - name: Build release AAB

@@ -1,8 +1,9 @@
 import type {Language} from './languages';
 import {localizedItemName} from './starter-item-names';
+import {russianCompanionMissionNames,russianMissionOnlyMaterials} from './companion-missions-ru';
 
 /**
- * German display names for server-authored Sanctuary Expeditions.
+ * German and Russian display names for server-authored Sanctuary Expeditions.
  * Guard each translation with the immutable mission ID AND exact English name.
  * Unknown missions and renamed source copy must be shown unchanged.
  */
@@ -27,8 +28,9 @@ export const germanCompanionMissionNames:Readonly<Record<string,readonly [string
 };
 
 export function companionMissionDisplayName(language:Language,missionId:string,source:string):string{
- const entry=germanCompanionMissionNames[missionId];
- return language==='de'&&entry?.[0]===source?entry[1]:source;
+ const names=language==='de'?germanCompanionMissionNames:language==='ru'?russianCompanionMissionNames:undefined;
+ const entry=names?.[missionId];
+ return entry?.[0]===source?entry[1]:source;
 }
 
 /** Two mission-only backend resource IDs are not part of the item-name registry. */
@@ -38,6 +40,8 @@ const germanMissionOnlyMaterials:Readonly<Record<string,string>>={
 };
 
 export function companionMissionMaterialName(language:Language,itemId:string):string{
+ if(language==='ru'&&Object.prototype.hasOwnProperty.call(russianMissionOnlyMaterials,itemId))
+  return russianMissionOnlyMaterials[itemId];
  if(language==='de'&&Object.prototype.hasOwnProperty.call(germanMissionOnlyMaterials,itemId))
   return germanMissionOnlyMaterials[itemId];
  return localizedItemName(language,itemId);

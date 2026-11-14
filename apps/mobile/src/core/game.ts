@@ -1,6 +1,8 @@
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
+import {huntActiveDamageEvents,huntSupportHealEvents,huntTankGuardEvents} from './hunt-active-abilities';
+import {huntClassSurvivalEvents} from './hunt-class-identity';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -545,10 +547,33 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
  if(!runtime.huntOptions)return undefined;
  const count=48;
  let seconds=0,damage=0,healing=0,onKillHealing=0;
+ const sessionStart=state.activity?.kind==='combat'&&state.activity.targetId===monsterId
+  ?state.activity.startedAtMs??0:0;
+ let encounterStart=sessionStart;
+ const classSkillLevel=characterClassSkills(runtime.c)[0]?.level??1;
+ const equippedGuardCompanion=runtime.companion.contributionPct>0
+  ?COMBAT_COMPANIONS.find(unit=>unit.id===runtime.c.equippedCombatCompanionId):undefined;
  for(let index=0;index<count;index++){
    const plan=regionalHuntPlan({...runtime.huntOptions,seed:regionalHuntSeed(state,monsterId,index)});
    const exchange=combatEncounterDamage({...runtime,killCycleSeconds:plan.cycleSeconds},false,plan.enemyAttackCount,plan.fightSeconds);
-   seconds+=plan.cycleSeconds;damage+=exchange.damage;healing+=exchange.healing;onKillHealing+=exchange.onKillHealing;
+   // Forecast actual companion and class protection from the same original
+   // session clock as settlement. Never adjust enemy HP, XP, Gold or fatigue.
+   const timing={combatStartedAtMs:sessionStart,encounterStartedAtMs:encounterStart,cycleSeconds:plan.cycleSeconds};
+   const guarded=huntTankGuardEvents(regionalHuntHits(plan,{
+    monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing,
+   }),{...timing,companion:equippedGuardCompanion?{
+    id:equippedGuardCompanion.id,name:equippedGuardCompanion.name,
+    abilityId:equippedGuardCompanion.activeAbility.id,abilityName:equippedGuardCompanion.activeAbility.name,
+    role:equippedGuardCompanion.role,activeKind:equippedGuardCompanion.activeAbility.effect.kind,
+    cooldownSeconds:equippedGuardCompanion.activeAbility.cooldownSeconds,
+    incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier,
+   }:undefined});
+   const cast=huntClassSurvivalEvents(guarded,{classId:runtime.c.classId,classSkillLevel,...timing});
+   seconds+=plan.cycleSeconds;
+   damage+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.damage,0);
+   healing+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.healing,0);
+   onKillHealing+=exchange.onKillHealing;
+   encounterStart+=plan.cycleSeconds*1000;
  }
  const killCycleSeconds=seconds/count;
  return {killCycleSeconds,damage:damage/count,healing:healing/count,onKillHealing:onKillHealing/count,net:(damage-healing)/count};
@@ -592,6 +617,7 @@ export function activeCombatRuntimeProjection(state:GameState){
   };
 }
 
+export interface ActiveHuntSkillEffect {atMs:number;name:string;kind:'recovery'|'damage'|'heal'|'shield';amount?:number;source?:'class'|'companion'}
 function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Date.now()){
  const c=state.character!,activity=state.activity!,startsAtMs=activity?.lastClaimAtMs??nowMs-elapsed*1000;
  const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs),prepared=combatRuntimeDetails(state,monsterId,startsAtMs);
@@ -620,14 +646,40 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
- const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false)=>{
+ // Only report a completed, genuinely applied recovery benefit; ordinary
+ // class training and companion stat multipliers are not active casts.
+ let lastSkillEffect:ActiveHuntSkillEffect|undefined;
+ const lastSkillEffects:ActiveHuntSkillEffect[]=[];
+ const recordSkillEffect=(effect:ActiveHuntSkillEffect)=>{
+  lastSkillEffect=effect;lastSkillEffects.push(effect);
+  if(lastSkillEffects.length>4)lastSkillEffects.shift();
+ };
+ const equippedAbilityCompanion=prepared.companion.contributionPct>0
+  ?COMBAT_COMPANIONS.find(def=>def.id===c.equippedCombatCompanionId):undefined;
+ const classTechniqueInput={classId:c.classId,classSkillLevel:characterClassSkills(c)[0]?.level??1};
+ const commonCompanion=equippedAbilityCompanion?{
+  id:equippedAbilityCompanion.id,name:equippedAbilityCompanion.name,
+  abilityId:equippedAbilityCompanion.activeAbility.id,abilityName:equippedAbilityCompanion.activeAbility.name,
+  role:equippedAbilityCompanion.role,activeKind:equippedAbilityCompanion.activeAbility.effect.kind,
+  cooldownSeconds:equippedAbilityCompanion.activeAbility.cooldownSeconds}:undefined;
+ const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds,isPrepared=false,encounterStartedAtMs=startsAtMs)=>{
+   let hits;
    if(runtime.huntOptions){
      const plan=planFor(index,isPrepared);
      const exchange=combatEncounterDamage(runtime,champion,plan.enemyAttackCount,plan.fightSeconds);
-     return regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
+     hits=regionalHuntHits(plan,{monsterDamage:exchange.monsterDamage,fatigueDamage:exchange.fatigue,healingPerEncounter:exchange.healing});
+   }else{
+     const exchange=combatEncounterDamage(runtime,champion);
+     hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
-   const exchange=combatEncounterDamage(runtime,champion);
-   return huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
+   const cooldownTiming={combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds};
+   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,
+     companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
+   const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
+     companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
+   const guarded=huntTankGuardEvents(heals,{...cooldownTiming,
+     companion:commonCompanion?{...commonCompanion,incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
+   return huntClassSurvivalEvents(guarded,{...classTechniqueInput,...cooldownTiming});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -635,22 +687,55 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    enemyHp=huntEnemyHpAt(prepared.m.hp,hitsFor(firstPrepared?prepared:plain,0,champion,undefined,firstPrepared),activity?.progressFraction??0);
  }
  enemyHp=Math.max(0,Math.min(prepared.m.hp,enemyHp));
- if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,foodConsumedById:[] as ItemStack[],endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit};
+ if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,foodConsumedById:[] as ItemStack[],endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit,lastSkillEffect,lastSkillEffects};
  for(const segment of timeline.segments){
    const runtime={...(segment.prepared?prepared:plain),killCycleSeconds:segment.cycleSeconds};
    if(segment.encounterIndex!==activeEncounterIndex){enemyHp=runtime.m.hp;activeEncounterIndex=segment.encounterIndex;}
    const encounterNumber=(activity?.sessionKills??0)+segment.encounterIndex;
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,encounterNumber);
    // Candy accelerates the clock, but cannot rearrange attack indices mid-fight.
-   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds,segment.prepared);
+   const encounterStartedAtMs=segment.startsAtMs-segment.fromFraction*segment.cycleSeconds*1000;
+   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds,segment.prepared,encounterStartedAtMs);
    for(const hit of huntHitsBetween(hits,segment.fromFraction,segment.toFraction)){
      const hitAtMs=segment.startsAtMs+(hit.fraction-segment.fromFraction)*segment.cycleSeconds*1000;
      if(hit.actor==='player'){
        enemyHp=Math.max(0,enemyHp-hit.damage);
+       // This class technique actually concentrates the damage of a landed
+       // strike. Companion damage shares the same resolved strike budget.
+       // Preserve both casts when they share one landed strike, rather than
+       // hiding the companion behind the character's class technique.
+       for(const effect of [hit.companionAssist,hit.activeAbility])if(effect)
+         recordSkillEffect({atMs:hitAtMs,name:effect.name,kind:'damage',amount:effect.amount,source:effect.source});
      }else{
        // Incoming damage is applied on the strike, not at the kill/claim boundary.
        // Healing cannot retroactively prevent a lethal hit.
-       hp=hp-hit.damage<=0?0:Math.min(runtime.stats.hp,hp-hit.damage+hit.healing);
+       const hpAfterDamage=hp-hit.damage;
+       if(hit.guardAbility)recordSkillEffect({atMs:hitAtMs,name:hit.guardAbility.name,kind:'shield',amount:hit.guardAbility.amount,source:'companion'});
+       if(hit.classGuardAbility)recordSkillEffect({atMs:hitAtMs,name:hit.classGuardAbility.name,kind:'shield',amount:hit.classGuardAbility.amount,source:'class'});
+       const appliedHealing=hpAfterDamage>0?Math.min(hit.healing,Math.max(0,runtime.stats.hp-hpAfterDamage)):0;
+       // Base restorative effects apply before this class's extra healing;
+       // each source is only credited for the HP it actually restores.
+       const classBudget=Math.max(0,hit.classHealingBudget??0);
+       const appliedBaseHealing=Math.min(appliedHealing,Math.max(0,hit.healing-classBudget));
+       const appliedClassHealing=Math.max(0,appliedHealing-appliedBaseHealing);
+       hp=hpAfterDamage<=0?0:Math.min(runtime.stats.hp,hpAfterDamage+hit.healing);
+       if(hit.classHealAbility&&appliedClassHealing>1e-5)
+         recordSkillEffect({atMs:hitAtMs,name:hit.classHealAbility.name,kind:'heal',amount:appliedClassHealing,source:'class'});
+       // Bloodrush recovery was already included in the resolved healing of
+       // this hit. Only credit the class for the proportion actually restored.
+       if(hit.actor==='fatigue'&&appliedBaseHealing>0&&runtime.style.onKillAttackHealPct){
+         const companionBase=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600*(runtime.c.preparation?preparationEffects(runtime.c.preparation).healing:1);
+         const classBase=runtime.stats.attack*runtime.style.onKillAttackHealPct;
+         const classPortion=appliedBaseHealing*classBase/(companionBase+classBase||1);
+         if(classPortion>1e-5)recordSkillEffect({atMs:hitAtMs,name:runtime.style.name,kind:'recovery',amount:classPortion,source:'class'});
+       }
+       if(appliedBaseHealing>0&&hit.supportAbility){
+         const companionHeal=runtime.stats.hp*runtime.companion.directHealingPctPerHour*runtime.killCycleSeconds/3600;
+         const classHeal=runtime.stats.attack*(runtime.style.onKillAttackHealPct??0);
+         const share=companionHeal/(companionHeal+classHeal||1);
+         const credited=Math.min(appliedBaseHealing,appliedBaseHealing*share);
+         if(credited>0.00001)recordSkillEffect({atMs:hitAtMs,name:hit.supportAbility.name,kind:'heal',amount:credited,source:'companion'});
+       }
        while(hp>0&&hp/runtime.stats.hp<=threshold){
          const nextFood=foodOrder.find(row=>row.heal>0&&(foodLeft.get(row.id)??0)>0);
          if(!nextFood)break;
@@ -677,7 +762,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      activeEncounterIndex=segment.encounterIndex+1;
    }
  }
- return {kills:completed.length,completed,championKills,foodConsumed,foodConsumedById:[...foodSpent].map(([itemId,quantity])=>({itemId,quantity})),endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit};
+ return {kills:completed.length,completed,championKills,foodConsumed,foodConsumedById:[...foodSpent].map(([itemId,quantity])=>({itemId,quantity})),endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit,lastSkillEffect,lastSkillEffects};
 }
 
 /** A UI-only replay cursor. The underlying saved GameState remains unchanged;
@@ -688,6 +773,8 @@ export interface ActiveCombatHitCursor{
  atMs:number;
  stoppedReason:string;
  lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+ lastSkillEffect?:ActiveHuntSkillEffect;
+ lastSkillEffects?:ActiveHuntSkillEffect[];
 }
 /** Exact hit projection, with optional incremental replay so a foreground clock
  * never recalculates a full 24-hour AFK backlog every animation tick. */
@@ -701,11 +788,14 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const runtime=combatRuntimeDetails(state,original.targetId);
  if(usable&&previous.stoppedReason){
    return {searching:false,playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
-     progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,cursor:previous};
+     progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,lastSkillEffect:previous.lastSkillEffect,lastSkillEffects:previous.lastSkillEffects??[],cursor:previous};
  }
  const elapsed=Math.max(0,(atMs-source.activity!.lastClaimAtMs)/1000);
  const current=simulateCombat(source,original.targetId,elapsed,atMs);
  const lastHit=current.lastHit??(usable?previous.lastHit:undefined);
+ const allSkillEffects=[...(usable?previous.lastSkillEffects??[]:[]),...current.lastSkillEffects];
+ const lastSkillEffects=allSkillEffects.filter((effect,index)=>allSkillEffects.findIndex(item=>Math.round(item.atMs)===Math.round(effect.atMs)&&item.name===effect.name&&item.kind===effect.kind)===index).slice(-4);
+ const lastSkillEffect=lastSkillEffects[lastSkillEffects.length-1]??(usable?previous.lastSkillEffect:undefined);
  const sourceCharacter=source.character!;
  let preparation=sourceCharacter.preparation;
  for(let i=0;i<current.preparationEncounters&&preparation;i++)preparation=spendPreparationEncounter(preparation,preparation.itemId);
@@ -723,9 +813,9 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const nextRuntime=combatRuntimeDetails(projected,original.targetId);
  const nextPlan=nextRuntime.huntOptions?regionalHuntPlan(nextRuntime.huntOptions):undefined;
  const searching=!!nextPlan&&current.nextProgressFraction<nextPlan.searchSeconds/nextPlan.cycleSeconds;
- const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit};
+ const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects};
  return {searching,playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
-   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,cursor};
+   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects,cursor};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{
@@ -799,6 +889,13 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
   const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
+  // Carry fractional per-kill rewards across claims of the same hunt clock.
+  // Without this, two offline claims can floor the same earned XP/Gold twice.
+  const xpFractionKey='combat:base-xp-fraction',goldFractionKey='combat:base-gold-fraction';
+  const storedFraction=(key:string)=>{const value=state.rewardRemainders?.[key];return typeof value==='number'&&Number.isFinite(value)?Math.max(0,Math.min(.999999999,value)):0;};
+  const rawBaseXp=sim.kills*baseXpPerKill+storedFraction(xpFractionKey),rawBaseGold=sim.kills*baseGoldPerKill+storedFraction(goldFractionKey);
+  const earnedBaseXp=Math.floor(rawBaseXp+1e-9),earnedBaseGold=Math.floor(rawBaseGold+1e-9);
+  const nextXpFraction=Math.max(0,Math.min(.999999999,rawBaseXp-earnedBaseXp)),nextGoldFraction=Math.max(0,Math.min(.999999999,rawBaseGold-earnedBaseGold));
   const explorationSkill=state.skills.find(skill=>skill.skillId==='exploration');
   const explorationRaw=sim.kills*Math.max(1,Math.ceil(m.level/12));
   const explorationRemainderKey='combat:passive-exploration-xp-tenths';
@@ -809,7 +906,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   let momentumXp=0;
   for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
   const momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,foodConsumedById:sim.foodConsumedById,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={nextRewardRemainders:{...(state.rewardRemainders??{}),[explorationRemainderKey]:explorationRemainder,[xpFractionKey]:nextXpFraction,[goldFractionKey]:nextGoldFraction},combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:earnedBaseXp+momentumXp+champion.xp,gold:earnedBaseGold+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,foodConsumedById:sim.foodConsumedById,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
@@ -1489,7 +1586,7 @@ export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSn
   const potionId=character.equippedHealingPotionId,potion=potionDef(potionId),potionQuantity=potion?.effect.kind==='healing'?stackQty(state.inventory.stacks,potionId):0;
   const prep=character.preparation?preparationEffects(character.preparation):undefined,gear=fallenKnightGearReadiness(state);
   return {
-    name:character.name,classId:character.classId,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
+    name:character.name,classId:character.classId,classSkillLevel:characterClassSkills(character)[0]?.level??1,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
     attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
     damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier*(prep?.outgoing??1),
     // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.

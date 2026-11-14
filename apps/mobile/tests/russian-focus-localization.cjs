@@ -127,6 +127,10 @@ for(const [key,expected] of Object.entries({
   assert.equal(earlyLocaleText('ru',key),expected,'Focused Russian text missing for '+key);
   assert.notEqual(earlyLocaleText('tr',key),expected,'Turkish UI must never inherit Russian text: '+key);
 }
+const {recentScreenText}=require('../src/i18n/recent-screens.ts');
+assert.equal(earlyLocaleText('ru','READY NOW'),'ГОТОВО К ИЗГОТОВЛЕНИЮ','Recipe-ready wording remains specific to crafting');
+assert.equal(recentScreenText('ru','READY NOW'),'ГОТОВО СЕЙЧАС','Home activity summary uses the reviewed general READY NOW label');
+assert.equal(recentScreenText('tr','READY NOW'),'ŞİMDİ HAZIR','Home activity summary preserves the reviewed Turkish label');
 assert.equal(earlyLocaleText('ru','Show breakdown'),'Показать подробности','Older Russian catalog entries still work');
 const params={count:3,name:'PLAYER-007',amount:2};
 const sourceTranslator=createSourceTranslator({'{name}, needs attention':['de','es','nl','it','fr']});

@@ -20,9 +20,9 @@ function oldMinesReady<T extends ReturnType<typeof unlocked>>(state:T){return {.
 const damage=unlocked('WAYFINDER');
 equal(damage.account.unlockedCombatCompanionIds?.length??0,0,'claiming Into Ironwood must wait for a starter choice');
 equal(starterCombatCompanionChoicePending(damage),true);
-deepEqual(starterCombatCompanionChoices(damage).map(row=>row.id),['UNIT_002','UNIT_003'],'damage classes choose Tank or Support');
-deepEqual(starterCombatCompanionChoices(unlocked('IRONWARDEN')).map(row=>row.id),['UNIT_001','UNIT_003'],'tank classes choose Damage or Support');
-deepEqual(starterCombatCompanionChoices(unlocked('DAWNKEEPER')).map(row=>row.id),['UNIT_001','UNIT_002'],'support classes choose Damage or Tank');
+deepEqual(starterCombatCompanionChoices(damage).map(row=>row.id),['UNIT_001','UNIT_002','UNIT_003'],'damage classes may choose all roles');
+deepEqual(starterCombatCompanionChoices(unlocked('IRONWARDEN')).map(row=>row.id),['UNIT_001','UNIT_002','UNIT_003'],'tank classes may choose all roles');
+deepEqual(starterCombatCompanionChoices(unlocked('DAWNKEEPER')).map(row=>row.id),['UNIT_001','UNIT_002','UNIT_003'],'support classes may choose all roles');
 
 const chosen=chooseStarterCombatCompanion(damage,'UNIT_002',now);
 equal(chosen.account.starterCombatCompanionId,'UNIT_002');
@@ -30,7 +30,7 @@ deepEqual(chosen.account.unlockedCombatCompanionIds,['UNIT_002']);
 equal(chosen.character?.equippedCombatCompanionId,'UNIT_002');
 equal(starterCombatCompanionChoicePending(chosen),false);
 throws(()=>chooseStarterCombatCompanion(chosen,'UNIT_003',now),/already been chosen/,'starter choice must be permanent');
-throws(()=>chooseStarterCombatCompanion(unlocked('WAYFINDER'),'UNIT_001',now),/different role/,'same-role starter must be rejected');
+equal(chooseStarterCombatCompanion(unlocked('WAYFINDER'),'UNIT_001',now).character?.equippedCombatCompanionId,'UNIT_001','same-role starter must be equippable');
 
 validateGameCommand({type:'companion_starter',args:{id:'UNIT_003'}});
 const commanded=executeGameCommand(unlocked('IRONWARDEN'),{type:'companion_starter',args:{id:'UNIT_003'}},now).state;
@@ -80,4 +80,4 @@ deepEqual(supportThird.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','U
 const thirdReload=parseSaveBackup(createSaveBackup(supportThird));
 equal(thirdReload.account.starterThirdCombatCompanionId,'UNIT_003','resolved third-companion reward survives save normalization');
 
-console.log('PASS: role-aware starter companion choice');
+console.log('PASS: unrestricted starter choice with guided follow-up roles');

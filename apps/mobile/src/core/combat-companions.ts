@@ -264,7 +264,10 @@ export function chooseStarterCombatCompanion<T extends CombatCompanionStateHost>
 }
 function starterFollowupCandidate(state:CombatCompanionStateHost){
  const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
- return starterCombatCompanionChoices(state).find(def=>!owned.has(def.id));
+ const candidates=STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).filter(def=>!owned.has(def.id));
+ // Prefer role diversity for free story rewards, without restricting selection.
+ const role=state.character?classCompanionRole(state.character.classId):undefined;
+ return candidates.find(def=>def.role!==role)??candidates[0];
 }
 export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHost>(state:T,nowMs=Date.now()):T{
   let next=sanitizeCombatCompanionState(state);

@@ -43954,7 +43954,9 @@ function chooseStarterCombatCompanion(state, id, nowMs = Date.now()) {
 }
 function starterFollowupCandidate(state) {
   const owned = new Set(state.account.unlockedCombatCompanionIds ?? []);
-  return starterCombatCompanionChoices(state).find((def) => !owned.has(def.id));
+  const candidates = STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).filter((def) => !owned.has(def.id));
+  const role = state.character ? classCompanionRole(state.character.classId) : void 0;
+  return candidates.find((def) => def.role !== role) ?? candidates[0];
 }
 function reconcileCombatCompanionUnlocks(state, nowMs = Date.now()) {
   let next = sanitizeCombatCompanionState(state);

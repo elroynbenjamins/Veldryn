@@ -54,7 +54,15 @@ export const usableCompanionRoles=(companionRole:CombatCompanionRole):CombatComp
 const STARTER_COMPANION_IDS=['UNIT_001','UNIT_002','UNIT_003'] as const;
 const starterCompanionIds=new Set<string>(STARTER_COMPANION_IDS);
 const isStarterCompanionId=(id:unknown):id is typeof STARTER_COMPANION_IDS[number]=>typeof id==='string'&&starterCompanionIds.has(id);
-const claimedQuest=(state:CombatCompanionStateHost,id:string)=>(state.quests??[]).some(entry=>entry.questId===id&&entry.status==='claimed');
+/** A manual recruitment retry may only use the same verified progression paths
+ * as automatic reconciliation. Event and shop rewards retain their own authority. */
+export function companionCanRecruitFromRequirements(def:CompanionDefinition){
+  return COMBAT_COMPANIONS.some(row=>row.id===def.id)&&!isStarterCompanionId(def.id)&&
+    def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'&&def.unlockRequirements.length>0;
+}
+const claimedQuest=(state:CombatCompanionStateHost,id:string)=>
+  [state.quests??[],...(state.otherCharacters??[]).map(row=>row.quests??[])]
+    .some(quests=>quests.some(entry=>entry.questId===id&&entry.status==='claimed'));
 
 export const defaultCompanionSanctuary=():CompanionSanctuaryState=>({trainingGroundLevel:0,essenceBasinLevel:0,bondHallLevel:0,expeditionPensLevel:0,masteryChamberLevel:0});
 export const defaultOwnedCompanionProgress=(nowMs=Date.now()):OwnedCompanionProgress=>({level:1,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false,obtainedAtMs:nowMs});
@@ -274,6 +282,19 @@ export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHo
    if(candidate){next=unlockCombatCompanion(next,candidate.id,nowMs);next={...next,account:{...next.account,starterThirdCombatCompanionId:candidate.id}} as T;}
   }
   return next;
+}
+/** Idempotent, server-authoritative retry for a fully completed recruitment.
+ * The client never submits progress or grants. Eligibility is recomputed from
+ * trusted saved state; special challenges, events and shops cannot be bypassed.
+ */
+export function recruitEligibleCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
+  const def=combatCompanionDef(id);
+  if(!def||!companionCanRecruitFromRequirements(def))throw new Error('companion_recruitment_requires_original_source');
+  const clean=sanitizeCombatCompanionState(state);
+  if(clean.account.unlockedCombatCompanionIds?.includes(id))return clean;
+  if(!def.unlockRequirements.every(requirement=>companionUnlockRequirementMet(clean,requirement)))
+    throw new Error('companion_recruitment_requirements_incomplete');
+  return unlockCombatCompanion(clean,id,nowMs);
 }
 export function unlockCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
   const def=combatCompanionDef(id);if(!def)throw new Error('Unknown combat companion.');

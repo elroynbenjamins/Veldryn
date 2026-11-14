@@ -4,6 +4,9 @@
  * Unknown text still falls back to English, never an invented translation.
  */
 export const TURKISH_COVERAGE = {
+  "FOOD ROTATION": "YİYECEK SIRASI",
+  "Food actions": "Yiyecek işlemleri",
+  "Food running low": "Yiyecek azalıyor",
   "Shows season, weather, and activity effects": "Mevsim, hava durumu ve etkinlik etkilerini gösterir",
   "Opens five customizable navigation shortcuts": "Özelleştirilebilir beş gezinme kısayolunu açar",
   "{name}, needs attention": "{name}, ilgilenmen gerekiyor",

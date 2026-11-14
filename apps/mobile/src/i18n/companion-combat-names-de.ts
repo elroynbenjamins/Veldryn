@@ -129,3 +129,34 @@ export function companionTechniqueName(language:Language,techniqueId:string,sour
  return Object.prototype.hasOwnProperty.call(germanCompanionTechniqueNames,source)
   ?germanCompanionTechniqueNames[source]:source;
 }
+
+
+/**
+ * Remaining authored description gaps across the Event companion identities
+ * and new custom combat techniques. The large shared companion catalog already
+ * covers the other descriptions. Strict source lookup prevents translation of
+ * player-entered or arbitrary server strings.
+ */
+export const germanCompanionCombatDescriptions:Readonly<Record<string,string>>={
+ 'Raises a heavy ward that reduces incoming pressure and protects the front line.':'Errichtet einen starken Schutzwall, der eingehenden Schaden verringert und die Front schützt.',
+ 'Hollow Armor: steadier mitigation during prolonged fights.':'Hohlrüstung: zuverlässigere Schadensminderung in längeren Kämpfen.',
+ 'Bond 10 strengthens Hollow Knightling mitigation.':'Bindung 10 verbessert die Schadensminderung des Hohlritters.',
+ 'Restores the weakest ally and briefly accelerates recovery cadence.':'Heilt den schwächsten Verbündeten und beschleunigt kurzzeitig weitere Heilungen.',
+ 'Wardlight: slightly faster support cadence.':'Schutzlicht: Unterstützungsfähigkeiten werden etwas häufiger eingesetzt.',
+ 'Bond 10 strengthens Lantern Keeper restorative support.':'Bindung 10 verstärkt die Heilunterstützung des Laternenhüters.',
+ 'Deepen the Sentinel’s sheltering ward.':'Verstärkt den Schutzwall des Wächters.',
+ 'Turn steady defense into a measured counter.':'Wandelt stabile Verteidigung in einen gezielten Gegenschlag um.',
+ 'Sharpen the Seeker’s decisive finishing blow.':'Verstärkt den entscheidenden letzten Schlag des Suchers.',
+ 'Keep the Seeker moving from mark to mark.':'Hält den Sucher von Ziel zu Ziel in Bewegung.',
+ 'Carry a brighter restorative refrain through the party.':'Stärkt die heilende Melodie, die die Gruppe unterstützt.',
+ 'Raise the tempo of the Herald’s support cycle.':'Erhöht das Tempo der Unterstützungsfähigkeiten des Herolds.',
+ 'Reinforce the Knightling’s ward for prolonged frontline pressure.':'Verstärkt den Schutz des kleinen Ritters für lange Kämpfe an der Front.',
+ 'Trade a little ward strength for faster defensive cycling.':'Verringert die Schutzstärke leicht und ermöglicht schnellere Verteidigungsfähigkeiten.',
+ 'Strengthen Lanternwing’s restorative support pulse.':'Verstärkt den heilenden Unterstützungsimpuls des Laternenflügels.',
+ 'Cycle support more quickly while retaining a smaller recovery boost.':'Unterstützungsfähigkeiten werden häufiger eingesetzt, allerdings mit geringerer Heilwirkung.',
+};
+
+export function companionCombatDescriptionText(language:Language,source:string):string|undefined{
+ return language==='de'&&Object.prototype.hasOwnProperty.call(germanCompanionCombatDescriptions,source)
+  ?germanCompanionCombatDescriptions[source]:undefined;
+}

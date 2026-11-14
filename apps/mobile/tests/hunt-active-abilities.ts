@@ -1,6 +1,6 @@
 import {assert} from './test-assert';
 import {huntActiveDamageEvents,huntSupportHealEvents,huntTankGuardEvents,huntCooldownPulseAt,HUNT_CLASS_TECHNIQUES} from '../src/core/hunt-active-abilities';
-import {huntEnemyHpAt,type HuntHit} from '../src/core/combat-hit-timeline';
+import {huntEnemyHpAt,huntHitsBetween,type HuntHit} from '../src/core/combat-hit-timeline';
 import type {ClassId} from '../src/core/types';
 import {battleText} from '../src/i18n/battle';
 import {SUPPORTED_LANGUAGES} from '../src/i18n/languages';
@@ -51,6 +51,13 @@ const classReady=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:106_
 assert.ok(classReady.some(hit=>hit.activeAbility?.name==='Rune Bash'),'Class skill activates on next real cooldown pulse');
 const companionReady=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:114_000});
 assert.ok(companionReady.some(hit=>hit.companionAssist?.name==='Ironwood Hound: Hamstring Pounce'),'Companion assist activates on its next real cooldown pulse');
+const fullScheduled=huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:114_000});
+const splitScheduled=[
+ ...huntHitsBetween(huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:114_000}),0,.5),
+ ...huntHitsBetween(huntActiveDamageEvents(hits,{...input,encounterStartedAtMs:114_000}),.5,1),
+];
+assert.equal(JSON.stringify(splitScheduled),JSON.stringify(fullScheduled),'Partial claim must preserve exactly the same cooldown-attributed strikes without duplicates');
+assert.equal(total(fullScheduled),total(hits),'Cooldown changes must never add hunt damage or alter rewards');
 const seconds=(start:number,cooldown:number)=>huntCooldownPulseAt({combatStartedAtMs:100_000,encounterStartedAtMs:start,cycleSeconds:3,cooldownSeconds:cooldown});
 assert.equal(seconds(100_000,14),100_000,'First pulse is ready when a hunting session starts');
 assert.equal(seconds(101_000,14),undefined,'Restarting a partial claim cannot refresh a cooldown');
@@ -68,6 +75,9 @@ assert.equal(firstHeal[0].supportAbility?.name,'Silverbrook Sprite: Silver Curre
 assert.equal(firstHeal[0].healing,baseHeal[0].healing,'Support attribution cannot add extra health');
 assert.equal(firstHeal[1].supportAbility,undefined,'Only one support cast per cooldown pulse');
 assert.ok(huntSupportHealEvents(baseHeal,{...supportInput,encounterStartedAtMs:110_000}).every(hit=>!hit.supportAbility),'Support cannot cast until its next pulse');
+const delayedHeal=huntSupportHealEvents(baseHeal,{...supportInput,encounterStartedAtMs:115_000});
+assert.equal(delayedHeal[0].supportAbility,undefined,'Support skill cannot be credited to a heal before its cooldown');
+assert.equal(delayedHeal[1].supportAbility?.id,'UABL_003','Support skill activates on the first genuine heal after the pulse');
 const secondHeal=huntSupportHealEvents(baseHeal,{...supportInput,encounterStartedAtMs:120_000});
 assert.equal(secondHeal[0].supportAbility?.id,'UABL_003','Support can cast again after cooldown');
 assert.ok(huntSupportHealEvents(baseHeal,{...supportInput,companion:{...supportInput.companion,role:'tank'}}).every(hit=>!hit.supportAbility),'A tank must not be labeled as a healing support skill');

@@ -20,6 +20,7 @@ import {battleText} from '../i18n/battle';
 import {progressionT} from '../i18n/progression';
 import {CharacterPortrait} from './CharacterVisual';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
+import {HuntAbilityCues} from './HuntAbilityCues';
 import {RegionArtwork} from './RegionArtwork';
 import {PixelFx,SpriteFrames} from './anim/SpriteFrames';
 import {useLoopProgress,useMotionEnabled} from './anim/motion';
@@ -153,17 +154,15 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
      <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
     </View>
    </View>)}
-   {recentSkillEffects.map((recentSkillEffect,index)=><View key={recentSkillEffect.name+':'+recentSkillEffect.atMs+':'+index} accessibilityLiveRegion="polite" style={{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6,paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:recentSkillEffect.kind==='damage'?C.accent:C.good,borderRadius:8,backgroundColor:C.panel2}}>
-    <Text style={{fontFamily:font,fontSize:9,fontWeight:'900',color:recentSkillEffect.kind==='damage'?C.accent:C.good}}>{tr(recentSkillEffect.kind==='recovery'?'ON-KILL RECOVERY':recentSkillEffect.source==='companion'?'COMPANION SKILL':'CLASS ABILITY')}</Text>
-    <Text numberOfLines={1} style={{fontFamily:font,fontSize:11,fontWeight:'800',color:C.text,flex:1}}>{tr(recentSkillEffect.name)}</Text>
-    {recentSkillEffect.amount!==undefined&&recentSkillEffect.kind!=='recovery'?<Text style={{fontFamily:font,fontSize:10,color:C.text,fontWeight:'800'}}>{tr(recentSkillEffect.kind==='heal'?'SKILL HEAL · {amount}':'SKILL DAMAGE · {amount}',{amount:damageText(recentSkillEffect.amount)})}</Text>:null}
-   </View>)}
+   <HuntAbilityCues effects={recentSkillEffects} language={state.settings.language} formatAmount={damageText}/>
    {narration&&!fight.stoppedReason&&!fight.searching?<Text accessibilityLiveRegion={narration.hit?'polite':'none'} numberOfLines={2} style={{fontFamily:font,fontSize:12,lineHeight:17,fontWeight:narration.hit?'700':'600',color:narration.tone==='danger'?C.bad:narration.tone==='accent'?C.accent:C.muted}}>
     {tr(narration.key,narration.params)}{narration.critical&&fight.lastHit?.actor==='player'?` · ${tr('CRITICAL!')}`:''}
    </Text>:null}
-   {state.character?<View style={{gap:3,borderTopWidth:1,borderTopColor:C.line,paddingTop:5}}>
-    <Text style={{fontFamily:font,fontSize:9,fontWeight:'800',color:C.muted}}>{tr('CLASS SKILLS · PASSIVE')}</Text>
-    <Text numberOfLines={2} style={{fontFamily:font,fontSize:10,color:C.text}}>{classSkillLevels.map((skill,index)=>tr(classSkillDefs[index]?.name??skill.skillId)+' · '+tr('Lv. {level}',{level:skill.level})).join('  |  ')}</Text>
+   {state.character?<View style={{gap:4,borderTopWidth:1,borderTopColor:C.line,paddingTop:6}}>
+    <View style={{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:5}}>
+     <Text style={{fontFamily:font,fontSize:9,fontWeight:'800',color:C.muted}}>{tr('CLASS SKILLS · PASSIVE')}</Text>
+     {classSkillLevels.map((skill,index)=><Text key={skill.skillId} numberOfLines={1} style={{fontFamily:font,fontSize:10,color:C.text,borderWidth:1,borderColor:C.lineStrong,borderRadius:5,paddingHorizontal:6,paddingVertical:2}}>{tr(classSkillDefs[index]?.name??skill.skillId)} · {tr('Lv. {level}',{level:skill.level})}</Text>)}
+    </View>
     {equippedCompanion?<Text numberOfLines={1} style={{fontFamily:font,fontSize:10,color:C.muted}}>{tr('COMPANION · PASSIVE BONUS')} · {equippedCompanion.name}</Text>:null}
    </View>:null}
   </View>:null}

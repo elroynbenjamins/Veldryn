@@ -491,7 +491,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  // Includes loot added by combat, quests, co-op and old save actions.
- state=reconcileAccountCollections(migrateGemPouch(state));
+ // Re-evaluate milestones earned by this command (fishing, mastery, bosses,
+ // crafting or quests), not just those completed before it started.
+ state=reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

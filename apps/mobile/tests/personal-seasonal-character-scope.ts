@@ -56,10 +56,10 @@ check(restored.character?.personalSeasonal?.claimIds.length===3,'Save normalizat
 check(switchAccountCharacter(restored,secondId,now).character?.personalSeasonal?.claimIds.length===3,'Save normalization must retain stored character receipts');
 const legacy=JSON.parse(JSON.stringify(firstReturn)) as GameState;
 delete legacy.character!.personalSeasonal;
-legacy.account.seasonalContractClaimIds=['DAILY_2026-11-14_0'];
+legacy.account.seasonalContractClaimIds=['DAILY_2026-11-13_1'];
 const migrated=ensurePersonalSeasonalState(legacy);
-check(migrated.character?.personalSeasonal?.claimIds.includes('DAILY_2026-11-14_0'),'Legacy account claims must be migrated to active character');
-check(!switchAccountCharacter(migrated,secondId,now).account.seasonalContractClaimIds?.includes('DAILY_2026-11-14_0'),'Legacy claims must not overwrite another character');
+check(migrated.character?.personalSeasonal?.claimIds.includes('DAILY_2026-11-13_1'),'Legacy account claims must be migrated to active character');
+check(!switchAccountCharacter(migrated,secondId,now).account.seasonalContractClaimIds?.includes('DAILY_2026-11-13_1'),'Legacy claims must not overwrite another character');
 const deleted=deleteAccountCharacter(firstReturn,secondId,'DELETE Second',now);
 check(deleted.character?.id===firstId&&deleted.character?.personalSeasonal?.claimIds.length===3,'Deleting an alt cannot remove the active character quest receipts');
 check(deleted.account.personalSeasonalClaimLedger?.[ids[0]]?.length===2,'Deleting an alt must not erase anti-farming receipts');

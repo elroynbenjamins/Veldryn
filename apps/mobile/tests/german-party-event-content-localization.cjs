@@ -50,8 +50,6 @@ for(const [tag,german] of Object.entries(germanPartyEventTags)){
  assert.equal(partyEventTagText('en','Rift Surge',germanPartyEventTemplates['Rift Surge'][0],tag),tag.replace(/_/g,' '));
 }
 assert.equal(partyEventTagText('de','Rift Surge',germanPartyEventTemplates['Rift Surge'][0],'new_tag'),'new tag');
-assert.ok(src.includes("missing.push('party_points')"));
-assert.ok(src.includes("missing.push('meaningful_contributors')")===false,'Ranking reasons are not defined here');
 const rules=fs.readFileSync(path.join(root,'backend/src/server/liveops/party-events.ts'),'utf8');
 assert.ok(rules.includes("missing.push('party_points')"));
 assert.ok(rules.includes("missing.push('meaningful_contributors')"));

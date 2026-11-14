@@ -371,5 +371,8 @@
   ".core-build/apps/mobile/tests/player-market-readiness.js",
   "tests/skill-disclosure-layout-ui.cjs",
   ".core-build/apps/mobile/tests/pixel-animation.js",
-  ".core-build/apps/mobile/tests/guild-member-last-active.js"
+  ".core-build/apps/mobile/tests/guild-member-last-active.js",
+  ".core-build/apps/mobile/tests/companion-stamina-authority.js",
+  ".core-build/apps/mobile/tests/companion-stamina-selection.js",
+  ".core-build/apps/mobile/tests/companion-stamina-housing.js"
 ]

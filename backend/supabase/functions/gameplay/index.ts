@@ -46768,9 +46768,9 @@ function resolveSpecialCompanionChallenge(input, executor) {
 
 // ../apps/mobile/src/core/companion-provisions.ts
 var COMPANION_STAMINA_HP_PER_POINT = 10;
-function companionFoodStamina(itemId) {
+function companionFoodHealingHp(itemId) {
   const item = itemDef(itemId);
-  return item.type === "food" && item.heal ? item.heal / COMPANION_STAMINA_HP_PER_POINT : 0;
+  return item.type === "food" && item.heal ? item.heal : 0;
 }
 function companionExpeditionStaminaCost(durationHours) {
   const hours = Math.max(1, Math.min(24, Math.ceil(durationHours)));
@@ -46834,21 +46834,29 @@ function expeditionFoodArg(value) {
   });
 }
 function spendExpeditionFood(state, food, requiredStamina) {
+  const quantities2 = /* @__PURE__ */ new Map();
+  for (const row of food) quantities2.set(row.itemId, (quantities2.get(row.itemId) ?? 0) + row.quantity);
   const available = (id) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === id).reduce((sum, s) => sum + s.quantity, 0);
-  for (const row of food) if (available(row.itemId) < row.quantity) throw new Error("companion_food_missing");
-  const supplied = food.reduce((sum, row) => sum + companionFoodStamina(row.itemId) * row.quantity, 0);
-  if (supplied < requiredStamina) throw new Error("companion_stamina_required");
-  const spend2 = (stacks, id, amount) => stacks.map((s) => s.itemId === id ? { ...s, quantity: s.quantity - amount } : s).filter((s) => s.quantity > 0);
-  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
-  for (const row of food) {
-    let remaining = row.quantity, take4 = Math.min(remaining, inventory.find((s) => s.itemId === row.itemId)?.quantity ?? 0);
-    if (take4) {
-      inventory = spend2(inventory, row.itemId, take4);
+  for (const [id, quantity2] of quantities2) if (available(id) < quantity2) throw new Error("companion_food_missing");
+  const suppliedHealingHp = food.reduce((sum, row) => sum + companionFoodHealingHp(row.itemId) * row.quantity, 0);
+  if (suppliedHealingHp < requiredStamina * COMPANION_STAMINA_HP_PER_POINT) throw new Error("companion_stamina_required");
+  const spend2 = (stacks, id, amount) => {
+    let remaining = amount;
+    return stacks.map((s) => {
+      if (s.itemId !== id || remaining <= 0) return s;
+      const take4 = Math.min(s.quantity, remaining);
       remaining -= take4;
-    }
-    if (remaining) bank = spend2(bank, row.itemId, remaining);
+      return { ...s, quantity: s.quantity - take4 };
+    }).filter((s) => s.quantity > 0);
+  };
+  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
+  for (const [id, quantity2] of quantities2) {
+    const inventoryQuantity = inventory.filter((s) => s.itemId === id).reduce((sum, s) => sum + s.quantity, 0);
+    const take4 = Math.min(quantity2, inventoryQuantity);
+    if (take4) inventory = spend2(inventory, id, take4);
+    if (quantity2 > take4) bank = spend2(bank, id, quantity2 - take4);
   }
-  return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, longTermMetrics: { ...state.account.longTermMetrics ?? {}, "companions.expedition.stamina_supplied": (state.account.longTermMetrics?.["companions.expedition.stamina_supplied"] ?? 0) + Math.floor(supplied) } } };
+  return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, longTermMetrics: { ...state.account.longTermMetrics ?? {}, "companions.expedition.stamina_supplied": (state.account.longTermMetrics?.["companions.expedition.stamina_supplied"] ?? 0) + Math.floor(suppliedHealingHp / COMPANION_STAMINA_HP_PER_POINT) } } };
 }
 var PLAYBACK_EVENT_TYPES = /* @__PURE__ */ new Set(["combat_start", "phase", "cast_start", "cast_complete", "damage", "miss", "heal", "shield", "dot_tick", "hot_tick", "status_apply", "status_remove", "interrupt", "down", "death", "combat_end"]);
 function companionBattlePlayback(result) {

@@ -66,7 +66,18 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
      late.state.character!.currentHp<=effectiveStats(late.state).hp,
      'Claim-triggered class progression cannot create invalid HP: '+context);
    }
-   assert.ok(Math.abs((late.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,'Split hunt must preserve enemy HP: '+context);
+   if(!evolved){
+    assert.ok(Math.abs((late.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,
+     'With unchanged class stats, split claims must preserve exact enemy HP: '+context);
+   }else{
+    // Skill XP earned at the first claim may change the next real damage
+    // distribution (e.g. Windshot), even though total kill damage is fixed.
+    // Remaining enemy HP is therefore bounded, not necessarily identical.
+    const remaining=late.state.activity?.combatEnemyHp;
+    assert.ok(typeof remaining==='number'&&Number.isFinite(remaining)&&remaining>=0&&
+     remaining<=activeCombatHitProjection(state,end)!.enemyMaxHp,
+     'Earned class progression cannot produce invalid partial enemy HP: '+context);
+   }
    const live=activeCombatHitProjection(state,end)!;
    assert.ok(live.playerHp>=1&&live.playerHp<=live.playerMaxHp,'Combat replay must bound HP: '+context);
    assert.ok(live.enemyHp>=0&&live.enemyHp<=live.enemyMaxHp,'Combat replay must bound enemy HP: '+context);

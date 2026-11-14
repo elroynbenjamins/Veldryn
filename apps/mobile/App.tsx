@@ -564,6 +564,23 @@ function VeldrynApp(){
   // If a source link opened a specific skill, Back returns to that source; if the player
   // chose a skill within Skills, Back first returns to the skill hub.
   useEffect(()=>{setSkillsOpenedAsLink(tab==='Skills'&&Boolean(selectedSkill));},[tab]);
+  // The Party provider already loads its initial snapshot. Refresh only when
+  // the same signed-in account actually switches fighters, avoiding an extra
+  // RPC during startup and never mixing different accounts' social state.
+  const lastPartyCharacterRef=useRef<{accountId:string;characterId:string}|null>(null);
+  const refreshPartySocial=partySocial.refresh;
+  useEffect(()=>{
+    const accountId=auth.session?.user.id,characterId=state?.character?.id;
+    if(!serverGameplayEnabled||!accountId||!characterId){
+      lastPartyCharacterRef.current=null;
+      return;
+    }
+    const previous=lastPartyCharacterRef.current;
+    lastPartyCharacterRef.current={accountId,characterId};
+    if(previous?.accountId===accountId&&previous.characterId!==characterId){
+      void refreshPartySocial();
+    }
+  },[auth.session?.user.id,state?.character?.id,refreshPartySocial]);
   // Do not return into another character's detail history after a roster switch.
   useEffect(()=>{setTabHistory([]);},[state?.character?.id]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);

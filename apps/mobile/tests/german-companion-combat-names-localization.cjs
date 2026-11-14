@@ -73,7 +73,7 @@ for(const [english,german] of descriptions){
  assert.equal(companionContent('de',english),german,'German content display missing: '+english);
  assert.equal(companionContent('en',english),english);
 }
-assert.equal(companionCombatDescriptionText('de','Untrusted text assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');'),undefined);
+assert.equal(companionCombatDescriptionText('de','Untrusted text $&'),undefined);
 
 const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
 assert.equal(customTechniques.length,52);
@@ -99,7 +99,7 @@ for(const [english,german] of trialNames){
  for(const language of ['en','es','nl','it','fr','ru','tr'])
   assert.equal(companionTrialAbilityName(language,english),english);
 }
-assert.equal(companionTrialAbilityName('de','Unknown server boss spell const components={'),'Unknown server boss spell const components={');
+assert.equal(companionTrialAbilityName('de','Unknown server boss spell $&'),'Unknown server boss spell $&');
 
 const components={
  training:source(path.join(app,'src/components/CompanionTrainingV50Panel.tsx')),

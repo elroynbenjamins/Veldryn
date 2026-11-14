@@ -20,7 +20,7 @@ import {companionTrialStageTeamMatchup} from '../../../../backend/src/shared/com
 import {companionTrialMonthlyHazard} from '../../../../backend/src/shared/companion-trial-monthly-hazards';
 import {COMPANION_SPECIAL_CHALLENGES,COMPANION_WEEKLY_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition,companionTrialSeasonDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
-import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
+import {COMPANION_STAMINA_HP_PER_POINT,companionExpeditionStaminaCost,companionFoodHealingHp} from './companion-provisions';
 import {itemDef} from '../content/items';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionCombatResult,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
@@ -28,13 +28,30 @@ import type {CombatEvent,CombatResult} from '../../../../backend/src/server/comb
 
 function expeditionFoodArg(value:unknown){if(!Array.isArray(value)||value.length<1||value.length>20)throw new Error('invalid_companion_food');return value.map(row=>{if(!row||typeof row!=='object'||Array.isArray(row))throw new Error('invalid_companion_food');const r=row as Record<string,unknown>;if(typeof r.itemId!=='string'||!Number.isSafeInteger(r.quantity)||Number(r.quantity)<1||Number(r.quantity)>10000)throw new Error('invalid_companion_food');const item=itemDef(r.itemId);if(item.type!=='food'||!item.heal)throw new Error('invalid_companion_food');return {itemId:r.itemId,quantity:Number(r.quantity)};});}
 function spendExpeditionFood(state:GameState,food:{itemId:string;quantity:number}[],requiredStamina:number){
+ // Validate the combined demand before spending anything; the payload may contain repeated food IDs.
+ const quantities=new Map<string,number>();
+ for(const row of food)quantities.set(row.itemId,(quantities.get(row.itemId)??0)+row.quantity);
  const available=(id:string)=>[...state.inventory.stacks,...state.bank.stacks].filter(s=>s.itemId===id).reduce((sum,s)=>sum+s.quantity,0);
- for(const row of food)if(available(row.itemId)<row.quantity)throw new Error('companion_food_missing');
- const supplied=food.reduce((sum,row)=>sum+companionFoodStamina(row.itemId)*row.quantity,0);if(supplied<requiredStamina)throw new Error('companion_stamina_required');
- const spend=(stacks:typeof state.inventory.stacks,id:string,amount:number)=>stacks.map(s=>s.itemId===id?{...s,quantity:s.quantity-amount}:s).filter(s=>s.quantity>0);
+ for(const [id,quantity] of quantities)if(available(id)<quantity)throw new Error('companion_food_missing');
+ // Healing is stored in integer HP. Compare exact HP values rather than rounded stamina floats.
+ const suppliedHealingHp=food.reduce((sum,row)=>sum+companionFoodHealingHp(row.itemId)*row.quantity,0);
+ if(suppliedHealingHp<requiredStamina*COMPANION_STAMINA_HP_PER_POINT)throw new Error('companion_stamina_required');
+ const spend=(stacks:typeof state.inventory.stacks,id:string,amount:number)=>{
+  let remaining=amount;
+  return stacks.map(s=>{
+   if(s.itemId!==id||remaining<=0)return s;
+   const take=Math.min(s.quantity,remaining);remaining-=take;
+   return {...s,quantity:s.quantity-take};
+  }).filter(s=>s.quantity>0);
+ };
  let inventory=state.inventory.stacks.map(x=>({...x})),bank=state.bank.stacks.map(x=>({...x}));
- for(const row of food){let remaining=row.quantity,take=Math.min(remaining,inventory.find(s=>s.itemId===row.itemId)?.quantity??0);if(take){inventory=spend(inventory,row.itemId,take);remaining-=take;}if(remaining)bank=spend(bank,row.itemId,remaining);}
- return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},account:{...state.account,longTermMetrics:{...(state.account.longTermMetrics??{}),'companions.expedition.stamina_supplied':(state.account.longTermMetrics?.['companions.expedition.stamina_supplied']??0)+Math.floor(supplied)}}};
+ for(const [id,quantity] of quantities){
+  const inventoryQuantity=inventory.filter(s=>s.itemId===id).reduce((sum,s)=>sum+s.quantity,0);
+  const take=Math.min(quantity,inventoryQuantity);
+  if(take)inventory=spend(inventory,id,take);
+  if(quantity>take)bank=spend(bank,id,quantity-take);
+ }
+ return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},account:{...state.account,longTermMetrics:{...(state.account.longTermMetrics??{}),'companions.expedition.stamina_supplied':(state.account.longTermMetrics?.['companions.expedition.stamina_supplied']??0)+Math.floor(suppliedHealingHp/COMPANION_STAMINA_HP_PER_POINT)}}};
 }
 
 /** Additive account schema; game schema 6 and the existing atomic online store remain compatible. */

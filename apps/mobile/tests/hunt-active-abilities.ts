@@ -163,11 +163,16 @@ assert.ok(bastion[1].damage<enemyHits[1].damage,'Fortress Rebuff retains a weake
 assert.ok(!bastion[1].classGuardAbility,'Second defensive layer must not fabricate an extra cast');
 const dreadguard=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DREADGUARD'});
 assert.ok((dreadguard[0].classHealingBudget??0)>0,'Binding Chain converts a fraction of prevented damage into recovery');
+assert.equal(dreadguard[0].classHealAbility?.name,'Binding Chain','Dreadguard must attribute its genuinely recovered HP to the skill');
+assert.equal(dreadguard[0].classHealAbility?.kind,'heal');
+assert.ok(Math.abs((dreadguard[0].classHealAbility?.amount??0)-(dreadguard[0].classHealingBudget??0))<1e-7,'Dreadguard recovery cue cannot overstate the awarded healing budget');
 const dawn=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER'});
 assert.ok(dawn[0].classHealAbility?.amount&&dawn[0].healing>enemyHits[0].healing,'Sun Smite gains real bounded restoration, not a free attack');
 assert.equal(dawn[0].damage,enemyHits[0].damage,'Dawnkeeper must not secretly block a hit');
 const stonecaller=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'STONECALLER'});
 assert.ok(stonecaller[0].classGuardAbility?.amount&&stonecaller[0].classHealingBudget,'Thunder Totem blocks damage and restores a small portion');
+assert.equal(stonecaller[0].classHealAbility?.name,'Thunder Totem','Stonecaller must show real totem restoration alongside absorption');
+assert.ok(Math.abs((stonecaller[0].classHealAbility?.amount??0)-(stonecaller[0].classHealingBudget??0))<1e-7,'Totem recovery cue must equal its budgeted healing');
 const highLevel=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'IRONWARDEN',classSkillLevel:100});
 assert.ok(highLevel[0].damage<=iron[0].damage,'Guard proficiency should improve mitigation within the cap');
 assert.ok(enemyHits.every(hit=>!hit.classGuardAbility&&!hit.classHealAbility),'Class allocation must not modify the source encounter');
@@ -176,7 +181,9 @@ for(const classId of damageClasses){
  assert.ok(untouched.every(hit=>!hit.classGuardAbility&&!hit.classHealAbility),'Damage classes cannot acquire a defensive class skill: '+classId);
 }
 const noMonster=huntClassSurvivalEvents([enemyHits[2]],{...identityInput,classId:'BASTION'});
-assert.ok(noMonster.every(hit=>!hit.classGuardAbility),'A fortress cast cannot trigger on fatigue alone');
+assert.ok(noMonster.every(hit=>!hit.classGuardAbility&&!hit.classHealAbility),'A fortress cast cannot trigger on fatigue alone');
+const stoneOnCooldown=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'STONECALLER',encounterStartedAtMs:101_000,cycleSeconds:1});
+assert.ok(stoneOnCooldown.every(hit=>!hit.classGuardAbility&&!hit.classHealAbility),'Recovery and guard must share the same cooldown gate');
 const pending=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER',encounterStartedAtMs:101_000,cycleSeconds:1});
 assert.ok(!pending[0].classHealAbility,'Sunlight cannot heal before its next original-session cooldown pulse');
 const absoluteBound=(rows:readonly HuntHit[])=>rows.reduce((sum,row)=>sum+row.damage,0);

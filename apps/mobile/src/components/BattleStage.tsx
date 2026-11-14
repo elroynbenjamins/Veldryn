@@ -36,7 +36,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const fight=useMemo(()=>isLive?activeCombatHitProjection(state,effectiveNowMs,replayCursor.current):undefined,[isLive,state,effectiveNowMs]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const recentHit=!fight?.searching&&fight?.lastHit&&effectiveNowMs-fight.lastHit.atMs<2600?fight.lastHit:undefined;
- const recentSkillEffect=isLive&&fight?.lastSkillEffect&&effectiveNowMs-fight.lastSkillEffect.atMs>=0&&effectiveNowMs-fight.lastSkillEffect.atMs<2700?fight.lastSkillEffect:undefined;
+ const recentSkillEffects=isLive?(fight?.lastSkillEffects??[]).filter(effect=>effectiveNowMs-effect.atMs>=0&&effectiveNowMs-effect.atMs<2700).slice(-2):[];
  const damageValue=(value:number)=>displayStatPrecise(value);
  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion);
  const playerLunge=useRef(new Animated.Value(0)).current,enemyLunge=useRef(new Animated.Value(0)).current;
@@ -124,11 +124,11 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
     <View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('COMBAT STYLE · PASSIVE')}</Text><Text style={s.ability}>{tr(view.style.name)}</Text><Text style={s.sub}>{tr(view.style.description)}</Text></View>
     <View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('CLASS SKILLS · PASSIVE')}</Text><View style={s.passiveChips}>{classSkills.map((skill,index)=><View key={skill.skillId} style={s.passiveChip}><Text style={s.passiveChipText}>{tr(skillDefinitions[index]?.name??skill.skillId)} · {tr('Lv. {level}',{level:skill.level})}</Text></View>)}</View></View>
     {combatCompanion?<View style={s.passiveGroup}><Text style={s.passiveLabel}>{tr('COMPANION · PASSIVE BONUS')}</Text><Text style={s.companionPassive}>{combatCompanion.name} · {tr('Combat bonus active')}</Text></View>:null}
-    {recentSkillEffect?<View accessibilityLiveRegion="polite" style={[s.recoveryCue,recentSkillEffect.kind==='damage'&&{borderColor:C.accent}]}>
+    {recentSkillEffects.map((recentSkillEffect,index)=><View key={recentSkillEffect.name+':'+recentSkillEffect.atMs+':'+index} accessibilityLiveRegion="polite" style={[s.recoveryCue,recentSkillEffect.kind==='damage'&&{borderColor:C.accent}]}>
      <Text style={[s.recoveryCueLabel,recentSkillEffect.kind==='damage'&&{color:C.accent}]}>{tr(recentSkillEffect.kind==='recovery'?'ON-KILL RECOVERY':recentSkillEffect.source==='companion'?'COMPANION SKILL':'CLASS ABILITY')}</Text>
      <Text numberOfLines={1} style={s.recoveryCueName}>{tr(recentSkillEffect.name)}</Text>
      {recentSkillEffect.amount!==undefined&&recentSkillEffect.kind!=='recovery'?<Text style={s.recoveryCueAmount}>{tr(recentSkillEffect.kind==='heal'?'SKILL HEAL · {amount}':'SKILL DAMAGE · {amount}',{amount:displayStatPrecise(recentSkillEffect.amount)})}</Text>:null}
-    </View>:null}
+    </View>)}
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>{tr('ENCOUNTER · {type}',{type:tr(view.encounter.archetype).toUpperCase()})}</Text><Text style={s.pressure}>{tr(view.encounter.pressure).toUpperCase()}</Text></View><Text style={s.sub}>{tr(view.encounter.summary)}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{tr(mechanic)}</Text></View>)}</View><Text style={s.tactic}>{tr('Tactic: {tactic}',{tactic:tr(view.encounter.tactic)})}</Text></View>
    <StatBar label={tr("Current health")} current={displayStat(fight?.playerHp??state.character!.currentHp)} max={displayStat(fight?.playerMaxHp??stats.hp)} reduceMotion={state.settings.reduceMotion}/>
    <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={displayStat(fight?.enemyHp??view.enemyHp)} max={displayStat(fight?.enemyMaxHp??view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>

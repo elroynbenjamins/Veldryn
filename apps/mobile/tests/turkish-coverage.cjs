@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=4516,'Turkish core coverage should retain the 4516-string baseline');
+assert.ok(keys.length>=5096,'Turkish core coverage should retain the 5096-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -123,5 +123,19 @@ assert.equal(earlyLocaleText('tr',"Sign out of guest account?"),"Misafir hesabı
 assert.equal(earlyLocaleText('tr',"Forgot password"),"Şifremi unuttum");
 assert.equal(earlyLocaleText('tr',"The opening exchange is the dangerous part; surviving it usually stabilizes the hunt."),"İlk çarpışma tehlikelidir; bundan sağ çıkmak avı genellikle dengeler.");
 assert.equal(earlyLocaleText('tr',"Use upgraded gear, food, class progression and a comfortable readiness margin before committing."),"Başlamadan önce geliştirilmiş ekipman, yiyecek, sınıf ilerlemesi ve güvenli bir güç payı sağla.");
+assert.equal(earlyLocaleText('tr',"GEM SOCKETED"),"MÜCEVHER TAKILDI");
+assert.equal(earlyLocaleText('tr',"Every equipment piece has two dedicated sockets: one Stat Gem and one Effect Gem. Stat Gems improve Attack, Defense or HP; Effect Gems change combat behavior."),"Her ekipmanda iki özel yuva vardır: bir Özellik Mücevheri ve bir Etki Mücevheri. Özellik Mücevherleri Saldırı, Savunma veya Canı artırır; Etki Mücevherleri savaş davranışını değiştirir.");
+assert.equal(earlyLocaleText('tr',"FIRST HUNT"),"İLK AV");
+assert.equal(earlyLocaleText('tr',"Stop or claim this character’s current activity before deleting it."),"Bu karakteri silmeden önce mevcut etkinliğini durdur veya ödüllerini al.");
+assert.equal(earlyLocaleText('tr',"Unable to load Guild Projects."),"Lonca Projeleri yüklenemedi.");
+assert.equal(earlyLocaleText('tr',"Disband Guild?"),"Lonca dağıtılsın mı?");
+assert.equal(earlyLocaleText('tr',"Save backup"),"Yedek kaydet");
+assert.equal(earlyLocaleText('tr',"Google Play Billing is unavailable right now."),"Google Play ödeme sistemi şu anda kullanılamıyor.");
+assert.equal(earlyLocaleText('tr',"Higher damage against enemies below 30% HP."),"Canı %30'un altındaki düşmanlara daha fazla hasar.");
+assert.equal(earlyLocaleText('tr',"Rare discovery while fishing {name}"),"{name} avlarken nadir keşif");
+assert.equal(earlyLocaleText('tr',"Queueing is same-region only. Stop-at-goal always keeps food/overflow safety and finishes the current cycle."),"Kuyruğa alma yalnızca aynı bölgede geçerlidir. Hedefte durma yiyecek ve depo güvenliğini korur; mevcut döngüyü tamamlar.");
+assert.equal(earlyLocaleText('tr',"Clear Skies"),"Açık Gökyüzü");
+assert.equal(earlyLocaleText('tr',"Weather changes in {time}"),"Hava durumu {time} içinde değişecek");
+assert.equal(earlyLocaleText('tr',"Stone impact · {amount}"),"Taş darbesi · {amount}");
 console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
  +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

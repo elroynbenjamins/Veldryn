@@ -1,43 +1,30 @@
 import type {GameState} from './types';
 import {hash32} from './rng';
 import {RECIPES} from '../content/skills';
+import {normalizeSeasonalProgress,SEASONAL_ACTIVITY_TAGS,ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
+export {normalizeSeasonalProgress,SEASONAL_ACTIVITY_TAGS} from './personal-seasonal-state';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
 export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'faith'|'equipment'|'boss'|'cooking'|'alchemy'|'smithing'|'tailoring'|'enchanting'|'event';
 export type SeasonalActivity=Exclude<ContractTag,'equipment'>;
 export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>;tags?:SeasonalActivity[]}>>;
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
-export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','event'];
 const activityTags=SEASONAL_ACTIVITY_TAGS;
-
-/** Additive save field: legacy saves start at zero rather than inheriting lifetime XP. */
-export function normalizeSeasonalProgress(raw:unknown):SeasonalProgress{
- const result:SeasonalProgress={};
- if(!raw||typeof raw!=='object')return result;
- for(const period of periods){
-  const row=(raw as Record<string,any>)[period];
-  if(!row||typeof row.key!=='string'||row.key.length>32)continue;
-  const counts:Partial<Record<SeasonalActivity,number>>={};
-  for(const tag of activityTags){const value=row.counts?.[tag];if(typeof value==='number'&&Number.isFinite(value)&&value>=0)counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value));}
-  const tags=Array.isArray(row.tags)&&row.tags.length===(period==='daily'?2:period==='weekly'?3:4)&&row.tags.every((tag:unknown)=>typeof tag==='string'&&activityTags.includes(tag as SeasonalActivity))&&new Set(row.tags).size===row.tags.length?row.tags as SeasonalActivity[]:undefined;
-  result[period]={key:row.key,counts,...(tags?{tags:[...tags]}:{})};
- }
- return result;
-}
 
 /** Credit completed actions on settlement, matching the game's reward-claim timing. */
 export function recordSeasonalActivity(state:GameState,tag:SeasonalActivity,units:number,nowMs:number):GameState{
  if(!state.character||!Number.isFinite(units)||units<1)return state;
- const progress=normalizeSeasonalProgress(state.account.seasonalContractProgress),date=new Date(nowMs);
+ const ready=ensurePersonalSeasonalState(state);
+ const progress=normalizeSeasonalProgress(ready.character?.personalSeasonal?.progress),date=new Date(nowMs);
  for(const period of periods){
   const key=periodKey(period,date),old=progress[period],counts=old?.key===key?{...old.counts}:{};
   // Freeze unlock-aware selections at the first credited action in a period.
   // Further character level-ups must not replace a quest someone was progressing.
-  const tags=old?.key===key&&old.tags?.every(tag=>activityTags.includes(tag))?old.tags:selectSeasonalTags(state,period,key,nowMs);
+  const tags=old?.key===key&&old.tags?.every(tag=>activityTags.includes(tag))?old.tags:selectSeasonalTags(ready,period,key,nowMs);
   counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,(counts[tag]??0)+Math.floor(units));
   progress[period]={key,counts,tags};
  }
- return {...state,account:{...state.account,seasonalContractProgress:progress}};
+ return updatePersonalSeasonalState(ready,{progress});
 }
 export type QuestRarity='common'|'uncommon'|'rare'|'epic'|'legendary';
 export const QUEST_RARITIES:Record<QuestRarity,{label:string;color:string;multiplier:number;cache:string}>={
@@ -174,12 +161,12 @@ export function seasonalQuestRewardOptions(state:GameState,period:SeasonalPeriod
 }
 function contractProgress(state:GameState,tag:ContractTag,period:SeasonalPeriod,key:string){
  if(tag==='equipment')return Object.values(state.character!.equipment).filter(Boolean).length;
- const progress=state.account.seasonalContractProgress?.[period];
+ const progress=(state.character?.personalSeasonal?.progress??state.account.seasonalContractProgress)?.[period];
  return progress?.key===key?progress.counts[tag]??0:0;
 }
 export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=new Date()):SeasonalQuest[]{
  if(!state.character)return [];
- const key=periodKey(period,date),frozen=state.account.seasonalContractProgress?.[period],tags=frozen?.key===key&&frozen.tags?.length===(period==='daily'?2:period==='weekly'?3:4)&&frozen.tags.every(tag=>activityTags.includes(tag))?frozen.tags:selectSeasonalTags(state,period,key,date.getTime());
+ const key=periodKey(period,date),frozen=(state.character.personalSeasonal?.progress??state.account.seasonalContractProgress)?.[period],tags=frozen?.key===key&&frozen.tags?.length===(period==='daily'?2:period==='weekly'?3:4)&&frozen.tags.every(tag=>activityTags.includes(tag))?frozen.tags:selectSeasonalTags(state,period,key,date.getTime());
  const base=BASE_REWARD_ACTIONS;
  return tags.map((tag,index)=>{
   const template=TEMPLATES.find(row=>row.tag===tag)!;

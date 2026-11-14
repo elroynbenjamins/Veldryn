@@ -34,6 +34,58 @@ export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):Regi
   if(worldZoneInDevelopment(zone))return 'inDevelopment';
   return regionTravelLockReason(state,zone)?'locked':'available';
 }
+/**
+ * A character retains every ordinary encounter from the furthest released region
+ * they have unlocked. Saved unlock flags are evidence, not an exhaustive access
+ * control list: older clients and roster migrations sometimes omitted entries.
+ *
+ * Never inspect the account's otherCharacters here; their progress is separate.
+ * Combat mastery also proves a region was previously reached after backtracking.
+ */
+export function furthestUnlockedCombatZone(state:GameState):WorldZoneDef|undefined{
+  if(!state.character)return undefined;
+  const released=WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone));
+  let highest=0;
+  const consider=(id:string)=>{
+    const index=released.findIndex(zone=>zone.id===id);
+    if(index>highest)highest=index;
+  };
+  for(const zone of released){
+    if(regionTravelAvailability(state,zone)==='available')consider(zone.id);
+  }
+  consider(state.currentRegionId);
+  const known=new Set(state.unlockedMonsterIds??[]);
+  for(const [monsterId,mastery] of Object.entries(state.character.monsterMasteryPoints??{})){
+    if(Number(mastery)>0)known.add(monsterId);
+  }
+  if(state.activity?.kind==='combat')known.add(state.activity.targetId);
+  for(const monster of MONSTERS){
+    if(!monster.boss&&known.has(monster.id)){
+      const zone=released.find(zone=>zone.name===monster.zone);
+      if(zone)consider(zone.id);
+    }
+  }
+  return released[highest];
+}
+
+/** All regular monsters through the character's highest unlocked released zone. */
+export function cumulativeMonsterUnlockIds(state:GameState):string[]{
+  const furthest=furthestUnlockedCombatZone(state);
+  const original=state.unlockedMonsterIds??[];
+  if(!furthest)return original;
+  const released=WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone));
+  const maxIndex=released.findIndex(zone=>zone.id===furthest.id);
+  const eligible=MONSTERS.filter(monster=>!monster.boss&&released.some((zone,index)=>index<=maxIndex&&zone.name===monster.zone)).map(monster=>monster.id);
+  return [...new Set([...original,...eligible])];
+}
+
+/** Heal old persisted flags on loading and on every character switch/commit. */
+export function restoreCumulativeMonsterUnlocks(state:GameState):GameState{
+  const ids=cumulativeMonsterUnlockIds(state);
+  const old=state.unlockedMonsterIds??[];
+  return ids.length===old.length&&ids.every((id,index)=>id===old[index])?state:{...state,unlockedMonsterIds:ids};
+}
+
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
 }
@@ -55,6 +107,9 @@ export function encounterLockRequirement(state:GameState,monster:MonsterDef):Enc
   // Authored future-region encounters must stay unplayable even when old save
   // data contains their unlock IDs or the character is above the level gate.
   if(region&&worldZoneInDevelopment(region))return {kind:'regionProgression'};
+  // Already-reached zones never lose ordinary encounters due to missing
+  // per-monster flags, backtracking, class changes or level rescaling.
+  if(!monster.boss&&cumulativeMonsterUnlockIds(state).includes(monster.id))return undefined;
   if(level<(region?.minLevel??1))return {kind:'level',level:region?.minLevel??1};
   if(monster.boss){
     if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};

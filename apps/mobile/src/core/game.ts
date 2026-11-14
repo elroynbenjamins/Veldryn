@@ -46,7 +46,7 @@ import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
-import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
+import {regionTravelAvailability,regionTravelLockReason,cumulativeMonsterUnlockIds} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment} from './equipment-enhancement';
 import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from './equipment-set-runtime';
@@ -233,7 +233,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   // Area encounters added after initial release use region + level progression.
   // Existing exploration-unlocked monsters retain their original unlock rules.
   const areaUnlockLevel=m.regionalAreaAutoUnlock?Math.max(m.unlockLevel,REGIONAL_AREAS.find(area=>area.id===m.areaId)?.minLevel??1):0;
-  if(!state.unlockedMonsterIds.includes(monsterId)&&!(m.regionalAreaAutoUnlock&&state.character.level>=areaUnlockLevel))throw new Error('Monster not unlocked');
+  if(!cumulativeMonsterUnlockIds(state).includes(monsterId)&&!(m.regionalAreaAutoUnlock&&state.character.level>=areaUnlockLevel))throw new Error('Monster not unlocked');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}

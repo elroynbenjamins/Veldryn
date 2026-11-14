@@ -49130,6 +49130,45 @@ function regionTravelAvailability(state, zone) {
   if (worldZoneInDevelopment(zone)) return "inDevelopment";
   return regionTravelLockReason(state, zone) ? "locked" : "available";
 }
+function furthestUnlockedCombatZone(state) {
+  if (!state.character) return void 0;
+  const released = WORLD_ZONES.filter((zone) => !worldZoneInDevelopment(zone));
+  let highest = 0;
+  const consider = (id) => {
+    const index = released.findIndex((zone) => zone.id === id);
+    if (index > highest) highest = index;
+  };
+  for (const zone of released) {
+    if (regionTravelAvailability(state, zone) === "available") consider(zone.id);
+  }
+  consider(state.currentRegionId);
+  const known2 = new Set(state.unlockedMonsterIds ?? []);
+  for (const [monsterId, mastery] of Object.entries(state.character.monsterMasteryPoints ?? {})) {
+    if (Number(mastery) > 0) known2.add(monsterId);
+  }
+  if (state.activity?.kind === "combat") known2.add(state.activity.targetId);
+  for (const monster of MONSTERS) {
+    if (!monster.boss && known2.has(monster.id)) {
+      const zone = released.find((zone2) => zone2.name === monster.zone);
+      if (zone) consider(zone.id);
+    }
+  }
+  return released[highest];
+}
+function cumulativeMonsterUnlockIds(state) {
+  const furthest = furthestUnlockedCombatZone(state);
+  const original = state.unlockedMonsterIds ?? [];
+  if (!furthest) return original;
+  const released = WORLD_ZONES.filter((zone) => !worldZoneInDevelopment(zone));
+  const maxIndex = released.findIndex((zone) => zone.id === furthest.id);
+  const eligible = MONSTERS.filter((monster) => !monster.boss && released.some((zone, index) => index <= maxIndex && zone.name === monster.zone)).map((monster) => monster.id);
+  return [.../* @__PURE__ */ new Set([...original, ...eligible])];
+}
+function restoreCumulativeMonsterUnlocks(state) {
+  const ids2 = cumulativeMonsterUnlockIds(state);
+  const old = state.unlockedMonsterIds ?? [];
+  return ids2.length === old.length && ids2.every((id, index) => id === old[index]) ? state : { ...state, unlockedMonsterIds: ids2 };
+}
 
 // ../apps/mobile/src/core/processing.ts
 init_progression();
@@ -52876,7 +52915,7 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (!m) throw new Error("Unknown monster");
   if (state.character.currentHp <= 1) throw new Error("Too injured to fight. Eat food or recover health before starting combat.");
   const areaUnlockLevel = m.regionalAreaAutoUnlock ? Math.max(m.unlockLevel, REGIONAL_AREAS.find((area) => area.id === m.areaId)?.minLevel ?? 1) : 0;
-  if (!state.unlockedMonsterIds.includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
+  if (!cumulativeMonsterUnlockIds(state).includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
   if (m.boss) throw new Error("Bosses use challengeFallenKnight");
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
@@ -58408,7 +58447,7 @@ function gameplayHandler(services2) {
       const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
       const storedState = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
-      const state = ensurePersonalSeasonalState(trustedState);
+      const state = restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
       state.account.longTermAccountScopeId = accountId;
       state.account.guildMember = loaded.guildMember;
       const previousEvent = state.account.liveEvent;
@@ -58474,7 +58513,7 @@ function gameplayHandler(services2) {
         // Count verified instant crafts only when no timed crafting lane was settled.
         ...projectSegments.some(({ activity }) => activity.kind === "alchemy" || activity.kind === "processing") ? [] : contributions.filter((event) => event.kind === "crafting" && event.units > 0).map((event) => ({ kind: "crafting", units: Math.min(100, event.units) }))
       ];
-      const response = { guildProjectEffort, guildPveEffort, state: result.state, version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
+      const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = "commit_online_game_guild_pve_v1";
       const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       try {

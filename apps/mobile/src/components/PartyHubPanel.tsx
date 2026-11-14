@@ -176,7 +176,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   <GameModalSurface visible={showSettings&&inParty} presentation="sheet" onClose={()=>setShowSettings(false)} surfaceStyle={{maxHeight:windowHeight*.90}}>
    <GameModalHeader eyebrow={st('ACTIVE PARTY')} title={st('Party options')} onClose={()=>setShowSettings(false)}/>
    <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody}>
-    <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{partyActivityLabel(preferences.activityLevel)} · {languageLabel}{preferences.minimumLevel?' · '+partyMinimumLevelLabel(language,preferences.minimumLevel):''}</Text></View>
+    <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{socialLabel(language,partyActivityLabel(preferences.activityLevel))} · {languageLabel}{preferences.minimumLevel?' · '+partyMinimumLevelLabel(language,preferences.minimumLevel):''}</Text></View>
     {(props.invitationCount??0)>0?props.partyInvitations:<Text style={s.muted}>{st('No pending invitations.')}</Text>}
     {canManageParty&&openSpots>0?<GameButton compact tone="secondary" title={st('Find members')} onPress={()=>{setShowSettings(false);if(props.dedicated)props.onOpenRecruitment?.();else{setBrowseMode('players');setSection('find');}}}/>:null}
 

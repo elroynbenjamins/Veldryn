@@ -4,6 +4,13 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Companion combat terminology
+
+- Added exact-source, per-companion German display names for **38 authored combat companion active abilities** and **38 Bond traits** across Asterfall, Sunscar, Frostmarch, Ashlands, Guild and released/event companion content.
+- Translated the **52 custom authored Companion technique names** and **6 shared fallback techniques**, leaving the technique IDs, equip actions, progression, stat modifiers and online combat data untouched.
+- Wired the translations into Training's Skills/Bond panels, the Companion Codex active-ability heading and the Trial formation preview. Unknown or renamed ability names retain the source wording.
+- Added a new dedicated regression that compares every named ability/trait and technique against authored content, checks language isolation and guards the UI call sites; full CI and narrow-screen device visual tests are still required.
+
 ## November 14, 2026: German Expedition Shop and Sanctuary missions
 
 - Localized the Expedition Shop UI, 17 ID/source-guarded shop offers, verified offer descriptions and eligibility messages; German currency counts and prices use local number grouping.

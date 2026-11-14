@@ -21,7 +21,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuthSession} from '../online/AuthSessionProvider';
 
 type Channel='world'|'guild'|'party'|'system';
-type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild';visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
+type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild';visible:boolean;hideDock?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
 
 export function ChatOverlay(props:ChatOverlayProps){
  const {session}=useAuthSession();
@@ -29,7 +29,7 @@ export function ChatOverlay(props:ChatOverlayProps){
  return <AccountChatOverlay key={session?.user.id??('local:'+props.state.createdAtMs)} {...props}/>;
 }
 
-function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
+function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,height,fontScale}=useWindowDimensions();
  const compactTabs=width<360||fontScale>=1.25;
@@ -122,7 +122,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  const guildChatHelp=localizedGuildDetailedGuide(state.settings.language,'Chat');
 
  return <>
-  {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
+  {!visible&&!hideDock&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
   <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}>
    <View ref={modalRootRef} onLayout={measureKeyboardOverlap} style={[s.modalRoot,{paddingTop:Math.max(insets.top,8)+4,paddingBottom:keyboardVisible?4+(Platform.OS==='android'?keyboardOverlap:0):Math.max(insets.bottom,8)}]}>
     <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>

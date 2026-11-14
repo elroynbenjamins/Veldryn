@@ -20,6 +20,7 @@ export const BATTLE_MESSAGES={
  'COMPANION SKILL':['BEGLEITERFÄHIGKEIT','HABILIDAD DE COMPAÑERO','METGEZELVAARDIGHEID','ABILITÀ COMPAGNO','CAPACITÉ DU COMPAGNON'],
  'SKILL DAMAGE · {amount}':['FÄHIGKEITSSCHADEN · {amount}','DAÑO DE HABILIDAD · {amount}','VAARDIGHEIDSSCHADE · {amount}','DANNO ABILITÀ · {amount}','DÉGÂTS DE CAPACITÉ · {amount}'],
  'SKILL HEAL · {amount}':['FÄHIGKEITSHEILUNG · {amount}','CURA DE HABILIDAD · {amount}','VAARDIGHEIDSHELING · {amount}','CURA ABILITÀ · {amount}','SOIN DE CAPACITÉ · {amount}'],
+ 'SHIELD · {amount}':['SCHILD · {amount}','ESCUDO · {amount}','SCHILD · {amount}','SCUDO · {amount}','BOUCLIER · {amount}'],
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
 
  'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],

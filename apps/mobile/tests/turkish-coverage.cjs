@@ -15,7 +15,7 @@ const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
 const {socialEarlyRows}=require('../src/i18n/social-early-coverage.ts');
 const keys=Object.keys(TURKISH_COVERAGE);
-assert.ok(keys.length>=2485,'Turkish core coverage should retain the 2485-string baseline');
+assert.ok(keys.length>=2899,'Turkish core coverage should retain the 2899-string baseline');
 
 const placeholders=text=>[...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)]
  .map(match=>match[1]).sort();
@@ -81,5 +81,11 @@ assert.equal(earlyLocaleText('tr','Auto-eat below {percent}% HP'),'Can %{percent
 assert.equal(earlyLocaleText('tr','No event is active'),'Etkin etkinlik yok');
 assert.equal(earlyLocaleText('tr','PET COLLECTION'),'EVCİL HAYVAN KOLEKSİYONU');
 assert.equal(earlyLocaleText('tr','ADVENTURER\'S JOURNAL'),'MACERACI GÜNCESİ');
+assert.equal(earlyLocaleText('tr',"Activity queue"),"Etkinlik kuyruğu");
+assert.equal(earlyLocaleText('tr',"This region has no unfinished Contract Board work this week."),"Bu bölgede bu hafta tamamlanmamış Sözleşme Panosu işi yok.");
+assert.equal(earlyLocaleText('tr',"Guild Projects"),"Lonca Projeleri");
+assert.equal(earlyLocaleText('tr',"COMBAT SKILL XP SPLIT"),"SAVAŞ BECERİSİ XP DAĞILIMI");
+assert.equal(earlyLocaleText('tr',"Idle Rule"),"Boşta Kalma Kuralı");
+assert.equal(earlyLocaleText('tr',"Show chat"),"Sohbeti göster");
 console.log('PASS: '+keys.length+' Turkish strings, catalog keys, placeholders, and runtime fallbacks. '
  +'Remaining source-key candidates in audited catalogs: '+remaining+'.');

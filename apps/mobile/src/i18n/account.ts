@@ -5,6 +5,7 @@ import {spanishUiGap} from './spanish-ui-gaps';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  "Start main screen tour": ["Start main screen tour","Tour des Hauptbildschirms starten","Iniciar recorrido por la pantalla principal","Rondleiding op het hoofdscherm starten","Avvia il tour della schermata principale","Démarrer la visite de l’écran principal"],
   // Account navigation copy: keep destination hints translated on every screen.
   "Dungeons": ["Dungeons","Dungeons","Mazmorras","Kerkers","Dungeon","Donjons"],
   "Browse dungeons, prepare Echoes and join expeditions": ["Browse dungeons, prepare Echoes and join expeditions","Dungeons erkunden, Echos vorbereiten und Expeditionen beitreten","Explora mazmorras, prepara Ecos y únete a expediciones","Verken kerkers, bereid Echo's voor en doe mee aan expedities","Esplora i dungeon, prepara gli Echi e unisciti alle spedizioni","Explorez les donjons, préparez les Échos et rejoignez des expéditions"],

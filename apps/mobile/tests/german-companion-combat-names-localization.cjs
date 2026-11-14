@@ -50,7 +50,7 @@ for(const {id,active,bond} of rows){
  assert.equal(companionCombatAbilityName('de',id,'New server skill $&'),'New server skill $&');
  assert.equal(companionCombatBondName('de',id,'New server trait $&'),'New server trait $&');
 }
-assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');'),'My skill assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');');
+assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');
 
 const asterServerNames=[...backend.matchAll(/\['(UNIT_\d{3})',(?:"([^"]+)"|'([^']+)')/g)]
  .filter(m=>Number(m[1].slice(-3))<=12).map(m=>({id:m[1],name:m[2]||m[3]}));

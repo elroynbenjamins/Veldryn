@@ -1,5 +1,6 @@
 import {random01} from './rng';
 import type {RegionalHuntPlan} from './ordinary-hunt';
+import type {HuntActiveAbility} from './hunt-active-abilities';
 
 /** Discrete, deterministic attacks for an ordinary idle hunt.
  * Timing is derived from the existing kill cycle so XP, drops and AFK pacing
@@ -12,6 +13,20 @@ export interface HuntHit {
   healing:number;
   critical:boolean;
   index:number;
+  /** Budgeted skill that landed on this real player hit. */
+  activeAbility?:HuntActiveAbility;
+  /** Portion of this landed hit contributed by an equipped companion. */
+  companionAssist?:HuntActiveAbility;
+  /** Genuine damage blocked by a cooldown-scheduled tank companion guard. */
+  guardAbility?:HuntActiveAbility;
+  /** Healing assist tagged at the first eligible real heal tick after cooldown. */
+  supportAbility?:HuntActiveAbility;
+  /** Actual damage prevented by a class guard/control/totem technique. */
+  classGuardAbility?:HuntActiveAbility;
+  /** A real extra healing budget from the class technique (never food). */
+  classHealingBudget?:number;
+  /** Restorative cast to display only after health is truly restored. */
+  classHealAbility?:HuntActiveAbility;
 }
 export interface HuntHitInput {
   monsterHp:number;

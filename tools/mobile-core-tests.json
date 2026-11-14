@@ -22,6 +22,7 @@
   ".core-build/apps/mobile/tests/world-boss-supply-economy-v12.js",
   "../../tools/validate-world-boss-rounds-v5.cjs",
   "tests/online-loading-interactions.cjs",
+  "tests/metro-shared-packages.cjs",
   ".core-build/apps/mobile/tests/coop-sync-policy.js",
   "tests/coop-sync-runtime.cjs",
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",
@@ -167,6 +168,9 @@
   ".core-build/apps/mobile/tests/combat-region.js",
   ".core-build/apps/mobile/tests/combat-presentation.js",
   ".core-build/apps/mobile/tests/combat-hit-timeline.js",
+  ".core-build/apps/mobile/tests/hunt-active-abilities.js",
+  "tests/hunt-ability-cue-colors.cjs",
+  ".core-build/apps/mobile/tests/combat-skill-regional-matrix.js",
   ".core-build/apps/mobile/tests/ordinary-hunt.js",
   ".core-build/apps/mobile/tests/solo-role-hunt-parity.js",
   ".core-build/apps/mobile/tests/combat-tactics.js",
@@ -349,6 +353,8 @@
   ".core-build/apps/mobile/tests/combat-buff-boundaries.js",
   ".core-build/apps/mobile/tests/combat-attrition.js",
   ".core-build/apps/mobile/tests/fallen-knight-gear-food.js",
+  ".core-build/apps/mobile/tests/story-boss-class-abilities.js",
+  ".core-build/apps/mobile/tests/story-boss-playback.js",
   ".core-build/apps/mobile/tests/chat-feed-cache.js",
   "../../tools/validate-chat-transport.mjs",
   "tests/auth-account-link.cjs",
@@ -365,5 +371,8 @@
   ".core-build/apps/mobile/tests/player-market-readiness.js",
   "tests/skill-disclosure-layout-ui.cjs",
   ".core-build/apps/mobile/tests/pixel-animation.js",
-  ".core-build/apps/mobile/tests/guild-member-last-active.js"
+  ".core-build/apps/mobile/tests/guild-member-last-active.js",
+  ".core-build/apps/mobile/tests/companion-stamina-authority.js",
+  ".core-build/apps/mobile/tests/companion-stamina-selection.js",
+  ".core-build/apps/mobile/tests/companion-stamina-housing.js"
 ]

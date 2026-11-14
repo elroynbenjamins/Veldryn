@@ -82,7 +82,14 @@ for(const relative of files){
  visit(tree);
 }
 const more=fs.readFileSync(path.join(root,'screens/MoreScreen.tsx'),'utf8');
-assert.ok(more.includes("const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies','Companions','Party','Friends','Guild'];"));
+const attentionOrderMatch=more.match(/const attentionPriority:MoreDestination\[\]=\[([^\]]+)\];/);
+assert.ok(attentionOrderMatch,'More screen must define the attention navigation order');
+const attentionOrder=[...attentionOrderMatch[1].matchAll(/'([^']+)'/g)].map(match=>match[1]);
+assert.equal(new Set(attentionOrder).size,attentionOrder.length,'Attention navigation cannot repeat a destination');
+for(const destination of ['NewUnlocks','Quests','DailySupplies','Companions','Party','Friends','Guild']){
+ assert.ok(attentionOrder.includes(destination),'Account attention order must include '+destination);
+}
+
 // Russian/Turkish coverage for the frequently used dashboard, roster and bonuses.
 // Scan actual call sites so future copy edits cannot silently revert to English.
 let earlyScreenKeys=0;
@@ -112,11 +119,22 @@ for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.
  visit(tree);
 }
 assert.ok(earlyScreenKeys>=100,'dashboard/roster/bonus/home-card coverage');
+assert.equal(accountText('de','Browse dungeons, prepare Echoes and join expeditions'),'Dungeons erkunden, Echos vorbereiten und Expeditionen beitreten');
+assert.equal(accountText('ru','New update available'),'Доступно новое обновление');
+assert.equal(accountText('tr','Codex'),'Rehber');
+assert.ok(accountText('de','{count} Party updates',{count:3}).includes('3'),'More Party badge placeholders must survive translation');
+assert.equal(accountText('de','Start main screen tour'),'Tour des Hauptbildschirms starten');
+assert.equal(accountText('ru','Start main screen tour'),'Начать обзор главного экрана');
+assert.equal(accountText('tr','Start main screen tour'),'Ana ekran turunu başlat');
 assert.equal(accountText('ru','Delete character only'),'Только удалить персонажа');
 assert.equal(accountText('tr','ACCOUNT SKILL'),'HESAP BEC.');
 assert.equal(recentScreenText('ru','ACTIVITY QUEUE'),'ОЧЕРЕДЬ ЗАНЯТИЙ');
 assert.equal(recentScreenText('tr','Your adventure'),'Maceran');
 assert.equal(recentScreenText('ru','READY NOW'),'ГОТОВО СЕЙЧАС');
+assert.equal(earlyLocaleText('ru','READY NOW'),'ГОТОВО К ИЗГОТОВЛЕНИЮ',
+ 'Crafting may retain the generic early Russian translation when it does not use the Home screen catalog');
+assert.equal(recentScreenText('tr','READY NOW'),'ŞİMDİ HAZIR',
+ 'The Home screen must prefer its reviewed Turkish translation over a shared fallback');
 console.log('RU/TR account screen coverage: '+earlyScreenKeys+' authored display calls.');
 
 console.log('Account localization passed: '+keys.length+' keys x 6 languages; '+guides.length+' guides; '+records.length+' records; '+files.length+' owned files; '+displayCalls+' display calls.');

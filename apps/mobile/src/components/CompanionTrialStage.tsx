@@ -1,4 +1,5 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {dungeonDynamicUiText} from '../i18n/dungeon-dynamic-ui';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
 import {companionCombatAbilityName,companionTrialAbilityName} from '../i18n/companion-combat-names-de';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -51,11 +52,11 @@ function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattl
  if(event.type==='dot_tick')return event.abilityId==='TRIAL_VENOM_BLOOM'?t('{target} suffers {amount} poison damage through shields',{target:target??t('Target'),amount}):t('{target} suffers {amount} periodic damage',{target:target??t('Target'),amount});
  if(event.type==='status_apply'&&event.statusKind==='dot')return t('{target} is poisoned',{target:target??t('Target')});
  if(event.type==='status_remove'&&event.statusKind==='dot')return t('{actor} cleanses poison from {target}',{actor:actor??t('Support'),target:target??t('Ally')});
- if(event.type==='heal'||event.type==='hot_tick')return t('{actor} restores {amount} HP to {target}',{actor:actor??t('Support'),amount,target:target??t('Ally')});
- if(event.type==='shield')return t('{actor} shields {target} for {amount}',{actor:actor??t('Support'),target:target??t('Ally'),amount});
+ if(event.type==='heal'||event.type==='hot_tick')return t('{actor} restores {amount} HP to {target}',{actor:actor??t('Support'),amount,target:target??t('Ally')})+( event.type==='heal'&&event.abilityId&&event.abilityId!=='BASIC' ? ` · ${ability}` : '' );
+ if(event.type==='shield')return t('{actor} shields {target} for {amount}',{actor:actor??t('Support'),target:target??t('Ally'),amount})+( event.abilityId&&event.abilityId!=='BASIC' ? ` · ${ability}` : '' );
  if(event.type==='cast_start')return t('{actor} begins {ability}',{actor:actor??t('Enemy'),ability});
  if(event.type==='cast_complete')return t('{actor} casts {ability}',{actor:actor??t('Enemy'),ability});
- if(event.type==='interrupt')return t('{actor} interrupts {target}',{actor:actor??t('Companion'),target:target??t('Enemy')});
+ if(event.type==='interrupt')return t('{actor} interrupts {target}',{actor:actor??t('Companion'),target:target??t('Enemy')})+( event.abilityId&&event.abilityId!=='BASIC' ? ` · ${ability}` : '' );
  if(event.type==='phase')return t('PHASE · {ability}',{ability});
  if(event.type==='miss')return t('{actor} misses {target}',{actor:actor??t('Attacker'),target:target??t('Target')});
  if(event.type==='down')return t('{target} is down',{target:target??t('Companion')});
@@ -111,6 +112,8 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
  if(playback&&fresh){
   const players=playbackView!.units.filter(unit=>unit.team==='players'),enemies=playbackView!.units.filter(unit=>unit.team==='enemies'),playbackTitle=enemies.find(unit=>unit.boss)?.name??last!.title;
   const activeCue=!finished&&current&&!['combat_start','cast_complete'].includes(current.type)?eventText(playback,current,language):undefined;
+  const activeCompanionSkill=!finished&&current?.actorId&&players.some(unit=>unit.id===current.actorId)&&current.abilityId&&current.abilityId!=='BASIC'&&['damage','heal','shield','interrupt','cast_start','status_remove'].includes(current.type)
+   ?playback.abilityNames[current.abilityId]:undefined;
   const unitCard=(unit:PlaybackUnit)=>{
    const def=COMBAT_COMPANIONS.find(row=>row.id===unit.id),art=def?companionArtSource(unit.id):undefined;
    const targeted=current?.targetId===unit.id,acting=current?.actorId===unit.id;
@@ -131,7 +134,8 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
    <View style={[s.liveArena,{borderColor:arenaAccent}]}>
     <View pointerEvents="none" style={s.trialAmbient}><View style={[s.trialHalo,{borderColor:arenaAccent}]}/><View style={[s.trialInnerHalo,{borderColor:arenaAccent}]}/><View style={[s.trialFloorLine,{backgroundColor:arenaAccent}]}/></View>
     <View style={s.liveColumn}><Text style={s.sideLabel}>{t("YOUR FORMATION")}</Text>{players.map(unitCard)}</View><View style={s.vs}><Text style={s.vsText}>{t("VS")}</Text></View><View style={s.liveColumn}><Text style={s.sideLabel}>{enemies.some(unit=>unit.boss) ? t("BOSS ENCOUNTER") : t("TRIAL FORMATION")}</Text>{enemies.map(unitCard)}</View></View>
-   {activeCue?<Text numberOfLines={1} accessibilityLiveRegion="polite" style={s.liveCue}>{activeCue}</Text>:null}
+    {activeCompanionSkill?<View accessibilityLiveRegion="polite" style={s.liveSkill}><Text style={s.liveSkillTag}>{dungeonDynamicUiText(language,'COMPANION SKILL')}</Text><Text numberOfLines={1} style={s.liveSkillName}>{activeCompanionSkill}</Text></View>:null}
+   {activeCue?<Text numberOfLines={2} accessibilityLiveRegion="polite" style={s.liveCue}>{activeCue}</Text>:null}
    {!finished?<View style={s.playbackTrack}><View style={[s.playbackFill,{width:`${Math.round(100*playhead/Math.max(1,playback.durationMs))}%` as `${number}%`}]} /></View>:null}
    {finished?<CombatOutcomeMoment outcome={last!.won?'victory':'defeat'} title={last!.won?t('VICTORY'):t('DEFEAT')} detail={t("+{value1} Essence · +{value2} Gold{value3}", {value1:last!.essence,value2:last!.gold,value3:last!.bondstones?t(" · +{value0} Bondstones",{value0:last!.bondstones}):''})} reduceMotion={state.settings.reduceMotion}/>:null}
   </Animated.View>;
@@ -158,6 +162,9 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  combatHint:{padding:8,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.panel2},combatHintLabel:{fontSize:8,color:C.info,fontWeight:'900',letterSpacing:.8},combatHintText:{...typography.caption,color:C.muted},
  liveArena:{minHeight:260,flexDirection:'row',alignItems:'stretch',gap:5,padding:8,borderWidth:1,borderRadius:16,backgroundColor:C.stage,overflow:'hidden'},trialAmbient:{...StyleSheet.absoluteFill,alignItems:'center',justifyContent:'center',opacity:.25},trialHalo:{width:210,height:210,borderWidth:2,borderRadius:110,transform:[{scaleY:.62}]},trialInnerHalo:{position:'absolute',width:130,height:130,borderWidth:1,borderRadius:70,transform:[{scaleY:.62}]},trialFloorLine:{position:'absolute',left:0,right:0,bottom:36,height:2,opacity:.65},liveColumn:{flex:1,gap:5},liveUnit:{gap:4,minHeight:62,padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},bossLiveUnit:{borderColor:C.warning,backgroundColor:C.warningSurface},liveUnitRow:{flexDirection:'row',alignItems:'center',gap:5},liveUnitBody:{flex:1,minWidth:0},unitIcon:{width:40,height:40,position:'relative',overflow:'visible',alignItems:'center',justifyContent:'center',borderRadius:10,backgroundColor:C.stage},enemyUnitIcon:{borderWidth:1,borderColor:'#7d8490',backgroundColor:'#242932'},bossUnitIcon:{borderWidth:1,borderColor:C.warning},unitArt:{width:38,height:38},enemyArt:{width:30,height:30},unitGlyph:{fontSize:17,color:C.accent,fontWeight:'900'},impactNumber:{fontSize:10,color:C.bad,fontWeight:'900'},impactPositive:{color:C.good},impactCritical:{color:C.warning,fontWeight:'900'},previewIcon:{width:38,height:38,alignItems:'center',justifyContent:'center'},previewArt:{width:36,height:36},targetUnit:{borderColor:C.warning},downedUnit:{opacity:.55},unitHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5},shieldTrack:{height:9,borderRadius:99,overflow:'hidden',backgroundColor:'#313741',marginBottom:2,justifyContent:'center',alignItems:'center'},shieldTrackEmpty:{opacity:.36},shieldFill:{...StyleSheet.absoluteFill,backgroundColor:'#b7bec8'},shieldBarText:{fontSize:6,color:'#101419',fontWeight:'900',fontVariant:['tabular-nums']},hpTrack:{height:12,borderRadius:99,overflow:'hidden',backgroundColor:C.badSurface,justifyContent:'center',alignItems:'center'},hpFill:{...StyleSheet.absoluteFill,backgroundColor:C.good},poisonHpFill:{backgroundColor:'#9a5cdb'},hpBarText:{fontSize:7,color:'#fff',fontWeight:'900',fontVariant:['tabular-nums'],textShadowColor:'rgba(0,0,0,.6)',textShadowRadius:1},castText:{fontSize:7,color:C.warning,fontWeight:'900',letterSpacing:.5},
  liveCue:{paddingHorizontal:6,paddingVertical:5,minHeight:22,...typography.caption,color:C.text,fontWeight:'700'},
+  liveSkill:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.special,borderRadius:radii.sm,backgroundColor:C.panel2},
+  liveSkillTag:{fontSize:8,color:C.special,fontWeight:'900',letterSpacing:.5},
+  liveSkillName:{flex:1,fontSize:10,color:C.text,fontWeight:'800'},
  liveSpeedRow:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center',gap:6},
  liveSpeedLabel:{fontSize:9,color:C.muted,fontWeight:'800',marginRight:4},
  liveSpeedOption:{minWidth:44,minHeight:40,paddingHorizontal:9,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},

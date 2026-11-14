@@ -58401,7 +58401,9 @@ function gameplayHandler(services2) {
         }
       }
       const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
-      const state = ensurePersonalSeasonalState(rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow)));
+      const storedState = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
+      const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
+      const state = ensurePersonalSeasonalState(trustedState);
       state.account.longTermAccountScopeId = accountId;
       state.account.guildMember = loaded.guildMember;
       const previousEvent = state.account.liveEvent;

@@ -95,7 +95,7 @@ export function SkillGuideScreen({state,onClose,onOpenSkill,onOpenCombat,onOpenM
     <Text style={s.tileLevel} numberOfLines={1}>{isFacility?t('Facility')+' '+level+'/3':t('Lv')+' '+level}</Text>
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={s.progressTrack}><View style={[s.progressFill,{width:(Math.round(progressFor(id)*100)+'%') as any}]}/></View>
    </Pressable>;
-  }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} columnWrapperStyle={s.row} contentContainerStyle={s.content}
+  }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} columnWrapperStyle={s.row} contentContainerStyle={s.content}
    ListHeaderComponent={<View style={s.header}>
     <View style={s.heading}>
      <Pressable accessibilityRole="button" accessibilityLabel={t('Back to Account')} onPress={onClose} style={s.backButton}><Text style={s.backGlyph}>‹</Text></Pressable>
@@ -114,7 +114,7 @@ export function SkillGuideScreen({state,onClose,onOpenSkill,onOpenCombat,onOpenM
   />
   <GameModalSurface visible={!!selected} presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedId(null)}>
    {selected&&selectedId?<><GameModalHeader eyebrow={selectedCategory?t(selectedCategory).toLocaleUpperCase(language):undefined} title={selected.title} onClose={()=>setSelectedId(null)}/>
-    <ScrollView contentContainerStyle={s.detail} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={s.detail} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      <View style={s.hero}>
       <View style={s.heroArt}>{art(selectedId,60)}</View>
       <View style={s.heroCopy}><Text style={s.category}>{selectedCategory?t(selectedCategory):''}</Text>

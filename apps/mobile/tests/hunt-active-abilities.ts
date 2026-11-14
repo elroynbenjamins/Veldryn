@@ -19,9 +19,9 @@ assert.ok(output[0].damage<hits[0].damage,'Class burst must change an earlier re
 assert.ok(output[3].damage>hits[3].damage,'Class burst must concentrate real damage into the finisher');
 assert.equal(output[3].activeAbility?.name,'Rune Bash','Class technique must use the existing combat skill name');
 assert.equal(output[3].activeAbility?.amount,output[3].damage,'Class banner must show real finisher damage');
-assert.equal(output[0].companionAssist?.name,'Ironwood Hound: Hamstring Pounce','Companion assist must show its own active ability');
-assert.ok((output[0].companionAssist?.amount??0)>0&&output[0].companionAssist!.amount<output[0].damage,'Companion damage is taken from an already-applied hit, never added');
-assert.equal(output[0].companionAssist?.source,'companion');
+assert.equal(output[2].companionAssist?.name,'Ironwood Hound: Hamstring Pounce','Companion assist must show its own active ability');
+assert.ok((output[2].companionAssist?.amount??0)>0&&output[2].companionAssist!.amount<output[2].damage,'Companion damage is taken from an already-applied hit, never added');
+assert.equal(output[2].companionAssist?.source,'companion');
 assert.ok(hits.every(hit=>!hit.activeAbility&&!hit.companionAssist),'Ability allocation must not mutate the baseline timeline');
 assert.equal(JSON.stringify(huntActiveDamageEvents(hits,input)),JSON.stringify(output),'Ability allocation must be replay deterministic');
 const higher=huntActiveDamageEvents(hits,{...input,classSkillLevel:100});
@@ -33,9 +33,9 @@ for(const classId of Object.keys(HUNT_CLASS_TECHNIQUES) as ClassId[]){
  assert.equal(total(run),total(hits),'Class ability must remain balance neutral');
 }
 const off=huntActiveDamageEvents(hits,{...input,encounterNumber:3});
-assert.equal(off[0].companionAssist,undefined,'Companion assist obeys the per-encounter action gate');
+assert.equal(off[2].companionAssist,undefined,'Companion assist obeys the per-encounter action gate');
 const support=huntActiveDamageEvents(hits,{...input,companion:{...input.companion,role:'support'}});
-assert.equal(support[0].companionAssist,undefined,'Do not turn a healing companion into a damage cast');
+assert.equal(support[2].companionAssist,undefined,'Do not turn a healing companion into a damage cast');
 const one=huntActiveDamageEvents([hits[0]],input);
 assert.equal(one[0].activeAbility,undefined,'One-shot hunts cannot invent a class burst');
 assert.equal(one[0].companionAssist,undefined,'One-shot hunts cannot invent a companion hit');

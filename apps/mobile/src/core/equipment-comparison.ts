@@ -1,12 +1,13 @@
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {itemDef} from '../content/items';
+import {isLiveSixPieceBonus} from './equipment-set-runtime';
 import {effectiveStats} from './game';
 import {equippedEffectGemBonuses} from './equipment-enhancement';
 import type {GameState} from './types';
 
 /** Fully derived from the runtime state on both sides of a potential equip.
  * Values are percentages in percentage points, not item-defined guesses.
- * The six-piece set trigger is intentionally pending, not a live bonus. */
+ * Early-region 6pc stats are live; T5+ conditional triggers remain pending. */
 export function equipmentComparison(state:GameState,projected:GameState){
  const before=effectiveStats(state),after=effectiveStats(projected);
  const effectBefore=equippedEffectGemBonuses(state),effectAfter=equippedEffectGemBonuses(projected);
@@ -44,7 +45,7 @@ export function equipmentComparison(state:GameState,projected:GameState){
   const afterPieces=equippedSetPieceCount(projected.character.equipment,set);
   return [{id:set.id,name:set.name,tier:set.tier,before:beforePieces,after:afterPieces,
    milestones:[2,4,6,8,10].filter(threshold=>(beforePieces>=threshold)!==(afterPieces>=threshold)).map(threshold=>({
-    threshold,status:threshold===6?'pending' as const:'active' as const,
+    threshold,status:threshold===6&&!isLiveSixPieceBonus(set)?'pending' as const:'active' as const,
     direction:afterPieces>=threshold?'gained' as const:'lost' as const,
    }))}];
  });

@@ -22,7 +22,7 @@ const STATIC_BONUS_RE=/\+(\d+(?:\.\d+)?)%\s+(Max HP|Armor|Ward|Tenacity|Haste|Po
 export function isLiveSixPieceBonus(set:Pick<EquipmentSetDef,'tier'|'sixPiece'>):boolean{
   return /^T[1-4]$/.test(set.tier)&&/^\+\d+(?:\.\d+)?% (Max HP|Armor|Ward|Tenacity|Haste|Power|Accuracy|Penetration|Potency|Crit Rate|Crit Damage|Evasion)$/.test(set.sixPiece);
 }
-export function emptyEquipmentSetStats():EquipmentSetStats{return {...EMPTY_STATS};
+export function emptyEquipmentSetStats():EquipmentSetStats{return {...EMPTY_STATS};}
 
 export function parseEquipmentSetStaticBonus(text:string):Partial<EquipmentSetStats>{
   const result:Partial<EquipmentSetStats>={};

@@ -2,6 +2,7 @@ import type {GameState,CharacterState,SkillState} from './types';
 import {classSkillsFor} from '../content/class-skills';
 import {levelFromXp} from './progression';
 import {snapshotCharacterWorldProgress,restoreCharacterWorldProgress} from './character-world-progress';
+import {ensurePersonalSeasonalState,personalSeasonalAccountView} from './personal-seasonal-state';
 export const CHARACTER_SLOT_THRESHOLDS=[0,250,500,950,1600] as const;
 const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith']);
 const safeLevel=(row:any)=>Number.isFinite(row?.xp)&&row.xp>=0?levelFromXp(row.xp):1;
@@ -17,9 +18,10 @@ export function recordAccountProgress(state:GameState){const slots=unlockedChara
 export function accountCharacters(state:GameState){return [{character:state.character!},...(state.otherCharacters??[])].filter(entry=>entry.character);}
 export function characterCreationError(state:GameState){if(!state.character)return undefined;if(accountCharacters(state).length>=unlockedCharacterSlots(state))return `Requires ${CHARACTER_SLOT_THRESHOLDS[accountCharacters(state).length]??'another'} account skill levels to unlock a character slot.`;return undefined;}
 export function projectCharacter(state:GameState,id:string){
+ state=ensurePersonalSeasonalState(state);
  if(state.character?.id===id)return state;
  const index=(state.otherCharacters??[]).findIndex(x=>x.character.id===id);if(index<0)throw new Error('Character is not owned.');
  const active={character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId,...snapshotCharacterWorldProgress(state)};
  const target=state.otherCharacters![index];const rest=state.otherCharacters!.slice();rest[index]=active;
- return {...state,...restoreCharacterWorldProgress(target),character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:rest};
+ return {...state,...restoreCharacterWorldProgress(target),character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:rest,account:personalSeasonalAccountView(state.account,target.character)};
 }

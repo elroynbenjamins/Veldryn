@@ -124,7 +124,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  scroll:{flex:1},
- root:{padding:spacing.lg,paddingTop:spacing.sm,gap:spacing.md,paddingBottom:140},
+ root:{padding:spacing.lg,paddingTop:spacing.sm,gap:spacing.md,paddingBottom:spacing.xl},
  header:{gap:9,paddingBottom:9,backgroundColor:C.bg,borderBottomWidth:1,borderBottomColor:C.line},
  headRow:{flexDirection:'row',alignItems:'center',gap:8},
  heading:{...typography.title,color:C.text,flex:1,minWidth:0},

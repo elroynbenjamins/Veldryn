@@ -1012,7 +1012,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   <ForgeRarityRevealModal results={activeGlobalPopup==='exceptional-forge'?forgeResults??[]:[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>
   {activeGlobalPopup==='story-boss'&&storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}
     onHeal={state.storyBossSession?async()=>{const result=await perform({type:'boss_heal'},false,false,false,true);if(result?.storyBossBattle)setStoryBossBattle({battle:result.storyBossBattle,message:result.message??'Healing potion used.'});}:undefined}
-    onFinish={state.storyBossSession?async()=>{const result=await perform({type:'boss_finish'},true,false,false,true);if(result){setStoryBossBattle(null);showAlert(result.won?'Victory':'Defeat',result.message??'Boss encounter completed.');}}:undefined}/>
+    onFinish={state.storyBossSession?async()=>{const result=await perform({type:'boss_finish'},true,false,false,true);if(result){setStoryBossBattle(null);showAlert(result.won?'Victory':'Defeat',result.message??'Boss encounter completed.');}}:undefined}/>}
   </SafeAreaView></TutorialHighlightProvider></GameThemeProvider>;
   };
   const renderedApp=renderApp();

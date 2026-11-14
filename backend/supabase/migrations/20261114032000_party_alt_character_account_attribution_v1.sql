@@ -125,4 +125,3 @@ revoke all on function public.sync_party_active_character_v1() from public, anon
 -- Existing Party Contract entitlements already have a unique key on
 -- (instance_id,account_id,reward_key): do not create second entitlements by
 -- character, and do not alter existing account-wide claim semantics.
-commit;

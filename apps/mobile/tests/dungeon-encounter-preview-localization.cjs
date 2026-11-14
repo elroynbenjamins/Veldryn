@@ -3,10 +3,11 @@ const fs=require('node:fs');
 const path=require('node:path');
 const Module=require('node:module');
 const ts=require('../node_modules/typescript');
+// Load dependent authored localization modules through the same TypeScript transpiler.
 require.extensions['.ts']=(module,filename)=>module._compile(
-  ts.transpileModule(fs.readFileSync(filename,'utf8'),{
-    compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
-  }).outputText,filename
+ ts.transpileModule(fs.readFileSync(filename,'utf8'),{
+  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
+ }).outputText,filename
 );
 const root=path.resolve(__dirname,'../../..'),app=path.resolve(__dirname,'..');
 function load(relative){

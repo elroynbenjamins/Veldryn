@@ -1,5 +1,33 @@
 # Localization status
 
+## November 14, 2026: German Guild Skills and upgrade guidance
+
+- Localized all **three Guild Skill branches** and **nine authored Guild Skill nodes** (names, scopes, descriptions and effect labels). Node IDs and all server-owned values remain canonical.
+- Localized Guild Skill overview, active effects, rank comparison, bank costs, warning copy, unreleased-state guidance and the **second-step upgrade confirmation modal**, including accessibility labels.
+- Localized the live Guild Skills panel's loading/update prompts, guild permissions, upgrade errors and success messages; the result notice color now depends on explicit success state rather than English substrings.
+- Kept English and other non-German locales unchanged by applying exact-source translations only when the active language is German. Server-verified rank values, Guild Bank material counts, permissions, idempotency keys and upgrade requests are unmodified.
+- Registered a focused regression check for the 9-node skill catalog, authored UI messages, localization wiring and the upgrade safety boundaries. CI and handset layout checks remain necessary.
+
+## November 14, 2026: German Sunscar special encounters
+
+- Localized **five** authored optional Sunscar encounters (name and gameplay summary), and added German-only labels for gem grade, pity guarantee, cooldown/daily limits, combat and replay cues, reward outcomes and accessibility hints.
+- Connected the source-guarded gameplay translation to the Regional Combat panel's displayed encounter names, replay cue types, item rewards, confirmation messages and button/status copy. Player and opponent names from replay receipts remain unchanged.
+- Server-calculated combat outcomes, random rewards, cadence limits, pity progress, receipt identity and persisted encounter/zone IDs remain untouched.
+- Added a regression test for exact parity with the five authored catalog entries, UI translations, and the server-authoritative call boundaries; registered it in the mobile localization suite. GitHub CI and device QA remain the release gate.
+
+## November 14, 2026: German World Boss and Regional Crisis content
+
+- Added exact-source German translations for the **two authored World Boss names/descriptions**, **three boss phases**, **three Regional Crisis names/descriptions**, and **three crisis stages** (22 authored strings), plus five status/counter labels.
+- Wired the safe fallback translation into World Boss and Regional Crisis detail screens and the shared-world overview. The overview now uses localized section prefixes and German percentage spacing, while retaining canonical region IDs.
+- English and every non-German locale retain their source/canonical behavior. Player names, unknown server responses, template keys, phase identifiers, state and scoring are untouched.
+- Added source-parity checks against authoritative backend definitions, plus UI-callsite assertions, to the localization regression suite. TypeScript/CI and device text-expansion checks are still needed.
+
+## November 14, 2026: German class disciplines and Combat XP split
+
+- Added exact-source German display translations for all **14 authored class disciplines**, their **14 skill themes**, and the **Max HP** label in the Skill Guide. Class skill IDs, experience calculation, combat balance and saved character state remain unchanged.
+- Localized the two discipline labels in the Combat XP allocation panel, including its radiogroup and radio-option accessibility labels. Non-German locales retain their established translations or source fallback.
+- Registered a focused regression for authored catalog parity, Skill Guide and XP split UI wiring, and safe fallback for unknown server text. Full TypeScript/CI checks and device text-expansion QA remain to be performed.
+
 ## November 14, 2026: Russian near-complete authored UI coverage
 
 - Added **539** additional exact-source Russian translations across Account and records (**187**), Companion expeditions and profile showcase (**88**), Inventory/Gem/crafting/forging (**120**), World progression and seasonal UI (**92**), and Party/dungeon feedback (**52**).

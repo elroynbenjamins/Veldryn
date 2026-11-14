@@ -36,6 +36,13 @@ export function normalizePersonalSeasonalState(raw:unknown):PersonalSeasonalStat
   :{};
  return {progress:normalizeSeasonalProgress(row.progress),claimIds,rewardChoices:choices};
 }
+/** Server-owned claim receipts for each period and character. Old IDs are
+ * retained across roster deletion; personal objectives themselves remain
+ * character-specific. */
+export function normalizePersonalSeasonalClaimLedger(raw:unknown):Record<string,string[]>{
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};
+ return Object.fromEntries(Object.entries(raw).filter(([id,characters])=>/^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id)&&Array.isArray(characters)).slice(-240).map(([id,characters])=>[id,[...new Set((characters as unknown[]).filter((value):value is string=>typeof value==='string'&&value.length>0&&value.length<=100))].slice(0,5)]));
+}
 /** Backward-compatible account projection. Only the active character's
  * personal quest data appears in the legacy account fields. */
 export function personalSeasonalAccountView(account:GameState['account'],character:CharacterState|null):GameState['account']{
@@ -54,7 +61,10 @@ export function ensurePersonalSeasonalState(state:GameState):GameState{
  };
  const personalSeasonal=normalizePersonalSeasonalState(source);
  const character={...state.character,personalSeasonal};
- return {...state,character,account:personalSeasonalAccountView(state.account,character)};
+ const ledger=state.account.personalSeasonalClaimLedger
+  ?normalizePersonalSeasonalClaimLedger(state.account.personalSeasonalClaimLedger)
+  :Object.fromEntries(personalSeasonal.claimIds.map(id=>[id,[character.id]]));
+ return {...state,character,account:{...personalSeasonalAccountView(state.account,character),personalSeasonalClaimLedger:ledger}};
 }
 /** Persist an earned action or confirmed claim on the active character and
  * update only that character's legacy read projection. */

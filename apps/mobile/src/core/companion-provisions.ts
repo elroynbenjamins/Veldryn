@@ -3,9 +3,12 @@ import {itemDef} from '../content/items';
 export const COMPANION_STAMINA_HP_PER_POINT=10;
 export const COMPANION_EXPEDITION_STAMINA=100;
 
-export function companionFoodStamina(itemId:string){
+export function companionFoodHealingHp(itemId:string){
  const item=itemDef(itemId);
- return item.type==='food'&&item.heal?item.heal/COMPANION_STAMINA_HP_PER_POINT:0;
+ return item.type==='food'&&item.heal?item.heal:0;
+}
+export function companionFoodStamina(itemId:string){
+ return companionFoodHealingHp(itemId)/COMPANION_STAMINA_HP_PER_POINT;
 }
 export function companionFoodNeededForStamina(itemId:string,stamina=COMPANION_EXPEDITION_STAMINA){
  const per=companionFoodStamina(itemId);return per>0?Math.ceil(stamina/per):Infinity;

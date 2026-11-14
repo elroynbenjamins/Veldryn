@@ -43828,7 +43828,8 @@ function recruitEligibleCombatCompanion(state, id, nowMs = Date.now()) {
   if (!def || !companionCanRecruitFromRequirements(def)) throw new Error("companion_recruitment_requires_original_source");
   const clean2 = sanitizeCombatCompanionState(state);
   if (clean2.account.unlockedCombatCompanionIds?.includes(id)) return clean2;
-  if (!def.unlockRequirements.every((requirement) => companionUnlockRequirementMet(clean2, requirement))) throw new Error("companion_recruitment_requirements_incomplete");
+  if (!def.unlockRequirements.every((requirement) => companionUnlockRequirementMet(clean2, requirement)))
+    throw new Error("companion_recruitment_requirements_incomplete");
   return unlockCombatCompanion(clean2, id, nowMs);
 }
 function unlockCombatCompanion(state, id, nowMs = Date.now()) {

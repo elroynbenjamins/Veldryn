@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {chooseStarterCombatCompanion,reconcileCombatCompanionUnlocks,starterCombatCompanionChoicePending,starterCombatCompanionChoices} from '../src/core/combat-companions';
+import {chooseStarterCombatCompanion,reconcileCombatCompanionUnlocks,starterCombatCompanionChoicePending,starterCombatCompanionChoices,unlockCombatCompanion} from '../src/core/combat-companions';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 
@@ -49,16 +49,33 @@ const before8=silverbrookReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN
 equal(reconcileCombatCompanionUnlocks({...before8,skills:before8.skills.map(s=>s.skillId==='fishing'?{...s,level:7}:s)},now+1).account.starterFollowupCombatCompanionId,undefined,'Fishing 7 cannot award second starter');
 equal(reconcileCombatCompanionUnlocks({...before8,account:{...before8.account,companionUnlockProgress:{'node:SILVERBROOK_SHOAL':1}}},now+1).account.starterFollowupCombatCompanionId,undefined,'One fishing pool cannot award second starter');
 const damageWithSprite=reconcileCombatCompanionUnlocks(silverbrookReady(chooseStarterCombatCompanion(unlocked('WAYFINDER'),'UNIT_003',now)),now+1);
-equal(damageWithSprite.account.starterFollowupCombatCompanionId,'UNIT_002','damage class with Sprite receives the Tank starter second');
-deepEqual(damageWithSprite.account.unlockedCombatCompanionIds?.sort(),['UNIT_002','UNIT_003'],'Sprite is not duplicated for a damage class');
+equal(damageWithSprite.account.starterFollowupCombatCompanionId,'UNIT_001','Sprite starters earn the next missing companion, without class restrictions');
+deepEqual(damageWithSprite.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_003'],'Sprite is not duplicated for a damage class');
 const tankWithSprite=reconcileCombatCompanionUnlocks(silverbrookReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN'),'UNIT_003',now)),now+1);
 equal(tankWithSprite.account.starterFollowupCombatCompanionId,'UNIT_001','tank class with Sprite receives the Damage starter second');
 deepEqual(tankWithSprite.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_003'],'Sprite is not duplicated for a tank class');
 const supportWithHound=reconcileCombatCompanionUnlocks(silverbrookReady(chooseStarterCombatCompanion(unlocked('DAWNKEEPER'),'UNIT_001',now)),now+1);
-equal(supportWithHound.account.starterFollowupCombatCompanionId,'UNIT_002','support class receives its missing compatible Tank starter');
-deepEqual(supportWithHound.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_002'],'support class is not awarded an unusable Support companion');
+equal(supportWithHound.account.starterFollowupCombatCompanionId,'UNIT_003','Silverbrook always grants Sprite rather than a class-based substitute');
+deepEqual(supportWithHound.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_003'],'support classes may now own and use Sprite');
 const tankWithHound=reconcileCombatCompanionUnlocks(silverbrookReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN'),'UNIT_001',now)),now+1);
 equal(tankWithHound.account.starterFollowupCombatCompanionId,'UNIT_003','the normal Silverbrook reward remains unchanged when it is compatible and missing');
+// Regression: previous builds gave Runebound Sentry at Silverbrook and left
+// Silverbrook Sprite showing 2/2 complete but Locked. Preserve the Sentry.
+const legacyWrong=companionsLegacySentry();
+function companionsLegacySentry(){
+ const ready=silverbrookReady(chooseStarterCombatCompanion(unlocked('DAWNKEEPER'),'UNIT_001',now));
+ const withSentry=unlockCombatCompanion(ready,'UNIT_002',now);
+ return {...withSentry,account:{...withSentry.account,starterFollowupCombatCompanionId:'UNIT_002'}};
+}
+const recovered=reconcileCombatCompanionUnlocks(legacyWrong,now+3);
+deepEqual(recovered.account.unlockedCombatCompanionIds?.slice().sort(),['UNIT_001','UNIT_002','UNIT_003'],'legacy Sentry reward is kept and Sprite is granted');
+equal(recovered.account.starterFollowupCombatCompanionId,'UNIT_002','legacy followup receipt is not rewritten');
+equal(reconcileCombatCompanionUnlocks(recovered,now+4).account.unlockedCombatCompanionIds?.filter(id=>id==='UNIT_003').length,1,'repeated reconciliation must not grant duplicate Sprites');
+equal(reconcileCombatCompanionUnlocks(oldMinesReady(recovered),now+5).account.starterThirdCombatCompanionId,'UNIT_003','already owned third starter still completes the Old Mines milestone');
+const automatic=executeGameCommand(silverbrookReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN'),'UNIT_001',now)),{type:'inventory_seen_all'},now+6).state;
+equal(automatic.account.unlockedCombatCompanionIds?.includes('UNIT_003'),true,'normal gameplay command automatically recruits earned Sprite');
+equal(automatic.account.combatCompanionProgress?.UNIT_003?.bondLevel,1,'automatic recruitment initializes permanent Bond progress');
+
 const followupReload=parseSaveBackup(createSaveBackup(damageWithSprite));
 equal(followupReload.account.starterFollowupCombatCompanionId,'UNIT_002','resolved second-companion reward survives save normalization');
 
@@ -69,13 +86,13 @@ const at99=oldMinesReady(damageWithSprite);
 at99.account.companionUnlockProgress={...at99.account.companionUnlockProgress,OLD_MINES_KILLS:99};
 equal(reconcileCombatCompanionUnlocks(at99,now+2).account.starterThirdCombatCompanionId,undefined,'99 kills cannot award third starter');
 const damageThird=reconcileCombatCompanionUnlocks(oldMinesReady(damageWithSprite),now+2);
-equal(damageThird.account.starterThirdCombatCompanionId,'UNIT_001','damage class receives the missing Damage starter for companion-only modes');
+equal(damageThird.account.starterThirdCombatCompanionId,'UNIT_002','Old Mines awards the remaining Sentry starter');
 deepEqual(damageThird.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_002','UNIT_003'],'damage class can collect all three starters');
 const tankThird=reconcileCombatCompanionUnlocks(oldMinesReady(tankWithSprite),now+2);
 equal(tankThird.account.starterThirdCombatCompanionId,'UNIT_002','tank class receives the missing Tank starter');
 deepEqual(tankThird.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_002','UNIT_003'],'tank class can collect all three starters');
 const supportThird=reconcileCombatCompanionUnlocks(oldMinesReady(supportWithHound),now+2);
-equal(supportThird.account.starterThirdCombatCompanionId,'UNIT_003','support class receives the missing Support starter for companion-only modes');
+equal(supportThird.account.starterThirdCombatCompanionId,'UNIT_002','support class receives the missing Tank starter');
 deepEqual(supportThird.account.unlockedCombatCompanionIds?.sort(),['UNIT_001','UNIT_002','UNIT_003'],'support class can collect all three starters');
 const thirdReload=parseSaveBackup(createSaveBackup(supportThird));
 equal(thirdReload.account.starterThirdCombatCompanionId,'UNIT_003','resolved third-companion reward survives save normalization');

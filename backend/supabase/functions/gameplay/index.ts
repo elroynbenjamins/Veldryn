@@ -428,6 +428,166 @@ function huntEnemyHpAt(monsterHp, events, progressFraction) {
   return Math.max(0, hp - events.reduce((sum, hit) => sum + (hit.actor === "player" && hit.fraction <= progressFraction + 1e-9 ? hit.damage : 0), 0));
 }
 
+// ../apps/mobile/src/core/hunt-active-abilities.ts
+var HUNT_CLASS_TECHNIQUES = {
+  IRONWARDEN: { id: "IW_BASH", name: "Rune Bash", cooldownSeconds: 6.5 },
+  BASTION: { id: "BT_REBUFF", name: "Fortress Rebuff", cooldownSeconds: 7.5 },
+  DREADGUARD: { id: "DG_BIND", name: "Binding Chain", cooldownSeconds: 6.5 },
+  DAWNKEEPER: { id: "DK_SMITE", name: "Sun Smite", cooldownSeconds: 5.5 },
+  WAYFINDER: { id: "WF_SHOT", name: "Windshot", cooldownSeconds: 4.5 },
+  RAVAGER: { id: "RV_SWING", name: "Titan Swing", cooldownSeconds: 4.2 },
+  HEXWEAVER: { id: "HX_CURSE", name: "Black Thread", cooldownSeconds: 6.5 },
+  KNIFE_DANCER: { id: "KD_LOOP", name: "Scarlet Loop", cooldownSeconds: 5 },
+  STONECALLER: { id: "SC_THUNDER", name: "Thunder Totem", cooldownSeconds: 6 }
+};
+function huntCooldownPulseAt(input) {
+  const { combatStartedAtMs: session, encounterStartedAtMs: start, cycleSeconds, cooldownSeconds } = input;
+  if (![session, start, cycleSeconds, cooldownSeconds].every(Number.isFinite) || cycleSeconds <= 0 || cooldownSeconds <= 0 || start < session - 1e-3) return void 0;
+  const period = Math.max(1e3, Math.round(cooldownSeconds * 1e3));
+  const count = Math.max(0, Math.ceil((start - session - 1e-5) / period));
+  const pulse = session + count * period;
+  return pulse >= start - 1e-3 && pulse < start + cycleSeconds * 1e3 - 1e-3 ? pulse : void 0;
+}
+var timeOf = (hit, start, cycleSeconds) => start + hit.fraction * cycleSeconds * 1e3;
+function huntActiveDamageEvents(events, input) {
+  const result = events.map((hit) => ({ ...hit }));
+  const landed = result.filter((hit) => hit.actor === "player" && hit.damage > 0);
+  const ability2 = HUNT_CLASS_TECHNIQUES[input.classId];
+  const classPulse = huntCooldownPulseAt({ ...input, cooldownSeconds: ability2.cooldownSeconds });
+  if (landed.length >= 2 && classPulse !== void 0) {
+    const eligible = landed.filter((hit) => timeOf(hit, input.encounterStartedAtMs, input.cycleSeconds) >= classPulse - 1e-3);
+    const first = landed[0], last = landed[landed.length - 1];
+    const penultimate = landed[landed.length - 2];
+    const rank = Math.max(1, Math.min(100, Math.floor(input.classSkillLevel || 1)));
+    const scale = (rank - 1) / 99;
+    const shift = (source, target2, fraction) => {
+      if (source === target2) return 0;
+      const amount = Math.min(source.damage - 1, Math.max(1, Math.floor(source.damage * fraction)));
+      if (!(amount > 0)) return 0;
+      source.damage -= amount;
+      target2.damage += amount;
+      return amount;
+    };
+    let activation;
+    switch (input.classId) {
+      case "WAYFINDER": {
+        const target2 = eligible.find((hit) => hit !== last);
+        if (target2 && shift(last, target2, 0.08 + 0.07 * scale) > 0) activation = target2;
+        break;
+      }
+      case "RAVAGER": {
+        if (eligible.includes(last) && shift(first, last, 0.18 + 0.14 * scale) > 0) activation = last;
+        break;
+      }
+      case "HEXWEAVER": {
+        if (eligible.includes(last)) {
+          const middle = penultimate !== first && eligible.includes(penultimate) ? penultimate : void 0;
+          const moved = middle ? shift(first, middle, 0.055 + 0.035 * scale) : 0;
+          if (shift(first, last, 0.11 + 0.07 * scale) > 0 || moved > 0) activation = last;
+        }
+        break;
+      }
+      case "KNIFE_DANCER": {
+        const target2 = eligible.includes(penultimate) ? penultimate : eligible.find((hit) => hit !== last);
+        if (target2 && shift(last, target2, 0.1 + 0.1 * scale) > 0) activation = target2;
+        break;
+      }
+    }
+    if (activation) activation.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: activation.damage };
+  }
+  const companion = input.companion;
+  if (landed.length >= 2 && companion?.role === "damage" && companion.contributionPct > 0) {
+    const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: companion.cooldownSeconds });
+    if (pulse !== void 0) {
+      const eligible = landed.filter((hit2) => timeOf(hit2, input.encounterStartedAtMs, input.cycleSeconds) >= pulse - 1e-3);
+      const hit = eligible[Math.floor((eligible.length - 1) / 2)];
+      if (hit) {
+        const portion = Math.min(hit.damage - 1, Math.max(1, Math.floor(hit.damage * Math.min(0.12, companion.contributionPct))));
+        if (portion > 0) hit.companionAssist = { source: "companion", id: companion.abilityId, name: companion.name + ": " + companion.abilityName, kind: "damage", amount: portion };
+      }
+    }
+  }
+  return result;
+}
+function huntSupportHealEvents(events, input) {
+  const result = events.map((hit) => ({ ...hit }));
+  const c = input.companion;
+  if (!c || c.role !== "support" || c.activeKind !== "heal" || c.healingPctPerHour <= 0) return result;
+  const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: c.cooldownSeconds });
+  if (pulse === void 0) return result;
+  const first = result.find((hit) => (hit.actor === "enemy" || hit.actor === "fatigue") && hit.healing > 0 && timeOf(hit, input.encounterStartedAtMs, input.cycleSeconds) >= pulse - 1e-3);
+  if (first) first.supportAbility = { source: "companion", id: c.abilityId, name: c.name + ": " + c.abilityName, kind: "heal", amount: 0 };
+  return result;
+}
+function huntTankGuardEvents(events, input) {
+  const result = events.map((hit) => ({ ...hit }));
+  const unit = input.companion;
+  if (!unit || unit.role !== "tank" || unit.activeKind !== "shield" && unit.activeKind !== "damage_reduction") return result;
+  const pulseAt = huntCooldownPulseAt({ ...input, cooldownSeconds: unit.cooldownSeconds });
+  if (pulseAt === void 0) return result;
+  const first = result.find((hit) => hit.actor === "enemy" && hit.damage > 0 && timeOf(hit, input.encounterStartedAtMs, input.cycleSeconds) >= pulseAt - 1e-3);
+  if (!first) return result;
+  const passiveMitigation = Math.max(0, 1 - Math.min(1, unit.incomingDamageMultiplier));
+  const rate = Math.min(0.025, passiveMitigation * 0.35);
+  const prevented = Math.min(first.damage * 0.025, first.damage * rate);
+  if (!(prevented > 1e-6)) return result;
+  first.damage = Math.max(0, first.damage - prevented);
+  first.guardAbility = { source: "companion", id: unit.abilityId, name: unit.name + ": " + unit.abilityName, kind: "shield", amount: prevented };
+  return result;
+}
+
+// ../apps/mobile/src/core/hunt-class-identity.ts
+var HUNT_CLASS_SURVIVAL_PROFILES = {
+  IRONWARDEN: { mechanic: "counter_guard", firstGuardPct: 0.055, followupGuardPct: 0, recoveryOfPreventedPct: 0, healingOfIncomingPct: 0 },
+  BASTION: { mechanic: "fortress", firstGuardPct: 0.065, followupGuardPct: 0.025, recoveryOfPreventedPct: 0, healingOfIncomingPct: 0 },
+  DREADGUARD: { mechanic: "dread_leech", firstGuardPct: 0.05, followupGuardPct: 0, recoveryOfPreventedPct: 0.3, healingOfIncomingPct: 0 },
+  DAWNKEEPER: { mechanic: "sun_heal", firstGuardPct: 0, followupGuardPct: 0, recoveryOfPreventedPct: 0, healingOfIncomingPct: 0.12 },
+  STONECALLER: { mechanic: "storm_totem", firstGuardPct: 0.06, followupGuardPct: 0, recoveryOfPreventedPct: 0.2, healingOfIncomingPct: 0 }
+};
+function isHuntDefensiveClass(id) {
+  return Object.prototype.hasOwnProperty.call(HUNT_CLASS_SURVIVAL_PROFILES, id);
+}
+function huntClassSurvivalEvents(events, input) {
+  const result = events.map((event) => ({ ...event }));
+  if (!isHuntDefensiveClass(input.classId)) return result;
+  const profile = HUNT_CLASS_SURVIVAL_PROFILES[input.classId];
+  const ability2 = HUNT_CLASS_TECHNIQUES[input.classId];
+  const pulse = huntCooldownPulseAt({ ...input, cooldownSeconds: ability2.cooldownSeconds });
+  if (pulse === void 0) return result;
+  const rank = Math.min(100, Math.max(1, Math.floor(Number.isFinite(input.classSkillLevel) ? input.classSkillLevel : 1)));
+  const scale = 1 + 0.3 * (rank - 1) / 99;
+  const eligible = result.filter((event) => (event.actor === "enemy" || profile.mechanic === "sun_heal" && event.actor === "fatigue") && event.damage > 0 && input.encounterStartedAtMs + event.fraction * input.cycleSeconds * 1e3 >= pulse - 1e-3);
+  const first = eligible[0];
+  if (!first) return result;
+  if (profile.mechanic === "sun_heal") {
+    const bonus = Math.max(0, Math.min(first.damage * 0.15, first.damage * profile.healingOfIncomingPct * scale));
+    if (bonus > 1e-6) {
+      first.healing += bonus;
+      first.classHealingBudget = (first.classHealingBudget ?? 0) + bonus;
+      first.classHealAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "heal", amount: bonus };
+    }
+    return result;
+  }
+  const hit = first;
+  const prevented = hit.damage * Math.min(0.09, profile.firstGuardPct * scale);
+  if (prevented <= 1e-6) return result;
+  hit.damage = Math.max(0, hit.damage - prevented);
+  hit.classGuardAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "shield", amount: prevented };
+  if (profile.recoveryOfPreventedPct > 0) {
+    const siphon = prevented * profile.recoveryOfPreventedPct;
+    if (siphon > 1e-6) {
+      hit.healing += siphon;
+      hit.classHealingBudget = (hit.classHealingBudget ?? 0) + siphon;
+      hit.classHealAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "heal", amount: siphon };
+    }
+  }
+  if (profile.followupGuardPct > 0) {
+    const followup = eligible.find((event) => event !== first && event.actor === "enemy");
+    if (followup) followup.damage = Math.max(0, followup.damage * (1 - Math.min(0.04, profile.followupGuardPct * scale)));
+  }
+  return result;
+}
+
 // ../apps/mobile/src/core/ordinary-hunt.ts
 var SEARCH_RANGES = {
   Greenfields: [3, 6],
@@ -52141,6 +52301,11 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
   let bossHp = bossMaxHp, playerHp = clamp8(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp8(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
+  const classId = Object.prototype.hasOwnProperty.call(HUNT_CLASS_TECHNIQUES, player.classId) ? player.classId : void 0;
+  const classAbility = classId ? HUNT_CLASS_TECHNIQUES[classId] : void 0;
+  const classRank = Number.isFinite(player.classSkillLevel) ? Math.max(1, Math.min(100, Math.floor(player.classSkillLevel))) : 1;
+  const classScale = 1 + 0.3 * (classRank - 1) / 99;
+  let nextClassReadyAtMs = 0, fortressFollowup = false, hexMarkPending = false;
   const phasesReached = [1], events = [];
   const playerHitChance = clamp8(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
   const playerAttackIntervalMs = clamp8(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
@@ -52184,13 +52349,31 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
         const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
-        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1)));
+        const offensive = !!classAbility && now >= nextClassReadyAtMs && (classId === "WAYFINDER" || classId === "RAVAGER" || classId === "HEXWEAVER" || classId === "KNIFE_DANCER");
+        const bonus = offensive ? classId === "WAYFINDER" ? 0.025 : classId === "RAVAGER" ? 0.045 : classId === "HEXWEAVER" ? 0.02 : 0.025 : 0;
+        const markedBonus = hexMarkPending ? 0.02 : 0;
+        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1) * (1 + Math.min(0.05, bonus * classScale) + markedBonus)));
         let nextBossHp = Math.max(0, bossHp - rolledAmount);
         if (mode === "story" && phase === 1 && nextBossHp <= bossMaxHp * 0.65) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.65));
         else if (mode === "story" && phase === 2 && nextBossHp <= bossMaxHp * 0.3) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.3));
         const amount = Math.max(1, bossHp - nextBossHp);
         bossHp = nextBossHp;
-        push({ atMs: now, type: "player_hit", label: critical ? "Critical strike!" : "Strike", abilityId: "PLAYER_STRIKE", amount, critical });
+        const castName = offensive ? classAbility.name : void 0;
+        push({
+          atMs: now,
+          type: "player_hit",
+          label: castName ?? (critical ? "Critical strike!" : "Strike"),
+          abilityId: offensive ? classAbility.id : "PLAYER_STRIKE",
+          skillKind: offensive ? "damage" : void 0,
+          amount,
+          critical
+        });
+        if (hexMarkPending) hexMarkPending = false;
+        if (offensive) {
+          nextClassReadyAtMs = now + Math.round(classAbility.cooldownSeconds * 1e3);
+          if (classId === "HEXWEAVER") hexMarkPending = true;
+          if (classId === "KNIFE_DANCER") nextPlayerAt -= Math.min(140, Math.round(playerAttackIntervalMs * 0.055));
+        }
         const hpPct2 = bossHp / bossMaxHp;
         if (phase === 1 && hpPct2 <= 0.65 && bossHp > 0) enterPhase(now, 2);
         else if (phase === 2 && hpPct2 <= 0.3 && bossHp > 0) enterPhase(now, 3);
@@ -52225,9 +52408,59 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
       const raw2 = monster.attack * 0.29 + monster.level * 0.14;
       const phaseDamage = phase === 3 ? 1.18 : phase === 2 ? 1.06 : 1;
-      const amount = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
+      const incoming = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
+      let amount = incoming, prevented = 0, restored = 0;
+      const defensive = !!classAbility && now >= nextClassReadyAtMs && (classId === "IRONWARDEN" || classId === "BASTION" || classId === "DREADGUARD" || classId === "DAWNKEEPER" || classId === "STONECALLER");
+      if (defensive && classId !== "DAWNKEEPER") {
+        const guardPct = classId === "IRONWARDEN" ? 0.055 : classId === "BASTION" ? 0.065 : classId === "DREADGUARD" ? 0.05 : 0.06;
+        amount = Math.max(1, incoming - Math.round(incoming * Math.min(0.09, guardPct * classScale)));
+        prevented = incoming - amount;
+        if (classId === "BASTION") fortressFollowup = true;
+      } else if (fortressFollowup && classId === "BASTION" && !defensive) {
+        amount = Math.max(1, incoming - Math.round(incoming * Math.min(0.04, 0.025 * classScale)));
+        prevented = incoming - amount;
+        fortressFollowup = false;
+      }
       playerHp = Math.max(0, playerHp - amount);
       push({ atMs: now, type: "boss_hit", label, abilityId, amount, critical });
+      if (defensive) {
+        const restorationPct = classId === "DAWNKEEPER" ? 0.12 : classId === "DREADGUARD" ? 0.3 : classId === "STONECALLER" ? 0.2 : 0;
+        const restorationBase = classId === "DAWNKEEPER" ? amount : prevented;
+        if (playerHp > 0 && restorationPct > 0) {
+          const healBudget = Math.floor(restorationBase * (classId === "DAWNKEEPER" ? Math.min(0.15, restorationPct * classScale) : restorationPct * classScale));
+          restored = Math.max(0, Math.min(playerMaxHp - playerHp, healBudget));
+          if (restored > 0) playerHp += restored;
+        }
+        if (prevented > 0 || restored > 0) {
+          nextClassReadyAtMs = now + Math.round(classAbility.cooldownSeconds * 1e3);
+          push({
+            atMs: now + 1,
+            type: "class_skill",
+            label: classAbility.name,
+            abilityId: classAbility.id,
+            skillKind: prevented > 0 ? "shield" : "heal",
+            amount: prevented > 0 ? prevented : restored
+          });
+          if (prevented > 0 && restored > 0)
+            push({
+              atMs: now + 2,
+              type: "class_skill",
+              label: classAbility.name,
+              abilityId: classAbility.id,
+              skillKind: "heal",
+              amount: restored
+            });
+        }
+      } else if (prevented > 0 && classId === "BASTION") {
+        push({
+          atMs: now + 1,
+          type: "class_skill",
+          label: classAbility.name,
+          abilityId: classAbility.id,
+          skillKind: "shield",
+          amount: prevented
+        });
+      }
       maybePotion(now);
     }
     nextBossAt += attackInterval;
@@ -52803,14 +53036,49 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const completed = [];
   let activeEncounterIndex = 0, enemyHp = activity?.combatEnemyHp;
   let lastHit;
-  const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds, isPrepared = false) => {
+  let lastSkillEffect;
+  const lastSkillEffects = [];
+  const recordSkillEffect = (effect2) => {
+    lastSkillEffect = effect2;
+    lastSkillEffects.push(effect2);
+    if (lastSkillEffects.length > 4) lastSkillEffects.shift();
+  };
+  const equippedAbilityCompanion = prepared.companion.contributionPct > 0 ? COMBAT_COMPANIONS.find((def) => def.id === c.equippedCombatCompanionId) : void 0;
+  const classTechniqueInput = { classId: c.classId, classSkillLevel: characterClassSkills(c)[0]?.level ?? 1 };
+  const commonCompanion = equippedAbilityCompanion ? {
+    id: equippedAbilityCompanion.id,
+    name: equippedAbilityCompanion.name,
+    abilityId: equippedAbilityCompanion.activeAbility.id,
+    abilityName: equippedAbilityCompanion.activeAbility.name,
+    role: equippedAbilityCompanion.role,
+    activeKind: equippedAbilityCompanion.activeAbility.effect.kind,
+    cooldownSeconds: equippedAbilityCompanion.activeAbility.cooldownSeconds
+  } : void 0;
+  const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds, isPrepared = false, encounterStartedAtMs = startsAtMs) => {
+    let hits;
     if (runtime.huntOptions) {
       const plan = planFor(index, isPrepared);
-      const exchange2 = combatEncounterDamage(runtime, champion, plan.enemyAttackCount, plan.fightSeconds);
-      return regionalHuntHits(plan, { monsterDamage: exchange2.monsterDamage, fatigueDamage: exchange2.fatigue, healingPerEncounter: exchange2.healing });
+      const exchange = combatEncounterDamage(runtime, champion, plan.enemyAttackCount, plan.fightSeconds);
+      hits = regionalHuntHits(plan, { monsterDamage: exchange.monsterDamage, fatigueDamage: exchange.fatigue, healingPerEncounter: exchange.healing });
+    } else {
+      const exchange = combatEncounterDamage(runtime, champion);
+      hits = huntHitEvents({ monsterHp: runtime.m.hp, basePlayerHit: huntBasePlayerHit(runtime.stats.attack, runtime.m.defense, runtime.secondary.playerOutputMultiplier), incomingDamage: exchange.damage, healingPerEncounter: exchange.healing, cycleSeconds: attackCadenceSeconds, critChance: runtime.stats.critChance, seed: seedFor(index) });
     }
-    const exchange = combatEncounterDamage(runtime, champion);
-    return huntHitEvents({ monsterHp: runtime.m.hp, basePlayerHit: huntBasePlayerHit(runtime.stats.attack, runtime.m.defense, runtime.secondary.playerOutputMultiplier), incomingDamage: exchange.damage, healingPerEncounter: exchange.healing, cycleSeconds: attackCadenceSeconds, critChance: runtime.stats.critChance, seed: seedFor(index) });
+    const cooldownTiming = { combatStartedAtMs: activity.startedAtMs ?? startsAtMs, encounterStartedAtMs, cycleSeconds: runtime.killCycleSeconds };
+    const offensive = huntActiveDamageEvents(hits, {
+      ...classTechniqueInput,
+      ...cooldownTiming,
+      companion: commonCompanion ? { ...commonCompanion, contributionPct: Math.max(0, 1 - 1 / runtime.companion.outputMultiplier) } : void 0
+    });
+    const heals = huntSupportHealEvents(offensive, {
+      ...cooldownTiming,
+      companion: commonCompanion ? { ...commonCompanion, healingPctPerHour: runtime.companion.directHealingPctPerHour } : void 0
+    });
+    const guarded = huntTankGuardEvents(heals, {
+      ...cooldownTiming,
+      companion: commonCompanion ? { ...commonCompanion, incomingDamageMultiplier: runtime.companion.incomingDamageMultiplier } : void 0
+    });
+    return huntClassSurvivalEvents(guarded, { ...classTechniqueInput, ...cooldownTiming });
   };
   if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
@@ -52818,7 +53086,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     enemyHp = huntEnemyHpAt(prepared.m.hp, hitsFor(firstPrepared ? prepared : plain, 0, champion, void 0, firstPrepared), activity?.progressFraction ?? 0);
   }
   enemyHp = Math.max(0, Math.min(prepared.m.hp, enemyHp));
-  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, foodConsumedById: [], endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit };
+  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, foodConsumedById: [], endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit, lastSkillEffect, lastSkillEffects };
   for (const segment of timeline.segments) {
     const runtime = { ...segment.prepared ? prepared : plain, killCycleSeconds: segment.cycleSeconds };
     if (segment.encounterIndex !== activeEncounterIndex) {
@@ -52827,13 +53095,38 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     }
     const encounterNumber = (activity?.sessionKills ?? 0) + segment.encounterIndex;
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, encounterNumber);
-    const hits = hitsFor(runtime, segment.encounterIndex, champion, segment.prepared ? prepared.killCycleSeconds : plain.killCycleSeconds, segment.prepared);
+    const encounterStartedAtMs = segment.startsAtMs - segment.fromFraction * segment.cycleSeconds * 1e3;
+    const hits = hitsFor(runtime, segment.encounterIndex, champion, segment.prepared ? prepared.killCycleSeconds : plain.killCycleSeconds, segment.prepared, encounterStartedAtMs);
     for (const hit of huntHitsBetween(hits, segment.fromFraction, segment.toFraction)) {
       const hitAtMs = segment.startsAtMs + (hit.fraction - segment.fromFraction) * segment.cycleSeconds * 1e3;
       if (hit.actor === "player") {
         enemyHp = Math.max(0, enemyHp - hit.damage);
+        for (const effect2 of [hit.companionAssist, hit.activeAbility]) if (effect2)
+          recordSkillEffect({ atMs: hitAtMs, name: effect2.name, kind: "damage", amount: effect2.amount, source: effect2.source });
       } else {
-        hp = hp - hit.damage <= 0 ? 0 : Math.min(runtime.stats.hp, hp - hit.damage + hit.healing);
+        const hpAfterDamage = hp - hit.damage;
+        if (hit.guardAbility) recordSkillEffect({ atMs: hitAtMs, name: hit.guardAbility.name, kind: "shield", amount: hit.guardAbility.amount, source: "companion" });
+        if (hit.classGuardAbility) recordSkillEffect({ atMs: hitAtMs, name: hit.classGuardAbility.name, kind: "shield", amount: hit.classGuardAbility.amount, source: "class" });
+        const appliedHealing = hpAfterDamage > 0 ? Math.min(hit.healing, Math.max(0, runtime.stats.hp - hpAfterDamage)) : 0;
+        const classBudget = Math.max(0, hit.classHealingBudget ?? 0);
+        const appliedBaseHealing = Math.min(appliedHealing, Math.max(0, hit.healing - classBudget));
+        const appliedClassHealing = Math.max(0, appliedHealing - appliedBaseHealing);
+        hp = hpAfterDamage <= 0 ? 0 : Math.min(runtime.stats.hp, hpAfterDamage + hit.healing);
+        if (hit.classHealAbility && appliedClassHealing > 1e-5)
+          recordSkillEffect({ atMs: hitAtMs, name: hit.classHealAbility.name, kind: "heal", amount: appliedClassHealing, source: "class" });
+        if (hit.actor === "fatigue" && appliedBaseHealing > 0 && runtime.style.onKillAttackHealPct) {
+          const companionBase = runtime.stats.hp * runtime.companion.directHealingPctPerHour * runtime.killCycleSeconds / 3600 * (runtime.c.preparation ? preparationEffects(runtime.c.preparation).healing : 1);
+          const classBase = runtime.stats.attack * runtime.style.onKillAttackHealPct;
+          const classPortion = appliedBaseHealing * classBase / (companionBase + classBase || 1);
+          if (classPortion > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: runtime.style.name, kind: "recovery", amount: classPortion, source: "class" });
+        }
+        if (appliedBaseHealing > 0 && hit.supportAbility) {
+          const companionHeal = runtime.stats.hp * runtime.companion.directHealingPctPerHour * runtime.killCycleSeconds / 3600;
+          const classHeal = runtime.stats.attack * (runtime.style.onKillAttackHealPct ?? 0);
+          const share = companionHeal / (companionHeal + classHeal || 1);
+          const credited = Math.min(appliedBaseHealing, appliedBaseHealing * share);
+          if (credited > 1e-5) recordSkillEffect({ atMs: hitAtMs, name: hit.supportAbility.name, kind: "heal", amount: credited, source: "companion" });
+        }
         while (hp > 0 && hp / runtime.stats.hp <= threshold) {
           const nextFood = foodOrder.find((row) => row.heal > 0 && (foodLeft.get(row.id) ?? 0) > 0);
           if (!nextFood) break;
@@ -52860,7 +53153,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       activeEncounterIndex = segment.encounterIndex + 1;
     }
   }
-  return { kills: completed.length, completed, championKills, foodConsumed, foodConsumedById: [...foodSpent].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })), endHp: hp, enemyHp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters, lastHit };
+  return { kills: completed.length, completed, championKills, foodConsumed, foodConsumedById: [...foodSpent].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })), endHp: hp, enemyHp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters, lastHit, lastSkillEffect, lastSkillEffects };
 }
 function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -52962,6 +53255,14 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   const combatXpScale = characterCombatXpScale(m.level, m.boss);
   const rewardItems = items, champion = championBonus(Math.floor(m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
   const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
+  const xpFractionKey = "combat:base-xp-fraction", goldFractionKey = "combat:base-gold-fraction";
+  const storedFraction = (key) => {
+    const value = state.rewardRemainders?.[key];
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(0.999999999, value)) : 0;
+  };
+  const rawBaseXp = sim.kills * baseXpPerKill + storedFraction(xpFractionKey), rawBaseGold = sim.kills * baseGoldPerKill + storedFraction(goldFractionKey);
+  const earnedBaseXp = Math.floor(rawBaseXp + 1e-9), earnedBaseGold = Math.floor(rawBaseGold + 1e-9);
+  const nextXpFraction = Math.max(0, Math.min(0.999999999, rawBaseXp - earnedBaseXp)), nextGoldFraction = Math.max(0, Math.min(0.999999999, rawBaseGold - earnedBaseGold));
   const explorationSkill = state.skills.find((skill2) => skill2.skillId === "exploration");
   const explorationRaw = sim.kills * Math.max(1, Math.ceil(m.level / 12));
   const explorationRemainderKey = "combat:passive-exploration-xp-tenths";
@@ -52977,7 +53278,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, foodConsumedById: sim.foodConsumedById, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward3 = { nextRewardRemainders: { ...state.rewardRemainders ?? {}, [explorationRemainderKey]: explorationRemainder, [xpFractionKey]: nextXpFraction, [goldFractionKey]: nextGoldFraction }, combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: earnedBaseXp + momentumXp + champion.xp, gold: earnedBaseGold + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, foodConsumedById: sim.foodConsumedById, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward3, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
@@ -53720,6 +54021,7 @@ function fallenKnightPlayerSnapshot(state) {
   return {
     name: character.name,
     classId: character.classId,
+    classSkillLevel: characterClassSkills(character)[0]?.level ?? 1,
     maxHp: stats4.hp,
     currentHp: Math.max(1, Math.min(stats4.hp, character.currentHp || stats4.hp)),
     attack: stats4.attack,

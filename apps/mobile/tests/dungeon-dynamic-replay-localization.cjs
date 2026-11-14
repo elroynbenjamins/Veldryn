@@ -12,7 +12,7 @@ const {playbackCueLabel}=require('../src/core/dungeon-combat-playback.ts');
 const {dungeonDynamicUiRows,dungeonDynamicUiText,localizedDungeonPlaybackCue,localizedDungeonCueType}=require('../src/i18n/dungeon-dynamic-ui.ts');
 const languages=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...languages]);
-assert.equal(Object.keys(dungeonDynamicUiRows).length,65);
+assert.equal(Object.keys(dungeonDynamicUiRows).length,70);
 const tokens=x=>[...x.matchAll(/\{(\w+)\}/g)].map(m=>m[1]).sort();
 for(const [en,translations] of Object.entries(dungeonDynamicUiRows)){
  assert.equal(translations.length,7,'language parity '+en);
@@ -56,6 +56,11 @@ for(const cue of cues){
  }
 }
 assert.equal(localizedDungeonPlaybackCue('nl',{atMs:0,type:'action',actorName:'Mira',targetName:'Ari',actionKind:'heal',amount:15}),'Mira geneest Ari · 15');
+assert.equal(localizedDungeonPlaybackCue('nl',{atMs:0,type:'action',actorName:'Mira',targetName:'Ari',actionKind:'heal',amount:15,abilityName:'Healing Light'}),'Mira geneest Ari met Healing Light · 15');
+assert.equal(localizedDungeonPlaybackCue('de',{atMs:0,type:'action',actorName:'Mira',targetName:'Ari',actionKind:'shield',amount:25,abilityName:'Stone Ward'}),'Mira schützt Ari mit Stone Ward · 25');
+assert.equal(dungeonDynamicUiText('ru','COMPANION SKILL'),'УМЕНИЕ СПУТНИКА');
+assert.equal(dungeonDynamicUiText('tr','CLASS ABILITY'),'SINIF YETENEĞİ');
+
 assert.equal(localizedDungeonPlaybackCue('ru',{atMs:0,type:'cast',actorName:'Boss $&',abilityName:'Unknown Storm'}),'Boss $& начинает Unknown Storm');
 assert.equal(localizedDungeonPlaybackCue('tr',{atMs:0,type:'down',targetName:'Mira'}),'Mira yere düştü');
 assert.equal(localizedDungeonPlaybackCue('de',{atMs:0,type:'action',actorName:'Mira',targetName:'Ari',outcome:'miss'}),'Mira verfehlt Ari · VERFEHLT');
@@ -95,4 +100,4 @@ for(const marker of [
  'validateCoopRunView(run)',
   "dungeonDynamicUiText(language,'A disconnected party member is being piloted",
 ])assert.ok(run.includes(marker),'run status missing safe localization: '+marker);
-console.log('PASS: 65 Dungeon dynamic UI templates x 7 locales, combat cue replay parity, source values, route and status wiring');
+console.log('PASS: 70 Dungeon dynamic UI templates x 7 locales, combat cue replay parity, source values, route and status wiring');

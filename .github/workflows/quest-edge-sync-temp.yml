@@ -31,7 +31,9 @@ jobs:
           pnpm --dir backend build:online
           node tools/verify-gameplay-edge.mjs
       - name: Run authoritative online gameplay integration regressions
-        run: pnpm --dir backend test:online
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/gameplay.js
       - name: Commit regenerated bundles to release branch
         shell: bash
         run: |

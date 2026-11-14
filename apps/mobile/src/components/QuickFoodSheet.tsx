@@ -67,7 +67,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
      {equippedFoodId&&equippedFood?<View style={[s.rotationRow,s.primaryRow]}>
       <ItemArtwork itemId={equippedFoodId} size={34}/>
       <View style={s.foodCopy}><Text style={s.queueEyebrow}>{gt('PRIMARY')}</Text><Text style={s.foodName} numberOfLines={1}>{equippedFood.name}</Text><Text style={s.foodHeal}>×{equippedStack?.quantity??0} · +{equippedHealLabel} HP</Text></View>
-      <GameButton compact tone="secondary" title={gt('Eat 1')} disabled={busy||equippedHeal<=0||(equippedStack?.quantity??0)<1} onPress={()=>run({type:'eat',args:{id:equippedFoodId}})} style={s.primaryEat}/>
+      <GameButton compact tone="secondary" title={gt('Eat 1')} accessibilityLabel={hp>=maxHp?gt('Health is full'):gt('Eat {name} · restore up to {hp} HP',{name:equippedFood.name,hp:equippedHealLabel})} disabled={busy||equippedHeal<=0||(equippedStack?.quantity??0)<1} onPress={()=>run({type:'eat',args:{id:equippedFoodId}})} style={s.primaryEat}/>
      </View>:<Text style={s.empty}>{gt('No food selected for auto-eat')}</Text>}
      {queuedFoodIds.map((id,index)=>{
       const food=itemDef(id),quantity=state.inventory.stacks.find(row=>row.itemId===id)?.quantity??0,expanded=expandedFoodId===id;
@@ -82,7 +82,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
         <Pressable accessibilityRole="button" accessibilityLabel={gt('Remove backup')} accessibilityState={{disabled:busy}} disabled={busy} onPress={()=>{setExpandedFoodId(null);updateQueue(queuedFoodIds.filter(entry=>entry!==id));}} style={[s.iconAction,busy&&s.iconDisabled]}><Text style={[s.iconActionText,{color:C.bad}]}>×</Text></Pressable>
        </View>
        {expanded?<View style={s.inlineActions}>
-        <GameButton compact tone="secondary" title={gt('Eat 1')} disabled={busy||quantity<=0||recoveryAmount(state,id)<=0} onPress={()=>run({type:'eat',args:{id}})} style={s.inlineButton}/>
+        <GameButton compact tone="secondary" title={gt('Eat 1')} accessibilityLabel={hp>=maxHp?gt('Health is full'):gt('Eat {name} · restore up to {hp} HP',{name:food.name,hp:displayHealHp(foodHealingAmount(state,id))})} disabled={busy||quantity<=0||recoveryAmount(state,id)<=0} onPress={()=>run({type:'eat',args:{id}})} style={s.inlineButton}/>
         <GameButton compact tone="secondary" title={gt('Set primary')} disabled={busy||quantity<=0} onPress={()=>{setExpandedFoodId(null);void run({type:'food',args:{id}});}} style={s.inlineButton}/>
        </View>:null}
       </View>;
@@ -100,7 +100,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
         <Pressable accessibilityRole="button" accessibilityLabel={gt('Food actions')} accessibilityState={{expanded,disabled:busy}} disabled={busy} onPress={()=>setExpandedFoodId(expanded?null:food.id)} style={[s.iconAction,busy&&s.iconDisabled]}><Text style={s.iconActionText}>{expanded?'▴':'⋯'}</Text></Pressable>
        </View>
        {expanded?<View style={s.inlineActions}>
-        <GameButton compact tone="secondary" title={gt('Eat 1')} disabled={busy||heal<=0} onPress={()=>run({type:'eat',args:{id:food.id}})} style={s.inlineButton}/>
+        <GameButton compact tone="secondary" title={gt('Eat 1')} accessibilityLabel={hp>=maxHp?gt('Health is full'):gt('Eat {name} · restore up to {hp} HP',{name:food.name,hp:displayHealHp(foodHealingAmount(state,food.id))})} disabled={busy||heal<=0} onPress={()=>run({type:'eat',args:{id:food.id}})} style={s.inlineButton}/>
         {equippedFoodId?<GameButton compact tone="secondary" title={gt('Set primary')} disabled={busy} onPress={()=>{setExpandedFoodId(null);void run({type:'food',args:{id:food.id}});}} style={s.inlineButton}/>:null}
        </View>:null}
       </View>;

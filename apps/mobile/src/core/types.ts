@@ -119,7 +119,7 @@ export interface GameState {
   version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   /** Timestamp from which passive HP recovery may accrue while no activity is running. */
   outOfCombatSinceMs?:number;
-  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
+  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string;unlockedMonsterIds?:string[];exploredRouteIds?:string[];defeatedBossIds?:string[]}>;
   rewardRemainders?:Record<string,number>;
   /** Persisted player location. Region-scoped activities may only start here. */
   currentRegionId:string;

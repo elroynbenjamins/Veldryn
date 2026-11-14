@@ -1,6 +1,7 @@
 import type {GameState,CharacterState,SkillState} from './types';
 import {classSkillsFor} from '../content/class-skills';
 import {levelFromXp} from './progression';
+import {snapshotCharacterWorldProgress,restoreCharacterWorldProgress} from './character-world-progress';
 export const CHARACTER_SLOT_THRESHOLDS=[0,250,500,950,1600] as const;
 const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith']);
 const safeLevel=(row:any)=>Number.isFinite(row?.xp)&&row.xp>=0?levelFromXp(row.xp):1;
@@ -18,7 +19,7 @@ export function characterCreationError(state:GameState){if(!state.character)retu
 export function projectCharacter(state:GameState,id:string){
  if(state.character?.id===id)return state;
  const index=(state.otherCharacters??[]).findIndex(x=>x.character.id===id);if(index<0)throw new Error('Character is not owned.');
- const active={character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId};
+ const active={character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId,...snapshotCharacterWorldProgress(state)};
  const target=state.otherCharacters![index];const rest=state.otherCharacters!.slice();rest[index]=active;
- return {...state,character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:rest};
+ return {...state,...restoreCharacterWorldProgress(target),character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:rest};
 }

@@ -164,8 +164,8 @@ ok(top.includes('accessibilityRole="button"')&&top.includes('style={({pressed})=
 ok(top.includes("tr('{amount} gold'")&&top.includes('style={styles.goldBlock}')&&top.includes('<View accessible accessibilityRole="text" accessibilityLabel='),'Top-bar Gold must be exposed as one localized readable accessibility element');
 
 const quickFood=read('src/components/QuickFoodSheet.tsx');
-ok(quickFood.includes("gt('Health is full')")&&quickFood.includes("gt('Eat {name} · restore up to {hp} HP'"),'Equipped-food action must explain a full-health state and name the food when it can heal');
-ok(quickFood.includes('style={s.foodScroll}')&&quickFood.includes('foodArtwork:{width:44,height:44'),'Food rows must reserve an unclipped artwork frame inside a scrollable sheet');
+ok(quickFood.includes("accessibilityLabel={hp>=maxHp?gt('Health is full')")&&quickFood.includes("gt('Eat {name} · restore up to {hp} HP'"),'Food actions must announce a full-health state or the food name and healing amount');
+ok(quickFood.includes('style={s.foodScroll}')&&quickFood.includes('ItemArtwork itemId={equippedFoodId} size={34}')&&quickFood.includes('ItemArtwork itemId={id} size={32}'),'Compact Food rows must retain artwork inside a scrollable sheet');
 ok(quickFood.includes("surface:{height:'96%',maxHeight:'96%'")&&quickFood.includes('foodScroll:{flex:1,minHeight:76}'),'Food and potion choices must use the available sheet height instead of a short fixed scroll area');
 
 console.log('PASS: responsive layouts, touch targets, keyboard behavior and screen-reader semantics remain accessible');

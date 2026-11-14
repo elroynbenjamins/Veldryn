@@ -26,7 +26,7 @@ export function PlayerBadge({id,size=20,showLabel=false}:{id:PlayerBadgeId;size?
  return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>
   {vip?<View style={[s.vipMark,{width:size,height:size,borderColor:id==='vip_plus'?'#C9A2FC':'#E6C365',backgroundColor:id==='vip_plus'?'#312044':'#3D3017'}]}>
    <Text numberOfLines={1} adjustsFontSizeToFit style={{color:id==='vip_plus'?'#F0DFFF':'#FFECB0',fontWeight:'900',fontSize:size*.31,letterSpacing:-.25}}>{id==='vip_plus'?'VIP+':'VIP'}</Text>
-  </View>:<Image accessible={false} source={artwork[id]} resizeMode="contain" style={{width:size,height:size}}/>}
+  </View>:<Image accessible={false} source={artwork[id as Exclude<PlayerBadgeId,'vip'|'vip_plus'>]} resizeMode="contain" style={{width:size,height:size}}/>}
   {showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}
  </View>;
 }

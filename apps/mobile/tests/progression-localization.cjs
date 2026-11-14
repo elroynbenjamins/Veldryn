@@ -85,8 +85,11 @@ function renderComponent(name, language, props) {
     if (id.endsWith('/progression')) return progression;
     if (id.endsWith('/shared-world-v19')) return {formatCompact:value=>String(value)};
     if (id.endsWith('/items')) return {itemDef:()=>({name:'Clear'})};
-    if (id.endsWith('/theme')) return {C:{},radii:{md:4},typography:{}};
+    if (id.endsWith('/starter-item-names')) return {localizedItemName:(_lang,itemId)=>itemId==='unchanged_item_id'?'Clear':itemId};
+    if (id.endsWith('/theme')) return {C:{},radii:{md:4},typography:{caption:{},bodyStrong:{},body:{}}};
+    if (id.endsWith('/ThemeContext')) return {useGameTheme:()=>({panel:'',line:'',muted:'',accent:'',info:'',text:''})};
     if (id === './ItemArtwork') return {ItemArtwork:()=>null};
+    if (id === './ResourceIcon') return {ResourceIcon:()=>null};
     return normalRequire(id);
   };
   loaded._compile(compile(fs.readFileSync(filename,'utf8'),filename),filename);

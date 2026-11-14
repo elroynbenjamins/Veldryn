@@ -1,0 +1,87 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const ts=require('../node_modules/typescript');
+const app=path.resolve(__dirname,'..');
+const root=path.resolve(app,'../..');
+require.extensions['.ts']=function(mod,filename){
+ const out=ts.transpileModule(fs.readFileSync(filename,'utf8'),{
+  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}
+ }).outputText;
+ mod._compile(out,filename);
+};
+const {
+ germanCompanionCombatNames,germanCompanionTechniqueNames,
+ companionCombatAbilityName,companionCombatBondName,companionTechniqueName,
+}=require('../src/i18n/companion-combat-names-de.ts');
+const source=path=>fs.readFileSync(path,'utf8');
+const core=source(path.join(app,'src/content/combat-companions.ts'));
+const event=source(path.join(app,'src/content/event-companions-v2.ts'));
+const guild=source(path.join(app,'src/content/guild-companions-v1.ts'));
+const backend=source(path.join(root,'backend/src/server/companions/content.ts'));
+const aster=core.slice(core.indexOf('const ASTERFALL_COMPANIONS:'),core.indexOf('const REGIONAL_ASCENSION_MATERIALS'));
+const asterRows=[...aster.matchAll(/\{id:'(UNIT_\d+)'[\s\S]*?activeAbility:ability\('([^']+)',(?:"([^"]+)"|'([^']+)')[\s\S]*?bondTrait:trait\('([^']+)',(?:"([^"]+)"|'([^']+)')/g)]
+ .map(m=>({id:m[1],active:m[3]||m[4],bond:m[6]||m[7]}));
+const regional=core.slice(core.indexOf('const REGIONAL_IDENTITY_COPY:'),core.indexOf('const REGIONAL_IDENTITY_COPY:')+7500);
+const regionalRows=[...regional.matchAll(/(UNIT_\d+):\{activeName:(?:"([^"]+)"|'([^']+)')[\s\S]*?bondName:(?:"([^"]+)"|'([^']+)')/g)]
+ .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
+const eventRows=[...event.slice(event.indexOf('const EVENT_IDENTITY_COPY:'),event.indexOf('const effectFor'))
+ .matchAll(/(EVT_UNIT_\d+):\{activeName:(?:"([^"]+)"|'([^']+)')[\s\S]*?bondName:(?:"([^"]+)"|'([^']+)')/g)]
+ .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
+const guildRows=[...guild.matchAll(/id:'(GUILD_UNIT_\d+)'[\s\S]*?activeName:(?:"([^"]+)"|'([^']+)')[\s\S]*?bondName:(?:"([^"]+)"|'([^']+)')/g)]
+ .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
+assert.deepEqual([asterRows.length,regionalRows.length,eventRows.length,guildRows.length],[12,12,11,3]);
+const rows=[...asterRows,...regionalRows,...eventRows,...guildRows];
+assert.equal(rows.length,38,'Expected 38 authored companions');
+assert.deepEqual(Object.keys(germanCompanionCombatNames).sort(),rows.map(row=>row.id).sort(),'German combat-name ID coverage drifted');
+for(const {id,active,bond} of rows){
+ const copy=germanCompanionCombatNames[id];
+ assert.equal(copy?.active[0],active,'Active ability source drift: '+id);
+ assert.equal(copy?.bond[0],bond,'Bond trait source drift: '+id);
+ assert.ok(copy.active[1]&&copy.active[1]!==active,'Untranslated active ability: '+id);
+ assert.ok(copy.bond[1]&&copy.bond[1]!==bond,'Untranslated bond trait: '+id);
+ assert.equal(companionCombatAbilityName('de',id,active),copy.active[1]);
+ assert.equal(companionCombatBondName('de',id,bond),copy.bond[1]);
+ for(const language of ['en','es','nl','it','fr','ru','tr']){
+  assert.equal(companionCombatAbilityName(language,id,active),active,'Unintended language change: '+id);
+  assert.equal(companionCombatBondName(language,id,bond),bond,'Unintended language change: '+id);
+ }
+ assert.equal(companionCombatAbilityName('de',id,'New server skill $&'),'New server skill $&');
+ assert.equal(companionCombatBondName('de',id,'New server trait $&'),'New server trait $&');
+}
+assert.equal(companionCombatAbilityName('de','CUSTOM_PLAYER_ID','My skill $&'),'My skill $&');
+const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
+assert.equal(customTechniques.length,52);
+const defaults=['Fortified Shell','Reflective Shell','Executioner','Relentless','Deep Restoration','Rapid Aid'];
+const names=[...customTechniques,...defaults];
+assert.equal(new Set(names).size,58,'Technique translations should have unique English sources');
+assert.deepEqual(Object.keys(germanCompanionTechniqueNames).sort(),names.sort(),'German technique coverage drifted');
+for(const name of names){
+ assert.ok(germanCompanionTechniqueNames[name]&&germanCompanionTechniqueNames[name]!==name,'Missing German technique: '+name);
+ assert.equal(companionTechniqueName('de','UNIT_013_EXECUTIONER',name),germanCompanionTechniqueNames[name]);
+ assert.equal(companionTechniqueName('en','UNIT_013_EXECUTIONER',name),name);
+}
+assert.equal(companionTechniqueName('de','UNKNOWN_ID','Venom Ambush'),'Venom Ambush');
+assert.equal(companionTechniqueName('de','UNIT_013_EXECUTIONER','Unknown server technique $&'),'Unknown server technique $&');
+const components={
+ training:source(path.join(app,'src/components/CompanionTrainingV50Panel.tsx')),
+ codex:source(path.join(app,'src/components/CombatCompanionPanel.tsx')),
+ trials:source(path.join(app,'src/components/CompanionTrialStage.tsx')),
+};
+const markers={
+ training:[
+  'companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)',
+  'companionCombatBondName(language,model.def.id,model.def.bondTrait.name)',
+  'companionTechniqueName(language,technique.id,technique.name)',
+ ],
+ codex:[
+  'summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}',
+  '{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>',
+ ],
+ trials:['companionCombatAbilityName(language,def.id,def.activeAbility.name)'],
+};
+for(const [component,needed] of Object.entries(markers)){
+ for(const marker of needed)
+  assert.ok(components[component].includes(marker),component+' lost German combat name integration: '+marker);
+}
+console.log('PASS: 38 source-guarded German companion abilities and Bond traits, 58 fixed technique names, Training/Codex/Trial wiring');

@@ -3909,7 +3909,7 @@ export const TURKISH_COVERAGE = {
   "TAG": "ETİKET",
   "Check tag": "Etiketi kontrol et",
   "JOIN POLICY": "KATILIM KURALI",
-  "Applications": "Bașvurular",
+  "Applications": "Başvurular",
   "Create Guild": "Lonca oluştur",
   "AVAILABLE GUILDS": "KATILINABİLİR LONCALAR",
   "No online Guilds yet": "Henüz çevrimiçi Lonca yok",

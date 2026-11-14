@@ -63,6 +63,8 @@ jobs:
         run: node tests/storage-dungeon-refinement-ui.cjs
       - name: Validate Frostfall 14-day preview and sealed rewards
         run: pnpm test:frostfall-preview
+      - name: Validate Skill Guide localization and Account navigation
+        run: node tests/skill-guide-ui.cjs
       - name: Validate Companion Collection and Codex UX
         run: node tests/companion-codex-focused-ui.cjs
       - name: Validate Companion layout and upgrade resource icons

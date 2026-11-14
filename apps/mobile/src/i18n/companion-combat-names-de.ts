@@ -112,9 +112,22 @@ export const germanCompanionTechniqueNames:Readonly<Record<string,string>>={
  'Rapid Aid':'Schnelle Hilfe',
 };
 
+/** The first 12 server companions still use default Signature names in combat replays.
+ * Preserve the proper companion name and localize only the generic ability type.
+ */
+export const germanCompanionLegacySignatures:Readonly<Record<string,string>>={
+ UNIT_001:'Ironwood Hound',UNIT_002:'Runebound Sentry',UNIT_003:'Silverbrook Sprite',
+ UNIT_004:'Briarhorn Cub',UNIT_005:'Lantern Wisp',UNIT_006:'Oathbound Page',
+ UNIT_007:'Gloamknife Shade',UNIT_008:'Dawnwing',UNIT_009:'Echo Stalker',
+ UNIT_010:'Forge Automaton',UNIT_011:"Veyren's Memory",UNIT_012:'Oathglass Knightling',
+};
+
 export function companionCombatAbilityName(language:Language,companionId:string,source:string):string{
+ if(language!=='de')return source;
  const entry=germanCompanionCombatNames[companionId]?.active;
- return language==='de'&&entry?.[0]===source?entry[1]:source;
+ if(entry?.[0]===source)return entry[1];
+ const signature=germanCompanionLegacySignatures[companionId];
+ return signature&&source===signature+' Signature'?'Spezialfähigkeit: '+signature:source;
 }
 
 export function companionCombatBondName(language:Language,companionId:string,source:string):string{

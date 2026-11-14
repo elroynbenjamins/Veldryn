@@ -2,7 +2,6 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
-  "ROUTE": ["МАРШРУТ","ROTA"],
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
   "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],

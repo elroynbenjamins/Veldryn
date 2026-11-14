@@ -53,8 +53,8 @@ assert.ok(unknown.events.every(e=>e.type!=='class_skill'&&e.skillKind===undefine
 const none=simulateFallenKnightStoryBattle({...dummy,classId:'IRONWARDEN',classSkillLevel:1},'boss-guard-base','rematch');
 const max=simulateFallenKnightStoryBattle({...dummy,classId:'IRONWARDEN',classSkillLevel:100},'boss-guard-base','rematch');
 const totalGuard=(events:typeof none.events)=>events.filter(e=>e.type==='class_skill'&&e.skillKind==='shield').reduce((sum,e)=>sum+(e.amount??0),0);
-assert.ok(totalGuard(max)>=totalGuard(none),'Higher combat skill ranks must not reduce guard protection');
-assert.ok(totalGuard(max)>0,'A real incoming hit should activate the guard');
+assert.ok(totalGuard(max.events)>=totalGuard(none.events),'Higher combat skill ranks must not reduce guard protection');
+assert.ok(totalGuard(max.events)>0,'A real incoming hit should activate the guard');
 assert.equal(none.foodConsumed,0,'No boss food under any combat class');
 console.log('BOSS_CLASS_TECHNIQUES '+labels.join(','));
 console.log('PASS real nine-class story boss techniques, class XP potency, bounded HP, deterministic replay and potion limits');

@@ -3,7 +3,7 @@
 // These checks do not retune enemies or create class-specific reward bonuses.
 import {assert} from './test-assert';
 import {CLASSES} from '../src/content/classes';
-import {combatSustainProjection,activeCombatHitProjection,claimActivity} from '../src/core/game';
+import {combatSustainProjection,activeCombatHitProjection,claimActivity,effectiveStats} from '../src/core/game';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 
 const regions=new Set(['GREENFIELDS','KINGS_ROAD','SUNSCAR','FROSTMARCH']);
@@ -40,7 +40,14 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>regions.has(row.regionId))
     const fraction=late.state.rewardRemainders?.[fractionKey];
     assert.ok(typeof fraction==='number'&&fraction>=0&&fraction<1,'Fractional combat rewards must remain bounded after split claims: '+context+'/'+fractionKey);
    }
-   assert.ok(Math.abs(late.state.character!.currentHp-single.state.character!.currentHp)<1e-4,'Split hunt must preserve actual HP after real class skills: '+context);
+   assert.ok(Math.abs(late.state.character!.currentHp-single.state.character!.currentHp)<1e-4,
+    'Split hunt must preserve actual HP after real class skills: '+context+' '+
+    JSON.stringify({singleHp:single.state.character!.currentHp,splitHp:late.state.character!.currentHp,
+      initialStats:effectiveStats(state),afterFirstStats:effectiveStats(early.state),
+      initialLevel:state.character!.level,afterFirstLevel:early.state.character!.level,
+      initialSkills:state.character!.classSkills,afterFirstSkills:early.state.character!.classSkills,
+      splitKills:early.reward.kills,allKills:single.reward.kills,
+      stop:single.reward.stoppedReason,splitStop:late.reward.stoppedReason}));
    assert.ok(Math.abs((late.state.activity?.combatEnemyHp??0)-(single.state.activity?.combatEnemyHp??0))<1e-4,'Split hunt must preserve enemy HP: '+context);
    const live=activeCombatHitProjection(state,end)!;
    assert.ok(live.playerHp>=1&&live.playerHp<=live.playerMaxHp,'Combat replay must bound HP: '+context);

@@ -4,6 +4,7 @@ import {COMPANION_TOUR_STEPS} from '../core/companion-tutorial';
 import {companionTutorialText} from '../i18n/companion-tutorial';
 import {SectionGuide} from './SectionGuide';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
+import {companionCombatAbilityName} from '../i18n/companion-combat-names-de';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
@@ -216,8 +217,8 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
         </>}
       </View>}
     </CompanionDisclosure>
-    {model&&selectedCodexEntry?.state!=='unknown'?<CompanionDisclosure key={'abilities:'+selection} title={t('Abilities & Traits')} summary={model.def.activeAbility.name}>
-      <Text style={s.name}>{model.def.activeAbility.name}</Text>
+    {model&&selectedCodexEntry?.state!=='unknown'?<CompanionDisclosure key={'abilities:'+selection} title={t('Abilities & Traits')} summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}>
+      <Text style={s.name}>{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>
       <Text style={s.body}>{t("{value0} · {value1}s cooldown", {value0: companionContent(language,model.def.activeAbility.description), value1: model.def.activeAbility.cooldownSeconds})}</Text>
       <Text style={s.name}>{t('Passive ability')}</Text><Text style={s.body}>{companionContent(language,model.def.passiveAbility.description)}</Text>
       <Text style={s.name}>{t('Bond trait')}</Text><Text style={s.body}>{t("Bond 10: {value0}", {value0: companionContent(language,model.def.bondTrait.description)})}</Text>

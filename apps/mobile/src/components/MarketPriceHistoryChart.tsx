@@ -3,7 +3,6 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {recentScreenText} from '../i18n/recent-screens';
-import {formatLocalizedNumber} from '../i18n/translator';
 import {marketPriceGraphBarsV13,marketPriceGraphHasVisibleSalesV13,
   type MarketPriceGraphSnapshotV13,type MarketPriceGraphPeriodV13,
 } from '../core/market-price-history-v13';
@@ -33,7 +32,8 @@ export function MarketPriceHistoryChart({snapshot,periodDays,onPeriodChange,load
  const min=Math.min(...withSales.map(row=>row.point?.lowGold??max));
  const chosen=withSales.find(row=>row.date===selectedDate)
    ??withSales[withSales.length-1]??{date:'',label:'',point:null};
- const price=(n:number)=>formatLocalizedNumber(language,n);
+ const priceLocale=language==='de'?'de-DE':language;
+ const price=(n:number)=>n.toLocaleString(priceLocale);
  return <View style={styles.root}>
   <View style={styles.headingRow}>
    <View style={styles.titleGroup}>

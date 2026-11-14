@@ -177,7 +177,7 @@ for(const classId of damageClasses){
 }
 const noMonster=huntClassSurvivalEvents([enemyHits[2]],{...identityInput,classId:'BASTION'});
 assert.ok(noMonster.every(hit=>!hit.classGuardAbility),'A fortress cast cannot trigger on fatigue alone');
-const pending=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER',encounterStartedAtMs:105_000});
+const pending=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER',encounterStartedAtMs:101_000,cycleSeconds:1});
 assert.ok(!pending[0].classHealAbility,'Sunlight cannot heal before its next original-session cooldown pulse');
 const absoluteBound=(rows:readonly HuntHit[])=>rows.reduce((sum,row)=>sum+row.damage,0);
 for(const classId of ['IRONWARDEN','BASTION','DREADGUARD','STONECALLER'] as ClassId[]){

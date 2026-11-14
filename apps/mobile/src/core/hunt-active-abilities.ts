@@ -103,7 +103,7 @@ export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
   if(activation)activation.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:activation.damage};
  }
  const companion=input.companion;
- if(companion?.role==='damage'&&companion.contributionPct>0){
+ if(landed.length>=2&&companion?.role==='damage'&&companion.contributionPct>0){
   const pulse=huntCooldownPulseAt({...input,cooldownSeconds:companion.cooldownSeconds});
   if(pulse!==undefined){
    // Prefer the middle eligible strike for readability, never attribute an

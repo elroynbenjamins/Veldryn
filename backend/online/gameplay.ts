@@ -16,7 +16,7 @@ export interface GameplayServices{
 }
 export class GameplayError extends Error{constructor(message:string,readonly status=400){super(message);}}
 interface LoadedGame {state:GameState|null;version:number;serverNow:number;characterId:string|null;walletGold:number|null;guildMember:boolean;liveEvent?:GameState['account']['liveEvent'];communityProgress:Record<string,number>}
-const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info,x-veldryn-contract-catalog','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
+const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers});
 const hash=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))).map(b=>b.toString(16).padStart(2,'0')).join('');
 function canonical(value:unknown):string{if(value===null||typeof value!=='object')return JSON.stringify(value);if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonical((value as Record<string,unknown>)[key])).join(',')+'}';}
@@ -76,7 +76,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    const guard=await services.rpc<{blocked:boolean;reason?:string}>('character_delete_coop_guard_server_v1',{p_account_id:accountId,p_character_id:characterId});
    if(guard?.blocked)throw new GameplayError(guard.reason??'Leave co-op before deleting this character.');
   }
-  let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'||(command.type==='qa_prepare'&&!loaded.characterId)?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll(),accountId,eventId:String(body.requestId),adminQa,legacySeasonalClient:request.headers.get('x-veldryn-contract-catalog')!=='2'});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
+  let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'||(command.type==='qa_prepare'&&!loaded.characterId)?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll(),accountId,eventId:String(body.requestId),adminQa});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
   // Translate verified actions using the same current content as the simulation, never client weights.
   const contributions=(adminQa?[]:result.contributions).map(event=>{
    let metric='',units=event.units;

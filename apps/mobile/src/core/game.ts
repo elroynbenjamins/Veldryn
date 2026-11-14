@@ -1,3 +1,5 @@
+import {ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
+import {hasFrozenLegacySeasonalGrant} from './legacy-seasonal-claim';
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt,regionalHuntHits} from './combat-hit-timeline';
@@ -1047,23 +1049,33 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */
 export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string):GameState{
+  state=ensurePersonalSeasonalState(state);
   if(!state.character)throw new Error('Create a character first');
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
   if(!contract)throw new Error('This contract has expired.');
-  if((state.account.seasonalContractClaimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
-  if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
+  if((state.character!.personalSeasonal?.claimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
+  const ledger=state.account.personalSeasonalClaimLedger??{},previousClaimants=ledger[contract.id]??[];
+  const maximumClaims=Math.max(1,Math.min(5,Math.max(state.account.unlockedCharacterSlots??1,1+(state.otherCharacters?.length??0))));
+  if(previousClaimants.includes(state.character!.id))throw new Error('This contract reward was already claimed.');
+  if(previousClaimants.length>=maximumClaims)throw new Error('The account has reached its character claim limit for this objective.');
+  const legacyEligible=hasFrozenLegacySeasonalGrant(state,contract.id,nowMs);
+  if(contract.progress<contract.required&&!legacyEligible)throw new Error('Complete the contract before claiming its cache.');
   // Recompute the allowed rewards from authoritative character progression; never trust client amounts.
-  const chosen=choiceId===undefined?contract.rewardOptions[0]:contract.rewardOptions.find(reward=>reward.id===choiceId);
+  const chosen=choiceId===undefined?contract.rewardOptions[0]:(contract.rewardOptions.find(reward=>reward.id===choiceId)??(legacyEligible?contract.rewardOptions[0]:undefined));
   if(!chosen)throw new Error('Invalid or unavailable Quest reward choice.');
   const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
   const routed=chosen.rewardItemId&&chosen.rewardItemQty
     ?routeRewards(state,[{itemId:chosen.rewardItemId,quantity:chosen.rewardItemQty}],nowMs):state;
-  const claimed=[...(state.account.seasonalContractClaimIds??[]),contract.id].slice(-120);
-  const previousChoices=state.account.seasonalContractRewardChoices??{};
+  const claimed=[...(state.character!.personalSeasonal?.claimIds??[]),contract.id].slice(-120);
+  const previousChoices=state.character!.personalSeasonal?.rewardChoices??{};
   const recordedChoices=Object.fromEntries([...Object.entries(previousChoices),[contract.id,chosen.id]].filter(([id])=>claimed.includes(id)));
-  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
+  // Only unexpired cadence IDs matter for anti-farming. Keep the monthly
+  // receipt even after dozens of daily claims; never evict it by insertion order.
+  const activeIds=new Set((['daily','weekly','monthly'] as const).flatMap(cadence=>seasonalQuestBoard(state,cadence,new Date(nowMs)).map(entry=>entry.id)));
+  const updatedLedger=Object.fromEntries([...Object.entries(ledger).filter(([id])=>activeIds.has(id)),[contract.id,[...previousClaimants,state.character.id]]]);
+  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),personalSeasonalClaimLedger:updatedLedger,seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
   const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
-  return applyLocalBalanceSnapshot(refreshQuests(grantBondstones(withEssence,chosen.rewardBondstones??0)),nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices})),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */

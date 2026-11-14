@@ -12,18 +12,18 @@ declare
 begin
  for i in 1..5 loop
   insert into auth.users(id,email) values(a[i],'v16-'||a[i]||'@example.invalid');
-  insert into public.characters(id,account_id,name,class_id) values(c[i],a[i],'Party Test '||chr(64+i),'WAYFINDER');
+  insert into public.characters(id,account_id,name,class_id,level) values(c[i],a[i],'Party Test '||chr(64+i),case i when 1 then 'IRONWARDEN' when 3 then 'DAWNKEEPER' else 'WAYFINDER' end,10);
  end loop;
  perform set_config('request.jwt.claim.sub',a[1]::text,true);
  set local role authenticated;
- p:=public.create_persistent_party_v16(c[1],'damage','mixed','v16-create-00001');
- perform pg_temp.assert_v16(p=public.create_persistent_party_v16(c[1],'damage','mixed','v16-create-00001'),'create replay');
+ p:=public.create_persistent_party_v16(c[1],'tank','mixed','v16-create-00001');
+ perform pg_temp.assert_v16(p=public.create_persistent_party_v16(c[1],'tank','mixed','v16-create-00001'),'create replay');
  for i in 2..4 loop
   perform set_config('request.jwt.claim.sub',a[i]::text,true);
-  perform public.join_persistent_party_v16(p,c[i],'damage','v16-join-0000'||i);
-  perform pg_temp.assert_v16(p=public.join_persistent_party_v16(p,c[i],'damage','v16-join-0000'||i),'join replay');
+  perform public.join_persistent_party_v16(p,c[i],case i when 3 then 'support' else 'damage' end,'v16-join-0000'||i);
+  perform pg_temp.assert_v16(p=public.join_persistent_party_v16(p,c[i],case i when 3 then 'support' else 'damage' end,'v16-join-0000'||i),'join replay');
  end loop;
- perform pg_temp.assert_v16((select count(*)=4 from public.party_members where party_id=p and left_at is null),'four unrestricted roles');
+ perform pg_temp.assert_v16((select count(*)=4 from public.party_members where party_id=p and left_at is null),'four members with exact dungeon-style roles');
  perform set_config('request.jwt.claim.sub',a[5]::text,true);
  begin perform public.join_persistent_party_v16(p,c[5],'tank','v16-fifth-00001');raise exception 'V16 fifth accepted';exception when others then if sqlerrm<>'party_full' then raise; end if;end;
  perform pg_temp.assert_v16((select count(*)=0 from public.parties where id=p),'outsider Party RLS');

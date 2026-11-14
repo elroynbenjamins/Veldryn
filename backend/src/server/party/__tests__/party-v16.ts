@@ -5,6 +5,7 @@ import {
   joinPersistentParty,
   leavePersistentParty,
   persistentPartyCanExistWithCurrentRoles,
+  persistentPartyOpenRoles,
   type PersistentPartyState,
 } from '../../social/party';
 import {
@@ -43,7 +44,27 @@ assert(canAccessPersistentPartyChat(party, 'a2'), 'party chat should be accessib
 assert(evaluateLiveDungeonComposition(party.members).valid, '1T/2D/1S party may enter Live Dungeon queue');
 
 const freeRoles = { ...party, members: party.members.map(member => ({ ...member, role: 'damage' as const })) };
-assert(persistentPartyCanExistWithCurrentRoles(freeRoles.members), 'persistent party must not be role locked');
+assert(persistentPartyCanExistWithCurrentRoles(freeRoles.members), 'legacy Party rosters must not be removed on read');
+assert(persistentPartyOpenRoles(party.members).tank === 0
+  && persistentPartyOpenRoles(party.members).damage === 0
+  && persistentPartyOpenRoles(party.members).support === 0,
+  '1 Tank / 2 Damage / 1 Support fills all available role slots');
+const onlyDamage: PersistentPartyState = {...baseParty,
+ members: [
+  {...baseParty.members[0]!},
+  {accountId:'a2',characterId:'c2',role:'damage',joinedAtMs:2},
+ ]};
+assert(canJoinPersistentParty(onlyDamage,{accountId:'a3',characterId:'c3',role:'damage'}).reason === 'party_role_full',
+ 'a third Damage cannot join a forming Party');
+assert(canJoinPersistentParty(onlyDamage,{accountId:'a3',characterId:'c3',role:'tank'}).allowed,
+ 'a Tank can still join the same forming Party');
+assert(canJoinPersistentParty(onlyDamage,{accountId:'a3',characterId:'c3',role:'support'}).allowed,
+ 'a Support can still join the same forming Party');
+assert(canJoinPersistentParty(baseParty,{accountId:'a2',characterId:'c2'}).reason === 'party_role_required',
+ 'new joins must include a server-verified role');
+assert(canJoinPersistentParty({...baseParty,members:freeRoles.members.slice(0,3)},{
+ accountId:'a5',characterId:'c5',role:'tank'
+}).reason === 'party_legacy_role_overflow','old three-Damage parties cannot expand until repaired');
 assert(!evaluateLiveDungeonComposition(freeRoles.members).valid, 'generic party roles must not bypass Live Dungeon exact composition');
 assert(
   !hasExactCoopRoles(freeRoles.members.map(member => member.role!)),

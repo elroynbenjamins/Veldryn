@@ -14,6 +14,8 @@ import {
   contractProgressRatio,
   filterRecruitmentCards,
   partyOpenSpots,
+  partyRoleVacancies,
+  partyHasRoleOverflow,
   personalContributionEligible,
   normalizedPartyPreferences,
   partyActivityLabel,
@@ -96,6 +98,10 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  const cards=React.useMemo(()=>filterRecruitmentCards(props.recruitment,{...filters,postTypes:[browseMode==='parties'?'party_recruiting':'looking_for_party']},props.nowMs),[props.recruitment,filters,props.nowMs,browseMode]);
  const inParty=!!props.party,canManageParty=!!props.party?.members.some(member=>member.accountId===props.accountId&&member.isLeader);
  const openSpots=props.party?partyOpenSpots(props.party):0;
+ const roleVacancies=partyRoleVacancies(props.party?.members??[]);
+ const legacyRoleOverflow=partyHasRoleOverflow(props.party?.members??[]);
+ const neededRoles=([['tank',st('Tank')],['damage',st('Damage')],['support',st('Support')]] as const)
+  .flatMap(([role,label])=>roleVacancies[role]?[`${roleVacancies[role]} ${label}`]:[]);
  const readyContractRewards=props.party?partyContractClaimableRewardIds(props.contracts).length:0;
  const focusedMember=selectedMember&&props.party?.members.find(member=>member.accountId===selectedMember.accountId);
  const permissions=focusedMember?partyMemberManagement(canManageParty,props.accountId,focusedMember.accountId):null;
@@ -123,6 +129,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    </View>:null}
    {(!props.dedicated||props.activeView!=='Contracts')?<View style={s.panel}>
     <View style={s.between}><Text style={s.sectionTitle}>{st('PARTY MEMBERS')}</Text><Text style={s.metaCount}>{props.party!.members.length}/4</Text></View>
+    {openSpots>0?<Text style={s.muted}>{st('Open party roles')}: {legacyRoleOverflow?st('Resolve existing role overflow first'):neededRoles.join(' · ')}</Text>:null}
     <View style={s.members}>{props.party!.members.map(member=>{
      const manage=partyMemberManagement(canManageParty,props.accountId,member.accountId);
      const canOpenManagement=manage.canTransfer&&!!props.onTransferLeadership||manage.canRemove&&!!props.onRemoveMember;

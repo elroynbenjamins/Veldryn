@@ -1,6 +1,6 @@
 import type {Language} from './languages';
 import {SUPPORTED_LANGUAGES} from './languages';
-import {createTranslator,type TranslationParams} from './translator';
+import {createTranslator,interpolateTranslation,type TranslationParams} from './translator';
 import {accountText} from './account';
 
 /** New player-facing copy in Roadmap, Market Inbox and badges. Columns DE/ES/NL/IT/FR/RU/TR.
@@ -712,9 +712,16 @@ const t=createTranslator<RecentScreenKey>(catalogs);
 
 /** Prefer reviewed new screen copy, then the established account dictionary. */
 export function recentScreenText(language:Language,source:string,params:TranslationParams={}):string{
- return Object.prototype.hasOwnProperty.call(recentScreenTranslationRows,source)
-  ?t(language,source as RecentScreenKey,params)
-  :accountText(language,source,params);
+ if(!Object.prototype.hasOwnProperty.call(recentScreenTranslationRows,source))
+  return accountText(language,source,params);
+ // This is a screen-specific, reviewed catalog. Its explicit RU/TR copy
+ // must win over generic early-language fallbacks used in other contexts.
+ // E.g. READY NOW on the Home screen is not READY NOW in a crafting recipe.
+ if(language==='ru'||language==='tr'){
+  const index=SUPPORTED_LANGUAGES.indexOf(language)-1;
+  return interpolateTranslation(recentScreenTranslationRows[source as RecentScreenKey][index],params);
+ }
+ return t(language,source as RecentScreenKey,params);
 }
 
 /** Localize only the exact achievement-title structure authored in adventurers-journal-v42.

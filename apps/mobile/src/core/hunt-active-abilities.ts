@@ -4,17 +4,33 @@ import type {HuntHit} from './combat-hit-timeline';
 /** Single-target solo-hunt techniques share names with their existing dungeon
  * counterparts. This is a separate, budget-neutral hunt ruleset, not the
  * dungeon cooldown / status engine. */
-export const HUNT_CLASS_TECHNIQUES:Readonly<Record<ClassId,{id:string;name:string}>>={
- IRONWARDEN:{id:'IW_BASH',name:'Rune Bash'},
- BASTION:{id:'BT_REBUFF',name:'Fortress Rebuff'},
- DREADGUARD:{id:'DG_BIND',name:'Binding Chain'},
- DAWNKEEPER:{id:'DK_SMITE',name:'Sun Smite'},
- WAYFINDER:{id:'WF_SHOT',name:'Windshot'},
- RAVAGER:{id:'RV_SWING',name:'Titan Swing'},
- HEXWEAVER:{id:'HX_CURSE',name:'Black Thread'},
- KNIFE_DANCER:{id:'KD_LOOP',name:'Scarlet Loop'},
- STONECALLER:{id:'SC_THUNDER',name:'Thunder Totem'},
+export const HUNT_CLASS_TECHNIQUES:Readonly<Record<ClassId,{id:string;name:string;cooldownSeconds:number}>>={
+ IRONWARDEN:{id:'IW_BASH',name:'Rune Bash',cooldownSeconds:6.5},
+ BASTION:{id:'BT_REBUFF',name:'Fortress Rebuff',cooldownSeconds:7.5},
+ DREADGUARD:{id:'DG_BIND',name:'Binding Chain',cooldownSeconds:6.5},
+ DAWNKEEPER:{id:'DK_SMITE',name:'Sun Smite',cooldownSeconds:5.5},
+ WAYFINDER:{id:'WF_SHOT',name:'Windshot',cooldownSeconds:4.5},
+ RAVAGER:{id:'RV_SWING',name:'Titan Swing',cooldownSeconds:4.2},
+ HEXWEAVER:{id:'HX_CURSE',name:'Black Thread',cooldownSeconds:6.5},
+ KNIFE_DANCER:{id:'KD_LOOP',name:'Scarlet Loop',cooldownSeconds:5},
+ STONECALLER:{id:'SC_THUNDER',name:'Thunder Totem',cooldownSeconds:6},
 };
+
+/** First cooldown pulse in a hunt encounter. The original combat-session
+ * clock is the only authority: a claim / app restart cannot refresh a skill.
+ * Only the first eligible landed hit in the encounter may use the pulse.
+ * No persisted ability state or per-frame timers are needed. */
+export function huntCooldownPulseAt(input:{
+ combatStartedAtMs:number;encounterStartedAtMs:number;cycleSeconds:number;cooldownSeconds:number;
+}):number|undefined{
+ const {combatStartedAtMs:session,encounterStartedAtMs:start,cycleSeconds,cooldownSeconds}=input;
+ if(![session,start,cycleSeconds,cooldownSeconds].every(Number.isFinite)||cycleSeconds<=0||cooldownSeconds<=0||start<session-1e-3)return undefined;
+ const period=Math.max(1000,Math.round(cooldownSeconds*1000));
+ const count=Math.max(0,Math.ceil((start-session-1e-5)/period));
+ const pulse=session+count*period;
+ return pulse>=start-1e-3&&pulse<start+cycleSeconds*1000-1e-3?pulse:undefined;
+}
+const timeOf=(hit:HuntHit,start:number,cycleSeconds:number)=>start+hit.fraction*cycleSeconds*1000;
 
 export interface HuntActiveAbility {
  source:'class'|'companion';
@@ -24,49 +40,63 @@ export interface HuntActiveAbility {
  amount:number;
 }
 
-/** A damage-role companion contributes part of an already budgeted landed
- * attack, never free extra damage or an extra kill. Healer units receive their
- * own event from the effective recovery applied in the settlement loop.
- *
- * Class burst skills move damage from an earlier landed hit to the final hit.
- * Real intermediate enemy HP changes; the encounter's total damage, finish
- * time and rewards are identical. No abilities fire during searching/misses,
- * and none are invented when only a single attack lands.
- *
- * All input events are cloned; consecutive / partial / offline settlements
- * therefore see the same results for the same encounter.
+/** Deterministic, session-timed combat skills for ordinary hunting.
+ * Class finishers move a small part of an actual earlier attack into the
+ * finishing hit; no damage is created. Damage-companion assists attribute
+ * existing damage at the first eligible hit following their cooldown pulse.
+ * The caller resolves these same events in online, offline and live replay.
  */
 export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
- classId:ClassId;
- classSkillLevel:number;
- encounterNumber:number;
- companion?:{id:string;name:string;abilityId:string;abilityName:string;role:'damage'|'tank'|'support';contributionPct:number};
+ classId:ClassId;classSkillLevel:number;
+ combatStartedAtMs:number;encounterStartedAtMs:number;cycleSeconds:number;
+ companion?:{id:string;name:string;abilityId:string;abilityName:string;role:'damage'|'tank'|'support';contributionPct:number;cooldownSeconds:number};
 }):HuntHit[]{
  const result=events.map(hit=>({...hit}));
- const playerIndices=result.map((hit,index)=>hit.actor==='player'&&hit.damage>0?index:-1).filter(index=>index>=0);
- if(playerIndices.length<2)return result;
- const first=result[playerIndices[0]],last=result[playerIndices[playerIndices.length-1]];
- // Technique rank controls how much of the encounter budget is concentrated
- // into the finisher. Minimum 1 HP is left on the donor's attack.
- const rank=Math.max(1,Math.min(100,Math.floor(input.classSkillLevel||1)));
- const fraction=.10+.10*(rank-1)/99;
- const shifted=Math.min(first.damage-1,Math.max(1,Math.floor(first.damage*fraction)));
- if(shifted>0){
-  first.damage-=shifted;
-  last.damage+=shifted;
-  const ability=HUNT_CLASS_TECHNIQUES[input.classId];
-  last.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:last.damage};
- }
- // A single companion assist is taken from an actual landed hit, limited to
- // its already-applied power budget. Not all companion roles are damage roles.
- const companion=input.companion;
- if(companion?.role==='damage'&&companion.contributionPct>0&&input.encounterNumber%2===0){
-  const hit=result[playerIndices[Math.floor((playerIndices.length-1)/2)]];
-  const portion=Math.min(hit.damage-1,Math.max(1,Math.floor(hit.damage*Math.min(.12,companion.contributionPct))));
-  if(portion>0){
-   hit.companionAssist={source:'companion',id:companion.abilityId,name:companion.name+': '+companion.abilityName,kind:'damage',amount:portion};
+ const landed=result.filter(hit=>hit.actor==='player'&&hit.damage>0);
+ if(landed.length<2)return result;
+ const ability=HUNT_CLASS_TECHNIQUES[input.classId];
+ const classPulse=huntCooldownPulseAt({...input,cooldownSeconds:ability.cooldownSeconds});
+ const first=landed[0],last=landed[landed.length-1];
+ if(classPulse!==undefined&&timeOf(last,input.encounterStartedAtMs,input.cycleSeconds)>=classPulse-1e-3){
+  const rank=Math.max(1,Math.min(100,Math.floor(input.classSkillLevel||1)));
+  const fraction=.10+.10*(rank-1)/99;
+  const shifted=Math.min(first.damage-1,Math.max(1,Math.floor(first.damage*fraction)));
+  if(shifted>0){
+   first.damage-=shifted;last.damage+=shifted;
+   last.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:last.damage};
   }
  }
+ const companion=input.companion;
+ if(companion?.role==='damage'&&companion.contributionPct>0){
+  const pulse=huntCooldownPulseAt({...input,cooldownSeconds:companion.cooldownSeconds});
+  if(pulse!==undefined){
+   // Prefer the middle eligible strike for readability, never attribute an
+   // assist to a hit that preceded the cooldown becoming available.
+   const eligible=landed.filter(hit=>timeOf(hit,input.encounterStartedAtMs,input.cycleSeconds)>=pulse-1e-3);
+   const hit=eligible[Math.floor((eligible.length-1)/2)];
+   if(hit){
+    const portion=Math.min(hit.damage-1,Math.max(1,Math.floor(hit.damage*Math.min(.12,companion.contributionPct))));
+    if(portion>0)hit.companionAssist={source:'companion',id:companion.abilityId,name:companion.name+': '+companion.abilityName,kind:'damage',amount:portion};
+   }
+  }
+ }
+ return result;
+}
+
+/** A restorative companion can cast only on a genuinely resolved heal tick
+ * after its cooldown pulse. This tags a real healing opportunity; the actual
+ * restored HP is checked and attributed by the settlement loop. */
+export function huntSupportHealEvents(events:readonly HuntHit[],input:{
+ combatStartedAtMs:number;encounterStartedAtMs:number;cycleSeconds:number;
+ companion?:{id:string;name:string;abilityId:string;abilityName:string;role:'damage'|'tank'|'support';activeKind:string;cooldownSeconds:number;healingPctPerHour:number};
+}):HuntHit[]{
+ const result=events.map(hit=>({...hit}));
+ const c=input.companion;
+ if(!c||c.role!=='support'||c.activeKind!=='heal'||c.healingPctPerHour<=0)return result;
+ const pulse=huntCooldownPulseAt({...input,cooldownSeconds:c.cooldownSeconds});
+ if(pulse===undefined)return result;
+ const first=result.find(hit=>(hit.actor==='enemy'||hit.actor==='fatigue')&&hit.healing>0&&timeOf(hit,input.encounterStartedAtMs,input.cycleSeconds)>=pulse-1e-3);
+ if(first)first.supportAbility={source:'companion',id:c.abilityId,name:c.name+': '+c.abilityName,kind:'heal',amount:0};
  return result;
 }
 
@@ -96,18 +126,9 @@ export function huntTankGuardEvents(events:readonly HuntHit[],input:{
  const result=events.map(hit=>({...hit}));
  const unit=input.companion;
  if(!unit||unit.role!=='tank'||(unit.activeKind!=='shield'&&unit.activeKind!=='damage_reduction'))return result;
- const cooldown=Math.max(1000,Math.round(unit.cooldownSeconds*1000));
- const session=Number.isFinite(input.combatStartedAtMs)?input.combatStartedAtMs:0;
- const start=Number.isFinite(input.encounterStartedAtMs)?input.encounterStartedAtMs:session;
- const cycle=Math.max(0,Number.isFinite(input.cycleSeconds)?input.cycleSeconds:0)*1000;
- if(cycle<=0)return result;
- // Only a pulse that starts during this encounter can arm its shield. The
- // upper limit is exclusive, so adjacent encounters never claim the same pulse.
- const pulseIndex=Math.max(0,Math.ceil((start-session-0.00001)/cooldown));
- const pulseAt=session+pulseIndex*cooldown;
- const end=start+cycle;
- if(pulseAt<start-1e-3||pulseAt>=end-1e-3)return result;
- const first=result.find(hit=>hit.actor==='enemy'&&hit.damage>0&&start+hit.fraction*cycle>=pulseAt-1e-3);
+ const pulseAt=huntCooldownPulseAt({...input,cooldownSeconds:unit.cooldownSeconds});
+ if(pulseAt===undefined)return result;
+ const first=result.find(hit=>hit.actor==='enemy'&&hit.damage>0&&timeOf(hit,input.encounterStartedAtMs,input.cycleSeconds)>=pulseAt-1e-3);
  if(!first)return result;
  const passiveMitigation=Math.max(0,1-Math.min(1,unit.incomingDamageMultiplier));
  // No defensive contribution means no active guard or false shield number.

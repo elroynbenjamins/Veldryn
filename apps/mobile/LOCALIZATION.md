@@ -4,6 +4,14 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German Companion combat descriptions and Trials
+
+- Translated the 16 remaining authored Event companion and custom technique descriptions not yet covered by the shared companion catalog. The shared `companionContent` path only resolves exact authored German text, preserving English and all other locales.
+- Translated 22 authored Companion Trial enemy abilities and boss phase labels in both preview cards and live combat/cast cues. Boss phase effect descriptions use the shared localized companion catalog.
+- Normalized the 12 original server-defined `Signature` ability labels to German during Trial replay. Player and unknown server text remains untouched; combat IDs and mechanics are unchanged.
+- Localized shield accessibility labels, German battle number formatting, and German player-market price-chart grouping (`de-DE`), resolving the chart's German formatting assertion.
+- Added content-parity and UI-wiring assertions. Other existing mobile CI checks still require separate fixes; these tests have not been validated on an Android build.
+
 ## November 14, 2026: German Companion combat terminology
 
 - Added exact-source, per-companion German display names for **38 authored combat companion active abilities** and **38 Bond traits** across Asterfall, Sunscar, Frostmarch, Ashlands, Guild and released/event companion content.

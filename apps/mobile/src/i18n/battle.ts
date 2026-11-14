@@ -21,6 +21,10 @@ export const BATTLE_MESSAGES={
  'SKILL DAMAGE · {amount}':['FÄHIGKEITSSCHADEN · {amount}','DAÑO DE HABILIDAD · {amount}','VAARDIGHEIDSSCHADE · {amount}','DANNO ABILITÀ · {amount}','DÉGÂTS DE CAPACITÉ · {amount}'],
  'SKILL HEAL · {amount}':['FÄHIGKEITSHEILUNG · {amount}','CURA DE HABILIDAD · {amount}','VAARDIGHEIDSHELING · {amount}','CURA ABILITÀ · {amount}','SOIN DE CAPACITÉ · {amount}'],
  'SHIELD · {amount}':['SCHILD · {amount}','ESCUDO · {amount}','SCHILD · {amount}','SCUDO · {amount}','BOUCLIER · {amount}'],
+ "Rune Brace":["Runenblock","Protección rúnica","Runenbescherming","Difesa runica","Garde runique"],
+ "Page's Vow":["Schwur des Pagen","Juramento del paje","Eed van de schildknaap","Giuramento del paggio","Serment de l'écuyer"],
+ "Hamstring Pounce":["Sehnensprung","Salto desgarrador","Peessprong","Balzo debilitante","Bondissement entravant"],
+ "Silver Current":["Silberstrom","Corriente plateada","Zilverstroom","Corrente argentata","Courant argenté"],
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
 
  'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],

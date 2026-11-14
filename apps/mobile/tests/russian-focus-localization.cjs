@@ -6,17 +6,20 @@ require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}
 }).outputText,f);
 const {RUSSIAN_FOCUS_ROWS}=require('../src/i18n/russian-focus.ts');
+const {RUSSIAN_CONTINUATION_ROWS}=require('../src/i18n/russian-continuation.ts');
+const continuationKeys=Object.keys(RUSSIAN_CONTINUATION_ROWS);
+for(const key of continuationKeys)assert.ok(!Object.prototype.hasOwnProperty.call(RUSSIAN_FOCUS_ROWS,key),'Duplicate focused/continuation RU key: '+key);
 const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
-const keys=Object.keys(RUSSIAN_FOCUS_ROWS);
+const keys=Object.keys({...RUSSIAN_FOCUS_ROWS,...RUSSIAN_CONTINUATION_ROWS});
 assert.ok(keys.length>=4925,'Expected expanded Russian UI coverage');
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 const modules=['account','app-shell','battle','companions','creation','gameplay','navigation','profile','progression','social'];
 const sources=modules.map(name=>fs.readFileSync(path.join(__dirname,'../src/i18n/'+name+'.ts'),'utf8'));
 const owned=new Set(sources.flatMap(source=>[...source.matchAll(/^\s*(['"])(.*?)\1\s*:\s*\[/gm)].map(match=>match[2])));
 for(const key of keys){
-  const translated=RUSSIAN_FOCUS_ROWS[key];
+  const translated=RUSSIAN_FOCUS_ROWS[key]??RUSSIAN_CONTINUATION_ROWS[key];
   assert.ok(owned.has(key),'Missing exact source key '+key);
   assert.ok(translated.trim(),'Empty Russian translation for '+key);
   assert.deepEqual(tokens(translated),tokens(key),'Placeholder mismatch: '+key);
@@ -120,7 +123,7 @@ for(const key of keys)assert.ok(!Object.hasOwn(EARLY_LOCALE_ROWS,key),'Duplicate
 const russianOwned=new Set([...keys,...Object.keys(EARLY_LOCALE_ROWS)].filter(key=>owned.has(key)));
 const coverage=(100*russianOwned.size/owned.size).toFixed(1);
 assert.ok(russianOwned.size>=keys.length,'Coverage cannot be smaller than focused translations');
-console.log('PASS: '+keys.length+' focused Russian UI translations, source keys, placeholders, and language fallback');
+console.log('PASS: '+keys.length+' focused and continuation Russian UI translations, source keys, placeholders, and language fallback');
 console.log('Russian catalog coverage: '+russianOwned.size+'/'+owned.size+' distinct authored keys ('+coverage+'%). Remaining keys fall back to English.');
 for(let i=0;i<modules.length;i++){
   const keysInModule=new Set([...sources[i].matchAll(/^\s*(['"])(.*?)\1\s*:\s*\[/gm)].map(match=>match[2]));

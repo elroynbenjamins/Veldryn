@@ -956,6 +956,10 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
   if(!contract)throw new Error('This contract has expired.');
   if((state.character!.personalSeasonal?.claimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
+  const ledger=state.account.personalSeasonalClaimLedger??{},previousClaimants=ledger[contract.id]??[];
+  const maximumClaims=Math.max(1,Math.min(5,Math.max(state.account.unlockedCharacterSlots??1,1+(state.otherCharacters?.length??0))));
+  if(previousClaimants.includes(state.character!.id))throw new Error('This contract reward was already claimed.');
+  if(previousClaimants.length>=maximumClaims)throw new Error('The account has reached its character claim limit for this objective.');
   if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
   // Recompute the allowed rewards from authoritative character progression; never trust client amounts.
   const chosen=choiceId===undefined?contract.rewardOptions[0]:contract.rewardOptions.find(reward=>reward.id===choiceId);
@@ -966,7 +970,8 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const claimed=[...(state.character!.personalSeasonal?.claimIds??[]),contract.id].slice(-120);
   const previousChoices=state.character!.personalSeasonal?.rewardChoices??{};
   const recordedChoices=Object.fromEntries([...Object.entries(previousChoices),[contract.id,chosen.id]].filter(([id])=>claimed.includes(id)));
-  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
+  const updatedLedger=Object.fromEntries([...Object.entries(ledger),[contract.id,[...previousClaimants,state.character.id]]].slice(-240));
+  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),personalSeasonalClaimLedger:updatedLedger,seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
   const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
   return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices})),nowMs);
 }

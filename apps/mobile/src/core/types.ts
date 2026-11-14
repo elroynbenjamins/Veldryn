@@ -21,6 +21,8 @@ export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harv
 export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
+  /** Own daily, weekly and monthly challenge progress, claims and reward selections. */
+  personalSeasonal?:import('./personal-seasonal-state').PersonalSeasonalState;
   classSkillRemainders?:Record<string,number>;
   classTraining?:ClassDrills;
   monsterMasteryPoints?:Record<string,number>;

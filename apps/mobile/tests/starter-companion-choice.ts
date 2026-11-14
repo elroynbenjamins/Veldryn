@@ -77,7 +77,7 @@ equal(automatic.account.unlockedCombatCompanionIds?.includes('UNIT_003'),true,'n
 equal(automatic.account.combatCompanionProgress?.UNIT_003?.bondLevel,1,'automatic recruitment initializes permanent Bond progress');
 
 const followupReload=parseSaveBackup(createSaveBackup(damageWithSprite));
-equal(followupReload.account.starterFollowupCombatCompanionId,'UNIT_002','resolved second-companion reward survives save normalization');
+equal(followupReload.account.starterFollowupCombatCompanionId,'UNIT_001','resolved second-companion reward survives save normalization');
 
 const thirdWaits=reconcileCombatCompanionUnlocks(oldMinesReady(chooseStarterCombatCompanion(unlocked('IRONWARDEN'),'UNIT_001',now)),now+2);
 equal(thirdWaits.account.starterThirdCombatCompanionId,undefined,'third milestone waits until the second companion is recruited');

@@ -11,6 +11,7 @@ declare
   v_old text;
   v_new text;
   v_needle text;
+  v_target regprocedure;
 begin
   -- Online-game contribution gate must look up account membership even when
   -- the currently selected character differs from the character that joined.
@@ -47,7 +48,14 @@ begin
 
   -- Party UI shows the account's active, owned character instead of the
   -- character originally recorded in the immutable membership row.
-  v_old := pg_get_functiondef('public.party_social_state_v16()'::regprocedure);
+  -- Production keeps the original roster projection in a wrapped helper
+  -- (party_social_state_before_weekly_tiers_v1); staging uses the v16 RPC
+  -- directly. Patch the function that actually emits the Party members.
+  v_target := to_regprocedure('public.party_social_state_before_weekly_tiers_v1()');
+  if v_target is null then
+    v_target := 'public.party_social_state_v16()'::regprocedure;
+  end if;
+  v_old := pg_get_functiondef(v_target);
   v_needle := 'join public.characters c on c.id=m.character_id';
   if length(v_old)-length(replace(v_old,v_needle,'')) <> length(v_needle) then
     raise exception 'party_alt_character_social_projection_definition_drift';

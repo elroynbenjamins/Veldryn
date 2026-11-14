@@ -1,6 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
-import {companionMissionDisplayName} from '../i18n/companion-missions-de';
+import {companionMissionDisplayName,companionMissionMaterialName} from '../i18n/companion-missions-de';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {formatLocalizedNumber} from '../i18n/translator';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -201,7 +201,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
     <View style={s.between}><View style={s.flex}><Text style={s.fieldTitle}>{t('Expedition Supplies')}</Text><Text style={[s.meta,foodReady?s.good:s.warning]}>{Math.min(staminaTotal,requiredStamina).toFixed(1)} / {requiredStamina} {t('Stamina')}</Text></View><GameButton compact tone="secondary" title={t('Edit Food')} disabled={busy} onPress={()=>setFoodOpen(true)}/></View>
     {!foodReady?<GameButton compact tone="secondary" title={t('Auto Select Food')} disabled={busy} onPress={()=>setFoodSelection(companionAutoStaminaSelection(state,requiredStamina).selection)}/>:null}
    </View>
-   <View style={s.prepareCard}><Text style={s.eyebrow}>{t('BASE REWARDS')}</Text>{rewards(mission)}<View style={s.materials}>{Object.entries(mission.baseRewards.materials??{}).map(([id,amount])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={19}/><Text style={s.meta}>{amount} {localizedItemName(language,id)}</Text></View>)}</View><View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View></View>
+   <View style={s.prepareCard}><Text style={s.eyebrow}>{t('BASE REWARDS')}</Text>{rewards(mission)}<View style={s.materials}>{Object.entries(mission.baseRewards.materials??{}).map(([id,amount])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={19}/><Text style={s.meta}>{amount} {companionMissionMaterialName(language,id)}</Text></View>)}</View><View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View></View>
    <GameButton title={busy?t('Sending…'):t('Start Expedition')+' · '+duration(mission.durationMs)} disabled={!canSend} loading={busy} onPress={()=>setConfirmOpen(true)}/>
    {!hasCapacity?<Text style={s.warning}>{capacity===0?t('Build Expedition Pens to unlock missions.'):t('All expedition slots are occupied.')}</Text>:null}
    <CompanionDisclosure title={t('Mission Details')} summary={t('Requirements')+' · '+t('Bonus Team')} icon="inventory"><View style={s.details}>
@@ -244,7 +244,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
    <GameModalHeader title={t('Expedition Complete')} onClose={()=>setClaimedReward(null)}/>
    {claimedReward?<View style={s.modalContent}><Text style={s.itemTitle}>{missionName(claimedReward.missionId,claimedReward.name)}</Text><Text style={[s.good,s.itemTitle]}>{t('Rewards Collected')}{claimedReward.grade?' · '+t('Grade')+' '+claimedReward.grade:''}</Text>
     <View style={s.rewardWrap}><Text style={s.rewardText}>{fmt(claimedReward.reward.companionEssence)} {t('Essence')}</Text><Text style={s.rewardText}>{fmt(claimedReward.reward.companionXp)} {t('Companion XP')}</Text><Text style={s.rewardText}>{fmt(claimedReward.reward.bondXp)} {t('Bond XP')}</Text><Text style={s.rewardText}>{fmt(claimedReward.reward.gold)} {t('Gold')}</Text>{claimedReward.reward.bondstones>0?<Text style={s.rewardText}>{claimedReward.reward.bondstones} {t('Bondstones')}</Text>:null}</View>
-    {Object.entries(claimedReward.reward.materials).map(([id,quantity])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={22}/><Text style={s.value}>{quantity} {localizedItemName(language,id)}</Text></View>)}
+    {Object.entries(claimedReward.reward.materials).map(([id,quantity])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={22}/><Text style={s.value}>{quantity} {companionMissionMaterialName(language,id)}</Text></View>)}
     {claimedReward.reward.bonusRewardGranted?<Text style={s.good}>{t('✓ Bonus reward received')}</Text>:null}
     <GameButton title={t('Continue')} onPress={()=>setClaimedReward(null)}/></View>:null}
   </GameModalSurface>

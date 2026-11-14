@@ -11,8 +11,8 @@ require.extensions['.ts']=function(mod,filename){
  mod._compile(transpiled,filename);
 };
 const {
- germanPartyEventTemplates,germanPartyEventTags,germanPartyEventRankReasons,
- partyEventDisplayCopy,partyEventTagText,partyEventRankReasonText,
+ germanPartyEventTemplates,germanPartyEventTags,germanPartyEventRankReasons,germanPartyEventActivityNames,
+ partyEventDisplayCopy,partyEventTagText,partyEventRankReasonText,partyEventActivityText,
 }=require('../src/i18n/party-event-content-de.ts');
 const src=fs.readFileSync(path.join(root,'backend/src/server/liveops/event-definitions.ts'),'utf8');
 const definitions=[...src.matchAll(/id: '(party_event_[^']+)', version: 1, scope: 'party', name: '([^']+)',\s*shortDescription: '([^']+)'/g)]
@@ -64,6 +64,27 @@ for(const [reason,german] of Object.entries(germanPartyEventRankReasons)){
   assert.equal(partyEventRankReasonText(language,reason),reason.replace(/_/g,' '));
 }
 assert.equal(partyEventRankReasonText('de','new_server_reason'),'new server reason');
+
+const partyCore=fs.readFileSync(path.join(mobile,'src/core/party-social.ts'),'utf8');
+const activitySource=partyCore.slice(partyCore.indexOf('export const eventActivityLabel:'),partyCore.indexOf('export function nextUnreachedMilestone'));
+const activities=[...activitySource.matchAll(/\b(combat|gathering|processing|crafting|fishing|hunting|alchemy|delivery):'([^']+)'/g)]
+ .map(([,id,name])=>({id,name}));
+assert.equal(activities.length,8,'Party Event activity source labels changed');
+assert.deepEqual(Object.keys(germanPartyEventActivityNames).sort(),activities.map(row=>row.id).sort());
+for(const {id,name} of activities){
+ assert.equal(germanPartyEventActivityNames[id][0],name,'Activity English source changed: '+id);
+ assert.notEqual(germanPartyEventActivityNames[id][1],name,'Activity still English: '+id);
+ assert.equal(partyEventActivityText('de',id),germanPartyEventActivityNames[id][1]);
+ for(const language of ['en','es','nl','it','fr','ru','tr'])
+  assert.equal(partyEventActivityText(language,id),name);
+}
+const contributions=fs.readFileSync(path.join(mobile,'src/components/EventContributionBreakdownPanel.tsx'),'utf8');
+for(const marker of [
+ 'partyEventActivityText(language,row.activityKind)',
+ 'breakdown.totalPoints.toLocaleString(language)',
+ 'row.points.toLocaleString(language)',
+])assert.ok(contributions.includes(marker),'Contribution German UI wiring missing: '+marker);
+
 const hub=fs.readFileSync(path.join(mobile,'src/components/PartyEventHubPanel.tsx'),'utf8');
 for(const marker of [
  'partyEventDisplayCopy(language,event.name,event.shortDescription)',
@@ -72,4 +93,4 @@ for(const marker of [
  'event.rankedEligibilityMissing.map(x=>partyEventRankReasonText(language,x))',
 ])assert.ok(hub.includes(marker),'Party Event German UI wiring missing: '+marker);
 assert.ok(hub.includes('{event.partyName??ui('),'Player party names must remain unchanged');
-console.log('PASS: 5 authored Party Event templates, 9 tags, 4 ranking reasons, strict source/locale guards and screen wiring');
+console.log('PASS: 5 Party Event templates, 9 tags, 4 rank reasons, 8 activities, source guards and UI wiring');

@@ -180,7 +180,7 @@ const baseline={
     "act('companion_unequip')",
     "act(type,args)",
     "btn('companion_codex',{ id: m.id },m.claimed || !m.complete)",
-    "btn('companion_equip',{ id: selection },!model.compatible || !idle(selection))",
+    "btn('companion_equip',{ id: selection },!idle(selection))",
     "btn('companion_monthly',{ id },claimed || !completed)",
     "btn('companion_recruit',{ id: model.def.id })",
     "btn('companion_showcase',{ id, ids: view.codex.showcaseCompanionIds },view.codex.favoriteCompanionId === id)",

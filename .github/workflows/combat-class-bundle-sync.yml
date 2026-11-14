@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: feature/combat-skill-activation-feedback-20261114
           persist-credentials: true
       - uses: pnpm/action-setup@v4
         with:

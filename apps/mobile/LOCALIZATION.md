@@ -12,6 +12,37 @@ Russian and Turkish have expanded but still incomplete coverage. English remains
 - Localized shield accessibility labels, German battle number formatting, and German player-market price-chart grouping (`de-DE`), resolving the chart's German formatting assertion.
 - Added content-parity and UI-wiring assertions. Other existing mobile CI checks still require separate fixes; these tests have not been validated on an Android build.
 
+## November 14, 2026: German Party Events and Guild identity
+
+- Added guarded German names and descriptions for all **5 authored Party Live Ops event templates**. Both the English event name and description must match the backend template; unknown, modified and player-authored Party names remain unmodified.
+- Localized **9 template event tags**, **4 server-defined ranked-eligibility reasons**, and **8 Party Event activity names**. Event contribution points, scoring, party IDs and reward eligibility remain unchanged.
+- Wired the German copy into the Party Event hub and event contribution breakdown; all displayed breakdown totals use locale-aware number grouping.
+- Localized **4 Guild identity loading/error/retry labels** and existing Guild roster role names, and formatted roster contribution numbers according to the selected language.
+- Registered two focused regression tests that verify content parity against server/client source catalogues, other-language fallback, stale-source protection and render-path wiring. Full CI and Android visual QA are still required.
+
+## November 14, 2026: German Guild membership and recruitment discovery
+
+- Added **40 reviewed German UI translations** for Guild member management and recruitment discovery, covering promotions, demotions, leadership transfer, removal confirmations, safety explanations, filter headings, chips, advanced filters and listing labels.
+- Guarded source strings and substituted player names/objectives by safe placeholder callbacks; user-authored Party/Guild names, recruitment descriptions, tags and backend permission rules are unchanged.
+- Localized the Guild member join date and role presentation, extended management action descriptions to three lines for longer German wording, and preserved the existing scrollable confirmation sheet.
+- Localized recruitment activity/focus badges and expiry labels in German, leaving the existing card ranking, search/filter IDs, expiry calculations and non-German locale behavior unchanged.
+- Registered a dedicated German social-management regression test for 40 reviewed strings, source fallback, runtime substitution and critical UI/permission paths. Full TypeScript/CI and Android visual QA remain outstanding.
+
+## November 14, 2026: German Party Hub and Guild Muster refinement
+
+- Added nine exact-English-keyed German Party Hub guide and control translations, including section help, empty weekly contract, Party search and preference controls. Other locales and player-authored text retain their existing wording.
+- Localized Party activity labels in the header and options, existing private-invite copy, member roles and contract categories using the reviewed social catalog.
+- Shortened German minimum-level presentation from "Lv." to "St." in the Party Hub and recruitment editor without changing level requirements or submit payloads.
+- Applied locale-specific number grouping to Party Contract progress, personal contributions and large Guild Muster daily/weekly totals; point calculations remain numeric and unchanged.
+- Registered a focused static/runtime regression for language isolation, source fallback, UI wiring and preserved gameplay guards. TypeScript, full CI and Android layout checks remain pending.
+
+## November 14, 2026: German Guild Bank and Project detail polish
+
+- Added ID- and exact-English-source-guarded German display names and short labels for all eight published Guild Construction materials in the Guild Bank, without changing storage, crafting or donation IDs.
+- German and English resource search remain usable; unknown material labels and server errors are preserved.
+- Applied selected-language number formatting to Guild Bank, Guild Project contribution totals, project progress, resource goals and supply donations, including large amounts and accessible labels.
+- Reused translated Guild member roles and Guild-material labels on Project detail and contribution surfaces, with new regression guards. CI and narrow-device visual review remain outstanding.
+
 ## November 14, 2026: German Companion combat terminology
 
 - Added exact-source, per-companion German display names for **38 authored combat companion active abilities** and **38 Bond traits** across Asterfall, Sunscar, Frostmarch, Ashlands, Guild and released/event companion content.

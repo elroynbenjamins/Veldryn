@@ -7,6 +7,8 @@ import {radii,spacing,type ThemeColors} from '../theme/theme';
 import {PARTY_LANGUAGES,normalizedPartyPreferences,type PartyLanguage,type PersistentPartySummary,type RecruitmentActivityLevel} from '../core/party-social';
 import type {PublishRecruitmentInput} from '../online/party-social';
 import {useSocialText} from '../i18n/social';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {partyMinimumLevelLabel} from '../i18n/party-surface-de';
 
 const activityChoices:readonly {id:RecruitmentActivityLevel;label:string}[]=[
  {id:'casual',label:'Casual'},
@@ -17,7 +19,7 @@ const activityChoices:readonly {id:RecruitmentActivityLevel;label:string}[]=[
 
 /** One lightweight advert editor for LFG and LFM; dungeon roles stay in dungeon setup. */
 export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}:{initial:PublishRecruitmentInput;party?:PersistentPartySummary|null;busy:boolean;onPublish:(value:PublishRecruitmentInput)=>void;onCancel:()=>void}){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),st=useSocialText(),[draft,setDraft]=useState(initial),[languageOpen,setLanguageOpen]=useState(false);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),locale=useGameLanguage(),st=useSocialText(),[draft,setDraft]=useState(initial),[languageOpen,setLanguageOpen]=useState(false);
  const [advertActivityLevel,setAdvertActivityLevel]=useState<RecruitmentActivityLevel>(initial.activityLevel??'active');
  const [seekerLanguage,setSeekerLanguage]=useState<PartyLanguage>((PARTY_LANGUAGES.some(item=>item.id===initial.language)?initial.language:'any') as PartyLanguage);
  const recruiting=draft.postType==='party_recruiting',prefs=normalizedPartyPreferences(party);
@@ -37,7 +39,7 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
    <View style={s.pill}><Text style={s.pillText}>{recruiting?'LFM':'LFG'}</Text></View>
   </View>
   {recruiting?<View style={s.summary}><View style={s.between}><Text style={s.summaryTitle}>{st('Your Party')}</Text><Text style={s.available}>{st('{count} open',{count:Math.max(0,4-(party?.members.length??1))})}</Text></View>
-    <Text style={s.hint}>{languageName}{prefs.minimumLevel?' · Lv. '+prefs.minimumLevel+'+':''}</Text>
+    <Text style={s.hint}>{languageName}{prefs.minimumLevel?' · '+partyMinimumLevelLabel(locale,prefs.minimumLevel):''}</Text>
     <Text style={s.help}>{st('Language and minimum level follow your Party settings.')}</Text>
    </View>:null}
   <View style={s.section}>

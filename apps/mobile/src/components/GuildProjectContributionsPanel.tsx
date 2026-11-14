@@ -1,6 +1,8 @@
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import type {Language} from '../i18n/languages';
+import {guildBankResourceName} from '../i18n/guild-bank-ui';
 import {guildProjectAuthoredCopy} from '../i18n/guild-project-authored';
 import {guildFlowFocusText} from '../i18n/guild-flow-ui';
 import {useOnlineGuildProjectUiText} from '../i18n/online-guild-project-ui';
@@ -15,12 +17,12 @@ import {IdentityArtwork} from './SocialIdentity';
 
 const TOP_COUNT=5;
 
-function sourceSummary(member:OnlineGuildProjectMemberContribution,ui:ReturnType<typeof useOnlineGuildProjectUiText>){
+function sourceSummary(member:OnlineGuildProjectMemberContribution,ui:ReturnType<typeof useOnlineGuildProjectUiText>,language:Language){
  return [
-  member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',
-  member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',
-  member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):'',
-  member.donationPoints?ui('Donate {count}',{count:member.donationPoints.toLocaleString()}):'',
+  member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString(language)}):'',
+  member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString(language)}):'',
+  member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString(language)}):'',
+  member.donationPoints?ui('Donate {count}',{count:member.donationPoints.toLocaleString(language)}):'',
  ].filter(Boolean).join(' · ');
 }
 
@@ -73,7 +75,7 @@ export function GuildProjectContributionsPanel({projects,embedded=false}:{
    <Text style={s.muted}>{ui('{count} members',{count:members.length})}</Text>
   </View>
   {shown.map((member,index)=>{
-   const sources=sourceSummary(member,ui);
+   const sources=sourceSummary(member,ui,language);
    return <View key={member.accountId} style={[s.member,index<3&&s.topMember]}>
     <Text style={[s.rank,index<3&&s.topRank]}>{'#'+(index+1)}</Text>
     <IdentityArtwork name={member.displayName} accountId={member.accountId} size={34}/>
@@ -83,7 +85,7 @@ export function GuildProjectContributionsPanel({projects,embedded=false}:{
      {member.meaningful?<Text style={s.qualified}>{ui('Counts toward contributor minimum')}</Text>
       :member.points>0?<Text style={s.mutedSmall}>{ui('Below contributor minimum')}</Text>:null}
     </View>
-    <Text numberOfLines={2} style={s.points}>{ui('{count} effort',{count:member.points.toLocaleString()})}</Text>
+    <Text numberOfLines={2} style={s.points}>{ui('{count} effort',{count:member.points.toLocaleString(language)})}</Text>
    </View>;
   })}
   {!members.length?<Text style={s.empty}>{ui('No Guild members found.')}</Text>:null}
@@ -100,13 +102,13 @@ export function GuildProjectContributionsPanel({projects,embedded=false}:{
   {detailsOpen?<View style={s.details}>
    <Text style={s.description}>{authored.description}</Text>
    {project.kind!=='development'?<View style={s.breakdown}>
-    <Text style={s.muted}>{ui('Combat: {count}',{count:project.combatPoints.toLocaleString()})}</Text>
-    <Text style={s.muted}>{ui('Skilling: {count}',{count:project.skillingPoints.toLocaleString()})}</Text>
+    <Text style={s.muted}>{ui('Combat: {count}',{count:project.combatPoints.toLocaleString(language)})}</Text>
+    <Text style={s.muted}>{ui('Skilling: {count}',{count:project.skillingPoints.toLocaleString(language)})}</Text>
    </View>:null}
    {project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>
     {guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.resourceIcon} resizeMode="contain" accessible={false}/>:null}
-    <Text style={[s.description,s.flex]}>{goal.label}</Text>
-    <Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
+    <Text style={[s.description,s.flex]}>{guildBankResourceName(language,goal.resourceId,goal.label)}</Text>
+    <Text style={s.resourceAmount}>{goal.current.toLocaleString(language)} / {goal.target.toLocaleString(language)}</Text>
    </View>)}
    {weekly?<View style={s.rules}><Text style={s.muted}>{ui(project.projectMode==='donation'
     ?'Donate eligible supplies · Each member may cover up to 50% · Claim within 7 days.'

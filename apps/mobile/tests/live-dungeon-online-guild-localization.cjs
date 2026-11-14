@@ -63,7 +63,7 @@ for(const token of [
  "ui('Member contributions')",
  "ui('Top 5 contributors')",
  "member.displayName",
- "{goal.label}",
+ "guildBankResourceName(language,goal.resourceId,goal.label)",
  "300 effort for Guild Bank reward · Claim within 7 days.",
  "300 effort for 500 Gold · Claim within 7 days.",
 ])assert.ok(contributionBoard.includes(token),'Guild contributor details or localized rewards missing in new compact panel: '+token);

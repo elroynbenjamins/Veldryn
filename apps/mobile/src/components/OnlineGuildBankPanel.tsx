@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {useGuildBankUiText} from '../i18n/guild-bank-ui';
+import {guildBankResourceName,guildBankResourceShortName,useGuildBankUiText} from '../i18n/guild-bank-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {Keyboard,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {Panel} from './Panel';
@@ -16,7 +16,6 @@ import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {loadOnlineGuildSkills,type GuildSkillsSnapshot} from '../online/guild-skills';
 import {depositOnlineGuildBank,pendingGuildBankDeposit,discardPendingGuildBankDeposit,type PendingGuildBankDeposit} from '../online/guild-bank';
 
-const resourceTitle=(id:string)=>id==='gold'?'Gold':guildUpgradeComponentName(id)??id.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase());
 type Need={current:number;upcoming:number;skills:number};
 type BankSection='inventory'|'needed'|'activity';
 function projectNeeds(snapshot:GuildTokenShopSnapshot,skillSnapshot:GuildSkillsSnapshot|null){
@@ -53,6 +52,10 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
  focusResourceId?:string|null;onFocusHandled?:()=>void;onOpenConstruction?:()=>void;
 }){
  const ui=useGuildBankUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
+  const resourceTitle=(id:string)=>{
+   const english=id==='gold'?'Gold':guildUpgradeComponentName(id)??id.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase());
+   return guildBankResourceName(language,id,english);
+  };
  // Preserve readable touch targets when accessibility fonts are significantly enlarged.
  const accessibleGrid=windowWidth<430||fontScale>=1.25;
  const roomyGrid=windowWidth<350||fontScale>=1.55;
@@ -110,22 +113,16 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   const aNow=(needs.get(a)?.current??0)+(needs.get(a)?.skills??0)>0?0:1,bNow=(needs.get(b)?.current??0)+(needs.get(b)?.skills??0)>0?0:1;
   return aNow-bNow||Number(b==='gold')-Number(a==='gold')||a.localeCompare(b);
  });
- const visibleIds=ids.filter(id=>resourceTitle(id).toLowerCase().includes(search.trim().toLowerCase()));
+ const visibleIds=ids.filter(id=>[resourceTitle(id),guildUpgradeComponentName(id)??''].some(name=>name.toLocaleLowerCase(language).includes(search.trim().toLocaleLowerCase(language))));
  const shortageNow=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)-balance(id));
  const shortageUpcoming=(id:string)=>Math.max(0,(needs.get(id)?.upcoming??0)-Math.max(0,balance(id)-(needs.get(id)?.current??0)-(needs.get(id)?.skills??0)));
  const currentIds=ids.filter(id=>(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)>0);
  const upcomingIds=ids.filter(id=>(needs.get(id)?.upcoming??0)>0);
  const remainingTotal=ids.reduce((sum,id)=>sum+depositCapacity(id),0);
  const storedTypes=ids.filter(id=>balance(id)>0).length;
- const shortName=(id:string)=>resourceTitle(id)
-  .replace('Reinforced Timber Bundle','Timber Bundle')
-  .replace("Mason's Keystone",'Keystone')
-  .replace('Forged Rivet Crate','Forged Rivets')
-  .replace('Fortification Hinge Set','Hinge Set')
-  .replace('Heraldic Dye Flask','Heraldic Dye')
-  .replace('Beacon Oil Flask','Beacon Oil');
+ const shortName=(id:string)=>guildBankResourceShortName(language,id,resourceTitle(id));
  const status=(id:string)=>shortageNow(id)>0?'Needed now':shortageUpcoming(id)>0?'Upcoming':'Covered';
- const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString()+'k':value.toLocaleString();
+ const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString(language)+'k':value.toLocaleString(language);
  const activityTime=(iso:string)=>{
   const date=new Date(iso);
   if(!Number.isFinite(date.getTime()))return ui('Recent');
@@ -144,7 +141,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    // timed out, so update displayed local stock for either confirmed receipt.
    setLocalDeductions(previous=>({...previous,[input.resourceId]:(previous[input.resourceId]??0)+input.amount}));
    setNotice(response.alreadyProcessed?ui('Saved deposit confirmed. No additional resources were deducted.'):
-    ui('{amount} {resource} deposited into the Guild Bank.',{amount:input.amount.toLocaleString(),resource:resourceTitle(input.resourceId)}));
+    ui('{amount} {resource} deposited into the Guild Bank.',{amount:input.amount.toLocaleString(language),resource:resourceTitle(input.resourceId)}));
    try{await onReload();setSkillRefresh(x=>x+1)}catch{setNotice(ui('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.'));}
   }catch(reason){
    setConfirming(false);setSelection(null);
@@ -168,7 +165,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
  const inventoryCard=(id:string)=>{
   const onHand=balance(id),remaining=depositCapacity(id),state=status(id),stock=availableQuantity(id);
   return <Pressable key={id} accessibilityRole="button"
-   accessibilityLabel={ui('{resource}, {stored} in Guild Bank. {more} more can be donated.',{resource:resourceTitle(id),stored:onHand.toLocaleString(),more:remaining.toLocaleString()})}
+   accessibilityLabel={ui('{resource}, {stored} in Guild Bank. {more} more can be donated.',{resource:resourceTitle(id),stored:onHand.toLocaleString(language),more:remaining.toLocaleString(language)})}
    accessibilityHint={ui("Opens material details and donation options")}
    disabled={depositDisabled} onPress={()=>choose(id)}
    style={({pressed})=>[s.bankSlot,accessibleGrid&&s.accessibleSlot,roomyGrid&&s.roomySlot,state==='Covered'&&s.fundedSlot,
@@ -191,8 +188,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   return <View key={(upcoming?'later-':'now-')+id} style={s.neededRow}>
    <View style={s.neededArt}>{id==='gold'?<GoldIcon size={34}/>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
    <View style={s.flex}><Text numberOfLines={2} style={s.name}>{resourceTitle(id)}</Text>
-    <Text style={s.meta}>{ui('{stored} stored · {more} more to deposit',{stored:balance(id).toLocaleString(),more:shortage.toLocaleString()})}{!upcoming&&(needs.get(id)?.skills??0)>0?' · '+ui('Guild Skills'):''}</Text>
-    {playerState?<Text style={s.meta}>{ui('You own {count} · {available} available',{count:ownedQuantity(id).toLocaleString(),available:(availableQuantity(id)??0).toLocaleString()})}</Text>:null}
+    <Text style={s.meta}>{ui('{stored} stored · {more} more to deposit',{stored:balance(id).toLocaleString(language),more:shortage.toLocaleString(language)})}{!upcoming&&(needs.get(id)?.skills??0)>0?' · '+ui('Guild Skills'):''}</Text>
+    {playerState?<Text style={s.meta}>{ui('You own {count} · {available} available',{count:ownedQuantity(id).toLocaleString(language),available:(availableQuantity(id)??0).toLocaleString(language)})}</Text>:null}
    </View>
    {shortage>0?<GameButton compact tone="secondary" title={ui("Donate")} disabled={depositDisabled} onPress={()=>choose(id)}/>:
     <Text style={[s.meta,s.nowText]}>{ui('In bank')}</Text>}
@@ -211,7 +208,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   <View style={[s.stats,roomyGrid&&s.statsWrap]}>
    <View style={[s.stat,roomyGrid&&s.wideStat]}><Text style={s.statLabel}>{ui('STORED MATERIALS')}</Text><Text style={s.statValue}>{snapshot.bank?storedTypes:'—'}<Text style={s.statSuffix}>{' '+ui('types')}</Text></Text></View>
    {!roomyGrid?<View style={s.statDivider}/>:null}
-   <View style={[s.stat,roomyGrid&&s.wideStat]}><Text style={s.statLabel}>{ui('STILL TO DEPOSIT')}</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}>{' '+ui('units')}</Text></Text></View>
+   <View style={[s.stat,roomyGrid&&s.wideStat]}><Text style={s.statLabel}>{ui('STILL TO DEPOSIT')}</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString(language):'—'}<Text style={s.statSuffix}>{' '+ui('units')}</Text></Text></View>
   </View>
   <View style={s.fundingGuide}>
    <Text style={s.guideTitle}>{ui('How Guild funding works')}</Text>
@@ -230,7 +227,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   {!!notice&&<Text accessibilityLiveRegion="polite" style={s.success}>{notice}</Text>}
   {pending?<View style={s.pending}>
    <Text style={s.name}>{ui('Deposit needs confirmation')}</Text>
-   <Text style={s.help}>{ui('{amount} {resource} · Retry the saved receipt. Do not create a second donation.',{amount:pending.amount.toLocaleString(),resource:resourceTitle(pending.resourceId)})}</Text>
+   <Text style={s.help}>{ui('{amount} {resource} · Retry the saved receipt. Do not create a second donation.',{amount:pending.amount.toLocaleString(language),resource:resourceTitle(pending.resourceId)})}</Text>
    <View style={s.actions}>
     <GameButton compact title={ui("Retry saved deposit")} disabled={busy} loading={busy} onPress={()=>deposit(pending)}/>
     <GameButton compact tone="secondary" title={ui("Discard local retry")} disabled={busy} onPress={discard}/>
@@ -279,7 +276,7 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
      <Text numberOfLines={2} style={s.meta}>{resourceTitle(item.resourceId)} · {activityTime(item.createdAt)}</Text>
     </View>
     <Text style={[s.activityAmount,{color:item.kind==='deposit'||item.kind==='project_reward'?C.good:C.info}]}>
-     {item.kind==='deposit'||item.kind==='project_reward'?'+':'−'}{item.amount.toLocaleString()}
+     {item.kind==='deposit'||item.kind==='project_reward'?'+':'−'}{item.amount.toLocaleString(language)}
     </Text>
    </View>):<View style={s.empty}><Text style={s.name}>{ui('No recorded activity yet')}</Text>
     <Text style={s.help}>{ui('Deposits and project allocations will appear here after they are confirmed.')}</Text></View>}
@@ -292,8 +289,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
     <View style={s.modalSummary}>
      <View style={s.modalArt}>{selected==='gold'?<GoldIcon size={56}/>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
-      <Text style={s.help}>{ui('{amount} from your inventory into the shared Guild Bank',{amount:amount.toLocaleString()})}</Text>
-      <Text style={s.meta}>{ui('{count} currently stored',{count:balance(selected).toLocaleString()})}</Text>
+      <Text style={s.help}>{ui('{amount} from your inventory into the shared Guild Bank',{amount:amount.toLocaleString(language)})}</Text>
+      <Text style={s.meta}>{ui('{count} currently stored',{count:balance(selected).toLocaleString(language)})}</Text>
      </View>
     </View>
     <View style={s.warningCard}><Text style={s.help}>{ui('This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.')}</Text></View>
@@ -307,14 +304,14 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
     <View style={s.modalSummary}>
      <View style={s.modalArt}>{selected==='gold'?<GoldIcon size={56}/>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
-      <Text style={s.help}>{ui('{count} stored in the shared Bank',{count:balance(selected).toLocaleString()})}</Text>
+      <Text style={s.help}>{ui('{count} stored in the shared Bank',{count:balance(selected).toLocaleString(language)})}</Text>
       <Text style={s.meta}>{ui('Only published Construction and released Skill materials can be deposited')}</Text>
      </View>
     </View>
     <View style={[s.modalStats,roomyGrid&&s.modalStatsWrap]}>
-     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('GUILD OWNS')}</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
-     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('YOU OWN')}</Text><Text style={s.modalNumber}>{playerState?ownedQuantity(selected).toLocaleString():'—'}</Text></View>
-     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('CAN DONATE')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
+     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('GUILD OWNS')}</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString(language)}</Text></View>
+     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('YOU OWN')}</Text><Text style={s.modalNumber}>{playerState?ownedQuantity(selected).toLocaleString(language):'—'}</Text></View>
+     <View style={[s.modalStat,roomyGrid&&s.modalStatWide]}><Text style={s.statLabel}>{ui('CAN DONATE')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString(language)}</Text></View>
     </View>
     <Text style={s.name}>{ui('Donation amount')}</Text>
     <TextInput value={quantity} onChangeText={setQuantity} selectTextOnFocus keyboardType="number-pad"
@@ -326,10 +323,10 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
      style={({pressed})=>[s.preset,pressed&&s.pressed]}>
      <Text style={s.presetText}>{typeof preset==='number'?preset:ui(preset)}</Text>
     </Pressable>)}</View>
-    {playerState?<Text style={s.meta}>{ui('Available unlocked: {count}',{count:(availableQuantity(selected)??0).toLocaleString()})}</Text>:null}
+    {playerState?<Text style={s.meta}>{ui('Available unlocked: {count}',{count:(availableQuantity(selected)??0).toLocaleString(language)})}</Text>:null}
     {maxAmount<=0?<Text style={s.warning}>{depositCapacity(selected)>0?ui('No unlocked stock available to donate.'):ui('The Guild Bank has enough for current requirements. Upcoming construction unlocks at its required Guild Level.')}</Text>:
-     !valid?<Text style={s.warning}>{ui('Enter a whole number between 1 and {max}.',{max:maxAmount.toLocaleString()})}</Text>:
-     <Text style={s.meta}>{ui('Up to {max} can be donated now. The server rechecks your inventory and Guild requirements.',{max:maxAmount.toLocaleString()})}</Text>}
+     !valid?<Text style={s.warning}>{ui('Enter a whole number between 1 and {max}.',{max:maxAmount.toLocaleString(language)})}</Text>:
+     <Text style={s.meta}>{ui('Up to {max} can be donated now. The server rechecks your inventory and Guild requirements.',{max:maxAmount.toLocaleString(language)})}</Text>}
     <View style={s.warningCard}><Text style={s.help}>{ui('Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.')}</Text></View>
     <View style={s.actions}><View style={s.flex}><GameButton tone="secondary" title={ui("Cancel")} disabled={busy} onPress={close}/></View>
      <View style={s.flex}><GameButton title={ui("Review donation")} disabled={!valid||depositDisabled} loading={busy} onPress={confirmDeposit}/></View></View>

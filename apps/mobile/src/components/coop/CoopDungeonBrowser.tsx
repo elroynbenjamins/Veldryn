@@ -111,10 +111,10 @@ function expeditionAccent(event:CoopEventExpeditionPreview){
 function EventExpeditionCard({language,event,onPress}:{language:Language;event:CoopEventExpeditionPreview;onPress:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),available=event.status==='available',definition=liveEventDef(event.liveEventId??''),visuals=definition?liveEventVisuals(definition.visualKey):seasonalIdentity(event)?liveEventVisuals('veilbreak'):undefined;
- const accent=expeditionAccent(event);
+ const accent=expeditionAccent(event),artwork=seasonalDungeonArtwork(event.id,visuals?.heroBackground);
  return <Pressable accessibilityRole="button" accessibilityLabel={event.name+'. '+(available?ct(language,'browse.available'):event.lockedReason??ct(language,'event.preview'))} onPress={onPress} style={({pressed})=>[s.eventCard,{borderColor:accent,backgroundColor:accent+'13'},pressed&&s.pressed]}>
    <View style={s.cardRow}>
-     {visuals?<Image source={seasonalDungeonArtwork(event.id,visuals.heroBackground)} resizeMode="cover" style={s.eventThumb}/>:<View style={[s.eventFallback,{borderColor:accent}]}><Text style={{color:accent,fontSize:24}}>✦</Text></View>}
+     {artwork?<Image source={artwork} resizeMode="cover" style={s.eventThumb}/>:<View style={[s.eventFallback,{borderColor:accent}]}><Text style={{color:accent,fontSize:24}}>✦</Text></View>}
      <View style={s.cardCopy}><Text style={[s.eventName,{color:accent}]}>{event.eventName}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{event.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:event.minLevel})} · {event.rewardMarks} {definition?.currencyName??accountText(language,'event currency')}</Text><Text style={[s.eventStatus,{color:accent}]}>{available?st('LIVE'):ct(language,'event.preview')}</Text></View>
      <Text style={[s.compactChevron,{color:accent}]}>›</Text>
    </View>

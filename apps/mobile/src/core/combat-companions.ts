@@ -264,23 +264,41 @@ export function chooseStarterCombatCompanion<T extends CombatCompanionStateHost>
 }
 function starterFollowupCandidate(state:CombatCompanionStateHost){
  const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
- const candidates=STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).filter(def=>!owned.has(def.id));
- // Prefer role diversity for free story rewards, without restricting selection.
- const role=state.character?classCompanionRole(state.character.classId):undefined;
- return candidates.find(def=>def.role!==role)??candidates[0];
+ return STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).find(def=>!owned.has(def.id));
 }
 export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHost>(state:T,nowMs=Date.now()):T{
   let next=sanitizeCombatCompanionState(state);
-  // The starter trio is progression-guided: choose any first companion;
-  // the remaining two arrive at Silverbrook and Old Mines milestones.
-  for(const def of COMBAT_COMPANIONS){if(isStarterCompanionId(def.id)||(next.account.unlockedCombatCompanionIds??[]).includes(def.id))continue;if(def.unlockRequirements.length&&def.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement)))next=unlockCombatCompanion(next,def.id,nowMs);}
+  // Progression companions auto-join when their server-verified requirements
+  // are complete. Shop and event acquisition continue through their own flows.
+  for(const def of COMBAT_COMPANIONS){
+    if(isStarterCompanionId(def.id)||(next.account.unlockedCombatCompanionIds??[]).includes(def.id))continue;
+    if(companionCanRecruitFromRequirements(def)&&def.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement)))
+      next=unlockCombatCompanion(next,def.id,nowMs);
+  }
   const sprite=combatCompanionDef('UNIT_003')!,sentry=combatCompanionDef('UNIT_002')!;
-  if(next.account.starterCombatCompanionId&&!next.account.starterFollowupCombatCompanionId&&sprite.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement))){
-   const candidate=starterFollowupCandidate(next);if(candidate){next=unlockCombatCompanion(next,candidate.id,nowMs);next={...next,account:{...next.account,starterFollowupCombatCompanionId:candidate.id}} as T;}
+  if(next.account.starterCombatCompanionId&&sprite.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement))){
+    // Silverbrook specifically earns the Sprite, regardless of player class.
+    // Older saves sometimes received the Sentry instead: retain that earned
+    // companion while also granting the missing Sprite, exactly once.
+    next=unlockCombatCompanion(next,sprite.id,nowMs);
+    if(!next.account.starterFollowupCombatCompanionId){
+      const candidate=next.account.starterCombatCompanionId===sprite.id?starterFollowupCandidate(next):sprite;
+      if(candidate){
+        next=unlockCombatCompanion(next,candidate.id,nowMs);
+        next={...next,account:{...next.account,starterFollowupCombatCompanionId:candidate.id}} as T;
+      }
+    }
   }
   if(next.account.starterFollowupCombatCompanionId&&!next.account.starterThirdCombatCompanionId&&sentry.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement))){
-   const owned=new Set(next.account.unlockedCombatCompanionIds??[]),candidate=STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).find(def=>!owned.has(def.id));
-   if(candidate){next=unlockCombatCompanion(next,candidate.id,nowMs);next={...next,account:{...next.account,starterThirdCombatCompanionId:candidate.id}} as T;}
+    const owned=new Set(next.account.unlockedCombatCompanionIds??[]);
+    const missing=STARTER_COMPANION_IDS.find(id=>!owned.has(id));
+    // A legacy account may already own all three after Silverbrook recovery.
+    // Mark the third milestone complete without creating a duplicate grant.
+    const thirdId=missing??STARTER_COMPANION_IDS.find(id=>id!==next.account.starterCombatCompanionId&&id!==next.account.starterFollowupCombatCompanionId);
+    if(thirdId){
+      next=unlockCombatCompanion(next,thirdId,nowMs);
+      next={...next,account:{...next.account,starterThirdCombatCompanionId:thirdId}} as T;
+    }
   }
   return next;
 }

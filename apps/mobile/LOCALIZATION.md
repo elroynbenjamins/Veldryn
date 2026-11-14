@@ -4,6 +4,13 @@ Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`
 
 Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
+## November 14, 2026: German World Boss and Regional Crisis content
+
+- Added exact-source German translations for the **two authored World Boss names/descriptions**, **three boss phases**, **three Regional Crisis names/descriptions**, and **three crisis stages** (22 authored strings), plus five status/counter labels.
+- Wired the safe fallback translation into World Boss and Regional Crisis detail screens and the shared-world overview. The overview now uses localized section prefixes and German percentage spacing, while retaining canonical region IDs.
+- English and every non-German locale retain their source/canonical behavior. Player names, unknown server responses, template keys, phase identifiers, state and scoring are untouched.
+- Added source-parity checks against authoritative backend definitions, plus UI-callsite assertions, to the localization regression suite. TypeScript/CI and device text-expansion checks are still needed.
+
 ## November 14, 2026: German class disciplines and Combat XP split
 
 - Added exact-source German display translations for all **14 authored class disciplines**, their **14 skill themes**, and the **Max HP** label in the Skill Guide. Class skill IDs, experience calculation, combat balance and saved character state remain unchanged.

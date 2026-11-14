@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {useGameplayText} from '../i18n/gameplay';
 import {AppState,Platform,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -30,8 +31,10 @@ const upgradeError:Record<string,string>={
 
 export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const {gl,language}=useGameplayText();
+ const de=(value:string)=>language==='de'?gl(value):value;
  const [snapshot,setSnapshot]=useState<GuildSkillsSnapshot|null>(null);
- const [loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
+ const [loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[noticeSuccess,setNoticeSuccess]=useState(false);
  const mounted=useRef(true),upgradeFlight=useRef(false);
 
  const load=async()=>{
@@ -59,37 +62,38 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
   if(!snapshot||busy||upgradeFlight.current)return;
   const node=snapshot.nodes.find(n=>n.id===skillId);
   if(!node)return;
-  if(!node.released){setNotice(upgradeError.guild_skill_not_released);return;}
+  if(!node.released){setNotice(de(upgradeError.guild_skill_not_released));setNoticeSuccess(false);return;}
   upgradeFlight.current=true;
-  setBusy(true);setNotice('');
+  setBusy(true);setNotice('');setNoticeSuccess(false);
   // Idempotent per (skill, target rank): a retry reuses the key, so a dropped
   // response can never charge the Guild Bank twice for the same rank.
   const requestKey=`${skillId}-r${node.rank+1}`;
   try{
    const result=await upgradeOnlineGuildSkill(skillId,requestKey);
-   setNotice(result.alreadyProcessed?'Already applied. Synced your ranks.':`${node.name} upgraded to rank ${result.rank}.`);
+   setNotice(result.alreadyProcessed?de('Already applied. Synced your ranks.'):language==='de'?`${de(node.name)} auf Rang ${result.rank} verbessert.`:`${node.name} upgraded to rank ${result.rank}.`);
+   setNoticeSuccess(true);
    await load();
   }catch(reason){
    const code=reason instanceof Error?reason.message:'';
-   setNotice(upgradeError[code]??'Could not complete the upgrade. Try again.');
+   setNotice(de(upgradeError[code]??'Could not complete the upgrade. Try again.'));setNoticeSuccess(false);
   }finally{upgradeFlight.current=false;if(mounted.current)setBusy(false);}
  };
 
- if(loading&&!snapshot)return <LoadingState label="Loading Guild Skills…" detail="Reading authoritative skill points, ranks and Guild Bank materials."/>;
+ if(loading&&!snapshot)return <LoadingState label={de('Loading Guild Skills…')} detail={de('Reading authoritative skill points, ranks and Guild Bank materials.')}/>;
  if(error&&!snapshot){
   const updateRequired=error==='app_update_required';
   return <Panel>
-   <Text style={s.title}>Guild Skills</Text>
-   <Text accessibilityRole="alert" style={updateRequired?s.copy:s.error}>{updateRequired?'A newer version of VELDRYN is needed to view Guild Skills. Your other Guild activities are still available.':error}</Text>
-   {updateRequired&&Platform.OS==='android'?<GameButton compact title="Check Google Play for update" onPress={()=>openStoreListing()}/>:null}
-   <GameButton compact tone="secondary" title={updateRequired?'Check again':'Retry'} loading={loading} disabled={loading} onPress={()=>void load()}/>
+   <Text style={s.title}>{de('Guild Skills')}</Text>
+   <Text accessibilityRole="alert" style={updateRequired?s.copy:s.error}>{updateRequired?de('A newer version of VELDRYN is needed to view Guild Skills. Your other Guild activities are still available.'):de(error)}</Text>
+   {updateRequired&&Platform.OS==='android'?<GameButton compact title={de('Check Google Play for update')} onPress={()=>openStoreListing()}/>:null}
+   <GameButton compact tone="secondary" title={de(updateRequired?'Check again':'Retry')} loading={loading} disabled={loading} onPress={()=>void load()}/>
   </Panel>;
  }
- if(!snapshot)return <Panel><Text style={s.title}>Guild Skills</Text><Text style={s.copy}>Join a Guild to shape shared Skill Trees.</Text></Panel>;
+ if(!snapshot)return <Panel><Text style={s.title}>{de('Guild Skills')}</Text><Text style={s.copy}>{de('Join a Guild to shape shared Skill Trees.')}</Text></Panel>;
 
  const noneReleased=releasedIds.size===0;
  return <View style={s.root}>
-  {noneReleased?<View style={[s.releaseNotice,{backgroundColor:C.infoSurface,borderColor:C.info}]}><Text style={s.kicker}>BONUSES ACTIVATING SOON</Text><Text style={s.copy}>Skill ranks and materials can be reviewed. Upgrades remain disabled until released.</Text></View>:null}
+  {noneReleased?<View style={[s.releaseNotice,{backgroundColor:C.infoSurface,borderColor:C.info}]}><Text style={s.kicker}>{de('BONUSES ACTIVATING SOON')}</Text><Text style={s.copy}>{de('Skill ranks and materials can be reviewed. Upgrades remain disabled until released.')}</Text></View>:null}
   <GuildSpecializationPaths
    guildLevel={snapshot.guildLevel}
    skillPoints={snapshot.skillPoints}
@@ -100,9 +104,9 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
    onSpend={id=>void spend(id)}
    onViewBank={onViewBank}
   />
-  {busy?<Text accessibilityRole="alert" style={s.copy}>Processing upgrade…</Text>:null}
-  {notice?<Text accessibilityRole="alert" style={[s.notice,{color:notice.includes('upgraded')||notice.includes('Synced')?C.good:C.warning}]}>{notice}</Text>:null}
-  <GameButton compact tone="secondary" title={loading?'Refreshing…':'Refresh Guild Skills'} loading={loading} disabled={loading||busy} onPress={()=>void load()}/>
+  {busy?<Text accessibilityRole="alert" style={s.copy}>{de('Processing upgrade…')}</Text>:null}
+  {notice?<Text accessibilityRole="alert" style={[s.notice,{color:noticeSuccess?C.good:C.warning}]}>{notice}</Text>:null}
+  <GameButton compact tone="secondary" title={de(loading?'Refreshing…':'Refresh Guild Skills')} loading={loading} disabled={loading||busy} onPress={()=>void load()}/>
  </View>;
 }
 

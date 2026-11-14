@@ -1,6 +1,7 @@
 import type {CharacterState,GameState} from './types';
 import type {SeasonalActivity,SeasonalPeriod,SeasonalProgress} from './seasonal-quests';
 
+/** Personal challenges and their claim receipts follow the selected character, not the account-wide currency wallet. */
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
 export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','event'];
 const activityTags=SEASONAL_ACTIVITY_TAGS;

@@ -43028,20 +43028,6 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
 });
 
 // ../apps/mobile/src/core/combat-companions.ts
-var CLASS_COMPANION_ROLE = {
-  IRONWARDEN: "tank",
-  BASTION: "tank",
-  DREADGUARD: "tank",
-  DAWNKEEPER: "support",
-  STONECALLER: "support",
-  WAYFINDER: "damage",
-  RAVAGER: "damage",
-  HEXWEAVER: "damage",
-  KNIFE_DANCER: "damage"
-};
-var classCompanionRole = (classId) => CLASS_COMPANION_ROLE[classId];
-var canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
-var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatCompanion(characterRole, companionRole, "normal_combat");
 var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
 var isStarterCompanionId = (id) => typeof id === "string" && starterCompanionIds.has(id);
@@ -43109,9 +43095,8 @@ function migrateLegacyCombatCompanionAccount(input) {
     const def = combatCompanionDef(id);
     progress[id] = normalizeProgress(def, merged[id], legacyOwnedCompanionProgress());
   }
-  const characterRole = input?.character?.classId && CLASS_COMPANION_ROLE[input.character.classId];
   const explicitStarter = isStarterCompanionId(account.starterCombatCompanionId) && legacyOwned.includes(account.starterCombatCompanionId) ? account.starterCombatCompanionId : void 0;
-  const legacyStarter = explicitStarter ?? legacyOwned.find((id) => isStarterCompanionId(id) && (!characterRole || combatCompanionDef(id)?.role !== characterRole));
+  const legacyStarter = explicitStarter ?? legacyOwned.find(isStarterCompanionId);
   const followup = isStarterCompanionId(account.starterFollowupCombatCompanionId) && legacyOwned.includes(account.starterFollowupCombatCompanionId) ? account.starterFollowupCombatCompanionId : void 0;
   const third = isStarterCompanionId(account.starterThirdCombatCompanionId) && legacyOwned.includes(account.starterThirdCombatCompanionId) ? account.starterThirdCombatCompanionId : void 0;
   return {
@@ -43149,7 +43134,7 @@ function sanitizeCombatCompanionState(state) {
   const cleanCharacter = (character) => {
     if (!character) return character;
     const id = legacyEquippedCombatCompanionId(character), def = id ? combatCompanionDef(id) : void 0;
-    const valid = !!id && !!def && owned.includes(id) && canEquipCompanion(classCompanionRole(character.classId), def.role);
+    const valid = !!id && !!def && owned.includes(id);
     return { ...character, equippedCombatCompanionId: valid ? id : void 0 };
   };
   return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress } };
@@ -44984,7 +44969,6 @@ var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => 
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
 var RARITY_MAX_LEVEL = COMPANION_RARITY_MAX_LEVEL;
 var STAGE_CAPS = { standard: [10, 20, 20, 20], rare: [10, 20, 25, 25], elite: [10, 20, 25, 30], prestige: [10, 20, 25, 35] };
-var canUseCharacterCombatCompanion2 = (characterRole, companionRole, _mode) => characterRole !== companionRole;
 function validateCompanionLoadout(input) {
   if (!input.companionId) return { ok: true, companionId: null };
   const role2 = COMPANION_ROLE[input.companionId];
@@ -44993,7 +44977,6 @@ function validateCompanionLoadout(input) {
   if (input.busyCompanionIds?.includes(input.companionId)) return { ok: false, reason: "companion_busy" };
   const characterRole = CLASS_ROLE[input.classId];
   if (!characterRole) return { ok: false, reason: "unknown_character_class" };
-  if (!canUseCharacterCombatCompanion2(characterRole, role2, input.combatMode ?? "normal_combat")) return { ok: false, reason: "same_role_restricted" };
   return { ok: true, companionId: input.companionId };
 }
 function companionLevelCap(companionId, ascensionTier) {

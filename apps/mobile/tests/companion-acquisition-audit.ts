@@ -3,7 +3,7 @@ import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,combatCompanionDef} from '../src
 import {EVENT_COMPANIONS} from '../src/content/event-companions-v2';
 import {GUILD_COMBAT_COMPANIONS} from '../src/content/guild-companions-v1';
 import {MONSTERS} from '../src/content/monsters';
-import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks,companionCanRecruitFromRequirements,recruitEligibleCombatCompanion,starterCombatCompanionChoicePending,chooseStarterCombatCompanion} from '../src/core/combat-companions';
+import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks,companionCanRecruitFromRequirements,recruitEligibleCombatCompanion,starterCombatCompanionChoices,starterCombatCompanionChoicePending,chooseStarterCombatCompanion} from '../src/core/combat-companions';
 import {validateGameCommand} from '../src/core/game-commands';
 import {companionRequirementProgress} from '../src/core/companion-presentation';
 import {classCombatSkillTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
@@ -69,8 +69,9 @@ ok(reject(main,EVENT_COMPANIONS[0].id),'Event rewards cannot be granted via recr
 const questProof={questId:'QST_005',status:'claimed' as const};
 const rosterReady={...main,quests:main.quests.filter(q=>q.questId!=='QST_005'),otherCharacters:(main.otherCharacters??[]).map(row=>({...row,quests:[...row.quests.filter(q=>q.questId!=='QST_005'),questProof]}))};
 ok(starterCombatCompanionChoicePending(rosterReady),'Completed quest on the inactive character must offer starter selection');
-const starter=chooseStarterCombatCompanion(rosterReady,'UNIT_001',1000);
-ok(starter.account.starterCombatCompanionId==='UNIT_001'&&starter.account.unlockedCombatCompanionIds?.includes('UNIT_001'),'Starter choice must work using inactive character quest proof');
+ok(starterCombatCompanionChoices(rosterReady).map(row=>row.id).join(',')==='UNIT_001,UNIT_002,UNIT_003','All three starter roles must be selectable by every class');
+const starter=chooseStarterCombatCompanion(rosterReady,'UNIT_002',1000);
+ok(starter.account.starterCombatCompanionId==='UNIT_002'&&starter.account.unlockedCombatCompanionIds?.includes('UNIT_002'),'Same-role starter choice must work using inactive character quest proof');
 
 main=reconcileCombatCompanionUnlocks(main,1000);
 ok(main.account.unlockedCombatCompanionIds?.includes('UNIT_007'),'Gloamknife Shade should recruit from the account roster');

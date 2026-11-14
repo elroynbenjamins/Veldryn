@@ -64,6 +64,7 @@ const deleted=deleteAccountCharacter(firstReturn,secondId,'DELETE Second',now);
 check(deleted.character?.id===firstId&&deleted.character?.personalSeasonal?.claimIds.length===3,'Deleting an alt cannot remove the active character quest receipts');
 check(deleted.account.personalSeasonalClaimLedger?.[ids[0]]?.length===2,'Deleting an alt must not erase anti-farming receipts');
 const replacement=earned(createAccountCharacter(deleted,'STONECALLER','Replacement','male',now));
+check(replacement.character?.id!==secondId,'Recreated alts must receive a fresh never-reused character ID');
 let farmBlocked=false;
 try{claimSeasonalContract(replacement,'daily',ids[0],now);}catch(e){farmBlocked=e instanceof Error&&e.message.includes('claim limit');}
 check(farmBlocked,'Deleting and recreating an alt must not farm the same daily objective again');

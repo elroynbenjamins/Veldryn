@@ -88,6 +88,10 @@ async function main(){
 
  const limit=instance(1000000);
  const sameAccount=await Promise.all(Array.from({length:12},(_,i)=>prepared('SAME_OWNER','ATTEMPT_'+i+'_V10')));
+ // These are twelve distinct owned fighter IDs on one account. The World
+ // Boss attempts cap must apply to the account, not multiply per character.
+ assert.equal(new Set(sameAccount.map(p=>p.command.characterId)).size,12);
+ assert.ok(sameAccount.every(p=>p.command.accountId==='SAME_OWNER'));
  const slots=await Promise.allSettled(sameAccount.map(p=>limit.reserve(p,NOW)));
  assert.equal(slots.filter(x=>x.status==='fulfilled').length,3);
  assert.equal(slots.filter(x=>x.status==='rejected').length,9);

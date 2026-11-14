@@ -32,7 +32,7 @@ export function normalizePersonalSeasonalState(raw:unknown):PersonalSeasonalStat
   ?[...new Set(row.claimIds.filter((id):id is string=>typeof id==='string'&&/^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id)))].slice(-120)
   :[];
  const choices=row.rewardChoices&&typeof row.rewardChoices==='object'&&!Array.isArray(row.rewardChoices)
-  ?Object.fromEntries(Object.entries(row.rewardChoices).filter(([id,choice])=>claimIds.includes(id)&&typeof choice==='string'&&choice.length<=100))
+  ?Object.fromEntries(Object.entries(row.rewardChoices).filter(([id,choice])=>claimIds.includes(id)&&typeof choice==='string'&&choice.length<=100)) as Record<string,string>
   :{};
  return {progress:normalizeSeasonalProgress(row.progress),claimIds,rewardChoices:choices};
 }

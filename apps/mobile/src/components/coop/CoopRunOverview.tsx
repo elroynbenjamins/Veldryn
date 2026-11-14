@@ -263,7 +263,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     <View style={s.rewardOverlay}>
      <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
-      <Text style={s.rewardRunCaption}>{run.region?`${run.region} · `:''}{modeLabel}{run.routePath?` · ${st('ROUTE')} ${run.routePath.totalDepth}`:''}</Text>
+      <Text style={s.rewardRunCaption}>{run.region?`${run.region} · `:''}{modeLabel}</Text>
       {!rewardSurfaceReady?<Text style={s.copy}>{run.phase==='failed'
        ?st("No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.")
        :st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}

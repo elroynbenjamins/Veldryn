@@ -951,8 +951,8 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */
 export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string):GameState{
-  if(!state.character)throw new Error('Create a character first');
   state=ensurePersonalSeasonalState(state);
+  if(!state.character)throw new Error('Create a character first');
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
   if(!contract)throw new Error('This contract has expired.');
   if((state.character!.personalSeasonal?.claimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');

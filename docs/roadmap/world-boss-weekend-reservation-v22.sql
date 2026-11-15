@@ -4,30 +4,28 @@
 --
 -- Event starts Monday 00:00 UTC, runs until following Monday 00:00 UTC.
 -- Mon-Fri: community War Camp preparations (separate donation ledger).
--- Sat/Sun: 00:00/08:00/16:00 UTC, six windows 30 minutes each.
+-- Sat 00:00 UTC through Mon 00:00 UTC (exclusive): one continuous 48h raid window.
 -- Week 2: cooldown, enforced by a separately scheduled event calendar.
 -- Three battle attempts PER ACCOUNT PER EVENT, NOT per character or window.
 BEGIN;
 
--- Pure UTC math used for schedule testing; returns zero-based window index.
--- Negative one means closed. Not a public or user-supplied clock endpoint.
+-- Pure UTC math; returns 0 throughout the 48-hour weekend, -1 otherwise.
+-- Not a public or user-supplied clock endpoint.
 CREATE FUNCTION private.world_boss_v22_window_at(
  p_starts_at timestamptz,p_now timestamptz
 ) RETURNS integer LANGUAGE plpgsql IMMUTABLE STRICT SECURITY INVOKER
  SET search_path='' AS $win$
 DECLARE
  elapsed_seconds numeric;
- idx integer;
 BEGIN
  IF p_starts_at<>date_trunc('day',p_starts_at AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
     OR extract(isodow FROM p_starts_at AT TIME ZONE 'UTC')<>1
  THEN RETURN -1; END IF;
- elapsed_seconds:=extract(epoch FROM p_now-p_starts_at)-432000;
- IF elapsed_seconds<0 OR elapsed_seconds>=172800 THEN RETURN -1; END IF;
- idx:=floor(elapsed_seconds/28800)::integer;
- IF idx<0 OR idx>5 OR elapsed_seconds-idx*28800>=1800
+ elapsed_seconds:=extract(epoch FROM p_now-p_starts_at);
+ -- Exactly Saturday 00:00 through Monday 00:00 UTC, half-open.
+ IF elapsed_seconds<432000 OR elapsed_seconds>=604800
  THEN RETURN -1; END IF;
- RETURN idx;
+ RETURN 0;
 END
 $win$;
 

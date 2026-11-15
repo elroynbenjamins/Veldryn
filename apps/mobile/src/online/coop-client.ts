@@ -38,7 +38,7 @@ export function coopErrorMessage(error:unknown,fallback='Dungeons are temporaril
  if(message==='dungeon_level_requirement')return 'Requires level 10 for Asterfall or level 25 for Sunscar.';
  if(message==='dungeon_power_requirement')return 'Your Combat Power is below the selected dungeon tier requirement.';
  if(message==='dungeon_unavailable')return 'This dungeon is no longer open for new runs.';
- if(message==='stale_game_version')return 'Your character changed while preparing this dungeon. Refresh your loadout and try again.';
+ if(message==='stale_game_version')return 'Your character updated while joining the dungeon. Please try again.';
  if(error instanceof Error&&error.message.trim())return error.message;
  if(typeof error==='string'&&error.trim())return error;
  if(error&&typeof error==='object'){

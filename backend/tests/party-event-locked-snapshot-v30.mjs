@@ -9,6 +9,21 @@ const filepath=fileURLToPath(new URL(
  '../supabase/migrations/20261115190000_party_event_locked_claim_snapshot_v30.sql',
  import.meta.url));
 const migration=readFileSync(filepath,'utf8');
+// Prevent account/offer lock inversion with the existing v25 week-first
+// preflight: an unlocked offer locator must precede WEEK row locking,
+// which must precede taking the OFFER update lock.
+const locate=migration.indexOf(
+ 'where id=p_offer_id and account_id=p_account_id;');
+const lockWeek=migration.indexOf(
+ 'where party_id=o.party_id and event_starts_at=o.event_starts_at\n  for update;');
+const lockOffer=migration.indexOf(
+ 'where id=p_offer_id and account_id=p_account_id for update;');
+if(!(locate>=0&&locate<lockWeek&&lockWeek<lockOffer)){
+ throw Error('v30_incorrect_account_week_offer_lock_order');
+}
+if(!migration.includes("w.status not in ('active','closed','settled')")){
+ throw Error('v30_settled_week_claim_window_regressed');
+}
 const db=await PGlite.create();
 const account='11111111-1111-4111-8111-111111111111';
 const offer='33333333-3333-4333-8333-333333333333';

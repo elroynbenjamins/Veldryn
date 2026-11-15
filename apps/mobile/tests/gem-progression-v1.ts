@@ -112,10 +112,10 @@ ok(failed.kind==='gem'&&!failed.gemSucceeded,'A high trusted roll should fail a 
 ok(gemPouch(failed.state).stacks.find(row=>row.itemId==='gem:stat_might:g1')?.quantity===2,'Failed merge must return two gems, consuming one');
 ok(!gemPouch(failed.state).stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Failed merge must not mint the upgraded gem');
 ok(failed.state.character!.gold===state.character!.gold-failedStart.recipe.gold,'Failed merge must still charge Gold');
-ok(equipmentCraftingQueueModel(failed.state,failedStart.job.completesAtMs).jobs.every(row=>row.id!==failedStart.job.id),'Failed merge must settle and leave the queue');
+ok(equipmentCraftQueueModel(failed.state,failedStart.job.completesAtMs).jobs.every(row=>row.id!==failedStart.job.id),'Failed merge must settle and leave the queue');
 const legacyStart=startGemCombine(state,recipeId,3000);
-const legacyState={...legacyStart.state,account:{...legacyStart.state.account,equipmentCraftingQueue:[{...legacyStart.job,combineSuccessChancePercent:undefined}]}};
-const legacyClaim=claimForgeJob(legacyState,legacyStart.job.id,legacyStart.job.completesAtMs,.999);
+const legacyMergeState={...legacyStart.state,account:{...legacyStart.state.account,equipmentCraftingQueue:[{...legacyStart.job,combineSuccessChancePercent:undefined}]}};
+const legacyClaim=claimForgeJob(legacyMergeState,legacyStart.job.id,legacyStart.job.completesAtMs,.999);
 ok(legacyClaim.kind==='gem'&&legacyClaim.gemSucceeded,'Already queued pre-change merges must remain guaranteed');
 
 const cacheNow=Date.UTC(2026,8,21,12),cacheWeek='2026-09-21';

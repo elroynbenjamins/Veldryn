@@ -1,5 +1,6 @@
 import {gameplayHandler,GameplayError,type GameplayServices} from './gameplay';
 import {withReleaseGate,releasePolicyLoader} from './release-gate';
+import {rankingsHandler} from './rankings-handler';
 import {regionalCombatHandlerV1} from './regional-combat';
 import {guildShopReadHandler,guildShopDailyClaimHandler,guildShopPurchaseHandler,guildShopEventClaimHandler,guildConstructionDonationHandler,guildBankDepositHandler,guildShopWeeklyClaimHandler,type GuildShopReadServices} from './guild-shop-read';
 import {guildSkillsReadHandler,guildSkillsUpgradeHandler,type GuildSkillsServices} from './guild-skills-read';
@@ -13,6 +14,7 @@ const services:GameplayServices={
  randomId:()=>crypto.randomUUID(),randomRoll:()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296,
 };
 const gameplay=gameplayHandler(services),regionalCombat=regionalCombatHandlerV1(services);
+const rankings=rankingsHandler(services); // Both release gates are disabled.
 const guildShopServices:GuildShopReadServices={
  authenticate:services.authenticate,
  rpc:services.rpc,
@@ -31,6 +33,7 @@ const guildSkillsUpgrade=guildSkillsUpgradeHandler(guildSkillsServices);
 Deno.serve(withReleaseGate(async request=>{
  const route=new URL(request.url);
  if(route.pathname.includes('/regional-combat'))return regionalCombat(request);
+ if(route.searchParams.get('view')==='rankings')return rankings(request);
  if(route.searchParams.get('view')==='guild-shop'){
   if(route.searchParams.get('action')==='purchase')return guildShopPurchase(request);
   if(route.searchParams.get('action')==='event-claim')return guildShopEventClaim(request);

@@ -38,14 +38,11 @@ jobs:
         run: |
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
-      - name: Typecheck core and run milestone regression tests
+      - name: Run isolated monthly milestone regression tests
         run: |
-          pnpm --dir apps/mobile typecheck:core
-          node tools/run-mobile-tests.mjs monthly-quest-milestones
-      - name: Typecheck full mobile app and online backend
-        run: |
-          pnpm --dir apps/mobile typecheck
-          pnpm --dir backend typecheck:online
+          pnpm --dir apps/mobile exec tsc -p tsconfig.monthly-quest-milestones.json
+          node apps/mobile/.monthly-quest-build/apps/mobile/tests/monthly-quest-milestones.js
+          node apps/mobile/.monthly-quest-build/apps/mobile/tests/monthly-quest-copy.js
       - name: Rebuild and verify generated game engine
         run: |
           pnpm --dir backend build:online
@@ -76,3 +73,8 @@ jobs:
           done
           echo 'Could not sync generated Edge bundles without concurrent branch changes.' >&2
           exit 1
+
+      - name: Full mobile and online backend typecheck (release gate)
+        run: |
+          pnpm --dir apps/mobile typecheck
+          pnpm --dir backend typecheck:online

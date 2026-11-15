@@ -40,28 +40,42 @@ async function main(){
  assert.equal(WORLD_BOSS_V22_ACCOUNT_RAID_LIVE,false);
  assert.equal(WORLD_BOSS_V22_MAX_ATTEMPTS,3);
  const windows=worldBossWindowsV22(MONDAY);
- assert.equal(windows.length,6);
- assert.deepEqual(windows.map(x=>new Date(x.startsAtUtcMs).getUTCHours()),
-  [0,8,16,0,8,16]);
- assert.deepEqual(windows.map(x=>x.day),
-  ['saturday','saturday','saturday','sunday','sunday','sunday']);
- for(let i=0;i<6;i++){
-  const w=windows[i];
-  assert.equal(w.endsAtUtcMs-w.startsAtUtcMs,30*MINUTE);
-  if(i>0)assert.equal(w.startsAtUtcMs-windows[i-1].startsAtUtcMs,8*HOUR);
-  assert.equal(worldBossScheduleAtV22(MONDAY,w.startsAtUtcMs).phase,'raid');
-  assert.equal(worldBossScheduleAtV22(MONDAY,w.endsAtUtcMs-1).phase,'raid');
-  assert.equal(assertWorldBossAttackWindowV22(MONDAY,w.startsAtUtcMs).index,i);
-  reject(()=>assertWorldBossAttackWindowV22(MONDAY,w.endsAtUtcMs),
+ assert.equal(windows.length,1);
+ const [weekend]=windows;
+ assert.equal(weekend.index,0);
+ assert.equal(weekend.day,'weekend');
+ assert.equal(weekend.startsAtUtcMs,MONDAY+5*DAY);
+ assert.equal(weekend.endsAtUtcMs,MONDAY+7*DAY);
+ assert.equal(weekend.endsAtUtcMs-weekend.startsAtUtcMs,48*HOUR);
+ // A continuous attack window: Saturday and Sunday at every hour, not just slots.
+ for(const offset of [0,1,30*MINUTE,8*HOUR,16*HOUR,
+  24*HOUR-1,24*HOUR,24*HOUR+8*HOUR,36*HOUR,
+  47*HOUR+59*MINUTE,48*HOUR-1]){
+  const when=weekend.startsAtUtcMs+offset;
+  assert.equal(worldBossScheduleAtV22(MONDAY,when).phase,'raid');
+  assert.equal(assertWorldBossAttackWindowV22(MONDAY,when).index,0);
+  assert.equal(worldBossScheduleAtV22(MONDAY,when).remainingWindows,1);
+ }
+ for(const when of [MONDAY,MONDAY+5*DAY-1,
+  weekend.endsAtUtcMs,weekend.endsAtUtcMs+1,MONDAY+14*DAY]){
+  reject(()=>assertWorldBossAttackWindowV22(MONDAY,when),
    'attack_window_closed');
  }
  assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY-1).phase,'upcoming');
  assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY).phase,'preparation');
  assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY+5*DAY-1).phase,'preparation');
+ assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY+5*DAY-1).nextWindow?.index,0);
  assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY+5*DAY).phase,'raid');
  assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY+7*DAY).phase,'cooldown');
+ assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY+7*DAY).remainingWindows,0);
  assert.equal(worldBossScheduleAtV22(MONDAY,MONDAY+14*DAY).phase,'expired');
  assert.equal(nextWorldBossCycleV22(MONDAY),MONDAY+14*DAY);
+ // A later spring DST change must never alter the 48-hour UTC weekend.
+ const spring=Date.UTC(2027,2,29);
+ const springWeekend=worldBossWindowsV22(spring)[0];
+ assert.equal(springWeekend.startsAtUtcMs,spring+5*DAY);
+ assert.equal(springWeekend.endsAtUtcMs,spring+7*DAY);
+ assert.equal(assertWorldBossAttackWindowV22(spring,spring+6*DAY+12*HOUR).index,0);
  reject(()=>worldBossWindowsV22(MONDAY+DAY),'invalid_monday_start_utc');
  reject(()=>worldBossScheduleAtV22(MONDAY,NaN),'invalid_clock');
 
@@ -192,8 +206,8 @@ async function main(){
   ...battleArgs,warCamp:{...warCamp,levels:{...warCamp.levels,fortifications:2}},
  }), 'war_camp_digest_mismatch');
  assert.ok(launchPlayer('Ironwarden',25).role==='tank');
- console.log('WORLD_BOSS_V22_SIX_WINDOWS_AND_ACCOUNT_RAID='+JSON.stringify({
-  windows:6,daysPreparing:5,sessionsEveryHours:8,windowMinutes:30,
+ console.log('WORLD_BOSS_V22_CONTINUOUS_WEEKEND_AND_ACCOUNT_RAID='+JSON.stringify({
+  weekendHours:48,continuous:true,daysPreparing:5,
   worldBossAttemptsPerAccount:3,
   verifiedSameAccountCharacters:5,oneBattleForAll:true,
   accountDamageCapForEqualFive:1.28,

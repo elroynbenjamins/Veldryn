@@ -30,7 +30,7 @@ Acceptance examples from the fixtures:
 
 ## Synthetic load observations — not a production SLA
 
-Staging PostgreSQL EXPLAIN ANALYZE completed a 50,000-row synthetic ranking/window/materialization query with 10,051 returned-score rows in approximately **91 ms**, and a synthetic JSONB snapshot extraction/page filtering query in approximately **71 ms**. These measure only narrow SQL operations without many concurrent players, real production row complexity, network transfer, profile badge rendering or auth overhead. The 50k own-standing SQL fixture also passed.
+Staging PostgreSQL EXPLAIN ANALYZE completed a 50,000-row synthetic ranking/window/materialization query with 10,051 returned-score rows in approximately **91 ms**, and a synthetic JSONB snapshot extraction/page filtering query in approximately **71 ms**. A separate **50,000-synthetic-account / 150,000-skill-row** JSONB profession parsing, duplicate level/XP pair deduplication, account sum and window-rank query completed in **815 ms** on staging (single run). These measure only narrow SQL operations without many concurrent players, real production row complexity, network transfer, profile badge rendering or auth overhead. The 50k own-standing SQL fixture also passed.
 
 Before release, run production-shaped concurrent tests against **staging** across 19 boards, with current/guild joins and multi-character saves, taking p50/p95/p99, peak private snapshot storage, maintenance throughput, and 10-minute expiration behavior. Establish and enforce the resource budget; do not extrapolate from those two synthetic numbers.
 

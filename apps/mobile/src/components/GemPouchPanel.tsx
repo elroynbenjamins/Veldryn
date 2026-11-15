@@ -1,8 +1,10 @@
 import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
-import {gemPouch,gemPouchUpgradePreview} from '../core/gem-pouch';
-import {availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1} from '../core/gem-progression-v1';
+import {gemPouch,gemPouchUpgradePreview,gemStorageQuantity} from '../core/gem-pouch';
+import {professionActionPace} from '../core/profession-action-pace';
+import {gemPouchBonusDisplayV1} from '../core/gem-pouch-bonus-display';
+import {availableGemCombinesV1,availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1,gemCombineRecipeIdV1,gemCombineRecipeV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import type {GameCommand} from '../core/game-commands';
@@ -11,6 +13,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {gemPouchText} from '../i18n/gem-pouch-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {ItemArtwork} from './ItemArtwork';
+import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
 import {ConfirmModal} from './ConfirmModal';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -29,17 +32,23 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
   const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
   const [pendingSell,setPendingSell]=useState<{itemId:string;quantity:number}|null>(null),[pendingDismantle,setPendingDismantle]=useState<string|null>(null);
+  const [pendingCombine,setPendingCombine]=useState<{familyId:string;grade:1|2|3|4}|null>(null);
   const pouch=gemPouch(state),used=pouch.stacks.length,upgrade=gemPouchUpgradePreview(state);
   const pages=Math.ceil(pouch.capacity/PAGE_SIZE),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
   const entries=Array.from({length:Math.min(PAGE_SIZE,pouch.capacity-start)},(_,index)=>pouch.stacks[start+index]);
   const selectedStack=pouch.stacks.find(stack=>stack.itemId===selected);
   const selectedItem=selectedStack?itemDef(selectedStack.itemId):undefined;
+  const selectedBonus=selectedStack?gemPouchBonusDisplayV1(selectedStack.itemId):undefined;
   const selectedMeta=selectedStack?canonicalGemMetaV1(selectedStack.itemId):undefined;
   const selectedRaw=selectedStack?parseMobileRawGemItemIdV1(selectedStack.itemId):undefined;
   const grade=selectedMeta?.grade??selectedRaw?.grade;
   const family=mobileGemFamilyV1(selectedMeta?.familyId??selectedRaw?.familyId??'');
   const rollRange=family&&grade?formatGemRollRangeV1(family.familyId,grade):undefined;
   const refinement=selectedRaw?availableGemRefinementsV1(state).find(row=>row.recipe.familyId===selectedRaw.familyId&&row.recipe.grade===selectedRaw.grade):undefined;
+  const combination=selectedMeta&&selectedMeta.grade<5?availableGemCombinesV1(state).find(row=>row.recipe.familyId===selectedMeta.familyId&&row.recipe.fromGrade===selectedMeta.grade):undefined;
+  const combineRecipe=pendingCombine?gemCombineRecipeV1(gemCombineRecipeIdV1(pendingCombine.familyId,pendingCombine.grade)):undefined;
+  const combineXp=combination?Math.floor(professionActionPace(state,combination.recipe,'forge').xpPerAction+1e-9):0;
+  const pendingCombineXp=combineRecipe?Math.floor(professionActionPace(state,combineRecipe,'forge').xpPerAction+1e-9):0;
   const selectedRarity=selectedItem?rarityMeta(grade?GEM_GRADE_RARITY_V1[grade]:itemRarity(selectedItem)):undefined;
   const favorite=!!selectedStack&&!!state.settings.favoriteItemIds?.includes(selectedStack.itemId),locked=!!selectedStack&&!!state.settings.lockedItemIds?.includes(selectedStack.itemId);
   const protectedGem=favorite||locked;
@@ -60,7 +69,11 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     </View>:null}
     <GameModalSurface visible={!!selectedStack} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}
       backdropLabel={p('Close Gem Pouch item details')} surfaceStyle={s.sheet}>
-      <GameModalHeader eyebrow={p('GEM POUCH · ACCOUNT STORAGE')} title={selectedItem?localizedItemName(language,selectedItem.id):p('Gem details')} onClose={()=>setSelected(null)}/>
+      <GameModalHeader eyebrow={p('GEM POUCH · ACCOUNT STORAGE')} title={selectedItem?localizedItemName(language,selectedItem.id):p('Gem details')} onClose={()=>setSelected(null)}
+        trailing={selectedStack?<InventoryItemHeaderControls favorite={favorite} locked={locked}
+          onFavorite={onFavorite?()=>onFavorite(selectedStack.itemId):undefined}
+          onLock={onLock?()=>onLock(selectedStack.itemId):undefined}
+          disabled={busy} onClose={()=>setSelected(null)} showClose={false}/>:undefined}/>
       {selectedStack&&selectedItem?<ScrollView style={s.sheetScroll} contentContainerStyle={s.sheetBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.gemHero}>
           <View style={[s.largeArt,{borderColor:selectedRarity?.color??C.lineStrong}]}><ItemArtwork itemId={selectedStack.itemId} size={76}/></View>
@@ -84,7 +97,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         </View>:null}
         <View style={s.detail}>
           <Text style={s.itemName}>{p('What it does')}</Text>
-          <Text style={s.meta}>{family?.description??selectedItem.passive??p('Gem material.')}</Text>
+          {selectedBonus?<Text style={[s.buffText,!selectedBonus.active&&{color:C.muted}]}>{selectedBonus.bonus}</Text>:null}
+          {selectedBonus?.detail?<Text style={s.meta}>{selectedBonus.detail}</Text>:null}
           {selectedMeta?.kind==='effect'&&family?<View style={s.resonanceInfo}>
             <Text style={s.itemName}>{p('Resonance bonuses')}</Text>
             {family.resonance2?<Text style={s.meta}>{'2/3 · '+family.resonance2}</Text>:null}
@@ -94,14 +108,21 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
           {protectedGem?<Text style={[s.meta,{color:C.warning}]}>{p('★ Protected: remove Favorite and Lock before selling or dismantling.')}</Text>:null}
         </View>
         <Text style={s.actionTitle}>{p('ACTIONS')}</Text>
-        <View style={s.actions}>
-          <GameButton compact tone="secondary" title={p(favorite?'★ Favorited':'☆ Favorite')} disabled={!onFavorite||busy} onPress={()=>onFavorite?.(selectedStack.itemId)}/>
-          <GameButton compact tone="secondary" title={p(locked?'Unlock':'Lock')} disabled={!onLock||busy} onPress={()=>onLock?.(selectedStack.itemId)}/>
-        </View>
         {selectedRaw&&refinement?<View style={s.refinement}>
           <Text style={s.itemName}>{p('Enchanting · Grade {grade}',{grade:selectedRaw.grade})}</Text>
           <Text style={s.meta}>{p('Requires Lv {level} · {gold} Gold · {materials}',{level:refinement.recipe.level,gold:refinement.recipe.gold.toLocaleString(language),materials:refinement.recipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', ')})}</Text>
           <GameButton compact title={p(refinement.ready?'Refine 1 gem':'Refinement unavailable')} disabled={!onAction||busy||!refinement.ready} onPress={()=>{setSelected(null);return onAction?.({type:'gem_refine',args:{familyId:selectedRaw.familyId,grade:selectedRaw.grade}})}}/>
+        </View>:null}
+        {combination?<View style={s.refinement}>
+          <Text style={s.itemName}>{p('Merge gems')} · G{combination.recipe.fromGrade} → G{combination.recipe.toGrade}</Text>
+          <Text style={s.meta}>{p('Combine 3 identical gems into 1 higher-grade gem.')}</Text>
+          <Text style={[s.meta,{color:C.good}]}>{p('+{xp} Enchanting XP on claim',{xp:combineXp.toLocaleString(language)})}</Text>
+          <Text style={s.meta}>{p('Requires Lv {level} · {gold} Gold · {materials}',{level:combination.recipe.level,gold:combination.recipe.gold.toLocaleString(language),materials:combination.recipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', ')})}</Text>
+          {!combination.recipeReady?<Text style={[s.meta,{color:C.warning}]}>{p('Discover this Effect Gem recipe first.')}</Text>:null}
+          {!combination.skillReady?<Text style={[s.meta,{color:C.warning}]}>{p('Requires Enchanting level {level}',{level:combination.recipe.level})}</Text>:null}
+          {!combination.inputReady?<Text style={[s.meta,{color:C.warning}]}>{p('Missing: {materials}',{materials:combination.recipe.inputs.filter(input=>gemStorageQuantity(state,input.itemId)<input.quantity).map(input=>(input.quantity-gemStorageQuantity(state,input.itemId))+'× '+localizedItemName(language,input.itemId)).join(', ')})}</Text>:null}
+          {protectedGem?<Text style={[s.meta,{color:C.warning}]}>{p('Unfavorite and unlock this gem before merging.')}</Text>:null}
+          <GameButton compact title={p('Merge 3 gems')} disabled={!onAction||busy||!combination.ready||protectedGem} onPress={()=>{setSelected(null);setPendingCombine({familyId:combination.recipe.familyId,grade:combination.recipe.fromGrade})}}/>
         </View>:null}
         <View style={s.actions}>
           <GameButton compact tone="secondary" title={p('Sell 1')} disabled={!onAction||busy||protectedGem||selectedItem.value<=0} onPress={()=>{setSelected(null);setPendingSell({itemId:selectedStack.itemId,quantity:1})}}/>
@@ -111,6 +132,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         <Text style={s.meta}>{p('Gems remain available for equipment socketing and crafting directly from shared storage.')}</Text>
       </ScrollView>:null}
     </GameModalSurface>
+    <ConfirmModal visible={!!pendingCombine} title={p('Merge gems?')} message={combineRecipe?p('Reserve {materials} and {gold} Gold to produce 1× {result} in the Forge queue.',{materials:combineRecipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', '),gold:combineRecipe.gold.toLocaleString(language),result:localizedItemName(language,combineRecipe.output.itemId)})+'\n'+p('+{xp} Enchanting XP on claim',{xp:pendingCombineXp.toLocaleString(language)}):''} confirmLabel={p('Start merge')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingCombine;setPendingCombine(null);if(pending)void onAction?.({type:'gem_combine',args:{familyId:pending.familyId,grade:pending.grade}})}} onCancel={()=>setPendingCombine(null)}/>
     <ConfirmModal visible={!!pendingSell} title={p('Sell gems from Gem Pouch?')} message={pendingSell?p('{count}× {name} · {gold} Gold. This cannot be undone.',{count:pendingSell.quantity,name:localizedItemName(language,pendingSell.itemId),gold:(pendingSell.quantity*itemDef(pendingSell.itemId).value).toLocaleString(language)}):''} confirmLabel={p('Sell gems')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingSell;setPendingSell(null);if(pending)void onAction?.({type:'gem_pouch_sell',args:pending})}} onCancel={()=>setPendingSell(null)}/>
     <ConfirmModal visible={!!pendingDismantle} title={p('Dismantle this gem?')} message={pendingDismantle?p('Convert 1× {name} into Gem Dust? This cannot be undone.',{name:localizedItemName(language,pendingDismantle)}):''} confirmLabel={p('Dismantle')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const id=pendingDismantle;setPendingDismantle(null);if(id)void onAction?.({type:'gem_dismantle',args:{gemId:id,quantity:1}})}} onCancel={()=>setPendingDismantle(null)}/>
   </View>;
@@ -135,6 +157,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  gradeProgress:{gap:3,marginTop:3},gradeRow:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:8,paddingVertical:5,borderRadius:7},gradeRowActive:{backgroundColor:C.selection},
  gradeLabel:{width:25,...typography.caption,color:C.muted,fontWeight:'800'},gradeBonus:{flex:1,...typography.caption,color:C.text},gradeMark:{fontSize:10,color:C.accent},
  resonanceInfo:{gap:5,marginTop:7},
+ buffText:{fontSize:16,lineHeight:23,color:C.good,fontWeight:'800'},
  actionTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.6},
  refinement:{gap:spacing.sm,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:6},itemName:{...typography.bodyStrong,color:C.text},

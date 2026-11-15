@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {equippedCanonicalStatGemBonusesV1,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
+import {equippedCanonicalStatGemBonusesV1,equippedGemBonuses,equippedEffectGemBonuses,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
 import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
@@ -144,6 +144,28 @@ const compatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,statGemId
 ok(compatibleLegacy.statGemRollPercent===110,'A valid existing named socket retains its saved roll');
 const legacyState={...rollState,character:{...rollState.character!,gearEnhancements:{basic_sword:{rank:0,failures:0,statGemId:might,gemIds:[]}}}};
 ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.power??0)-.004)<1e-10,'Older socketed gems preserve their original midpoint value');
+
+const legacyRollBase={...rollState,inventory:{...rollState.inventory,stacks:[{itemId:'EMBER_SHARD',quantity:5},{itemId:'SWIFT_SIGIL',quantity:4}]}};
+const legacyLow=socketGem(legacyRollBase,'basic_sword','EMBER_SHARD',0);
+ok(gearEnhancement(legacyLow,'basic_sword').statGemRollPercent===80,'Legacy shard sockets now store the 80% minimum roll');
+ok(Math.abs(equippedGemBonuses(legacyLow).attack-.016)<1e-10,'Legacy Ember Shard applies +1.6% Attack at an 80% roll');
+const legacyHigh=replaceGem(legacyLow,'basic_sword','EMBER_SHARD',.999999);
+ok(gearEnhancement(legacyHigh,'basic_sword').statGemRollPercent===120,'Legacy duplicate shards can reroll up to 120%');
+ok(Math.abs(equippedGemBonuses(legacyHigh).attack-.024)<1e-10,'Legacy Ember Shard applies +2.4% Attack at a 120% roll');
+
+const legacyEffectLow=socketGem(legacyHigh,'basic_sword','SWIFT_SIGIL',0);
+ok(gearEnhancement(legacyEffectLow,'basic_sword').effectGemRollPercent===80,'Legacy Effect Sigil stores its own roll');
+ok(Math.abs(equippedEffectGemBonuses(legacyEffectLow).combat_speed-.016)<1e-10,'Legacy Swift Sigil applies +1.6% Combat Speed at an 80% roll');
+const legacyEffectImproved=replaceGem(legacyEffectLow,'basic_sword','SWIFT_SIGIL',.999999);
+ok(Math.abs(equippedEffectGemBonuses(legacyEffectImproved).combat_speed-.024)<1e-10,'Legacy effect reroll improves the active combat modifier to +2.4%');
+const legacyExisting={...legacyRollBase,character:{...legacyRollBase.character!,gearEnhancements:{
+ basic_sword:{rank:0,failures:0,statGemId:'EMBER_SHARD',effectGemId:'SWIFT_SIGIL',gemIds:[]},
+}}};
+ok(Math.abs(equippedGemBonuses(legacyExisting).attack-.02)<1e-10,'Existing socketed legacy shards retain original 100% bonuses');
+ok(Math.abs(equippedEffectGemBonuses(legacyExisting).combat_speed-.02)<1e-10,'Existing socketed legacy sigils retain original 100% effects');
+const trustedLegacy=executeGameCommand(legacyRollBase,{type:'socket',args:{id:'basic_sword',gemId:'EMBER_SHARD'}},1000,{randomRoll:0}).state;
+ok(gearEnhancement(trustedLegacy,'basic_sword').statGemRollPercent===80,'Authoritative legacy sockets persist the trusted server roll');
+
 let untrusted=false;try{executeGameCommand(rollState,{type:'socket',args:{id:'basic_sword',gemId:might}},1000)}catch(error){untrusted=String(error).includes('trusted_random_required')}
 ok(untrusted,'Online authoritative socket commands must reject a missing server random roll');
 const serverSocket=executeGameCommand(rollState,{type:'socket',args:{id:'basic_sword',gemId:might}},1000,{randomRoll:1/9-1e-9}).state;

@@ -6,14 +6,49 @@ import {socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {claimAllReadyEquipmentCrafts,claimForgeJob,startGemRefinement} from '../src/core/equipment-crafting-queue';
 import {gemDepositDestination,gemPouch,gemPouchUpgradePreview,gemStorageQuantity,migrateGemPouch,sellPouchGem,storePouchGem,upgradeGemPouch} from '../src/core/gem-pouch';
 import {gemRefineRecipeIdV1} from '../src/core/gem-progression-v1';
+import {gemPouchBonusDisplayV1} from '../src/core/gem-pouch-bonus-display';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {normalizeSave} from '../src/core/save-normalization';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
+const emberBonus=gemPouchBonusDisplayV1('EMBER_SHARD');
+ok(emberBonus.active&&emberBonus.bonus==='+1.6–2.4% Attack when socketed','Legacy Ember Shard must describe its real attack bonus, not generic material text');
+ok(gemPouchBonusDisplayV1('WARD_SHARD').bonus.includes('+1.6–2.4% Defense'),'Legacy Ward Shard must show its defense bonus');
+ok(gemPouchBonusDisplayV1('VITALITY_HEART_GEM').bonus.includes('+4–6% Max HP'),'Legacy Vitality Heart must show its HP bonus');
+ok(gemPouchBonusDisplayV1('BOSSBANE_SIGIL').bonus.includes('+2.4–3.6% combat power against bosses'),'Legacy effect gems must show their actual combat effect');
+const cutVitality=gemPouchBonusDisplayV1('gem:stat_vitality:g1');
+ok(cutVitality.active&&cutVitality.bonus.includes('Max HP')&&cutVitality.bonus.includes('when socketed'),'Canonical stat gems must show their grade-dependent socket bonus');
+const momentumBonus=gemPouchBonusDisplayV1('gem:effect_momentum:g1');
+ok(momentumBonus.active&&momentumBonus.bonus.includes('stacking damage')&&momentumBonus.detail?.includes('Possible socket strength'),'Canonical effect gems must show both behavior and magnitude');
+const unrefinedBonus=gemPouchBonusDisplayV1('raw_gem:stat_vitality:g1');
+ok(!unrefinedBonus.active&&unrefinedBonus.bonus.includes('No active bonus')&&unrefinedBonus.detail?.includes('After refining'),'Unrefined gems must not imply a currently active buff');
+
 const rawId='raw_gem:stat_vitality:g1',gemId='gem:stat_vitality:g1';
 const start=createCharacter(newGame(0),'IRONWARDEN','Pouch Tester');
+
+const mergeBase=storePouchGem({...start,character:{...start.character!,gold:5000},skills:start.skills.map(row=>row.skillId==='enchanting'?{...row,level:8}:row)},'gem:stat_might:g1',3);
+ok(gemPouch(mergeBase).stacks.find(row=>row.itemId==='gem:stat_might:g1')?.quantity===3,'Merge regression starts with all three gems in shared Gem Pouch');
+let favMergeBlocked=false;
+try{executeGameCommand({...mergeBase,settings:{...mergeBase.settings,favoriteItemIds:['gem:stat_might:g1']}},{type:'gem_combine',args:{familyId:'stat_might',grade:1}},1000)}catch(error){favMergeBlocked=String(error).includes('Unfavorite')}
+ok(favMergeBlocked,'Server must not consume favorited pouch gems during merge');
+let lockMergeBlocked=false;
+try{executeGameCommand({...mergeBase,settings:{...mergeBase.settings,lockedItemIds:['gem:stat_might:g1']}},{type:'gem_combine',args:{familyId:'stat_might',grade:1}},1000)}catch(error){lockMergeBlocked=String(error).includes('Unfavorite')}
+ok(lockMergeBlocked,'Server must not consume locked pouch gems during merge');
+const mergeStarted=executeGameCommand(mergeBase,{type:'gem_combine',args:{familyId:'stat_might',grade:1}},1000).state;
+const mergeXpBefore=mergeStarted.skills.find(row=>row.skillId==='enchanting')!.xp;
+ok(mergeXpBefore===mergeBase.skills.find(row=>row.skillId==='enchanting')!.xp,'Starting a merge must not award XP before a completed Forge claim');
+ok(gemStorageQuantity(mergeStarted,'gem:stat_might:g1')===0,'Starting a Gem Pouch merge consumes exactly three source gems');
+const mergeJob=mergeStarted.account.equipmentCraftingQueue?.find(row=>row.recipeId==='gem_combine:stat_might:g1');
+ok(!!mergeJob,'Gem Pouch merge must enter the existing authoritative Forge queue');
+const mergeClaimed=claimForgeJob(mergeStarted,mergeJob!.id,mergeJob!.completesAtMs).state;
+ok(gemPouch(mergeClaimed).stacks.some(row=>row.itemId==='gem:stat_might:g2'&&row.quantity===1),'Finished merge returns upgraded gem to shared Gem Pouch');
+ok(mergeJob!.xpPerCraft!==undefined&&mergeJob!.xpPerCraft>0,'Gem combination must snapshot positive Enchanting XP in the Forge job');
+ok(mergeClaimed.skills.find(row=>row.skillId==='enchanting')!.xp-mergeXpBefore===Math.floor(mergeJob!.xpPerCraft!+1e-9),'Claiming a completed merge awards the configured Enchanting XP to its owner');
+let repeatMergeClaimBlocked=false;try{claimForgeJob(mergeClaimed,mergeJob!.id,mergeJob!.completesAtMs)}catch{repeatMergeClaimBlocked=true}
+ok(repeatMergeClaimBlocked,'A finished merge cannot be claimed twice to duplicate Enchanting XP');
+
 const base={...start,account:{...start.account,gemPouchMigrationDone:false},character:{...start.character!,level:70,gold:100000},inventory:{capacity:3,stacks:[{itemId:rawId,quantity:1},{itemId:'WISP_DUST',quantity:2}]},bank:{...start.bank,capacity:0,stacks:[]}};
 const recipe=gemRefineRecipeIdV1('stat_vitality',1);
 const reserved=startGemRefinement(base,recipe,1000);

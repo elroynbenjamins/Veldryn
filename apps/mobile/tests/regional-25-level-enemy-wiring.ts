@@ -6,7 +6,7 @@ import {regionalEnemySecondaryStats} from '../src/core/regional-enemy-stats';
 import {regionalClassCounter,regionalCounterCoverage} from '../src/core/regional-class-counter';
 import {CLASSES} from '../src/content/classes';
 import {itemDef} from '../src/content/items';
-import {cumulativeMonsterUnlockIds,encounterLockRequirement} from '../src/core/world-navigation';
+import {cumulativeMonsterUnlockIds,encounterLockRequirement,regionEncounters} from '../src/core/world-navigation';
 import {combatSustainProjection,startCombat} from '../src/core/game';
 import {regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 import type {GameState} from '../src/core/types';
@@ -115,6 +115,17 @@ console.log('REGIONAL BALANCE '+JSON.stringify(models.map(([id])=>{
  const values=balanceRows.filter(x=>x.id===id);
  return {id,killsPerHourMin:Number(Math.min(...values.map(x=>x.killsPerHour)).toFixed(1)),killsPerHourMax:Number(Math.max(...values.map(x=>x.killsPerHour)).toFixed(1)),foodPerHourMax:Number(Math.max(...values.map(x=>x.foodPerHour)).toFixed(1))};
 })));
+const previewState=regionalCombatFixture({regionId:'SUNSCAR',regionName:'Sunscar',monsterId:'DUSTVEIL_RUNNER',level:32,tier:'T3',foodId:'GRILLED_OASIS_CARP'},'prepared','WAYFINDER');
+for(const [name,zone] of [['Sunscar','ZONE_008'],['Frostmarch','ZONE_012']] as const){
+ const rows=regionEncounters(previewState,name,'',false,zone);
+ check(rows.length===3,name+' + '+zone+' must show all three encounters');
+ check(rows.every((m,i)=>!i||rows[i-1].level<=m.level),name+' + '+zone+' must show low difficulty first');
+}
+const asterfallEncounters=regionEncounters(previewState,'Ironwood Forest','',false);
+check(asterfallEncounters.map(x=>x.id).join(',')===MONSTERS.filter(x=>x.zone==='Ironwood Forest').map(x=>x.id).join(','),'Do not reorder existing Asterfall encounters');
+const encounterUi=fs.readFileSync('src/components/RegionEncounterList.tsx','utf8');
+check(encounterUi.includes('regionalClassCounter(monster.id,state.character.classId)'),'Class matchup must use the active character class');
+check(encounterUi.includes('Favorable class matchup'),'Class advantage must be visible in the encounter details');
 check(REGIONAL_AREAS.length===8,'Do not introduce additional subzones');
 check(MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')?.level===25,'Asterfall story boss unchanged');
 console.log('PASS regional enemy wiring: 8 new portraits, 24 normal hunts, overlapping 26–75 chapter bands');

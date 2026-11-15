@@ -49,17 +49,24 @@ BEGIN
         AND jsonb_typeof(x.value->'xp')='number'
         AND x.value->>'xp' ~ '^[0-9]{1,16}(\\.[0-9]{1,3})?$'
     ), per_character AS (
-      SELECT sr.account_id,sr.character_id,sr.skill_id,
-        MAX(sr.skill_level)::bigint AS lvl,MAX(sr.skill_xp) AS xp
+      -- A duplicate cached save must not combine level from one record with XP
+      -- from another. Select one coherent best level/XP snapshot per skill.
+      SELECT DISTINCT ON (sr.account_id,sr.character_id,sr.skill_id)
+        sr.account_id,sr.character_id,sr.skill_id,
+        sr.skill_level::bigint AS lvl,sr.skill_xp AS xp
       FROM skill_rows sr
       WHERE p_board='profession_total' OR sr.skill_id=p_board
-      GROUP BY sr.account_id,sr.character_id,sr.skill_id
+      ORDER BY sr.account_id,sr.character_id,sr.skill_id,
+        sr.skill_level DESC,sr.skill_xp DESC
     )
     SELECT pc.account_id,
       CASE WHEN p_board='profession_total' THEN SUM(pc.lvl)
         ELSE MAX(pc.lvl) END::bigint AS value,
       CASE WHEN p_board='profession_total' THEN SUM(pc.xp)
-        ELSE MAX(pc.xp) END AS secondary_value
+        -- For a single profession, compare XP from the character that
+        -- actually owns the highest level, not another lower-level character.
+        ELSE (array_agg(pc.xp ORDER BY pc.lvl DESC,pc.xp DESC))[1]
+      END AS secondary_value
     FROM per_character pc GROUP BY pc.account_id;
   ELSIF p_board='achievement_score' THEN
     -- Earned V42 Journal milestones, NOT claimed reward receipts.

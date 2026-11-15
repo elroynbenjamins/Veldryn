@@ -360,7 +360,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'discard_preparation':state=game.discardPreparation(state);break;
   case 'gear_link_legacy':state=linkLegacyCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.from,['inventory','bank']),integer(a,'stackIndex',0,1000));message='Legacy Forge copy linked to its existing rarity and quality record';break;
   case 'gear_autosell':{if(typeof a.enabled!=='boolean')throw new Error('invalid_autosell_preference');state={...state,account:{...state.account,craftedGearAutoSellMode:a.enabled?'keep_best_seven':'off'}};message=a.enabled?'Keep Best 7 enabled — only verified, unprotected copies can be sold':'Automatic equipment selling disabled';break;}
-  case 'gear_equip':state=equipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy equipped';break;
+  case 'gear_equip':{
+   const healthBeforeSwap=state.activity?.kind==='combat'?state.character?.currentHp:undefined;
+   state=equipCraftedGearInstance(state,text(a,'instanceId',180));
+   // The previous hunt interval was settled with the old loadout above.
+   // Clamp HP against the new maximum without healing a combatant for swapping.
+   if(healthBeforeSwap!==undefined&&state.character)state.character.currentHp=Math.min(healthBeforeSwap,game.effectiveStats(state).hp);
+   message='Equipment copy equipped';break;
+  }
   case 'gear_unequip':state=unequipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy unequipped';break;
   case 'gear_move':state=moveCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.to,['inventory','bank','equipment_pouch']));message='Equipment copy transferred';break;
   case 'equipment_pouch_move':state=moveLegacyEquipmentPouchStack(state,text(a,'itemId'),integer(a,'quantity',1,100),oneOf(a.from,['inventory','bank','equipment_pouch']),oneOf(a.to,['inventory','bank','equipment_pouch']));message='Equipment moved';break;

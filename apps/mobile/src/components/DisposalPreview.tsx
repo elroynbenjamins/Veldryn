@@ -34,12 +34,13 @@ export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning}:{
    </View>
    <View style={s.itemList}>
      {items.slice(0,3).map((item,index)=>{
-       const meta=rarityMeta(item.rarity??itemRarity(itemDef(item.itemId)));
+       const definition=itemDef(item.itemId),gear=definition.type==='gear';
+       const meta=rarityMeta(item.rarity??itemRarity(definition));
        return <View key={item.itemId+':'+index} style={s.itemRow}>
-         <View style={[s.art,{borderColor:meta.color,backgroundColor:meta.surface}]}><ItemArtwork itemId={item.itemId} size={40}/></View>
+         <View style={[s.art,{borderColor:gear?meta.color:C.lineStrong,backgroundColor:gear?meta.surface:C.panel}]}><ItemArtwork itemId={item.itemId} size={40}/></View>
          <View style={s.copy}>
-           <Text numberOfLines={2} style={[s.itemName,{color:item.rarity?meta.color:C.text}]}>{localizedItemName(language,item.itemId)}</Text>
-           <Text style={s.itemMeta}>{meta.label}{typeof item.quality==='number'?' · Q'+item.quality:''}</Text>
+           <Text numberOfLines={2} style={[s.itemName,{color:gear?meta.color:C.text}]}>{localizedItemName(language,item.itemId)}</Text>
+           {gear?<Text style={s.itemMeta}>{meta.label}{typeof item.quality==='number'?' · Q'+item.quality:''}</Text>:null}
          </View>
          <Text style={s.quantity}>×{item.quantity.toLocaleString(language)}</Text>
        </View>;

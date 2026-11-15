@@ -6,7 +6,8 @@
   "include": [
     "src/core/rankings.ts",
     "src/core/ranking-pagination.ts",
-    "tests/rankings.ts"
+    "tests/rankings.ts",
+    "src/core/rankings-responsive.ts"
   ],
   "exclude": []
 }

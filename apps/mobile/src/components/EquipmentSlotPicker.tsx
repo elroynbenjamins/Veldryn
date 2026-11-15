@@ -61,7 +61,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
  const trade=selected?equipmentTradeOff(before,selected.after):undefined;
  const oldInstance=state.character?.equipmentInstanceIds?.[slot];
  const same=selected&&oldId===selected.itemId&&(selected.instanceId?oldInstance===selected.instanceId:!oldInstance);
- const blocked=state.activity?.kind==='combat'?gl('Stop combat before equipping'):undefined;
+ const blocked=state.activity?.kind==='combat'&&slot!=='weapon'?gl('Stop combat before equipping'):undefined;
   const socket=selected?gemSocketState(selected.projected,selected.itemId):undefined;
  const enhancement=selected?gearEnhancement(selected.projected,selected.itemId):undefined;
  const sets=comparison?.sets??[];

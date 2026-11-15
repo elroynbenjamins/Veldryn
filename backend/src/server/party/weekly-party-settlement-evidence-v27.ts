@@ -234,6 +234,26 @@ export function verifyPrivatePartyEventEvidenceV27(
   };
 }
 
+export interface TrustedPrivatePartyEvidenceReaderV27 {
+  /** The database query must restrict both offer ID and server-owned account. */
+  readEvidence(offerId:string,trustedAccountId:string):
+    Promise<PrivatePartyEventEvidenceV27>;
+}
+
+/** This gate controls the private read-only prototype, never payout. */
+export async function readVerifiedPrivatePartyEvidenceV27(input:{
+  gateEnabled:boolean;offerId:string;trustedAccountId:string;
+  reader:TrustedPrivatePartyEvidenceReaderV27;
+}):Promise<VerifiedPartyEventEvidenceV27>{
+  must(input.gateEnabled,'release_gate_disabled');
+  must(UUID.test(input.offerId)&&UUID.test(input.trustedAccountId),
+    'invalid_trusted_identity');
+  const proof=await input.reader.readEvidence(input.offerId,input.trustedAccountId);
+  return verifyPrivatePartyEventEvidenceV27({
+    offerId:input.offerId,trustedAccountId:input.trustedAccountId,proof,
+  });
+}
+
 /** Never expose the proof as a user-selectable payout action. */
 export async function claimPrivatePartyEventRewardV27():Promise<never>{
   throw new Error('party_event_v27_atomic_payout_unreleased');

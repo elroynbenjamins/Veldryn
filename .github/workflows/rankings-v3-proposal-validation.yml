@@ -22,6 +22,9 @@ on:
       - 'backend/online/edge.ts'
       - '.github/workflows/rankings-v3-proposal-validation.yml'
 
+permissions:
+  contents: read
+
 jobs:
   rankings-v3:
     runs-on: ubuntu-latest

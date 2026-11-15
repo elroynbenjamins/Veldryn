@@ -19,6 +19,8 @@ export interface CombatStats {
 export interface AbilityEffect {
   executeBelowHpPct?:number;
   executeBonus?:number;
+  /** Optional bounded bonus to direct hits against targets already carrying a debuff. */
+  bonusVsDebuffed?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
   coeff?: number;

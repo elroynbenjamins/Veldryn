@@ -47,6 +47,15 @@ const heavyEnemy={...actor('bulky','enemies'),stats:{...enemy.stats,maxHp:100000
 const briar=buildOwnedCompanionCombatant(baseProgress('UNIT_004'),{mode:'companion_trial'});
 const briarFight=simulateCombat({seed:'briar-exposes-target',players:[briar],enemies:[heavyEnemy],maxDurationMs:2500});
 assert.ok(briarFight.events.some(e=>e.type==='status_apply'&&e.statusTag==='damage_taken'&&e.actorId==='UNIT_004'),'Briar vulnerability must reach real combat');
+const twoTargets=simulateCombat({seed:'briar-strike-and-mark-same-target',players:[briar],enemies:[
+ {...actor('enemy-a','enemies'),stats:{...enemy.stats,maxHp:50000}},
+ {...actor('enemy-b','enemies'),stats:{...enemy.stats,maxHp:50000}},
+],maxDurationMs:100});
+const briarHit=twoTargets.events.find(e=>e.abilityId==='UNIT_004_ACTIVE'&&e.type==='damage');
+const briarMark=twoTargets.events.find(e=>e.abilityId==='UNIT_004_ACTIVE'&&e.type==='status_apply');
+assert.ok(briarHit&&briarMark,'Briar Charge must deal damage and mark the enemy');
+assert.equal(briarHit!.targetId,briarMark!.targetId,'Briar Charge must expose the same enemy it strikes');
+
 assert.equal(buildOwnedCompanionCombatant(baseProgress('UNIT_011'),{mode:'companion_trial'}).abilities[0].target,'current_target','Memory Command must be offensive in Trials');
 assert.ok(buildOwnedCompanionCombatant(baseProgress('UNIT_003'),{mode:'companion_trial'}).abilities[0].effects.some(e=>e.kind==='hot'),'Silver Current regen must work in Trials');
 assert.ok(buildOwnedCompanionCombatant(baseProgress('UNIT_008'),{mode:'companion_trial'}).abilities[0].effects.some(e=>e.kind==='cleanse'),'Dawnwing cleanse must work in Trials');

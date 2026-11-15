@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useSocialText} from '../../i18n/social';
 import type {CoopChatMessage} from '../../online/coop-client';
 import {useCoopStyles} from '../../theme/useCoopStyles';
@@ -36,9 +36,9 @@ export function CoopLiveChatBar({messages,onSend,reduceMotion=false}:{messages:C
     <Pressable style={StyleSheet.absoluteFillObject} onPress={close} accessibilityLabel={st('Close chat')}/>
     <View style={s.sheet} accessibilityViewIsModal>
      <View style={s.header}><View style={s.headerTitle}><Text style={s.title}>{st('Party Chat')}</Text><Text style={s.subtitle}>{st('Only current Live party members can read this room.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={st('Close chat')} onPress={close} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
-     <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.body}>
+     <View style={s.body}>
       <CoopPartyChat messages={messages} onSend={onSend}/>
-     </ScrollView>
+     </View>
     </View>
    </KeyboardAvoidingView>
   </Modal>

@@ -11,7 +11,7 @@ import {LoadingState} from '../components/LoadingState';
 import {CompactPlayerIdentity} from '../components/CompactPlayerIdentity';
 import {GameModalSurface,GameModalHeader} from '../components/GameModalSurface';
 import {RANKING_BOARDS,RANKING_GROUPS,type RankingBoardId,type RankingBoardSnapshot,type RankingGroup,type RankingEntry} from '../core/rankings';
-import {rankingsClient,rankingsOnlineConfigured} from '../online/rankings-client';
+import {rankingsClient,rankingsOnlineConfigured,rankingsFrozenConfigured,frozenRankingsClient} from '../online/rankings-client';
 import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay} from '../core/ranking-pagination';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -23,9 +23,12 @@ export function RankingsScreen(){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<360||fontScale>=1.25;const[group,setGroup]=useState<RankingGroup>('Account'),[board,setBoard]=useState<RankingBoardId>('profession_total'),[snapshot,setSnapshot]=useState<RankingBoardSnapshot|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState(''),[boardPickerOpen,setBoardPickerOpen]=useState(false),[page,setPage]=useState(0),[loadedPage,setLoadedPage]=useState(0),[hasNext,setHasNext]=useState(false);const boards=useMemo(()=>RANKING_BOARDS.filter(row=>row.group===group),[group]);useEffect(()=>{if(!boards.some(row=>row.id===board))setBoard(boards[0].id)},[group]);
  const request=useRef(0);
  const scrollRef=useRef<ScrollViewInstance|null>(null);
+ // Opaque server cursor per page; never derived from account IDs or scores.
+ const frozenCursors=useRef<Map<number,string>>(new Map());
  function selectGroup(value:RankingGroup){
    if(value===group)return;
    request.current++;
+   frozenCursors.current.clear();
    const first=RANKING_BOARDS.find(row=>row.group===value);
    setGroup(value);setPage(0);setHasNext(false);setSnapshot(null);setError('');setLoading(false);
    if(first&&!RANKING_BOARDS.some(row=>row.id===board&&row.group===value))setBoard(first.id);
@@ -35,12 +38,14 @@ export function RankingsScreen(){
    setBoardPickerOpen(false);
    if(next===board)return;
    request.current++;
+   frozenCursors.current.clear();
    setBoard(next);setPage(0);setHasNext(false);setSnapshot(null);setError('');setLoading(false);
    scrollRef.current?.scrollTo({y:0,animated:false});
  }
  function goToPage(next:number){
    if(loading||!Number.isSafeInteger(next)||next<0||next===page)return;
    try{rankingPageOffset(next);}catch{return;}
+   if(rankingsFrozenConfigured&&!frozenCursors.current.has(next))return;
    request.current++;
    scrollRef.current?.scrollTo({y:0,animated:false});
    setSnapshot(null);setHasNext(false);setError('');setLoading(false);setPage(next);
@@ -53,12 +58,30 @@ export function RankingsScreen(){
    }
    setLoading(true);setError('');
    try{
-     const next=await rankingsClient.board(board,RANKING_PAGE_SIZE+1,rankingPageOffset(page));
-     if(version===request.current){
-       if(next.board!==board||!Array.isArray(next.entries))throw new Error('invalid_rankings_response');
-       const display=projectRankingPage(next.entries,page);
-       setSnapshot({...next,entries:display.entries});
-       setLoadedPage(page);setHasNext(display.hasNext);
+     if(rankingsFrozenConfigured){
+       const cursor=page>0?frozenCursors.current.get(page):undefined;
+       if(page>0&&!cursor)throw new Error('ranking_snapshot_missing_cursor');
+       const next=page===0
+         ?await frozenRankingsClient.start(board,RANKING_PAGE_SIZE)
+         :await frozenRankingsClient.page(cursor!);
+       if(version===request.current){
+         if(next.board!==board||!Array.isArray(next.entries)
+           ||next.pageSize!==RANKING_PAGE_SIZE)throw new Error('invalid_frozen_ranking_response');
+         if(page===0)frozenCursors.current.clear();
+         frozenCursors.current.set(page,next.cursor);
+         if(next.nextCursor)frozenCursors.current.set(page+1,next.nextCursor);
+         else frozenCursors.current.delete(page+1);
+         setSnapshot(next);
+         setLoadedPage(page);setHasNext(next.hasNext);
+       }
+     }else{
+       const next=await rankingsClient.board(board,RANKING_PAGE_SIZE+1,rankingPageOffset(page));
+       if(version===request.current){
+         if(next.board!==board||!Array.isArray(next.entries))throw new Error('invalid_rankings_response');
+         const display=projectRankingPage(next.entries,page);
+         setSnapshot({...next,entries:display.entries});
+         setLoadedPage(page);setHasNext(display.hasNext);
+       }
      }
    }catch(e){
      // Keep the last successful snapshot for this board and page when refreshing

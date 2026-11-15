@@ -1,7 +1,7 @@
 import type {GameState} from './types';
 import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
-import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
+import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,sanitizeCombatCompanionState,classCompanionRole} from './combat-companions';
 import {companionHousingLevelCap,companionHousingTier} from './companion-housing';
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
@@ -163,6 +163,8 @@ function setOwned(state:GameState,owned:Record<string,OwnedCompanionSnapshot>):G
   return {...state,account:{...state.account,unlockedCombatCompanionIds:Object.keys(owned),combatCompanionProgress:Object.fromEntries(Object.entries(owned).map(([id,p])=>{const {masteryStatMultiplier:_transient,...saved}=p;return [id,{...state.account.combatCompanionProgress?.[id],...saved}];}))}};
 }
 function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number):GameState {
+  // Activity settlements can run before any companion screen is visited.
+  if(state.account.companionHousingMigratedV1!==true)state=sanitizeCombatCompanionState(state);
   const owned=companionOwned(state);let essence=state.account.companionEssence??0,overflow=state.account.companionOverflow;
   const earnedBond=Math.round(bond*(1+(state.account.companionSanctuary?.bondHallLevel??0)*.05));
   const earnedXp=companionMasteryCompanionXp(xp,state.account.companionMasteryXp);

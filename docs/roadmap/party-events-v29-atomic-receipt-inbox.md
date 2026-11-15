@@ -55,6 +55,14 @@ releaseEnabled = false
 6. A properly authenticated, rate-limited worker/API and account-scoped Inbox read model. Do not use `service_role` from the mobile client, accept client-supplied account ID, or expose `private` to PostgREST clients.
 7. **Actual execution of test suites and staged isolated SQL tests.** All new v29 test files are committed, but there is no verified fresh CI result or runtime database integration result yet.
 
+## Verified staging SQL parse (rolled back)
+
+On **15 November 2026**, the v29 migration was compiled by PostgreSQL on staging inside an explicit `BEGIN ... ROLLBACK` transaction. Because the earlier hidden v24 migration is not installed, the validation transaction created only a synthetic v24 offer-table shape and immutable trigger function; it ran the exact v29 DDL **without** its outer `BEGIN/COMMIT`, and checked the two deferrable receipt/Inbox constraints and both SHA-256 quote checks. PostgreSQL returned success.
+
+A separate read-only `to_regclass/to_regprocedure` verification afterward confirmed that neither the synthetic prerequisites nor the v29 tables or functions remained. **No persistent staging change or player-data write occurred.**
+
+The PGlite integration test and TypeScript test suites are committed but still **not executed/confirmed** in fresh CI; their behavior must not be reported as passed.
+
 ## Migration/release status
 
 **Not applied** to staging or production. No user balance, inventory, skill, Party Renown, payout status, claim, user Inbox or other live record has been changed. Draft PR #1045 remains unmerged. This is a transaction schema and test harness, not a working in-app Claim button.

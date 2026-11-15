@@ -1366,9 +1366,52 @@ const enhancement={
   "FINAL IMPROVEMENT":["FINAL IMPROVEMENT","LETZTE VERBESSERUNG","MEJORA FINAL","LAATSTE VERBETERING","MIGLIORAMENTO FINALE","AMÉLIORATION FINALE"],
   "Rare discovery · {name}":["Rare discovery · {name}","Seltene Entdeckung · {name}","Descubrimiento raro · {name}","Zeldzame ontdekking · {name}","Scoperta rara · {name}","Découverte rare · {name}"],
 } as const satisfies Record<string,TranslationRow>;
-const rows={...common,...combat,...queue,...skills,...inventory,...rewards,...crafting,...details,...enhancement};
+const storyBossRewardCopy={
+  "GOLD":["GOLD","GOLD","ORO","GOUD","ORO","OR"],
+  "XP":["XP","EP","EXP","XP","PE","XP"],
+  "ESSENCE":["ESSENCE","ESSENZ","ESENCIA","ESSENTIE","ESSENZA","ESSENCE"],
+  "✦ BOSS DEFEATED":["✦ BOSS DEFEATED","✦ BOSS BESIEGT","✦ JEFE DERROTADO","✦ BAAS VERSLAGEN","✦ BOSS SCONFITTO","✦ BOSS VAINCU"],
+  "BOSS BATTLE ENDED":["BOSS BATTLE ENDED","BOSSKAMPF BEENDET","COMBATE CONTRA EL JEFE TERMINADO","BAASGEVECHT AFGELOPEN","SCONTRO CON IL BOSS TERMINATO","COMBAT CONTRE LE BOSS TERMINÉ"],
+  "The Fallen Knight":["The Fallen Knight","Der gefallene Ritter","El Caballero Caído","De Gevallen Ridder","Il Cavaliere Caduto","Le Chevalier déchu"],
+  "STORY CLEAR":["STORY CLEAR","STORY ABSCHLUSS","HISTORIA COMPLETADA","VERHAAL VOLTOOID","STORIA COMPLETATA","HISTOIRE TERMINÉE"],
+  "CLEAR":["CLEAR","ABSCHLUSS","VICTORIA","VOLTOOID","COMPLETATO","VICTOIRE"],
+  "BATTLE SUMMARY":["BATTLE SUMMARY","KAMPFÜBERSICHT","RESUMEN DEL COMBATE","GEVECHTSOVERZICHT","RIEPILOGO COMBATTIMENTO","RÉSUMÉ DU COMBAT"],
+  "REWARDS RECEIVED":["REWARDS RECEIVED","ERHALTENE BELOHNUNGEN","RECOMPENSAS RECIBIDAS","ONTVANGEN BELONINGEN","RICOMPENSE RICEVUTE","RÉCOMPENSES REÇUES"],
+  "BONUS REWARD":["BONUS REWARD","BONUSBELOHNUNG","RECOMPENSA EXTRA","BONUSBELONING","RICOMPENSA BONUS","RÉCOMPENSE BONUS"],
+  "Bondstone":["Bondstone","Bindungsstein","Piedra de vínculo","Bindingssteen","Pietra del legame","Pierre de lien"],
+  "Weekly Bondstone limit reached":["Weekly Bondstone limit reached","Wöchentliches Bindungsstein-Limit erreicht","Límite semanal de piedras de vínculo alcanzado","Wekelijkse limiet voor bindingsstenen bereikt","Limite settimanale delle pietre del legame raggiunto","Limite hebdomadaire de pierres de lien atteinte"],
+  "No bonus item drops this time.":["No bonus item drops this time.","Diesmal keine zusätzlichen Gegenstände.","No hay objetos extra esta vez.","Deze keer geen extra voorwerpen.","Nessun oggetto bonus questa volta.","Aucun objet bonus cette fois."],
+  "OATHGLASS BOUNTY":["OATHGLASS BOUNTY","EIDGLAS-KOPFGELD","RECOMPENSA DE OATHGLASS","OATHGLASS-PREMIE","TAGLIA OATHGLASS","PRIME OATHGLASS"],
+  "GUARANTEED REWARDS":["GUARANTEED REWARDS","GARANTIERTE BELOHNUNGEN","RECOMPENSAS GARANTIZADAS","GEGARANDEERDE BELONINGEN","RICOMPENSE GARANTITE","RÉCOMPENSES GARANTIES"],
+  "BOSS DROPS":["BOSS DROPS","BOSSBEUTE","BOTÍN DEL JEFE","BAASBUIT","BOTTINO DEL BOSS","BUTIN DU BOSS"],
+} as const satisfies Record<string,TranslationRow>;
+const rows={...common,...storyBossRewardCopy,...combat,...queue,...skills,...inventory,...rewards,...crafting,...details,...enhancement};
 export type GameplayKey=keyof typeof rows;
 export const gameplayCatalogs=catalogsFor(rows);
+const storyBossRewardEarlyLocales={
+  "GOLD":["ЗОЛОТО","ALTIN"],
+  "XP":["ОПЫТ","TP"],
+  "ESSENCE":["ЭССЕНЦИЯ","ÖZ"],
+  "✦ BOSS DEFEATED":["✦ БОСС ПОБЕЖДЁН","✦ BOSS YENİLDİ"],
+  "BOSS BATTLE ENDED":["БОЙ С БОССОМ ЗАВЕРШЁН","BOSS SAVAŞI SONA ERDİ"],
+  "The Fallen Knight":["Падший рыцарь","Düşmüş Şövalye"],
+  "STORY CLEAR":["СЮЖЕТ ПРОЙДЕН","HİKÂYE TAMAMLANDI"],
+  "CLEAR":["ПОБЕДА","ZAFER"],
+  "BATTLE SUMMARY":["ИТОГИ БОЯ","SAVAŞ ÖZETİ"],
+  "REWARDS RECEIVED":["ПОЛУЧЕННЫЕ НАГРАДЫ","ALINAN ÖDÜLLER"],
+  "BONUS REWARD":["ДОПОЛНИТЕЛЬНАЯ НАГРАДА","BONUS ÖDÜL"],
+  "Bondstone":["Камень связи","Bağ Taşı"],
+  "Weekly Bondstone limit reached":["Недельный лимит камней связи достигнут","Haftalık Bağ Taşı sınırına ulaşıldı"],
+  "No bonus item drops this time.":["В этот раз дополнительных предметов нет.","Bu sefer bonus eşya düşmedi."],
+  "OATHGLASS BOUNTY":["НАГРАДА ЗА OATHGLASS","OATHGLASS ÖDÜLÜ"],
+  "GUARANTEED REWARDS":["ГАРАНТИРОВАННЫЕ НАГРАДЫ","GARANTİLİ ÖDÜLLER"],
+  "BOSS DROPS":["ДОБЫЧА С БОССА","BOSS GANİMETLERİ"],
+} as const;
+for(const [english,pair] of Object.entries(storyBossRewardEarlyLocales)){
+  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+
 // Russian and Turkish support for recently added enhancement-popup controls.
 const enhancementPopupEarlyLocales={"Equipment enhancement":["Улучшение снаряжения","Ekipman geliştirme"],"Confirm below to apply this change.":["Подтвердите ниже, чтобы применить изменение.","Değişikliği uygulamak için aşağıdan onayla."],"Confirm replacement":["Подтвердить замену","Değiştirmeyi onayla"],"Confirm extraction":["Подтвердить извлечение","Çıkarmayı onayla"],"Gear stat gains":["Прирост характеристик снаряжения","Ekipman özellik artışları"]} as const;
 for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){

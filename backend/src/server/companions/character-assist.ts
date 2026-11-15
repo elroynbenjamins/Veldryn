@@ -50,7 +50,7 @@ export function applyCharacterCompanionAssist(owner:CombatantDefinition,progress
   target='interruptible_casting_enemy';condition='target_casting';
   effects=[{kind:'interrupt',tag:'companion_spellbreak'}];
  }else if(kind==='shield'){
-  target=def.id==='UNIT_008'?'lowest_hp_ally':'self';
+  target=def.id==='UNIT_008'?'lowest_hp_ally_with_dot':'self';
   condition=def.id==='UNIT_008'?'ally_below_50_or_dot':'always';
   effects=[{kind:'shield',flat:ownerHp*budget*.67*(1+value('shield_strength'))*multiplier('activeShieldMultiplier'),shieldReflectPct:clamp(effectActive?.shieldReflectPct??0,0,.30),tag:'companion_assist'},...signatureAssistEffects(def.id,ownerHp)];
  }else if(kind==='heal'){

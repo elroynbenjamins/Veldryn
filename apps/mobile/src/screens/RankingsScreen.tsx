@@ -51,7 +51,19 @@ export function RankingsScreen(){
    scrollRef.current?.scrollTo({y:0,animated:false});
    setSnapshot(null);setHasNext(false);setError('');setLoading(false);setPage(next);
  }
- async function load(){
+ function refreshRankings(){
+   if(rankingsFrozenConfigured){
+     frozenCursors.current.clear();
+     setHasNext(false);
+     if(page!==0){
+       request.current++;
+       setSnapshot(null);setLoading(false);setError('');
+       setPage(0);return;
+     }
+   }
+   void load(true);
+ }
+ async function load(forceNewSnapshot=false){
    const version=++request.current;
    if(!rankingsOnlineConfigured){
      setLoading(false);setSnapshot(null);setHasNext(false);
@@ -60,15 +72,15 @@ export function RankingsScreen(){
    setLoading(true);setError('');
    try{
      if(rankingsFrozenConfigured){
-       const cursor=page>0?frozenCursors.current.get(page):undefined;
+       const cursor=forceNewSnapshot?undefined:frozenCursors.current.get(page);
        if(page>0&&!cursor)throw new Error('ranking_snapshot_missing_cursor');
-       const next=page===0
-         ?await frozenRankingsClient.start(board,RANKING_PAGE_SIZE)
-         :await frozenRankingsClient.page(cursor!);
+       const next=cursor
+         ?await frozenRankingsClient.page(cursor)
+         :await frozenRankingsClient.start(board,RANKING_PAGE_SIZE);
        if(version===request.current){
          if(next.board!==board||!Array.isArray(next.entries)
            ||next.pageSize!==RANKING_PAGE_SIZE)throw new Error('invalid_frozen_ranking_response');
-         if(page===0)frozenCursors.current.clear();
+         if(page===0&&!cursor)frozenCursors.current.clear();
          frozenCursors.current.set(page,next.cursor);
          if(next.nextCursor)frozenCursors.current.set(page+1,next.nextCursor);
          else frozenCursors.current.delete(page+1);
@@ -96,7 +108,12 @@ export function RankingsScreen(){
 
  // Visual highlights do not change official ranks or hide tied entries.
  const {podium,remaining}=splitRankingDisplay(activeSnapshot?.entries??[],page);
- const pageInfo=activeSnapshot?projectRankingPage(activeSnapshot.entries,page):null;
+ const pageInfo=activeSnapshot
+   ?(rankingsFrozenConfigured?{
+      firstPosition:activeSnapshot.entries[0]?.rank??0,
+      lastPosition:activeSnapshot.entries.length
+        ?activeSnapshot.entries[activeSnapshot.entries.length-1].rank:0
+     }:projectRankingPage(activeSnapshot.entries,page)):null;
  function rankRow(entry:RankingEntry,top=false,rowIndex=0){
    const position=rankingPositionPresentation(entry.rank),podiumTone=position.tone==='podium_gold'?s.rankGold:position.tone==='podium_silver'?s.rankSilver:position.tone==='podium_bronze'?s.rankBronze:undefined;
    return <View key={`${page}-${rowIndex}-${entry.entityType}-${entry.rank}`} style={[top?s.podiumCard:s.rankCard,entry.isSelf&&s.youCard,top&&stackRows&&s.podiumStack]}>
@@ -123,7 +140,7 @@ export function RankingsScreen(){
   </Pressable>
   <View style={s.boardIntro}>
     <View style={s.flex}><Text style={s.copy}>{definition.group==='Professions'?st('Highest {profession} level on one account character.',{profession:socialLabel(language,definition.name)}):socialLabel(language,definition.description)}</Text></View>
-    <GameButton compact title={st("Refresh")} tone="secondary" loading={loading} onPress={()=>load()}/>
+    <GameButton compact title={st("Refresh")} tone="secondary" loading={loading} onPress={refreshRankings}/>
   </View>
   {activeSnapshot?.self?<View style={s.selfCard}><View style={s.selfHead}><Text style={s.kicker}>{st("YOUR STANDING")}</Text><Text style={s.selfRank}>{activeSnapshot.self.listed&&activeSnapshot.self.rank?`#${activeSnapshot.self.rank}`:'—'}</Text></View>
     <Text style={s.selfValue}>{rankingValueLabel(board,activeSnapshot.self.value)}</Text>{activeSnapshot.self.reason?<Text style={s.warning}>{activeSnapshot.self.reason}</Text>:null}
@@ -140,7 +157,7 @@ export function RankingsScreen(){
     <View style={s.pageMeta}>
       <Text accessibilityLiveRegion="polite" style={s.pageCounter}>{st("Page")} {formatLocalizedNumber(language,page+1)}</Text>
       {pageInfo?.firstPosition&&pageInfo.lastPosition?
-        <Text style={s.pageRange}>{st("Entries {first}–{last}",{
+        <Text style={s.pageRange}>{st(rankingsFrozenConfigured?"Ranks {first}–{last}":"Entries {first}–{last}",{
           first:formatLocalizedNumber(language,pageInfo.firstPosition),
           last:formatLocalizedNumber(language,pageInfo.lastPosition),
         })}</Text>:null}

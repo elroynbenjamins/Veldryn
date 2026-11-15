@@ -12,6 +12,7 @@ import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {ItemArtwork} from './ItemArtwork';
+import {DisposalPreview} from './DisposalPreview';
 import {GameButton} from './GameButton';
 import {EquipmentPreview} from './EquipmentPreview';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -55,11 +56,17 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const confirmationValid=pendingRows.length>0&&pendingRows.length===(pendingSale?.length??0)&&pendingRows.every(row=>row.eligible);
  const salvageConfirmationValid=pendingSalvageRows.length>0&&pendingSalvageRows.length===(pendingSalvage?.length??0)&&pendingSalvageRows.every(row=>row.eligible);
  const salvageCandidate=selectedIndex===null?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
- const salvageMaterials=(rows:typeof salvageCandidates)=>{
+ const salvageRewards=(rows:typeof salvageCandidates):ItemStack[]=>{
   const amounts=new Map<string,number>();
   for(const row of rows)for(const reward of row.rewards??(row.reward?[row.reward]:[]))amounts.set(reward.itemId,(amounts.get(reward.itemId)??0)+reward.quantity);
-  return [...amounts].map(([id,amount])=>`${amount.toLocaleString(language)}× ${localizedItemName(language,id)}`).join(' · ');
+  return [...amounts].map(([itemId,quantity])=>({itemId,quantity}));
  };
+ const salvageMaterials=(rows:typeof salvageCandidates)=>salvageRewards(rows)
+  .map(row=>`${row.quantity.toLocaleString(language)}× ${localizedItemName(language,row.itemId)}`).join(' · ');
+ const disposalItems=(rows:readonly {itemId:string;index:number}[])=>rows.map(row=>{
+  const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
+  return {itemId:row.itemId,quantity:1,rarity:copy?.rarity??itemRarity(itemDef(row.itemId)),quality:copy?craftedGearDisplayQuality(copy):undefined};
+ });
  const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
  const toggleSelected=(candidate:EquipmentPouchSaleCandidate)=>{
   if(busy)return;
@@ -175,8 +182,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
    <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
-    <Text style={s.itemName}>{p(pendingRows.length===1?'{count} copy · {gold} Gold':'{count} copies · {gold} Gold',{count:pendingRows.length,gold:pendingGold.toLocaleString(language)})}</Text>
-    <Text style={s.meta}>{p('This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}</Text>
+    <DisposalPreview mode="sell" items={disposalItems(pendingRows)} gold={pendingGold} note={p('Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}/>
     {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
      <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSale(null)}/>
@@ -187,9 +193,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
    <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}}/>
    <View style={s.details}>
-    <Text style={s.itemName}>{p('{count} copies to salvage',{count:pendingSalvageRows.length})}</Text>
-    <Text style={s.meta}>{salvageMaterials(pendingSalvageRows)}</Text>
-    <Text style={s.meta}>{p('Materials go to Inventory. This cannot be undone; protected gear is excluded.')}</Text>
+    <DisposalPreview mode="salvage" items={disposalItems(pendingSalvageRows)} rewards={salvageRewards(pendingSalvageRows)} note={p('Materials go to Inventory. Protected gear is excluded.')}/>
     {!salvageConfirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
      <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSalvage(null)}/>

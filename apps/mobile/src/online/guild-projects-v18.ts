@@ -2,6 +2,7 @@ import {supabase} from './supabase';
 import {myGuild} from './social';
 import {ShortLivedReadCache} from '../core/short-lived-read-cache';
 import type {GuildActivityView,GuildProjectFocus,GuildProjectKind} from '../core/guild-projects-v18';
+import {claimableGuildProjectRewardIds} from '../core/guild-project-reward-attention';
 
 type ProjectRow={
  id:string;guild_id:string;template_id:string;definition_snapshot:Record<string,unknown>|null;kind:GuildProjectKind;focus:GuildProjectFocus;slot_index:number;status:'active'|'completed'|'expired'|'cancelled';
@@ -41,6 +42,45 @@ function resourceLabel(snapshot:Record<string,unknown>|null,resourceId:string,ki
 
 const projectReads=new ShortLivedReadCache<OnlineGuildProjectsSnapshot>(20_000);
 const voteReminderReads=new ShortLivedReadCache<boolean>(120_000);
+const claimRewardReads=new ShortLivedReadCache<number>(25_000);
+
+/** Lightweight account-scoped attention read. Unlike the full Guild Projects
+ * screen, the nav badge does not hydrate rosters, ballots, supplies or activity
+ * feeds, nor does it run project-preparation RPCs on every background poll. */
+export async function claimableOnlineGuildProjectRewardCount(force=false):Promise<number>{
+ const membership=await myGuild();
+ if(!membership){claimRewardReads.clear();return 0;}
+ return claimRewardReads.read(membership.account_id+':'+membership.guild_id,async()=>{
+  const db=client();
+  const cutoff=new Date(Date.now()-7*86400000).toISOString();
+  const result=await db.from('guild_project_instances')
+   .select('id,template_id,slot_index,cycle_key,status,ends_at,personal_reward_threshold')
+   .eq('guild_id',membership.guild_id).eq('status','completed')
+   .gte('ends_at',cutoff).order('ends_at',{ascending:false}).limit(24);
+  if(result.error)throw result.error;
+  const rows=(result.data??[]) as Array<{
+   id:string;template_id:string;slot_index:number;cycle_key?:string|null;status:'completed';ends_at?:string|null;personal_reward_threshold:number|string;
+  }>;
+  if(!rows.length)return 0;
+  const ids=rows.map(row=>row.id);
+  const [progressResult,claimResult]=await Promise.all([
+   db.from('guild_project_member_progress').select('project_instance_id,raw_points')
+    .eq('account_id',membership.account_id).in('project_instance_id',ids),
+   db.from('guild_project_reward_claims').select('project_instance_id')
+    .eq('account_id',membership.account_id).eq('reward_key','completion').in('project_instance_id',ids),
+  ]);
+  if(progressResult.error)throw progressResult.error;
+  if(claimResult.error)throw claimResult.error;
+  const points=new Map((progressResult.data??[]).map(row=>[row.project_instance_id,num(row.raw_points)]));
+  const claimed=new Set((claimResult.data??[]).map(row=>row.project_instance_id));
+  return claimableGuildProjectRewardIds(rows.map(row=>({
+   id:row.id,launchWeekly:row.template_id==='guild_weekly_shared_effort'||(row.slot_index===2&&row.cycle_key?.startsWith('choice:')===true),
+   status:row.status,completionRewardClaimed:claimed.has(row.id),
+   personalPoints:points.get(row.id)??0,personalRewardThreshold:num(row.personal_reward_threshold),endsAt:row.ends_at??undefined,
+  }))).length;
+ },force);
+}
+
 export async function loadOnlineGuildProjectsV18(force=false):Promise<OnlineGuildProjectsSnapshot|null>{
  // Check the current authoritative membership on every visit/read, including
  // cache hits. A stale guild projection must not outlive access revocation.
@@ -147,4 +187,4 @@ export async function guildChoiceVoteReminder(force=false):Promise<boolean>{
 
 export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();voteReminderReads.clear();return data as string;}
 
-export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;projectReads.clear();return data;}
+export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;projectReads.clear();claimRewardReads.clear();return data;}

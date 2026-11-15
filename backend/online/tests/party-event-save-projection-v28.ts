@@ -40,7 +40,10 @@ type Quote=ReturnType<typeof partyEventRewardBundle>;
 function evidence(quote:Quote,
  difficulty:'standard'|'veteran'|'heroic'='standard'):VerifiedPartyEventEvidenceV27{
  return {
-  offerId:offer,trustedAccountId:account,frozenCharacterId:character,
+  offerId:offer,partyId:'44444444-4444-4444-8444-444444444444',
+  reservationId:'55555555-5555-4555-8555-555555555555',
+  eventStartsAt:'2026-11-01T00:00:00+00:00',
+  trustedAccountId:account,frozenCharacterId:character,
   quoteHash:'a'.repeat(64),difficulty,reward:quote,
   historicalSnapshotsStale:false,onlineRevision:10,
   evidenceReconciled:true,claimable:false,entitled:false,claimed:false,

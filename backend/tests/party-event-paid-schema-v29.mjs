@@ -20,6 +20,7 @@ const otherOffer='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const receipt='66666666-6666-4666-8666-666666666666';
 const inbox='77777777-7777-4777-8777-777777777777';
 const reservation='55555555-5555-4555-8555-555555555555';
+const otherReservation='99999999-9999-4999-8999-999999999999';
 const startsAt='2026-11-01T00:00:00Z';
 const requestId='party-v29-integration-0001';
 const stateHash='a'.repeat(64);
@@ -60,7 +61,7 @@ async function writeReceipt(options={},handle=db){
  return q(receiptSql,[
   options.receipt??receipt,options.inbox??inbox,
   options.offer??offer,options.account??account,character,
-  reservation,options.start??startsAt,options.request??requestId,
+  options.reservation??reservation,options.start??startsAt,options.request??requestId,
   options.hash??rewardHash,options.json??json,stateHash,
  ],handle);
 }
@@ -87,8 +88,8 @@ async function run(){
    primary key(id,account_id)
   );
   create table private.party_event_reward_offers_v24(
-   id uuid primary key,event_starts_at timestamptz not null,
-   account_id uuid not null,
+   id uuid primary key,reservation_id uuid not null,
+   event_starts_at timestamptz not null,account_id uuid not null,
    unique(event_starts_at,account_id)
   );
   create function private.party_event_progress_immutable_v14()
@@ -101,8 +102,8 @@ async function run(){
  assert(/^[a-f0-9]{64}$/.test(rewardHash),'canonical hash from PostgreSQL jsonb');
  await q('insert into auth.users(id) values($1::uuid),($2::uuid)',[account,outsider]);
  await q('insert into public.characters(id,account_id) values($1::uuid,$2::uuid)',[character,account]);
- await q('insert into private.party_event_reward_offers_v24(id,event_starts_at,account_id) values($1::uuid,$2::timestamptz,$3::uuid)',[offer,startsAt,account]);
- await q('insert into private.party_event_reward_offers_v24(id,event_starts_at,account_id) values($1::uuid,$2::timestamptz,$3::uuid)',[otherOffer,'2026-11-22T00:00:00Z',account]);
+ await q('insert into private.party_event_reward_offers_v24(id,reservation_id,event_starts_at,account_id) values($1::uuid,$2::uuid,$3::timestamptz,$4::uuid)',[offer,reservation,startsAt,account]);
+ await q('insert into private.party_event_reward_offers_v24(id,reservation_id,event_starts_at,account_id) values($1::uuid,$2::uuid,$3::timestamptz,$4::uuid)',[otherOffer,otherReservation,'2026-11-22T00:00:00Z',account]);
 
  // In either direction the cyclic deferred FKs reject orphan records at COMMIT.
  await expectFailure(tx=>writeReceipt({},tx),'receipt without Inbox must rollback');
@@ -136,7 +137,7 @@ async function run(){
  await expectFailure(tx=>writeReceipt({
   receipt:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   inbox:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-  offer:otherOffer,start:'2026-11-22T00:00:00Z',
+  offer:otherOffer,reservation:otherReservation,start:'2026-11-22T00:00:00Z',
   request:requestId,
  },tx), 'same account/request across weeks');
  await expectFailure(tx=>writeReceipt({
@@ -147,7 +148,7 @@ async function run(){
  await expectFailure(tx=>writeReceipt({
   receipt:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   inbox:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-  offer:otherOffer,start:'2026-11-22T00:00:00Z',
+  offer:otherOffer,reservation:otherReservation,start:'2026-11-22T00:00:00Z',
   request:'another-v29-key-0001',hash:'f'.repeat(64),
  },tx), 'receipt quote hash cannot diverge from reward JSON');
 
@@ -158,13 +159,13 @@ async function run(){
   await writeReceipt({
    receipt:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
    inbox:'ffffffff-ffff-4fff-8fff-ffffffffffff',
-   offer:otherOffer,start:'2026-11-22T00:00:00Z',
+   offer:otherOffer,reservation:otherReservation,start:'2026-11-22T00:00:00Z',
    request:'party-v29-quote-drift-0001',
   },tx);
   await writeInbox({
    receipt:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
    inbox:'ffffffff-ffff-4fff-8fff-ffffffffffff',
-   offer:otherOffer,start:'2026-11-22T00:00:00Z',
+   offer:otherOffer,reservation:otherReservation,start:'2026-11-22T00:00:00Z',
    json:changedJson,hash:changed.rows[0].h,
   },tx);
  },'Inbox/receipt mismatched reward hashes must rollback');
@@ -173,7 +174,7 @@ async function run(){
  await expectFailure(tx=>writeReceipt({
   receipt:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
   inbox:'ffffffff-ffff-4fff-8fff-ffffffffffff',
-  offer:otherOffer,account:outsider,start:'2026-11-22T00:00:00Z',
+  offer:otherOffer,reservation:otherReservation,account:outsider,start:'2026-11-22T00:00:00Z',
   request:'party-v29-foreign-owner-0001',
  },tx),'account/offer mismatch is rejected');
 

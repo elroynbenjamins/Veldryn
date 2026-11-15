@@ -10,6 +10,8 @@ const shell=read('components/coop/CoopVisualKit.tsx');
 const run=read('components/coop/CoopRunOverview.tsx');
 const browser=read('components/coop/CoopDungeonBrowser.tsx');
 const hero=read('components/coop/DungeonPreparation.tsx');
+const liveChat=read('components/coop/CoopLiveChatBar.tsx');
+const partyChat=read('components/coop/CoopPartyChat.tsx');
 
 // World remains independent of all dungeon browsing and run states.
 assert(world.includes('<WorldChapterNavigator'),'World retains region and exploration navigation');
@@ -28,6 +30,14 @@ assert((app.match(/onRunActiveChange={setDungeonFlowActive}/g)||[]).length===1,'
 assert(app.includes("dungeonFlowActive&&tab==='Coop'"),'Only the standalone dungeon route becomes immersive');
 assert(app.includes('{!immersiveDungeonFlow&&<GameTopBar'),'Active runs hide the global character and activity HUD');
 assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'}"),'The activity bar is hidden on the entire Dungeon tab, including browser, loadout, shops and event details');
+assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'}"),'Dungeon tab hides the global World chat dock so it cannot duplicate Live party chat');
+assert(run.includes("run.mode==='live'&&onChatSend&&!terminal?<CoopLiveChatBar"),'Only active Live runs show the dedicated party chat dock');
+assert(run.indexOf('<CoopLiveChatBar')>run.indexOf('</ExpeditionScreenShell>'),'Party chat stays docked below the dungeon scroll content');
+assert(!run.includes("<DungeonDisclosure title={st('Party Chat')}"),'Party chat is no longer buried in a scroll disclosure');
+assert(liveChat.includes("latest.senderName")&&liveChat.includes("latest.body"),'Live chat bar previews the latest party message');
+assert(liveChat.includes('<Modal visible={open}')&&liveChat.includes('<CoopPartyChat messages={messages} onSend={onSend}/>'),'Party dock expands into the existing server-backed party chat');
+assert(liveChat.includes('KeyboardAvoidingView')&&liveChat.includes("onRequestClose={close}"),'Live chat composer adapts to keyboard and supports hardware Back');
+assert(partyChat.includes('catch{setError(')&&partyChat.includes("setText('');"),'Failed chat sends preserve drafts for retry');
 assert((browser.match(/<ExpeditionScreenShell compactHeader hideHeader titleInHero/g)||[]).length===2,'Normal and seasonal dungeon details remove the standalone Back to expeditions row');
 assert(browser.includes("description=\"\" onBack={onBack} backLabel={ct(language,'details.backList')}"),'Normal dungeon details keep an accessible in-hero back control');
 assert(browser.includes("description={event.description} onBack={preparing?()=>setPreparing(false):onBack}"),'Seasonal dungeon detail back control preserves preparation step navigation');

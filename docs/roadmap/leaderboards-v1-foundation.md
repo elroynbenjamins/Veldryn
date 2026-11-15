@@ -88,6 +88,13 @@
 - Re-ran the 19-board v3 scoring contract and global privacy fixtures together on **Veldryn Staging** inside one transaction, ending with `ROLLBACK`. The database returned success with no persisted functions, records, grants, or gate changes from this test.
 - Remaining blockers: long-form seeded results for all 19 boards, score-source performance on realistic high-volume saves, durable snapshot/keyset pagination, seasonal/event history, current-branch CI and Android QA. All release gates remain disabled.
 
+## 15 November — multi-character Journal score deduplication
+
+- Audited account-wide Journal scoring against repeated saved character snapshots: the original proposal could sum the same account-earned milestone multiple times. The undeployed v3 scoring draft now selects **distinct (account, milestone ID)** after validating schema, ownership, catalog allowlist and unlock timestamp.
+- Added a deterministic synthetic duplicate-snapshot contract and retained the existing earned-Journal integration fixture.
+- **Verified staging:** the repaired v3 SQL, all 19 board-shape/scoring checks, earned-Journal fixture and privacy tests ran together in a single explicit `BEGIN/ROLLBACK` transaction. Checked afterward that neither v3 RPC/function was persisted.
+- No live migrations, server flags, rewards or public ranks changed. The old draft branch remains unsuitable for wholesale merge; port reviewed scoring independently from current main.
+
 ## Release checklist
 - [x] V2 RPC identity and permissions checked read-only on both staging and production (2026-11-13)
 - [x] Read-only staging v2 permissions preflight passed

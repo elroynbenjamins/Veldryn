@@ -45,8 +45,10 @@ begin
   -- Calling this from a service-role RPC or from a forged account parameter
   -- is intentionally impossible: verified PostgREST authenticated JWT context
   -- is the ONLY account selector. There is NO p_account_id input.
-  if pg_catalog.current_setting('request.jwt.claim.role', true)
-        is distinct from 'authenticated'
+  if pg_catalog.coalesce(
+       nullif(pg_catalog.current_setting('request.jwt.claims', true),'')::jsonb->>'role',
+       nullif(pg_catalog.current_setting('request.jwt.claim.role', true),'')
+     ) is distinct from 'authenticated'
      or (select auth.uid()) is null
   then raise exception 'market_auth_required' using errcode='28000'; end if;
   v_actor := (select auth.uid());

@@ -1,0 +1,54 @@
+name: Rebuild dungeon tonic branch Edge bundles
+
+on:
+  push:
+    branches:
+      - feat/dungeon-only-tonics-20261115
+    paths:
+      - '.github/workflows/tonic-dungeon-branch-bundles.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tonic-dungeon-branch-bundles
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: github.ref == 'refs/heads/feat/dungeon-only-tonics-20261115'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/dungeon-only-tonics-20261115
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild and verify server bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated artifacts to this feature branch only
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Generated bundles already synchronized.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync generated gameplay and co-op bundles for dungeon tonics'
+          git push origin HEAD:feat/dungeon-only-tonics-20261115

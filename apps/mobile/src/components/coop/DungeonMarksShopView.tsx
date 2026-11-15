@@ -6,7 +6,7 @@ import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
-import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason} from '../../i18n/dungeon-shop';
+import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopLockReason} from '../../i18n/dungeon-shop';
 
 import type {DungeonMarksShopSnapshot} from '../../core/dungeon-marks-shop-types';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
@@ -14,9 +14,8 @@ export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemS
 type Shelf='Supplies'|'Collections'|'Owned';
 
 /**
- * Hidden, reusable Dungeon Marks Shop presentation. Deliberately not mounted in
- * navigation until the server-only atomic purchasing + collectible grants ship.
- * The temporary dungeon room Merchant remains an unrelated resource system.
+ * Dungeon Marks Shop presentation. Purchase availability, prices, ownership,
+ * and region access are always enforced by the server, not this view.
  */
 export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:{
  snapshot:DungeonMarksShopSnapshot|null;
@@ -87,25 +86,35 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const offerStatus=t(statusSource);
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);
+   const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
+   const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
+   const glyph={supply:'◈',companion:'✦',icon:'◇',border:'▣',background:'▤',pet:'✧'}[item.category];
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
      disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
-     <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
+     <View style={s.art} accessible={false}><Text style={s.artGlyph}>{glyph}</Text><Text numberOfLines={1} style={s.artKind}>{t(item.category)}</Text></View>
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
-      <Text style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
-      <View style={s.price}><ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
+      <Text numberOfLines={2} style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
+      <View style={s.price}>{previewOnly?<Text style={s.priceHint}>{t('Preview price')}</Text>:null}<ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
      </View>
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.detail}>
-     <Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>
+     {bonusDetails?<View style={s.bonusBlock}>
+      <Text style={s.bonusName}>{bonusDetails.stat}</Text>
+      <View style={s.bonusGrid}>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.equipped}</Text><Text style={s.bonusCaption}>{t('While equipped')}</Text></View>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.owned}</Text><Text style={s.bonusCaption}>{t('Permanent when owned')}</Text></View>
+      </View>
+     </View>:<Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>}
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
      {item.status==='already_owned'||item.owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
-     {item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
+     {previewOnly&&!item.owned?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
+      :item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
      {offerEligible?<GameButton title={pending===item.id?t('Processing…'):t('Confirm purchase · {marks} Marks',{marks:localizedMarks})} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
      {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>{t('Not enough Expedition Marks.')}</Text>:null}
     </View>:null}
@@ -122,13 +131,21 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  selectedTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabLabel:{...typography.caption,color:C.muted,fontWeight:'800'},activeLabel:{color:C.text},
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
- art:{width:48,height:48,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center'},
- artGlyph:{color:C.accent,fontSize:25,fontWeight:'800'},
+ art:{width:52,height:52,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center',gap:1,paddingHorizontal:2},
+ artGlyph:{color:C.accent,fontSize:23,fontWeight:'800'},artKind:{...typography.caption,color:C.muted,fontSize:9,fontWeight:'700'},
  title:{...typography.bodyStrong,color:C.text},
- price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:3},priceText:{...typography.bodyStrong,color:C.accent},
+ price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:5,flexWrap:'wrap'},priceText:{...typography.bodyStrong,color:C.accent},
+ priceHint:{...typography.caption,color:C.muted,fontSize:11,marginRight:2},
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
- description:{...typography.body,color:C.text},
+ description:{...typography.body,color:C.text,lineHeight:22},
+ bonusBlock:{gap:8},
+ bonusName:{...typography.bodyStrong,color:C.text,fontSize:15},
+ bonusGrid:{flexDirection:'row',gap:8},
+ bonusCell:{flex:1,minWidth:0,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panelRaised,padding:10,gap:3},
+ bonusAmount:{...typography.bodyStrong,color:C.good,fontSize:17},
+ bonusCaption:{...typography.caption,color:C.muted,lineHeight:16},
+ previewNote:{...typography.caption,color:C.muted,lineHeight:18},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

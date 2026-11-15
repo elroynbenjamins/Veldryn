@@ -1,0 +1,63 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
+const require=createRequire(new URL('../backend/package.json',import.meta.url));
+const ts=require('typescript');
+const source=readFileSync(new URL('../backend/online/rankings-handler.ts',import.meta.url),'utf8');
+const compiled=ts.transpileModule(source,{compilerOptions:{
+ target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS
+}}).outputText;
+const exports={};
+new Function('exports','require',compiled)(exports,require);
+const {rankingsHandler,RANKINGS_RELEASED,FROZEN_RANKINGS_RELEASED,
+ ARENA_HISTORY_RELEASED,WORLD_BOSS_HISTORY_RELEASED}=exports;
+assert.equal(RANKINGS_RELEASED,false);
+assert.equal(FROZEN_RANKINGS_RELEASED,false);
+assert.equal(ARENA_HISTORY_RELEASED,false);
+assert.equal(WORLD_BOSS_HISTORY_RELEASED,false);
+
+const account='11111111-1111-4111-8111-111111111111';
+const cursor='22222222-2222-4222-8222-222222222222';
+const boss='33333333-3333-4333-8333-333333333333';
+const calls=[];
+const services={
+ authenticate:async token=>token==='valid'?account:null,
+ rpc:async (name,args)=>{calls.push({name,args});return {
+   board:'mining',frozen:true,prestigeOnly:true,entries:[],cursor,
+   pageSize:50,nextCursor:null,hasNext:false,expiresAtMs:5000
+ };}
+};
+const get=(action,query='')=>new Request('https://example.test/gameplay?view=rankings&action='+action+query,{
+ method:'GET',headers:{authorization:'Bearer valid'}
+});
+const post=(body)=>new Request('https://example.test/gameplay?view=rankings&action=snapshot-start',{
+ method:'POST',headers:{authorization:'Bearer valid','content-type':'application/json'},body:JSON.stringify(body)
+});
+const both={rankings:true,frozen:true,arena:true,worldBoss:true};
+const test=async()=>{
+ assert.equal((await rankingsHandler(services)(get('snapshot-page','&cursor='+cursor))).status,404);
+ assert.equal(calls.length,0,'disabled routes cannot access DB');
+ assert.equal((await rankingsHandler(services,{...both,frozen:false})(get('snapshot-page','&cursor='+cursor))).status,404);
+ assert.equal(calls.length,0);
+ const handler=rankingsHandler(services,both);
+ assert.equal((await handler(post({board:'invalid'}))).status,400);
+ assert.equal((await handler(get('snapshot-page','&cursor=invalid'))).status,400);
+ assert.equal((await handler(get('world-boss-history','&bossId=invalid'))).status,400);
+ assert.equal((await handler(get('arena-history','&seasonId=test&metric=invalid'))).status,400);
+ assert.equal(calls.length,0);
+ assert.equal((await handler(post({board:'mining',limit:50,accountId:boss}))).status,200);
+ assert.deepEqual(calls[0],{name:'rankings_frozen_start_server_v1',args:{
+   p_requester:account,p_board:'mining',p_page_size:50
+ }},'always use authenticated account instead of body spoof');
+ assert.equal((await handler(get('snapshot-page','&cursor='+cursor))).status,200);
+ assert.deepEqual(calls[1],{name:'rankings_frozen_page_server_v1',args:{
+   p_requester:account,p_cursor:cursor
+ }});
+ assert.equal((await handler(get('arena-history','&seasonId=closed&metric=arena_rating'))).status,200);
+ assert.equal(calls[2].name,'rankings_arena_final_history_server_v1');
+ assert.equal((await handler(get('world-boss-history','&bossId='+boss))).status,200);
+ assert.equal(calls[3].name,'leaderboards_world_boss_event_server_v1');
+ assert.equal((await handler(new Request('https://example.test/gameplay?view=rankings&action=snapshot-page&cursor='+cursor))).status,401);
+ console.log('Ranks Edge auth, all gates, cursor parsing and server-only caller checks PASS');
+};
+void test();

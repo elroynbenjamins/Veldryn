@@ -48890,7 +48890,7 @@ function equipmentSalvageRewards(itemId, crafted) {
   const rarityBps = crafted.rarity === "rare" ? 250 : ["epic", "legendary", "mythic"].includes(crafted.rarity) ? 500 : 0;
   const quality = crafted.quality;
   const qualityBps = typeof quality === "number" && Number.isInteger(quality) && quality >= 0 && quality <= 100 ? quality >= 90 ? 500 : quality >= 70 ? 250 : 0 : 0;
-  const percentBps = Math.min(2500, 1500 + rarityBps + qualityBps);
+  const percentBps = Math.min(3e3, 2e3 + rarityBps + qualityBps);
   const materials = recipe2.inputs.filter((input) => eligibleOrdinaryIngredient(input.itemId)).map((input) => ({ itemId: input.itemId, quantity: Math.floor(input.quantity * percentBps / 1e4) })).filter((input) => input.quantity > 0);
   return [dust, ...materials];
 }

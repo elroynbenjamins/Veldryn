@@ -17,7 +17,9 @@ export function createAccountCharacter(state:GameState,classId:ClassId,name:stri
  // Never reuse deleted character IDs: account-wide claim receipts and co-op identity retain historical IDs.
  const sequence=Math.max(state.account.createdCharacterCount??0,accountCharacters(state).length)+1;
  const id=`LOCAL_CHAR_${sequence}`;next.character!.id=id;
- const account={...state.account,createdCharacterCount:sequence};
+ // Persist the earned-slot watermark when a character is created so a later
+ // progression recalculation or character deletion cannot revoke that slot.
+ const account={...state.account,createdCharacterCount:sequence,unlockedCharacterSlots:Math.max(state.account.unlockedCharacterSlots??1,unlockedCharacterSlots(state))};
  return {...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:personalSeasonalAccountView(account,next.character),otherCharacters:[...(state.otherCharacters??[]),active]};
 }
 export function transitionAccountFaithPractice(state:GameState,now:number,tierId:string,count:number){const {reserveFaithPractice}=require('./faith') as typeof import('./faith');return {state:reserveFaithPractice(state,tierId,count,now)};}

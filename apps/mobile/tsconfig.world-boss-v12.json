@@ -23,7 +23,8 @@
     "tests/world-boss-account-balance-v24.ts",
     "tests/world-boss-authored-account-encounters-v25.ts",
     "tests/world-boss-authored-settlement-v26.ts",
-    "tests/world-boss-war-camp-transactions-v27.ts"
+    "tests/world-boss-war-camp-transactions-v27.ts",
+    "tests/world-boss-reward-ledger-v28.ts"
   ],
   "exclude": []
 }

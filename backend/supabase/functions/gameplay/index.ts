@@ -42960,11 +42960,12 @@ function huntClassSurvivalEvents(events, input) {
   if (pulse === void 0) return result;
   const rank = Math.min(100, Math.max(1, Math.floor(Number.isFinite(input.classSkillLevel) ? input.classSkillLevel : 1)));
   const scale = 1 + 0.3 * (rank - 1) / 99;
+  const healScale = Math.max(1, Math.min(1.2, input.classHealingMultiplier ?? 1));
   const eligible = result.filter((event) => (event.actor === "enemy" || profile.mechanic === "sun_heal" && event.actor === "fatigue") && event.damage > 0 && input.encounterStartedAtMs + event.fraction * input.cycleSeconds * 1e3 >= pulse - 1e-3);
   const first = eligible[0];
   if (!first) return result;
   if (profile.mechanic === "sun_heal") {
-    const bonus = Math.max(0, Math.min(first.damage * 0.15, first.damage * profile.healingOfIncomingPct * scale));
+    const bonus = Math.max(0, Math.min(first.damage * 0.18, first.damage * profile.healingOfIncomingPct * scale * healScale));
     if (bonus > 1e-6) {
       first.healing += bonus;
       first.classHealingBudget = (first.classHealingBudget ?? 0) + bonus;
@@ -42978,7 +42979,7 @@ function huntClassSurvivalEvents(events, input) {
   hit.damage = Math.max(0, hit.damage - prevented);
   hit.classGuardAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "shield", amount: prevented };
   if (profile.recoveryOfPreventedPct > 0) {
-    const siphon = prevented * profile.recoveryOfPreventedPct;
+    const siphon = prevented * profile.recoveryOfPreventedPct * healScale;
     if (siphon > 1e-6) {
       hit.healing += siphon;
       hit.classHealingBudget = (hit.classHealingBudget ?? 0) + siphon;
@@ -43549,12 +43550,12 @@ var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.i
 // ../apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
-var ward = skill("warding", "Warding", "Magical protection");
+var ward = skill("warding", "Warding", "Damage warding");
 var CLASS_SKILLS = {
   IRONWARDEN: [guard, ward],
   BASTION: [guard, ward],
   DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
-  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Protection and cleansing")],
+  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
   WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
   RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
   HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
@@ -43603,15 +43604,28 @@ function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFoc
 }
 function characterClassEffects(c) {
   const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
-  const tank = ["IRONWARDEN", "BASTION", "DREADGUARD"].includes(c.classId), support = ["DAWNKEEPER", "STONECALLER"].includes(c.classId);
-  const precision = c.classId === "KNIFE_DANCER";
-  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b, accuracy: 0, evasion: 0 } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1, accuracy: 0, evasion: 0 } : {
-    attack: 1 + 0.07 * a + (precision ? 0 : 0.03 * b),
-    hp: 1,
-    defense: 1 + (precision ? 0 : 0.06 * b),
-    accuracy: precision ? 0.03 * b : 0,
-    evasion: precision ? 0.06 * b : 0
-  };
+  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
+  switch (c.classId) {
+    case "IRONWARDEN":
+      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
+    case "BASTION":
+      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
+    case "DREADGUARD":
+      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
+    case "DAWNKEEPER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
+    case "WAYFINDER":
+      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
+    case "RAVAGER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
+    case "HEXWEAVER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
+    case "KNIFE_DANCER":
+      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
+    case "STONECALLER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
+  }
+  return base;
 }
 function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
@@ -50620,6 +50634,9 @@ function craftedInstanceResult(state, instance) {
     rarity: instance.rarity,
     quality: instance.quality,
     baseRarity,
+    // Trusted command response metadata for read-only public forge announcements.
+    itemName: itemDef(instance.itemId).name,
+    crafterName: state.character?.id === instance.ownerCharacterId ? state.character.name : (state.otherCharacters ?? []).find((row) => row.character.id === instance.ownerCharacterId)?.character.name ?? "Adventurer",
     qualityProc: instance.rarity !== baseRarity,
     duplicateCount: Math.max(0, copies.length - 1),
     statMultiplier: craftedRarityStatMultiplier(instance.itemId, instance.rarity) * (instance.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality)),
@@ -50631,6 +50648,12 @@ function craftedInstanceResult(state, instance) {
 // ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
 var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
+var GEM_COMBINE_SUCCESS_PERCENT_V1 = { 1: 90, 2: 80, 3: 70, 4: 60, 5: 55, 6: 50 };
+function gemCombineSuccessPercentV1(fromGrade) {
+  if (!Number.isSafeInteger(fromGrade) || fromGrade < 1) throw new Error("Invalid gem grade");
+  if (fromGrade <= 6) return GEM_COMBINE_SUCCESS_PERCENT_V1[fromGrade];
+  return Math.max(10, 50 - (fromGrade - 6) * 5);
+}
 var GEM_COMBINE_COSTS_V1 = {
   1: { to: 2, copies: 3, dust: 0, gold: 1800, seconds: 5 * 60, level: 8, xp: 140 },
   2: { to: 3, copies: 3, dust: 5, gold: 6e3, seconds: 15 * 60, level: 20, xp: 420 },
@@ -50829,7 +50852,7 @@ function gemCombineRecipeV1(recipeId) {
   const inputs = [{ itemId: mobileGemItemIdV1(parsed.familyId, parsed.fromGrade), quantity: 3 }];
   if (cost.dust) inputs.push({ itemId: "GEM_DUST", quantity: cost.dust });
   if (cost.catalystId) inputs.push({ itemId: cost.catalystId, quantity: 1 });
-  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", skillId: "enchanting", level: cost.level, xp: cost.xp, inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
+  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, successChancePercent: gemCombineSuccessPercentV1(parsed.fromGrade), name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", skillId: "enchanting", level: cost.level, xp: cost.xp, inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
 }
 var RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 = 3;
 function resonanceWeekKeyV1(nowMs) {
@@ -52730,6 +52753,9 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const classAbility = classId ? HUNT_CLASS_TECHNIQUES[classId] : void 0;
   const classRank = Number.isFinite(player.classSkillLevel) ? Math.max(1, Math.min(100, Math.floor(player.classSkillLevel))) : 1;
   const classScale = 1 + 0.3 * (classRank - 1) / 99;
+  const armorBreak = classId === "RAVAGER" ? clamp8(player.armorPenetration ?? 0, 0, 0.05) : 0;
+  const hexPower = classId === "HEXWEAVER" ? clamp8(player.hexPotency ?? 0, 0, 0.05) : 0;
+  const classHealingScale = clamp8(player.classHealingMultiplier ?? 1, 1, 1.2);
   let nextClassReadyAtMs = 0, fortressFollowup = false, hexMarkPending = false;
   const phasesReached = [1], events = [];
   const playerHitChance = clamp8(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
@@ -52773,11 +52799,11 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
         const critical = random01(seed, rngIndex++) < clamp8(player.critChance, 0, 0.75);
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
-        const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
+        const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * (1 - armorBreak) * 15);
         const offensive = !!classAbility && now >= nextClassReadyAtMs && (classId === "WAYFINDER" || classId === "RAVAGER" || classId === "HEXWEAVER" || classId === "KNIFE_DANCER");
         const bonus = offensive ? classId === "WAYFINDER" ? 0.025 : classId === "RAVAGER" ? 0.045 : classId === "HEXWEAVER" ? 0.02 : 0.025 : 0;
         const markedBonus = hexMarkPending ? 0.02 : 0;
-        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1) * (1 + Math.min(0.05, bonus * classScale) + markedBonus)));
+        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * (1 + hexPower) * bossWard * (critical ? player.critMultiplier : 1) * (1 + Math.min(0.05, bonus * classScale) + markedBonus)));
         let nextBossHp = Math.max(0, bossHp - rolledAmount);
         if (mode === "story" && phase === 1 && nextBossHp <= bossMaxHp * 0.65) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.65));
         else if (mode === "story" && phase === 2 && nextBossHp <= bossMaxHp * 0.3) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.3));
@@ -52852,7 +52878,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
         const restorationPct = classId === "DAWNKEEPER" ? 0.12 : classId === "DREADGUARD" ? 0.3 : classId === "STONECALLER" ? 0.2 : 0;
         const restorationBase = classId === "DAWNKEEPER" ? amount : prevented;
         if (playerHp > 0 && restorationPct > 0) {
-          const healBudget = Math.floor(restorationBase * (classId === "DAWNKEEPER" ? Math.min(0.15, restorationPct * classScale) : restorationPct * classScale));
+          const healBudget = Math.floor(restorationBase * (classId === "DAWNKEEPER" ? Math.min(0.18, restorationPct * classScale * classHealingScale) : restorationPct * classScale * classHealingScale));
           restored = Math.max(0, Math.min(playerMaxHp - playerHp, healBudget));
           if (restored > 0) playerHp += restored;
         }
@@ -53082,7 +53108,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -53129,12 +53155,14 @@ function effectiveStats(state) {
     critMultiplier: 1.5 + setStats.critDamage,
     accuracy: Math.min(0.99, 0.84 + setStats.accuracy + mastery.accuracy),
     evasion: Math.min(0.5, baseEvasion + setStats.evasion + mastery.evasion),
-    haste: 0.05 + setStats.haste,
+    haste: 0.05 + setStats.haste + mastery.haste,
     armor: setStats.armor,
-    ward: setStats.ward,
+    // Stack equipment and class wards multiplicatively.
+    ward: 1 - (1 - setStats.ward) * (1 - mastery.ward),
     tenacity: setStats.tenacity,
-    potency: setStats.potency,
-    penetration: setStats.penetration
+    potency: setStats.potency + mastery.potency,
+    penetration: setStats.penetration + mastery.penetration,
+    classHealing: mastery.classHealing
   };
 }
 function settleOutOfCombatRecovery(state, nowMs) {
@@ -53379,7 +53407,8 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const bossPowerMultiplier = m.boss ? 1 + effectGems.boss_power : 1;
   const boostedPower = Math.max(1, Math.round(stats4.power * bossPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
-  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
+  const skillEffects = characterClassEffects(c);
+  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier * (1 + skillEffects.potency) * (usesDamageDrivenHunts(m.zone) ? 1 : 1 + skillEffects.penetration);
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
   const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
   const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
@@ -53415,7 +53444,7 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
   const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds } = runtime;
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
-  const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
+  const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - stats4.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const fatigue = runtime.huntOptions ? Math.max(floor, Math.min(stats4.hp * 6e-4, m.hp * 0.02) * runtime.gearAttritionMultiplier) : 0;
   const huntPlan = runtime.huntOptions && (enemyAttackCount === void 0 || fightSeconds === void 0) ? regionalHuntPlan(runtime.huntOptions) : void 0;
@@ -53504,7 +53533,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       ...cooldownTiming,
       companion: commonCompanion ? { ...commonCompanion, incomingDamageMultiplier: runtime.companion.incomingDamageMultiplier } : void 0
     });
-    return huntClassSurvivalEvents(guarded, { ...classTechniqueInput, ...cooldownTiming });
+    return huntClassSurvivalEvents(guarded, { ...classTechniqueInput, ...cooldownTiming, classHealingMultiplier: runtime.stats.classHealing });
   };
   if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
@@ -54464,11 +54493,14 @@ function fallenKnightPlayerSnapshot(state) {
     critChance: stats4.critChance,
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
+    armorPenetration: characterClassEffects(character).penetration,
+    classHealingMultiplier: stats4.classHealing,
+    hexPotency: characterClassEffects(character).potency,
     damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier * (prep?.outgoing ?? 1),
     // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
     // Do not apply them again through actionSpeedMultiplier.
     actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed)) * gear.actionSpeedMultiplier,
-    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
+    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - stats4.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
     potionHeal: potion?.effect.kind === "healing" ? Math.ceil(stats4.hp * potion.effect.maxHpFraction * multipliers.healingEffectivenessMultiplier) : 0,
     potionQuantity,
     autoEatThresholdPct: state.settings.autoEatThresholdPct
@@ -54969,7 +55001,10 @@ function normalizeEquipmentCraftingQueue(raw2) {
     xpPerCraft: typeof row.xpPerCraft === "number" && Number.isFinite(row.xpPerCraft) && row.xpPerCraft >= 0 && row.xpPerCraft <= 1e6 ? row.xpPerCraft : void 0,
     skillAffinity: normalizeSkillAffinitySnapshot(row.skillAffinity),
     reservedGold: Number.isFinite(Number(row.reservedGold)) ? Math.max(0, Math.floor(Number(row.reservedGold))) : void 0,
-    reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0
+    reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0,
+    // A malformed odds field must not become a guaranteed legacy claim.
+    // Only jobs with no odds field at all retain the old 100% outcome.
+    combineSuccessChancePercent: row.combineSuccessChancePercent === void 0 ? void 0 : Number.isInteger(row.combineSuccessChancePercent) && row.combineSuccessChancePercent >= 1 && row.combineSuccessChancePercent <= 100 ? row.combineSuccessChancePercent : gemCombineRecipeV1(String(row.recipeId).slice(0, 120))?.successChancePercent
   })).filter((row) => row.completesAtMs >= row.startedAtMs).slice(-(MAX_READY_EQUIPMENT_CRAFTS + MAX_EQUIPMENT_CRAFT_SLOTS + MAX_WAITING_EQUIPMENT_CRAFTS));
 }
 function equipmentCraftingQueue(state) {
@@ -55116,6 +55151,7 @@ function startGemCombine(state, recipeId, nowMs) {
     id: `gemcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
     recipeId,
     ownerCharacterId: projected.character.id,
+    combineSuccessChancePercent: recipe2.successChancePercent,
     startedAtMs: startsNow ? nowMs : nowMs + 1,
     completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
     reservedGold: recipe2.gold,
@@ -55317,14 +55353,21 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
       result: { ...craftedInstanceResult(next, draft), autoSold, saleGold }
     };
   }
-  next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
+  const gemSucceeded = !gemCombineRecipe || job.combineSuccessChancePercent === void 0 ? true : (() => {
+    if (!Number.isFinite(rarityRoll) || rarityRoll < 0 || rarityRoll >= 1) throw new Error("Invalid trusted gem combination roll");
+    return rarityRoll < job.combineSuccessChancePercent / 100;
+  })();
+  if (gemCombineRecipe && !gemSucceeded) {
+    const inputId = gemCombineRecipe.inputs[0].itemId;
+    next = storePouchGem(next, inputId, gemCombineRecipe.inputs[0].quantity - 1);
+  } else next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
   next = awardOwnerSkillXp(next, job.ownerCharacterId, gemRecipe, job);
   next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
   next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: gemRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
-  return { state: next, recipe: gemRecipe, job, kind: "gem", gemAction: gemRefineRecipe ? "refine" : "combine" };
+  return { state: next, recipe: gemRecipe, job, kind: "gem", gemSucceeded, gemAction: gemRefineRecipe ? "refine" : "combine" };
 }
 function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
-  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0;
+  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0, gemFailed = 0;
   const blocked = [];
   for (const job of equipmentCraftingQueue(next).filter((row) => isReady(row, nowMs))) {
     try {
@@ -55332,7 +55375,10 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       next = result.state;
       claimed.push(job.id);
       if (result.kind === "equipment") results.push(result.result);
-      else gemClaims++;
+      else {
+        gemClaims++;
+        if (!result.gemSucceeded) gemFailed++;
+      }
     } catch (error) {
       const reason = error instanceof Error ? error.message : "";
       if (reason === "Gem Pouch, Inventory and Bank are full" || reason === "Equipment Pouch, Inventory and Bank are full" || reason.startsWith("Equipment Pouch and Bank are full") || reason === "Inventory and Bank are full" || reason.startsWith("Bank is full") || reason === "Crafting recipe is no longer available" || reason.startsWith("Crafted equipment storage is full") || reason.startsWith("Equipment copy limit reached") || reason.startsWith("Equipment copy ownership requires manual review") || reason.startsWith("Equipment requires manual review")) {
@@ -55342,7 +55388,7 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       throw error;
     }
   }
-  return { state: next, claimed, results, gemClaims, blocked };
+  return { state: next, claimed, results, gemClaims, gemFailed, blocked };
 }
 var EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND = 0;
 function addStackable(stacks, capacity, itemId, quantityToAdd) {
@@ -58269,7 +58315,7 @@ function executeGameCommand(previous, value, now, options = {}) {
         forgeResults = [result.result];
       }
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
-      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.gemAction === "refine" ? "Refined" : "Combined"} ${result.recipe.name} \xB7 Gem Pouch`;
+      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : result.gemAction === "refine" ? `Refined ${result.recipe.name} \xB7 Gem Pouch` : result.gemSucceeded ? `Combined ${result.recipe.name} \xB7 Gem Pouch` : `Gem merge failed: ${result.recipe.name} \xB7 1 gem lost, 2 returned \xB7 Gold and reagents spent`;
       break;
     }
     case "craft_claim_all": {
@@ -58287,7 +58333,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       const equipmentCount = result.claimed.length - result.gemClaims, procCount = result.results.filter((row) => row.qualityProc).length;
       const blockedCount = result.blocked.length;
       const blockedReason = result.blocked.some((row) => row.reason === "Crafting recipe is no longer available") ? "Some jobs use retired recipes; please contact support." : result.blocked.some((row) => row.reason.startsWith("Equipment copy") || row.reason.startsWith("Equipment requires") || row.reason.startsWith("Crafted equipment")) ? `Check your equipment copies. ${result.blocked[0].reason}` : "Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.";
-      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
+      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"}${result.gemFailed ? ` (${result.gemFailed} failed merge${result.gemFailed === 1 ? "" : "s"})` : ""} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
       break;
     }
     case "craft_cancel": {
@@ -59222,7 +59268,7 @@ function redistributeCompanionCombatPower(personal, companion) {
   return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
 }
 var statScore = (stats4, level) => Math.max(0, Math.round(
-  stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
+  stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135 + Math.max(0, (stats4.classHealing ?? 1) - 1) * 80
 ));
 function combatPowerRating(state) {
   const character = state.character;

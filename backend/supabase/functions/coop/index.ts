@@ -564,12 +564,12 @@ var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.i
 // ../apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
-var ward = skill("warding", "Warding", "Magical protection");
+var ward = skill("warding", "Warding", "Damage warding");
 var CLASS_SKILLS = {
   IRONWARDEN: [guard, ward],
   BASTION: [guard, ward],
   DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
-  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Protection and cleansing")],
+  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
   WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
   RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
   HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
@@ -593,15 +593,28 @@ function normalizeClassSkills(id, raw2) {
 var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
 function characterClassEffects(c) {
   const [a, b] = characterClassSkills(c).map((s2) => (s2.level - 1) / 99);
-  const tank = ["IRONWARDEN", "BASTION", "DREADGUARD"].includes(c.classId), support = ["DAWNKEEPER", "STONECALLER"].includes(c.classId);
-  const precision = c.classId === "KNIFE_DANCER";
-  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b, accuracy: 0, evasion: 0 } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1, accuracy: 0, evasion: 0 } : {
-    attack: 1 + 0.07 * a + (precision ? 0 : 0.03 * b),
-    hp: 1,
-    defense: 1 + (precision ? 0 : 0.06 * b),
-    accuracy: precision ? 0.03 * b : 0,
-    evasion: precision ? 0.06 * b : 0
-  };
+  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
+  switch (c.classId) {
+    case "IRONWARDEN":
+      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
+    case "BASTION":
+      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
+    case "DREADGUARD":
+      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
+    case "DAWNKEEPER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
+    case "WAYFINDER":
+      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
+    case "RAVAGER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
+    case "HEXWEAVER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
+    case "KNIFE_DANCER":
+      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
+    case "STONECALLER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
+  }
+  return base;
 }
 
 // ../apps/mobile/src/core/companion-mastery.ts
@@ -46547,7 +46560,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -46594,12 +46607,14 @@ function effectiveStats(state) {
     critMultiplier: 1.5 + setStats.critDamage,
     accuracy: Math.min(0.99, 0.84 + setStats.accuracy + mastery.accuracy),
     evasion: Math.min(0.5, baseEvasion + setStats.evasion + mastery.evasion),
-    haste: 0.05 + setStats.haste,
+    haste: 0.05 + setStats.haste + mastery.haste,
     armor: setStats.armor,
-    ward: setStats.ward,
+    // Stack equipment and class wards multiplicatively.
+    ward: 1 - (1 - setStats.ward) * (1 - mastery.ward),
     tenacity: setStats.tenacity,
-    potency: setStats.potency,
-    penetration: setStats.penetration
+    potency: setStats.potency + mastery.potency,
+    penetration: setStats.penetration + mastery.penetration,
+    classHealing: mastery.classHealing
   };
 }
 
@@ -46613,7 +46628,7 @@ function redistributeCompanionCombatPower(personal, companion) {
   return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
 }
 var statScore = (stats6, level) => Math.max(0, Math.round(
-  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135
+  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135 + Math.max(0, (stats6.classHealing ?? 1) - 1) * 80
 ));
 function combatPowerRating(state) {
   const character = state.character;

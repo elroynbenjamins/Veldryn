@@ -328,7 +328,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
       ?`Refined ${result.recipe.name} · Gem Pouch`
       :result.gemSucceeded
         ?`Combined ${result.recipe.name} · Gem Pouch`
-        :`Gem merge failed · 1 gem lost, 2 returned · Gold and reagents spent`;
+        :`Gem merge failed: ${result.recipe.name} · 1 gem lost, 2 returned · Gold and reagents spent`;
    break;
   }
   case 'craft_claim_all':{

@@ -78,6 +78,18 @@ assert.equal(count('receipts',"cycle_id='GX11_CYCLE'"),0);
 assert.equal(scalar('bool_and(relrowsecurity)::text FROM pg_class c JOIN pg_namespace n'+
  " ON n.oid=c.relnamespace WHERE n.nspname='guild_exp_v11_qa' AND c.relkind='r'"),
  'true','all private tables must have RLS enabled');
+assert.equal(scalar("count(*) FROM pg_namespace n CROSS JOIN LATERAL"+
+ " aclexplode(COALESCE(n.nspacl,acldefault('n',n.nspowner))) acl"+
+ " WHERE n.nspname='guild_exp_v11_qa' AND acl.grantee=0 AND acl.privilege_type='USAGE'"),
+ '0','private schema must not grant PUBLIC usage');
+assert.equal(scalar("count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace"+
+ " CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl"+
+ " WHERE n.nspname='guild_exp_v11_qa' AND acl.grantee=0 AND acl.privilege_type='EXECUTE'"),
+ '0','private QA commit function must not be executable by PUBLIC');
+assert.equal(scalar("count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace"+
+ " CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl"+
+ " WHERE n.nspname='guild_exp_v11_qa' AND c.relkind='r' AND acl.grantee=0"),
+ '0','private QA tables must not grant PUBLIC access');
 
 fail({account:'GX11_A',nonce:'LOCKED_FIRST',node:'C3-06'},'gx11_locked_prerequisite');
 assert.equal(roster('GX11_MAIN','GX11_A'),'0:0');

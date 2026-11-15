@@ -1,4 +1,5 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
+import { COMBAT_LIMITS } from '../expeditions/constants';
 import { CombatRng } from './deterministic-rng';
 import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatGemStateSnapshot, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState, TargetRule } from './types';
 import {gemConsumeSupportChargeV1,gemEffectiveDefenseV1,gemEffectiveHasteV1,gemHealingMultiplierV1,gemIncomingDamageMultiplierV1,gemOnAbilityUsedV1,gemOnBossPhaseV1,gemOnBuffAppliedV1,gemOnDamageTakenV1,gemOnDebuffAppliedV1,gemOnDirectHealV1,gemOnDirectHitV1,gemOnKillV1,gemOnShieldAppliedV1,gemOutgoingDamageMultiplierV1,gemShieldMultiplierV1} from './gem-effects-v1';
@@ -111,7 +112,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{
     if(!target.alive)return;
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
-    const hc=clamp(hitChance(source.definition.stats.accuracy,target.definition.stats.evasion,accuracyScale)+modifier(target,'hit_taken',now),0,.99); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage')events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});return;}
+    const hc=clamp(hitChance(source.definition.stats.accuracy,target.definition.stats.evasion,accuracyScale)+modifier(target,'hit_taken',now),COMBAT_LIMITS.hitChanceMin,COMBAT_LIMITS.hitChanceMax); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage')events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});return;}
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now),mitigationConstant);
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';

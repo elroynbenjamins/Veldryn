@@ -107,6 +107,12 @@ const REGIONAL_25_LEVEL_REBALANCE:Readonly<Record<string,Partial<MonsterDef>>>={
  CHOIR_HUNTER:{level:70,hp:2540,attack:153,defense:99,xp:1880,gold:98,secondsPerKill:59,unlockLevel:69},
  WYRMSPINE_GUARDIAN:{level:73,hp:2890,attack:165,defense:115,xp:2180,gold:114,secondsPerKill:63,unlockLevel:72},
 };
+/** New chapter hunts unlock gradually inside already-visited regions; existing
+ * monster/save access remains cumulative for backwards compatibility. */
+export const REGIONAL_CHAPTER_NEW_MONSTER_IDS:ReadonlySet<string>=new Set([
+ 'DUSTVEIL_RUNNER','SANDPLATE_JUGGERNAUT','PRISM_HEXER','CROWN_EXECUTIONER',
+ 'RIME_BERSERKER','FROSTNEEDLE_BROOD','CHOIR_DEFILER','STORMGLASS_COLOSSUS',
+]);
 const PREPARED_MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>({...monster,...(REGIONAL_25_LEVEL_REBALANCE[monster.id]??{})}));
 export const MONSTERS:MonsterDef[]=PREPARED_MONSTERS.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);

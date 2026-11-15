@@ -61,7 +61,7 @@ export function applyCharacterCompanionAssist(owner:CombatantDefinition,progress
  }else{
   // Utility is a true short owner buff. The old companion_utility tag was not
   // consumed by the combat engine and gave players no meaningful effect.
-  effects=[{kind:'buff',value:clamp(def.active.baseCoeff*multiplier('utilityMultiplier'),.035,.075),durationMs:6000,tag:'damage_done'}];
+  effects=[{kind:'buff',value:clamp((def.id==='UNIT_012'?.05:def.active.baseCoeff)*multiplier('utilityMultiplier'),.035,.075),durationMs:6000,tag:'damage_done'}];
  }
  const ability:AbilityDefinition={...active,id:`${owner.id}:${def.id}:assist`,name:`${def.name}: ${active.name}`,target,aiCondition:condition,effects,tags:['combat_companion',def.id,def.role,`companion_signature:${def.id}`]};
  // The disruptor retains a tiny always-on tempo niche when a fight has no casts;

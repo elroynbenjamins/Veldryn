@@ -16,6 +16,8 @@
     "src/server/rankings/__tests__/frozen-rankings.ts",
     "src/server/rankings/arena-history.ts",
     "src/server/rankings/world-boss-history.ts",
-    "src/server/rankings/__tests__/event-history-gates.ts"
+    "src/server/rankings/__tests__/event-history-gates.ts",
+    "src/server/rankings/final-mode-history.ts",
+    "src/server/rankings/__tests__/final-mode-history.ts"
   ]
 }

@@ -65,7 +65,7 @@ test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and tr
  }
  equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.gold,50,'tonic Gold now uses ×5 premium combat cost');
  equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.xp,345,'tonic XP now uses ×3 combat reward');
- equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.inputs,[{itemId:'DEWLEAF',quantity:20}],'tonic herbs now cost ×5');
+ equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.inputs,[{itemId:'DEWLEAF',quantity:20},{itemId:'HOLY_WATER',quantity:3},{itemId:'TEMPERING_DUST',quantity:2}],'tonic costs ×5 herbs plus exactly three Holy Water and two Tempering Dust');
  equal(alchemyRecipeDef('BREW_VERDANT_BINDING_RESIN')!.xp,95,'infusion XP is unchanged');
 });
 test('Ironwood Binding Resin resolves canonical and legacy item-ID aliases without unknown recipe errors',()=>{
@@ -93,13 +93,14 @@ test('combat tonic premium balance preserves base infusion economics and old pai
  for(const row of ALCHEMY_RECIPES){
   if(!POTIONS.some(p=>p.id===row.output.itemId))continue;
   const source=ALCHEMY_RECIPES.find(r=>r.id===row.id)!;
-  ok(source.inputs.every(i=>i.quantity%5===0),'all combat consumables use ×5 ingredient quantities');
+  ok(source.inputs.filter(i=>i.itemId!=='HOLY_WATER'&&i.itemId!=='TEMPERING_DUST').every(i=>i.quantity%5===0),'base combat ingredients retain ×5 scaling');
+  if(POTIONS.find(p=>p.id===source.output.itemId)?.effect.kind==='preparation')equal(source.inputs.slice(-2),[{itemId:'HOLY_WATER',quantity:3},{itemId:'TEMPERING_DUST',quantity:2}],'each tonic uses exact fixed reagents');
   ok(source.xp>0&&source.gold>0,'all combat consumables award XP and cost Gold');
  }
  for(const id of ['BREW_VIGOR_TONIC','BREW_GREATER_VIGOR_TONIC','BREW_OATH_WARD_TONIC_ASHLANDS']){
   const current=alchemyRecipeDef(id)!;
   const legacy={version:1 as const,recipeId:id,totalBatches:2,remainingBatches:2,
-   inputsPerBatch:current.inputs.map(row=>({...row,quantity:row.quantity/5})),
+   inputsPerBatch:current.inputs.filter(row=>row.itemId!=='HOLY_WATER'&&row.itemId!=='TEMPERING_DUST').map(row=>({...row,quantity:row.quantity/5})), 
    goldPerBatch:Math.ceil(current.gold/5),outputPerBatch:{...current.output},cycleSeconds:current.seconds,xpPerBatch:current.xp/3};
   equal(normalizeAlchemyBatch(legacy,id).inputsPerBatch,legacy.inputsPerBatch,id+' old escrow is preserved');
  }
@@ -115,7 +116,7 @@ test('T1/T2/T3 potions include Damage, Defense, Support and Healing with shared 
    const recipe=alchemyRecipeDef('BREW_'+potion.id)!;
    ok(!!recipe,potion.id+' has base recipe');
    equal(recipe.level,unlock,potion.id+' same-tier level gate');
-   ok(recipe.inputs.length>0&&recipe.inputs.every(row=>HERB_NODES.some(node=>node.itemId===row.itemId)),potion.id+' uses gatherable herbs');
+   ok(recipe.inputs.length>0&&recipe.inputs.every(row=>HERB_NODES.some(node=>node.itemId===row.itemId)||['HOLY_WATER','TEMPERING_DUST'].includes(row.itemId)),potion.id+' uses valid reagents');
   }
   const draught=rows.find(p=>p.effect.kind==='healing')!;
   ok(draught.effect.kind==='healing','one healing draught');
@@ -131,19 +132,14 @@ test('T1/T2/T3 potions include Damage, Defense, Support and Healing with shared 
   }
  }
 });
-test('Role tonics have actual outgoing, defensive and support multipliers and replace prior preparation',()=>{
- let state=fresh();state.inventory.stacks.push({itemId:'VIGOR_TONIC',quantity:1},{itemId:'WARD_TONIC',quantity:1},{itemId:'HARMONY_TONIC',quantity:1});
- state=usePotion(state,'VIGOR_TONIC');
- equal(preparationEffects(state.character!.preparation).outgoing,1.05,'Vigor outgoing damage');
- equal(preparationEffects(state.character!.preparation).attack,1,'Vigor does not artificially raise Attack display');
- state=usePotion(state,'WARD_TONIC');
- equal(preparationEffects(state.character!.preparation).damage,.95,'Ward incoming multiplier');
- equal(state.inventory.stacks.find(row=>row.itemId==='WARD_TONIC'),undefined,'Ward consumed once');
- state=usePotion(state,'HARMONY_TONIC');
- const buff=preparationEffects(state.character!.preparation);
- equal([buff.outgoing,buff.healing,buff.shielding],[1.02,1.05,1.05],'support magnitudes');
- equal(buff.damage,1,'support does not secretly grant Ward');
- equal(state.character!.preparation?.itemId,'HARMONY_TONIC','single nonstacking preparation');
+test('Tonics are dungeon-only: ordinary use cannot consume an item or grant old preparation buffs',()=>{
+ const state=fresh();state.inventory.stacks.push({itemId:'VIGOR_TONIC',quantity:1},{itemId:'WARD_TONIC',quantity:1},{itemId:'HARMONY_TONIC',quantity:1});
+ const before=JSON.stringify(state);
+ for(const id of ['VIGOR_TONIC','WARD_TONIC','HARMONY_TONIC'])throws(()=>usePotion(state,id),'dungeon-only');
+ equal(JSON.stringify(state),before,'no ordinary tonic use consumes resources');
+ const old={itemId:'OATH_WARD_TONIC',remainingEncounters:30};
+ const buff=preparationEffects(old);
+ equal([buff.attack,buff.outgoing,buff.damage,buff.healing,buff.shielding],[1,1,1,1,1],'old saved combat preparations cannot buff hunts or bosses');
 });
 test('Older tonic brewing escrow remains loadable after recipe ingredient changes',()=>{
  const original=alchemyRecipeDef('BREW_VIGOR_TONIC')!;
@@ -154,7 +150,7 @@ test('Older tonic brewing escrow remains loadable after recipe ingredient change
  throws(()=>normalizeAlchemyBatch({...saved,inputsPerBatch:[{itemId:'DEWLEAF',quantity:9999},{itemId:'RIVER_MINT',quantity:2}]},original.id),'prevent forged ingredient refund');
 });
 for(const herb of HERB_NODES){test(`${herb.id}: reachable region, item and recipe uses; no missing-tool penalty`,()=>{ok(WORLD_ZONES.some(z=>z.id===herb.zoneId),'real zone');equal(itemDef(herb.itemId).type,'material','item');ok(ALCHEMY_RECIPES.some(r=>r.inputs.some(i=>i.itemId===herb.itemId)),'use');close(gatheringPacing(fresh(),herb).timeMultiplier,1,'hand picking');});}
-for(const r of ALCHEMY_RECIPES){test(`${r.id}: craft and sell cannot create free Gold from the inputs`,()=>{const output=itemDef(r.output.itemId),potion=POTIONS.some(p=>p.id===r.output.itemId),infusion=ALCHEMY_EQUIPMENT_INFUSIONS.some(row=>row.id===r.output.itemId);ok(potion||infusion,'registered output');const inputValue=r.inputs.reduce((sum,i)=>sum+itemDef(i.itemId).value*i.quantity,0);ok(output.value*r.output.quantity<inputValue+r.gold,'no vendor arbitrage');ok(potion?r.inputs.every(i=>HERB_NODES.some(node=>node.itemId===i.itemId)):output.type==='material'&&output.rarity!=='common','regional infusion is a rare-plus material');ok(r.seconds>=60&&r.output.quantity===1,'finite timed result');});}
+for(const r of ALCHEMY_RECIPES){test(`${r.id}: craft and sell cannot create free Gold from the inputs`,()=>{const output=itemDef(r.output.itemId),potion=POTIONS.some(p=>p.id===r.output.itemId),infusion=ALCHEMY_EQUIPMENT_INFUSIONS.some(row=>row.id===r.output.itemId);ok(potion||infusion,'registered output');const inputValue=r.inputs.reduce((sum,i)=>sum+itemDef(i.itemId).value*i.quantity,0);ok(output.value*r.output.quantity<inputValue+r.gold,'no vendor arbitrage');ok(potion?r.inputs.every(i=>HERB_NODES.some(node=>node.itemId===i.itemId)||['HOLY_WATER','TEMPERING_DUST'].includes(i.itemId)):output.type==='material'&&output.rarity!=='common','regional infusion is a rare-plus material');ok(r.seconds>=60&&r.output.quantity===1,'finite timed result');});}
 for(const c of CLASSES)test(`${c.id}: two new professions are genuine, class-independent level-one skills`,()=>{const s=createCharacter(newGame(T),c.id,'Tester');equal(s.skills.length,11,'account skills');equal(accountSkillLevel(s),13,'11+2');ok(s.skills.some(k=>k.skillId==='alchemy')&&s.skills.some(k=>k.skillId==='herbalism'),'both');});
 test('first herb can be gathered immediately; a partial action has no XP or item payout',()=>{const s=startGathering(fresh(),'DEWLEAF_PATCH',T),cycle=activityCycleSeconds(s);const r=previewActivityReward(s,T+cycle*500);equal([r.xp,r.kills,r.items.length],[0,0,0],'no partial payout');equal(claimActivity(s,T+cycle*1000+1).reward.kills,1,'one harvest');});
 test('Herbalism grants its own XP, not combat, class or Alchemy XP',()=>{const s=startGathering(fresh(),'DEWLEAF_PATCH',T),next=claimActivity(s,T+600000).state;ok(next.skills.find(k=>k.skillId==='herbalism')!.xp>0,'herbXP');equal(next.skills.find(k=>k.skillId==='alchemy')!.xp,0,'not alchemy');equal(next.character!.xp,0,'not combat');equal(next.character!.classSkills,s.character!.classSkills,'not class');});

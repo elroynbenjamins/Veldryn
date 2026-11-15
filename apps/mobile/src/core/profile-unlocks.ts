@@ -1,4 +1,6 @@
 import {GameState} from './types';
+import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
+import {DUNGEON_MARKS_SHOP_RELEASED} from './release-flags';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from './progression';
 export const PROFILE_BACKGROUNDS=[{id:'asterfall-night',name:'Asterfall Night',requiredLevel:1},{id:'ironwood-dawn',name:'Ironwood Dawn',requiredLevel:rebaseLevel(10)},{id:'silverbrook-mist',name:'Silverbrook Mist',requiredLevel:rebaseLevel(20)},{id:'oathglass-hall',name:'Oathglass Hall',requiredLevel:rebaseLevel(25)}];
 export const PROFILE_TITLES=[{id:'new-adventurer',name:'New Adventurer',requiredLevel:1},{id:'pathfinder',name:'Pathfinder',requiredLevel:rebaseLevel(10)},{id:'oathbound',name:'Oathbound',requiredLevel:rebaseLevel(25)},{id:'bloomwarden',name:'Bloomwarden',requiredGuild:true}];

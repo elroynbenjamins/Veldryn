@@ -85,7 +85,7 @@ ok(gearEnhancement(statSocketed,ringId).statGemId==='WARD_SHARD','Stat Gem shoul
 ok(effectiveStats(statSocketed).defense>effectiveStats(upgraded).defense,'Ward gem should increase defense');
 let duplicateStat=false;try{socketGem(statSocketed,ringId,'WARD_SHARD')}catch{duplicateStat=true}ok(duplicateStat,'A second Stat Gem must not occupy the Effect socket');
 
-const fullySocketed=socketGem(statSocketed,ringId,'SWIFT_SIGIL');
+const fullySocketed=socketGem(statSocketed,ringId,'SWIFT_SIGIL',.5);
 ok(gearEnhancement(fullySocketed,ringId).effectGemId==='SWIFT_SIGIL','Effect Gem should occupy the Effect socket');
 ok(Math.abs(equippedEffectGemBonuses(fullySocketed).combat_speed-.02)<.000001,'Swift Sigil should provide its behavioral combat-speed bonus');
 

@@ -7,12 +7,16 @@ on:
       - 'backend/src/server/combat/guild-pve-broken-forge-v7.ts'
       - 'apps/mobile/tests/guild-pve-real-combat-v7.ts'
       - 'apps/mobile/tsconfig.guild-pve-v7.json'
+      - 'tools/guild-pve-v7-content-verify.mjs'
+      - 'docs/roadmap/spreadsheets/guild-pve-broken-forge-encounter-cues-v5.csv'
       - '.github/workflows/guild-pve-v7-validation.yml'
   pull_request:
     paths:
       - 'backend/src/server/combat/guild-pve-broken-forge-v7.ts'
       - 'apps/mobile/tests/guild-pve-real-combat-v7.ts'
       - 'apps/mobile/tsconfig.guild-pve-v7.json'
+      - 'tools/guild-pve-v7-content-verify.mjs'
+      - 'docs/roadmap/spreadsheets/guild-pve-broken-forge-encounter-cues-v5.csv'
       - '.github/workflows/guild-pve-v7-validation.yml'
   workflow_dispatch:
 
@@ -38,6 +42,8 @@ jobs:
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Validate 36 authored boss cues
+        run: node ../../tools/guild-pve-v7-content-verify.mjs
       - name: Typecheck source-derived Guild PvE combat
         run: pnpm exec tsc -p tsconfig.guild-pve-v7.json --noEmit
       - name: Compile hidden Guild PvE test only

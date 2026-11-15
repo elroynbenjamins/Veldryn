@@ -2,6 +2,8 @@ import {LIVE_EVENT_CATALOG,type EventReward,type LiveEventDef} from '../content/
 import type {GameState} from './types';
 import {PROFILE_TITLES,profileTitleUnlocked,profileBackgroundUnlocked} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
+import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
+import {DUNGEON_MARKS_SHOP_RELEASED} from './release-flags';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections';
 export type ProfileRewardKind='background'|'border'|'title';
@@ -90,6 +92,10 @@ function eventProfileRewardSource(state:GameState,kind:ProfileRewardKind,id:stri
 }
 
 export function profileRewardSource(state:GameState,kind:ProfileRewardKind,id:string):ProfileRewardSource{
+ if(DUNGEON_MARKS_SHOP_RELEASED){
+  const dungeon=DUNGEON_SHOP_COLLECTIBLES_V1.find(row=>row.id===id&&row.kind===kind);
+  if(dungeon)return {kind,id,name:dungeon.name,label:'Dungeon Marks Shop',detail:`${dungeon.region} clear required · ${kind==='border'?'950':'1,500'} Expedition Marks`,destination:'Collections',actionLabel:'Open Collections'};
+ }
  if(kind==='border'){
   const guildBorder={
    'guild-border-silver':{name:'Fellowship Silver',detail:'Guild Token Shop · Guild Level 2.'},

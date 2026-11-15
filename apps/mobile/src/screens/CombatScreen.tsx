@@ -35,7 +35,7 @@ export function CombatScreen({state,onCommand,onEquip,onEquipInstance,onEquipPou
   const explorationLock=encounters.map(monster=>({monster,lock:encounterLockRequirement(state,monster)})).find(row=>row.lock?.kind==='exploration');
   const [showTraining,setShowTraining]=useState(false),[inspectedId,setInspectedId]=useState<string>(),[weaponPickerOpen,setWeaponPickerOpen]=useState(false);
   const detail=encounters.find(m=>m.id===inspectedId)??preview;
-  const weaponName=character.equipment.weapon?localizedItemName(state.settings.language,character.equipment.weapon):gt('Unarmed');
+  const weaponName=character.equipment.weapon?localizedItemName(state.settings.language,character.equipment.weapon):gt('Empty slot');
   useEffect(()=>{setInspectedId(undefined);setSelectedAreaId(regionalArea(zone.id,initialAreaId)?.id)},[zone.id,initialAreaId]);
   useEffect(()=>{setInspectedId(undefined)},[selectedAreaId]);
   return <View style={{flex:1,minHeight:0,backgroundColor:C.bg}}><ScrollView style={{flex:1,minHeight:0}} contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>

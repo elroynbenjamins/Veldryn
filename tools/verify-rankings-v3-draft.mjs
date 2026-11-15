@@ -7,6 +7,7 @@ const tests=[
  'leaderboards_v3_scoring_contract.sql',
  'leaderboards_v3_privacy_fixture.sql',
  'leaderboards_v3_earned_journal_fixture.sql',
+ 'leaderboards_v3_profession_real_fixture.sql',
 ].map(file=>read('backend/supabase/tests/'+file));
 const adapter=read('backend/src/server/rankings/supabase-ranking-repository.ts');
 const count=text=>(proposal.match(new RegExp(text,'g'))??[]).length;
@@ -34,4 +35,5 @@ assert.ok(tests.every(text=>text.includes('DO $')),'retain executable staging fi
 assert.ok(tests[0].includes('V3_GUILD_DEDUP_QUERY_MISSING'),'test duplicate guild membership');
 assert.ok(tests[1].includes('REQUESTER_RANK_MOVED_AFTER_BLOCK'),'test stable ranks after reciprocal blocks');
 assert.ok(tests[2].includes('JOURNAL_MULTISAVE_DEDUP_FAILED'),'test repeated Journal saves');
+assert.ok(tests[3].includes('ACCOUNT_PROFESSION_TOTAL_INVALID'),'test actual saved account total and XP pairing');
 console.log('rankings v3 staged SQL/read adapter safeguards PASS');

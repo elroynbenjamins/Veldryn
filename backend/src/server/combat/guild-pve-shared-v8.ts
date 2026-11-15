@@ -75,7 +75,7 @@ export function verifyGuildPveV8Manifest(){
 }
 verifyGuildPveV8Manifest();
 const safestr=(v:string)=>typeof v==='string'&&/^[A-Za-z0-9][A-Za-z0-9:_-]{1,99}$/.test(v);
-const round=n=>Number(Math.max(0,n).toFixed(2));
+const round=(n:number)=>Number(Math.max(0,n).toFixed(2));
 const clamp=(n:number,min:number,max:number)=>Math.min(max,Math.max(min,n));
 const checksum=(...text:string[])=>createHash('sha256').update(JSON.stringify(text)).digest('hex');
 const multi:Record<GuildPveDifficultyV7,number>={Scout:1,Veteran:1.24,Mythic:1.5};

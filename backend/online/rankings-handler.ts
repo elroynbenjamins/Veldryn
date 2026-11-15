@@ -53,8 +53,9 @@ function publicProjection(value:unknown):Record<string,unknown>{
    if(!value||typeof value!=='object'||Array.isArray(value))
      throw new Error('INVALID_RANKINGS_ENTRY');
    const row=value as Record<string,unknown>;
-   if(!Number.isSafeInteger(row.rank)||typeof row.displayName!=='string'
-     ||!Number.isSafeInteger(row.value)
+   if(typeof row.rank!=='number'||!Number.isSafeInteger(row.rank)||row.rank<1
+     ||typeof row.displayName!=='string'
+     ||typeof row.value!=='number'||!Number.isSafeInteger(row.value)
      ||row.value<0||!['account','guild','party'].includes(String(row.entityType)))
      throw new Error('INVALID_RANKINGS_ENTRY');
    const safe=only(row,PUBLIC_ENTRY_FIELDS);

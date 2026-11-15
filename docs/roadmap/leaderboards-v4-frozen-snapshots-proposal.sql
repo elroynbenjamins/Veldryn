@@ -80,6 +80,7 @@ DECLARE
   v_next uuid;
   v_has_next boolean;
   v_self jsonb;
+  v_own_guild uuid;
 BEGIN
   IF p_requester IS NULL OR p_cursor IS NULL
   THEN RAISE EXCEPTION 'INVALID_RANKING_CURSOR'; END IF;
@@ -91,6 +92,11 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'RANKING_SNAPSHOT_EXPIRED_OR_FORBIDDEN'; END IF;
   SELECT c.raw_after INTO v_after FROM private.rankings_frozen_cursors_v1 c
   WHERE c.id=p_cursor AND c.snapshot_id=v_snapshot.id;
+  IF v_snapshot.board='guild' THEN
+    SELECT gm.guild_id INTO v_own_guild
+    FROM public.guild_members gm WHERE gm.account_id=p_requester
+    ORDER BY gm.guild_id LIMIT 1;
+  END IF;
 
   WITH visible AS (
     SELECT r.ordinality::integer AS raw_ordinal,r.entry,
@@ -134,8 +140,10 @@ BEGIN
       THEN v.tag_color_id ELSE v.account_guild_color END,
     'value',(v.entry->>'value')::bigint,
     'secondaryValue',(v.entry->>'secondaryValue')::numeric,
-    'isSelf',v.entry->>'entityType'='account'
-      AND v.entry->>'entityId'=p_requester::text
+    'isSelf',CASE WHEN v_snapshot.board='guild' THEN
+      v_own_guild IS NOT NULL AND v.entry->>'entityId'=v_own_guild::text
+      ELSE v.entry->>'entityType'='account'
+        AND v.entry->>'entityId'=p_requester::text END
   ) ORDER BY v.raw_ordinal),'[]'::jsonb)
   INTO v_hits FROM visible v;
   v_has_next:=jsonb_array_length(v_hits)>v_snapshot.page_size;
@@ -157,7 +165,18 @@ BEGIN
   END IF;
 
   v_self:=v_snapshot.own_standing;
-  IF NOT EXISTS (SELECT 1 FROM public.player_profiles pp
+  IF v_snapshot.board='guild' THEN
+    -- Membership is rechecked on every request; a player who leaves a
+    -- guild cannot keep a stale personal guild rank from an earlier page.
+    SELECT jsonb_build_object('listed',true,
+      'rank',(e.item->>'rank')::bigint,
+      'value',(e.item->>'value')::bigint,
+      'secondaryValue',(e.item->>'secondaryValue')::numeric)
+    INTO v_self FROM jsonb_array_elements(v_snapshot.ordered_rows) e(item)
+    WHERE e.item->>'entityId'=v_own_guild::text LIMIT 1;
+    v_self:=coalesce(v_self,jsonb_build_object('listed',false,
+      'value',0,'reason','You are not a member of a ranked guild.'));
+  ELSIF NOT EXISTS (SELECT 1 FROM public.player_profiles pp
     WHERE pp.account_id=p_requester AND pp.profile_visibility='public')
   THEN
     v_self:=jsonb_build_object('listed',false,

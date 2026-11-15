@@ -82,6 +82,7 @@ assert.deepEqual(previewBrokenForgeAttemptV7(replayInput),previewBrokenForgeAtte
  'replaying the same frozen preview must be deterministic');
 expectThrow(()=>previewBrokenForgeAttemptV7({...replayInput,seed:''}),'invalid_seed');
 const stats=['bossHpRemoved','rawPlayerDamage','playerHpLost','effectiveHealing','shieldAbsorbed','reelEvents'] as const;
+const allResults:GuildPvePreviewV7[]=[];
 let total=0,nonzeroBossDamage=0,withCastWarning=0,withHeals=0,withCleanses=0,withShieldAbsorbed=0;
 const summary=[] as Array<{
  tier:GuildPveTierV7;boss:string;phase:string;fights:number;
@@ -115,7 +116,7 @@ for(const {tier} of TIERS){
    if(fight.effectiveHealing>0)withHeals++;
    if(fight.cleanseEvents>0)withCleanses++;
    if(fight.shieldAbsorbed>0)withShieldAbsorbed++;
-   result.push(fight);total++;
+   result.push(fight);allResults.push(fight);total++;
   }
   assert.equal(result.length,54);
   const byStance=(stance:GuildPveStanceV7)=>mean(result.filter(r=>r.stance===stance).map(r=>r.bossHpRemoved));
@@ -145,9 +146,24 @@ console.log('GUILD_PVE_V7_METADATA='+JSON.stringify({
  source:'real Veldryn co-op class/gear/companion eligibility pipeline; synthetic fixtures',
  realEngine:true,actualPlayerAccounts:false,sourceDerivedLoadouts:verifiedSnapshots,
  guildHpPersistence:false,globalBossBalancing:false,
- phases:9,guardianBosses:3,tiers:4,stances:3,seedsPerProfile:2,
+ phases:9,guardianBosses:3,tiers:4,stances:3,seedsPerProfile:2,classBreakdowns:108,
  battles:total,positiveDamageBattles:nonzeroBossDamage,
  withCastWarning,withHeals,withCleanses,withShieldAbsorbed,
  rewardGranted:0,serverStateWrites:0,liveFeatureEnabled:false,
 }));
 for(const row of summary)console.log('GUILD_PVE_V7_COHORT='+JSON.stringify(row));
+for(const {tier} of TIERS)for(const cls of CLASSES)for(const stance of STANCES){
+ const a=allResults.filter(x=>x.tier===tier&&x.classId===cls.id&&x.stance===stance);
+ assert.equal(a.length,18,'per-class samples cover 3 bosses x 3 phases x 2 seeds');
+ console.log('GUILD_PVE_V7_CLASS='+JSON.stringify({
+  tier,classId:cls.id,role:cls.role,stance,fights:a.length,
+  meanHpDamage:round(mean(a.map(x=>x.bossHpRemoved))),
+  meanHpLost:round(mean(a.map(x=>x.playerHpLost))),
+  meanHealing:round(mean(a.map(x=>x.effectiveHealing))),
+  meanShieldAbsorbed:round(mean(a.map(x=>x.shieldAbsorbed))),
+  downed:a.filter(x=>!x.survived).length,
+  cleaned:a.filter(x=>x.cleanseEvents>0).length,
+  warned:a.filter(x=>x.castWarnings>0).length,
+ }));
+}
+

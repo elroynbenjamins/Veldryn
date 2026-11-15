@@ -6,12 +6,25 @@ import {socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {claimAllReadyEquipmentCrafts,claimForgeJob,startGemRefinement} from '../src/core/equipment-crafting-queue';
 import {gemDepositDestination,gemPouch,gemPouchUpgradePreview,gemStorageQuantity,migrateGemPouch,sellPouchGem,storePouchGem,upgradeGemPouch} from '../src/core/gem-pouch';
 import {gemRefineRecipeIdV1} from '../src/core/gem-progression-v1';
+import {gemPouchBonusDisplayV1} from '../src/core/gem-pouch-bonus-display';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {normalizeSave} from '../src/core/save-normalization';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
+const emberBonus=gemPouchBonusDisplayV1('EMBER_SHARD');
+ok(emberBonus.active&&emberBonus.bonus==='+2% Attack when socketed','Legacy Ember Shard must describe its real attack bonus, not generic material text');
+ok(gemPouchBonusDisplayV1('WARD_SHARD').bonus.includes('+2% Defense'),'Legacy Ward Shard must show its defense bonus');
+ok(gemPouchBonusDisplayV1('VITALITY_HEART_GEM').bonus.includes('+5% Max HP'),'Legacy Vitality Heart must show its HP bonus');
+ok(gemPouchBonusDisplayV1('BOSSBANE_SIGIL').bonus.includes('+3% combat power against bosses'),'Legacy effect gems must show their actual combat effect');
+const cutVitality=gemPouchBonusDisplayV1('gem:stat_vitality:g1');
+ok(cutVitality.active&&cutVitality.bonus.includes('Max HP')&&cutVitality.bonus.includes('when socketed'),'Canonical stat gems must show their grade-dependent socket bonus');
+const momentumBonus=gemPouchBonusDisplayV1('gem:effect_momentum:g1');
+ok(momentumBonus.active&&momentumBonus.bonus.includes('stacking damage')&&momentumBonus.detail?.includes('Possible socket strength'),'Canonical effect gems must show both behavior and magnitude');
+const unrefinedBonus=gemPouchBonusDisplayV1('raw_gem:stat_vitality:g1');
+ok(!unrefinedBonus.active&&unrefinedBonus.bonus.includes('No active bonus')&&unrefinedBonus.detail?.includes('After refining'),'Unrefined gems must not imply a currently active buff');
+
 const rawId='raw_gem:stat_vitality:g1',gemId='gem:stat_vitality:g1';
 const start=createCharacter(newGame(0),'IRONWARDEN','Pouch Tester');
 const base={...start,account:{...start.account,gemPouchMigrationDone:false},character:{...start.character!,level:70,gold:100000},inventory:{capacity:3,stacks:[{itemId:rawId,quantity:1},{itemId:'WISP_DUST',quantity:2}]},bank:{...start.bank,capacity:0,stacks:[]}};

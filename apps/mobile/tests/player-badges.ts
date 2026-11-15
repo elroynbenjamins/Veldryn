@@ -1,7 +1,7 @@
 import {
  COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_EQUIPPED_PLAYER_BADGES,MAX_FEATURED_PLAYER_BADGES,
  normalizePlayerBadges,playerBadgeIds,profileBadgeIds,validatedFeaturedBadges,supporterTierMonths,
- canEquipSupporterBadge,type PlayerBadgeIdentity,
+ canEquipSupporterBadge,PLAYER_BADGE_DESCRIPTIONS,PLAYER_BADGE_LABELS,type PlayerBadgeIdentity,
 } from '../src/core/player-badges';
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 const now=1000;
@@ -153,4 +153,12 @@ ok(shelfSql.includes("'featured',to_jsonb(v_profile)")&&shelfSql.includes("'extr
 ok(!shelfSql.includes('raw_user_meta_data')&&!shelfSql.includes('user_metadata'),'shelf ownership cannot be forged in user metadata');
 ok(!shelfSql.includes('to anon'),'shelf mutation requires an authenticated identity');
 ok(!shelfSql.includes('set profile_badge_ids=case'),'the shelf is never seeded from the worn badge, which the name row already shows');
+
+const allBadgeIds=['admin','moderator',...VIP_BADGE_IDS,...SUPPORTER_BADGE_IDS,...COLLECTIBLE_PLAYER_BADGE_IDS];
+ok(allBadgeIds.every(id=>!!PLAYER_BADGE_LABELS[id as keyof typeof PLAYER_BADGE_LABELS]&&!!PLAYER_BADGE_DESCRIPTIONS[id as keyof typeof PLAYER_BADGE_DESCRIPTIONS]),'every known badge has a label and tooltip description');
+const badgeComponent=read('src/components/PlayerBadges.tsx');
+ok(badgeComponent.includes('interactive=false')&&badgeComponent.includes('accessibilityHint={detail}'),'badge popovers are opt-in so setting gallery rows keep their single-tap equip action');
+ok(badgeComponent.includes('size={size} showLabel={showLabels} interactive/>')&&badgeComponent.includes('size={size} interactive/>'),'name-row and profile-showcase badges both expose the information bubble');
+ok(badgeComponent.includes('nativeEvent.pageX')&&badgeComponent.includes('nativeEvent.pageY')&&badgeComponent.includes('setAnchor(null)')&&badgeComponent.includes('onRequestClose'),'badge bubble anchors to the pressed icon and dismisses on tap outside or Android back');
+ok(badgeComponent.includes('event.stopPropagation()'),'tapping a badge inside a chat name does not also open that player profile');
 console.log('PASS: one badge beside the name, three on the profile, automatic staff, supporter 0/3/6/12 tiers, artwork, authenticated tenure and old-client compatibility');

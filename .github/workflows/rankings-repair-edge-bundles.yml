@@ -1,32 +1,29 @@
-name: Rankings branch - repair generated Edge parity
+name: Rankings branch - generated Edge bundle review
 
+# This check deliberately has NO repository write permission. Pull request
+# code must never run with a token capable of pushing commits.
 on:
-  push:
-    branches:
-      - chatgpt/rankings-snapshot-histories-20261115
-    paths:
-      - '.github/workflows/rankings-repair-edge-bundles.yml'
   pull_request:
-    branches:
-      - chatgpt/rankings-v3-scoring-main-20261115
     paths:
       - '.github/workflows/rankings-repair-edge-bundles.yml'
       - 'backend/online/edge.ts'
       - 'backend/online/rankings-handler.ts'
+      - 'apps/mobile/src/core/**'
+      - 'backend/online/**'
+      - 'backend/supabase/functions/gameplay/index.ts'
+      - 'backend/supabase/functions/coop/index.ts'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  regenerate:
-    if: github.repository == 'elroynbenjamins/Veldryn' && ((github.event_name == 'push' && github.ref == 'refs/heads/chatgpt/rankings-snapshot-histories-20261115') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'elroynbenjamins/Veldryn' && github.event.pull_request.head.ref == 'chatgpt/rankings-snapshot-histories-20261115'))
+  regenerate-for-review:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: true
-          ref: chatgpt/rankings-snapshot-histories-20261115
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: '10.34.9'
@@ -36,20 +33,24 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm --dir backend install --frozen-lockfile
-      - name: Rebuild exactly the two canonical Edge bundles
+      - name: Rebuild the two canonical generated Edge bundles
         run: node tools/build-online.mjs
-      - name: Verify regenerated bundles match the shared engine
+      - name: Verify outputs against the shared engine
         run: node tools/verify-gameplay-edge.mjs
-      - name: Commit only the generated Edge artifacts to this draft branch
+      - name: Upload generated bundles for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: rankings-generated-gameplay-coop-edge
+          retention-days: 3
+          if-no-files-found: error
+          path: |
+            backend/supabase/functions/gameplay/index.ts
+            backend/supabase/functions/coop/index.ts
+      - name: Report whether checked-in bundles need updating
         shell: bash
         run: |
-          set -euo pipefail
-          git add -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
-          if git diff --cached --quiet; then
-            echo "Both generated bundles already match."
-            exit 0
+          if git diff --quiet -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts; then
+            echo "Generated Edge bundles are already synchronized."
+          else
+            echo "::warning::The two generated Edge bundles need a reviewed commit; uploaded artifacts contain canonical rebuilds."
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(edge): regenerate gameplay and coop from canonical shared engine"
-          git push origin HEAD:chatgpt/rankings-snapshot-histories-20261115

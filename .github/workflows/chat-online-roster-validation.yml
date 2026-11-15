@@ -1,0 +1,36 @@
+name: Chat online players validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/components/ChatOverlay.tsx'
+      - 'apps/mobile/src/components/ChatOnlinePlayersPanel.tsx'
+      - 'apps/mobile/src/online/online-player-roster.ts'
+      - 'apps/mobile/src/online/useOnlineGame.ts'
+      - 'apps/mobile/tests/chat-online-player-roster.cjs'
+      - 'apps/mobile/tests/chat-overlay-layout.cjs'
+      - 'backend/supabase/migrations/*_chat_online_players_roster.sql'
+      - '.github/workflows/chat-online-roster-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  online-roster:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Validate roster response, UI integration and chat layout
+        run: node tests/chat-online-player-roster.cjs && node tests/chat-overlay-layout.cjs
+      - name: Typecheck mobile UI and online client
+        run: pnpm typecheck

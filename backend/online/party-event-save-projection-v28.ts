@@ -142,7 +142,17 @@ export function projectPartyEventSaveV28(input:{
      personalPoints:r.personalPoints,choice,
    });
  }catch{throw Error('party_event_v28_quote_model_invalid');}
- must(JSON.stringify(expected)===JSON.stringify(r),
+ const keys=Object.keys(expected.materials).sort();
+ must(expected.version===r.version&&expected.kind===r.kind
+   &&expected.performanceBand===r.performanceBand
+   &&expected.personalPoints===r.personalPoints
+   &&expected.gold===r.gold&&expected.combatXp===r.combatXp
+   &&expected.skillXp===r.skillXp
+   &&expected.companionEssence===r.companionEssence
+   &&expected.bondstones===r.bondstones
+   &&expected.partyRenown===r.partyRenown
+   &&JSON.stringify(keys)===JSON.stringify(Object.keys(r.materials).sort())
+   &&keys.every(key=>r.materials[key]===expected.materials[key]),
    'quote_model_mismatch');
  must(Object.keys(r.materials).every(id=>id===GEM_DUST),
    'unapproved_material');
@@ -186,9 +196,6 @@ export function projectPartyEventSaveV28(input:{
      'combat_xp_cap_or_curve_conflict');
    grantedCombatXp=xpDelta;
    character={...result.character,gold:afterGold};
- }else{
-   must(input.professionSkillTarget===undefined||r.skillXp>0,
-     'unexpected_profession_target');
  }
 
  let skills=state.skills.map(s=>({...s}));

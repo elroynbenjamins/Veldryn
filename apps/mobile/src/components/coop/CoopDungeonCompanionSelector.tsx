@@ -4,6 +4,7 @@ import type {GameState} from '../../core/types';
 import {combatCompanionDef} from '../../content/combat-companions';
 import {canEquipCompanion,classCompanionRole} from '../../core/combat-companions';
 import {dungeonCompanionOpportunity,type DungeonCompanionCounterId} from '../../../../../backend/src/server/coop/dungeon-companion-counters';
+import {companionServerDefinition} from '../../../../../backend/src/server/companions/content';
 import {companionArtSource} from '../../theme/companion-art';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
@@ -81,9 +82,10 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
       const art=companionArtSource(item.id),disabled=pending||busy||item.busy||item.forbidden||item.selected;
       const status=item.busy?st('On Expedition'):item.forbidden?st('Same role as your class'):item.selected?st('Equipped'):item.inTrial?st('In Trial · Available'):item.matchup?st('Possible counter'):st('Available');
       const roleLabel=st(item.def.role==='damage'?'Damage':item.def.role==='tank'?'Tank':'Support');
-      const assist=st(item.def.role==='damage'?'Damage assist':item.def.role==='tank'?'Shield assist':'Healing assist');
+      const ability=companionServerDefinition(item.id)?.active;
+      const assist=st(ability?.effectKind==='interrupt'?'Cast interrupt':ability?.effectKind==='shield'?'Shield assist':ability?.effectKind==='heal'?'Healing assist':ability?.effectKind==='mitigation'?'Damage mitigation':ability?.effectKind==='utility'?'Tactical boost':'Damage assist');
       return <Pressable key={item.id} accessibilityRole="button"
-       accessibilityLabel={item.def.name+', '+item.def.role+', '+status}
+       accessibilityLabel={item.def.name+', '+item.def.role+', '+(ability?.name??item.def.activeAbility.name)+', '+status}
        accessibilityState={{selected:item.selected,disabled}}
        disabled={disabled} onPress={()=>void choose(item.id)}
        style={({pressed})=>[s.item,item.selected&&s.equipped,disabled&&!item.selected&&s.disabled,pressed&&s.pressed]}>
@@ -91,7 +93,7 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
        <View style={s.grow}>
         <Text numberOfLines={1} style={s.name}>{item.def.name}{item.selected?' ✓':''}</Text>
         <Text style={s.meta}>{st('Level')} {item.progress.level} · {roleLabel} · {item.def.rarity}</Text>
-        <Text style={s.assist}>{assist}</Text>
+        <Text style={s.assist} numberOfLines={2}>{ability?.name??item.def.activeAbility.name} · {assist}</Text>
         {item.matchup&&!item.busy&&!item.forbidden?<Text style={s.matchup}>{dungeonCompanionCounterLabel(item.matchup,st)}</Text>:null}
         {item.busy||item.forbidden?<Text style={s.reason}>{status}</Text>:null}
        </View>

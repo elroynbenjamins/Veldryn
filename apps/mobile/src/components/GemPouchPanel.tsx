@@ -2,6 +2,7 @@ import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {gemPouch,gemPouchUpgradePreview} from '../core/gem-pouch';
+import {gemPouchBonusDisplayV1} from '../core/gem-pouch-bonus-display';
 import {availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
@@ -34,6 +35,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const entries=Array.from({length:Math.min(PAGE_SIZE,pouch.capacity-start)},(_,index)=>pouch.stacks[start+index]);
   const selectedStack=pouch.stacks.find(stack=>stack.itemId===selected);
   const selectedItem=selectedStack?itemDef(selectedStack.itemId):undefined;
+  const selectedBonus=selectedStack?gemPouchBonusDisplayV1(selectedStack.itemId):undefined;
   const selectedMeta=selectedStack?canonicalGemMetaV1(selectedStack.itemId):undefined;
   const selectedRaw=selectedStack?parseMobileRawGemItemIdV1(selectedStack.itemId):undefined;
   const grade=selectedMeta?.grade??selectedRaw?.grade;
@@ -84,7 +86,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         </View>:null}
         <View style={s.detail}>
           <Text style={s.itemName}>{p('What it does')}</Text>
-          <Text style={s.meta}>{family?.description??selectedItem.passive??p('Gem material.')}</Text>
+          {selectedBonus?<Text style={[s.buffText,!selectedBonus.active&&{color:C.muted}]}>{selectedBonus.bonus}</Text>:null}
+          {selectedBonus?.detail?<Text style={s.meta}>{selectedBonus.detail}</Text>:null}
           {selectedMeta?.kind==='effect'&&family?<View style={s.resonanceInfo}>
             <Text style={s.itemName}>{p('Resonance bonuses')}</Text>
             {family.resonance2?<Text style={s.meta}>{'2/3 · '+family.resonance2}</Text>:null}
@@ -135,6 +138,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  gradeProgress:{gap:3,marginTop:3},gradeRow:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:8,paddingVertical:5,borderRadius:7},gradeRowActive:{backgroundColor:C.selection},
  gradeLabel:{width:25,...typography.caption,color:C.muted,fontWeight:'800'},gradeBonus:{flex:1,...typography.caption,color:C.text},gradeMark:{fontSize:10,color:C.accent},
  resonanceInfo:{gap:5,marginTop:7},
+ buffText:{fontSize:16,lineHeight:23,color:C.good,fontWeight:'800'},
  actionTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.6},
  refinement:{gap:spacing.sm,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:6},itemName:{...typography.bodyStrong,color:C.text},

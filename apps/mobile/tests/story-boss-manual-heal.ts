@@ -24,6 +24,7 @@ assert.ok(effectiveStats(state).hp>state.character!.currentHp,'fixture must be w
 // In manual mode an empty schedule consumes no potions; the signed command
 // decides the timestamps, the client never supplies a health delta or schedule.
 const initiated=startStoryBossSession(state,start);
+assert.equal(initiated.state.storyBossSession?.healingMode,'manual','existing manual mode remains the safe default');
 assert.equal(initiated.battle.potionConsumed,0,'manual session disables automatic potions');
 assert.equal(initiated.state.storyBossSession?.characterId,state.character!.id,'session scoped to active character');
 let rejected=false;
@@ -33,6 +34,25 @@ rejected=false;
 try{executeGameCommand(initiated.state,{type:'roster_switch',args:{id:'other-character'}},start+100);}catch{rejected=true;}
 assert.ok(rejected,'character cannot switch during server-owned battle');
 
+// Preference commands are strictly validated before they can change a character.
+let invalidPreference=false;
+try{validateGameCommand({type:'boss_potion_preference',args:{mode:'auto',thresholdPct:80,amount:99999}});}catch{invalidPreference=true;}
+assert.ok(invalidPreference,'clients cannot smuggle potion strength in configuration');
+let invalidThreshold=false;
+try{executeGameCommand(state,{type:'boss_potion_preference',args:{mode:'auto',thresholdPct:45}},start);}catch{invalidThreshold=true;}
+assert.ok(invalidThreshold,'only explicitly supported auto-heal thresholds are accepted');
+const configured=executeGameCommand(state,{type:'boss_potion_preference',args:{mode:'auto',thresholdPct:80}},start);
+assert.equal(configured.state.character?.bossPotionMode,'auto');
+assert.equal(configured.state.character?.bossPotionThresholdPct,80);
+const automatic=startStoryBossSession(configured.state,start);
+assert.equal(automatic.state.storyBossSession?.healingMode,'auto');
+assert.equal(automatic.state.storyBossSession?.autoThresholdPct,80);
+let blockedManualInAuto=false;
+try{healStoryBossSession(automatic.state,start+250);}catch{blockedManualInAuto=true;}
+assert.ok(blockedManualInAuto,'auto mode does not accept manual healing commands');
+let blockedMidfightModeChange=false;
+try{executeGameCommand(automatic.state,{type:'boss_potion_preference',args:{mode:'manual',thresholdPct:80}},start+100);}catch{blockedMidfightModeChange=true;}
+assert.ok(blockedMidfightModeChange,'healing mode cannot be switched during a live fight');
 const healed=healStoryBossSession(initiated.state,start+250);
 assert.equal(healed.battle.potionConsumed,1,'one heal command consumes exactly one unit');
 assert.equal(healed.state.inventory.stacks.find(x=>x.itemId==='RIVERHEART_DRAUGHT')?.quantity,5,'inventory reserved until settlement');
@@ -68,4 +88,10 @@ assert.ok(at1800[0]?.type==='heal','heal executes before same-time boss action')
 let badSchedule=false;
 try{simulateFallenKnightStoryBattle(snapshot,'MANUAL_BOSS_HEAL_ORDER','rematch',[1800,1801]);}catch{badSchedule=true;}
 assert.ok(badSchedule,'simulator rejects cooldown bypass');
+const autoSnapshot={...snapshot,autoEatThresholdPct:80};
+const autoBattle=simulateFallenKnightStoryBattle(autoSnapshot,'AUTO_BOSS_HEAL_COOLDOWN','rematch',undefined,FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS);
+const autoTimes=autoBattle.events.filter(e=>e.type==='heal').map(e=>e.atMs);
+assert.ok(autoTimes.length>0,'auto potion mode performs real healing');
+assert.ok(autoTimes.every((at,index)=>index===0||at-autoTimes[index-1]>=FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS),'automatic healing cannot bypass the manual potion cooldown');
+assert.ok(autoBattle.potionConsumed<=5,'auto potion mode obeys the encounter cap');
 console.log('PASS live Fallen Knight manual healing, idempotent finish, server timing, UI order and potion economy');

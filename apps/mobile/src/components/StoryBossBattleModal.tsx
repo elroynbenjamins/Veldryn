@@ -1,4 +1,4 @@
-import {useGameplayText} from '../i18n/gameplay';
+import {useGameplayText,type GameplayKey} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {MONSTERS} from '../content/monsters';
@@ -161,7 +161,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
 
 const bossItemNames=new Map(ITEMS.map(item=>[item.name.toLocaleLowerCase('en'),item]));
 
-function BossLootSection({title,items,accent,complete=false}:{title:string;items:StoryBossLootDisplay[];accent:string;complete?:boolean}){
+function BossLootSection({title,items,accent,complete=false}:{title:GameplayKey;items:StoryBossLootDisplay[];accent:string;complete?:boolean}){
   const {gt,gl}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const {width,fontScale}=useWindowDimensions(),singleColumn=width<330||fontScale>1.25;

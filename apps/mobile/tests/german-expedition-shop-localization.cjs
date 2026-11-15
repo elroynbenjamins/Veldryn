@@ -10,7 +10,7 @@ require.extensions['.ts']=function(mod,filename){
 };
 const {
  germanDungeonShopCopy,germanDungeonShopOfferNames,dungeonShopText,
- dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason,
+ dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopLockReason,
 }=require('../src/i18n/dungeon-shop.ts');
 const app=path.resolve(__dirname,'..');
 const backend=fs.readFileSync(path.join(app,'../../backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'),'utf8');
@@ -44,7 +44,7 @@ const expectedCopy=[
  'Purchase confirmed. Reopen your inventory to refresh rewards.',
  '‹ Back to Dungeons','Loading Expedition Shop…',
  'Rare','Epic','supply','companion','icon','border','background','pet',
- 'Profile icon · visual only',
+ 'Profile icon · visual only','While equipped','Permanent when owned','Preview price',
 ];
 const placeholders=source=>[...source.matchAll(/\{(\w+)\}/g)].map(match=>match[1]).sort();
 assert.deepEqual(Object.keys(germanDungeonShopCopy).sort(),expectedCopy.sort(),'German shop UI keys changed without review');
@@ -69,11 +69,20 @@ for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp
  const source='+ 2.00% '+target+' equipped; +0.50% owned';
  const result=dungeonShopOfferSummary('de',source);
  assert.notEqual(result,source,'Untranslated live bonus stat: '+target);
- assert.match(result,/\+2,00 %/,'German bonus should use comma decimals');
- assert.match(result,/\+0,50 % im Besitz/);
- assert.equal(dungeonShopOfferSummary('en',source),source,'English server description changed');
+ assert.match(result,/\+2 %/,'German bonus should use friendly percentage formatting');
+ assert.match(result,/\+0,5 % dauerhaft im Besitz/);
+ const english=dungeonShopOfferSummary('en',source);
+ assert.match(english,/\+2% /);
+ assert.match(english,/\+0\.5% permanently once owned/);
+ assert(!english.includes(target),'English bonus must not expose '+target);
+ const details=dungeonShopOfferBonusDetails('en',source);
+ assert.equal(details?.equipped,'+2%');
+ assert.equal(details?.owned,'+0.5%');
+ assert.ok(details?.stat,'Missing readable stat label');
 }
 assert.equal(dungeonShopOfferSummary('de','Unknown effect {whatever}'),'Unknown effect {whatever}');
+assert.equal(dungeonShopOfferBonusDetails('en','Unknown effect {whatever}'),null);
+assert.equal(dungeonShopOfferBonusDetails('en','+ 2.00% unexpectedServerKey equipped; +0.50% owned'),null);
 for(const region of ['Asterfall','Sunscar','Frostmarch'])
  assert.equal(dungeonShopLockReason('de','Clear a '+region+' dungeon first.'),'Schließe zuerst einen Dungeon in '+region+' ab.');
 assert.equal(dungeonShopLockReason('de','A player named Clear a Something dungeon first.'),'A player named Clear a Something dungeon first.');
@@ -85,6 +94,11 @@ const shell=fs.readFileSync(path.join(components,'ExpeditionShopPanel.tsx'),'utf
 for(const marker of [
  'dungeonShopOfferName(language,item.id,item.name)',
  'dungeonShopOfferSummary(language,item.summary)',
+ 'dungeonShopOfferBonusDetails(language,item.summary)',
+ "t('While equipped')",
+ "t('Permanent when owned')",
+ "t('Preview price')",
+ "t('Not yet released — no Marks can be spent on this offer.')",
  'dungeonShopLockReason(language,item.lockReason)',
  "t('{name}, {marks} Expedition Marks, {status}'",
  'formatLocalizedNumber(language,item.marks)',
@@ -96,4 +110,4 @@ for(const marker of [
  "t('Loading Expedition Shop…')",
  "t('Purchase confirmed. Reopen your inventory to refresh rewards.')",
 ])assert.ok(shell.includes(marker),'Expedition shell translation missing: '+marker);
-console.log('PASS: 17 guarded German Expedition Shop offers, 45 UI keys, descriptions, statuses, placeholders and a11y wiring');
+console.log('PASS: 17 guarded German Expedition Shop offers, 48 UI keys, readable collection benefits, preview statuses and a11y wiring');

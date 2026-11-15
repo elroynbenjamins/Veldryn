@@ -130,7 +130,7 @@ async function main(){
  assert.equal(tiny.snapshot(START).members.GX8_FX_0.seals,1);
  assert.equal(tiny.snapshot(START).members.GX8_FX_1.seals,0);
  assert.equal(node(tiny,'C1-04').state,'cleared');
- assert.equal((await tiny.commit(fight('GX8_FX_0','C1-04','RACE_ATK_A'),START)),a);
+ assert.deepEqual((await tiny.commit(fight('GX8_FX_0','C1-04','RACE_ATK_A'),START)),a);
 
  // First successful action binds an account to this guild for the whole cycle;
  // a different guild using the same shared *in-memory* registry must reject it.
@@ -194,7 +194,7 @@ async function main(){
   assert.equal(snap.serverPersisted,false);
   assert.ok(creditedHp>=0);
   results.push({members:n,tier,attempts,creditedHp:Number(creditedHp.toFixed(2)),
-   clearedMandatory:clear,finished:node(run,'C3-06').cleared,
+   clearedMandatory:clear,finished:node(run,'C3-06').state==='cleared',
    phaseTransitions:transitions,pressure:snap.pressure,
    supportFightCount:guardOrRally,stale:staleEvents});
  }

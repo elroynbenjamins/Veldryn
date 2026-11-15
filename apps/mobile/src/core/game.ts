@@ -14,6 +14,7 @@ import {CLASSES} from '../content/classes';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
+import {MAX_RELEASED_EQUIPMENT_TIER} from '../content/equipment-release';
 import {REGIONAL_AREAS} from '../content/regional-areas';
 import {itemDef} from '../content/items';
 import {equipmentSalvageReward} from './equipment-salvage';
@@ -478,10 +479,14 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
     m.zone==='Ironwood Forest'?(m.level>=14?2:1):
     m.zone==='Old Mines'?2:
     m.zone==="King's Road"?2:
-    m.zone==='Sunscar'?(m.level>=40?4:3):
-    m.zone==='Frostmarch'?(m.level>=70?6:m.level>=55?5:4):
+    m.zone==='Sunscar'?(m.level>=42?4:3):
+    m.zone==='Frostmarch'?(m.level>=67?6:5):
     m.zone==='Ashlands'?(m.level>=82?7:6):undefined;
-  const expectedTier=regionalGearTier??(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0);
+  // T6 is not released yet. Do not penalize a Frostmarch player for missing
+  // uncraftable equipment; this cap automatically lifts when the tier ships.
+  const expectedTier=regionalGearTier===undefined
+    ?(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0)
+    :m.zone==='Frostmarch'?Math.min(MAX_RELEASED_EQUIPMENT_TIER,regionalGearTier):regionalGearTier;
   const tierGap=regionalEquippedTierGap(state,expectedTier);
   const progressionSpeedPenalty=tierGap===0?1:Math.max(.50,1-tierGap*.24);
   const progressionDamagePenalty=tierGap===0?1:1+tierGap*.20;

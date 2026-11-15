@@ -24,6 +24,8 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
       - name: Install backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies required by shared TypeScript modules
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Rebuild committed online Edge functions
         run: pnpm --dir backend build:online
       - name: Commit regenerated bundles to this feature branch

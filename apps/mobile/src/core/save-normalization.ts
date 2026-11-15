@@ -12,6 +12,7 @@ import {ITEMS} from '../content/items';
 import {migrateLegacyCombatCompanionAccount,reconcileCombatCompanionUnlocks} from './combat-companions';
 import {normalizeCompanionRuntimeSave} from './companion-save';
 import {normalizeMonsterMastery} from './monster-mastery';
+import {backfillEnemyFamilyMastery,normalizeEnemyFamilyMastery} from './enemy-family-mastery';
 import {normalizeClassSkills,normalizeTrainingFocus,normalizeClassDrills} from './class-skills';
 import {normalizeFaith} from './faith';
 import {normalizeAlchemyBatch} from './alchemy';
@@ -98,6 +99,11 @@ export function normalizeSave(input:any):GameState{
     return {
     ...savedCharacter,
     monsterMasteryPoints:normalizeMonsterMastery(savedCharacter.monsterMasteryPoints),
+    // Backfill only on first upgrade. Subsequent saves retain the independent
+    // family total even when all individual species counters have capped.
+    familyMasteryPoints:savedCharacter.familyMasteryPoints===undefined
+      ?backfillEnemyFamilyMastery(savedCharacter.monsterMasteryPoints)
+      :normalizeEnemyFamilyMastery(savedCharacter.familyMasteryPoints),
     masteryMaterialRemainders:Object.fromEntries(Object.entries(savedCharacter.masteryMaterialRemainders??{}).filter(([id,v])=>ITEMS.some(i=>i.id===id&&i.type==='material')&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     classSkills:normalizeClassSkills(savedCharacter.classId,savedCharacter.classSkills),
     faith:normalizeFaith(savedCharacter.faith),
@@ -239,7 +245,11 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),foodQueueIds:normalizeFoodQueueIds(entry.character.foodQueueIds,entry.character.equippedFoodId),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeDailySupplyBoosts:activeDailySupplyBoosts(entry.character),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,
+ familyMasteryPoints:entry.character.familyMasteryPoints===undefined
+  ?backfillEnemyFamilyMastery(entry.character.monsterMasteryPoints)
+  :normalizeEnemyFamilyMastery(entry.character.familyMasteryPoints),
+ gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),foodQueueIds:normalizeFoodQueueIds(entry.character.foodQueueIds,entry.character.equippedFoodId),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeDailySupplyBoosts:activeDailySupplyBoosts(entry.character),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));

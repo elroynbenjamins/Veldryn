@@ -33,7 +33,7 @@ assert.ok(assist('UNIT_006').effects.some(e=>e.kind==='buff'&&e.tag==='damage_ta
 assert.ok(assist('UNIT_008').effects.some(e=>e.kind==='cleanse'),'Dawn Pinion must cleanse DoTs');
 assert.ok(assist('UNIT_010').effects.some(e=>e.kind==='debuff'),'Siege Bolt must expose targets');
 assert.equal(assist('UNIT_009').effects[0].bonusVsDebuffed,.12,'Echo Rend must reward coordinated debuff play');
-assert.ok(assist('UNIT_011').effects.some(e=>e.kind==='debuff'&&e.tag==='hit_taken'&&e.value===.04),'Memory Command must boost party hit chance, not duplicate damage marks');
+assert.ok(assist('UNIT_011').effects.some(e=>e.kind==='debuff'&&e.tag==='crit_taken'&&e.value===.03),'Memory Command must create a party-wide critical-hit opening');
 assert.equal(assist('UNIT_011').target,'current_target','Memory Command must damage an enemy, not an ally');
 assert.ok(assist('UNIT_012').effects.some(e=>e.kind==='buff'&&e.tag==='damage_done'),'Oathglass utility must modify real damage');
 assert.ok(assist('UNIT_002').effects[0].flat!>assist('UNIT_003').effects[0].flat!,'Tank shield should be more substantial than the direct heal');
@@ -94,7 +94,7 @@ assert.ok(trialTech.abilities[0].aiCondition==='target_casting','Technique chang
  * only difference is whether Echo's attack sees a pre-existing debuff. */
 const echoAttack:CombatantDefinition={...actor('echo','players'),abilities:[{id:'echo_combo',name:'Echo Combo',cooldownMs:3000,castTimeMs:0,target:'current_target',priority:1,effects:[{kind:'damage',coeff:1,bonusVsDebuffed:.12}]}]};
 function echoMarkProbe(kind:'buff'|'debuff'){
- const opener:CombatantDefinition={...actor('opener','players'),abilities:[{id:'mark',name:'Mark',cooldownMs:3000,castTimeMs:0,target:'current_target',priority:1,effects:[{kind,value:.04,durationMs:3000,tag:'hit_taken'}]}]};
+ const opener:CombatantDefinition={...actor('opener','players'),abilities:[{id:'mark',name:'Mark',cooldownMs:3000,castTimeMs:0,target:'current_target',priority:1,effects:[{kind,value:.04,durationMs:3000,tag:'crit_taken'}]}]};
  const result=simulateCombat({seed:'echo-mark-same-rng',players:[opener,echoAttack],enemies:[{...actor('target','enemies'),stats:{...enemy.stats,maxHp:100000}}],maxDurationMs:100});
  return result.events.find(e=>e.type==='damage'&&e.abilityId==='echo_combo')?.amount??0;
 }

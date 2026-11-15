@@ -134,6 +134,36 @@ async function main(){
  assert.ok(rolesSeen.has('tank'));
  assert.ok(rolesSeen.has('support'));
 
+ // Explicitly exercise compositions that do NOT have the legacy Tank or
+ // Support requirement, including a single Damage or Support character.
+ const mixes:readonly {name:string;indices:readonly number[]}[]=[
+  {name:'solo_damage',indices:[2]},
+  {name:'solo_support',indices:[1]},
+  {name:'no_tank_three_damage',indices:[2,3,4]},
+  {name:'no_support_two',indices:[0,3]},
+  {name:'support_and_damage',indices:[1,4]},
+ ];
+ for(const mix of mixes){
+  const party=freezeWorldBossAccountRosterV22({
+   accountId:ACCOUNT,atUtcMs:NOW,
+   verified:mix.indices.map(i=>verified[i]),
+  });
+  const result=simulateWorldBossAccountRaidV24({
+   eventId:EVENT,requestId:'WB24_'+mix.name.toUpperCase(),
+   roster:party,boss:'sunscar',phase:'exposed',
+   order:'steady_assault',
+   serverSeed:'WB24_TRUSTED_MIXED_ROLE_SEED_123456789',
+   encounter:profiles('sunscar','exposed'),warCamp:camp,
+  });
+  assert.equal(result.rosterSize,mix.indices.length);
+  assert.equal(result.roundsCompleted,14);
+  assert.ok(result.proposedWorldHpDamage>=0);
+  assert.equal(result.characterLedger.length,mix.indices.length);
+  assert.equal(new Set(result.characterLedger.map(x=>x.characterId)).size,
+   mix.indices.length);
+ }
+ const zeroContribution=allResults.filter(x=>Number(x.split('/')[3])===0).length;
+
  // Legacy V6 stays restrictive; this relaxed mode needs explicit opt-in.
  fail(()=>simulateWorldBossRounds({
   seed:'WB24_TEST_SEED_LEGACY_REJECTION',
@@ -184,7 +214,8 @@ async function main(){
  assert.ok(stress.characterLedger.every(x=>Number.isFinite(x.bossHpDamage)));
  console.log('WORLD_BOSS_V24_AUTHORED_ACCOUNT_RAID='+JSON.stringify({
   bosses:bosses.length,phases:phases.length,rosterSizes:[1,2,3,4,5],
-  uniqueSimulations:allResults.length,authoredCues:126,
+  uniqueSimulations:allResults.length,extraMixes:mixes.length,
+  zeroGlobalDamageFixtures:zeroContribution,authoredCues:126,
   includesRealTelegraphs:true,includesRealGuardianSupportDamage:true,
   deterministicFrozenReplay:true,
   oldFourRoleContractUnaffected:true,

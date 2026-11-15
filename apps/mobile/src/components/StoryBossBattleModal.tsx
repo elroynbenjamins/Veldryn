@@ -64,6 +64,14 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
   const potionRemaining=Math.max(0,potionCapacity-potionsUsedSoFar);
   const lastUse=session?.manualPotionAtMs[session.manualPotionAtMs.length-1];
   const cooldownRemaining=lastUse===undefined?0:Math.max(0,FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS-(playhead-lastUse));
+  const healDisabled=!session?.potionId||potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0;
+  const healHint=!session?.potionId?gt('No healing potion selected'):
+    potionRemaining<=0?gt('No potions left'):
+    playerHp<=0?gt('Cannot heal after defeat'):
+    bossHp<=0?gt('Boss defeated'):
+    playerHp>=battle.playerMaxHp?gt('HP already full'):
+    cooldownRemaining>0?`${gt('Cooldown')} ${(cooldownRemaining/1000).toFixed(1)}s`:
+    `+${Math.min(Math.round(session.snapshot.potionHeal),Math.max(0,battle.playerMaxHp-playerHp))} HP`;
   const phasesReachedSoFar=Math.min(3,1+visible.filter(event=>event.type==='phase').length);
 
   useEffect(()=>{
@@ -166,8 +174,8 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
             <Text style={s.healHint}>{potionRemaining} {gt('potions left')} · {gt('4.5s cooldown')}</Text>
             {!session?.potionId?<Text style={s.healHint}>{gt('No potion selected before battle')}</Text>:null}
           </View>:<>
-            <GameButton compact title={`${gt('HEAL NOW')} · ×${potionRemaining}`} accessibilityLabel={`${gt('Use healing potion')}. ${potionRemaining} ${gt('potions left')}`} onPress={onHeal!} disabled={!session?.potionId||potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0} style={s.healButton}/>
-            <Text style={s.healHint}>{cooldownRemaining>0?`${gt('Cooldown')} ${(cooldownRemaining/1000).toFixed(1)}s`: `+${Math.min(Math.round(session?.snapshot.potionHeal??0),Math.max(0,battle.playerMaxHp-playerHp))} HP`}</Text>
+            <GameButton compact title={`${gt('HEAL NOW')} · ×${potionRemaining}`} accessibilityLabel={`${gt('Use healing potion')}. ${potionRemaining} ${gt('potions left')}`} onPress={onHeal!} disabled={healDisabled} style={s.healButton}/>
+            <Text style={s.healHint}>{healHint}</Text>
           </>}
         </View>}
       </View>:null}

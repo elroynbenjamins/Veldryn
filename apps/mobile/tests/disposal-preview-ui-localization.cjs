@@ -36,7 +36,7 @@ assert.ok(inventory.includes('bulkSelectionSummary(state,bulkPending.ids'), 'Bul
 assert.ok(inventory.includes('confirmDisabled={!disposalSelectionValid'),'Cannot dispose changed bulk items');
 assert.ok(inventory.includes('protectedUnits:Math.max(0,selectionSummary.selectedUnitCount-eligibleUnits)'),'Inventory disposal preview accounts for skipped protected units');
 assert.ok(inventory.includes('protectedStacks:Math.max(0,selectionSummary.selectedStackCount-eligibleStacks)'),'Inventory protected note uses stack units');
-assert.ok(pouch.includes('protectedCount:pendingSale.protectedCount')&&pouch.includes('protectedCount:pendingSalvage.protectedCount'),'Pouch confirmations display copy-safe exclusions');
+assert.ok(pouch.includes('protected:pendingSale.protectedCount')&&pouch.includes('protected:pendingSalvage.protectedCount'),'Pouch confirmations display copy-safe exclusions');
 assert.ok(pouch.includes("const selectionValid=saleCount>0;")&&pouch.includes("const salvageSelectionValid=salvageCount>0;"),'Mixed protected selection still allows eligible-only disposal');
 assert.ok(pouch.includes("p('Quick sell')")&&pouch.includes("p('Quick salvage')"),'One-tap quick actions open safety confirmation');
 assert.ok(inventory.includes('confirmDisabled={!copyDisposalValid'),'Cannot dispose stale exact equipment');

@@ -47,7 +47,7 @@ export interface CompanionCodexProfileState{
   favoriteCompanionId?:string;showcaseCompanionIds:string[];discoveredCompanionIds?:string[];claimedCodexMilestoneIds?:string[];codexRewardIds?:string[];showcaseSlotsUnlocked?:number;
 }
 
-export interface EngineAbilityEffect{kind:EngineEffectKind;coeff?:number;flat?:number;durationMs?:number;value?:number;tag?:string;executeBelowHpPct?:number;executeBonus?:number;shieldReflectPct?:number;damageType?:'physical'|'fire'|'ice'|'shadow'|'arcane'|'nature'|'true';tickMs?:number;}
+export interface EngineAbilityEffect{kind:EngineEffectKind;coeff?:number;flat?:number;durationMs?:number;value?:number;tag?:string;executeBelowHpPct?:number;executeBonus?:number;bonusVsDebuffed?:number;shieldReflectPct?:number;damageType?:'physical'|'fire'|'ice'|'shadow'|'arcane'|'nature'|'true';tickMs?:number;}
 export interface EngineAbilityDefinition{id:string;name:string;cooldownMs:number;castTimeMs:number;interruptible?:boolean;target:EngineTargetRule;exactTargetId?:string;effects:EngineAbilityEffect[];priority:number;aiCondition?:'always'|'self_below_50'|'ally_below_50'|'ally_below_50_or_dot'|'ally_below_80'|'ally_below_80_or_targeted'|'target_casting'|'multiple_enemies';tags?:string[];}
 export interface EngineBossPhaseDefinition{id:string;name?:string;hpPct:number;target:EngineTargetRule;effects:EngineAbilityEffect[];}
 export interface CompanionCombatantDefinition{

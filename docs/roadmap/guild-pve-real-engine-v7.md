@@ -45,6 +45,21 @@ All classes can use Assault, Guard, or Rally in the prototype. The following val
 
 These stance ability values **are not mapped onto the eventual shared guild-pressure system**; the actual combat engine determines if any shield was absorbed, condition removed, or HP restored. `shieldAbsorbed` summarizes absorption **from all sources**, including class kit and gems, so it must not yet be used as a Guard-specific reward credit. `effectiveHealing` is real engine healing but may be zero when there is no missing HP. Existing passive support and guard class skills are not silently changed in live systems.
 
+## First verified focused CI measurement
+
+[Successful V7 validation run 43752896883](https://github.com/elroynbenjamins/Veldryn/actions/runs/43752896883) completed the original 1,944-fight suite, compiling TypeScript and validating all 36 authored cues. Its 36 measured boss/phase/tier cohort rows are archived as [V7 source combat evidence](./spreadsheets/guild-pve-v7-source-combat-cohorts-test-only.csv). The later **per-class diagnostic enhancement** is a separate test change and must pass its own CI before those additional data are treated as verified.
+
+| Synthetic gear tier | Sample fights | Mean phase-local boss HP removed | Preview deaths |
+| --- | ---: | ---: | ---: |
+| T1 | 486 | 2,223 | 43 |
+| T2 | 486 | 4,461 | 0 |
+| T3 | 486 | 7,870 | 0 |
+| T4 | 486 | 14,377 | 0 |
+
+All **1,944/1,944 previews** inflicted positive boss HP damage and recorded at least one cast-warning event. The engine recorded **507 previews with healing**, **322 with actual cleanse events**, and **794 with shield absorption**, but these can overlap and are not exclusive to the Rally/Guard stances.
+
+**Critical interpretation:** The lack of deaths in T2–T4 against reference-scaled threat is a likely **under-pressure diagnostic** for *these 18-second solo phase-local tests*. It is **not** evidence that T2–T4 will beat a shared 14-day guild campaign, nor evidence that a class is too strong. Those fights omit persistent guild pressure, mandatory-node HP, later phase state and class-mixed guild progress. The next tuning pass must review pressure and armour in authentic shared-phase contexts rather than arbitrarily nerfing players or increasing every boss's Attack.
+
 ## 2. Safety and validation
 
 The suite explicitly tests source-derived loadout legality, positive loadout stats, distinct class identities, frozen reference digest tamper rejection, illegal phase rejection, identical replay under the same seed, 18-second maximum fight, no negative/non-finite damage metrics, real guardian HP removed capped by guardian max HP, and **zero** granted rewards/Seals spent/server persistence.

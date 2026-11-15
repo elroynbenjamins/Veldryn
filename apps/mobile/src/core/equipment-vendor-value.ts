@@ -12,5 +12,5 @@ const forgeGoldCostByItemId=new Map(V33_EQUIPMENT_RECIPES.map(recipe=>[recipe.ou
 export function itemVendorSellGold(item:Pick<ItemDef,'id'|'type'|'value'>):number{
   if(item.type!=='gear')return item.value;
   const forgeGold=forgeGoldCostByItemId.get(item.id)??0;
-  return Math.max(item.value*2,Math.round(forgeGold*EQUIPMENT_FORGE_SELL_REFUND_RATE));
+  return forgeGold>0?Math.max(item.value,Math.round(forgeGold*EQUIPMENT_FORGE_SELL_REFUND_RATE)):item.value*2;
 }

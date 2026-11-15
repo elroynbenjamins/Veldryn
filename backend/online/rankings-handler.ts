@@ -6,9 +6,12 @@ export const RANKINGS_RELEASED=false;
 export const FROZEN_RANKINGS_RELEASED=false;
 export const ARENA_HISTORY_RELEASED=false;
 export const WORLD_BOSS_HISTORY_RELEASED=false;
-type Gates={rankings:boolean;frozen:boolean;arena:boolean;worldBoss:boolean};
+export const PARTY_EVENT_HISTORY_RELEASED=false;
+export const GUILD_PVE_HISTORY_RELEASED=false;
+type Gates={rankings:boolean;frozen:boolean;arena:boolean;worldBoss:boolean;partyEvent:boolean;guildPve:boolean};
 const CLOSED:Gates={rankings:RANKINGS_RELEASED,frozen:FROZEN_RANKINGS_RELEASED,
-  arena:ARENA_HISTORY_RELEASED,worldBoss:WORLD_BOSS_HISTORY_RELEASED};
+  arena:ARENA_HISTORY_RELEASED,worldBoss:WORLD_BOSS_HISTORY_RELEASED,
+  partyEvent:PARTY_EVENT_HISTORY_RELEASED,guildPve:GUILD_PVE_HISTORY_RELEASED};
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -76,6 +79,25 @@ export function rankingsHandler(services:Pick<GameplayServices,'authenticate'|'r
     if(!bossId)return json({error:'invalid_world_boss_id'},400);
     return json(await services.rpc('leaderboards_world_boss_event_server_v1',{
       p_requester:accountId,p_boss_id:bossId,
+      p_limit:integer(url.searchParams.get('limit'),50,1,100),
+      p_offset:integer(url.searchParams.get('offset'),0,0,10000)
+    }));
+   }
+   if(action==='party-event-history'||action==='guild-pve-history'){
+    const isParty=action==='party-event-history';
+    if(isParty&&!gates.partyEvent||!isParty&&!gates.guildPve)
+      return json({error:'finalized_event_history_disabled'},404);
+    const mode=isParty?'party_event':'guild_pve';
+    const eventKey=url.searchParams.get('eventKey');
+    const metric=url.searchParams.get('metric');
+    const bracket=url.searchParams.get('bracket');
+    const allowed=isParty?['damage','depth','support','shielding','mechanics']
+      :['campaign_score','campaign_progress','contribution'];
+    if(!eventKey||eventKey.length>120||!metric||!allowed.includes(metric)
+      ||!bracket||!/^[-a-z0-9_:]{1,48}$/.test(bracket))
+      return json({error:'invalid_event_history_scope'},400);
+    return json(await services.rpc('rankings_final_mode_history_server_v1',{
+      p_mode:mode,p_event_key:eventKey,p_metric:metric,p_bracket:bracket,
       p_limit:integer(url.searchParams.get('limit'),50,1,100),
       p_offset:integer(url.searchParams.get('offset'),0,0,10000)
     }));

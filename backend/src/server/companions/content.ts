@@ -26,6 +26,21 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];
 const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
+
+// Existing Asterfall companions have gameplay identities, not only generic role actives.
+// Keep these modest: rarity and investment remain the source of total power.
+ UNIT_001:{activeName:'Hamstring Pounce',activeDamageMultiplier:1.04,activeExecuteBonus:.05,activeCooldownMultiplier:.97,bond:{activeExecuteBonus:.04,activeCooldownMultiplier:.96}},
+ UNIT_002:{activeName:'Rune Brace',activeShieldMultiplier:1.05,activeReflectPct:.015,bond:{activeShieldMultiplier:1.04,activeReflectPct:.02}},
+ UNIT_003:{activeName:'Silver Current',activeHealMultiplier:1.07,activeCooldownMultiplier:.94,bond:{activeHealMultiplier:1.05}},
+ UNIT_004:{activeName:'Briar Charge',activeDamageMultiplier:1.06,bond:{activeDamageMultiplier:1.04}},
+ UNIT_005:{activeName:'Lantern Snuff',activeCooldownMultiplier:.92,hasteBonus:.015,bond:{activeCooldownMultiplier:.94}},
+ UNIT_006:{activeName:"Page's Vow",activeShieldMultiplier:1.09,bond:{activeShieldMultiplier:1.05}},
+ UNIT_007:{activeName:'Gloamstep',activeDamageMultiplier:1.03,activeExecuteBonus:.10,bond:{activeExecuteBonus:.05}},
+ UNIT_008:{activeName:'Dawn Pinion',activeShieldMultiplier:1.08,activeCooldownMultiplier:.97,bond:{activeShieldMultiplier:1.06}},
+ UNIT_009:{activeName:'Echo Rend',activeDamageMultiplier:1.07,bond:{activeDamageMultiplier:1.035}},
+ UNIT_010:{activeName:'Siege Bolt',activeDamageMultiplier:1.08,activeCooldownMultiplier:1.04,bond:{activeDamageMultiplier:1.05}},
+ UNIT_011:{activeName:'Memory Command',activeDamageMultiplier:1.04,bond:{activeCooldownMultiplier:.96}},
+ UNIT_012:{activeName:'Oathglass Reflection',utilityMultiplier:1.10,activeCooldownMultiplier:.96,bond:{utilityMultiplier:1.04}},
  UNIT_013:{activeName:'Venom Pounce',basicDamageMultiplier:1.02,activeDamageMultiplier:1.04,activeExecuteBonus:.05,hasteBonus:.015,bond:{activeExecuteBonus:.03,hasteBonus:.01}},
  UNIT_014:{activeName:'Mirage Spring',activeHealMultiplier:1.12,activeCooldownMultiplier:.95,hasteBonus:.02,bond:{activeHealMultiplier:1.08,hasteBonus:.02}},
  UNIT_015:{activeName:'Solar Carapace',activeShieldMultiplier:1.15,activeReflectPct:.08,defenseMultiplier:1.02,bond:{activeReflectPct:.04,defenseMultiplier:1.02}},
@@ -54,11 +69,11 @@ const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  EVT_UNIT_010:{activeName:'Caravan Formation',utilityMultiplier:1.05,activeHealMultiplier:1.05,defenseMultiplier:1.02,hasteBonus:.02,bond:{activeCooldownMultiplier:.96}},
 };
 const cooldown=(rarity:CompanionRarity,role:CompanionRole)=>1000*(role==='damage'?(rarity==='prestige'?18:20):rarity==='prestige'?22:24);
-const target=(role:CompanionRole)=>role==='damage'?{assistTarget:'current_target' as const,standaloneTarget:'current_target' as const}:role==='tank'?{assistTarget:'owner' as const,standaloneTarget:'self' as const}:{assistTarget:'owner' as const,standaloneTarget:'lowest_hp_ally' as const};
+const target=(role:CompanionRole,kind:string)=>kind==='damage'?{assistTarget:'current_target' as const,standaloneTarget:'current_target' as const}:kind==='interrupt'?{assistTarget:'interruptible_casting_enemy' as const,standaloneTarget:'interruptible_casting_enemy' as const}:role==='tank'?{assistTarget:'owner' as const,standaloneTarget:'self' as const}:{assistTarget:'owner' as const,standaloneTarget:'lowest_hp_ally' as const};
 const effect=(kind:string):CompanionServerDefinition['active']['effectKind']=>kind==='damage'?'damage':kind==='shield'?'shield':kind==='interrupt'?'interrupt':kind==='heal'?'heal':kind==='mitigation'?'mitigation':'utility';
 export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([id,name,role,rarity,originId,hp,power,defense,attackSpeed,kind,coeff])=>({
  id,name,role,rarity,affinity:companionAffinityById(id),originId,baseStats:{hp,power,defense,attackSpeed},tags:[role,rarity,originId,companionAffinityById(id),`affinity:${companionAffinityById(id)}`],
- active:{id:`${id}_ACTIVE`,name:COMPANION_IDENTITY_PROFILES[id]?.activeName??`${name} Signature`,cooldownMs:cooldown(rarity,role),baseCoeff:coeff,perLevelCoeff:kind==='damage'?.004:.0006,effectKind:effect(kind),targeting:target(role)},
+ active:{id:`${id}_ACTIVE`,name:COMPANION_IDENTITY_PROFILES[id]?.activeName??`${name} Signature`,cooldownMs:cooldown(rarity,role),baseCoeff:coeff,perLevelCoeff:kind==='damage'?.004:.0006,effectKind:effect(kind),targeting:target(role,kind)},
  identity:COMPANION_IDENTITY_PROFILES[id],
  visual:rarity==='prestige'?{rarityFrame:'prestige',summonEffect:'prestige_summon',idleEffect:'prestige_idle',profileFrame:'prestige_profile',masteryMarker:'prestige_mastery',nameplateTreatment:'prestige_nameplate',animationRef:`${id}_prestige_entry`,rarityIcon:'★',rarityLabel:'Prestige',accessibilityLabel:'Prestige combat companion. Star rarity icon and ornate structured frame.',reducedMotionFallback:'prestige_static_entry'}:rarity==='elite'?{rarityFrame:'elite',summonEffect:'elite_summon',masteryMarker:'elite_mastery',rarityIcon:'◆◆◆',rarityLabel:'Elite',accessibilityLabel:'Elite combat companion. Triple-diamond rarity icon and distinct structured frame.',reducedMotionFallback:'elite_static_entry'}:rarity==='rare'?{rarityFrame:'rare',rarityIcon:'◆◆',rarityLabel:'Rare',accessibilityLabel:'Rare combat companion. Double-diamond rarity icon and enhanced frame.'}:{rarityFrame:'standard',rarityIcon:'◆',rarityLabel:'Standard',accessibilityLabel:'Standard combat companion. Single-diamond rarity icon and simple frame.'},
 }));

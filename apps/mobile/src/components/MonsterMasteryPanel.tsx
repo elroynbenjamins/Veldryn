@@ -6,6 +6,7 @@ import type {GameState} from '../core/types';
 import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
 import {monsterMasteryGuidance,masterySummary,MONSTER_MASTERY_MILESTONES} from '../core/monster-mastery-presentation';
+import {monsterMasteryCombatBonuses} from '../core/monster-mastery';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {StatBar} from './StatBar';
@@ -25,12 +26,14 @@ export function MonsterMasteryPanel({state}:{state:GameState}){
   <View style={s.summary}><Summary label={t("TRACKED")} value={summary.species}/><Summary label={t("RANKS")} value={summary.totalRanks}/><Summary label={t("RANK 10+")} value={summary.rank10}/><Summary label={t("MASTERED")} value={summary.masteredSpecies}/></View>
   <GameButton title={open ? t("Hide mastery") : t("View species mastery")} onPress={()=>setOpen(!open)}/>
   {open&&<><View style={s.ladder}><Text style={s.ladderTitle}>{t("MASTERY LADDER")}</Text>{MONSTER_MASTERY_MILESTONES.map(row=><Text key={row.rank+row.label} style={s.ladderRow}>{t("Rank {value0} · {value1}", {value0: row.rank, value1: companionContent(language,row.label)})}</Text>)}</View>
-   {available.map(m=>{const p=monsterMasteryGuidance(state,m.id),rankProgress=p.rank>=30?25:p.points%25;return <View key={m.id} style={s.entry}>
+   {available.map(m=>{const p=monsterMasteryGuidance(state,m.id),rankProgress=p.rank>=30?25:p.points%25;
+   const familyKnowledge=monsterMasteryCombatBonuses(state,m.id).family?.dropKnowledge??false;
+   return <View key={m.id} style={s.entry}>
     <View style={s.head}><View style={s.flex}><Text style={s.name}>{p.badgeUnlocked ? '◆ ' : ''}{m.name}</Text><Text style={s.rank}>{t("Rank {value0}/30 · {value1} mastery points", {value0: p.rank, value1: p.points})}</Text></View>{p.rank>=30?<Text style={s.max}>{t("MAX")}</Text>:null}</View>
     <StatBar reduceMotion={state.settings.reduceMotion} label={p.rank>=30 ? t("Mastery complete") : t("{value0} kills to Rank {value1}", {value0: p.killsToNextRank, value1: p.rank+1})} current={rankProgress} max={25}/>
     <Text style={s.body}>{t("+{value0}% damage · +{value1}% normal materials", {value0: Math.round(p.damageBonus*100), value1: Math.round(p.materialBonus*100)})}</Text>
     {p.next?<View style={s.next}><Text style={s.nextLabel}>{t("NEXT MILESTONE · RANK {value0}", {value0: p.next.rank})}</Text><Text style={s.nextTitle}>{companionContent(language,p.next.label)}</Text><Text style={s.body}>{companionContent(language,p.next.detail)}</Text><Text style={s.nextKills}>{t("{value0} kills remaining", {value0: p.killsToNextMilestone})}</Text></View>:<Text style={s.complete}>{t("All species mastery milestones unlocked.")}</Text>}
-    {p.dropKnowledge?<><Text style={s.dropTitle}>{t("KNOWN DROPS")}</Text><View style={s.dropList}>{m.drops.map(d=>{const item=itemDef(d.itemId),gearMaterial=v33EquipmentMaterialLabel(d.itemId);return <View key={d.itemId} style={s.dropRow}><ItemArtwork itemId={d.itemId} size={34}/><View style={s.flex}><Text style={s.dropName}>{item.name}</Text><Text style={s.dropMeta}>{(d.chance*100).toFixed(2)}% · {d.min}–{d.max}{gearMaterial ? ' · '+label(gearMaterial) : ''}</Text></View></View>})}</View></>:<Text style={s.locked}>{t("Reach Rank 10 to reveal the full base drop table.")}</Text>}
+    {(p.dropKnowledge||familyKnowledge)?<><Text style={s.dropTitle}>{t("KNOWN DROPS")}{familyKnowledge&&!p.dropKnowledge?' · '+t('TYPE KNOWLEDGE'):''}</Text><View style={s.dropList}>{m.drops.map(d=>{const item=itemDef(d.itemId),gearMaterial=v33EquipmentMaterialLabel(d.itemId);return <View key={d.itemId} style={s.dropRow}><ItemArtwork itemId={d.itemId} size={34}/><View style={s.flex}><Text style={s.dropName}>{item.name}</Text><Text style={s.dropMeta}>{(d.chance*100).toFixed(2)}% · {d.min}–{d.max}{gearMaterial ? ' · '+label(gearMaterial) : ''}</Text></View></View>})}</View></>:<Text style={s.locked}>{t("Reach species or enemy type Rank 10 to reveal the full base drop table.")}</Text>}
    </View>})}
   </>}
  </Panel>;

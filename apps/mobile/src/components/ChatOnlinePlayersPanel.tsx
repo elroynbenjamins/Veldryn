@@ -64,7 +64,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
      <Text style={s.chevron}>›</Text>
     </Pressable>}
     ListEmptyComponent={<View style={s.empty}><Text style={s.emptyTitle}>{loading&&count===null?st('Loading players...'):error&&count===null?st('Online list unavailable'):search.trim()||filter!=='all'?st('No matching players'):st('No players online')}</Text><Text style={s.emptyDetail}>{search.trim()||filter!=='all'?st('Try another search or filter.'):st('Players appear here when they are active in Veldryn.')}</Text></View>}
-    ListFooterComponent={filter==='all'&&!search.trim()&&count!==null&&count>available.length?<Text style={s.footer}>{st('Showing the first {count} players.',{count:available.length})}</Text>:null}
+    ListFooterComponent={filter==='all'&&!search.trim()&&count!==null&&count>available.length?<Text style={s.footer}>{st('Showing the first {count} players.',{count:available.length})}</Text>:undefined}
    />
    <ChatPlayerSheet message={selected} reduceMotion={reduceMotion} onClose={()=>setSelected(null)} onBlocked={accountId=>{setBlocked(current=>current.includes(accountId)?current:[...current,accountId]);onRefresh();}}/>
   </View>;

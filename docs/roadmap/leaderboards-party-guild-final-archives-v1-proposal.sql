@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS private.rankings_final_mode_archives_v1 (
   event_key text NOT NULL,
   metric text NOT NULL,
   bracket text NOT NULL,
-  source_receipt_id uuid NOT NULL,
+  source_receipt_id uuid NOT NULL REFERENCES private.rankings_final_mode_settlement_receipts_v1(id),
   event_ends_at timestamptz NOT NULL,
   finalized_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -52,6 +52,28 @@ ON CONFLICT(mode) DO NOTHING;
 ALTER TABLE private.rankings_final_mode_gates_v1 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE private.rankings_final_mode_gates_v1
   FROM PUBLIC,anon,authenticated;
+
+-- Preserve finality even if a future privileged path accidentally tries to
+-- update an archived scoreboard or its certified receipt. New settlement
+-- versions must receive distinct event keys, not modify published results.
+CREATE OR REPLACE FUNCTION private.rankings_reject_final_record_mutation_v1()
+RETURNS trigger
+LANGUAGE plpgsql SET search_path='' AS $immutable$
+BEGIN
+  RAISE EXCEPTION 'FINAL_RANKING_RECORD_IMMUTABLE';
+END $immutable$;
+REVOKE ALL ON FUNCTION private.rankings_reject_final_record_mutation_v1()
+  FROM PUBLIC,anon,authenticated;
+DROP TRIGGER IF EXISTS rankings_archive_immutable_v1
+  ON private.rankings_final_mode_archives_v1;
+CREATE TRIGGER rankings_archive_immutable_v1
+  BEFORE UPDATE OR DELETE ON private.rankings_final_mode_archives_v1
+  FOR EACH ROW EXECUTE FUNCTION private.rankings_reject_final_record_mutation_v1();
+DROP TRIGGER IF EXISTS rankings_receipt_immutable_v1
+  ON private.rankings_final_mode_settlement_receipts_v1;
+CREATE TRIGGER rankings_receipt_immutable_v1
+  BEFORE UPDATE OR DELETE ON private.rankings_final_mode_settlement_receipts_v1
+  FOR EACH ROW EXECUTE FUNCTION private.rankings_reject_final_record_mutation_v1();
 
 -- No grant to client roles; the caller must be an authenticated backend mode
 -- finalizer holding a service key and verifying settlement receipts first.

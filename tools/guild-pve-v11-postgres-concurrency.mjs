@@ -68,8 +68,6 @@ const roster=(guild,account)=>q(
  ' WHERE cycle_id='+sqlLit('GX11_CYCLE')+
  ' AND guild_id='+sqlLit(guild)+' AND account_id='+sqlLit(account)+';'
 );
-const status=(guild,node)=>q('SELECT cleared::text||':'||hp::text FROM guild_exp_v11_qa.nodes WHERE guild_id='+
- sqlLit(guild)+' AND node_id='+sqlLit(node)+';');
 const totals=(guild)=>JSON.parse(q('SELECT row_to_json(x)::text FROM ('+
  ' SELECT revision,pressure FROM guild_exp_v11_qa.runs WHERE guild_id='+
  sqlLit(guild)+') x;'));

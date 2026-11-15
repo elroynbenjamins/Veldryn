@@ -1,3 +1,4 @@
+import {itemVendorSellGold,EQUIPMENT_FORGE_SELL_REFUND_RATE} from '../src/core/equipment-vendor-value';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
@@ -26,6 +27,7 @@ ok(CRAFTED_MYTHIC_CHANCE===.001,'Forge Mythic result chance must remain 0.10%');
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T1P_001')!;
 const base=itemRarity(itemDef(recipe.output.itemId));
 ok(base==='common','T1P_001 must remain a useful Common baseline fixture');
+ok(itemVendorSellGold(itemDef(recipe.output.itemId))>=Math.round(recipe.gold*EQUIPMENT_FORGE_SELL_REFUND_RATE),'Gear resale returns the increased percentage of Forge Gold costs');
 ok(craftedGearRarity(recipe.output.itemId,0)==='mythic','Roll 0 should proc Mythic');
 ok(craftedGearRarity(recipe.output.itemId,.000999)==='mythic','Mythic range should cover [0,0.001)');
 ok(craftedGearRarity(recipe.output.itemId,.001)==='legendary','Legendary must start after Mythic');
@@ -155,7 +157,7 @@ const opted=executeGameCommand(cappedStart,{type:'gear_autosell',args:{enabled:t
 const beforeAutoGold=opted.character!.gold;
 const autoWeak=claimEquipmentCraft(opted,cappedJob.id,cappedJob.completesAtMs,.5);
 ok(autoWeak.result.autoSold==='incoming','Weaker 26th Forge copy should auto-vendor itself after explicit opt-in');
-ok(autoWeak.state.character!.gold-beforeAutoGold===itemDef(recipe.output.itemId).value,'Selling weaker incoming gear must credit exactly its vendor Gold');
+ok(autoWeak.state.character!.gold-beforeAutoGold===itemVendorSellGold(itemDef(recipe.output.itemId)),'Selling weaker incoming gear must credit exactly its vendor Gold');
 ok(craftedGearCopyCapacity(autoWeak.state,recipe.output.itemId).count===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM&&
   auditCraftedGearOwnership(autoWeak.state).consistent,'Auto-vendoring a weak new copy must preserve the 25 existing tagged physical items');
 ok(!equipmentCraftingQueue(autoWeak.state).some(row=>row.id===cappedJob.id),'Auto-vendored Forge jobs must complete and not claim twice');
@@ -256,7 +258,7 @@ const movedByCommand=executeGameCommand(unequippedByCommand.state,{type:'gear_mo
 ok(movedByCommand.state.bank.stacks.some(row=>row.instanceId===ownedIds[0]),'Validated exact bank command should retain the original instance ID');
 const beforeBankGold=movedByCommand.state.bank.gold??0;
 const soldByCommand=executeGameCommand(movedByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1206);
-ok((soldByCommand.state.bank.gold??0)-beforeBankGold===itemDef(recipe.output.itemId).value,'Selling a specified Bank copy must credit exactly one vendor reward to Bank');
+ok((soldByCommand.state.bank.gold??0)-beforeBankGold===itemVendorSellGold(itemDef(recipe.output.itemId)),'Selling a specified Bank copy must credit exactly one vendor reward to Bank');
 ok(craftedGearInstances(soldByCommand.state).every(row=>row.id!==ownedIds[0])&&auditCraftedGearOwnership(soldByCommand.state).consistent,'Exact-copy sale must remove physical and unique records together without touching other copies');
 let replayedSaleDenied=false;try{executeGameCommand(soldByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1207)}catch{replayedSaleDenied=true}
 ok(replayedSaleDenied,'Repeated exact-item sale must not credit Gold again');

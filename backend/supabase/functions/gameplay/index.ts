@@ -47354,8 +47354,10 @@ function idsArg(a) {
   if (!Array.isArray(v) || v.length > 3 || v.some((x) => typeof x !== "string" || x.length > 80) || new Set(v).size !== v.length) throw new Error("Choose unique companions.");
   return v;
 }
-function assertCompanionIdle(state, id) {
-  if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
+function assertCompanionIdle(state, id, options = {}) {
+  const onExpedition = (state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id));
+  const inTrial = state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) === true;
+  if (onExpedition || inTrial && !options.allowActiveTrial) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }
 function executeCompanionActivity(input, type, a, now) {
   if (!earlyFeatureUnlocked(input, "companions")) throw new Error("companion_system_locked");
@@ -55260,10 +55262,15 @@ function mergeStacks(stacks) {
   const merged = [];
   for (const stack of stacks) {
     if (!stack || typeof stack.itemId !== "string" || !Number.isFinite(stack.quantity) || stack.quantity <= 0) continue;
+    if (stack.instanceId) {
+      if (stack.quantity !== 1) throw new Error("Invalid crafted equipment stack during character deletion.");
+      merged.push({ ...stack, quantity: 1 });
+      continue;
+    }
     const cap = stackCap(stack.itemId);
     let remaining = Math.floor(stack.quantity);
     while (remaining > 0) {
-      const existing = merged.find((row) => row.itemId === stack.itemId && row.quantity < cap);
+      const existing = merged.find((row) => row.itemId === stack.itemId && !row.instanceId && row.quantity < cap);
       if (existing) {
         const moved2 = Math.min(cap - existing.quantity, remaining);
         existing.quantity += moved2;
@@ -55271,7 +55278,7 @@ function mergeStacks(stacks) {
         continue;
       }
       const moved = Math.min(cap, remaining);
-      merged.push({ itemId: stack.itemId, quantity: moved });
+      merged.push({ ...stack, quantity: moved });
       remaining -= moved;
     }
   }
@@ -55280,8 +55287,14 @@ function mergeStacks(stacks) {
 function routeToBank(bank, baseOverflow, incoming, now) {
   const stacks = bank.stacks.map((row) => ({ ...row })), overflow = baseOverflow.stacks.map((row) => ({ ...row }));
   for (const incomingStack of mergeStacks(incoming)) {
+    if (incomingStack.instanceId) {
+      if ([...stacks, ...overflow].some((row) => row.instanceId === incomingStack.instanceId))
+        throw new Error("Duplicate crafted equipment copy during character deletion.");
+      (stacks.length < bank.capacity ? stacks : overflow).push({ ...incomingStack });
+      continue;
+    }
     let remaining = incomingStack.quantity, cap = stackCap(incomingStack.itemId);
-    for (const existing of stacks.filter((row) => row.itemId === incomingStack.itemId)) {
+    for (const existing of stacks.filter((row) => row.itemId === incomingStack.itemId && !row.instanceId)) {
       if (remaining <= 0) break;
       const room = Math.max(0, cap - existing.quantity), moved = Math.min(room, remaining);
       existing.quantity += moved;
@@ -55298,18 +55311,21 @@ function routeToBank(bank, baseOverflow, incoming, now) {
   return { bank: { ...bank, stacks }, overflow: { stacks: overflowStacks, expiresAtMs: overflowStacks.length ? Math.max(baseOverflow.expiresAtMs ?? 0, now + 72 * 60 * 60 * 1e3) : null } };
 }
 function deletionRecoveryItems(entry2, sharedBank) {
-  const equipped = [...new Set(Object.values(entry2.character.equipment).filter((id) => typeof id === "string" && !!id))];
+  const equipped = Object.entries(entry2.character.equipment).filter((entry3) => typeof entry3[1] === "string" && !!entry3[1]).map(([slot, itemId]) => {
+    const instanceId = entry2.character.equipmentInstanceIds?.[slot];
+    return { itemId, quantity: 1, ...instanceId ? { instanceId } : {} };
+  });
   const tools = [...new Set(Object.values(entry2.character.equippedToolIds ?? {}).filter((id) => typeof id === "string" && !!id))];
-  const held = [...equipped, ...tools];
+  const held = [...equipped, ...tools.map((itemId) => ({ itemId, quantity: 1 }))];
   const ownedGearIds = /* @__PURE__ */ new Set([
-    ...equipped,
+    ...equipped.map((row) => row.itemId),
     ...entry2.inventory.stacks.map((row) => row.itemId),
     ...(entry2.character.equipmentPouch?.stacks ?? []).map((row) => row.itemId),
     ...entry2.overflow.stacks.map((row) => row.itemId),
     ...sharedBank.stacks.map((row) => row.itemId)
   ]);
   const socketed = Object.entries(entry2.character.gearEnhancements ?? {}).flatMap(([itemId, enhancement]) => ownedGearIds.has(itemId) ? [enhancement.statGemId, enhancement.effectGemId].filter((id) => Boolean(id)) : []);
-  return [...entry2.inventory.stacks, ...entry2.character.equipmentPouch?.stacks ?? [], ...entry2.overflow.stacks, ...held.map((itemId) => ({ itemId, quantity: 1 })), ...socketed.map((itemId) => ({ itemId, quantity: 1 }))];
+  return [...entry2.inventory.stacks, ...entry2.character.equipmentPouch?.stacks ?? [], ...entry2.overflow.stacks, ...held, ...socketed.map((itemId) => ({ itemId, quantity: 1 }))];
 }
 function accountAfterCharacterDelete(state, character) {
   const earnedSlots = unlockedCharacterSlots(state);
@@ -55334,8 +55350,8 @@ function characterDeleteBlockReason(state, id) {
   if (!stored) return "Character is not owned.";
   if (stored.activity) return "Stop or claim this character\u2019s current activity before deleting it.";
   if (equipmentCraftingQueue(state).some((job) => job.ownerCharacterId === id)) return "Claim this character\u2019s queued equipment crafts before deleting it.";
-  if (auditCraftedGearOwnership(state).linked.some((row) => row.holderCharacterId === id && row.place !== "bank"))
-    return "Transfer unique equipment copies to the shared Bank before deleting this character.";
+  if (auditCraftedGearOwnership(state).problems.length)
+    return "Equipment identity conflict. Contact support before deleting this character.";
   return void 0;
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
@@ -57761,7 +57777,8 @@ function executeGameCommand(previous, value, now, options = {}) {
   if (command.type === "idle_rules_set" && !earlyFeatureUnlocked(state, "contracts")) throw new Error("contract_board_locked");
   if (command.type.startsWith("event_") && !earlyFeatureUnlocked(state, "events")) throw new Error("events_locked");
   const companionMetricBefore = command.type.startsWith("companion_") ? companionCommandEconomySnapshot(state) : void 0;
-  if (["companion_equip", "companion_level", "companion_ascend", "companion_master"].includes(command.type)) assertCompanionIdle(state, text(a, "id"));
+  if (command.type === "companion_equip") assertCompanionIdle(state, text(a, "id"), { allowActiveTrial: true });
+  if (["companion_level", "companion_ascend", "companion_master"].includes(command.type)) assertCompanionIdle(state, text(a, "id"));
   if (command.type === "event_candy") {
     const kind = oneOf(a.kind, ["skill", "combat", "companion", "pet"]);
     if (a.companionId !== void 0) {
@@ -59162,7 +59179,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   const companionId = character.equippedCombatCompanionId;
   const companionPolicy = validateCompanionLoadout({ classId: character.classId, companionId, ownedCompanionIds: state.account.unlockedCombatCompanionIds ?? [], combatMode: "dungeon" });
   if (!companionPolicy.ok) throw new Error(companionPolicy.reason);
-  if (companionId) assertCompanionIdle(state, companionId);
+  if (companionId) assertCompanionIdle(state, companionId, { allowActiveTrial: true });
   const combatCompanion = companionId ? companionOwned(state)[companionId] : void 0;
   if (companionId && !combatCompanion) throw new Error("missing_companion_progress");
   return {

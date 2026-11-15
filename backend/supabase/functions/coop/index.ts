@@ -45022,8 +45022,10 @@ function companionOwned(state) {
   }));
 }
 var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));
-function assertCompanionIdle(state, id) {
-  if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
+function assertCompanionIdle(state, id, options = {}) {
+  const onExpedition = (state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id));
+  const inTrial = state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) === true;
+  if (onExpedition || inTrial && !options.allowActiveTrial) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }
 
 // ../apps/mobile/src/content/event-currency-promotion.ts
@@ -47132,7 +47134,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   const companionId = character.equippedCombatCompanionId;
   const companionPolicy = validateCompanionLoadout({ classId: character.classId, companionId, ownedCompanionIds: state.account.unlockedCombatCompanionIds ?? [], combatMode: "dungeon" });
   if (!companionPolicy.ok) throw new Error(companionPolicy.reason);
-  if (companionId) assertCompanionIdle(state, companionId);
+  if (companionId) assertCompanionIdle(state, companionId, { allowActiveTrial: true });
   const combatCompanion = companionId ? companionOwned(state)[companionId] : void 0;
   if (companionId && !combatCompanion) throw new Error("missing_companion_progress");
   return {

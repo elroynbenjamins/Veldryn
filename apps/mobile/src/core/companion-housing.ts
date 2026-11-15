@@ -56,7 +56,7 @@ export function upgradeCompanionHousing<T extends {character:{gold:number}|null;
  if(!state.character)throw new Error('character_required');
  if(!state.account.unlockedCombatCompanionIds?.includes(companionId))throw new Error('companion_not_owned');
  const check=companionHousingUpgradeAffordability(state,companionId);if(!check.cost)throw new Error('companion_housing_max');if(!check.ready)throw new Error('companion_housing_resources');
- const spend=(stacks:{itemId:string;quantity:number}[],id:string,amount:number)=>stacks.map(s=>s.itemId===id?{...s,quantity:s.quantity-amount}:s).filter(s=>s.quantity>0);
+ const spend=(stacks:{itemId:string;quantity:number}[],id:string,amount:number)=>{let left=amount;return stacks.map(s=>{if(s.itemId!==id||left<=0)return s;const used=Math.min(Math.max(0,s.quantity),left);left-=used;return {...s,quantity:s.quantity-used};}).filter(s=>s.quantity>0);};
  let inventory=state.inventory.stacks.map(x=>({...x})),bank=state.bank.stacks.map(x=>({...x}));
  for(const input of check.cost.inputs){let remaining=input.quantity,have=qty(inventory,input.itemId),take=Math.min(have,remaining);if(take){inventory=spend(inventory,input.itemId,take);remaining-=take;}if(remaining)bank=spend(bank,input.itemId,remaining);}
  const tier=companionHousingTier(companionId,state.account.companionHousingTiers)+1;

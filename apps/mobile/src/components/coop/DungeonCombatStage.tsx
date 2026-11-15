@@ -14,7 +14,7 @@ import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatClassFx,dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackSkillActivation,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackSkillActivation,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
 import {type CoopColors} from '../../theme/coop-ui-theme';
 import {StateChip} from './CoopVisualKit';
 import {radii,spacing,touchTargetMin,typography} from '../../theme/theme';
@@ -132,7 +132,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   const timer=setInterval(()=>setAnticipationTick(tick=>tick+1),700);
   return()=>clearInterval(timer);
  },[anticipation,reduceMotion,run.runId]);
- const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
+ const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
  useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion]);
  // Live receives only elapsed server-authorized cues. Play each new
@@ -176,14 +176,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   ]).start();
   return()=>{actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();feedbackAnim.stopAnimation();};
  },[cueIndex,replayKey,reduceMotion,fx?.durationMs,fx?.actorMotion,fx?.targetMotion,currentCue?.type]);
- useEffect(()=>{
-  castAnim.stopAnimation();castAnim.setValue(0);
-  const displayMs=playbackCastDisplayMs(currentBossCast,1);
-  if(!currentBossCast||displayMs<=0)return;
-  if(reduceMotion){castAnim.setValue(1);return;}
-  Animated.timing(castAnim,{toValue:1,duration:displayMs,useNativeDriver:false,easing:Easing.linear}).start();
-  return()=>castAnim.stopAnimation();
- },[cueIndex,replayKey,reduceMotion,currentBossCast?.durationMs,currentBossCast?.abilityId]);
+
  const bossPhaseLabel=useMemo(()=>{for(let index=Math.min(cueIndex,cues.length-1);index>=0;index--){const cue=cues[index];if(cue.type==='phase'&&cue.abilityName)return seasonalBossDisplayName(language,cue.abilityName);}return undefined;},[cues,cueIndex,language]);
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
  const replayEnemies=useMemo(()=>playbackEnemyCombatants(replay),[replay]);
@@ -216,7 +209,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {scale:targetAnim.interpolate({inputRange:[0,.48,1],outputRange:[1,fx.targetMotion==='pulse'?1.055:fx.targetMotion==='brace'?1.035:1,1]})},
  ]}:undefined;
  const feedbackStyle=currentCue?.type==='action'&&!reduceMotion?{opacity:feedbackAnim.interpolate({inputRange:[0,.12,.72,1],outputRange:[0,1,1,0]}),transform:[{translateY:feedbackAnim.interpolate({inputRange:[0,1],outputRange:[6,-12]})},{scale:feedbackAnim.interpolate({inputRange:[0,.18,1],outputRange:[.9,1.08,1]})}]}:undefined;
- const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):dungeonDynamicUiText(language,'Boss ability'),durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),progressStyle:{width:reduceMotion?'100%' as const:castAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}}:undefined;
+ const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):dungeonDynamicUiText(language,'Boss ability'),durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim()}:undefined;
  const toggleInspect=(key:string)=>setInspectKey(current=>current===key?undefined:key);
   const inspectedSlot=inspectKey?.startsWith('party:')?ordered.find(slot=>slotInspectKey(slot)===inspectKey):undefined;
  const inspectedEnemy=inspectKey?.startsWith('enemy:')?visibleEnemies.find(enemy=>enemyInspectKey(enemy.id)===inspectKey):undefined;

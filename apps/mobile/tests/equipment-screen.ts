@@ -207,7 +207,15 @@ const noHealPreview=previewEquipment(damagedWeapon,forgeWeapon.id,'COPY_HIGH');
 if(noHealPreview.character!.currentHp>damagedWeapon.character!.currentHp)
  throw new Error('Previewing a combat weapon swap must not restore HP');
 const legacyDamaged={...activeLegacy,character:{...activeLegacy.character!,currentHp:1}};
-if(equipItem(legacyDamaged,'basic_sword').character!.currentHp>1)
- throw new Error('Equipping a legacy combat weapon must not restore HP');
+const legacySwapped=equipItem(legacyDamaged,'basic_sword');
+if(legacySwapped.character!.currentHp!==1||legacySwapped.activity?.kind!=='combat')
+ throw new Error('Equipping a legacy combat weapon must preserve HP and the active hunt');
+const pouchDamaged={...activeLegacyPouch,character:{...activeLegacyPouch.character!,currentHp:1}};
+const pouchSwapped=equipItemFromEquipmentPouch(pouchDamaged,'basic_sword');
+if(pouchSwapped.character!.currentHp!==1||pouchSwapped.activity?.kind!=='combat')
+ throw new Error('Equipping a pouch weapon during combat must preserve HP and the active hunt');
+const forgedSwapped=equipCraftedGearInstance(damagedWeapon,'COPY_HIGH');
+if(forgedSwapped.character!.currentHp!==1||forgedSwapped.activity?.kind!=='combat')
+ throw new Error('Equipping a forged weapon during combat must preserve HP and the active hunt');
 
 console.log('PASS: equipment screen uses ten live slots, canonical stats, loadout guides, contextual focus and saved presentation');

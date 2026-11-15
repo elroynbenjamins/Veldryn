@@ -452,8 +452,9 @@ var COMPANION_STAGE_CAPS = {
 var COMPANION_LEVEL_CURVE = { baseXp: 65, xpGrowth: 1.16, goldBase: 38, goldGrowth: 1.21, essenceBase: 4, essenceGrowth: 1.16 };
 var COMPANION_BOND_CONFIG = {
   maxLevel: 10,
-  // cumulative XP required for Bond Levels 1-10
-  xpThresholds: [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520],
+  curveVersion: 2,
+  // Cumulative XP. Tripled versus the original Bond curve, preserving its shape.
+  xpThresholds: [0, 270, 630, 1110, 1740, 2520, 3480, 4620, 5970, 7560],
   rewards: { 2: "20 Essence", 4: "35 Essence", 6: "55 Essence", 8: "80 Essence", 10: "Bond Trait" },
   sourceXp: { battle: 4, boss: 60, dungeon: 32, companion_objective: 45, future_activity: 12 }
 };
@@ -42313,6 +42314,8 @@ var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
+var T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
+var T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
@@ -42360,6 +42363,10 @@ function mergeInputs(inputs) {
   const totals = /* @__PURE__ */ new Map();
   for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
   return [...totals].map(([itemId, quantity]) => ({ itemId, quantity }));
+}
+var EQUIPMENT_PRIMARY_MATERIAL_REDUCTION = 2;
+function reducePrimaryEquipmentMaterial(inputs) {
+  return inputs.map((input, index) => index === 0 ? { ...input, quantity: Math.max(1, input.quantity - EQUIPMENT_PRIMARY_MATERIAL_REDUCTION) } : input);
 }
 function ingredients(tier, path, multiplier, skillId) {
   multiplier *= TIER_MATERIAL_MULTIPLIER[tier] ?? 1;
@@ -42427,7 +42434,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
-  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const boostedCraftXp = tier === "T2" ? Math.round(standardCraftXp * T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : ["T3", "T4"].includes(tier) ? Math.round(standardCraftXp * T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : standardCraftXp;
+  const craftXp = t5Affix ? Math.round(boostedCraftXp * T5_AFFIX_XP_MULTIPLIER) : boostedCraftXp;
   const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
   const baseSeconds = clamp(Math.round(range.base * multiplier), range.min, range.max);
   return {
@@ -42438,7 +42446,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     xp: craftXp,
     gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
     seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
+    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId)), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42683,7 +42691,7 @@ var ALCHEMY_RECIPES = [
   recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
   recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
   recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
-  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "RIVER_MINT", quantity: 5 }]),
   recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
   recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
   recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),
@@ -43062,10 +43070,10 @@ function normalizeProgress(def, value, fallback) {
   const max = companionMaxLevel(def), level = int(value?.level ?? fallback.level, 1, max);
   const inferred = requiredAscensionTierForLevel(def, level), ascensionTier = Math.max(inferred, int(value?.ascensionTier ?? fallback.ascensionTier, 0, 3));
   let bondLevel = int(value?.bondLevel ?? fallback.bondLevel, 1, COMPANION_BOND_CONFIG.maxLevel);
-  const rawBondXp = int(value?.bondXp ?? fallback.bondXp), minimumBondXp = COMPANION_BOND_CONFIG.xpThresholds[Math.max(0, bondLevel - 1)] ?? 0;
-  let normalizedBondXp = bondLevel >= 10 ? COMPANION_BOND_CONFIG.xpThresholds[9] ?? 0 : rawBondXp < minimumBondXp ? minimumBondXp + rawBondXp : rawBondXp;
-  while (bondLevel < 10 && normalizedBondXp >= (COMPANION_BOND_CONFIG.xpThresholds[bondLevel] ?? Number.MAX_SAFE_INTEGER)) bondLevel++;
-  if (bondLevel >= 10) normalizedBondXp = COMPANION_BOND_CONFIG.xpThresholds[9] ?? normalizedBondXp;
+  const rawBondXp = int(value?.bondXp ?? fallback.bondXp);
+  let normalizedBondXp = value?.bondCurveVersion === 2 ? Math.max(bondThreshold(bondLevel), rawBondXp) : rebaseLegacyBondXp(bondLevel, rawBondXp);
+  while (bondLevel < 10 && normalizedBondXp >= bondThreshold(bondLevel + 1)) bondLevel++;
+  if (bondLevel >= 10) normalizedBondXp = bondThreshold(10);
   const cap = COMPANION_STAGE_CAPS[def.rarity][ascensionTier];
   const safeLevel = Math.min(level, cap, max), nextXp = companionXpToNextLevel(def.rarity, safeLevel);
   return {
@@ -43074,6 +43082,7 @@ function normalizeProgress(def, value, fallback) {
     ascensionTier,
     bondLevel,
     bondXp: normalizedBondXp,
+    bondCurveVersion: 2,
     bondTraitUnlocked: bondLevel >= 10,
     mastered: def.rarity === "prestige" && safeLevel === 35 && value?.mastered === true,
     obtainedAtMs: Number.isFinite(value?.obtainedAtMs) ? value.obtainedAtMs : fallback.obtainedAtMs,
@@ -43154,6 +43163,18 @@ function progressFor(state, id) {
   const progress = state.account.combatCompanionProgress?.[id];
   if (!progress) throw new Error("Combat companion is not owned.");
   return progress;
+}
+var LEGACY_BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
+function bondThreshold(level) {
+  return COMPANION_BOND_CONFIG.xpThresholds[Math.max(0, Math.min(9, level - 1))] ?? Number.MAX_SAFE_INTEGER;
+}
+function rebaseLegacyBondXp(level, rawXp) {
+  const index = Math.max(0, Math.min(9, level - 1)), oldFloor = LEGACY_BOND_THRESHOLDS[index];
+  if (level >= 10) return bondThreshold(10);
+  const oldNext = LEGACY_BOND_THRESHOLDS[index + 1], newFloor = bondThreshold(level), newNext = bondThreshold(level + 1);
+  const earned = rawXp < oldFloor ? rawXp : rawXp - oldFloor;
+  const ratio = Math.max(0, Math.min(1, earned / Math.max(1, oldNext - oldFloor)));
+  return Math.min(newNext - 1, newFloor + Math.round((newNext - newFloor) * ratio));
 }
 function companionAbilityValue(def, progress) {
   const scaling = def.activeAbility.scaling, value = scaling.baseValue + scaling.perLevel * Math.max(0, progress.level - 1);
@@ -46747,7 +46768,7 @@ var COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: "coopRogueliteV1",
   enabledByDefault: false,
   routeSchemaVersion: 1,
-  routeGeneratorVersion: "coop-route-v2",
+  routeGeneratorVersion: "coop-route-v3",
   preBossNodeMin: 5,
   preBossNodeMax: 5,
   choicesPerDepth: 3,
@@ -48892,11 +48913,18 @@ function coopEntryHandler(services) {
 
 // src/server/expeditions/dungeon-shop-catalog-v1.ts
 var DUNGEON_SHOP_LIVE_V1 = true;
-var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v2-2026-11-11";
+var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v3-2026-11-15";
 var DUNGEON_SHOP_CATALOG_V1 = Object.freeze([
   { id: "dshop_tempering_satchel", name: "Delver Tempering Satchel", category: "supply", marks: 120, perUtcWeek: 2, grant: { kind: "material", itemId: "TEMPERING_DUST", quantity: 10, accountBound: true } },
   { id: "dshop_gem_dust_cache", name: "Gem Dust Cache", category: "supply", marks: 240, perUtcWeek: 1, grant: { kind: "material", itemId: "GEM_DUST", quantity: 8, accountBound: true } },
   { id: "dshop_tempering_core_cache", name: "Tempering Core Cache", category: "supply", marks: 450, perUtcWeek: 1, grant: { kind: "material", itemId: "TEMPERING_CORE", quantity: 2, accountBound: true } },
+  { id: "dshop_moss_fiber_100", name: "Moss Fiber \xD7100", category: "material", marks: 150, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "MOSS_FIBER", quantity: 100, tier: 1 } },
+  { id: "dshop_greenwood_log_100", name: "Greenwood Log \xD7100", category: "material", marks: 150, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "GREENWOOD_LOG", quantity: 100, tier: 1 } },
+  { id: "dshop_wolf_pelt_100", name: "Wolf Pelt \xD7100", category: "material", marks: 300, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "WOLF_PELT", quantity: 100, tier: 2 } },
+  { id: "dshop_ironwood_log_100", name: "Ironwood Log \xD7100", category: "material", marks: 300, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "IRONWOOD_LOG", quantity: 100, tier: 2 } },
+  { id: "dshop_dunewood_100", name: "Dunewood \xD7100", category: "material", marks: 600, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "DUNEWOOD", quantity: 100, tier: 3 } },
+  { id: "dshop_sunscale_100", name: "Sunscale \xD7100", category: "material", marks: 600, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "SUNSCALE", quantity: 100, tier: 3 } },
+  { id: "dshop_sunstone_ingot_100", name: "Sunstone Ingot \xD7100", category: "material", marks: 1e3, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "SUNSTONE_INGOT", quantity: 100, tier: 4 } },
   { id: "dshop_companion_essence", name: "Companion Essence Cache", category: "companion", marks: 400, perUtcWeek: 1, grant: { kind: "account_resource", field: "companionEssence", quantity: 100 } },
   { id: "dshop_bondstone", name: "Bondstone", category: "companion", marks: 750, perUtcWeek: 1, grant: { kind: "account_resource", field: "bondstones", quantity: 1 } },
   { id: "dshop_asterfall_icon", name: "Warden's Lantern", category: "icon", marks: 500, firstClearRegion: "Asterfall", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileIconIds", rewardId: "dungeon:asterfall:wardens-lantern", rarity: "Rare" } },
@@ -48945,6 +48973,7 @@ function validateDungeonShopCatalogV1() {
     if (offer.permanent === true && offer.grant.kind !== "profile_collectible") throw new Error("permanent_offer_without_entitlement");
     if (offer.permanent === true && offer.perUtcWeek !== void 0) throw new Error("permanent_offer_weekly_limit");
     if (offer.perUtcWeek !== void 0 && (!Number.isSafeInteger(offer.perUtcWeek) || offer.perUtcWeek < 1)) throw new Error("invalid_dungeon_shop_limit");
+    if (offer.grant.kind === "crafting_bundle" && (offer.category !== "material" || offer.grant.quantity !== 100 || ![1, 2, 3, 4].includes(offer.grant.tier) || offer.perUtcWeek !== 1 || offer.permanent)) throw new Error("invalid_crafting_bundle");
     if (offer.grant.kind === "profile_collectible") {
       if (!offer.permanent || rewardIds.has(offer.grant.rewardId)) throw new Error("duplicate_or_unbounded_dungeon_collectible");
       rewardIds.add(offer.grant.rewardId);
@@ -48956,7 +48985,7 @@ function validateDungeonShopCatalogV1() {
 validateDungeonShopCatalogV1();
 
 // online/dungeon-shop.ts
-var category = (offer) => offer.grant.kind === "material" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") : offer.grant.kind === "account_resource" ? offer.grant.quantity + " " + (offer.grant.field === "bondstones" ? "Bondstones" : "Companion Essence") : offer.grant.bonus ? "+ " + (offer.grant.bonus.activeBps / 100).toFixed(2) + "% " + offer.grant.bonus.target + " equipped; +" + (offer.grant.bonus.ownedBps / 100).toFixed(2) + "% owned" : "Profile icon \xB7 visual only";
+var category = (offer) => offer.grant.kind === "crafting_bundle" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") + " \xB7 Shared Bank" : offer.grant.kind === "material" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") : offer.grant.kind === "account_resource" ? offer.grant.quantity + " " + (offer.grant.field === "bondstones" ? "Bondstones" : "Companion Essence") : offer.grant.bonus ? "+ " + (offer.grant.bonus.activeBps / 100).toFixed(2) + "% " + offer.grant.bonus.target + " equipped; +" + (offer.grant.bonus.ownedBps / 100).toFixed(2) + "% owned" : "Profile icon \xB7 visual only";
 function sanitizedSnapshot(raw2) {
   if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const s2 = raw2;
@@ -48992,6 +49021,8 @@ function makeDungeonShopController(services) {
           status: "unreleased",
           rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
           region: offer.firstClearRegion,
+          tier: offer.grant.kind === "crafting_bundle" ? offer.grant.tier : void 0,
+          materialItemId: offer.grant.kind === "crafting_bundle" ? offer.grant.itemId : void 0,
           owned: false,
           remainingThisUtcWeek: offer.perUtcWeek ?? null,
           lockReason: "Shop preview only \u2014 no purchases are available."
@@ -49018,6 +49049,8 @@ function makeDungeonShopController(services) {
             status: published ? quote.status : "unreleased",
             rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
             region: offer.firstClearRegion,
+            tier: offer.grant.kind === "crafting_bundle" ? offer.grant.tier : void 0,
+            materialItemId: offer.grant.kind === "crafting_bundle" ? offer.grant.itemId : void 0,
             remainingThisUtcWeek: quote.remaining,
             owned,
             lockReason: !published ? "Not yet released \u2014 no Marks can be spent on this offer." : quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
@@ -49618,7 +49651,7 @@ function coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, d
   if (choice === 0) return "battle";
   if (depth === 3 && choice === 1) return "camp";
   const def = EXPEDITIONS[expeditionId];
-  const entries = Object.entries(def.nodeWeights).filter(([kind]) => kind !== "boss");
+  const entries = Object.entries(def.nodeWeights).filter(([kind]) => kind !== "boss" && kind !== "merchant");
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
   let roll = deterministicUnit(secret, "coop-route-v1", runId, expeditionId, contentVersion, balanceVersion, "kind", depth, choice) * total;
   for (const [kind, weight] of entries) {
@@ -49846,7 +49879,7 @@ var ROOM_BOON_CHOICES = [
   { id: "ROOM_BOON_STRIKE", name: "Battle Focus", description: "+5% party attack power for the remaining run." },
   { id: "ROOM_BOON_WARD", name: "Stalwart Guard", description: "+5% party defense for the remaining run." },
   { id: "ROOM_BOON_RECOVERY", name: "Second Wind", description: "Restore 20% max HP to each party member (revives downed allies)." },
-  { id: "ROOM_BOON_SUPPLY", name: "Expedition Cache", description: "Gain 2 supplies to spend at Merchant rooms." }
+  { id: "ROOM_BOON_SUPPLY", name: "Expedition Cache", description: "Legacy supply boon; no longer offered in new dungeon runs." }
 ];
 var CHOICE_ROOM_KINDS = /* @__PURE__ */ new Set(["shrine", "forge", "echo", "event", "treasure", "secret", "camp"]);
 function roomBoonOffers(run, secret) {
@@ -49856,7 +49889,7 @@ function roomBoonOffers(run, secret) {
   if (run.chosenRoomBoons?.[last.nodeId]) return [];
   const current = run.graph.nodes.find((node) => node.nodeId === last.nodeId);
   if (!current) return [];
-  const ids2 = generateBoonOffer({ secret, runId: run.id, characterId: run.players[0].id, nodeIndex: current.depth, contentVersion: run.graph.contentVersion, ownedBoonIds: [], eligibleBoonIds: ROOM_BOON_CHOICES.map((choice) => choice.id), choiceCount: 3 });
+  const ids2 = generateBoonOffer({ secret, runId: run.id, characterId: run.players[0].id, nodeIndex: current.depth, contentVersion: run.graph.contentVersion, ownedBoonIds: [], eligibleBoonIds: ROOM_BOON_CHOICES.filter((choice) => choice.id !== "ROOM_BOON_SUPPLY").map((choice) => choice.id), choiceCount: 3 });
   return ids2.map((id) => ROOM_BOON_CHOICES.find((choice) => choice.id === id)).filter(Boolean);
 }
 function applyRoomBoon(run, boonId) {
@@ -50125,17 +50158,15 @@ function projectQModeRun(run, mode = "qmode", serverSecret) {
   const options = run.phase === "awaiting_choice" ? current.nextNodeIds.filter((id) => visible.has(id)).map((id) => graph2.nodes.find((node) => node.nodeId === id)).filter(Boolean).map((node) => ({ ...node, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: cachedEncounterPreview(node.contentId) } : {} })) : [];
   const lastRoomOutcome = publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary);
   const boonOffers = mode === "qmode" && serverSecret ? roomBoonOffers(run, serverSecret) : [];
-  const merchantShop = mode === "qmode" && run.phase === "awaiting_choice" && current.kind === "merchant" && run.persistentState.visitedNodeIds.includes(current.nodeId) ? {
-    resources: run.persistentState.resources,
-    offers: merchantOffers(current.contentId).map((offer) => ({ id: offer.id, kind: offer.kind, cost: offer.cost, purchased: (run.persistentState.personalEffects[run.players[0].id]?.purchases ?? []).includes(offer.id) }))
-  } : void 0;
+  const resolvedNode = run.graph.nodes.find((node) => node.nodeId === run.lastResolution?.nodeId);
+  const lastCombatMarks = run.lastResolution?.result.success && run.lastResolution.result.summary.kind === "combat" ? resolvedNode?.kind === "elite" ? 5 : resolvedNode?.kind === "battle" ? 3 : void 0 : void 0;
   const team = run.players.map((player2, index) => {
     const state = run.persistentState.actors[player2.id];
     if (!state) throw new Error("missing_qmode_actor_state");
     const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (player2.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
     return { memberId: player2.id, displayName: player2.name, role: player2.role, classId: player2.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : run.npcCharacterIds?.includes(player2.id) ? "npc" : "echo", effectiveLevel: player2.level, currentHp: state.hp, maximumHp: player2.stats.maxHp, downed: state.downed };
   });
-  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...boonOffers.length ? { boonOffers } : {}, ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...merchantShop ? { merchantShop } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
+  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...boonOffers.length ? { boonOffers } : {}, ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...lastCombatMarks ? { lastCombatMarks } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
 }
 
 // src/server/coop/loadout-snapshots.ts

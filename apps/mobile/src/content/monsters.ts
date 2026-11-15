@@ -90,6 +90,7 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
  * stats and XP at their new difficulty, retaining item IDs, drops and local area IDs.
  * Asterfall and legacy dungeon/boss content remain untouched. */
 const REGIONAL_25_LEVEL_REBALANCE:Readonly<Record<string,Partial<MonsterDef>>>={
+ SUNSCAR_SCORPION:{level:26,hp:625,attack:51,defense:32,xp:360,gold:22,secondsPerKill:32,unlockLevel:26},
  SAFFRON_MARAUDER:{level:31,hp:720,attack:60,defense:37,xp:425,gold:26,secondsPerKill:33,unlockLevel:30},
  DUNE_ORACLE:{level:34,hp:815,attack:65,defense:40,xp:480,gold:29,secondsPerKill:35,unlockLevel:32},
  GLASS_DUNE_STRIDER:{level:37,hp:900,attack:71,defense:43,xp:545,gold:33,secondsPerKill:37,unlockLevel:35},

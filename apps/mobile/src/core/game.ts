@@ -1297,6 +1297,7 @@ export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameS
   if(!state.character)throw new Error('No character');
   const def=itemDef(itemId);
   if(def.type!=='gear'||!def.slot)throw new Error('Not gear');
+  if(state.activity?.kind==='combat'&&def.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(def.requiredLevel??1))throw new Error(`Requires character level ${def.requiredLevel}`);
   if(state.character.equipmentInstanceIds?.[def.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
@@ -1310,17 +1311,19 @@ export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameS
   if(updatedStacks.length>pouch.capacity)throw new Error('Equipment Pouch is full');
   const temp={...state,character:{...state.character,equipment:{...state.character.equipment,[def.slot]:itemId},equipmentPouch:{...pouch,stacks:updatedStacks}}} as GameState;
   const maxHp=effectiveStats(temp).hp;
-  temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(def.hp||0));
+  // A weapon swap must not serve as a free heal during an active hunt.
+  temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(state.activity?.kind==='combat'?0:(def.hp||0)));
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now());
 }
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
+  if(state.activity?.kind==='combat'&&d.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(d.requiredLevel??1))throw new Error(`Requires character level ${d.requiredLevel}`);
   if(state.character.equipmentInstanceIds?.[d.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
   let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
   const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
-  const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
+  const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(state.activity?.kind==='combat'?0:(d.hp||0)));
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now())
 }
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId,foodQueueIds:(state.character.foodQueueIds??[]).filter(id=>id!==itemId)}}}

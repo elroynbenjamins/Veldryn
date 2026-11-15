@@ -62,6 +62,23 @@ assert.equal(buildOwnedCompanionCombatant(baseProgress('UNIT_011'),{mode:'compan
 assert.ok(buildOwnedCompanionCombatant(baseProgress('UNIT_003'),{mode:'companion_trial'}).abilities[0].effects.some(e=>e.kind==='hot'),'Silver Current regen must work in Trials');
 assert.ok(buildOwnedCompanionCombatant(baseProgress('UNIT_008'),{mode:'companion_trial'}).abilities[0].effects.some(e=>e.kind==='cleanse'),'Dawnwing cleanse must work in Trials');
 
+assert.equal(assist('UNIT_008').target,'lowest_hp_ally_with_dot','Dawnwing assist must prioritize an ally suffering a DoT');
+assert.equal(buildOwnedCompanionCombatant(baseProgress('UNIT_008'),{mode:'companion_trial'}).abilities[0].target,'lowest_hp_ally_with_dot','Dawnwing Trial targeting must prefer an afflicted ally');
+const dawnTrial=buildOwnedCompanionCombatant(baseProgress('UNIT_008'),{mode:'companion_trial'});
+const testDawn:CombatantDefinition={...dawnTrial,basicAttackMs:99999,abilities:[{...dawnTrial.abilities[0],cooldownMs:100}]};
+const testTank:CombatantDefinition={...actor('healthy-tank','players'),role:'tank',basicAttackMs:99999};
+const injured:CombatantDefinition={...actor('injured-ally','players'),basicAttackMs:99999};
+const poisonEnemy:CombatantDefinition={...actor('poison-caster','enemies'),basicAttackMs:99999,stats:{...enemy.stats,maxHp:100000},abilities:[{
+ id:'poison_dot',name:'Poison',priority:99,cooldownMs:10000,castTimeMs:0,target:'current_target',
+ effects:[{kind:'dot',flat:1,tickMs:500,durationMs:3000,tag:'poison'}],
+}]};
+const emergency=simulateCombat({seed:'dawnwing-afflicted-priority',players:[testTank,injured,testDawn],enemies:[poisonEnemy],maxDurationMs:600,
+ initialPlayerState:{'injured-ally':{hp:30,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:99999}},
+});
+assert.ok(emergency.events.some(e=>e.type==='status_apply'&&e.abilityId==='poison_dot'&&e.targetId==='healthy-tank'),'Enemy must apply the test DoT to the healthy tank');
+assert.ok(emergency.events.some(e=>e.type==='status_remove'&&e.abilityId==='UNIT_008_ACTIVE'&&e.targetId==='healthy-tank'&&e.statusKind==='dot'),'Dawnwing must cleanse the poisoned ally, not waste the cleanse on a different low-HP ally');
+
+
 
 const withTechnique=(id:string,suffix:string):OwnedCompanionSnapshot=>({...baseProgress(id),selectedTechniqueId:`${id}_${suffix}`});
 const ownedAssist=(progress:OwnedCompanionSnapshot)=>applyCharacterCompanionAssist({...actor('owner','players'),classId:'WAYFINDER'},progress);

@@ -47,8 +47,7 @@ const claimRewardReads=new ShortLivedReadCache<number>(25_000);
 /** Lightweight account-scoped attention read. Unlike the full Guild Projects
  * screen, the nav badge does not hydrate rosters, ballots, supplies or activity
  * feeds, nor does it run project-preparation RPCs on every background poll. */
-export async function claimableOnlineGuildProjectRewardCount(force=false):Promise<number>{
- const membership=await myGuild();
+export async function claimableOnlineGuildProjectRewardCount(membership:Awaited<ReturnType<typeof myGuild>>,force=false):Promise<number>{
  if(!membership){claimRewardReads.clear();return 0;}
  return claimRewardReads.read(membership.account_id+':'+membership.guild_id,async()=>{
   const db=client();

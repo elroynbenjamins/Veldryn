@@ -16,11 +16,11 @@ language plpgsql security definer set search_path=''
 as $actor_prune$
 begin
   with expired as (
-    select old.ctid
-      from market_api_internal.market_read_buckets_v26 old
-     where old.account_id = new.account_id
-       and old.window_start < new.window_start - interval '48 hours'
-     order by old.window_start asc
+    select bucket_row.ctid
+      from market_api_internal.market_read_buckets_v26 bucket_row
+     where bucket_row.account_id = new.account_id
+       and bucket_row.window_start < new.window_start - interval '48 hours'
+     order by bucket_row.window_start asc
      limit 64
      for update skip locked
   )
@@ -53,10 +53,10 @@ begin
   end if;
 
   with expired as (
-    select old.ctid
-      from market_api_internal.market_read_buckets_v26 old
-     where old.window_start < pg_catalog.transaction_timestamp() - interval '48 hours'
-     order by old.window_start asc
+    select bucket_row.ctid
+      from market_api_internal.market_read_buckets_v26 bucket_row
+     where bucket_row.window_start < pg_catalog.transaction_timestamp() - interval '48 hours'
+     order by bucket_row.window_start asc
      limit p_limit
      for update skip locked
   )

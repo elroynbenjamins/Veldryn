@@ -165,6 +165,15 @@ async function main(){
     if(fights===0){
      const replayed=simulateWorldBossAuthoredAccountEncounterV25(args);
      assert.deepEqual(result,replayed,'same frozen input must replay exactly');
+     // V26 accepts 24–512-character service-owned entropy. V25's previous
+     // 160-character ID constraint was narrower than the reservation worker.
+     const longSeed=simulateWorldBossAuthoredAccountEncounterV25({
+      ...args,serverSeed:'X'.repeat(200),
+     });
+     assert.equal(longSeed.engineVersion,WORLD_BOSS_V25_ENGINE_VERSION);
+     reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
+      ...args,serverSeed:'X'.repeat(513),
+     }), 'invalid_account_encounter');
      const modified=structuredClone(roster);
      modified.characters[0].combatant.stats.attackPower*=100;
      reject(()=>simulateWorldBossAuthoredAccountEncounterV25({

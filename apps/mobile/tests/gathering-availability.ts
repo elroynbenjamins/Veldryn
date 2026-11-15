@@ -48,7 +48,7 @@ check(entry(advancedSunscar,'GLASSFIN_POOL',100).status==='ready','Area and prof
 check(entry({...advancedSunscar,currentRegionId:'GREENFIELDS'},'GLASSFIN_POOL',100).status==='travel','Reachable regional area should show travel not locked');
 const progressing=state(glassfinArea.minLevel,'SUNSCAR',{
  defeatedBossIds:['FALLEN_KNIGHT'],exploredRouteIds:['SCOUT_KINGS_ROAD'],
- skills:[{skillId:'mining',level:100},{skillId:'woodcutting',level:100},{skillId:'fishing',level:100},{skillId:'herbalism',level:100}] as GameState['skills'],
+ skills:[{skillId:'mining',level:100,xp:0},{skillId:'woodcutting',level:100,xp:0},{skillId:'fishing',level:100,xp:0},{skillId:'herbalism',level:100,xp:0}] as GameState['skills'],
 });
 const regional=regionalGatheringNodes(progressing);
 check(regional.length>0&&regional.every(row=>row.zoneId==='SUNSCAR'),'Regional view only shows the selected region');

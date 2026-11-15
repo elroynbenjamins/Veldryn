@@ -150,6 +150,7 @@ BEGIN
      participant_id IS NULL OR
      participant_id !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' OR
      participant_id=ANY(participant_ids) OR
+     participant_role IS NULL OR
      participant_role NOT IN('tank','damage','support') OR
      jsonb_typeof(participant->'survived')<>'boolean' OR
      jsonb_typeof(participant->'interrupts')<>'number'

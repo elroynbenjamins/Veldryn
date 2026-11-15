@@ -37,11 +37,17 @@ let lockMergeBlocked=false;
 try{executeGameCommand({...mergeBase,settings:{...mergeBase.settings,lockedItemIds:['gem:stat_might:g1']}},{type:'gem_combine',args:{familyId:'stat_might',grade:1}},1000)}catch(error){lockMergeBlocked=String(error).includes('Unfavorite')}
 ok(lockMergeBlocked,'Server must not consume locked pouch gems during merge');
 const mergeStarted=executeGameCommand(mergeBase,{type:'gem_combine',args:{familyId:'stat_might',grade:1}},1000).state;
+const mergeXpBefore=mergeStarted.skills.find(row=>row.skillId==='enchanting')!.xp;
+ok(mergeXpBefore===mergeBase.skills.find(row=>row.skillId==='enchanting')!.xp,'Starting a merge must not award XP before a completed Forge claim');
 ok(gemStorageQuantity(mergeStarted,'gem:stat_might:g1')===0,'Starting a Gem Pouch merge consumes exactly three source gems');
 const mergeJob=mergeStarted.account.equipmentCraftingQueue?.find(row=>row.recipeId==='gem_combine:stat_might:g1');
 ok(!!mergeJob,'Gem Pouch merge must enter the existing authoritative Forge queue');
 const mergeClaimed=claimForgeJob(mergeStarted,mergeJob!.id,mergeJob!.completesAtMs).state;
 ok(gemPouch(mergeClaimed).stacks.some(row=>row.itemId==='gem:stat_might:g2'&&row.quantity===1),'Finished merge returns upgraded gem to shared Gem Pouch');
+ok(mergeJob!.xpPerCraft!==undefined&&mergeJob!.xpPerCraft>0,'Gem combination must snapshot positive Enchanting XP in the Forge job');
+ok(mergeClaimed.skills.find(row=>row.skillId==='enchanting')!.xp-mergeXpBefore===Math.floor(mergeJob!.xpPerCraft!+1e-9),'Claiming a completed merge awards the configured Enchanting XP to its owner');
+let repeatMergeClaimBlocked=false;try{claimForgeJob(mergeClaimed,mergeJob!.id,mergeJob!.completesAtMs)}catch{repeatMergeClaimBlocked=true}
+ok(repeatMergeClaimBlocked,'A finished merge cannot be claimed twice to duplicate Enchanting XP');
 
 const base={...start,account:{...start.account,gemPouchMigrationDone:false},character:{...start.character!,level:70,gold:100000},inventory:{capacity:3,stacks:[{itemId:rawId,quantity:1},{itemId:'WISP_DUST',quantity:2}]},bank:{...start.bank,capacity:0,stacks:[]}};
 const recipe=gemRefineRecipeIdV1('stat_vitality',1);

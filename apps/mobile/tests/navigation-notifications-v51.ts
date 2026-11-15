@@ -1,4 +1,5 @@
 import {actionableClaimNotifications,badgeDisplay,buildNavigationBadges,buildQuickNavigationBadges,buildSubrouteBadges,destinationForNotification,mergeRouteBadges,type NavigationNotification} from '../src/core/navigation-notifications';
+import {claimableGuildProjectRewardIds} from '../src/core/guild-project-reward-attention';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal<T>(actual:T,expected:T,message:string){if(actual!==expected)throw new Error(`${message}: ${String(actual)} !== ${String(expected)}`)}
 
@@ -39,6 +40,24 @@ equal(buildNavigationBadges(withPartyRewards).account.count,14,'Claim-ready Part
 equal(buildQuickNavigationBadges(withPartyRewards)['Party']?.count,8,'Ready Party rewards add to Party shortcut alongside invites and unread chat');
 equal(buildSubrouteBadges(withPartyRewards)['social.party.contracts']?.count,2,'Party Contracts subroute shows exact ready reward count');
 equal(buildQuickNavigationBadges([...notifications,{...rewardAlert,unread:false}])['Party']?.count,6,'Claim badges clear as soon as authoritative rewards are claimed');
+const guildProjectAlert:NavigationNotification={key:'guild-project-claims',kind:'guild_project_reward_ready',count:2,unread:true};
+equal(destinationForNotification('guild_project_reward_ready').subroute,'social.guild.projects','Guild rewards point directly to the Projects claim board');
+equal(buildNavigationBadges([...notifications,guildProjectAlert]).account.count,14,'Claim-ready Guild rewards increment Account notification count');
+equal(buildQuickNavigationBadges([...notifications,guildProjectAlert])['Guild']?.count,6,'Guild shortcut includes project reward claims');
+equal(buildSubrouteBadges([...notifications,guildProjectAlert])['social.guild.projects']?.count,2,'Projects claim board receives claimable count');
+equal(buildNavigationBadges([...notifications,{...guildProjectAlert,unread:false}]).account.count,12,'Claimed project reward badge clears');
+
+const nowMs=Date.parse('2026-11-15T12:00:00Z');
+const ready={id:'ready',launchWeekly:true,status:'completed' as const,completionRewardClaimed:false,
+ personalPoints:300,personalRewardThreshold:250,endsAt:'2026-11-10T12:00:00Z'};
+equal(claimableGuildProjectRewardIds([ready],nowMs).length,1,'Eligible completed weekly Guild Project alerts');
+equal(claimableGuildProjectRewardIds([{...ready,completionRewardClaimed:true}],nowMs).length,0,'Already-claimed Guild Project clears');
+equal(claimableGuildProjectRewardIds([{...ready,personalPoints:100}],nowMs).length,0,'Unqualified members do not see claims');
+equal(claimableGuildProjectRewardIds([{...ready,status:'active'}],nowMs).length,0,'Unfinished Guild Projects do not alert');
+equal(claimableGuildProjectRewardIds([{...ready,launchWeekly:false}],nowMs).length,0,'Only eligible weekly completion rewards notify');
+equal(claimableGuildProjectRewardIds([{...ready,endsAt:'2026-11-08T12:00:00Z'}],nowMs).length,0,'Expired project claims never linger');
+equal(claimableGuildProjectRewardIds([{...ready,endsAt:'invalid'}],nowMs).length,0,'Invalid claim windows do not alert');
+equal(claimableGuildProjectRewardIds([ready,ready],nowMs).length,1,'Duplicate rows never double-count rewards');
 const quick=buildQuickNavigationBadges(notifications);
 ok(quick['Quests']?.dot,'Weekly Contract Board attention should route to Quests in quick navigation');
 ok(!quick['Events'],'Legacy Event rewards do not create top-bar shortcut attention');

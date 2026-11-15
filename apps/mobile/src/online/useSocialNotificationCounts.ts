@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import {friendRequests,guildApplications,myGuild,socialChatAttention,socialInvitations} from './social';
 import {useAuthSession} from './AuthSessionProvider';
+import {claimableOnlineGuildProjectRewardCount} from './guild-projects-v18';
 
 export interface SocialNotificationCounts{
   friendRequests:number;
@@ -16,13 +17,14 @@ export interface SocialNotificationCounts{
   guild:number;
   guildApplications:number;
   guildInvites:number;
+  guildProjectRewards:number;
   party:number;
   partyInvites:number;
   events:number;
   account:number;
 }
 
-const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:0,guildChatUnread:0,guildChatMentions:0,guildFirstUnreadMessageId:undefined,partyChatUnread:0,partyChatMentions:0,partyFirstUnreadMessageId:undefined,guild:0,guildApplications:0,guildInvites:0,party:0,partyInvites:0,events:0,account:0};
+const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:0,guildChatUnread:0,guildChatMentions:0,guildFirstUnreadMessageId:undefined,partyChatUnread:0,partyChatMentions:0,partyFirstUnreadMessageId:undefined,guild:0,guildApplications:0,guildInvites:0,guildProjectRewards:0,party:0,partyInvites:0,events:0,account:0};
 
 export function useSocialNotificationCounts(){
   const {session}=useAuthSession(),accountId=session?.user.id;
@@ -44,6 +46,7 @@ export function useSocialNotificationCounts(){
         socialChatAttention().catch(()=>null),
         myGuild().catch(()=>null),
       ]);
+      const guildProjectRewards=mine?await claimableOnlineGuildProjectRewardCount(mine).catch(()=>0):0;
       const incoming=requests.filter(request=>request.direction==='incoming').length;
       let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
@@ -61,8 +64,8 @@ export function useSocialNotificationCounts(){
         const partyChatUnread=chatAttention?.partyUnread??current.partyChatUnread,partyChatMentions=chatAttention?.partyMentions??current.partyChatMentions;
         const partyFirstUnreadMessageId=chatAttention?chatAttention.partyFirstUnreadMessageId:current.partyFirstUnreadMessageId;
         const chatUnread=guildChatUnread+partyChatUnread,chatMentions=guildChatMentions+partyChatMentions;
-        const next={...current,friendRequests:incoming,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:guildApplicationsCount,guildInvites,party,partyInvites};
-        return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.party+next.events};
+        const next={...current,friendRequests:incoming,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:guildApplicationsCount,guildInvites,guildProjectRewards,party,partyInvites};
+        return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
       });
     }catch{
       // Notification polling must never interrupt gameplay or sign-in.

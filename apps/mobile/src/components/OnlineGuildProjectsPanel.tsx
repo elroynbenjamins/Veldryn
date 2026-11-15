@@ -9,6 +9,7 @@ import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
 import {GuildActivityFeedPanel} from './GuildActivityFeedPanel';
+import {claimableGuildProjectRewardIds} from '../core/guild-project-reward-attention';
 import {GuildProjectSupplyDonationPanel} from './GuildProjectSupplyDonationPanel';
 import {gameAlert} from '../core/game-alerts';
 import {donateOnlineGuildProjectSupplies,pendingGuildProjectSupplyDonation,discardPendingGuildProjectSupplyDonation,type PendingGuildProjectSupplyDonation} from '../online/guild-project-supply-donations';
@@ -104,8 +105,8 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  if(!snapshot)return <Panel><Text style={s.title}>{ui("Guild Projects")}</Text><Text style={s.copy}>{ui("Join a Guild to view shared weekly progress.")}</Text></Panel>;
  const active=snapshot.projects.filter(row=>row.status==='active').sort((a,b)=>a.slotIndex-b.slotIndex);
  const completed=snapshot.projects.filter(row=>row.status==='completed');
- const claimableCompleted=completed.filter(project=>project.launchWeekly&&!project.completionRewardClaimed&&project.personalRewardThreshold>0
-  &&project.personalPoints>=project.personalRewardThreshold&&!!project.endsAt&&Date.now()<Date.parse(project.endsAt)+7*86400000);
+ const claimableIds=new Set(claimableGuildProjectRewardIds(completed));
+ const claimableCompleted=completed.filter(project=>claimableIds.has(project.id));
  const recentCompleted=completed.filter(project=>!claimableCompleted.some(ready=>ready.id===project.id)).slice(0,4);
  return <View style={s.root}>
   <View style={s.sectionHead}>

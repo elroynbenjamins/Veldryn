@@ -128,7 +128,9 @@ const validateReceipt=(r:WorldBossWarCampDonationReceiptV27,
   r.track!==recipe?.track||![1,2].includes(r.ordinal)||
   !Number.isSafeInteger(r.revision)||r.revision<1||
   typeof r.repeated!=='boolean'||!Array.isArray(r.paidMaterials)||
-  JSON.stringify(r.paidMaterials)!==JSON.stringify(recipe.materials))
+  r.paidMaterials.length!==recipe.materials.length||
+  r.paidMaterials.some((m,i)=>m.itemId!==recipe.materials[i].itemId||
+   m.quantity!==recipe.materials[i].quantity))
   throw Error('world_boss_v27_untrusted_db_receipt');
  return r;
 };

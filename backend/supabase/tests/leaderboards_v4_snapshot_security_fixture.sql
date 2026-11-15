@@ -123,3 +123,27 @@ BEGIN
   THEN RAISE EXCEPTION 'SNAPSHOT_CURSOR_CASCADE_INCOMPLETE'; END IF;
   RAISE NOTICE 'All 19 boards, cursor replay, privacy, expiry and account binding passed';
 END $rank_snap$;
+
+-- The account's personal standing must be computed before the page cap.
+DO $own_rank_beyond_cap$
+DECLARE own_rank bigint; rows_in_page integer;
+BEGIN
+  WITH synthetic AS (
+    SELECT n AS entity_id,(50001-n)::bigint AS value
+    FROM generate_series(1,50000) AS n
+  ), ranked AS MATERIALIZED (
+    SELECT s.*,rank() OVER (ORDER BY s.value DESC) AS rank_position
+    FROM synthetic s
+  ), bounded AS (
+    SELECT * FROM ranked ORDER BY value DESC,entity_id LIMIT 10051
+  )
+  SELECT (SELECT r.rank_position FROM ranked r WHERE r.entity_id=20000),
+    (SELECT count(*) FROM bounded)
+  INTO own_rank,rows_in_page;
+  IF own_rank<>20000 OR rows_in_page<>10051
+  THEN RAISE EXCEPTION 'PERSONAL_RANK_TRUNCATED_BEYOND_PAGE_CAP'; END IF;
+  IF position('FROM ranked r WHERE r.entity_type=' IN
+    pg_get_functiondef('public.rankings_frozen_start_server_v1(uuid,text,integer)'::regprocedure))=0
+  THEN RAISE EXCEPTION 'FROZEN_SNAPSHOT_PERSONAL_RANK_NOT_UNBOUNDED'; END IF;
+  RAISE NOTICE '50k account personal rank outside page cap remains preserved';
+END $own_rank_beyond_cap$;

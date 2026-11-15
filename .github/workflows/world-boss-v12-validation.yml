@@ -17,6 +17,7 @@ on:
       - 'backend/online/world-boss-war-camp-policy-v27.ts'
       - 'backend/online/world-boss-account-runtime-v27.ts'
       - 'docs/roadmap/world-boss-war-camp-transactions-v27*.sql'
+      - 'docs/roadmap/world-boss-war-camp-policy-init-v27.sql'
       - 'backend/online/world-boss-consented-echoes-v20.ts'
       - 'backend/online/world-boss-consent-command-v21.ts'
       - 'backend/online/world-boss-frozen-modifiers-v20.ts'

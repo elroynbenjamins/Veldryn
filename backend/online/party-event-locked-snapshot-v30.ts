@@ -109,7 +109,9 @@ export function validatePrivatePartyEventLockedSnapshotV30(input:{
   'gold_projection_conflict');
  must(obj(s.reward)&&obj(s.reward.materials)
   &&typeof s.reward.kind==='string'
+  &&typeof s.reward.personalPoints==='number'
   &&Number.isInteger(s.reward.personalPoints)
+  &&typeof s.reward.performanceBand==='number'
   &&Number.isInteger(s.reward.performanceBand),
   'quote_invalid');
  const reward=s.reward as unknown as PartyEventRewardBundle;

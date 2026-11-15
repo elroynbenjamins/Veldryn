@@ -29,6 +29,7 @@ ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generi
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
 ok(enemyArt.includes("'bell-warden':'Oathglass Sentinel'")&&enemyArt.includes("'bell warden':'Oathglass Sentinel'"),'Bell-Warden must resolve an existing humanoid portrait rather than the placeholder crown');
 
+ok(card.includes('enemyStatusRow')&&card.includes('enemyStatusEffects')&&card.includes('castInlineName')&&!card.includes('enemyInfoCasting'),'Boss casts must share a preallocated status row without changing boss-card height');
 // Keep enemy portraits unobstructed in normal and boss rooms. Their names remain
 // available through tap-to-inspect and the existing accessibility label.
 ok(!card.includes('s.enemyPlate')&&!card.includes('s.enemyBossPlate'),'Enemy portraits must not be covered by an encounter/name plate');
@@ -37,9 +38,9 @@ ok(card.includes("accessibilityLabel={ui(boss?'Boss {name}':'Dungeon enemy {name
 ok(card.includes('enemyHpHead')&&card.includes('enemyHpTrack'),'Enemy HP counters and progress bars must remain visible');
 ok(card.includes("boss?'♛':'◆'"),'Unknown enemies must retain a safe visual fallback');
 ok(card.includes('bossPhaseLabel')&&card.includes('PHASE'),'Boss card must keep the latest authoritative phase visible');
-ok(card.includes('INTERRUPT NOW')&&card.includes('castTrack'),'Interruptible boss casts must be readable inside the encounter card');
+ok(card.includes('INTERRUPT NOW')&&card.includes('castInline')&&!card.includes('castPanel'),'Interruptible boss casts must be readable inside the encounter card');
 ok(card.includes('Animated.View')&&card.includes('feedbackStyle'),'Damage, heal, miss, crit and barrier feedback must support rise/fade animation');
-ok(stage.includes('playbackAdvanceDelayMs')&&stage.includes('playbackCastDisplayMs'),'Combat playback must reserve readable time for boss casts');
+ok(stage.includes('playbackAdvanceDelayMs')&&read('src/core/dungeon-combat-playback.ts').includes('playbackCastDisplayMs(current,speed)'),'Combat playback must reserve readable time for boss casts');
 ok(stage.includes('bossPhaseLabel')&&stage.includes('bossCast={bossEncounter?bossCast:undefined}'),'Vertical battlefield must feed phase and cast state into the boss card');
 ok(card.includes('AnimatedHealthBar')&&card.includes('animateHealth'),'Combat HP bars must animate between authoritative replay states and honor reduced motion');
 ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards must show active replay-time barriers');
@@ -60,7 +61,7 @@ ok(card.includes("'gem:retaliation_ready':'RETAL'")&&card.includes("'gem:benedic
 ok(card.includes("status.source==='gem'")&&card.includes('styles.statusGem'),'Persistent beneficial Effect Gem states must use the gem visual treatment while harmful marks remain harmful');
 ok(!stage.includes('playbackSpeed')&&!stage.includes('DUNGEON_PLAYBACK_SPEEDS'),'Dungeon playback must not have speed controls');
 ok(!stage.includes('Skip combat replay to result')&&!stage.includes('Pause combat replay'),'Dungeon theater must advance automatically without Live or Solo transport controls');
-ok(stage.includes('playbackAdvanceDelayMs(current,next,1)')&&stage.includes('playbackCastDisplayMs(currentBossCast,1)'),'Dungeon combat cues and casts run at fixed normal speed');
+ok(stage.includes('playbackAdvanceDelayMs(current,next,1)')&&read('src/core/dungeon-combat-playback.ts').includes('playbackCastDisplayMs(current,speed)'),'Dungeon combat cues and casts run at fixed normal speed');
 ok(stage.includes('playbackVisualDurationMs(fx.durationMs,1)'),'Combat effects use the same fixed normal speed');
 ok(card.includes('FOCUS →')&&card.includes('bossCast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
 ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield must feed the cast cue target into the boss focus label');

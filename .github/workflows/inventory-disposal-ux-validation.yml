@@ -1,0 +1,39 @@
+name: Inventory disposal UX validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/components/DisposalPreview.tsx'
+      - 'apps/mobile/src/components/EquipmentPouchPanel.tsx'
+      - 'apps/mobile/src/screens/InventoryScreen.tsx'
+      - 'apps/mobile/src/i18n/disposal-preview-ui.ts'
+      - 'apps/mobile/src/i18n/equipment-pouch-ui.ts'
+      - 'apps/mobile/tests/disposal-preview-ui-localization.cjs'
+      - 'apps/mobile/tests/equipment-pouch-ui-localization.cjs'
+      - 'apps/mobile/tests/inventory-storage-management-ui.cjs'
+      - '.github/workflows/inventory-disposal-ux-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  receipt-and-selection-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Verify localized and safe disposal receipts
+        run: node tests/disposal-preview-ui-localization.cjs
+      - name: Verify pouch selection, safety and localization
+        run: node tests/equipment-pouch-ui-localization.cjs
+      - name: Verify compact storage UI
+        run: node tests/inventory-storage-management-ui.cjs

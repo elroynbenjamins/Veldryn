@@ -25,7 +25,7 @@ import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
 import {DungeonCombatStage} from './DungeonCombatStage';
 import {CombatTheaterModal} from '../CombatTheaterModal';
-import {CoopPartyChat} from './CoopPartyChat';
+import {CoopLiveChatBar} from './CoopLiveChatBar';
 import {DungeonDisclosure} from './DungeonPreparation';
 import {CoopPartyCompanionChip} from './CoopPartyCompanionChip';
 import {combatCompanionDef} from '../../content/combat-companions';
@@ -253,12 +253,12 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {run.objective?<FantasyPanel variant={run.objective.completed?'success':'selected'}><View style={s.mechanicHead}><View style={s.grow}><Text style={s.title}>{localizedObjective?.label}</Text><Text style={s.copy}>{localizedObjective?.description}</Text></View><StateChip label={`${run.objective.count}/${run.objective.maxCount}`} tone={run.objective.completed?'success':'selected'}/></View><Text style={s.copy}>{localizedObjective?.effectText}</Text></FantasyPanel>:null}
     </DungeonDisclosure>:null}
     <SeasonalBossTelegraphPanel mechanic={run.bossMechanic} recap={run.bossRecap} showPlan={bossNext}/>
-    {run.mode==='live'&&onChatSend?<DungeonDisclosure title={st('Party Chat')}><CoopPartyChat messages={chatMessages} busy={busy} onSend={onChatSend}/></DungeonDisclosure>:null}
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
 
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
     {terminal?<GameButton title={st('View rewards')} tone="secondary" disabled={busy} onPress={()=>setRewardOpen(true)}/>:null}
   </ExpeditionScreenShell>
+   {run.mode==='live'&&onChatSend&&!terminal?<CoopLiveChatBar key={run.runId} messages={chatMessages} onSend={onChatSend} reduceMotion={reduceMotion}/>:null}
    {terminal?<Modal visible={rewardOpen&&!theaterOpen} transparent animationType={reduceMotion?'none':'fade'} onRequestClose={()=>setRewardOpen(false)}>
     <View style={s.rewardOverlay}>
      <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>

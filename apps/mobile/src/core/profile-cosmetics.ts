@@ -1,5 +1,7 @@
 import type {GameState} from './types';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
+import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
+import {DUNGEON_MARKS_SHOP_RELEASED} from './release-flags';
 export const BASE_PROFILE_BACKGROUNDS=[
   {id:'asterfall-night',name:'Asterfall Night',region:'KINGS_ROAD'},
   {id:'ironwood-dawn',name:'Ironwood Dawn',region:'IRONWOOD'},
@@ -19,6 +21,7 @@ export function canUseProfileCosmetic(state:GameState,kind:'background'|'border'
 export function profileCosmeticReleased(state:GameState,kind:'background'|'border',id:string,nowMs=Date.now()){
   if(kind==='background'&&BASE_PROFILE_BACKGROUNDS.some(item=>item.id===id))return true;
   if(kind==='border'&&GUILD_TOKEN_PROFILE_BORDERS.has(id))return true;
+  if(DUNGEON_MARKS_SHOP_RELEASED&&DUNGEON_SHOP_COLLECTIBLES_V1.some(row=>row.kind===kind&&row.id===id))return true;
   if(canUseProfileCosmetic(state,kind,id))return true;
   if(!state.character)return false;
   const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[

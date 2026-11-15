@@ -7,10 +7,10 @@ export function gemCombineSuccessPercentV1(from:number):number{
 }
 export interface GemCombineCost{from:GemGrade;to:GemGrade;copies:3;dust:number;gold:number;durationSeconds:number;successChancePercent:number;catalyst?:'regional'|'radiant';}
 export const GEM_COMBINE_COSTS_V1:readonly GemCombineCost[]=[
- {from:1,to:2,copies:3,dust:0,gold:1500,durationSeconds:300,successChancePercent:90},
- {from:2,to:3,copies:3,dust:5,gold:5000,durationSeconds:900,successChancePercent:80},
- {from:3,to:4,copies:3,dust:15,gold:18000,durationSeconds:2700,successChancePercent:70,catalyst:'regional'},
- {from:4,to:5,copies:3,dust:40,gold:60000,durationSeconds:7200,successChancePercent:60,catalyst:'radiant'},
+ {from:1,to:2,copies:3,dust:0,gold:1800,durationSeconds:300,successChancePercent:90},
+ {from:2,to:3,copies:3,dust:5,gold:6000,durationSeconds:900,successChancePercent:80},
+ {from:3,to:4,copies:3,dust:15,gold:21600,durationSeconds:2700,successChancePercent:70,catalyst:'regional'},
+ {from:4,to:5,copies:3,dust:40,gold:72000,durationSeconds:7200,successChancePercent:60,catalyst:'radiant'},
 ] as const;
 export const GEM_DISMANTLE_DUST_V1:Readonly<Record<GemGrade,number>>={1:1,2:3,3:8,4:22,5:60};
 export const GEM_UNSOCKET_COST_V1:Readonly<Record<GemGrade,{gold:number;dust:number}>>={

@@ -178,7 +178,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // The separate advanced Contract Board remains gated through idle_rules_set.
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
- if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
+ if(command.type==='companion_equip')assertCompanionIdle(state,text(a,'id'),{allowActiveTrial:true});
+ if(['companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
  if(command.type==='event_candy'){const kind=oneOf(a.kind,['skill','combat','companion','pet']);if(a.companionId!==undefined){if(kind!=='companion')throw new Error('invalid_companion_target');text(a,'companionId',80);}}
  switch(command.type){
   case 'qa_prepare':case 'qa_switch_class':{

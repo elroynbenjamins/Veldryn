@@ -5,7 +5,7 @@ import {regionalArea} from '../src/content/regional-areas';
 import {gatheringNodeAvailability,regionalGatheringNodes} from '../src/core/regional-gathering';
 import type {GameState,GatheringSkillId} from '../src/core/types';
 
-function check(value:unknown,message:string){if(!value)throw new Error(message);}
+function check(value:unknown,message:string):asserts value {if(!value)throw new Error(message);}
 const nodes=[...GATHERING,...HERB_NODES];
 function node(id:string){const result=nodes.find(row=>row.id===id);if(!result)throw new Error('Missing gathering node '+id);return result;}
 function regionLevel(id:string){const value=WORLD_ZONES.find(zone=>zone.id===id);if(!value)throw new Error('Missing zone '+id);return value.minLevel;}

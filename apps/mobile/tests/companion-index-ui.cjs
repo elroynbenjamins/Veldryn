@@ -10,7 +10,9 @@ const i18n=read('i18n/companions.ts');
 assert(screen.includes('<CombatCompanionPanel'),'Companion screen must still use the owning panel');
 assert(panel.includes('<CompanionIndex'),'Collection must use the index');
 assert(panel.includes('onOpen={id=>{setSelection(id);setDetailOpen(true)}}'),'Companion detail sheet must stay wired');
-assert(panel.includes("onTrain={id=>{setSelection(id);setSection('Training')}}"),'Training route must stay wired');
+assert(panel.includes("onTrain={id=>{setSelection(id);setOpenBondOnEntry(false);setSection('Training')}}"),'Training route must stay wired');
+assert(panel.includes("onBond={id=>{setSelection(id);setOpenBondOnEntry(true);setSection('Training')}}"),'Claimable Bond rewards must open their modal directly');
+assert(index.includes('bondRewardReady?onBond(def.id):onOpen(def.id)'),'Claim-ready roster entries must deep-link to Bond while other entries open details');
 assert(panel.includes("onCodex={()=>setSection('Codex')}"),'Codex navigation must remain available');
 
 for(const key of ['My companions','Unlock','Past events','Your companions','Companions to unlock','Previously released companions','Manage','Details','Filter roles']){

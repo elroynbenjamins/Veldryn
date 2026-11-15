@@ -144,8 +144,8 @@ try{
   cmd(guild,'CHAR_V10_ALT','V10_LOST_ACK','C1-04','Guard'));
  assert.equal(lostReplayed.status,'committed');
  assert.equal(lostReplayed.costSeals,1);
- assert.equal((await port.inspect()).revision,afterLost.revision+1,
-  'replay itself records no extra Seal; adapter QA row revision is bookkeeping');
+ assert.equal((await port.inspect()).revision,afterLost.revision,
+  'idempotent replay must not write the QA row or advance its revision');
  outputs.afterCommitAckLoss=true;
  // A transient serialization error must abort+retry whole decision.
  const transient=localPool(db,{failSerialization:1});

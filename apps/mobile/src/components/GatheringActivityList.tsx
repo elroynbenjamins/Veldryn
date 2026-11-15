@@ -64,7 +64,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
    const start=()=>{
     if(active)return;
     if(readyHere){onGather(activity.id);return;}
-    if(travelReady){onNavigate?.({kind:'world',regionId:activity.zoneId,button:gt('Travel to {region}',{region:gl(nodeRegion?.name??activity.zoneId)}),detail:gt('Travel here to gather {name}.',{name:gl(activity.name)})});return;}
+    if(travelReady){onNavigate?.({kind:'skills',skillId,mode:'gathering',actionId:activity.id,regionId:activity.zoneId,button:gt('Travel to {region}',{region:gl(nodeRegion?.name??activity.zoneId)}),detail:gt('Travel here to gather {name}.',{name:gl(activity.name)})});return;}
     if(inCurrentRegion&&areaReady&&!skillReady)onNavigate?.(gatheringProgressionAction(state,activity).destination);
    };
    const expanded=expandedDropId===activity.id;

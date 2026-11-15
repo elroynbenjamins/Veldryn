@@ -243,7 +243,7 @@ async function main(){
  // No V23 (generic-timer) worker can consume the V26 authored packet.
  await fail(()=>settleTrustedWorldBossAccountV23({
   eventId:EVENT,accountId:ACCOUNT,requestId,
- },f.deps as unknown as WorldBossDepsV23),'unapproved_or_invalid_frozen_engine');
+ },f.deps as unknown as WorldBossDepsV23),'invalid_frozen_lease');
  assert.equal(f.metrics().settleCalls,0);
  const committed=await settleTrustedWorldBossAccountV26({
   eventId:EVENT,accountId:ACCOUNT,requestId,

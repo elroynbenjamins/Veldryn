@@ -11,6 +11,8 @@
     "src/server/rankings/ranking-persistence.ts",
     "src/server/rankings/ranking-types.ts",
     "src/server/rankings/supabase-ranking-repository.ts",
-    "src/server/rankings/__tests__/ranking-application.ts"
+    "src/server/rankings/__tests__/ranking-application.ts",
+    "src/server/rankings/frozen-rankings.ts",
+    "src/server/rankings/__tests__/frozen-rankings.ts"
   ]
 }

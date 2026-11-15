@@ -8,14 +8,18 @@ import type {QModeRun} from '../../src/server/coop/qmode';
 
 async function main(){
  const player=launchPlayer('Ironwarden',25),runId='00000000-0000-4000-8000-000000000001',accountId='controller';
- let graph=generateCoopRouteGraph('merchant-seed','EXP_001',runId,'content-v1','balance-v1');
- let merchant=graph.nodes.find(node=>node.kind==='merchant');
- for(let seed=1;!merchant&&seed<100;seed++){
-  graph=generateCoopRouteGraph('merchant-seed','EXP_001',runId+'-'+seed,'content-v1','balance-v1');
-  merchant=graph.nodes.find(node=>node.kind==='merchant');
+ // New dungeon routes must never generate a Merchant room.
+ for(let seed=0;seed<25;seed++){
+  const candidate=generateCoopRouteGraph('merchant-retirement','EXP_001',runId+'-'+seed,'content-v1','balance-v1');
+  assert.ok(candidate.nodes.every(node=>node.kind!=='merchant'),'new Q-Mode routes must not sell Merchant offers');
  }
- if(!merchant)throw new Error('merchant_fixture_missing');
- const merchantNode=merchant;
+ // Reconstruct an *existing* historical Merchant node to keep old account
+ // receipts and replay safety covered without introducing new Merchant rooms.
+ const freshGraph=generateCoopRouteGraph('merchant-seed','EXP_001',runId,'content-v1','balance-v1');
+ const historicalNode=freshGraph.nodes.find(node=>node.kind==='event')??freshGraph.nodes.find(node=>node.kind==='battle');
+ if(!historicalNode)throw new Error('historical_room_fixture_missing');
+ const graph={...freshGraph,nodes:freshGraph.nodes.map(node=>node.nodeId===historicalNode.nodeId?{...node,kind:'merchant' as const,contentId:'COOP_HISTORICAL_MERCHANT'}:node)};
+ const merchantNode=graph.nodes.find(node=>node.kind==='merchant')!;
  const state={...initialPersistentRunState([player]),resources:5,visitedNodeIds:[merchantNode.nodeId]};
  const run:QModeRun={id:runId,requestId:'run-create-01',controllerAccountId:accountId,expeditionId:'EXP_001',tier:1,graph,currentNodeId:merchantNode.nodeId,phase:'awaiting_choice',players:[player],persistentState:state,echoSourceAccountIds:[]};
  const offerId=merchantNode.contentId+':boon',request={requestId:'merchant-purchase-001',expectedVersion:5,offerId};
@@ -46,6 +50,6 @@ async function main(){
  assert.equal(commits,1);
  assert.equal(loads,1);
  await assert.rejects(()=>runtime.purchaseMerchant(accountId,runId,{...request,offerId:merchantNode.contentId+':artifact'}),/idempotency_key_conflict/);
- console.log('PASS QMode Merchant: server-owned offer, funds, actor, receipt replay and changed-intent conflict');
+ console.log('PASS Q-Mode: Merchant rooms retired for new runs; historical server receipts remain replay-safe');
 }
 void main();

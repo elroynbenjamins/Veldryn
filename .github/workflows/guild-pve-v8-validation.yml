@@ -1,0 +1,41 @@
+name: Hidden Guild PvE V8 shared run emulator
+
+# Test-only; does not connect to production services or run migrations.
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/guild-pve-shared-v8.ts'
+      - 'backend/src/server/combat/guild-pve-broken-forge-v7.ts'
+      - 'apps/mobile/tests/guild-pve-shared-v8.ts'
+      - 'apps/mobile/tsconfig.guild-pve-v8.json'
+      - '.github/workflows/guild-pve-v8-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  in-memory-transaction-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck V8 shared guild action and combat bridge
+        run: pnpm exec tsc -p tsconfig.guild-pve-v8.json --noEmit
+      - name: Compile V8 test-only emulator
+        run: pnpm exec tsc -p tsconfig.guild-pve-v8.json --outDir .core-build
+      - name: Test retries, simultaneous attacks, phases and all guild tiers
+        run: node .core-build/apps/mobile/tests/guild-pve-shared-v8.js

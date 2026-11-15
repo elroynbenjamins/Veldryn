@@ -11,7 +11,14 @@ check(source.includes('onPress={()=>setExpandedDropId('),'Drops must have a sepa
 const disclosure=fs.readFileSync('src/components/DisclosureControl.tsx','utf8');
 check(source.includes('<DisclosureControl label='),'Drops must use the shared labeled disclosure control');
 check(disclosure.includes('accessibilityState={{expanded}}'),'Shared disclosure must expose its expanded state to accessibility services');
-check(source.includes('disabled={active||!inCurrentRegion||(!unlocked&&!onNavigate)}'),'The existing gather action gating remains intact');
+check(source.includes('disabled={!canTap}'),'Resource taps must respect the computed readiness and travel gates');
+check(source.includes('regionTravelAvailability(state,nodeRegion)'),'Gathering readiness must use World travel rules, including route and story locks');
+check(source.includes('regionalArea(activity.zoneId,activity.areaId)'),'Gathering must account for character-level regional subareas');
+check(source.includes('const readyHere=')&&source.includes('const travelReady='),'Ready here and travel-ready nodes must be distinct');
+check(source.includes('a.rank-b.rank'),'Ready resources must sort before locked resources');
+check(source.includes("gt('READY NOW')")&&source.includes("gt('CAN TRAVEL')")&&source.includes("gt('ZONE LOCKED')")&&source.includes("gt('SKILL LOCKED')"),'Cards must present explicit readiness and lock status');
+check(source.includes("kind:'skills',skillId,mode:'gathering',actionId:activity.id,regionId:activity.zoneId"),'Travel-ready nodes must navigate with the selected resource preserved');
+check(source.includes("gt('Ready now')")&&source.includes("gt('Can travel')")&&source.includes("gt('Locked')"),'Gathering list must summarize availability categories');
 check(source.includes('drop.kind===\'essence\'?gt(\'base chance\')'),'Botanical essence labels must distinguish base from effective odds');
 check(source.includes("drop.kind==='event_discovery'?gt('per event minute')"),'Event minutes must not be described as gathering action odds');
 check(source.includes('petArtSource(drop.petId)'),'Pet drops should reuse the compact canonical pet artwork');

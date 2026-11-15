@@ -1,5 +1,5 @@
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
-export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','beta_tester','veteran','guild_leader','community_champion','event_champion'] as const;
+export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion'] as const;
 export const VIP_BADGE_IDS=['vip','vip_plus'] as const;
 export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m','supporter_12m'] as const;
 export type CollectiblePlayerBadgeId=typeof COLLECTIBLE_PLAYER_BADGE_IDS[number];
@@ -27,12 +27,11 @@ export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  admin:'Admin',moderator:'Moderator',
  vip:'VIP',vip_plus:'VIP+',
  supporter:'Supporter',supporter_3m:'Supporter · 3 Months',supporter_6m:'Supporter · 6 Months',supporter_12m:'Supporter · 12 Months',
- founder:'Founder',beta_tester:'Beta Tester',veteran:'Veteran',guild_leader:'Guild Leader',
+ founder:'Founder',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
 };
 export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  founder:'Awarded to founding players.',
- beta_tester:'Awarded to early beta testers.',
  veteran:'Play Veldryn for 90 days.',
  guild_leader:'Lead an active guild.',
  community_champion:'Awarded for outstanding community contributions.',

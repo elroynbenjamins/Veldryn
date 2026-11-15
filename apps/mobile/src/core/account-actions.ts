@@ -63,7 +63,7 @@ function routeToBank(bank:GameState['bank'],baseOverflow:OverflowState,incoming:
    continue;
   }
   let remaining=incomingStack.quantity,cap=stackCap(incomingStack.itemId);
-  for(const existing of stacks.filter(row=>row.itemId===incomingStack.itemId)){
+  for(const existing of stacks.filter(row=>row.itemId===incomingStack.itemId&&!row.instanceId)){
    if(remaining<=0)break;const room=Math.max(0,cap-existing.quantity),moved=Math.min(room,remaining);existing.quantity+=moved;remaining-=moved;
   }
   while(remaining>0&&stacks.length<bank.capacity){const moved=Math.min(cap,remaining);stacks.push({itemId:incomingStack.itemId,quantity:moved});remaining-=moved;}

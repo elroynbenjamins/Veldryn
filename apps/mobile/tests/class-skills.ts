@@ -13,7 +13,7 @@ const now=Date.UTC(2026,8,13),fresh=(id:ClassId='IRONWARDEN')=>createCharacter(n
 const total=(s:GameState)=>characterClassSkills(s.character!).reduce((n,r)=>n+r.xp,0);
 const hubFocus=skillTrainingFocus(fresh());ok(!!hubFocus&&hubFocus.nextLevel>hubFocus.currentLevel&&hubFocus.milestoneCount>=1,'skill hub recommends a real upcoming authored milestone');
 for(const cls of CLASSES){let s=startCombat(fresh(cls.id),'MOSS_RAT',now);const snap=JSON.stringify(s),preview=previewActivityReward(s,now+60000);ok(preview.classSkillXp?.every(a=>a.xp>0),'both skills gain '+cls.id);ok(JSON.stringify(s)===snap,'preview pure');s=claimActivity(s,now+60000).state;ok(total(s)>0,'combat XP applied');ok(total(claimActivity(s,now+60000).state)===total(s),'no replay');
-const base=fresh(cls.id),before=effectiveStats(base);for(let i=0;i<2;i++){const c=structuredClone(base);c.character!.classSkills=classSkillsFor(cls.id).map((d,j)=>({skillId:d.id,xp:i===j?MAX_CLASS_SKILL_XP:0,level:1}));const after=effectiveStats(c);ok(after.hp>before.hp||after.attack>before.attack||after.defense>before.defense||after.accuracy>before.accuracy||after.evasion>before.evasion,'each skill improves runtime '+cls.id);}}
+const base=fresh(cls.id),before=effectiveStats(base);for(let i=0;i<2;i++){const c=structuredClone(base);c.character!.classSkills=classSkillsFor(cls.id).map((d,j)=>({skillId:d.id,xp:i===j?MAX_CLASS_SKILL_XP:0,level:1}));const after=effectiveStats(c);ok(after.hp>before.hp||after.attack>before.attack||after.defense>before.defense||after.accuracy>before.accuracy||after.evasion>before.evasion||after.haste>before.haste||after.ward>before.ward||after.potency>before.potency||after.penetration>before.penetration||after.classHealing>before.classHealing,'each class discipline improves a real runtime stat '+cls.id);}}
 // Precision now increases real hit/dodge chances instead of Attack/Defense.
 const knifeBase=fresh('KNIFE_DANCER'),knifeMastered=structuredClone(knifeBase);
 knifeMastered.character!.classSkills=classSkillsFor('KNIFE_DANCER').map((skill)=>({skillId:skill.id,xp:skill.id==='precision'?MAX_CLASS_SKILL_XP:0,level:1}));
@@ -21,6 +21,13 @@ const knifeBefore=effectiveStats(knifeBase),knifeAfter=effectiveStats(knifeMaste
 ok(Math.abs((knifeAfter.accuracy-knifeBefore.accuracy)-.03)<1e-9,'Precision grants +3 percentage points of accuracy at level 100');
 ok(Math.abs((knifeAfter.evasion-knifeBefore.evasion)-.06)<1e-9,'Precision grants +6 percentage points of evasion at level 100');
 ok(knifeAfter.attack===knifeBefore.attack&&knifeAfter.defense===knifeBefore.defense,'Precision does not grant misleading Attack/Defense bonuses');
+
+ // Character training must not mutate class identity or remove previous skills.
+ const trained=structuredClone(fresh(cls.id));
+ trained.character!.classSkills=classSkillsFor(cls.id).map(d=>({skillId:d.id,xp:MAX_CLASS_SKILL_XP,level:100}));
+ const buffed=effectiveStats(trained);
+ ok(buffed.hp>=before.hp&&buffed.attack>=before.attack&&buffed.defense>=before.defense,'specialist class stats never penalize base equipment: '+cls.id);
+ ok([buffed.accuracy,buffed.evasion,buffed.haste,buffed.ward,buffed.potency,buffed.penetration,buffed.classHealing].every(Number.isFinite),'specialist secondary ratings remain finite: '+cls.id);
 let train=startClassTraining(fresh(),now);train.character!.currentHp=5;const inventory=JSON.stringify(train.inventory);const first=claimActivity(train,now+60000);ok(first.reward.trainingActions===1&&total(first.state)===CLASS_DRILL_BASE_XP,'24 XP per drill');ok(first.state.character!.currentHp===5&&JSON.stringify(first.state.inventory)===inventory,'drills do not heal or spend food');ok(first.reward.xp===0&&first.reward.gold===0&&first.reward.kills===0&&!first.reward.eventDrops,'no unrelated rewards');
 let chunks=train;for(let sec=10;sec<=600;sec+=10)chunks=claimActivity(chunks,now+sec*1000).state;const long=claimActivity(train,now+600000).state;ok(JSON.stringify(chunks.character)===JSON.stringify(long.character),'drills independent of claim chunking');
 let focused=executeGameCommand(train,{type:'class_focus',args:{focus:'primary'}},now+30000).state;focused=claimActivity(focused,now+60000).state;ok(characterClassSkills(focused.character!).every(s=>s.xp===12),'partial drill keeps old focus');focused=claimActivity(focused,now+120000).state;ok(characterClassSkills(focused.character!)[0].xp===30&&characterClassSkills(focused.character!)[1].xp===18,'next drill uses focus');

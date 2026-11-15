@@ -22,6 +22,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           for branch in             feat/gem-combine-success-rates-20261115             feat/system-exceptional-forge-notices-20261115             ui/dungeon-command-event-first-nov14             feat/class-skill-specialization-pass-20261115; do
             echo "::group::Compare $branch"
             git fetch origin "refs/heads/$branch:refs/remotes/origin/$branch"

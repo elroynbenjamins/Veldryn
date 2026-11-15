@@ -1,6 +1,6 @@
 import {itemDef} from '../content/items';
 import {GEM_ROLL_MIN_PERCENT_V1,GEM_ROLL_MAX_PERCENT_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
-import {gemEffectDescription,legacyGemBonusValue} from './equipment-enhancement';
+import {legacyGemBonusValue} from './equipment-enhancement';
 import {canonicalGemMetaV1,formatGemRollRangeV1} from './gem-progression-v1';
 
 /** Player-facing socket effects. Never present an unrefined gem as an active buff. */

@@ -82,12 +82,14 @@ DECLARE
 BEGIN
   IF p_requester IS NULL OR p_cursor IS NULL
   THEN RAISE EXCEPTION 'INVALID_RANKING_CURSOR'; END IF;
-  SELECT s,c.raw_after INTO v_snapshot,v_after
+  SELECT s INTO v_snapshot
   FROM private.rankings_frozen_cursors_v1 c
   JOIN private.rankings_frozen_snapshots_v1 s ON s.id=c.snapshot_id
   WHERE c.id=p_cursor AND s.requester_id=p_requester
     AND s.expires_at>clock_timestamp();
   IF NOT FOUND THEN RAISE EXCEPTION 'RANKING_SNAPSHOT_EXPIRED_OR_FORBIDDEN'; END IF;
+  SELECT c.raw_after INTO v_after FROM private.rankings_frozen_cursors_v1 c
+  WHERE c.id=p_cursor AND c.snapshot_id=v_snapshot.id;
 
   WITH visible AS (
     SELECT r.ordinality::integer AS raw_ordinal,r.entry,

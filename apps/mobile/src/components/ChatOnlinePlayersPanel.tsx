@@ -52,6 +52,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
    </View>
    {error&&<View style={s.warning}><Text style={s.warningText}>{st('Unable to refresh online players.')}</Text><Pressable accessibilityRole="button" onPress={onRefresh} style={s.retry}><Text style={s.retryText}>{st('Retry')}</Text></Pressable></View>}
    <FlatList
+    style={s.playerList}
     data={displayed}
     keyExtractor={item=>item.account_id}
     keyboardShouldPersistTaps="handled"
@@ -100,6 +101,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  warningText:{color:C.warning,fontSize:11,flexShrink:1},
  retry:{minHeight:40,justifyContent:'center',paddingHorizontal:8},
  retryText:{color:C.info,fontSize:12,fontWeight:'800'},
+ playerList:{flex:1,minHeight:0},
  list:{paddingHorizontal:12,paddingBottom:24},
  emptyList:{flexGrow:1,paddingHorizontal:12},
  player:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,borderBottomColor:C.line,borderBottomWidth:StyleSheet.hairlineWidth,paddingHorizontal:3,paddingVertical:8},

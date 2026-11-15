@@ -17,6 +17,11 @@ expect(weekly.weeklyClear,'1/3','Weekly clear count is available');
 expect(weekly.bountyCompleted,true,'First clear highlights bounty completion');
 expect(weekly.bounty.length,4,'All bounty items are shown');
 expect(weekly.drops.length,4,'All rolled boss drops are shown');
+expect(weekly.guaranteed.length,2,'The weekly base items must not disappear from the result');
+expect(weekly.guaranteed[0].itemId,'OATHGLASS_SHARD','Guaranteed shards use the canonical item ID');
+expect(weekly.guaranteed[0].quantity,2,'Two guaranteed shards are included');
+expect(weekly.guaranteed[1].itemId,'GEM_DUST','Guaranteed Gem Dust is included separately from bounty dust');
+expect(weekly.guaranteed[1].quantity,4,'Four guaranteed Gem Dust are included');
 expect(weekly.drops[0].name,'Echo-Touched Pelt','Hyphenated loot names survive parsing');
 expect(weekly.drops[2].quantity,12,'Stack quantity is shown correctly');
 
@@ -26,6 +31,7 @@ const rematch=storyBossRewardDisplay(
 );
 expect(rematch.weeklyClear,'2/3','Second weekly clear number is retained');
 expect(rematch.bountyCompleted,false,'Bounty is not repeated on later clears');
+expect(rematch.guaranteed.length,2,'Guaranteed weekly loot remains on later clears');
 expect(rematch.drops.length,0,'Zero boss drops are explicit');
 expect(rematch.bondstoneCapped,true,'Weekly Bondstone limit is visible');
 
@@ -38,7 +44,9 @@ expect(story.essence,40,'Companion Essence is recognized');
 expect(story.bondstones,1,'Story clear Bondstone is recognized');
 expect(story.drops.length,2,'Story clear drops are visible');
 expect(story.weeklyClear,null,'Story clear has no weekly counter');
+expect(story.guaranteed.length,0,'Story clears must not invent weekly loot');
 
 const unknown=storyBossRewardDisplay('An unfamiliar settlement response.');
 expect(unknown.recognized,false,'Unknown results retain original message in UI');
+expect(unknown.guaranteed.length,0,'An unknown result cannot invent guaranteed loot');
 console.log('PASS story boss reward presentation breakdown');

@@ -15,6 +15,7 @@ const db=await PGlite.create();
 const account='11111111-1111-4111-8111-111111111111';
 const outsider='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const character='22222222-2222-4222-8222-222222222222';
+const altCharacter='88888888-8888-4888-8888-888888888888';
 const offer='33333333-3333-4333-8333-333333333333';
 const otherOffer='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const receipt='66666666-6666-4666-8666-666666666666';
@@ -24,7 +25,11 @@ const otherReservation='99999999-9999-4999-8999-999999999999';
 const startsAt='2026-11-01T00:00:00Z';
 const requestId='party-v29-integration-0001';
 const stateHash='a'.repeat(64);
-const reward={kind:'participation',gold:420,version:'party-event-rewards-v2'};
+const reward={
+ version:'party-event-rewards-v2',kind:'participation',
+ performanceBand:1,personalPoints:5,gold:420,combatXp:0,skillXp:0,
+ companionEssence:0,bondstones:0,partyRenown:0,materials:{},
+};
 const json=JSON.stringify(reward);
 
 function assert(ok,label){if(!ok)throw new Error('party_v29_sql_integration: '+label);}
@@ -47,7 +52,7 @@ insert into private.party_event_paid_claim_receipts_v29 (
 ) values (
  $1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6::uuid,
  $7::timestamptz,$8,'party-event-rewards-v2','participation',$9,
- $10::jsonb,5,6,420,0,0,0,0,0,0,$11
+ $10::jsonb,5,6,$12::bigint,0,0,0,0,0,0,$11
 )`;
 const inboxSql=`
 insert into private.party_event_paid_claim_inbox_v29 (
@@ -60,15 +65,15 @@ insert into private.party_event_paid_claim_inbox_v29 (
 async function writeReceipt(options={},handle=db){
  return q(receiptSql,[
   options.receipt??receipt,options.inbox??inbox,
-  options.offer??offer,options.account??account,character,
+  options.offer??offer,options.account??account,options.character??character,
   options.reservation??reservation,options.start??startsAt,options.request??requestId,
-  options.hash??rewardHash,options.json??json,stateHash,
+  options.hash??rewardHash,options.json??json,stateHash,options.goldDelta??420,
  ],handle);
 }
 async function writeInbox(options={},handle=db){
  return q(inboxSql,[
   options.inbox??inbox,options.receipt??receipt,
-  options.offer??offer,options.account??account,character,
+  options.offer??offer,options.account??account,options.character??character,
   options.start??startsAt,options.json??json,
   options.hash??rewardHash,
  ],handle);
@@ -87,6 +92,11 @@ async function run(){
    id uuid not null,account_id uuid not null,
    primary key(id,account_id)
   );
+  create table private.party_event_reward_claim_quotes_v25(
+   offer_id uuid primary key,account_id uuid not null,
+   character_id uuid not null,event_starts_at timestamptz not null,
+   reward_hash text not null
+  );
   create table private.party_event_reward_offers_v24(
    id uuid primary key,reservation_id uuid not null,
    event_starts_at timestamptz not null,account_id uuid not null,
@@ -101,9 +111,11 @@ async function run(){
  rewardHash=hash.rows[0].h;
  assert(/^[a-f0-9]{64}$/.test(rewardHash),'canonical hash from PostgreSQL jsonb');
  await q('insert into auth.users(id) values($1::uuid),($2::uuid)',[account,outsider]);
- await q('insert into public.characters(id,account_id) values($1::uuid,$2::uuid)',[character,account]);
+ await q('insert into public.characters(id,account_id) values($1::uuid,$2::uuid),($3::uuid,$2::uuid)',[character,account,altCharacter]);
  await q('insert into private.party_event_reward_offers_v24(id,reservation_id,event_starts_at,account_id) values($1::uuid,$2::uuid,$3::timestamptz,$4::uuid)',[offer,reservation,startsAt,account]);
  await q('insert into private.party_event_reward_offers_v24(id,reservation_id,event_starts_at,account_id) values($1::uuid,$2::uuid,$3::timestamptz,$4::uuid)',[otherOffer,otherReservation,'2026-11-22T00:00:00Z',account]);
+
+ await q('insert into private.party_event_reward_claim_quotes_v25(offer_id,account_id,character_id,event_starts_at,reward_hash) values($1::uuid,$2::uuid,$3::uuid,$4::timestamptz,$5),($6::uuid,$2::uuid,$3::uuid,$7::timestamptz,$5)',[offer,account,character,startsAt,rewardHash,otherOffer,'2026-11-22T00:00:00Z']);
 
  // In either direction the cyclic deferred FKs reject orphan records at COMMIT.
  await expectFailure(tx=>writeReceipt({},tx),'receipt without Inbox must rollback');
@@ -177,6 +189,22 @@ async function run(){
   offer:otherOffer,reservation:otherReservation,account:outsider,start:'2026-11-22T00:00:00Z',
   request:'party-v29-foreign-owner-0001',
  },tx),'account/offer mismatch is rejected');
+
+ await expectFailure(tx=>writeReceipt({
+  receipt:'12121212-1212-4121-8121-121212121212',
+  inbox:'13131313-1313-4131-8131-131313131313',
+  offer:otherOffer,reservation:otherReservation,start:'2026-11-22T00:00:00Z',
+  request:'party-v29-wrong-gold-0001',goldDelta:421,
+ },tx),'Gold delta differs from recorded quote');
+ await expectFailure(async tx=>{
+  const receiptId='14141414-1414-4141-8141-141414141414';
+  const inboxId='15151515-1515-4151-8151-151515151515';
+  await writeReceipt({receipt:receiptId,inbox:inboxId,
+   offer:otherOffer,reservation:otherReservation,start:'2026-11-22T00:00:00Z',
+   request:'party-v29-wrong-character-0001'},tx);
+  await writeInbox({receipt:receiptId,inbox:inboxId,character:altCharacter,
+   offer:otherOffer,start:'2026-11-22T00:00:00Z'},tx);
+ },'paired Inbox targets wrong character');
 
  // Edits to paid records are forbidden; cascade deletion remains possible
  // for legitimate account erasure by the owner.

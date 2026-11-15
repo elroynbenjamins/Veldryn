@@ -8,6 +8,7 @@ export const socialEarlyRows={
   "Previous": ["Назад","Önceki"],
   "Next": ["Далее","Sonraki"],
   "Page": ["Страница","Sayfa"],
+  "Ranking snapshot expired. Refresh to load updated results.": ["Снимок рейтинга устарел. Обновите, чтобы загрузить новые результаты.","Sıralama görüntüsünün süresi doldu. Güncel sonuçları yüklemek için yenileyin."],
   "Ranks {first}–{last}": ["Места {first}–{last}","Sıralar {first}–{last}"],
   "Entries {first}–{last}": ["Строки {first}–{last}","Kayıtlar {first}–{last}"],
   "Live rankings can change while players progress.": ["Рейтинг может измениться по мере развития игроков.","Oyuncular ilerledikçe canlı sıralamalar değişebilir."],

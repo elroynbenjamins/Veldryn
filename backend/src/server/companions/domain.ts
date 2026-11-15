@@ -35,7 +35,7 @@ export interface CompanionTechniqueDefinition{
   effects:Array<{kind:'shield_strength'|'reflect'|'execute'|'cooldown'|'heal_strength'|'haste'|'defense'|'damage';value:number}>;
 }
 export interface OwnedCompanionSnapshot{
-  companionId:string;level:number;xp:number;ascensionTier:0|1|2|3;bondLevel:number;bondXp:number;bondTraitUnlocked:boolean;mastered?:boolean;selectedTechniqueId?:string;
+  companionId:string;level:number;xp:number;ascensionTier:0|1|2|3;bondLevel:number;bondXp:number;bondCurveVersion?:2;bondTraitUnlocked:boolean;mastered?:boolean;selectedTechniqueId?:string;
   obtainedAt?:string;originalEventReleaseYear?:number;veteranCosmeticEligible?:boolean;
   /** Runtime-only verified account mastery; never persist or accept as an entitlement. */
   masteryStatMultiplier?:number;

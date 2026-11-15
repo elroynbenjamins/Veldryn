@@ -21,6 +21,7 @@ export function CombatXpSplit({state,onCommand}:{state:GameState;onCommand:(comm
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),lock=useRef(false);
   if(!state.character)return null;
   const [primary,secondary]=classSkillsFor(state.character.classId),focus=normalizeTrainingFocus(state.character.trainingFocus);
+  const primaryLabel=gl(primary.name),secondaryLabel=gl(secondary.name);
   const selected=splits.find(split=>split.focus===focus)!;
   async function choose(next:TrainingFocus){
     if(lock.current||next===focus)return;
@@ -32,11 +33,11 @@ export function CombatXpSplit({state,onCommand}:{state:GameState;onCommand:(comm
   return <View style={s.panel}>
     <Text accessibilityRole="header" style={s.heading}>{gt("COMBAT SKILL XP SPLIT")}</Text>
     <View style={s.skills}>
-      <View style={s.skillIdentity}><Image accessible={false} source={classSkillIcon(primary.id)} resizeMode="contain" style={s.skillIcon}/><Text style={s.skill}>{primary.name} <Text style={s.percent}>{selected.primary}%</Text></Text></View>
-      <View style={[s.skillIdentity,s.skillIdentityRight]}><Image accessible={false} source={classSkillIcon(secondary.id)} resizeMode="contain" style={s.skillIcon}/><Text style={[s.skill,s.right]}>{secondary.name} <Text style={s.percent}>{selected.secondary}%</Text></Text></View>
+      <View style={s.skillIdentity}><Image accessible={false} source={classSkillIcon(primary.id)} resizeMode="contain" style={s.skillIcon}/><Text style={s.skill}>{primaryLabel} <Text style={s.percent}>{selected.primary}%</Text></Text></View>
+      <View style={[s.skillIdentity,s.skillIdentityRight]}><Image accessible={false} source={classSkillIcon(secondary.id)} resizeMode="contain" style={s.skillIcon}/><Text style={[s.skill,s.right]}>{secondaryLabel} <Text style={s.percent}>{selected.secondary}%</Text></Text></View>
     </View>
-    <View accessibilityRole="radiogroup" accessibilityLabel={gt("{primary} / {secondary} XP split",{primary:primary.name,secondary:secondary.name})} style={s.options}>
-      {splits.map(split=><Pressable key={split.focus} accessibilityRole="radio" accessibilityLabel={`${primary.name} ${split.primary}%, ${secondary.name} ${split.secondary}%`} aria-checked={focus===split.focus} accessibilityState={{checked:focus===split.focus,disabled:busy}} disabled={busy} onPress={()=>void choose(split.focus)} style={({pressed})=>[s.option,focus===split.focus&&s.selected,pressed&&s.pressed,busy&&s.busy]}>
+    <View accessibilityRole="radiogroup" accessibilityLabel={gt("{primary} / {secondary} XP split",{primary:primaryLabel,secondary:secondaryLabel})} style={s.options}>
+      {splits.map(split=><Pressable key={split.focus} accessibilityRole="radio" accessibilityLabel={`${primaryLabel} ${split.primary}%, ${secondaryLabel} ${split.secondary}%`} aria-checked={focus===split.focus} accessibilityState={{checked:focus===split.focus,disabled:busy}} disabled={busy} onPress={()=>void choose(split.focus)} style={({pressed})=>[s.option,focus===split.focus&&s.selected,pressed&&s.pressed,busy&&s.busy]}>
         <Text style={[s.ratio,focus===split.focus&&s.selectedText]}>{split.primary} / {split.secondary}</Text>
       </Pressable>)}
     </View>

@@ -1,4 +1,5 @@
 import {useMemo,useState} from 'react';
+import {useGameplayText} from '../i18n/gameplay';
 import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GUILD_MAJOR_BRANCHES,GUILD_SKILL_NODES,type GuildSkillNode} from '../content/guild-skill-paths';
 import {itemDef} from '../content/items';
@@ -26,6 +27,8 @@ type Props={
  * All skill upgrades require a second, explicit confirmation. */
 export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCosts,canUpgrade=false,isReleased,onSpend,onViewBank}:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {gl,language}=useGameplayText();
+ const de=(value:string)=>language==='de'?gl(value):value;
  const {width:windowWidth,fontScale}=useWindowDimensions();
  const narrow=windowWidth<350||fontScale>=1.25;
  const [branch,setBranch]=useState<typeof GUILD_MAJOR_BRANCHES[number]>('Professions');
@@ -47,7 +50,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
  const affordable=known&&costsKnown&&Object.entries(cost).length>0&&Object.entries(cost).every(([id,n])=>(metrics?.[`guild_bank_${id}`]??0)>=n);
  const ready=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
  const reviewable=known&&costsKnown&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3;
- const bonus=(n:GuildSkillNode,r:number)=>`+${r*n.perTier}${n.id==='fellowship_membership'?' members':'%'}`;
+ const bonus=(n:GuildSkillNode,r:number)=>`+${r*n.perTier}${n.id==='fellowship_membership'?(language==='de'?' Mitglieder':' members'):'%'}`;
  const active=known?GUILD_SKILL_NODES.filter(n=>rank(n.id)>0):[];
  const changeBranch=(value:typeof GUILD_MAJOR_BRANCHES[number])=>{
   setBranch(value);setSelected(GUILD_SKILL_NODES.find(n=>n.major===value)?.id??selected);setReview(false);
@@ -64,85 +67,85 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
   <View style={s.overview}>
    <View style={s.header}>
     <View style={s.flex}>
-     <Text style={s.eyebrow}>PERMANENT GUILD BONUSES</Text>
-     <Text style={s.title} accessibilityRole="header">Guild Skills</Text>
-     <Text style={s.copy}>{guildLevel===undefined?'Shared guild progression':`Guild Level ${guildLevel}`}</Text>
+     <Text style={s.eyebrow}>{de('PERMANENT GUILD BONUSES')}</Text>
+     <Text style={s.title} accessibilityRole="header">{de('Guild Skills')}</Text>
+     <Text style={s.copy}>{guildLevel===undefined?de('Shared guild progression'):language==='de'?`Gildenstufe ${guildLevel}`:`Guild Level ${guildLevel}`}</Text>
     </View>
-    <View style={s.points}><Text style={s.pointsValue}>{skillPoints===undefined?'—':skillPoints.toLocaleString()}</Text><Text style={s.pointsLabel}>Skill points</Text></View>
+    <View style={s.points}><Text style={s.pointsValue}>{skillPoints===undefined?'—':skillPoints.toLocaleString()}</Text><Text style={s.pointsLabel}>{de('Skill points')}</Text></View>
    </View>
    <View style={s.summary}>
-    <Text style={s.copy}>Active skills</Text><Text style={s.summaryValue}>{known?`${active.length} / ${GUILD_SKILL_NODES.length}`:'—'}</Text>
+    <Text style={s.copy}>{de('Active skills')}</Text><Text style={s.summaryValue}>{known?`${active.length} / ${GUILD_SKILL_NODES.length}`:'—'}</Text>
    </View>
    {active.length?<View style={s.active}>
-    {active.map(n=><View key={n.id} style={s.activeChip}><Text style={s.activeText}>{n.label} {bonus(n,rank(n.id))}</Text></View>)}
+    {active.map(n=><View key={n.id} style={s.activeChip}><Text style={s.activeText}>{de(n.label)} {bonus(n,rank(n.id))}</Text></View>)}
    </View>:null}
   </View>
 
-  <BoardTabs compact label="Guild Skill branches" items={GUILD_MAJOR_BRANCHES.map(id=>({id,label:id}))} value={branch} onChange={changeBranch}/>
+  <BoardTabs compact label={de('Guild Skill branches')} items={GUILD_MAJOR_BRANCHES.map(id=>({id,label:de(id)}))} value={branch} onChange={changeBranch}/>
   <View style={[s.tiles,narrow&&s.tilesNarrow]}>
    {nodes.map(n=>{const current=rank(n.id),chosen=n.id===node.id,live=isReleased?.(n.id)??true;return <Pressable key={n.id}
-     accessibilityRole="button" accessibilityLabel={`${n.name}, rank ${current} of 3${live?'':', not released'}. View skill.`}
+     accessibilityRole="button" accessibilityLabel={language==='de'?`${de(n.name)}, Rang ${current} von 3${live?'':', nicht freigeschaltet'}. Fertigkeit ansehen.`:`${n.name}, rank ${current} of 3${live?'':', not released'}. View skill.`}
      accessibilityState={{selected:chosen}} onPress={()=>{setSelected(n.id);setReview(false)}}
      style={({pressed})=>[s.tile,narrow&&s.tileNarrow,{borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panelRaised},pressed&&s.pressed]}>
     <Image source={guildSkillArtwork(n.id)} resizeMode="contain" style={s.tileIcon} accessible={false}/>
-    <Text numberOfLines={2} style={s.tileName}>{n.name}</Text>
-    <Text style={s.tileBonus}>{known?bonus(n,current):'3 ranks'}</Text>
+    <Text numberOfLines={2} style={s.tileName}>{de(n.name)}</Text>
+    <Text style={s.tileBonus}>{known?bonus(n,current):de('3 ranks')}</Text>
     <View style={s.rankDots}>{[1,2,3].map(k=><View key={k} style={[s.rankDot,{backgroundColor:current>=k?C.accent:C.lineStrong}]}/>)}</View>
-    {!live?<Text style={s.unreleased}>NOT RELEASED</Text>:null}
+    {!live?<Text style={s.unreleased}>{de('NOT RELEASED')}</Text>:null}
    </Pressable>})}
   </View>
 
   <View style={s.detail}>
    <View style={s.header}>
     <Image source={guildSkillArtwork(node.id)} resizeMode="contain" style={s.detailIcon} accessible={false}/>
-    <View style={s.flex}><Text style={s.eyebrow}>{node.scope}</Text><Text style={s.detailTitle}>{node.name}</Text><Text style={s.copy}>Rank {known?level:'—'} / 3</Text></View>
+    <View style={s.flex}><Text style={s.eyebrow}>{de(node.scope)}</Text><Text style={s.detailTitle}>{de(node.name)}</Text><Text style={s.copy}>{language==='de'?`Rang ${known?level:'—'} / 3`:`Rank ${known?level:'—'} / 3`}</Text></View>
    </View>
-   <Text style={s.copy}>{node.summary}{node.major==='Vanguard'?' Bonuses apply only in Guild encounters.':''}</Text>
+   <Text style={s.copy}>{de(node.summary)}{node.major==='Vanguard'?' '+de('Bonuses apply only in Guild encounters.'):''}</Text>
    <View style={s.compare}>
-    <View style={s.compareCell}><Text style={s.compareLabel}>CURRENT BONUS</Text><Text style={s.compareValue}>{known?bonus(node,level):'—'}</Text></View>
+    <View style={s.compareCell}><Text style={s.compareLabel}>{de('CURRENT BONUS')}</Text><Text style={s.compareValue}>{known?bonus(node,level):'—'}</Text></View>
     <Text style={s.compareArrow}>→</Text>
-    <View style={s.compareCell}><Text style={s.compareLabel}>{level>=3?'MAX RANK':'NEXT RANK'}</Text><Text style={[s.compareValue,{color:C.good}]}>{known?(level>=3?'MAX':bonus(node,level+1)):'—'}</Text></View>
+    <View style={s.compareCell}><Text style={s.compareLabel}>{de(level>=3?'MAX RANK':'NEXT RANK')}</Text><Text style={[s.compareValue,{color:C.good}]}>{known?(level>=3?de('MAX'):bonus(node,level+1)):'—'}</Text></View>
    </View>
    {known&&level<3?<View style={s.costSection}>
-    <View style={s.sectionHeader}><Text style={s.eyebrow}>UPGRADE COST</Text><Text style={s.costPoint}>1 Skill Point</Text></View>
+    <View style={s.sectionHeader}><Text style={s.eyebrow}>{de('UPGRADE COST')}</Text><Text style={s.costPoint}>{de('1 Skill Point')}</Text></View>
     <View style={s.materials}>{resources.map(([id,needed])=>{
       const owned=Math.max(0,metrics?.[`guild_bank_${id}`]??0),missing=Math.max(0,needed-owned);
       return <View key={id} style={s.material}>
        <ResourceIcon resourceId={id} size={27}/>
-       <View style={s.flex}><Text numberOfLines={1} style={s.materialName}>{id==='gold'?'Gold':itemDef(id).name}</Text><Text style={s.materialOwned}>Bank: {owned.toLocaleString()}</Text></View>
-       <View style={s.materialRight}><Text style={[s.materialAmount,{color:missing?C.warning:C.good}]}>{needed.toLocaleString()}</Text><Text style={[s.materialStatus,{color:missing?C.warning:C.good}]}>{missing?`Missing ${missing.toLocaleString()}`:'Ready'}</Text></View>
+       <View style={s.flex}><Text numberOfLines={1} style={s.materialName}>{id==='gold'?'Gold':de(itemDef(id).name)}</Text><Text style={s.materialOwned}>{de('Bank')}: {owned.toLocaleString()}</Text></View>
+       <View style={s.materialRight}><Text style={[s.materialAmount,{color:missing?C.warning:C.good}]}>{needed.toLocaleString()}</Text><Text style={[s.materialStatus,{color:missing?C.warning:C.good}]}>{missing?de('Missing')+' '+missing.toLocaleString():de('Ready')}</Text></View>
       </View>;
     })}</View>
-    {!costsKnown?<Text style={[s.warning,{color:C.warning}]}>The Guild Bank upgrade costs are unavailable. Refresh Guild Skills before upgrading.</Text>:!released?<Text style={[s.warning,{color:C.warning}]}>This bonus has not been released yet. You can review it but cannot upgrade it.</Text>:!canUpgrade?<Text style={s.copy}>Only Guild Officers and Leaders may allocate skill points.</Text>:!(skillPoints??0)?<Text style={s.copy}>Earn Guild XP to receive more skill points.</Text>:!affordable?<Text style={s.copy}>Deposit the missing materials or Gold into the Guild Bank before upgrading.</Text>:null}
-    <GameButton title="Upgrade · Review cost" disabled={!reviewable} onPress={()=>setReview(true)}/>
-   </View>:known?<Text style={[s.warning,{color:C.good}]}>Maximum rank reached.</Text>:<Text style={s.copy}>Live skill ranks and bank materials are unavailable in this preview.</Text>}
-   {onViewBank?<GameButton compact title="Open Guild Bank" tone="secondary" onPress={onViewBank}/>:null}
+    {!costsKnown?<Text style={[s.warning,{color:C.warning}]}>{de("The Guild Bank upgrade costs are unavailable. Refresh Guild Skills before upgrading.")}</Text>:!released?<Text style={[s.warning,{color:C.warning}]}>{de("This bonus has not been released yet. You can review it but cannot upgrade it.")}</Text>:!canUpgrade?<Text style={s.copy}>{de("Only Guild Officers and Leaders may allocate skill points.")}</Text>:!(skillPoints??0)?<Text style={s.copy}>{de("Earn Guild XP to receive more skill points.")}</Text>:!affordable?<Text style={s.copy}>{de("Deposit the missing materials or Gold into the Guild Bank before upgrading.")}</Text>:null}
+    <GameButton title={de('Upgrade · Review cost')} disabled={!reviewable} onPress={()=>setReview(true)}/>
+   </View>:known?<Text style={[s.warning,{color:C.good}]}>{de('Maximum rank reached.')}</Text>:<Text style={s.copy}>{de('Live skill ranks and bank materials are unavailable in this preview.')}</Text>}
+   {onViewBank?<GameButton compact title={de('Open Guild Bank')} tone="secondary" onPress={onViewBank}/>:null}
   </View>
 
   <Modal visible={review} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
    <View style={s.modalShade}>
-    <Pressable style={s.modalBackdrop} accessibilityLabel="Dismiss upgrade confirmation" accessibilityRole="button" onPress={close}/>
+    <Pressable style={s.modalBackdrop} accessibilityLabel={de('Dismiss upgrade confirmation')} accessibilityRole="button" onPress={close}/>
     <View style={s.modalCard} accessibilityViewIsModal>
      <ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-      <Text style={s.eyebrow}>CONFIRM GUILD UPGRADE</Text>
+      <Text style={s.eyebrow}>{de('CONFIRM GUILD UPGRADE')}</Text>
       <View style={s.header}><Image source={guildSkillArtwork(node.id)} style={s.detailIcon} resizeMode="contain" accessible={false}/>
-       <View style={s.flex}><Text style={s.modalTitle}>{node.name}</Text><Text style={s.copy}>Rank {level} → Rank {level+1} of 3</Text></View>
+       <View style={s.flex}><Text style={s.modalTitle}>{de(node.name)}</Text><Text style={s.copy}>{language==='de'?`Rang ${level} → Rang ${level+1} von 3`:`Rank ${level} → Rank ${level+1} of 3`}</Text></View>
       </View>
       <View style={s.compare}>
-       <View style={s.compareCell}><Text style={s.compareLabel}>BEFORE</Text><Text style={s.compareValue}>{bonus(node,level)}</Text></View>
+       <View style={s.compareCell}><Text style={s.compareLabel}>{de('BEFORE')}</Text><Text style={s.compareValue}>{bonus(node,level)}</Text></View>
        <Text style={s.compareArrow}>→</Text>
-       <View style={s.compareCell}><Text style={s.compareLabel}>AFTER</Text><Text style={[s.compareValue,{color:C.good}]}>{bonus(node,level+1)}</Text></View>
+       <View style={s.compareCell}><Text style={s.compareLabel}>{de('AFTER')}</Text><Text style={[s.compareValue,{color:C.good}]}>{bonus(node,level+1)}</Text></View>
       </View>
-      <Text style={s.eyebrow}>BANK MATERIALS & GOLD · 1 SKILL POINT</Text>
+      <Text style={s.eyebrow}>{de('BANK MATERIALS & GOLD · 1 SKILL POINT')}</Text>
       {resources.map(([id,needed])=>{const owned=Math.max(0,metrics?.[`guild_bank_${id}`]??0),remaining=owned-needed;return <View key={id} style={s.modalMaterial}>
-       <ResourceIcon resourceId={id} size={26}/><View style={s.flex}><Text style={s.materialName}>{id==='gold'?'Gold':itemDef(id).name}</Text><Text style={s.materialOwned}>Bank {owned.toLocaleString()} · Cost {needed.toLocaleString()}</Text></View>
-       <Text style={[s.materialAmount,{color:remaining>=0?C.good:C.warning}]}>{remaining>=0?`${remaining.toLocaleString()} left`:`${Math.abs(remaining).toLocaleString()} short`}</Text>
+       <ResourceIcon resourceId={id} size={26}/><View style={s.flex}><Text style={s.materialName}>{id==='gold'?'Gold':de(itemDef(id).name)}</Text><Text style={s.materialOwned}>{de('Bank')} {owned.toLocaleString()} · {de('Cost')} {needed.toLocaleString()}</Text></View>
+       <Text style={[s.materialAmount,{color:remaining>=0?C.good:C.warning}]}>{language==='de'?(remaining>=0?`${remaining.toLocaleString()} übrig`:`${Math.abs(remaining).toLocaleString()} fehlen`):(remaining>=0?`${remaining.toLocaleString()} left`:`${Math.abs(remaining).toLocaleString()} short`)}</Text>
       </View>})}
-      <Text style={s.copy}>This permanently spends 1 Guild Skill point, materials and Guild Bank Gold shown above. The server will recheck permissions and balances.</Text>
+      <Text style={s.copy}>{de('This permanently spends 1 Guild Skill point, materials and Guild Bank Gold shown above. The server will recheck permissions and balances.')}</Text>
      </ScrollView>
      <View style={s.modalActions}>
-      <GameButton title="Confirm upgrade" disabled={!ready} onPress={confirm}/>
-      <GameButton title="Cancel" tone="secondary" onPress={close}/>
+      <GameButton title={de('Confirm upgrade')} disabled={!ready} onPress={confirm}/>
+      <GameButton title={de('Cancel')} tone="secondary" onPress={close}/>
      </View>
     </View>
    </View>

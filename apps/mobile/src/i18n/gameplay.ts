@@ -3,11 +3,54 @@ import {createTranslator} from './translator';
 import {useGameLanguage} from './GameLanguageProvider';
 import {battleText} from './battle';
 import {equipmentMaterialMetadataText} from './equipment-metadata';
+import {germanCoverageText} from './german-coverage';
 import {useMemo} from 'react';
 
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Gathering availability status and unlock copy (all six gameplay locales).
+ "Ready resources appear first. Travel to other unlocked regions for more.":["Ready resources appear first. Travel to other unlocked regions for more.","Verfügbare Rohstoffe zuerst. Reise in andere freigeschaltete Regionen, um mehr zu finden.","Los recursos disponibles aparecen primero. Viaja a otras regiones desbloqueadas para encontrar más.","Beschikbare grondstoffen staan vooraan. Reis naar andere ontgrendelde regio's voor meer.","Le risorse disponibili appaiono per prime. Viaggia in altre regioni sbloccate per trovarne altre.","Les ressources disponibles apparaissent en premier. Voyagez vers d'autres régions débloquées pour en trouver davantage."],
+ "Show all resources":["Show all resources","Alle Rohstoffe anzeigen","Mostrar todos los recursos","Alle grondstoffen tonen","Mostra tutte le risorse","Afficher toutes les ressources"],
+ "Show doable resources only":["Show doable resources only","Nur verfügbare Rohstoffe anzeigen","Mostrar solo recursos accesibles","Alleen beschikbare grondstoffen tonen","Mostra solo le risorse accessibili","Afficher uniquement les ressources accessibles"],
+ "Doable only":["Doable only","Nur verfügbare","Solo accesibles","Alleen beschikbaar","Solo accessibili","Accessibles seulement"],
+ "Travel to {region}":["Travel to {region}","Nach {region} reisen","Viajar a {region}","Reis naar {region}","Viaggia a {region}","Voyager vers {region}"],
+ "Travel here to gather {name}.":["Travel here to gather {name}.","Reise hierher, um {name} zu sammeln.","Viaja aquí para recolectar {name}.","Reis hierheen om {name} te verzamelen.","Viaggia qui per raccogliere {name}.","Voyagez ici pour récolter {name}."],
+ "CAN TRAVEL":["CAN TRAVEL","REISE MÖGLICH","PUEDES VIAJAR","REIS MOGELIJK","VIAGGIO POSSIBILE","VOYAGE POSSIBLE"],
+ "COMING SOON":["COMING SOON","BALD VERFÜGBAR","PRÓXIMAMENTE","BINNENKORT","PROSSIMAMENTE","BIENTÔT"],
+ "ZONE LOCKED":["ZONE LOCKED","ZONE GESPERRT","ZONA BLOQUEADA","ZONE VERGRENDELD","ZONA BLOCCATA","ZONE VERROUILLÉE"],
+ "AREA LOCKED":["AREA LOCKED","GEBIET GESPERRT","ÁREA BLOQUEADA","GEBIED VERGRENDELD","AREA BLOCCATA","SECTEUR VERROUILLÉ"],
+ "SKILL LOCKED":["SKILL LOCKED","FERTIGKEIT GESPERRT","HABILIDAD BLOQUEADA","VAARDIGHEID VERGRENDELD","ABILITÀ BLOCCATA","COMPÉTENCE VERROUILLÉE"],
+ "{skill} Lv {level}":["{skill} Lv {level}","{skill} St. {level}","{skill} niv. {level}","{skill} niv. {level}","{skill} liv. {level}","{skill} niv. {level}"],
+ "Character Lv {level} ({area})":["Character Lv {level} ({area})","Charakterstufe {level} ({area})","Personaje niv. {level} ({area})","Personage niv. {level} ({area})","Personaggio liv. {level} ({area})","Personnage niv. {level} ({area})"],
+ "Region not unlocked":["Region not unlocked","Region noch nicht freigeschaltet","Región aún no desbloqueada","Regio nog niet ontgrendeld","Regione non ancora sbloccata","Région non débloquée"],
+ "Ready to gather after travel":["Ready to gather after travel","Nach der Reise zum Sammeln bereit","Listo para recolectar tras viajar","Na het reizen klaar om te verzamelen","Pronto da raccogliere dopo il viaggio","Prêt à récolter après le voyage"],
+ "Region in development":["Region in development","Region in Entwicklung","Región en desarrollo","Regio in ontwikkeling","Regione in sviluppo","Région en développement"],
+ "Travel to {region} to gather {name}":["Travel to {region} to gather {name}","Reise nach {region}, um {name} zu sammeln","Viaja a {region} para recolectar {name}","Reis naar {region} om {name} te verzamelen","Viaggia a {region} per raccogliere {name}","Voyagez vers {region} pour récolter {name}"],
+ "{name} is locked. {reason}":["{name} is locked. {reason}","{name} ist gesperrt. {reason}","{name} está bloqueado. {reason}","{name} is vergrendeld. {reason}","{name} è bloccato. {reason}","{name} est verrouillé. {reason}"],
+ "Here":["Here","Hier","Aquí","Hier","Qui","Ici"],
+ "Nothing doable yet. Show all resources to check unlock requirements.":["Nothing doable yet. Show all resources to check unlock requirements.","Noch keine Rohstoffe verfügbar. Zeige alle an, um die Freischaltbedingungen zu sehen.","Aún no hay recursos accesibles. Muestra todos para ver los requisitos de desbloqueo.","Nog geen grondstoffen beschikbaar. Toon alles om de ontgrendelvereisten te bekijken.","Nessuna risorsa accessibile per ora. Mostrale tutte per vedere i requisiti di sblocco.","Aucune ressource accessible pour le moment. Affichez tout pour voir les conditions de déblocage."],
+ "{ready} / {total} resources ready here":["{ready} / {total} resources ready here","{ready} / {total} Rohstoffe hier verfügbar","{ready} / {total} recursos disponibles aquí","{ready} / {total} grondstoffen hier beschikbaar","{ready} / {total} risorse disponibili qui","{ready} / {total} ressources disponibles ici"],
+ "Regional resources":["Regional resources","Regionale Rohstoffe","Recursos regionales","Regionale grondstoffen","Risorse regionali","Ressources régionales"],
+ "Ready resources first. Locked ones show requirements.":["Ready resources first. Locked ones show requirements.","Verfügbare Rohstoffe zuerst. Gesperrte zeigen ihre Voraussetzungen.","Primero los recursos disponibles. Los bloqueados muestran sus requisitos.","Beschikbare grondstoffen eerst. Vergrendelde tonen hun vereisten.","Prima le risorse disponibili. Quelle bloccate mostrano i requisiti.","Les ressources disponibles d'abord. Les ressources verrouillées affichent leurs conditions."],
+ "All four gathering skills are shown here. Locked resources display their requirements.":["All four gathering skills are shown here. Locked resources display their requirements.","Hier werden alle vier Sammelfertigkeiten angezeigt. Gesperrte Rohstoffe zeigen ihre Voraussetzungen.","Aquí se muestran las cuatro habilidades de recolección. Los recursos bloqueados indican sus requisitos.","Hier staan alle vier de verzamelvaardigheden. Vergrendelde grondstoffen tonen hun vereisten.","Qui sono mostrate tutte e quattro le abilità di raccolta. Le risorse bloccate indicano i requisiti.","Les quatre compétences de récolte sont affichées ici. Les ressources verrouillées indiquent leurs conditions."],
+ "Ready here first, then reachable zones and locked resources.":["Ready here first, then reachable zones and locked resources.","Zuerst hier verfügbare Rohstoffe, dann erreichbare Zonen und gesperrte Rohstoffe.","Primero lo disponible aquí, luego las zonas accesibles y los recursos bloqueados.","Eerst wat hier beschikbaar is, daarna bereikbare zones en vergrendelde grondstoffen.","Prima le risorse disponibili qui, poi le zone raggiungibili e le risorse bloccate.","D'abord les ressources disponibles ici, puis les zones accessibles et les ressources verrouillées."],
+ "FOOD ROTATION":["FOOD ROTATION","ESSENSREIHENFOLGE","ROTACIÓN DE COMIDA","VOEDSELVOLGORDE","ROTAZIONE CIBO","ORDRE DES ALIMENTS"],
+ "Food actions":["Food actions","Essensaktionen","Opciones de comida","Voedselacties","Azioni cibo","Actions de nourriture"],
+ "Food running low":["Food running low","Essensvorrat fast leer","Queda poca comida","Voedsel raakt op","Scorte di cibo in esaurimento","Réserve de nourriture faible"],
+ "PRIMARY":["PRIMARY","HAUPTNAHRUNG","PRINCIPAL","HOOFDVOEDSEL","PRINCIPALE","PRINCIPAL"],
+ "AVAILABLE FOOD":["AVAILABLE FOOD","VERFÜGBARES ESSEN","COMIDA DISPONIBLE","BESCHIKBAAR ETEN","CIBO DISPONIBILE","NOURRITURE DISPONIBLE"],
+ "Set primary":["Set primary","Als Hauptnahrung","Usar como principal","Als hoofdvoedsel","Imposta principale","Définir principal"],
+ "Eat 1":["Eat 1","1 essen","Comer 1","Eet 1","Mangia 1","Manger 1"],
+ "All carried food is already assigned.":["All carried food is already assigned.","Alle mitgeführten Speisen sind bereits zugewiesen.","Toda la comida disponible ya está asignada.","Al het meegenomen eten is al toegewezen.","Tutto il cibo trasportato è già assegnato.","Toute la nourriture transportée est déjà attribuée."],
+ "No food selected for auto-eat":["No food selected for auto-eat","Kein Essen für automatisches Essen gewählt","No hay comida para comer automáticamente","Geen eten geselecteerd voor automatisch eten","Nessun cibo selezionato per il consumo automatico","Aucune nourriture sélectionnée pour la consommation automatique"],
+ "FOOD BACKUPS":["FOOD BACKUPS","ESSENSRESERVE","COMIDA DE RESERVA","ETENRESERVE","SCORTE DI CIBO","RÉSERVES DE NOURRITURE"],
+ "Uses the selected food first, then each backup in order when it runs out. Only food carried in Inventory is used.":["Uses the selected food first, then each backup in order when it runs out. Only food carried in Inventory is used.","Verbraucht zuerst das gewählte Essen und dann die Reserve in Reihenfolge. Nur Essen im Inventar wird genutzt.","Usa primero la comida seleccionada y luego las reservas en orden. Solo se usa comida del inventario.","Gebruikt eerst het gekozen eten en daarna de reserve op volgorde. Alleen eten in je inventaris wordt gebruikt.","Usa prima il cibo selezionato, poi le scorte in ordine. Viene usato solo il cibo nell'inventario.","Utilise d'abord la nourriture choisie, puis les réserves dans l'ordre. Seule la nourriture de l'inventaire est utilisée."],
+ "BACKUP":["BACKUP","RESERVE","RESERVA","RESERVE","SCORTA","RÉSERVE"],
+ "Remove backup":["Remove backup","Reserve entfernen","Quitar reserva","Verwijder reserve","Rimuovi scorta","Retirer la réserve"],
+ "Add as backup":["Add as backup","Als Reserve hinzufügen","Añadir como reserva","Voeg toe als reserve","Aggiungi alle scorte","Ajouter en réserve"],
+ "Up":["Up","Nach oben","Subir","Omhoog","Su","Monter"],
+ "Down":["Down","Nach unten","Bajar","Omlaag","Giù","Descendre"],
  "Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.":["Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.","Tränke heilen bei Bossen und in Dungeons. Tonika bereiten Dungeonläufe vor und stärken normale Kämpfe.","Las pociones curan contra jefes y en mazmorras. Los tónicos preparan las mazmorras y mejoran los combates normales.","Drankjes herstellen HP bij bazen en in kerkers. Tonics bereiden kerkers voor en versterken gewone gevechten.","Le pozioni curano contro i boss e nei dungeon. I tonici preparano i dungeon e potenziano gli scontri normali.","Les potions soignent contre les boss et en donjon. Les toniques préparent les donjons et renforcent les combats ordinaires."],
  "Potions":["Potions","Tränke","Pociones","Drankjes","Pozioni","Potions"],
  "Recipe source":["Recipe source","Rezeptquelle","Origen de la receta","Receptbron","Fonte della ricetta","Source de la recette"],
@@ -19,7 +62,7 @@ const common={
 
  "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
  "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
- "Events":["Events","Events","Eventos","Evenementen","Eventi","Événements"],
+ "Events":["Events","Ereignisse","Eventos","Evenementen","Eventi","Événements"],
  "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],
  "Reserved · materials returned on cancel; no Gold":["Reserved · materials returned on cancel; no Gold","Reserviert · Materialien bei Abbruch zurück; kein Gold","Reservado · se devuelven los materiales al cancelar; sin oro","Gereserveerd · materialen terug bij annuleren; geen goud","Riservato · materiali restituiti all'annullamento; niente oro","Réservé · matériaux rendus en cas d'annulation ; aucun or"],
 
@@ -37,7 +80,20 @@ const common={
  "T2 equipment":["T2 equipment","T2-Ausrüstung","Equipo T2","T2-uitrusting","Equipaggiamento T2","Équipement T2"],
  "Alchemy Lv {level} · Crafted, not a Woodcutting drop":["Alchemy Lv {level} · Crafted, not a Woodcutting drop","Alchemie St. {level} · Hergestellt, kein Holzfällen-Fund","Alquimia niv. {level} · Se fabrica; no se obtiene talando","Alchemie niv. {level} · Gemaakt, geen houthakdrop","Alchimia liv. {level} · Si crea, non si ottiene tagliando","Alchimie niv. {level} · Fabriqué, non obtenu en bûcheronnage"],
 
- // Alchemy workshop: translate displayed effects from authoritative potion properties.
+ 
+  // Dynamic gathering messages; interpolate translated skill and item names.
+  "Gather {name}":["Gather {name}","{name} sammeln","Recolectar {name}","{name} verzamelen","Raccogli {name}","Récolter {name}"],
+  "Train to gather {name}":["Train to gather {name}","Trainiere, um {name} zu sammeln","Entrena para recolectar {name}","Train om {name} te verzamelen","Allenati per raccogliere {name}","Entraînez-vous pour récolter {name}"],
+  "{name} is currently gathering":["{name} is currently gathering","{name} wird gerade gesammelt","{name} se está recolectando","{name} wordt nu verzameld","Raccolta di {name} in corso","Récolte de {name} en cours"],
+  "{name} is in {region}":["{name} is in {region}","{name} befindet sich in {region}","{name} está en {region}","{name} bevindt zich in {region}","{name} si trova in {region}","{name} se trouve dans {region}"],
+  "Region: {name}":["Region: {name}","Region: {name}","Región: {name}","Regio: {name}","Regione: {name}","Région : {name}"],
+  "Have: {count} {resource} · {seconds}s":["Have: {count} {resource} · {seconds}s","Im Besitz: {count} {resource} · {seconds} s","Tienes: {count} {resource} · {seconds}s","In bezit: {count} {resource} · {seconds}s","Possiedi: {count} {resource} · {seconds}s","Possédé : {count} {resource} · {seconds}s"],
+  "Unlocks at {skill} level {level}":["Unlocks at {skill} level {level}","Freigeschaltet ab {skill}-Stufe {level}","Se desbloquea con {skill} nivel {level}","Ontgrendelt bij {skill} niveau {level}","Si sblocca con {skill} livello {level}","Débloqué au niveau {level} de {skill}"],
+  "No {skill} resources are configured.":["No {skill} resources are configured.","Für {skill} sind keine Ressourcen eingerichtet.","No hay recursos configurados para {skill}.","Geen grondstoffen ingesteld voor {skill}.","Nessuna risorsa configurata per {skill}.","Aucune ressource configurée pour {skill}."],
+  "Facility Lv {level}/3":["Facility Lv {level}/3","Anlage Stufe {level}/3","Instalación niv. {level}/3","Faciliteit niv. {level}/3","Struttura liv. {level}/3","Installation niv. {level}/3"],
+  "{xp} XP/day per idle companion":["{xp} XP/day per idle companion","{xp} EP/Tag je untätigem Gefährten","{xp} EXP/día por compañero inactivo","{xp} XP/dag per inactieve metgezel","{xp} PE/giorno per compagno inattivo","{xp} EXP/jour par compagnon inactif"],
+  "Next level: {xp} XP/day · {status}":["Next level: {xp} XP/day · {status}","Nächste Stufe: {xp} EP/Tag · {status}","Siguiente nivel: {xp} EXP/día · {status}","Volgend niveau: {xp} XP/dag · {status}","Livello successivo: {xp} PE/giorno · {status}","Niveau suivant : {xp} EXP/jour · {status}"],
+  // Alchemy workshop: translate displayed effects from authoritative potion properties.
  "Restores {percent}% maximum HP in boss fights or between dungeon rooms.":["Restores {percent}% maximum HP in boss fights or between dungeon rooms.","Stellt {percent} % der maximalen LP im Bosskampf oder zwischen Dungeonräumen wieder her.","Recupera un {percent} % de salud máxima contra jefes o entre salas de mazmorra.","Herstelt {percent}% maximale HP bij bazen of tussen kerkerkamers.","Ripristina il {percent}% dei PV massimi contro i boss o tra le stanze dei dungeon.","Rend {percent} % des PV max. contre les boss ou entre les salles de donjon."],
  "Deals {percent}% more damage for {count} ordinary encounters.":["Deals {percent}% more damage for {count} ordinary encounters.","Verursacht {percent} % mehr Schaden für {count} normale Kämpfe.","Inflige un {percent} % más de daño durante {count} encuentros normales.","Brengt {percent}% meer schade toe gedurende {count} gewone gevechten.","Infligge il {percent}% di danni in più per {count} incontri normali.","Inflige {percent} % de dégâts supplémentaires pendant {count} combats ordinaires."],
  "Takes {percent}% less damage for {count} ordinary encounters.":["Takes {percent}% less damage for {count} ordinary encounters.","Erleidet {percent} % weniger Schaden für {count} normale Kämpfe.","Recibe un {percent} % menos de daño durante {count} encuentros normales.","Ontvangt {percent}% minder schade gedurende {count} gewone gevechten.","Subisce il {percent}% di danni in meno per {count} incontri normali.","Subit {percent} % de dégâts en moins pendant {count} combats ordinaires."],
@@ -896,7 +952,8 @@ const crafting={
 "Auto-sell settings":["Auto-sell settings","Automatischer Verkauf","Ajustes de venta automática","Instellingen automatisch verkopen","Impostazioni vendita automatica","Paramètres de vente automatique"],
 "Auto-sell ON":["Auto-sell ON","Autoverkauf AN","Venta automática ACTIVADA","Automatisch verkopen AAN","Vendita automatica ATTIVA","Vente automatique ACTIVÉE"],
 "Auto-sell OFF":["Auto-sell OFF","Autoverkauf AUS","Venta automática DESACTIVADA","Automatisch verkopen UIT","Vendita automatica DISATTIVA","Vente automatique DÉSACTIVÉE"],
-"Keep best 7":["Keep best 7","Beste 7 behalten","Conservar los 7 mejores","Beste 7 bewaren","Tieni i 7 migliori","Conserver les 7 meilleurs"],
+"Keep best {count}":["Keep best {count}","Die besten {count} behalten","Conservar los {count} mejores","Beste {count} bewaren","Tieni i {count} migliori","Conserver les {count} meilleurs"],
+"Per equipment type":["Per equipment type","Pro Ausrüstungstyp","Por tipo de equipo","Per uitrustingstype","Per tipo di equipaggiamento","Par type d’équipement"],
 "Collect finished equipment":["Collect finished equipment","Fertige Ausrüstung abholen","Recoger equipo terminado","Voltooide uitrusting ophalen","Ritira equipaggiamento finito","Récupérer l’équipement terminé"],
 "Back to crafting":["Back to crafting","Zurück zur Herstellung","Volver a fabricar","Terug naar maken","Torna alla creazione","Retour à la fabrication"],
 "Manage & collect":["Manage & collect","Verwalten und abholen","Gestionar y recoger","Beheren en ophalen","Gestisci e ritira","Gérer et récupérer"],
@@ -1002,6 +1059,22 @@ const crafting={
 "Multiple finished crafts produced rarer copies.":["Multiple finished crafts produced rarer copies.","Mehrere Fertigungen ergaben seltenere Exemplare.","Varias fabricaciones produjeron copias más raras.","Meerdere opdrachten leverden zeldzamere exemplaren op.","Più creazioni hanno prodotto copie più rare.","Plusieurs fabrications ont produit des exemplaires plus rares."],
 "First crafted copy owned":["First crafted copy owned","Erstes gefertigtes Exemplar im Besitz","Primera copia fabricada en posesión","Eerste gemaakt exemplaar in bezit","Prima copia creata posseduta","Premier exemplaire fabriqué possédé"],
 "Continue forging":["Continue forging","Weiter schmieden","Seguir forjando","Verder smeden","Continua a forgiare","Continuer à forger"],
+
+"Close Forge collection":["Close Forge collection","Schmiedesammlung schließen","Cerrar recogida de forja","Smeedoverzicht sluiten","Chiudi raccolta forgia","Fermer le récapitulatif de forge"],
+"FORGE · CLAIM ALL":["FORGE · CLAIM ALL","SCHMIEDE · ALLES ABHOLEN","FORJA · RECOGER TODO","SMEDERIJ · ALLES OPHALEN","FORGIA · RITIRA TUTTO","FORGE · TOUT RÉCUPÉRER"],
+"Collection summary":["Collection summary","Abholübersicht","Resumen de recogida","Overzicht opbrengst","Riepilogo raccolta","Récapitulatif des objets"],
+"Equipment collected: {count}":["Equipment collected: {count}","Ausrüstung abgeholt: {count}","Equipo recogido: {count}","Uitrusting opgehaald: {count}","Equipaggiamenti ritirati: {count}","Équipements récupérés : {count}"],
+"Equipment Pouch first · Inventory or Bank if full":["Equipment Pouch first · Inventory or Bank if full","Zuerst Ausrüstungstasche · bei Platzmangel Inventar oder Bank","Bolsa de equipo primero · si está llena, inventario o banco","Eerst uitrustingstas · bij vol Inventaris of Bank","Prima borsa equipaggiamento · se piena, Inventario o Banca","Sac d'équipement en premier · sinon inventaire ou banque"],
+"Auto-sold incoming: {count}":["Auto-sold incoming: {count}","Neue Ausrüstung automatisch verkauft: {count}","Equipo nuevo vendido automáticamente: {count}","Nieuwe uitrusting automatisch verkocht: {count}","Nuovi equipaggiamenti venduti automaticamente: {count}","Équipements reçus revendus automatiquement : {count}"],
+"Weaker copies sold: {count}":["Weaker copies sold: {count}","Schwächere Exemplare verkauft: {count}","Copias inferiores vendidas: {count}","Zwakkere exemplaren verkocht: {count}","Copie inferiori vendute: {count}","Exemplaires plus faibles vendus : {count}"],
+"Forge jobs still waiting: {count}":["Forge jobs still waiting: {count}","Schmiedeaufträge noch offen: {count}","Trabajos de forja pendientes: {count}","Smeedopdrachten wachten nog: {count}","Lavori in forgia ancora in attesa: {count}","Fabrications encore en attente : {count}"],
+"Auto-sold new gear":["Auto-sold new gear","Neue Ausrüstung automatisch verkauft","Equipo nuevo vendido automáticamente","Nieuwe uitrusting automatisch verkocht","Nuovo equipaggiamento venduto automaticamente","Nouvel équipement revendu automatiquement"],
+"Weaker copy sold":["Weaker copy sold","Schwächeres Exemplar verkauft","Copia inferior vendida","Zwakker exemplaar verkocht","Copia inferiore venduta","Exemplaire plus faible vendu"],
+"AUTO-SOLD · NOT COLLECTED":["AUTO-SOLD · NOT COLLECTED","AUTOMATISCH VERKAUFT · NICHT ABGEHOLT","VENTA AUTOMÁTICA · NO RECOGIDO","AUTOMATISCH VERKOCHT · NIET OPGEHAALD","VENDUTI AUTOMATICAMENTE · NON RITIRATI","REVENDU AUTOMATIQUEMENT · NON RÉCUPÉRÉ"],
+"View Gear storage":["View Gear storage","Ausrüstungslager öffnen","Ver almacén de equipo","Uitrustingsopslag bekijken","Apri deposito equipaggiamento","Voir le stockage d'équipement"],
+"Collected":["Collected","Abgeholt","Recogido","Opgehaald","Ritirato","Récupéré"],
+"Auto-sold":["Auto-sold","Automatisch verkauft","Venta automática","Automatisch verkocht","Venduto automaticamente","Revendu automatiquement"],
+
 "View inventory":["View inventory","Inventar ansehen","Ver inventario","Inventaris bekijken","Vedi inventario","Voir l’inventaire"],
 "Tap a resource to begin gathering.":["Tap a resource to begin gathering.","Tippe auf eine Ressource, um zu sammeln.","Toca un recurso para recolectar.","Tik op een grondstof om te verzamelen.","Tocca una risorsa per raccogliere.","Touchez une ressource pour récolter."],
 "HERE":["HERE","HIER","AQUÍ","HIER","QUI","ICI"],
@@ -1295,6 +1368,31 @@ for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
+// The Forge copy cap is interpolated, and the legacy auto-sell setting persists across all locales.
+const forgeCopyLimitEarlyLocales={
+  "Keep best {count}":["Сохранять лучшие {count}","En iyi {count} tanesini tut"],
+  "Per equipment type":["Для каждого типа снаряжения","Ekipman türü başına"],
+
+  "Close Forge collection":["Закрыть итоги кузницы","Demirhane özetini kapat"],
+  "FORGE · CLAIM ALL":["КУЗНИЦА · ЗАБРАТЬ ВСЁ","DEMİRHANE · HEPSİNİ AL"],
+  "Collection summary":["Итоги получения","Alım özeti"],
+  "Equipment collected: {count}":["Получено снаряжения: {count}","Alınan ekipman: {count}"],
+  "Equipment Pouch first · Inventory or Bank if full":["Сначала сумка снаряжения · затем инвентарь или банк","Önce ekipman çantası · doluysa envanter veya banka"],
+  "Auto-sold incoming: {count}":["Автопродажа нового: {count}","Otomatik satılan yeni: {count}"],
+  "Weaker copies sold: {count}":["Продано слабых копий: {count}","Satılan zayıf kopya: {count}"],
+  "Forge jobs still waiting: {count}":["Ожидают получения: {count}","Bekleyen demirhane işleri: {count}"],
+  "Auto-sold new gear":["Новое снаряжение продано автоматически","Yeni ekipman otomatik satıldı"],
+  "Weaker copy sold":["Слабая копия продана","Zayıf kopya satıldı"],
+  "AUTO-SOLD · NOT COLLECTED":["АВТОПРОДАЖА · НЕ ПОЛУЧЕНО","OTOMATİK SATILDI · ALINMADI"],
+  "View Gear storage":["Открыть хранилище снаряжения","Ekipman deposunu aç"],
+  "Collected":["Получено","Alındı"],
+  "Auto-sold":["Автопродажа","Otomatik satıldı"],
+
+} as const;
+for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{
@@ -1312,6 +1410,8 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
   const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
+  // German source labels take priority over generic interpolated templates.
+  if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}
   for(const template of templates){
     const match=template.pattern.exec(value);
     if(match){const params:Record<string,string>={};template.names.forEach((name,index)=>{params[name]=name==='skill'?localizeGameplay(language,match[index+1]):match[index+1];});return gameplayTranslate(language,template.key,params);}

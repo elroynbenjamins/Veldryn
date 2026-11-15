@@ -11,9 +11,10 @@ const setPanel=read('src/components/EquipmentSetProgressPanel.tsx');
 
 ok(runtime.includes("if(pieces>=2)addStats"),'2pc static set bonus must activate by equipped-piece count');
 ok(runtime.includes("if(pieces>=4)addStats"),'4pc static set bonus must activate by equipped-piece count');
+ok(runtime.includes('if(pieces>=6&&isLiveSixPieceBonus(set))addStats'),'Early 6pc static set bonus must activate');
 ok(runtime.includes("if(pieces>=8)addStats"),'8pc static set bonus must activate by equipped-piece count');
 ok(runtime.includes("if(pieces>=10)addStats"),'10pc static set bonus must activate by equipped-piece count');
-ok(runtime.includes("sixPieceStatus:pieces>=6?'trigger-hook-pending':'locked'"),'6pc conditional must be preserved as a hook rather than faked');
+ok(runtime.includes("isLiveSixPieceBonus(set)?'active':'trigger-hook-pending'"),'Early 6pc stats must be live while later hooks remain pending');
 ok(runtime.includes("'max hp':'maxHp'")&&runtime.includes("'crit damage':'critDamage'"),'Static parser must cover V33 stat language');
 ok(runtime.includes('unsupportedStatic'),'Runtime must expose catalog parsing coverage');
 
@@ -35,7 +36,7 @@ ok(character.includes('label={profileT(language,"Haste")}'),'Character stats mus
 ok(character.includes('label={profileT(language,"Armor")}')&&character.includes('label={profileT(language,"Ward")}')&&character.includes('label={profileT(language,"Tenacity")}'),'Character stats must surface V33 defensive set stats');
 
 ok(inspect.includes("row.runtime==='live'?gt(\"LIVE\"):it('HOOK')"),'Item inspect must distinguish live thresholds from conditional hooks');
-ok(inspect.includes('2/4/8/10 always-on V33 bonuses are live'),'Item inspect must accurately explain runtime coverage');
-ok(setPanel.includes('progress.thresholds.map')&&setPanel.includes('t.pieces===6&&t.active?gt("PENDING")')&&setPanel.includes('t.active?gt("REACHED"):gt("LOCKED")')&&!setPanel.includes('6pc simulated'),'Set progress must show the 6-piece conditional as pending while preserving real 2/4/8/10 milestone states');
+ok(inspect.includes("gearDecision.set.tier")&&inspect.includes('2/4/8/10 always-on V33 bonuses are live'),'Item inspect note is only shown for higher-tier pending hooks');
+ok(setPanel.includes('progress.thresholds.map')&&setPanel.includes('t.pieces===6&&t.active&&!earlySet?gt("PENDING")')&&setPanel.includes('t.active?gt("REACHED"):gt("LOCKED")'),'Set progress marks T1–T4 6pc reached and later hooks pending');
 
-console.log('PASS: V33 set runtime is wired through stats/combat and UI accurately distinguishes live bonuses from 6pc hooks');
+console.log('PASS: V33 set runtime and UI distinguish early live six-piece bonuses from later pending hooks');

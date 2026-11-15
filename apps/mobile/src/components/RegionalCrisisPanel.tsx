@@ -1,5 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
+import {sharedWorldAuthoredText} from '../i18n/shared-world-authored-de';
 import React from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {CrisisSummary} from '../core/shared-world-v19';
@@ -9,10 +10,11 @@ export function RegionalCrisisPanel({crisis,onViewRewards,onOpenRegion}:{crisis:
   const contextLanguage=useGameLanguage(),language=contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
+  const authored=(text:string)=>sharedWorldAuthoredText(language,text);
 
  const progress=fraction(crisis.creditedPoints,crisis.targetPoints);
  return <ScrollView contentContainerStyle={s.wrap} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-  <View style={s.hero}><View style={{flex:1}}><Text style={s.eyebrow}>{t("REGIONAL CRISIS ·")} {crisis.regionId.toUpperCase()}</Text><Text style={s.title}>{crisis.name}</Text><Text style={s.status}>{crisisStatusLabel(crisis)}</Text></View><View style={s.badge}><Text style={s.badgeText}>{Math.round(progress*100)}%</Text></View></View>
+  <View style={s.hero}><View style={{flex:1}}><Text style={s.eyebrow}>{t("REGIONAL CRISIS ·")} {crisis.regionId.toUpperCase()}</Text><Text style={s.title}>{authored(crisis.name)}</Text><Text style={s.status}>{authored(crisisStatusLabel(crisis))}</Text></View><View style={s.badge}><Text style={s.badgeText}>{Math.round(progress*100)}%</Text></View></View>
   <View style={s.panel}><View style={s.row}><Text style={s.section}>{t("SERVER RESPONSE")}</Text><Text style={s.value}>{formatCompact(crisis.creditedPoints)} / {formatCompact(crisis.targetPoints)}</Text></View><View style={s.track}><View style={[s.fill,{width:`${Math.round(progress*100)}%`}]} /></View><Text style={s.copy}>{t("Normal eligible activities in this region contribute automatically. Harder or longer actions earn proportionally more effort points.")}</Text></View>
   <View style={s.grid}><View style={s.stat}><Text style={s.statLabel}>{t("YOUR IMPACT")}</Text><Text style={s.statValue}>{formatCompact(crisis.yourPoints)}</Text></View><View style={s.stat}><Text style={s.statLabel}>{t("PARTY")}</Text><Text style={s.statValue}>{formatCompact(crisis.partyPoints||0)}</Text></View><View style={s.stat}><Text style={s.statLabel}>{t("GUILD")}</Text><Text style={s.statValue}>{formatCompact(crisis.guildPoints||0)}</Text></View></View>
   <View style={s.panel}><Text style={s.section}>{t("WHAT HELPS")}</Text><Text style={s.copy}>{t("Continue normal Combat, Gathering, Processing, Crafting or other eligible regional activities. You do not need to queue into a special synchronized instance.")}</Text><View style={s.actions}><Pressable style={s.primary} onPress={onOpenRegion}><Text style={s.primaryText}>{t("Open Region")}</Text></Pressable><Pressable style={s.secondary} onPress={onViewRewards}><Text style={s.secondaryText}>{t("Milestones & Rewards")}</Text></Pressable></View></View>

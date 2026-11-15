@@ -5,8 +5,8 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
 type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
-type Props={title:string;onPress:()=>unknown;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors;style?:StyleProp<ViewStyle>};
-export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors,style}:Props){
+type Props={title:string;onPress:()=>unknown;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors;style?:StyleProp<ViewStyle>;accessibilityLabel?:string};
+export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors,style,accessibilityLabel}:Props){
   const C=useGameTheme();
   const [focused,setFocused]=useState(false),[pending,setPending]=useState(false);
   const pendingRef=useRef(false);
@@ -28,7 +28,7 @@ export function GameButton({title,onPress,disabled=false,loading=false,selected,
   const toneStyle=colors??(tone==='primary'?{borderColor:C.primaryButtonBorder,backgroundColor:C.primaryButton}:tone==='danger'?{borderColor:C.dangerButtonBorder,backgroundColor:C.dangerButton}:{borderColor:C.secondaryButtonBorder,backgroundColor:C.secondaryButton});
   const labelColor=colors?.textColor??(tone==='primary'?C.primaryButtonText:tone==='danger'?C.dangerButtonText:C.secondaryButtonText);
   const selectedStyle=selected?{borderColor:C.selectionLine,backgroundColor:tone==='secondary'?C.selection:toneStyle.backgroundColor}:undefined;
-  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading||pending,selected}}
+  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel??title} accessibilityState={{disabled:inactive,busy:loading||pending,selected}}
     disabled={inactive} onPress={execute} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
     style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,style,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&!loading&&!pending&&s.disabled]}>
     {(loading||pending)&&<ActivityIndicator color={labelColor} size="small"/>}

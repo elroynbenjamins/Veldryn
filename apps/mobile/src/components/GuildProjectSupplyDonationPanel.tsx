@@ -4,6 +4,7 @@ import {GameButton} from './GameButton';
 import {ResourceArtwork} from './ResourceArtwork';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useOnlineGuildProjectUiText} from '../i18n/online-guild-project-ui';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import type {ThemeColors} from '../theme/theme';
 import type {OnlineGuildProjectResourceGoal,OnlineGuildProjectSupplyItem} from '../online/guild-projects-v18';
 
@@ -13,7 +14,7 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
  busy:boolean;
  onDonate:(itemId:string,quantity:number)=>void;
 }){
- const ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [quantity,setQuantity]=useState('1');
  const activeGoals=goals.filter(goal=>goal.resourceId.startsWith('supply:')&&goal.current<goal.target);
@@ -25,8 +26,8 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
  const quantityProblem=!selected||!goal?null
   :!Number.isSafeInteger(amount)||amount<1?ui('Enter a positive whole number of resources.')
   :amount>10000?ui('You can donate up to 10,000 items at once.')
-  :amount>selected.available?ui('You only have {count} eligible items available.',{count:selected.available.toLocaleString()})
-  :units>goalRemaining?ui('That exceeds the remaining {count} supply needed.',{count:goalRemaining.toLocaleString()})
+  :amount>selected.available?ui('You only have {count} eligible items available.',{count:selected.available.toLocaleString(language)})
+  :units>goalRemaining?ui('That exceeds the remaining {count} supply needed.',{count:goalRemaining.toLocaleString(language)})
   :null;
  const valid=!!selected&&!!goal&&quantityProblem===null&&amount>=1;
  if(!goals.some(goal=>goal.resourceId.startsWith('supply:')))return null;
@@ -37,7 +38,7 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
    const label=row.resourceId==='supply:wood'?ui('Wood supplies'):row.resourceId==='supply:fish'?ui('Food supplies'):ui('Ore supplies');
    const pct=row.target>0?Math.min(100,row.current/row.target*100):100;
    return <View key={row.resourceId} style={s.goal}>
-    <View style={s.between}><Text style={s.text}>{label}</Text><Text style={s.muted}>{row.current.toLocaleString()} / {row.target.toLocaleString()}</Text></View>
+    <View style={s.between}><Text style={s.text}>{label}</Text><Text style={s.muted}>{row.current.toLocaleString(language)} / {row.target.toLocaleString(language)}</Text></View>
     <View style={s.track}><View style={[s.fill,{width:`${pct}%` as any}]}/></View>
    </View>;
   })}
@@ -51,7 +52,7 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
      style={({pressed})=>[s.option,selected?.itemId===item.itemId&&s.chosen,pressed&&s.pressed]}>
      <ResourceArtwork itemId={item.itemId} size={31} framed={false}/>
      <View style={s.flex}><Text style={s.optionName} numberOfLines={1}>{item.name}</Text>
-      <Text style={s.muted}>{item.available} × {item.value} {ui('supply')}</Text></View>
+      <Text style={s.muted}>{item.available.toLocaleString(language)} × {item.value.toLocaleString(language)} {ui('supply')}</Text></View>
     </Pressable>)}
    </View>
    <View style={s.between}>
@@ -61,8 +62,8 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
      accessibilityLabel={ui('Donation quantity')}
      style={s.quantity} placeholderTextColor={C.muted}/>
    </View>
-   {selected&&goal?<Text style={s.muted}>{ui('{remaining} supply still needed · You own {owned} of this resource',{remaining:goalRemaining.toLocaleString(),owned:selected.available.toLocaleString()})}</Text>:null}
-   <GameButton title={valid?ui('Donate {value} supply',{value:units.toLocaleString()}):ui('Donate supplies')}
+   {selected&&goal?<Text style={s.muted}>{ui('{remaining} supply still needed · You own {owned} of this resource',{remaining:goalRemaining.toLocaleString(language),owned:selected.available.toLocaleString(language)})}</Text>:null}
+   <GameButton title={valid?ui('Donate {value} supply',{value:units.toLocaleString(language)}):ui('Donate supplies')}
     disabled={busy||!valid} loading={busy} onPress={()=>{if(valid&&selected)onDonate(selected.itemId,amount)}}/>
    {quantityProblem?<Text accessibilityRole="alert" style={[s.muted,{color:C.warning}]}>{quantityProblem}</Text>:null}
    <Text style={s.muted}>{ui('Each member can provide up to half of a supply goal. The server checks your remaining personal limit.')}</Text>

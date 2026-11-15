@@ -22,10 +22,10 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
  },[reduceMotion,pulse]);
  const currentStyle={transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[1,1.14]})}],opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.85,1]})};
  const steps=Array.from({length:path.totalDepth},(_,index)=>index);
- return <View style={s.container} accessibilityLabel={st("Route progress: room {current} of {total}",{current:Math.min(path.depth+1,path.totalDepth),total:path.totalDepth})}>
+ return <View style={s.container} accessibilityRole="progressbar" accessibilityValue={{min:0,max:path.totalDepth,now:Math.min(path.depth,path.totalDepth)}} accessibilityLabel={st("Route progress: room {current} of {total}",{current:Math.min(path.depth+1,path.totalDepth),total:path.totalDepth})}>
   <View style={s.header}>
    <Text style={s.label}>{st("ROUTE")}</Text>
-   <Text style={s.counter}>{Math.min(path.depth+1,path.totalDepth)} / {path.totalDepth}</Text>
+   <View style={s.headerRight}><Text style={s.bossLegend}>{st('FINAL BOSS')}</Text><Text style={s.counter}>{Math.min(path.depth+1,path.totalDepth)} / {path.totalDepth}</Text></View>
   </View>
   <View style={s.strip}>
    {steps.map(index=>{
@@ -47,7 +47,7 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
 
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
  container:{gap:6,paddingVertical:8,paddingHorizontal:coopSpacing.sm,borderWidth:1,borderColor:C.goldDim,borderRadius:12,backgroundColor:C.surface},
- header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},headerRight:{flexDirection:'row',alignItems:'center',gap:10},bossLegend:{fontSize:9,lineHeight:13,color:C.gold,fontWeight:'700',letterSpacing:.3},
  label:{...coopTypography.meta,color:C.textMuted,fontWeight:'800',letterSpacing:.8,fontSize:10},
  counter:{...coopTypography.meta,color:C.gold,fontWeight:'800'},
  strip:{flexDirection:'row',alignItems:'center',gap:0},

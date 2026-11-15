@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {accountText} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {NavigationLinework,navigationLinework} from '../components/NavigationLinework';
 import type {GameState} from '../core/types';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -38,7 +38,7 @@ const STATUS_OPTIONS:{id:CommunityRoadmapStatus;label:string}[]=[
 ];
 
 export function CommunityRoadmapScreen({language}:{language:Language}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),a=(source:string)=>accountText(language,source);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),a=(source:string)=>recentScreenText(language,source);
  const [selected,setSelected]=useState<CommunityRoadmapStatus>('considering');
  const [snapshot,setSnapshot]=useState<CommunityRoadmapSnapshot|null>(null);
  const [loading,setLoading]=useState(true);

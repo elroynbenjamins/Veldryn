@@ -1,4 +1,5 @@
 import {actionableClaimNotifications,badgeDisplay,buildNavigationBadges,buildQuickNavigationBadges,buildSubrouteBadges,destinationForNotification,mergeRouteBadges,type NavigationNotification} from '../src/core/navigation-notifications';
+import {claimableGuildProjectRewardIds} from '../src/core/guild-project-reward-attention';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal<T>(actual:T,expected:T,message:string){if(actual!==expected)throw new Error(`${message}: ${String(actual)} !== ${String(expected)}`)}
 
@@ -19,8 +20,9 @@ const notifications:NavigationNotification[]=[
 const primary=buildNavigationBadges(notifications);
 equal(primary.account.count,12,'Account count excludes legacy Event reward alerts and deduplicates keys');
 ok(primary.account.dot,'Count badges also mark the route as needing attention');
-equal(primary.skills.count,3,'Finished equipment craft count reaches Skills');
-ok(primary.skills.dot,'Finished equipment craft count marks Skills for attention');
+equal(primary.home.count,3,'Finished equipment craft count reaches Home');
+ok(primary.home.dot,'Finished equipment craft count marks Home for attention');
+equal(primary.skills.count,0,'Forge readiness no longer inflates Skills navigation');
 ok(primary.world.dot,'Dot-only notifications reach World');
 equal(primary.world.count,0,'Dot-only notifications do not increment counts');
 const sub=buildSubrouteBadges(notifications);
@@ -29,7 +31,7 @@ equal(sub['social.chat'].count,5,'Guild/Party chat unread count');
 equal(mergeRouteBadges(sub,['social.guild.invites','social.guild.applications']).count,4,'Related subroutes merge');
 ok(!sub['events.rewards'],'Event rewards never create a navigation subroute badge');
 equal(destinationForNotification('companion_attention').subroute,'companions','Companion attention routes to the Companion hub');
-equal(destinationForNotification('equipment_craft_ready').subroute,'skills.smithing.forge','Finished equipment routes to the Smithing forge');
+equal(destinationForNotification('equipment_craft_ready').subroute,'home.forge','Finished equipment directs the player to the Home Forge shortcut');
 ok(sub['companions'].dot,'Companion subroute receives one consolidated dot');
 ok(sub['account.new-unlocks'].dot,'Profile customization attention routes to the consolidated Account new-unlocks inbox as a dot');
 const rewardAlert:NavigationNotification={key:'party-contract-claims',kind:'party_contract_reward_ready',count:2,unread:true};
@@ -39,13 +41,35 @@ equal(buildNavigationBadges(withPartyRewards).account.count,14,'Claim-ready Part
 equal(buildQuickNavigationBadges(withPartyRewards)['Party']?.count,8,'Ready Party rewards add to Party shortcut alongside invites and unread chat');
 equal(buildSubrouteBadges(withPartyRewards)['social.party.contracts']?.count,2,'Party Contracts subroute shows exact ready reward count');
 equal(buildQuickNavigationBadges([...notifications,{...rewardAlert,unread:false}])['Party']?.count,6,'Claim badges clear as soon as authoritative rewards are claimed');
+const guildProjectAlert:NavigationNotification={key:'guild-project-claims',kind:'guild_project_reward_ready',count:2,unread:true};
+equal(destinationForNotification('guild_project_reward_ready').subroute,'social.guild.projects','Guild rewards point directly to the Projects claim board');
+equal(buildNavigationBadges([...notifications,guildProjectAlert]).account.count,14,'Claim-ready Guild rewards increment Account notification count');
+equal(buildQuickNavigationBadges([...notifications,guildProjectAlert])['Guild']?.count,6,'Guild shortcut includes project reward claims');
+equal(buildSubrouteBadges([...notifications,guildProjectAlert])['social.guild.projects']?.count,2,'Projects claim board receives claimable count');
+equal(buildNavigationBadges([...notifications,{...guildProjectAlert,unread:false}]).account.count,12,'Claimed project reward badge clears');
+
+const nowMs=Date.parse('2026-11-15T12:00:00Z');
+const ready={id:'ready',launchWeekly:true,status:'completed' as const,completionRewardClaimed:false,
+ personalPoints:300,personalRewardThreshold:250,endsAt:'2026-11-10T12:00:00Z'};
+equal(claimableGuildProjectRewardIds([ready],nowMs).length,1,'Eligible completed weekly Guild Project alerts');
+equal(claimableGuildProjectRewardIds([{...ready,completionRewardClaimed:true}],nowMs).length,0,'Already-claimed Guild Project clears');
+equal(claimableGuildProjectRewardIds([{...ready,personalPoints:100}],nowMs).length,0,'Unqualified members do not see claims');
+equal(claimableGuildProjectRewardIds([{...ready,status:'active'}],nowMs).length,0,'Unfinished Guild Projects do not alert');
+equal(claimableGuildProjectRewardIds([{...ready,launchWeekly:false}],nowMs).length,0,'Only eligible weekly completion rewards notify');
+equal(claimableGuildProjectRewardIds([{...ready,endsAt:'2026-11-08T12:00:00Z'}],nowMs).length,0,'Expired project claims never linger');
+equal(claimableGuildProjectRewardIds([{...ready,endsAt:'invalid'}],nowMs).length,0,'Invalid claim windows do not alert');
+equal(claimableGuildProjectRewardIds([ready,ready],nowMs).length,1,'Duplicate rows never double-count rewards');
 const quick=buildQuickNavigationBadges(notifications);
 ok(quick['Quests']?.dot,'Weekly Contract Board attention should route to Quests in quick navigation');
 ok(!quick['Events'],'Legacy Event rewards do not create top-bar shortcut attention');
 ok(!primary.account.display?.includes('16'),'Event reward counts cannot inflate the primary Account badge');
 equal(quick['Guild']?.count,4,'Guild invite and application attention should merge on the Guild shortcut');
 equal(quick['Friends']?.count,2,'Friend requests should route directly to Friends in quick navigation');
-equal(quick['Skills']?.count,3,'Finished Forge jobs should route directly to Skills in quick navigation');
+equal(quick['Home']?.count,3,'Finished Forge jobs should alert Home in quick navigation');
+ok(!quick['Skills']?.dot,'Finished Forge jobs should not alert the Skills shortcut');
+equal(buildSubrouteBadges(notifications)['home.forge']?.count,3,'Home Forge shortcut receives the claimable count');
+equal(buildNavigationBadges([...notifications,{key:'forge-1',kind:'equipment_craft_ready',count:3,unread:true}]).home.count,3,'Forge readiness is not double counted');
+equal(buildNavigationBadges(notifications.map(row=>row.kind==='equipment_craft_ready'?{...row,unread:false}:row)).home.count,0,'Home Forge badge clears after all jobs are claimed');
 ok(quick['Companions']?.dot,'Companion attention should route directly to Companions in quick navigation');
 equal(badgeDisplay(100),'99+','Large counts are capped for display');
 const claimable=actionableClaimNotifications({storyRewards:3,overflowStacks:1});

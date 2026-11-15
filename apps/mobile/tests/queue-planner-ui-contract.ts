@@ -3,7 +3,7 @@ const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:boolean,message:string){if(!value)throw new Error(message);}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 const skills=read('src/screens/SkillsScreen.tsx');
-const hubReturn=skills.split('\n').find(line=>line.includes('if(!initialSkill)return'))??'';
+const hubReturn=skills.split('\n').find(line=>line.includes("return <SkillHub"))??'';
 ok(hubReturn.includes('<SkillHub')&&hubReturn.includes('onCommand={onCommand}'),'Queue planning commands belong to the scrolling Skills hub');
 ok(skills.split('<ActivityQueuePlanner').length===2&&!skills.includes('<ActionQueuePanel'),'Individual skill screens must not contain queue controls');
 const focusPosition=skills.indexOf('{focus?<Pressable'),queuePosition=skills.indexOf('<ActivityQueuePlanner'),combatPosition=skills.indexOf('{section(gt("COMBAT SKILLS")');

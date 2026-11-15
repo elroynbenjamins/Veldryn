@@ -44,7 +44,7 @@ assert.equal(gameplayTranslate('ru','BOSS HEALING POTIONS'),'ЛЕЧЕБНЫЕ З
 assert.equal(gameplayTranslate('tr','Select for bosses'),'Bosslar için seç');
 assert.equal(gameplayTranslate('ru','No healing potions carried. Brew them in Alchemy or withdraw from Bank.'),'При себе нет лечебных зелий. Создайте их в Алхимии или возьмите из банка.');
 assert.equal(gameplayTranslate('tr','Health is full'),'Can dolu');
-assert.equal(gameplayTranslate('ru','No recipes ready. Show locked to see requirements.'),'No recipes ready. Show locked to see requirements.');
+assert.equal(gameplayTranslate('ru','No recipes ready. Show locked to see requirements.'),'Нет доступных рецептов. Покажите закрытые, чтобы узнать требования.','Reviewed Russian recipe guidance must replace the obsolete English fallback');
 
 const {itemDetailRows,itemDetailText,itemDetailContent}=load(path.join(root,'src/i18n/item-details.ts'));
 const {craftingDetailRows,craftingDetailText,craftingDetailContent}=load(path.join(root,'src/i18n/crafting-details.ts'));
@@ -87,7 +87,7 @@ for(const language of languages){
   const result=gameplayTranslate(language,'{name}, {kind}, level {level}',params);
   assert.ok(result.includes(params.name));assert.ok(result.includes(params.kind));assert.ok(result.includes('42'));
   assert.equal(localizeGameplay(language,'My loadout {name}'),'My loadout {name}');
-  assert.equal(localizeGameplay(language,'Marksmanship'),'Marksmanship');
+  assert.equal(localizeGameplay(language,'Marksmanship'),language==='de'?'Schießkunst':'Marksmanship');
   const blocked=localizeGameplay(language,'Requires mining level 42 in Asterfall.');
   assert.ok(blocked.includes('42'));assert.ok(blocked.includes('Asterfall'));
   assert.ok(!blocked.includes('{level}'));

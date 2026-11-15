@@ -8,12 +8,15 @@ import {GuildCrest} from './SocialIdentity';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {useSocialText} from '../i18n/social';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {guildIdentityText} from '../i18n/guild-identity-de';
 import {CardBackground} from './CardBackground';
 import {guildBackgroundSources} from '../theme/card-background-assets';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 
 /** Compact, real guild identity card. Never invents player counts, activity or officers. */
 export function GuildMemberIdentity({onRoster,onManage}:{onRoster?:()=>void;onManage?:()=>void}={}){
+ const language=useGameLanguage(),de=(value:string)=>guildIdentityText(language,value);
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [guild,setGuild]=useState<OnlineGuild|null>(null);
  const [role,setRole]=useState<'leader'|'officer'|'member'|null>(null);
@@ -34,7 +37,7 @@ export function GuildMemberIdentity({onRoster,onManage}:{onRoster?:()=>void;onMa
   })();
   return()=>{active=false};
  },[retry]);
- if(!guild)return <Panel><View style={s.loading}><View style={s.flex}><Text style={s.kicker}>YOUR GUILD</Text><Text style={s.title}>{failure?'Guild details unavailable':'Loading your Guild…'}</Text></View>{!failure?<ActivityIndicator color={C.accent}/>:null}</View>{failure?<GameButton compact tone="secondary" title="Retry Guild details" onPress={()=>{setFailure(false);setRetry(n=>n+1)}}/>:null}</Panel>;
+ if(!guild)return <Panel><View style={s.loading}><View style={s.flex}><Text style={s.kicker}>{de("YOUR GUILD")}</Text><Text style={s.title}>{failure?de('Guild details unavailable'):de('Loading your Guild…')}</Text></View>{!failure?<ActivityIndicator color={C.accent}/>:null}</View>{failure?<GameButton compact tone="secondary" title={de("Retry Guild details")} onPress={()=>{setFailure(false);setRetry(n=>n+1)}}/>:null}</Panel>;
  return <GuildMemberIdentityCard guild={guild} role={role} members={members} onRoster={onRoster} onManage={onManage}/>;
 }
 

@@ -7,11 +7,11 @@ import {profileText,profileSourceText} from '../i18n/profile';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {GameButton} from '../components/GameButton';
-import type {UnlockInboxEntry} from '../core/unlock-inbox';
+import {unlockInboxDisplayName,type UnlockInboxEntry} from '../core/unlock-inbox';
 import {unlockInboxArtwork} from '../theme/unlock-inbox-art';
 
 const icons={title:'character',background:'world',border:'account',profile_icon:'character',pet:'companions',emote:'chat',guild_cosmetic:'guild'} as const;
-const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',profile_icon:'PROFILE ICON',pet:'COSMETIC PET',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
+const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',profile_icon:'PROFILE ICON',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
 export function NewUnlocksScreen({language,entries,onCustomize}:{language:Language;entries:readonly UnlockInboxEntry[];onBack:()=>void;onCustomize:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAll,setShowAll]=useState(false),[filter,setFilter]=useState<'all'|'title'|'pet'|'other'>('all'),[expanded,setExpanded]=useState<string|null>(null);
@@ -34,8 +34,8 @@ export function NewUnlocksScreen({language,entries,onCustomize}:{language:Langua
      <Text style={s.section}>{t('Recently unlocked')} · {filtered.length}</Text>
      <View style={s.list}>{shown.map(row=>{const art=unlockInboxArtwork(row);return <Pressable key={row.key} accessibilityRole="button" accessibilityState={{expanded:expanded===row.key}} onPress={()=>setExpanded(current=>current===row.key?null:row.key)} style={({pressed})=>[s.entry,pressed&&s.pressed]}>
        <View style={s.mark}>{art?<Image accessible={false} source={art} fadeDuration={0} resizeMode={row.kind==='background'?'cover':'contain'} style={[s.art,row.kind==='background'&&s.backgroundArt]}/>:<UiIcon name={icons[row.kind]} size={27}/>}</View>
-       <View style={s.flex}><Text style={s.kind}>{row.kind==='pet'||row.kind==='emote'||row.kind==='guild_cosmetic'?t(labels[row.kind]):profileText(language,labels[row.kind])}</Text>
-         <Text style={s.name} numberOfLines={expanded===row.key?undefined:2}>{row.name}</Text>
+       <View style={s.flex}>{row.kind!=='pet'?<Text style={s.kind}>{row.kind==='emote'||row.kind==='guild_cosmetic'?t(labels[row.kind]):profileText(language,labels[row.kind])}</Text>:null}
+         <Text style={s.name} numberOfLines={expanded===row.key?undefined:2}>{unlockInboxDisplayName(row)}</Text>
          {row.detail&&expanded===row.key?<Text style={s.detail}>{profileSourceText(language,row.detail)}</Text>:null}
        </View><View style={s.end}><Text style={s.date}>{new Date(row.unlockedAtMs).toLocaleDateString(language)}</Text><Text style={s.chevron}>{expanded===row.key?'⌃':'⌄'}</Text></View>
      </Pressable>})}</View>

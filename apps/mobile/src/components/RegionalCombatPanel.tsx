@@ -11,16 +11,16 @@ import {regionalCombatAvailabilityV1,regionalGemIntelV1,SUNSCAR_REGIONAL_ENCOUNT
 import {itemDef} from '../content/items';
 import {displayStat} from '../core/stat-display';
 
-function cueText(cue:RegionalCombatResultV1['result']['replayCues'][number]){
- const seconds=(cue.atMs/1000).toFixed(1)+'s',ability=cue.abilityName?' · '+cue.abilityName:'';
- if(cue.type==='phase')return seconds+' · Boss phase'+ability;
- if(cue.type==='cast')return seconds+' · Cast'+ability;
- if(cue.type==='interrupt')return seconds+' · Interrupt'+ability;
- if(cue.type==='down')return seconds+' · '+(cue.targetName??'Combatant')+' down';
- if(cue.type==='victory'||cue.type==='wipe'||cue.type==='timeout')return seconds+' · '+cue.type.toUpperCase();
- if(cue.type==='damage')return seconds+' · '+(cue.actorName??'Attack')+ability+' · '+displayStat(cue.amount??0).toLocaleString()+(cue.critical?' CRIT':'');
- if(cue.type==='heal')return seconds+' · '+(cue.actorName??'Heal')+ability+' · +'+displayStat(cue.amount??0).toLocaleString();
- return seconds+' · '+(cue.actorName??'Shield')+ability+' · '+displayStat(cue.amount??0).toLocaleString();
+function cueText(cue:RegionalCombatResultV1['result']['replayCues'][number],text:(source:string)=>string){
+ const seconds=(cue.atMs/1000).toFixed(1)+'s',ability=cue.abilityName?' · '+text(cue.abilityName):'';
+ if(cue.type==='phase')return seconds+' · '+text('Boss phase')+ability;
+ if(cue.type==='cast')return seconds+' · '+text('Cast')+ability;
+ if(cue.type==='interrupt')return seconds+' · '+text('Interrupt')+ability;
+ if(cue.type==='down')return seconds+' · '+(cue.targetName??text('Combatant'))+' '+text('down');
+ if(cue.type==='victory'||cue.type==='wipe'||cue.type==='timeout')return seconds+' · '+text(cue.type.toUpperCase());
+ if(cue.type==='damage')return seconds+' · '+(cue.actorName??text('Attack'))+ability+' · '+displayStat(cue.amount??0).toLocaleString()+(cue.critical?' '+text('CRIT'):'');
+ if(cue.type==='heal')return seconds+' · '+(cue.actorName??text('Heal'))+ability+' · +'+displayStat(cue.amount??0).toLocaleString();
+ return seconds+' · '+(cue.actorName??text('Shield'))+ability+' · '+displayStat(cue.amount??0).toLocaleString();
 }
 function compactDuration(ms:number){
  const seconds=Math.max(0,Math.ceil(ms/1000));
@@ -29,15 +29,15 @@ function compactDuration(ms:number){
  if(minutes<60)return minutes+'m';
  const hours=Math.floor(minutes/60),rest=minutes%60;return hours+'h'+(rest?(' '+rest+'m'):'');
 }
-function rewardText(result:RegionalCombatResultV1){
- const reward=result.reward;if(!result.result.victory)return result.result.reason==='timeout'?'The encounter timed out. Improve your loadout and try again.':'Your character was defeated. Improve gear, Gems or class progression and retry.';
- if(!reward?.eligible)return 'Victory recorded. No Gem reward was rolled on this clear.';
+function rewardText(result:RegionalCombatResultV1,text:(source:string)=>string){
+ const reward=result.reward;if(!result.result.victory)return result.result.reason==='timeout'?text('The encounter timed out. Improve your loadout and try again.'):text('Your character was defeated. Improve gear, Gems or class progression and retry.');
+ if(!reward?.eligible)return text('Victory recorded. No Gem reward was rolled on this clear.');
  const parts:string[]=[];
- if(reward.gemItemId){let name=reward.gemItemId;try{name=itemDef(reward.gemItemId).name}catch{}parts.push((reward.pityTriggered?'Pity guaranteed · ':'')+name);}
- if(reward.recipeUnlockedId)parts.push('New Effect Gem recipe discovered');
- if(reward.duplicateRecipeDust)parts.push('Duplicate recipe · +'+reward.duplicateRecipeDust+' Gem Dust');
- if(reward.regionalCatalysts)parts.push('+'+reward.regionalCatalysts+' Regional Catalyst');
- return parts.length?parts.join(' · '):'Victory recorded. Gem pity progress updated.';
+ if(reward.gemItemId){let name=reward.gemItemId;try{name=itemDef(reward.gemItemId).name}catch{}parts.push((reward.pityTriggered?text('Pity guaranteed · '):'')+text(name));}
+ if(reward.recipeUnlockedId)parts.push(text('New Effect Gem recipe discovered'));
+ if(reward.duplicateRecipeDust)parts.push(text('Duplicate recipe · +')+reward.duplicateRecipeDust+' '+text('Gem Dust'));
+ if(reward.regionalCatalysts)parts.push('+'+reward.regionalCatalysts+' '+text('Regional Catalyst'));
+ return parts.length?parts.join(' · '):text('Victory recorded. Gem pity progress updated.');
 }
 
 export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;onRewardsChanged?:()=>Promise<void>|void}){
@@ -53,39 +53,39 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
  const run=async(encounterId:string)=>{
   if(!state.character||busy)return;setBusy(encounterId);setNotice('');
   try{
-   const result=await runRegionalCombatV1(state.character.id,encounterId);setLast({encounterId,result});setNotice(rewardText(result));
+   const result=await runRegionalCombatV1(state.character.id,encounterId);setLast({encounterId,result});setNotice(rewardText(result,gl));
    await onRewardsChanged?.();await refreshCadence();
   }catch(error){setNotice(error instanceof Error?error.message:gt("Regional encounter failed. Please retry."));await refreshCadence();}
   finally{setBusy('');}
  };
  return <Panel accentSurface={E.panel}>
   <Pressable accessibilityRole="button" accessibilityState={{expanded}} onPress={()=>setExpanded(value=>!value)} style={s.head}>
-    <View style={s.flex}><Text style={s.eyebrow}>SUNSCAR · OPTIONAL</Text><Text style={s.title}>Special encounters</Text></View>
-    <Text style={s.level}>{expanded?'HIDE':'SHOW'}</Text>
+    <View style={s.flex}><Text style={s.eyebrow}>{gl('SUNSCAR · OPTIONAL')}</Text><Text style={s.title}>{gl('Special encounters')}</Text></View>
+    <Text style={s.level}>{gl(expanded?'HIDE':'SHOW')}</Text>
   </Pressable>
-  {expanded&&<><Text style={s.copy}>Optional battles for rare gems and materials, separate from idle hunts.</Text>
+  {expanded&&<><Text style={s.copy}>{gl('Optional battles for rare gems and materials, separate from idle hunts.')}</Text>
   <View style={s.list}>{SUNSCAR_REGIONAL_ENCOUNTERS_V1.map(encounter=>{
    const locked=level<encounter.level,active=busy===encounter.id,recent=last?.encounterId===encounter.id,intel=regionalGemIntelV1(encounter,state.account.gemPityBySource);
    const projectedNow=cadence?cadence.projection.serverNow+(tick-cadence.receivedAtMs):tick,cadenceRow=cadence?.projection.encounters.find(row=>row.encounterId===encounter.id),availability=regionalCombatAvailabilityV1(encounter,cadenceRow,projectedNow),cadenceLocked=availability.coolingDown||availability.dailyCapped;
-   const statusText=locked?'LV '+encounter.level:availability.dailyCapped?gt("DAILY CAP"):availability.coolingDown?'READY IN '+compactDuration(availability.readyInMs):gt("Ready").toLocaleUpperCase(language);
+   const statusText=locked?gl('LV')+' '+encounter.level:availability.dailyCapped?gt("DAILY CAP"):availability.coolingDown?gl('READY IN')+' '+compactDuration(availability.readyInMs):gt("Ready").toLocaleUpperCase(language);
    const chance=(intel.chance*100).toFixed(intel.chance<.01?2:1)+'%';
    return <View key={encounter.id} style={[s.card,recent&&s.recent]}>
-    <View style={s.row}><View style={s.flex}><Text style={s.kind}>{encounter.kind==='regional_boss'?gt("REGIONAL BOSS"):encounter.kind.toUpperCase()} · ZONE {encounter.zoneId.slice(-3)}</Text><Text style={s.name}>{encounter.name}</Text></View><Text style={locked||cadenceLocked?s.locked:s.ready}>{statusText}</Text></View>
+    <View style={s.row}><View style={s.flex}><Text style={s.kind}>{encounter.kind==='regional_boss'?gt("REGIONAL BOSS"):gl(encounter.kind.charAt(0).toUpperCase()+encounter.kind.slice(1)).toLocaleUpperCase(language)} · {gl('ZONE')} {encounter.zoneId.slice(-3)}</Text><Text style={s.name}>{gl(encounter.name)}</Text></View><Text style={locked||cadenceLocked?s.locked:s.ready}>{statusText}</Text></View>
     <Text style={s.description}>{gl(encounter.summary)}</Text>
-    <View style={s.rewardIntel}><View style={s.row}><Text style={s.rewardLabel}>GEM · GRADE {gradeRoman[intel.grade]} · {chance}</Text>{intel.pityAt?<Text style={s.pityValue}>{gt("Pity").toLocaleUpperCase(language)} {intel.misses}/{intel.pityAt}</Text>:<Text style={s.pityValue}>Independent roll</Text>}</View>
-    {intel.pityAt?<><View accessibilityLabel={`Gem pity ${intel.misses} of ${intel.pityAt}; guaranteed within ${intel.remaining} eligible victories`} style={s.pityTrack}><View style={[s.pityFill,{width:(Math.max(3,intel.progress*100)+'%') as any}]}/></View><Text style={s.pityMeta}>Guaranteed in ≤{intel.remaining} eligible {intel.remaining===1?'victory':'victories'}{intel.recipeChance?' · Recipe '+Math.round(intel.recipeChance*100)+'%':''}{intel.catalystChance?' · Catalyst '+Math.round(intel.catalystChance*100)+'%':''}</Text></>:<Text style={s.pityMeta}>{gl("Each victory has its own drop chance.")}</Text>}<Text style={s.pityMeta}>Cadence · {encounter.cooldownSeconds>=60?Math.round(encounter.cooldownSeconds/60)+'m':encounter.cooldownSeconds+'s'} between starts{availability.dailyRemaining!==undefined?' · '+availability.dailyRemaining+'/'+(cadenceRow?.dailyCap??encounter.dailyVictoryCap)+' boss clears remaining':''}{availability.dailyCapped&&availability.resetInMs!==undefined?' · resets in '+compactDuration(availability.resetInMs):''}</Text></View>
+    <View style={s.rewardIntel}><View style={s.row}><Text style={s.rewardLabel}>{gl('GEM · GRADE')} {gradeRoman[intel.grade]} · {chance}</Text>{intel.pityAt?<Text style={s.pityValue}>{gt("Pity").toLocaleUpperCase(language)} {intel.misses}/{intel.pityAt}</Text>:<Text style={s.pityValue}>{gl('Independent roll')}</Text>}</View>
+    {intel.pityAt?<><View accessibilityLabel={`${gl('Gem pity')} ${intel.misses} ${gl('of')} ${intel.pityAt}; ${gl('guaranteed within')} ${intel.remaining} ${gl('eligible victories')}`} style={s.pityTrack}><View style={[s.pityFill,{width:(Math.max(3,intel.progress*100)+'%') as any}]}/></View><Text style={s.pityMeta}>{gl('Guaranteed in ≤')}{intel.remaining} {gl('eligible')} {gl(intel.remaining===1?'victory':'victories')}{intel.recipeChance?' · '+gl('Recipe')+' '+Math.round(intel.recipeChance*100)+'%':''}{intel.catalystChance?' · '+gl('Catalyst')+' '+Math.round(intel.catalystChance*100)+'%':''}</Text></>:<Text style={s.pityMeta}>{gl("Each victory has its own drop chance.")}</Text>}<Text style={s.pityMeta}>{gl('Cadence')} · {encounter.cooldownSeconds>=60?Math.round(encounter.cooldownSeconds/60)+'m':encounter.cooldownSeconds+'s'} {gl('between starts')}{availability.dailyRemaining!==undefined?' · '+availability.dailyRemaining+'/'+(cadenceRow?.dailyCap??encounter.dailyVictoryCap)+' '+gl('boss clears remaining'):''}{availability.dailyCapped&&availability.resetInMs!==undefined?' · '+gl('resets in')+' '+compactDuration(availability.resetInMs):''}</Text></View>
     {recent&&last?<View style={s.resultCard}>
-      <View style={s.row}><Text style={last.result.result.victory?s.victory:s.defeat}>{last.result.result.victory?gt("VICTORY"):gt("DEFEAT")} · {Math.max(1,Math.round(last.result.result.durationMs/1000))}s</Text><Text style={s.resultMetric}>{displayStat(last.result.result.damageDone).toLocaleString()} DMG</Text></View>
-      <View style={s.combatants}><View style={s.combatant}><Text style={s.combatantName}>{last.result.result.playerName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.playerHp/Math.max(1,last.result.result.playerMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{displayStat(last.result.result.playerHp).toLocaleString()} / {displayStat(last.result.result.playerMaxHp).toLocaleString()} HP</Text></View>
-      <View style={s.combatant}><Text style={s.combatantName}>{last.result.result.enemyName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.enemyHp/Math.max(1,last.result.result.enemyMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{displayStat(last.result.result.enemyHp).toLocaleString()} / {displayStat(last.result.result.enemyMaxHp).toLocaleString()} HP</Text></View></View>
-      {!!last.result.result.replayCues.length&&<View style={s.timeline}><Text style={s.timelineTitle}>{gt("KEY MOMENTS")}</Text>{last.result.result.replayCues.slice(-6).map((cue,index)=><Text key={cue.atMs+':'+cue.type+':'+index} style={s.timelineRow}>{cueText(cue)}</Text>)}</View>}
-      <View style={s.rewardReveal}><Text style={s.timelineTitle}>{gt("REWARD")}</Text><Text style={s.rewardResult}>{rewardText(last.result)}</Text></View>
+      <View style={s.row}><Text style={last.result.result.victory?s.victory:s.defeat}>{last.result.result.victory?gt("VICTORY"):gt("DEFEAT")} · {Math.max(1,Math.round(last.result.result.durationMs/1000))}s</Text><Text style={s.resultMetric}>{displayStat(last.result.result.damageDone).toLocaleString()} {gl('DMG')}</Text></View>
+      <View style={s.combatants}><View style={s.combatant}><Text style={s.combatantName}>{last.result.result.playerName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.playerHp/Math.max(1,last.result.result.playerMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{displayStat(last.result.result.playerHp).toLocaleString()} / {displayStat(last.result.result.playerMaxHp).toLocaleString()} {gl('HP')}</Text></View>
+      <View style={s.combatant}><Text style={s.combatantName}>{last.result.result.enemyName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.enemyHp/Math.max(1,last.result.result.enemyMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{displayStat(last.result.result.enemyHp).toLocaleString()} / {displayStat(last.result.result.enemyMaxHp).toLocaleString()} {gl('HP')}</Text></View></View>
+      {!!last.result.result.replayCues.length&&<View style={s.timeline}><Text style={s.timelineTitle}>{gt("KEY MOMENTS")}</Text>{last.result.result.replayCues.slice(-6).map((cue,index)=><Text key={cue.atMs+':'+cue.type+':'+index} style={s.timelineRow}>{cueText(cue,gl)}</Text>)}</View>}
+      <View style={s.rewardReveal}><Text style={s.timelineTitle}>{gt("REWARD")}</Text><Text style={s.rewardResult}>{rewardText(last.result,gl)}</Text></View>
     </View>:null}
-    <GameButton compact disabled={locked||cadenceLocked||Boolean(busy)} loading={active} title={active?gt("Resolving…"):availability.dailyCapped?gt("Daily cap reached"):availability.coolingDown?'Ready in '+compactDuration(availability.readyInMs):encounter.kind==='regional_boss'?gt("Challenge boss"):gt("Challenge")} tone={encounter.kind==='regional_boss'?'primary':'secondary'} onPress={()=>run(encounter.id)}/>
+    <GameButton compact disabled={locked||cadenceLocked||Boolean(busy)} loading={active} title={active?gt("Resolving…"):availability.dailyCapped?gt("Daily cap reached"):availability.coolingDown?gl('Ready in')+' '+compactDuration(availability.readyInMs):encounter.kind==='regional_boss'?gt("Challenge boss"):gt("Challenge")} tone={encounter.kind==='regional_boss'?'primary':'secondary'} onPress={()=>run(encounter.id)}/>
    </View>;
   })}</View>
   {!!notice&&<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{gl(notice)}</Text></View>}
-  <Text style={s.foot}>Rewards are granted automatically after a victory.</Text></>}
+  <Text style={s.foot}>{gl('Rewards are granted automatically after a victory.')}</Text></>}
  </Panel>;
 }
 function styles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({

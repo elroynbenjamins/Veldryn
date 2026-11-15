@@ -1,0 +1,35 @@
+name: Guild PvE V6 budget feasibility (test only)
+
+# No gameplay, Supabase, secrets, token minting or deployment steps.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/guild-pve-budget-v6.mjs'
+      - 'docs/roadmap/spreadsheets/guild-pve-v6-*.csv'
+      - '.github/workflows/guild-pve-v6-budget-test-only.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-deterministic-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify standalone model assertions
+        run: node tools/guild-pve-budget-v6.mjs --summary
+      - name: Compare generated CSV against versioned evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/guild-pve-budget-v6.mjs --effort > /tmp/guild-pve-v6-effort.csv
+          node tools/guild-pve-budget-v6.mjs --supply > /tmp/guild-pve-v6-supply.csv
+          node tools/guild-pve-budget-v6.mjs --allocation > /tmp/guild-pve-v6-allocation.csv
+          cmp /tmp/guild-pve-v6-effort.csv docs/roadmap/spreadsheets/guild-pve-v6-effort-sensitivity-test-only.csv
+          cmp /tmp/guild-pve-v6-supply.csv docs/roadmap/spreadsheets/guild-pve-v6-supply-reachability-test-only.csv
+          cmp /tmp/guild-pve-v6-allocation.csv docs/roadmap/spreadsheets/guild-pve-v6-mandatory-node-budget-test-only.csv

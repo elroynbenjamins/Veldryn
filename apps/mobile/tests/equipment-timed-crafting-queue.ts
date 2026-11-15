@@ -3,6 +3,10 @@ import {NOVICE_RECIPES} from '../src/content/novice-sets';
 import {itemDef} from '../src/content/items';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {createCharacter,newGame} from '../src/core/game';
+import {totalXpAtLevel} from '../src/core/progression';
+import {combatCompanionDef} from '../src/content/combat-companions';
+import {refreshCompanions} from '../src/core/companion-runtime';
+import {RECIPES} from '../src/content/skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftAvailability,equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -11,6 +15,8 @@ import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
+const forgeAutomatonRequirements=combatCompanionDef('UNIT_010')!.unlockRequirements;
+ok(forgeAutomatonRequirements.some(req=>req.target==='EQUIPMENT_CRAFTS'&&req.amount===500)&&forgeAutomatonRequirements.some(req=>req.type==='skill_level'&&req.target==='smithing'&&req.amount===30),'Forge Automaton must require 500 equipment claims and Smithing 30');
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
 for(const sample of [{tier:'T1',slot:'helmet',gold:368},{tier:'T1',slot:'weapon',gold:584},{tier:'T9',slot:'weapon',gold:243000}]){
@@ -101,17 +107,21 @@ const bulkClaim=executeGameCommand(baseActiveState,{type:'craft_claim_all'},done
 ok(bulkClaim.forgeResults?.length===3,'Claim All must return each of three finished equipment results');
 ok(equipmentCraftingQueue(bulkClaim.state).length===0,'Claim All must remove only claimed ready jobs');
 ok(bulkClaim.contributions.filter(row=>row.kind==='crafting').length===3,'Bulk claim must credit each verified craft');
+ok(bulkClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===3,'Claim All must count each completed equipment piece toward Forge Automaton');
 const bulkRepeat=executeGameCommand(bulkClaim.state,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
 ok(bulkRepeat.forgeResults?.length===0&&bulkRepeat.message==='No finished forge jobs','Repeating Claim All must not duplicate rewards');
+ok(bulkRepeat.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===3,'Repeated Claim All must not duplicate companion crafting progress');
 
 // A full bank must not cause an entire batch to fail and roll back earlier rewards.
 const constrained:GameState={...baseActiveState,inventory:{...baseActiveState.inventory,capacity:0},bank:{...baseActiveState.bank,capacity:1}};
 const partial=executeGameCommand(constrained,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
 ok(partial.forgeResults?.length===1,'Bulk claim should keep the first storable equipment result');
+ok(partial.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===1,'Blocked forge jobs must not count toward companion recruitment');
 ok(equipmentCraftingQueue(partial.state).length===2,'Blocked jobs must remain in the queue');
 ok(partial.message?.includes('2 still waiting')===true,'Partial claims must explain how many jobs were blocked');
 const recovered=executeGameCommand({...partial.state,bank:{...partial.state.bank,capacity:8}},{type:'craft_claim_all'},doneAt+1,{randomRoll:.5});
 ok(recovered.forgeResults?.length===2&&equipmentCraftingQueue(recovered.state).length===0,'Blocked jobs must be claimable after storage is freed');
+ok(recovered.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===3,'Recovering blocked forge jobs counts the remaining two equipment pieces once');
 
 ok(validateGameCommand({type:'craft_claim',args:{id:'job'}}).type==='craft_claim','Online command validator must accept equipment craft claims');
 ok(validateGameCommand({type:'craft_claim_all'}).type==='craft_claim_all','Online command validator must accept claim-all');
@@ -124,6 +134,26 @@ const commandJob=equipmentCraftingQueue(online)[0];
 const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(commandClaim.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative claim command must grant finished equipment');
 ok(commandClaim.contributions.some(row=>row.kind==='crafting'&&row.contentId===recipe.id),'Verified crafting contribution must occur on completion');
+ok(commandClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===1,'Claiming one completed equipment craft must advance Forge Automaton recruitment');
+const nearAutomaton={...online,skills:online.skills.map(row=>row.skillId==='smithing'?{...row,level:30,xp:totalXpAtLevel(30)}:row),account:{...online.account,companionUnlockProgress:{...online.account.companionUnlockProgress,EQUIPMENT_CRAFTS:499}}};
+ok(!nearAutomaton.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton remains locked before the final equipment craft');
+const automatonClaim=executeGameCommand(nearAutomaton,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
+ok(automatonClaim.state.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'The 500th equipment claim reaches the exact recruitment threshold');
+ok(automatonClaim.state.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Forge Automaton unlocks automatically after 500 equipment claims and Smithing 30');
+
+// Existing players earned per-recipe profession mastery on their completed Forge
+// claims, even when the old companion counter was not updated.
+const oldHistory=prepared();
+const withOldHistory={...oldHistory,skills:oldHistory.skills.map(row=>row.skillId==='smithing'?{...row,level:30,xp:totalXpAtLevel(30)}:row),account:{...oldHistory.account,professionMasteryByAction:{[recipe.id]:{actionId:recipe.id,points:500,updatedAtMs:1000}}}};
+const recoveredHistory=refreshCompanions(withOldHistory,1001);
+ok(recoveredHistory.account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'Existing verified forge history must restore missed recruitment progress');
+ok(recoveredHistory.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Verified historical forge crafts should unlock Forge Automaton automatically');
+ok(refreshCompanions(recoveredHistory,1002).account.companionUnlockProgress?.EQUIPMENT_CRAFTS===500,'Historical recovery must be idempotent');
+const nonGearRecipe=RECIPES.find(row=>itemDef(row.output.itemId).type!=='gear')!;
+const withOtherHistory={...withOldHistory,account:{...withOldHistory.account,professionMasteryByAction:{[nonGearRecipe.id]:{actionId:nonGearRecipe.id,points:600,updatedAtMs:1000}}}};
+const otherRecovered=refreshCompanions(withOtherHistory,1001);
+ok((otherRecovered.account.companionUnlockProgress?.EQUIPMENT_CRAFTS??0)===0,'Non-equipment crafting must never count toward Forge Automaton');
+ok(!otherRecovered.account.unlockedCombatCompanionIds?.includes('UNIT_010'),'Non-equipment crafting alone must not recruit Forge Automaton');
 
 let tailor=createCharacter(newGame(0),tailoringRecipe.classId,'Tailor Queue','male');
 tailor={...tailor,character:{...tailor.character!,level:tailoringRecipe.characterLevel,gold:500000},skills:tailor.skills.map(row=>row.skillId==='tailoring'?{...row,level:tailoringRecipe.level,xp:0}:row),inventory:{...tailor.inventory,capacity:60,stacks:tailoringRecipe.inputs.map(input=>({...input,quantity:input.quantity*2}))},bank:{...tailor.bank,capacity:200,stacks:[]}};

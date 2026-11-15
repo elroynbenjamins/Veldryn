@@ -1,7 +1,10 @@
 import type {GameState,CharacterState,SkillState} from './types';
 import {classSkillsFor} from '../content/class-skills';
 import {levelFromXp} from './progression';
-export const CHARACTER_SLOT_THRESHOLDS=[0,250,500,950,1600] as const;
+import {snapshotCharacterWorldProgress,restoreCharacterWorldProgress} from './character-world-progress';
+import {restoreCumulativeMonsterUnlocks} from './world-navigation';
+import {ensurePersonalSeasonalState,personalSeasonalAccountView} from './personal-seasonal-state';
+export const CHARACTER_SLOT_THRESHOLDS=[0,250,550,1050,1750] as const;
 const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith']);
 const safeLevel=(row:any)=>Number.isFinite(row?.xp)&&row.xp>=0?levelFromXp(row.xp):1;
 export function characterSkillTotal(skills:SkillState[],character?:CharacterState|null){
@@ -11,14 +14,17 @@ export function characterSkillTotal(skills:SkillState[],character?:CharacterStat
  return total;
 }
 export function accountSkillLevel(state:GameState){if(!state.character)return 0;let total=characterSkillTotal(state.skills,state.character);for(const entry of state.otherCharacters??[])total+=characterSkillTotal(entry.skills,entry.character);return total;}
-export function unlockedCharacterSlots(state:GameState){const earned=Number((state.account as {unlockedCharacterSlots?:number}).unlockedCharacterSlots??0);const threshold=CHARACTER_SLOT_THRESHOLDS.filter(n=>n<=accountSkillLevel(state)).length;return Math.min(5,Math.max(1,earned,threshold));}
+export function unlockedCharacterSlots(state:GameState){const earned=Number((state.account as {unlockedCharacterSlots?:number}).unlockedCharacterSlots??0);const threshold=CHARACTER_SLOT_THRESHOLDS.filter(n=>n<=accountSkillLevel(state)).length;
+ // Previously earned slots and slots occupied by existing characters must never be revoked.
+ return Math.min(5,Math.max(1,earned,threshold,accountCharacters(state).length));}
 export function recordAccountProgress(state:GameState){const slots=unlockedCharacterSlots(state);return {...state,account:{...state.account,unlockedCharacterSlots:slots}};}
 export function accountCharacters(state:GameState){return [{character:state.character!},...(state.otherCharacters??[])].filter(entry=>entry.character);}
 export function characterCreationError(state:GameState){if(!state.character)return undefined;if(accountCharacters(state).length>=unlockedCharacterSlots(state))return `Requires ${CHARACTER_SLOT_THRESHOLDS[accountCharacters(state).length]??'another'} account skill levels to unlock a character slot.`;return undefined;}
 export function projectCharacter(state:GameState,id:string){
+ state=restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(state));
  if(state.character?.id===id)return state;
  const index=(state.otherCharacters??[]).findIndex(x=>x.character.id===id);if(index<0)throw new Error('Character is not owned.');
- const active={character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId};
+ const active={character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId,...snapshotCharacterWorldProgress(state)};
  const target=state.otherCharacters![index];const rest=state.otherCharacters!.slice();rest[index]=active;
- return {...state,character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:rest};
+ return restoreCumulativeMonsterUnlocks({...state,...restoreCharacterWorldProgress(target),character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:rest,account:personalSeasonalAccountView(state.account,target.character)});
 }

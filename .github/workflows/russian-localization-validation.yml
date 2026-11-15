@@ -1,0 +1,44 @@
+name: Russian localization validation
+
+# Avoid stacking outdated localization runs while authors continue updating one PR.
+concurrency:
+  group: russian-localization-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/i18n/**'
+      - 'apps/mobile/tests/russian-focus-localization.cjs'
+      - 'tools/run-mobile-localization-tests.mjs'
+      - '.github/workflows/russian-localization-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/src/i18n/**'
+      - 'apps/mobile/tests/russian-focus-localization.cjs'
+      - 'tools/run-mobile-localization-tests.mjs'
+      - '.github/workflows/russian-localization-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  localization:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies needed by mobile typecheck
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Run complete mobile localization suite including focused Russian coverage
+        run: pnpm test:localization

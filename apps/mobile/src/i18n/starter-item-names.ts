@@ -1,5 +1,6 @@
 import type {Language} from './languages';
 import {itemDef} from '../content/items';
+import {germanCoverageText} from './german-coverage';
 import {expandedItemNamesA} from './expanded-item-names-a';
 import {expandedItemNamesB} from './expanded-item-names-b';
 import {alchemyItemNames} from './alchemy-item-names';
@@ -428,5 +429,5 @@ export function localizedItemName(language:Language,itemId:string):string{
  let item:ReturnType<typeof itemDef>;
  try{item=itemDef(itemId)}catch{return itemId.replace(/_/g,' ');}
  const row=Object.prototype.hasOwnProperty.call(allItemNames,itemId)?allItemNames[itemId as keyof typeof allItemNames]:undefined;
- return row&&row.en===item.name?row[language]??item.name:item.name;
+ return row&&row.en===item.name?row[language]??item.name:language==='de'?(germanCoverageText(item.name)??item.name):item.name;
 }

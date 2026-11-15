@@ -18,6 +18,10 @@ const STAT_KEY_BY_LABEL:Record<string,EquipmentSetStatKey>={
 };
 const STATIC_BONUS_RE=/\+(\d+(?:\.\d+)?)%\s+(Max HP|Armor|Ward|Tenacity|Haste|Power|Accuracy|Penetration|Potency|Crit Rate|Crit Damage|Evasion)/gi;
 
+/** T1–T4 have always-on 6pc bonuses; T5+ retain conditional hooks. */
+export function isLiveSixPieceBonus(set:Pick<EquipmentSetDef,'tier'|'sixPiece'>):boolean{
+  return /^T[1-4]$/.test(set.tier)&&/^\+\d+(?:\.\d+)?% (Max HP|Armor|Ward|Tenacity|Haste|Power|Accuracy|Penetration|Potency|Crit Rate|Crit Damage|Evasion)$/.test(set.sixPiece);
+}
 export function emptyEquipmentSetStats():EquipmentSetStats{return {...EMPTY_STATS};}
 
 export function parseEquipmentSetStaticBonus(text:string):Partial<EquipmentSetStats>{
@@ -41,7 +45,7 @@ export interface ActiveEquipmentSetRuntime{
   activeThresholds:number[];
   staticStats:EquipmentSetStats;
   sixPieceText?:string;
-  sixPieceStatus:'locked'|'trigger-hook-pending';
+  sixPieceStatus:'locked'|'active'|'trigger-hook-pending';
 }
 
 export interface EquipmentSetRuntimeSummary{
@@ -53,6 +57,7 @@ export function equipmentSetStaticStatsForCount(set:EquipmentSetDef,pieces:numbe
   const stats=emptyEquipmentSetStats();
   if(pieces>=2)addStats(stats,parseEquipmentSetStaticBonus(set.twoPiece));
   if(pieces>=4)addStats(stats,parseEquipmentSetStaticBonus(set.fourPiece));
+  if(pieces>=6&&isLiveSixPieceBonus(set))addStats(stats,parseEquipmentSetStaticBonus(set.sixPiece));
   if(pieces>=8)addStats(stats,parseEquipmentSetStaticBonus(set.eightPiece));
   if(pieces>=10)addStats(stats,parseEquipmentSetStaticBonus(set.tenPiece));
   return stats;
@@ -77,7 +82,7 @@ export function activeEquipmentSetRuntime(state:GameState):EquipmentSetRuntimeSu
       activeThresholds:[2,4,6,8,10].filter(value=>pieces>=value),
       staticStats,
       sixPieceText:pieces>=6?set.sixPiece:undefined,
-      sixPieceStatus:pieces>=6?'trigger-hook-pending':'locked',
+      sixPieceStatus:pieces>=6?(isLiveSixPieceBonus(set)?'active':'trigger-hook-pending'):'locked',
     });
   }
   return {stats:total,activeSets:activeSets.sort((a,b)=>b.pieces-a.pieces||a.setId.localeCompare(b.setId))};
@@ -90,6 +95,7 @@ export function equipmentSetBonusCoverage(){
       const matches=[...String(text).matchAll(STATIC_BONUS_RE)];
       if(!matches.length)unsupportedStatic.push(`${set.id} ${threshold}pc: ${text}`);
     }
+    if(/^T[1-4]$/.test(set.tier)&&!isLiveSixPieceBonus(set))unsupportedStatic.push(`${set.id} 6pc: ${set.sixPiece}`);
   }
   return {setCount:EQUIPMENT_SETS.length,unsupportedStatic};
 }
@@ -129,8 +135,8 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
 
 /**
  * Maps authored always-on V33 stats into the current idle combat simulator.
- * This does not invent 6pc trigger behavior: those remain explicit trigger hooks
- * until the active-skill/ally/barrier event model can fire them faithfully.
+ * T1–T4 six-piece bonuses are always-on stats. T5+ conditional mechanics
+ * remain event hooks until their actual skill/ally/barrier triggers exist.
  */
 export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,baseAccuracy=.84){
   const stats=activeEquipmentBuildStats(state);

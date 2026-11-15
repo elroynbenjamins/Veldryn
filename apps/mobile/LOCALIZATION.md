@@ -1,8 +1,163 @@
 # Localization status
 
+## November 14, 2026: Russian authored Companion combat skills and Trial names
+
+- Localized **38 Combat Companion active ability names, 38 Bond traits, 58 authored technique names, 22 Trial attack/phase names, and 16 authored combat descriptions** that previously used English in Russian display paths.
+- Retained the original companion's proper name and translated only the generic `Signature` label for 12 legacy companion battle-replay abilities.
+- All active/Bond names require immutable companion ID and exact original source text; custom techniques are restricted to known companion-technique IDs. Unknown/player/server-renamed copy stays unchanged. German and other languages are unaffected.
+- Added regression coverage for source parity, other-locale isolation, Trial UI wiring and source-drift fallbacks; this is a dynamic-content extension beyond the source-catalog coverage percentage.
+
+## November 14, 2026: Russian localization release validation and dynamic Sanctuary names
+
+- Fixed a stale Turkish regression expectation for `Secured`: Russian now correctly translates it to `Защищено`, and Turkish/German locale separation remains unchanged.
+- Translated two new Forge labels, `Keep best {count}` and `Per equipment type`, found in the expanded authored gameplay catalog. The authored Russian source inventory now covers all nontechnical player-facing source keys on this branch; the existing server identifiers and canonical names remain unchanged.
+- Added source-guarded Russian display names for **all 17 Sanctuary Expedition missions**, plus the two expedition-only material labels (`SUPPLIES` and `TRIAL_SANCTUARY_MATERIAL`). Unknown or renamed mission text remains verbatim.
+- Kept the live Sanctuary UI's existing shared name/material helper; German outputs and all other locales remain isolated. Added the focused Russian mission regression to the complete localization CI suite.
+- This documents source coverage and static wiring only. Native-speaker proofreading and Android small-screen verification remain necessary before claiming all Russian copy is polished.
+
+## November 14, 2026: German Guild Skills and upgrade guidance
+
+- Localized all **three Guild Skill branches** and **nine authored Guild Skill nodes** (names, scopes, descriptions and effect labels). Node IDs and all server-owned values remain canonical.
+- Localized Guild Skill overview, active effects, rank comparison, bank costs, warning copy, unreleased-state guidance and the **second-step upgrade confirmation modal**, including accessibility labels.
+- Localized the live Guild Skills panel's loading/update prompts, guild permissions, upgrade errors and success messages; the result notice color now depends on explicit success state rather than English substrings.
+- Kept English and other non-German locales unchanged by applying exact-source translations only when the active language is German. Server-verified rank values, Guild Bank material counts, permissions, idempotency keys and upgrade requests are unmodified.
+- Registered a focused regression check for the 9-node skill catalog, authored UI messages, localization wiring and the upgrade safety boundaries. CI and handset layout checks remain necessary.
+
+## November 14, 2026: German Sunscar special encounters
+
+- Localized **five** authored optional Sunscar encounters (name and gameplay summary), and added German-only labels for gem grade, pity guarantee, cooldown/daily limits, combat and replay cues, reward outcomes and accessibility hints.
+- Connected the source-guarded gameplay translation to the Regional Combat panel's displayed encounter names, replay cue types, item rewards, confirmation messages and button/status copy. Player and opponent names from replay receipts remain unchanged.
+- Server-calculated combat outcomes, random rewards, cadence limits, pity progress, receipt identity and persisted encounter/zone IDs remain untouched.
+- Added a regression test for exact parity with the five authored catalog entries, UI translations, and the server-authoritative call boundaries; registered it in the mobile localization suite. GitHub CI and device QA remain the release gate.
+
+## November 14, 2026: German World Boss and Regional Crisis content
+
+- Added exact-source German translations for the **two authored World Boss names/descriptions**, **three boss phases**, **three Regional Crisis names/descriptions**, and **three crisis stages** (22 authored strings), plus five status/counter labels.
+- Wired the safe fallback translation into World Boss and Regional Crisis detail screens and the shared-world overview. The overview now uses localized section prefixes and German percentage spacing, while retaining canonical region IDs.
+- English and every non-German locale retain their source/canonical behavior. Player names, unknown server responses, template keys, phase identifiers, state and scoring are untouched.
+- Added source-parity checks against authoritative backend definitions, plus UI-callsite assertions, to the localization regression suite. TypeScript/CI and device text-expansion checks are still needed.
+
+## November 14, 2026: German class disciplines and Combat XP split
+
+- Added exact-source German display translations for all **14 authored class disciplines**, their **14 skill themes**, and the **Max HP** label in the Skill Guide. Class skill IDs, experience calculation, combat balance and saved character state remain unchanged.
+- Localized the two discipline labels in the Combat XP allocation panel, including its radiogroup and radio-option accessibility labels. Non-German locales retain their established translations or source fallback.
+- Registered a focused regression for authored catalog parity, Skill Guide and XP split UI wiring, and safe fallback for unknown server text. Full TypeScript/CI checks and device text-expansion QA remain to be performed.
+
+## November 14, 2026: Russian near-complete authored UI coverage
+
+- Added **539** additional exact-source Russian translations across Account and records (**187**), Companion expeditions and profile showcase (**88**), Inventory/Gem/crafting/forging (**120**), World progression and seasonal UI (**92**), and Party/dungeon feedback (**52**).
+- Authored source coverage is now **7,223 / 7,228 (99.9%)**, compared with 6,684 / 7,228 (92.5%) before this pass. The five remaining English keys are technical category identifiers (`guild_recruiting`, `looking_for_guild`, `party_recruiting`) and canonical names (`NPC`, `Rootbound Colossus`), deliberately not reworded.
+- All new catalogs are loaded through `earlyLocaleText`; Russian source regression tests now validate their exact keys, nonblank translations, duplicate isolation and interpolation token parity. No gameplay identifiers, server-owned fields or reward logic changed.
+- Full GitHub CI and in-app narrow-screen/native-speaker proofreading are still required before marking the locale release-ready.
+
+
+## November 14, 2026: Russian progression, weather, profiles and co-op follow-up
+
+- Added **738** exact-source Russian UI strings across four focused catalogs: **165** progression/weather/events, **199** profile/build guides, **199** Account actions/goal prompts, and **175** social/Guild/Party/live dungeon states.
+- Total authored Russian coverage increased to **6,684 / 7,228 (92.5%)** with **544** authored strings still falling back to English. This includes the prior continuation pass and existing starter translations.
+- Source audit found no duplicate catalog keys, missing authored keys in the new catalogs, blank translations or interpolation-token mismatches; canonical/server-owned values continue to bypass translation.
+- Loaded each catalog through `earlyLocaleText` and extended `russian-focus-localization.cjs` to reject future cross-catalog collisions and validate runtime lookup. Full CI, native-speaker review and narrow-screen UI verification remain pending.
+
+## November 14, 2026: Russian Guild, Party, Account and gameplay continuation
+
+- Added **376** new exact-source Russian UI translations, increasing authored coverage from **5,570 / 7,228 (77.1%)** to **5,946 / 7,228 (82.3%)**; **1,282** authored strings remain English fallback.
+- Covered Account error and daily-claim states, Help & Game Guide, Guild discovery/management/projects, Party invitations/contracts, player reports, equipment actions, Gem Codex/refinement, saved loadouts, boss/region labels, and combat/profile descriptions.
+- Added `russian-continuation.ts`, wired its entries into the shared RU translator and expanded localization regression assertions; existing Russian, Turkish and other locale entries remain intact.
+- Audited all added keys against the 10 authored source catalogs: no missing keys, blank values, starter overlaps, or placeholder mismatches. Full app CI, native-language review and narrow-screen testing remain pending.
+
+
 Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`), Italian (`it`), French (`fr`), Russian (`ru`), and Turkish (`tr`).
 
-Russian and Turkish are starter-only languages. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
+Russian and Turkish have expanded but still incomplete coverage. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
+
+## November 14, 2026: German Companion combat descriptions and Trials
+
+- Translated the 16 remaining authored Event companion and custom technique descriptions not yet covered by the shared companion catalog. The shared `companionContent` path only resolves exact authored German text, preserving English and all other locales.
+- Translated 22 authored Companion Trial enemy abilities and boss phase labels in both preview cards and live combat/cast cues. Boss phase effect descriptions use the shared localized companion catalog.
+- Normalized the 12 original server-defined `Signature` ability labels to German during Trial replay. Player and unknown server text remains untouched; combat IDs and mechanics are unchanged.
+- Localized shield accessibility labels, German battle number formatting, and German player-market price-chart grouping (`de-DE`), resolving the chart's German formatting assertion.
+- Added content-parity and UI-wiring assertions. Other existing mobile CI checks still require separate fixes; these tests have not been validated on an Android build.
+
+## November 14, 2026: German Party Events and Guild identity
+
+- Added guarded German names and descriptions for all **5 authored Party Live Ops event templates**. Both the English event name and description must match the backend template; unknown, modified and player-authored Party names remain unmodified.
+- Localized **9 template event tags**, **4 server-defined ranked-eligibility reasons**, and **8 Party Event activity names**. Event contribution points, scoring, party IDs and reward eligibility remain unchanged.
+- Wired the German copy into the Party Event hub and event contribution breakdown; all displayed breakdown totals use locale-aware number grouping.
+- Localized **4 Guild identity loading/error/retry labels** and existing Guild roster role names, and formatted roster contribution numbers according to the selected language.
+- Registered two focused regression tests that verify content parity against server/client source catalogues, other-language fallback, stale-source protection and render-path wiring. Full CI and Android visual QA are still required.
+
+## November 14, 2026: German Guild membership and recruitment discovery
+
+- Added **40 reviewed German UI translations** for Guild member management and recruitment discovery, covering promotions, demotions, leadership transfer, removal confirmations, safety explanations, filter headings, chips, advanced filters and listing labels.
+- Guarded source strings and substituted player names/objectives by safe placeholder callbacks; user-authored Party/Guild names, recruitment descriptions, tags and backend permission rules are unchanged.
+- Localized the Guild member join date and role presentation, extended management action descriptions to three lines for longer German wording, and preserved the existing scrollable confirmation sheet.
+- Localized recruitment activity/focus badges and expiry labels in German, leaving the existing card ranking, search/filter IDs, expiry calculations and non-German locale behavior unchanged.
+- Registered a dedicated German social-management regression test for 40 reviewed strings, source fallback, runtime substitution and critical UI/permission paths. Full TypeScript/CI and Android visual QA remain outstanding.
+
+## November 14, 2026: German Party Hub and Guild Muster refinement
+
+- Added nine exact-English-keyed German Party Hub guide and control translations, including section help, empty weekly contract, Party search and preference controls. Other locales and player-authored text retain their existing wording.
+- Localized Party activity labels in the header and options, existing private-invite copy, member roles and contract categories using the reviewed social catalog.
+- Shortened German minimum-level presentation from "Lv." to "St." in the Party Hub and recruitment editor without changing level requirements or submit payloads.
+- Applied locale-specific number grouping to Party Contract progress, personal contributions and large Guild Muster daily/weekly totals; point calculations remain numeric and unchanged.
+- Registered a focused static/runtime regression for language isolation, source fallback, UI wiring and preserved gameplay guards. TypeScript, full CI and Android layout checks remain pending.
+
+## November 14, 2026: German Guild Bank and Project detail polish
+
+- Added ID- and exact-English-source-guarded German display names and short labels for all eight published Guild Construction materials in the Guild Bank, without changing storage, crafting or donation IDs.
+- German and English resource search remain usable; unknown material labels and server errors are preserved.
+- Applied selected-language number formatting to Guild Bank, Guild Project contribution totals, project progress, resource goals and supply donations, including large amounts and accessible labels.
+- Reused translated Guild member roles and Guild-material labels on Project detail and contribution surfaces, with new regression guards. CI and narrow-device visual review remain outstanding.
+
+## November 14, 2026: German Companion combat terminology
+
+- Added exact-source, per-companion German display names for **38 authored combat companion active abilities** and **38 Bond traits** across Asterfall, Sunscar, Frostmarch, Ashlands, Guild and released/event companion content.
+- Translated the **52 custom authored Companion technique names** and **6 shared fallback techniques**, leaving the technique IDs, equip actions, progression, stat modifiers and online combat data untouched.
+- Wired the translations into Training's Skills/Bond panels, the Companion Codex active-ability heading and the Trial formation preview. Unknown or renamed ability names retain the source wording.
+- Added a new dedicated regression that compares every named ability/trait and technique against authored content, checks language isolation and guards the UI call sites; full CI and narrow-screen device visual tests are still required.
+
+## November 14, 2026: German Expedition Shop and Sanctuary missions
+
+- Localized the Expedition Shop UI, 17 ID/source-guarded shop offers, verified offer descriptions and eligibility messages; German currency counts and prices use local number grouping.
+- Completed German display names for all 17 authored Sanctuary Expedition missions, including the active mission list, mission board, preparation, confirmation, claim receipts and accessibility labels. Source IDs and mission names in server state are not mutated.
+- Reused existing localized item names for mission food and reward materials, with explicit German display names for two mission-only resource IDs. Companion names, arbitrary server responses, and player-authored content remain protected from automatic translation.
+- Added independent German catalog/source-drift checks to the existing mobile localization suite. Full TypeScript/CI validation and Android narrow-screen visual review are still required; German is not yet release-complete.
+
+## Russian focused coverage (November 2026)
+
+- This follow-up also aligns Russian focus entries with the expanded RU/TR starter catalog (19 duplicate strings removed). The Russian test now verifies Turkish translations remain independent, even when Turkish has a valid translation rather than an English fallback.
+
+- Across the 10 authored source catalogs, **5,570 of 7,228 unique messages (77.1%)** currently have a Russian translation including pre-existing starter strings; other messages use English fallback. This is catalog-key coverage, not a measure of live screen usage.
+
+- A focused Russian expansion now adds **4,930 exact, authored UI translations** across Companion Index, Sanctuary/Trials/Expeditions, Dungeon setup and Expedition Shop, Guild Rally, guild controls, account recovery and inbox, settings and interactive Game Guide, crafting and food, equipment preview and profile showcase, World Boss and world travel, contracts and achievements, class/combat guidance, Pet Collection and Bestiary, seasonal event calendar and rewards, guild/party chat, interface themes, accessibility and account privacy, companion missions/training and Tower battles, online dungeon matchmaking, guild moderation and account sign-in/security.
+- The expansion is applied centrally through the shared translator to exact catalog-owned English strings. It does not translate live server text, dynamic player content, canonical item identifiers, or unknown messages, and leaves Turkish and the established five languages unchanged.
+- This continuation adds 379 Russian translations for class abilities, first-run quests, pet and guild introductions, dungeon matchmaking, party and guild boss rewards, achievements and collections, interactive account guidance, activity queues, auto-travel and crafting controls. Gameplay and server-owned text are unchanged.
+- The next pass adds 476 new Russian translations for Companion Collection, Sanctuary, Trials, unlocks and combat statuses; Profile cosmetics and equipment guidance; Skills, food, combat XP distribution, and activity queue controls. Russian authored-key coverage reaches 55.0%. No game rules or backend code changed.
+- The latest pass adds 488 exact Russian translations covering Inventory and Bank filters, multi-select/sell/salvage, protected equipment and food, Account navigation and Daily Supplies, Companion Expedition requirements and error states, and Forge, gem refinement, equipment enhancement and Faith. This moves the authored-key coverage to 61.8%; game rules and backend behavior remain unchanged.
+- A further 509 exact-source Russian translations cover Profile privacy, titles and player showcase; Companion seasonal roles, skills and Bond 10 traits; event schedules, rewards and Mastery Hall; character management and deletion warnings, Daily Supplies bonus descriptions and purchase states; Skill training, tool blueprints and queue recovery. This increases authored-source coverage to 68.8%, without changing game logic or backend behavior.
+- After the merger of PR #1107, the subsequent translation pass adds 195 not-yet-merged strings for World Boss and regional progress, goal and AFK safety rules, equipment transitions, offline reward summaries and crafting/harvest filters. Concurrent main changes also introduced three distinct Russian translations. The consolidated catalog now covers 5,570 / 7,228 distinct authored keys, without changing game or server behavior.
+- The dedicated Russian regression test checks all 4,930 exact catalog keys, placeholders, fallback semantics, language isolation and representative translated interpolation. Russian remains incomplete across the game and requires native-speaker and narrow-screen review.
+
+
+## November 13, 2026: recently changed screens
+
+- Added 168 reviewed eight-language source keys (English plus DE/ES/NL/IT/FR/RU/TR) in `src/i18n/recent-screens.ts` covering the Community Roadmap, the not-yet-released Market Inbox, Player Badge settings, and authored regional Journal goals/achievement ladders.
+- Roadmap entries from the four November 10 authoritative migrations have matching localized titles/descriptions and category labels. Unknown or changed server entries still display their original source text rather than being translated speculatively.
+- Added placeholder, locale coverage, badge metadata, authored Journal source, and Roadmap SQL source checks in `tests/recent-ui-localization.cjs`, wired into the localization test runner.
+- The hidden Market price-history chart has localized period labels, price/sale explanations and screen-reader descriptions, with number formatting for every supported language; this does not change sample requirements or generated data. The Rewards Inbox Market tab and remaining Settings update/developer labels are translated.
+- Continued Home/account localization: 91 additional Russian/Turkish translations now cover the Home dashboard, session status, character-management and deletion warnings, and Account Bonuses. The Home Quick Actions panel is now fully localized (including accessibility labels) for all eight languages; tiles allow two text lines and their heading can wrap on narrow screens.
+- `account-localization.cjs` scans the actual authored text calls across Home, Home Session, Home Adventure Header, character management, and Account Bonuses for RU/TR coverage and placeholder safety. `recent-ui-localization.cjs` protects the Quick Actions labels and compact layout. Player names, future server content, and unknown dynamic text remain unchanged.
+
+- The Market Inbox now uses the existing item-name locale registry and language-aware number formatting. Regional Journal objectives/Echo labels and the generated nine-by-five achievement ladder display reviewed translations while unknown names remain untouched.
+- Russian and Turkish remain starter-level across the **rest** of the game. Unreviewed, data-driven, and new interface text may still fall back to English. Native-speaker review and narrow-screen text-expansion QA remain open.
+
+
+## Spanish gap review · 2026-11-13
+
+- New exact-English-source Spanish translations cover Resource Codex searches/sources/recipes, Market Inbox deliveries and claim states, More navigation, release information, Settings, the Community Roadmap, the activity queue, Store headers and Event calendar/teasers.
+- The new food queue's Health and Auto-Eat headings and carry/empty-state helper copy are translated; Companion Mastery and Training Ground explanations, requirements and controls no longer show English in Spanish mode.
+- Reviewed strings pass through `accountText` and keep numeric placeholders intact. Proper names, player text, server identifiers and unrecognized messages remain unchanged; other languages retain their prior fallback behavior.
+- The localization-catalog validator now checks Spanish overlay placeholder parity and the relevant screens' static translation call sites.
 
 ## Implemented
 

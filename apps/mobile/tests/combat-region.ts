@@ -11,10 +11,11 @@ ok(currentRegionId(beginner)==='GREENFIELDS','A new character must begin in Gree
 const ironwoodWolf=MONSTERS.find(monster=>monster.id==='IRONWOOD_WOLF')!,venomWeaver=MONSTERS.find(monster=>monster.id==='VENOM_WEAVER')!;
 const levelSevenIronwood={...beginner,character:{...beginner.character!,level:rebaseLevel(7)},currentRegionId:'IRONWOOD'};
 const wolfLock=encounterLockRequirement(levelSevenIronwood,ironwoodWolf);
-ok(wolfLock?.kind==='exploration'&&wolfLock.routeName==='Trace Ironwood paths','Level-ready Ironwood Wolf must explain its Exploration unlock instead of repeating the Combat level');
+ok(!wolfLock,'A character with Ironwood unlocked must retain all ordinary Ironwood monsters');
 const weaverBelowRequirement={...levelSevenIronwood,character:{...levelSevenIronwood.character!,level:venomWeaver.unlockLevel-1}};
-const weaverLock=encounterLockRequirement(weaverBelowRequirement,venomWeaver);
-ok(weaverLock?.kind==='level'&&weaverLock.level===rebaseLevel(8),'A genuinely level-locked encounter must retain its exact level requirement');
+ok(encounterUnlocked(weaverBelowRequirement,venomWeaver),'Cumulative monster access must not depend on an individual encounter level');
+const neverReachedIronwood=encounterLockRequirement(beginner,venomWeaver);
+ok(neverReachedIronwood?.kind==='level','A new Greenfields character must not receive future-zone monsters');
 
 let rejected=false;
 try{startGathering(beginner,'COPPER_VEIN',1)}catch{rejected=true}

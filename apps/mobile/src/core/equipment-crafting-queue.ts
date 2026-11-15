@@ -353,7 +353,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
     const draft=draftCraftedGearInstance(args),capacity=craftedGearCopyCapacity(next,itemId),mode=next.account.craftedGearAutoSellMode??'off';
     let saleGold=0,autoSold:'incoming'|'existing'|undefined;
     if(capacity.count>=capacity.limit){
-      if(mode!=='keep_best_seven')throw new Error('Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies');
+      if(mode!=='keep_best_seven')throw new Error(`Equipment copy limit reached (${capacity.count}/${capacity.limit}); enable Keep Best ${capacity.limit} or manage copies`);
       const entries=forgeOwnedCopyLocations(next,itemId);
       if(!entries)throw new Error('Equipment copy ownership requires manual review before auto-selling');
       const delivery=forgeIncomingDelivery(next,job.ownerCharacterId);

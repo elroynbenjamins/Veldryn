@@ -1,6 +1,6 @@
 import type {QuickNavDestination} from './quick-navigation';
-export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
-export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready'|'party_contract_reward_ready';
+export type PrimaryNavigationId='home'|'character'|'skills'|'world'|'inventory'|'account';
+export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready'|'party_contract_reward_ready'|'guild_project_reward_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
 export type NavigationBadgeMap=Record<PrimaryNavigationId,NavigationBadge>;
@@ -10,6 +10,7 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  friend_request:{primary:'account',subroute:'social.friends.requests',mode:'count'},
  party_invite:{primary:'account',subroute:'social.party.invites',mode:'count'},
  party_contract_reward_ready:{primary:'account',subroute:'social.party.contracts',mode:'count'},
+ guild_project_reward_ready:{primary:'account',subroute:'social.guild.projects',mode:'count'},
  guild_invite:{primary:'account',subroute:'social.guild.invites',mode:'count'},
  guild_application:{primary:'account',subroute:'social.guild.applications',mode:'count'},
  chat_unread:{primary:'account',subroute:'social.chat',mode:'count'},
@@ -22,14 +23,14 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  event_reward_ready:{primary:'account',subroute:'events.rewards',mode:'count'},
  account_action:{primary:'account',subroute:'account',mode:'dot'},
  companion_attention:{primary:'account',subroute:'companions',mode:'dot'},
- equipment_craft_ready:{primary:'skills',subroute:'skills.smithing.forge',mode:'count'},
+ equipment_craft_ready:{primary:'home',subroute:'home.forge',mode:'count'},
 };
 
 const empty=():NavigationBadge=>({count:0,dot:false});
 export function badgeDisplay(count:number){return count>99?'99+':count>0?String(count):undefined}
 
 export function buildNavigationBadges(rows:NavigationNotification[]):NavigationBadgeMap{
- const out:NavigationBadgeMap={character:empty(),skills:empty(),world:empty(),inventory:empty(),account:empty()},seen=new Set<string>();
+ const out:NavigationBadgeMap={home:empty(),character:empty(),skills:empty(),world:empty(),inventory:empty(),account:empty()},seen=new Set<string>();
  for(const row of rows){
   if(!row.unread||row.kind==='event_reward_ready'||seen.has(row.key))continue;
   seen.add(row.key);
@@ -66,6 +67,7 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  friend_request:'Friends',
  party_invite:'Party',
  party_contract_reward_ready:'Party',
+ guild_project_reward_ready:'Guild',
  guild_invite:'Guild',
  guild_application:'Guild',
  chat_unread:'Party',
@@ -78,7 +80,7 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  event_reward_ready:'Events',
  account_action:'Account',
  companion_attention:'Companions',
- equipment_craft_ready:'Skills',
+ equipment_craft_ready:'Home',
 };
 
 export type QuickNavigationBadgeMap=Partial<Record<QuickNavDestination,NavigationBadge>>;

@@ -11,12 +11,12 @@ import {
 } from '../dungeon-shop-catalog-v1';
 
 validateDungeonShopCatalogV1();
-assert.equal(DUNGEON_SHOP_CATALOG_VERSION,'dungeon-marks-shop-v2-2026-11-11');
-assert.equal(dungeonShopPurchasesEnabledV1(),false,'Catalog must not activate a public purchase route');
-assert.equal(DUNGEON_SHOP_CATALOG_V1.length,17);
+assert.equal(DUNGEON_SHOP_CATALOG_VERSION,'dungeon-marks-shop-v3-2026-11-15');
+assert.equal(dungeonShopPurchasesEnabledV1(),true,'The DB global gate and per-SKU enabled flags authorize releases, not the client');
+assert.equal(DUNGEON_SHOP_CATALOG_V1.length,24);
 assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.permanent).length,12);
-assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.perUtcWeek!==undefined).length,5);
-assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.map(row=>row.id)).size,17);
+assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.perUtcWeek!==undefined).length,12);
+assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.map(row=>row.id)).size,24);
 assert.equal(new Set(DUNGEON_SHOP_CATALOG_V1.filter(row=>row.grant.kind==='profile_collectible').map(row=>row.grant.kind==='profile_collectible'?row.grant.rewardId:'')).size,12);
 for(const region of ['Asterfall','Sunscar','Frostmarch']){
   const set=DUNGEON_SHOP_CATALOG_V1.filter(row=>row.firstClearRegion===region);
@@ -33,10 +33,19 @@ for(const offer of DUNGEON_SHOP_CATALOG_V1){
       assert.equal(offer.grant.bonus?.activeBps,offer.category==='pet'?300:200);
     }
   }else{
+    if(offer.grant.kind==='crafting_bundle'){
+      assert.equal(offer.grant.quantity,100);
+      assert.equal(offer.perUtcWeek,1);
+      assert.equal(offer.category,'material');
+    }
     assert.ok(offer.perUtcWeek!==undefined&&offer.perUtcWeek<=2,'No uncapped consumable spam');
     if(offer.grant.kind==='material')assert.equal(offer.grant.accountBound,true);
   }
 }
+const bundles=DUNGEON_SHOP_CATALOG_V1.filter(row=>row.grant.kind==='crafting_bundle');
+assert.equal(bundles.length,7);
+assert.deepEqual(bundles.map(row=>row.marks),[150,150,300,300,600,600,1000]);
+assert.deepEqual(bundles.map(row=>row.grant.kind==='crafting_bundle'?row.grant.tier:null),[1,1,2,2,3,3,4]);
 const initial:DungeonShopAccountViewV1={
   marks:4000,clearedRegions:['Sunscar'],ownedRewardIds:[],purchasesThisUtcWeek:{},
 };
@@ -48,6 +57,9 @@ assert.equal(dungeonShopQuoteV1('dshop_frostmarch_pet',initial).status,'region_l
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',{...initial,ownedRewardIds:['DUNGEON_PET_SUNSCAR_001']}).status,'already_owned');
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',{...initial,marks:1000}).status,'insufficient_marks');
 assert.equal(dungeonShopQuoteV1('dshop_bondstone',{...initial,marks:500}).status,'insufficient_marks');
+assert.equal(dungeonShopQuoteV1('dshop_bondstone',{...initial,marks:500},499).status,'eligible');
+assert.equal(dungeonShopQuoteV1('dshop_bondstone',initial,900).price,900);
+assert.throws(()=>dungeonShopQuoteV1('dshop_bondstone',initial,-1),/invalid_server_shop_price/);
 assert.equal(dungeonShopQuoteV1('dshop_tempering_satchel',{...initial,purchasesThisUtcWeek:{dshop_tempering_satchel:1}}).remaining,1);
 assert.equal(dungeonShopQuoteV1('dshop_tempering_satchel',{...initial,purchasesThisUtcWeek:{dshop_tempering_satchel:2}}).status,'weekly_limit');
 assert.equal(dungeonShopQuoteV1('not_real',initial).status,'unknown_offer');

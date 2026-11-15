@@ -1,12 +1,13 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import type {ActiveActivity,ActivityKind,RewardBundle} from '../core/types';
+import type {ActiveActivity,ActivityKind,RewardBundle,GameState} from '../core/types';
 import type {IdleResourceRate} from '../core/idle-activity-insights';
 import type {LevelPaceProjection} from '../core/balance-projection';
 import {activityStopPresentation} from '../core/activity-stop-presentation';
 import {idleActivityInsights} from '../core/idle-activity-insights';
 import {formatGameNumber} from '../core/number-format';
 import {MONSTERS} from '../content/monsters';
+import {WORLD_ZONES} from '../content/world-map';
 import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,type ThemeColors} from '../theme/theme';
@@ -16,12 +17,15 @@ import {ActivityCard} from './ActivityCard';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GatheringScene} from './GatheringScene';
+import {HuntingPreview} from './HuntingPreview';
 import {isGatheringSceneKind} from '../core/gathering-scene';
 
 type Props={
  title:string;kind:ActivityKind;activity:ActiveActivity;cycleSeconds:number;capHours:number;
  preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};
  resourceRate?:IdleResourceRate;maxHp?:number;levelPace?:LevelPaceProjection;reduceMotion?:boolean;
+ /** Only needed for the live combat scene; gathering panels stay unchanged. */
+ gameState?:GameState;
  numberMode?:'exact'|'abbreviated';onClaim:()=>void;onStop:()=>void;
  /** Authoritative gathering action time; keeps the scene's completion cue on the settlement clock. */
  gatheringCycleSeconds?:number;
@@ -57,6 +61,7 @@ export function HomeActivityFocus(props:Props){
     </View>
    </View>
    {isGatheringSceneKind(kind)?<GatheringScene activity={activity} cycleSeconds={props.gatheringCycleSeconds??props.cycleSeconds} reduceMotion={props.reduceMotion} working={!stopped&&!capped}/>:null}
+   {kind==='combat'&&monster&&props.gameState?<HuntingPreview state={props.gameState} monster={monster} regionId={WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id??'GREENFIELDS'} sceneOnly/>:null}
    <View style={s.identity}>
     <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={44} framed={false} reduceMotion/>:<ActivityArtwork id={iconId} size={38}/>}</View>
     <View style={s.copy}><Text numberOfLines={2} style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{gl(kindNames[kind])} · {gl('Rewards since last collection')}</Text></View>

@@ -1,4 +1,4 @@
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackSkillActivation,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../src/core/dungeon-enemy-display';
 
@@ -54,6 +54,16 @@ assert(playbackAdvanceDelayMs(replay.cues[2],replay.cues[3],4)>=playbackCastDisp
 assert(playbackVisualDurationMs(320,4)<playbackVisualDurationMs(320,1),'combat VFX should accelerate with replay speed');
 equal(playbackCueTone(replay.cues[3]),'selected');
 equal(playbackCueLabel(replay.cues[3]),'Lantern Wisp: Lantern Snuff');
+equal(playbackSkillActivation(replay.cues[0],true),undefined,'Basic attacks must never trigger a skill banner');
+equal(playbackSkillActivation(replay.cues[3],true),{kind:'companion',name:'Lantern Wisp: Lantern Snuff',actorName:'Wayfinder',amount:undefined,actionKind:undefined,outcome:undefined},'Only a recorded companion assist shows a skill banner');
+equal(playbackSkillActivation(replay.cues[3],false),undefined,'An enemy or unknown actor must not be shown as a player skill');
+const classAbility={atMs:4500,type:'action' as const,actorId:'p3',actorName:'Dawnkeeper',targetId:'p0',targetName:'Tank',abilityId:'DK_HEAL',abilityName:'Dawn Renewal',actionKind:'heal' as const,amount:120};
+equal(playbackSkillActivation(classAbility,true),{kind:'class',name:'Dawn Renewal',actorName:'Dawnkeeper',amount:120,actionKind:'heal',outcome:undefined},'A real named class heal must be visible');
+equal(playbackCueLabel(classAbility),'Dawnkeeper heals Tank with Dawn Renewal · 120','Heal combat log must name the skill');
+equal(playbackCueLabel({...classAbility,actionKind:'shield',amount:90}),'Dawnkeeper shields Tank with Dawn Renewal · 90','Shield combat log must name the skill');
+equal(playbackSkillActivation({...classAbility,abilityName:'Basic Attack',abilityId:'BASIC'},true),undefined,'No synthetic skill banner for normal attacks');
+equal(playbackSkillActivation({...classAbility,abilityName:undefined},true),undefined,'Never invent unknown skill names');
+equal(playbackSkillActivation({...classAbility,type:'phase'},true),undefined,'Boss phase and non-skill events are not class activations');
 equal(playbackCueLabel(replay.cues[4]),'Ravager is downed');
 assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])>=260,'cue delay below floor');
 assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])<=950,'cue delay above ceiling');

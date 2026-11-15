@@ -40,7 +40,7 @@ export function OnlineGuildMusterPanel(){
   </Panel>
 
   <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Today")}</Text><Text style={s.meta}>{st('{current}/{max} contribution',{current:state.dailyPoints,max:state.dailyCap})}</Text></View><StatusPill label={state.rallyMarkEarned?st("RALLY MARK"):st("IN PROGRESS")} tone={state.rallyMarkEarned?'good':'info'}/></View>
+   <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Today")}</Text><Text style={s.meta}>{st('{current}/{max} contribution',{current:state.dailyPoints.toLocaleString(language),max:state.dailyCap.toLocaleString(language)})}</Text></View><StatusPill label={state.rallyMarkEarned?st("RALLY MARK"):st("IN PROGRESS")} tone={state.rallyMarkEarned?'good':'info'}/></View>
    <Progress value={dailyPct} C={C}/>
    <View style={s.metrics}>
     <Metric label={st("CHECK-IN")} value={String(state.checkInPoints)} C={C}/>
@@ -49,9 +49,9 @@ export function OnlineGuildMusterPanel(){
    </View>
    <Text style={s.note}>{state.rallyMarkEarned
     ? st('Rally Mark earned today. Your extra points still add to weekly contribution.')
-    : st('{points} more points needed for today’s Rally Mark. A check-in alone is not enough.',{points:remainingToday})}</Text>
+    : st('{points} more points needed for today’s Rally Mark. A check-in alone is not enough.',{points:remainingToday.toLocaleString(language)})}</Text>
    <View style={s.weekSummary}>
-   <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Your week")}</Text><Text style={s.meta}>{st('{current}/{max} Rally days · {points} points',{current:state.personalQualifyingDays,max:state.personalWeeklyGoal,points:state.personalWeeklyPoints})}</Text></View><StatusPill label={state.personalQualifyingDays>=state.personalWeeklyGoal?st("READY"):st('{current} OF {goal}',{current:state.personalQualifyingDays,goal:state.personalWeeklyGoal})} tone={state.personalQualifyingDays>=state.personalWeeklyGoal?'good':'info'}/></View>
+   <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Your week")}</Text><Text style={s.meta}>{st('{current}/{max} Rally days · {points} points',{current:state.personalQualifyingDays,max:state.personalWeeklyGoal,points:state.personalWeeklyPoints.toLocaleString(language)})}</Text></View><StatusPill label={state.personalQualifyingDays>=state.personalWeeklyGoal?st("READY"):st('{current} OF {goal}',{current:state.personalQualifyingDays,goal:state.personalWeeklyGoal})} tone={state.personalQualifyingDays>=state.personalWeeklyGoal?'good':'info'}/></View>
    <Text style={s.copy}>{state.personalQualifyingDays>=state.personalWeeklyGoal
     ? st('You have completed your {days} Rally days this week.',{days:state.personalWeeklyGoal})
     : st('Earn a Rally Mark on {days} more days this week. No daily streak required.',{days:state.personalWeeklyGoal-state.personalQualifyingDays})}</Text>
@@ -89,8 +89,8 @@ export function OnlineGuildMusterPanel(){
     return <View key={member.accountId} style={s.member}>
      <View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text>
       <Text style={s.meta}>{rosterView==='today'
-       ? st('{points}/{goal} today · {days}/{weekGoal} Rally days',{points:member.todayPoints,goal:state.rallyMarkThreshold,days:member.qualifyingDays,weekGoal:state.personalWeeklyGoal})
-       : st('{days}/{goal} Rally days · {points} weekly points',{days:member.qualifyingDays,goal:state.personalWeeklyGoal,points:member.weeklyPoints})}</Text>
+       ? st('{points}/{goal} today · {days}/{weekGoal} Rally days',{points:member.todayPoints.toLocaleString(language),goal:state.rallyMarkThreshold.toLocaleString(language),days:member.qualifyingDays,weekGoal:state.personalWeeklyGoal})
+       : st('{days}/{goal} Rally days · {points} weekly points',{days:member.qualifyingDays,goal:state.personalWeeklyGoal,points:member.weeklyPoints.toLocaleString(language)})}</Text>
      </View>
      <View style={[s.memberStatus,positive?s.memberStatusGood:pending?s.memberStatusPending:s.memberStatusMuted]}><Text numberOfLines={1} style={[s.memberStatusText,positive?s.memberStatusTextGood:s.memberStatusTextMuted]}>{status}</Text></View>
     </View>;

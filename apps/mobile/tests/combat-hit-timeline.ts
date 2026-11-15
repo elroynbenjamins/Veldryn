@@ -7,6 +7,7 @@ import type {ClassId} from '../src/core/types';
 import {huntHitEvents,huntHitsBetween,huntEnemyHpAt} from '../src/core/combat-hit-timeline';
 import {activeCombatHitProjection,activeCombatRuntimeProjection,claimActivity,createCharacter,effectiveStats,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import type {ActiveCombatHitCursor} from '../src/core/game';
+import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 
 const events=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,healingPerEncounter:10,cycleSeconds:12,critChance:.25,seed:'replay-stable'});
 const again=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,healingPerEncounter:10,cycleSeconds:12,critChance:.25,seed:'replay-stable'});
@@ -66,9 +67,26 @@ for(let tick=0;tick<=halfSecondSteps;tick++){
  assert.ok(Math.abs(direct.playerHp-incremental.playerHp)<1e-5,'incremental combat must keep exact HP parity');
  assert.ok(Math.abs(direct.enemyHp-incremental.enemyHp)<1e-5,'incremental combat must keep enemy HP parity');
  assert.equal(direct.stoppedReason,incremental.stoppedReason,'incremental combat stop must remain deterministic');
+ const skillSnapshot=(rows:typeof direct.lastSkillEffects)=>JSON.stringify((rows??[]).map(effect=>({name:effect.name,kind:effect.kind,source:effect.source,time:Math.round(effect.atMs),amount:Math.round((effect.amount??0)*1000)/1000})));
+ assert.equal(skillSnapshot(direct.lastSkillEffects),skillSnapshot(incremental.lastSkillEffects),'incremental and full combat must record identical real skill events');
  assert.ok(Math.abs(direct.progressFraction-incremental.progressFraction)<1e-7,'incremental combat phase must stay synced');
  cursor=incremental.cursor;
 }
+// Only a settled, mechanically earned Ravager recovery may be highlighted.
+const ravager=regionalCombatFixture(REGIONAL_COMBAT_FIXTURES[4],'prepared','RAVAGER');
+ravager.activity={kind:'combat',targetId:REGIONAL_COMBAT_FIXTURES[4].monsterId,combatTacticId:'balanced',startedAtMs:T,lastClaimAtMs:T};
+const recovered=activeCombatHitProjection(ravager,T+5*60_000)!;
+assert.ok((recovered.lastSkillEffects??[]).some(effect=>effect.name==='Bloodrush'),'Ravager should expose its real earned recovery after a hunt');
+assert.ok((recovered.lastSkillEffects??[]).some(effect=>effect.kind==='recovery'&&effect.name==='Bloodrush'));
+assert.ok((recovered.lastSkillEffects??[]).filter(effect=>effect.name==='Bloodrush').every(effect=>(effect.amount??0)>0),'Displayed Bloodrush recovery must restore real HP');
+assert.ok((recovered.lastSkillEffects??[]).some(effect=>effect.name==='Bloodrush'&&effect.kind==='recovery'),'Bloodrush must coexist with other class and companion cues');
+assert.ok((recovered.lastSkillEffects??[]).filter(effect=>effect.name==='Bloodrush').every(effect=>effect.atMs<=T+5*60_000),'Recovery event must not occur in the future');
+const wayfinder=regionalCombatFixture(REGIONAL_COMBAT_FIXTURES[4],'prepared','WAYFINDER');
+wayfinder.activity={kind:'combat',targetId:REGIONAL_COMBAT_FIXTURES[4].monsterId,combatTacticId:'balanced',startedAtMs:T,lastClaimAtMs:T};
+const wayfinderSkillEffects=activeCombatHitProjection(wayfinder,T+5*60_000)?.lastSkillEffects??[];
+assert.ok(wayfinderSkillEffects.length>0&&wayfinderSkillEffects.some(effect=>effect.kind==='damage'),'Wayfinder must have a real named damage technique');
+assert.ok(wayfinderSkillEffects.every(effect=>effect.kind!=='recovery'&&effect.name!=='Bloodrush'),'Classes without on-kill healing must never fabricate recovery');
+assert.equal(activeCombatHitProjection(state,T)?.lastSkillEffect,undefined,'no combat activation may appear before the first settled hit');
 assert.equal(liveState.character!.preparation!.remainingEncounters,3,'read-only live replay must not spend actual potion charges');
 assert.equal(liveState.character!.currentHp,state.character!.currentHp,'read-only live replay must not mutate player HP');
 // Narration is presentation only: it must match real hit events and never
@@ -140,6 +158,12 @@ const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
 assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
 assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
 assert.ok(combatTab.includes('liveHuntNarration('),'Combat tab must show event-driven class and encounter narration');
+const homeAbilityCues=homeStage.includes('<HuntAbilityCues effects={recentSkillEffects}');
+const tabAbilityCues=combatTab.includes('<HuntAbilityCues effects={recentSkillEffects}');
+assert.ok(homeAbilityCues&&tabAbilityCues,'Both battle screens must use the shared recorded-skill component');
+const abilityUI=fs.readFileSync('src/components/HuntAbilityCues.tsx','utf8');
+assert.ok(abilityUI.includes('effects.slice(-2)')&&abilityUI.includes('ON-KILL RECOVERY'),'Live skill UI must stay compact and distinguish genuine recovery');
+assert.ok(abilityUI.includes("effect.source==='companion'")&&abilityUI.includes("accessibilityLiveRegion=\"polite\""),'Companion assists and accessible live updates must stay visible');
 assert.ok(combatTab.includes('playerHp:fight.playerHp')&&combatTab.includes('enemyHp:fight.enemyHp'),'HP-based narration must use real projected combat values');
 assert.ok(!combatTab.includes("tr('Progress · {percent}%"),'Live combat must not show a progress percentage');
 assert.ok(!combatTab.includes('Damage updates on hit. Rewards are granted on defeat.'),'Static live combat instruction must be removed');

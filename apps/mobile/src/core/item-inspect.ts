@@ -5,6 +5,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
+import {isLiveSixPieceBonus} from './equipment-set-runtime';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,normalizeEnhancementGemSlots,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
@@ -27,7 +28,7 @@ export interface ItemGearDecision{
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
  maxRank:number;maxItemStats:{attack:number;defense:number;hp:number};maxLoadoutGain:{attack:number;defense:number;hp:number;power:number};
  gems:Array<{id:string;name:string;kind:'stat'|'effect';detail:string;stat?:string;percent?:number}>;
- set?:{name:string;currentPieces:number;previewPieces:number;required:number;reached?:{pieces:number;bonus:string};next?:{pieces:number;bonus:string};active:readonly {pieces:number;bonus:string;runtime:'live'|'trigger-hook-pending'}[]};
+ set?:{name:string;tier:string;currentPieces:number;previewPieces:number;required:number;reached?:{pieces:number;bonus:string};next?:{pieces:number;bonus:string};active:readonly {pieces:number;bonus:string;runtime:'live'|'trigger-hook-pending'}[]};
 }
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
@@ -162,7 +163,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
       if(set){
         const currentPieces=equippedSetPieceCount(state.character.equipment,set),previewPieces=compatible?equippedSetPieceCount(previewState.character!.equipment,set):currentPieces;
         const milestones=[{pieces:2,bonus:set.twoPiece},{pieces:4,bonus:set.fourPiece},{pieces:6,bonus:set.sixPiece},{pieces:8,bonus:set.eightPiece},{pieces:10,bonus:set.tenPiece}];
-        setDecision={name:set.name,currentPieces,previewPieces,required:10,reached:[...milestones].reverse().find(row=>row.pieces<=previewPieces),next:milestones.find(row=>row.pieces>previewPieces),active:milestones.filter(row=>row.pieces<=previewPieces).map(row=>({...row,runtime:row.pieces===6?'trigger-hook-pending':'live'} as const))};
+        setDecision={name:set.name,tier:set.tier,currentPieces,previewPieces,required:10,reached:[...milestones].reverse().find(row=>row.pieces<=previewPieces),next:milestones.find(row=>row.pieces>previewPieces),active:milestones.filter(row=>row.pieces<=previewPieces).map(row=>({...row,runtime:row.pieces===6&&!isLiveSixPieceBonus(set)?'trigger-hook-pending':'live'} as const))};
       }
       gearDecision={compatible,previewAvailable,alreadyEquipped:equippedSame&&previewAvailable,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
         loadoutBefore:{attack:before.attack,defense:before.defense,hp:before.hp,power:before.power},loadoutAfter:{attack:after.attack,defense:after.defense,hp:after.hp,power:after.power},

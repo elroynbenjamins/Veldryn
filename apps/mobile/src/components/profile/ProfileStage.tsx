@@ -80,7 +80,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  scrim:{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.54)':'rgba(255,255,255,.66)'},
  tools:{position:'absolute',top:8,right:8,flexDirection:'row',gap:6,zIndex:12},
  toolsFramed:{top:18,right:58},
- tool:{width:34,height:34,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.dark?'rgba(185,192,198,.44)':'rgba(40,46,52,.28)',backgroundColor:C.dark?'rgba(3,4,5,.62)':'rgba(255,255,255,.72)'},
+ tool:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.dark?'rgba(185,192,198,.44)':'rgba(40,46,52,.28)',backgroundColor:C.dark?'rgba(3,4,5,.62)':'rgba(255,255,255,.72)'},
  toolMark:{fontSize:15,lineHeight:18,color:C.text,fontWeight:'800'},
  pressed:{opacity:.72},
  pet:{position:'absolute',right:14,bottom:12,width:58,height:58,zIndex:3},

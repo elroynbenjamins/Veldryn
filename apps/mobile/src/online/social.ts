@@ -1,6 +1,6 @@
 import {supabase} from './supabase';
 import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
-import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
+import {CHAT_RECENT_MESSAGE_LIMIT,GUILD_CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
@@ -280,7 +280,7 @@ export async function cancelGuildInvitation(invitationId:string){const client=re
 export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
 export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
 export function guildChatCommandKey(){return `guild-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
-export async function guildChatState(limit=CHAT_RECENT_MESSAGE_LIMIT){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;const state=data as GuildChatState;if(!state?.messages?.length)return state;return {...state,messages:await withChatIdentities(state.messages)};}
+export async function guildChatState(limit=GUILD_CHAT_RECENT_MESSAGE_LIMIT){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;const state=data as GuildChatState;if(!state?.messages?.length)return state;return {...state,messages:await withChatIdentities(state.messages)};}
 export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
 export async function socialChatAttention(){const client=requireClient();const {data,error}=await client.rpc('social_chat_attention_state_v1');if(error)throw error;return data as SocialChatAttentionState;}
 export async function markSocialChatRead(channelType:'guild'|'party',channelId:string,messageId:string){const client=requireClient();const {data,error}=await client.rpc('mark_social_chat_read_v2',{p_channel_type:channelType,p_channel_id:channelId,p_message_id:messageId});if(error)throw error;return data as {channelType:'guild'|'party';channelId:string;readAt:string;readMessageId:string};}

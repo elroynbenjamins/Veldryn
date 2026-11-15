@@ -3,6 +3,17 @@ name: Gem and dungeon runtime validation
 # Focused tests must still run while the separate release gate detects
 # out-of-date generated Edge bundles. This does not weaken that release gate.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/src/core/**'
+      - 'apps/mobile/src/content/gems-v1.ts'
+      - 'apps/mobile/tests/stat-gem-runtime-v1.ts'
+      - 'backend/src/server/combat/**'
+      - 'backend/src/server/equipment/**'
+      - 'backend/src/server/coop/**'
+      - 'backend/online/**'
+      - '.github/workflows/gem-dungeon-runtime-validation.yml'
   pull_request:
     paths:
       - 'apps/mobile/src/core/**'

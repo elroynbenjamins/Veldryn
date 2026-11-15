@@ -21,6 +21,8 @@ export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harv
 export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
+  /** Own daily, weekly and monthly challenge progress, claims and reward selections. */
+  personalSeasonal?:import('./personal-seasonal-state').PersonalSeasonalState;
   classSkillRemainders?:Record<string,number>;
   classTraining?:ClassDrills;
   monsterMasteryPoints?:Record<string,number>;
@@ -47,6 +49,8 @@ export interface CharacterState {
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
   equippedFoodId?:string;
+  /** Auto-eat backup order (up to four different food types); never consumes bank food. */
+  foodQueueIds?:string[];
   /** Character-bound boss healing potion; selected in the HP menu, consumed only in eligible boss battles. */
   equippedHealingPotionId?:string;
   bodyPresentation?:BodyPresentation;
@@ -117,7 +121,7 @@ export interface GameState {
   version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   /** Timestamp from which passive HP recovery may accrue while no activity is running. */
   outOfCombatSinceMs?:number;
-  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
+  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string;unlockedMonsterIds?:string[];exploredRouteIds?:string[];defeatedBossIds?:string[]}>;
   rewardRemainders?:Record<string,number>;
   /** Persisted player location. Region-scoped activities may only start here. */
   currentRegionId:string;
@@ -145,7 +149,7 @@ export interface GameState {
   /** Current UTC-week Live co-op Resonance Cache projection and pre-rolled reward choices. */
   resonanceCache?:ResonanceCacheStateV1;
   unlockedCollectionRewardIds?:string[];
-  guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];seasonalContractRewardChoices?:Record<string,string>;liveEvent?:LiveEventRuntime;eventCandyChargesById?:Record<string,number>;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedProfileIconIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
+  guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];seasonalContractRewardChoices?:Record<string,string>;personalSeasonalClaimLedger?:Record<string,string[]>;legacySeasonalGrantSnapshot?:import('./legacy-seasonal-claim').LegacySeasonalGrantSnapshot;liveEvent?:LiveEventRuntime;eventCandyChargesById?:Record<string,number>;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedProfileIconIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
   settings:{language:Language;uiTheme?:UiThemeId;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoTravelQueuedActivities?:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;chatDockLines?:1|2|3;chatEmoteTrayIds?:string[];quickNavDestinations?:QuickNavDestination[];favoriteItemIds?:string[];lockedItemIds?:string[];seenItemIds?:string[];};
 }
 export interface RewardBundle {
@@ -164,7 +168,7 @@ export interface RewardBundle {
   classSkillXp?:Array<{skillId:string;xp:number}>;
   trainingActions?:number;
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
-  preparationEncounters?:number; foodConsumed?:number; endHp?:number; stoppedReason?:string;
+  preparationEncounters?:number; foodConsumed?:number; foodConsumedById?:ItemStack[]; endHp?:number; stoppedReason?:string;
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];
   petDrops?:{petId:string;name:string;sourceId:string}[];

@@ -54,7 +54,10 @@ export class OnlineQModeRuntime{
   const minimum=regularDungeonTierRequiredLevel(definition,request.tier),minimumPower=regularDungeonTierRequiredPower(definition,request.tier),sync=definition.recommendedLevel;
   const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,minCombatPower:minimumPower,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned');
-  if(request.loadoutRevision!==record.revision){const replay=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
+  // The loadout revision is a UI observation, not a lock on unrelated gathering/combat progress.
+  // The actual dungeon snapshot is rebuilt from current authoritative state and checked again
+  // by start_online_qmode_server_v1. Do not reject a valid player just for background activity.
+  if(request.loadoutRevision>record.revision){const replay=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
   const controller=freeze(record);
   const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:minimum});
   const profiles:PublishedEcho[]=[];
@@ -107,10 +110,12 @@ export class OnlineQModeRuntime{
   // Simulation is already finished when this response is queued. Echo does
   // not need to wait through the entire simulated 30–180s battle before
   // the server commits its result. Live keeps separate synchronized pacing.
+  // Only persist the authoritative result once: its public replay/settlement
+  // projection is built at finalization, not duplicated inside private state.
   const chosen=run.graph.nodes.find(node=>node.nodeId===request.optionId);
   const duration=chosen?.kind==='boss'?1_800:chosen?.kind==='elite'?1_400:chosen?.kind==='battle'?900:0;
   const resolvesAtMs=loaded.serverNow+duration;
   const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined};
-  return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState),settlement:settlement(run,loaded.stateVersion+2,seed)}},p_client_projection:client});
+  return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState)}},p_client_projection:client});
  }
 }

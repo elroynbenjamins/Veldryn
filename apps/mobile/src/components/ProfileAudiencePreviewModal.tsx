@@ -12,6 +12,8 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {PublicProfileScene} from './PublicProfileScene';
+import {ProfileEquippedGearShowcase} from './ProfileEquippedGearShowcase';
+import {localProfileGear} from '../core/profile-equipped-gear';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {useSelfProfileGuild} from '../online/useSelfProfileGuild';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
@@ -28,7 +30,7 @@ const words=(value?:string|null)=>value?value.replace(/[_:-]+/g,' ').replace(/\b
 export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose}:{visible:boolean;state:GameState;identityDraft:ProfileExtensionSelfV43|null;onClose:()=>void}){
  const guild=useSelfProfileGuild(state,visible),badges=usePlayerBadges();
  const language=useGameLanguage();
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<400||fontScale>=1.2;
  const [audience,setAudience]=useState<ProfilePreviewAudience>('public');
  useEffect(()=>{if(visible)setAudience(identityDraft?'public':'self')},[visible,!!identityDraft]);
  const characters=[...(state.character?[state.character]:[]),...(state.otherCharacters??[]).map(row=>row.character)];
@@ -68,22 +70,23 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   :visibility==='guild'&&audience==='public'
    ?'Guild-only profiles are hidden from players outside your guild.'
    :'This viewer cannot open the profile with the current privacy setting.';
- return <GameModalSurface visible={visible} onClose={onClose} backdropLabel={profileT(language,"Close profile preview")} surfaceStyle={s.sheet}>
+ return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel={profileT(language,"Close profile preview")} surfaceStyle={s.sheet}>
     <GameModalHeader eyebrow={profileT(language,"AUDIENCE PREVIEW")} title={profileT(language,"As other players see you")} onClose={onClose} trailing={<View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?profileText(language,visibilityLabel[visibility]).toUpperCase():profileT(language,"LOCAL ONLY")}</Text></View>}/>
     <Text style={s.copy}>{profileT(language,"Switch audiences to test profile visibility. This preview never publishes or saves changes.")}</Text>
-    <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{profileText(language,row.label)}</Text><Text style={s.audienceDetail}>{profileText(language,row.detail)}</Text></Pressable>)}</View>
+    <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityLabel={profileText(language,row.label)} accessibilityHint={profileText(language,row.detail)} accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text numberOfLines={2} style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{profileText(language,row.label)}</Text><Text numberOfLines={3} style={s.audienceDetail}>{profileText(language,row.detail)}</Text></Pressable>)}</View>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
      {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>{profileT(language,"Profile hidden from this viewer")}</Text><Text style={s.hiddenCopy}>{profileText(language,hiddenReason)}</Text></View>:<>
       <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
       {profile.bio?<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.muted}>{profileT(language,"No biography selected.")}</Text></View>}
+      <ProfileEquippedGearShowcase key={character.id} gear={localProfileGear(state,character.id)} reduceMotion={state.settings.reduceMotion}/>
       <View style={s.card}>
        <Text style={s.section}>{profileT(language,"PROFILE HIGHLIGHTS")}</Text>
        <PreviewRow stack={stackLayout} label={profileT(language,"Favorite skill")} value={profileText(language,words(profile.favoriteSkillId))}/>
-       <PreviewRow stack={stackLayout} label={profileT(language,"Favorite companion")} value={companion??'Not selected'}/>
-       <PreviewRow stack={stackLayout} label={profileT(language,"Achievements")} value={achievements.length?achievements.join(' · '):'No featured achievements'}/>
-       <PreviewRow stack={stackLayout} label={profileT(language,"Personal records")} value={records.length?records.join(' · '):'No featured records'}/>
-       <PreviewRow stack={stackLayout} label={profileT(language,"Collection")} value={collections.length?collections.join(' · '):'No featured collectibles'}/>
-       <PreviewRow stack={stackLayout} label={profileT(language,"Mastery")} value={masteries.length?masteries.join(' · '):'No featured R50 masteries'}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Favorite companion")} value={companion??profileText(language,"Not selected")}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Achievements")} value={achievements.length?achievements.join(' · '):profileText(language,"No featured achievements")}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Personal records")} value={records.length?records.join(' · '):profileText(language,"No featured records")}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Collection")} value={collections.length?collections.join(' · '):profileText(language,"No featured collectibles")}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Mastery")} value={masteries.length?masteries.join(' · '):profileText(language,"No featured R50 masteries")}/>
       </View>
       {identityDraft?.worldFeedOptOut?<View style={s.feedNote}><Text style={s.feedNoteTitle}>{profileT(language,"WORLD MILESTONES HIDDEN")}</Text><Text style={s.copy}>{profileT(language,"Your profile remains viewable to the selected audience, but your recent milestone cards stay out of the World feed.")}</Text></View>:null}
       <Text style={s.footnote}>{profileT(language,"Guild tag and guild-name styling come from your live guild identity and are not changed by this preview.")}</Text>
@@ -95,7 +98,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
 function PreviewRow({label,value,stack=false}:{label:string;value:string;stack?:boolean}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- return <View style={[s.row,stack&&s.rowStack]}><Text style={[s.rowLabel,stack&&s.rowLabelStack]}>{label}</Text><Text numberOfLines={stack?4:2} style={[s.rowValue,stack&&s.rowValueStack]}>{value}</Text></View>;
+ return <View accessible accessibilityLabel={`${label}: ${value}`} style={[s.row,stack&&s.rowStack]}><Text style={[s.rowLabel,stack&&s.rowLabelStack]}>{label}</Text><Text numberOfLines={stack?6:3} style={[s.rowValue,stack&&s.rowValueStack]}>{value}</Text></View>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({

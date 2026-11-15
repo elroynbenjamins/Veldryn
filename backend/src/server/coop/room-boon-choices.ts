@@ -7,7 +7,7 @@ export const ROOM_BOON_CHOICES=[
  {id:'ROOM_BOON_STRIKE',name:'Battle Focus',description:'+5% party attack power for the remaining run.'},
  {id:'ROOM_BOON_WARD',name:'Stalwart Guard',description:'+5% party defense for the remaining run.'},
  {id:'ROOM_BOON_RECOVERY',name:'Second Wind',description:'Restore 20% max HP to each party member (revives downed allies).'},
- {id:'ROOM_BOON_SUPPLY',name:'Expedition Cache',description:'Gain 2 supplies to spend at Merchant rooms.'},
+ {id:'ROOM_BOON_SUPPLY',name:'Expedition Cache',description:'Legacy supply boon; no longer offered in new dungeon runs.'},
 ] as const;
 export type RoomBoonId=(typeof ROOM_BOON_CHOICES)[number]['id'];
 export type RoomBoonOffer=(typeof ROOM_BOON_CHOICES)[number];
@@ -21,7 +21,7 @@ export function roomBoonOffers(run:QModeRun,secret:string):RoomBoonOffer[]{
  if(run.chosenRoomBoons?.[last.nodeId])return [];
  const current=run.graph.nodes.find(node=>node.nodeId===last.nodeId);
  if(!current)return [];
- const ids=generateBoonOffer({secret,runId:run.id,characterId:run.players[0].id,nodeIndex:current.depth,contentVersion:run.graph.contentVersion,ownedBoonIds:[],eligibleBoonIds:ROOM_BOON_CHOICES.map(choice=>choice.id),choiceCount:3});
+ const ids=generateBoonOffer({secret,runId:run.id,characterId:run.players[0].id,nodeIndex:current.depth,contentVersion:run.graph.contentVersion,ownedBoonIds:[],eligibleBoonIds:ROOM_BOON_CHOICES.filter(choice=>choice.id!=='ROOM_BOON_SUPPLY').map(choice=>choice.id),choiceCount:3});
  return ids.map(id=>ROOM_BOON_CHOICES.find(choice=>choice.id===id)!).filter(Boolean);
 }
 export function applyRoomBoon(run:QModeRun,boonId:RoomBoonId):void{

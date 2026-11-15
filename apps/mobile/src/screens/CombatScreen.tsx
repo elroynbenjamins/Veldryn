@@ -43,12 +43,18 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
     {areas.length>0?<View style={s.areaPicker}>
       <Pressable accessibilityRole="button" accessibilityState={{selected:!area}} onPress={()=>setSelectedAreaId(undefined)}
         style={[s.areaChip,!area&&s.areaChipSelected]}><Text style={[s.areaChipText,!area&&s.areaChipTextSelected]}>{'All'}</Text></Pressable>
-      {areas.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={entry.name+' · Lv '+entry.minLevel+'+'}
-        accessibilityState={{disabled:character.level<entry.minLevel,selected:area?.id===entry.id}}
-        disabled={character.level<entry.minLevel} onPress={()=>setSelectedAreaId(entry.id)}
-        style={[s.areaChip,area?.id===entry.id&&s.areaChipSelected,character.level<entry.minLevel&&s.areaChipLocked]}>
-        <Text numberOfLines={1} style={[s.areaChipText,area?.id===entry.id&&s.areaChipTextSelected]}>{entry.name}</Text>
-      </Pressable>)}
+      {areas.map(entry=>{
+        // Encounter entitlement is cumulative through the furthest unlocked
+        // region. Do not leave an area's tab disabled after its monsters unlock.
+        const hasUnlockedHunts=regionEncounters(state,zone.name,'',true,entry.id).length>0;
+        const locked=character.level<entry.minLevel&&!hasUnlockedHunts;
+        return <Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={entry.name+' · Lv '+entry.minLevel+'+'}
+          accessibilityState={{disabled:locked,selected:area?.id===entry.id}}
+          disabled={locked} onPress={()=>setSelectedAreaId(entry.id)}
+          style={[s.areaChip,area?.id===entry.id&&s.areaChipSelected,locked&&s.areaChipLocked]}>
+          <Text numberOfLines={1} style={[s.areaChipText,area?.id===entry.id&&s.areaChipTextSelected]}>{entry.name}</Text>
+        </Pressable>;
+      })}
     </View>:null}
     <View style={s.xpRow}><View style={s.levelBadge}><Text style={s.levelBadgeText}>{gt("Level {value}",{value:character.level})}</Text></View><View style={s.flex}><StatBar rounded reduceMotion={state.settings.reduceMotion} label={gt("Combat XP")} current={progress.current} max={progress.need}/></View></View>
     {preview?<HuntingPreview state={state} monster={preview} regionId={zone.id}/>:null}

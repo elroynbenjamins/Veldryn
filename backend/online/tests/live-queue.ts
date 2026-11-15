@@ -48,7 +48,15 @@ async function main(){
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_005'}))).status,400);
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_004'}))).status,400,'Retired Mirage Well cannot be joined');
  assert.equal((await handler(request('queue',{...body,characterId:'other'}))).status,403);
- assert.equal((await handler(request('queue',{...body,loadoutRevision:6}))).status,409);
+ assert.equal((await handler(request('queue',{...body,loadoutRevision:8}))).status,409,'future version is invalid');
+ // A background gather/hunt may increment the account revision between the Ready
+ // preview and queue submission. Server freezes current gear, not the stale preview.
+ const stalePreview={...body,requestId:'live-stale-preview-001',loadoutRevision:6};
+ assert.equal((await handler(request('queue',stalePreview))).status,200,'unrelated gameplay revision must not block joining');
+ const staleJoin=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
+ assert.equal(staleJoin.args.p_game_version,7,'join must commit using the fresh server revision');
+ assert.equal((staleJoin.args.p_snapshot as {revision:number}).revision,7,'combat snapshot must be derived from current server gear');
+ prior=null;reads=0;calls.length=0;
  const quick={requestId:'quick-start-001',characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
  const quickResponse=await handler(request('quick-queue',quick));assert.equal(quickResponse.status,200);
  const quickWrite=calls.filter(row=>row.name==='join_online_live_queue_server_v1').at(-1)!;

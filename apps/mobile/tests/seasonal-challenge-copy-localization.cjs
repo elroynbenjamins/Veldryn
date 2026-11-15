@@ -11,13 +11,13 @@ const {QUEST_RARITIES}=require('../src/core/seasonal-quests.ts');
 const lang=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],lang,'eight existing selectable languages');
 const archivedNames=['Hold the Line','Iron Ration','Marching Vigil','Roadwarden Survey','Light the Way','Mercy in Motion','Dawn Patrol','Safe Passage','Predator’s Circuit','Edge of Mastery','The Long Hunt','Forward Scout','Steel Discipline','Unbroken Wall','Chain of Command','Sunlamp Offering','Cartographer’s Eye','Break Their Line','Runic Survey','Steps Unseen','Stone and Storm'];
-const names=['Field Patrol','Gathering Run','Crafting Orders','Trail Survey','Faith Practice'];
-const templates=['Defeat {n} monsters this period.','Complete {n} gathering actions this period.','Complete {n} crafts this period.','Complete {n} exploration route actions this period.','Complete {n} Faith practices this period.'];
+const names=['Field Patrol','Gathering Run','Crafting Orders','Trail Survey','Faith Practice','Kitchen Duties','Alchemist Orders','Forge Work','Tailoring Commission','Enchanter Practice','Boss Hunt','Festival Service'];
+const templates=['Defeat {n} monsters this period.','Complete {n} gathering actions this period.','Complete {n} crafts this period.','Complete {n} exploration route actions this period.','Complete {n} Faith practices this period.','Complete {n} Cooking recipes this period.','Complete {n} Alchemy recipes this period.','Complete {n} Smithing recipes this period.','Complete {n} Tailoring recipes this period.','Complete {n} Enchanting recipes this period.','Defeat {n} bosses this period.','Claim {n} completed event objective this period.'];
 const cacheNames=Object.values(QUEST_RARITIES).map(v=>v.cache);
 const rarityNames=Object.values(QUEST_RARITIES).map(v=>v.label);
-const tags=['COMBAT','GATHERING','CRAFTING','EXPLORATION','FAITH','EQUIPMENT','BOSS'];
+const tags=['COMBAT','GATHERING','CRAFTING','EXPLORATION','FAITH','EQUIPMENT','BOSS','COOKING','ALCHEMY','SMITHING','TAILORING','ENCHANTING','EVENT'];
 const all=[...archivedNames,...names,...templates,...cacheNames,...rarityNames,...tags,'CACHE CLAIMED'];
-assert.equal(all.length,49,'expected precisely 49 owned authored templates including legacy translations');
+assert.equal(all.length,69,'expected 69 localized current and legacy challenge strings');
 assert.deepEqual(Object.keys(seasonalChallengeRows).sort(),all.slice().sort(),'no missing or unreviewed keys');
 const source=fs.readFileSync(path.join(__dirname,'../src/core/seasonal-quests.ts'),'utf8');
 for(const key of names.concat(templates,cacheNames,rarityNames)){
@@ -34,7 +34,7 @@ for(const key of all){
   assert.equal(seasonalChallengeText(language,key,{n:17}),values[i].replace(/\{n\}/g,'17'),key+' wrong '+language);
  }
 }
-for(const [tag,template]of Object.entries({combat:templates[0],gathering:templates[1],crafting:templates[2],exploration:templates[3],faith:templates[4]})){
+for(const [tag,template]of Object.entries({combat:templates[0],gathering:templates[1],crafting:templates[2],exploration:templates[3],faith:templates[4],cooking:templates[5],alchemy:templates[6],smithing:templates[7],tailoring:templates[8],enchanting:templates[9],boss:templates[10],event:templates[11]})){
  for(const language of lang){
   const quest={tag,required:37,description:template.replace('{n}','37')};
   assert.equal(seasonalChallengeDescription(language,quest),seasonalChallengeText(language,template,{n:37}),tag+' '+language+' valid objective');
@@ -55,4 +55,4 @@ for(const pathName of ['QuestRefinedScreen.tsx','QuestScreen.tsx']){
  const ast=ts.createSourceFile(pathName,src,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(ast.parseDiagnostics.length,0,pathName+' invalid JSX');
 }
-console.log('PASS: 49 localized challenge entries including shared quests and Faith, source parity and both Quest screens');
+console.log('PASS: 69 localized challenge entries, source parity and both Quest screens');

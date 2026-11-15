@@ -1,4 +1,4 @@
-import {accountText} from '../i18n/account';
+import {recentScreenText} from '../i18n/recent-screens';
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
@@ -13,7 +13,7 @@ import {liveEventVisuals} from '../ui/live-event-visuals-active';
 
 export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onWeekly,onForge,onCompanions,onNew,compact=false}:{compact?:boolean;state:GameState;nowMs:number;onQuests:()=>void;onDaily:()=>void;onEvents:()=>void;onWeekly:()=>void;onForge:()=>void;onCompanions:()=>void;onNew:()=>void}){
  const language=state.settings.language;
- const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+ const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAllReady,setShowAllReady]=useState(false);

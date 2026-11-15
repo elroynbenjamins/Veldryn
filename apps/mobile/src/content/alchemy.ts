@@ -54,7 +54,7 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   recipe('VIGOR_TONIC',1,75,115,8,[{itemId:'DEWLEAF',quantity:4}]),
   recipe('WARD_TONIC',1,90,195,12,[{itemId:'DEWLEAF',quantity:5}]),
   recipe('HARMONY_TONIC',1,100,220,14,[{itemId:'DEWLEAF',quantity:6}]),
-  recipe('RIVERHEART_DRAUGHT',25,105,315,18,[{itemId:'DEWLEAF',quantity:3},{itemId:'RIVER_MINT',quantity:3}]),
+  recipe('RIVERHEART_DRAUGHT',25,105,315,18,[{itemId:'RIVER_MINT',quantity:5}]),
   recipe('GREATER_VIGOR_TONIC',25,120,475,28,[{itemId:'RIVER_MINT',quantity:3},{itemId:'IRONBLOOM',quantity:2}]),
   recipe('GREATER_WARD_TONIC',25,135,700,40,[{itemId:'IRONBLOOM',quantity:3},{itemId:'RIVER_MINT',quantity:3}]),
   recipe('GREATER_HARMONY_TONIC',25,145,760,46,[{itemId:'RIVER_MINT',quantity:3},{itemId:'IRONBLOOM',quantity:4}]),

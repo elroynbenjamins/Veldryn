@@ -7,7 +7,7 @@ import type {CombatCompanionRole,CompanionAscensionCost,CompanionBondSource,Comp
 
 interface HostItemStack{itemId:string;quantity:number;}
 interface HostCharacter{id:string;classId:VeldrynClassId;gold:number;equippedCombatCompanionId?:string;classSkills?:unknown;monsterMasteryPoints?:Record<string,number>;}
-interface HostCharacterProgress{character:HostCharacter;}
+interface HostCharacterProgress{character:HostCharacter;skills?:Array<{skillId:string;level:number;xp?:number}>;quests?:Array<{questId:string;status:string;progress?:number}>;}
 interface HostAccount{
   companionBossClears?:Record<string,number>;
   companionSpecialClears?:string[];
@@ -43,18 +43,26 @@ export const CLASS_COMPANION_ROLE:Record<VeldrynClassId,CombatCompanionRole>={
   DAWNKEEPER:'support',STONECALLER:'support',
   WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
 };
-/** Character-led combat always requires a companion with a different role.
- * Companion Trials and Sanctuary Expeditions build companion-only teams and are exempt. */
+/** Character-led combat allows every owned companion role.
+ * Trials and Sanctuary Expeditions retain independent team and availability rules. */
 export type CharacterCompanionCombatMode='normal_combat'|'dungeon'|'guild_boss'|'event_boss'|'world_boss'|'arena'|'future_character_combat';
 export const CHARACTER_COMPANION_COMBAT_MODES:readonly CharacterCompanionCombatMode[]=['normal_combat','dungeon','guild_boss','event_boss','world_boss','arena','future_character_combat'];
 export const classCompanionRole=(classId:VeldrynClassId):CombatCompanionRole=>CLASS_COMPANION_ROLE[classId];
-export const canUseCharacterCombatCompanion=(characterRole:CombatCompanionRole,companionRole:CombatCompanionRole,_mode:CharacterCompanionCombatMode)=>characterRole!==companionRole;
+export const canUseCharacterCombatCompanion=(_characterRole:CombatCompanionRole,_companionRole:CombatCompanionRole,_mode:CharacterCompanionCombatMode)=>true;
 export const canEquipCompanion=(characterRole:CombatCompanionRole,companionRole:CombatCompanionRole)=>canUseCharacterCombatCompanion(characterRole,companionRole,'normal_combat');
-export const usableCompanionRoles=(companionRole:CombatCompanionRole):CombatCompanionRole[]=>(['damage','tank','support'] as CombatCompanionRole[]).filter(role=>role!==companionRole);
+export const usableCompanionRoles=(_companionRole:CombatCompanionRole):CombatCompanionRole[]=>['damage','tank','support'];
 const STARTER_COMPANION_IDS=['UNIT_001','UNIT_002','UNIT_003'] as const;
 const starterCompanionIds=new Set<string>(STARTER_COMPANION_IDS);
 const isStarterCompanionId=(id:unknown):id is typeof STARTER_COMPANION_IDS[number]=>typeof id==='string'&&starterCompanionIds.has(id);
-const claimedQuest=(state:CombatCompanionStateHost,id:string)=>(state.quests??[]).some(entry=>entry.questId===id&&entry.status==='claimed');
+/** A manual recruitment retry may only use the same verified progression paths
+ * as automatic reconciliation. Event and shop rewards retain their own authority. */
+export function companionCanRecruitFromRequirements(def:CompanionDefinition){
+  return COMBAT_COMPANIONS.some(row=>row.id===def.id)&&!isStarterCompanionId(def.id)&&
+    def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'&&def.unlockRequirements.length>0;
+}
+const claimedQuest=(state:CombatCompanionStateHost,id:string)=>
+  [state.quests??[],...(state.otherCharacters??[]).map(row=>row.quests??[])]
+    .some(quests=>quests.some(entry=>entry.questId===id&&entry.status==='claimed'));
 
 export const defaultCompanionSanctuary=():CompanionSanctuaryState=>({trainingGroundLevel:0,essenceBasinLevel:0,bondHallLevel:0,expeditionPensLevel:0,masteryChamberLevel:0});
 export const defaultOwnedCompanionProgress=(nowMs=Date.now()):OwnedCompanionProgress=>({level:1,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false,obtainedAtMs:nowMs});
@@ -113,13 +121,12 @@ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompa
   const max=companionMaxLevel(def),level=int(value?.level??fallback.level,1,max);
   const inferred=requiredAscensionTierForLevel(def,level),ascensionTier=Math.max(inferred,int(value?.ascensionTier??fallback.ascensionTier,0,3)) as 0|1|2|3;
   let bondLevel=int(value?.bondLevel??fallback.bondLevel,1,COMPANION_BOND_CONFIG.maxLevel);
-  const rawBondXp=int(value?.bondXp??fallback.bondXp),minimumBondXp=COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,bondLevel-1)]??0;
-  // v13 and earlier local saves stored Bond XP as progress within the current
-  // level, while the authoritative server uses cumulative Bond XP. Detect the
-  // residual form and promote it without losing earned progress.
-  let normalizedBondXp=bondLevel>=10?(COMPANION_BOND_CONFIG.xpThresholds[9]??0):(rawBondXp<minimumBondXp?minimumBondXp+rawBondXp:rawBondXp);
-  while(bondLevel<10&&normalizedBondXp>=(COMPANION_BOND_CONFIG.xpThresholds[bondLevel]??Number.MAX_SAFE_INTEGER))bondLevel++;
-  if(bondLevel>=10)normalizedBondXp=COMPANION_BOND_CONFIG.xpThresholds[9]??normalizedBondXp;
+  const rawBondXp=int(value?.bondXp??fallback.bondXp);
+  // Keep existing Bond ranks and their within-level progress when the curve changes.
+  // The version marker prevents re-applying the tripling on subsequent loads.
+  let normalizedBondXp=value?.bondCurveVersion===2?Math.max(bondThreshold(bondLevel),rawBondXp):rebaseLegacyBondXp(bondLevel,rawBondXp);
+  while(bondLevel<10&&normalizedBondXp>=bondThreshold(bondLevel+1))bondLevel++;
+  if(bondLevel>=10)normalizedBondXp=bondThreshold(10);
   const cap=COMPANION_STAGE_CAPS[def.rarity][ascensionTier];
   const safeLevel=Math.min(level,cap,max),nextXp=companionXpToNextLevel(def.rarity,safeLevel);
   return {
@@ -128,6 +135,7 @@ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompa
     ascensionTier,
     bondLevel,
     bondXp:normalizedBondXp,
+    bondCurveVersion:2,
     bondTraitUnlocked:bondLevel>=10,
     mastered:def.rarity==='prestige'&&safeLevel===35&&value?.mastered===true,
     obtainedAtMs:Number.isFinite(value?.obtainedAtMs)?value.obtainedAtMs:fallback.obtainedAtMs,
@@ -160,11 +168,10 @@ export function migrateLegacyCombatCompanionAccount(input:any){
   const merged:Record<string,any>={};for(const source of sources)if(source&&typeof source==='object')Object.assign(merged,source);
   const progress:Record<string,OwnedCompanionProgress>={};
   for(const id of legacyOwned){const def=combatCompanionDef(id)!;progress[id]=normalizeProgress(def,merged[id],legacyOwnedCompanionProgress());}
-  const characterRole=input?.character?.classId&&CLASS_COMPANION_ROLE[input.character.classId as VeldrynClassId];
   const explicitStarter=isStarterCompanionId(account.starterCombatCompanionId)&&legacyOwned.includes(account.starterCombatCompanionId)?account.starterCombatCompanionId:undefined;
   // Old saves received a starter automatically. Preserve that earned unit as
   // the permanent choice instead of showing existing players a retroactive prompt.
-  const legacyStarter=explicitStarter??legacyOwned.find(id=>isStarterCompanionId(id)&&(!characterRole||combatCompanionDef(id)?.role!==characterRole));
+  const legacyStarter=explicitStarter??legacyOwned.find(isStarterCompanionId);
   const followup=isStarterCompanionId(account.starterFollowupCombatCompanionId)&&legacyOwned.includes(account.starterFollowupCombatCompanionId)?account.starterFollowupCombatCompanionId:undefined;
   const third=isStarterCompanionId(account.starterThirdCombatCompanionId)&&legacyOwned.includes(account.starterThirdCombatCompanionId)?account.starterThirdCombatCompanionId:undefined;
   return {
@@ -199,7 +206,7 @@ export function sanitizeCombatCompanionState<T extends CombatCompanionStateHost>
   const cleanCharacter=(character:HostCharacter|null)=>{
     if(!character)return character;
     const id=legacyEquippedCombatCompanionId(character),def=id?combatCompanionDef(id):undefined;
-    const valid=!!id&&!!def&&owned.includes(id)&&canEquipCompanion(classCompanionRole(character.classId),def.role);
+    const valid=!!id&&!!def&&owned.includes(id);
     return {...character,equippedCombatCompanionId:valid?id:undefined};
   };
   return {...state,character:cleanCharacter(state.character),otherCharacters:(state.otherCharacters??[]).map(entry=>({...entry,character:cleanCharacter(entry.character)!})),account:{...state.account,...migrated,unlockedCombatCompanionIds:owned,combatCompanionProgress:progress}} as T;
@@ -210,9 +217,12 @@ export function isCombatCompanionMastered(def:CompanionDefinition,progress:Owned
 
 export function companionUnlockRequirementMet(state:CombatCompanionStateHost,requirement:CompanionDefinition['unlockRequirements'][number]){
   const target=requirement.target??requirement.description,amount=Math.max(1,requirement.amount??1);
-  if(target==='KNIFE_DANCER_SKILL_TOTAL'&&state.character?.classId==='KNIFE_DANCER')return normalizeClassSkills('KNIFE_DANCER',state.character.classSkills).reduce((sum,s)=>sum+s.level,0)>=amount;
-  if(requirement.type==='monster_mastery'&&state.character?.monsterMasteryPoints?.[target]!==undefined)return Math.floor((normalizeMonsterMastery(state.character.monsterMasteryPoints)[target]??0)/25)>=amount;
-  if(target==='ASTERFALL_MASTERY_20_ALL'&&state.character?.monsterMasteryPoints)return Object.values(normalizeMonsterMastery(state.character.monsterMasteryPoints)).filter(n=>n>=500).length>=amount;
+  // Companion ownership is account-wide. Any one qualifying character can
+  // satisfy a character-bound milestone, including an inactive roster slot.
+  const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is HostCharacter=>!!row);
+  if(target==='KNIFE_DANCER_SKILL_TOTAL')return characters.some(character=>character.classId==='KNIFE_DANCER'&&normalizeClassSkills('KNIFE_DANCER',character.classSkills).reduce((sum,s)=>sum+s.level,0)>=amount);
+  if(requirement.type==='monster_mastery')return characters.some(character=>Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target]??0)/25)>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
+  if(target==='ASTERFALL_MASTERY_20_ALL')return characters.some(character=>Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter(n=>n>=500).length>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
   if(requirement.type==='meta'&&target.startsWith('COMPANION_BOND:')){
     const companionId=target.slice('COMPANION_BOND:'.length),progress=state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel??0)>=amount;
@@ -228,9 +238,9 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
     if((progress.SILVERBROOK_NODES??0)>=1)return true;
     return SILVERBROOK_STARTER_FISHING_NODES.filter(id=>(progress[`node:${id}`]??0)>0).length>=2;
   }
-  if(requirement.type==='quest')return (state.quests??[]).some(entry=>entry.questId===target&&entry.status==='claimed');
+  if(requirement.type==='quest')return [state.quests??[],...(state.otherCharacters??[]).map(row=>row.quests??[])].some(quests=>quests.some(entry=>entry.questId===target&&entry.status==='claimed'));
   if(requirement.type==='boss_kills')return Math.max((state.defeatedBossIds??[]).includes(target)?1:0,state.account.companionBossClears?.[target]??0)>=amount;
-  if(requirement.type==='skill_level')return (state.skills??[]).some(skill=>skill.skillId===target&&skill.level>=amount);
+  if(requirement.type==='skill_level')return [state.skills??[],...(state.otherCharacters??[]).map(row=>row.skills??[])].some(skills=>skills.some(skill=>skill.skillId===target&&skill.level>=amount));
   if(requirement.type==='event_challenge'&&target.startsWith('CHALLENGE_'))return state.account.companionSpecialClears?.includes(target)===true;
   return (state.account.companionUnlockProgress?.[target]??0)>=amount;
 }
@@ -240,8 +250,7 @@ export function starterCombatCompanionChoicePending(state:CombatCompanionStateHo
 }
 export function starterCombatCompanionChoices(state:CombatCompanionStateHost){
  const clean=sanitizeCombatCompanionState(state);if(!clean.character)return [];
- const role=classCompanionRole(clean.character.classId);
- return STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).filter(def=>def.role!==role);
+ return STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!);
 }
 export function chooseStarterCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
  const clean=sanitizeCombatCompanionState(state);
@@ -249,28 +258,62 @@ export function chooseStarterCombatCompanion<T extends CombatCompanionStateHost>
  if(clean.account.starterCombatCompanionId)throw new Error('A starter companion has already been chosen.');
  if(!claimedQuest(clean,'QST_005'))throw new Error('Complete Into Ironwood before choosing a companion.');
  const choice=starterCombatCompanionChoices(clean).find(def=>def.id===id);
- if(!choice)throw new Error('Choose a companion with a different role.');
+ if(!choice)throw new Error('Choose an available starter companion.');
  const unlocked=unlockCombatCompanion(clean,choice.id,nowMs);
  return {...unlocked,character:{...unlocked.character!,equippedCombatCompanionId:choice.id},account:{...unlocked.account,starterCombatCompanionId:choice.id}} as T;
 }
 function starterFollowupCandidate(state:CombatCompanionStateHost){
  const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
- return starterCombatCompanionChoices(state).find(def=>!owned.has(def.id));
+ return STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).find(def=>!owned.has(def.id));
 }
 export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHost>(state:T,nowMs=Date.now()):T{
   let next=sanitizeCombatCompanionState(state);
-  // The standard trio is progression-guided: the first is a deliberate role
-  // choice, the other two arrive at Silverbrook and Old Mines milestones.
-  for(const def of COMBAT_COMPANIONS){if(isStarterCompanionId(def.id)||(next.account.unlockedCombatCompanionIds??[]).includes(def.id))continue;if(def.unlockRequirements.length&&def.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement)))next=unlockCombatCompanion(next,def.id,nowMs);}
+  // Progression companions auto-join when their server-verified requirements
+  // are complete. Shop and event acquisition continue through their own flows.
+  for(const def of COMBAT_COMPANIONS){
+    if(isStarterCompanionId(def.id)||(next.account.unlockedCombatCompanionIds??[]).includes(def.id))continue;
+    if(companionCanRecruitFromRequirements(def)&&def.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement)))
+      next=unlockCombatCompanion(next,def.id,nowMs);
+  }
   const sprite=combatCompanionDef('UNIT_003')!,sentry=combatCompanionDef('UNIT_002')!;
-  if(next.account.starterCombatCompanionId&&!next.account.starterFollowupCombatCompanionId&&sprite.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement))){
-   const candidate=starterFollowupCandidate(next);if(candidate){next=unlockCombatCompanion(next,candidate.id,nowMs);next={...next,account:{...next.account,starterFollowupCombatCompanionId:candidate.id}} as T;}
+  if(next.account.starterCombatCompanionId&&sprite.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement))){
+    // Silverbrook specifically earns the Sprite, regardless of player class.
+    // Older saves sometimes received the Sentry instead: retain that earned
+    // companion while also granting the missing Sprite, exactly once.
+    next=unlockCombatCompanion(next,sprite.id,nowMs);
+    if(!next.account.starterFollowupCombatCompanionId){
+      const candidate=next.account.starterCombatCompanionId===sprite.id?starterFollowupCandidate(next):sprite;
+      if(candidate){
+        next=unlockCombatCompanion(next,candidate.id,nowMs);
+        next={...next,account:{...next.account,starterFollowupCombatCompanionId:candidate.id}} as T;
+      }
+    }
   }
   if(next.account.starterFollowupCombatCompanionId&&!next.account.starterThirdCombatCompanionId&&sentry.unlockRequirements.every(requirement=>companionUnlockRequirementMet(next,requirement))){
-   const owned=new Set(next.account.unlockedCombatCompanionIds??[]),candidate=STARTER_COMPANION_IDS.map(id=>combatCompanionDef(id)!).find(def=>!owned.has(def.id));
-   if(candidate){next=unlockCombatCompanion(next,candidate.id,nowMs);next={...next,account:{...next.account,starterThirdCombatCompanionId:candidate.id}} as T;}
+    const owned=new Set(next.account.unlockedCombatCompanionIds??[]);
+    const missing=STARTER_COMPANION_IDS.find(id=>!owned.has(id));
+    // A legacy account may already own all three after Silverbrook recovery.
+    // Mark the third milestone complete without creating a duplicate grant.
+    const thirdId=missing??STARTER_COMPANION_IDS.find(id=>id!==next.account.starterCombatCompanionId&&id!==next.account.starterFollowupCombatCompanionId);
+    if(thirdId){
+      next=unlockCombatCompanion(next,thirdId,nowMs);
+      next={...next,account:{...next.account,starterThirdCombatCompanionId:thirdId}} as T;
+    }
   }
   return next;
+}
+/** Idempotent, server-authoritative retry for a fully completed recruitment.
+ * The client never submits progress or grants. Eligibility is recomputed from
+ * trusted saved state; special challenges, events and shops cannot be bypassed.
+ */
+export function recruitEligibleCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
+  const def=combatCompanionDef(id);
+  if(!def||!companionCanRecruitFromRequirements(def))throw new Error('companion_recruitment_requires_original_source');
+  const clean=sanitizeCombatCompanionState(state);
+  if(clean.account.unlockedCombatCompanionIds?.includes(id))return clean;
+  if(!def.unlockRequirements.every(requirement=>companionUnlockRequirementMet(clean,requirement)))
+    throw new Error('companion_recruitment_requirements_incomplete');
+  return unlockCombatCompanion(clean,id,nowMs);
 }
 export function unlockCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
   const def=combatCompanionDef(id);if(!def)throw new Error('Unknown combat companion.');
@@ -283,8 +326,6 @@ export function equipCombatCompanion<T extends CombatCompanionStateHost>(state:T
   const def=combatCompanionDef(id);if(!def)throw new Error('Unknown combat companion.');
   if(!(clean.account.unlockedCombatCompanionIds??[]).includes(id))throw new Error('This combat companion is locked.');
   if((clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds?.includes(id)))throw new Error('This combat companion is on a Sanctuary Expedition.');
-  const characterRole=classCompanionRole(clean.character.classId);
-  if(!canEquipCompanion(characterRole,def.role))throw new Error(`Cannot equip: ${def.role} companions cannot be used by a ${characterRole} character.`);
   return {...clean,character:{...clean.character,equippedCombatCompanionId:id}} as T;
 }
 export function unequipCombatCompanion<T extends CombatCompanionStateHost>(state:T):T{return !state.character?state:{...state,character:{...state.character,equippedCombatCompanionId:undefined}} as T;}
@@ -346,12 +387,23 @@ export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDe
   while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;cap=companionCurrentLevelCap(def,p);}
   if(p.level>=cap||p.level>=max)p.xp=0;return p;
 }
+const LEGACY_BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
 function bondThreshold(level:number){return COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,Math.min(9,level-1))]??Number.MAX_SAFE_INTEGER;}
+/** One-time migration: preserve the earned rank and fractional progress in that rank. */
+function rebaseLegacyBondXp(level:number,rawXp:number){
+ const index=Math.max(0,Math.min(9,level-1)),oldFloor=LEGACY_BOND_THRESHOLDS[index];
+ if(level>=10)return bondThreshold(10);
+ const oldNext=LEGACY_BOND_THRESHOLDS[index+1],newFloor=bondThreshold(level),newNext=bondThreshold(level+1);
+ // Older local saves used within-level XP; newer saves used cumulative XP.
+ const earned=rawXp<oldFloor?rawXp:rawXp-oldFloor;
+ const ratio=Math.max(0,Math.min(1,earned/Math.max(1,oldNext-oldFloor)));
+ return Math.min(newNext-1,newFloor+Math.round((newNext-newFloor)*ratio));
+}
 export function applyCompanionBondXp(progress:OwnedCompanionProgress,amount:number):OwnedCompanionProgress{
-  let level=progress.bondLevel,xp=Math.max(bondThreshold(level),progress.bondXp)+Math.max(0,Math.floor(amount));
+  let level=progress.bondLevel,xp=Math.max(bondThreshold(level),progress.bondCurveVersion===2?progress.bondXp:rebaseLegacyBondXp(level,progress.bondXp))+Math.max(0,Math.floor(amount));
   while(level<10&&xp>=bondThreshold(level+1))level++;
   if(level>=10)xp=bondThreshold(10);
-  return {...progress,bondLevel:level,bondXp:xp,bondTraitUnlocked:level>=10||progress.bondTraitUnlocked};
+  return {...progress,bondLevel:level,bondXp:xp,bondCurveVersion:2,bondTraitUnlocked:level>=10||progress.bondTraitUnlocked};
 }
 export function companionBondXpMultiplier(state:CombatCompanionStateHost){const level=int(state.account.companionSanctuary?.bondHallLevel,0,3);return 1+COMPANION_SANCTUARY_BOND_BONUS[level];}
 function bondSourceXp(source:CompanionBondSource){const value=(COMPANION_BOND_CONFIG.sourceXp as Record<string,number>)[source];if(!Number.isFinite(value))throw new Error('Invalid Companion Bond source.');return value;}
@@ -423,8 +475,8 @@ export function isCompanionAvailable(def:CompanionDefinition,context:{activeEven
 export function canUseOwnedCompanion(state:CombatCompanionStateHost,id:string){return (state.account.unlockedCombatCompanionIds??[]).includes(id)&&!!combatCompanionDef(id);}
 
 export function combatCompanionUiModel(state:CombatCompanionStateHost,id:string){
-  const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined,characterRole=clean.character?classCompanionRole(clean.character.classId):undefined;
-  const compatible=!!characterRole&&canEquipCompanion(characterRole,def.role),cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionRemainingLevelCost(def,p):undefined,tier=p?nextCompanionAscension(def,p):undefined;
+  const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined;
+  const compatible=!!clean.character,cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionRemainingLevelCost(def,p):undefined,tier=p?nextCompanionAscension(def,p):undefined;
   return {def,owned,progress:p,compatible,equipped:clean.character?.equippedCombatCompanionId===id,usableRoles:usableCompanionRoles(def.role),levelCap:cap,maxLevel:max,nextLevelCost:cost,nextAscensionTier:tier,nextAscensionCost:tier?companionAscensionCost(def,tier):undefined,abilityValue:p?companionAbilityValue(def,p):def.activeAbility.scaling.baseValue};
 }
 

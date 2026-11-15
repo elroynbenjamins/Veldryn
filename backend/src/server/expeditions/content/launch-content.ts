@@ -15,7 +15,7 @@ export interface ExpeditionDefinition {
 }
 
 export const EXPEDITIONS: Record<string, ExpeditionDefinition> = {
-  EXP_001: { id:'EXP_001', name:'Rootbound Vault', region:'Asterfall', minLevel:15, recommendedLevel:25, baseMarks:74, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_ROOT', coopImplemented:true, nodeWeights:{battle:30,elite:10,event:18,camp:9,treasure:8,echo:8,forge:5,merchant:4,risk:5,secret:3}},
+  EXP_001: { id:'EXP_001', name:'Rootbound Vault', region:'Asterfall', minLevel:10, recommendedLevel:15, baseMarks:74, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_ROOT', coopImplemented:true, nodeWeights:{battle:30,elite:10,event:18,camp:9,treasure:8,echo:8,forge:5,merchant:4,risk:5,secret:3}},
   EXP_002: { id:'EXP_002', name:'Lanternwatch Descent', region:'Asterfall', minLevel:18, recommendedLevel:25, baseMarks:76, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_BELL', coopImplemented:true, nodeWeights:{battle:28,elite:11,event:17,camp:8,treasure:8,echo:12,forge:5,merchant:4,risk:5,secret:2}},
   EXP_003: { id:'EXP_003', name:'Buried Observatory', region:'Sunscar', minLevel:36, recommendedLevel:45, baseMarks:80, minNodes:9, maxNodes:11, bossId:'BOSS_EXP_SOLAR', coopImplemented:true, nodeWeights:{battle:29,elite:12,event:16,camp:9,treasure:7,echo:6,forge:5,merchant:5,risk:8,secret:3}},
   EXP_004: { id:'EXP_004', name:'Mirage Well', region:'Sunscar', minLevel:32, recommendedLevel:45, baseMarks:80, minNodes:9, maxNodes:11, bossId:'BOSS_EXP_SPHINX', coopImplemented:true, nodeWeights:{battle:27,elite:11,event:19,camp:7,treasure:8,echo:7,forge:4,merchant:5,risk:9,secret:3}},

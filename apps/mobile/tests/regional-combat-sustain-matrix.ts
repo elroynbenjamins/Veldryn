@@ -42,4 +42,19 @@ assert.ok(healerProjection.companionHealingPerHour>0,'restorative Support compan
 assert.ok(healerProjection.foodPerHour<baselineProjection.foodPerHour,'restorative Support healing must reduce food burn');
 assert.ok(healerProjection.foodPerHour>0,'Support healing must not remove the long-hunt food requirement');
 
+// Long-hunt estimates must include a tank companion's active, session-timed
+// shield in addition to its passive mitigation. Damage roles can equip tanks.
+const road=REGIONAL_COMBAT_FIXTURES.find(def=>def.regionId==='KINGS_ROAD')!;
+const unguardedState=regionalCombatFixture(road,'prepared','RAVAGER');
+let guardedState=unlockCombatCompanion(unguardedState,'UNIT_002',0);
+guardedState=equipCombatCompanion(guardedState,'UNIT_002');
+assert.equal(guardedState.character!.equippedCombatCompanionId,'UNIT_002','Damage class may equip a Tank companion');
+const unguardedProjection=combatSustainProjection(unguardedState,road.monsterId)!;
+const guardedProjection=combatSustainProjection(guardedState,road.monsterId)!;
+assert.ok(guardedProjection.damagePerKill<unguardedProjection.damagePerKill,'Tank protection must lower incoming hit budget');
+assert.ok(guardedProjection.netDamagePerKill<unguardedProjection.netDamagePerKill,'Tank defense must reduce actual forecast net damage');
+assert.ok(guardedProjection.foodPerHour<=unguardedProjection.foodPerHour*1.05+.05,'Tank companion must not cause a provisioning regression');
+assert.ok(Math.abs(guardedProjection.xpPerHour/guardedProjection.killsPerHour-unguardedProjection.xpPerHour/unguardedProjection.killsPerHour)<1e-6,'Tank guard cannot alter XP per kill');
+assert.ok(Math.abs(guardedProjection.goldPerHour/guardedProjection.killsPerHour-unguardedProjection.goldPerHour/unguardedProjection.killsPerHour)<1e-6,'Tank guard cannot alter Gold per kill');
+
 console.log(JSON.stringify({status:'PASS',report},null,2));

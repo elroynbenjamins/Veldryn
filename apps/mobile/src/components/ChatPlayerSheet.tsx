@@ -13,6 +13,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {profileShowcaseArt} from '../theme/profile-showcase-art';
 import {ProfileShowcaseSection} from './ProfileShowcaseSection';
+import {ProfileEquippedGearShowcase} from './ProfileEquippedGearShowcase';
 import {ProfileFavoriteHighlights} from './ProfileFavoriteHighlights';
 import {GameButton} from './GameButton';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
@@ -90,7 +91,8 @@ export function ChatPlayerSheet({
  const recordEntries=profile?.recordShowcaseIds.map(id=>{const record=profile.recordEntries?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel,prestige:recordPrestige.tone,badge:recordPrestige.badge}})??[];
  const collectionEntries=profile?.collectionShowcase.map(ref=>{const prestige=profileCollectionPrestige(ref);return {key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:ref.kind.replace(/_/g,' '),art:profileShowcaseArt(ref),artMode:ref.kind==='background'?'cover' as const:'contain' as const,prestige:prestige.tone,badge:prestige.badge}})??[];
  const relationshipPresentation=friendRelationshipActionPresentation(relationship.relationship);
- const showInviteActions=!!inviteCapabilities&&(inviteCapabilities.party.available||inviteCapabilities.party.pending||inviteCapabilities.guild.available||inviteCapabilities.guild.pending);
+ const partyInviteHint=inviteCapabilities?.party.reason==='leader_required'?st('Only your Party leader can invite other players.'):inviteCapabilities?.party.reason==='target_in_party'?st('This player already belongs to another Party.'):null;
+ const showInviteActions=!!inviteCapabilities&&(inviteCapabilities.party.available||inviteCapabilities.party.pending||inviteCapabilities.guild.available||inviteCapabilities.guild.pending||!!partyInviteHint);
  const socialActions=isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>{st("THIS IS YOUR PROFILE")}</Text><Text style={s.selfNoticeText}>{st("Edit your biography, favorites, privacy and showcases from Account → Profile.")}</Text></View>:<View style={s.actionArea}>
   <View style={s.actionHead}><Text style={s.hint}>{st("PLAYER ACTIONS")}</Text><View style={[s.relationshipPill,relationshipPresentation.tone==='friend'&&s.relationshipFriend]}>{relationshipLoading?<ActivityIndicator size="small" color={C.info}/>:<Text style={[s.relationshipText,relationshipPresentation.tone==='friend'&&s.relationshipFriendText]}>{relationshipPresentation.status}</Text>}</View></View>
   {relationshipError?<Text style={s.relationshipError}>{st("Friend status could not refresh; showing the last known state.")}</Text>:null}
@@ -105,7 +107,7 @@ export function ChatPlayerSheet({
   {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>{st("DIRECT INVITATIONS")}</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={[s.actions,stackActions&&s.actionsStack]}>
    {inviteCapabilities?.party.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Invite to Party")} tone="secondary" disabled={busy||inviteLoading} onPress={()=>inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Party invite sent")} tone="secondary" disabled onPress={()=>{}}/></View>:null}
    {inviteCapabilities?.guild.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Invite to Guild")} tone="secondary" disabled={busy||inviteLoading} onPress={()=>inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Guild invite sent")} tone="secondary" disabled onPress={()=>{}}/></View>:null}
-  </View></>:inviteError?<Text style={s.inviteError}>{st("Direct invitations are temporarily unavailable.")}</Text>:null}
+  </View>{partyInviteHint?<Text style={s.inviteError}>{partyInviteHint}</Text>:null}</>:inviteError?<Text style={s.inviteError}>{st("Direct invitations are temporarily unavailable.")}</Text>:null}
  </View>;
 
  return <GameModalSurface visible presentation="sheet" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close player profile" surfaceStyle={s.sheet}>
@@ -114,6 +116,7 @@ export function ChatPlayerSheet({
     {loading?<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={st("LOADING PROFILE")}/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={{...profile,combatPower}}/>{socialActions}
     {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>{st("PROFILE BIO")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
     {(profile.favoriteSkillId||profile.favoriteCompanionId)?<ProfileFavoriteHighlights favoriteSkillId={profile.favoriteSkillId} favoriteCompanionId={profile.favoriteCompanionId}/>:null}
+    {profile.equippedGear?<ProfileEquippedGearShowcase key={profile.accountId+':'+profile.character.id} gear={profile.equippedGear} reduceMotion={reduceMotion}/>:null}
     <ProfileShowcaseSection title={st("ACHIEVEMENT SHOWCASE")} entries={achievementEntries} emptyLabel="No achievement selected"/>
     <ProfileShowcaseSection title={st("PERSONAL RECORDS")} entries={recordEntries} emptyLabel="No record selected"/>
     <ProfileShowcaseSection title={st("COLLECTION SHOWCASE")} entries={collectionEntries} emptyLabel="No collectible selected"/>

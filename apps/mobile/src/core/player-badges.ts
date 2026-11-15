@@ -1,9 +1,11 @@
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
-export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','beta_tester','veteran','guild_leader','community_champion','event_champion'] as const;
+export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion'] as const;
+export const VIP_BADGE_IDS=['vip','vip_plus'] as const;
 export const SUPPORTER_BADGE_IDS=['supporter','supporter_3m','supporter_6m','supporter_12m'] as const;
 export type CollectiblePlayerBadgeId=typeof COLLECTIBLE_PLAYER_BADGE_IDS[number];
 export type SupporterBadgeId=typeof SUPPORTER_BADGE_IDS[number];
-export type EquippablePlayerBadgeId=SupporterBadgeId|CollectiblePlayerBadgeId;
+export type VipBadgeId=typeof VIP_BADGE_IDS[number];
+export type EquippablePlayerBadgeId=SupporterBadgeId|CollectiblePlayerBadgeId|VipBadgeId;
 export type PlayerBadgeId='admin'|'moderator'|EquippablePlayerBadgeId;
 export type SupporterTenureTier=0|1|3|6|12;
 export interface PlayerBadgeIdentity{
@@ -23,17 +25,37 @@ export interface PlayerBadgeIdentity{
 }
 export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  admin:'Admin',moderator:'Moderator',
+ vip:'VIP',vip_plus:'VIP+',
  supporter:'Supporter',supporter_3m:'Supporter · 3 Months',supporter_6m:'Supporter · 6 Months',supporter_12m:'Supporter · 12 Months',
- founder:'Founder',beta_tester:'Beta Tester',veteran:'Veteran',guild_leader:'Guild Leader',
+ founder:'Founder',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
+};
+/** Friendly explanations for badge info bubbles, independent of ownership or unlock state. */
+export const PLAYER_BADGE_DESCRIPTIONS:Record<PlayerBadgeId,string>={
+ admin:'Official Veldryn administrator.',
+ moderator:'Official Veldryn community moderator.',
+ vip:'VIP membership badge.',
+ vip_plus:'VIP+ membership badge.',
+ supporter:'Awarded for supporting Veldryn.',
+ supporter_3m:'Three verified months of Supporter membership.',
+ supporter_6m:'Six verified months of Supporter membership.',
+ supporter_12m:'Twelve verified months of Supporter membership.',
+ founder:'Awarded to founding players of Veldryn.',
+ veteran:'Recognizes 90 days of adventuring in Veldryn.',
+ guild_leader:'Recognizes leadership of an active guild.',
+ community_champion:'Awarded for outstanding community contributions.',
+ event_champion:'Awarded for special event achievements.',
 };
 export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  founder:'Awarded to founding players.',
- beta_tester:'Awarded to early beta testers.',
  veteran:'Play Veldryn for 90 days.',
  guild_leader:'Lead an active guild.',
  community_champion:'Awarded for outstanding community contributions.',
  event_champion:'Awarded for special event achievements.',
+};
+export const VIP_BADGE_UNLOCK_HINTS:Record<VipBadgeId,string>={
+ vip:'Unlock with VIP or VIP+ on your account.',
+ vip_plus:'Unlock with VIP+ on your account.',
 };
 export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter:'Unlock with an active Supporter entitlement.',
@@ -54,8 +76,11 @@ export function isCollectiblePlayerBadgeId(value:unknown):value is CollectiblePl
 export function isSupporterBadgeId(value:unknown):value is SupporterBadgeId{
  return typeof value==='string'&&(SUPPORTER_BADGE_IDS as readonly string[]).includes(value);
 }
+export function isVipBadgeId(value:unknown):value is VipBadgeId{
+ return typeof value==='string'&&(VIP_BADGE_IDS as readonly string[]).includes(value);
+}
 export function isEquippablePlayerBadgeId(value:unknown):value is EquippablePlayerBadgeId{
- return isCollectiblePlayerBadgeId(value)||isSupporterBadgeId(value);
+ return isCollectiblePlayerBadgeId(value)||isSupporterBadgeId(value)||isVipBadgeId(value);
 }
 function cleanExtras(value:unknown):CollectiblePlayerBadgeId[]{
  if(!Array.isArray(value))return [];

@@ -14,6 +14,9 @@ import {RegionArtwork} from './RegionArtwork';
 import {GameButton} from './GameButton';
 import {GameModalSurface} from './GameModalSurface';
 import {CombatEffectShape} from './CombatAttackSprite';
+import {CLASS_ICON_ACCENT} from '../content/class-icon-colors';
+import {battleText} from '../i18n/battle';
+import {storyBossPlaybackEvents} from '../core/story-boss-playback';
 
 function pct(current:number,max:number){return Math.max(0,Math.min(100,max>0?current/max*100:0));}
 function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
@@ -22,6 +25,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!,region=WORLD_ZONES.find(row=>row.name==="King's Road");
   const reduceMotion=state.settings.reduceMotion;
+  const classTint=state.character?CLASS_ICON_ACCENT[state.character.classId]:C.accent;
   const playbackRealMs=Math.min(38_000,Math.max(12_000,battle.durationMs));
   const simPerRealMs=battle.durationMs/playbackRealMs;
   const [playhead,setPlayhead]=useState(0);
@@ -36,8 +40,11 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
     },80);
     return()=>clearInterval(id);
   },[battle.durationMs,simPerRealMs]);
-  const visible=useMemo(()=>battle.events.filter(event=>event.atMs<=playhead),[battle.events,playhead]);
-  const current=visible[visible.length-1]??battle.events[0];
+  // Retroactive telegraphs retain their labels, but must never reveal HP from
+  // an attack that has not yet appeared in the on-screen replay.
+  const playbackEvents=useMemo(()=>storyBossPlaybackEvents(battle),[battle]);
+  const visible=useMemo(()=>playbackEvents.filter(event=>event.atMs<=playhead),[playbackEvents,playhead]);
+  const current=visible[visible.length-1]??playbackEvents[0];
   const previous=visible.length>1?visible[visible.length-2]:undefined;
   const finished=playhead>=battle.durationMs;
   const bossHp=current?.bossHp??battle.bossMaxHp,playerHp=current?.playerHp??battle.playerMaxHp;
@@ -70,7 +77,10 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   // Android Back and accessibility Escape cannot bypass the fight; Continue unlocks after the full timeline.
   const closeAfterBattle=()=>{if(finished)onClose();};
   const eventText=(event:StoryBossEvent)=>{
-    if(event.type==='player_hit')return `${event.critical?'CRIT · ':''}You hit for ${displayStat(event.amount??0).toLocaleString()}`;
+    if(event.type==='player_hit')return event.skillKind==='damage'
+      ?`${battleText(language,event.label)} · ${battleText(language,'SKILL DAMAGE · {amount}',{amount:displayStat(event.amount??0).toLocaleString()})}`
+      :`${event.critical?'CRIT · ':''}You hit for ${displayStat(event.amount??0).toLocaleString()}`;
+    if(event.type==='class_skill')return `${battleText(language,event.label)} · ${battleText(language,event.skillKind==='heal'?'SKILL HEAL · {amount}':'SHIELD · {amount}',{amount:displayStat(event.amount??0).toLocaleString()})}`;
     if(event.type==='boss_hit')return `${event.critical?'CRIT · ':''}${event.label} hits for ${displayStat(event.amount??0).toLocaleString()}`;
     if(event.type==='heal')return `Healing potion restores ${displayStat(event.amount??0).toLocaleString()} HP`;
     if(event.type==='phase'||event.type==='telegraph')return event.label;
@@ -123,7 +133,13 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
 
         <View style={s.log}>
           <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{potionsUsedSoFar>0?`${potionsUsedSoFar} ${potionsUsedSoFar===1?'potion':'potions'} used · `:''}{phasesReachedSoFar}/3 phases</Text></View>
-          {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{gl(eventText(event))}</Text></View>):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
+          {recent.length?recent.map((event,index)=>{
+            const classCast=event.type==='class_skill'||event.skillKind==='damage';
+            return <View key={event.atMs+':'+event.type+':'+index} style={[s.logRow,classCast&&{borderLeftWidth:3,borderLeftColor:classTint,paddingLeft:5}]}>
+              <Text style={s.logTime}>{timeLabel(event.atMs)}</Text>
+              <Text numberOfLines={2} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog,classCast&&C.dark&&{color:classTint}]}>{gl(eventText(event))}</Text>
+            </View>;
+          }):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 
         {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{gl(message)}</Text></View>:null}

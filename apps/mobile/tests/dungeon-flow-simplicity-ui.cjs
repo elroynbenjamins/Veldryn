@@ -28,7 +28,7 @@ assert(screen.includes('setMyLiveVote({runId:run.runId,decisionId:run.decisionId
 assert(screen.includes("myLiveVote.decisionId===run.decisionId"),'Vote marker must reset when decision changes');
 assert(screen.includes('const result=voting?await coopClient.vote('),'Votes must use real Live server command');
 assert(run.indexOf('<DungeonRouteChoices')<run.indexOf("Party & formation"),'Current room choices must precede secondary party details');
-assert(run.includes("Objectives & mechanics")&&run.includes("Party Chat"),'Details and chat remain accessible in disclosures');
+assert(run.includes("Objectives & mechanics")&&run.includes("run.mode==='live'&&onChatSend&&!terminal?<CoopLiveChatBar")&&!run.includes("<DungeonDisclosure title={st('Party Chat')}"),'Mechanics stay in a disclosure while Live Party Chat stays available in the dedicated dock');
 assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombatStage run={run}'),'Run must retain cinematic combat for Live and Solo');
 assert(stage.includes('CombatAttackSprite')&&stage.includes('CombatImpactBurst'),'Animated attack and impact effects remain in the Live combat stage');
 assert(theater.includes('{footer?<View style={[s.footer')&&theater.includes('paddingBottom:Math.max(insets.bottom,12)'), 'Combat theater keeps the main action fixed above device safe area');
@@ -65,4 +65,19 @@ assert(run.includes('onChoose?.(nodeId,needsBoon?selectedBoonId:undefined)'),'Ch
 assert(screen.includes('...(boonId?{boonId}:{})'),'The boon ID must travel through the idempotent server command');
 const boonRuntime=fs.readFileSync(path.join(root,'../../backend/src/server/coop/room-boon-choices.ts'),'utf8');
 assert(boonRuntime.includes('generateBoonOffer(')&&boonRuntime.includes('chosenRoomBoons'),'Server decides offered boons and prevents repeated claims');
+// Dungeon experience redesign: keep client-side polish separate from server decisions.
+const loadout=read('components/coop/CoopLoadoutSelection.tsx');
+const setup=read('components/coop/CoopCombatSetupPanel.tsx');
+const routeStrip=read('components/coop/RoutePathStrip.tsx');
+const preparation=read('components/coop/DungeonPreparation.tsx');
+assert(browser.includes('featured={index===0}')&&browser.includes('featured&&dungeon.available'),'Only the first available regional dungeon receives the ready spotlight');
+assert(browser.includes('<DungeonHero compact title={dungeon.name}')&&preparation.includes('height:compact?142:title?190:146'),'Normal dungeon preview saves vertical space while event art remains full height');
+assert(loadout.includes('compact onChooseCompanion=')&&setup.includes('compact&&s.compactTile'),'Preparation uses compact but touch-friendly companion and potion cards');
+assert(loadout.includes('partyRoleStrip')&&loadout.includes('selected?.selectable?<StateChip'),'Preflight shows authentic party role requirements and server-verified readiness');
+assert(loadout.includes('accessibilityState={{expanded:showMatchup}}'),'Optional companion strategy is keyboard/screen-reader expandable');
+assert(run.includes('run.roleSlots.map((slot,index)=><View')&&run.includes('partyMiniName'),'Current run party preview derives from its server-authorized roster');
+assert(run.includes("initiallyOpen={Boolean(healingPotion?.canUse||dungeonTonic?.open)}"),'Supply actions expand automatically when healing or tonic selection needs attention');
+assert(run.includes("gt('DUNGEON HEALING')} · ${gt('DUNGEON TONIC')}"),'Supplies reuse translated gameplay labels rather than introducing English-only text');
+assert(routeStrip.includes('accessibilityRole="progressbar"')&&routeStrip.includes('accessibilityValue={{min:0,max:path.totalDepth'),'Screen reader announces authoritative dungeon route progress');
+assert(run.includes('rewards.map(reward=>')&&run.includes('onClaim?.(reward.id)'),'The polished reward recap cannot skip authoritative per-receipt claims');
 console.log('PASS dungeon flows: navigation, Live voting, NPC clarity, cinematic combat and advanced disclosures');

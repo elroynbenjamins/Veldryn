@@ -66,7 +66,7 @@ assert.match(update,/count\(c\.resource_id\)<>5/,'Every rank must retain five in
 assert.doesNotMatch(update,/DELETE FROM|UPDATE public\.guild_skill_allocations|UPDATE public\.guild_skill_upgrade_receipts_v1/i,'Already purchased ranks and receipts must not be touched');
 assert.match(liveUi,/nodeCosts=\{Object\.fromEntries\(snapshot\.nodes\.map\(node=>\[node\.id,node\.costs\]\)\)\}/,'Live Guild UI must pass server-authoritative costs');
 assert.match(skillUi,/const cost=nodeCosts[\s\S]*?Object\.fromEntries\(currentPublishedCosts/,'Live Guild UI must not silently use stale local prices');
-assert.match(skillUi,/id==='gold'\?'Gold':itemDef\(id\)\.name/,'Gold must be renderable, never sent through itemDef');
+assert.match(skillUi,/id==='gold'\?'Gold':(?:de\()?itemDef\(id\)\.name/,'Gold must be renderable, never sent through itemDef');
 assert.match(skillUi,/ResourceIcon resourceId=\{id\}/,'Upgrade preview must include the shared Gold icon');
 assert.match(skillUi,/costsKnown&&Object\.entries\(cost\)\.length>0/,'No zero-cost upgrade if the server lacks costs');
 assert.match(bankUi,/node\.costs/,'Guild Bank donation needs derive from server-published rank costs');

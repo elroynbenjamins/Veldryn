@@ -69,7 +69,9 @@ export class OnlineEventExpeditionRuntime{
   if(!game.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
-  if(request.loadoutRevision!==record.revision){const replay=await this.receipt(accountId,'event_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
+  // A stale preview after unrelated activity must not block an otherwise eligible run.
+  // Freeze and validate the current server-derived character, never the preview revision.
+  if(request.loadoutRevision>record.revision){const replay=await this.receipt(accountId,'event_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
   const gateLevel=isFrostfallEventExpedition(definition.id)?requiredLevel:rebaseLevel(definition.minLevel);
   const freeze=(source:AuthoritativeLoadoutRecord,syncLevel=definition.minLevel)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:gateLevel,syncLevel,repository:{getOwnedLoadout:()=>source}});
   const controllerForRole=freeze(record,isFrostfallEventExpedition(definition.id)?requiredLevel:definition.minLevel);

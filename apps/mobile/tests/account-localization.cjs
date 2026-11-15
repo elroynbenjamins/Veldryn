@@ -16,6 +16,8 @@ function load(relative){
  return exports;
 }
 const {accountCatalogs,accountTranslationRows,accountT,accountText,accountError,accountDuration}=load('i18n/account.ts');
+const {recentScreenTranslationRows,recentScreenText}=load('i18n/recent-screens.ts');
+const {earlyLocaleText}=load('i18n/early-locales.ts');
 const languages=['en','de','es','nl','it','fr'];
 const placeholders=text=>Array.from(text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g),m=>m[1]).sort();
 const keys=Object.keys(accountTranslationRows);
@@ -72,7 +74,7 @@ for(const relative of files){
  function visit(node){
   if(ts.isCallExpression(node)&&node.expression.getText(tree)==='a'){
    displayCalls++;
-   if(ts.isStringLiteral(node.arguments[0]))assert.ok(Object.hasOwn(accountTranslationRows,node.arguments[0].text),relative+' missing '+node.arguments[0].text);
+   if(ts.isStringLiteral(node.arguments[0]))assert.ok(Object.hasOwn(accountTranslationRows,node.arguments[0].text)||Object.hasOwn(recentScreenTranslationRows,node.arguments[0].text),relative+' missing '+node.arguments[0].text);
   }
   if(ts.isJsxAttribute(node)&&technical.has(node.name.getText(tree)))assert.ok(!/\ba\(/.test(node.initializer?.getText(tree)||''),relative+' translated technical '+node.name.getText(tree));
   ts.forEachChild(node,visit);
@@ -80,5 +82,59 @@ for(const relative of files){
  visit(tree);
 }
 const more=fs.readFileSync(path.join(root,'screens/MoreScreen.tsx'),'utf8');
-assert.ok(more.includes("const attentionPriority:MoreDestination[]=['DailySupplies','Progression','Companions','Social','Friends','Guild','Profile'];"));
+const attentionOrderMatch=more.match(/const attentionPriority:MoreDestination\[\]=\[([^\]]+)\];/);
+assert.ok(attentionOrderMatch,'More screen must define the attention navigation order');
+const attentionOrder=[...attentionOrderMatch[1].matchAll(/'([^']+)'/g)].map(match=>match[1]);
+assert.equal(new Set(attentionOrder).size,attentionOrder.length,'Attention navigation cannot repeat a destination');
+for(const destination of ['NewUnlocks','Quests','DailySupplies','Companions','Party','Friends','Guild']){
+ assert.ok(attentionOrder.includes(destination),'Account attention order must include '+destination);
+}
+
+// Russian/Turkish coverage for the frequently used dashboard, roster and bonuses.
+// Scan actual call sites so future copy edits cannot silently revert to English.
+let earlyScreenKeys=0;
+for(const relative of ['screens/HomeScreen.tsx','screens/ActivityOverviewScreen.tsx','screens/AccountBonusesScreen.tsx','components/HomeSessionOverview.tsx','components/HomeAdventureHeader.tsx']){
+ const source=fs.readFileSync(path.join(root,relative),'utf8');
+ const tree=ts.createSourceFile(relative,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+ assert.equal(tree.parseDiagnostics.length,0,relative+' parses');
+ function visit(node){
+  if(ts.isCallExpression(node)&&node.expression.getText(tree)==='a'&&ts.isStringLiteral(node.arguments[0])){
+   const english=node.arguments[0].text;
+   const params=Object.fromEntries(placeholders(english).map(name=>[name,'VALUE_'+name]));
+   for(const language of ['ru','tr']){
+    const recent=Object.hasOwn(recentScreenTranslationRows,english)
+      ?recentScreenTranslationRows[english][language==='ru'?5:6]:undefined;
+    const reviewed=recent??earlyLocaleText(language,english);
+    assert.ok(reviewed&&reviewed.trim(),relative+' missing '+language+' for '+english);
+    assert.deepEqual(placeholders(reviewed),placeholders(english),relative+' placeholders '+language+' '+english);
+    const recentScreen=relative==='screens/HomeScreen.tsx'||relative==='components/HomeSessionOverview.tsx'||relative==='components/HomeAdventureHeader.tsx';
+    const output=recentScreen?recentScreenText(language,english,params):accountText(language,english,params);
+    assert.ok(output&&output.trim(),relative+' output '+language+' '+english);
+    for(const value of Object.values(params))assert.ok(output.includes(value),relative+' interpolation '+language+' '+english);
+   }
+   earlyScreenKeys++;
+  }
+  ts.forEachChild(node,visit);
+ }
+ visit(tree);
+}
+assert.ok(earlyScreenKeys>=100,'dashboard/roster/bonus/home-card coverage');
+assert.equal(accountText('de','Browse dungeons, prepare Echoes and join expeditions'),'Dungeons erkunden, Echos vorbereiten und Expeditionen beitreten');
+assert.equal(accountText('ru','New update available'),'Доступно новое обновление');
+assert.equal(accountText('tr','Codex'),'Rehber');
+assert.ok(accountText('de','{count} Party updates',{count:3}).includes('3'),'More Party badge placeholders must survive translation');
+assert.equal(accountText('de','Start main screen tour'),'Tour des Hauptbildschirms starten');
+assert.equal(accountText('ru','Start main screen tour'),'Начать обзор главного экрана');
+assert.equal(accountText('tr','Start main screen tour'),'Ana ekran turunu başlat');
+assert.equal(accountText('ru','Delete character only'),'Только удалить персонажа');
+assert.equal(accountText('tr','ACCOUNT SKILL'),'HESAP BEC.');
+assert.equal(recentScreenText('ru','ACTIVITY QUEUE'),'ОЧЕРЕДЬ ЗАНЯТИЙ');
+assert.equal(recentScreenText('tr','Your adventure'),'Maceran');
+assert.equal(recentScreenText('ru','READY NOW'),'ГОТОВО СЕЙЧАС');
+assert.equal(earlyLocaleText('ru','READY NOW'),'ГОТОВО К ИЗГОТОВЛЕНИЮ',
+ 'Crafting may retain the generic early Russian translation when it does not use the Home screen catalog');
+assert.equal(recentScreenText('tr','READY NOW'),'ŞİMDİ HAZIR',
+ 'The Home screen must prefer its reviewed Turkish translation over a shared fallback');
+console.log('RU/TR account screen coverage: '+earlyScreenKeys+' authored display calls.');
+
 console.log('Account localization passed: '+keys.length+' keys x 6 languages; '+guides.length+' guides; '+records.length+' records; '+files.length+' owned files; '+displayCalls+' display calls.');

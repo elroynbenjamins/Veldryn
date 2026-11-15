@@ -6,12 +6,25 @@ const t0=1_000_000;
 let s=createCharacter(newGame(t0),'WAYFINDER','Tester');
 s=startCombat(s,'MOSS_RAT',t0);
 const runtime=activeCombatRuntimeProjection(s);ok(!!runtime&&runtime.killCycleSeconds>0,'Active combat must expose its authoritative kill cycle');
-const halfCycleMs=Math.max(1,Math.floor(runtime!.killCycleSeconds*500));
+// The HUD cycle is an average over seeded encounters, not a guarantee for
+// this exact first Moss Rat. Find its deterministic completion boundary so the
+// carry-over test remains valid when encounter search/attack timings change.
+let firstKillUpperMs=Math.max(1000,Math.ceil(runtime!.killCycleSeconds*1000));
+while(previewActivityReward(s,t0+firstKillUpperMs).kills===0&&firstKillUpperMs<300_000)firstKillUpperMs*=2;
+ok(previewActivityReward(s,t0+firstKillUpperMs).kills>=1,'A fresh Moss Rat hunt must eventually complete a kill');
+let low=0,high=firstKillUpperMs;
+while(high-low>1){
+ const midpoint=Math.floor((low+high)/2);
+ if(previewActivityReward(s,t0+midpoint).kills>=1)high=midpoint;
+ else low=midpoint;
+}
+const halfCycleMs=Math.max(1,Math.floor(high/2));
 const partial=claimActivity(s,t0+halfCycleMs);
 ok(partial.reward.kills===0,'A sub-cycle combat claim must not invent a kill');
 ok((partial.state.activity?.progressFraction??0)>0,'A sub-cycle combat claim must preserve partial hunt progress');
-const cycleMs=runtime!.killCycleSeconds*1000;
-const followUpMs=Math.round(cycleMs*0.8);
+// The second span is shorter than a full fresh encounter, but the preserved
+// first-half progress must push it past this particular encounter's boundary.
+const followUpMs=high-halfCycleMs+1;
 const completed=claimActivity(partial.state,partial.state.activity!.lastClaimAtMs+followUpMs);
 ok(completed.reward.kills>=1,'Preserved partial hunt progress must complete on the following claim');
 const withoutCarry=claimActivity(s,t0+followUpMs);

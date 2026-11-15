@@ -8,6 +8,7 @@ import {rarityMeta} from './item-rarity';
  * The authoritative caller must resolve exact instance locations and commit the
  * sale, Gold credit, Forge receipt and new copy together in one transaction.
  */
+/** `keep_best_seven` is the persisted legacy setting ID; it now applies to the current copy cap. */
 export type CraftedGearAutoSellMode='off'|'keep_best_seven';
 export type CraftedGearInstanceLocation='inventory'|'bank'|'equipment_pouch'|'equipped'|'unknown';
 
@@ -71,7 +72,7 @@ export function planCraftedGearRetention(
   if(existing.some(row=>row.instance.itemId!==incoming.itemId)||new Set([...existing.map(row=>row.instance.id),incoming.id]).size!==existing.length+1)
     return {action:'manual_review',reason:'inconsistent_instances'};
   // Copies may be legacy/unrolled while there is still room. Do not require
-  // a quality ranking before the item reaches its seven-copy pool limit.
+  // a quality ranking before the item reaches its per-item copy limit.
   if(existing.length<TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'keep',reason:'under_limit'};
   if(mode==='off')return {action:'manual_review',reason:'disabled'};
   const validQuality=isValidCraftedGearQuality;

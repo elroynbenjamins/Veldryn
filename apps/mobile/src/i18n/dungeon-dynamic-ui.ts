@@ -13,6 +13,8 @@ import {seasonalBossDisplayName} from './seasonal-boss-copy';
 export const dungeonDynamicUiRows={
  "{actor} heals {target}": ["{actor} heilt {target}","{actor} cura a {target}","{actor} geneest {target}","{actor} cura {target}","{actor} soigne {target}","{actor} лечит {target}","{actor}, {target} hedefini iyileştiriyor"],
  "{actor} shields {target}": ["{actor} schützt {target}","{actor} protege a {target}","{actor} beschermt {target}","{actor} protegge {target}","{actor} protège {target}","{actor} защищает {target} щитом","{actor}, {target} için kalkan sağlıyor"],
+ "{actor} heals {target} with {ability}": ["{actor} heilt {target} mit {ability}","{actor} cura a {target} con {ability}","{actor} geneest {target} met {ability}","{actor} cura {target} con {ability}","{actor} soigne {target} avec {ability}","{actor} лечит {target} с помощью {ability}","{actor}, {ability} ile {target} hedefini iyileştiriyor"],
+ "{actor} shields {target} with {ability}": ["{actor} schützt {target} mit {ability}","{actor} protege a {target} con {ability}","{actor} beschermt {target} met {ability}","{actor} protegge {target} con {ability}","{actor} protège {target} avec {ability}","{actor} защищает {target} с помощью {ability}","{actor}, {ability} ile {target} için kalkan sağlıyor"],
  "{actor} misses {target}": ["{actor} verfehlt {target}","{actor} falla contra {target}","{actor} mist {target}","{actor} manca {target}","{actor} manque {target}","{actor} промахивается по {target}","{actor}, {target} hedefini ıskaladı"],
  "{actor} attacks {target}": ["{actor} greift {target} an","{actor} ataca a {target}","{actor} valt {target} aan","{actor} attacca {target}","{actor} attaque {target}","{actor} атакует {target}","{actor}, {target} hedefine saldırıyor"],
  "{actor} uses {ability}": ["{actor} setzt {ability} ein","{actor} usa {ability}","{actor} gebruikt {ability}","{actor} usa {ability}","{actor} utilise {ability}","{actor} использует {ability}","{actor}, {ability} kullanıyor"],
@@ -44,6 +46,9 @@ export const dungeonDynamicUiRows={
  "CAST": ["ZAUBER","CONJURO","SPREUK","INCANTESIMO","INCANTATION","ЗАКЛИНАНИЕ","BÜYÜ"],
  "INTERRUPT": ["UNTERBRECHUNG","INTERRUPCIÓN","ONDERBREKING","INTERRUZIONE","INTERRUPTION","ПРЕРЫВАНИЕ","KESİNTİ"],
  "ASSIST": ["HILFE","ASISTENCIA","HULP","SUPPORTO","ASSISTANCE","ПОМОЩЬ","YARDIM"],
+ "CLASS ABILITY": ["KLASSENFÄHIGKEIT","HABILIDAD DE CLASE","KLASSEVAARDIGHEID","ABILITÀ DI CLASSE","CAPACITÉ DE CLASSE","УМЕНИЕ КЛАССА","SINIF YETENEĞİ"],
+ "COMPANION SKILL": ["BEGLEITERFÄHIGKEIT","HABILIDAD DE COMPAÑERO","METGEZELVAARDIGHEID","ABILITÀ COMPAGNO","CAPACITÉ DU COMPAGNON","УМЕНИЕ СПУТНИКА","YOLDAŞ YETENEĞİ"],
+ "SHIELD {amount}": ["SCHILD {amount}","ESCUDO {amount}","SCHILD {amount}","SCUDO {amount}","BOUCLIER {amount}","ЩИТ {amount}","KALKAN {amount}"],
  "DOWN": ["AUSGEFALLEN","CAÍDO","UITGESCHAKELD","A TERRA","À TERRE","ПОВЕРЖЕН","DÜŞTÜ"],
  "VICTORY": ["SIEG","VICTORIA","OVERWINNING","VITTORIA","VICTOIRE","ПОБЕДА","ZAFER"],
  "WIPE": ["NIEDERLAGE","DERROTA","NEDERLAAG","SCONFITTA","DÉFAITE","ПОРАЖЕНИЕ","YENİLGİ"],
@@ -104,8 +109,8 @@ export function localizedDungeonPlaybackCue(language:Language,cue:CoopCombatRepl
  const named=(key:DungeonDynamicUiKey,params:TranslationParams)=>render(language,key,params);
  switch(cue.type){
   case 'action':
-   if(cue.actionKind==='heal')return named('{actor} heals {target}',{actor:actor??render(language,'Support'),target:target??render(language,'ally')})+amount+extras;
-   if(cue.actionKind==='shield')return named('{actor} shields {target}',{actor:actor??render(language,'Support'),target:target??render(language,'ally')})+amount+extras;
+   if(cue.actionKind==='heal')return named(ability&&ability!=='Basic Attack'?'{actor} heals {target} with {ability}':'{actor} heals {target}',{actor:actor??render(language,'Support'),target:target??render(language,'ally'),ability:ability??''})+amount+extras;
+   if(cue.actionKind==='shield')return named(ability&&ability!=='Basic Attack'?'{actor} shields {target} with {ability}':'{actor} shields {target}',{actor:actor??render(language,'Support'),target:target??render(language,'ally'),ability:ability??''})+amount+extras;
    if(cue.outcome==='miss')return named('{actor} misses {target}',{actor:actor??render(language,'Combatant'),target:target??render(language,'target')})+extras;
    if(dungeonEnemyAbilityDisplayName(cue.abilityName?.trim()??'')==='Basic Attack')return named('{actor} attacks {target}',{actor:actor??render(language,'Combatant'),target:target??render(language,'target')})+amount+extras;
    return named(target?'{actor} uses {ability} on {target}':'{actor} uses {ability}',{actor:actor??render(language,'Combatant'),ability:ability??render(language,'an ability'),...(target?{target}:{})})+amount+extras;

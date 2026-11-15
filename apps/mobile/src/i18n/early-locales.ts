@@ -1,7 +1,30 @@
 import type {Language} from './languages';
+import {TURKISH_COVERAGE} from './turkish-coverage';
+import {RUSSIAN_FOCUS_ROWS} from './russian-focus';
+import {RUSSIAN_CONTINUATION_ROWS} from './russian-continuation';
+import {RUSSIAN_SOCIAL_ROWS} from './russian-social';
+import {RUSSIAN_ACCOUNT_ROWS} from './russian-account';
+import {RUSSIAN_PROFILE_ROWS} from './russian-profile';
+import {RUSSIAN_PROGRESS_ROWS} from './russian-progress';
+import {RUSSIAN_FINAL_SOCIAL_ROWS} from './russian-final-social';
+import {RUSSIAN_FINAL_PROGRESSION_ROWS} from './russian-final-progression';
+import {RUSSIAN_FINAL_GAMEPLAY_ROWS} from './russian-final-gameplay';
+import {RUSSIAN_FINAL_COMPANION_ROWS} from './russian-final-companions';
+import {RUSSIAN_FINAL_ACCOUNT_ROWS} from './russian-final-account';
 
-// Starter-only RU/TR copy; missing phrases deliberately fall back to English.
+// Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  // More navigation and release status in RU/TR.
+  "Browse dungeons, prepare Echoes and join expeditions": ["Исследуйте подземелья, готовьте эхо и присоединяйтесь к экспедициям","Zindanları keşfet, Yankıları hazırla ve seferlere katıl"],
+  "Your team, weekly contracts, invites and chat": ["Ваша команда, еженедельные контракты, приглашения и чат","Ekibin, haftalık sözleşmeler, davetler ve sohbet"],
+  "Find Parties, players and Guilds": ["Найдите группы, игроков и гильдии","Grupları, oyuncuları ve loncaları bul"],
+  "Browse resources, companion materials and crafting recipes": ["Просматривайте ресурсы, материалы для спутников и рецепты создания","Kaynaklara, yoldaş malzemelerine ve üretim tariflerine göz at"],
+  "{count} Party updates": ["{count} обновлений группы","{count} grup güncellemesi"],
+  "Party updates": ["Обновления группы","Grup güncellemeleri"],
+  "New release information available": ["Доступна новая информация о выпуске","Yeni sürüm bilgileri mevcut"],
+  "Release notes and app versions": ["Примечания к выпуску и версии приложения","Sürüm notları ve uygulama sürümleri"],
+  "New update available": ["Доступно новое обновление","Yeni güncelleme mevcut"],
+  "Start main screen tour": ["Начать обзор главного экрана","Ana ekran turunu başlat"],
   // Profile showcase empty states and selection guidance.
   "Choose an earned achievement": ["Выберите полученное достижение","Kazanılmış bir başarı seçin"],
   "Choose a personal record": ["Выберите личный рекорд","Bir kişisel rekor seçin"],
@@ -17,6 +40,30 @@ export const EARLY_LOCALE_ROWS={
   // Character and Combat Power details for Russian and Turkish.
   "Edit profile": ["Изменить профиль","Profili düzenle"],
   "Combat Power": ["Боевая мощь","Savaş gücü"],
+  "CLASS SKILLS · PASSIVE": ["НАВЫКИ КЛАССА · ПАССИВНО","SINIF BECERİLERİ · PASİF"],
+  "COMBAT STYLE · PASSIVE": ["СТИЛЬ БОЯ · ПАССИВНО","SAVAŞ STİLİ · PASİF"],
+  "COMPANION · PASSIVE BONUS": ["СПУТНИК · ПАССИВНЫЙ БОНУС","YOLDAŞ · PASİF BONUS"],
+  "Combat bonus active": ["Боевой бонус активен","Savaş bonusu etkin"],
+  "ON-KILL RECOVERY": ["ВОССТАНОВЛЕНИЕ ПОСЛЕ ПОБЕДЫ","DÜŞMANI YENDİKTEN SONRA İYİLEŞME"],
+  "Rune Bash": ["Рунный удар","Rün Darbesi"],
+  "Fortress Rebuff": ["Ответ крепости","Kale Karşı Darbesi"],
+  "Binding Chain": ["Сковывающая цепь","Bağlayıcı Zincir"],
+  "Sun Smite": ["Солнечный удар","Güneş Darbesi"],
+  "Windshot": ["Ветреный выстрел","Rüzgâr Atışı"],
+  "Titan Swing": ["Удар титана","Titan Savuruşu"],
+  "Black Thread": ["Чёрная нить","Kara İplik"],
+  "Scarlet Loop": ["Алая петля","Kızıl Döngü"],
+  "Thunder Totem": ["Громовой тотем","Gök Gürültüsü Totemi"],
+  "Bloodrush": ["Кровавый натиск","Kan Hırsı"],
+  "CLASS ABILITY": ["УМЕНИЕ КЛАССА","SINIF YETENEĞİ"],
+  "COMPANION SKILL": ["УМЕНИЕ СПУТНИКА","YOLDAŞ YETENEĞİ"],
+  "SKILL DAMAGE · {amount}": ["УРОН УМЕНИЯ · {amount}","YETENEK HASARI · {amount}"],
+  "SKILL HEAL · {amount}": ["ЛЕЧЕНИЕ УМЕНИЕМ · {amount}","YETENEK İYİLEŞTİRMESİ · {amount}"],
+  "SHIELD · {amount}": ["ЩИТ · {amount}","KALKAN · {amount}"],
+  "Rune Brace": ["Рунная защита","Rün Koruması"],
+  "Page's Vow": ["Клятва оруженосца","Silahşor Yemini"],
+  "Hamstring Pounce": ["Подсекающий прыжок","Sakatlayıcı Atlayış"],
+  "Silver Current": ["Серебряный поток","Gümüş Akıntı"],
   "Show breakdown": ["Показать подробности","Ayrıntıları göster"],
   "Hide breakdown": ["Скрыть подробности","Ayrıntıları gizle"],
   "Combat Power breakdown": ["Подробности боевой мощи","Savaş gücü ayrıntıları"],
@@ -2459,11 +2506,140 @@ export const EARLY_LOCALE_ROWS={
   "{region} · Lv {level} · {chance} drop": ["{region} · ур. {level} · шанс добычи {chance}","{region} · Sv. {level} · düşme olasılığı {chance}"],
   "Open {name} in {region}.": ["Открыть {name} в {region}.","{region} bölgesinde {name} aç."],
   "Open {name}.": ["Открыть {name}.","{name} aç."],
+  "ATTENTION": ["ВНИМАНИЕ","DİKKAT"],
+  "NEXT STEP": ["СЛЕДУЮЩИЙ ШАГ","SONRAKİ ADIM"],
+  "NOW": ["СЕЙЧАС","ŞİMDİ"],
+  "RECOMMENDED": ["РЕКОМЕНДУЕТСЯ","ÖNERİLEN"],
+  "Your next adventure": ["Ваше следующее приключение","Sonraki maceran"],
+  "Choose a hunt or gathering activity to start earning.": ["Начните охоту или сбор ресурсов, чтобы получать награды.","Ödül kazanmaya başlamak için avlanma veya toplama etkinliği seç."],
+  "Explore activities": ["Выбрать занятие","Etkinlikleri keşfet"],
+  "Encounter preview": ["Предпросмотр боя","Karşılaşma önizlemesi"],
+  "Character, campaign & skills": ["Персонаж, сюжет и навыки","Karakter, hikâye ve beceriler"],
+  "Contract Board": ["Доска контрактов","Sözleşme panosu"],
+  "skill snapshot": ["обзор навыков","beceri özeti"],
+  "{className} · Level {level}": ["{className} · ур. {level}","{className} · Sv. {level}"],
+  "LV {level}": ["УР. {level}","SV. {level}"],
+  "Experience": ["Опыт","Deneyim"],
+  "ASTERFALL CAMPAIGN · CHAPTER {chapter}/{total}": ["ИСТОРИЯ АСТЕРФОЛЛА · ГЛАВА {chapter}/{total}","ASTERFALL HİKÂYESİ · BÖLÜM {chapter}/{total}"],
+  "{claimed}/{total} claimed": ["Получено: {claimed}/{total}","Alınan: {claimed}/{total}"],
+  "{count} rewards ready": ["Наград готово: {count}","{count} ödül hazır"],
+  "defeated": ["побеждён","yenildi"],
+  "Lv. {level}/25": ["ур. {level}/25","Sv. {level}/25"],
+  "Claim {count}": ["Забрать ({count})","{count} ödülü al"],
+  "Journal": ["Журнал","Günlük"],
+  "Storage, AFK reserve & milestones": ["Хранилище, запас AFK и этапы","Depo, AFK süresi ve aşamalar"],
+  "Bag {count}/{capacity}": ["Сумка {count}/{capacity}","Çanta {count}/{capacity}"],
+  "Bank {count}/{capacity}": ["Банк {count}/{capacity}","Banka {count}/{capacity}"],
+  "Bestiary {count}/{total}": ["Бестиарий {count}/{total}","Yaratık rehberi {count}/{total}"],
+  "AFK reserve · {hours}/{max} hours": ["Запас AFK · {hours}/{max} ч","AFK süresi · {hours}/{max} saat"],
+  "Base {hours}h · {count}/{total} upgrades earned": ["База {hours} ч · улучшений {count}/{total}","Temel {hours} sa · {count}/{total} yükseltme kazanıldı"],
+  "Asterfall milestone complete.": ["Этап Астерфолла пройден.","Asterfall aşaması tamamlandı."],
+  "Reach level 25, prepare your gear, then challenge the Fallen Knight.": ["Достигните 25-го уровня, подготовьте снаряжение и сразитесь с Павшим рыцарем.","25. seviyeye ulaş, ekipmanını hazırla ve Düşmüş Şövalye'ye meydan oku."],
+  "Level {level} / 25": ["Уровень {level} / 25","Seviye {level} / 25"],
+  "ROSTER": ["ПЕРСОНАЖИ","KADRO"],
+  "ACTIVE": ["АКТИВНО","AKTİF"],
+  "ACCOUNT SKILL": ["НАВЫКИ АКК.","HESAP BEC."],
+  "Next character slot unlocks at {count} combined account skill levels.": ["Следующая ячейка персонажа откроется при суммарном уровне навыков аккаунта {count}.","Sonraki karakter yuvası, hesabın toplam beceri seviyesi {count} olduğunda açılır."],
+  "All 5 character slots are permanently unlocked.": ["Все 5 ячеек персонажей открыты навсегда.","5 karakter yuvasının tamamı kalıcı olarak açıldı."],
+  "ACTIVE CHARACTER": ["АКТИВНЫЙ ПЕРСОНАЖ","AKTİF KARAKTER"],
+  "Idle": ["Бездействует","Boşta"],
+  "Running for {time}": ["Занятие длится {time}","{time} süredir etkin"],
+  "No activity is currently running.": ["Сейчас нет активного занятия.","Şu anda devam eden etkinlik yok."],
+  "Create another character": ["Создать ещё персонажа","Başka karakter oluştur"],
+  "Close character management": ["Закрыть управление персонажем","Karakter yönetimini kapat"],
+  "CHARACTER MANAGEMENT": ["УПРАВЛЕНИЕ ПЕРСОНАЖЕМ","KARAKTER YÖNETİMİ"],
+  "What you lose": ["Что вы потеряете","Kaybedeceklerin"],
+  "Your character, levels, Gold, skills, quests, loadouts and equipment upgrades are permanently removed.": ["Персонаж, его уровни, золото, навыки, задания, наборы снаряжения и улучшения экипировки будут удалены навсегда.","Karakterin, seviyelerin, altının, becerilerin, görevlerin, kayıtlı ekipman setlerin ve ekipman geliştirmelerin kalıcı olarak silinir."],
+  "Equipment and items return to the shared Bank or Overflow, with upgrades removed.": ["Экипировка и предметы вернутся в общий Банк или резервное хранилище, но без улучшений.","Ekipman ve eşyalar geliştirmeleri kaldırılmış hâlde ortak Bankaya veya Taşma Deposuna iade edilir."],
+  "Hide deletion details": ["Скрыть сведения об удалении","Silme ayrıntılarını gizle"],
+  "Read full deletion details": ["Подробнее об удалении","Tüm silme ayrıntılarını oku"],
+  "Levels, XP, Gold, skills, quests, class progress, saved loadouts and character-bound appearance progress are removed. Equipment enhancement/temper ranks and pity progress are also removed; recovered gear returns as its base item. Inventory, overflow items, equipped gear, gathering tools and socketed gems are recovered to the shared Bank, then Overflow if needed.": ["Уровни, опыт, золото, навыки, задания, прогресс класса, сохранённые наборы снаряжения и привязанные к персонажу изменения внешнего вида удаляются. Уровни улучшения и закалки экипировки, а также накопленный прогресс гарантированного результата также теряются; возвращённая экипировка будет базовой. Предметы из инвентаря, резервного хранилища, надетая экипировка, инструменты сбора и вставленные самоцветы перемещаются в общий Банк, а при нехватке места — в резервное хранилище.","Seviyeler, XP, altın, beceriler, görevler, sınıf ilerlemesi, kayıtlı ekipman setleri ve karaktere bağlı görünüm ilerlemesi silinir. Ekipman geliştirme ve sertleştirme dereceleri ile garanti birikimi de silinir; geri alınan ekipman temel hâline döner. Envanter, taşma deposu, kuşanılmış ekipman, toplama aletleri ve takılı taşlar ortak Bankaya; yer kalmazsa Taşma Deposuna aktarılır."],
+  "ACCOUNT PROGRESS STAYS": ["ПРОГРЕСС АККАУНТА СОХРАНИТСЯ","HESAP İLERLEMESİ KORUNUR"],
+  "What you keep": ["Что сохранится","Koruyacakların"],
+  "Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.": ["Открытые ячейки персонажей, премиальная валюта, спутники, членство в гильдии и коллекционные предметы аккаунта сохраняются.","Açılmış karakter yuvaları, premium para birimi, yoldaşlar, Lonca üyeliği ve hesaba ait koleksiyonlar korunur."],
+  "Finish before deleting": ["Завершите перед удалением","Silmeden önce tamamla"],
+  "{count} equipment crafts are still linked to this character.": ["С этим персонажем связано {count} незавершённых заказов на экипировку.","Bu karaktere bağlı {count} ekipman üretimi hâlâ devam ediyor."],
+  "Type {confirmation} to unlock the delete actions.": ["Введите {confirmation}, чтобы разблокировать удаление.","Silme seçeneklerini açmak için {confirmation} yaz."],
+  "Character deletion confirmation": ["Подтверждение удаления персонажа","Karakter silme onayı"],
+  "Deleting…": ["Удаление…","Siliniyor…"],
+  "Delete & choose new class": ["Удалить и выбрать новый класс","Sil ve yeni sınıf seç"],
+  "Delete character only": ["Только удалить персонажа","Yalnızca karakteri sil"],
+  "This is your only character. After deletion you return to class creation.": ["Это ваш единственный персонаж. После удаления откроется создание персонажа.","Bu tek karakterin. Sildikten sonra karakter oluşturma ekranına dönersin."],
+  "Choosing a new class deletes this character first, frees the slot, and then opens class creation. Plain delete keeps you on the remaining roster.": ["Выбор нового класса сначала удалит этого персонажа и освободит ячейку, затем откроет создание персонажа. Простое удаление оставит вас в списке остальных персонажей.","Yeni sınıf seçmek önce bu karakteri siler, yuvayı boşaltır ve karakter oluşturmayı açar. Yalnızca silmek ise seni kalan karakter listesinde tutar."],
+  "ACCOUNT & CHARACTER": ["АККАУНТ И ПЕРСОНАЖ","HESAP VE KARAKTER"],
+  "Bonuses": ["Бонусы","Bonuslar"],
+  "A single view of modifiers that are actually active in gameplay right now. Collection ownership is account-wide; selected Faith and permanent boost sources follow the active character.": ["Здесь показаны только бонусы, которые сейчас реально действуют в игре. Коллекции общие для аккаунта, а выбранные бонусы Веры и постоянные усиления зависят от активного персонажа.","Şu anda oyunda gerçekten etkin olan bonusların tek görünümü. Koleksiyon sahipliği hesap genelindedir; seçilen İnanç ve kalıcı güçlendirme kaynakları etkin karaktere bağlıdır."],
+  "TEMPORARY BOOST": ["ВРЕМЕННОЕ УСИЛЕНИЕ","GEÇİCİ GÜÇLENDİRME"],
+  "{time} qualifying activity time remaining. The timer only consumes time from eligible activities.": ["Осталось {time} подходящих занятий. Время расходуется только во время занятий, на которые действует бонус.","{time} uygun etkinlik süresi kaldı. Sayaç yalnızca bonusun geçerli olduğu etkinliklerde ilerler."],
+  "EFFECTIVE PERMANENT MODIFIERS": ["ДЕЙСТВУЮЩИЕ ПОСТОЯННЫЕ БОНУСЫ","ETKİN KALICI BONUSLAR"],
+  "Less taken / consumed": ["Меньше урона / затрат","Daha az hasar / tüketim"],
+  "Effective increase": ["Фактическое увеличение","Geçerli artış"],
+  "No permanent gameplay modifiers are active on this character yet.": ["У этого персонажа пока нет действующих постоянных бонусов.","Bu karakterde henüz etkin kalıcı oyun bonusu yok."],
+  "ACTIVE SOURCES": ["АКТИВНЫЕ ИСТОЧНИКИ","ETKİN KAYNAKLAR"],
+  "ACCOUNT": ["АККАУНТ","HESAP"],
+  "CHARACTER": ["ПЕРСОНАЖ","KARAKTER"],
+  "No permanent source is contributing a bonus yet.": ["Ни один постоянный источник пока не даёт бонуса.","Henüz hiçbir kalıcı kaynak bonus sağlamıyor."],
+  "WHAT COUNTS HERE": ["ЧТО УЧИТЫВАЕТСЯ","BURADA NELER SAYILIR"],
+  "This screen reflects the same runtime multiplier calculation used by combat, skilling, rewards and other supported systems. Locked collectibles and inactive entitlements are not counted. Collection caps are already applied before the totals are shown.": ["Здесь используются те же расчёты множителей, что и в бою, навыках, наградах и других системах. Закрытые коллекционные предметы и неактивные привилегии не учитываются. Ограничения бонусов коллекций применяются до показа итогов.","Bu ekran savaşta, becerilerde, ödüllerde ve diğer desteklenen sistemlerde kullanılan gerçek bonus çarpanı hesabını gösterir. Kilitli koleksiyon eşyaları ve etkin olmayan haklar sayılmaz. Koleksiyon bonus sınırları toplamlar gösterilmeden önce uygulanır."],
+  "{count} story": ["Сюжет: {count}","Hikâye: {count}"],
+  "daily claim": ["ежедневная награда","günlük ödül"],
+  "{count} event": ["События: {count}","Etkinlik: {count}"],
+  "{count} forge": ["Кузница: {count}","Demirhane: {count}"],
+  "{count} contract": ["Контракты: {count}","Sözleşme: {count}"],
+  "{count} companion": ["Спутники: {count}","Yoldaş: {count}"],
+  "READY": ["ГОТОВО","HAZIR"],
+  "SESSION OVERVIEW": ["ОБЗОР СЕССИИ","OTURUM ÖZETİ"],
+  "{count} READY": ["ГОТОВО: {count}","{count} HAZIR"],
+  "CLEAR": ["ПУСТО","TEMİZ"],
+  "WEEKLY": ["ЕЖЕНЕДЕЛЬНО","HAFTALIK"],
+  "{count} ready": ["Готово: {count}","{count} hazır"],
+  "LOCKED": ["ЗАКРЫТО","KİLİTLİ"],
+  "NEW": ["НОВОЕ","YENİ"],
+  "PREPARE FOR THE TRAIL": ["ПОДГОТОВКА К ТРОПЕ","PATİKAYA HAZIRLAN"],
+  "Make food for the road": ["Приготовьте еду в дорогу","Yol için yemek hazırla"],
+  "Ironwood opens at character level 7. Before then, gather wood for fuel, catch fish, and cook it into food for longer combat hunts.": ["Железный лес открывается на 7-м уровне персонажа. До этого соберите дрова, поймайте рыбу и приготовьте еду для долгих сражений.","Ironwood, karakter seviyesi 7'de açılır. O zamana kadar yakacak odun topla, balık tut ve daha uzun avlar için yemek pişir."],
+  "Open Skills to gather logs and fish, then use Cooking. Combat rewards raise your character level for the Ironwood trail.": ["Откройте навыки, соберите древесину и рыбу, затем приготовьте еду. Боевые награды повышают уровень персонажа для пути в Железный лес.","Odun ve balık toplamak için Beceriler'i aç, ardından Yemek Pişirme'yi kullan. Savaş ödülleri Ironwood yolculuğu için karakter seviyeni yükseltir."],
+  "FIND THE TRAIL": ["НАЙДИТЕ ТРОПУ","PATİKAYI BUL"],
+  "Travel to Ironwood Forest": ["Отправьтесь в Железный лес","Ironwood Ormanı'na git"],
+  "The wolf trail begins beyond Greenfields. Travel to Ironwood Forest before you can scout the route that reveals the pack.": ["Волчья тропа начинается за Зелёными полями. Отправьтесь в Железный лес, чтобы разведать путь и обнаружить стаю.","Kurt patikası Greenfields'ın ötesinde başlar. Sürüyü ortaya çıkaracak rotayı keşfetmeden önce Ironwood Ormanı'na git."],
+  "Open World, choose Ironwood Forest, and travel there. The route opens at character level 7.": ["Откройте карту мира, выберите Железный лес и отправьтесь туда. Путь открывается на 7-м уровне персонажа.","Dünya'yı aç, Ironwood Ormanı'nı seç ve oraya git. Rota karakter seviyesi 7'de açılır."],
+  "Scout before you hunt": ["Разведайте путь перед охотой","Avlanmadan önce keşfet"],
+  "You have reached Ironwood Forest, but the Ironwood Wolf encounter has not been discovered yet. Trace the forest paths to reveal it.": ["Вы достигли Железного леса, но ещё не обнаружили железнолесных волков. Исследуйте лесные тропы, чтобы открыть встречу.","Ironwood Ormanı'na ulaştın ancak Ironwood Kurtları henüz keşfedilmedi. Karşılaşmayı açmak için orman patikalarını izle."],
+  "Open Skills → Exploration, then start Trace Ironwood paths.": ["Откройте Навыки → Исследование и начните «Исследовать тропы Железного леса».","Beceriler → Keşif'i aç, ardından Ironwood patikalarını izlemeye başla."],
+  "Show Exploration": ["Показать исследование","Keşfi göster"],
+  "TRAIL IN PROGRESS": ["РАЗВЕДКА ТРОПЫ","PATİKA KEŞFEDİLİYOR"],
+  "Finish the scouting route": ["Завершите разведку маршрута","Keşif rotasını tamamla"],
+  "Trace Ironwood paths is revealing the encounter. Exploration progress is awarded when you collect the completed route.": ["Исследование троп Железного леса открывает встречу с волками. Опыт исследования начисляется после получения награды за завершённый маршрут.","Ironwood patikalarını izlemek karşılaşmayı ortaya çıkarır. Keşif ilerlemesi, tamamlanan rotayı topladığında verilir."],
+  "Let the 96-second route finish, then collect it to discover Ironwood Wolves and complete this objective.": ["Дождитесь завершения 96-секундного маршрута, затем заберите награду, чтобы обнаружить волков Железного леса и выполнить цель.","96 saniyelik rotanın bitmesini bekle, ardından ödülü toplayarak Ironwood Kurtları'nı keşfet ve hedefi tamamla."],
+  "Ready now · {items}{more}": ["Готово сейчас · {items}{more}","Şimdi hazır · {items}{more}"],
+  " · +{count} more": [" · ещё {count}"," · +{count} daha"],
 } satisfies Record<string,readonly [string,string]>;
 
 export function earlyLocaleText(language:Language,source:string):string|undefined{
   if(language!=='ru'&&language!=='tr')return undefined;
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FOCUS_ROWS,source))
+    return RUSSIAN_FOCUS_ROWS[source as keyof typeof RUSSIAN_FOCUS_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_CONTINUATION_ROWS,source))
+    return RUSSIAN_CONTINUATION_ROWS[source as keyof typeof RUSSIAN_CONTINUATION_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_PROGRESS_ROWS,source))
+    return RUSSIAN_PROGRESS_ROWS[source as keyof typeof RUSSIAN_PROGRESS_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_PROFILE_ROWS,source))
+    return RUSSIAN_PROFILE_ROWS[source as keyof typeof RUSSIAN_PROFILE_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_ACCOUNT_ROWS,source))
+    return RUSSIAN_ACCOUNT_ROWS[source as keyof typeof RUSSIAN_ACCOUNT_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_SOCIAL_ROWS,source))
+    return RUSSIAN_SOCIAL_ROWS[source as keyof typeof RUSSIAN_SOCIAL_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FINAL_ACCOUNT_ROWS,source))
+    return RUSSIAN_FINAL_ACCOUNT_ROWS[source as keyof typeof RUSSIAN_FINAL_ACCOUNT_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FINAL_COMPANION_ROWS,source))
+    return RUSSIAN_FINAL_COMPANION_ROWS[source as keyof typeof RUSSIAN_FINAL_COMPANION_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FINAL_GAMEPLAY_ROWS,source))
+    return RUSSIAN_FINAL_GAMEPLAY_ROWS[source as keyof typeof RUSSIAN_FINAL_GAMEPLAY_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FINAL_PROGRESSION_ROWS,source))
+    return RUSSIAN_FINAL_PROGRESSION_ROWS[source as keyof typeof RUSSIAN_FINAL_PROGRESSION_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FINAL_SOCIAL_ROWS,source))
+    return RUSSIAN_FINAL_SOCIAL_ROWS[source as keyof typeof RUSSIAN_FINAL_SOCIAL_ROWS];
   const row=Object.prototype.hasOwnProperty.call(EARLY_LOCALE_ROWS,source)
     ? EARLY_LOCALE_ROWS[source as keyof typeof EARLY_LOCALE_ROWS]:undefined;
-  return row?.[language==='ru'?0:1];
+  return row?.[language==='ru'?0:1]??(language==='tr'?TURKISH_COVERAGE[source as keyof typeof TURKISH_COVERAGE]:undefined);
 }

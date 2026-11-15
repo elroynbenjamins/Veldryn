@@ -38,6 +38,7 @@ export function coopErrorMessage(error:unknown,fallback='Dungeons are temporaril
  if(message==='dungeon_level_requirement')return 'Requires level 10 for Asterfall or level 25 for Sunscar.';
  if(message==='dungeon_power_requirement')return 'Your Combat Power is below the selected dungeon tier requirement.';
  if(message==='dungeon_unavailable')return 'This dungeon is no longer open for new runs.';
+ if(message==='stale_game_version')return 'Your character updated while joining the dungeon. Please try again.';
  if(error instanceof Error&&error.message.trim())return error.message;
  if(typeof error==='string'&&error.trim())return error;
  if(error&&typeof error==='object'){
@@ -119,6 +120,7 @@ export const coopClient={
  liveRematch:(runId:string)=>request<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`),
  respondLiveRematch:(runId:string,accept:boolean)=>mutate<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`,{requestId:coopRequestId(),accept}),
  hasPending:async()=>(await journal()).pending(),
+ hasPendingForRun:async(runId:string)=>(await journal()).pendingForRun(runId),
  retryPending:async()=>{noteCoopEntryMutation();return (await journal()).execute();},
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},

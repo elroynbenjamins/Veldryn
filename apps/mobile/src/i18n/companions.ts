@@ -3,9 +3,73 @@ import {createTranslator} from './translator';
 import {companionObjectiveText} from './companion-objectives';
 import {companionGuidanceText} from './companion-guidance';
 import {companionDynamicText} from './companion-dynamic';
+import {companionCombatDescriptionText} from './companion-combat-names-de';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Affinity":["Affinität","Afinidad","Affiniteit","Affinità","Affinité"],
+ // Companion screen refinement: compact Bond and always-visible Quarters.
+ "Companion Quarters": ["Gefährtenquartier","Alojamiento de compañeros","Metgezellenverblijf","Alloggi dei compagni","Quartiers des compagnons"],
+ "Choose a companion to view its housing tier and level cap.": ["Wähle einen Gefährten, um Quartierstufe und Levelgrenze zu sehen.","Elige un compañero para ver su alojamiento y límite de nivel.","Kies een metgezel om de verblijfsklasse en levellimiet te bekijken.","Scegli un compagno per vedere il livello dell'alloggio e il limite di livello.","Choisissez un compagnon pour voir son quartier et sa limite de niveau."],
+ "Tier {value0}/3": ["Stufe {value0}/3","Grado {value0}/3","Niveau {value0}/3","Grado {value0}/3","Palier {value0}/3"],
+ "Housing Tier {value0}": ["Quartierstufe {value0}","Alojamiento de grado {value0}","Verblijfsniveau {value0}","Alloggio di grado {value0}","Quartier de palier {value0}"],
+ "Tier {value0}": ["Stufe {value0}","Grado {value0}","Niveau {value0}","Grado {value0}","Palier {value0}"],
+ "Recruit a companion to unlock Quarters upgrades.": ["Rekrutiere einen Gefährten, um Quartierverbesserungen freizuschalten.","Recluta un compañero para desbloquear mejoras de alojamiento.","Rekruteer een metgezel om verblijfsupgrades te ontgrendelen.","Recluta un compagno per sbloccare i miglioramenti dell'alloggio.","Recrutez un compagnon pour débloquer les améliorations des quartiers."],
+ "Claim Bond reward": ["Bindungsbelohnung abholen","Reclamar recompensa de vínculo","Bondbeloning claimen","Riscatta premio legame","Récupérer la récompense de lien"],
+ "Bond MAX": ["Bindung MAX","Vínculo MÁX.","Bond MAX","Legame MAX","Lien MAX"],
+ "Bond 10 trait active · {value0}": ["Bindung-10-Eigenschaft aktiv · {value0}","Rasgo de vínculo 10 activo · {value0}","Bond 10-eigenschap actief · {value0}","Tratto legame 10 attivo · {value0}","Trait de lien 10 actif · {value0}"],
+ "View Bond rewards & trait": ["Bindungsbelohnungen und Eigenschaft ansehen","Ver recompensas y rasgo de vínculo","Bekijk Bondbeloningen en eigenschap","Visualizza premi e tratto legame","Voir les récompenses et le trait de lien"],
+
+ "Shield":["Schild","Escudo","Schild","Scudo","Bouclier"],
+ // Simplified Companion Index: three intent-based views and a compact role picker.
+ "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],
+ "Unlock":["Freischalten","Desbloquear","Ontgrendelen","Sblocca","Débloquer"],
+ "Past events":["Vergangene Events","Eventos pasados","Eerdere evenementen","Eventi passati","Évènements passés"],
+ "Your companions":["Deine Begleiter","Tus compañeros","Jouw metgezellen","I tuoi compagni","Vos compagnons"],
+ "Companions to unlock":["Freischaltbare Begleiter","Compañeros por desbloquear","Metgezellen om te ontgrendelen","Compagni da sbloccare","Compagnons à débloquer"],
+ "Previously released companions":["Früher veröffentlichte Begleiter","Compañeros de eventos anteriores","Eerder uitgebrachte metgezellen","Compagni degli eventi passati","Compagnons des évènements précédents"],
+ "Manage":["Verwalten","Gestionar","Beheren","Gestisci","Gérer"],
+ "Details":["Details","Detalles","Details","Dettagli","Détails"],
+ "Filter roles":["Rollen filtern","Filtrar roles","Rollen filteren","Filtra ruoli","Filtrer les rôles"],
+ "No companions owned yet.":["Noch keine Begleiter freigeschaltet.","Todavía no tienes compañeros.","Je hebt nog geen metgezellen.","Non hai ancora compagni.","Vous n'avez pas encore de compagnons."],
+ "Unlock your first companion to see it here.":["Schalte deinen ersten Begleiter frei, damit er hier erscheint.","Desbloquea tu primer compañero para verlo aquí.","Ontgrendel je eerste metgezel om deze hier te zien.","Sblocca il tuo primo compagno per vederlo qui.","Débloquez votre premier compagnon pour le voir ici."],
+ "All available companions unlocked.":["Alle verfügbaren Begleiter freigeschaltet.","Has desbloqueado todos los compañeros disponibles.","Alle beschikbare metgezellen ontgrendeld.","Hai sbloccato tutti i compagni disponibili.","Tous les compagnons disponibles sont débloqués."],
+
+ // Companion Index v2: complete localization for compact discovery and acquisition guidance.
+ // Companion availability and unlock-status categories (keep upcoming event identities private).
+ "Available to earn":["Jetzt freischaltbar","Disponible para conseguir","Nu vrij te spelen","Disponibili da ottenere","À débloquer maintenant"],
+ "Event / Past":["Event / Früher verfügbar","Evento / Anterior","Evenement / Eerder beschikbaar","Evento / Passati","Évènement / Passés"],
+ "{value0} more seasonal companions are hidden until their events release.":["{value0} weitere saisonale Begleiter bleiben bis zum Start ihrer Events verborgen.","{value0} compañeros de temporada más permanecerán ocultos hasta sus eventos.","Nog {value0} seizoensmetgezellen blijven verborgen tot hun evenementen beginnen.","Altri {value0} compagni stagionali restano nascosti fino all'uscita degli eventi.","{value0} autres compagnons saisonniers restent masqués jusqu'à leurs évènements."],
+ "Unlock requirements":["Freischaltbedingungen","Requisitos de desbloqueo","Ontgrendelvereisten","Requisiti di sblocco","Conditions de déblocage"],
+ "Planned unlocks":["Geplante Freischaltungen","Desbloqueos previstos","Geplande ontgrendelingen","Sblocchi previsti","Déblocages prévus"],
+ "Previously available through {event}":["Früher verfügbar bei {event}","Antes disponible en {event}","Eerder verkrijgbaar via {event}","Disponibile in passato durante {event}","Auparavant disponible pendant {event}"],
+ "Guild Lv. {level} · {cost} tokens":["Gildenstufe {level} · {cost} Marken","Gremio niv. {level} · {cost} fichas","Gildeniveau {level} · {cost} munten","Gilda liv. {level} · {cost} gettoni","Guilde niv. {level} · {cost} jetons"],
+ "Companion Index":["Begleiterverzeichnis","Índice de compañeros","Metgezellenoverzicht","Indice dei compagni","Index des compagnons"],
+ "{value0} collected · {value1} total":["{value0} gesammelt · {value1} insgesamt","{value0} obtenidos · {value1} en total","{value0} verzameld · {value1} totaal","{value0} raccolti · {value1} totali","{value0} obtenus · {value1} au total"],
+ "Codex & rewards":["Kodex & Belohnungen","Códice y recompensas","Codex en beloningen","Codice e ricompense","Codex et récompenses"],
+ "Next unlock: {value0}":["Nächste Freischaltung: {value0}","Próximo desbloqueo: {value0}","Volgende ontgrendeling: {value0}","Prossimo sblocco: {value0}","Prochain déblocage : {value0}"],
+ "NEXT TO UNLOCK":["ALS NÄCHSTES FREISCHALTEN","PRÓXIMO DESBLOQUEO","VOLGENDE ONTGRENDELING","PROSSIMO SBLOCCO","PROCHAIN DÉBLOCAGE"],
+ "Search companions":["Begleiter suchen","Buscar compañeros","Metgezellen zoeken","Cerca compagni","Rechercher des compagnons"],
+ "All roles":["Alle Rollen","Todos los roles","Alle rollen","Tutti i ruoli","Tous les rôles"],
+ "{value0} companions shown":["{value0} Begleiter angezeigt","{value0} compañeros mostrados","{value0} metgezellen getoond","{value0} compagni mostrati","{value0} compagnons affichés"],
+ "No companions found":["Keine Begleiter gefunden","No se encontraron compañeros","Geen metgezellen gevonden","Nessun compagno trovato","Aucun compagnon trouvé"],
+ "Try another filter or search.":["Versuche einen anderen Filter oder Suchbegriff.","Prueba otro filtro o búsqueda.","Probeer een ander filter of een andere zoekopdracht.","Prova un altro filtro o una ricerca diversa.","Essayez un autre filtre ou une autre recherche."],
+ "Show all companions":["Alle Begleiter anzeigen","Mostrar todos los compañeros","Alle metgezellen tonen","Mostra tutti i compagni","Afficher tous les compagnons"],
+ "Undiscovered":["Unentdeckt","Sin descubrir","Onontdekt","Non scoperto","Non découvert"],
+ "Coming soon":["Demnächst verfügbar","Próximamente","Binnenkort beschikbaar","Prossimamente","Bientôt disponible"],
+ "Event reward":["Eventbelohnung","Recompensa de evento","Evenementbeloning","Ricompensa evento","Récompense d’événement"],
+ "Guild Token Shop":["Gildenmarken-Laden","Tienda de fichas de gremio","Gildemuntenwinkel","Negozio gettoni gilda","Boutique de jetons de guilde"],
+ "Lv. {value0} · Bond {value1}":["St. {value0} · Bindung {value1}","Nv. {value0} · Vínculo {value1}","Niv. {value0} · Band {value1}","Liv. {value0} · Legame {value1}","Niv. {value0} · Lien {value1}"],
+ "Discover through companion challenges":["Durch Begleiterherausforderungen entdecken","Descubre mediante desafíos de compañeros","Ontdek via metgezellenuitdagingen","Scopri tramite le sfide dei compagni","Découvrez-le via les défis des compagnons"],
+ "Region in development":["Region in Entwicklung","Región en desarrollo","Regio in ontwikkeling","Regione in sviluppo","Région en développement"],
+ "Earn during its event":["Während des zugehörigen Events erhalten","Consíguelo durante su evento","Verdien tijdens het bijbehorende evenement","Ottienilo durante il suo evento","À obtenir lors de son événement"],
+ "Purchase from the Guild Shop":["Im Gildenladen kaufen","Compra en la tienda del gremio","Koop in de gildewinkel","Acquista nel negozio della gilda","Acheter dans la boutique de guilde"],
+ "Complete unlock requirements":["Freischaltbedingungen erfüllen","Completa los requisitos de desbloqueo","Voldoe aan de ontgrendelvereisten","Completa i requisiti di sblocco","Remplissez les conditions de déblocage"],
+ "requirements":["Bedingungen","requisitos","vereisten","requisiti","conditions"],
+ "Train & Bond your companions":["Begleiter trainieren & Bindung stärken","Entrena a tus compañeros y fortalece su vínculo","Train je metgezellen en versterk hun band","Allena i compagni e rafforza il legame","Entraînez vos compagnons et renforcez leur lien"],
+ "Event companions are awarded by their event rewards. Once earned, they stay unlocked permanently.":["Eventbegleiter erhältst du als Eventbelohnung. Einmal erhalten, bleiben sie dauerhaft freigeschaltet.","Los compañeros de evento se obtienen como recompensa del evento. Una vez conseguidos, quedan desbloqueados para siempre.","Evenementmetgezellen ontvang je als evenementbeloning. Eenmaal verdiend blijven ze permanent ontgrendeld.","I compagni evento si ottengono come ricompense degli eventi. Una volta ottenuti, restano sbloccati per sempre.","Les compagnons d’événement s’obtiennent grâce aux récompenses d’événement. Une fois acquis, ils restent débloqués définitivement."],
+ "Buy this companion in the Guild Token Shop. Purchases unlock account-wide.":["Kaufe diesen Begleiter im Gildenmarken-Laden. Der Kauf schaltet ihn für dein gesamtes Konto frei.","Compra este compañero en la tienda de fichas de gremio. La compra lo desbloquea para toda tu cuenta.","Koop deze metgezel in de gildemuntenwinkel. De aankoop ontgrendelt hem voor je hele account.","Acquista questo compagno nel negozio dei gettoni della gilda. L'acquisto lo sblocca per tutto l'account.","Achetez ce compagnon dans la boutique de jetons de guilde. L’achat le débloque pour tout votre compte."],
+
  "Progress target reached; waiting for verified challenge completion.":["Fortschrittsziel erreicht; die bestätigte Herausforderung muss noch abgeschlossen werden.","Objetivo de progreso alcanzado; falta la confirmación del desafío.","Voortgangsdoel bereikt; wacht op bevestigde voltooiing van de uitdaging.","Obiettivo di avanzamento raggiunto; in attesa della conferma del completamento della sfida.","Objectif de progression atteint ; en attente de la validation du défi."],
  "Clear Floor {floor}+ this month with the required team to unlock this reward.":["Schließe diesen Monat Ebene {floor}+ mit dem erforderlichen Team ab, um diese Belohnung freizuschalten.","Supera el piso {floor}+ este mes con el equipo requerido para desbloquear esta recompensa.","Voltooi deze maand verdieping {floor}+ met het vereiste team om deze beloning vrij te spelen.","Completa il piano {floor}+ questo mese con la squadra richiesta per sbloccare questa ricompensa.","Terminez l’étage {floor}+ ce mois-ci avec l’équipe requise pour débloquer cette récompense."],
  "Floor reached, but this month's required team conditions have not been recorded.":["Ebene erreicht, aber die erforderlichen Teambedingungen wurden diesen Monat noch nicht erfüllt.","Piso alcanzado, pero aún no se han registrado las condiciones de equipo requeridas este mes.","Verdieping bereikt, maar de vereiste teamvoorwaarden zijn deze maand nog niet geregistreerd.","Piano raggiunto, ma le condizioni di squadra richieste non sono ancora state registrate questo mese.","Étage atteint, mais les conditions d’équipe requises n’ont pas encore été enregistrées ce mois-ci."],
@@ -22,9 +86,10 @@ export const companionTranslationRows={
  // Starter Companion onboarding flow (current 1.0.6 redesign).
  "FIRST COMPANION":["ERSTER BEGLEITER","PRIMER COMPAÑERO","EERSTE METGEZEL","PRIMO COMPAGNO","PREMIER COMPAGNON"],
  "Choose your combat partner":["Wähle deinen Kampfgefährten","Elige a tu compañero de combate","Kies je gevechtsmetgezel","Scegli il tuo compagno di battaglia","Choisis ton compagnon de combat"],
- "Choose a companion outside your class role. Your other two starter roles will join through Silverbrook and Old Mines progress.":["Wähle einen Begleiter mit einer anderen Rolle als deine Klasse. Die beiden übrigen Startrollen schließen sich durch Fortschritte in Silverbrook und Old Mines an.","Elige un compañero con un rol distinto al de tu clase. Los otros dos roles iniciales se unirán al avanzar en Silverbrook y Old Mines.","Kies een metgezel met een andere rol dan je klasse. De andere twee startrollen komen vrij via voortgang in Silverbrook en Old Mines.","Scegli un compagno con un ruolo diverso dalla tua classe. Gli altri due ruoli iniziali si uniranno progredendo a Silverbrook e nelle Old Mines.","Choisis un compagnon dont le rôle diffère de celui de ta classe. Les deux autres rôles de départ se débloquent en progressant à Silverbrook et Old Mines."],
+  "Any class can choose any companion. The other two starter companions join through Silverbrook and Old Mines progress.":["Jede Klasse kann jeden Begleiter wählen. Die anderen beiden Startbegleiter schließen sich durch Fortschritte in Silverbrook und Old Mines an.","Cualquier clase puede elegir cualquier compañero. Los otros dos compañeros iniciales se unirán al avanzar en Silverbrook y Old Mines.","Elke klasse kan elke metgezel kiezen. De andere twee startmetgezellen sluiten zich aan via voortgang in Silverbrook en Old Mines.","Ogni classe può scegliere qualsiasi compagno. Gli altri due compagni iniziali si uniranno progredendo a Silverbrook e nelle Old Mines.","Toutes les classes peuvent choisir n'importe quel compagnon. Les deux autres compagnons de départ se débloquent en progressant à Silverbrook et Old Mines."],
  "Choose {name}, {role}":["{name} wählen, Rolle: {role}","Elegir a {name}, rol: {role}","Kies {name}, rol: {role}","Scegli {name}, ruolo: {role}","Choisir {name}, rôle : {role}"],
  "Recruiting…":["Wird rekrutiert…","Reclutando…","Rekruteren…","Reclutamento…","Recrutement…"],
+ "Recruit companion":["Begleiter rekrutieren","Reclutar compañero","Metgezel rekruteren","Recluta compagno","Recruter un compagnon"],
  "Choose companion":["Begleiter wählen","Elegir compañero","Kies metgezel","Scegli compagno","Choisir un compagnon"],
 
  "Complete Into Ironwood and choose your starter companion.":["Schließe Into Ironwood ab und wähle deinen ersten Begleiter.","Completa Into Ironwood y elige a tu primer compañero.","Voltooi Into Ironwood en kies je eerste metgezel.","Completa Into Ironwood e scegli il tuo primo compagno.","Terminez Into Ironwood et choisissez votre premier compagnon."],
@@ -278,7 +343,7 @@ export const companionTranslationRows={
  "Team Power {value0}": ["Teamstärke {value0}","Poder del equipo {value0}","Teamkracht {value0}","Potenza squadra {value0}","Puissance d'équipe {value0}"],
  "Combat Companions": ["Kampfgefährten","Compañeros de combate","Gevechtsmetgezellen","Compagni di combattimento","Compagnons de combat"],
  "One tactical companion can assist your character.": ["Ein taktischer Gefährte kann deinen Charakter unterstützen.","Un compañero táctico puede ayudar a tu personaje.","Eén tactische metgezel kan je personage helpen.","Un compagno tattico può assistere il personaggio.","Un compagnon tactique peut assister votre personnage."],
- "Choose a different role from your character. Passive pets keep their separate collection bonuses.": ["Wähle eine andere Rolle als die deines Charakters. Passive Haustiere behalten ihre eigenen Sammlungsboni.","Elige un rol distinto al de tu personaje. Las mascotas pasivas conservan sus bonificaciones de colección independientes.","Kies een andere rol dan je personage. Passieve huisdieren behouden hun eigen verzamelbonussen.","Scegli un ruolo diverso dal personaggio. Gli animali passivi mantengono i propri bonus di collezione.","Choisissez un rôle différent de votre personnage. Les familiers passifs conservent leurs bonus de collection distincts."],
+  "Any unlocked companion can assist your class. Passive pets keep their separate collection bonuses.": ["Jeder freigeschaltete Begleiter kann deiner Klasse helfen. Passive Haustiere behalten ihre eigenen Sammlungsboni.","Cualquier compañero desbloqueado puede ayudar a tu clase. Las mascotas pasivas conservan sus bonificaciones de colección independientes.","Elke vrijgespeelde metgezel kan je klasse helpen. Passieve huisdieren behouden hun eigen verzamelbonussen.","Qualsiasi compagno sbloccato può assistere la tua classe. Gli animali passivi mantengono i propri bonus di collezione.","Tout compagnon débloqué peut aider votre classe. Les familiers passifs conservent leurs bonus de collection distincts."],
  "Essence": ["Essenz","Esencia","Essentie","Essenza","Essence"],
  "Bondstones": ["Bindungssteine","Piedras de vínculo","Bandstenen","Pietre del legame","Pierres de lien"],
  "Gold": ["Gold","Oro","Goud","Oro","Or"],
@@ -330,7 +395,6 @@ export const companionTranslationRows={
  "Bond 10: {value0}": ["Bindung 10: {value0}","Vínculo 10: {value0}","Band 10: {value0}","Legame 10: {value0}","Lien 10 : {value0}"],
  "Ready to recruit": ["Bereit zur Rekrutierung","Listo para reclutar","Gereed om te rekruteren","Pronto per il reclutamento","Prêt à recruter"],
  "Recommended next step": ["Empfohlener nächster Schritt","Siguiente paso recomendado","Aanbevolen volgende stap","Prossimo passo consigliato","Prochaine étape recommandée"],
- "Unlock requirements": ["Freischaltbedingungen","Requisitos de desbloqueo","Ontgrendelvereisten","Requisiti di sblocco","Conditions de déblocage"],
  "Unlocks when all requirements are met. Requirements tied to unreleased game content remain locked.": ["Wird freigeschaltet, sobald alle Bedingungen erfüllt sind. Bedingungen für unveröffentlichte Inhalte bleiben gesperrt.","Se desbloquea al cumplir todos los requisitos. Los vinculados a contenido no publicado permanecen bloqueados.","Ontgrendelt zodra aan alle vereisten is voldaan. Vereisten voor niet-uitgebrachte inhoud blijven vergrendeld.","Si sblocca quando tutti i requisiti sono soddisfatti. Quelli legati a contenuti non pubblicati restano bloccati.","Se débloque quand toutes les conditions sont remplies. Celles liées au contenu non publié restent verrouillées."],
  "ASCENSION MATERIAL": ["AUFSTIEGSMATERIAL","MATERIAL DE ASCENSIÓN","VERHEFFINGSMATERIAAL","MATERIALE D'ASCESA","MATÉRIAU D'ASCENSION"],
  "{value0} owned · choose a source to continue progression.": ["{value0} im Besitz · wähle eine Quelle, um fortzufahren.","{value0} en posesión · elige una fuente para seguir progresando.","{value0} in bezit · kies een bron om verder te gaan.","{value0} posseduti · scegli una fonte per progredire.","{value0} possédés · choisissez une source pour progresser."],
@@ -1059,6 +1123,8 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
  companionCatalogs.ru[key]=key;
  companionCatalogs.tr[key]=key;
 }
+companionCatalogs.ru["Recruit companion"]="Нанять спутника";
+companionCatalogs.tr["Recruit companion"]="Yoldaş edin";
 export const translateCompanion=createTranslator(companionCatalogs);
 export const companionTranslator=(language:Language)=>(key:CompanionMessageKey,params?:Record<string,string|number>)=>translateCompanion(language,key,params);
 
@@ -1116,7 +1182,6 @@ export function companionError(language:Language,error:unknown):string{
  if(key)return translateCompanion(language,key);
  if(message.startsWith('mission_requirement_'))return translateCompanion(language,'The selected team does not meet every assignment requirement.');
  if(message.startsWith('missing_material:')||/^Missing .*material/i.test(message))return translateCompanion(language,'Missing companion materials.');
- if(message.startsWith('Cannot equip:'))return translateCompanion(language,'Same role as your character');
  const bond=/^Reach Bond (\d+) first\.$/.exec(message);
  if(bond)return translateCompanion(language,'Reach Bond {level} first.',{level:bond[1]});
  return translateCompanion(language,'Unable to complete action.');
@@ -1149,6 +1214,8 @@ export function companionMessage(language:Language,message:string):string{
  if(match)return t("{name}'s combat choice is ready.",{name:match[1]});
  match=/^(.*) · Bond (\d+) · (.*)\.$/.exec(message);
  if(match){const essence=/^(\d+) Essence$/.exec(match[3]);return t('{name} · Bond {level} · {reward}.',{name:match[1],level:match[2],reward:essence?essence[1]+' × '+t('Essence'):companionLabel(language,match[3])});}
+ const recruited=/^(.*) joined your permanent roster\.$/.exec(message);
+ if(recruited)return t('{value0} joined your permanent roster.',{value0:recruited[1]});
  const content=companionContent(language,message);
  return content!==message||Object.prototype.hasOwnProperty.call(companionTranslationRows,message)?content:companionError(language,message);
 }
@@ -1179,6 +1246,8 @@ export function companionContent(language:Language,value:string):string{
  if(guidance!==undefined)return guidance;
  const dynamic=companionDynamicText(language,value);
  if(dynamic!==undefined)return dynamic;
+ const combat=companionCombatDescriptionText(language,value);
+ if(combat!==undefined)return combat;
  for(const {key,names,pattern} of contentPatterns){
   const match=pattern.exec(value);
   if(match)return translateCompanion(language,key,Object.fromEntries(names.map((name,index)=>[name,match[index+1]])));

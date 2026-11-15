@@ -1,6 +1,7 @@
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
+import {localizeGameplay} from '../i18n/gameplay';
 import {useEffect,useMemo,useState} from 'react';
 import {ImageBackground,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -26,6 +27,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
+   const gl=(text:string)=>localizeGameplay(language,text);
 
   const dateLabel=new Intl.DateTimeFormat(language,{month:'short',day:'numeric',timeZone:'UTC'});
   const monthLabel=(index:number)=>new Intl.DateTimeFormat(language,{month:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2000,index,1))).toLocaleUpperCase(language);
@@ -54,11 +56,11 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
   const distinctFeatured=featured?.row&&(!frostfallWindow||annualEventSeriesId(featured.row.eventId)!=='EVT_ANNUAL_012');
   return <View style={s.hub}>
     {frostfallWindow?.startsAtMs!==undefined?<FrostfallPreview startsAtMs={frostfallWindow.startsAtMs} nowMs={previewNow}/>:null}
-    {distinctFeatured&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{featured.row.name}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {featured.year}</Text><Text style={s.heroSummary}>{p(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}
+    {distinctFeatured&&<ImageBackground source={FESTIVAL_ART[featured.row.definition.visualKey]} resizeMode="cover" style={s.featureHero} imageStyle={s.featureImage}><View style={s.featureShade}/><View style={s.featureContent}><Text style={s.kicker}>{p(previewFestival?'FESTIVAL PREVIEW':'NEXT FESTIVAL')}</Text><EventIdentityBadge event={featured.row.name} visualKey={featured.row.definition.visualKey} accent={featured.row.definition.accent} size={76}/><Text style={s.heroName}>{gl(featured.row.name)}</Text><Text style={[s.featureDate,{color:featured.row.definition.accent}]}>{scheduleLabel(scheduleFor(featured.row.eventId,featured.year),featured.row.windowLabel)} · {featured.year}</Text><Text style={s.heroSummary}>{gl(featured.row.definition.summary)}</Text><Text style={s.note}>{p(hasExactSchedule(scheduleFor(featured.row.eventId,featured.year))?'Dates set':'Planned window · dates subject to change')}</Text></View></ImageBackground>}
     <Panel>
     <Text style={s.kicker}>{p('COMING EVENTS')}</Text>
 
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.upcomingList} showsVerticalScrollIndicator={false}>{upcoming.map(({row,year})=><Pressable key={row.eventId} accessibilityRole="button" accessibilityLabel={row.name+', '+scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)+', '+year} onPress={()=>{setSelectedDate({year,month:monthForOrder(row.order)});setPreviewFestival(true)}} style={[s.upcomingCard,{borderColor:row.definition.accent}]}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={38}/><Text style={s.featureName}>{row.name}</Text><Text style={s.note}>{scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)} · {year}</Text><Text style={s.meta}>{p(hasExactSchedule(scheduleFor(row.eventId,year))?'Dates set':'Planned window')}</Text></Pressable>)}</ScrollView>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.upcomingList} showsVerticalScrollIndicator={false}>{upcoming.map(({row,year})=><Pressable key={row.eventId} accessibilityRole="button" accessibilityLabel={gl(row.name)+', '+scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)+', '+year} onPress={()=>{setSelectedDate({year,month:monthForOrder(row.order)});setPreviewFestival(true)}} style={[s.upcomingCard,{borderColor:row.definition.accent}]}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={38}/><Text style={s.featureName}>{gl(row.name)}</Text><Text style={s.note}>{scheduleLabel(scheduleFor(row.eventId,year),row.windowLabel)} · {year}</Text><Text style={s.meta}>{p(hasExactSchedule(scheduleFor(row.eventId,year))?'Dates set':'Planned window')}</Text></Pressable>)}</ScrollView>
 
     </Panel>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:calendarOpen}} onPress={()=>setCalendarOpen(value=>!value)} style={s.calendarToggle}><View style={s.flex}><Text style={s.title}>{t('Festival calendar')}</Text><Text style={s.note}>{p('Browse festival months and dates')}</Text></View><DisclosureMark expanded={calendarOpen}/></Pressable>
@@ -68,7 +70,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
         if(!isVisibleMonth(year,index+1))return null;
         const localizedMonth=monthLabel(index),month=index+1,event=rowForMonth(month),selectedNow=selectedDate.year===year&&selectedDate.month===month;
         const highlighted=year===currentYear&&event&&(event.eventId===highlightEventId||!!highlightSeries&&annualEventSeriesId(event.eventId)===highlightSeries);
-        return <Pressable key={`${year}-${label}`} accessibilityRole="button" accessibilityLabel={event?`${localizedMonth} ${year}, ${event.name}, ${scheduleLabel(scheduleFor(event.eventId,year),event.windowLabel)}`:t("{month}, no annual festival",{month:`${localizedMonth} ${year}`})} accessibilityState={{selected:selectedNow}} onPress={()=>setSelectedDate({year,month})} style={[s.month,selectedNow&&s.monthSelected,selectedNow&&event&&{borderColor:event.definition.accent}]}>
+        return <Pressable key={`${year}-${label}`} accessibilityRole="button" accessibilityLabel={event?`${localizedMonth} ${year}, ${gl(event.name)}, ${scheduleLabel(scheduleFor(event.eventId,year),event.windowLabel)}`:t("{month}, no annual festival",{month:`${localizedMonth} ${year}`})} accessibilityState={{selected:selectedNow}} onPress={()=>setSelectedDate({year,month})} style={[s.month,selectedNow&&s.monthSelected,selectedNow&&event&&{borderColor:event.definition.accent}]}>
           <Text style={[s.monthText,selectedNow&&s.monthTextSelected]}>{localizedMonth}</Text>
           {event?<View style={[s.monthArt,highlighted&&{borderColor:event.definition.accent}]}><EventIdentityBadge event={event.name} visualKey={event.definition.visualKey} accent={event.definition.accent} size={30}/></View>:<View style={s.monthDotEmpty}/>}
         </Pressable>;
@@ -76,7 +78,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel,
     </ScrollView>
 
     {selected?<View style={[s.feature,{borderColor:selected.definition.accent}]}>
-      <View style={s.featureTop}><EventIdentityBadge event={selected.name} visualKey={selected.definition.visualKey} accent={selected.definition.accent} size={46}/><View style={s.flex}><View style={s.row}><Text style={s.featureName}>{selected.name}</Text>{selected.eventId===highlightEventId||!!highlightSeries&&annualEventSeriesId(selected.eventId)===highlightSeries?<Text style={s.badge}>{highlightLabel??t("CURRENT")}</Text>:null}</View><Text style={[s.signature,{color:selected.definition.accent}]}>{selected.definition.signature.title}</Text></View></View>
+      <View style={s.featureTop}><EventIdentityBadge event={selected.name} visualKey={selected.definition.visualKey} accent={selected.definition.accent} size={46}/><View style={s.flex}><View style={s.row}><Text style={s.featureName}>{gl(selected.name)}</Text>{selected.eventId===highlightEventId||!!highlightSeries&&annualEventSeriesId(selected.eventId)===highlightSeries?<Text style={s.badge}>{highlightLabel??t("CURRENT")}</Text>:null}</View><Text style={[s.signature,{color:selected.definition.accent}]} >{gl(selected.definition.signature.title)}</Text></View></View>
       <View style={s.scheduleRow}><Text style={[s.window,{color:selected.definition.accent}]}>{scheduleLabel(scheduleFor(selected.eventId,selectedDate.year),selected.windowLabel)}</Text>{hasExactSchedule(scheduleFor(selected.eventId,selectedDate.year))?<Text style={s.scheduled}>{t("DATES SET")}</Text>:null}</View>
       <Text style={s.meta}>{selected.hasHistory?t("Previously attended · {percent}% collection complete",{percent:selected.collectionPercent}):t("Annual festival · Not attended yet")}</Text>
     </View>:null}

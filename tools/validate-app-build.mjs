@@ -83,7 +83,15 @@ const offline=await gate(build(),{connected:false}).fetchAppVersionGate();
 assert.deepEqual(offline,{currentVersion:appConfig.expo.version,policy:null,updateRequired:false,updateAvailable:false,maintenanceMode:false,verificationFailed:true});
 console.log('PASS legacy release-channel policies and unavailable online configuration');
 
-const earlyLocales=load('apps/mobile/src/i18n/early-locales.ts',{});
+// Load every authored source-locale overlay used by early-locales. Newly
+// added Russian catalogues must not make build-metadata tests fail merely
+// because this isolated test loader knows only the previous two modules.
+const earlyLocaleSource=fs.readFileSync(path.join(root,'apps/mobile/src/i18n/early-locales.ts'),'utf8');
+const earlyLocaleImports=Object.fromEntries(
+  [...earlyLocaleSource.matchAll(/^import\s+\{[^}]+\}\s+from\s+['"]([.]\/(?:russian-[^'"]+|turkish-coverage))['"];?\s*$/gm)]
+    .map(([,specifier])=>[specifier,load('apps/mobile/src/i18n/'+specifier.slice(2)+'.ts',{})])
+);
+const earlyLocales=load('apps/mobile/src/i18n/early-locales.ts',earlyLocaleImports);
 const translator=load('apps/mobile/src/i18n/translator.ts',{'./early-locales':earlyLocales});
 const {SUPPORTED_LANGUAGES}=load('apps/mobile/src/i18n/languages.ts',{});
 const {appBuildCatalogs,appBuildText}=load('apps/mobile/src/i18n/app-build.ts',{'./translator':translator});

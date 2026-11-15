@@ -10,9 +10,10 @@ const upgrade=read('CompanionUpgradePresentation.tsx');
 const resource=read('ResourceIcon.tsx');
 const skills=fs.readFileSync(path.join(root,'src/screens/SkillsScreen.tsx'),'utf8');
 
-// The everyday roster starts with owned companions; discovery remains available.
-assert(panel.includes("useState<CollectionFilter>('Owned')"),'Roster must default to owned companions');
-assert(panel.includes("title={t(\"Companion Codex\")}"),'Companion discovery remains available');
+// Companion Index opens on unlockable recruits, with owned and past-event views one tap away.
+assert(read('CompanionIndex.tsx').includes("useState<IndexTab>(()=>(state.account.unlockedCombatCompanionIds?.length??0)>0?'owned':'unlock')"),'Companion Index defaults to owned recruits where available');
+assert(read('CompanionIndex.tsx').includes("type IndexTab='owned'|'unlock'|'event'"),'Owned and past-event groups must remain accessible');
+assert(read('CompanionIndex.tsx').includes('onCodex}'),'Companion discovery remains available through the Index header');
 assert(panel.includes("Train equipped companion"),'Equipped companion should have a shortcut to Training');
 
 // Only real server-derived costs/holdings should drive upgrade readiness.
@@ -34,22 +35,15 @@ assert(panel.includes('disabled={busy||!trainingDue}')&&panel.includes('disabled
 assert(training.includes('costBreakdown(model.nextLevelCost)'),'Training must show resource cost before upgrading');
 assert(training.includes('resourceId:"bondstones"'),'Training must display a Bondstone icon when required');
 
-// Companion Training has two equal-width, translation-friendly actions on the
-// first row, with Materials & Ascension on its own full-width second row.
-const growthStart=training.indexOf('<View style={s.growthGrid}>');
-const growthEnd=training.indexOf('   </View>:null}',growthStart);
-assert(growthStart>=0&&growthEnd>growthStart,'Companion growth actions must be visible for owned companions');
-const growthActions=training.slice(growthStart,growthEnd);
-assert(growthActions.includes('<View style={s.growthPair}>'),'Bond and Abilities must share a dedicated horizontal row');
-assert(growthActions.includes("['Bond',t('Bond')")&&growthActions.includes("['Skills',t('Abilities & Techniques')"),'Bond and Abilities must remain equally sized actions');
-assert(growthActions.includes('s.growthTile,s.growthHalfTile'),'The first-row buttons must use equal flex widths');
-assert(growthActions.includes('s.growthTile,s.growthTileWide'),'Materials & Ascension needs its own full-width button');
-assert(growthActions.includes("setTab('Materials')")&&growthActions.includes('setTab(key)'),'All three actions must retain working modal navigation');
-assert(growthActions.includes('accessibilityRole="button"')&&growthActions.includes("accessibilityLabel={t('Materials & Ascension')"),'Growth buttons must retain accessible names and button semantics');
-assert(training.includes("growthPair:{flexDirection:'row',alignItems:'stretch',gap:8}")&&training.includes('growthHalfTile:{flex:1,minWidth:0}'),'First row must be 50/50 with an 8px gap and avoid forced minimum widths');
-assert(training.includes("growthTileWide:{width:'100%',minHeight:56"),'Ascension action must occupy 100% width below the pair');
-assert(training.includes('growthTitle:{fontSize:12,lineHeight:17')&&training.includes('flexShrink:1'),'Long translated labels must wrap without forcing tiles to overflow');
-assert(!training.includes("flexBasis:'28%'")&&!training.includes("flexBasis:'38%'"),'Legacy three-column flex basis must not compete for narrow phone width');
+// Companion Training now has a direct Bond summary before secondary growth actions.
+const bond=read('CompanionBondProgressPanel.tsx');
+assert(training.includes('<CompanionBondProgressPanel')&&training.includes('onOpen={()=>{setMessage(\'\');setTab(\'Bond\')}'),'Bond is directly visible on Training and opens its reward sheet');
+assert(training.includes("setTab('Skills')")&&training.includes("setTab('Materials')"),'Abilities and Ascension remain equally reachable');
+assert(training.includes('s.growthTile,s.growthHalfTile'),'The remaining growth actions fit a two-column row');
+assert(bond.includes("accessibilityRole=\"progressbar\"")&&bond.includes("bond.remaining"),'Bond uses a proper progress bar and remaining XP');
+assert(bond.includes("claimable.length")&&bond.includes('onClaim(level as RewardLevel)'),'Bond rewards retain per-milestone claim actions');
+assert(bond.includes('COMPANION_BOND_CONFIG.sourceXp')&&bond.includes('traitName'),'Bond XP sources and the companion-specific trait are explicit');
+assert(panel.includes('s.quartersChoices')&&panel.includes('housingView'),'Quarters are directly visible and the companion can be changed without a hidden disclosure');
 
 for(const title of ['Mission Board','Prepare Expedition','Prepare Team','Expedition Supplies'])assert(expedition.includes(title),'Missing expedition section '+title);
 assert(expedition.includes("activeCompanionMissions(now)"),'Mission board must use the active weekly rotation');
@@ -72,7 +66,7 @@ assert(expedition.includes("type:'companion_assignment_start'"),'Starting expedi
 assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');
 // The Skills hub Companion tile is a Sanctuary facility, not a fake levelable skill.
 assert(skills.includes("level:facilityLevel,kind:'Sanctuary facility'"),'Companion skill tile must describe the actual Training Ground facility level, including level zero');
-assert(skills.includes("Math.min(1,card.level/3)")&&skills.includes("'Facility Lv '+card.level+'/3'"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
+assert(skills.includes("Math.min(1,card.level/3)")&&skills.includes("gt('Facility Lv {level}/3',{level:card.level})"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
 assert(skills.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[facilityLevel]'),'Training XP/day must follow the authoritative Sanctuary values');
 assert(skills.includes('trainingDaysReady*facilityXpPerDay')&&skills.includes('idleCompanions.length'),'Companion training claim must show accrued XP and eligible companions');
 assert(skills.includes("type:'companion_training'")&&skills.includes('disabled={!trainingClaimReady}'),'Skills hub uses an existing authenticated companion training claim with readiness gating');

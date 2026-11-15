@@ -4,6 +4,7 @@ import {DiscordButton} from '../components/DiscordButton';
 import {LineworkIcon} from '../components/LineworkIcon';
 import {navigationLinework} from '../components/NavigationLinework';
 import {accountText} from '../i18n/account';
+import {skillGuideUi} from '../i18n/skill-guide-ui';
 import {useMemo,useState} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {TutorialBeacon} from '../components/TutorialBeacon';
@@ -18,11 +19,11 @@ import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Dungeon'|'Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
+export type MoreDestination='Dungeon'|'Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'SkillGuide'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Dungeon','Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Party','Recruitment','Friends','Guild','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','Store','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','SkillGuide','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
@@ -33,7 +34,7 @@ function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Recruitment')return 'Social';
   if(id==='Collections'||id==='ResourceCodex')return 'Inventory';
   if(id==='Store')return 'Inventory';
-  if(id==='MasteryHall')return 'Skills';
+  if(id==='MasteryHall'||id==='SkillGuide')return 'Skills';
   if(id==='AdventurersJournal')return 'Quests';
   if(id==='Bestiary'||id==='WorldMilestones')return 'World';
   return id;
@@ -66,6 +67,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
     case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
     case 'ResourceCodex':return {title:a('Codex'),description:a('Browse resources, companion materials and crafting recipes')};
+    case 'SkillGuide':return {title:skillGuideUi(language,'Skill Guide'),description:skillGuideUi(language,'Browse skills, training and unlocks.')};
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
     case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};
@@ -75,7 +77,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;onOpenRoadmap?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
+export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,onOpenGuildProjects,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,guildProjectRewardCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;onOpenRoadmap?:()=>void;onOpenGuildProjects?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;guildProjectRewardCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -132,7 +134,18 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
     </Pressable>:null}
-    {attentionDestinations.length?<View style={s.attentionRail}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><MoreIcon id={id} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View></View>:null}
+    {(attentionDestinations.length>0||(guildProjectRewardCount>0&&!!onOpenGuildProjects))?<View style={s.attentionRail}>
+      <Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text>
+      {guildProjectRewardCount>0&&onOpenGuildProjects?<Pressable accessibilityRole="button"
+        accessibilityLabel={a('Guild Project reward ready')} accessibilityHint={a('Open Guild Projects to claim')}
+        onPress={onOpenGuildProjects} style={({pressed})=>[s.guildClaimAction,pressed&&s.pressed]}>
+        <MoreIcon id="Guild" size={25}/>
+        <View style={s.flex}><Text style={s.guildClaimTitle}>{a('Guild Project reward ready')}</Text>
+          <Text style={s.guildClaimDetail}>{a('Open Guild Projects to claim')}</Text></View>
+        <AttentionCount count={guildProjectRewardCount} label={a('Guild Project rewards ready')}/><UiIcon name="next" size={18}/>
+      </Pressable>:null}
+      {attentionDestinations.length>0?<View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><MoreIcon id={id} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View>:null}
+    </View>:null}
 
     <View style={s.quickSection}><Text style={s.sectionLabel}>{a('QUICK ACCESS')}</Text>
       <View style={[s.quickAccessRow,singleColumn&&s.quickAccessWrapped]}>{quickAccess.map(id=><Pressable key={id} accessibilityRole="button" accessibilityLabel={itemMeta(language,id).title} onPress={()=>onNavigate(id)} style={({pressed})=>[s.quickAccessItem,singleColumn&&s.quickAccessWide,pressed&&s.pressed]}>
@@ -181,6 +194,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   section:{gap:6,marginTop:4},
   sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:.7},
   attentionRail:{gap:8,padding:9,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
+  guildClaimAction:{minHeight:55,flexDirection:'row',alignItems:'center',gap:9,padding:10,borderWidth:1,borderColor:C.selectionLine,borderRadius:10,backgroundColor:C.panel},
+  guildClaimTitle:{fontSize:12,fontWeight:'800',color:C.text},
+  guildClaimDetail:{fontSize:10,color:C.muted,marginTop:3},
   attentionQuickRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
   attentionQuick:{flex:1,minWidth:132,minHeight:44,flexDirection:'row',alignItems:'center',gap:7,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   attentionQuickWide:{flexBasis:'100%'},

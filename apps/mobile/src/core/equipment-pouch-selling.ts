@@ -9,6 +9,9 @@ import {equipmentSalvageReward,equipmentSalvageRewards} from './equipment-salvag
 import type {GameState,GearSlot,ItemStack} from './types';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
+/** Forge receipt IDs can be 120 characters; copy: makes a valid selection ID 125. */
+export const EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH=180;
+
 /** Snapshot-scoped identifiers: never sell an item type in place of an exact forged copy.
  * Legacy token includes the slot index and item ID so stale actions cannot target another slot. */
 export function equipmentPouchSaleId(stack:ItemStack,index:number){
@@ -44,7 +47,7 @@ function sellLegacySlot(state:GameState,index:number,itemId:string):GameState{
 export function sellEquipmentPouchSelected(state:GameState,ids:readonly string[]):GameState{
  if(!state.character)throw new Error('Choose a character before selling equipment');
  if(!Array.isArray(ids)||ids.length<1||ids.length>100||new Set(ids).size!==ids.length||
-   ids.some(id=>typeof id!=='string'||!id||id.length>120))
+   ids.some(id=>typeof id!=='string'||!id||id.length>EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH))
    throw new Error('Select 1–100 equipment copies');
  const original=equipmentPouch(state).stacks;
  const byId=new Map(original.map((stack,index)=>[equipmentPouchSaleId(stack,index),{index,stack}] as const));
@@ -140,7 +143,7 @@ function salvageLegacySlot(state:GameState,index:number,itemId:string):GameState
 export function salvageEquipmentPouchSelected(state:GameState,ids:readonly string[]):GameState{
  if(!state.character)throw new Error('Choose a character before salvaging equipment');
  if(!Array.isArray(ids)||ids.length<1||ids.length>100||new Set(ids).size!==ids.length||
-   ids.some(id=>typeof id!=='string'||!id||id.length>120))
+   ids.some(id=>typeof id!=='string'||!id||id.length>EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH))
    throw new Error('Select 1–100 equipment copies');
  const original=equipmentPouch(state).stacks;
  const byId=new Map(original.map((stack,index)=>[equipmentPouchSaleId(stack,index),{index,stack}] as const));

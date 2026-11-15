@@ -9,6 +9,7 @@ const domain=read('backend/src/server/coop/qmode.ts');
 const resolver=read('backend/src/server/expeditions/node-resolution.ts');
 const details=read('apps/mobile/src/components/coop/CoopDungeonBrowser.tsx');
 const run=read('apps/mobile/src/components/coop/CoopRunOverview.tsx');
+const rewardDisplay=read('apps/mobile/src/core/dungeon-reward-display.ts');
 const textCatalog=read('apps/mobile/src/i18n/social.ts');
 const screen=read('apps/mobile/src/screens/CoopExpeditionScreen.tsx');
 const browse=read('apps/mobile/src/core/coop-dungeon-browsing.ts');
@@ -24,6 +25,9 @@ assert(domain.includes('tierScalingVersion:2')&&resolver.includes('coopTierEnemy
 assert(server.includes('enhancedDungeonMarks(run)'),'Live rewards must share tier and failure formulas, not flat percentage');
 assert(details.includes('dungeon.expectedMarksByTier?.[effectiveTier]')&&details.includes('rewardBudget.weeklyRemaining'),'Preparation must show selected-tier Marks and weekly remaining');
 assert(screen.includes('rewardBudget={entry?.rewardBudget}'),'Screen must receive server-owned reward budget');
+assert(run.includes('dungeonRewardDisplayAmount(reward,run,rewardBudget,liveFellowshipRemaining)')&&!run.includes('reward.reward_json.marks??0'),'Unclaimed dungeon popup must never show a misleading zero');
+assert(rewardDisplay.includes('reward.reward_json.enhanced_marks')&&rewardDisplay.includes('reward.claimed_at')&&rewardDisplay.includes('weeklyRemaining'),'Pre-claim calculation must use the server entitlement, preserve claimed totals and respect reward budgets');
+assert(screen.includes('liveFellowshipRemaining={entry?.liveFellowshipRemaining}'),'Preview must account for server-supplied Live Fellowship availability');
 assert(entry.includes('recommendedLiveTier:')&&details.includes('dungeon.recommendedLiveTier'),'Live tier label must follow verified backend gear recommendation');
 assert(browse.includes('estimatedMinutes??{min:6,max:8}')&&details.includes("mode==='live'?'3–5'"),'Live shows shorter wall pacing without misrepresenting Solo estimated time');
 assert(details.includes('rewardBudget.weeklyRemaining===0')&&details.includes('rewardBudget.charges===0'),'Dungeon reward preview must distinguish the exhausted weekly cap from empty charges');

@@ -14,6 +14,7 @@ import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {EquipmentArtwork} from '../components/EquipmentArtwork';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
+import {isLiveSixPieceBonus} from '../core/equipment-set-runtime';
 import {companionArtSource} from '../theme/companion-art';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {StatRow} from '../components/StatRow';
@@ -180,14 +181,14 @@ export function CharacterScreen({state,onEquip,onEquipInstance,onEquipPouch,onUn
         </View>
         <View style={s.sectionHeading}><Text style={s.toolHeading}>{profileT(language,'Equipped sets')}</Text><Text style={s.toolMuted}>{equippedSets.length} {profileT(language,'sets')}</Text></View>
         {equippedSets.length===0?<Text style={s.toolMuted}>{profileT(language,'No matching set pieces equipped yet.')}</Text>:null}
-        {visibleSets.map(set=>{const count=equippedSetPieceCount(character.equipment,set!);const nextBonus=[2,4,8,10].find(pieces=>count<pieces);return <View key={set!.id} style={s.setToolCard}>
+        {visibleSets.map(set=>{const count=equippedSetPieceCount(character.equipment,set!);const nextBonus=(isLiveSixPieceBonus(set!)?[2,4,6,8,10]:[2,4,8,10]).find(pieces=>count<pieces);return <View key={set!.id} style={s.setToolCard}>
           <Pressable accessibilityRole="button" accessibilityState={{expanded:expandedSet===set!.id}} onPress={()=>setExpandedSet(value=>value===set!.id?null:set!.id)} style={s.toolSetHeader}>
             <View style={s.detailCopy}><Text style={s.detailName}>{set!.name}</Text><Text style={s.detailStats}>{set!.tier} · {count}/{set!.itemIds.length} {profileText(language,'equipped')}</Text></View>
             <Text style={s.allStatsText}>{profileText(language,'Set bonuses')} {expandedSet===set!.id?'⌃':'›'}</Text>
           </Pressable>
           <View style={s.setTrack}><View style={[s.setFill,{flex:count}]}/><View style={{flex:Math.max(0,set!.itemIds.length-count)}}/></View>
           <Text style={s.toolMuted}>{nextBonus?profileT(language,'Next bonus at {count} pieces',{count:nextBonus}):profileT(language,'All set milestones reached')}</Text>
-          {expandedSet===set!.id&&([{pieces:2,text:set!.twoPiece},{pieces:4,text:set!.fourPiece},{pieces:6,text:set!.sixPiece},{pieces:8,text:set!.eightPiece},{pieces:10,text:set!.tenPiece}].map(row=><View key={row.pieces} style={s.setBonusRow}><Text style={[s.detailName,{color:count>=row.pieces&&row.pieces!==6?C.good:C.muted}]}>{row.pieces}pc · {profileText(language,count<row.pieces?'Locked':row.pieces===6?'Not active yet':'Active')}</Text><Text style={s.detailStats}>{profileText(language,row.text)}</Text></View>))}
+          {expandedSet===set!.id&&([{pieces:2,text:set!.twoPiece},{pieces:4,text:set!.fourPiece},{pieces:6,text:set!.sixPiece},{pieces:8,text:set!.eightPiece},{pieces:10,text:set!.tenPiece}].map(row=><View key={row.pieces} style={s.setBonusRow}><Text style={[s.detailName,{color:count>=row.pieces&&(row.pieces!==6||isLiveSixPieceBonus(set!))?C.good:C.muted}]}>{row.pieces}pc · {profileText(language,count<row.pieces?'Locked':row.pieces===6&&!isLiveSixPieceBonus(set!)?'Not active yet':'Active')}</Text><Text style={s.detailStats}>{profileText(language,row.text)}</Text></View>))}
         </View>})}
         {equippedSets.length>2?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllSets}} onPress={()=>setShowAllSets(value=>!value)} style={s.toolSecondaryLink}><Text style={s.allStatsText}>{showAllSets?profileT(language,'Show fewer sets'):profileT(language,'Show all sets')} · {equippedSets.length} {showAllSets?'⌃':'›'}</Text></Pressable>:null}
       </View>}

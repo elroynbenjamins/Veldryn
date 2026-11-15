@@ -5,6 +5,10 @@ import type {MonsterDef} from '../content/monsters';
 import {combatBaselineProjection} from '../core/balance-projection';
 import {activeCombatHitProjection,combatSustainProjection} from '../core/game';
 import {liveHuntNarration} from '../core/combat-narration';
+import {classSkillsFor} from '../content/class-skills';
+import {characterClassSkills} from '../core/class-skills';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {companionCombatContribution} from '../core/combat-companions';
 import {dungeonCombatClassFx} from '../core/dungeon-combat-fx';
 import {huntStrikePresentation} from '../core/hunt-strike-presentation';
 import {itemDef} from '../content/items';
@@ -16,6 +20,7 @@ import {battleText} from '../i18n/battle';
 import {progressionT} from '../i18n/progression';
 import {CharacterPortrait} from './CharacterVisual';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
+import {HuntAbilityCues} from './HuntAbilityCues';
 import {RegionArtwork} from './RegionArtwork';
 import {PixelFx,SpriteFrames} from './anim/SpriteFrames';
 import {useLoopProgress,useMotionEnabled} from './anim/motion';
@@ -23,7 +28,7 @@ import {useLoopProgress,useMotionEnabled} from './anim/motion';
 const BOLT_SHEET={frameWidth:COMBAT_FX.bolt.frameSize,frameHeight:COMBAT_FX.bolt.frameSize,frames:COMBAT_FX.bolt.frames,durationsMs:[1,1,1,1]};
 
 /** An encounter preview; reward projections are deliberately labeled as baseline estimates. */
-export function HuntingPreview({state,monster,regionId}:{state:GameState;monster:MonsterDef;regionId:string}){
+export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:GameState;monster:MonsterDef;regionId:string;sceneOnly?:boolean}){
  const C=useGameTheme(),sustain=useMemo(()=>monster.boss?undefined:combatSustainProjection(state,monster.id),[state,monster.id,monster.boss]);
  const pace=sustain?{killsPerHour:sustain.killsPerHour,xpPerHour:sustain.xpPerHour,goldPerHour:sustain.goldPerHour}:combatBaselineProjection(monster);
  const active=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
@@ -33,6 +38,13 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const fight=useMemo(()=>active?activeCombatHitProjection(state,clock,replayCursor.current):undefined,[state,active,clock]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const lastHit=!fight?.searching&&fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
+ const recentSkillEffects=active?(fight?.lastSkillEffects??[]).filter(effect=>clock-effect.atMs>=0&&clock-effect.atMs<2700).slice(-2):[];
+ const classSkillLevels=useMemo(()=>state.character?characterClassSkills(state.character):[],[state.character]);
+ const classSkillDefs=state.character?classSkillsFor(state.character.classId):[];
+ const equippedCompanion=useMemo(()=>{
+  const contribution=companionCombatContribution(state);
+  return contribution.contributionPct>0?COMBAT_COMPANIONS.find(def=>def.id===state.character?.equippedCombatCompanionId):undefined;
+ },[state]);
  // Every effect below replays a strike the hit projection already resolved. Nothing here
  // rolls damage, predicts an outcome or delays the hunt.
  const animate=useMotionEnabled(state.settings.reduceMotion,active);
@@ -128,7 +140,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
     </Animated.View>:null}
    </Animated.View>
   </View>
-  {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
+  {!sceneOnly&&fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
    <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':fight.searching?'Searching for an encounter...':'Live combat')}</Text>
    {(fight.searching
       ?[{label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good}]
@@ -142,11 +154,19 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
      <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
     </View>
    </View>)}
+   <HuntAbilityCues effects={recentSkillEffects} language={state.settings.language} classId={state.character!.classId} formatAmount={damageText}/>
    {narration&&!fight.stoppedReason&&!fight.searching?<Text accessibilityLiveRegion={narration.hit?'polite':'none'} numberOfLines={2} style={{fontFamily:font,fontSize:12,lineHeight:17,fontWeight:narration.hit?'700':'600',color:narration.tone==='danger'?C.bad:narration.tone==='accent'?C.accent:C.muted}}>
     {tr(narration.key,narration.params)}{narration.critical&&fight.lastHit?.actor==='player'?` · ${tr('CRITICAL!')}`:''}
    </Text>:null}
+   {state.character?<View style={{gap:4,borderTopWidth:1,borderTopColor:C.line,paddingTop:6}}>
+    <View style={{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:5}}>
+     <Text style={{fontFamily:font,fontSize:9,fontWeight:'800',color:C.muted}}>{tr('CLASS SKILLS · PASSIVE')}</Text>
+     {classSkillLevels.map((skill,index)=><Text key={skill.skillId} numberOfLines={1} style={{fontFamily:font,fontSize:10,color:C.text,borderWidth:1,borderColor:C.lineStrong,borderRadius:5,paddingHorizontal:6,paddingVertical:2}}>{tr(classSkillDefs[index]?.name??skill.skillId)} · {tr('Lv. {level}',{level:skill.level})}</Text>)}
+    </View>
+    {equippedCompanion?<Text numberOfLines={1} style={{fontFamily:font,fontSize:10,color:C.muted}}>{tr('COMPANION · PASSIVE BONUS')} · {equippedCompanion.name}</Text>:null}
+   </View>:null}
   </View>:null}
-  {!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
+  {!sceneOnly&&!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
    <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:6}}>{[[pace.killsPerHour,'kills/hr'],[pace.xpPerHour,'XP/hr'],[pace.goldPerHour,'Gold/hr']].map(([value,label],index)=><Text key={label} style={{fontFamily:font,color:C.text,fontWeight:'600',fontSize:13}}>{index?'·  ':''}~{number(value as number)} {label}</Text>)}</View>
    <Text style={{fontFamily:font,color:C.muted,fontSize:11,lineHeight:15,textAlign:'center'}}>{sustain?.foodId?`${itemDef(sustain.foodId).name} · ~${sustain.foodPerHour.toFixed(1)} food/hr`:progressionT(state.settings.language,'Equip cooked food for sustained hunts.')}</Text>
   </View>:null}

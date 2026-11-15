@@ -1,6 +1,7 @@
 import {useSocialText} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {partyEventStatusText,partyProgressNumber,usePartyProgressUiText} from '../i18n/party-progress-ui';
+import {partyEventDisplayCopy,partyEventRankReasonText,partyEventTagText} from '../i18n/party-event-content-de';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { milestoneProgressPercent, nextUnreachedMilestone, type PartyEventView } from '../core/party-social';
@@ -26,12 +27,13 @@ export function PartyEventHubPanel(props:PartyEventHubPanelProps){
   const C=useGameTheme(),styles=useMemo(()=>makeStyles(C),[C]);
   const [tab,setTab]=useState<Tab>('overview');
   const event=props.event;
+  const eventCopy=event?partyEventDisplayCopy(language,event.name,event.shortDescription):undefined;
   const nextPersonal=useMemo(()=>event?nextUnreachedMilestone(event.personalPoints,event.personalMilestones):undefined,[event]);
   const nextParty=useMemo(()=>event?nextUnreachedMilestone(event.partyScore,event.partyMilestones):undefined,[event]);
   if(!event)return <View style={styles.panel}><Text style={styles.eyebrow}>{st("PARTY EVENT")}</Text><Text style={styles.title}>{st("No active Party Event")}</Text><Text style={styles.copy}>{ui('Temporary Party Events appear here when a live-ops window is active. Weekly Party Contracts continue normally.')}</Text></View>;
   return <View style={styles.panel}>
-    <View style={styles.header}><View style={styles.flex}><Text style={styles.eyebrow}>{ui('LIVE PARTY EVENT · {status}',{status:partyEventStatusText(language,event.status).toLocaleUpperCase(language)})}</Text><Text style={styles.title}>{event.name}</Text><Text style={styles.copy}>{event.shortDescription}</Text></View>{event.partyRank&&<View style={styles.rankBadge}><Text style={styles.rankSmall}>{st("RANK")}</Text><Text style={styles.rankValue}>#{event.partyRank}</Text></View>}</View>
-    <View style={styles.tags}>{event.eventTags.map(tag=><Text key={tag} style={styles.tag}>{tag.replace(/_/g,' ')}</Text>)}</View>
+    <View style={styles.header}><View style={styles.flex}><Text style={styles.eyebrow}>{ui('LIVE PARTY EVENT · {status}',{status:partyEventStatusText(language,event.status).toLocaleUpperCase(language)})}</Text><Text style={styles.title}>{eventCopy?.name}</Text><Text style={styles.copy}>{eventCopy?.shortDescription}</Text></View>{event.partyRank&&<View style={styles.rankBadge}><Text style={styles.rankSmall}>{st("RANK")}</Text><Text style={styles.rankValue}>#{event.partyRank}</Text></View>}</View>
+    <View style={styles.tags}>{event.eventTags.map(tag=><Text key={tag} style={styles.tag}>{partyEventTagText(language,event.name,event.shortDescription,tag)}</Text>)}</View>
     <View style={styles.tabs}>{(['overview','milestones','party'] as Tab[]).map(item=><Pressable key={item} onPress={()=>setTab(item)} style={[styles.tab,tab===item&&styles.tabActive]}><Text style={styles.tabText}>{ui(item)}</Text></Pressable>)}</View>
     {tab==='overview'&&<View style={styles.section}>
       <View style={styles.statRow}><View><Text style={styles.statLabel}>{st("YOUR POINTS")}</Text><Text style={styles.statValue}>{number(event.personalPoints)}</Text></View><View><Text style={styles.statLabel}>{st("PARTY SCORE")}</Text><Text style={styles.statValue}>{number(event.partyScore)}</Text></View></View>
@@ -40,7 +42,7 @@ export function PartyEventHubPanel(props:PartyEventHubPanelProps){
       <Text style={styles.cap}>{ui('Today: {current} / {cap} credited points',{current:number(event.personalPointsToday),cap:number(event.personalDailyCap)})}</Text>
       {!event.partyId&&props.onFindParty&&<Pressable style={styles.primary} onPress={props.onFindParty}><Text style={styles.primaryText}>{st("Find / Create a Party")}</Text></Pressable>}
       {props.onOpenContributionBreakdown||props.onOpenLeaderboard?<View style={styles.actions}>{props.onOpenContributionBreakdown?<Pressable style={styles.secondary} onPress={props.onOpenContributionBreakdown}><Text style={styles.secondaryText}>{st("Contribution")}</Text></Pressable>:null}{props.onOpenLeaderboard?<Pressable style={styles.secondary} onPress={props.onOpenLeaderboard}><Text style={styles.secondaryText}>{st("Leaderboard")}</Text></Pressable>:null}</View>:null}
-      {!event.rankedEligible&&event.partyId&&<View style={styles.warningCard}><Text style={styles.warningLabel}>{st("RANKING QUALIFICATION")}</Text><Text style={styles.warning}>{ui('Party ranking qualification: {reasons}',{reasons:event.rankedEligibilityMissing.map(x=>x.replace(/_/g,' ')).join(' · ')})}</Text></View>}
+      {!event.rankedEligible&&event.partyId&&<View style={styles.warningCard}><Text style={styles.warningLabel}>{st("RANKING QUALIFICATION")}</Text><Text style={styles.warning}>{ui('Party ranking qualification: {reasons}',{reasons:event.rankedEligibilityMissing.map(x=>partyEventRankReasonText(language,x)).join(' · ')})}</Text></View>}
     </View>}
     {tab==='milestones'&&<ScrollView style={styles.scroll} nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <Text style={styles.sectionTitle}>{st("Personal")}</Text>{event.personalMilestones.map(m=><View key={`p${m.points}`} style={styles.milestone}><View style={styles.flex}><Text style={styles.milestoneTitle}>{ui('{points} points',{points:number(m.points)})}</Text><Text style={[styles.milestoneState,m.claimed?styles.claimedState:m.reached?styles.readyState:null]}>{m.claimed?st("Claimed"):m.reached?st("Ready"):st("Locked")}</Text></View>{m.reached&&!m.claimed&&props.onClaimPersonalMilestone&&<Pressable style={styles.claim} onPress={()=>props.onClaimPersonalMilestone?.(m.points)}><Text style={styles.claimText}>{st("Claim")}</Text></Pressable>}</View>)}

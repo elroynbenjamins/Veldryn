@@ -56,7 +56,7 @@ for(const [id,expected] of [
  ['SMELT_COPPER_INGOT',36],['COOK_MEADOW_PERCH',42],
  ['ENCHANT_REGIONAL_CATALYST',14400],['FORGE_REINFORCED_FITTING',60],
  ['BREW_DEWLEAF_DRAUGHT',25],['BREW_VERDANT_BINDING_RESIN',22],
- ['GUILD_FORGE_TIMBER',180],['CRAFT_COPPER_PICKAXE',144],
+ ['GUILD_FORGE_TIMBER',180],['CRAFT_COPPER_PICKAXE',288],
 ] as const)ok(recipeDef(id)?.gold===expected,id+' Gold must match the authoritative recipe catalog');
 ok(alchemyRecipeDef('BREW_DEWLEAF_DRAUGHT')?.gold===25,'Alchemy standalone preview matches the recipe catalog');
 ok(ALCHEMY_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)?.gold===recipe.gold),'All Alchemy recipes share exact client/server Gold');

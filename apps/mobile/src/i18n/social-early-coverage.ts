@@ -2,6 +2,7 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
   "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],
   "{points} shared points left": ["Осталось {points} общих очков","{points} ortak puan kaldı"],
@@ -408,6 +409,10 @@ export const socialEarlyRows={
   "Grants a dungeon artifact": ["Даёт артефакт подземелья","Zindan eseri verir"],
   "Restores 35% HP": ["Восстанавливает 35% ОЗ","%35 Can yeniler"],
   "Merchant offers": ["Товары торговца","Tüccar teklifleri"],
+  "Random passive effect for your party. Identity revealed on pickup.": ["Случайный пассивный эффект для группы. Он откроется после получения.","Grubun için rastgele pasif etki. Alındığında ortaya çıkar."],
+  "Persistent run item. Effect triggers in combat.": ["Предмет на весь поход. Эффект срабатывает в бою.","Sefer boyunca kalan eşya. Etkisi savaşta tetiklenir."],
+  "Instantly heals the chosen ally. No mystery here.": ["Мгновенно исцеляет выбранного союзника. Без сюрпризов.","Seçilen müttefiki anında iyileştirir. Sürpriz yok."],
+  "Spend at Expedition Shop": ["Потратить в магазине экспедиций","Sefer Mağazasında harca"],
   "Dungeon resources": ["Ресурсы подземелья","Zindan kaynakları"],
   "Purchased": ["Куплено","Satın alındı"],
   "Buy": ["Купить","Satın al"],

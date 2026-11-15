@@ -4,6 +4,8 @@ import {DUNGEON_UNLOCK_LEVEL,defeatedDungeonChapterBoss,listedRegularDungeon,pub
 
 const before={defeatedBossIds:[]},cleared={defeatedBossIds:['FALLEN_KNIGHT']};
 assert.equal(DUNGEON_UNLOCK_LEVEL,10);
+assert.equal(EXPEDITIONS.EXP_001.minLevel,10,'Asterfall catalogue matches level-10 gate');
+assert.equal(EXPEDITIONS.EXP_001.recommendedLevel,15,'Asterfall recommendation reflects early progression');
 assert.deepEqual(Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003']);
 assert.deepEqual(Object.values(EXPEDITIONS).filter(listedRegularDungeon).map(def=>def.id),['EXP_001','EXP_003','EXP_005','EXP_007']);
 for(const id of ['EXP_002','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008'])assert.equal(regularDungeonEntryError(EXPEDITIONS[id],cleared,100,100_000),'dungeon_unavailable');

@@ -116,3 +116,37 @@ export function guildBankUiText(language:Language,key:GuildBankUiKey,params:Tran
  const i=idx[language];return interpolateTranslation(i===undefined?key:guildBankUiRows[key][i],params);
 }
 export function useGuildBankUiText(){const language=useGameLanguage();return useMemo(()=>(key:GuildBankUiKey,params?:TranslationParams)=>guildBankUiText(language,key,params),[language]);}
+
+
+/**
+ * Fixed, ID-guarded German names for released Guild Construction materials.
+ * Server IDs, inventory quantities and unknown material names stay untouched.
+ * Source wording is checked so renamed items cannot silently get stale translations.
+ */
+export const germanGuildBankResources={
+ GUILD_REINFORCED_TIMBER:{source:'Reinforced Timber Bundle',full:'Verstärktes Holzbündel',short:'Holzbündel'},
+ GUILD_MASONS_KEYSTONE:{source:"Mason's Keystone",full:'Schlussstein des Steinmetzes',short:'Schlussstein'},
+ GUILD_FORGED_RIVETS:{source:'Forged Rivet Crate',full:'Kiste mit Schmiedenieten',short:'Schmiedenieten'},
+ GUILD_BANNERWEAVE:{source:'Bannerweave Cloth',full:'Bannerstoff',short:'Bannerstoff'},
+ GUILD_HERALDIC_DYE:{source:'Heraldic Dye Flask',full:'Flasche mit Wappenfarbe',short:'Wappenfarbe'},
+ GUILD_SEAL_WAX:{source:'Guild Seal Wax',full:'Gildensiegelwachs',short:'Siegelwachs'},
+ GUILD_FORTIFICATION_HINGES:{source:'Fortification Hinge Set',full:'Befestigungsscharniere',short:'Scharniere'},
+ GUILD_BEACON_OIL:{source:'Beacon Oil Flask',full:'Flasche mit Leuchtfeueröl',short:'Leuchtfeueröl'},
+} as const;
+const guildBankEnglishShort:Readonly<Record<string,string>>={
+ 'Reinforced Timber Bundle':'Timber Bundle',
+ "Mason's Keystone":'Keystone',
+ 'Forged Rivet Crate':'Forged Rivets',
+ 'Fortification Hinge Set':'Hinge Set',
+ 'Heraldic Dye Flask':'Heraldic Dye',
+ 'Beacon Oil Flask':'Beacon Oil',
+};
+export function guildBankResourceName(language:Language,id:string,source:string):string{
+ const row=germanGuildBankResources[id as keyof typeof germanGuildBankResources];
+ return language==='de'&&row?.source===source?row.full:source;
+}
+export function guildBankResourceShortName(language:Language,id:string,source:string):string{
+ const row=germanGuildBankResources[id as keyof typeof germanGuildBankResources];
+ if(language==='de'&&row&&source===row.full)return row.short;
+ return guildBankEnglishShort[source]??source;
+}

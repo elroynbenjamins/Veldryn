@@ -8,6 +8,8 @@ import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from '../components/ProfileFavoriteHighlights';
+import {ProfileEquippedGearShowcase} from '../components/ProfileEquippedGearShowcase';
+import {localProfileGear} from '../core/profile-equipped-gear';
 import {MasteryHallPanel} from '../components/MasteryHallPanel';
 import type {GameState} from '../core/types';
 import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
@@ -44,6 +46,11 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const recordEntries=recordIds.map(id=>{const record=publicSelf?.recordEntries?.[id]??state.account.journalState?.records?.[id];return {key:id,label:profileText(language,profileRecordLabel(id)),value:record?profileRecordValue(language,id,record.value):'—',meta:record?.contextLabel,prestige:recordPrestige.tone,badge:profileBadge(language,recordPrestige.badge)}});
  const collectionEntries=collectionRefs.map(ref=>{const prestige=profileCollectionPrestige(ref);return {key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:profileText(language,label(ref.kind)),art:profileShowcaseArt(ref),artMode:ref.kind==='background'?'cover' as const:'contain' as const,prestige:prestige.tone,badge:profileBadge(language,prestige.badge)}});
  const masteryPrestige=profileMasteryPrestige(),masteryEntries=masteryIds.flatMap(id=>{const row=professionMasteryActionDefinition(id);return row?[{key:id,label:row.name,value:'R50',meta:profileText(language,skillIdentity(row.skillId).label)+' · '+profileT(language,'Account mastery'),prestige:masteryPrestige.tone,badge:profileBadge(language,masteryPrestige.badge)}]:[]});
+ // Self-profile should reflect live equipment changes without waiting for a public
+ // profile refetch. Only fall back to the server for a character not loaded locally.
+ const selectedProfileCharacterId=publicSelf?.character.id??c.id;
+ const selectedLocally=selectedProfileCharacterId===c.id||(state.otherCharacters??[]).some(row=>row.character.id===selectedProfileCharacterId);
+ const displayedGear=selectedLocally?localProfileGear(state,selectedProfileCharacterId):publicSelf?.equippedGear??[];
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',profileStateLabel=publicError?profileT(language,"SYNC ISSUE"):publicSelf?.visibility==='public'?profileT(language,"PUBLIC PROFILE"):publicSelf?.visibility==='guild'?profileT(language,"GUILD PROFILE"):publicSelf?.visibility==='private'?profileT(language,"PRIVATE PROFILE"):profileT(language,"LOCAL PROFILE");
@@ -87,6 +94,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?profileT(language,'Highest current skill · Lv. {level}',{level:summary.highestSkill.level}):favoriteSkillId?profileT(language,'Showcased by player'):undefined} favoriteCompanionId={favoriteCompanionId}/>
   </View>
 
+  <ProfileEquippedGearShowcase key={publicSelf?publicSelf.accountId+':'+publicSelf.character.id:c.id} gear={displayedGear} reduceMotion={state.settings.reduceMotion}/>
   <ProfileShowcaseSection title={profileT(language,"ACHIEVEMENT SHOWCASE")} entries={achievementEntries} emptyLabel="Choose an earned achievement"/>
   <ProfileShowcaseSection title={profileT(language,"PERSONAL RECORDS")} entries={recordEntries} emptyLabel="Choose a personal record"/>
   <ProfileShowcaseSection title={profileT(language,"COLLECTION SHOWCASE")} entries={collectionEntries} emptyLabel="Choose a collectible"/>

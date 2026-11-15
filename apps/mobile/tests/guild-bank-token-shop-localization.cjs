@@ -73,4 +73,24 @@ for(const token of [
 ])assert.ok(shopController.includes(token),'Guild Shop client safety or localized result missing: '+token);
 assert.ok(shop.includes('name:companion.name,description:companion.description'),'Unverified companion descriptions must remain source-authored');
 assert.ok(shop.includes('name:card.title'),'Unknown server offer names must remain unchanged');
+
+// German construction material names are guarded by stable IDs and exact source copy.
+const {germanGuildBankResources,guildBankResourceName,guildBankResourceShortName}=require('../src/i18n/guild-bank-ui.ts');
+assert.equal(Object.keys(germanGuildBankResources).length,8,'all released Guild crafting material IDs must be covered');
+for(const [id,row] of Object.entries(germanGuildBankResources)){
+ assert.ok(row.full&&row.short&&row.source,'review complete copy for '+id);
+ assert.equal(guildBankResourceName('de',id,row.source),row.full);
+ assert.equal(guildBankResourceShortName('de',id,row.full),row.short);
+ for(const locale of SUPPORTED_LANGUAGES.filter(language=>language!=='de'))
+  assert.equal(guildBankResourceName(locale,id,row.source),row.source,'do not change other-language names');
+ assert.equal(guildBankResourceName('de',id,'Server-renamed '+row.source),'Server-renamed '+row.source,'unverified source must pass through');
+}
+assert.equal(guildBankResourceName('de','user_authored','Custom timber $&'),'Custom timber $&');
+assert.equal(guildBankResourceName('de','gold','Gold'),'Gold');
+assert.equal(guildBankResourceShortName('en','GUILD_REINFORCED_TIMBER','Reinforced Timber Bundle'),'Timber Bundle');
+assert.ok(bank.includes('guildBankResourceName(language,id,english)'),'Guild Bank must use locale-guarded material names');
+assert.ok(bank.includes('guildBankResourceShortName(language,id,resourceTitle(id))'),'compact bank tiles must use localized labels');
+assert.ok(bank.includes('guildUpgradeComponentName(id)??'), 'English material search must continue to work');
+assert.ok(!bank.includes('.toLocaleString()'),'Guild Bank must group all numbers according to selected language');
+
 console.log('PASS: Guild Bank (104) and Token Shop (90) templates x seven target languages, exact interpolated values and server-validated transactions');

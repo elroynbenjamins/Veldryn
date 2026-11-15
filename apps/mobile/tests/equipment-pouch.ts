@@ -74,19 +74,19 @@ const inactiveForge:GameState={...started.state,character:backgroundCharacter,in
 const backgroundClaim=claimEquipmentCraft(inactiveForge,job.id,job.completesAtMs,.004);
 ok(backgroundClaim.state.otherCharacters?.[0].character.equipmentPouch?.stacks.some(row=>row.instanceId===backgroundClaim.result.instanceId)
  &&equipmentPouch(backgroundClaim.state).stacks.length===0,'Claiming a different character\'s finished Forge job must deliver to its owner\'s pouch');
-const maxedCopies=Array.from({length:7},(_,index)=>draftCraftedGearInstance({
+const maxedCopies=Array.from({length:25},(_,index)=>draftCraftedGearInstance({
  itemId:output,ownerCharacterId:started.state.character!.id,jobId:'owner-autosell-'+index,createdAtMs:1000,roll:.00005,
 }));
-const sevenBank:GameState={...inactiveForge,bank:{...inactiveForge.bank,capacity:30,stacks:maxedCopies.map(instance=>({itemId:output,quantity:1,instanceId:instance.id}))},
+const cappedBank:GameState={...inactiveForge,bank:{...inactiveForge.bank,capacity:30,stacks:maxedCopies.map(instance=>({itemId:output,quantity:1,instanceId:instance.id}))},
  account:{...inactiveForge.account,craftedGearInstances:maxedCopies,craftedGearAutoSellMode:'keep_best_seven'}};
-ok(auditCraftedGearOwnership(sevenBank).consistent,'Inactive owner auto-sale fixture needs exact existing physical copies');
-const priorOwnerGold=sevenBank.otherCharacters![0].character.gold,priorBankGold=sevenBank.bank.gold??0;
-const autoSale=claimEquipmentCraft(sevenBank,job.id,job.completesAtMs,.9);
-ok(autoSale.result.autoSold==='incoming','An eighth weaker forged copy must honor the opt-in Keep Best 7 mode');
+ok(auditCraftedGearOwnership(cappedBank).consistent,'Inactive owner auto-sale fixture needs exact existing physical copies');
+const priorOwnerGold=cappedBank.otherCharacters![0].character.gold,priorBankGold=cappedBank.bank.gold??0;
+const autoSale=claimEquipmentCraft(cappedBank,job.id,job.completesAtMs,.9);
+ok(autoSale.result.autoSold==='incoming','The 26th weaker forged copy must honor the opt-in 25-copy auto-sell setting');
 ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemDef(output).value
  &&(autoSale.state.bank.gold??0)===priorBankGold,
  'Auto-sale of an inactive character\'s would-be Equipment Pouch item must credit that character, never the shared Bank');
-ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve seven exact physical copies');
+ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve 25 exact physical copies');
 
 // Sales must be explicit, copy-specific and atomic. No item IDs or prices can be
 // supplied as a substitute for a physical pouch entry or its exact Forge receipt.
@@ -130,6 +130,26 @@ ok(!equipmentPouch(soldExact).stacks.length&&!soldExact.account.craftedGearInsta
  &&soldExact.character!.gold===tagged.character!.gold+itemDef(output).value
  &&auditCraftedGearOwnership(soldExact).consistent,
  'Selling exact Forge receipt must remove its one owned instance and credit only its original character');
+// Production Forge receipts can be 120 characters before the "copy:" selector
+// prefix. The resulting 125-character selector must pass both command and
+// settlement validation without weakening exact-copy ownership checks.
+const longReceiptPrefix=`eqcraft:${base.character!.id}:CRAFT_V33_${output}:1794263998325:7`;
+const longReceipt=longReceiptPrefix.padEnd(120-(`gear:${base.character!.id}:`).length,'x');
+const longRecord=draftCraftedGearInstance({itemId:output,ownerCharacterId:base.character!.id,jobId:longReceipt,createdAtMs:1000,roll:.003});
+ok(longRecord.id.length===120,'Regression Forge ID should match production 120-character receipts');
+const longTagged:GameState={...tagged,character:{...tagged.character!,equipmentPouch:{capacity:30,stacks:[{itemId:output,quantity:1,instanceId:longRecord.id}]}},
+ account:{...tagged.account,craftedGearInstances:[longRecord]}};
+const longSelector=equipmentPouchSaleId(longTagged.character!.equipmentPouch!.stacks[0],0);
+ok(longSelector.length===125,'Exact forged-copy selection adds the 5-character prefix');
+ok(equipmentPouchSaleCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy sale must be eligible');
+ok(equipmentPouchSalvageCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy salvage must be eligible');
+const longSold=executeGameCommand(longTagged,{type:'equipment_pouch_sell',args:{ids:[longSelector]}},1007).state;
+ok(equipmentPouch(longSold).stacks.length===0&&longSold.character!.gold===longTagged.character!.gold+itemDef(output).value,
+ 'Long forged-copy sale settles once, credits Gold and removes the exact pouch instance');
+const longSalvaged=executeGameCommand(longTagged,{type:'equipment_pouch_salvage',args:{ids:[longSelector]}},1011).state;
+ok(equipmentPouch(longSalvaged).stacks.length===0&&
+ (longSalvaged.inventory.stacks.find(row=>row.itemId===equipmentSalvageReward(output)!.itemId)?.quantity??0)===(longTagged.inventory.stacks.find(row=>row.itemId===equipmentSalvageReward(output)!.itemId)?.quantity??0)+equipmentSalvageReward(output)!.quantity,
+ 'Long forged-copy salvage settles once and grants authored materials');
 const protectedExact:GameState={...tagged,account:{...tagged.account,craftedGearInstances:[{...record,locked:true}]}};
 ok(!equipmentPouchSaleCandidates(protectedExact)[0].eligible,'Exact locked Forge gear must be blocked from safe selection');
 let protectedExactRejected=false;try{sellEquipmentPouchSelected(protectedExact,[exactCandidate.id])}catch{protectedExactRejected=true}
@@ -192,5 +212,5 @@ ok(validateGameCommand({type:'equipment_pouch_salvage',args:{ids:salvageIds}}).t
 const fs=require('fs') as {readFileSync:(p:string,e:string)=>string};
 const view=fs.readFileSync('src/screens/InventoryScreen.tsx','utf8'),panel=fs.readFileSync('src/components/EquipmentPouchPanel.tsx','utf8');
 ok(view.includes('<EquipmentPouchPanel')&&view.includes('Equipment')&&panel.includes('To Inventory')&&panel.includes('To Bank')&&panel.includes('Equip'),'Inventory must expose usable Equipment Pouch actions');
-ok(panel.includes('Select safe to sell')&&panel.includes('Sell selected')&&panel.includes("type:'equipment_pouch_sell'")&&panel.includes('Sell selected equipment?'),'Pouch must provide direct sale, safe mass selection and explicit irreversible-sale confirmation');
+ok(panel.includes('Quick sell')&&panel.includes('Quick salvage')&&panel.includes('Sell selected')&&panel.includes("type:'equipment_pouch_sell'")&&panel.includes('Sell selected equipment?'),'Pouch must provide direct sale, safe mass selection and explicit irreversible-sale confirmation');
 console.log('PASS: Equipment Pouch bulk sale and salvage, authored materials, Forge ownership, transfers and protections');

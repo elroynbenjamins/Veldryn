@@ -30,7 +30,10 @@ export class OnlineLiveQueue {
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
-  if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
+  // Unrelated gathering/combat can advance the account revision after the UI preview.
+  // Rebuild stats and eligibility from the newest server state and let the atomic
+  // join transaction guard the actual revision. Reject only impossible future versions.
+  if(request.loadoutRevision>game.version){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier);
   if(entryError)throw new GameplayError(entryError);
@@ -55,7 +58,10 @@ export class OnlineLiveQueue {
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
-  if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
+  // Unrelated gathering/combat can advance the account revision after the UI preview.
+  // Rebuild stats and eligibility from the newest server state and let the atomic
+  // join transaction guard the actual revision. Reject only impossible future versions.
+  if(request.loadoutRevision>game.version){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
   const eligible=Object.values(EXPEDITIONS).filter(definition=>publishedRegularDungeon(definition)&&!regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower)&&highestEligibleRegularDungeonTier(definition,record.characterLevel,record.combatPower)!==undefined).sort((a,b)=>b.minLevel-a.minLevel||a.id.localeCompare(b.id));

@@ -17,6 +17,7 @@
 - Paid receipt requires an Inbox record with the exact same account, offer ID and reward hash.
 - Inbox record requires its corresponding paid receipt with the same account, offer ID and reward hash.
 - Both rows must exist by the **end of the same SQL transaction**, otherwise the transaction rolls back.
+- The receipt additionally proves the **exact frozen v24 offer + reservation + event week + account** through a composite foreign key. Both cyclic links include event start time, preventing a receipt/mail mix-up between event weeks.
 - Each row's `reward_hash` is recomputed from canonical `reward_json::text` with SHA-256, preventing an Inbox message from displaying a different award than the accounting receipt.
 - `UNIQUE(offer_id)`, `UNIQUE(event_starts_at,account_id)` and `UNIQUE(account_id,request_id)` prohibit double recording for one offer, event/account or replayed request key.
 - Immutable UPDATE triggers prevent editing paid history. Direct DELETE is never granted to ordinary roles; foreign-key cascade remains possible for required user account erasure.

@@ -32,6 +32,8 @@ assert.ok(assist('UNIT_004').effects.some(e=>e.kind==='debuff'&&e.tag==='damage_
 assert.ok(assist('UNIT_006').effects.some(e=>e.kind==='buff'&&e.tag==='damage_taken'),'Page\'s Vow must mitigate hits');
 assert.ok(assist('UNIT_008').effects.some(e=>e.kind==='cleanse'),'Dawn Pinion must cleanse DoTs');
 assert.ok(assist('UNIT_010').effects.some(e=>e.kind==='debuff'),'Siege Bolt must expose targets');
+assert.equal(assist('UNIT_009').effects[0].bonusVsDebuffed,.12,'Echo Rend must reward coordinated debuff play');
+assert.ok(assist('UNIT_011').effects.some(e=>e.kind==='debuff'&&e.tag==='hit_taken'&&e.value===.04),'Memory Command must boost party hit chance, not duplicate damage marks');
 assert.equal(assist('UNIT_011').target,'current_target','Memory Command must damage an enemy, not an ally');
 assert.ok(assist('UNIT_012').effects.some(e=>e.kind==='buff'&&e.tag==='damage_done'),'Oathglass utility must modify real damage');
 assert.ok(assist('UNIT_002').effects[0].flat!>assist('UNIT_003').effects[0].flat!,'Tank shield should be more substantial than the direct heal');
@@ -85,5 +87,18 @@ assert.ok(ownedAssist(withTechnique('UNIT_012','RAPID_AID')).abilities.at(-1)!.c
 const trialTech=buildOwnedCompanionCombatant(withTechnique('UNIT_005','DEEP_RESTORATION'),{mode:'companion_trial'});
 assert.ok(trialTech.stats.haste>buildOwnedCompanionCombatant(withTechnique('UNIT_005','RAPID_AID'),{mode:'companion_trial'}).stats.haste,'Technique haste must affect standalone Trial simulation');
 assert.ok(trialTech.abilities[0].aiCondition==='target_casting','Technique changes must never turn an interrupt into a wasted cast');
+
+
+/** One enemy, one mark, one strike: identical seed and target selection.
+ * A harmless buff and a harmful debuff use the same modifier tag/value, so the
+ * only difference is whether Echo's attack sees a pre-existing debuff. */
+const echoAttack:CombatantDefinition={...actor('echo','players'),abilities:[{id:'echo_combo',name:'Echo Combo',cooldownMs:3000,castTimeMs:0,target:'current_target',priority:1,effects:[{kind:'damage',coeff:1,bonusVsDebuffed:.12}]}]};
+function echoMarkProbe(kind:'buff'|'debuff'){
+ const opener:CombatantDefinition={...actor('opener','players'),abilities:[{id:'mark',name:'Mark',cooldownMs:3000,castTimeMs:0,target:'current_target',priority:1,effects:[{kind,value:.04,durationMs:3000,tag:'hit_taken'}]}]};
+ const result=simulateCombat({seed:'echo-mark-same-rng',players:[opener,echoAttack],enemies:[{...actor('target','enemies'),stats:{...enemy.stats,maxHp:100000}}],maxDurationMs:100});
+ return result.events.find(e=>e.type==='damage'&&e.abilityId==='echo_combo')?.amount??0;
+}
+const unmarkedEcho=echoMarkProbe('buff'),markedEcho=echoMarkProbe('debuff');
+assert.ok(unmarkedEcho>0&&markedEcho>=unmarkedEcho*1.115,`Echo requires an existing enemy debuff: ${unmarkedEcho} vs ${markedEcho}`);
 
 console.log('PASS actual execute damage, finite shield reflection, Trial and co-op signature effects and technique effects');

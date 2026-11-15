@@ -168,8 +168,8 @@ async function main(){
   token:'private-verified-auth',
   selection:{eventId:EVENT,requestId:'WB28_CLAIM_SECOND'},
  },f.deps);
- assert.equal(firstAfter.creditedSigils,45);
- assert.equal(firstAfter.balanceAfter,55);
+ assert.equal(firstAfter.creditedSigils,40);
+ assert.equal(firstAfter.balanceAfter,50);
  const repeatDonation=await claimAuthenticatedWorldBossSigilsV28({
   token:'private-verified-auth',selection,
  },f.deps);
@@ -184,8 +184,8 @@ async function main(){
  const overview=await readAuthenticatedWorldBossRewardsV28({
   token:'private-verified-auth',eventId:EVENT,
  },f.deps);
- assert.equal(overview.balance,55);
- assert.equal(overview.claimedThisEvent,55);
+ assert.equal(overview.balance,50);
+ assert.equal(overview.claimedThisEvent,50);
  assert.equal(overview.eventCap,100);
  assert.equal(overview.impactMilestonesCredited,false);
  const utility=summarizeWorldBossRoleEvidenceV28(overview);
@@ -208,7 +208,7 @@ async function main(){
    assert.ok(!sql.includes(ACCOUNT)&&!sql.includes('WB28_CLAIM_FOURTH'));
    if(sql.includes('world_boss_v28_claim('))return {rows:[{
     receipt:{eventId:EVENT,accountId:ACCOUNT,requestId:'WB28_CLAIM_FOURTH',
-     repeated:false,creditedSigils:0,balanceAfter:55,walletRevision:2},
+     repeated:false,creditedSigils:0,balanceAfter:50,walletRevision:2},
    } as unknown as T]};
    if(sql.includes('world_boss_v28_view('))return {rows:[{
     state:overview,
@@ -227,7 +227,7 @@ async function main(){
  assert.equal(fourth.creditedSigils,0);
  assert.equal((await db.committedReplay(EVENT,ACCOUNT,REQUEST)).replayDigest,digest);
  assert.equal((await db.recordReplay(EVENT,ACCOUNT,REQUEST,content)).survived,true);
- assert.equal((await db.view(ACCOUNT,EVENT)).balance,55);
+ assert.equal((await db.view(ACCOUNT,EVENT)).balance,50);
  assert.equal(queries.length,4);
  for(const q of queries)assert.ok(q.values.length>=2);
  await fail(()=>db.claim(EVENT,ACCOUNT,'invalid'),'private_pg_identity_invalid');

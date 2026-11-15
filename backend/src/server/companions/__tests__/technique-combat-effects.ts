@@ -16,14 +16,14 @@ const defender=actor('defender','players');defender.abilities=[{id:'reflect',nam
 enemy.basicAttackCoeff=.2;
 const reflected=simulateCombat({seed:'reflection-effects',players:[defender],enemies:[enemy],maxDurationMs:15000});
 const hits=reflected.events.filter(e=>e.abilityId==='COMPANION_REFLECT');assert.ok(hits.length>0,'absorbed damage must reflect');assert.ok(hits.reduce((s,e)=>s+(e.amount??0),0)<=8.02,'reflection cannot outlive its 40-HP shield');
-const p:OwnedCompanionSnapshot={companionId:'UNIT_002',level:20,xp:0,ascensionTier:2,bondLevel:10,bondXp:2520,bondTraitUnlocked:true,selectedTechniqueId:'UNIT_002_REFLECTIVE'};
+const p:OwnedCompanionSnapshot={companionId:'UNIT_002',level:20,xp:0,ascensionTier:2,bondLevel:10,bondXp:7560,bondCurveVersion:2,bondTraitUnlocked:true,selectedTechniqueId:'UNIT_002_REFLECTIVE'};
 assert.ok((buildOwnedCompanionCombatant(p,{mode:'companion_trial'}).abilities[0].effects[0].shieldReflectPct??0)>.15,'Rune Brace reflects independently of its optional technique');
 const owner={...actor('owner','players'),classId:'WAYFINDER'};
 assert.ok((applyCharacterCompanionAssist(owner,p).abilities[0].effects[0].shieldReflectPct??0)>.15,'Rune Brace keeps its reflected damage in character combat');
 const d={...p,companionId:'UNIT_001',selectedTechniqueId:'UNIT_001_EXECUTIONER'};
 assert.ok((applyCharacterCompanionAssist({...owner,classId:'IRONWARDEN',role:'tank'},d).abilities[0].effects[0].executeBonus??0)>.18,'Hamstring Pounce preserves its unique finisher and technique');
 
-const baseProgress=(companionId:string):OwnedCompanionSnapshot=>({companionId,level:20,xp:0,ascensionTier:2,bondLevel:10,bondXp:2520,bondTraitUnlocked:true});
+const baseProgress=(companionId:string):OwnedCompanionSnapshot=>({companionId,level:20,xp:0,ascensionTier:2,bondLevel:10,bondXp:7560,bondCurveVersion:2,bondTraitUnlocked:true});
 const assist=(id:string)=>applyCharacterCompanionAssist({...actor('owner','players'),classId:'WAYFINDER'},baseProgress(id)).abilities.at(-1)!;
 assert.equal(assist('UNIT_001').name,'Ironwood Hound: Hamstring Pounce');
 assert.ok(assist('UNIT_001').effects.some(e=>e.kind==='debuff'&&e.tag==='damage_done'),'Hound must weaken enemy attacks');

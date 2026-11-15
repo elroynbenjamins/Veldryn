@@ -29,15 +29,21 @@ assert.ok(ordinary.every(row=>best.find(max=>max.itemId===row.itemId)!.quantity>
 assert.ok(best.some(row=>row.itemId!==dust.itemId&&row.quantity>ordinary.find(min=>min.itemId===row.itemId)!.quantity),'mythic Q100 can recover more ordinary resources');
 const infusionIds=new Set(['VERDANT_BINDING_RESIN','IRONWOOD_BINDING_RESIN','SUNSCAR_DUNE_BINDER','GLASSBOUND_BINDER','SUNFUSED_FIXATIVE','RIMEWARD_DISTILLATE','CINDERHEART_ELIXIR']);
 for(const recipe of V33_EQUIPMENT_RECIPES){
+ const base={...common,itemId:recipe.output.itemId,rarity:'common' as const,quality:50};
+ const baseRewards=equipmentSalvageRewards(recipe.output.itemId,base);
  const forged={...common,itemId:recipe.output.itemId,rarity:'mythic' as const,quality:100};
  const rewards=equipmentSalvageRewards(recipe.output.itemId,forged);
  assert.equal(rewards[0].itemId,'TEMPERING_DUST',recipe.id+' keeps guaranteed Dust');
+ for(const returned of baseRewards.slice(1)){
+  const input=recipe.inputs.find(input=>input.itemId===returned.itemId)!;
+  assert.equal(returned.quantity,Math.floor(input.quantity*.20),recipe.id+' base ordinary material return is 20%, rounded down');
+ }
  for(const returned of rewards.slice(1)){
   const input=recipe.inputs.find(input=>input.itemId===returned.itemId);
   assert.ok(input,recipe.id+' only recovers an authored ingredient');
   assert.ok(!infusionIds.has(returned.itemId),recipe.id+' cannot salvage an Alchemy catalyst');
   assert.ok(['common','uncommon'].includes(itemRarity(itemDef(returned.itemId))),recipe.id+' cannot recover a rare input');
-  assert.equal(returned.quantity,Math.floor(input!.quantity*.25),recipe.id+' maximum is exactly 25% per ordinary material, rounded down');
+  assert.equal(returned.quantity,Math.floor(input!.quantity*.30),recipe.id+' maximum is exactly 30% per ordinary material, rounded down');
   assert.ok(returned.quantity<input!.quantity,recipe.id+' recovery cannot pay for another complete craft');
  }
  assert.ok(new Set(rewards.map(row=>row.itemId)).size===rewards.length,recipe.id+' contains no duplicate reward type');
@@ -76,4 +82,4 @@ assert.ok(bankResult.bank.stacks.length===0&&bankResult.inventory.stacks.some(ro
 const inventoryGear:GameState={...owned,character:{...owned.character!,equipmentPouch:{capacity:30,stacks:[]}},inventory:{...owned.inventory,stacks:[{itemId,quantity:1,instanceId:common.id}]}};
 const bulk=bulkSalvageSelected(inventoryGear,['copy:'+common.id]);
 assert.ok(bulk.inventory.stacks.some(row=>row.itemId==='TEMPERING_DUST')&&!bulk.account.craftedGearInstances?.length,'bulk Inventory salvage uses the same exact-copy reward pipeline');
-console.log('PASS: tiered Dust and 15–25% ordinary Forge-material salvage, per-copy previews, protected gear, full Inventory atomicity, Bank and bulk paths, replay safety');
+console.log('PASS: tiered Dust and 20–30% ordinary Forge-material salvage, per-copy previews, protected gear, full Inventory atomicity, Bank and bulk paths, replay safety');

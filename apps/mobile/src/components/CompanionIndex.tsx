@@ -10,6 +10,7 @@ import type {CombatCompanionRole,CompanionUnlockRequirementType} from '../core/c
 import type {GameState} from '../core/types';
 import {companionNextUnlockTargets,companionUnlockCompletion} from '../core/companion-presentation';
 import {companionAvailability} from '../core/companion-runtime';
+import {companionBondProgress} from '../core/companion-bond-progress';
 import {companionArtSource} from '../theme/companion-art';
 import {companionRarityBorder} from './CompanionPresentation';
 import {SearchField} from './SearchField';
@@ -40,7 +41,7 @@ export interface CompanionIndexProps{
 export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:CompanionIndexProps){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),language=useGameLanguage(),t=companionTranslator(language);
  const {width}=useWindowDimensions(),wide=width>=680;
- const [tab,setTab]=useState<IndexTab>('unlock'),[role,setRole]=useState<Role>('all'),[roleMenuOpen,setRoleMenuOpen]=useState(false),[query,setQuery]=useState('');
+ const [tab,setTab]=useState<IndexTab>(()=>(state.account.unlockedCombatCompanionIds?.length??0)>0?'owned':'unlock'),[role,setRole]=useState<Role>('all'),[roleMenuOpen,setRoleMenuOpen]=useState(false),[query,setQuery]=useState('');
  const ownedIds=new Set(state.account.unlockedCombatCompanionIds??[]);
  const inIndex=COMBAT_COMPANIONS.filter(def=>companionIndexGroup(def)!=='comingSoon');
  const unlocked=inIndex.filter(def=>ownedIds.has(def.id)).length;
@@ -67,9 +68,11 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
    return true;
   }).sort((a,b)=>{
    const aOwned=ownedIds.has(a.id),bOwned=ownedIds.has(b.id);
+   const rewardReady=(id:string)=>{const p=state.account.combatCompanionProgress?.[id];return !!p&&([2,4,6,8] as const).some(level=>p.bondLevel>=level&&!state.account.companionBondRewardClaims?.includes(id+':'+level));};
    const aEquipped=a.id===state.character?.equippedCombatCompanionId,bEquipped=b.id===state.character?.equippedCombatCompanionId;
    if(aEquipped!==bEquipped)return aEquipped?-1:1;
    if(aOwned!==bOwned)return aOwned?-1:1;
+   if(tab==='owned'&&rewardReady(a.id)!==rewardReady(b.id))return rewardReady(a.id)?-1:1;
    const aHidden=hiddenIds.has(a.id),bHidden=hiddenIds.has(b.id);
    if(aHidden!==bHidden)return aHidden?1:-1;
    if(!aOwned&&!aHidden&&!bHidden){
@@ -144,6 +147,8 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
   <View style={s.list}>{visible.map(def=>{
    const owned=ownedIds.has(def.id),hidden=!owned&&hiddenIds.has(def.id),progress=state.account.combatCompanionProgress?.[def.id],equipped=state.character?.equippedCombatCompanionId===def.id;
    const status=owned?companionAvailability(state,def.id).label:undefined;
+   const bond=owned&&progress?companionBondProgress(progress.bondLevel,progress.bondXp):undefined;
+   const bondRewardReady=owned&&progress?([2,4,6,8] as const).some(level=>progress.bondLevel>=level&&!state.account.companionBondRewardClaims?.includes(def.id+':'+level)):false;
    const guildShopEntry=def.origin.id==='GUILD_TOKEN_SHOP'?GUILD_SHOP_CATALOGUE.find(entry=>entry.category==='companion'&&entry.id==='guild_companion_'+def.id.slice(-2)):undefined;
    const achievement=!owned&&!hidden&&def.origin.type!=='event'&&def.origin.id!=='GUILD_TOKEN_SHOP'?companionUnlockCompletion(state,def):undefined;
    const percent=achievement?Math.round(achievement.ratio*100):0;
@@ -163,9 +168,14 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
       <Text numberOfLines={2} style={s.caption}>{subtitle}</Text>
      </View>
      <View style={[s.statusTag,owned?s.statusOwned:def.origin.type==='event'?s.statusEvent:s.statusLocked]}>
-      <Text style={[s.statusText,owned?s.statusOwnedText:def.origin.type==='event'?s.statusEventText:s.statusLockedText]}>{equipped?t('EQUIPPED'):owned?t('Owned'):def.origin.type==='event'?t('Event reward'):t('Locked')}</Text>
+      <Text style={[s.statusText,owned?s.statusOwnedText:def.origin.type==='event'?s.statusEventText:s.statusLockedText]}>{equipped?t('EQUIPPED'):bondRewardReady?t('Reward ready'):owned?t('Owned'):def.origin.type==='event'?t('Event reward'):t('Locked')}</Text>
      </View>
     </View>
+    {bond?<View style={s.bondRow}>
+     <View style={s.bondTrack} accessibilityRole="progressbar" accessibilityLabel={t('Bond {value0}',{value0:bond.level})} accessibilityValue={{min:0,max:100,now:bond.percent}}><View style={[s.bondFill,{width:(bond.percent+'%') as any}]}/></View>
+     <Text style={s.bondText}>{bond.maxed?t('Bond MAX'):t('Bond {value0}/10',{value0:bond.level})}</Text>
+     {bondRewardReady?<Text style={s.bondReady}>{t('Claim reward')} ›</Text>:null}
+    </View>:null}
     {!owned&&!hidden&&guildShopEntry?<View style={s.requirementList}>
      <Text style={s.requirementHeading}>{t('Unlock requirements')}</Text>
      <View style={s.requirementRow}><View style={s.requirementIcon}><UiIcon name="guild" size={18}/></View>
@@ -239,6 +249,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  resultsLabel:{fontSize:10,fontWeight:'700',color:C.muted},
  list:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'stretch'},
  entry:{minHeight:114,gap:8,padding:10,borderWidth:1,borderLeftWidth:3,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+ bondRow:{flexDirection:'row',alignItems:'center',gap:7,paddingTop:2},bondTrack:{flex:1,minWidth:24,height:6,borderRadius:4,backgroundColor:C.panelRaised,overflow:'hidden'},bondFill:{height:'100%',backgroundColor:C.good},bondText:{fontSize:10,fontWeight:'800',color:C.muted},bondReady:{fontSize:10,fontWeight:'900',color:C.good},
  entryTop:{flexDirection:'row',alignItems:'center',gap:9},
  artBox:{width:62,height:66,justifyContent:'center',alignItems:'center',backgroundColor:C.panel2,borderRadius:7,overflow:'hidden'},
  art:{width:61,height:65},
@@ -246,7 +257,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  entryBody:{flex:1,minWidth:0,gap:2},
  cardName:{fontSize:12,lineHeight:17,color:C.text,fontWeight:'900'},
  meta:{fontSize:10,lineHeight:14,color:C.accent,fontWeight:'700'},
- statusTag:{alignSelf:'flex-start',paddingHorizontal:6,paddingVertical:4,borderWidth:1,borderRadius:6,maxWidth:95},
+ statusTag:{alignSelf:'flex-start',paddingHorizontal:6,paddingVertical:5,borderWidth:1,borderRadius:6,maxWidth:108},
  statusOwned:{backgroundColor:C.goodSurface,borderColor:C.good},
  statusEvent:{backgroundColor:C.panel2,borderColor:C.lineStrong},
  statusLocked:{backgroundColor:C.warningSurface,borderColor:C.warning},

@@ -45,3 +45,29 @@ BEGIN
   THEN RAISE EXCEPTION 'JOURNAL_SCORE_PROJECTION_WRONG'; END IF;
   RAISE NOTICE 'Journal Score fixture passed: 60 provisional points, 2 valid unlocks';
 END $journal_score$;
+
+-- Synthetic account with two saved character snapshots. Three journal rows
+-- contain only two unique earned milestones; duplicate snapshots must NOT
+-- inflate account-wide score or achievement count.
+DO $journal_snapshot_dedup$
+DECLARE v_points bigint; v_count numeric;
+BEGIN
+  WITH snapshots(account_key,milestone_id) AS (
+    VALUES
+      ('same-account','combatant_novice'),
+      ('same-account','combatant_novice'),
+      ('same-account','artisan_veteran')
+  ), earned_once AS (
+    SELECT DISTINCT account_key,milestone_id FROM snapshots
+  )
+  SELECT SUM(CASE WHEN milestone_id LIKE '%_novice' THEN 10
+                  WHEN milestone_id LIKE '%_veteran' THEN 50
+                  ELSE 0 END)::bigint, COUNT(*)::numeric
+  INTO v_points,v_count FROM earned_once;
+  IF v_points<>60 OR v_count<>2
+  THEN RAISE EXCEPTION 'JOURNAL_MULTISAVE_DEDUP_FAILED'; END IF;
+  IF position('SELECT DISTINCT s.account_id,x.key AS milestone_id' IN
+    pg_get_functiondef('private.rankings_verified_metrics_v3(text)'::regprocedure))=0
+  THEN RAISE EXCEPTION 'JOURNAL_DEDUP_SCORER_NOT_INSTALLED'; END IF;
+  RAISE NOTICE 'Journal multi-snapshot milestone dedup contract passed';
+END $journal_snapshot_dedup$;

@@ -1,5 +1,5 @@
 import {RANKING_BOARDS,rankingBoardDefinition,rankingValueLabel,type RankingEntry} from '../src/core/rankings';
-import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage} from '../src/core/ranking-pagination';
+import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay} from '../src/core/ranking-pagination';
 const assert=(condition:boolean,message:string)=>{if(!condition)throw new Error(message)};
 assert(RANKING_BOARDS.length===19,'expected all rankings');
 assert(rankingBoardDefinition('arena_rating').unit==='rating','arena unit');
@@ -21,6 +21,15 @@ const sharedTies:Array<RankingEntry>=[
 const tiedPage=projectRankingPage(sharedTies,0,3);
 assert(tiedPage.hasNext&&tiedPage.entries[0].rank===1&&tiedPage.entries[1].rank===1&&tiedPage.entries[2].rank===3,'ties preserve official ranks');
 assert(sharedTies.length===4,'page projection does not mutate source rows');
+const manyTies:Array<RankingEntry>=Array.from({length:8},(_,index)=>({
+ rank:1,entityType:'account',displayName:'Equal '+index,value:900,isSelf:false
+}));
+const firstHighlight=splitRankingDisplay(manyTies,0);
+assert(firstHighlight.podium.length===3&&firstHighlight.remaining.length===5,'only three tied players appear in podium');
+assert(firstHighlight.remaining.every(entry=>entry.rank===1),'non-podium tied players retain their official rank');
+const laterHighlight=splitRankingDisplay(manyTies,1);
+assert(laterHighlight.podium.length===0&&laterHighlight.remaining.length===8,'later pages never show a second podium');
+assert(manyTies.length===8,'podium projection does not mutate score rows');
 assert(rankingPageOffset(1)===50&&rankingPageOffset(200)===10000,'bounded offset arithmetic');
 assert(!projectRankingPage(rows,200).hasNext,'no next page beyond maximum offset');
 let threw=false;try{rankingPageOffset(201)}catch{threw=true}assert(threw,'past maximum offset is rejected');

@@ -71,7 +71,13 @@ async function main(){
  const bosses=['hollowroot','sunscar','frostmarch'] as const;
  const phases=['armored','exposed','enraged'] as const;
  let simulated=0,withHealing=0,withInterrupts=0,
-  fiveSoloLowerStrongest=0;
+  fiveSoloLowerStrongest=0,fiveBelowSoloCredit=0,
+  fiveAbove128PercentOfSolo=0;
+ const accountSizeComparisons:Array<{
+  cohort:string;boss:string;phase:string;
+  soloCredit:number;fiveCredit:number;
+  fiveOverSolo:number|null;
+ }> = [];
  const sizeSummaries:Record<number,{samples:number;maxBoost:number;minBoost:number}>=
   Object.fromEntries([1,2,3,4,5].map(n=>[n,{
    samples:0,maxBoost:0,minBoost:Infinity,
@@ -93,7 +99,7 @@ async function main(){
      configVersion:'v24-synthetic-test-not-production',
      attack:combo.attack,defense:combo.defense,guardMax:8000,
     });
-    let strongestSolo=0;
+    let strongestSolo=0,soloCredit=0;
     for(let size=1;size<=5;size++){
      const roster=freezeWorldBossAccountRosterV22({
       accountId:ACCOUNT,atUtcMs:NOW,verified:verified.slice(0,size),
@@ -124,9 +130,19 @@ async function main(){
      if(size===1){
       assert.equal(evidence.secondaryBonusFraction,0);
       strongestSolo=evidence.strongestDamage;
+      soloCredit=evidence.proposedWorldHpDamage;
      }
-     if(size===5&&evidence.strongestDamage<strongestSolo)
-      fiveSoloLowerStrongest++;
+     if(size===5){
+      if(evidence.strongestDamage<strongestSolo)fiveSoloLowerStrongest++;
+      const fiveCredit=evidence.proposedWorldHpDamage;
+      const fiveOverSolo=soloCredit>0?fiveCredit/soloCredit:null;
+      if(fiveCredit<soloCredit)fiveBelowSoloCredit++;
+      if(fiveOverSolo!==null&&fiveOverSolo>1.28+1e-8)
+       fiveAbove128PercentOfSolo++;
+      accountSizeComparisons.push({
+       cohort:combo.name,boss,phase,soloCredit,fiveCredit,fiveOverSolo,
+      });
+     }
      if(evidence.effectiveHealing>0)withHealing++;
      if(evidence.interrupts>0)withInterrupts++;
      const bucket=sizeSummaries[size];
@@ -162,6 +178,7 @@ async function main(){
   simulatedBattles:simulated,equipmentBands:['T2','T4'],classes:classes.length,
   bosses:bosses.length,phases:phases.length,sizes:[1,2,3,4,5],
   sizeSummaries,withHealing,withInterrupts,fiveSoloLowerStrongest,
+  fiveBelowSoloCredit,fiveAbove128PercentOfSolo,accountSizeComparisons,
   mitigationUnattributed:true,approved:false,live:false,
   playerSaveReads:0,rewardsCredited:0,
  }));

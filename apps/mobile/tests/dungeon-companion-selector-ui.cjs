@@ -22,7 +22,9 @@ assert.match(loadout,/onChooseCompanion=\{onEquipCompanion\?\(\)=>setShowCompani
 assert.match(loadout,/CoopDungeonCompanionSelector state=\{state\}/,'Owned companion selector must actually render');
 assert.match(setup,/onPress=\{onChooseCompanion\?\?\(\(\)=>toggle\('companion'\)\)\}/,'Read-only setup uses an explicit selector callback when available');
 assert.match(picker,/canEquipCompanion\(role,def\.role\)/,'Same-class-role companions cannot be chosen');
-assert.match(picker,/companionTrialProgress.*activeRun.*teamCompanionIds/,'Companion Trials reserve their team');
+assert.match(picker,/companionTrialProgress.*activeRun.*teamCompanionIds/,'Active Trial membership is visible in the dungeon picker');
+assert.match(picker,/busy:onExpedition/,'Only Sanctuary Expeditions block dungeon companion selection');
+assert.match(picker,/item\.inTrial\?st\('In Trial · Available'\)/,'Trial companions appear selectable in the dungeon picker');
 assert.match(picker,/companionAssignments\?\.some/,'Sanctuary Expeditions reserve companions');
 assert.match(picker,/dungeonCompanionOpportunity\(id,possibleCounterIds\)/,'Recommendations reuse the canonical counter matcher');
 assert.match(picker,/onSelect\(id\);onClose\(\);/,'Selector closes only after the command resolves');

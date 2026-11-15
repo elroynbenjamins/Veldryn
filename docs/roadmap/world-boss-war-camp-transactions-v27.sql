@@ -51,6 +51,29 @@ CREATE TABLE private.world_boss_war_donations_v27 (
 CREATE INDEX world_boss_v27_donations_track_idx
  ON private.world_boss_war_donations_v27(event_id,track);
 
+-- Goal thresholds, event ID and the frozen snapshot cannot be silently
+-- rewritten by a later server request. A frozen camp is immutable.
+CREATE FUNCTION private.world_boss_v27_guard_camp_update()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $guard$
+BEGIN
+ IF ROW(NEW.event_id,NEW.fort_tier1,NEW.fort_tier2,NEW.field_tier1,
+        NEW.field_tier2,NEW.siege_tier1,NEW.siege_tier2)
+    IS DISTINCT FROM
+    ROW(OLD.event_id,OLD.fort_tier1,OLD.fort_tier2,OLD.field_tier1,
+        OLD.field_tier2,OLD.siege_tier1,OLD.siege_tier2)
+ THEN RAISE EXCEPTION 'WB27_IMMUTABLE_COMMUNITY_GOALS'; END IF;
+ IF OLD.frozen_snapshot IS NOT NULL AND NEW IS DISTINCT FROM OLD
+ THEN RAISE EXCEPTION 'WB27_FROZEN_CAMP_IMMUTABLE'; END IF;
+ IF NEW.revision<OLD.revision OR NEW.revision>OLD.revision+1
+ THEN RAISE EXCEPTION 'WB27_INVALID_REVISION'; END IF;
+ RETURN NEW;
+END
+$guard$;
+CREATE TRIGGER world_boss_v27_camp_guard
+ BEFORE UPDATE ON private.world_boss_war_camps_v27
+ FOR EACH ROW EXECUTE FUNCTION private.world_boss_v27_guard_camp_update();
+
 -- SHA-256 of EXACTLY the JS V11 canonical JSON field order. PostgreSQL
 -- jsonb's alphabetical output cannot be hashed directly for this purpose.
 CREATE FUNCTION private.world_boss_v27_snapshot(
@@ -80,14 +103,16 @@ DECLARE
  e private.world_boss_events_v17%ROWTYPE;
  w private.world_boss_war_camps_v27%ROWTYPE;
  snap jsonb;
- now_at timestamptz:=clock_timestamp();
+ now_at timestamptz;
 BEGIN
  SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'WB27_EVENT_MISSING'; END IF;
+ now_at:=clock_timestamp();
  SELECT * INTO w FROM private.world_boss_war_camps_v27 WHERE event_id=p_event FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'WB27_WAR_CAMP_MISSING'; END IF;
  IF w.frozen_snapshot IS NOT NULL THEN RETURN w.frozen_snapshot; END IF;
- IF e.ends_at<>e.starts_at+interval '7 days'
+ IF e.status NOT IN('active','closed') OR
+    e.ends_at<>e.starts_at+interval '7 days'
     OR private.world_boss_v22_window_at(e.starts_at,e.starts_at+interval '5 days')<>0
     OR now_at<e.starts_at+interval '5 days'
  THEN RAISE EXCEPTION 'WB27_PREPARATION_NOT_FINISHED'; END IF;
@@ -117,8 +142,9 @@ DECLARE
  w private.world_boss_war_camps_v27%ROWTYPE;
  old private.world_boss_war_donations_v27%ROWTYPE;
  recipe private.world_boss_war_recipes_v27%ROWTYPE;
+ material_ids text[]:=ARRAY[]::text[];
  saved record;
- now_at timestamptz:=clock_timestamp();
+ now_at timestamptz;
  current_count integer;
  goal2 integer;
  already integer;
@@ -143,6 +169,7 @@ BEGIN
  THEN RAISE EXCEPTION 'WB27_INVALID_REQUEST'; END IF;
  SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'WB27_EVENT_MISSING'; END IF;
+ now_at:=clock_timestamp();
  SELECT * INTO old FROM private.world_boss_war_donations_v27
   WHERE event_id=p_event AND account_id=p_account AND request_id=p_request FOR UPDATE;
  IF FOUND THEN
@@ -187,9 +214,280 @@ BEGIN
  stacks:=saved.state#>'{inventory,stacks}';
  FOR mat IN SELECT value FROM jsonb_array_elements(recipe.materials) LOOP
   item_id:=mat->>'itemId';
-  IF item_id IS NULL OR item_id !~ '^[A-Z0-9_]{2,100}$'
-    OR mat->>'quantity' IS NULL OR (mat->>'quantity') !~ '^[0-9]{1,9}$'
+  IF item_id IS NULL OR item_id !~ '^[A-Z0-9_]{2,100}
+  IF remaining<1 THEN RAISE EXCEPTION 'WB27_CORRUPT_RECIPE'; END IF;
+  new_stacks:='[]'::jsonb;
+  FOR stack IN SELECT value FROM jsonb_array_elements(stacks) LOOP
+   IF jsonb_typeof(stack)<>'object' OR stack->>'quantity' IS NULL OR
+      (stack->>'quantity') !~ '^[0-9]{1,12}$'
+   THEN RAISE EXCEPTION 'WB27_INVALID_INVENTORY_STACK'; END IF;
+   qty:=(stack->>'quantity')::bigint;
+   IF qty<1 OR qty>1000000000 THEN RAISE EXCEPTION 'WB27_INVALID_INVENTORY_QUANTITY'; END IF;
+   IF remaining>0 AND stack->>'itemId'=item_id
+      AND NOT(stack ? 'instanceId') THEN
+    take_qty:=LEAST(qty,remaining);
+    remaining:=remaining-take_qty;
+    IF qty>take_qty THEN
+     new_stacks:=new_stacks||jsonb_build_array(
+      jsonb_set(stack,'{quantity}',to_jsonb(qty-take_qty)));
+    END IF;
+   ELSE
+    new_stacks:=new_stacks||jsonb_build_array(stack);
+   END IF;
+  END LOOP;
+  IF remaining>0 THEN RAISE EXCEPTION 'WB27_INSUFFICIENT_MATERIALS'; END IF;
+  stacks:=new_stacks;
+ END LOOP;
+ new_state:=jsonb_set(saved.state,'{inventory,stacks}',stacks,false);
+ UPDATE public.online_game_states
+  SET state=new_state,revision=revision+1,updated_at=now_at
+  WHERE account_id=p_account AND character_id=p_character;
+ new_count:=current_count+1;
+ new_revision:=w.revision+1;
+ IF recipe.track='fortifications' THEN
+  UPDATE private.world_boss_war_camps_v27
+   SET fortifications=new_count,revision=new_revision WHERE event_id=p_event;
+ ELSIF recipe.track='fieldProvisions' THEN
+  UPDATE private.world_boss_war_camps_v27
+   SET field_provisions=new_count,revision=new_revision WHERE event_id=p_event;
+ ELSE
+  UPDATE private.world_boss_war_camps_v27
+   SET siegecraft=new_count,revision=new_revision WHERE event_id=p_event;
+ END IF;
+ INSERT INTO private.world_boss_war_donations_v27(
+  event_id,account_id,request_id,character_id,recipe_id,
+  track,ordinal,paid_materials,at_utc,revision)
+ VALUES(p_event,p_account,p_request,p_character,p_recipe,
+  recipe.track,ordinal_slot,recipe.materials,now_at,new_revision);
+ RETURN jsonb_build_object('eventId',p_event::text,'accountId',p_account::text,
+  'requestId',p_request,'recipeId',p_recipe,'ordinal',ordinal_slot,
+  'track',recipe.track,'revision',new_revision,'paidMaterials',recipe.materials,
+  'repeated',false);
+END
+$donate$;
+
+-- One atomic entry for authored V26 reservations: freezes War Camp on demand
+-- under event lock and requires exact frozen digest before allocating an attempt.
+CREATE FUNCTION private.world_boss_v27_reserve_frozen(
+ p_event uuid,p_account uuid,p_character uuid,p_request text,
+ p_order text,p_seed text,p_digest text,p_account_roster jsonb,
+ p_engine text,p_worker text,p_camp_digest text,p_profile_digest text DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $reserve$
+DECLARE
+ snap jsonb;
+BEGIN
+ -- Same event-first row lock order. V22 handles duplicate attempt receipts.
+ snap:=private.world_boss_v27_freeze(p_event);
+ IF snap->>'digest' IS DISTINCT FROM p_camp_digest
+    OR p_account_roster->'warCamp'->>'digest' IS DISTINCT FROM snap->>'digest'
+ THEN RAISE EXCEPTION 'WB27_FROZEN_CAMP_DIGEST_MISMATCH'; END IF;
+ RETURN private.world_boss_v22_reserve_account(
+  p_event,p_account,p_character,p_request,p_order,p_seed,p_digest,
+  p_account_roster,p_engine,p_worker,p_camp_digest,p_profile_digest);
+END
+$reserve$;
+
+-- Read-only board projection: community progress is server-owned. After
+-- Saturday, the first reader freezes the snapshot; no last-second donation
+-- can sneak across the event-row transaction boundary.
+CREATE FUNCTION private.world_boss_v27_progress(p_event uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $progress$
+DECLARE
+ e private.world_boss_events_v17%ROWTYPE;
+ w private.world_boss_war_camps_v27%ROWTYPE;
+ frozen jsonb;
+BEGIN
+ SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB27_EVENT_MISSING'; END IF;
+ IF clock_timestamp()>=e.starts_at+interval '5 days'
+ THEN PERFORM private.world_boss_v27_freeze(p_event); END IF;
+ SELECT * INTO w FROM private.world_boss_war_camps_v27 WHERE event_id=p_event;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB27_WAR_CAMP_MISSING'; END IF;
+ RETURN jsonb_build_object(
+  'eventId',p_event::text,
+  'revision',w.revision,
+  'contributions',jsonb_build_object(
+   'fortifications',w.fortifications,
+   'fieldProvisions',w.field_provisions,
+   'siegecraft',w.siegecraft),
+  'goals',jsonb_build_object(
+   'fortifications',jsonb_build_object('tier1At',w.fort_tier1,'tier2At',w.fort_tier2),
+   'fieldProvisions',jsonb_build_object('tier1At',w.field_tier1,'tier2At',w.field_tier2),
+   'siegecraft',jsonb_build_object('tier1At',w.siege_tier1,'tier2At',w.siege_tier2)),
+  'frozen',w.frozen_snapshot IS NOT NULL,
+  'snapshot',w.frozen_snapshot);
+END
+$progress$;
+
+ALTER TABLE private.world_boss_war_camps_v27 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.world_boss_war_recipes_v27 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.world_boss_war_donations_v27 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private.world_boss_war_camps_v27,
+ private.world_boss_war_recipes_v27,
+ private.world_boss_war_donations_v27 FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_snapshot(uuid,bigint,integer,integer,integer)
+ FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_freeze(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_progress(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_donate(uuid,uuid,uuid,text,text)
+ FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_reserve_frozen(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)
+ FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_guard_camp_update()
+ FROM PUBLIC,anon,authenticated;
+GRANT SELECT,INSERT,UPDATE ON private.world_boss_war_camps_v27 TO service_role;
+GRANT SELECT,INSERT ON private.world_boss_war_recipes_v27,
+ private.world_boss_war_donations_v27 TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_guard_camp_update()
+ TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_snapshot(uuid,bigint,integer,integer,integer)
+ TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_freeze(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_progress(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_donate(uuid,uuid,uuid,text,text)
+ TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_reserve_frozen(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)
+ TO service_role;
+COMMIT;
+
+    OR item_id=ANY(material_ids)
+    OR mat->>'quantity' IS NULL OR (mat->>'quantity') !~ '^[0-9]{1,9}
+  IF remaining<1 THEN RAISE EXCEPTION 'WB27_CORRUPT_RECIPE'; END IF;
+  new_stacks:='[]'::jsonb;
+  FOR stack IN SELECT value FROM jsonb_array_elements(stacks) LOOP
+   IF jsonb_typeof(stack)<>'object' OR stack->>'quantity' IS NULL OR
+      (stack->>'quantity') !~ '^[0-9]{1,12}$'
+   THEN RAISE EXCEPTION 'WB27_INVALID_INVENTORY_STACK'; END IF;
+   qty:=(stack->>'quantity')::bigint;
+   IF qty<1 OR qty>1000000000 THEN RAISE EXCEPTION 'WB27_INVALID_INVENTORY_QUANTITY'; END IF;
+   IF remaining>0 AND stack->>'itemId'=item_id
+      AND NOT(stack ? 'instanceId') THEN
+    take_qty:=LEAST(qty,remaining);
+    remaining:=remaining-take_qty;
+    IF qty>take_qty THEN
+     new_stacks:=new_stacks||jsonb_build_array(
+      jsonb_set(stack,'{quantity}',to_jsonb(qty-take_qty)));
+    END IF;
+   ELSE
+    new_stacks:=new_stacks||jsonb_build_array(stack);
+   END IF;
+  END LOOP;
+  IF remaining>0 THEN RAISE EXCEPTION 'WB27_INSUFFICIENT_MATERIALS'; END IF;
+  stacks:=new_stacks;
+ END LOOP;
+ new_state:=jsonb_set(saved.state,'{inventory,stacks}',stacks,false);
+ UPDATE public.online_game_states
+  SET state=new_state,revision=revision+1,updated_at=now_at
+  WHERE account_id=p_account AND character_id=p_character;
+ new_count:=current_count+1;
+ new_revision:=w.revision+1;
+ IF recipe.track='fortifications' THEN
+  UPDATE private.world_boss_war_camps_v27
+   SET fortifications=new_count,revision=new_revision WHERE event_id=p_event;
+ ELSIF recipe.track='fieldProvisions' THEN
+  UPDATE private.world_boss_war_camps_v27
+   SET field_provisions=new_count,revision=new_revision WHERE event_id=p_event;
+ ELSE
+  UPDATE private.world_boss_war_camps_v27
+   SET siegecraft=new_count,revision=new_revision WHERE event_id=p_event;
+ END IF;
+ INSERT INTO private.world_boss_war_donations_v27(
+  event_id,account_id,request_id,character_id,recipe_id,
+  track,ordinal,paid_materials,at_utc,revision)
+ VALUES(p_event,p_account,p_request,p_character,p_recipe,
+  recipe.track,ordinal_slot,recipe.materials,now_at,new_revision);
+ RETURN jsonb_build_object('eventId',p_event::text,'accountId',p_account::text,
+  'requestId',p_request,'recipeId',p_recipe,'ordinal',ordinal_slot,
+  'track',recipe.track,'revision',new_revision,'paidMaterials',recipe.materials,
+  'repeated',false);
+END
+$donate$;
+
+-- One atomic entry for authored V26 reservations: freezes War Camp on demand
+-- under event lock and requires exact frozen digest before allocating an attempt.
+CREATE FUNCTION private.world_boss_v27_reserve_frozen(
+ p_event uuid,p_account uuid,p_character uuid,p_request text,
+ p_order text,p_seed text,p_digest text,p_account_roster jsonb,
+ p_engine text,p_worker text,p_camp_digest text,p_profile_digest text DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $reserve$
+DECLARE
+ snap jsonb;
+BEGIN
+ -- Same event-first row lock order. V22 handles duplicate attempt receipts.
+ snap:=private.world_boss_v27_freeze(p_event);
+ IF snap->>'digest' IS DISTINCT FROM p_camp_digest
+    OR p_account_roster->'warCamp'->>'digest' IS DISTINCT FROM snap->>'digest'
+ THEN RAISE EXCEPTION 'WB27_FROZEN_CAMP_DIGEST_MISMATCH'; END IF;
+ RETURN private.world_boss_v22_reserve_account(
+  p_event,p_account,p_character,p_request,p_order,p_seed,p_digest,
+  p_account_roster,p_engine,p_worker,p_camp_digest,p_profile_digest);
+END
+$reserve$;
+
+-- Read-only board projection: community progress is server-owned. After
+-- Saturday, the first reader freezes the snapshot; no last-second donation
+-- can sneak across the event-row transaction boundary.
+CREATE FUNCTION private.world_boss_v27_progress(p_event uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $progress$
+DECLARE
+ e private.world_boss_events_v17%ROWTYPE;
+ w private.world_boss_war_camps_v27%ROWTYPE;
+ frozen jsonb;
+BEGIN
+ SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB27_EVENT_MISSING'; END IF;
+ IF clock_timestamp()>=e.starts_at+interval '5 days'
+ THEN PERFORM private.world_boss_v27_freeze(p_event); END IF;
+ SELECT * INTO w FROM private.world_boss_war_camps_v27 WHERE event_id=p_event;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB27_WAR_CAMP_MISSING'; END IF;
+ RETURN jsonb_build_object(
+  'eventId',p_event::text,
+  'revision',w.revision,
+  'contributions',jsonb_build_object(
+   'fortifications',w.fortifications,
+   'fieldProvisions',w.field_provisions,
+   'siegecraft',w.siegecraft),
+  'goals',jsonb_build_object(
+   'fortifications',jsonb_build_object('tier1At',w.fort_tier1,'tier2At',w.fort_tier2),
+   'fieldProvisions',jsonb_build_object('tier1At',w.field_tier1,'tier2At',w.field_tier2),
+   'siegecraft',jsonb_build_object('tier1At',w.siege_tier1,'tier2At',w.siege_tier2)),
+  'frozen',w.frozen_snapshot IS NOT NULL,
+  'snapshot',w.frozen_snapshot);
+END
+$progress$;
+
+ALTER TABLE private.world_boss_war_camps_v27 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.world_boss_war_recipes_v27 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.world_boss_war_donations_v27 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private.world_boss_war_camps_v27,
+ private.world_boss_war_recipes_v27,
+ private.world_boss_war_donations_v27 FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_snapshot(uuid,bigint,integer,integer,integer)
+ FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_freeze(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_progress(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_donate(uuid,uuid,uuid,text,text)
+ FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_reserve_frozen(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)
+ FROM PUBLIC,anon,authenticated;
+GRANT SELECT,INSERT,UPDATE ON private.world_boss_war_camps_v27,
+ private.world_boss_war_recipes_v27,private.world_boss_war_donations_v27 TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_snapshot(uuid,bigint,integer,integer,integer)
+ TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_freeze(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_progress(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_donate(uuid,uuid,uuid,text,text)
+ TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_reserve_frozen(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)
+ TO service_role;
+COMMIT;
+
   THEN RAISE EXCEPTION 'WB27_CORRUPT_RECIPE'; END IF;
+  material_ids:=array_append(material_ids,item_id);
   remaining:=(mat->>'quantity')::bigint;
   IF remaining<1 THEN RAISE EXCEPTION 'WB27_CORRUPT_RECIPE'; END IF;
   new_stacks:='[]'::jsonb;

@@ -1,0 +1,65 @@
+name: Stage remaining v1.0.10 feature merges in isolation
+
+on:
+  push:
+    branches: ['release/1.0.10-merge-resolution-20261115']
+    paths:
+      - '.github/workflows/v1-0-10-stage-conflicted-features.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v110-conflict-stage
+  cancel-in-progress: false
+
+jobs:
+  stage-merges:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/1.0.10-merge-resolution-20261115
+          fetch-depth: 0
+      - name: Three-way merge remaining release features, preserving base on overlapping hunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for branch in             feat/gem-combine-success-rates-20261115             feat/system-exceptional-forge-notices-20261115             ui/dungeon-command-event-first-nov14; do
+            git fetch origin "refs/heads/$branch:refs/remotes/origin/$branch"
+            echo "::group::Stage $branch using three-way merge with release-favoring overlaps"
+            git merge --no-ff -X ours -m "release(v1.0.10): stage $branch pending full regression" "origin/$branch"
+            git show --format=short --stat HEAD | head -100
+            echo "::endgroup::"
+          done
+          # Consolidate added regression tests without dropping earlier entries.
+          node <<'NODE'
+          const fs=require('fs'),cp=require('child_process');
+          const file='tools/mobile-core-tests.json';
+          const current=JSON.parse(fs.readFileSync(file,'utf8'));
+          const incoming=JSON.parse(cp.execFileSync('git',['show','origin/feat/system-exceptional-forge-notices-20261115:'+file],{encoding:'utf8'}));
+          const all=[...new Set([...current,...incoming])];
+          if (!all.some(x=>x.includes('forge-system-announcements'))) throw Error('Forge notice core test missing after merge');
+          fs.writeFileSync(file,JSON.stringify(all,null,2)+'\n');
+          console.log('Merged mobile core test registrations:',all.length);
+          NODE
+          git add tools/mobile-core-tests.json
+          git diff --cached --quiet || git commit -m "test(release): retain combined mobile core registration coverage"
+          # Branch-scoped helper workflow is not needed after the engine merge.
+          if git ls-files --error-unmatch .github/workflows/rebuild-gem-merge-pr.yml >/dev/null 2>&1; then
+            git rm .github/workflows/rebuild-gem-merge-pr.yml
+            git commit -m "chore(release): remove gem-branch-only generated-bundle helper"
+          fi
+          if git grep -n -e '^<<<<<<<' -e '^=======' -e '^>>>>>>>' -- apps/mobile/src backend/src tools/mobile-core-tests.json; then
+            echo "Unresolved merge markers detected" >&2
+            exit 1
+          fi
+          git push origin HEAD:release/1.0.10-merge-resolution-20261115
+      - name: Print final staged HEAD and require follow-up full CI
+        run: |
+          git log --oneline -6
+          echo 'Staging only. DO NOT ship until separate validation, reconciliation, and Android AAB smoke pass.'

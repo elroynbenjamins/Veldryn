@@ -117,7 +117,7 @@ export function makeGuildPveV9Run(input:{
    (n.weight??0)*difficultyWeight[input.difficulty]):0;
   const phase=n.boss?GUILD_PVE_V7_PHASES[n.boss][0]:null;
   return [n.id,{hp,maxHp:hp,phase,phaseTriggers:[],cleared:n.kind==='start'}];
- })) as Record<GuildPveNodeIdV8,GuildPveV9Node>;
+ })) as unknown as Record<GuildPveNodeIdV8,GuildPveV9Node>;
  return {
   cycleId:input.cycleId,guildId:input.guildId,startMs:input.startMs,
   endMs:input.startMs+14*DAY,difficulty:input.difficulty,

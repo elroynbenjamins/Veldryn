@@ -98,6 +98,9 @@ export interface PrivatePartyEventEvidenceV27{
 }
 export interface VerifiedPartyEventEvidenceV27{
   readonly offerId:string;
+  readonly partyId:string;
+  readonly reservationId:string;
+  readonly eventStartsAt:string;
   readonly trustedAccountId:string;
   readonly frozenCharacterId:string;
   readonly quoteHash:string;
@@ -222,7 +225,8 @@ export function verifyPrivatePartyEventEvidenceV27(
     ||p.onlineRevision!==preflight.onlineRevision
     ||g!==intent.walletBefore;
   return {
-    offerId:p.offerId,trustedAccountId:p.accountId,
+    offerId:p.offerId,partyId:p.partyId,reservationId:p.reservationId,
+    eventStartsAt:p.eventStartsAt,trustedAccountId:p.accountId,
     frozenCharacterId:p.frozenCharacterId,
     quoteHash:intent.quoteHash,difficulty:p.difficulty,reward:intent.quote,
     historicalSnapshotsStale,onlineRevision:p.onlineRevision,

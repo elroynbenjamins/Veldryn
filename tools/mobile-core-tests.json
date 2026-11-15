@@ -378,6 +378,8 @@
   ".core-build/apps/mobile/tests/guild-member-last-active.js",
   ".core-build/apps/mobile/tests/companion-stamina-authority.js",
   ".core-build/apps/mobile/tests/companion-stamina-selection.js",
+  ".core-build/apps/mobile/tests/companion-housing-upgrade.js",
+  ".core-build/apps/mobile/tests/companion-housing-progression.js",
   ".core-build/apps/mobile/tests/companion-stamina-housing.js",
   ".core-build/apps/mobile/tests/dungeon-reward-display.js"
 ]

@@ -10,6 +10,12 @@ create unique index party_event_offer_settlement_tuple_v29
  on private.party_event_reward_offers_v24(
   id,reservation_id,event_starts_at,account_id);
 
+-- A paid receipt must match an already frozen, account-owned v25 quote;
+-- neither its amount nor its character can be invented by a new writer.
+create unique index party_event_quote_settlement_tuple_v29
+ on private.party_event_reward_claim_quotes_v25(
+  offer_id,account_id,character_id,event_starts_at,reward_hash);
+
 -- Receipt and mailbox rows are future "paid" records, not provisional grants.
 -- Neither can be inserted by ordinary service_role credentials: only a future
 -- separately reviewed SECURITY DEFINER atomic payout writer could do so.
@@ -47,7 +53,7 @@ create table private.party_event_paid_claim_receipts_v29 (
  created_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
  unique(account_id,request_id),
- unique(id,account_id,offer_id,event_starts_at,reward_hash),
+ unique(id,account_id,character_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -56,6 +62,37 @@ create table private.party_event_paid_claim_receipts_v29 (
  foreign key(offer_id,reservation_id,event_starts_at,account_id)
    references private.party_event_reward_offers_v24(
      id,reservation_id,event_starts_at,account_id) on delete cascade,
+ foreign key(offer_id,account_id,character_id,event_starts_at,reward_hash)
+   references private.party_event_reward_claim_quotes_v25(
+    offer_id,account_id,character_id,event_starts_at,reward_hash)
+   on delete cascade,
+ -- Cross-check the verified v25 quote shape against all future paid
+ -- deltas. A paid row is NOT a replacement for recomputation from game state.
+ constraint paid_receipt_quote_shape_v29 check(
+   reward_json ?& array['version','kind','performanceBand','personalPoints',
+    'gold','combatXp','skillXp','companionEssence','bondstones',
+    'partyRenown','materials']
+   and reward_json->>'version'='party-event-rewards-v2'
+   and reward_json->>'kind'=reward_kind
+   and jsonb_typeof(reward_json->'materials')='object'
+   and jsonb_typeof(reward_json->'gold')='number'
+   and jsonb_typeof(reward_json->'combatXp')='number'
+   and jsonb_typeof(reward_json->'skillXp')='number'
+   and jsonb_typeof(reward_json->'companionEssence')='number'
+   and jsonb_typeof(reward_json->'bondstones')='number'
+   and jsonb_typeof(reward_json->'partyRenown')='number'
+   and gold_delta=(reward_json->>'gold')::bigint
+   and profession_xp_delta=(reward_json->>'skillXp')::bigint
+   and companion_essence_delta=(reward_json->>'companionEssence')::bigint
+   and bondstones_delta=(reward_json->>'bondstones')::bigint
+   and party_renown_delta=(reward_json->>'partyRenown')::bigint
+   and gem_dust_delta=coalesce((reward_json#>>'{materials,GEM_DUST}')::bigint,0)
+   and (
+     ((reward_json->>'combatXp')::bigint=0 and combat_xp_delta=0)
+     or (combat_xp_delta>=greatest(0,(reward_json->>'combatXp')::bigint-2)
+         and combat_xp_delta<=(reward_json->>'combatXp')::bigint+2)
+   )
+ ),
  check((profession_xp_delta>0)=(profession_skill_id is not null)),
  check(profession_skill_id is null or profession_skill_id in
    ('mining','woodcutting','fishing','smithing','cooking','herbalism',
@@ -79,7 +116,7 @@ create table private.party_event_paid_claim_inbox_v29 (
    check(delivery_state='delivered'),
  delivered_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
- unique(id,account_id,offer_id,event_starts_at,reward_hash),
+ unique(id,account_id,character_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -92,13 +129,13 @@ create table private.party_event_paid_claim_inbox_v29 (
 -- A receipt cannot survive without its own Inbox message and vice versa.
 alter table private.party_event_paid_claim_receipts_v29
  add constraint party_event_v29_receipt_inbox_pair
- foreign key(inbox_id,account_id,offer_id,event_starts_at,reward_hash)
- references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,event_starts_at,reward_hash)
+ foreign key(inbox_id,account_id,character_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_inbox_v29(id,account_id,character_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 alter table private.party_event_paid_claim_inbox_v29
  add constraint party_event_v29_inbox_receipt_pair
- foreign key(receipt_id,account_id,offer_id,event_starts_at,reward_hash)
- references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,event_starts_at,reward_hash)
+ foreign key(receipt_id,account_id,character_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_receipts_v29(id,account_id,character_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 
 alter table private.party_event_paid_claim_receipts_v29 enable row level security;

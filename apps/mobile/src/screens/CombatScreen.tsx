@@ -16,6 +16,11 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from '../components/GameButton';
 import {EquipmentSlotPicker} from '../components/EquipmentSlotPicker';
 import {localizedItemName} from '../i18n/starter-item-names';
+import {EquipmentArtwork} from '../components/EquipmentArtwork';
+import {itemDef} from '../content/items';
+import {gearEnhancement} from '../core/equipment-enhancement';
+import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
+import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {RegionEncounterList} from '../components/RegionEncounterList';
 import {StatBar} from '../components/StatBar';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
@@ -35,7 +40,15 @@ export function CombatScreen({state,onCommand,onOpenInventory,onChangeRegion,onS
   const explorationLock=encounters.map(monster=>({monster,lock:encounterLockRequirement(state,monster)})).find(row=>row.lock?.kind==='exploration');
   const [showTraining,setShowTraining]=useState(false),[inspectedId,setInspectedId]=useState<string>(),[weaponPickerOpen,setWeaponPickerOpen]=useState(false);
   const detail=encounters.find(m=>m.id===inspectedId)??preview;
-  const weaponName=character.equipment.weapon?localizedItemName(state.settings.language,character.equipment.weapon):gt('Empty slot');
+  const weaponId=character.equipment.weapon;
+  const weapon=weaponId?itemDef(weaponId):undefined;
+  const weaponName=weaponId?localizedItemName(state.settings.language,weaponId):gt('Empty slot');
+  const weaponRank=weaponId?gearEnhancement(state,weaponId).rank:0;
+  const weaponRarity=weapon?rarityMeta(equippedCraftedGearRarity(state,'weapon')??itemRarity(weapon)):undefined;
+  const weaponCopyId=character.equipmentInstanceIds?.weapon;
+  const weaponCopy=weaponCopyId?craftedGearInstances(state).find(copy=>copy.id===weaponCopyId):undefined;
+  const weaponMeta=[weaponRarity?.label,weaponCopy?'Q'+craftedGearDisplayQuality(weaponCopy):undefined].filter(Boolean).join(' · ');
+  const isHunting=state.activity?.kind==='combat';
   useEffect(()=>{setInspectedId(undefined);setSelectedAreaId(regionalArea(zone.id,initialAreaId)?.id)},[zone.id,initialAreaId]);
   useEffect(()=>{setInspectedId(undefined)},[selectedAreaId]);
   return <View style={{flex:1,minHeight:0,backgroundColor:C.bg}}><ScrollView style={{flex:1,minHeight:0}} contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -60,9 +73,16 @@ export function CombatScreen({state,onCommand,onOpenInventory,onChangeRegion,onS
       })}
     </View>:null}
     <View style={s.xpRow}><View style={s.levelBadge}><Text style={s.levelBadgeText}>{gt("Level {value}",{value:character.level})}</Text></View><View style={s.flex}><StatBar rounded reduceMotion={state.settings.reduceMotion} label={gt("Combat XP")} current={progress.current} max={progress.need}/></View></View>
-    <Pressable accessibilityRole="button" accessibilityLabel={gt('Compare & Swap')+' · '+gt('Weapon')} onPress={()=>setWeaponPickerOpen(true)} style={s.weaponQuickAccess}>
-      <View style={s.flex}><Text style={s.weaponQuickLabel}>{gt('Weapon')}</Text><Text numberOfLines={1} style={s.weaponQuickName}>{weaponName}</Text></View>
-      <Text style={s.weaponQuickAction}>{gt('Compare & Swap')} ›</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={gt('Weapon')+' · '+weaponName+' · '+gt('Compare & Swap')}
+      accessibilityHint={isHunting?gt('Weapon swaps keep your hunt running. Health is not restored.'):undefined}
+      onPress={()=>setWeaponPickerOpen(true)} style={({pressed})=>[s.weaponQuickAccess,pressed&&s.weaponQuickPressed]}>
+      <View style={s.weaponQuickArt}>{weapon?<EquipmentArtwork item={weapon} rarity={weaponRarity?.id} size={38} framed={false}/>:<LineworkIcon name="inventory" size={26}/>}</View>
+      <View style={s.flex}>
+        <Text style={s.weaponQuickLabel}>{gt('Weapon')}{isHunting?' · '+gt('Combat'):''}</Text>
+        <Text numberOfLines={1} style={s.weaponQuickName}>{weaponName}{weaponRank?' +'+weaponRank:''}</Text>
+        {weaponMeta?<Text numberOfLines={1} style={s.weaponQuickMeta}>{weaponMeta}</Text>:null}
+      </View>
+      <View style={s.weaponQuickActionGroup}><Text numberOfLines={2} style={s.weaponQuickAction}>{gt('Compare & Swap')}</Text><Text style={s.weaponQuickArrow}>›</Text></View>
     </Pressable>
     {preview?<HuntingPreview state={state} monster={preview} regionId={zone.id}/>:null}
     <View style={s.enemiesHeading}><Text style={[s.section,s.flex]}>{gt("ENEMIES IN {region}",{region:(area?.name??zone.name).toUpperCase()})}</Text><Text style={s.sub}>{gt("{count} enemies",{count:encounters.length})}</Text></View>
@@ -77,6 +97,6 @@ export function CombatScreen({state,onCommand,onOpenInventory,onChangeRegion,onS
   </ScrollView>{weaponPickerOpen?<EquipmentSlotPicker state={state} slot="weapon" onEquip={itemId=>onCommand({type:"equip",args:{id:itemId}})} onEquipInstance={instanceId=>onCommand({type:"gear_equip",args:{instanceId}})} onEquipPouch={itemId=>onCommand({type:"equipment_pouch_equip",args:{itemId}})} onInventory={onOpenInventory?()=>{setWeaponPickerOpen(false);onOpenInventory()}:undefined} onClose={()=>setWeaponPickerOpen(false)}/>:null}</View>;
 }
 
-function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{flexGrow:1,padding:spacing.lg,gap:spacing.sm,paddingBottom:spacing.xl},weaponQuickAccess:{minHeight:52,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:spacing.sm,paddingVertical:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.md,backgroundColor:equipmentColors.panel},weaponQuickLabel:{...typography.caption,fontSize:10,color:C.muted,fontWeight:'800'},weaponQuickName:{...typography.bodyStrong,color:C.text},weaponQuickAction:{...typography.caption,color:C.accent,fontWeight:'800',textAlign:'right'},
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{flexGrow:1,padding:spacing.lg,gap:spacing.sm,paddingBottom:spacing.xl},weaponQuickAccess:{minHeight:60,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:spacing.sm,paddingVertical:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.md,backgroundColor:equipmentColors.panel},weaponQuickPressed:{backgroundColor:C.selection},weaponQuickArt:{width:42,height:42,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2,overflow:'hidden'},weaponQuickLabel:{...typography.caption,fontSize:10,color:C.muted,fontWeight:'800'},weaponQuickName:{...typography.bodyStrong,color:C.text},weaponQuickMeta:{...typography.caption,fontSize:10,color:C.muted},weaponQuickActionGroup:{maxWidth:111,flexDirection:'row',alignItems:'center',gap:3},weaponQuickAction:{...typography.caption,color:C.accent,fontWeight:'800',textAlign:'right',flexShrink:1},weaponQuickArrow:{fontSize:20,color:C.accent},
 areaPicker:{flexDirection:'row',flexWrap:'wrap',gap:6,paddingVertical:3},areaChip:{minHeight:36,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2,paddingHorizontal:10},
 areaChipSelected:{borderColor:C.accent,backgroundColor:C.selection},areaChipLocked:{opacity:.45},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},unlockGuide:{gap:4,paddingHorizontal:spacing.sm,paddingVertical:10,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},unlockGuideTitle:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},unlockGuideText:{...typography.body,color:C.text},afterMonsters:{gap:8,paddingTop:spacing.xs},huntingPanel:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:equipmentColors.panel},huntingLabel:{...typography.caption,color:C.muted,fontWeight:'800',letterSpacing:.7},huntingActions:{flexDirection:'row',gap:8},dockTitle:{fontFamily:Platform.OS==='web'?'system-ui':'sans-serif',fontSize:14,lineHeight:19,fontWeight:'600',color:C.text},enemiesHeading:{flexDirection:'row',alignItems:'center',gap:10,marginTop:2},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.md,minHeight:48},breadcrumb:{flex:1,minWidth:0,flexDirection:'row',alignItems:'baseline',flexWrap:'wrap',columnGap:5},worldLink:{...typography.body,color:C.muted},regionName:{fontFamily:Platform.OS==='web'?'system-ui':'sans-serif',fontSize:20,lineHeight:27,fontWeight:'500',color:C.text},xpRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},levelBadge:{paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},levelBadgeText:{...typography.caption,color:C.text,fontWeight:'700'},flex:{flex:1,minWidth:0},sub:{...typography.caption,color:C.muted},trainingToggle:{minHeight:48,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:equipmentColors.panel},trainingMark:{width:24,color:C.muted,fontSize:23,textAlign:'center',fontWeight:'700'},section:{...typography.caption,color:C.muted,fontWeight:'700',letterSpacing:.6}});}

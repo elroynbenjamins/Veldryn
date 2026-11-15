@@ -1,12 +1,33 @@
 import {ENEMY_FAMILIES,enemyFamilyForMonster,type EnemyFamilyId} from '../content/enemy-families';
+import {MONSTERS} from '../content/monsters';
 import type {GameState} from './types';
 
-/** Four times the species-mastery requirement (100 vs 25 kills per rank).
- * Total is 3,000 verified ordinary kills within this family for Rank 30.
+/** Weighted family-mastery points: a kill is worth at least 2 points.
+ * 250 points/rank requires 125 entry-zone kills versus 25 species kills,
+ * and still takes at least 42 top-zone kills per family rank.
  */
-export const FAMILY_MASTERY_POINTS_PER_RANK=100;
+export const FAMILY_MASTERY_POINTS_PER_RANK=250;
 export const FAMILY_MASTERY_MAX_RANK=30;
 export const FAMILY_MASTERY_MAX_POINTS=FAMILY_MASTERY_POINTS_PER_RANK*FAMILY_MASTERY_MAX_RANK;
+
+/** Reward the monster's authored difficulty, never the player's current
+ * location or character level (which could be changed without a harder fight).
+ * Region floors and enemy-level thresholds both contribute. The maximum of
+ * the two avoids inflating rewards by counting the same difficulty twice.
+ */
+const ZONE_MASTERY_POINTS:Readonly<Record<string,number>>={
+ 'Greenfields':2,'Silverbrook':2,'Ironwood Forest':2,
+ 'Old Mines':3,"King's Road":3,'Sunscar':4,'Frostmarch':5,'Ashlands':6,
+};
+export function enemyFamilyMasteryPointsPerKill(monsterId:string):number{
+ const family=enemyFamilyForMonster(monsterId);
+ if(!family)return 0;
+ const monster=MONSTERS.find(row=>row.id===monsterId&&!row.boss);
+ if(!monster)return 0;
+ const byLevel=monster.level>=75?6:monster.level>=55?5:monster.level>=35?4:monster.level>=20?3:2;
+ const byZone=ZONE_MASTERY_POINTS[monster.zone]??2;
+ return Math.max(2,Math.min(6,Math.max(byZone,byLevel)));
+}
 
 export function normalizeEnemyFamilyMastery(raw:unknown):Record<string,number>{
  const data=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
@@ -21,7 +42,7 @@ export function normalizeEnemyFamilyMastery(raw:unknown):Record<string,number>{
  return out;
 }
 
-/** Migration-only: give existing hunters credit for known historical kills.
+/** Migration-only: give existing hunters weighted credit for historical kills.
  * Species counters cap at 750 so earlier excess kills cannot be reconstructed.
  * Never recompute after family tracking is present: fresh kills also progress
  * past each species's cap without creating a duplicate backfill.
@@ -35,7 +56,10 @@ export function backfillEnemyFamilyMastery(speciesPoints:unknown):Record<string,
   if(!id||typeof value!=='number'||!Number.isFinite(value)||value<=0)continue;
   // Original species counters are capped at 750 verified kills.
   const count=Math.min(750,Math.floor(value));
-  points[id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[id]??0)+count);
+  // Credit historical species kills by their authored region/level weight.
+  // Historical kills beyond each species cap cannot be reconstructed.
+  const weighted=count*enemyFamilyMasteryPointsPerKill(monsterId);
+  points[id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[id]??0)+weighted);
  }
  return points;
 }
@@ -60,8 +84,11 @@ export function enemyFamilyMastery(state:GameState,id:EnemyFamilyId){
 export function recordEnemyFamilyMastery(state:GameState,monsterId:string,kills:number):GameState{
  const family=enemyFamilyForMonster(monsterId);
  if(!family||!state.character||!Number.isSafeInteger(kills)||kills<=0)return state;
+ const perKill=enemyFamilyMasteryPointsPerKill(monsterId);
+ if(perKill<2)return state;
  const points=normalizeEnemyFamilyMastery(state.character.familyMasteryPoints);
- points[family.id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[family.id]??0)+kills);
+ // Multiply only after validating the authoritative kill count; bounded at cap.
+ points[family.id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[family.id]??0)+kills*perKill);
  return {...state,character:{...state.character,familyMasteryPoints:points}};
 }
 

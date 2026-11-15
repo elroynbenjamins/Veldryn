@@ -1,7 +1,7 @@
 import type {ClassId} from '../core/types';
 export interface ClassSkillDefinition{id:string;name:string;theme:string;}
 const skill=(id:string,name:string,theme:string):ClassSkillDefinition=>({id,name,theme});
-const guard=skill('guardcraft','Guardcraft','Physical protection'),ward=skill('warding','Warding','Magical protection');
+const guard=skill('guardcraft','Guardcraft','Physical protection'),ward=skill('warding','Warding','Damage warding');
 /** Seven workbook pairs, with the two additional tank classes using matching disciplines. */
 export const CLASS_SKILLS:Record<ClassId,readonly [ClassSkillDefinition,ClassSkillDefinition]>={
  IRONWARDEN:[guard,ward],BASTION:[guard,ward],DREADGUARD:[skill('might','Might','Weapon power'),ward],

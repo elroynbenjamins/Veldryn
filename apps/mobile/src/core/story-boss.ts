@@ -139,6 +139,10 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
     }
   };
 
+  // In live Auto mode, an already-injured character can heal at the start.
+  // Legacy prerecorded battles retain their previous after-hit behavior.
+  if(autoPotionCooldownMs>0&&!manualMode)maybePotion(0);
+
   const enterPhase=(atMs:number,next:2|3)=>{
     phase=next;phasesReached.push(next);
     if(next===2){

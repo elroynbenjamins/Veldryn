@@ -7,6 +7,7 @@ import {interpolateTranslation,type TranslationParams} from './translator';
  * server-generated sale reasons and canonical IDs/commands. DE/ES/NL/IT/FR/RU/TR. */
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const equipmentPouchUiRows={
+  "Estimated sale · {gold} Gold": ["Voraussichtlicher Verkauf · {gold} Gold","Venta estimada · {gold} de oro","Verwachte verkoop · {gold} goud","Vendita prevista · {gold} oro","Vente estimée · {gold} or","Ожидаемая продажа · {gold} золота","Tahmini satış · {gold} altın"],
   "Quick sell": ["Schnell verkaufen","Venta rápida","Snel verkopen","Vendita rapida","Vente rapide","Быстрая продажа","Hızlı sat"],
   "Quick salvage": ["Schnell zerlegen","Desguace rápido","Snel ontmantelen","Smontaggio rapido","Recyclage rapide","Быстрая разборка","Hızlı sök"],
   "Selected": ["Ausgewählt","Seleccionado","Geselecteerd","Selezionati","Sélectionnés","Выбрано","Seçilen"],

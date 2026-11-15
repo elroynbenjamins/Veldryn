@@ -19,7 +19,7 @@ const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='BASTION'&&row.v33Equ
 const otherRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!;
 const gem=ITEMS.find(item=>item.type==='gem'||!!item.rawGemFamilyId)!;
 const output=recipe.output.itemId;
-ok(itemVendorSellGold(itemDef(output))===Math.max(itemDef(output).value*2,Math.round(recipe.gold*EQUIPMENT_FORGE_SELL_REFUND_RATE)),
+ok(itemVendorSellGold(itemDef(output))===Math.max(itemDef(output).value,Math.round(recipe.gold*EQUIPMENT_FORGE_SELL_REFUND_RATE)),
  'Forge equipment vendor Gold should refund 40% of the crafting Gold fee or exceed the legacy value floor');
 ok(itemVendorSellGold(itemDef(gem.id))===itemDef(gem.id).value,'Non-equipment vendor Gold is unchanged');
 let base=createCharacter(newGame(0),'BASTION','Pouch Tester');

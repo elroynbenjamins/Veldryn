@@ -24,7 +24,7 @@ assert.ok(chat.includes('guildUnread')&&chat.includes('guildMentions')&&chat.inc
 assert.ok(chat.includes('visitedChannels.includes('),'visited conversations remain mounted');
 assert.ok(chat.includes('style={s.channelMeta}')&&chat.includes('languageMenuOpen'),'language selection on secondary header');
 assert.ok(chat.includes('setWorldChannel(index);setLanguageMenuOpen(false);'),'World language switching retained');
-assert.ok(chat.includes('onRequestClose={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}'),'Android back dismisses language menu first');
+assert.ok(chat.includes('onRequestClose={()=>{if(onlinePlayersOpen)setOnlinePlayersOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}'),'Android back closes the online roster, then the language menu, then chat');
 assert.ok(chat.includes('Keyboard.addListener(')&&chat.includes("'keyboardDidShow'")&&chat.includes("'keyboardDidHide'"),'keyboard visibility lifecycle');
 assert.ok(chat.includes("behavior={Platform.OS==='ios'?'padding':undefined}"),'Android handles IME clearance without double-shrinking the modal');
 assert.ok(chat.includes('measureInWindow')&&chat.includes('keyboardTopRef')&&chat.includes('onLayout={measureKeyboardOverlap}'),'Android measures actual modal occlusion on keyboard and layout changes');

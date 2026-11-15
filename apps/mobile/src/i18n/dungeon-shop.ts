@@ -13,6 +13,9 @@ export const germanDungeonShopCopy:Readonly<Record<string,string>>={
  'Refresh':'Aktualisieren',
  'Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.':'Wöchentliche Vorräte werden montags um 00:00 UTC zurückgesetzt. Dauerhafte Sammlerstücke wechseln nicht.',
  'Supplies':'Vorräte',
+ 'material':'Material',
+ 'Equipment crafting materials · 100 per bundle':'Ausrüstungsmaterialien · 100 pro Bündel',
+ 'Choose a tier and resource. Purchases go directly to your shared Bank.':'Wähle eine Stufe und einen Rohstoff. Einkäufe landen direkt in deiner gemeinsamen Bank.',
  'Collections':'Sammlerstücke',
  'Owned':'Im Besitz',
  'Unable to refresh the Dungeon Shop. Please retry.':'Dungeon-Shop konnte nicht aktualisiert werden. Bitte versuche es erneut.',
@@ -59,6 +62,13 @@ export const germanDungeonShopOfferNames:Readonly<Record<string,readonly [string
  dshop_tempering_satchel:['Delver Tempering Satchel','Härtestaubbeutel des Erkunders'],
  dshop_gem_dust_cache:['Gem Dust Cache','Edelsteinstaub-Vorrat'],
  dshop_tempering_core_cache:['Tempering Core Cache','Härtekern-Vorrat'],
+ dshop_moss_fiber_100:['Moss Fiber ×100','Moosfaser ×100'],
+ dshop_greenwood_log_100:['Greenwood Log ×100','Grünholzstamm ×100'],
+ dshop_wolf_pelt_100:['Wolf Pelt ×100','Wolfspelz ×100'],
+ dshop_ironwood_log_100:['Ironwood Log ×100','Eisenholzstamm ×100'],
+ dshop_dunewood_100:['Dunewood ×100','Dünenholz ×100'],
+ dshop_sunscale_100:['Sunscale ×100','Sonnenschuppe ×100'],
+ dshop_sunstone_ingot_100:['Sunstone Ingot ×100','Sonnensteinbarren ×100'],
  dshop_companion_essence:['Companion Essence Cache','Begleiteressenz-Vorrat'],
  dshop_bondstone:['Bondstone','Bindungsstein'],
  dshop_asterfall_icon:["Warden's Lantern",'Wächterlaterne'],
@@ -87,6 +97,13 @@ export function dungeonShopOfferName(language:Language,id:string,source:string):
 }
 
 const materialNames:Readonly<Record<string,string>>={
+ 'MOSS FIBER':'Moosfaser',
+ 'GREENWOOD LOG':'Grünholzstamm',
+ 'WOLF PELT':'Wolfspelz',
+ 'IRONWOOD LOG':'Eisenholzstamm',
+ 'DUNEWOOD':'Dünenholz',
+ 'SUNSCALE':'Sonnenschuppe',
+ 'SUNSTONE INGOT':'Sonnensteinbarren',
  'TEMPERING DUST':'Härtungsstaub',
  'GEM DUST':'Edelsteinstaub',
  'TEMPERING CORE':'Härtekern',
@@ -106,6 +123,8 @@ const bonusNames:Readonly<Record<string,string>>={
 /** The Edge service emits only these reviewed offer-summary structures. */
 export function dungeonShopOfferSummary(language:Language,source:string):string{
  if(language!=='de')return source;
+ const bundle=/^100 × (MOSS FIBER|GREENWOOD LOG|WOLF PELT|IRONWOOD LOG|DUNEWOOD|SUNSCALE|SUNSTONE INGOT) · Shared Bank$/.exec(source);
+ if(bundle)return '100 × '+materialNames[bundle[1]]+' · Gemeinsame Bank';
  const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
  if(material)return material[1]+' × '+materialNames[material[2]];
  const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);

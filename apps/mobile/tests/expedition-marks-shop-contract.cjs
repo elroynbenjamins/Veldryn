@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'../../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const foundation=read('backend/supabase/migrations/20261111141514_dungeon_shop_hidden_atomic_foundation_v1.sql');
 const release=read('backend/supabase/migrations/20261113192000_dungeon_shop_account_resources_release_v2.sql');
+const bundles=read('backend/supabase/migrations/20261115220500_dungeon_shop_crafting_bundles_v3.sql');
 const panel=read('apps/mobile/src/components/ExpeditionShopPanel.tsx');
 const shopView=read('apps/mobile/src/components/coop/DungeonMarksShopView.tsx');
 const resourceArt=read('apps/mobile/src/theme/resource-assets.ts');
@@ -69,4 +70,12 @@ assert(shopView.includes('<DungeonShopOfferIcon item={item}/>'),'offers must ren
 assert(shopView.includes('CATEGORY_PREVIEW_ART[item.category]'),'unreleased collectible previews must have category artwork');
 assert(!shopView.includes('◇'),'generic diamond shop-item placeholder must not return');
 
-console.log('PASS Expedition Shop: authoritative 17-SKU foundation, 2 safe account-resource offers, journaled Edge purchase and opt-in release');
+// V3 extends the baseline 17 SKUs with seven one-per-week, x100 crafting inputs.
+// Preserve the baseline resource artwork improvements from main.
+assert(bundles.includes("'crafting_bundle'")&&bundles.includes("'quantity',v_offer.reward_quantity"),'bank grant must be server-owned');
+assert(bundles.includes("dungeon_shop_bank_full")&&bundles.includes("jsonb_set(v_game.state,'{bank,stacks}'"),'full Bank rejection must precede spending');
+assert(bundles.includes("to service_role")&&bundles.includes("from public,anon,authenticated"),'purchase RPC must stay service-role-only');
+assert(catalog.includes("dshop_moss_fiber_100")&&catalog.includes("dshop_sunstone_ingot_100"),'tier resource offers missing');
+assert(shopView.includes("materialTier")&&shopView.includes("item.materialItemId??OFFER_RESOURCE_ART[item.id]"),'existing artwork must work for selected resources');
+assert(shopView.includes("material:'inventory'"),'preview art must support the material category');
+console.log('PASS Expedition Shop: original artwork, 17 baseline SKUs + 7 tiered x100 shared-Bank materials');

@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Image,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {PLAYER_BADGE_LABELS,PLAYER_BADGE_DESCRIPTIONS,playerBadgeIds,profileBadgeIds,type PlayerBadgeIdentity,type PlayerBadgeId} from '../core/player-badges';
@@ -28,7 +28,6 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const C=useGameTheme(),language=useGameLanguage(),label=recentScreenText(language,PLAYER_BADGE_LABELS[id]);
  const detail=recentScreenText(language,PLAYER_BADGE_DESCRIPTIONS[id]);
  const {width:screenWidth,height:screenHeight}=useWindowDimensions(),insets=useSafeAreaInsets();
- const badgeRef=useRef<View>(null);
  const [anchor,setAnchor]=useState<{left:number;top:number}|null>(null);
  const vip=id==='vip'||id==='vip_plus';
  const art=(artSize:number)=>vip?<View style={[s.vipMark,{width:artSize,height:artSize,borderColor:id==='vip_plus'?'#C9A2FC':'#E6C365',backgroundColor:id==='vip_plus'?'#312044':'#3D3017'}]}>
@@ -36,20 +35,18 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
   </View>:<Image accessible={false} source={artwork[id as Exclude<PlayerBadgeId,'vip'|'vip_plus'>]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
  const content=<>{art(size)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
  if(!interactive)return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>{content}</View>;
- const open=()=>{
-  badgeRef.current?.measureInWindow((x,y,w,h)=>{
-   const bubbleWidth=Math.min(248,Math.max(180,screenWidth-24));
-   const left=Math.max(12,Math.min(screenWidth-bubbleWidth-12,x+w/2-bubbleWidth/2));
-   // Prefer below the icon, flipping above near the bottom of the viewport.
-   const above=y+h+130>screenHeight-insets.bottom;
-   const desiredTop=above?y-128:y+h+8;
-   const top=Math.max(insets.top+8,Math.min(screenHeight-insets.bottom-132,desiredTop));
-   setAnchor({left,top});
-  });
+ const open=(pageX:number,pageY:number)=>{
+  const bubbleWidth=Math.min(248,Math.max(180,screenWidth-24));
+  const left=Math.max(12,Math.min(screenWidth-bubbleWidth-12,pageX-bubbleWidth/2));
+  // Anchor to the tap itself so this works with modern React Native's function refs.
+  const above=pageY+130>screenHeight-insets.bottom;
+  const desiredTop=above?pageY-128:pageY+14;
+  const top=Math.max(insets.top+8,Math.min(screenHeight-insets.bottom-132,desiredTop));
+  setAnchor({left,top});
  };
  return <>
-  <Pressable ref={badgeRef} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={detail}
-   hitSlop={6} onPress={event=>{event.stopPropagation();open();}} style={({pressed})=>[s.badge,pressed&&s.pressed]}>{content}</Pressable>
+  <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={detail}
+   hitSlop={6} onPress={event=>{event.stopPropagation();open(event.nativeEvent.pageX,event.nativeEvent.pageY);}} style={({pressed})=>[s.badge,pressed&&s.pressed]}>{content}</Pressable>
   {anchor?<Modal visible transparent statusBarTranslucent animationType="fade" onRequestClose={()=>setAnchor(null)}>
    <View style={s.infoLayer}>
     <Pressable accessible={false} accessibilityLabel="Close badge information" style={StyleSheet.absoluteFill} onPress={()=>setAnchor(null)}/>

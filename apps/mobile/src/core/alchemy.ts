@@ -84,6 +84,12 @@ export function alchemyRefund(brew:AlchemyBatchState) {
 }
 /** Legacy reservations retain the material mix and cost actually paid at start.
  * T1–T3 rebalancing must not invalidate escrow started on 1.0.5. */
+/** Ingredient snapshots for Riverheart brews started before the T2 regional-herb rebalance.
+ * Both the premium (×5) and older base-cost recipes must remain refundable. */
+const PREVIOUS_RIVERHEART_INPUTS:readonly (readonly ItemStack[])[]=[
+ [{itemId:'DEWLEAF',quantity:15},{itemId:'RIVER_MINT',quantity:15}],
+ [{itemId:'DEWLEAF',quantity:3},{itemId:'RIVER_MINT',quantity:3}],
+];
 const PREVIOUS_TONIC_INPUTS:Record<string,readonly ItemStack[]>={
  'BREW_VIGOR_TONIC':[{itemId:'DEWLEAF',quantity:2},{itemId:'RIVER_MINT',quantity:2}],
  'BREW_WARD_TONIC':[{itemId:'DEWLEAF',quantity:2},{itemId:'IRONBLOOM',quantity:2}],
@@ -97,7 +103,8 @@ function permittedReservationInputs(recipeId:string,current:readonly ItemStack[]
  const priorInputs=isTonic?current.filter(row=>row.itemId!=='HOLY_WATER'&&row.itemId!=='TEMPERING_DUST'):current;
  const priorTonicInputs=isTonic&&priorInputs.every(row=>row.quantity%COMBAT_POTION_CRAFT_COST_MULTIPLIER===0)
   ?priorInputs.map(row=>({...row,quantity:row.quantity/COMBAT_POTION_CRAFT_COST_MULTIPLIER})):undefined;
- const allowed=[current,priorInputs,priorTonicInputs,PREVIOUS_TONIC_INPUTS[recipeId]].filter((rows):rows is readonly ItemStack[]=>!!rows);
+ const allowed=[current,priorInputs,priorTonicInputs,PREVIOUS_TONIC_INPUTS[recipeId],
+  ...(recipeId==='BREW_RIVERHEART_DRAUGHT'?PREVIOUS_RIVERHEART_INPUTS:[])].filter((rows):rows is readonly ItemStack[]=>!!rows);
  return allowed.some(inputs=>inputs.length===saved.length&&inputs.every(input=>
   saved.filter(row=>row.itemId===input.itemId&&row.quantity===input.quantity).length===1));
 }

@@ -61,8 +61,16 @@ BEGIN
   WHERE mode='party_event';
   SELECT public.rankings_final_mode_history_server_v1(
     'party_event',event_id,'damage','standard:4',50,0) INTO snap;
+  -- Equal final scores share the same rank; UUID is the internal
+  -- deterministic order, so Alpha and Bravo may appear in either position.
   IF jsonb_array_length(snap->'entries')<>3
-    OR snap->'entries'->0->>'displayName'<>'Alpha Party'
+    OR (snap->'entries'->0->>'rank')::integer<>1
+    OR (snap->'entries'->1->>'rank')::integer<>1
+    OR (snap->'entries'->2->>'rank')::integer<>3
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(snap->'entries') e
+      WHERE e.value->>'displayName'='Alpha Party')
+    OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(snap->'entries') e
+      WHERE e.value->>'displayName'='Bravo Party')
   THEN RAISE EXCEPTION 'PARTY_FINAL_HISTORY_READ_INVALID'; END IF;
   IF position(party_one::text IN snap::text)>0
   THEN RAISE EXCEPTION 'PARTY_FINAL_HISTORY_LEAKED_ENTITY_UUID'; END IF;

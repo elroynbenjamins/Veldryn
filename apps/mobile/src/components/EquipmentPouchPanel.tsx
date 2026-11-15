@@ -158,7 +158,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       <Text style={s.selectionStatLabel}>{p(stat.label)}</Text>
     </View>)}
    </View>
-   <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}{salvageCount?` · ${salvageMaterials(eligibleSalvages)}`:''}</Text>
+   <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}</Text>
    <View style={s.sellToolbar}>
     <GameButton compact title={saleCount?p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Nothing sellable')} tone="danger"
      disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id),selectedSales.length-saleCount)}/>

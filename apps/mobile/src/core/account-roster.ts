@@ -14,7 +14,8 @@ export function characterSkillTotal(skills:SkillState[],character?:CharacterStat
  return total;
 }
 export function accountSkillLevel(state:GameState){if(!state.character)return 0;let total=characterSkillTotal(state.skills,state.character);for(const entry of state.otherCharacters??[])total+=characterSkillTotal(entry.skills,entry.character);return total;}
-export function unlockedCharacterSlots(state:GameState){const earned=Number((state.account as {unlockedCharacterSlots?:number}).unlockedCharacterSlots??0);const threshold=CHARACTER_SLOT_THRESHOLDS.filter(n=>n<=accountSkillLevel(state)).length;// Previously earned slots and slots occupied by existing characters must never be revoked.
+export function unlockedCharacterSlots(state:GameState){const earned=Number((state.account as {unlockedCharacterSlots?:number}).unlockedCharacterSlots??0);const threshold=CHARACTER_SLOT_THRESHOLDS.filter(n=>n<=accountSkillLevel(state)).length;
+ // Previously earned slots and slots occupied by existing characters must never be revoked.
  return Math.min(5,Math.max(1,earned,threshold,accountCharacters(state).length));}
 export function recordAccountProgress(state:GameState){const slots=unlockedCharacterSlots(state);return {...state,account:{...state.account,unlockedCharacterSlots:slots}};}
 export function accountCharacters(state:GameState){return [{character:state.character!},...(state.otherCharacters??[])].filter(entry=>entry.character);}

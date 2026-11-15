@@ -81,11 +81,13 @@ export function rankingsHandler(services:Pick<GameplayServices,'authenticate'|'r
   if(!['GET','POST'].includes(request.method))return json({error:'method_not_allowed'},405);
   const token=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!token)return json({error:'auth_required'},401);
-  const accountId=await services.authenticate(token);
-  if(!accountId||!UUID.test(accountId))return json({error:'auth_required'},401);
-  const url=new URL(request.url);
-  const action=url.searchParams.get('action');
   try{
+   // Authentication provider outages must produce a sanitized 503 response,
+   // never an unhandled rejection from the Edge entrypoint.
+   const accountId=await services.authenticate(token);
+   if(!accountId||!UUID.test(accountId))return json({error:'auth_required'},401);
+   const url=new URL(request.url);
+   const action=url.searchParams.get('action');
    if(action==='snapshot-start'){
     if(!gates.frozen)return json({error:'ranking_snapshots_disabled'},404);
     if(request.method!=='POST')return json({error:'method_not_allowed'},405);

@@ -1297,6 +1297,7 @@ export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameS
   if(!state.character)throw new Error('No character');
   const def=itemDef(itemId);
   if(def.type!=='gear'||!def.slot)throw new Error('Not gear');
+  if(state.activity?.kind==='combat'&&def.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(def.requiredLevel??1))throw new Error(`Requires character level ${def.requiredLevel}`);
   if(state.character.equipmentInstanceIds?.[def.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
@@ -1315,6 +1316,7 @@ export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameS
 }
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
+  if(state.activity?.kind==='combat'&&d.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(d.requiredLevel??1))throw new Error(`Requires character level ${d.requiredLevel}`);
   if(state.character.equipmentInstanceIds?.[d.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');

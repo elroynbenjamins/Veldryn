@@ -70,10 +70,11 @@ export function RankingsScreen(){
  }
  useEffect(()=>{void load();const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60000);const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});return()=>{request.current++;clearInterval(timer);foreground.remove();};},[board,page]);const definition=RANKING_BOARDS.find(row=>row.id===board)!,activeSnapshot=snapshot?.board===board&&loadedPage===page&&boards.some(row=>row.id===board)?snapshot:null;
 
- // Later pages may contain players tied at #1–3; show them as ordinary rows
- // instead of duplicating the first-page podium on every page.
- const podium=page===0?(activeSnapshot?.entries.filter(entry=>entry.rank<=3).sort((a,b)=>a.rank-b.rank)??[]):[];
- const remaining=activeSnapshot?.entries.filter(entry=>page>0||entry.rank>3)??[];
+ // Always cap the podium at three entries, even if dozens share rank #1.
+ // Keep every other tied player visible in the normal list, and never show a
+ // second podium on later pages.
+ const podium=page===0?(activeSnapshot?.entries.slice(0,3)??[]):[];
+ const remaining=activeSnapshot?.entries.filter((_,index)=>page>0||index>=3)??[];
  const pageInfo=activeSnapshot?projectRankingPage(activeSnapshot.entries,page):null;
  function rankRow(entry:RankingEntry,top=false,rowIndex=0){
    const position=rankingPositionPresentation(entry.rank),podiumTone=position.tone==='podium_gold'?s.rankGold:position.tone==='podium_silver'?s.rankSilver:position.tone==='podium_bronze'?s.rankBronze:undefined;

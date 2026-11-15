@@ -9,6 +9,9 @@ on:
       - 'apps/mobile/src/i18n/social.ts'
       - 'apps/mobile/src/i18n/social-early-coverage.ts'
       - 'apps/mobile/tests/rankings.ts'
+      - 'apps/mobile/tests/run-rankings-standalone.mjs'
+      - 'apps/mobile/tests/rankings-ui-contract.mjs'
+      - 'apps/mobile/tsconfig.rankings.json'
       - 'apps/mobile/tests/localization-social.mjs'
       - 'apps/mobile/tests/ui-density-hierarchy-contract.ts'
       - '.github/workflows/rankings-readonly-validation.yml'
@@ -31,7 +34,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Typecheck Rankings core only
+        run: node node_modules/typescript/lib/tsc.js -p tsconfig.rankings.json --noEmit
       - name: Rankings core pagination and boundaries
-        run: node ../../tools/run-mobile-tests.mjs rankings
+        run: node tests/run-rankings-standalone.mjs
+      - name: Rankings mobile interaction contract
+        run: node tests/rankings-ui-contract.mjs
       - name: Rankings translation coverage
         run: node tests/localization-social.mjs

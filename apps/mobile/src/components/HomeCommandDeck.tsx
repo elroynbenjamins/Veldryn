@@ -34,7 +34,7 @@ function DeckAction({label,detail,mark,onPress,badgeCount=0,s}:{label:string;det
  const count=Number.isFinite(badgeCount)?Math.max(0,Math.floor(badgeCount)):0;
  return <Pressable accessibilityRole="button" accessibilityLabel={count>0?`${label}, ${count} ready to claim`:label} accessibilityHint={detail} onPress={onPress} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
   <ThemedIcon name={mark} size={27}/><View style={s.flex}><Text numberOfLines={2} style={s.tileName}>{label}</Text><Text numberOfLines={2} style={s.tileHint}>{detail}</Text></View><Text style={s.chevron}>›</Text>
-  {count>0?<View pointerEvents="none" accessible={false} style={[s.readyBadge,{backgroundColor:C.notification}]}><Text style={s.readyBadgeText}>{count>99?'99+':count}</Text></View>:null}
+  {count>0?<View pointerEvents="none" accessible={false} style={s.readyBadge}><Text style={s.readyBadgeText}>{count>99?'99+':count}</Text></View>:null}
  </Pressable>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

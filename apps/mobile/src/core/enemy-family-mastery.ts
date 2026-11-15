@@ -1,17 +1,17 @@
 import {ENEMY_FAMILIES,enemyFamilyForMonster,type EnemyFamilyId} from '../content/enemy-families';
 import {MONSTERS} from '../content/monsters';
+import {masteryRewardBonuses} from './mastery-rewards';
 import type {GameState} from './types';
 
-/** Progressive family mastery: Rank 1 costs 250 points, the final rank
- * costs approximately 1,750 more; Rank 30 is exactly 30,000 total points.
- * Lower-level hunts award 1 point, while tougher enemies give up to 6.
- * Thresholds grow smoothly rather than giving an abrupt 1,000-point first rank.
+/** Escalating 30-rank progression to 50,000 total family points.
+ * Rank 1: 300 points; Rank 30: 50,000. Earn 1–6 points per ordinary kill,
+ * according to the enemy's authored level/zone rather than player level.
  */
 export const FAMILY_MASTERY_MAX_RANK=30;
-export const FAMILY_MASTERY_MAX_POINTS=30_000;
+export const FAMILY_MASTERY_MAX_POINTS=50_000;
 export function familyMasteryPointsForRank(rank:number):number{
  const r=Number.isFinite(rank)?Math.max(0,Math.min(FAMILY_MASTERY_MAX_RANK,Math.floor(rank))):0;
- return Math.round(250*r+750*r*(r-1)/29);
+ return Math.round(300*r+41_000*r*(r-1)/(30*29));
 }
 
 /** Authoritative monster difficulty, not a player's level or selected region.
@@ -43,7 +43,8 @@ export function normalizeEnemyFamilyMastery(raw:unknown):Record<string,number>{
 }
 
 /** Migration-only: give existing hunters weighted credit for historical kills.
- * Species counters cap at 750 so earlier excess kills cannot be reconstructed.
+ * Historical species counters only recorded up to their previous 750-kill cap;
+ * future saves may have up to 1,500 per species. Unknown excess cannot be reconstructed.
  * Never recompute after family tracking is present: fresh kills also progress
  * past each species's cap without creating a duplicate backfill.
  */
@@ -54,8 +55,8 @@ export function backfillEnemyFamilyMastery(speciesPoints:unknown):Record<string,
  for(const [monsterId,value] of Object.entries(species)){
   const id=enemyFamilyForMonster(monsterId)?.id;
   if(!id||typeof value!=='number'||!Number.isFinite(value)||value<=0)continue;
-  // Original species counters are capped at 750 verified kills.
-  const count=Math.min(750,Math.floor(value));
+  // Preserve newer 1,500-kill species saves as well as legacy capped snapshots.
+  const count=Math.min(1_500,Math.floor(value));
   // Credit historical species kills by their authored region/level weight.
   // Historical kills beyond each species cap cannot be reconstructed.
   const weighted=count*enemyFamilyMasteryPointsPerKill(monsterId);
@@ -71,8 +72,7 @@ export function enemyFamilyMastery(state:GameState,id:EnemyFamilyId){
  return {
   points,rank,
   nextRankPoints:familyMasteryPointsForRank(Math.min(FAMILY_MASTERY_MAX_RANK,rank+1)),
-  damageBonus:rank>=30?.02:rank>=5?.01:0,
-  materialBonus:rank>=30?.05:rank>=15?.03:0,
+  ...masteryRewardBonuses(rank),
   dropKnowledge:rank>=10,
   eliteKnowledge:rank>=20,
   badgeUnlocked:rank>=25,

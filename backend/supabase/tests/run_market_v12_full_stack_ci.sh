@@ -46,11 +46,12 @@ for migration in \
   20261113112000_market_resale_expiry_private_v24.sql \
   20261113112500_market_v12_browser_reconciliation_private_v24.sql \
   20261115210000_market_authenticated_read_bridge_private_v26.sql \
-  20261115220000_market_read_rate_retention_private_v27.sql
+  20261115220000_market_read_rate_retention_private_v27.sql \
+  20261115224000_market_expiry_worker_internal_v28.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 37 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 38 dependency-ordered private Market migrations compile on clean PG17"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_acquisition_v18.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_provenance_v19.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_recipient_transfer_v20.sql"
@@ -60,6 +61,7 @@ psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_res
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_visibility_expiry_v24.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_authenticated_read_v26.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_rate_retention_v27.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_expiry_worker_v28.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'

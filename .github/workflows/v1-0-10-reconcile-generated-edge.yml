@@ -1,4 +1,4 @@
-# Re-run after six staging merges: regional dungeon and tonic sources must be bundled together.
+# Re-run after full ten-PR 1.0.10 staging consolidation, including class/gem/server sources.
 name: Veldryn 1.0.10 reconcile generated Edge bundles
 
 on:

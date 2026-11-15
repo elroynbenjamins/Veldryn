@@ -16,7 +16,8 @@ const content_1 = require("./content");
 const policy_1 = require("./policy");
 const trial_season_1 = require("./trial-season");
 const XP_MULT = { standard: 1, rare: 1.08, elite: 1.16, prestige: 1.25 };
-const BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
+const BOND_THRESHOLDS = [0, 270, 630, 1110, 1740, 2520, 3480, 4620, 5970, 7560];
+const LEGACY_BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
 function companionXpToNextServer(companionId, level) { const def = (0, content_1.companionServerDefinition)(companionId); if (!def)
     throw new Error('unknown_companion'); if (level >= content_1.COMPANION_RARITY_MAX_LEVEL[def.rarity])
     return 0; return Math.max(1, Math.round(65 * Math.pow(1.16, Math.max(0, level - 1)) * XP_MULT[def.rarity])); }
@@ -77,9 +78,20 @@ function awardCompanionXpServer(input) {
     return { progress: p, companionEssence: input.companionEssence, overflow: normalizeOverflow(input.overflow, input.serverNowMs), convertedEssence: 0, droppedXp: 0 };
 }
 function normalizeOverflow(value, nowMs) { const weekKey = (0, trial_season_1.companionTrialWeekKey)(nowMs); return value?.weekKey === weekKey ? { weekKey, essenceConvertedThisWeek: Math.max(0, Math.floor(value.essenceConvertedThisWeek)) } : { weekKey, essenceConvertedThisWeek: 0 }; }
-function awardCompanionBondXpServer(progress, amount) { let total = Math.max(0, progress.bondXp + Math.floor(amount)), level = progress.bondLevel; while (level < 10 && total >= BOND_THRESHOLDS[level])
-    level++; if (level >= 10)
-    return { ...progress, bondLevel: 10, bondXp: BOND_THRESHOLDS[9], bondTraitUnlocked: true }; return { ...progress, bondLevel: level, bondXp: total, bondTraitUnlocked: progress.bondTraitUnlocked }; }
+function rebaseLegacyBondXp(level, rawXp) {
+    const index = Math.max(0, Math.min(9, level - 1)), oldFloor = LEGACY_BOND_THRESHOLDS[index];
+    if (level >= 10) return BOND_THRESHOLDS[9];
+    const oldNext = LEGACY_BOND_THRESHOLDS[index + 1], newFloor = BOND_THRESHOLDS[index], newNext = BOND_THRESHOLDS[index + 1];
+    const earned = rawXp < oldFloor ? rawXp : rawXp - oldFloor, ratio = Math.max(0, Math.min(1, earned / Math.max(1, oldNext - oldFloor)));
+    return Math.min(newNext - 1, newFloor + Math.round((newNext - newFloor) * ratio));
+}
+function awardCompanionBondXpServer(progress, amount) {
+    let level = Math.max(1, Math.min(10, progress.bondLevel));
+    let total = Math.max(BOND_THRESHOLDS[level - 1], progress.bondCurveVersion === 2 ? progress.bondXp : rebaseLegacyBondXp(level, progress.bondXp)) + Math.max(0, Math.floor(amount));
+    while (level < 10 && total >= BOND_THRESHOLDS[level]) level++;
+    if (level >= 10) return { ...progress, bondLevel: 10, bondXp: BOND_THRESHOLDS[9], bondCurveVersion: 2, bondTraitUnlocked: true };
+    return { ...progress, bondLevel: level, bondXp: total, bondCurveVersion: 2, bondTraitUnlocked: progress.bondTraitUnlocked };
+}
 function companionUnlockRequirementSatisfied(r, f) {
     switch (r.type) {
         case 'trial_floor': return f.highestTrialFloor >= (r.amount ?? 1);

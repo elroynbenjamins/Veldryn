@@ -6,7 +6,7 @@ import {regionalEnemySecondaryStats} from '../src/core/regional-enemy-stats';
 import {regionalClassCounter,regionalCounterCoverage} from '../src/core/regional-class-counter';
 import {CLASSES} from '../src/content/classes';
 import {itemDef} from '../src/content/items';
-import {cumulativeMonsterUnlockIds,encounterLockRequirement,regionEncounters} from '../src/core/world-navigation';
+import {cumulativeMonsterUnlockIds,encounterLockRequirement,regionEncounters,regionTravelAvailability} from '../src/core/world-navigation';
 import {combatSustainProjection,startCombat} from '../src/core/game';
 import {regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 import type {GameState} from '../src/core/types';
@@ -126,6 +126,20 @@ check(asterfallEncounters.map(x=>x.id).join(',')===MONSTERS.filter(x=>x.zone==='
 const encounterUi=fs.readFileSync('src/components/RegionEncounterList.tsx','utf8');
 check(encounterUi.includes('regionalClassCounter(monster.id,state.character.classId)'),'Class matchup must use the active character class');
 check(encounterUi.includes('Favorable class matchup'),'Class advantage must be visible in the encounter details');
+for(const [regionId,entryLevel,oldId,food,tier] of [
+ ['SUNSCAR',26,'SUNSCAR_SCORPION','GRILLED_OASIS_CARP','T3'],
+ ['FROSTMARCH',51,'FROSTWOLF','FROSTED_ICEFIN','T5'],
+] as const){
+ const world=WORLD_ZONES.find(x=>x.id===regionId)!;
+ const regionName=world.name;
+ const previous=regionalCombatFixture({regionId,regionName,monsterId:oldId,level:entryLevel-1,tier,foodId:food},'prepared','IRONWARDEN');
+ const oldSave={...previous,defeatedBossIds:[],exploredRouteIds:[]} as GameState;
+ check(regionTravelAvailability(oldSave,world)==='available',regionId+' previously-visited character lost regional access after rescale');
+ const newArrival={...oldSave,currentRegionId:'GREENFIELDS',unlockedMonsterIds:[],character:{...oldSave.character!,monsterMasteryPoints:{}}} as GameState;
+ check(regionTravelAvailability(newArrival,world)==='locked',regionId+' should still require new entry levels for fresh characters');
+ const mastered={...newArrival,character:{...newArrival.character!,monsterMasteryPoints:{[oldId]:3}}} as GameState;
+ check(regionTravelAvailability(mastered,world)==='available',regionId+' previous mastery must preserve a historical visit');
+}
 check(REGIONAL_AREAS.length===8,'Do not introduce additional subzones');
 check(MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')?.level===25,'Asterfall story boss unchanged');
 console.log('PASS regional enemy wiring: 8 new portraits, 24 normal hunts, overlapping 26–75 chapter bands');

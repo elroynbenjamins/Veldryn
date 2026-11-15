@@ -15,9 +15,15 @@ export interface ActiveStoryBossSession {
  snapshot:FallenKnightPlayerSnapshot;
  potionId?:string;
  manualPotionAtMs:number[];
+ /** Absent on older sessions: retain their manual behavior. */
+ healingMode?:'manual'|'auto';
+ autoThresholdPct?:20|40|60|80;
 }
 export function projectStoryBossSession(session:ActiveStoryBossSession):FallenKnightBattleResult {
- return simulateFallenKnightStoryBattle(session.snapshot,session.seed,session.mode,session.manualPotionAtMs);
+ const automatic=session.healingMode==='auto';
+ const snapshot=automatic?{...session.snapshot,autoEatThresholdPct:session.autoThresholdPct??40}:session.snapshot;
+ return simulateFallenKnightStoryBattle(snapshot,session.seed,session.mode,
+  automatic?undefined:session.manualPotionAtMs,automatic?FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS:0);
 }
 function requireSession(state:GameState):ActiveStoryBossSession {
  const session=state.storyBossSession;
@@ -37,15 +43,20 @@ export function startStoryBossSession(state:GameState,nowMs:number){
  if(mode==='rematch'&&fallenKnightWeeklyStatus(state,nowMs).remaining<=0)
   throw new Error('Fallen Knight weekly rematches are complete.');
  const snapshot=fallenKnightPlayerSnapshot(state);
+ const healingMode=character.bossPotionMode==='auto'?'auto':'manual';
+ const autoThresholdPct=([20,40,60,80] as number[]).includes(character.bossPotionThresholdPct??40)
+  ?character.bossPotionThresholdPct??40:40;
  const session:ActiveStoryBossSession={
   kind:'fallen_knight',characterId:character.id,startedAtMs:nowMs,
   seed:character.id+':FALLEN_KNIGHT_'+mode.toUpperCase()+':'+nowMs,mode,snapshot,
-  potionId:character.equippedHealingPotionId,manualPotionAtMs:[],
+  potionId:character.equippedHealingPotionId,manualPotionAtMs:[],healingMode,
+  autoThresholdPct:autoThresholdPct as 20|40|60|80,
  };
  return {state:{...state,storyBossSession:session},battle:projectStoryBossSession(session)};
 }
 export function healStoryBossSession(state:GameState,nowMs:number){
  const session=requireSession(state),elapsed=nowMs-session.startedAtMs;
+ if(session.healingMode==='auto')throw new Error('Switch to Manual in Food & Potions to press Heal Now.');
  const before=projectStoryBossSession(session);
  if(!Number.isSafeInteger(elapsed)||elapsed<0||elapsed>=before.durationMs)
   throw new Error('The battle has already ended.');

@@ -102,7 +102,8 @@ function simulateWorldBossCore(
  input:WorldBossRoundInput,accountRaid:boolean,
 ):WorldBossRoundResult{
  validateWorldBossScripts();
- if(!input||typeof input.seed!=='string'||input.seed.length<24||
+ if(!input||typeof input.seed!=='string'||!input.seed||
+  (accountRaid&&input.seed.length<24)||
   !Array.isArray(input.players)||
   (accountRaid?
    input.players.length<1||input.players.length>5:

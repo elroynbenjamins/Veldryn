@@ -66,7 +66,7 @@ begin
  if removed<>1
   or exists(select 1 from market_api_internal.market_read_buckets_v26
    where account_id=b and window_start=window_now-interval '72 hours')
-  or (select count(*) from market_api_internal.market_read_buckets_v26)<>4
+  or (select count(*) from market_api_internal.market_read_buckets_v26)<>3
  then raise exception 'market_v27_global_cleanup_bad_count';end if;
  if market_api_internal.market_prune_old_read_buckets_v27(50)<>0
  then raise exception 'market_v27_cleanup_not_idempotent';end if;

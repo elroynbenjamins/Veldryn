@@ -17,7 +17,8 @@
     "tests/world-boss-owned-cohort-v15.ts",
     "tests/world-boss-server-service-v19.ts",
     "tests/world-boss-consented-echoes-v20.ts",
-    "tests/world-boss-consent-command-v21.ts"
+    "tests/world-boss-consent-command-v21.ts",
+    "tests/world-boss-weekend-account-raid-v22.ts"
   ],
   "exclude": []
 }

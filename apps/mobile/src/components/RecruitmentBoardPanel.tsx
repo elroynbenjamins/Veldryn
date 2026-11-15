@@ -30,7 +30,8 @@ export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFil
   card.postType==='looking_for_party'?partyUnlocked&&!inParty:
   card.postType==='guild_recruiting'?canRecruitGuild:guildMembershipKnown&&!inGuild
  );
- const expiredPartyPost=area==='party'?myPosts.find(card=>card.postType==='party_recruiting'&&canRenew(card)&&recruitmentPostExpired(card,nowMs)):undefined;
+ const hasActivePartyPost=area==='party'&&myPosts.some(card=>card.postType==='party_recruiting'&&card.partyId===currentPartyId&&card.status!=='closed'&&!recruitmentPostExpired(card,nowMs));
+ const expiredPartyPost=area==='party'&&!hasActivePartyPost?myPosts.find(card=>card.postType==='party_recruiting'&&canRenew(card)&&recruitmentPostExpired(card,nowMs)):undefined;
  const options:{id:Action;title:string;detail:string;enabled:boolean}[]=[
   {id:'looking_for_party',title:st('Looking for a Party'),detail:st('Find a persistent team'),enabled:partyUnlocked&&!inParty},
   {id:'party_recruiting',title:st('Recruit for my Party'),detail:partyOpenSpots>0?st('Find members for open Party slots'):st('Your Party has no open slots'),enabled:partyUnlocked&&inParty&&partyLeader&&partyOpenSpots>0},

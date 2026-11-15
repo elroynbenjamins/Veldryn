@@ -17,6 +17,7 @@
     "web": "expo start --web",
     "typecheck:core": "node node_modules/typescript/lib/tsc.js -p tsconfig.core.json --noEmit",
     "test:core": "node ../../tools/run-mobile-core-tests.mjs",
+    "test:forge-claim-all-summary": "node tests/forge-claim-all-summary-ui.cjs",
     "test:localization": "node ../../tools/run-mobile-localization-tests.mjs",
     "test:pets": "node -e \"require('fs').rmSync('.pet-test-build',{recursive:true,force:true})\" && tsc -p tsconfig.pet-tests.json && node .pet-test-build/apps/mobile/tests/core-pets.js && node .pet-test-build/apps/mobile/tests/core-pet-drops.js && node ../../tools/validate-master-roster-assets.mjs && node ../../tools/validate-companion-art-coverage.mjs",
     "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/offline-smoke.js && node .core-build/apps/mobile/tests/equipment-screen.js && node .core-build/apps/mobile/tests/quick-navigation.js && node .core-build/apps/mobile/tests/pre-codex-smoke.js",

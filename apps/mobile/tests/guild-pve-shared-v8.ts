@@ -162,6 +162,12 @@ async function main(){
  assert.equal(orderState.members.GX8_FX_0.seals,7);
  assert.equal(orderState.members.GX8_FX_0.orders,6);
  assert.equal(node(orderRun,'C3-06',START+8*DAY).state,'cleared');
+ for(const id of ['C1-04','C2-01','C2-05','C3-01'] as GuildPveNodeIdV8[])
+  assert.equal(node(orderRun,id,START+8*DAY).transitions.length,0,
+   'a skirmish has no invented guardian phase triggers');
+ for(const id of ['C1-06','C2-06','C3-06'] as GuildPveNodeIdV8[])
+  assert.equal(node(orderRun,id,START+8*DAY).transitions.length,2,
+   'a three-phase guardian passes both thresholds once');
 
  // First successful action binds an account to this guild for the whole cycle;
  // a different guild using the same shared *in-memory* registry must reject it.
@@ -224,6 +230,8 @@ async function main(){
   assert.equal(snap.rewardGranted,false);
   assert.equal(snap.serverPersisted,false);
   assert.ok(creditedHp>=0);
+  assert.ok(transitions<=6,'only three guardians have two phase boundaries');
+  if(clear===7)assert.equal(transitions,6,'full clear must trigger six guardian transitions');
   results.push({members:n,tier,attempts,creditedHp:Number(creditedHp.toFixed(2)),
    clearedMandatory:clear,finished:node(run,'C3-06').state==='cleared',
    phaseTransitions:transitions,pressure:snap.pressure,

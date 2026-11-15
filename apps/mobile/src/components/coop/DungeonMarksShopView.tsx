@@ -3,6 +3,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
+import {ResourceIcon} from '../ResourceIcon';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
@@ -28,6 +29,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
  const language=useGameLanguage();
  const t=(source:string,params:Record<string,string|number>={})=>dungeonShopText(language,source,params);
  const [shelf,setShelf]=useState<Shelf>('Supplies');
+ const [materialTier,setMaterialTier]=useState<1|2|3|4>(1);
  const [selected,setSelected]=useState<string|null>(null);
  const [pending,setPending]=useState<string|null>(null);
  const [refreshing,setRefreshing]=useState(false);
@@ -53,11 +55,12 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    setError(cause instanceof Error?cause.message:t('Unable to confirm purchase. Refresh before retrying.'));
   }finally{requestLock.current=false;setPending(null)}
  };
+ const availableMaterialTiers=([1,2,3,4] as const).filter(tier=>snapshot?.offers.some(item=>item.category==='material'&&item.tier===tier));
  const items=(snapshot?.offers??[]).filter(item=>
   shelf==='Owned'?item.owned||item.status==='already_owned':
-  shelf==='Supplies'?item.category==='supply'||item.category==='companion':
-  !['supply','companion'].includes(item.category)
- );
+  shelf==='Supplies'?item.category==='supply'||item.category==='companion'||(item.category==='material'&&item.tier===materialTier):
+  !['supply','material','companion'].includes(item.category)
+ ).sort((a,b)=>Number(b.category==='material')-Number(a.category==='material'));
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.wallet}>
    <ExpeditionMarkIcon size={34}/>
@@ -73,6 +76,14 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
     accessibilityState={{selected:shelf===tab,disabled:busy||!!pending||refreshing}} disabled={busy||!!pending||refreshing} onPress={()=>{setShelf(tab);setSelected(null)}}
     style={[s.tab,shelf===tab&&s.selectedTab]}><Text style={[s.tabLabel,shelf===tab&&s.activeLabel]}>{t(tab)}</Text></Pressable>)}
   </View>
+  {shelf==='Supplies'&&availableMaterialTiers.length>0?<View style={s.materialPicker}>
+   <Text style={s.title}>{t('Equipment crafting materials · 100 per bundle')}</Text>
+   <Text style={s.meta}>{t('Choose a tier and resource. Purchases go directly to your shared Bank.')}</Text>
+   <View style={s.tabs}>{availableMaterialTiers.map(tier=><Pressable key={tier} accessibilityRole="button"
+    accessibilityState={{selected:materialTier===tier,disabled:busy||!!pending||refreshing}}
+    disabled={busy||!!pending||refreshing} onPress={()=>{setMaterialTier(tier);setSelected(null)}}
+    style={[s.tab,materialTier===tier&&s.selectedTab]}><Text style={[s.tabLabel,materialTier===tier&&s.activeLabel]}>T{tier}</Text></Pressable>)}</View>
+  </View>:null}
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {!snapshot?<Text style={s.meta}>{t('The server has not supplied a verified Dungeon Shop catalogue.')}</Text>:null}
@@ -91,7 +102,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
      disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
-     <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
+     <View style={s.art}>{item.materialItemId?<ResourceIcon resourceId={item.materialItemId} size={40}/>:<Text style={s.artGlyph}>◇</Text>}</View>
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
@@ -118,6 +129,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:10,padding:spacing.md,paddingBottom:100},
  wallet:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:radii.md,borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.panelRaised},
  fill:{flex:1,minWidth:0},walletAmount:{...typography.bodyStrong,color:C.text,fontSize:16},meta:{...typography.caption,color:C.muted,lineHeight:17},
+ materialPicker:{gap:7,padding:10,borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel},
  tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
  selectedTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabLabel:{...typography.caption,color:C.muted,fontWeight:'800'},activeLabel:{color:C.text},
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},

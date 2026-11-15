@@ -45,14 +45,14 @@ DECLARE
   v_distinct integer;
   v_rows jsonb;
 BEGIN
-  IF p_mode NOT IN ('party_event','guild_pve') OR p_event_key IS NULL
+  IF p_mode IS NULL OR p_mode NOT IN ('party_event','guild_pve') OR p_event_key IS NULL
     OR length(p_event_key) NOT BETWEEN 1 AND 120
     OR p_bracket IS NULL OR length(p_bracket) NOT BETWEEN 1 AND 48
     OR p_bracket !~ '^[a-z0-9_:-]+$'
     OR p_receipt_id IS NULL OR p_ends_at IS NULL OR p_finalized_at IS NULL
     OR p_ends_at>p_finalized_at OR p_finalized_at>clock_timestamp()
     OR p_finalized_at<'2020-01-01'::timestamptz
-    OR jsonb_typeof(p_entries)<>'array'
+    OR p_entries IS NULL OR jsonb_typeof(p_entries)<>'array'
   THEN RAISE EXCEPTION 'INVALID_COMPETITIVE_FINAL_RECEIPT'; END IF;
   IF (p_mode='party_event' AND p_metric NOT IN
        ('damage','depth','support','shielding','mechanics'))

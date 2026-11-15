@@ -65,6 +65,13 @@ function check(input:PrivatePartyEventEvidenceV27){
   });
 }
 const valid=check(clean());
+// A successfully sealed/boss-attested event may become globally settled
+// before every enrolled character can open their one-time reward Inbox.
+const afterSettled=check({...clean(),weekStatus:'settled'});
+must(afterSettled.evidenceReconciled&&!afterSettled.claimable,
+ 'post-settlement unpaid offer remains reviewable');
+denies(()=>check({...clean(),weekStatus:'cancelled'}),
+ 'invalid_week_or_settlement_window');
 must(!PARTY_EVENT_EVIDENCE_V27_RELEASED,'read prototype remains hidden');
 must(valid.evidenceReconciled&&valid.historicalSnapshotsStale
   &&valid.reward.gold===2150

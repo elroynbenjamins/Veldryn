@@ -1,7 +1,7 @@
 import React,{useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {companionTranslator} from '../i18n/companions';
+import {companionContent} from '../i18n/companions';
 import type {GameState} from '../core/types';
 import {MONSTERS} from '../content/monsters';
 import {ENEMY_FAMILIES} from '../content/enemy-families';
@@ -17,7 +17,7 @@ import {C,radii,spacing,typography} from '../theme/theme';
 
 /** Companion panel to species mastery. No editable ranks or direct grants. */
 export function EnemyFamilyMasteryPanel({state}:{state:GameState}){
- const language=useGameLanguage(),t=companionTranslator(language);
+ const language=useGameLanguage(),t=(value:string)=>companionContent(language,value);
  const [open,setOpen]=useState(false);
  const seenIds=new Set([
   ...state.unlockedMonsterIds,

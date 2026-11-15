@@ -1,6 +1,7 @@
 import {profileIconSource} from '../components/ProfileIcon';
 import {dungeonHealingPotionView} from '../core/coop-potion-view';
 import {dungeonTonicView} from '../core/coop-tonic-view';
+import {rememberedDungeonTonic,rememberDungeonTonic,autoDungeonTonicForRun,type DungeonTonicPreference} from '../core/coop-dungeon-tonic-preference';
 import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,BackHandler,Pressable,View,Text} from 'react-native';
@@ -43,6 +44,19 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const [entry,setEntry]=useState<CoopEntryData>();
   // Disk-backed browse previews only: no loadouts, rewards or running state.
   const characterId=state.character?.id;
+  const [savedTonic,setSavedTonic]=useState<{characterId:string;preference:DungeonTonicPreference}>();
+  const tonicPreference=savedTonic?.characterId===characterId?savedTonic.preference:undefined;
+  useEffect(()=>{
+   let cancelled=false;setSavedTonic(undefined);
+   void rememberedDungeonTonic(characterId).then(preference=>{if(!cancelled&&characterId)setSavedTonic({characterId,preference});});
+   return()=>{cancelled=true;};
+  },[characterId]);
+  const updateTonicPreference=(preference:DungeonTonicPreference)=>{
+   if(!characterId||!tonicPreference)return;
+   setSavedTonic({characterId,preference});
+   void rememberDungeonTonic(characterId,preference);
+  };
+  const autoTonicAttempted=useRef<Set<string>>(new Set());
   const [cachedBrowse,setCachedBrowse]=useState<{characterId:string;dungeons:CoopDungeonProjection[]}>();
   const [selected,setSelected]=useState<CoopDungeonView>();
   const [selectedEvent,setSelectedEvent]=useState<CoopEventExpeditionPreview>();
@@ -107,6 +121,23 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     setEventRun(current=>current?.runId===runId&&current.stateVersion<=next.stateVersion?next:current);
   },[]);
   const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(coopErrorMessage(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
+  // Auto-preparation happens only when the server opens the first-room window.
+  // A failed request is not retried blindly: the player keeps manual controls.
+  useEffect(()=>{
+   if(!foreground||busy||pending||eventRun||entrySource.kind!=='real'||!tonicPreference||!run)return;
+   const potionId=autoDungeonTonicForRun(run,state,tonicPreference);
+   if(!potionId)return;
+   const attemptKey=(characterId??'')+':'+run.runId;
+   if(autoTonicAttempted.current.has(attemptKey))return;
+   autoTonicAttempted.current.add(attemptKey);
+   void action(async()=>{
+    const updated=await coopClient.prepareTonic(run.runId,potionId);
+    if(activeRunId.current!==run.runId)return;
+    acceptRun(updated);
+    await onRewardsChanged?.();
+    setNotice(st('Selected tonic prepared automatically for this dungeon.'));
+   });
+  },[run,state,tonicPreference,characterId,foreground,busy,pending,eventRun,entrySource.kind]);
   const load=useCallback(async(force=true)=>{
     const requestId=++loadRequestId.current;
     setLoading(true);setError('');
@@ -361,7 +392,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     const started=await coopClient.startEvent({requestId:coopRequestId(),eventExpeditionId:selectedEvent.id,tier:selectedTier,characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
-  if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load(true)} onIntent={startWithLoadout} possibleCounterIds={selected.companionCounterIds} onEquipCompanion={entrySource.kind==='real'&&onCommand?selectDungeonCompanion:undefined}/></View>;
+  if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load(true)} onIntent={startWithLoadout} possibleCounterIds={selected.companionCounterIds} onEquipCompanion={entrySource.kind==='real'&&onCommand?selectDungeonCompanion:undefined} tonicPreference={tonicPreference} onTonicPreferenceChange={tonicPreference?updateTonicPreference:undefined}/></View>;
   if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} rewardBudget={entry?.rewardBudget} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('');if(selected)void rememberCoopTier(characterId,selected.id,next);}} onContinue={continueDungeon}/>;
   const echoTools=entrySource.kind==='real'&&entry?.gameVersion?(<View style={{paddingHorizontal:16,paddingTop:8}}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoSharing}} accessibilityLabel={st("Echo sharing")} accessibilityHint={st("Sharing an Echo lets other players recruit a snapshot of your character for 7 days.")} onPress={()=>setShowEchoSharing(value=>!value)} style={{paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>

@@ -2,6 +2,21 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  // Read-only Rankings pagination.
+  "No further ranked entries": ["Больше записей в рейтинге нет","Başka sıralama kaydı yok"],
+  "Return to the previous page to view ranked entries.": ["Вернитесь на предыдущую страницу, чтобы увидеть рейтинг.","Sıralamayı görmek için önceki sayfaya dön."],
+  "Previous": ["Назад","Önceki"],
+  "Next": ["Далее","Sonraki"],
+  "Page": ["Страница","Sayfa"],
+  "Entries {first}–{last}": ["Строки {first}–{last}","Kayıtlar {first}–{last}"],
+  "Live rankings can change while players progress.": ["Рейтинг может измениться по мере развития игроков.","Oyuncular ilerledikçe canlı sıralamalar değişebilir."],
+  "Reward amount is being prepared.": ["Размер награды уточняется.","Ödül miktarı hazırlanıyor."],
+  "Estimated · final Marks confirmed when claimed.": ["Оценка · окончательное количество знаков подтвердится при получении.","Tahmini · kesin Nişan miktarı alınırken doğrulanır."],
+  "Refresh battle status": ["Обновить статус боя","Savaş durumunu yenile"],
+  "You are already friends with {name}.": ["Вы уже друзья с {name}.","{name} ile zaten arkadaşsınız."],
+  "You already have a friend request from {name}. Check Requests.": ["У вас уже есть запрос в друзья от {name}. Проверьте запросы.","{name} kişisinden zaten arkadaşlık isteğiniz var. İstekleri kontrol edin."],
+  "Your friend request is already pending.": ["Ваш запрос в друзья уже ожидает ответа.","Arkadaşlık isteğin zaten beklemede."],
+  "Already friends": ["Уже в друзьях","Zaten arkadaşsınız"],
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
   "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],

@@ -1,4 +1,4 @@
-import {MONSTERS,MonsterDef} from '../content/monsters';
+import {MONSTERS,REGIONAL_CHAPTER_NEW_MONSTER_IDS,type MonsterDef} from '../content/monsters';
 import {regionalArea} from '../content/regional-areas';
 import {WORLD_ZONES,type WorldZoneDef,worldZoneInDevelopment} from '../content/world-map';
 import {GATHERING} from '../content/skills';
@@ -75,7 +75,12 @@ export function cumulativeMonsterUnlockIds(state:GameState):string[]{
   if(!furthest)return original;
   const released=WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone));
   const maxIndex=released.findIndex(zone=>zone.id===furthest.id);
-  const eligible=MONSTERS.filter(monster=>!monster.boss&&released.some((zone,index)=>index<=maxIndex&&zone.name===monster.zone)).map(monster=>monster.id);
+  const level=state.character?.level??0;
+  // Only the eight new encounters follow staged level gates. The old roster
+  // remains cumulative for returning characters and migrated save files.
+  const eligible=MONSTERS.filter(monster=>!monster.boss
+   &&(!REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monster.id)||level>=monster.unlockLevel)
+   &&released.some((zone,index)=>index<=maxIndex&&zone.name===monster.zone)).map(monster=>monster.id);
   return [...new Set([...original,...eligible])];
 }
 
@@ -107,6 +112,14 @@ export function encounterLockRequirement(state:GameState,monster:MonsterDef):Enc
   // Authored future-region encounters must stay unplayable even when old save
   // data contains their unlock IDs or the character is above the level gate.
   if(region&&worldZoneInDevelopment(region))return {kind:'regionProgression'};
+  // New regional enemies must never be farmable before their authored unlock,
+  // even if a legacy snapshot already contains their ID or the region is open.
+  // This is intentionally narrower than changing old cumulative hunt access.
+  if(REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monster.id)){
+    const area=region?regionalArea(region.id,monster.areaId):undefined;
+    const required=Math.max(monster.unlockLevel,area?.minLevel??1,region?.minLevel??1);
+    if(level<required)return {kind:'level',level:required};
+  }
   // Already-reached zones never lose ordinary encounters due to missing
   // per-monster flags, backtracking, class changes or level rescaling.
   if(!monster.boss&&cumulativeMonsterUnlockIds(state).includes(monster.id))return undefined;

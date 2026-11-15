@@ -1,6 +1,7 @@
 /**
  * Hidden V26 private PostgreSQL adapter for the authored V25 engine.
- * NO API route, live migration or client credentials.
+ * NO API route, live migration or client credentials. V27 adds the private
+ * Saturday-frozen War Camp gate BEFORE the V22 account reservation.
  * SQL names are server-fixed, every value parameterized. Database principal
  * MUST be the trusted service role; keep private schema out of Data API.
  */
@@ -80,7 +81,7 @@ export function createWorldBossAccountPgV26(pg:WorldBossPgExecutorV19):
     input.frozenPacket.accountId!==input.accountId)
     throw Error('world_boss_v26_pg_invalid_reservation_packet');
    const r=await pg.query<{receipt:WorldBossLeaseV19}>(
-    'SELECT private.world_boss_v22_reserve_account('+ 
+    'SELECT private.world_boss_v27_reserve_frozen('+ 
     '$1::uuid,$2::uuid,$3::uuid,$4::text,$5::text,$6::text,'+
     '$7::text,$8::jsonb,$9::text,$10::text,$11::text,$12::text) AS receipt',
     [input.eventId,input.accountId,input.characterId,input.requestId,

@@ -12,6 +12,7 @@ export function normalizeEnemyFamilyMastery(raw:unknown):Record<string,number>{
  const data=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
  const out:Record<string,number>={};
  for(const family of ENEMY_FAMILIES){
+  if(!family.monsterIds.length)continue; // Unreleased families cannot carry imported progress.
   const n=data[family.id];
   if(typeof n==='number'&&Number.isFinite(n)&&Number.isSafeInteger(n)&&n>0){
    out[family.id]=Math.min(FAMILY_MASTERY_MAX_POINTS,n);

@@ -27,8 +27,13 @@ export function monsterMasteryGuidance(state:GameState,id:string){
   ...mastery,next,
   killsToNextRank:Math.max(0,mastery.nextRankPoints-mastery.points),
   killsToNextMilestone:next?Math.max(0,monsterMasteryKillsForRank(next.rank)-mastery.points):0,
-  currentRankProgress:mastery.points-currentRankKills,
-  currentRankTarget:mastery.nextRankPoints-currentRankKills,
+  // A mastered rank must render a full bar, not pass max=0 to StatBar.
+  currentRankProgress:mastery.rank>=MONSTER_MASTERY_MAX_RANK
+   ?monsterMasteryKillsForRank(30)-monsterMasteryKillsForRank(29)
+   :mastery.points-currentRankKills,
+  currentRankTarget:mastery.rank>=MONSTER_MASTERY_MAX_RANK
+   ?monsterMasteryKillsForRank(30)-monsterMasteryKillsForRank(29)
+   :mastery.nextRankPoints-currentRankKills,
  };
 }
 export function masterySummary(state:GameState,ids:string[]){

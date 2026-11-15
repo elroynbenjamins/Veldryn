@@ -117,3 +117,7 @@ echo "PASS: no synthetic trades survive rollback; all launch flags, asset polici
 # No fixture is ever created in staging, production, or a persistent DB.
 bash -n "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"
 bash "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"
+# Dedicated concurrent read-rate test runs LAST because it temporarily
+# opens the V24 browse guard exclusively inside the disposable CI database.
+bash -n "$ROOT/backend/supabase/tests/player_market_read_quota_race_v27_ci.sh"
+bash "$ROOT/backend/supabase/tests/player_market_read_quota_race_v27_ci.sh"

@@ -42026,6 +42026,10 @@ function mergeInputs(inputs) {
   for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
   return [...totals].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 }));
 }
+var EQUIPMENT_PRIMARY_MATERIAL_REDUCTION = 2;
+function reducePrimaryEquipmentMaterial(inputs) {
+  return inputs.map((input, index) => index === 0 ? { ...input, quantity: Math.max(1, input.quantity - EQUIPMENT_PRIMARY_MATERIAL_REDUCTION) } : input);
+}
 function ingredients(tier, path, multiplier, skillId) {
   multiplier *= TIER_MATERIAL_MULTIPLIER[tier] ?? 1;
   if (skillId === "tailoring") {
@@ -42103,7 +42107,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     xp: craftXp,
     gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
     seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
+    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId)), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42321,7 +42325,7 @@ var ALCHEMY_RECIPES = [
   recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
   recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
   recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
-  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "RIVER_MINT", quantity: 5 }]),
   recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
   recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
   recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),

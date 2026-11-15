@@ -50,7 +50,7 @@ test('catalog has eleven regional herb nodes, twelve potions and eight equipment
 test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and triple XP',()=>{
  const expected=[
   {id:'DEWLEAF_DRAUGHT',healing:.20,materials:[{itemId:'DEWLEAF',quantity:10}],gold:25,xp:180},
-  {id:'RIVERHEART_DRAUGHT',healing:.35,materials:[{itemId:'DEWLEAF',quantity:15},{itemId:'RIVER_MINT',quantity:15}],gold:110,xp:945},
+  {id:'RIVERHEART_DRAUGHT',healing:.35,materials:[{itemId:'RIVER_MINT',quantity:25}],gold:110,xp:945},
   {id:'OATHBLOOM_DRAUGHT',healing:.50,materials:[{itemId:'DEWLEAF',quantity:20},{itemId:'OATHBLOSSOM',quantity:10}],gold:360,xp:3225},
  ] as const;
  for(const entry of expected){

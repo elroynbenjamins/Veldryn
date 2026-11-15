@@ -30,6 +30,22 @@ export const PLAYER_BADGE_LABELS:Record<PlayerBadgeId,string>={
  founder:'Founder',veteran:'Veteran',guild_leader:'Guild Leader',
  community_champion:'Community Champion',event_champion:'Event Champion',
 };
+/** Friendly explanations for badge info bubbles, independent of ownership or unlock state. */
+export const PLAYER_BADGE_DESCRIPTIONS:Record<PlayerBadgeId,string>={
+ admin:'Official Veldryn administrator.',
+ moderator:'Official Veldryn community moderator.',
+ vip:'VIP membership badge.',
+ vip_plus:'VIP+ membership badge.',
+ supporter:'Awarded for supporting Veldryn.',
+ supporter_3m:'Three verified months of Supporter membership.',
+ supporter_6m:'Six verified months of Supporter membership.',
+ supporter_12m:'Twelve verified months of Supporter membership.',
+ founder:'Awarded to founding players of Veldryn.',
+ veteran:'Recognizes 90 days of adventuring in Veldryn.',
+ guild_leader:'Recognizes leadership of an active guild.',
+ community_champion:'Awarded for outstanding community contributions.',
+ event_champion:'Awarded for special event achievements.',
+};
 export const PLAYER_BADGE_UNLOCK_HINTS:Record<CollectiblePlayerBadgeId,string>={
  founder:'Awarded to founding players.',
  veteran:'Play Veldryn for 90 days.',

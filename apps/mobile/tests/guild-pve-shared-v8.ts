@@ -169,6 +169,22 @@ async function main(){
   assert.equal(node(orderRun,id,START+8*DAY).transitions.length,2,
    'a three-phase guardian passes both thresholds once');
 
+ // Pressure must stay inside the UI-safe 0..100 interval under repeated
+ // committed Assaults, and Guard/Rally must lower rather than inflate it.
+ const pressureRun=create('GXV8_PRESSURE',members(12),{attack:5000});
+ for(let i=0;i<10;i++){
+  const p=await pressureRun.commit(fight('GX8_FX_'+i,'C1-04',
+   'PRESSURE_ASSAULT_'+i,'Assault'),START+DAY);
+  assert.equal(p.costSeals,1);
+ }
+ assert.equal(pressureRun.snapshot(START).pressure,100);
+ const guardPressure=await pressureRun.commit(fight('GX8_FX_10','C1-04',
+  'PRESSURE_GUARD_10','Guard'),START+DAY);
+ assert.equal(guardPressure.afterPressure,84);
+ const rallyPressure=await pressureRun.commit(fight('GX8_FX_11','C1-04',
+  'PRESSURE_RALLY_11','Rally'),START+DAY);
+ assert.equal(rallyPressure.afterPressure,72);
+
  // First successful action binds an account to this guild for the whole cycle;
  // a different guild using the same shared *in-memory* registry must reject it.
  const bindings=new GuildPveV8CycleBindings();

@@ -168,7 +168,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.guilds(id,name,owner_account_id,level,xp,member_cap)
-  VALUES(v_guild,'QA Ranking '||substr(v_guild::text,1,8),v_account,9,1234,12);
+  VALUES(v_guild,'Guild'||translate(substr(md5(v_guild::text),1,12),'0123456789abcdef','abcdefghijklmnop'),v_account,9,1234,12);
   INSERT INTO public.guild_members(guild_id,account_id,role)
   VALUES(v_guild,v_account,'leader');
 

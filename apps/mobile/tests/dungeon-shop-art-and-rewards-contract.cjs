@@ -24,7 +24,8 @@ for(const region of regions)for(const kind of kinds){
  const bytes=fs.readFileSync(path.join(root,file));
  assert(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),file+' is not PNG');
  assert(bytes.length>=200,file+' suspiciously empty');
- if(kind!=='icon')assert(collector.includes(offer.replace('dshop_','').replace('_','')), 'check collectible metadata for '+offer);
+ if(kind==='pet')assert(collector.includes('DUNGEON_PET_'+region.toUpperCase()+'_001'),'missing pet reward '+region);
+ else assert(collector.includes("dungeon:"+region+":"),'missing regional reward '+region);
 }
 for(const id of ['dshop_tempering_satchel','dshop_gem_dust_cache','dshop_tempering_core_cache']){
  assert(catalog.includes(id),'missing material '+id);

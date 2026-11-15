@@ -1,5 +1,6 @@
 import {RANKING_BOARDS,rankingBoardDefinition,rankingValueLabel,type RankingEntry} from '../src/core/rankings';
 import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay} from '../src/core/ranking-pagination';
+import {rankingsShouldStack,RANKINGS_MIN_TAP_TARGET} from '../src/core/rankings-responsive';
 const assert=(condition:boolean,message:string)=>{if(!condition)throw new Error(message)};
 assert(RANKING_BOARDS.length===19,'expected all rankings');
 assert(rankingBoardDefinition('arena_rating').unit==='rating','arena unit');
@@ -41,4 +42,11 @@ for(const invalidSize of [0,2.5,100]){
  let failed=false;try{rankingPageOffset(0,invalidSize)}catch{failed=true}
  assert(failed,'invalid page size must throw: '+String(invalidSize));
 }
+assert(rankingsShouldStack(320,1),'320px handset must stack rows');
+assert(rankingsShouldStack(359,1),'359px handset must stack rows');
+assert(!rankingsShouldStack(360,1),'normal 360px screen may use horizontal rows');
+assert(rankingsShouldStack(412,1.25),'larger accessibility text must stack rows');
+assert(rankingsShouldStack(480,2),'200 percent text scaling must stack rows');
+assert(rankingsShouldStack(Number.NaN,1),'unstable display width must fail compact');
+assert(RANKINGS_MIN_TAP_TARGET>=44,'page navigation must retain an accessible touch target');
 console.log('rankings core + pagination PASS');

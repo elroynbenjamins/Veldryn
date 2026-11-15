@@ -175,7 +175,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
    <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
-    <Text style={s.itemName}>{p(pendingRows.length===1?'{count} copy · {gold} Gold':'{count} copies · {gold} Gold',{count:pendingRows.length,gold:pendingGold.toLocaleString(language)})}</Text>
+    <Text style={s.itemName}>{p('{count} selected {unit}',{count:pendingRows.length,unit:pendingRows.length===1?'copy':'copies'})}</Text>
+    <Text style={[s.itemName,{color:C.good}]}>{p('You receive: +{gold} Gold',{gold:pendingGold.toLocaleString(language)})}</Text>
     <Text style={s.meta}>{p('This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}</Text>
     {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>

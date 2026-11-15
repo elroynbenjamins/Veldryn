@@ -52,7 +52,7 @@ import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDispose
 import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
-import {monsterMastery,recordMonsterMastery} from './monster-mastery';
+import {monsterMasteryCombatBonuses,recordMonsterMastery} from './monster-mastery';
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
@@ -455,6 +455,9 @@ function regionalHuntSeed(state:GameState,monsterId:string,index:number){
 function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now()){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
   const m=baseMonster,stats=effectiveStats(state),modifiers=characterPermanentMultipliers(state),companion=companionCombatContribution(state);
+  // Resolve overlapping mastery once for this encounter. A family bonus
+  // never leaks to a monster with a different authored enemy type.
+  const masteryBonuses=monsterMasteryCombatBonuses(state,monsterId);
   const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.kind==='combat'?state.activity.combatTacticId:undefined);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
@@ -488,14 +491,14 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const gearAttritionMultiplier=1+tierGap*MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   // Legacy preparations are inert outside dungeons; dungeon boosts use a server-owned snapshot.
   const outgoingPreparation=c.preparation?preparationEffects(c.preparation).outgoing:1;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*masteryBonuses.damageMultiplier*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
   // Early regions resolve actual landed attacks rather than scaling an
   // authored monster timer. Crits and misses can change the number of swings;
   // the search phase limits easy-area kill rates without artificial HP.
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
     playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
+      setCombat.penetrationMultiplier*masteryBonuses.damageMultiplier*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
@@ -886,7 +889,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   for(const drop of m.drops){const dropDef=itemDef(drop.itemId),blueprintKnowledge=dropDef.knowledgeUnlockId;if(blueprintKnowledge&&((state.account.unlockedKnowledgeIds??[]).includes(blueprintKnowledge)||combinedQty(state,drop.itemId)+(state.overflow.stacks.find(stack=>stack.itemId===drop.itemId)?.quantity??0)>0))continue;let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++){if(random01(seed,i)>=chance)continue;qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(blueprintKnowledge){qty=1;break;}}if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
   const candyKills=sim.completed.filter(row=>row.candy).length,combatCandy=sim.kills?1+.1*candyKills/sim.kills:1;
   const classGain=awardCombatClassXp(state.character,sim.kills,m.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*combatCandy,state.activity.classFocus);
-  const mastery=monsterMastery(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
+  const mastery=monsterMasteryCombatBonuses(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);

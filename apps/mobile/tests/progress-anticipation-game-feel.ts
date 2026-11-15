@@ -1,4 +1,5 @@
 import {contractAnticipation,forgeAnticipation,masteryMilestoneAnticipation,pityAnticipation,progressAnticipation} from '../src/core/progress-anticipation';
+import {monsterMasteryKillsForRank} from '../src/core/monster-mastery';
 
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -14,7 +15,7 @@ equal(contractAnticipation(9,10).band,'next','one contract progress remaining sh
 equal(forgeAnticipation(45,600).band,'near','Forge jobs under one minute should surface finishing soon');
 equal(forgeAnticipation(10,600).band,'urgent','Forge jobs in the last seconds should say almost done');
 
-const mastery=masteryMilestoneAnticipation(497);
+const mastery=masteryMilestoneAnticipation(monsterMasteryKillsForRank(20)-3);
 equal(mastery?.rank,20,'mastery anticipation must target the next meaningful milestone');
 equal(mastery?.remaining,3,'mastery milestone must expose exact kills remaining');
 equal(mastery?.label,'elite knowledge','rank-20 mastery anticipation must describe the unlock');

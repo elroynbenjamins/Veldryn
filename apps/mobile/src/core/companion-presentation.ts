@@ -6,7 +6,7 @@ import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {characterClassSkills} from './class-skills';
-import {monsterMastery} from './monster-mastery';
+import {monsterMastery,monsterMasteryRankFromKills,monsterMasteryKillsForRank} from './monster-mastery';
 
 export function companionMaterialName(id:string){return ITEMS.find(item=>item.id===id)?.name??id.toLowerCase().replace(/_/g,' ').replace(/^./,s=>s.toUpperCase());}
 export type CompanionMaterialSourceTarget=
@@ -46,7 +46,7 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  const rosterCharacters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is NonNullable<GameState['character']>=>!!row);
  if(target==='KNIFE_DANCER_SKILL_TOTAL')current=Math.max(0,...rosterCharacters.filter(character=>character.classId==='KNIFE_DANCER').map(character=>characterClassSkills(character).reduce((sum,s)=>sum+s.level,0)));
 
- if(req.type==='monster_mastery'&&MONSTERS.some(m=>m.id===target))current=Math.max(monsterMastery(state,target).rank,...rosterCharacters.map(character=>Math.floor((character.monsterMasteryPoints?.[target]??0)/25)));
+ if(req.type==='monster_mastery'&&MONSTERS.some(m=>m.id===target))current=Math.max(current,monsterMastery(state,target).rank,...rosterCharacters.map(character=>monsterMasteryRankFromKills(character.monsterMasteryPoints?.[target]??0)));
 
  if(req.type==='quest')current=[state.quests,...(state.otherCharacters??[]).map(row=>row.quests)].some(quests=>quests.some(q=>q.questId===target&&q.status==='claimed'))?1:0;
  if(req.type==='skill_level')current=Math.max(0,...[state.skills,...(state.otherCharacters??[]).map(row=>row.skills)].map(skills=>skills.find(s=>s.skillId===target)?.level??0));
@@ -88,7 +88,7 @@ const rarityPriority:Record<CompanionDefinition['rarity'],number>={standard:0,ra
 export function companionUnlockRequirementGuidance(req:CompanionDefinition['unlockRequirements'][number]){
  const target=req.target??'',amount=Math.max(1,req.amount??1);
  if(req.type==='quest')return {label:'Continue the campaign',detail:req.description};
- if(req.type==='monster_mastery')return {label:`Hunt ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Raise Monster Mastery to ${amount}.`};
+ if(req.type==='monster_mastery')return {label:`Hunt ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Reach Monster Mastery Rank ${amount} (${monsterMasteryKillsForRank(amount).toLocaleString('en-GB')} total kills).`};
  if(req.type==='skill_level')return {label:`Train ${target.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}`,detail:`Reach skill level ${amount}.`};
  if(req.type==='collection'&&target==='SILVERBROOK_NODES')return {label:'Explore Silverbrook fishing spots',detail:'Fish at Silverbrook Shoal and River Eel Pool once each (Fishing 8).'};
  if(req.type==='boss_kills')return {label:`Challenge ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Defeat it ${amount} time${amount===1?'':'s'}.`};

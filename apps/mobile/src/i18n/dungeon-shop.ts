@@ -52,6 +52,9 @@ export const germanDungeonShopCopy:Readonly<Record<string,string>>={
  'background':'Hintergrund',
  'pet':'Haustier',
  'Profile icon · visual only':'Profilsymbol · nur optisch',
+ 'While equipped':'Beim Ausrüsten',
+ 'Permanent when owned':'Dauerhaft im Besitz',
+ 'Preview price':'Vorschaupreis',
 };
 
 /** Translate only the exact English name tied to its immutable catalogue ID. */
@@ -103,15 +106,49 @@ const bonusNames:Readonly<Record<string,string>>={
  actionSpeed:'Aktionsgeschwindigkeit',
 };
 
-/** The Edge service emits only these reviewed offer-summary structures. */
+const englishBonusNames:Readonly<Record<string,string>>={
+ craftingSpeed:'Crafting speed',
+ skillXp:'Skill XP',
+ dropChance:'Drop chance',
+ gatheringYield:'Gathering yield',
+ hp:'Maximum HP',
+ healingEffectiveness:'Healing effectiveness',
+ fishingSpeed:'Fishing speed',
+ defense:'Defense',
+ actionSpeed:'Action speed',
+};
+
+const bonusPattern=/^\+ ([0-9]+\.[0-9]{2})% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+\.[0-9]{2})% owned$/;
+
+/** Present known backend bonus keys as friendly labels; leave unexpected
+ * server text unchanged rather than guessing what an effect means. */
+export function dungeonShopOfferBonusDetails(language:Language,source:string):{
+ stat:string;equipped:string;owned:string;
+}|null{
+ const match=bonusPattern.exec(source);
+ if(!match)return null;
+ const percentage=(value:string)=>{
+  const concise=value.replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
+  return '+'+(language==='de'?concise.replace('.',',')+' %':concise+'%');
+ };
+ return {
+  stat:language==='de'?bonusNames[match[2]]:englishBonusNames[match[2]],
+  equipped:percentage(match[1]),
+  owned:percentage(match[3]),
+ };
+}
+
+/** Player-readable copy for every verified server offer summary. */
 export function dungeonShopOfferSummary(language:Language,source:string):string{
+ const bonus=dungeonShopOfferBonusDetails(language,source);
+ if(bonus)return language==='de'
+  ?bonus.equipped+' '+bonus.stat+' beim Ausrüsten; '+bonus.owned+' dauerhaft im Besitz'
+  :bonus.equipped+' '+bonus.stat+' while equipped; '+bonus.owned+' permanently once owned';
  if(language!=='de')return source;
  const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
  if(material)return material[1]+' × '+materialNames[material[2]];
  const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);
  if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?(essence[1]==='1'?'Bindungsstein':'Bindungssteine'):'Begleiteressenz');
- const bonus=/^\+ ([0-9]+\.[0-9]{2})% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+\.[0-9]{2})% owned$/.exec(source);
- if(bonus)return '+'+bonus[1].replace('.',',')+' % '+bonusNames[bonus[2]]+' ausgerüstet; +'+bonus[3].replace('.',',')+' % im Besitz';
  return dungeonShopText(language,source);
 }
 

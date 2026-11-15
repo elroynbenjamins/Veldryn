@@ -93,6 +93,7 @@ async function main(){
   cohort:string;boss:string;phase:string;size:number;
   rounds:number;hp:number;guard:number;worldHpPreview:number;
   healed:number;protection:number;shieldConsumed:number;
+  soloWorldHpPreview:number;fiveVsSolo:number|null;
  }>=[];
  for(const cohort of cohorts){
   const verified=await resolveCohort(cohort);
@@ -111,6 +112,7 @@ async function main(){
     attack:cohort.attack,defense:cohort.defense,
     guardMax:cohort.guardMax,
    });
+   let soloWorldHpPreview=0;
    for(let size=1;size<=5;size++){
     const roster=freezeWorldBossAccountRosterV22({
      accountId:ACCOUNT,atUtcMs:NOW,verified:verified.slice(0,size),
@@ -150,12 +152,15 @@ async function main(){
     if(!result.survived)wipes++;
     if(result.events.some(e=>e.type==='telegraph'&&
      e.abilityId===signature[boss][phase]))signatureObserved++;
+    if(size===1)soloWorldHpPreview=result.proposedWorldHpDamage;
     if(size===5)sampleResults.push({
      cohort:cohort.name,boss,phase,size,
      rounds:result.roundsCompleted,hp:result.rawBossHpDamage,
      guard:result.localGuardDamage,
      worldHpPreview:result.proposedWorldHpDamage,
-     healed,protection,shieldConsumed,
+     healed,protection,shieldConsumed,soloWorldHpPreview,
+     fiveVsSolo:soloWorldHpPreview>0?
+      result.proposedWorldHpDamage/soloWorldHpPreview:null,
     });
     if(fights===0){
      const replayed=simulateWorldBossAuthoredAccountEncounterV25(args);
@@ -244,6 +249,8 @@ async function main(){
  assert.equal(fights,90);
  assert.equal(tactical,36);
  assert.equal(sampleResults.length,18);
+ assert.ok(sampleResults.every(x=>x.fiveVsSolo===null||
+  Number.isFinite(x.fiveVsSolo)&&x.fiveVsSolo>=0));
  // A replay is a concrete event ledger, not a narrative proof of balance.
  // Unique telegraphs must appear for the three bosses across all phases.
  assert.ok(signatureObserved>=50,'boss telegraph signatures should be visible');

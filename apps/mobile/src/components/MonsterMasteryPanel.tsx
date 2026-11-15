@@ -5,6 +5,7 @@ import {companionContent,companionTranslator,companionLabel} from '../i18n/compa
 import {formatLocalizedNumber} from '../i18n/translator';
 import type {GameState} from '../core/types';
 import {MONSTERS} from '../content/monsters';
+import {enemyFamilyById} from '../content/enemy-families';
 import {itemDef} from '../content/items';
 import {monsterMasteryGuidance,masterySummary,MONSTER_MASTERY_MILESTONES} from '../core/monster-mastery-presentation';
 import {monsterMasteryCombatBonuses,monsterMasteryKillsForRank,MONSTER_MASTERY_MAX_KILLS} from '../core/monster-mastery';
@@ -51,6 +52,7 @@ export function MonsterMasteryPanel({state}:{state:GameState}){
    {available.map(monster=>{
     const p=monsterMasteryGuidance(state,monster.id);
     const {family,familyId}=monsterMasteryCombatBonuses(state,monster.id);
+    const familyName=familyId?enemyFamilyById(familyId)?.name:undefined;
     const familyKnowledge=family?.dropKnowledge??false;
     const expanded=expandedSpeciesId===monster.id;
     return <View key={monster.id} style={styles.entry}>
@@ -73,7 +75,7 @@ export function MonsterMasteryPanel({state}:{state:GameState}){
       <Text style={styles.bonus}>+{percent(p.materialBonus)}% {localized('normal materials')}</Text>
      </View>
      {expanded&&<>
-      {family&&<Text style={styles.familyStack}>{localized('Enemy type')} {familyId} · +{percent(family.damageBonus)}% {localized('damage')} · +{percent(family.materialBonus)}% {localized('normal materials')}</Text>}
+      {family&&<Text style={styles.familyStack}>{localized('Enemy type')} {localized(familyName??familyId??'')} · +{percent(family.damageBonus)}% {localized('damage')} · +{percent(family.materialBonus)}% {localized('normal materials')}</Text>}
       {p.next?<View style={styles.next}>
        <Text style={styles.nextLabel}>{t("NEXT MILESTONE · RANK {value0}",{value0:p.next.rank})} · {num(monsterMasteryKillsForRank(p.next.rank))} {localized('kills')}</Text>
        <Text style={styles.nextTitle}>{localized(p.next.label)}</Text>

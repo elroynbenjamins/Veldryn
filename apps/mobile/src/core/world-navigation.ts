@@ -100,7 +100,13 @@ export function regionEncounters(state:GameState,zoneName:string,query:string,av
   if(zone&&worldZoneInDevelopment(zone))return [];
   const regionId=zone?.id;
   const area=regionId?regionalArea(regionId,areaId):undefined;
-  return MONSTERS.filter(monster=>monster.zone===zoneName&&(!area||monster.areaId===area.id)&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
+  const encounters=MONSTERS.filter(monster=>monster.zone===zoneName&&(!area||monster.areaId===area.id)&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
+  // Authoring order differs from level order in Mirage Basin and Whitepine Reach.
+  // Show the easiest enemy first in the new 25-level chapters; do not
+  // rearrange the historical Asterfall hunt list or its tutorial order.
+  return regionId==='SUNSCAR'||regionId==='FROSTMARCH'
+    ?encounters.sort((a,b)=>a.level-b.level||a.unlockLevel-b.unlockLevel||a.id.localeCompare(b.id))
+    :encounters;
 }
 export type EncounterLockRequirement=
   |{kind:'level';level:number}

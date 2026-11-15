@@ -47,6 +47,7 @@ assert.equal(configured.state.character?.bossPotionThresholdPct,80);
 const automatic=startStoryBossSession(configured.state,start);
 assert.equal(automatic.state.storyBossSession?.healingMode,'auto');
 assert.equal(automatic.state.storyBossSession?.autoThresholdPct,80);
+assert.ok(automatic.battle.events.some(e=>e.type==='heal'&&e.atMs===40),'auto mode heals immediately when already below the chosen HP threshold');
 let blockedManualInAuto=false;
 try{healStoryBossSession(automatic.state,start+250);}catch{blockedManualInAuto=true;}
 assert.ok(blockedManualInAuto,'auto mode does not accept manual healing commands');

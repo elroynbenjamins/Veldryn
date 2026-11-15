@@ -67,7 +67,7 @@ function asterfallSignatureEffects(id:string):EngineAbilityEffect[]{
   case 'UNIT_008':return [{kind:'cleanse',tag:'dawn_pinion'}];
   case 'UNIT_009':return [{kind:'debuff',value:.03,durationMs:5000,tag:'damage_taken'}];
   case 'UNIT_010':return [{kind:'debuff',value:.035,durationMs:7000,tag:'damage_taken'}];
-  case 'UNIT_011':return [{kind:'debuff',value:.025,durationMs:6000,tag:'damage_taken'}];
+  case 'UNIT_011':return [{kind:'debuff',value:.04,durationMs:6000,tag:'hit_taken'}];
   default:return [];
  }
 }
@@ -75,7 +75,7 @@ function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnap
  const identity=identityModifiers(def,progress),levelCoeff=balancedActiveCoeff(def,progress),tDamage=effectValue(progress,'damage'),tHeal=effectValue(progress,'heal_strength'),tShield=effectValue(progress,'shield_strength');
  const signature=asterfallSignatureEffects(def.id);
  switch(def.active.effectKind){
-  case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)*identity.activeDamageMultiplier),executeBelowHpPct:.30,executeBonus:Math.min(.30,effectValue(progress,'execute')+identity.activeExecuteBonus),tag:'companion_active'},...signature];
+  case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)*identity.activeDamageMultiplier),executeBelowHpPct:.30,executeBonus:Math.min(.30,effectValue(progress,'execute')+identity.activeExecuteBonus),...(def.id==='UNIT_009'?{bonusVsDebuffed:.12}:{}),tag:'companion_active'},...signature];
   case 'shield':return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)*identity.activeShieldMultiplier),shieldReflectPct:Math.min(.30,effectValue(progress,'reflect')+identity.activeReflectPct),tag:'companion_active'},...signature];
   case 'heal':return [{kind:'heal',coeff:Math.max(.02,levelCoeff*(1+tHeal)*identity.activeHealMultiplier),tag:'companion_active'},...signature];
   case 'interrupt':return [{kind:'damage',coeff:Math.max(.50,levelCoeff*.9),tag:'companion_active'},{kind:'interrupt',coeff:1,tag:'companion_interrupt'}];

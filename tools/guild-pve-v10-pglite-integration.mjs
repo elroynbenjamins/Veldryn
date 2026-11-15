@@ -15,8 +15,9 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const requireBackend=createRequire(new URL('../backend/package.json',import.meta.url));
 const modulePath=requireBackend.resolve('@electric-sql/pglite');
-const {PGlite}=await import(modulePath);
-assert.equal(typeof PGlite.create,'function','PGlite must support async initialization');
+const pgliteModule=await import(modulePath);
+const PGlite=pgliteModule.PGlite??pgliteModule.default?.PGlite??pgliteModule.default;
+assert.equal(typeof PGlite?.create,'function','PGlite must support async initialization');
 const {GuildPveV10SqlAtomicPort,GUILD_PVE_V10_LIVE}=
  requireBackend('./dist-v10/server/combat/guild-pve-pg-v10.js');
 const {GuildPveV9TransactionService,makeGuildPveV9Run,registerGuildPveV9TestRun}=

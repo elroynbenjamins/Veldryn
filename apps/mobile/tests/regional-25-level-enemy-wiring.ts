@@ -3,6 +3,8 @@ import {REGIONAL_AREAS,regionAreas} from '../src/content/regional-areas';
 import {WORLD_ZONES} from '../src/content/world-map';
 import {encounterIdentity,encounterProfileCoverage} from '../src/core/encounter-identity';
 import {regionalEnemySecondaryStats} from '../src/core/regional-enemy-stats';
+import {regionalClassCounter,regionalCounterCoverage} from '../src/core/regional-class-counter';
+import {CLASSES} from '../src/content/classes';
 import {validateRegionalAreaContent} from '../src/core/region-area-activities';
 
 const fs=require('fs') as {
@@ -53,6 +55,16 @@ for(const [region,minimum,maximum] of [['SUNSCAR',26,50],['FROSTMARCH',51,75]] a
  }
  check(encounterProfileCoverage(local).missing.length===0,region+' monster identity coverage incomplete');
 }
+const covered=new Set(regionalCounterCoverage());
+for(const cls of CLASSES)check(covered.has(cls.id),cls.id+' requires at least one favorable monster');
+for(const [id] of models){
+ for(const cls of CLASSES){
+  const counter=regionalClassCounter(id,cls.id);
+  check(counter.outputMultiplier>=1&&counter.outputMultiplier<=1.07,id+'/'+cls.id+' output advantage out of range');
+  check(counter.incomingMultiplier>=.93&&counter.incomingMultiplier<=1,id+'/'+cls.id+' defensive advantage out of range');
+ }
+}
+check(regionalClassCounter('MOSS_RAT','WAYFINDER').outputMultiplier===1,'Asterfall must retain neutral regional matchup');
 check(REGIONAL_AREAS.length===8,'Do not introduce additional subzones');
 check(MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')?.level===25,'Asterfall story boss unchanged');
 console.log('PASS regional enemy wiring: 8 new portraits, 24 normal hunts, overlapping 26–75 chapter bands');

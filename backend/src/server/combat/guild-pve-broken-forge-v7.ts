@@ -109,7 +109,7 @@ export function draftBrokenForgeGuardianV7(input:{
  const f=difficultyFactor[input.difficulty];
  const phaseNo=GUILD_PVE_V7_PHASES[input.boss].indexOf(input.phase);
  const hpFactor=input.boss==='warden'?1.4:input.boss==='seer'?1.12:1;
- const attackFactor=input.boss==='warden'?1.08:input.boss==='seer'?.95:1;
+ const attackFactor=input.boss==='warden'?1.08:input.boss==='seer'?0.95:1;
  return {
   id:'GX_'+input.boss+'_'+input.phase,
   name:input.boss==='gatekeeper'?'Ironbound Gatekeeper':
@@ -135,7 +135,7 @@ function preparedActor(actor:CombatantDefinition,stance:GuildPveStanceV7):Combat
   throw Error('guild_pve_v7_invalid_verified_actor');
  if(stance==='Assault')return actor;
  const stats={...actor.stats,
-  attackPower:actor.stats.attackPower*(stance==='Guard'?.80:.75),
+  attackPower:actor.stats.attackPower*(stance==='Guard'?0.80:0.75),
   defense:actor.stats.defense*(stance==='Guard'?1.20:1),
   healingPower:actor.stats.healingPower*(stance==='Rally'?1.20:1),
  };

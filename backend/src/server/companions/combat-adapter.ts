@@ -54,17 +54,37 @@ function balancedActiveCoeff(def:CompanionServerDefinition,progress:OwnedCompani
  // so abilities keep identity while the new rarity budget remains the main tier edge.
  return def.active.effectKind==='damage'?1+(raw-1)*.25:raw;
 }
+/** Status effects shared with the authored Asterfall ability names. They use
+ * normal engine statuses and short durations, so they cannot become permanent
+ * boss debuffs or unbounded passive stat multipliers. */
+function asterfallSignatureEffects(id:string):EngineAbilityEffect[]{
+ switch(id){
+  case 'UNIT_001':return [{kind:'debuff',value:-.035,durationMs:5000,tag:'damage_done'}];
+  case 'UNIT_002':return [{kind:'buff',value:-.02,durationMs:4000,tag:'damage_taken'}];
+  case 'UNIT_003':return [{kind:'hot',coeff:.005,tickMs:2000,durationMs:4000,tag:'silver_current'}];
+  case 'UNIT_004':return [{kind:'debuff',value:.035,durationMs:5000,tag:'damage_taken'}];
+  case 'UNIT_006':return [{kind:'buff',value:-.025,durationMs:5000,tag:'damage_taken'}];
+  case 'UNIT_008':return [{kind:'cleanse',tag:'dawn_pinion'}];
+  case 'UNIT_009':return [{kind:'debuff',value:.03,durationMs:5000,tag:'damage_taken'}];
+  case 'UNIT_010':return [{kind:'debuff',value:.035,durationMs:7000,tag:'damage_taken'}];
+  case 'UNIT_011':return [{kind:'debuff',value:.025,durationMs:6000,tag:'damage_taken'}];
+  default:return [];
+ }
+}
 function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):EngineAbilityEffect[]{
  const identity=identityModifiers(def,progress),levelCoeff=balancedActiveCoeff(def,progress),tDamage=effectValue(progress,'damage'),tHeal=effectValue(progress,'heal_strength'),tShield=effectValue(progress,'shield_strength');
+ const signature=asterfallSignatureEffects(def.id);
  switch(def.active.effectKind){
-  case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)*identity.activeDamageMultiplier),executeBelowHpPct:.30,executeBonus:Math.min(.30,effectValue(progress,'execute')+identity.activeExecuteBonus),tag:'companion_active'}];
-  case 'shield':return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)*identity.activeShieldMultiplier),shieldReflectPct:Math.min(.30,effectValue(progress,'reflect')+identity.activeReflectPct),tag:'companion_active'},...(def.id==='UNIT_008'&&context.mode==='companion_trial'?[{kind:'cleanse' as const,tag:'poison_cleanse'}]:[])];
-  case 'heal':return [{kind:'heal',coeff:Math.max(.02,levelCoeff*(1+tHeal)*identity.activeHealMultiplier),tag:'companion_active'}];
-  case 'interrupt':return context.mode==='character_assist'?[{kind:'interrupt',coeff:Math.max(.05,levelCoeff),tag:'companion_active'}]:[{kind:'damage',coeff:Math.max(.50,levelCoeff*.9),tag:'companion_active'},{kind:'interrupt',coeff:1,tag:'companion_interrupt'}];
+  case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)*identity.activeDamageMultiplier),executeBelowHpPct:.30,executeBonus:Math.min(.30,effectValue(progress,'execute')+identity.activeExecuteBonus),tag:'companion_active'},...signature];
+  case 'shield':return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)*identity.activeShieldMultiplier),shieldReflectPct:Math.min(.30,effectValue(progress,'reflect')+identity.activeReflectPct),tag:'companion_active'},...signature];
+  case 'heal':return [{kind:'heal',coeff:Math.max(.02,levelCoeff*(1+tHeal)*identity.activeHealMultiplier),tag:'companion_active'},...signature];
+  case 'interrupt':return [{kind:'damage',coeff:Math.max(.50,levelCoeff*.9),tag:'companion_active'},{kind:'interrupt',coeff:1,tag:'companion_interrupt'}];
   case 'mitigation':return [{kind:'buff',value:-Math.max(.01,levelCoeff*identity.mitigationMultiplier),durationMs:5000,tag:'damage_taken'}];
   case 'utility':default:
+   // Support utility must affect a real engine modifier, not a decorative tag.
+   if(def.id==='UNIT_012')return [{kind:'buff',value:clamp(.05*identity.utilityMultiplier,.03,.07),durationMs:6000,tag:'damage_done'}];
    if(def.role==='support'&&context.mode!=='character_assist')return [{kind:'heal',coeff:clamp(levelCoeff*.18,.035,.08)*(1+tHeal)*identity.activeHealMultiplier*identity.utilityMultiplier,tag:'companion_utility'}];
-   return def.role==='support'?[{kind:'buff',value:Math.max(.01,levelCoeff*identity.utilityMultiplier),durationMs:5000,tag:'companion_utility'}]:[{kind:'damage',coeff:Math.max(.05,levelCoeff*identity.activeDamageMultiplier),tag:'companion_active'}];
+   return def.role==='support'?[{kind:'buff',value:clamp(levelCoeff*identity.utilityMultiplier,.03,.07),durationMs:5000,tag:'damage_done'}]:[{kind:'damage',coeff:Math.max(.05,levelCoeff*identity.activeDamageMultiplier),tag:'companion_active'}];
  }
 }
 export function buildCompanionCombatant(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):CompanionCombatantDefinition{
@@ -77,7 +97,7 @@ export function buildCompanionCombatant(def:CompanionServerDefinition,progress:O
  // companion-only combat without inflating character-assist output.
  const standalone=context.mode!=='character_assist';
  const healingPower=standalone?(def.role==='support'?maxHp*2.5:def.role==='tank'?maxHp*2:attackPower*.35):base.power*(def.role==='support'?.9:.35)*derived;
- const ability:EngineAbilityDefinition={id:def.active.id,name:def.active.name,cooldownMs:Math.max(3000,Math.round(def.active.cooldownMs*identity.activeCooldownMultiplier*(1+cooldownChange))),castTimeMs:0,target:def.active.effectKind==='interrupt'&&context.mode==='companion_trial'?'interruptible_casting_enemy':target.target,exactTargetId:target.exactTargetId,effects:engineEffects(def,progress,context),priority:def.role==='support'?85:def.role==='tank'?80:70,aiCondition:context.mode==='companion_trial'&&def.active.effectKind==='interrupt'?'target_casting':context.mode==='companion_trial'&&def.id==='UNIT_008'?'ally_below_50_or_dot':def.role==='support'?'ally_below_50':'always',tags:['combat_companion',def.role,context.mode,...techniqueEffects(progress).map(x=>`technique:${x.kind}:${x.value}`)]};
+ const ability:EngineAbilityDefinition={id:def.active.id,name:def.active.name,cooldownMs:Math.max(3000,Math.round(def.active.cooldownMs*identity.activeCooldownMultiplier*(1+cooldownChange))),castTimeMs:0,target:def.active.effectKind==='interrupt'?'interruptible_casting_enemy':target.target,exactTargetId:target.exactTargetId,effects:engineEffects(def,progress,context),priority:def.role==='support'?85:def.role==='tank'?80:70,aiCondition:def.active.effectKind==='interrupt'?'target_casting':def.id==='UNIT_008'?'ally_below_50_or_dot':def.active.effectKind==='heal'?'ally_below_80':'always',tags:['combat_companion',def.role,context.mode,...techniqueEffects(progress).map(x=>`technique:${x.kind}:${x.value}`)]};
  return {id:def.id,name:def.name,team:'players',role:def.role,level:progress.level,stats:{maxHp,attackPower,healingPower:Number(healingPower.toFixed(2)),defense:Number((base.defense*derived*identity.defenseMultiplier).toFixed(2)),accuracy:Math.min(.98,.84+progress.level*.002),evasion:Math.min(.22,.04+(def.role==='damage'?.03:0)),critChance:def.role==='damage'?.10:.05,critMultiplier:1.5,haste:Math.min(.45,.04+hasteBonus+identity.hasteBonus+Math.max(0,2.5-base.attackSpeed)*.03)},basicAttackMs:Math.max(850,Math.round(base.attackSpeed*1000)),basicAttackCoeff:(def.role==='damage'?.72:def.role==='tank'?.46:.40)*identity.basicDamageMultiplier,abilities:[ability],tags:['combat_companion',def.rarity,def.originId,context.mode]};
 }
 export function buildOwnedCompanionCombatant(progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext){const def=companionServerDefinition(progress.companionId);if(!def)throw new Error('unknown_companion');return buildCompanionCombatant(def,progress,context);}

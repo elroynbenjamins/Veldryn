@@ -109,7 +109,6 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
   {expanded?<View style={s.detail} accessibilityLiveRegion="polite">
    <Text style={s.detailText}>{expanded==='companion'?
     (setup.companion?st('Companion assists are part of your dungeon loadout.'):st('Equip a companion before joining a queue.')):
-    expanded==='healing'?
     (setup.healing?st('Healing uses carried potions; food is disabled in dungeons.'):st('Choose your healing potion in the HP menu before queuing.'))}</Text>
   </View>:null}
  </View>

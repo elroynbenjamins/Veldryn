@@ -48,7 +48,6 @@ const bad=():never=>{throw new MarketRequestError('market_invalid_request',400);
 function validate(operation:string,method:string,query:URLSearchParams,body:unknown):MarketOperation{
   const params:string[]=[];
   query.forEach((_value,key)=>params.push(key));
-  if(params.some(k=>!['view','action','history','offset'].includes(k)))bad();
   if(operation==='browse'){
     if(method!=='GET'||body!==null)bad();
     const keys=['view','action','kind','itemId','search','sort','minGold','maxGold','limit','offset'];
@@ -68,7 +67,7 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
     if(!['all','resource','equipment'].includes(kind)
       ||!['price_asc','price_desc','newest'].includes(sort)
       ||(itemId!==null&&(itemId.length>180||!/^[A-Za-z0-9_:-]+$/.test(itemId)))
-      ||(search!==null&&(search.length>60||!/^[A-Za-z0-9_ :\\-]+$/.test(search))))bad();
+      ||(search!==null&&(search.length>60||!/^[A-Za-z0-9_ :-]+$/.test(search))))bad();
     const minTotalGold=minText===null?null:parse(minText,1,1,1000000000000000);
     const maxTotalGold=maxText===null?null:parse(maxText,1,1,1000000000000000);
     if(minTotalGold!==null&&maxTotalGold!==null&&minTotalGold>maxTotalGold)bad();

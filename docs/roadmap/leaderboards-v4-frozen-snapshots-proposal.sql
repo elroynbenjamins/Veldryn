@@ -209,12 +209,12 @@ BEGIN
     WHERE s.starts_at<=v_now AND s.ends_at>v_now
     ORDER BY s.starts_at DESC LIMIT 1;
   END IF;
-  WITH source AS (
+  WITH source AS MATERIALIZED (
     SELECT r.* FROM private.rankings_frozen_metrics_v1(p_board) r
     WHERE r.entity_type='guild'
       OR EXISTS(SELECT 1 FROM public.player_profiles p
         WHERE p.account_id=r.entity_id AND p.profile_visibility='public')
-  ), ranked AS (
+  ), ranked AS MATERIALIZED (
     SELECT s.*, rank() OVER(
       ORDER BY s.value DESC,s.secondary_value DESC) AS official_rank
     FROM source s
@@ -222,21 +222,20 @@ BEGIN
     SELECT * FROM ranked
     ORDER BY value DESC,secondary_value DESC,entity_id LIMIT 10051
   )
-  SELECT coalesce(jsonb_agg(jsonb_build_object(
-    'entityId',b.entity_id,'entityType',b.entity_type,
-    'rank',b.official_rank,'value',b.value,
-    'secondaryValue',b.secondary_value
-  ) ORDER BY b.value DESC,b.secondary_value DESC,b.entity_id),'[]'::jsonb)
-  INTO v_rows FROM bounded b;
-
-  SELECT jsonb_build_object('listed',true,
-    'rank',(e.item->>'rank')::bigint,
-    'value',(e.item->>'value')::bigint,
-    'secondaryValue',(e.item->>'secondaryValue')::numeric)
-  INTO v_self
-  FROM jsonb_array_elements(v_rows) e(item)
-  WHERE e.item->>'entityType'='account'
-    AND e.item->>'entityId'=p_requester::text LIMIT 1;
+  SELECT
+    coalesce((SELECT jsonb_agg(jsonb_build_object(
+      'entityId',b.entity_id,'entityType',b.entity_type,
+      'rank',b.official_rank,'value',b.value,
+      'secondaryValue',b.secondary_value
+    ) ORDER BY b.value DESC,b.secondary_value DESC,b.entity_id)
+      FROM bounded b),'[]'::jsonb),
+    (SELECT jsonb_build_object('listed',true,'rank',r.official_rank,
+      'value',r.value,'secondaryValue',r.secondary_value)
+     FROM ranked r WHERE r.entity_type='account'
+       AND r.entity_id=p_requester LIMIT 1)
+  INTO v_rows,v_self;
+  -- The personal standing is taken from the entire ranked result, not the
+  -- 10,051-row page cap. A player ranked #50,000 still sees their own rank.
   v_self:=coalesce(v_self,jsonb_build_object(
     'listed',false,'value',0,'reason',
     'This account is not visible on the public ranking.'));

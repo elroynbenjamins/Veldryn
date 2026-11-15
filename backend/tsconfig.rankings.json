@@ -13,6 +13,9 @@
     "src/server/rankings/supabase-ranking-repository.ts",
     "src/server/rankings/__tests__/ranking-application.ts",
     "src/server/rankings/frozen-rankings.ts",
-    "src/server/rankings/__tests__/frozen-rankings.ts"
+    "src/server/rankings/__tests__/frozen-rankings.ts",
+    "src/server/rankings/arena-history.ts",
+    "src/server/rankings/world-boss-history.ts",
+    "src/server/rankings/__tests__/event-history-gates.ts"
   ]
 }

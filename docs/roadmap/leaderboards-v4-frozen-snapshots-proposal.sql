@@ -195,6 +195,15 @@ BEGIN
   IF p_requester IS NULL OR p_board IS NULL
     OR p_page_size IS NULL OR p_page_size NOT BETWEEN 1 AND 50
   THEN RAISE EXCEPTION 'INVALID_RANKING_SNAPSHOT_REQUEST'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.player_profiles p WHERE p.account_id=p_requester)
+  THEN RAISE EXCEPTION 'RANKING_SNAPSHOT_UNKNOWN_ACCOUNT'; END IF;
+  -- Serialize snapshot creation per account, making the quota race-safe.
+  PERFORM pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('rankings-frozen:'||p_requester::text,0));
+  IF (SELECT count(*) FROM private.rankings_frozen_snapshots_v1 s
+      WHERE s.requester_id=p_requester
+        AND s.captured_at>clock_timestamp()-interval '1 minute')>=6
+  THEN RAISE EXCEPTION 'RANKING_SNAPSHOT_RATE_LIMITED'; END IF;
   IF p_board IN ('arena_rating','arena_wins') THEN
     SELECT s.id INTO v_season FROM public.squad_arena_seasons s
     WHERE s.starts_at<=v_now AND s.ends_at>v_now
@@ -269,6 +278,30 @@ REVOKE ALL ON FUNCTION public.rankings_frozen_start_server_v1(uuid,text,integer)
 GRANT EXECUTE ON FUNCTION public.rankings_frozen_start_server_v1(uuid,text,integer)
   TO service_role;
 
--- Expired snapshots can be pruned by a scheduled service-role maintenance job.
--- No automatic server cron, public grants, migrations or release flags here.
+-- Explicit service-only housekeeping. Production deployment must schedule
+-- invocation at a measured cadence. Cascading cursor cleanup is atomic.
+CREATE OR REPLACE FUNCTION public.rankings_frozen_prune_server_v1(
+  p_batch integer DEFAULT 1000
+) RETURNS integer
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $prune$
+DECLARE v_deleted integer;
+BEGIN
+  IF p_batch IS NULL OR p_batch NOT BETWEEN 1 AND 5000
+  THEN RAISE EXCEPTION 'INVALID_SNAPSHOT_PRUNE_BATCH'; END IF;
+  WITH expired AS (
+    SELECT id FROM private.rankings_frozen_snapshots_v1
+    WHERE expires_at<clock_timestamp()-interval '1 hour'
+    ORDER BY expires_at LIMIT p_batch
+  )
+  DELETE FROM private.rankings_frozen_snapshots_v1 s
+  USING expired e WHERE s.id=e.id;
+  GET DIAGNOSTICS v_deleted=ROW_COUNT;
+  RETURN v_deleted;
+END $prune$;
+REVOKE ALL ON FUNCTION public.rankings_frozen_prune_server_v1(integer)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.rankings_frozen_prune_server_v1(integer)
+  TO service_role;
+
+-- No automatic cron, public grants, migration or release flag here.
 COMMIT;

@@ -15,5 +15,6 @@ assert.equal(companionHousingTier('UNIT_001',(next.account as any).companionHous
 assert.equal(next.character!.gold,12000);
 assert.equal(next.inventory.stacks.some((x:any)=>x.itemId==='IRONWOOD_LOG'),false);
 assert.equal(next.bank.stacks.some((x:any)=>x.itemId==='REINFORCED_FITTING'),false);
-assert.throws(()=>upgradeCompanionHousing({...state,account:{...state.account,unlockedCombatCompanionIds:[]}} as any,'UNIT_001'),/companion_not_owned/);
+let unownedRejected=false;try{upgradeCompanionHousing({...state,account:{...state.account,unlockedCombatCompanionIds:[]}} as any,'UNIT_001');}catch(error){unownedRejected=String(error).includes('companion_not_owned');}
+assert.ok(unownedRejected);
 console.log('PASS companion Housing upgrade spends mixed stacks and rejects unowned upgrades');

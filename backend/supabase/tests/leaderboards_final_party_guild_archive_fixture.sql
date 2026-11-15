@@ -9,6 +9,11 @@ DECLARE
   party_two uuid:=gen_random_uuid();
   third_party uuid:=gen_random_uuid();
   receipt uuid:=gen_random_uuid();
+  guild_receipt uuid:=gen_random_uuid();
+  party_ends timestamptz:=clock_timestamp()-interval '1 day';
+  party_final timestamptz:=clock_timestamp();
+  guild_ends timestamptz:=clock_timestamp()-interval '1 day';
+  guild_final timestamptz:=clock_timestamp();
   snap jsonb;
   original jsonb;
   party_rows jsonb;
@@ -19,6 +24,11 @@ BEGIN
     OR has_function_privilege('authenticated',
     'public.rankings_final_mode_history_server_v1(text,text,text,text,integer,integer)','EXECUTE')
   THEN RAISE EXCEPTION 'FINAL_ARCHIVE_FUNCTION_EXPOSED'; END IF;
+  IF has_table_privilege('anon',
+       'private.rankings_final_mode_settlement_receipts_v1','INSERT')
+     OR has_table_privilege('authenticated',
+       'private.rankings_final_mode_settlement_receipts_v1','INSERT')
+  THEN RAISE EXCEPTION 'FINAL_RECEIPTS_CLIENT_WRITABLE'; END IF;
 
   party_rows:=jsonb_build_array(
     jsonb_build_object('entityId',party_one,'entityType','party','displayName','Alpha Party',
@@ -28,9 +38,28 @@ BEGIN
     jsonb_build_object('entityId',third_party,'entityType','party','displayName','Charlie Party',
       'value',100,'secondaryValue',0,'rank',1)
   );
+  -- Even a syntactically valid final score set must be refused if no
+  -- trusted Day-8 settlement receipt has been registered.
+  BEGIN
+    PERFORM public.rankings_final_mode_seal_server_v1(
+      'party_event',event_id,'damage','standard:4',receipt,
+      party_ends,party_final,party_rows);
+    RAISE EXCEPTION 'PROVISIONAL_PARTY_RESULT_WAS_SEALED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'COMPETITIVE_FINAL_RECEIPT_NOT_REGISTERED' THEN RAISE; END IF;
+  END;
+
+  -- Synthetic staging-only stand-in for a FUTURE verified mode finalizer.
+  INSERT INTO private.rankings_final_mode_settlement_receipts_v1(
+    id,mode,event_key,metric,bracket,event_ends_at,finalized_at,
+    source_version,entries_digest
+  ) VALUES(
+    receipt,'party_event',event_id,'damage','standard:4',
+    party_ends,party_final,1,pg_catalog.md5(party_rows::text)
+  );
   PERFORM public.rankings_final_mode_seal_server_v1(
     'party_event',event_id,'damage','standard:4',receipt,
-    clock_timestamp()-interval '1 day',clock_timestamp(),party_rows);
+    party_ends,party_final,party_rows);
   SELECT rows INTO original FROM private.rankings_final_mode_archives_v1
   WHERE mode='party_event' AND event_key=event_id
     AND metric='damage' AND bracket='standard:4';
@@ -39,11 +68,20 @@ BEGIN
     OR (original->2->>'rank')::integer<>3
   THEN RAISE EXCEPTION 'PARTY_FINAL_SHARED_RANKS_INVALID'; END IF;
 
+  -- A retried genuine settlement is harmless and cannot replace the seal.
   PERFORM public.rankings_final_mode_seal_server_v1(
     'party_event',event_id,'damage','standard:4',receipt,
-    clock_timestamp()-interval '1 day',clock_timestamp(),
-    jsonb_build_array(jsonb_build_object('entityId',party_one,'entityType','party',
-      'displayName','Injected Party','value',999999)));
+    party_ends,party_final,party_rows);
+  BEGIN
+    PERFORM public.rankings_final_mode_seal_server_v1(
+      'party_event',event_id,'damage','standard:4',receipt,
+      party_ends,party_final,
+      jsonb_build_array(jsonb_build_object('entityId',party_one,
+        'entityType','party','displayName','Injected Party','value',999999)));
+    RAISE EXCEPTION 'FORGED_PARTY_RESULT_WAS_SEALED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'COMPETITIVE_FINAL_RECEIPT_NOT_REGISTERED' THEN RAISE; END IF;
+  END;
   SELECT rows INTO snap FROM private.rankings_final_mode_archives_v1
   WHERE mode='party_event' AND event_key=event_id
     AND metric='damage' AND bracket='standard:4';
@@ -85,9 +123,16 @@ BEGIN
   guild_rows:=jsonb_build_array(jsonb_build_object(
     'entityId',guild_id,'entityType','guild','displayName','Guild Final Label',
     'value',800,'secondaryValue',7));
+  INSERT INTO private.rankings_final_mode_settlement_receipts_v1(
+    id,mode,event_key,metric,bracket,event_ends_at,finalized_at,
+    source_version,entries_digest
+  ) VALUES(
+    guild_receipt,'guild_pve',guild_event,'campaign_score','tier1',
+    guild_ends,guild_final,1,pg_catalog.md5(guild_rows::text)
+  );
   PERFORM public.rankings_final_mode_seal_server_v1(
-    'guild_pve',guild_event,'campaign_score','tier1',gen_random_uuid(),
-    clock_timestamp()-interval '1 day',clock_timestamp(),guild_rows);
+    'guild_pve',guild_event,'campaign_score','tier1',guild_receipt,
+    guild_ends,guild_final,guild_rows);
   UPDATE private.rankings_final_mode_gates_v1 SET enabled=true
   WHERE mode='guild_pve';
   SELECT public.rankings_final_mode_history_server_v1(
@@ -99,7 +144,7 @@ BEGIN
   BEGIN
     PERFORM public.rankings_final_mode_seal_server_v1(
       'party_event',event_id,'damage','standard:4',receipt,
-      clock_timestamp()-interval '1 day',clock_timestamp(),
+      party_ends,party_final,
       jsonb_build_array(
         jsonb_build_object('entityId',party_one,'entityType','party',
           'displayName','Alpha Party','value',100),

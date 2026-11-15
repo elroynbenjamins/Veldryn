@@ -1,5 +1,5 @@
-import {type PropsWithChildren,type ReactNode,useMemo} from 'react';
-import {KeyboardAvoidingView,Modal,Platform,Pressable,StyleSheet,Text,View,type StyleProp,type ViewStyle} from 'react-native';
+import {type PropsWithChildren,type ReactNode,useEffect,useMemo,useState} from 'react';
+import {Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -9,11 +9,21 @@ import {sharedText} from '../i18n/shared';
 type Presentation='sheet'|'dialog'|'fullscreen';
 export function GameModalSurface({visible,onClose,reduceMotion=false,presentation='sheet',children,surfaceStyle,backdropLabel:providedBackdropLabel,dismissOnBackdrop=true}:PropsWithChildren<{visible:boolean;onClose:()=>void;reduceMotion?:boolean;presentation?:Presentation;surfaceStyle?:StyleProp<ViewStyle>;backdropLabel?:string;dismissOnBackdrop?:boolean}>){
   const language=useGameLanguage(),backdropLabel=providedBackdropLabel??sharedText(language,'Close dialog');
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),sheet=presentation==='sheet',fullscreen=presentation==='fullscreen';
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{height:windowHeight}=useWindowDimensions(),sheet=presentation==='sheet',fullscreen=presentation==='fullscreen';
+  const [androidKeyboardTop,setAndroidKeyboardTop]=useState<number|null>(null);
+  useEffect(()=>{
+    if(Platform.OS!=='android'||!visible){setAndroidKeyboardTop(null);return;}
+    const show=Keyboard.addListener('keyboardDidShow',event=>setAndroidKeyboardTop(event.endCoordinates.screenY));
+    const hide=Keyboard.addListener('keyboardDidHide',()=>setAndroidKeyboardTop(null));
+    return ()=>{show.remove();hide.remove();};
+  },[visible]);
+  // Some Android transparent modals do not resize with the IME. Reserve the
+  // obscured screen area explicitly, but do not double-inset an already resized window.
+  const keyboardOverlap=Platform.OS==='android'&&androidKeyboardTop!==null?Math.max(0,windowHeight-androidKeyboardTop):0;
   return <Modal visible={visible} transparent={!fullscreen} statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
-    <View style={[s.backdrop,fullscreen&&s.fullscreenBackdrop,!sheet&&!fullscreen&&s.center,{paddingTop:fullscreen?0:Math.max(spacing.sm,insets.top)},!sheet&&!fullscreen&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}]}>
+    <View style={[s.backdrop,fullscreen&&s.fullscreenBackdrop,!sheet&&!fullscreen&&s.center,{paddingTop:fullscreen?0:Math.max(spacing.sm,insets.top)},!sheet&&!fullscreen&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)},keyboardOverlap>0&&{paddingBottom:keyboardOverlap}]}>
       {dismissOnBackdrop?<Pressable accessible={false} accessibilityLabel={backdropLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>:<View pointerEvents="none" style={StyleSheet.absoluteFill}/>} 
-      <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={[s.keyboardAvoider,fullscreen?s.keyboardFullscreen:sheet?s.keyboardSheet:s.keyboardDialog]}>
+      <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={insets.top} style={[s.keyboardAvoider,fullscreen?s.keyboardFullscreen:sheet?s.keyboardSheet:s.keyboardDialog]}>
       <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={[s.surface,fullscreen?s.fullscreen:sheet?s.sheet:s.dialog,sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)},fullscreen&&{paddingTop:Math.max(spacing.sm,insets.top),paddingBottom:Math.max(spacing.sm,insets.bottom)},surfaceStyle]}>
         {sheet?<View style={s.grabber}/>:null}
         {children}

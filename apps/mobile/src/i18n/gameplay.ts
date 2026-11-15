@@ -9,6 +9,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Gem forging: reveal success odds and protect the confirmation flow.
+ "success":["success","Erfolg","éxito","succes","successo","réussite"],
+ "Success: receive 1 higher-grade gem.":["Success: receive 1 higher-grade gem.","Erfolg: Erhalte 1 Edelstein der nächsten Stufe.","Éxito: recibes 1 gema de grado superior.","Geslaagd: ontvang 1 edelsteen van een hogere graad.","Successo: ricevi 1 gemma di grado superiore.","Réussite : obtenez 1 gemme de grade supérieur."],
+ "Failure: 1 gem lost, 2 returned. Gold and reagents spent.":["Failure: 1 gem lost, 2 returned. Gold and reagents spent.","Fehlschlag: 1 Edelstein verloren, 2 zurück. Gold und Zutaten verbraucht.","Fallo: pierdes 1 gema, recuperas 2. Se gastan oro y reactivos.","Mislukt: 1 edelsteen verloren, 2 terug. Goud en ingrediënten verbruikt.","Fallimento: perdi 1 gemma, ne recuperi 2. Oro e reagenti consumati.","Échec : 1 gemme perdue, 2 rendues. Or et réactifs consommés."],
+ "Confirm this merge? The result is rolled when you claim the finished Forge job.":["Confirm this merge? The result is rolled when you claim the finished Forge job.","Zusammenführen bestätigen? Das Ergebnis wird beim Abholen des fertigen Schmiedeauftrags ermittelt.","¿Confirmar fusión? El resultado se determina al recoger el trabajo terminado de la forja.","Samenvoegen bevestigen? Het resultaat wordt bepaald wanneer je de voltooide smederijopdracht ophaalt.","Confermi la fusione? L'esito viene determinato quando ritiri il lavoro completato dalla forgia.","Confirmer la fusion ? Le résultat est déterminé lorsque vous récupérez le travail terminé à la forge."],
+ "Confirm merge":["Confirm merge","Fusion bestätigen","Confirmar fusión","Samenvoegen bevestigen","Conferma fusione","Confirmer la fusion"],
+
  "FOOD ROTATION":["FOOD ROTATION","ESSENSREIHENFOLGE","ROTACIÓN DE COMIDA","VOEDSELVOLGORDE","ROTAZIONE CIBO","ORDRE DES ALIMENTS"],
  "Food actions":["Food actions","Essensaktionen","Opciones de comida","Voedselacties","Azioni cibo","Actions de nourriture"],
  "Food running low":["Food running low","Essensvorrat fast leer","Queda poca comida","Voedsel raakt op","Scorte di cibo in esaurimento","Réserve de nourriture faible"],
@@ -1332,6 +1339,18 @@ const forgeCopyLimitEarlyLocales={
   "Per equipment type":["Для каждого типа снаряжения","Ekipman türü başına"],
 } as const;
 for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Russian and Turkish gem merge confirmation, matching the newly typed gameplay keys.
+const gemMergeEarlyLocales={
+ "success":["успех","başarı"],
+ "Success: receive 1 higher-grade gem.":["Успех: получите 1 самоцвет рангом выше.","Başarı: 1 üst seviye mücevher kazanırsın."],
+ "Failure: 1 gem lost, 2 returned. Gold and reagents spent.":["Неудача: 1 самоцвет потерян, 2 возвращены. Золото и материалы потрачены.","Başarısızlık: 1 mücevher kaybolur, 2'si iade edilir. Altın ve malzemeler harcanır."],
+ "Confirm this merge? The result is rolled when you claim the finished Forge job.":["Подтвердить слияние? Результат определяется при получении готового изделия из кузницы.","Birleştirme onaylansın mı? Sonuç, tamamlanan demirhane işini aldığında belirlenir."],
+ "Confirm merge":["Подтвердить слияние","Birleştirmeyi onayla"],
+} as const;
+for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

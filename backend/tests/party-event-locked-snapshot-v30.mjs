@@ -1,0 +1,60 @@
+/**
+ * v30 read-only locked-inspection SQL integration fixture.
+ * Executes in a throwaway in-memory PGlite instance, never production.
+ */
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {PGlite} from '@electric-sql/pglite';
+const filepath=fileURLToPath(new URL(
+ '../supabase/migrations/20261115190000_party_event_locked_claim_snapshot_v30.sql',
+ import.meta.url));
+const migration=readFileSync(filepath,'utf8');
+const db=await PGlite.create();
+const account='11111111-1111-4111-8111-111111111111';
+const offer='33333333-3333-4333-8333-333333333333';
+function must(v,m){if(!v)throw Error('v30_locked_sql_'+m);}
+async function denied(promise,message){
+ try{await promise;throw Error('unexpected_success');}
+ catch(e){must(String(e).includes(message),
+  'expected_'+message+'_got_'+String(e));}
+}
+async function run(){
+ await db.exec(`
+  create schema private;
+  create role anon;
+  create role authenticated;
+  create role service_role;
+  create table private.party_event_reward_offers_v24(
+    id uuid primary key,account_id uuid not null
+  );
+ `);
+ await db.exec(migration);
+ const fn=await db.query(`select p.prosecdef,p.provolatile,n.nspname
+  from pg_proc p join pg_namespace n on p.pronamespace=n.oid
+  where p.proname='inspect_party_event_claim_lock_v30'`);
+ must(fn.rows.length===1&&fn.rows[0].prosecdef===true
+  &&fn.rows[0].provolatile==='v'&&fn.rows[0].nspname==='private',
+  'private_transaction_scoped_function');
+ const grants=await db.query(`select
+  has_function_privilege('anon',
+   'private.inspect_party_event_claim_lock_v30(uuid,uuid)','EXECUTE') a,
+  has_function_privilege('authenticated',
+   'private.inspect_party_event_claim_lock_v30(uuid,uuid)','EXECUTE') b,
+  has_function_privilege('service_role',
+   'private.inspect_party_event_claim_lock_v30(uuid,uuid)','EXECUTE') s`);
+ must(grants.rows[0].a===false&&grants.rows[0].b===false
+  &&grants.rows[0].s===true,'no_player_sql_execute');
+ const q=`select private.inspect_party_event_claim_lock_v30(
+  $1::uuid,$2::uuid) as snapshot`;
+ await denied(db.query(q,[null,account]),'trusted_ids_required');
+ await denied(db.query(q,[offer,account]),'offer_not_owned');
+ const summary=await db.query(`select count(*)::int n from pg_proc p
+  join pg_namespace n on p.pronamespace=n.oid where
+  n.nspname='private' and p.proname like '%pay%v30'`);
+ must(summary.rows[0].n===0,'no_payout_writer_created');
+ console.log('Party Events v30 PGlite: private inspect-only SQL, no public execute, locked account/offer ownership, fail-closed and zero payout writers');
+}
+run().then(()=>db.close()).catch(async e=>{
+ console.error(e);try{await db.close();}catch{}
+ process.exitCode=1;
+});

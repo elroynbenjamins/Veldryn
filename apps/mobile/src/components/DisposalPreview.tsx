@@ -1,5 +1,5 @@
 import {useMemo} from 'react';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {ItemStack} from '../core/types';
 import {itemDef} from '../content/items';
 import {localizedItemName} from '../i18n/starter-item-names';
@@ -25,9 +25,9 @@ export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning}:{
  note?:string;
  warning?:string;
 }){
- const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height}=useWindowDimensions();
  const count=items.reduce((total,item)=>total+item.quantity,0);
- return <View style={s.root}>
+ return <ScrollView style={{maxHeight:Math.max(142,Math.min(420,height*.48))}} contentContainerStyle={s.root} nestedScrollEnabled showsVerticalScrollIndicator>
    <View style={s.sectionHead}>
      <Text style={s.eyebrow}>{mode==='sell'?'SELLING':'SALVAGING'}</Text>
      <Text style={s.counter}>{count.toLocaleString(language)} {count===1?'item':'items'}</Text>
@@ -54,18 +54,18 @@ export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning}:{
          <Text style={s.goldAmount}>+{gold.toLocaleString(language)}</Text>
          <Text style={s.goldLabel}>Gold</Text>
        </View>:
-       <ScrollView style={s.rewardsScroll} nestedScrollEnabled showsVerticalScrollIndicator={rewards.length>4} contentContainerStyle={s.rewards}>
+       <View style={s.rewards}>
          {rewards.map(reward=><View key={reward.itemId} style={s.rewardRow}>
            <View style={s.rewardArt}><ItemArtwork itemId={reward.itemId} size={30}/></View>
            <Text numberOfLines={2} style={s.rewardName}>{localizedItemName(language,reward.itemId)}</Text>
            <Text style={s.rewardQuantity}>+{reward.quantity.toLocaleString(language)}</Text>
          </View>)}
          {!rewards.length?<Text style={s.note}>No recoverable materials</Text>:null}
-       </ScrollView>}
+       </View>}
    </View>
    {note?<Text style={s.note}>{note}</Text>:null}
    <Text style={s.caution}>{warning??'This action cannot be undone.'}</Text>
- </View>;
+ </ScrollView>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
  root:{gap:spacing.sm},
@@ -86,7 +86,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  goldGlyph:{fontSize:18,color:C.warning},
  goldAmount:{...typography.title,color:C.warning,fontWeight:'900'},
  goldLabel:{...typography.bodyStrong,color:C.text},
- rewardsScroll:{maxHeight:192},
  rewards:{gap:6},
  rewardRow:{flexDirection:'row',alignItems:'center',gap:9,padding:6,borderRadius:8,backgroundColor:C.panel2},
  rewardArt:{width:34,height:34,justifyContent:'center',alignItems:'center'},

@@ -93,7 +93,24 @@ BEGIN
      char_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' OR
      lower(char_text)=ANY(seen) OR
      item->>'sourceRevision' IS NULL OR
-     item->>'sourceRevision' !~ '^[1-9][0-9]{0,15}
+     item->>'sourceRevision' !~ '^[1-9][0-9]{0,15}$' OR
+     decoded_roster->'characters'->roster_position->>'characterId'
+       IS DISTINCT FROM char_text OR
+     decoded_roster->'characters'->roster_position->>'sourceRevision'
+       IS DISTINCT FROM item->>'sourceRevision'
+  THEN RAISE EXCEPTION 'WB23_DUPLICATE_OR_INVALID_CHARACTER'; END IF;
+  seen:=array_append(seen,lower(char_text));
+  IF char_text::uuid=p_leader THEN seen_leader:=true; END IF;
+  -- Lock each verified character's owner and GameState revision.
+  SELECT s.revision::bigint INTO latest_version
+  FROM public.characters c
+  JOIN public.online_game_states s ON s.character_id=c.id AND
+    s.account_id=c.account_id
+  WHERE c.id=char_text::uuid AND c.account_id=p_account
+  FOR SHARE OF c,s;
+  IF NOT FOUND OR latest_version<>(item->>'sourceRevision')::bigint
+  THEN RAISE EXCEPTION 'WB23_CHARACTER_SOURCE_REVISION_CHANGED'; END IF;
+  roster_position:=roster_position+1;
  END LOOP;
  IF NOT seen_leader THEN RAISE EXCEPTION 'WB23_LEADER_NOT_OWNED_ROSTER'; END IF;
 

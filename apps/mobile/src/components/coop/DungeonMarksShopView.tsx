@@ -3,15 +3,36 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
+import {ResourceIcon} from '../ResourceIcon';
+import {UiIcon} from '../UiIcon';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
 import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason} from '../../i18n/dungeon-shop';
 
-import type {DungeonMarksShopSnapshot} from '../../core/dungeon-marks-shop-types';
+import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
+import type {UiIconName} from '../../theme/ui-icons';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
 
 type Shelf='Supplies'|'Collections'|'Owned';
+
+/** The server exposes offer SKUs, not material IDs. Map approved catalogue SKUs
+ * to existing inventory/companion artwork instead of displaying a generic glyph.
+ * Preview-only collectibles use category artwork until their bespoke art ships. */
+const OFFER_RESOURCE_ART:Readonly<Record<string,string>>={
+ dshop_tempering_satchel:'TEMPERING_DUST',
+ dshop_gem_dust_cache:'GEM_DUST',
+ dshop_tempering_core_cache:'TEMPERING_CORE',
+ dshop_companion_essence:'essence',
+ dshop_bondstone:'bondstones',
+};
+const CATEGORY_PREVIEW_ART:Record<DungeonMarksShopCard['category'],UiIconName>={
+ supply:'inventory',companion:'companions',icon:'account',border:'character',background:'world',pet:'companions',
+};
+function DungeonShopOfferIcon({item}:{item:DungeonMarksShopCard}){
+ const resourceId=OFFER_RESOURCE_ART[item.id];
+ return resourceId?<ResourceIcon resourceId={resourceId} size={42}/>:<UiIcon name={CATEGORY_PREVIEW_ART[item.category]} size={36}/>;
+}
 
 /**
  * Hidden, reusable Dungeon Marks Shop presentation. Deliberately not mounted in
@@ -91,7 +112,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
      disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
-     <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
+     <View style={s.art} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><DungeonShopOfferIcon item={item}/></View>
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
@@ -123,7 +144,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
  art:{width:48,height:48,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center'},
- artGlyph:{color:C.accent,fontSize:25,fontWeight:'800'},
  title:{...typography.bodyStrong,color:C.text},
  price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:3},priceText:{...typography.bodyStrong,color:C.accent},
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},

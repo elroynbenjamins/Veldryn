@@ -34,11 +34,12 @@ export interface CompanionIndexProps{
  hiddenIds:ReadonlySet<string>;
  onOpen:(id:string)=>void;
  onTrain:(id:string)=>void;
+ onBond:(id:string)=>void;
  onCodex:()=>void;
 }
 
 /** A single intent per tab: manage what you own, earn available recruits, or review past events. */
-export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:CompanionIndexProps){
+export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onBond,onCodex}:CompanionIndexProps){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),language=useGameLanguage(),t=companionTranslator(language);
  const {width}=useWindowDimensions(),wide=width>=680;
  const [tab,setTab]=useState<IndexTab>(()=>(state.account.unlockedCombatCompanionIds?.length??0)>0?'owned':'unlock'),[role,setRole]=useState<Role>('all'),[roleMenuOpen,setRoleMenuOpen]=useState(false),[query,setQuery]=useState('');
@@ -159,7 +160,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     const p=achievement.requirements[index];
     return companionUnlockRequirement(language,req.description)+' '+(p.complete?'✓':p.current+'/'+p.total);
    }).join(' · '):guildShopEntry?t('Guild Lv. {level} · {cost} tokens',{level:guildShopEntry.guildLevel,cost:formatLocalizedNumber(language,guildShopEntry.tokenCost)}):undefined;
-   return <Pressable key={def.id} accessibilityRole="button" accessibilityLabel={label+' · '+(owned?t('Owned'):t('Locked'))+' · '+subtitle} accessibilityHint={requirementHint} onPress={()=>onOpen(def.id)} style={({pressed})=>[s.entry,{width:wide?'48.9%':'100%',borderLeftColor:hidden?C.line:companionRarityBorder(def.rarity,C.dark)},pressed&&s.pressed]}>
+   return <Pressable key={def.id} accessibilityRole="button" accessibilityLabel={label+' · '+(owned?t('Owned'):t('Locked'))+' · '+subtitle} accessibilityHint={requirementHint} onPress={()=>bondRewardReady?onBond(def.id):onOpen(def.id)} style={({pressed})=>[s.entry,{width:wide?'48.9%':'100%',borderLeftColor:hidden?C.line:companionRarityBorder(def.rarity,C.dark)},pressed&&s.pressed]}>
     <View style={s.entryTop}>
      <View style={s.artBox}>{art?<Image source={art} resizeMode="contain" style={s.art}/>:<Text style={s.unknown}>?</Text>}</View>
      <View style={s.entryBody}>
@@ -174,7 +175,7 @@ export function CompanionIndex({state,hiddenIds,onOpen,onTrain,onCodex}:Companio
     {bond?<View style={s.bondRow}>
      <View style={s.bondTrack} accessibilityRole="progressbar" accessibilityLabel={t('Bond {value0}',{value0:bond.level})} accessibilityValue={{min:0,max:100,now:bond.percent}}><View style={[s.bondFill,{width:(bond.percent+'%') as any}]}/></View>
      <Text style={s.bondText}>{bond.maxed?t('Bond MAX'):t('Bond {value0}/10',{value0:bond.level})}</Text>
-     {bondRewardReady?<Text style={s.bondReady}>{t('Claim reward')} ›</Text>:null}
+     {bondRewardReady?<Text style={s.bondReady}>{t('Claim Bond reward')} ›</Text>:null}
     </View>:null}
     {!owned&&!hidden&&guildShopEntry?<View style={s.requirementList}>
      <Text style={s.requirementHeading}>{t('Unlock requirements')}</Text>

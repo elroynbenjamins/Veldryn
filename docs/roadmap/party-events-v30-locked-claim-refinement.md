@@ -20,6 +20,7 @@ Tests added to the v29 PGlite fixture cover the new quote FK, mismatched quote a
 A new **nonpaying** SQL function `private.inspect_party_event_claim_lock_v30(offer_id, account_id)`:
 
 1. Acquires `pg_advisory_xact_lock(hashtextextended('party-account:'||account_id,0))`, matching the authoritative gameplay save's serialization key.
+   - **Deadlock refinement:** follow the existing v25 ordering: locate immutable offer without a row lock, acquire the event-week update lock, then the offer update lock. Do not acquire the offer update lock first; v25 preflights lock week before offer. Only afterward lock online state, owned character and wallet.
 2. Locks v24 offer and event week, checks final-stage/day-8 eligibility, frozen v11 roster and event/account ownership. It accepts an already **settled** week only when its independently checked v23/v24 boss/reward proof and all v25 records exist, preventing legitimate unpaid members from losing claims on event finalization.
 3. Rechecks v23 replay attestation, v24 batch/candidate/replay fingerprints and the server-locked Warrior/Artisan/Companion selection. Participation cannot have a selected cache.
 4. Locks/reads all three separate nonpaying v25 intent, preflight and quote records. It recomputes the v2 reward from the authoritative offer and verifies every SHA-256 and JSON reward matches.

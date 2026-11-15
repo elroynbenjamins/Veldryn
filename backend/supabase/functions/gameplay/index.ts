@@ -41978,6 +41978,8 @@ var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
+var T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
+var T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
@@ -42025,6 +42027,10 @@ function mergeInputs(inputs) {
   const totals = /* @__PURE__ */ new Map();
   for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
   return [...totals].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 }));
+}
+var EQUIPMENT_PRIMARY_MATERIAL_REDUCTION = 2;
+function reducePrimaryEquipmentMaterial(inputs) {
+  return inputs.map((input, index) => index === 0 ? { ...input, quantity: Math.max(1, input.quantity - EQUIPMENT_PRIMARY_MATERIAL_REDUCTION) } : input);
 }
 function ingredients(tier, path, multiplier, skillId) {
   multiplier *= TIER_MATERIAL_MULTIPLIER[tier] ?? 1;
@@ -42092,7 +42098,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
-  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const boostedCraftXp = tier === "T2" ? Math.round(standardCraftXp * T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : ["T3", "T4"].includes(tier) ? Math.round(standardCraftXp * T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : standardCraftXp;
+  const craftXp = t5Affix ? Math.round(boostedCraftXp * T5_AFFIX_XP_MULTIPLIER) : boostedCraftXp;
   const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
   const baseSeconds = clamp(Math.round(range.base * multiplier), range.min, range.max);
   return {
@@ -42103,7 +42110,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     xp: craftXp,
     gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
     seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
+    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId)), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42321,7 +42328,7 @@ var ALCHEMY_RECIPES = [
   recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
   recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
   recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
-  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "RIVER_MINT", quantity: 5 }]),
   recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
   recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
   recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),
@@ -58601,9 +58608,9 @@ function withReleaseGate(handler, loadPolicies, now = Date.now) {
       return json2({ error: "release_policy_unavailable" }, 503);
     }
     const response = await handler(request);
-    const headers3 = new Headers(response.headers);
-    Object.entries(cors).forEach(([key, value]) => headers3.set(key, value));
-    return new Response(response.body, { status: response.status, headers: headers3 });
+    const headers4 = new Headers(response.headers);
+    Object.entries(cors).forEach(([key, value]) => headers4.set(key, value));
+    return new Response(response.body, { status: response.status, headers: headers4 });
   };
 }
 function releasePolicyLoader(url2, publicKey) {
@@ -58617,6 +58624,138 @@ function releasePolicyLoader(url2, publicKey) {
       return rows2;
     } finally {
       clearTimeout(timer);
+    }
+  };
+}
+
+// online/rankings-handler.ts
+var RANKINGS_RELEASED = false;
+var FROZEN_RANKINGS_RELEASED = false;
+var ARENA_HISTORY_RELEASED = false;
+var WORLD_BOSS_HISTORY_RELEASED = false;
+var PARTY_EVENT_HISTORY_RELEASED = false;
+var GUILD_PVE_HISTORY_RELEASED = false;
+var CLOSED = {
+  rankings: RANKINGS_RELEASED,
+  frozen: FROZEN_RANKINGS_RELEASED,
+  arena: ARENA_HISTORY_RELEASED,
+  worldBoss: WORLD_BOSS_HISTORY_RELEASED,
+  partyEvent: PARTY_EVENT_HISTORY_RELEASED,
+  guildPve: GUILD_PVE_HISTORY_RELEASED
+};
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+var headers2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+var json3 = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: headers2 });
+var integer2 = (v, def, min, max) => {
+  if (v === null || v === void 0 || v === "") return def;
+  const n = typeof v === "string" ? Number(v) : v;
+  if (typeof n !== "number" || !Number.isSafeInteger(n) || n < min || n > max)
+    throw new Error("INVALID_PAGE");
+  return n;
+};
+var parseToken = (v) => typeof v === "string" && UUID.test(v) ? v : null;
+function rankingsHandler(services2, gates = CLOSED) {
+  return async (request) => {
+    if (!gates.rankings) return json3({ error: "rankings_unavailable" }, 404);
+    if (!["GET", "POST"].includes(request.method)) return json3({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json3({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId || !UUID.test(accountId)) return json3({ error: "auth_required" }, 401);
+    const url2 = new URL(request.url);
+    const action = url2.searchParams.get("action");
+    try {
+      if (action === "snapshot-start") {
+        if (!gates.frozen) return json3({ error: "ranking_snapshots_disabled" }, 404);
+        if (request.method !== "POST") return json3({ error: "method_not_allowed" }, 405);
+        const body = await request.json();
+        const board = body?.board;
+        const allowed2 = [
+          "profession_total",
+          "mining",
+          "woodcutting",
+          "fishing",
+          "smithing",
+          "cooking",
+          "herbalism",
+          "alchemy",
+          "hunting",
+          "exploration",
+          "tailoring",
+          "enchanting",
+          "faith",
+          "achievement_score",
+          "dungeon_tier",
+          "dungeon_clears",
+          "arena_rating",
+          "arena_wins",
+          "guild"
+        ];
+        if (typeof board !== "string" || !allowed2.includes(board)) return json3({ error: "invalid_ranking_board" }, 400);
+        return json3(await services2.rpc("rankings_frozen_start_server_v1", {
+          p_requester: accountId,
+          p_board: board,
+          p_page_size: integer2(body?.limit, 50, 1, 50)
+        }));
+      }
+      if (action === "snapshot-page") {
+        if (!gates.frozen) return json3({ error: "ranking_snapshots_disabled" }, 404);
+        if (request.method !== "GET") return json3({ error: "method_not_allowed" }, 405);
+        const cursor = parseToken(url2.searchParams.get("cursor"));
+        if (!cursor) return json3({ error: "invalid_ranking_cursor" }, 400);
+        return json3(await services2.rpc("rankings_frozen_page_server_v1", {
+          p_requester: accountId,
+          p_cursor: cursor
+        }));
+      }
+      if (action === "arena-history") {
+        if (!gates.arena) return json3({ error: "arena_history_disabled" }, 404);
+        const seasonId = url2.searchParams.get("seasonId");
+        const metric = url2.searchParams.get("metric");
+        if (!seasonId || seasonId.length > 120 || !["arena_rating", "arena_wins"].includes(metric ?? ""))
+          return json3({ error: "invalid_arena_history" }, 400);
+        return json3(await services2.rpc("rankings_arena_final_history_server_v1", {
+          p_requester: accountId,
+          p_season_id: seasonId,
+          p_metric: metric,
+          p_limit: integer2(url2.searchParams.get("limit"), 50, 1, 100),
+          p_offset: integer2(url2.searchParams.get("offset"), 0, 0, 1e4)
+        }));
+      }
+      if (action === "world-boss-history") {
+        if (!gates.worldBoss) return json3({ error: "world_boss_history_disabled" }, 404);
+        const bossId = parseToken(url2.searchParams.get("bossId"));
+        if (!bossId) return json3({ error: "invalid_world_boss_id" }, 400);
+        return json3(await services2.rpc("leaderboards_world_boss_event_server_v1", {
+          p_requester: accountId,
+          p_boss_id: bossId,
+          p_limit: integer2(url2.searchParams.get("limit"), 50, 1, 100),
+          p_offset: integer2(url2.searchParams.get("offset"), 0, 0, 1e4)
+        }));
+      }
+      if (action === "party-event-history" || action === "guild-pve-history") {
+        const isParty = action === "party-event-history";
+        if (isParty && !gates.partyEvent || !isParty && !gates.guildPve)
+          return json3({ error: "finalized_event_history_disabled" }, 404);
+        const mode = isParty ? "party_event" : "guild_pve";
+        const eventKey = url2.searchParams.get("eventKey");
+        const metric = url2.searchParams.get("metric");
+        const bracket = url2.searchParams.get("bracket");
+        const allowed2 = isParty ? ["damage", "depth", "support", "shielding", "mechanics"] : ["campaign_score", "campaign_progress", "contribution"];
+        if (!eventKey || eventKey.length > 120 || !metric || !allowed2.includes(metric) || !bracket || !/^[-a-z0-9_:]{1,48}$/.test(bracket))
+          return json3({ error: "invalid_event_history_scope" }, 400);
+        return json3(await services2.rpc("rankings_final_mode_history_server_v1", {
+          p_mode: mode,
+          p_event_key: eventKey,
+          p_metric: metric,
+          p_bracket: bracket,
+          p_limit: integer2(url2.searchParams.get("limit"), 50, 1, 100),
+          p_offset: integer2(url2.searchParams.get("offset"), 0, 0, 1e4)
+        }));
+      }
+      return json3({ error: "ranking_action_unknown" }, 404);
+    } catch {
+      return json3({ error: "rankings_request_unavailable" }, 503);
     }
   };
 }
@@ -59323,33 +59462,33 @@ var OnlineRegionalCombatRuntimeV1 = class {
     return { receiptId, result: resolution.result, reward: resolution.reward ?? null, duplicate: resolution.duplicate };
   }
 };
-var headers2 = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
-var json3 = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: headers2 });
+var headers3 = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
+var json4 = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: headers3 });
 var uuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 function regionalCombatHandlerV1(services2) {
   const runtime = new OnlineRegionalCombatRuntimeV1(services2);
   return async (request) => {
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: headers2 });
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: headers3 });
     try {
       const bearer = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-      if (!bearer) return json3({ error: "auth_required" }, 401);
+      if (!bearer) return json4({ error: "auth_required" }, 401);
       const accountId = await services2.authenticate(bearer);
-      if (!accountId) return json3({ error: "invalid_session" }, 401);
+      if (!accountId) return json4({ error: "invalid_session" }, 401);
       const path = new URL(request.url).pathname;
       if (path.endsWith("/regional-combat/status")) {
-        if (request.method !== "GET") return json3({ error: "method_not_allowed" }, 405);
-        return json3(await runtime.cadence(accountId));
+        if (request.method !== "GET") return json4({ error: "method_not_allowed" }, 405);
+        return json4(await runtime.cadence(accountId));
       }
       const match = path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
       if (match) {
-        if (!uuid.test(match[1])) return json3({ error: "invalid_request" }, 400);
-        if (request.method !== "POST") return json3({ error: "method_not_allowed" }, 405);
-        return json3(await runtime.resolve(accountId, match[1]));
+        if (!uuid.test(match[1])) return json4({ error: "invalid_request" }, 400);
+        if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
+        return json4(await runtime.resolve(accountId, match[1]));
       }
-      if (!path.endsWith("/regional-combat")) return json3({ error: "not_found" }, 404);
-      if (request.method !== "POST") return json3({ error: "method_not_allowed" }, 405);
+      if (!path.endsWith("/regional-combat")) return json4({ error: "not_found" }, 404);
+      if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
       const raw2 = await request.text();
-      if (raw2.length > 2048) return json3({ error: "request_too_large" }, 413);
+      if (raw2.length > 2048) return json4({ error: "request_too_large" }, 413);
       let body;
       try {
         body = JSON.parse(raw2);
@@ -59359,11 +59498,11 @@ function regionalCombatHandlerV1(services2) {
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new GameplayError("invalid_request");
       const row = body;
       if (Object.keys(row).some((key) => !["requestId", "characterId", "encounterId"].includes(key)) || typeof row.requestId !== "string" || typeof row.characterId !== "string" || typeof row.encounterId !== "string") throw new GameplayError("invalid_request");
-      return json3(await runtime.start(accountId, row));
+      return json4(await runtime.start(accountId, row));
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error";
       const status = error instanceof GameplayError ? error.status : /owner_mismatch|not_owned/.test(message) ? 403 : /cooldown|daily_cap/.test(message) ? 429 : /invalid_|unknown_|locked|below_level|not_active/.test(message) ? 400 : 503;
-      return json3({ error: status === 503 ? "Server temporarily unavailable. Retry the pending action." : message }, status);
+      return json4({ error: status === 503 ? "Server temporarily unavailable. Retry the pending action." : message }, status);
     }
   };
 }
@@ -59440,17 +59579,17 @@ function buildGuildShopCards(state) {
 
 // online/guild-shop-read.ts
 var responseHeaders = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-var json4 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders });
+var json5 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders });
 function guildShopReadHandler(services2) {
   return async (request) => {
-    if (request.method !== "GET") return json4({ error: "method_not_allowed" }, 405);
+    if (request.method !== "GET") return json5({ error: "method_not_allowed" }, 405);
     const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
+    if (!token) return json5({ error: "auth_required" }, 401);
     const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
     try {
       const guildLevel = await services2.guildLevelForAccount(accountId);
-      if (guildLevel === null) return json4({ error: "guild_membership_required" }, 403);
+      if (guildLevel === null) return json5({ error: "guild_membership_required" }, 403);
       const [base, constructionResult, eventResult, enabledResult, weeklyResult, bankResult, perksResult, costsResult] = await Promise.allSettled([
         services2.rpc("guild_shop_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_snapshot_server_v1", { p_account_id: accountId }),
@@ -59464,7 +59603,7 @@ function guildShopReadHandler(services2) {
       if (base.status !== "fulfilled") throw new Error("guild_shop_wallet_snapshot_unavailable");
       const snapshot2 = base.value;
       if (!snapshot2 || !Number.isSafeInteger(snapshot2.balance) || !Array.isArray(snapshot2.ownedItemIds))
-        return json4({ error: "invalid_shop_snapshot" }, 503);
+        return json5({ error: "invalid_shop_snapshot" }, 503);
       const construction = constructionResult.status === "fulfilled" && Array.isArray(constructionResult.value) ? constructionResult.value : [];
       const eventBonuses = eventResult.status === "fulfilled" && Array.isArray(eventResult.value) ? eventResult.value : [];
       const constructionEnabled = enabledResult.status === "fulfilled" && Array.isArray(enabledResult.value) ? enabledResult.value : [];
@@ -59485,7 +59624,7 @@ function guildShopReadHandler(services2) {
         ...perks ? [] : ["constructionBenefits"],
         ...costSnapshot ? [] : ["constructionCosts"]
       ];
-      return json4({
+      return json5({
         guildLevel,
         constructionMemberCount: costSnapshot?.memberCount ?? null,
         unavailableSections,
@@ -59520,269 +59659,45 @@ function guildShopReadHandler(services2) {
         }))
       });
     } catch {
-      return json4({ error: "guild_shop_temporarily_unavailable" }, 503);
+      return json5({ error: "guild_shop_temporarily_unavailable" }, 503);
     }
   };
 }
 function guildShopDailyClaimHandler(services2) {
   return async (request) => {
-    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
     const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
+    if (!token) return json5({ error: "auth_required" }, 401);
     const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
     const raw2 = await request.text();
-    if (raw2.length > 2048) return json4({ error: "request_too_large" }, 413);
+    if (raw2.length > 2048) return json5({ error: "request_too_large" }, 413);
     let body;
     try {
       body = JSON.parse(raw2);
     } catch {
-      return json4({ error: "invalid_json" }, 400);
+      return json5({ error: "invalid_json" }, 400);
     }
-    if (!body || typeof body !== "object" || Array.isArray(body)) return json4({ error: "invalid_request" }, 400);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json5({ error: "invalid_request" }, 400);
     const candidate = body;
     if (Object.keys(candidate).length !== 1 || candidate.kind !== "attendance" && candidate.kind !== "contribution")
-      return json4({ error: "invalid_reward_kind" }, 400);
+      return json5({ error: "invalid_reward_kind" }, 400);
     try {
       const credited = await services2.rpc("guild_shop_claim_daily_server_v1", {
         p_account_id: accountId,
         p_kind: candidate.kind
       });
       if (!Number.isSafeInteger(credited) || credited < 0 || credited > 12)
-        return json4({ error: "invalid_claim_result" }, 503);
-      return json4({ credited });
+        return json5({ error: "invalid_claim_result" }, 503);
+      return json5({ credited });
     } catch (reason) {
       if (reason instanceof Error && reason.message === "guild_daily_reward_not_earned")
-        return json4({ error: "guild_daily_reward_not_earned" }, 403);
-      return json4({ error: "guild_token_claim_unavailable" }, 503);
+        return json5({ error: "guild_daily_reward_not_earned" }, 403);
+      return json5({ error: "guild_token_claim_unavailable" }, 503);
     }
   };
 }
 function guildShopPurchaseHandler(services2) {
-  return async (request) => {
-    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
-    const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
-    const raw2 = await request.text();
-    if (raw2.length > 1024) return json4({ error: "request_too_large" }, 413);
-    let input;
-    try {
-      input = JSON.parse(raw2);
-    } catch {
-      return json4({ error: "invalid_json" }, 400);
-    }
-    if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
-    const body = input;
-    if (Object.keys(body).length !== 1 || typeof body.itemId !== "string" || !GUILD_SHOP_CATALOGUE.some((c) => c.id === body.itemId))
-      return json4({ error: "unknown_guild_reward" }, 400);
-    try {
-      const result = await services2.rpc("guild_shop_purchase_server_v4", {
-        p_account_id: accountId,
-        p_item_id: body.itemId
-      });
-      if (!result || result.status !== "purchased" && result.status !== "already_owned" || !Number.isSafeInteger(result.balance) || result.balance < 0)
-        return json4({ error: "invalid_purchase_result" }, 503);
-      return json4(result);
-    } catch {
-      return json4({ error: "guild_token_purchase_unavailable" }, 503);
-    }
-  };
-}
-function guildShopEventClaimHandler(services2) {
-  return async (request) => {
-    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
-    const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
-    const raw2 = await request.text();
-    if (raw2.length > 512) return json4({ error: "request_too_large" }, 413);
-    let input;
-    try {
-      input = JSON.parse(raw2);
-    } catch {
-      return json4({ error: "invalid_json" }, 400);
-    }
-    if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
-    const body = input;
-    if (Object.keys(body).length !== 2 || typeof body.eventId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(body.eventId) || ![25, 50, 75, 100].includes(body.milestonePercent))
-      return json4({ error: "invalid_event_reward" }, 400);
-    try {
-      const credited = await services2.rpc("guild_shop_claim_event_community_server_v1", {
-        p_account_id: accountId,
-        p_event_id: body.eventId,
-        p_milestone_percent: body.milestonePercent
-      });
-      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 350)
-        return json4({ error: "invalid_claim_result" }, 503);
-      return json4({ credited });
-    } catch {
-      return json4({ error: "event_token_claim_unavailable" }, 503);
-    }
-  };
-}
-function guildConstructionDonationHandler(services2) {
-  return async (request) => {
-    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
-    const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
-    const raw2 = await request.text();
-    if (raw2.length > 1024) return json4({ error: "request_too_large" }, 413);
-    let input;
-    try {
-      input = JSON.parse(raw2);
-    } catch {
-      return json4({ error: "invalid_json" }, 400);
-    }
-    if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
-    const body = input;
-    if (Object.keys(body).length !== 4 || typeof body.templateId !== "string" || typeof body.resourceId !== "string" || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
-      return json4({ error: "invalid_donation" }, 400);
-    const template = GUILD_CONSTRUCTION_TEMPLATES.find((t) => t.id === body.templateId);
-    if (!template || !["gold", ...template.materials.map((m) => m.materialKey)].includes(body.resourceId))
-      return json4({ error: "invalid_construction_resource" }, 400);
-    try {
-      const result = await services2.rpc(
-        "guild_bank_allocate_server_v1",
-        {
-          p_account_id: accountId,
-          p_template_id: body.templateId,
-          p_resource_id: body.resourceId,
-          p_amount: body.amount,
-          p_request_key: body.requestKey
-        }
-      );
-      if (!result || typeof result.alreadyProcessed !== "boolean" || typeof result.completed !== "boolean")
-        return json4({ error: "invalid_donation_result" }, 503);
-      return json4(result);
-    } catch (reason) {
-      const code = reason instanceof Error ? reason.message : "";
-      if ([
-        "insufficient_gold",
-        "insufficient_construction_materials",
-        "construction_resource_target_exceeded",
-        "construction_already_completed",
-        "construction_donations_not_released",
-        "guild_level_locked",
-        "guild_membership_required",
-        "guild_construction_request_conflict",
-        "insufficient_guild_bank_balance"
-      ].includes(code)) return json4({ error: code }, code === "insufficient_gold" || code === "insufficient_construction_materials" || code === "insufficient_guild_bank_balance" ? 422 : 409);
-      return json4({ error: "guild_construction_donation_unavailable" }, 503);
-    }
-  };
-}
-function guildShopWeeklyClaimHandler(services2) {
-  return async (request) => {
-    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
-    const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
-    const raw2 = await request.text();
-    if (raw2.length > 512) return json4({ error: "request_too_large" }, 413);
-    let input;
-    try {
-      input = JSON.parse(raw2);
-    } catch {
-      return json4({ error: "invalid_json" }, 400);
-    }
-    if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
-    const body = input;
-    if (Object.keys(body).length !== 1 || !["attendance", "project", "boss"].includes(body.kind))
-      return json4({ error: "invalid_weekly_guild_reward" }, 400);
-    try {
-      const credited = await services2.rpc("guild_shop_claim_weekly_server_v1", {
-        p_account_id: accountId,
-        p_kind: body.kind
-      });
-      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 60)
-        return json4({ error: "invalid_claim_result" }, 503);
-      return json4({ credited });
-    } catch {
-      return json4({ error: "weekly_guild_reward_not_earned_or_unavailable" }, 503);
-    }
-  };
-}
-function guildBankDepositHandler(services2) {
-  return async (request) => {
-    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json4({ error: "auth_required" }, 401);
-    const accountId = await services2.authenticate(token);
-    if (!accountId) return json4({ error: "invalid_session" }, 401);
-    const raw2 = await request.text();
-    if (raw2.length > 1024) return json4({ error: "request_too_large" }, 413);
-    let input;
-    try {
-      input = JSON.parse(raw2);
-    } catch {
-      return json4({ error: "invalid_json" }, 400);
-    }
-    if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
-    const body = input;
-    if (Object.keys(body).length !== 3 || typeof body.resourceId !== "string" || !/^[A-Za-z0-9_]{1,100}$/.test(body.resourceId) || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
-      return json4({ error: "invalid_guild_bank_deposit" }, 400);
-    try {
-      const result = await services2.rpc("guild_bank_deposit_server_v1", {
-        p_account_id: accountId,
-        p_resource_id: body.resourceId,
-        p_amount: body.amount,
-        p_request_key: body.requestKey
-      });
-      if (!result || typeof result.alreadyProcessed !== "boolean" || result.amount !== body.amount || result.resourceId !== body.resourceId)
-        return json4({ error: "invalid_bank_receipt" }, 503);
-      return json4(result);
-    } catch (reason) {
-      const code = reason instanceof Error ? reason.message : "";
-      if ([
-        "guild_membership_required",
-        "guild_bank_resource_unavailable",
-        "guild_bank_resource_exceeds_active_requirements",
-        "guild_bank_item_locked",
-        "insufficient_gold",
-        "insufficient_construction_materials",
-        "guild_bank_capacity_reached",
-        "guild_bank_request_conflict",
-        "character_required"
-      ].includes(code))
-        return json4({ error: code }, code.startsWith("insufficient_") ? 422 : 409);
-      return json4({ error: "guild_bank_deposit_unavailable" }, 503);
-    }
-  };
-}
-
-// online/guild-skills-read.ts
-var responseHeaders2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-var json5 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders2 });
-function validSnapshot(value) {
-  if (!value || typeof value !== "object") return false;
-  const s = value;
-  return typeof s.guildLevel === "number" && Number.isSafeInteger(s.totalSkillPoints) && Number.isSafeInteger(s.spentSkillPoints) && Number.isSafeInteger(s.skillPoints) && Array.isArray(s.nodes) && Array.isArray(s.bank);
-}
-function guildSkillsReadHandler(services2) {
-  return async (request) => {
-    if (request.method !== "GET") return json5({ error: "method_not_allowed" }, 405);
-    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
-    if (!token) return json5({ error: "auth_required" }, 401);
-    const accountId = await services2.authenticate(token);
-    if (!accountId) return json5({ error: "invalid_session" }, 401);
-    try {
-      const snapshot2 = await services2.rpc("guild_skill_snapshot_server_v1", { p_account_id: accountId });
-      if (!validSnapshot(snapshot2)) return json5({ error: "invalid_guild_skill_snapshot" }, 503);
-      return json5(snapshot2);
-    } catch (reason) {
-      const code = reason instanceof Error ? reason.message : "";
-      if (code === "guild_membership_required") return json5({ error: code }, 403);
-      return json5({ error: "guild_skill_snapshot_unavailable" }, 503);
-    }
-  };
-}
-function guildSkillsUpgradeHandler(services2) {
   return async (request) => {
     if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
     const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
@@ -59799,29 +59714,253 @@ function guildSkillsUpgradeHandler(services2) {
     }
     if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
     const body = input;
+    if (Object.keys(body).length !== 1 || typeof body.itemId !== "string" || !GUILD_SHOP_CATALOGUE.some((c) => c.id === body.itemId))
+      return json5({ error: "unknown_guild_reward" }, 400);
+    try {
+      const result = await services2.rpc("guild_shop_purchase_server_v4", {
+        p_account_id: accountId,
+        p_item_id: body.itemId
+      });
+      if (!result || result.status !== "purchased" && result.status !== "already_owned" || !Number.isSafeInteger(result.balance) || result.balance < 0)
+        return json5({ error: "invalid_purchase_result" }, 503);
+      return json5(result);
+    } catch {
+      return json5({ error: "guild_token_purchase_unavailable" }, 503);
+    }
+  };
+}
+function guildShopEventClaimHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 512) return json5({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json5({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 2 || typeof body.eventId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(body.eventId) || ![25, 50, 75, 100].includes(body.milestonePercent))
+      return json5({ error: "invalid_event_reward" }, 400);
+    try {
+      const credited = await services2.rpc("guild_shop_claim_event_community_server_v1", {
+        p_account_id: accountId,
+        p_event_id: body.eventId,
+        p_milestone_percent: body.milestonePercent
+      });
+      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 350)
+        return json5({ error: "invalid_claim_result" }, 503);
+      return json5({ credited });
+    } catch {
+      return json5({ error: "event_token_claim_unavailable" }, 503);
+    }
+  };
+}
+function guildConstructionDonationHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 1024) return json5({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json5({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 4 || typeof body.templateId !== "string" || typeof body.resourceId !== "string" || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+      return json5({ error: "invalid_donation" }, 400);
+    const template = GUILD_CONSTRUCTION_TEMPLATES.find((t) => t.id === body.templateId);
+    if (!template || !["gold", ...template.materials.map((m) => m.materialKey)].includes(body.resourceId))
+      return json5({ error: "invalid_construction_resource" }, 400);
+    try {
+      const result = await services2.rpc(
+        "guild_bank_allocate_server_v1",
+        {
+          p_account_id: accountId,
+          p_template_id: body.templateId,
+          p_resource_id: body.resourceId,
+          p_amount: body.amount,
+          p_request_key: body.requestKey
+        }
+      );
+      if (!result || typeof result.alreadyProcessed !== "boolean" || typeof result.completed !== "boolean")
+        return json5({ error: "invalid_donation_result" }, 503);
+      return json5(result);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if ([
+        "insufficient_gold",
+        "insufficient_construction_materials",
+        "construction_resource_target_exceeded",
+        "construction_already_completed",
+        "construction_donations_not_released",
+        "guild_level_locked",
+        "guild_membership_required",
+        "guild_construction_request_conflict",
+        "insufficient_guild_bank_balance"
+      ].includes(code)) return json5({ error: code }, code === "insufficient_gold" || code === "insufficient_construction_materials" || code === "insufficient_guild_bank_balance" ? 422 : 409);
+      return json5({ error: "guild_construction_donation_unavailable" }, 503);
+    }
+  };
+}
+function guildShopWeeklyClaimHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 512) return json5({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json5({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 1 || !["attendance", "project", "boss"].includes(body.kind))
+      return json5({ error: "invalid_weekly_guild_reward" }, 400);
+    try {
+      const credited = await services2.rpc("guild_shop_claim_weekly_server_v1", {
+        p_account_id: accountId,
+        p_kind: body.kind
+      });
+      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 60)
+        return json5({ error: "invalid_claim_result" }, 503);
+      return json5({ credited });
+    } catch {
+      return json5({ error: "weekly_guild_reward_not_earned_or_unavailable" }, 503);
+    }
+  };
+}
+function guildBankDepositHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 1024) return json5({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json5({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 3 || typeof body.resourceId !== "string" || !/^[A-Za-z0-9_]{1,100}$/.test(body.resourceId) || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+      return json5({ error: "invalid_guild_bank_deposit" }, 400);
+    try {
+      const result = await services2.rpc("guild_bank_deposit_server_v1", {
+        p_account_id: accountId,
+        p_resource_id: body.resourceId,
+        p_amount: body.amount,
+        p_request_key: body.requestKey
+      });
+      if (!result || typeof result.alreadyProcessed !== "boolean" || result.amount !== body.amount || result.resourceId !== body.resourceId)
+        return json5({ error: "invalid_bank_receipt" }, 503);
+      return json5(result);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if ([
+        "guild_membership_required",
+        "guild_bank_resource_unavailable",
+        "guild_bank_resource_exceeds_active_requirements",
+        "guild_bank_item_locked",
+        "insufficient_gold",
+        "insufficient_construction_materials",
+        "guild_bank_capacity_reached",
+        "guild_bank_request_conflict",
+        "character_required"
+      ].includes(code))
+        return json5({ error: code }, code.startsWith("insufficient_") ? 422 : 409);
+      return json5({ error: "guild_bank_deposit_unavailable" }, 503);
+    }
+  };
+}
+
+// online/guild-skills-read.ts
+var responseHeaders2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+var json6 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders2 });
+function validSnapshot(value) {
+  if (!value || typeof value !== "object") return false;
+  const s = value;
+  return typeof s.guildLevel === "number" && Number.isSafeInteger(s.totalSkillPoints) && Number.isSafeInteger(s.spentSkillPoints) && Number.isSafeInteger(s.skillPoints) && Array.isArray(s.nodes) && Array.isArray(s.bank);
+}
+function guildSkillsReadHandler(services2) {
+  return async (request) => {
+    if (request.method !== "GET") return json6({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json6({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json6({ error: "invalid_session" }, 401);
+    try {
+      const snapshot2 = await services2.rpc("guild_skill_snapshot_server_v1", { p_account_id: accountId });
+      if (!validSnapshot(snapshot2)) return json6({ error: "invalid_guild_skill_snapshot" }, 503);
+      return json6(snapshot2);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if (code === "guild_membership_required") return json6({ error: code }, 403);
+      return json6({ error: "guild_skill_snapshot_unavailable" }, 503);
+    }
+  };
+}
+function guildSkillsUpgradeHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json6({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json6({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json6({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 1024) return json6({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json6({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json6({ error: "invalid_request" }, 400);
+    const body = input;
     if (Object.keys(body).length !== 2 || typeof body.skillId !== "string" || !/^[a-z][a-z0-9_]{1,63}$/.test(body.skillId) || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
-      return json5({ error: "invalid_guild_skill_upgrade" }, 400);
+      return json6({ error: "invalid_guild_skill_upgrade" }, 400);
     try {
       const result = await services2.rpc(
         "guild_skill_upgrade_server_v1",
         { p_account_id: accountId, p_skill_id: body.skillId, p_request_key: body.requestKey }
       );
       if (!result || typeof result.alreadyProcessed !== "boolean" || result.skillId !== body.skillId || !Number.isSafeInteger(result.rank) || !Array.isArray(result.costs))
-        return json5({ error: "invalid_guild_skill_receipt" }, 503);
-      return json5(result);
+        return json6({ error: "invalid_guild_skill_receipt" }, 503);
+      return json6(result);
     } catch (reason) {
       const code = reason instanceof Error ? reason.message : "";
-      if (code === "guild_skill_not_released") return json5({ error: code }, 409);
+      if (code === "guild_skill_not_released") return json6({ error: code }, 409);
       if ([
         "guild_membership_required",
         "guild_skill_not_leader",
         "guild_skill_max_rank",
         "guild_skill_request_conflict",
         "character_required"
-      ].includes(code)) return json5({ error: code }, 409);
-      if (["insufficient_skill_points", "insufficient_guild_bank_materials"].includes(code)) return json5({ error: code }, 422);
-      if (code === "unknown_guild_skill") return json5({ error: code }, 404);
-      return json5({ error: "guild_skill_upgrade_unavailable" }, 503);
+      ].includes(code)) return json6({ error: code }, 409);
+      if (["insufficient_skill_points", "insufficient_guild_bank_materials"].includes(code)) return json6({ error: code }, 422);
+      if (code === "unknown_guild_skill") return json6({ error: code }, 404);
+      return json6({ error: "guild_skill_upgrade_unavailable" }, 503);
     }
   };
 }
@@ -59860,6 +59999,7 @@ var services = {
 };
 var gameplay = gameplayHandler(services);
 var regionalCombat = regionalCombatHandlerV1(services);
+var rankings = rankingsHandler(services);
 var guildShopServices = {
   authenticate: services.authenticate,
   rpc: services.rpc,
@@ -59878,6 +60018,7 @@ var guildSkillsUpgrade = guildSkillsUpgradeHandler(guildSkillsServices);
 Deno.serve(withReleaseGate(async (request) => {
   const route = new URL(request.url);
   if (route.pathname.includes("/regional-combat")) return regionalCombat(request);
+  if (route.searchParams.get("view") === "rankings") return rankings(request);
   if (route.searchParams.get("view") === "guild-shop") {
     if (route.searchParams.get("action") === "purchase") return guildShopPurchase(request);
     if (route.searchParams.get("action") === "event-claim") return guildShopEventClaim(request);

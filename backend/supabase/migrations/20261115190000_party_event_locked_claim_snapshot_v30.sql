@@ -35,7 +35,7 @@ begin
   where party_id=o.party_id and event_starts_at=o.event_starts_at
   for update;
  if not found or w.active_stage<>3
-  or w.status not in ('active','closed')
+  or w.status not in ('active','closed','settled')
   or now()<w.event_ends_at+interval '1 hour'
  then raise exception 'party_event_v30_window_unavailable';end if;
 

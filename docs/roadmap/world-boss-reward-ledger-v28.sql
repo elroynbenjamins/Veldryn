@@ -74,6 +74,12 @@ DECLARE
  rounds integer;
  n integer;
  ledger jsonb;
+ participant jsonb;
+ participant_ids text[]:=ARRAY[]::text[];
+ participant_id text;
+ participant_role text;
+ damage_sum numeric:=0;
+ guard_sum numeric:=0;
 BEGIN
  SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'WB28_EVENT_MISSING'; END IF;
@@ -137,6 +143,32 @@ BEGIN
     jsonb_array_length(replay->'events')<1 OR
     (replay->'result'->>'survived')::boolean IS DISTINCT FROM survived
  THEN RAISE EXCEPTION 'WB28_REPLAY_COMBAT_PROOF_MISMATCH'; END IF;
+ FOR participant IN SELECT value FROM jsonb_array_elements(ledger) LOOP
+  participant_id:=participant->>'characterId';
+  participant_role:=participant->>'role';
+  IF jsonb_typeof(participant)<>'object' OR
+     participant_id IS NULL OR
+     participant_id !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' OR
+     participant_id=ANY(participant_ids) OR
+     participant_role NOT IN('tank','damage','support') OR
+     jsonb_typeof(participant->'survived')<>'boolean' OR
+     jsonb_typeof(participant->'interrupts')<>'number'
+  THEN RAISE EXCEPTION 'WB28_INVALID_ROLE_EVIDENCE'; END IF;
+  participant_ids:=array_append(participant_ids,participant_id);
+  IF (participant->>'bossHpDamage') !~ '^[0-9]+(\\.[0-9]+)?$'
+     OR (participant->>'localGuardDamage') !~ '^[0-9]+(\\.[0-9]+)?$'
+     OR (participant->>'effectiveHealing') !~ '^[0-9]+(\\.[0-9]+)?$'
+     OR (participant->>'shieldConsumed') !~ '^[0-9]+(\\.[0-9]+)?$'
+     OR (participant->>'tankProtection') !~ '^[0-9]+(\\.[0-9]+)?$'
+     OR (participant->>'cleansePrevented') !~ '^[0-9]+(\\.[0-9]+)?$'
+     OR (participant->>'interrupts') !~ '^[0-9]{1,6}$'
+  THEN RAISE EXCEPTION 'WB28_INVALID_ROLE_METRICS'; END IF;
+  damage_sum:=damage_sum+(participant->>'bossHpDamage')::numeric;
+  guard_sum:=guard_sum+(participant->>'localGuardDamage')::numeric;
+ END LOOP;
+ IF abs(damage_sum-(replay->>'rawBossHpDamage')::numeric)>.05 OR
+    abs(guard_sum-guard)>.05
+ THEN RAISE EXCEPTION 'WB28_ROLE_DAMAGE_RECONCILIATION_FAILED'; END IF;
  INSERT INTO private.world_boss_replay_proofs_v28(
   event_id,account_id,request_id,replay_digest,survived,
   boss_hp_damage,local_guard_damage,character_ledger,rounds_completed)

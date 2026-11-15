@@ -84,13 +84,18 @@ export class GuildPveV10SqlAtomicPort implements GuildPveV9AtomicPort{
     // The callback does its deterministic simulation and ledger decision
     // under the transaction, without any irreversible external effects.
     const value=await action(clone);
-    const updated=await c.query<{revision:number} & Record<string,unknown>>(
-     'UPDATE '+QA_TABLE+' SET payload=$1::jsonb, revision=revision+1'+
-      ' WHERE scope=$2 RETURNING revision',
-     [JSON.stringify(clone),this.namespace]
-    );
-    if(updated.rows.length!==1)
-     throw Error('guild_pve_v10_state_update_failed');
+    // Returning an already-committed receipt is read-only. In particular
+    // do not advance the physical row revision or force replay WAL writes.
+    const nextJson=JSON.stringify(clone);
+    if(nextJson!==JSON.stringify(original)){
+     const updated=await c.query<{revision:number} & Record<string,unknown>>(
+      'UPDATE '+QA_TABLE+' SET payload=$1::jsonb, revision=revision+1'+
+       ' WHERE scope=$2 RETURNING revision',
+      [nextJson,this.namespace]
+     );
+     if(updated.rows.length!==1)
+      throw Error('guild_pve_v10_state_update_failed');
+    }
     await c.query('COMMIT');
     committed=true;
     return structuredClone(value);

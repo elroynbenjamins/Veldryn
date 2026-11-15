@@ -68,7 +68,7 @@ async function main(){
  assert.ok(WORLD_BOSS_V24_ENGINE_VERSION.includes('v24-scripted'));
  assert.equal(validateWorldBossScripts(),126,'3 bosses x 3 phases x 14 cues');
  assert.deepEqual([1,2,3,4,5].map(worldBossAccountPressureV24),
-  [.7,.78,.85,.93,1]);
+  [.7,.775,.85,.925,1]);
  fail(()=>worldBossAccountPressureV24(0),'invalid_raid_size');
  fail(()=>worldBossAccountPressureV24(6),'invalid_raid_size');
  const {roster,verified}=await sourceRoster();

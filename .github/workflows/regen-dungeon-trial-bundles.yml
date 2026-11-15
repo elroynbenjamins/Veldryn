@@ -1,18 +1,19 @@
 name: Regenerate dungeon Trial companion Edge bundles
 on:
-  push:
+  pull_request:
     branches:
-      - fix/dungeon-companions-active-trials-20261115
+      - main
 permissions:
   contents: write
 jobs:
   rebuild:
-    if: github.actor != 'github-actions[bot]'
+    if: github.head_ref == 'fix/dungeon-companions-active-trials-20261115' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+          ref: fix/dungeon-companions-active-trials-20261115
       - uses: pnpm/action-setup@v4
         with:
           version: 10.34.9

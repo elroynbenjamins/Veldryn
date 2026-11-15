@@ -34,7 +34,9 @@ async function main(){
   assert.ok(Array.isArray(dungeon.companionCounterIds)&&dungeon.companionCounterIds.length>0,'Possible companion counters must come from the server-published encounter catalog');
  }
  const first=projection.dungeons.find((row:{id:string})=>row.id==='EXP_003');
- assert.deepEqual(first?.expectedMarksByTier,{1:80,2:88,3:100},'Canonical Sunscar tier rewards keep the existing mark multipliers');
+ assert.deepEqual(first?.expectedMarksByTier,{1:72,2:79,3:90},'Sunscar previews use rebalanced base Marks with unchanged tier multipliers');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.expectedMarksByTier,{1:50,2:55,3:63},'Entry dungeon starts at 50 Marks');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_005')?.expectedMarksByTier,{1:84,2:92,3:105},'Frostmarch endpoint stays at its existing rewards');
  assert.deepEqual(projection.dungeons.map((row:{id:string})=>row.id),['EXP_001','EXP_003','EXP_005','EXP_007'],'Two active regional dungeons plus Frostmarch and Ashlands development previews are listed');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.minLevel,10,'Restored Asterfall begins at Level 10');
  assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_001')?.tierMinLevels,{1:10,2:10,3:10},'Asterfall tiers are determined by Combat Power, not additional level offsets');

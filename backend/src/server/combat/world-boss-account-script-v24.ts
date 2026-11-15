@@ -49,7 +49,7 @@ const phaseList:readonly WorldBossPhase[]=['armored','exposed','enraged'];
 export function worldBossAccountPressureV24(size:number):number{
  if(!Number.isInteger(size)||size<1||size>5)
   throw Error('world_boss_v24_invalid_raid_size');
- return money(.70+(size-1)*.075);
+ return (700+(size-1)*75)/1000;
 }
 export interface WorldBossAccountRoleLedgerV24 extends WorldBossRoleLedger{
  characterId:string;

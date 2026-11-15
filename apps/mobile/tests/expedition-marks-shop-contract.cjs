@@ -6,6 +6,9 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const foundation=read('backend/supabase/migrations/20261111141514_dungeon_shop_hidden_atomic_foundation_v1.sql');
 const release=read('backend/supabase/migrations/20261113192000_dungeon_shop_account_resources_release_v2.sql');
 const panel=read('apps/mobile/src/components/ExpeditionShopPanel.tsx');
+const shopView=read('apps/mobile/src/components/coop/DungeonMarksShopView.tsx');
+const resourceArt=read('apps/mobile/src/theme/resource-assets.ts');
+const ingredientArt=read('apps/mobile/src/theme/ingredient-assets.ts');
 const client=read('apps/mobile/src/online/expedition-shop.ts');
 const screen=read('apps/mobile/src/screens/CoopExpeditionScreen.tsx');
 const backend=read('backend/online/dungeon-shop.ts');
@@ -49,5 +52,21 @@ assert(screen.includes('<ExpeditionShopPanel'),'the existing Dungeon entry opens
 assert(backend.includes('account.releasedPrices[offer.id]'),'server prices come from the DB');
 assert(backend.includes("published?quote.status:'unreleased'"),'disabled offers cannot render as purchasable');
 assert(catalog.includes("DUNGEON_SHOP_LIVE_V1 = true"),'DB gate, not stale hardcoded preview, owns release');
+
+// Every active Dungeon Shop material/currency offer must render its exact existing
+// pixel artwork, not the generic diamond that previously filled all item cards.
+for(const [offerId,resourceId] of Object.entries({
+ dshop_tempering_satchel:'TEMPERING_DUST',
+ dshop_gem_dust_cache:'GEM_DUST',
+ dshop_tempering_core_cache:'TEMPERING_CORE',
+ dshop_companion_essence:'essence',
+ dshop_bondstone:'bondstones',
+})){
+ assert(shopView.includes(offerId+ ":'" +resourceId+ "'"),'missing shop icon mapping: '+offerId);
+ assert((resourceId==='essence'||resourceId==='bondstones'?resourceArt:ingredientArt).includes(resourceId+':require('),'missing pixel art: '+resourceId);
+}
+assert(shopView.includes('<DungeonShopOfferIcon item={item}/>'),'offers must render their artwork');
+assert(shopView.includes('CATEGORY_PREVIEW_ART[item.category]'),'unreleased collectible previews must have category artwork');
+assert(!shopView.includes('◇'),'generic diamond shop-item placeholder must not return');
 
 console.log('PASS Expedition Shop: authoritative 17-SKU foundation, 2 safe account-resource offers, journaled Edge purchase and opt-in release');

@@ -40,13 +40,13 @@ export function useSocialNotificationCounts(){
     do{
     request.refreshAgain=false;
     try{
-      const [requests,invites,chat,mine,guildProjectRewards]=await Promise.all([
+      const [requests,invites,chat,mine]=await Promise.all([
         friendRequests(),
         socialInvitations().catch(()=>null),
         socialChatAttention().catch(()=>null),
         myGuild().catch(()=>null),
-        claimableOnlineGuildProjectRewardCount().catch(()=>0),
       ]);
+      const guildProjectRewards=mine?await claimableOnlineGuildProjectRewardCount(mine).catch(()=>0):0;
       const incoming=requests.filter(request=>request.direction==='incoming').length;
       let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;

@@ -44159,29 +44159,253 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   };
 });
 
+// ../apps/mobile/src/content/enemy-families.ts
+var ENEMY_FAMILIES = [
+  {
+    "id": "UNDEAD",
+    "name": "Undead",
+    "description": "Revenants, wraiths, spirits bound to death and the oathfallen.",
+    "monsterIds": [
+      "LANTERN_WRETCH",
+      "DROWNED_PILGRIM",
+      "OATHBOUND_SQUIRE",
+      "BANNER_SHADE",
+      "FALLEN_SENTINEL",
+      "OATHGLASS_REVENANT",
+      "BELLWRAITH",
+      "LAKEBOUND_SPECTER",
+      "ASHEN_REVENANT"
+    ]
+  },
+  {
+    "id": "HUMAN",
+    "name": "Humans",
+    "description": "Living mortal raiders, scouts, soldiers and spellcasters.",
+    "monsterIds": [
+      "RUNEBOUND_MINER",
+      "DUNE_ORACLE",
+      "SAFFRON_MARAUDER",
+      "ROYAL_SANDGUARD",
+      "ICEBOUND_RAIDER",
+      "CHOIR_HUNTER"
+    ]
+  },
+  {
+    "id": "ORC",
+    "name": "Orcs",
+    "description": "Orc warriors and raiders. Reserved for future enemy content.",
+    "monsterIds": []
+  },
+  {
+    "id": "BEAST",
+    "name": "Beasts",
+    "description": "Natural predators, wildlife and monstrous animals.",
+    "monsterIds": [
+      "MOSS_RAT",
+      "ROADSIDE_BOAR",
+      "SILVERFIN_SWARM",
+      "IRONWOOD_WOLF",
+      "MIRE_HERON",
+      "IRONBACK_MOLE",
+      "ECHO_BAT",
+      "GLASS_DUNE_STRIDER",
+      "FROSTWOLF",
+      "RIME_STALKER"
+    ]
+  },
+  {
+    "id": "VERMIN",
+    "name": "Vermin",
+    "description": "Arachnids, insects and smaller venomous swarms.",
+    "monsterIds": [
+      "VENOM_WEAVER",
+      "CAVE_SKITTER",
+      "GLOAM_MITE",
+      "SUNSCAR_SCORPION"
+    ]
+  },
+  {
+    "id": "NATURE",
+    "name": "Natureborn",
+    "description": "Living plants, treants and creatures of corrupted growth.",
+    "monsterIds": [
+      "THORNLING",
+      "BRIAR_HUSK",
+      "ANCIENT_TREANT",
+      "SNOW_TREANT",
+      "BLACKGLASS_MIRELING"
+    ]
+  },
+  {
+    "id": "CONSTRUCT",
+    "name": "Constructs",
+    "description": "Animated guardians, sentinels and artificial protectors.",
+    "monsterIds": [
+      "GLASSBOUND_SENTINEL",
+      "OBSERVATORY_KEEPER",
+      "WYRMSPINE_GUARDIAN"
+    ]
+  },
+  {
+    "id": "ELEMENTAL",
+    "name": "Elementals",
+    "description": "Living elemental forces, embers and magical wisps.",
+    "monsterIds": [
+      "FIELD_WISP",
+      "CINDER_TITAN"
+    ]
+  },
+  {
+    "id": "SPIRIT",
+    "name": "Spirits",
+    "description": "Mirage-born noncorporeal entities.",
+    "monsterIds": [
+      "MIRAGE_SHADE"
+    ]
+  },
+  {
+    "id": "GIANT",
+    "name": "Giants",
+    "description": "Trolls and other massive living giants.",
+    "monsterIds": [
+      "FOREST_TROLL"
+    ]
+  }
+];
+var FAMILY_BY_MONSTER = new Map(
+  ENEMY_FAMILIES.flatMap((family) => family.monsterIds.map((id) => [id, family]))
+);
+var ORDINARY_MONSTER_IDS = new Set(MONSTERS.filter((monster) => !monster.boss).map((monster) => monster.id));
+function enemyFamilyForMonster(monsterId) {
+  return ORDINARY_MONSTER_IDS.has(monsterId) ? FAMILY_BY_MONSTER.get(monsterId) : void 0;
+}
+
+// ../apps/mobile/src/core/mastery-rewards.ts
+function masteryRewardBonuses(rank) {
+  const safe = Number.isFinite(rank) ? Math.max(0, Math.min(30, Math.floor(rank))) : 0;
+  return {
+    damageBonus: safe < 5 ? 0 : 0.01 + 0.01 * (safe - 5) / 25,
+    materialBonus: safe < 15 ? 0 : 0.03 + 0.02 * (safe - 15) / 15
+  };
+}
+
+// ../apps/mobile/src/core/enemy-family-mastery.ts
+var FAMILY_MASTERY_MAX_RANK = 30;
+var FAMILY_MASTERY_MAX_POINTS = 5e4;
+function familyMasteryPointsForRank(rank) {
+  const r = Number.isFinite(rank) ? Math.max(0, Math.min(FAMILY_MASTERY_MAX_RANK, Math.floor(rank))) : 0;
+  return Math.round(300 * r + 41e3 * r * (r - 1) / (30 * 29));
+}
+var FAMILY_MASTERY_ZONE_REWARDS = {
+  "Greenfields": 1,
+  "Silverbrook": 1,
+  "Ironwood Forest": 1,
+  "Old Mines": 2,
+  "King's Road": 2,
+  "Sunscar": 3,
+  "Frostmarch": 4,
+  "Ashlands": 6
+};
+function enemyFamilyMasteryPointsPerKill(monsterId) {
+  if (!enemyFamilyForMonster(monsterId)) return 0;
+  const monster = MONSTERS.find((row) => row.id === monsterId && !row.boss);
+  if (!monster) return 0;
+  const byLevel = monster.level >= 75 ? 6 : monster.level >= 55 ? 4 : monster.level >= 35 ? 3 : monster.level >= 20 ? 2 : 1;
+  return Math.max(1, Math.min(6, Math.max(FAMILY_MASTERY_ZONE_REWARDS[monster.zone] ?? 1, byLevel)));
+}
+function normalizeEnemyFamilyMastery(raw2) {
+  const data = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
+  const out = {};
+  for (const family of ENEMY_FAMILIES) {
+    if (!family.monsterIds.length) continue;
+    const n = data[family.id];
+    if (typeof n === "number" && Number.isFinite(n) && Number.isSafeInteger(n) && n > 0) {
+      out[family.id] = Math.min(FAMILY_MASTERY_MAX_POINTS, n);
+    }
+  }
+  return out;
+}
+function enemyFamilyMastery(state, id) {
+  const points = normalizeEnemyFamilyMastery(state.character?.familyMasteryPoints)[id] ?? 0;
+  let rank = 0;
+  while (rank < FAMILY_MASTERY_MAX_RANK && points >= familyMasteryPointsForRank(rank + 1)) rank++;
+  return {
+    points,
+    rank,
+    nextRankPoints: familyMasteryPointsForRank(Math.min(FAMILY_MASTERY_MAX_RANK, rank + 1)),
+    ...masteryRewardBonuses(rank),
+    dropKnowledge: rank >= 10,
+    eliteKnowledge: rank >= 20,
+    badgeUnlocked: rank >= 25
+  };
+}
+function recordEnemyFamilyMastery(state, monsterId, kills) {
+  const family = enemyFamilyForMonster(monsterId);
+  if (!family || !state.character || !Number.isSafeInteger(kills) || kills <= 0) return state;
+  const perKill = enemyFamilyMasteryPointsPerKill(monsterId);
+  if (perKill < 1) return state;
+  const points = normalizeEnemyFamilyMastery(state.character.familyMasteryPoints);
+  points[family.id] = Math.min(FAMILY_MASTERY_MAX_POINTS, (points[family.id] ?? 0) + kills * perKill);
+  return { ...state, character: { ...state.character, familyMasteryPoints: points } };
+}
+
 // ../apps/mobile/src/core/monster-mastery.ts
-var MASTERY_POINTS_PER_RANK = 25;
+var MONSTER_MASTERY_MAX_RANK = 30;
+var MONSTER_MASTERY_MAX_KILLS = 1500;
+function monsterMasteryKillsForRank(rank) {
+  const r = Number.isFinite(rank) ? Math.max(0, Math.min(MONSTER_MASTERY_MAX_RANK, Math.floor(rank))) : 0;
+  return Math.round(20 * r + 900 * r * (r - 1) / (30 * 29));
+}
+function monsterMasteryRankFromKills(kills) {
+  const points = Number.isFinite(kills) ? Math.max(0, Math.floor(kills)) : 0;
+  let rank = 0;
+  while (rank < MONSTER_MASTERY_MAX_RANK && points >= monsterMasteryKillsForRank(rank + 1)) rank++;
+  return rank;
+}
 function normalizeMonsterMastery(raw2) {
-  const input = raw2 && typeof raw2 === "object" ? raw2 : {};
+  const input = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
   return Object.fromEntries(MONSTERS.filter((m) => !m.boss).flatMap((m) => {
     const n = input[m.id];
-    return typeof n === "number" && Number.isFinite(n) && n > 0 ? [[m.id, Math.min(750, Math.floor(n))]] : [];
+    return typeof n === "number" && Number.isFinite(n) && Number.isSafeInteger(n) && n > 0 ? [[m.id, Math.min(MONSTER_MASTERY_MAX_KILLS, n)]] : [];
   }));
 }
 function monsterMastery(state, id) {
   const monster = MONSTERS.find((m) => m.id === id);
   const points = monster && !monster.boss ? normalizeMonsterMastery(state.character?.monsterMasteryPoints)[id] ?? 0 : 0;
-  const rank = Math.min(30, Math.floor(points / MASTERY_POINTS_PER_RANK));
-  return { points, rank, nextRankPoints: rank >= 30 ? 750 : (rank + 1) * MASTERY_POINTS_PER_RANK, damageBonus: rank >= 30 ? 0.02 : rank >= 5 ? 0.01 : 0, materialBonus: rank >= 30 ? 0.05 : rank >= 15 ? 0.03 : 0, dropKnowledge: rank >= 10, eliteKnowledge: rank >= 20, badgeUnlocked: rank >= 25 };
+  const rank = monsterMasteryRankFromKills(points);
+  const reward3 = masteryRewardBonuses(rank);
+  return {
+    points,
+    rank,
+    nextRankPoints: monsterMasteryKillsForRank(Math.min(MONSTER_MASTERY_MAX_RANK, rank + 1)),
+    ...reward3,
+    dropKnowledge: rank >= 10,
+    eliteKnowledge: rank >= 20,
+    badgeUnlocked: rank >= 25
+  };
+}
+function monsterMasteryCombatBonuses(state, id) {
+  const species = monsterMastery(state, id);
+  const familyId = enemyFamilyForMonster(id)?.id;
+  const family = familyId ? enemyFamilyMastery(state, familyId) : void 0;
+  return {
+    species,
+    family,
+    familyId,
+    damageMultiplier: (1 + species.damageBonus) * (1 + (family?.damageBonus ?? 0)),
+    materialBonus: species.materialBonus + (family?.materialBonus ?? 0)
+  };
 }
 function recordMonsterMastery(state, id, kills) {
   if (!state.character || !MONSTERS.some((m) => m.id === id && !m.boss) || !Number.isSafeInteger(kills) || kills <= 0) return state;
   const points = normalizeMonsterMastery(state.character.monsterMasteryPoints);
-  points[id] = Math.min(750, (points[id] ?? 0) + kills);
-  const next = { ...state, character: { ...state.character, monsterMasteryPoints: points } };
-  const counters = { ...state.account.companionUnlockProgress };
-  for (const [target2, n] of Object.entries(points)) counters[target2] = Math.floor(n / 25);
-  counters.ASTERFALL_MASTERY_20_ALL = MONSTERS.filter((m) => !m.boss && (points[m.id] ?? 0) >= 500).length;
+  points[id] = Math.min(MONSTER_MASTERY_MAX_KILLS, (points[id] ?? 0) + kills);
+  const next = recordEnemyFamilyMastery({ ...state, character: { ...state.character, monsterMasteryPoints: points } }, id, kills);
+  const counters = { ...next.account.companionUnlockProgress };
+  for (const [target2, n] of Object.entries(points))
+    counters[target2] = Math.max(counters[target2] ?? 0, monsterMasteryRankFromKills(n));
+  const rank20Count = MONSTERS.filter((m) => !m.boss && monsterMasteryRankFromKills(points[m.id] ?? 0) >= 20).length;
+  counters.ASTERFALL_MASTERY_20_ALL = Math.max(counters.ASTERFALL_MASTERY_20_ALL ?? 0, rank20Count);
   return { ...next, account: { ...next.account, companionUnlockProgress: counters } };
 }
 
@@ -44352,8 +44576,8 @@ function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
   if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
-  if (requirement.type === "monster_mastery") return characters.some((character) => Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
-  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (requirement.type === "monster_mastery") return characters.some((character) => monsterMasteryRankFromKills(normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => monsterMasteryRankFromKills(n) >= 20).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
     const companionId = target2.slice("COMPANION_BOND:".length), progress = state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel ?? 0) >= amount;
@@ -50814,7 +51038,7 @@ function socketGem(state, itemId, gemId, randomRoll = Math.random()) {
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (kind === "stat" && enhancement.statGemId) throw new Error("The Stat Gem socket is already filled");
   if (kind === "effect" && enhancement.effectGemId) throw new Error("The Effect Gem socket is already filled");
-  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
+  const rollPercent = gemRollPercentFromUnitV1(randomRoll);
   let next = consumeAcross(state, gemId, 1);
   next = setEnhancement(next, itemId, {
     ...enhancement,
@@ -50861,8 +51085,6 @@ function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   const kind = gemSocketKind(gemId), enhancement = gearEnhancement(state, itemId), currentId = kind === "stat" ? enhancement.statGemId : enhancement.effectGemId;
   if (!currentId) return socketGem(state, itemId, gemId, randomRoll);
   if (currentId === gemId) {
-    const meta = canonicalGemMetaV1(gemId);
-    if (!meta) throw new Error("Only graded gems can be rerolled");
     const candidate = gemRollPercentFromUnitV1(randomRoll);
     const previous = kind === "stat" ? enhancement.statGemRollPercent : enhancement.effectGemRollPercent;
     if ((previous ?? 100) >= 120) throw new Error("This gem already has its maximum roll");
@@ -50879,7 +51101,7 @@ function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   const fee = gemUnsocketCostForStateV1(state, currentId);
   if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
   if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
-  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
+  const rollPercent = gemRollPercentFromUnitV1(randomRoll);
   let next = consumeAcross(state, gemId, 1);
   next = { ...next, character: { ...next.character, gold: next.character.gold - fee.gold } };
   if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
@@ -50942,6 +51164,11 @@ function equippedCanonicalStatGemBonusesV1(state) {
   }
   return { statPercent, statPercentagePoints };
 }
+function legacyGemBonusValue(gemId, rollPercent) {
+  const gem2 = itemDef(gemId);
+  const base = gem2.gemStat ? gem2.gemPercent ?? 0 : gem2.gemEffectValue ?? 0;
+  return base * (normalizeGemRollPercentV1(rollPercent) ?? 100) / 100;
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -50951,7 +51178,7 @@ function equippedGemBonuses(state) {
     if (!gemId) continue;
     if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
-    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
+    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += legacyGemBonusValue(gemId, gearEnhancement(state, itemId).statGemRollPercent);
   }
   return result;
 }
@@ -50963,7 +51190,7 @@ function equippedEffectGemBonuses(state) {
     const enhancement = gearEnhancement(state, itemId), gemId = enhancement.effectGemId;
     if (!gemId) continue;
     const gem2 = itemDef(gemId), meta = canonicalGemMetaV1(gemId);
-    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, meta ? gemRolledValueV1(meta.familyId, meta.grade, enhancement.effectGemRollPercent) : gem2.gemEffectValue ?? 0);
+    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, meta ? gemRolledValueV1(meta.familyId, meta.grade, enhancement.effectGemRollPercent) : legacyGemBonusValue(gemId, enhancement.effectGemRollPercent));
   }
   result.combat_speed = Math.min(0.1, result.combat_speed);
   result.boss_power = Math.min(0.15, result.boss_power);
@@ -53143,6 +53370,7 @@ function regionalHuntSeed(state, monsterId, index) {
 function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const c = state.character, baseMonster = MONSTERS.find((x) => x.id === monsterId);
   const m = baseMonster, stats4 = effectiveStats(state), modifiers = characterPermanentMultipliers(state), companion = companionCombatContribution(state);
+  const masteryBonuses = monsterMasteryCombatBonuses(state, monsterId);
   const style = classCombatStyle(c.classId), tactic = combatTactic(state.activity?.kind === "combat" ? state.activity.combatTacticId : void 0);
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === c.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
@@ -53160,14 +53388,14 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.2;
   const gearAttritionMultiplier = 1 + tierGap * MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   const outgoingPreparation = c.preparation ? preparationEffects(c.preparation).outgoing : 1;
-  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
+  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * masteryBonuses.damageMultiplier * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
   const huntOptions = usesDamageDrivenHunts(m.zone) && !m.boss ? {
     zone: m.zone,
     monsterHp: m.hp,
     playerHit: huntBasePlayerHit(
       Math.round(stats4.attack),
       m.defense,
-      setCombat.penetrationMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * progressionSpeedPenalty * outgoingPreparation
+      setCombat.penetrationMultiplier * masteryBonuses.damageMultiplier * progressionSpeedPenalty * outgoingPreparation
     ) * style.soloHuntDamageMultiplier,
     hitChance: secondary.playerHitChance,
     critChance: stats4.critChance,
@@ -53443,7 +53671,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   }
   const candyKills = sim.completed.filter((row) => row.candy).length, combatCandy = sim.kills ? 1 + 0.1 * candyKills / sim.kills : 1;
   const classGain = awardCombatClassXp(state.character, sim.kills, m.xp * effect2.xpMultiplier * multipliers.skillXpMultiplier * combatCandy, state.activity.classFocus);
-  const mastery = monsterMastery(state, m.id), materialRemainders = { ...state.character.masteryMaterialRemainders };
+  const mastery = monsterMasteryCombatBonuses(state, m.id), materialRemainders = { ...state.character.masteryMaterialRemainders };
   if (mastery.materialBonus) for (const item of items) {
     if (itemDef(item.itemId).type !== "material") continue;
     const extra = item.quantity * mastery.materialBonus + (materialRemainders[item.itemId] ?? 0), whole = Math.floor(extra + 1e-9);
@@ -54789,6 +55017,9 @@ function validateGemCombineStart(state, recipeId) {
   if (!state.character) throw new Error("Create a character first");
   const recipe2 = gemCombineRecipeV1(recipeId);
   if (!recipe2) throw new Error("Unknown gem combination");
+  const sourceGemId = recipe2.inputs[0].itemId;
+  if (state.settings.favoriteItemIds?.includes(sourceGemId) || state.settings.lockedItemIds?.includes(sourceGemId))
+    throw new Error("Unfavorite and unlock this gem before merging");
   if (!isGemFamilyRecipeUnlockedV1(state, recipe2.familyId)) throw new Error("Discover this Effect Gem recipe first");
   const skill2 = state.skills.find((row) => row.skillId === "enchanting");
   if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);

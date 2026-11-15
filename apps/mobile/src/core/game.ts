@@ -14,6 +14,7 @@ import {CLASSES} from '../content/classes';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
+import {regionalClassCounter} from './regional-class-counter';
 import {MAX_RELEASED_EQUIPMENT_TIER} from '../content/equipment-release';
 import {REGIONAL_AREAS} from '../content/regional-areas';
 import {itemDef} from '../content/items';
@@ -460,6 +461,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
   const secondary=regionalSecondaryExchange(stats,m,baseCritChance);
+  const classCounter=regionalClassCounter(m.id,c.classId);
   // effectiveStats is the canonical, already-buffed character snapshot. Do not
   // apply permanent Combat Power a second time here (or turn Attack bonuses
   // into unintended Defense bonuses).
@@ -467,7 +469,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const bossPowerMultiplier=m.boss?1+effectGems.boss_power:1;
   const boostedPower=Math.max(1,Math.round(stats.power*bossPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier;
+  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier*classCounter.outputMultiplier;
   const combatCandy=eventCandyUtilityMultiplier(state,nowMs,'combat');
   // Regional elites are the first real reason to finish the current tier. A
   // player can still scout them in starter gear, but the missing tier creates
@@ -500,7 +502,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
     playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
+      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier*classCounter.outputMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
@@ -510,15 +512,15 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   }:undefined;
   const legacyKillCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
   const killCycleSeconds=huntOptions?regionalHuntPlan(huntOptions).cycleSeconds:legacyKillCycleSeconds;
-  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,legacyKillCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier,huntOptions};
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,classCounter,boostedDefense,killCycleSeconds,legacyKillCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier,huntOptions};
 }
 
 /** Shared ordinary-hunt damage; fractional HP preserves small defensive bonuses. */
 function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,champion=false,enemyAttackCount?:number,fightSeconds?:number){
- const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds}=runtime;
+ const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,classCounter,boostedDefense,killCycleSeconds}=runtime;
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
- const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
+ const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*classCounter.incomingMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
  // Ravager's Bloodrush converts its offensive investment into modest
  // post-kill sustain. It cannot prevent a lethal hit and remains much weaker
  // when nearly all equipment slots are missing. This belongs to the same

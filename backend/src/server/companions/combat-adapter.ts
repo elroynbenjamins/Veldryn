@@ -67,7 +67,7 @@ function asterfallSignatureEffects(id:string):EngineAbilityEffect[]{
   case 'UNIT_008':return [{kind:'cleanse',tag:'dawn_pinion'}];
   case 'UNIT_009':return [{kind:'debuff',value:.03,durationMs:5000,tag:'damage_taken'}];
   case 'UNIT_010':return [{kind:'debuff',value:.035,durationMs:7000,tag:'damage_taken'}];
-  case 'UNIT_011':return [{kind:'debuff',value:.04,durationMs:6000,tag:'hit_taken'}];
+  case 'UNIT_011':return [{kind:'debuff',value:.03,durationMs:6000,tag:'crit_taken'}];
   default:return [];
  }
 }

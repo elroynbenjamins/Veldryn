@@ -60,6 +60,7 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       skillAffinity:normalizeSkillAffinitySnapshot(row.skillAffinity),
       reservedGold:Number.isFinite(Number(row.reservedGold))?Math.max(0,Math.floor(Number(row.reservedGold))):undefined,
       reservedInputs:Array.isArray(row.reservedInputs)?row.reservedInputs.filter((stack:any)=>stack&&typeof stack.itemId==='string'&&Number.isFinite(Number(stack.quantity))&&Number(stack.quantity)>0).map((stack:any)=>({itemId:String(stack.itemId).slice(0,120),quantity:Math.max(1,Math.floor(Number(stack.quantity)))})).slice(0,12):undefined,
+      combineSuccessChancePercent:Number.isInteger(row.combineSuccessChancePercent)&&row.combineSuccessChancePercent>=1&&row.combineSuccessChancePercent<=100?row.combineSuccessChancePercent:undefined,
     }))
     .filter(row=>row.completesAtMs>=row.startedAtMs)
     .slice(-(MAX_READY_EQUIPMENT_CRAFTS+MAX_EQUIPMENT_CRAFT_SLOTS+MAX_WAITING_EQUIPMENT_CRAFTS));
@@ -200,7 +201,7 @@ export function startGemCombine(state:GameState,recipeId:string,nowMs:number){
   const existingQueue=equipmentCraftingQueue(projected),startsNow=active.length<slots.capacity&&waiting.length===0;
   const job:EquipmentCraftJob={
     id:`gemcraft:${projected.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
-    recipeId,ownerCharacterId:projected.character!.id,
+    recipeId,ownerCharacterId:projected.character!.id,combineSuccessChancePercent:recipe.successChancePercent,
     startedAtMs:startsNow?nowMs:nowMs+1,completesAtMs:(startsNow?nowMs:nowMs+1)+durationMs,
     reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
     xpPerCraft:professionActionPace(projected,recipe,'forge').xpPerAction,skillAffinity:captureSkillAffinity(projected,recipe.skillId),
@@ -382,11 +383,23 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
     return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:draft,
       result:{...craftedInstanceResult(next,draft),autoSold,saleGold}};
   }
-  next=grantCraftOutput(next,recipe,job.ownerCharacterId);
+  // Legacy queued combines have no odds snapshot: honor their original 100% promise.
+  // All new rolls are supplied by the authoritative claim command.
+  const gemSucceeded=!gemCombineRecipe||job.combineSuccessChancePercent===undefined
+    ?true:(()=>{
+      if(!Number.isFinite(rarityRoll)||rarityRoll<0||rarityRoll>=1)throw new Error('Invalid trusted gem combination roll');
+      return rarityRoll<job.combineSuccessChancePercent!/100;
+    })();
+  if(gemCombineRecipe&&!gemSucceeded){
+    // Three matching gems were reserved when started; on failure, only one
+    // is destroyed. Return the other two to account-wide shared storage.
+    const inputId=gemCombineRecipe.inputs[0].itemId;
+    next=storePouchGem(next,inputId,gemCombineRecipe.inputs[0].quantity-1);
+  }else next=grantCraftOutput(next,recipe,job.ownerCharacterId);
   next=awardOwnerSkillXp(next,job.ownerCharacterId,gemRecipe!,job);
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
   next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:gemRecipe!.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
-  return {state:next,recipe:gemRecipe!,job,kind:'gem' as const,gemAction:gemRefineRecipe?'refine' as const:'combine' as const};
+  return {state:next,recipe:gemRecipe!,job,kind:'gem' as const,gemSucceeded,gemAction:gemRefineRecipe?'refine' as const:'combine' as const};
 }
 
 export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
@@ -398,12 +411,12 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,ra
 /** Settle independently claimable jobs without losing successful claims to one blocked job.
  * Unexpected errors still abort the command so the authoritative transaction rolls back. */
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
-  let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0;
+  let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0,gemFailed=0;
   const blocked:{jobId:string;reason:string}[]=[];
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{
       const result=claimForgeJob(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
-      if(result.kind==='equipment')results.push(result.result);else gemClaims++;
+      if(result.kind==='equipment')results.push(result.result);else {gemClaims++;if(!result.gemSucceeded)gemFailed++;}
     }catch(error){
       const reason=error instanceof Error?error.message:'';
       // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
@@ -415,7 +428,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
       throw error;
     }
   }
-  return {state:next,claimed,results,gemClaims,blocked};
+  return {state:next,claimed,results,gemClaims,gemFailed,blocked};
 }
 
 export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=0;

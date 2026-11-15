@@ -14,6 +14,7 @@ import {GameButton} from './GameButton';
 import {StatBar} from './StatBar';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {formatGameNumber} from '../core/number-format';
+import {displayStat} from '../core/stat-display';
 import {ot} from '../i18n';
 import {ResourceArtwork} from './ResourceArtwork';
 
@@ -34,7 +35,7 @@ export function NoviceWorkshop({state,onCraft,onCharacter}:{state:GameState;onCr
     {recipes.map(recipe=>{
       const status=recipeAvailability(state,recipe.id),piece=progress.pieces.find(piece=>piece.id===recipe.output.itemId)!,item=itemDef(piece.id),stage=NOVICE_STAGE[piece.slot]??4;
       const stateLabel=piece.equipped?gt("Equipped").toLocaleUpperCase(language):piece.owned?gt("OWNED"):piece.crafted?gt("RECRAFT"):gt("LOCKED");
-      return <View key={recipe.id} style={[s.pieceCard,piece.equipped&&{borderColor:progress.set.theme.accent}]}><View style={[s.slotIcon,{borderColor:progress.set.theme.accent}]}><EquipmentArtwork item={item} compact/><Text style={s.slotLabel}>{piece.slot.toUpperCase()}</Text></View><View style={s.pieceCopy}><View style={s.between}><Text style={s.pieceName}>{item.name}</Text><Text style={[s.status,piece.equipped&&{color:progress.set.theme.accent}]}>{stateLabel}</Text></View><Text style={s.stats}>ATK {item.attack??0} · DEF {item.defense??0} · HP {item.hp??0}</Text><Text style={s.sub}>{gt("Stage")} {stage} · Character Lv {recipe.characterLevel} · {formatGameNumber(recipe.gold,state.settings.numberMode,state.settings.language)} gold · +{formatGameNumber(recipe.xp,state.settings.numberMode,state.settings.language)} {recipe.skillId==='tailoring'?gt("Tailoring"):gt("Smithing")} XP</Text><IngredientList inputs={status.inputs} numberMode={state.settings.numberMode}/>{!piece.owned&&<Text style={s.reason}>{status.reason}</Text>}<GameButton disabled={piece.owned||!status.ready} title={piece.owned?gt("Piece owned"):status.ready?`Craft ${item.name}`:gt("Requirements missing")} onPress={()=>onCraft(recipe.id)}/></View></View>;
+      return <View key={recipe.id} style={[s.pieceCard,piece.equipped&&{borderColor:progress.set.theme.accent}]}><View style={[s.slotIcon,{borderColor:progress.set.theme.accent}]}><EquipmentArtwork item={item} compact/><Text style={s.slotLabel}>{piece.slot.toUpperCase()}</Text></View><View style={s.pieceCopy}><View style={s.between}><Text style={s.pieceName}>{item.name}</Text><Text style={[s.status,piece.equipped&&{color:progress.set.theme.accent}]}>{stateLabel}</Text></View><Text style={s.stats}>ATK {displayStat(item.attack??0)} · DEF {displayStat(item.defense??0)} · HP {displayStat(item.hp??0)}</Text><Text style={s.sub}>{gt("Stage")} {stage} · Character Lv {recipe.characterLevel} · {formatGameNumber(recipe.gold,state.settings.numberMode,state.settings.language)} gold · +{formatGameNumber(recipe.xp,state.settings.numberMode,state.settings.language)} {recipe.skillId==='tailoring'?gt("Tailoring"):gt("Smithing")} XP</Text><IngredientList inputs={status.inputs} numberMode={state.settings.numberMode}/>{!piece.owned&&<Text style={s.reason}>{status.reason}</Text>}<GameButton disabled={piece.owned||!status.ready} title={piece.owned?gt("Piece owned"):status.ready?`Craft ${item.name}`:gt("Requirements missing")} onPress={()=>onCraft(recipe.id)}/></View></View>;
     })}
   </View>;
 }

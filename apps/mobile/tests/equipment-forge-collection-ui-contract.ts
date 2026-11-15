@@ -19,6 +19,11 @@ check(panel.includes("onMoveWaiting(job.id,'up')")&&panel.includes("onMoveWaitin
 check(collection.includes('queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>'),'Forge management must be separate from Smithing/Tailoring recipe selection');
 check(collection.includes('equipmentCraftQueueModel(state,Date.now()).ready>0'),'Finished crafts must open directly into the collection flow');
 check(collection.includes('ownedEquipmentDefinitionIds(state)'),'Ownership badges must recognize Equipment Pouch contents');
+check(collection.includes('+{displayStat(Number(value))}'),'Forge equipment stats must display whole numbers rather than raw decimals');
+const card=read('src/components/RecipeCard.tsx');
+check(card.includes('ATK {displayStat(output.attack??0)}'),'Recipe details must also show whole-number gear stats');
+const novice=read('src/components/NoviceWorkshop.tsx');
+check(novice.includes('ATK {displayStat(item.attack??0)}'),'Novice gear previews must also show whole-number gear stats');
 check(collection.includes('workingTowardItemSourceEntries(state,input.itemId)')&&collection.includes('props.onNavigate(source.destination)'),'Missing material tiles must route to a valid material source');
 check(collection.indexOf('onCraft(recipe.id)')<collection.indexOf('status.inputs.map(input=>'),'Craft CTA must be visible before long material details');
 check(screen.includes('<SmithingCollection state={state} skillId={initialSkill}'),'Smithing and Tailoring must continue sharing the same refined component');

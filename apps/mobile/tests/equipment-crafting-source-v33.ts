@@ -13,7 +13,7 @@ import {HERB_NODES} from '../src/content/herbalism';
 import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
-import {increasedCraftingGoldCost} from '../src/content/crafting-gold-cost';
+import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from '../src/content/crafting-gold-cost';
 import {isT5EquipmentAffixSlot,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 
@@ -23,6 +23,10 @@ ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a re
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
 ok(T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER===1.25,'T2–T4 equipment forge XP must be increased by exactly 25%');
 ok(T3_T4_DUNEWOOD_REDUCTION_FACTOR===0.8,'T3/T4 assembly Dunewood must be 20% below the recently tripled cost');
+ok(roundEquipmentCraftingGoldCost(1286)===1300,'1286 Gold must round up to 1300');
+ok(roundEquipmentCraftingGoldCost(1249)===1200,'1249 Gold must round down to 1200');
+ok(roundEquipmentCraftingGoldCost(1250)===1300,'Halfway Gold amounts must round up');
+ok(roundEquipmentCraftingGoldCost(49)===100,'Positive gear crafts must not become free');
 // T5 was deliberately repriced (3500 → 6000 Gold, 1100 → 1200 XP) when the T5 affix
 // slots landed; every other tier stays pinned to its original baseline.
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
@@ -32,7 +36,8 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const previousPrice=Math.max(1,Math.round(originalTierGold[recipe.v33EquipmentTier]*originalSlotGold[slot]));
   const highSunscar=recipe.v33EquipmentTier==='T3'||recipe.v33EquipmentTier==='T4';
-  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3)*(highSunscar?2:1),recipe.id+' must use the existing forge baseline plus exactly 2× Gold for T3/T4 only');
+  ok(recipe.gold===roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(previousPrice*3)*(highSunscar?2:1)),recipe.id+' must round its final forge Gold amount to the nearest 100');
+  ok(recipe.gold>0&&recipe.gold%100===0,recipe.id+' must have a positive 100-Gold-multiple price');
   const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
   const previousXp=baselineXp+(highSunscar?20:0);
   const boostedTier=['T2','T3','T4'].includes(recipe.v33EquipmentTier);
@@ -46,7 +51,8 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
 for(const recipe of NOVICE_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!,stage=NOVICE_STAGE[slot]??4;
   const previousPrice=(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2;
-  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3),recipe.id+' novice equipment must cost 20% above the 3× forge baseline');
+  ok(recipe.gold===roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(previousPrice*3)),recipe.id+' novice equipment must round its adjusted forge price to the nearest 100');
+  ok(recipe.gold>0&&recipe.gold%100===0,recipe.id+' novice craft must have a positive 100-Gold-multiple price');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' novice recipe price must match the shared catalog');
 }
 const firstNovice=NOVICE_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.output.itemId.endsWith('_CHEST'))!;

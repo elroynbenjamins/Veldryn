@@ -1,5 +1,5 @@
 import type {ClassId,GearSlot} from '../core/types';
-import {increasedCraftingGoldCost} from './crafting-gold-cost';
+import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from './crafting-gold-cost';
 import {isT5EquipmentAffixSlot,T5_AFFIX_EXTRA_FIXATIVE,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_TIME_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from './t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
@@ -156,7 +156,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     skillId,
     level,
     xp:craftXp,
-    gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1),
+    gold:roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1)),
     seconds:clamp(Math.round(baseSeconds*(t5Affix?T5_AFFIX_TIME_MULTIPLIER:1)),range.min,range.max),
     inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier*(t5Affix?T5_AFFIX_MATERIAL_MULTIPLIER:1),skillId),infusion]),
     output:{itemId:String(piece['Piece ID']),quantity:1},

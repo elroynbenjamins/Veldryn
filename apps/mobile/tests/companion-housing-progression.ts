@@ -1,7 +1,7 @@
 import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
 import {unlockCombatCompanion,sanitizeCombatCompanionState,purchaseCompanionLevel,applyCompanionXp,combatCompanionUiModel} from '../src/core/combat-companions';
-import {companionHousingTier,companionHousingLevelCap,upgradeCompanionHousing,normalizeCompanionHousingTiers} from '../src/core/companion-housing';
+import {companionHousingTier,companionHousingLevelCap,companionHousingUpgradeCost,upgradeCompanionHousing,normalizeCompanionHousingTiers} from '../src/core/companion-housing';
 import {normalizeCompanionRuntimeSave} from '../src/core/companion-save';
 import {combatCompanionDef} from '../src/content/combat-companions';
 import {awardCompanionXpServer} from '../../../backend/src/server/companions/progression-v2';
@@ -45,4 +45,7 @@ assert.equal(migrated.account.companionHousingMigratedV1,true);
 const tampered={...migrated,account:{...migrated.account,combatCompanionProgress:{...migrated.account.combatCompanionProgress,[id]:{...migrated.account.combatCompanionProgress![id],level:25,ascensionTier:2}}}};
 assert.equal(companionHousingTier(id,sanitizeCombatCompanionState(tampered).account.companionHousingTiers),1);
 assert.deepEqual(normalizeCompanionHousingTiers({UNIT_004:99,OTHER:-1,WRONG:'3'}),{UNIT_004:3});
+assert.equal(companionHousingUpgradeCost('UNIT_001',{UNIT_001:1}),undefined);
+assert.equal(companionHousingUpgradeCost('UNIT_004',{UNIT_004:2}),undefined);
+assert.ok(!!companionHousingUpgradeCost('UNIT_007',{UNIT_007:2}));
 console.log('PASS quarters progression: XP caps, paid training, legacy credit, and save round-trip');

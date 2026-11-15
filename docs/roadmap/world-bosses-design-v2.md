@@ -1,6 +1,6 @@
 # Veldryn — World Bosses | Detailed Design v2 (Historical)
 
-**Superseded 2026-11-15:** The new five-day preparation + six Saturday/Sunday 30-minute attack windows, and 1–5 owned characters attacking in one Account Raid, replace v2's unrestricted seven-day attack period and mandatory cross-account 4-role Echo squad. See [V22 weekend Account Raids](world-boss-weekend-account-raids-v22.md). This v2 file remains only as historical rationale; all other values require reconciliation before release.
+**Superseded 2026-11-15:** The new five-day preparation + one continuous 48-hour Saturday/Sunday battle window (Sat 00:00–Mon 00:00 UTC), and 1–5 owned characters attacking in one Account Raid, replace v2's unrestricted seven-day attack period and mandatory cross-account 4-role Echo squad. See [V22 weekend Account Raids](world-boss-weekend-account-raids-v22.md). This v2 file remains only as historical rationale; all other values require reconciliation before release.
 **Date:** 2026-11-10 · **Economy/shop amendment:** 2026-11-11 · **Status:** design only — no playable content, migrations, assets or backend changes
 **Source of truth:** standalone World Bosses roadmap workbook in `docs/roadmap/spreadsheets/`. Preserve the November 9 v1 baseline; all **Proposed v2** values require balancing approval.
 

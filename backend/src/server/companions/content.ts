@@ -83,6 +83,56 @@ export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'any' 
 
 type TechniqueSeed={suffix:string;name:string;description:string;effects:CompanionTechniqueDefinition['effects']};
 const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
+ // Preserve legacy technique IDs so no player loses a selected path.
+ // Each option deliberately changes an effect that its companion actually uses.
+ UNIT_001:[
+  {suffix:'EXECUTIONER',name:'Relentless Hunter',description:'Hamstring Pounce gains +11% execute pressure below 30% HP.',effects:[{kind:'execute',value:.11}]},
+  {suffix:'RELENTLESS',name:'Swift Pursuit',description:'Exchange burst for a quicker Pounce cycle.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.10}]},
+ ],
+ UNIT_002:[
+  {suffix:'FORTIFIED',name:'Deeper Runes',description:'Fortify Rune Brace with +16% shield strength.',effects:[{kind:'shield_strength',value:.16}]},
+  {suffix:'REFLECTIVE',name:'Mirror Runes',description:'Give up a little shield strength to reflect more damage.',effects:[{kind:'shield_strength',value:-.04},{kind:'reflect',value:.12}]},
+ ],
+ UNIT_003:[
+  {suffix:'DEEP_RESTORATION',name:'Deep Current',description:'Silver Current restores +15% more HP, including its restorative pulse.',effects:[{kind:'heal_strength',value:.15}]},
+  {suffix:'RAPID_AID',name:'Running Brook',description:'A shorter cooldown with a smaller increase to initial healing.',effects:[{kind:'heal_strength',value:.04},{kind:'cooldown',value:-.11}]},
+ ],
+ UNIT_004:[
+  {suffix:'EXECUTIONER',name:'Briar Breaker',description:'A stronger Briar Charge against enemies close to defeat.',effects:[{kind:'execute',value:.10},{kind:'damage',value:.02}]},
+  {suffix:'RELENTLESS',name:'Rushing Thorns',description:'Faster charges for repeated short vulnerability windows.',effects:[{kind:'cooldown',value:-.11},{kind:'damage',value:.02}]},
+ ],
+ UNIT_005:[
+  {suffix:'DEEP_RESTORATION',name:'Flicker Sense',description:'Improve Haste and readiness while preserving an interrupt.',effects:[{kind:'haste',value:.045},{kind:'cooldown',value:-.04}]},
+  {suffix:'RAPID_AID',name:'Quick Snuff',description:'A substantially shorter interrupt cooldown with modest Haste.',effects:[{kind:'haste',value:.012},{kind:'cooldown',value:-.16}]},
+ ],
+ UNIT_006:[
+  {suffix:'FORTIFIED',name:'Oathkeeper',description:'Page\'s Vow grants a stronger shield on demanding encounters.',effects:[{kind:'shield_strength',value:.16}]},
+  {suffix:'REFLECTIVE',name:'Reprisal Vow',description:'A thinner ward reflects a portion of absorbed blows.',effects:[{kind:'shield_strength',value:-.04},{kind:'reflect',value:.10}]},
+ ],
+ UNIT_007:[
+  {suffix:'EXECUTIONER',name:'Final Shadow',description:'Gloamstep hits wounded enemies much harder.',effects:[{kind:'execute',value:.13}]},
+  {suffix:'RELENTLESS',name:'Veiled Assault',description:'A more frequent strike with smaller damage increases.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.11}]},
+ ],
+ UNIT_008:[
+  {suffix:'DEEP_RESTORATION',name:'Bright Ward',description:'Strengthen Dawn Pinion shielding by 16% while retaining its cleanse.',effects:[{kind:'shield_strength',value:.16}]},
+  {suffix:'RAPID_AID',name:'Quick Pinion',description:'A shorter emergency shield and cleanse cycle.',effects:[{kind:'shield_strength',value:-.03},{kind:'cooldown',value:-.15}]},
+ ],
+ UNIT_009:[
+  {suffix:'EXECUTIONER',name:'Resonant Rend',description:'Sharper finishing attacks during Echo Rend vulnerability windows.',effects:[{kind:'execute',value:.08},{kind:'damage',value:.02}]},
+  {suffix:'RELENTLESS',name:'Echo Pursuit',description:'Maintain pressure with faster Rends.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.10}]},
+ ],
+ UNIT_010:[
+  {suffix:'EXECUTIONER',name:'High-Caliber Bolt',description:'Concentrate artillery power into one heavier Siege Bolt.',effects:[{kind:'damage',value:.075}]},
+  {suffix:'RELENTLESS',name:'Rapid Calibration',description:'Use quicker bolts with a lower peak damage increase.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.10}]},
+ ],
+ UNIT_011:[
+  {suffix:'DEEP_RESTORATION',name:'Precise Command',description:'Improve Memory Command damage instead of unused restoration.',effects:[{kind:'damage',value:.075}]},
+  {suffix:'RAPID_AID',name:'Swift Orders',description:'Use quicker tactical commands for repeated openings.',effects:[{kind:'damage',value:.02},{kind:'cooldown',value:-.13}]},
+ ],
+ UNIT_012:[
+  {suffix:'DEEP_RESTORATION',name:'Clear Reflection',description:'Strengthen the damage boost from Oathglass Reflection.',effects:[{kind:'damage',value:.11}]},
+  {suffix:'RAPID_AID',name:'Shifting Reflection',description:'Recover Reflection sooner to support frequent attack windows.',effects:[{kind:'cooldown',value:-.14}]},
+ ],
   UNIT_013:[
     {suffix:'VENOM_AMBUSH',name:'Venom Ambush',description:'Lean into poisoned prey with stronger finishing pressure.',effects:[{kind:'damage',value:.04},{kind:'execute',value:.08}]},
     {suffix:'SANDSTEP',name:'Sandstep',description:'Trade burst for faster repositioning and active cycles.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.06}]},

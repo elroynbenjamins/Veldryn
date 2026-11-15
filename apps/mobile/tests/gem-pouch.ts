@@ -14,10 +14,10 @@ import {executeGameCommand,validateGameCommand} from '../src/core/game-commands'
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const emberBonus=gemPouchBonusDisplayV1('EMBER_SHARD');
-ok(emberBonus.active&&emberBonus.bonus==='+2% Attack when socketed','Legacy Ember Shard must describe its real attack bonus, not generic material text');
-ok(gemPouchBonusDisplayV1('WARD_SHARD').bonus.includes('+2% Defense'),'Legacy Ward Shard must show its defense bonus');
-ok(gemPouchBonusDisplayV1('VITALITY_HEART_GEM').bonus.includes('+5% Max HP'),'Legacy Vitality Heart must show its HP bonus');
-ok(gemPouchBonusDisplayV1('BOSSBANE_SIGIL').bonus.includes('+3% combat power against bosses'),'Legacy effect gems must show their actual combat effect');
+ok(emberBonus.active&&emberBonus.bonus==='+1.6–2.4% Attack when socketed','Legacy Ember Shard must describe its real attack bonus, not generic material text');
+ok(gemPouchBonusDisplayV1('WARD_SHARD').bonus.includes('+1.6–2.4% Defense'),'Legacy Ward Shard must show its defense bonus');
+ok(gemPouchBonusDisplayV1('VITALITY_HEART_GEM').bonus.includes('+4–6% Max HP'),'Legacy Vitality Heart must show its HP bonus');
+ok(gemPouchBonusDisplayV1('BOSSBANE_SIGIL').bonus.includes('+2.4–3.6% combat power against bosses'),'Legacy effect gems must show their actual combat effect');
 const cutVitality=gemPouchBonusDisplayV1('gem:stat_vitality:g1');
 ok(cutVitality.active&&cutVitality.bonus.includes('Max HP')&&cutVitality.bonus.includes('when socketed'),'Canonical stat gems must show their grade-dependent socket bonus');
 const momentumBonus=gemPouchBonusDisplayV1('gem:effect_momentum:g1');

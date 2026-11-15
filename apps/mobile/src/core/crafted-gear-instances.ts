@@ -169,6 +169,11 @@ export function craftedInstanceResult(state:GameState,instance:CraftedGearInstan
   const copies=craftedInstancesForItem(state,instance.itemId,instance.ownerCharacterId),baseRarity:'common'='common';
   return {
     instanceId:instance.id,itemId:instance.itemId,rarity:instance.rarity,quality:instance.quality,baseRarity,
+    // Trusted command response metadata for read-only public forge announcements.
+    itemName:itemDef(instance.itemId).name,
+    crafterName:state.character?.id===instance.ownerCharacterId
+      ?state.character.name
+      :(state.otherCharacters??[]).find(row=>row.character.id===instance.ownerCharacterId)?.character.name??'Adventurer',
     qualityProc:instance.rarity!==baseRarity,duplicateCount:Math.max(0,copies.length-1),
     statMultiplier:craftedRarityStatMultiplier(instance.itemId,instance.rarity)*(instance.quality===undefined?1:craftedGearQualityMultiplier(instance.quality)),
     autoSold:undefined as 'incoming'|'existing'|undefined,saleGold:0,

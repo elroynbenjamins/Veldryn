@@ -18,6 +18,7 @@ on:
       - 'apps/mobile/src/core/permanent-boosts.ts'
       - 'apps/mobile/src/core/equipment-salvage.ts'
       - 'apps/mobile/src/core/crafted-gear-ownership.ts'
+      - 'apps/mobile/src/core/crafted-gear-instances.ts'
       - 'apps/mobile/src/core/equipment-pouch-selling.ts'
       - 'apps/mobile/tests/equipment-salvage-recovery.ts'
       - 'apps/mobile/tests/faith.ts'

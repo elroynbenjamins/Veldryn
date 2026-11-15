@@ -2,6 +2,7 @@ import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {gemPouch,gemPouchUpgradePreview,gemStorageQuantity} from '../core/gem-pouch';
+import {professionActionPace} from '../core/profession-action-pace';
 import {gemPouchBonusDisplayV1} from '../core/gem-pouch-bonus-display';
 import {availableGemCombinesV1,availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1,gemCombineRecipeIdV1,gemCombineRecipeV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
@@ -46,6 +47,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const refinement=selectedRaw?availableGemRefinementsV1(state).find(row=>row.recipe.familyId===selectedRaw.familyId&&row.recipe.grade===selectedRaw.grade):undefined;
   const combination=selectedMeta&&selectedMeta.grade<5?availableGemCombinesV1(state).find(row=>row.recipe.familyId===selectedMeta.familyId&&row.recipe.fromGrade===selectedMeta.grade):undefined;
   const combineRecipe=pendingCombine?gemCombineRecipeV1(gemCombineRecipeIdV1(pendingCombine.familyId,pendingCombine.grade)):undefined;
+  const combineXp=combination?Math.floor(professionActionPace(state,combination.recipe,'forge').xpPerAction+1e-9):0;
+  const pendingCombineXp=combineRecipe?Math.floor(professionActionPace(state,combineRecipe,'forge').xpPerAction+1e-9):0;
   const selectedRarity=selectedItem?rarityMeta(grade?GEM_GRADE_RARITY_V1[grade]:itemRarity(selectedItem)):undefined;
   const favorite=!!selectedStack&&!!state.settings.favoriteItemIds?.includes(selectedStack.itemId),locked=!!selectedStack&&!!state.settings.lockedItemIds?.includes(selectedStack.itemId);
   const protectedGem=favorite||locked;
@@ -113,6 +116,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         {combination?<View style={s.refinement}>
           <Text style={s.itemName}>{p('Merge gems')} · G{combination.recipe.fromGrade} → G{combination.recipe.toGrade}</Text>
           <Text style={s.meta}>{p('Combine 3 identical gems into 1 higher-grade gem.')}</Text>
+          <Text style={[s.meta,{color:C.good}]}>{p('+{xp} Enchanting XP on claim',{xp:combineXp.toLocaleString(language)})}</Text>
           <Text style={s.meta}>{p('Requires Lv {level} · {gold} Gold · {materials}',{level:combination.recipe.level,gold:combination.recipe.gold.toLocaleString(language),materials:combination.recipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', ')})}</Text>
           {!combination.recipeReady?<Text style={[s.meta,{color:C.warning}]}>{p('Discover this Effect Gem recipe first.')}</Text>:null}
           {!combination.skillReady?<Text style={[s.meta,{color:C.warning}]}>{p('Requires Enchanting level {level}',{level:combination.recipe.level})}</Text>:null}
@@ -128,7 +132,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         <Text style={s.meta}>{p('Gems remain available for equipment socketing and crafting directly from shared storage.')}</Text>
       </ScrollView>:null}
     </GameModalSurface>
-    <ConfirmModal visible={!!pendingCombine} title={p('Merge gems?')} message={combineRecipe?p('Reserve {materials} and {gold} Gold to produce 1× {result} in the Forge queue.',{materials:combineRecipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', '),gold:combineRecipe.gold.toLocaleString(language),result:localizedItemName(language,combineRecipe.output.itemId)}):''} confirmLabel={p('Start merge')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingCombine;setPendingCombine(null);if(pending)void onAction?.({type:'gem_combine',args:{familyId:pending.familyId,grade:pending.grade}})}} onCancel={()=>setPendingCombine(null)}/>
+    <ConfirmModal visible={!!pendingCombine} title={p('Merge gems?')} message={combineRecipe?p('Reserve {materials} and {gold} Gold to produce 1× {result} in the Forge queue.',{materials:combineRecipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', '),gold:combineRecipe.gold.toLocaleString(language),result:localizedItemName(language,combineRecipe.output.itemId)})+'\n'+p('+{xp} Enchanting XP on claim',{xp:pendingCombineXp.toLocaleString(language)}):''} confirmLabel={p('Start merge')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingCombine;setPendingCombine(null);if(pending)void onAction?.({type:'gem_combine',args:{familyId:pending.familyId,grade:pending.grade}})}} onCancel={()=>setPendingCombine(null)}/>
     <ConfirmModal visible={!!pendingSell} title={p('Sell gems from Gem Pouch?')} message={pendingSell?p('{count}× {name} · {gold} Gold. This cannot be undone.',{count:pendingSell.quantity,name:localizedItemName(language,pendingSell.itemId),gold:(pendingSell.quantity*itemDef(pendingSell.itemId).value).toLocaleString(language)}):''} confirmLabel={p('Sell gems')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingSell;setPendingSell(null);if(pending)void onAction?.({type:'gem_pouch_sell',args:pending})}} onCancel={()=>setPendingSell(null)}/>
     <ConfirmModal visible={!!pendingDismantle} title={p('Dismantle this gem?')} message={pendingDismantle?p('Convert 1× {name} into Gem Dust? This cannot be undone.',{name:localizedItemName(language,pendingDismantle)}):''} confirmLabel={p('Dismantle')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const id=pendingDismantle;setPendingDismantle(null);if(id)void onAction?.({type:'gem_dismantle',args:{gemId:id,quantity:1}})}} onCancel={()=>setPendingDismantle(null)}/>
   </View>;

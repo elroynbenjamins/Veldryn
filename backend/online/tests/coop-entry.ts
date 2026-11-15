@@ -44,6 +44,8 @@ async function main(){
  assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_003')?.tierMinPower,{1:6000,2:7250,3:8500});
  for(const id of ['EXP_001','EXP_003'])assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id===id)?.bossVariants.map((row:{chancePercent:number})=>row.chancePercent),[50,50],'Each active dungeon must expose two equally likely bosses');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_005')?.lockedReason,'In Development','Frostmarch is preview-only');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_005')?.bossVariants,[],'Do not advertise unpublished Frostmarch boss-specific gem rewards before settlement support');
+ assert.deepEqual(projection.dungeons.find((row:{id:string})=>row.id==='EXP_007')?.bossVariants,[],'Do not advertise unfinished Ashlands boss-specific reward odds');
  assert.equal(projection.dungeons.find((row:{id:string})=>row.id==='EXP_007')?.lockedReason,'In Development','Ashlands preview is visible but unplayable');
  assert.ok(!projection.dungeons.some((dungeon:{id:string})=>dungeon.id==='EXP_008'),'Second Ashlands dungeon remains out of the playable catalog');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');

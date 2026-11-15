@@ -234,6 +234,8 @@ export class GuildPveV9TransactionService {
     state.receipts[key]={fingerprint,value};
     return value;
    };
+   // A cycle-bound account cannot probe another guild via a free stale
+   // result. Even a zero-cost saved receipt requires correct guild binding.
    if(node.cleared)return save(receipt('stale',null,[]));
    if(!isAccessible(run,action.nodeId))throw Error('guild_pve_v9_node_locked');
    const week2=server.nowUtcMs>=run.startMs+7*DAY;

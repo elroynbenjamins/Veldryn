@@ -8,6 +8,7 @@ const app=read('App.tsx'),screen=read('src/screens/CoopExpeditionScreen.tsx');
 const loadout=read('src/components/coop/CoopLoadoutSelection.tsx');
 const setup=read('src/components/coop/CoopCombatSetupPanel.tsx');
 const picker=read('src/components/coop/CoopDungeonCompanionSelector.tsx');
+const commands=read('src/core/game-commands.ts');
 const browse=read('src/core/coop-dungeon-browsing.ts');
 
 assert.match(app,/onRunActiveChange=\{setDungeonFlowActive\} onCommand=\{runCompanionCommand\}/,'Dungeon uses the existing trusted command path');
@@ -24,6 +25,8 @@ assert.match(setup,/onPress=\{onChooseCompanion\?\?\(\(\)=>toggle\('companion'\)
 assert.match(picker,/canEquipCompanion\(role,def\.role\)/,'Same-class-role companions cannot be chosen');
 assert.match(picker,/companionTrialProgress.*activeRun.*teamCompanionIds/,'Active Trial membership is visible in the dungeon picker');
 assert.match(picker,/busy:onExpedition/,'Only Sanctuary Expeditions block dungeon companion selection');
+assert.match(commands,/if\(command\.type==='companion_equip'\)assertCompanionIdle\(state,text\(a,'id'\),\{allowActiveTrial:true\}\)/,'Server and local equip command allow active Trial companions');
+assert.match(commands,/\['companion_level','companion_ascend','companion_master'\].*assertCompanionIdle/,'Other reserved companion actions keep their existing availability guard');
 assert.match(picker,/item\.inTrial\?st\('In Trial · Available'\)/,'Trial companions appear selectable in the dungeon picker');
 assert.match(picker,/companionAssignments\?\.some/,'Sanctuary Expeditions reserve companions');
 assert.match(picker,/dungeonCompanionOpportunity\(id,possibleCounterIds\)/,'Recommendations reuse the canonical counter matcher');

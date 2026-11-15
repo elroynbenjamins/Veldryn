@@ -50,6 +50,7 @@ function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantSt
   switch(rule) {
     case 'self': return [actor];
     case 'lowest_hp_ally': { const live=living(allies); return live.length ? [live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)] : []; }
+    case 'lowest_hp_ally_with_dot': { const live=living(allies),poisoned=live.filter(x=>x.periodic.some(p=>p.kind==='dot')),candidates=poisoned.length?poisoned:live;return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[]; }
     case 'all_allies': return living(allies);
     case 'all_enemies': return living(enemies);
     case 'random_enemy': { const live=living(enemies); return live.length ? [rng.pick(live,label)] : []; }

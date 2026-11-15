@@ -42313,6 +42313,8 @@ var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
+var T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
+var T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
@@ -42360,6 +42362,10 @@ function mergeInputs(inputs) {
   const totals = /* @__PURE__ */ new Map();
   for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
   return [...totals].map(([itemId, quantity]) => ({ itemId, quantity }));
+}
+var EQUIPMENT_PRIMARY_MATERIAL_REDUCTION = 2;
+function reducePrimaryEquipmentMaterial(inputs) {
+  return inputs.map((input, index) => index === 0 ? { ...input, quantity: Math.max(1, input.quantity - EQUIPMENT_PRIMARY_MATERIAL_REDUCTION) } : input);
 }
 function ingredients(tier, path, multiplier, skillId) {
   multiplier *= TIER_MATERIAL_MULTIPLIER[tier] ?? 1;
@@ -42427,7 +42433,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
-  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const boostedCraftXp = tier === "T2" ? Math.round(standardCraftXp * T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : ["T3", "T4"].includes(tier) ? Math.round(standardCraftXp * T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : standardCraftXp;
+  const craftXp = t5Affix ? Math.round(boostedCraftXp * T5_AFFIX_XP_MULTIPLIER) : boostedCraftXp;
   const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
   const baseSeconds = clamp(Math.round(range.base * multiplier), range.min, range.max);
   return {
@@ -42438,7 +42445,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     xp: craftXp,
     gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
     seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
+    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId)), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42683,7 +42690,7 @@ var ALCHEMY_RECIPES = [
   recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
   recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
   recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
-  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "RIVER_MINT", quantity: 5 }]),
   recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
   recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
   recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),
@@ -43181,6 +43188,12 @@ function companionCombatContribution(state) {
   return { outputMultiplier: 1 + contribution * outputWeight, incomingDamageMultiplier: 1 - contribution * incomingWeight, recoveryMultiplier: 1 + contribution * recoveryWeight, directHealingPctPerHour, contributionPct: contribution };
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
+
+// ../apps/mobile/src/core/monthly-quest-milestones.ts
+init_progression();
+init_faith2();
+var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
+var MAX_XP2 = totalXpAtLevel(100);
 
 // ../apps/mobile/src/content/skills.ts
 init_progression();

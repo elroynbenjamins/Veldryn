@@ -21,6 +21,7 @@ import {C,radii,spacing,typography} from '../theme/theme';
 export function EnemyFamilyMasteryPanel({state}:{state:GameState}){
  const language=useGameLanguage(),t=(value:string)=>companionContent(language,value);
  const num=(value:number)=>formatLocalizedNumber(language,value);
+ const percent=(value:number)=>formatLocalizedNumber(language,value*100,{minimumFractionDigits:0,maximumFractionDigits:2});
  const [open,setOpen]=useState(false),[expandedFamilyId,setExpandedFamilyId]=useState<string|undefined>();
  const seenIds=new Set([...state.unlockedMonsterIds,...Object.keys(state.character?.monsterMasteryPoints??{})]);
  const families=ENEMY_FAMILIES.filter(family=>family.monsterIds.length>0&&
@@ -42,7 +43,7 @@ export function EnemyFamilyMasteryPanel({state}:{state:GameState}){
   {open&&<>
    <View style={styles.ladder}>
     <Text style={styles.ladderTitle}>{t('LONG-TERM MASTERY')} · {num(FAMILY_MASTERY_MAX_POINTS)} {t('POINTS TO RANK 30')}</Text>
-    <Text style={styles.copy}>{t('Rank requirements increase gradually. Reward points depend on the monster, not your character level.')}</Text>
+    <Text style={styles.copy}>{t('Each rank grows more difficult. Damage grows after Rank 5; materials after Rank 15. Rewards depend on the enemy, not your character level.')}</Text>
     <View style={styles.milestoneChips}>{ENEMY_FAMILY_MASTERY_MILESTONES.map(row=>
      <View key={row.rank} style={styles.milestoneChip}>
       <Text style={styles.chipRank}>{t('RANK')} {row.rank}</Text>
@@ -74,8 +75,8 @@ export function EnemyFamilyMasteryPanel({state}:{state:GameState}){
       current={m.rank===FAMILY_MASTERY_MAX_RANK?m.currentRankTarget:m.currentRankProgress}
       max={m.currentRankTarget}/>
      <View style={styles.effectRow}>
-      <Text style={styles.effect}>+{Math.round(m.damageBonus*100)}% {t('damage')}</Text>
-      <Text style={styles.effect}>+{Math.round(m.materialBonus*100)}% {t('materials')}</Text>
+      <Text style={styles.effect}>+{percent(m.damageBonus)}% {t('damage')}</Text>
+      <Text style={styles.effect}>+{percent(m.materialBonus)}% {t('materials')}</Text>
       <Text style={styles.effectHint}>{t('Stacks with species')}</Text>
      </View>
      {isExpanded&&<>

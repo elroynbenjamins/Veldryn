@@ -147,3 +147,56 @@ BEGIN
   THEN RAISE EXCEPTION 'FROZEN_SNAPSHOT_PERSONAL_RANK_NOT_UNBOUNDED'; END IF;
   RAISE NOTICE '50k account personal rank outside page cap remains preserved';
 END $own_rank_beyond_cap$;
+
+
+-- The guild board's personal standing belongs to the player's current guild,
+-- not a nonexistent "guild account" row. Membership changes take effect
+-- immediately without moving anyone else's original rank.
+DO $guild_frozen_self$
+DECLARE
+  v_account uuid;
+  v_guild uuid:=gen_random_uuid();
+  v_result jsonb;
+  v_cursor uuid;
+BEGIN
+  SELECT p.account_id INTO v_account FROM public.player_profiles p
+  WHERE p.profile_visibility='public'
+    AND NOT EXISTS(SELECT 1 FROM public.guild_members gm WHERE gm.account_id=p.account_id)
+  ORDER BY p.account_id LIMIT 1;
+  IF v_account IS NULL THEN
+    RAISE EXCEPTION 'GUILD_SNAPSHOT_NEEDS_GUILDLESS_STAGING_ACCOUNT';
+  END IF;
+
+  INSERT INTO public.guilds(id,name,owner_account_id,level,xp,member_cap)
+  VALUES(v_guild,'QA Ranking '||substr(v_guild::text,1,8),v_account,9,1234,12);
+  INSERT INTO public.guild_members(guild_id,account_id,role)
+  VALUES(v_guild,v_account,'leader');
+
+  SELECT public.rankings_frozen_start_server_v1(v_account,'guild',3)
+  INTO v_result;
+  v_cursor:=(v_result->>'cursor')::uuid;
+  IF (v_result->'self'->>'listed')::boolean IS NOT TRUE
+    OR (v_result->'self'->>'rank')::bigint<>1
+    OR (v_result->'self'->>'value')::bigint<>9
+    OR jsonb_array_length(v_result->'entries')<>1
+    OR (v_result->'entries'->0->>'isSelf')::boolean IS NOT TRUE
+  THEN RAISE EXCEPTION 'GUILD_SNAPSHOT_OWN_STANDING_MISSING'; END IF;
+
+  DELETE FROM public.guild_members
+  WHERE guild_id=v_guild AND account_id=v_account;
+  SELECT public.rankings_frozen_page_server_v1(v_account,v_cursor)
+  INTO v_result;
+  IF (v_result->'self'->>'listed')::boolean IS NOT FALSE
+    OR (v_result->'entries'->0->>'isSelf')::boolean IS NOT FALSE
+    OR (v_result->'entries'->0->>'rank')::integer<>1
+  THEN RAISE EXCEPTION 'GUILD_SNAPSHOT_STALE_MEMBERSHIP'; END IF;
+
+  INSERT INTO public.guild_members(guild_id,account_id,role)
+  VALUES(v_guild,v_account,'member');
+  SELECT public.rankings_frozen_page_server_v1(v_account,v_cursor)
+  INTO v_result;
+  IF (v_result->'self'->>'listed')::boolean IS NOT TRUE
+    OR (v_result->'entries'->0->>'isSelf')::boolean IS NOT TRUE
+  THEN RAISE EXCEPTION 'GUILD_SNAPSHOT_REJOIN_NOT_VISIBLE'; END IF;
+  RAISE NOTICE 'Guild viewer self-rank and live membership transitions passed';
+END $guild_frozen_self$;

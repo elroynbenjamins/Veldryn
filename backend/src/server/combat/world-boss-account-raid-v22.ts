@@ -108,6 +108,37 @@ export function freezeWorldBossAccountRosterV22(input:{
    }))}),
  };
 }
+/**
+ * Shared integrity boundary for the V22 time engine and V24 authored
+ * 14-round account engine. Hash checks accidental mutation of a frozen
+ * packet; trust still requires the private server to derive roster origin.
+ */
+export function verifyFrozenWorldBossAccountRosterV22(
+ roster:WorldBossAccountRosterV22,
+):void{
+ if(!roster||!ID.test(roster.accountId)||
+  !Number.isSafeInteger(roster.capturedAtUtcMs)||
+  !Array.isArray(roster.characters)||
+  roster.characters.length<1||
+  roster.characters.length>WORLD_BOSS_V22_MAX_CHARACTERS)
+  throw Error('world_boss_v22_frozen_roster_digest_mismatch');
+ if(roster.characters.some(c=>!c||!ID.test(c.characterId)||
+  c.characterId!==c.combatant?.id||c.combatant?.team!=='players'||
+  !['tank','damage','support'].includes(c.combatant?.role)||
+  !Number.isSafeInteger(c.sourceRevision)||c.sourceRevision<1||
+  !DIGEST.test(c.sourceHash)||!ID.test(c.snapshotId)))
+  throw Error('world_boss_v22_frozen_roster_digest_mismatch');
+ const expected=hash({version:WORLD_BOSS_V22_ENGINE_VERSION,accountId:roster.accountId,
+  characters:roster.characters.map(c=>({
+   id:c.characterId,snapshotId:c.snapshotId,
+   sourceRevision:c.sourceRevision,sourceHash:c.sourceHash,
+   combatant:c.combatant,
+  }))});
+ if(!DIGEST.test(roster.rosterDigest)||expected!==roster.rosterDigest||
+  new Set(roster.characters.map(c=>c.characterId)).size!==roster.characters.length)
+  throw Error('world_boss_v22_frozen_roster_digest_mismatch');
+}
+
 export function worldBossAccountDamageV22(
  ledger:readonly {characterId:string;rawDamage:number}[],
 ):number{
@@ -184,15 +215,7 @@ export function simulateWorldBossAccountRaidV22(input:{
  if(warCamp&&warCamp.eventId!==eventId)
   throw Error('world_boss_v22_foreign_war_camp');
  const effects=deriveWorldBossWarCampEffectsV11(warCamp);
- const expected=hash({version:WORLD_BOSS_V22_ENGINE_VERSION,accountId:roster.accountId,
-  characters:roster.characters.map(c=>({
-   id:c.characterId,snapshotId:c.snapshotId,
-   sourceRevision:c.sourceRevision,sourceHash:c.sourceHash,
-   combatant:c.combatant,
-  }))});
- if(!DIGEST.test(roster.rosterDigest)||expected!==roster.rosterDigest||
-  new Set(roster.characters.map(c=>c.characterId)).size!==roster.characters.length)
-  throw Error('world_boss_v22_frozen_roster_digest_mismatch');
+ verifyFrozenWorldBossAccountRosterV22(roster);
  const players=roster.characters.map(c=>({
   ...structuredClone(c.combatant),
   stats:{...c.combatant.stats,

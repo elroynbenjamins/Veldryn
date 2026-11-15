@@ -15,9 +15,9 @@ export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemS
 type Shelf='Supplies'|'Collections'|'Owned';
 
 /**
- * Hidden, reusable Dungeon Marks Shop presentation. Deliberately not mounted in
- * navigation until the server-only atomic purchasing + collectible grants ship.
- * The temporary dungeon room Merchant remains an unrelated resource system.
+ * Reusable Dungeon Marks Shop presentation, including one tiered selector for
+ * x100 primary equipment resources. Material grants land in the shared Bank;
+ * the retired in-run dungeon Merchant is not used.
  */
 export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:{
  snapshot:DungeonMarksShopSnapshot|null;

@@ -246,6 +246,22 @@ async function main(){
  }
  assert.equal(authoredStatuses,3);
  assert.equal(authoredSpikes,9);
+ // Guard is LOCAL to one replay: reducing it alone must never be reported
+ // as shared global boss HP, even with five active owned characters.
+ const sealedProfile=makeWorldBossEncounterProfileV13({
+  eventId:EVENT,boss:'hollowroot',phase:'armored',gearBand:2,
+  configVersion:'wb25-local-guard-only-regression',
+  attack:35,defense:100,guardMax:100000000,
+ });
+ const guardProof=simulateWorldBossAuthoredAccountEncounterV25({
+  eventId:EVENT,requestId:'WB25_LOCAL_GUARD_IS_NOT_WORLD_HP',
+  roster:full,order:'break_armor',boss:'hollowroot',phase:'armored',
+  serverSeed:'WB25_GUARD_SEPARATION_NONCE_123456789',
+  encounter:sealedProfile,warCamp:lowCamp,
+ });
+ assert.ok(guardProof.localGuardDamage>0);
+ assert.equal(guardProof.rawBossHpDamage,0);
+ assert.equal(guardProof.proposedWorldHpDamage,0);
  assert.equal(fights,90);
  assert.equal(tactical,36);
  assert.equal(sampleResults.length,18);
@@ -259,6 +275,7 @@ async function main(){
   alternativeWarOrders:tactical,roleAndClassCount:9,
   accountSizes:[1,2,3,4,5],bosses:[...bosses],phases:[...phases],
   signatureObserved,statusEvents,authoredStatuses,authoredSpikes,
+  localGuardOnlyProof:true,
   protectionObserved,cleansesObserved,
   interruptsObserved,guardRefreshObserved,wipes,sampleResults,
   noLiveRoutes:true,noSettlement:true,noSigils:true,live:false,

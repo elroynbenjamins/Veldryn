@@ -9,6 +9,7 @@ const screen=read('screens/CoopExpeditionScreen.tsx');
 const shell=read('components/coop/CoopVisualKit.tsx');
 const run=read('components/coop/CoopRunOverview.tsx');
 const browser=read('components/coop/CoopDungeonBrowser.tsx');
+const hero=read('components/coop/DungeonPreparation.tsx');
 
 // World remains independent of all dungeon browsing and run states.
 assert(world.includes('<WorldChapterNavigator'),'World retains region and exploration navigation');
@@ -26,6 +27,11 @@ assert((app.match(/onRunActiveChange={setDungeonFlowActive}/g)||[]).length===1,'
 // above the Q-Mode/Live status banner.
 assert(app.includes("dungeonFlowActive&&tab==='Coop'"),'Only the standalone dungeon route becomes immersive');
 assert(app.includes('{!immersiveDungeonFlow&&<GameTopBar'),'Active runs hide the global character and activity HUD');
+assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'}"),'The activity bar is hidden on the entire Dungeon tab, including browser, loadout, shops and event details');
+assert((browser.match(/<ExpeditionScreenShell compactHeader hideHeader titleInHero/g)||[]).length===2,'Normal and seasonal dungeon details remove the standalone Back to expeditions row');
+assert(browser.includes("description=\"\" onBack={onBack} backLabel={ct(language,'details.backList')}"),'Normal dungeon details keep an accessible in-hero back control');
+assert(browser.includes("description={event.description} onBack={preparing?()=>setPreparing(false):onBack}"),'Seasonal dungeon detail back control preserves preparation step navigation');
+assert(hero.includes('accessibilityRole="button" accessibilityLabel={backLabel}')&&hero.includes("position:'absolute',top:10,left:10"),'A compact, accessible back control sits over the hero instead of using its own row');
 assert(app.includes('{!immersiveDungeonFlow&&mainTabGuide'),'World guidance does not take up room during a run');
 assert(app.includes('{...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}'),'Back-edge gesture does not interrupt room selection');
 

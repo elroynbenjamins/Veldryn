@@ -87,4 +87,6 @@ const screen=fs.readFileSync('src/screens/CombatScreen.tsx','utf8');
 const familyUi=fs.readFileSync('src/components/EnemyFamilyMasteryPanel.tsx','utf8');
 ok(screen.includes('<EnemyFamilyMasteryPanel state={state}/>')&&familyUi.includes('ENEMY_FAMILY_MASTERY_MILESTONES'),'type mastery appears next to species mastery');
 ok(familyUi.includes('m.dropKnowledge')&&familyUi.includes('m.badgeUnlocked'),'family knowledge and cosmetic milestone are visible');
+const speciesUi=fs.readFileSync('src/components/MonsterMasteryPanel.tsx','utf8');
+ok(speciesUi.includes('p.dropKnowledge||familyKnowledge'),'family Rank 10 knowledge unlocks drop tables in the species panel too');
 console.log(`PASS monster and enemy-family mastery: ${checks} checks`);

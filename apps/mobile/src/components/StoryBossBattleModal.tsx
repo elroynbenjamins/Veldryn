@@ -71,7 +71,7 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
     bossHp<=0?gt('Boss defeated'):
     playerHp>=battle.playerMaxHp?gt('HP already full'):
     cooldownRemaining>0?`${gt('Cooldown')} ${(cooldownRemaining/1000).toFixed(1)}s`:
-    `+${Math.min(Math.round(session.snapshot.potionHeal),Math.max(0,battle.playerMaxHp-playerHp))} HP`;
+    `+${Math.min(Math.round(session?.snapshot.potionHeal??0),Math.max(0,battle.playerMaxHp-playerHp))} HP`;
   const phasesReachedSoFar=Math.min(3,1+visible.filter(event=>event.type==='phase').length);
 
   useEffect(()=>{

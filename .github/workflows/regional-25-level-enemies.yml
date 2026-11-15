@@ -13,6 +13,9 @@ on:
       - 'apps/mobile/src/components/MonsterPortraitFrame.tsx'
       - 'apps/mobile/assets/monsters/regional-monsters-v2.png'
       - 'apps/mobile/tests/regional-25-level-enemy-wiring.ts'
+      - 'apps/mobile/tests/region-content-v21.ts'
+      - 'apps/mobile/tests/gathering-availability.ts'
+      - 'apps/mobile/tests/regional-four-areas.ts'
   pull_request:
     paths:
       - '.github/workflows/regional-25-level-enemies.yml'
@@ -24,6 +27,9 @@ on:
       - 'apps/mobile/src/theme/monster-assets.ts'
       - 'apps/mobile/src/components/MonsterPortraitFrame.tsx'
       - 'apps/mobile/tests/regional-25-level-enemy-wiring.ts'
+      - 'apps/mobile/tests/region-content-v21.ts'
+      - 'apps/mobile/tests/gathering-availability.ts'
+      - 'apps/mobile/tests/regional-four-areas.ts'
   workflow_dispatch:
 
 permissions:

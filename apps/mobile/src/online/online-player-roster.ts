@@ -33,13 +33,13 @@ export function parseOnlineRoster(value:unknown):OnlineRoster{
 export function useOnlinePlayerRoster(active:boolean){
  const {session}=useAuthSession(),accountId=session?.user.id;
  const currentAccount=useRef(accountId);currentAccount.current=accountId;
- const pending=useRef(false);
+ const pendingForAccount=useRef<string|null>(null);
  const [roster,setRoster]=useState<OnlineRoster|null>(null);
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState('');
  const refresh=useCallback(async()=>{
-  if(!supabase||!accountId||pending.current)return;
-  pending.current=true;
+  if(!supabase||!accountId||pendingForAccount.current===accountId)return;
+  pendingForAccount.current=accountId;
   if(currentAccount.current===accountId)setLoading(true);
   try{
    const {data,error:requestError}=await supabase.rpc('online_player_roster_v1');
@@ -48,7 +48,7 @@ export function useOnlinePlayerRoster(active:boolean){
   }catch(e){
    if(currentAccount.current===accountId)setError(e instanceof Error?e.message:'Unable to load online players.');
   }finally{
-   pending.current=false;
+   if(pendingForAccount.current===accountId)pendingForAccount.current=null;
    if(currentAccount.current===accountId)setLoading(false);
   }
  },[accountId]);

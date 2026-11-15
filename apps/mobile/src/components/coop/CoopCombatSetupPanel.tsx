@@ -118,7 +118,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
     <View style={s.modalHeader}>
      <View style={s.tonicText}>
       <Text accessibilityRole="header" style={s.modalTitle}>{st('Choose dungeon tonic')}</Text>
-      <Text style={s.caption}>{st('Select a tonic now; it will not be consumed until the dungeon begins.')}</Text>
+      <Text style={s.caption}>{st('Select one buff tonic for your dungeon. It is consumed before the first room, lasts the whole run, and is not refunded on failure.')}</Text>
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={st('Close')} onPress={()=>setTonicPickerVisible(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
     </View>
@@ -143,7 +143,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
       {!tonicPreference?.potionId?<Text style={s.optionCount}>✓</Text>:null}
      </Pressable>
     </ScrollView>
-    <Text style={s.caption}>{st('One tonic per run. Availability is verified when used.')}</Text>
+    <Text style={s.caption}>{st('One buff tonic per run, plus one selected healing potion type. You can use multiple carried healing potions between rooms.')}</Text>
    </View>
   </View>
  </Modal></>;

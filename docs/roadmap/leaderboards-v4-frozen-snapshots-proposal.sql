@@ -79,6 +79,7 @@ DECLARE
   v_last integer;
   v_next uuid;
   v_has_next boolean;
+  v_self jsonb;
 BEGIN
   IF p_requester IS NULL OR p_cursor IS NULL
   THEN RAISE EXCEPTION 'INVALID_RANKING_CURSOR'; END IF;
@@ -145,7 +146,9 @@ BEGIN
   FROM jsonb_array_elements(v_hits) WITH ORDINALITY AS v(item,item_index)
   WHERE v.item_index<=v_snapshot.page_size;
 
-  IF v_has_next AND v_last IS NOT NULL THEN
+  -- Maximum permitted page starts at raw offset 10,000.
+  -- Never emit a cursor that would exceed the established API bound.
+  IF v_has_next AND v_last IS NOT NULL AND v_last<=10000 THEN
     INSERT INTO private.rankings_frozen_cursors_v1(snapshot_id,raw_after)
     VALUES(v_snapshot.id,v_last)
     ON CONFLICT(snapshot_id,raw_after) DO UPDATE
@@ -153,10 +156,18 @@ BEGIN
     RETURNING id INTO v_next;
   END IF;
 
+  v_self:=v_snapshot.own_standing;
+  IF NOT EXISTS (SELECT 1 FROM public.player_profiles pp
+    WHERE pp.account_id=p_requester AND pp.profile_visibility='public')
+  THEN
+    v_self:=jsonb_build_object('listed',false,
+      'value',coalesce((v_snapshot.own_standing->>'value')::bigint,0),
+      'reason','This account is not visible on the public ranking.');
+  END IF;
   RETURN v_snapshot.metadata || jsonb_build_object(
-    'entries',v_entries,'self',v_snapshot.own_standing,
+    'entries',v_entries,'self',v_self,
     'cursor',p_cursor::text,'nextCursor',v_next::text,
-    'hasNext',v_has_next,'frozen',true,'pageSize',v_snapshot.page_size,
+    'hasNext',v_next IS NOT NULL,'frozen',true,'pageSize',v_snapshot.page_size,
     'expiresAtMs',floor(extract(epoch from v_snapshot.expires_at)*1000)::bigint
   );
 END $page$;

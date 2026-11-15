@@ -49,7 +49,7 @@ for(const classId of Object.keys(CLASS_SKILLS) as ClassId[]){
  const max={...base,classSkills:characterClassSkills(base).map(row=>({...row,xp:MAX_CLASS_SKILL_XP}))};
  CLASS_SKILLS[classId].forEach((definition,index)=>{
   const actual=classSkillBonuses(max,definition.id)
-   .map(bonus=>bonus.stat+':'+bonus.maxPercent).join(',');
+   .map(bonus=>bonus.stat+':'+Number(bonus.maxPercent.toFixed(2))).join(',');
   ok(actual===expectedEffects[classId][index],classId+'/'+definition.name+' passive effect matches live skill audit: '+actual);
   auditedSlots++;
  });

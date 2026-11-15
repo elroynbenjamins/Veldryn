@@ -18,13 +18,22 @@ const REGION_SCOUT_REQUIREMENTS:Partial<Record<string,string>>={
  FROSTMARCH:'SCOUT_SUNSCAR',
  ASHLANDS:'SCOUT_FROSTMARCH',
 };
+function retainedRegionalVisit(state:GameState,zone:WorldZoneDef){
+  if(zone.id!=='SUNSCAR'&&zone.id!=='FROSTMARCH')return false;
+  // Only a persisted visit or actual monster mastery counts as old access.
+  // A monster unlock ID alone is insufficient because old saves can auto-grant
+  // all ordinary hunts in a visited region. Never inspect otherCharacters.
+  return state.currentRegionId===zone.id||MONSTERS.some(monster=>monster.zone===zone.name
+    &&(state.character?.monsterMasteryPoints?.[monster.id]??0)>0);
+}
 export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
   if(worldZoneInDevelopment(zone))return zone.name+' is still in development';
   const level=state.character?.level??1;
-  if(level<zone.minLevel)return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
-  if(POST_CHAPTER_ONE_REGIONS.has(zone.id)&&!(state.defeatedBossIds??[]).includes(FIRST_CHAPTER_BOSS_ID))return `Defeat the Fallen Knight to unlock ${zone.name}`;
+  const retainedVisit=retainedRegionalVisit(state,zone);
+  if(level<zone.minLevel&&!retainedVisit)return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if(POST_CHAPTER_ONE_REGIONS.has(zone.id)&&!(state.defeatedBossIds??[]).includes(FIRST_CHAPTER_BOSS_ID)&&!retainedVisit)return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId=REGION_SCOUT_REQUIREMENTS[zone.id];
-  if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)){
+  if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)&&!retainedVisit){
     const source=routeId.replace(/^SCOUT_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
     return `Complete ${source} scouting to discover the route to ${zone.name}`;
   }

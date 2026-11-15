@@ -10,7 +10,7 @@ export const LEGACY_DUNGEON_BASE_MARKS:Readonly<Record<string,number>>=Object.fr
 /** Existing runs retain their original economy even when rewards are retuned.
  * Fresh runs freeze the catalogue value at creation for retry safety. */
 export function frozenRunBaseMarks(run:{expeditionId:string;rewardBaseMarks?:number}):number{
- if(Number.isSafeInteger(run.rewardBaseMarks)&&run.rewardBaseMarks!>=0)return run.rewardBaseMarks!;
+ if(typeof run.rewardBaseMarks==='number'&&Number.isSafeInteger(run.rewardBaseMarks)&&run.rewardBaseMarks>=0)return run.rewardBaseMarks;
  const legacy=LEGACY_DUNGEON_BASE_MARKS[run.expeditionId];
  if(legacy===undefined)throw new Error('unknown_expedition');
  return legacy;
@@ -19,6 +19,6 @@ export function frozenRunBaseMarks(run:{expeditionId:string;rewardBaseMarks?:num
 /** Call only while creating a fresh dungeon run. */
 export function currentDungeonBaseMarks(expeditionId:string):number{
  const amount=EXPEDITIONS[expeditionId]?.baseMarks;
- if(!Number.isSafeInteger(amount)||amount!<0)throw new Error('unknown_expedition');
+ if(typeof amount!=='number'||!Number.isSafeInteger(amount)||amount<0)throw new Error('unknown_expedition');
  return amount;
 }

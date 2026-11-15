@@ -131,3 +131,4 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-weekend-reservation-v22-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-reservation-v23.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-reservation-v23-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-reservation-v23-positive-smoke.sql

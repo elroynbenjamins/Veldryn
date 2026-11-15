@@ -17,6 +17,8 @@ assert(overview.includes('<Modal visible={rewardOpen&&!theaterOpen}')&&overview.
 assert(overview.includes('rewards.map(reward=>')&&overview.includes('onClaim?.(reward.id)'),'Rewards remain individually server-claimed');
 assert(overview.includes('terminalAction.onPress')&&overview.includes('terminalAction.claimed'),'Seasonal rewards use their existing authoritative claim');
 assert(overview.includes('rewardsSecured&&onQueueAgain'),'Run-again action requires claimed rewards');
+assert(!overview.includes('Spend at Expedition Shop')&&!overview.includes('onOpenShop'),'Victory popup no longer offers a direct Expedition Shop action');
+assert(overview.includes('Return to dungeon list')&&overview.includes('onQueueAgain.onPress'),'Return and run-again actions remain');
 assert(screen.includes('lastQModeIntent')&&screen.includes('realCoopQModeSource.start(lastQModeIntent'),'Solo run-again creates a fresh run');
 assert(screen.includes('Find new Live party')&&screen.includes('coopClient.quickLive('),'Live action must indicate that it creates a new matchmaking party');
 console.log('PASS compact dungeon flow, elapsed timer, reward popup and repeat-run safety');

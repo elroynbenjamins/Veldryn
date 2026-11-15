@@ -159,6 +159,6 @@ ok(allBadgeIds.every(id=>!!PLAYER_BADGE_LABELS[id as keyof typeof PLAYER_BADGE_L
 const badgeComponent=read('src/components/PlayerBadges.tsx');
 ok(badgeComponent.includes('interactive=false')&&badgeComponent.includes('accessibilityHint={detail}'),'badge popovers are opt-in so setting gallery rows keep their single-tap equip action');
 ok(badgeComponent.includes('size={size} showLabel={showLabels} interactive/>')&&badgeComponent.includes('size={size} interactive/>'),'name-row and profile-showcase badges both expose the information bubble');
-ok(badgeComponent.includes('measureInWindow')&&badgeComponent.includes('setAnchor(null)')&&badgeComponent.includes('onRequestClose'),'badge bubble anchors to the pressed icon and dismisses on tap outside or Android back');
+ok(badgeComponent.includes('nativeEvent.pageX')&&badgeComponent.includes('nativeEvent.pageY')&&badgeComponent.includes('setAnchor(null)')&&badgeComponent.includes('onRequestClose'),'badge bubble anchors to the pressed icon and dismisses on tap outside or Android back');
 ok(badgeComponent.includes('event.stopPropagation()'),'tapping a badge inside a chat name does not also open that player profile');
 console.log('PASS: one badge beside the name, three on the profile, automatic staff, supporter 0/3/6/12 tiers, artwork, authenticated tenure and old-client compatibility');

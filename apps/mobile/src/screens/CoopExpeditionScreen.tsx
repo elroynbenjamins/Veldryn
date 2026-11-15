@@ -314,7 +314,27 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     finally{setBusy(false);}
   };
   const refreshLiveRecruitment=async()=>{const posts=await coopClient.liveRecruitment();setEntry(current=>current?{...current,liveRecruitment:posts}:current);};
-  const resumeActiveRun=()=>{const projection=entry?.activeRunProjection;if(!projection){if(entry?.activeRun)setRun(entry.activeRun);return;}if(projection.mode!=='live'){setRun(entry.activeRun);return;}void action(async()=>{const value=await coopClient.run(projection.runId);if(!('team' in value))throw new Error(st("Invalid active Live run response."));acceptRun(value);});};
+  // Re-entry is not a local UI restore. GET /runs/:id is also responsible for
+  // settling a server-authorized node whose combat timer elapsed while the app
+  // was closed. A browse snapshot may still show the previous room.
+  const resumeActiveRun=()=>{
+    const runId=entry?.activeRunProjection?.runId??entry?.activeRun?.runId;
+    if(!runId)return;
+    if(entrySource.kind!=='real'){if(entry?.activeRun)setRun(entry.activeRun);return;}
+    void action(async()=>{
+      // Reuse the original idempotency key if the app closed during a POST.
+      // Never replay a mutation for a different run or a new room choice.
+      if(await coopClient.hasPendingForRun(runId)){
+        try{await coopClient.retryPending();}
+        catch(reason){setNotice(coopErrorMessage(reason));}
+      }
+      const value=await coopClient.run(runId);
+      if('team' in value){acceptRun(value);setSyncError('');return;}
+      // Older endpoints may already return the validated presentation form.
+      if('roleSlots' in value){setRun(value);setSyncError('');return;}
+      throw new Error(st('Invalid active dungeon run response.'));
+    });
+  };
   function joinRecruitmentSearch(dungeonId:string){const dungeon=dungeons.find(item=>item.id===dungeonId);if(!dungeon?.available){setNotice(st("That dungeon is no longer available for this character."));return;}setMode('live');chooseDungeon(dungeon);}
   function chooseDungeon(dungeon:CoopDungeonView){setSelectedEvent(undefined);setEventRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setNotice('');void rememberedCoopTier(characterId,dungeon.id).then(remembered=>{if(remembered&&dungeon.difficulties.includes(remembered))setTier(current=>current===dungeon.difficulties[0]?remembered:current);});}
   function chooseEvent(expedition:CoopEventExpeditionPreview){setSelected(undefined);setShowLoadouts(false);setRun(undefined);setSelectedEvent(expedition);setNotice('')}

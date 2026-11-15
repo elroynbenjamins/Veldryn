@@ -120,6 +120,7 @@ export const coopClient={
  liveRematch:(runId:string)=>request<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`),
  respondLiveRematch:(runId:string,accept:boolean)=>mutate<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`,{requestId:coopRequestId(),accept}),
  hasPending:async()=>(await journal()).pending(),
+ hasPendingForRun:async(runId:string)=>(await journal()).pendingForRun(runId),
  retryPending:async()=>{noteCoopEntryMutation();return (await journal()).execute();},
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},

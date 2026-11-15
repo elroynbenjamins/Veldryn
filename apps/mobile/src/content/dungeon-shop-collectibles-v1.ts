@@ -1,11 +1,11 @@
 import type {CollectibleDefinition,CollectibleTarget} from './collectibles';
 
 /** Dormant content metadata for the three regional Dungeon Marks collections.
- * This is NOT registered in COLLECTIBLES until authored, approved pixel art,
- * atomic grant delivery and the release gate are ready. */
+ * Art and account ownership are prepared on the Dungeon Shop development branch.
+ * Server offer flags remain disabled until end-to-end validation. */
 const reward=(id:string,kind:'pet'|'background'|'border',name:string,target:CollectibleTarget,region:string,activeBps:200|300):CollectibleDefinition=>({
  id,kind,name,bonusFamilyId:id,target,ownedBps:50,activeBps,
- rarity:'Epic',collectionGroup:'profile',region,source:'Dungeon Marks Shop · '+region,
+ rarity:'Epic',collectionGroup:'dungeon',region,source:'Dungeon Marks Shop · '+region,
  nativeSize:kind==='pet'?64:undefined,
  description:'A permanent '+region+' Dungeon Marks collectible.',
 });

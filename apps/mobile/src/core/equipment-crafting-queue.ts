@@ -60,7 +60,11 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       skillAffinity:normalizeSkillAffinitySnapshot(row.skillAffinity),
       reservedGold:Number.isFinite(Number(row.reservedGold))?Math.max(0,Math.floor(Number(row.reservedGold))):undefined,
       reservedInputs:Array.isArray(row.reservedInputs)?row.reservedInputs.filter((stack:any)=>stack&&typeof stack.itemId==='string'&&Number.isFinite(Number(stack.quantity))&&Number(stack.quantity)>0).map((stack:any)=>({itemId:String(stack.itemId).slice(0,120),quantity:Math.max(1,Math.floor(Number(stack.quantity)))})).slice(0,12):undefined,
-      combineSuccessChancePercent:Number.isInteger(row.combineSuccessChancePercent)&&row.combineSuccessChancePercent>=1&&row.combineSuccessChancePercent<=100?row.combineSuccessChancePercent:undefined,
+      // A malformed odds field must not become a guaranteed legacy claim.
+      // Only jobs with no odds field at all retain the old 100% outcome.
+      combineSuccessChancePercent:row.combineSuccessChancePercent===undefined?undefined:
+        Number.isInteger(row.combineSuccessChancePercent)&&row.combineSuccessChancePercent>=1&&row.combineSuccessChancePercent<=100
+          ?row.combineSuccessChancePercent:gemCombineRecipeV1(String(row.recipeId).slice(0,120))?.successChancePercent,
     }))
     .filter(row=>row.completesAtMs>=row.startedAtMs)
     .slice(-(MAX_READY_EQUIPMENT_CRAFTS+MAX_EQUIPMENT_CRAFT_SLOTS+MAX_WAITING_EQUIPMENT_CRAFTS));

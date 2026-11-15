@@ -26,6 +26,8 @@ export interface CharacterState {
   classSkillRemainders?:Record<string,number>;
   classTraining?:ClassDrills;
   monsterMasteryPoints?:Record<string,number>;
+  /** Character-scoped type mastery; one point per verified ordinary kill even after species cap. */
+  familyMasteryPoints?:Record<string,number>;
   masteryMaterialRemainders?:Record<string,number>;
   classSkills?:ClassSkillState[];
   trainingFocus?:TrainingFocus;

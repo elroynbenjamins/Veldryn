@@ -5,11 +5,13 @@ const root=path.resolve(__dirname,'../../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const foundation=read('backend/supabase/migrations/20261111141514_dungeon_shop_hidden_atomic_foundation_v1.sql');
 const release=read('backend/supabase/migrations/20261113192000_dungeon_shop_account_resources_release_v2.sql');
+const bundles=read('backend/supabase/migrations/20261115220500_dungeon_shop_crafting_bundles_v3.sql');
 const panel=read('apps/mobile/src/components/ExpeditionShopPanel.tsx');
 const client=read('apps/mobile/src/online/expedition-shop.ts');
 const screen=read('apps/mobile/src/screens/CoopExpeditionScreen.tsx');
 const backend=read('backend/online/dungeon-shop.ts');
 const catalog=read('backend/src/server/expeditions/dungeon-shop-catalog-v1.ts');
+const shopView=read('apps/mobile/src/components/coop/DungeonMarksShopView.tsx');
 
 // One authoritative 17-offer schema; the obsolete nine phantom SKUs must never
 // be replayed by a future blanket Supabase migration deployment.
@@ -50,4 +52,11 @@ assert(backend.includes('account.releasedPrices[offer.id]'),'server prices come 
 assert(backend.includes("published?quote.status:'unreleased'"),'disabled offers cannot render as purchasable');
 assert(catalog.includes("DUNGEON_SHOP_LIVE_V1 = true"),'DB gate, not stale hardcoded preview, owns release');
 
-console.log('PASS Expedition Shop: authoritative 17-SKU foundation, 2 safe account-resource offers, journaled Edge purchase and opt-in release');
+// Seven one-per-week, bank-delivered, tier-priced x100 materials are additional
+// SKUs; the original 17-offer foundation remains intact.
+assert(bundles.includes("'crafting_bundle'")&&bundles.includes("'quantity',v_offer.reward_quantity"),'verified bank grant is server-owned');
+assert(bundles.includes("dungeon_shop_bank_full")&&bundles.includes("jsonb_set(v_game.state,'{bank,stacks}'"),'full bank fails before spend');
+assert(bundles.includes("to service_role")&&bundles.includes("from public,anon,authenticated"),'purchase RPC stays service-role-only');
+assert(catalog.includes("dshop_moss_fiber_100")&&catalog.includes("dshop_sunstone_ingot_100"),'new catalogue has both ends of T1–T4');
+assert(shopView.includes("materialTier")&&shopView.includes("ResourceIcon"),'one compact tier/resource picker uses existing artwork');
+console.log('PASS Expedition Shop: 17 baseline SKUs + 7 tiered x100 Bank materials, atomic spending and opt-in release');

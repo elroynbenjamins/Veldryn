@@ -132,6 +132,37 @@ async function main(){
  assert.equal(node(tiny,'C1-04').state,'cleared');
  assert.deepEqual((await tiny.commit(fight('GX8_FX_0','C1-04','RACE_ATK_A'),START)),a);
 
+ // Deliberately tiny reference HP for deterministic graph and Order budget
+ // validation ONLY. This is NOT an intended single-member live clear rate.
+ const orderRun=create('GXV8_ORDER_CAP',['GX8_FX_0'],{attack:1});
+ for(const [i,nodeId] of (['C1-04','C1-06','C2-01','C2-05'] as GuildPveNodeIdV8[]).entries()){
+  const o=await orderRun.commit(fight('GX8_FX_0',nodeId,'ORDER_PATH_W1_'+i),START+DAY);
+  assert.equal(o.costSeals,1);
+  assert.equal(node(orderRun,nodeId).state,'cleared');
+ }
+ for(const [i,nodeId] of (['C1-02','C1-05','C2-02'] as GuildPveNodeIdV8[]).entries()){
+  const o=await orderRun.commit(explore('GX8_FX_0',nodeId,'ORDER_CAP_W1_'+i),START+DAY);
+  assert.equal(o.costOrders,1);
+ }
+ assert.equal(orderRun.snapshot(START).members.GX8_FX_0.orders,3);
+ await err(()=>orderRun.commit(explore('GX8_FX_0','C2-03','ORDER_CAP_W1_BLOCK'),
+  START+DAY),'orders_exhausted');
+ for(const [i,nodeId] of (['C2-06','C3-01','C3-06'] as GuildPveNodeIdV8[]).entries()){
+  const o=await orderRun.commit(fight('GX8_FX_0',nodeId,'ORDER_PATH_W2_'+i),
+   START+8*DAY);
+  assert.equal(o.costSeals,1);
+  assert.equal(node(orderRun,nodeId,START+8*DAY).state,'cleared');
+ }
+ for(const [i,nodeId] of (['C2-03','C3-02','C3-04'] as GuildPveNodeIdV8[]).entries()){
+  const o=await orderRun.commit(explore('GX8_FX_0',nodeId,'ORDER_CAP_W2_'+i),
+   START+8*DAY);
+  assert.equal(o.costOrders,1);
+ }
+ const orderState=orderRun.snapshot(START+8*DAY);
+ assert.equal(orderState.members.GX8_FX_0.seals,7);
+ assert.equal(orderState.members.GX8_FX_0.orders,6);
+ assert.equal(node(orderRun,'C3-06',START+8*DAY).state,'cleared');
+
  // First successful action binds an account to this guild for the whole cycle;
  // a different guild using the same shared *in-memory* registry must reject it.
  const bindings=new GuildPveV8CycleBindings();

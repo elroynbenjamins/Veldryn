@@ -10,11 +10,14 @@ const compiled=ts.transpileModule(source,{compilerOptions:{
 const exports={};
 new Function('exports','require',compiled)(exports,require);
 const {rankingsHandler,RANKINGS_RELEASED,FROZEN_RANKINGS_RELEASED,
- ARENA_HISTORY_RELEASED,WORLD_BOSS_HISTORY_RELEASED}=exports;
+ ARENA_HISTORY_RELEASED,WORLD_BOSS_HISTORY_RELEASED,
+ PARTY_EVENT_HISTORY_RELEASED,GUILD_PVE_HISTORY_RELEASED}=exports;
 assert.equal(RANKINGS_RELEASED,false);
 assert.equal(FROZEN_RANKINGS_RELEASED,false);
 assert.equal(ARENA_HISTORY_RELEASED,false);
 assert.equal(WORLD_BOSS_HISTORY_RELEASED,false);
+assert.equal(PARTY_EVENT_HISTORY_RELEASED,false);
+assert.equal(GUILD_PVE_HISTORY_RELEASED,false);
 
 const account='11111111-1111-4111-8111-111111111111';
 const cursor='22222222-2222-4222-8222-222222222222';
@@ -33,7 +36,7 @@ const get=(action,query='')=>new Request('https://example.test/gameplay?view=ran
 const post=(body)=>new Request('https://example.test/gameplay?view=rankings&action=snapshot-start',{
  method:'POST',headers:{authorization:'Bearer valid','content-type':'application/json'},body:JSON.stringify(body)
 });
-const both={rankings:true,frozen:true,arena:true,worldBoss:true};
+const both={rankings:true,frozen:true,arena:true,worldBoss:true,partyEvent:true,guildPve:true};
 const test=async()=>{
  assert.equal((await rankingsHandler(services)(get('snapshot-page','&cursor='+cursor))).status,404);
  assert.equal(calls.length,0,'disabled routes cannot access DB');
@@ -57,6 +60,20 @@ const test=async()=>{
  assert.equal(calls[2].name,'rankings_arena_final_history_server_v1');
  assert.equal((await handler(get('world-boss-history','&bossId='+boss))).status,200);
  assert.equal(calls[3].name,'leaderboards_world_boss_event_server_v1');
+ assert.equal((await handler(get('party-event-history',
+ '&eventKey=event8&metric=damage&bracket=standard:4'))).status,200);
+ assert.equal(calls[4].name,'rankings_final_mode_history_server_v1');
+ assert.equal(calls[4].args.p_mode,'party_event');
+ assert.equal((await handler(get('guild-pve-history',
+ '&eventKey=campaign&metric=campaign_score&bracket=tier1'))).status,200);
+ assert.equal(calls[5].args.p_mode,'guild_pve');
+ const partyHidden=rankingsHandler(services,{...both,partyEvent:false});
+ assert.equal((await partyHidden(get('party-event-history',
+ '&eventKey=event8&metric=damage&bracket=standard:4'))).status,404);
+ const guildHidden=rankingsHandler(services,{...both,guildPve:false});
+ assert.equal((await guildHidden(get('guild-pve-history',
+ '&eventKey=campaign&metric=campaign_score&bracket=tier1'))).status,404);
+
  assert.equal((await handler(new Request('https://example.test/gameplay?view=rankings&action=snapshot-page&cursor='+cursor))).status,401);
  console.log('Ranks Edge auth, all gates, cursor parsing and server-only caller checks PASS');
 };

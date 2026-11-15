@@ -9,6 +9,12 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "success chance":["success chance","Erfolgschance","probabilidad de éxito","slagingskans","probabilità di successo","chances de réussite"],
+ "success":["success","Erfolg","éxito","succes","successo","réussite"],
+ "Success: receive 1 higher-grade gem.":["Success: receive 1 higher-grade gem.","Erfolg: Erhalte 1 Edelstein der nächsten Stufe.","Éxito: recibes 1 gema de grado superior.","Geslaagd: ontvang 1 edelsteen van een hogere graad.","Successo: ricevi 1 gemma di grado superiore.","Réussite : obtenez 1 gemme de grade supérieur."],
+ "Failure: 1 gem lost, 2 returned. Gold and reagents spent.":["Failure: 1 gem lost, 2 returned. Gold and reagents spent.","Fehlschlag: 1 Edelstein verloren, 2 zurück. Gold und Zutaten verbraucht.","Fallo: pierdes 1 gema, recuperas 2. Se gastan oro y reactivos.","Mislukt: 1 edelsteen verloren, 2 terug. Goud en ingrediënten verbruikt.","Fallimento: perdi 1 gemma, ne recuperi 2. Oro e reagenti consumati.","Échec : 1 gemme perdue, 2 rendues. Or et réactifs consommés."],
+ "Confirm this merge? The result is rolled when you claim the finished Forge job.":["Confirm this merge? The result is rolled when you claim the finished Forge job.","Zusammenführen bestätigen? Das Ergebnis wird beim Abholen des fertigen Schmiedeauftrags ermittelt.","¿Confirmar fusión? El resultado se determina al recoger el trabajo terminado de la forja.","Samenvoegen bevestigen? Het resultaat wordt bepaald wanneer je de voltooide smederijopdracht ophaalt.","Confermi la fusione? L'esito viene determinato quando ritiri il lavoro completato dalla forgia.","Confirmer la fusion ? Le résultat est déterminé lorsque vous récupérez le travail terminé à la forge."],
+ "Confirm merge":["Confirm merge","Fusion bestätigen","Confirmar fusión","Samenvoegen bevestigen","Conferma fusione","Confirmer la fusion"],
   "Deals {percent}% more damage for the full dungeon run.":["Deals {percent}% more damage for the full dungeon run.","Verursacht während des gesamten Dungeonlaufs {percent} % mehr Schaden.","Inflige un {percent} % más de daño durante toda la mazmorra.","Deelt de hele kerker-run {percent}% meer schade uit.","Infligge il {percent}% di danni in più per tutta la spedizione.","Inflige {percent} % de dégâts supplémentaires pendant tout le donjon."],
   "Takes {percent}% less damage for the full dungeon run.":["Takes {percent}% less damage for the full dungeon run.","Erleidet während des gesamten Dungeonlaufs {percent} % weniger Schaden.","Recibe un {percent} % menos de daño durante toda la mazmorra.","Krijgt de hele kerker-run {percent}% minder schade.","Subisce il {percent}% di danni in meno per tutta la spedizione.","Subit {percent} % de dégâts en moins pendant tout le donjon."],
   "+{damage}% damage · +{strength}% healing and shielding for the full dungeon run.":["+{damage}% damage · +{strength}% healing and shielding for the full dungeon run.","+{damage} % Schaden · +{strength} % Heilung und Schilde für den gesamten Dungeonlauf.","+{damage} % de daño · +{strength} % de curación y escudos durante toda la mazmorra.","+{damage}% schade · +{strength}% genezing en schilden voor de hele kerker-run.","+{damage}% danni · +{strength}% cure e scudi per tutta la spedizione.","+{damage} % de dégâts · +{strength} % de soins et de boucliers pendant tout le donjon."],
@@ -1450,6 +1456,7 @@ for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
 }
 // Russian and Turkish gem merge confirmation, matching the newly typed gameplay keys.
 const gemMergeEarlyLocales={
+ "success chance":["шанс успеха","başarı şansı"],
  "success":["успех","başarı"],
  "Success: receive 1 higher-grade gem.":["Успех: получите 1 самоцвет рангом выше.","Başarı: 1 üst seviye mücevher kazanırsın."],
  "Failure: 1 gem lost, 2 returned. Gold and reagents spent.":["Неудача: 1 самоцвет потерян, 2 возвращены. Золото и материалы потрачены.","Başarısızlık: 1 mücevher kaybolur, 2'si iade edilir. Altın ve malzemeler harcanır."],

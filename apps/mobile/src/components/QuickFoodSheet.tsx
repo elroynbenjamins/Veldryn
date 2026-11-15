@@ -23,6 +23,9 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
  const foods=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&itemDef(stack.itemId).type==='food'),[state.inventory.stacks]);
  const healingPotions=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&potionDef(stack.itemId)?.effect.kind==='healing'),[state.inventory.stacks]);
  const selectedPotionId=state.character?.equippedHealingPotionId,selectedPotion=selectedPotionId?potionDef(selectedPotionId):undefined;
+ const bossPotionMode=state.character?.bossPotionMode==='auto'?'auto':'manual';
+ const bossPotionThresholdPct=state.character?.bossPotionThresholdPct??40;
+ const activeBoss=Boolean(state.storyBossSession);
  const queuedFoodIds=state.character?.foodQueueIds??[];
  const maxHp=useMemo(()=>effectiveStats(state).hp,[state]);
  const hp=state.character?.currentHp??0,canResume=!!hunt&&!state.activity&&hp>1,hpPct=Math.max(0,Math.min(100,Math.round(hp/Math.max(1,maxHp)*100))),equippedFoodId=state.character?.equippedFoodId,equippedStack=equippedFoodId?state.inventory.stacks.find(stack=>stack.itemId===equippedFoodId):undefined,equippedFood=equippedFoodId?itemDef(equippedFoodId):undefined,equippedHeal=equippedFoodId?recoveryAmount(state,equippedFoodId):0,equippedHealLabel=equippedFoodId?displayHealHp(foodHealingAmount(state,equippedFoodId)):'0';
@@ -51,8 +54,8 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
   <ScrollView style={s.foodScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.foodList}>
    {section==='food'?<>
     <View style={s.autoCard}>
-     <View style={s.cardHeading}><Text style={s.queueTitle}>{accountText(language,'AUTO-EAT')}</Text><Pressable accessibilityRole="button" accessibilityLabel={gt('Food auto-heals during ordinary hunts. Selected healing potions trigger at this threshold during boss fights instead.')} accessibilityState={{expanded:showAutoHelp}} onPress={()=>setShowAutoHelp(value=>!value)} style={s.infoAction}><Text style={s.infoText}>?</Text></Pressable></View>
-     {showAutoHelp?<Text style={s.queueHint}>{gt('Food auto-heals during ordinary hunts. Selected healing potions trigger at this threshold during boss fights instead.')}</Text>:null}
+     <View style={s.cardHeading}><Text style={s.queueTitle}>{accountText(language,'AUTO-EAT')}</Text><Pressable accessibilityRole="button" accessibilityLabel={gt('Food auto-heals during ordinary hunts. Configure boss potion healing separately in the Potions tab.')} accessibilityState={{expanded:showAutoHelp}} onPress={()=>setShowAutoHelp(value=>!value)} style={s.infoAction}><Text style={s.infoText}>?</Text></Pressable></View>
+     {showAutoHelp?<Text style={s.queueHint}>{gt('Food auto-heals during ordinary hunts. Configure boss potion healing separately in the Potions tab.')}</Text>:null}
      <View style={s.thresholds}>{([20,40,60,80] as const).map(threshold=><Pressable key={threshold} accessibilityRole="radio" accessibilityState={{selected:state.settings.autoEatThresholdPct===threshold,disabled:busy}} disabled={busy} onPress={()=>updateSettings({autoEatThresholdPct:threshold})} style={({pressed})=>[s.threshold,state.settings.autoEatThresholdPct===threshold&&s.thresholdSelected,pressed&&s.pressed]}><Text style={[s.thresholdText,state.settings.autoEatThresholdPct===threshold&&s.thresholdTextSelected]}>{threshold}%</Text></Pressable>)}</View>
      <Pressable accessibilityRole="switch" accessibilityState={{checked:state.settings.stopCombatWhenOutOfFood,disabled:busy}} disabled={busy} onPress={()=>updateSettings({stopCombatWhenOutOfFood:!state.settings.stopCombatWhenOutOfFood})} style={({pressed})=>[s.safetyRow,pressed&&s.pressed]}>
       <Text style={s.safetyTitle}>{gt('Stop combat when out of food')}</Text><View style={[s.switchTrack,state.settings.stopCombatWhenOutOfFood&&s.switchTrackOn]}><View style={[s.switchThumb,state.settings.stopCombatWhenOutOfFood&&s.switchThumbOn]}/></View>
@@ -112,6 +115,19 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
     <View style={s.queueCard}>
      <Text style={s.queueTitle}>{gt('BOSS HEALING POTIONS')}</Text>
      <Text style={s.queueHint}>{gt('Food is disabled in bosses and dungeons. Boss fights use your selected Alchemy healing potion (up to 5 per fight); dungeon runs have their own limited potion charges.')}</Text>
+     <View style={s.autoCard}>
+      <Text style={s.queueTitle}>{gt('BOSS HEALING MODE')}</Text>
+      <View style={s.thresholds}>
+       {(['manual','auto'] as const).map(mode=><Pressable key={mode} accessibilityRole="radio" accessibilityLabel={mode==='manual'?gt('Manual healing'):gt('Automatic healing')} accessibilityState={{selected:bossPotionMode===mode,disabled:busy||activeBoss}} disabled={busy||activeBoss} onPress={()=>run({type:'boss_potion_preference',args:{mode,thresholdPct:bossPotionThresholdPct}})} style={[s.threshold,bossPotionMode===mode&&s.thresholdSelected]}>
+        <Text style={[s.thresholdText,bossPotionMode===mode&&s.thresholdTextSelected]}>{mode==='manual'?gt('Manual · tap to heal'):gt('Auto · heal at HP')}</Text>
+       </Pressable>)}
+      </View>
+      {bossPotionMode==='auto'?<>
+       <Text style={s.queueHint}>{gt('Automatically use one selected healing potion when HP falls to or below the chosen threshold. No food is consumed.')}</Text>
+       <View style={s.thresholds}>{([20,40,60,80] as const).map(threshold=><Pressable key={threshold} accessibilityRole="radio" accessibilityLabel={gt('Auto heal at {threshold}% HP',{threshold})} accessibilityState={{selected:bossPotionThresholdPct===threshold,disabled:busy||activeBoss}} disabled={busy||activeBoss} onPress={()=>run({type:'boss_potion_preference',args:{mode:'auto',thresholdPct:threshold}})} style={[s.threshold,bossPotionThresholdPct===threshold&&s.thresholdSelected]}><Text style={[s.thresholdText,bossPotionThresholdPct===threshold&&s.thresholdTextSelected]}>{threshold}%</Text></Pressable>)}</View>
+      </>:<Text style={s.queueHint}>{gt('During boss fights, press Heal Now to use the selected potion when needed.')}</Text>}
+      <Text style={s.queueHint}>{gt('Both modes share the boss potion limit and a 4.5-second cooldown. You cannot change modes during an active boss fight.')}</Text>
+     </View>
      {selectedPotion&&!healingPotions.some(stack=>stack.itemId===selectedPotion.id)?<View style={[s.rotationRow,s.primaryRow]}>
       <ItemArtwork itemId={selectedPotion.id} size={34}/>
       <View style={s.foodCopy}><Text style={s.queueEyebrow}>{gt('SELECTED')}</Text><Text style={s.foodName} numberOfLines={1}>{selectedPotion.name}</Text><Text style={s.foodHeal}>×0 {gt('carried')}</Text></View>

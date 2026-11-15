@@ -12,6 +12,7 @@ on:
       - 'docs/roadmap/leaderboards-authoritative-scoring-v3-proposal.sql'
       - 'docs/roadmap/leaderboards-v4-frozen-snapshots-proposal.sql'
       - 'docs/roadmap/leaderboards-arena-final-history-v1-proposal.sql'
+      - 'docs/roadmap/leaderboards-party-guild-final-archives-v1-proposal.sql'
       - 'docs/roadmap/leaderboards-world-boss-final-history-v1-proposal.sql'
       - 'docs/roadmap/leaderboards-competitive-policy-v1.md'
       - 'tools/verify-rankings-v3-draft.mjs'
@@ -45,6 +46,8 @@ jobs:
         run: node backend/.rankings-build/server/rankings/__tests__/frozen-rankings.js
       - name: Validate authenticated Edge snapshot routes (no active gates)
         run: node tools/verify-rankings-edge-handler.mjs
+      - name: Verify Party Event and Guild PvE sealed archive gates
+        run: node backend/.rankings-build/server/rankings/__tests__/final-mode-history.js
       - name: Verify World Boss and Arena independent finalized-history gates
         run: node backend/.rankings-build/server/rankings/__tests__/event-history-gates.js
       - name: Verify service-only staging SQL and fixture contracts

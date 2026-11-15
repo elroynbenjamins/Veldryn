@@ -18,7 +18,7 @@ function signatureAssistEffects(id:string,maxHp:number):AbilityEffect[]{
   case 'UNIT_008':return [{kind:'cleanse',tag:'dawn_pinion'}];
   case 'UNIT_009':return [{kind:'debuff',value:.03,durationMs:5000,tag:'damage_taken'}];
   case 'UNIT_010':return [{kind:'debuff',value:.03,durationMs:7000,tag:'damage_taken'}];
-  case 'UNIT_011':return [{kind:'debuff',value:.025,durationMs:6000,tag:'damage_taken'}];
+  case 'UNIT_011':return [{kind:'debuff',value:.04,durationMs:6000,tag:'hit_taken'}];
   default:return [];
  }
 }
@@ -45,7 +45,7 @@ export function applyCharacterCompanionAssist(owner:CombatantDefinition,progress
  let effects:AbilityEffect[];
  if(kind==='damage'){
   target='current_target';
-  effects=[{kind:'damage',coeff:baseDamageCoeff*multiplier('activeDamageMultiplier'),executeBelowHpPct:.30,executeBonus:clamp(effectActive?.executeBonus??0,0,.30),tag:'companion_assist'},...signatureAssistEffects(def.id,ownerHp)];
+  effects=[{kind:'damage',coeff:baseDamageCoeff*multiplier('activeDamageMultiplier'),executeBelowHpPct:.30,executeBonus:clamp(effectActive?.executeBonus??0,0,.30),...(def.id==='UNIT_009'?{bonusVsDebuffed:.12}:{}),tag:'companion_assist'},...signatureAssistEffects(def.id,ownerHp)];
  }else if(kind==='interrupt'){
   target='interruptible_casting_enemy';condition='target_casting';
   effects=[{kind:'interrupt',tag:'companion_spellbreak'}];

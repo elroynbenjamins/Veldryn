@@ -12,6 +12,7 @@ on:
       - 'apps/mobile/src/content/faith.ts'
       - 'apps/mobile/src/content/monsters.ts'
       - 'apps/mobile/src/content/gathering-tools.ts'
+      - 'apps/mobile/src/content/equipment-recipes-v33.ts'
       - 'apps/mobile/tests/gathering-tools.ts'
       - 'apps/mobile/tests/monster-drop-balance.ts'
       - 'apps/mobile/src/core/live-events.ts'

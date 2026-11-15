@@ -43595,7 +43595,14 @@ function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFoc
 function characterClassEffects(c) {
   const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
   const tank = ["IRONWARDEN", "BASTION", "DREADGUARD"].includes(c.classId), support = ["DAWNKEEPER", "STONECALLER"].includes(c.classId);
-  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1 } : { attack: 1 + 0.07 * a + 0.03 * b, hp: 1, defense: 1 + 0.06 * b };
+  const precision = c.classId === "KNIFE_DANCER";
+  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b, accuracy: 0, evasion: 0 } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1, accuracy: 0, evasion: 0 } : {
+    attack: 1 + 0.07 * a + (precision ? 0 : 0.03 * b),
+    hp: 1,
+    defense: 1 + (precision ? 0 : 0.06 * b),
+    accuracy: precision ? 0.03 * b : 0,
+    evasion: precision ? 0.06 * b : 0
+  };
 }
 function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
@@ -49930,7 +49937,7 @@ function restoreCharacterWorldProgress(entry2) {
 }
 
 // ../apps/mobile/src/core/account-roster.ts
-var CHARACTER_SLOT_THRESHOLDS = [0, 250, 500, 950, 1600];
+var CHARACTER_SLOT_THRESHOLDS = [0, 250, 550, 1050, 1750];
 var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
 var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;
 function characterSkillTotal(skills, character) {
@@ -49956,7 +49963,7 @@ function accountSkillLevel(state) {
 function unlockedCharacterSlots(state) {
   const earned = Number(state.account.unlockedCharacterSlots ?? 0);
   const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
-  return Math.min(5, Math.max(1, earned, threshold));
+  return Math.min(5, Math.max(1, earned, threshold, accountCharacters(state).length));
 }
 function accountCharacters(state) {
   return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
@@ -52892,8 +52899,8 @@ function effectiveStats(state) {
     power: Math.round(basePower * (1 + setStats.power)),
     critChance: Math.min(0.75, baseCritChance + setStats.critRate),
     critMultiplier: 1.5 + setStats.critDamage,
-    accuracy: Math.min(0.99, 0.84 + setStats.accuracy),
-    evasion: Math.min(0.5, baseEvasion + setStats.evasion),
+    accuracy: Math.min(0.99, 0.84 + setStats.accuracy + mastery.accuracy),
+    evasion: Math.min(0.5, baseEvasion + setStats.evasion + mastery.evasion),
     haste: 0.05 + setStats.haste,
     armor: setStats.armor,
     ward: setStats.ward,
@@ -55241,7 +55248,7 @@ function createAccountCharacter(state, classId, name, body, now) {
   const sequence = Math.max(state.account.createdCharacterCount ?? 0, accountCharacters(state).length) + 1;
   const id = `LOCAL_CHAR_${sequence}`;
   next.character.id = id;
-  const account = { ...state.account, createdCharacterCount: sequence };
+  const account = { ...state.account, createdCharacterCount: sequence, unlockedCharacterSlots: Math.max(state.account.unlockedCharacterSlots ?? 1, unlockedCharacterSlots(state)) };
   return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] };
 }
 function switchAccountCharacter(state, id, now) {

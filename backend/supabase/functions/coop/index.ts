@@ -594,7 +594,14 @@ var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills)
 function characterClassEffects(c) {
   const [a, b] = characterClassSkills(c).map((s2) => (s2.level - 1) / 99);
   const tank = ["IRONWARDEN", "BASTION", "DREADGUARD"].includes(c.classId), support = ["DAWNKEEPER", "STONECALLER"].includes(c.classId);
-  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1 } : { attack: 1 + 0.07 * a + 0.03 * b, hp: 1, defense: 1 + 0.06 * b };
+  const precision = c.classId === "KNIFE_DANCER";
+  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b, accuracy: 0, evasion: 0 } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1, accuracy: 0, evasion: 0 } : {
+    attack: 1 + 0.07 * a + (precision ? 0 : 0.03 * b),
+    hp: 1,
+    defense: 1 + (precision ? 0 : 0.06 * b),
+    accuracy: precision ? 0.03 * b : 0,
+    evasion: precision ? 0.06 * b : 0
+  };
 }
 
 // ../apps/mobile/src/core/companion-mastery.ts
@@ -46462,8 +46469,8 @@ function effectiveStats(state) {
     power: Math.round(basePower * (1 + setStats.power)),
     critChance: Math.min(0.75, baseCritChance + setStats.critRate),
     critMultiplier: 1.5 + setStats.critDamage,
-    accuracy: Math.min(0.99, 0.84 + setStats.accuracy),
-    evasion: Math.min(0.5, baseEvasion + setStats.evasion),
+    accuracy: Math.min(0.99, 0.84 + setStats.accuracy + mastery.accuracy),
+    evasion: Math.min(0.5, baseEvasion + setStats.evasion + mastery.evasion),
     haste: 0.05 + setStats.haste,
     armor: setStats.armor,
     ward: setStats.ward,
@@ -50321,7 +50328,7 @@ var OnlineQModeRuntime = class {
     const minimum = regularDungeonTierRequiredLevel(definition, request.tier), minimumPower = regularDungeonTierRequiredPower(definition, request.tier), sync = definition.recommendedLevel;
     const freeze = (source) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: minimum, minCombatPower: minimumPower, syncLevel: sync, repository: { getOwnedLoadout: () => source } });
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned");
-    if (request.loadoutRevision !== record.revision) {
+    if (request.loadoutRevision > record.revision) {
       const replay = await this.receipt(accountId, "qmode_start_v1", accountId, request.requestId, hash);
       if (replay) return replay.response;
       throw new GameplayError("stale_game_version", 409);
@@ -50546,7 +50553,7 @@ var OnlineLiveQueue = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
-    if (game.version !== request.loadoutRevision) {
+    if (request.loadoutRevision > game.version) {
       const receipt = await replay();
       if (receipt) return receipt.response;
       throw new GameplayError("stale_game_version", 409);
@@ -50583,7 +50590,7 @@ var OnlineLiveQueue = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
-    if (game.version !== request.loadoutRevision) {
+    if (request.loadoutRevision > game.version) {
       const receipt = await replay();
       if (receipt) return receipt.response;
       throw new GameplayError("stale_game_version", 409);
@@ -51391,7 +51398,7 @@ var OnlineEventExpeditionRuntime = class {
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
-    if (request.loadoutRevision !== record.revision) {
+    if (request.loadoutRevision > record.revision) {
       const replay = await this.receipt(accountId, "event_start_v1", accountId, request.requestId, hash);
       if (replay) return replay.response;
       throw new GameplayError("stale_game_version", 409);

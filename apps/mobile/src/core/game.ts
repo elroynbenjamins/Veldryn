@@ -578,7 +578,7 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
     cooldownSeconds:equippedGuardCompanion.activeAbility.cooldownSeconds,
     incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier,
    }:undefined});
-   const cast=huntClassSurvivalEvents(guarded,{classId:runtime.c.classId,classSkillLevel,...timing});
+   const cast=huntClassSurvivalEvents(guarded,{classId:runtime.c.classId,classSkillLevel,...timing,classHealingMultiplier:runtime.stats.classHealing});
    seconds+=plan.cycleSeconds;
    damage+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.damage,0);
    healing+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.healing,0);

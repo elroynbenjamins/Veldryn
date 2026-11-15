@@ -34,12 +34,12 @@ const roleGlyph={damage:'⚔',tank:'◆',support:'✦'};
 const portraitIds=['IRONWOOD_WOLF','OATHBOUND_SQUIRE','FIELD_WISP','VENOM_WEAVER','FOREST_TROLL','ECHO_BAT','MIRE_HERON','THORNLING','CAVE_SKITTER','LANTERN_WRETCH'];
 
 
-export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,initialSelection,onSelectionChange,showPicker=true}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;initialSelection?:string;onSelectionChange?:(id:string)=>void;showPicker?:boolean;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
+export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,initialSelection,onSelectionChange,showPicker=true,initialTab=null}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;initialSelection?:string;onSelectionChange?:(id:string)=>void;showPicker?:boolean;initialTab?:'Bond'|null;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
  const amount=(value:number)=>value.toLocaleString(language);
 
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [selection,setLocalSelection]=useState(initialSelection??state.character?.equippedCombatCompanionId??'UNIT_001'),[tab,setTab]=useState<DetailTab>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[messageError,setMessageError]=useState(false);
+ const [selection,setLocalSelection]=useState(initialSelection??state.character?.equippedCombatCompanionId??'UNIT_001'),[tab,setTab]=useState<DetailTab>(initialTab),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[messageError,setMessageError]=useState(false);
  const [rosterOwnership,setRosterOwnership]=useState<'Owned'|'All'|'Locked'>('Owned'),[rosterRarity,setRosterRarity]=useState<'All'|'standard'|'rare'|'elite'|'prestige'>('All'),[rosterRole,setRosterRole]=useState<'All'|'tank'|'damage'|'support'>('All');
  const {height:windowHeight}=useWindowDimensions();
  const setSelection=(id:string)=>{setTab(null);setMessage('');setMessageError(false);setLocalSelection(id);onSelectionChange?.(id);};

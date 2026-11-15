@@ -74,7 +74,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  };
 
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
- useEffect(()=>{if(visible)void refresh();},[visible,refresh]);
+ useEffect(()=>{if(visible)void refresh();else setOnlinePlayersOpen(false);},[visible,refresh]);
  useEffect(()=>{if(!party&&channel==='party')selectChannel('world');},[party,channel]);
  useEffect(()=>{guildCheckedAt.current=0;},[visible,state.account.guildMember]);
  useEffect(()=>{

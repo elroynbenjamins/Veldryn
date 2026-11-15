@@ -47,7 +47,7 @@ These stance ability values **are not mapped onto the eventual shared guild-pres
 
 ## First verified focused CI measurement
 
-[Successful V7 validation run 43752896883](https://github.com/elroynbenjamins/Veldryn/actions/runs/43752896883) completed the original 1,944-fight suite, compiling TypeScript and validating all 36 authored cues. Its 36 measured boss/phase/tier cohort rows are archived as [V7 source combat evidence](./spreadsheets/guild-pve-v7-source-combat-cohorts-test-only.csv). The later **per-class diagnostic enhancement** is a separate test change and must pass its own CI before those additional data are treated as verified.
+[Successful V7 validation run 43752896883](https://github.com/elroynbenjamins/Veldryn/actions/runs/43752896883) completed the original 1,944-fight suite, compiling TypeScript and validating all 36 authored cues. Its 36 measured boss/phase/tier cohort rows are archived as [V7 source combat evidence](./spreadsheets/guild-pve-v7-source-combat-cohorts-test-only.csv). [Follow-up focused V7 run 43753057460](https://github.com/elroynbenjamins/Veldryn/actions/runs/43753057460) also **passed** with the extended class diagnostics. Its [108 per-class/tier/stance records](./spreadsheets/guild-pve-v7-class-stance-evidence-test-only.csv) cover 18 phase-local preview samples per entry.
 
 | Synthetic gear tier | Sample fights | Mean phase-local boss HP removed | Preview deaths |
 | --- | ---: | ---: | ---: |
@@ -57,6 +57,26 @@ These stance ability values **are not mapped onto the eventual shared guild-pres
 | T4 | 486 | 14,377 | 0 |
 
 All **1,944/1,944 previews** inflicted positive boss HP damage and recorded at least one cast-warning event. The engine recorded **507 previews with healing**, **322 with actual cleanse events**, and **794 with shield absorption**, but these can overlap and are not exclusive to the Rally/Guard stances.
+
+### Class and stance differences in the verified V7 diagnostic
+
+The second focused run measured these across all **four tiers × three bosses × three phases**, with class, gear and seeds sampled evenly:
+
+| Class role | Assault mean HP removed | Guard mean HP removed | Rally mean HP removed | Observed Guard shield absorption mean |
+| --- | ---: | ---: | ---: | ---: |
+| Tank | 5,112 | 4,173 | 3,951 | 2,004 |
+| Damage | 13,040 | 10,443 | 9,813 | 1,508 |
+| Support | 4,347 | 3,520 | 3,322 | 2,820 |
+
+These numbers are per 18-second preview, not contribution points or expected game damage. Shield absorption counts **all shields**, including class-kit and gem sources.
+
+The **43 T1 downs** all occurred in Damage-class previews. Some examples from 18 T1 samples per stance:
+
+- **Wayfinder:** Assault **9/18** downs, Guard **4/18**, Rally **6/18**.
+- **Knife Dancer:** Assault **11/18** downs, Guard **4/18**, Rally **6/18**.
+- **Hexweaver:** Assault **3/18** downs; no other role at T1 recorded a down in the current matrix.
+
+The stance comparison gives a **directional Guard-survivability signal** and direct evidence of healing/cleansing, but is not a controlled causal estimate: additional ability use can change the deterministic RNG event order. Do not assume T1 Damage needs an automatic class nerf or that Tank and Support are overpowered. The ultimate raid balances **effective shared damage, protection actually consumed, and support charges**, rather than identical individual survival.
 
 **Critical interpretation:** The lack of deaths in T2–T4 against reference-scaled threat is a likely **under-pressure diagnostic** for *these 18-second solo phase-local tests*. It is **not** evidence that T2–T4 will beat a shared 14-day guild campaign, nor evidence that a class is too strong. Those fights omit persistent guild pressure, mandatory-node HP, later phase state and class-mixed guild progress. The next tuning pass must review pressure and armour in authentic shared-phase contexts rather than arbitrarily nerfing players or increasing every boss's Attack.
 

@@ -13,6 +13,8 @@ export const socialTranslationRows = {
   "Previous": ["Zurück","Anterior","Vorige","Precedente","Précédent"],
   "Next": ["Weiter","Siguiente","Volgende","Successiva","Suivant"],
   "Page": ["Seite","Página","Pagina","Pagina","Page"],
+  "Entries {first}–{last}": ["Einträge {first}–{last}","Entradas {first}–{last}","Posities {first}–{last}","Voci {first}–{last}","Entrées {first}–{last}"],
+  "Live rankings can change while players progress.": ["Live-Ranglisten können sich ändern, während Spieler Fortschritte machen.","Las clasificaciones en vivo pueden cambiar a medida que progresan los jugadores.","Live-ranglijsten kunnen veranderen terwijl spelers vooruitgang boeken.","Le classifiche in tempo reale possono cambiare mentre i giocatori avanzano.","Les classements en direct peuvent évoluer à mesure que les joueurs progressent."],
   "Back to Dungeons": ["Zurück zu den Dungeons","Volver a las mazmorras","Terug naar kerkers","Torna ai dungeon","Retour aux donjons"],
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],

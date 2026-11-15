@@ -51,6 +51,7 @@ export function characterClassEffects(c:CharacterState):ClassSkillEffects{
   case 'KNIFE_DANCER':return {...base,attack:1+.03*a,haste:.04*a,accuracy:.03*b,evasion:.06*b};
   case 'STONECALLER':return {...base,attack:1+.04*a,classHealing:1+.08*a,defense:1+.08*b,ward:.03*b};
  }
+ return base;
 }
 export function settleClassDrills(state:GameState,now:number,capSeconds:number):{state:GameState;reward:RewardBundle}{
  const c=state.character,drill=normalizeClassDrills(c?.classTraining);const empty:RewardBundle={xp:0,gold:0,kills:0,items:[],elapsedSeconds:0};

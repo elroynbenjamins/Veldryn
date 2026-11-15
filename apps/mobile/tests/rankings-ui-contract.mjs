@@ -1,0 +1,23 @@
+import {readFileSync} from 'node:fs';
+import {strict as assert} from 'node:assert';
+const screen=readFileSync(new URL('../src/screens/RankingsScreen.tsx',import.meta.url),'utf8');
+const pager=readFileSync(new URL('../src/core/ranking-pagination.ts',import.meta.url),'utf8');
+function includes(needle,message){assert.ok(screen.includes(needle),message);}
+includes('RANKING_PAGE_SIZE+1','lookahead must fetch exactly one extra server row');
+includes('rankingPageOffset(page)','page requests use bounded offsets');
+includes('projectRankingPage(next.entries,page)','server entries are projected to the requested page');
+includes('request.current++','selection and unmount must invalidate in-flight requests');
+includes('version===request.current','outdated fetch responses must be discarded');
+includes('if(next===board)return;','reselecting a board must not erase current standings');
+includes('if(value===group)return;','reselecting a category must preserve the current board');
+includes('if(next.board!==board||!Array.isArray(next.entries))','reject mismatched server responses');
+includes('setError(st("Could not load Rankings."))','request errors must be localized and avoid raw backend details');
+includes('page===0?(activeSnapshot?.entries.filter(entry=>entry.rank<=3)','only the first page displays the podium');
+includes('entry=>page>0||entry.rank>3','players sharing a podium rank on later pages remain visible');
+includes('setLoadedPage(page)','a response must be bound to its source page');
+includes('scrollRef.current?.scrollTo({y:0,animated:false})','page/board navigation resets scroll');
+includes('accessibilityLiveRegion="polite"','pagination announces page changes accessibly');
+includes('Entries {first}–{last}','pagination displays an entry range');
+includes('Live rankings can change while players progress.','live rankings must not imply frozen snapshots');
+assert.ok(pager.includes('Number.isSafeInteger')&&pager.includes('RANKING_MAX_OFFSET'),'pagination input is bounded');
+console.log('rankings UI/navigation contract PASS');

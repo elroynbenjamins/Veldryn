@@ -12,7 +12,10 @@ ok(playerBadgeIds(snapshot(null,true),now).join(',')==='supporter','legacy Suppo
 ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no badge');
 ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
 ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
-ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===6,'all current earned badges still exist');
+ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===5,'all five current earned badges still exist');
+ok(!COLLECTIBLE_PLAYER_BADGE_IDS.some(id=>String(id)==='beta_tester'),'retired Beta Tester badge is not available');
+ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'beta_tester',validUntilMs:2000}),now).length===0,'stale equipped Beta Tester badge does not render');
+ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['beta_tester','founder'],validUntilMs:2000}),now).join(',')==='founder','stale Beta Tester badge is removed from profile showcase');
 ok(SUPPORTER_BADGE_IDS.join(',')==='supporter,supporter_3m,supporter_6m,supporter_12m','four cosmetic Supporter tiers');
 ok(VIP_BADGE_IDS.join(',')==='vip,vip_plus','VIP and VIP+ belong to the elective badge catalog');
 ok(playerBadgeIds(normalizePlayerBadges({staff:'admin',supporter:false,equippedBadgeId:'vip',validUntilMs:2000}),now).join(',')==='admin,vip','verified VIP can display beside the automatic staff badge');
@@ -20,8 +23,8 @@ ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadg
 ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['vip_plus','vip','founder'],validUntilMs:2000}),now).join(',')==='vip_plus,vip,founder','VIP and VIP+ work as profile showcase selections');
 ok(validatedFeaturedBadges(['vip_plus','vip','admin'],VIP_BADGE_IDS).join(',')==='vip_plus,vip','VIP badges are valid choices while staff roles are not');
 
-ok(playerBadgeIds({...snapshot(null,false),extras:['founder','beta_tester']},now).join(',')==='founder','legacy double selection collapses safely to one');
-ok(playerBadgeIds({...snapshot('admin',true),extras:['founder','beta_tester']},now).join(',')==='admin,founder','staff badge appears separately');
+ok(playerBadgeIds({...snapshot(null,false),extras:['founder','community_champion']},now).join(',')==='founder','legacy double selection collapses safely to one');
+ok(playerBadgeIds({...snapshot('admin',true),extras:['founder','community_champion']},now).join(',')==='admin,founder','staff badge appears separately');
 ok(playerBadgeIds({...snapshot(null,true),extras:['veteran','guild_leader']},now).join(',')==='veteran','earned single badge takes precedence over legacy Supporter');
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:true,extras:['admin','founder','founder','event_champion'],validUntilMs:2000}),now).join(',')==='founder','no fake admin or double collectibles');
 
@@ -47,9 +50,9 @@ ok(playerBadgeIds(normalizePlayerBadges({staff:'owner',supporter:'true',validUnt
 // The profile shelf: three of the player's choosing, in their own order, beside the
 // automatic staff mark, while the name row still carries exactly one elective badge.
 ok(MAX_FEATURED_PLAYER_BADGES===3,'three profile badges by design');
-ok(validatedFeaturedBadges(['beta_tester','founder','admin'],['beta_tester','founder']).join(',')==='beta_tester,founder','a shelf keeps every owned pick and drops staff ids');
-ok(validatedFeaturedBadges(['veteran','founder','beta_tester','event_champion'],COLLECTIBLE_PLAYER_BADGE_IDS).join(',')==='veteran,founder,beta_tester','a shelf stops at three and keeps the order it was given');
-ok(validatedFeaturedBadges(['beta_tester','founder'],['founder']).join(',')==='founder','a locked pick is dropped without disturbing the rest');
+ok(validatedFeaturedBadges(['community_champion','founder','admin'],['community_champion','founder']).join(',')==='community_champion,founder','a shelf keeps every owned pick and drops staff ids');
+ok(validatedFeaturedBadges(['veteran','founder','community_champion','event_champion'],COLLECTIBLE_PLAYER_BADGE_IDS).join(',')==='veteran,founder,community_champion','a shelf stops at three and keeps the order it was given');
+ok(validatedFeaturedBadges(['community_champion','founder'],['founder']).join(',')==='founder','a locked pick is dropped without disturbing the rest');
 ok(validatedFeaturedBadges(['founder','founder'],['founder']).join(',')==='founder','the same badge cannot fill two shelf slots');
 ok(validatedFeaturedBadges('founder',['founder']).length===0&&validatedFeaturedBadges(undefined,['founder']).length===0,'a malformed shelf is empty, not a crash');
 
@@ -57,8 +60,8 @@ const shelf=normalizePlayerBadges({staff:'admin',supporter:true,supporterAvailab
 ok(playerBadgeIds(shelf,now).join(',')==='admin,founder','the name row is unchanged by a three-badge shelf');
 ok(profileBadgeIds(shelf,now).join(',')==='supporter_6m,veteran,founder','the profile shelf is exactly what the player featured, in their order');
 ok(profileBadgeIds(shelf,2000).length===0,'an expired identity shows no profile badges either');
-const tooMany=normalizePlayerBadges({staff:null,supporter:false,featured:['founder','veteran','beta_tester','event_champion'],validUntilMs:2000});
-ok(profileBadgeIds(tooMany,now).join(',')==='founder,veteran,beta_tester','a server shelf longer than three is truncated client-side');
+const tooMany=normalizePlayerBadges({staff:null,supporter:false,featured:['founder','veteran','community_champion','event_champion'],validUntilMs:2000});
+ok(profileBadgeIds(tooMany,now).join(',')==='founder,veteran,community_champion','a server shelf longer than three is truncated client-side');
 const unearnedTier=normalizePlayerBadges({staff:null,supporter:true,supporterAvailable:true,supporterTierMonths:1,featured:['supporter_12m','founder'],validUntilMs:2000});
 ok(profileBadgeIds(unearnedTier,now).join(',')==='founder','an unearned Supporter tier cannot be shelved by trusted-shape input');
 const lapsed=normalizePlayerBadges({staff:null,supporter:false,supporterAvailable:false,supporterTierMonths:12,featured:['supporter_12m'],validUntilMs:2000});
@@ -86,7 +89,7 @@ ok(profile.includes("'Badges'|'Name Style'")&&profile.includes("tab==='Badges'&&
 ok(!profile.includes("<PlayerBadgeSettings/>\n   <PlayerNameStyleEditor"),'badge chooser was removed from Name Style');
 const chips=read('src/components/profile/ProfileWardrobeChips.tsx'),look=read('src/components/profile/ProfileLookPanel.tsx');
 ok(chips.includes("profileT(language,\"Badges\")")&&look.includes('<PlayerBadgeSettings/>'),'Customize Profile reaches the badge chooser from its own category chips');
-ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('COLLECTIBLE_PLAYER_BADGE_IDS.map'),'new gallery includes all six collectibles and four supporter tiers');
+ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('COLLECTIBLE_PLAYER_BADGE_IDS.map'),'new gallery includes all five collectibles and four supporter tiers');
 ok(settings.includes('badges.setEquipped(equipped===id?null:id)'),'single tap replaces or unequips badge');
 ok(settings.includes("Staff badges appear automatically"),'staff identity is explained');
 // One gallery, two destinations: the name row takes one badge, the profile takes three.

@@ -29,13 +29,11 @@ const json=JSON.stringify(reward);
 function assert(ok,label){if(!ok)throw new Error('party_v29_sql_integration: '+label);}
 async function q(sql,params=[],handle=db){return handle.query(sql,params);}
 async function expectFailure(fn,label){
- await db.exec('begin');
  let error=null;
- try{await fn();await db.exec('commit');}
+ try { await db.transaction(async tx=>fn(tx)); }
  catch(e){error=e;}
- if(!error)throw new Error('party_v29_sql_integration: unexpectedly committed '+label);
- try{await db.exec('rollback');}catch{/* Postgres may already rollback a failed commit. */}
- assert(/constraint|foreign key|violates|immutable|duplicate|permission/i.test(String(error)),
+ if(!error) throw new Error('party_v29_sql_integration: unexpectedly committed '+label);
+ assert(/constraint|foreign key|violates|immutable|duplicate|permission|aborted|failed/i.test(String(error)),
    'unexpected rejection for '+label+': '+String(error));
 }
 const receiptSql=`

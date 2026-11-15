@@ -17,6 +17,7 @@ DECLARE
   prior_value bigint;
   frozen_value bigint;
   snapshot_id uuid;
+  i integer;
 BEGIN
   SELECT account_id INTO requester FROM public.player_profiles
   WHERE profile_visibility='public' ORDER BY account_id LIMIT 1;
@@ -45,6 +46,9 @@ BEGIN
       OR jsonb_typeof(original->'entries')<>'array'
       OR (original->>'pageSize')::integer<>50
     THEN RAISE EXCEPTION 'FROZEN_BOARD_MISMATCH: %',board; END IF;
+    -- Keep fixture within real production-style per-account rate limits.
+    DELETE FROM private.rankings_frozen_snapshots_v1
+    WHERE requester_id=requester;
   END LOOP;
 
   SELECT public.rankings_frozen_start_server_v1(requester,'mining',2) INTO first_page;
@@ -96,5 +100,26 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM<>'RANKING_SNAPSHOT_EXPIRED_OR_FORBIDDEN' THEN RAISE; END IF;
   END;
+  -- A rate-limited account cannot create arbitrarily many durable snapshots.
+  DELETE FROM private.rankings_frozen_snapshots_v1 WHERE requester_id=requester;
+  FOR i IN 1..6 LOOP
+    PERFORM public.rankings_frozen_start_server_v1(requester,'mining',1);
+  END LOOP;
+  BEGIN
+    PERFORM public.rankings_frozen_start_server_v1(requester,'mining',1);
+    RAISE EXCEPTION 'SNAPSHOT_RATE_LIMIT_NOT_ENFORCED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'RANKING_SNAPSHOT_RATE_LIMITED' THEN RAISE; END IF;
+  END;
+  -- Bounded housekeeping prunes old cursors and sessions together.
+  UPDATE private.rankings_frozen_snapshots_v1
+  SET expires_at=clock_timestamp()-interval '2 hours'
+  WHERE requester_id=requester;
+  IF public.rankings_frozen_prune_server_v1(100)<6
+  THEN RAISE EXCEPTION 'SNAPSHOT_CLEANUP_DID_NOT_DELETE_EXPIRED'; END IF;
+  IF EXISTS(SELECT 1 FROM private.rankings_frozen_cursors_v1 c
+    JOIN private.rankings_frozen_snapshots_v1 s ON s.id=c.snapshot_id
+    WHERE s.requester_id=requester)
+  THEN RAISE EXCEPTION 'SNAPSHOT_CURSOR_CASCADE_INCOMPLETE'; END IF;
   RAISE NOTICE 'All 19 boards, cursor replay, privacy, expiry and account binding passed';
 END $rank_snap$;

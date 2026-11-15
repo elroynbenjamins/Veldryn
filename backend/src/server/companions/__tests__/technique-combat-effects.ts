@@ -101,4 +101,26 @@ function echoMarkProbe(kind:'buff'|'debuff'){
 const unmarkedEcho=echoMarkProbe('buff'),markedEcho=echoMarkProbe('debuff');
 assert.ok(unmarkedEcho>0&&markedEcho>=unmarkedEcho*1.115,`Echo requires an existing enemy debuff: ${unmarkedEcho} vs ${markedEcho}`);
 
+// Memory Command must make critical strikes more likely in a real deterministic
+// combat simulation. A harmless mark preserves the same RNG calls as the real
+// mark, isolating the marked target's crit modifier.
+const critProbe=(markCritical:boolean)=>{
+ let critical=0;
+ for(let sample=0;sample<48;sample++){
+  const markerActor:CombatantDefinition={...actor('memory','players'),basicAttackMs:99999,abilities:[{
+   id:'memory_mark',name:'Memory Mark',priority:50,cooldownMs:12000,castTimeMs:0,target:'current_target',
+   effects:[{kind:'debuff',value:.03,durationMs:6000,tag:markCritical?'crit_taken':'noncritical_control'}],
+  }]};
+  const striker:CombatantDefinition={...actor('striker','players'),basicAttackMs:99999,stats:{...player.stats,critChance:.1,critMultiplier:1.5},abilities:[{
+   id:'critical_probe',name:'Critical Probe',priority:50,cooldownMs:300,castTimeMs:0,target:'current_target',
+   effects:[{kind:'damage',coeff:1}],
+  }]};
+  const outcome=simulateCombat({seed:`memory-mark-crit-${sample}`,players:[markerActor,striker],enemies:[{...actor('dummy','enemies'),basicAttackMs:99999,stats:{...enemy.stats,maxHp:100000}}],maxDurationMs:2500});
+  critical+=outcome.events.filter(e=>e.type==='damage'&&e.abilityId==='critical_probe'&&e.critical).length;
+ }
+ return critical;
+};
+const baselineCrits=critProbe(false),markedCrits=critProbe(true);
+assert.ok(markedCrits>baselineCrits,`Memory Command crit window must affect real rolls: ${baselineCrits} -> ${markedCrits}`);
+
 console.log('PASS actual execute damage, finite shield reflection, Trial and co-op signature effects and technique effects');

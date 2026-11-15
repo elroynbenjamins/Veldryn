@@ -12,8 +12,8 @@ includes('if(next===board)return;','reselecting a board must not erase current s
 includes('if(value===group)return;','reselecting a category must preserve the current board');
 includes('if(next.board!==board||!Array.isArray(next.entries))','reject mismatched server responses');
 includes('setError(st("Could not load Rankings."))','request errors must be localized and avoid raw backend details');
-includes('page===0?(activeSnapshot?.entries.filter(entry=>entry.rank<=3)','only the first page displays the podium');
-includes('entry=>page>0||entry.rank>3','players sharing a podium rank on later pages remain visible');
+includes('splitRankingDisplay(activeSnapshot?.entries??[],page)','podium and regular rows must use the tie-safe shared projector');
+assert.ok(pager.includes('entries.slice(0,3)')&&pager.includes('entries.slice(3)')&&pager.includes('page===0'),'podium must highlight only three entries without dropping ties');
 includes('setLoadedPage(page)','a response must be bound to its source page');
 includes('scrollRef.current?.scrollTo({y:0,animated:false})','page/board navigation resets scroll');
 includes('accessibilityLiveRegion="polite"','pagination announces page changes accessibly');

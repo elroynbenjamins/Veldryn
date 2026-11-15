@@ -41,6 +41,16 @@ for(let rank=2;rank<=30;rank++)ok(
  familyMasteryPointsForRank(rank)-familyMasteryPointsForRank(rank-1)>=familyMasteryPointsForRank(rank-1)-familyMasteryPointsForRank(rank-2),
  'later family ranks never become cheaper'
 );
+// Verify exact thresholds at milestone and last-rank boundaries; avoid silent cap drift.
+for(const rank of [1,5,10,15,20,25,29,30]){
+ const boundary=structuredClone(s);
+ boundary.character!.familyMasteryPoints={BEAST:familyMasteryPointsForRank(rank)};
+ ok(enemyFamilyMastery(boundary,'BEAST').rank===rank,'exact threshold unlocks Rank '+rank);
+ if(rank>0){
+  boundary.character!.familyMasteryPoints={BEAST:familyMasteryPointsForRank(rank)-1};
+  ok(enemyFamilyMastery(boundary,'BEAST').rank===rank-1,'one point below threshold keeps previous rank '+rank);
+ }
+}
 const rankFour=structuredClone(s);
 rankFour.character!.familyMasteryPoints={BEAST:familyMasteryPointsForRank(4)+25};
 const familyGuide=enemyFamilyMasteryGuidance(rankFour,'BEAST');
@@ -120,6 +130,10 @@ const screen=fs.readFileSync('src/screens/CombatScreen.tsx','utf8');
 const familyUi=fs.readFileSync('src/components/EnemyFamilyMasteryPanel.tsx','utf8');
 ok(screen.includes('<EnemyFamilyMasteryPanel state={state}/>')&&familyUi.includes('ENEMY_FAMILY_MASTERY_MILESTONES'),'type mastery appears next to species mastery');
 ok(familyUi.includes('m.dropKnowledge')&&familyUi.includes('m.badgeUnlocked'),'family knowledge and cosmetic milestone are visible');
+ok(familyUi.includes('m.currentRankProgress')&&familyUi.includes('m.currentRankTarget'),'family progress bar tracks the variable rank threshold');
+ok(familyUi.includes('m.pointsToNextRank')&&!familyUi.includes('kills to next rank'),'family progress labels count earned points rather than incorrectly estimating kills');
+ok(familyUi.includes('enemyFamilyMasteryPointsPerKill')&&familyUi.includes('expandedFamilyId'),'family summary displays real per-monster point scaling and compact expandable details');
+
 const speciesUi=fs.readFileSync('src/components/MonsterMasteryPanel.tsx','utf8');
 ok(speciesUi.includes('p.dropKnowledge||familyKnowledge'),'family Rank 10 knowledge unlocks drop tables in the species panel too');
 console.log(`PASS monster and enemy-family mastery: ${checks} checks`);

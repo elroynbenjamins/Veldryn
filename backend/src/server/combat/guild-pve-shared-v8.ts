@@ -141,6 +141,7 @@ export class GuildPveV8InMemoryGuild{
    input.startUtcMs<=0||new Date(input.startUtcMs).getUTCDay()!==1||
    new Date(input.startUtcMs).getUTCHours()!==0||
    new Date(input.startUtcMs).getUTCMinutes()!==0||
+   new Date(input.startUtcMs).getUTCSeconds()!==0||input.startUtcMs%1000!==0||
    !Object.hasOwn(multi,input.difficulty)||!input.accountIds.length||
    new Set(input.accountIds).size!==input.accountIds.length||
    input.accountIds.some(id=>!safestr(id)))
@@ -211,7 +212,10 @@ export class GuildPveV8InMemoryGuild{
    return structuredClone(receipt);
   };
   // A genuinely stale node returns no debit; no other state is touched.
-  if(target.cleared||!this.reachable(node))return store(makeReceipt('stale',null));
+  if(target.cleared)return store(makeReceipt('stale',null));
+  if(!this.reachable(node))throw Error('guild_pve_v8_node_locked');
+  const bound=this.bindings.get(this.eventId,cmd.accountId);
+  if(bound&&bound!==this.id)throw Error('guild_pve_v8_account_already_bound_to_other_guild');
   if(cmd.kind==='battle'&&usage.seals>=maxSeals)throw Error('guild_pve_v8_seals_exhausted');
   if(cmd.kind==='exploration'&&usage.orders>=maxOrders)throw Error('guild_pve_v8_orders_exhausted');
   // A fully trusted production caller would have already authenticated
@@ -235,6 +239,7 @@ export class GuildPveV8InMemoryGuild{
     difficulty:this.difficulty,reference:this.reference,
     stance:cmd.stance!,seed
    });
+   this.bindings.bind(this.eventId,cmd.accountId,this.id);
    // V7 is a phase-local 18-second result. The guild ledger is the true HP
    // remaining: overkill and damage to a full phase-local guardian never
    // produce more than the real remaining shared node HP.
@@ -252,14 +257,13 @@ export class GuildPveV8InMemoryGuild{
    this.pressure=clamp(this.pressure+rawPressure-4-warDrums,0,100);
    usage.seals++;
   }else{
+   this.bindings.bind(this.eventId,cmd.accountId,this.id);
    // Explorations are one immutable Order in this V8 emulator. They unlock
    // future side effects in V9 but do not fabricate damage or supplies here.
    target.cleared=true;
    usage.orders++;
   }
-  // Binds once per global cycle to avoid retries with alternate guilds.
-  // This is a *process-local* registry, not a DB uniqueness guarantee.
-  this.bindings.bind(this.eventId,cmd.accountId,this.id);
+  // Registry is an in-process demonstration, not a DB uniqueness guarantee.
   this.usage.set(cmd.accountId,usage);
   this.revision++;
   return store(makeReceipt('committed',combat,transitions));

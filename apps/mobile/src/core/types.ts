@@ -90,6 +90,8 @@ export interface EquipmentCraftJob{
   /** Reservation snapshot keeps cancellation refunds stable if recipe balance changes later. */
   reservedGold?:number;
   reservedInputs?:ItemStack[];
+  /** Frozen odds for new gem merges; missing means a legacy, guaranteed combine. */
+  combineSuccessChancePercent?:number;
 }
 export interface CraftedGearInstance{
   id:string;

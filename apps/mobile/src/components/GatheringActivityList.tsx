@@ -8,6 +8,7 @@ import {HERB_NODES} from '../content/herbalism';
 import type {Language} from '../i18n/languages';
 import {currentRegionId} from '../core/combat-region';
 import {WORLD_ZONES} from '../content/world-map';
+import {gatheringNodeAvailability} from '../core/regional-gathering';
 import {formatGameNumber} from '../core/number-format';
 import {ResourceArtwork} from './ResourceArtwork';
 import {type ThemeColors} from '../theme/theme';
@@ -26,25 +27,73 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [expandedDropId,setExpandedDropId]=useState<string|null>(null);
+ const [doableOnly,setDoableOnly]=useState(false);
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(row=>row.id===regionId)??WORLD_ZONES[0];
- const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId&&(!currentRegionOnly||row.zoneId===region.id)&&(!areaId||row.zoneId!==region.id||row.areaId===areaId)).sort((a,b)=>Number(b.zoneId===region.id)-Number(a.zoneId===region.id)||Number(b.id===preferredActionId)-Number(a.id===preferredActionId)||a.unlockLevel-b.unlockLevel);
+ // Use one availability rule for every profession and both gathering screens.
+ const entries=[...GATHERING,...HERB_NODES]
+  .filter(activity=>activity.skillId===skillId&&(!currentRegionOnly||activity.zoneId===region.id)&&(!areaId||activity.zoneId!==region.id||activity.areaId===areaId))
+  .map(activity=>gatheringNodeAvailability(state,activity,skillLevel))
+  .sort((a,b)=>a.rank-b.rank||Number(b.activity.id===preferredActionId)-Number(a.activity.id===preferredActionId)||a.activity.unlockLevel-b.activity.unlockLevel);
+ const readyCount=entries.filter(entry=>entry.readyHere||entry.active).length;
+ const travelCount=entries.filter(entry=>entry.travelReady).length;
+ const lockedCount=entries.length-readyCount-travelCount;
+ const visibleEntries=doableOnly?entries.filter(entry=>entry.readyHere||entry.travelReady||entry.active):entries;
  const stock=(itemId:string)=>[...state.inventory.stacks,...state.bank.stacks].filter(row=>row.itemId===itemId).reduce((total,row)=>total+row.quantity,0);
  return <View style={s.root}>
-  {showInstruction?<Text style={s.instruction}>{gt("Tap a resource to begin gathering.")}</Text>:null}
-  {nodes.map(activity=>{
-   const active=state.activity?.targetId===activity.id,inCurrentRegion=activity.zoneId===region.id,unlocked=skillLevel>=activity.unlockLevel,nodeRegion=WORLD_ZONES.find(row=>row.id===activity.zoneId),view=gatheringBalanceProjection(state,activity,0),available=stock(activity.itemId);
-   const start=()=>{if(active||!inCurrentRegion)return;if(unlocked)onGather(activity.id);else onNavigate?.(gatheringProgressionAction(state,activity).destination);};
+  {showInstruction?<Text style={s.instruction}>{gt('Ready resources appear first. Travel to other unlocked regions for more.')}</Text>:null}
+  {entries.length>0?<View style={s.availabilitySummary}>
+   <View style={s.summaryCounts}>
+    <Text style={s.summaryReady}>{gt('Ready')}: {readyCount}</Text>
+    {!currentRegionOnly?<Text style={s.summaryTravel}>{gt('Travel')}: {travelCount}</Text>:null}
+    <Text style={s.summaryLocked}>{gt('Locked')}: {lockedCount}</Text>
+   </View>
+   <Pressable accessibilityRole="button" accessibilityState={{selected:doableOnly}}
+    accessibilityLabel={doableOnly?gt('Show all resources'):gt('Show doable resources only')}
+    onPress={()=>setDoableOnly(value=>!value)} style={s.filterButton}>
+    <Text style={s.filterText}>{doableOnly?gt('Show all'):gt('Doable only')}</Text>
+   </Pressable>
+  </View>:null}
+  {visibleEntries.map(({activity,zone,area,inCurrentRegion,skillReady,areaReady,zoneStatus,active,status,readyHere,travelReady,zoneLockReason})=>{
+   const view=gatheringBalanceProjection(state,activity,0),available=stock(activity.itemId);
+   const canTap=!active&&(readyHere||(travelReady&&!!onNavigate)||(status==='skill-locked'&&inCurrentRegion&&!!onNavigate));
+   const start=()=>{
+    if(active)return;
+    if(readyHere){onGather(activity.id);return;}
+    if(travelReady){
+     onNavigate?.({kind:'skills',skillId,mode:'gathering',actionId:activity.id,regionId:activity.zoneId,
+      button:gt('Travel to {region}',{region:gl(zone?.name??activity.zoneId)}),
+      detail:gt('Travel here to gather {name}.',{name:gl(activity.name)})});
+     return;
+    }
+    if(status==='skill-locked'&&inCurrentRegion)onNavigate?.(gatheringProgressionAction(state,activity).destination);
+   };
    const expanded=expandedDropId===activity.id;
    // Drop rows are not assembled until the player expands this resource.
    const drops=expanded?gatheringDropPreview(activity,state):[];
-   const activityName=gl(activity.name),resourceName=localizedItemName(language,activity.itemId),regionName=gl(nodeRegion?.name??activity.zoneId);
-   const actionLabel=active?gt('{name} is currently gathering',{name:activityName}):!inCurrentRegion?gt('{name} is in {region}',{name:activityName,region:regionName}):unlocked?gt('Gather {name}',{name:activityName}):gt('Train to gather {name}',{name:activityName});
-   return <View key={activity.id} style={[s.card,inCurrentRegion&&s.cardCurrent,active&&s.cardActive]}>
+   const activityName=gl(activity.name),resourceName=localizedItemName(language,activity.itemId),regionName=gl(zone?.name??activity.zoneId);
+   const locked=!readyHere&&!travelReady&&!active;
+   const statusLabel=active?gt('ACTIVE'):readyHere?gt('READY NOW'):travelReady?gt('CAN TRAVEL')
+    :status==='upcoming'?gt('COMING SOON'):status==='zone-locked'?gt('ZONE LOCKED')
+    :status==='area-locked'?gt('AREA LOCKED'):gt('SKILL LOCKED');
+   const missingRequirements:string[]=[];
+   if(!skillReady)missingRequirements.push(gt('{skill} Lv {level}',{skill:gl(skillId),level:activity.unlockLevel}));
+   if(!areaReady)missingRequirements.push(gt('Character Lv {level} ({area})',{level:area?.minLevel??1,area:gl(area?.name??regionName)}));
+   if(zoneStatus==='locked')missingRequirements.push(zoneLockReason??gt('Region not unlocked'));
+   const detail=active?gt('Gathering now')
+    :readyHere?gt('Have: {count} {resource} · {seconds}s',{count:formatGameNumber(available,state.settings.numberMode,language),resource:resourceName,seconds:Math.ceil(view.cycleSeconds)})
+    :travelReady?gt('Ready to gather after travel')
+    :status==='upcoming'?gt('Region in development')
+    :missingRequirements.join(' · ');
+   const actionLabel=active?gt('{name} is currently gathering',{name:activityName})
+    :readyHere?gt('Gather {name}',{name:activityName})
+    :travelReady?gt('Travel to {region} to gather {name}',{region:regionName,name:activityName})
+    :gt('{name} is locked. {reason}',{name:activityName,reason:detail});
+   return <View key={activity.id} style={[s.card,readyHere&&s.cardReady,travelReady&&s.cardTravel,active&&s.cardActive]}>
     <View style={s.cardRow}>
      <Pressable accessibilityRole="button" accessibilityLabel={actionLabel}
-      accessibilityState={{disabled:active||!inCurrentRegion,selected:active||inCurrentRegion}}
-      disabled={active||!inCurrentRegion||(!unlocked&&!onNavigate)} onPress={start}
-      style={({pressed})=>[s.activityTap,(!unlocked||!inCurrentRegion)&&s.cardLocked,pressed&&!active&&inCurrentRegion&&s.pressed]}>
+      accessibilityState={{disabled:!canTap,selected:active}}
+      disabled={!canTap} onPress={start}
+      style={({pressed})=>[s.activityTap,locked&&s.cardLocked,pressed&&canTap&&s.pressed]}>
       <ResourceArtwork itemId={activity.itemId} size={34}/>
       <View style={s.copy}>
        <View style={s.topLine}>
@@ -52,9 +101,10 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
         <Text style={s.xp}>{`+${formatGameNumber(Math.round(activity.xp),state.settings.numberMode,state.settings.language)} XP`}</Text>
        </View>
        <View style={s.metaLine}>
-        {inCurrentRegion&&<Text style={s.regionTag}>{gt("HERE")}</Text>}
-        <Text numberOfLines={2} style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?gt('Region: {name}',{name:regionName}):unlocked?gt('Have: {count} {resource} · {seconds}s',{count:formatGameNumber(available,state.settings.numberMode,language),resource:resourceName,seconds:Math.ceil(view.cycleSeconds)}):gt('Unlocks at {skill} level {level}',{skill:gl(skillId),level:activity.unlockLevel})}</Text>
+        <Text style={[s.statusTag,(active||readyHere)&&s.statusReady,travelReady&&s.statusTravel,locked&&s.statusLocked]}>{statusLabel}</Text>
+        <Text numberOfLines={1} style={s.locationMeta}>{area?gl(area.name):inCurrentRegion?gt('Here'):regionName}</Text>
        </View>
+       <Text numberOfLines={3} style={[s.meta,(active||readyHere)&&s.activeMeta]}>{detail}</Text>
       </View>
      </Pressable>
      <DisclosureControl label={gt('Drops')} expanded={expanded}
@@ -77,27 +127,38 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
     </View>:null}
    </View>;
   })}
-  {!nodes.length&&<Text style={s.empty}>{gt('No {skill} resources are configured.',{skill:gl(skillId)})}</Text>}
+  {doableOnly&&visibleEntries.length===0&&entries.length>0?<Text style={s.empty}>{gt('Nothing doable yet. Show all resources to check unlock requirements.')}</Text>:null}
+  {!entries.length&&<Text style={s.empty}>{gt('No {skill} resources are configured.',{skill:gl(skillId)})}</Text>}
  </View>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:8},
- instruction:{fontSize:13,lineHeight:19,color:C.muted,textAlign:'center',fontWeight:'600',paddingBottom:2},
+ instruction:{fontSize:12,lineHeight:18,color:C.muted,textAlign:'center',fontWeight:'600',paddingBottom:2},
+ availabilitySummary:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:4,paddingBottom:2},
+ summaryCounts:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},
+ filterButton:{minHeight:44,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel2},
+ filterText:{fontSize:11,lineHeight:15,fontWeight:'800',color:C.text},
+ summaryReady:{fontSize:11,fontWeight:'800',color:C.good},
+ summaryTravel:{fontSize:11,fontWeight:'800',color:C.info},
+ summaryLocked:{fontSize:11,fontWeight:'700',color:C.muted},
  card:{minHeight:64,paddingHorizontal:12,paddingVertical:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
- cardCurrent:{borderColor:C.selectionLine,backgroundColor:C.selection},cardActive:{borderColor:C.good,backgroundColor:C.goodSurface},
+ cardReady:{borderColor:C.good,backgroundColor:C.goodSurface},cardTravel:{borderColor:C.info,backgroundColor:C.infoSurface},cardActive:{borderColor:C.good,backgroundColor:C.goodSurface},
  cardRow:{flexDirection:'row',alignItems:'center',gap:8}, 
  activityTap:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:10},
- cardLocked:{opacity:.6},pressed:{opacity:.76},
+ cardLocked:{opacity:.75},pressed:{opacity:.76},
  chevron:{color:C.accent,fontSize:17,lineHeight:20,fontWeight:'700'}, 
  copy:{flex:1,minWidth:0,gap:5},
  topLine:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:7,minWidth:0},
  name:{flex:1,minWidth:0,fontSize:14,lineHeight:19,color:C.text,fontWeight:'800',flexShrink:1},
  xp:{flexShrink:0,fontSize:11,lineHeight:18,color:C.accentSoft,fontWeight:'800',textAlign:'right'},
- metaLine:{flexDirection:'row',alignItems:'flex-start',gap:6,minWidth:0},
- regionTag:{fontSize:9,lineHeight:15,color:C.info,fontWeight:'900',letterSpacing:.5,
-  paddingHorizontal:6,paddingVertical:1,borderRadius:6,borderWidth:1,borderColor:C.info,flexShrink:0},
- meta:{flex:1,minWidth:0,fontSize:11,lineHeight:16,color:C.muted},
+ metaLine:{flexDirection:'row',alignItems:'center',gap:6,minWidth:0},
+ statusTag:{fontSize:9,lineHeight:15,fontWeight:'900',letterSpacing:.3,paddingHorizontal:6,paddingVertical:2,borderRadius:6,borderWidth:1,overflow:'hidden',flexShrink:0},
+ statusReady:{color:C.good,borderColor:C.good,backgroundColor:C.goodSurface},
+ statusTravel:{color:C.info,borderColor:C.info,backgroundColor:C.infoSurface},
+ statusLocked:{color:C.warning,borderColor:C.lineStrong,backgroundColor:C.panel2},
+ locationMeta:{flex:1,minWidth:0,fontSize:11,lineHeight:16,color:C.muted},
+ meta:{minWidth:0,fontSize:11,lineHeight:16,color:C.muted},
  activeMeta:{flex:1,minWidth:0,fontSize:11,lineHeight:16,color:C.good,fontWeight:'800'},
  dropDetails:{marginTop:8,paddingTop:8,borderTopWidth:1,borderColor:C.line,gap:5},
  dropRow:{minHeight:24,flexDirection:'row',alignItems:'center',gap:7},

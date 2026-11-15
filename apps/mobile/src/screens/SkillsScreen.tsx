@@ -75,18 +75,17 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
       <View style={[s.region,{borderColor:region.accent}]}>
         <ZoneSceneArtwork regionId={region.id}/>
         <View pointerEvents="none" style={s.regionShade}/>
-        <View style={s.flex}><Text style={s.regionLabel}>{gl("CURRENT REGION GATHERING")}</Text><Text accessibilityRole="header" style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gl("All gathering activities available in this region are shown together.")}</Text></View>
+        <View style={s.flex}><Text style={s.regionLabel}>{gl("CURRENT REGION GATHERING")}</Text><Text accessibilityRole="header" style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gt("All four gathering skills are shown here. Locked resources display their requirements.")}</Text></View>
       </View>
       {availableAreas.length>0?<View style={s.areaPicker}>
         <Pressable accessibilityRole="button" accessibilityState={{selected:!selectedArea}} onPress={()=>setSelectedAreaId(undefined)}
           style={[s.areaChip,!selectedArea&&s.areaChipSelected]}><Text style={[s.areaChipText,!selectedArea&&s.areaChipTextSelected]}>{gl('All')}</Text></Pressable>
         {availableAreas.map(area=><Pressable accessibilityRole="button" key={area.id}
           accessibilityLabel={area.name+' · Lv '+area.minLevel+'+'}
-          accessibilityState={{disabled:(state.character?.level??1)<area.minLevel,selected:selectedArea?.id===area.id}}
-          disabled={(state.character?.level??1)<area.minLevel}
+          accessibilityState={{selected:selectedArea?.id===area.id}}
           onPress={()=>setSelectedAreaId(area.id)}
           style={[s.areaChip,selectedArea?.id===area.id&&s.areaChipSelected,(state.character?.level??1)<area.minLevel&&s.areaChipLocked]}>
-          <Text numberOfLines={1} style={[s.areaChipText,selectedArea?.id===area.id&&s.areaChipTextSelected]}>{area.name}</Text>
+          <Text numberOfLines={1} style={[s.areaChipText,selectedArea?.id===area.id&&s.areaChipTextSelected]}>{area.name}{(state.character?.level??1)<area.minLevel?' · Lv '+area.minLevel:''}</Text>
         </Pressable>)}
       </View>:null}
       {gatheringSkillIds.map(skillId=>{
@@ -118,7 +117,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
 
 
     {goalAction?<View style={s.goalTarget}><Text style={s.goalTargetLabel}>{gt("WORKING TOWARD TARGET")}</Text><Text style={s.goalTargetName}>{goalAction.name}</Text><Text style={s.sub}>{initialRecipe?gt("The recipe list is filtered to this target."):gt("The target activity is shown first in this skill.")}</Text></View>:null}
-    {mode==='gathering'&&<View style={[s.region,{borderColor:region.accent}]}><ZoneSceneArtwork regionId={region.id}/><View pointerEvents="none" style={s.regionShade}/><View style={s.flex}><Text style={s.regionLabel}>{gt("CURRENT REGION")}</Text><Text style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gt("Only gathering nodes in this region are shown.")}</Text></View></View>}
+    {mode==='gathering'&&<View style={[s.region,{borderColor:region.accent}]}><ZoneSceneArtwork regionId={region.id}/><View pointerEvents="none" style={s.regionShade}/><View style={s.flex}><Text style={s.regionLabel}>{gt("CURRENT REGION")}</Text><Text style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gt("Ready here first, then reachable zones and locked resources.")}</Text></View></View>}
     {mode==='gathering'&&initialSkill==='herbalism'?<HerbalismMethodPanel state={state} onCommand={onCommand}/>:null}
     {(mode==='faith'||initialSkill==='faith')&&<FaithPanel state={state} onCommand={onCommand}/>}
     {mode==='novice'&&<NoviceWorkshop state={state} onCraft={onCraft} onCharacter={onCharacter}/>}
@@ -160,9 +159,9 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
     areaPicker:{flexDirection:'row',flexWrap:'wrap',gap:6,paddingVertical:3},
-    areaChip:{minHeight:36,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,paddingHorizontal:10},
+    areaChip:{minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,paddingHorizontal:10},
     areaChipSelected:{borderColor:C.accent,backgroundColor:C.selection},
-    areaChipLocked:{opacity:.45},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},root:{padding:spacing.lg,gap:spacing.md},plannerToggle:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,marginHorizontal:spacing.md,marginTop:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},plannerTitle:{...typography.bodyStrong,color:C.text},h:{...typography.hero,color:C.text},name:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},accentWord:{color:equipmentColors.goldSoft,fontWeight:'900'},infoWord:{color:C.info,fontWeight:'900'},weather:{...typography.caption,fontWeight:'900'},pacing:{...typography.caption,color:C.info},row:{flexDirection:'row',gap:spacing.sm},actionRow:{flexDirection:'row',gap:8},queueButton:{flex:1},startButton:{flex:2},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},modeChip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},modeChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},modeChipText:{fontSize:12,color:C.muted,fontWeight:'700'},modeChipTextSelected:{color:C.text},pressed:{opacity:.76},flex:{flex:1},group:{gap:spacing.md},output:{...typography.bodyStrong,color:C.accent},met:{...typography.caption,color:C.good},missing:{...typography.caption,color:C.warning},toolHeading:{minHeight:74,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:4}, manageHint:{...typography.caption,color:C.accent},emptyTool:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.stage},emptyToolCompact:{width:52,height:52},
+    areaChipLocked:{opacity:.72},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},root:{padding:spacing.lg,gap:spacing.md},plannerToggle:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,marginHorizontal:spacing.md,marginTop:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},plannerTitle:{...typography.bodyStrong,color:C.text},h:{...typography.hero,color:C.text},name:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},accentWord:{color:equipmentColors.goldSoft,fontWeight:'900'},infoWord:{color:C.info,fontWeight:'900'},weather:{...typography.caption,fontWeight:'900'},pacing:{...typography.caption,color:C.info},row:{flexDirection:'row',gap:spacing.sm},actionRow:{flexDirection:'row',gap:8},queueButton:{flex:1},startButton:{flex:2},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},modeChip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},modeChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},modeChipText:{fontSize:12,color:C.muted,fontWeight:'700'},modeChipTextSelected:{color:C.text},pressed:{opacity:.76},flex:{flex:1},group:{gap:spacing.md},output:{...typography.bodyStrong,color:C.accent},met:{...typography.caption,color:C.good},missing:{...typography.caption,color:C.warning},toolHeading:{minHeight:74,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:4}, manageHint:{...typography.caption,color:C.accent},emptyTool:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.stage},emptyToolCompact:{width:52,height:52},
  toolRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
  toolRowCompact:{flexDirection:'column',alignItems:'stretch',gap:8},
  toolInfo:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:spacing.sm},

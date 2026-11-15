@@ -9,7 +9,7 @@
     "test:online-loading": "node tests/online-loading-interactions.cjs",
     "test:event-currency-promotion": "node ../../tools/run-mobile-tests.mjs event-currency-promotion",
     "test:frostfall-preview": "node ../../tools/run-mobile-tests.mjs frostfall-preview frostfall-preview-localization && node tests/frostfall-preview-ui.cjs && node ../../tools/validate-event-release-graph.mjs",
-    "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-drop-ui-contract",
+    "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-availability gathering-drop-ui-contract",
     "eas-build-post-install": "node scripts/write-build-source.mjs",
     "start": "expo start",
     "android": "expo run:android",

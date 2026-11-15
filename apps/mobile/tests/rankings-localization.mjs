@@ -26,6 +26,7 @@ const keys=[
   'Return to the previous page to view ranked entries.',
   'Previous','Next','Page',
   'Entries {first}–{last}',
+  'Ranks {first}–{last}',
   'Live rankings can change while players progress.',
 ];
 for(const key of keys){
@@ -38,9 +39,9 @@ for(const key of keys){
     assert.deepEqual(placeholders(translation),placeholders(key),'Translation placeholder mismatch: '+key);
   }
   for(const language of SUPPORTED_LANGUAGES){
-    const output=socialText(language,key,key.startsWith('Entries ')?{first:'1',last:'50'}:undefined);
+    const output=socialText(language,key,key.includes('{first}')?{first:'1',last:'50'}:undefined);
     assert.ok(output.trim(),'Empty rendered Rankings copy: '+language+' / '+key);
-    if(key.startsWith('Entries '))assert.ok(output.includes('1')&&output.includes('50'),'Ranking range not interpolated: '+language);
+    if(key.includes('{first}'))assert.ok(output.includes('1')&&output.includes('50'),'Ranking range not interpolated: '+language);
   }
 }
 assert.equal(socialText('nl','Entries {first}–{last}',{first:'1',last:'50'}),'Posities 1–50');

@@ -1,6 +1,6 @@
 import {accountText,accountError,accountDuration} from '../i18n/account';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type ScrollViewInstance} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {GameTextInput} from '../components/GameTextInput';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
@@ -24,7 +24,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const entries=accountCharacters(state).map(entry=>({character:entry.character,activity:entry.character.id===state.character?.id?state.activity:(state.otherCharacters??[]).find(other=>other.character.id===entry.character.id)?.activity??null})).sort((a,b)=>Number(Boolean(b.activity))-Number(Boolean(a.activity)));
  const slots=unlockedCharacterSlots(state),skillTotal=accountSkillLevel(state),nextThreshold=slots<5?CHARACTER_SLOT_THRESHOLDS[slots]:undefined;
  const [managingId,setManagingId]=useState<string>(),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[showDeleteDetails,setShowDeleteDetails]=useState(false);
- const modalScrollRef=useRef<ScrollView>(null);
+ const modalScrollRef=useRef<ScrollViewInstance>(null);
  useEffect(()=>{
   if(!managingId)return;
   const listener=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',()=>{

@@ -12,7 +12,7 @@ import {CompactPlayerIdentity} from '../components/CompactPlayerIdentity';
 import {GameModalSurface,GameModalHeader} from '../components/GameModalSurface';
 import {RANKING_BOARDS,RANKING_GROUPS,type RankingBoardId,type RankingBoardSnapshot,type RankingGroup,type RankingEntry} from '../core/rankings';
 import {rankingsClient,rankingsOnlineConfigured} from '../online/rankings-client';
-import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage} from '../core/ranking-pagination';
+import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay} from '../core/ranking-pagination';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {rankingPositionPresentation} from '../core/social-identity';
@@ -70,11 +70,8 @@ export function RankingsScreen(){
  }
  useEffect(()=>{void load();const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60000);const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});return()=>{request.current++;clearInterval(timer);foreground.remove();};},[board,page]);const definition=RANKING_BOARDS.find(row=>row.id===board)!,activeSnapshot=snapshot?.board===board&&loadedPage===page&&boards.some(row=>row.id===board)?snapshot:null;
 
- // Always cap the podium at three entries, even if dozens share rank #1.
- // Keep every other tied player visible in the normal list, and never show a
- // second podium on later pages.
- const podium=page===0?(activeSnapshot?.entries.slice(0,3)??[]):[];
- const remaining=activeSnapshot?.entries.filter((_,index)=>page>0||index>=3)??[];
+ // Visual highlights do not change official ranks or hide tied entries.
+ const {podium,remaining}=splitRankingDisplay(activeSnapshot?.entries??[],page);
  const pageInfo=activeSnapshot?projectRankingPage(activeSnapshot.entries,page):null;
  function rankRow(entry:RankingEntry,top=false,rowIndex=0){
    const position=rankingPositionPresentation(entry.rank),podiumTone=position.tone==='podium_gold'?s.rankGold:position.tone==='podium_silver'?s.rankSilver:position.tone==='podium_bronze'?s.rankBronze:undefined;

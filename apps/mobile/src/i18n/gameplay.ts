@@ -1381,6 +1381,30 @@ const storyBossRewardCopy={
 const rows={...common,...storyBossRewardCopy,...combat,...queue,...skills,...inventory,...rewards,...crafting,...details,...enhancement};
 export type GameplayKey=keyof typeof rows;
 export const gameplayCatalogs=catalogsFor(rows);
+const storyBossRewardEarlyLocales={
+  "GOLD":["ЗОЛОТО","ALTIN"],
+  "XP":["ОПЫТ","TP"],
+  "ESSENCE":["ЭССЕНЦИЯ","ÖZ"],
+  "✦ BOSS DEFEATED":["✦ БОСС ПОБЕЖДЁН","✦ BOSS YENİLDİ"],
+  "BOSS BATTLE ENDED":["БОЙ С БОССОМ ЗАВЕРШЁН","BOSS SAVAŞI SONA ERDİ"],
+  "The Fallen Knight":["Падший рыцарь","Düşmüş Şövalye"],
+  "STORY CLEAR":["СЮЖЕТ ПРОЙДЕН","HİKÂYE TAMAMLANDI"],
+  "CLEAR":["ПОБЕДА","ZAFER"],
+  "BATTLE SUMMARY":["ИТОГИ БОЯ","SAVAŞ ÖZETİ"],
+  "REWARDS RECEIVED":["ПОЛУЧЕННЫЕ НАГРАДЫ","ALINAN ÖDÜLLER"],
+  "BONUS REWARD":["ДОПОЛНИТЕЛЬНАЯ НАГРАДА","BONUS ÖDÜL"],
+  "Bondstone":["Камень связи","Bağ Taşı"],
+  "Weekly Bondstone limit reached":["Недельный лимит камней связи достигнут","Haftalık Bağ Taşı sınırına ulaşıldı"],
+  "No bonus item drops this time.":["В этот раз дополнительных предметов нет.","Bu sefer bonus eşya düşmedi."],
+  "OATHGLASS BOUNTY":["НАГРАДА ЗА OATHGLASS","OATHGLASS ÖDÜLÜ"],
+  "GUARANTEED REWARDS":["ГАРАНТИРОВАННЫЕ НАГРАДЫ","GARANTİLİ ÖDÜLLER"],
+  "BOSS DROPS":["ДОБЫЧА С БОССА","BOSS GANİMETLERİ"],
+} as const;
+for(const [english,pair] of Object.entries(storyBossRewardEarlyLocales)){
+  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+
 // Russian and Turkish support for recently added enhancement-popup controls.
 const enhancementPopupEarlyLocales={"Equipment enhancement":["Улучшение снаряжения","Ekipman geliştirme"],"Confirm below to apply this change.":["Подтвердите ниже, чтобы применить изменение.","Değişikliği uygulamak için aşağıdan onayla."],"Confirm replacement":["Подтвердить замену","Değiştirmeyi onayla"],"Confirm extraction":["Подтвердить извлечение","Çıkarmayı onayla"],"Gear stat gains":["Прирост характеристик снаряжения","Ekipman özellik artışları"]} as const;
 for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){

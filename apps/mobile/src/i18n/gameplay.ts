@@ -148,6 +148,9 @@ const common={
  "Damage reduction":["Damage reduction","Schadensreduktion","Reducción de daño","Schadevermindering","Riduzione del danno","Réduction des dégâts"],
  "Recovery bonus":["Recovery bonus","Erholungsbonus","Bono de recuperación","Herstelbonus","Bonus recupero","Bonus de récupération"],
  "Equipment Pouch":["Equipment Pouch","Ausrüstungsbeutel","Bolsa de equipo","Uitrustingszak","Sacca equipaggiamento","Sac d’équipement"],
+ // Mid-hunt weapon comparison: explain continuity and avoid implying a free heal.
+ "Weapon swaps keep your hunt running. Health is not restored.":["Weapon swaps keep your hunt running. Health is not restored.","Waffenwechsel setzen die Jagd fort. Lebenspunkte werden nicht wiederhergestellt.","Cambiar de arma no interrumpe la caza ni restaura salud.","Wisselen van wapen onderbreekt de jacht niet en herstelt geen levenspunten.","Cambiare arma non interrompe la caccia e non ripristina salute.","Changer d'arme ne coupe pas la chasse et ne restaure pas la santé."],
+ "No spare equipment in Inventory or Equipment Pouch.":["No spare equipment in Inventory or Equipment Pouch.","Keine Ersatzausrüstung im Inventar oder in der Ausrüstungstasche.","No hay equipo de repuesto en el inventario ni en la bolsa de equipo.","Geen reserve-uitrusting in je inventaris of uitrustingstas.","Nessun equipaggiamento di riserva nell'inventario o nella borsa dell'equipaggiamento.","Aucun équipement de rechange dans l'inventaire ou la sacoche d'équipement."],
  // Equipment swap mobile UI: English / German / Spanish / Dutch / Italian / French.
  "Compare & Swap":["Compare & Swap","Vergleichen & wechseln","Comparar y cambiar","Vergelijken en wisselen","Confronta e sostituisci","Comparer et remplacer"],
  "Requires level":["Requires level","Benötigt Stufe","Requiere nivel","Vereist niveau","Richiede livello","Niveau requis"],

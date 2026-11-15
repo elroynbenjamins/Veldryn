@@ -50720,6 +50720,10 @@ var OnlineLiveQueue = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
+    if (request.loadoutRevision < game.version) {
+      const settled = await replay();
+      if (settled) return settled.response;
+    }
     if (request.loadoutRevision > game.version) {
       const receipt = await replay();
       if (receipt) return receipt.response;
@@ -50757,6 +50761,10 @@ var OnlineLiveQueue = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
+    if (request.loadoutRevision < game.version) {
+      const settled = await replay();
+      if (settled) return settled.response;
+    }
     if (request.loadoutRevision > game.version) {
       const receipt = await replay();
       if (receipt) return receipt.response;

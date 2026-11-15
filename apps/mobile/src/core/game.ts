@@ -455,6 +455,9 @@ function regionalHuntSeed(state:GameState,monsterId:string,index:number){
 function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now()){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
   const m=baseMonster,stats=effectiveStats(state),modifiers=characterPermanentMultipliers(state),companion=companionCombatContribution(state);
+  // Resolve overlapping mastery once for this encounter. A family bonus
+  // never leaks to a monster with a different authored enemy type.
+  const masteryBonuses=monsterMasteryCombatBonuses(state,monsterId);
   const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.kind==='combat'?state.activity.combatTacticId:undefined);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
@@ -488,14 +491,14 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const gearAttritionMultiplier=1+tierGap*MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   // Damage tonics affect actual resolved hunt output, rather than merely changing the displayed Attack stat.
   const outgoingPreparation=c.preparation?preparationEffects(c.preparation).outgoing:1;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*monsterMasteryCombatBonuses(state,monsterId).damageMultiplier*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*masteryBonuses.damageMultiplier*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
   // Early regions resolve actual landed attacks rather than scaling an
   // authored monster timer. Crits and misses can change the number of swings;
   // the search phase limits easy-area kill rates without artificial HP.
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
     playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*monsterMasteryCombatBonuses(state,monsterId).damageMultiplier*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
+      setCombat.penetrationMultiplier*masteryBonuses.damageMultiplier*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.

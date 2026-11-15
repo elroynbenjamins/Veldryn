@@ -1,4 +1,5 @@
 import type {OwnedCompanionProgress} from './combat-companion-types';
+import {combatCompanionDef,COMPANION_RARITY_CONFIG} from '../content/combat-companions';
 
 /** Every owned companion gets Basic Quarters automatically. Housing limits training only, never ownership or combat use. */
 export const COMPANION_HOUSING_UNLIMITED=true;
@@ -39,7 +40,12 @@ export function companionHousingVisual(companionId:string,tiers?:CompanionHousin
 
 function qty(stacks:{itemId:string;quantity:number}[],id:string){return stacks.reduce((total,stack)=>total+(stack.itemId===id?Math.max(0,stack.quantity):0),0);}
 export function companionHousingUpgradeCost(companionId:string,tiers?:CompanionHousingTiers){
- const next=companionHousingTier(companionId,tiers)+1;return COMPANION_HOUSING_UPGRADES.find(row=>row.tier===next);
+ const def=combatCompanionDef(companionId);
+ if(!def)return undefined;
+ // Never sell a Quarters tier once this rarity's actual maximum level is reached.
+ if(companionHousingLevelCap(companionHousingTier(companionId,tiers))>=COMPANION_RARITY_CONFIG[def.rarity].maxLevel)return undefined;
+ const next=companionHousingTier(companionId,tiers)+1;
+ return COMPANION_HOUSING_UPGRADES.find(row=>row.tier===next);
 }
 export function companionHousingUpgradeAffordability(state:{character:{gold:number}|null;inventory:{stacks:{itemId:string;quantity:number}[]};bank:{stacks:{itemId:string;quantity:number}[]};account:{companionHousingTiers?:CompanionHousingTiers}},companionId:string){
  const cost=companionHousingUpgradeCost(companionId,state.account.companionHousingTiers);if(!cost)return {ready:false,cost:undefined,materials:[]};

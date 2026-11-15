@@ -30,6 +30,8 @@ const required=[
   'RANKING_SNAPSHOT_RATE_LIMITED',
   'rankings_frozen_prune_server_v1',
   'pg_catalog.pg_advisory_xact_lock',
+  "v_snapshot.board='guild'",
+  "gm.account_id=p_requester",
 ];
 for(const term of required)assert.ok(sql.includes(term),'Missing frozen snapshot safety: '+term);
 assert.equal(sql.match(/CREATE OR REPLACE FUNCTION/g)?.length,4,'exactly four service-only functions');
@@ -40,6 +42,7 @@ assert.ok(code.includes("rankingsReleased:false,snapshotsReleased:RANKINGS_SNAPS
 for(const test of ['NEED_TWO_STAGING_PUBLIC_ACCOUNTS','SNAPSHOT_FUNCTIONS_EXPOSED_TO_CLIENT',
   'FROZEN_CURSOR_NOT_IDEMPOTENT','SNAPSHOT_IGNORED_NEW_PRIVACY',
   'EXPIRED_SNAPSHOT_ALLOWED','OTHER_ACCOUNT_STOLE_SNAPSHOT',
-  'SNAPSHOT_RATE_LIMIT_NOT_ENFORCED','SNAPSHOT_CLEANUP_DID_NOT_DELETE_EXPIRED'])
+  'SNAPSHOT_RATE_LIMIT_NOT_ENFORCED','SNAPSHOT_CLEANUP_DID_NOT_DELETE_EXPIRED',
+  'GUILD_SNAPSHOT_OWN_STANDING_MISSING','GUILD_SNAPSHOT_STALE_MEMBERSHIP','GUILD_SNAPSHOT_REJOIN_NOT_VISIBLE'])
   assert.ok(fixture.includes(test),'Missing staging test: '+test);
 console.log('All 19 frozen ranking snapshot draft SQL/security checks PASS');

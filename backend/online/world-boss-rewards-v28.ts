@@ -195,7 +195,8 @@ export async function recordTrustedWorldBossReplayV28(job:{
   replay?.schema!=='world-boss-v25-authored-account-rounds'||
   replay.accountId!==job.accountId||replay.eventId!==job.eventId||
   replay.requestId!==job.requestId||
-  !Number.isInteger(replay.roundsCompleted)||
+  typeof replay.roundsCompleted!=='number'||
+  !Number.isSafeInteger(replay.roundsCompleted)||
   (replay.roundsCompleted??0)<1||(replay.roundsCompleted??0)>14||
   typeof replay.survived!=='boolean'||
   !safeNumber(replay.proposedWorldHpDamage)||

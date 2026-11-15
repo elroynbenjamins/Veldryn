@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/src/core/ranking-pagination.ts'
+      - 'apps/mobile/src/core/rankings-responsive.ts'
       - 'apps/mobile/src/core/rankings.ts'
       - 'apps/mobile/src/screens/RankingsScreen.tsx'
       - 'apps/mobile/src/online/rankings-client.ts'

@@ -91,7 +91,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
    return <View key={activity.id} style={[s.card,readyHere&&s.cardReady,travelReady&&s.cardTravel,active&&s.cardActive]}>
     <View style={s.cardRow}>
      <Pressable accessibilityRole="button" accessibilityLabel={actionLabel}
-      accessibilityState={{disabled:!canTap,selected:active||readyHere}}
+      accessibilityState={{disabled:!canTap,selected:active}}
       disabled={!canTap} onPress={start}
       style={({pressed})=>[s.activityTap,locked&&s.cardLocked,pressed&&canTap&&s.pressed]}>
       <ResourceArtwork itemId={activity.itemId} size={34}/>
@@ -137,7 +137,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  instruction:{fontSize:12,lineHeight:18,color:C.muted,textAlign:'center',fontWeight:'600',paddingBottom:2},
  availabilitySummary:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:4,paddingBottom:2},
  summaryCounts:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},
- filterButton:{minHeight:34,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel2},
+ filterButton:{minHeight:44,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel2},
  filterText:{fontSize:11,lineHeight:15,fontWeight:'800',color:C.text},
  summaryReady:{fontSize:11,fontWeight:'800',color:C.good},
  summaryTravel:{fontSize:11,fontWeight:'800',color:C.info},

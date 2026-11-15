@@ -3,6 +3,7 @@ import {simulateCombat} from '../../combat/engine';
 import type {CombatantDefinition} from '../../combat/types';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
 import {applyCharacterCompanionAssist} from '../character-assist';
+import {companionTechniques} from '../content';
 import type {OwnedCompanionSnapshot} from '../domain';
 
 const actor=(id:string,team:'players'|'enemies'):CombatantDefinition=>({id,name:id,team,role:team==='players'?'damage':'enemy',level:20,stats:{maxHp:100,attackPower:100,healingPower:100,defense:0,accuracy:100000,evasion:0,critChance:0,critMultiplier:1,haste:0},basicAttackMs:1000,basicAttackCoeff:0,abilities:[]});
@@ -49,5 +50,31 @@ assert.ok(briarFight.events.some(e=>e.type==='status_apply'&&e.statusTag==='dama
 assert.equal(buildOwnedCompanionCombatant(baseProgress('UNIT_011'),{mode:'companion_trial'}).abilities[0].target,'current_target','Memory Command must be offensive in Trials');
 assert.ok(buildOwnedCompanionCombatant(baseProgress('UNIT_003'),{mode:'companion_trial'}).abilities[0].effects.some(e=>e.kind==='hot'),'Silver Current regen must work in Trials');
 assert.ok(buildOwnedCompanionCombatant(baseProgress('UNIT_008'),{mode:'companion_trial'}).abilities[0].effects.some(e=>e.kind==='cleanse'),'Dawnwing cleanse must work in Trials');
+
+
+const withTechnique=(id:string,suffix:string):OwnedCompanionSnapshot=>({...baseProgress(id),selectedTechniqueId:`${id}_${suffix}`});
+const ownedAssist=(progress:OwnedCompanionSnapshot)=>applyCharacterCompanionAssist({...actor('owner','players'),classId:'WAYFINDER'},progress);
+const effectAmount=(progress:OwnedCompanionSnapshot,kind:string)=>ownedAssist(progress).abilities.at(-1)!.effects.find(e=>e.kind===kind)!;
+for(let i=1;i<=12;i++){
+ const id=`UNIT_${String(i).padStart(3,'0')}`;
+ const choices=companionTechniques(id);
+ assert.equal(choices.length,2,`${id}: exactly two Technique choices`);
+ assert.notEqual(choices[0].name,choices[1].name,`${id}: no generic duplicated Technique labels`);
+ const a=buildOwnedCompanionCombatant({...baseProgress(id),selectedTechniqueId:choices[0].id},{mode:'companion_trial'});
+ const b=buildOwnedCompanionCombatant({...baseProgress(id),selectedTechniqueId:choices[1].id},{mode:'companion_trial'});
+ assert.notEqual(JSON.stringify({stats:a.stats,ability:a.abilities[0]}),JSON.stringify({stats:b.stats,ability:b.abilities[0]}),`${id}: Techniques must change actual gameplay`);
+}
+const earlyWisp=ownedAssist(withTechnique('UNIT_005','DEEP_RESTORATION'));
+const quickWisp=ownedAssist(withTechnique('UNIT_005','RAPID_AID'));
+assert.ok(earlyWisp.stats.haste>quickWisp.stats.haste,'Flicker Sense should improve actual Haste');
+assert.ok(quickWisp.abilities.at(-1)!.cooldownMs<earlyWisp.abilities.at(-1)!.cooldownMs,'Quick Snuff should actually interrupt sooner');
+assert.ok((effectAmount(withTechnique('UNIT_008','DEEP_RESTORATION'),'shield').flat??0)>(effectAmount(withTechnique('UNIT_008','RAPID_AID'),'shield').flat??0),'Dawnwing ward Technique should outweigh quick shield');
+assert.ok(ownedAssist(withTechnique('UNIT_008','RAPID_AID')).abilities.at(-1)!.cooldownMs<ownedAssist(withTechnique('UNIT_008','DEEP_RESTORATION')).abilities.at(-1)!.cooldownMs,'Quick Pinion should recharge sooner');
+assert.ok((effectAmount(withTechnique('UNIT_011','DEEP_RESTORATION'),'damage').coeff??0)>(effectAmount(withTechnique('UNIT_011','RAPID_AID'),'damage').coeff??0),'Memory Command must gain actual damage from Precise Command');
+assert.ok((effectAmount(withTechnique('UNIT_012','DEEP_RESTORATION'),'buff').value??0)>(effectAmount(withTechnique('UNIT_012','RAPID_AID'),'buff').value??0),'Oathglass Technique must boost tactical damage buff');
+assert.ok(ownedAssist(withTechnique('UNIT_012','RAPID_AID')).abilities.at(-1)!.cooldownMs<ownedAssist(withTechnique('UNIT_012','DEEP_RESTORATION')).abilities.at(-1)!.cooldownMs,'Quick Reflection should recharge sooner');
+const trialTech=buildOwnedCompanionCombatant(withTechnique('UNIT_005','DEEP_RESTORATION'),{mode:'companion_trial'});
+assert.ok(trialTech.stats.haste>buildOwnedCompanionCombatant(withTechnique('UNIT_005','RAPID_AID'),{mode:'companion_trial'}).stats.haste,'Technique haste must affect standalone Trial simulation');
+assert.ok(trialTech.abilities[0].aiCondition==='target_casting','Technique changes must never turn an interrupt into a wasted cast');
 
 console.log('PASS actual execute damage, finite shield reflection, Trial and co-op signature effects and technique effects');

@@ -58,7 +58,23 @@ for(const [points,rank] of [[2442,4],[2443,5],[7241,10],[14397,15],[50000,30]]){
  ok(p.rank===rank&&Math.abs(p.damageBonus-expected.damageBonus)<1e-12&&Math.abs(p.materialBonus-expected.materialBonus)<1e-12,'family rank milestones '+rank);
 }
 ok(ENEMY_FAMILY_MASTERY_MILESTONES.length===6,'type mastery mirrors all six species milestone levels');
+ok(MASTERY_ANTICIPATION_MILESTONES.every(m=>m.points===monsterMasteryKillsForRank(m.rank)),'combat previews use the same 1500-kill species milestones');
+ok(masteryMilestoneAnticipation(monsterMasteryKillsForRank(5)-1)?.remaining===1,'encounter hint anticipates the correct species milestone boundary');
+ok(monsterMasteryRankFromKills(750)<30&&monsterMasteryRankFromKills(1500)===30,'legacy 750 kills retain progress but are not reinterpreted as 1500');
+ok(normalizeMonsterMastery({MOSS_RAT:1500,IRONWOOD_WOLF:2000}).MOSS_RAT===1500&&normalizeMonsterMastery({IRONWOOD_WOLF:2000}).IRONWOOD_WOLF===1500,'species normalization accepts 1500 earned kills and clamps excess');
 ok(FAMILY_MASTERY_MAX_POINTS===50000&&familyMasteryPointsForRank(30)===50000,'maximum family mastery requires exactly 50000 points');
+for(const rank of [1,5,10,15,20,25,29,30]){
+ const threshold=familyMasteryPointsForRank(rank);
+ const exactly=structuredClone(s);
+ exactly.character!.familyMasteryPoints={BEAST:threshold};
+ ok(enemyFamilyMastery(exactly,'BEAST').rank===rank,'family exact threshold reaches Rank '+rank);
+ exactly.character!.familyMasteryPoints={BEAST:threshold-1};
+ ok(enemyFamilyMastery(exactly,'BEAST').rank===rank-1,'family one point short stays at previous rank '+rank);
+}
+for(let rank=1;rank<=30;rank++){
+ const a=masteryRewardBonuses(rank-1),b=masteryRewardBonuses(rank);
+ ok(b.damageBonus>=a.damageBonus&&b.materialBonus>=a.materialBonus,'family and species reward curve grows without regressions');
+}
 ok(familyMasteryPointsForRank(1)===300&&familyMasteryPointsForRank(5)===2443&&familyMasteryPointsForRank(10)===7241,'early family ranks use progressively higher requirements');
 for(let rank=1;rank<=30;rank++)ok(familyMasteryPointsForRank(rank)>familyMasteryPointsForRank(rank-1),'every successive rank threshold increases');
 for(let rank=2;rank<=30;rank++)ok(
@@ -147,6 +163,22 @@ const savedAgain=parseSaveBackup(createSaveBackup(saved));
 ok(enemyFamilyMastery(savedAgain,'GIANT').points===enemyFamilyMastery(saved,'GIANT').points,'subsequent saves do not reapply family backfill');
 const backfillWeighted=backfillEnemyFamilyMastery({SUNSCAR_SCORPION:100,FROSTWOLF:100,ASHEN_REVENANT:100});
 ok(backfillWeighted.VERMIN===300&&backfillWeighted.BEAST===400&&backfillWeighted.UNDEAD===600,'historical kills receive the same region/level weights as new kills');
+const newerBackfill=backfillEnemyFamilyMastery({MOSS_RAT:1500,IRONWOOD_WOLF:1500});
+ok(newerBackfill.BEAST===3000,'new 1500-kill species saves are fully credited during the one-time family migration');
+const cub=combatCompanionDef('UNIT_004')!;
+const cubMasteryRequirement=cub.unlockRequirements.find(row=>row.type==='monster_mastery')!;
+const unreached=structuredClone(s);
+unreached.character!.monsterMasteryPoints={FOREST_TROLL:monsterMasteryKillsForRank(20)-1};
+unreached.account.companionUnlockProgress={...unreached.account.companionUnlockProgress,FOREST_TROLL:0};
+ok(!companionUnlockRequirementMet(unreached,cubMasteryRequirement),'new companion Rank 20 uses the progressive species threshold');
+unreached.character!.monsterMasteryPoints={FOREST_TROLL:monsterMasteryKillsForRank(20)};
+ok(companionUnlockRequirementMet(unreached,cubMasteryRequirement),'companion unlock becomes eligible at exact new Rank 20');
+const historical=structuredClone(s);
+historical.character!.monsterMasteryPoints={FOREST_TROLL:500};
+historical.account.companionUnlockProgress={...historical.account.companionUnlockProgress,FOREST_TROLL:20,ASTERFALL_MASTERY_20_ALL:3};
+ok(companionUnlockRequirementMet(historical,cubMasteryRequirement),'already earned pre-rebalance companion entitlement remains valid');
+const retained=recordMonsterMastery(historical,'FOREST_TROLL',1);
+ok(retained.account.companionUnlockProgress?.FOREST_TROLL===20&&retained.account.companionUnlockProgress?.ASTERFALL_MASTERY_20_ALL===3,'new combat never rolls back older account mastery entitlements');
 ok(Object.keys(normalizeMonsterMastery({FALLEN_KNIGHT:750,MOSS_RAT:NaN,fake:99})).length===0,'invalid and boss points rejected');
 let rejected=false;try{validateGameCommand({type:'mastery',args:{rank:30}});}catch{rejected=true;}ok(rejected,'no client rank grants');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
@@ -160,4 +192,7 @@ ok(familyUi.includes('enemyFamilyMasteryPointsPerKill')&&familyUi.includes('expa
 
 const speciesUi=fs.readFileSync('src/components/MonsterMasteryPanel.tsx','utf8');
 ok(speciesUi.includes('p.dropKnowledge||familyKnowledge'),'family Rank 10 knowledge unlocks drop tables in the species panel too');
+ok(speciesUi.includes('p.currentRankProgress')&&speciesUi.includes('p.currentRankTarget'),'species progress uses nonlinear 1500-kill rank bands');
+ok(speciesUi.includes('expandedSpeciesId')&&speciesUi.includes('percent(p.damageBonus)'),'species UI stays compact and shows fractional rank-to-rank bonuses');
+ok(familyUi.includes('percent(m.damageBonus)')&&familyUi.includes('percent(m.materialBonus)'),'family UI shows accurate fractional rewards rather than misleading whole-number rounding');
 console.log(`PASS monster and enemy-family mastery: ${checks} checks`);

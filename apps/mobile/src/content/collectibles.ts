@@ -6,7 +6,7 @@ import {EVENTS_RELEASED,DUNGEON_MARKS_SHOP_RELEASED} from '../core/release-flags
 
 export type CollectibleKind='pet'|'background'|'border';
 export type CollectibleTarget='hp'|'attack'|'defense'|'skillXp'|'characterXp'|'gold'|'gatheringYield'|'dropChance'|'actionSpeed'|'cookingSpeed'|'herbalismSpeed'|'healingEffectiveness'|'craftingSpeed'|'dungeonReward'|'fishingSpeed'|'materialPreservation'|'guildContribution';
-export type CollectibleGroup='core'|'event'|'legacy'|'profile';
+export type CollectibleGroup='core'|'event'|'legacy'|'profile'|'dungeon';
 export interface CollectibleDefinition{
   id:string;
   kind:CollectibleKind;

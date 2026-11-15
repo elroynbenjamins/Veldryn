@@ -3,7 +3,7 @@ begin;
 -- Only the trusted online gameplay receipt can publish a craft announcement.
 -- This is deliberately not an authenticated/client-callable RPC. The receipt and
 -- world feed insert commit atomically, so retries cannot duplicate a message.
-create or replace function public.publish_exceptional_forge_crafts_v1()
+create or replace function private.publish_exceptional_forge_crafts_v1()
 returns trigger
 language plpgsql
 security definer
@@ -80,12 +80,12 @@ begin
 end;
 $$;
 
-revoke all on function public.publish_exceptional_forge_crafts_v1() from public, anon, authenticated;
+revoke all on function private.publish_exceptional_forge_crafts_v1() from public, anon, authenticated;
 
 drop trigger if exists publish_exceptional_forge_crafts_receipt_v1
   on public.server_action_receipts;
 create trigger publish_exceptional_forge_crafts_receipt_v1
 after insert on public.server_action_receipts
-for each row execute function public.publish_exceptional_forge_crafts_v1();
+for each row execute function private.publish_exceptional_forge_crafts_v1();
 
 commit;

@@ -22,7 +22,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
  const [blocked,setBlocked]=useState<string[]>([]);
  useEffect(()=>{setBlocked([]);},[session?.user.id]);
  const available=useMemo(()=>players.filter(p=>!blocked.includes(p.account_id)),[players,blocked]);
- const counts={all:count===null?available.length:Math.max(0,count-blocked.length),friends:available.filter(p=>p.is_friend).length,guild:available.filter(p=>p.is_guildmate).length};
+ const counts={all:count===null?available.length:count,friends:available.filter(p=>p.is_friend).length,guild:available.filter(p=>p.is_guildmate).length};
  const displayed=useMemo(()=>{
   const query=search.trim().toLocaleLowerCase();
   return available.filter(p=>(filter==='all'||(filter==='friends'?p.is_friend:p.is_guildmate))&&(!query||p.sender_name.toLocaleLowerCase().includes(query)));
@@ -34,7 +34,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
      <Text style={s.eyebrow}>{st('VELDRYN COMMUNITY')}</Text>
      <Text accessibilityRole="header" numberOfLines={1} style={s.title}>{st('Online players')}</Text>
     </View>
-    <View style={s.totalPill}><View style={s.dot}/><Text style={s.totalText}>{count===null?'—':Math.max(0,count-blocked.length)}</Text></View>
+    <View style={s.totalPill}><View style={s.dot}/><Text style={s.totalText}>{count===null?'—':count}</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel={st('Close online players')} onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
    </View>
    <View style={s.controls}>

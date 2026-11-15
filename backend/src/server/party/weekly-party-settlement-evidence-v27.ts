@@ -140,7 +140,7 @@ export function verifyPrivatePartyEventEvidenceV27(
     'frozen_character_not_active');
   must(IDENTITY_ROLES.has(p.rosterRole)
     &&['standard','veteran','heroic'].includes(p.difficulty)
-    &&p.weekStage===3&&['active','closed'].includes(p.weekStatus)
+    &&p.weekStage===3&&['active','closed','settled'].includes(p.weekStatus)
     &&p.settlementWindowOpen===true,
     'invalid_week_or_settlement_window');
   must(p.rewardModel==='party-event-rewards-v2'

@@ -6,7 +6,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {disposalPreviewText} from '../i18n/disposal-preview-ui';
 import {formatLocalizedNumber} from '../i18n/translator';
-import {itemRarity,rarityMeta,type ItemRarity} from '../core/item-rarity';
+import {itemRarity,rarityMeta,rarityNameColor,type ItemRarity} from '../core/item-rarity';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {ItemArtwork} from './ItemArtwork';
@@ -53,7 +53,7 @@ export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning}:{
            <ItemArtwork itemId={item.itemId} size={38}/>
          </View>
          <View style={s.copy}>
-           <Text numberOfLines={2} style={[s.itemName,{color:gear?meta.color:C.text}]}>{localizedItemName(language,item.itemId)}</Text>
+           <Text numberOfLines={2} style={[s.itemName,{color:gear?rarityNameColor(meta.id,C.dark,C.text):C.text}]}>{localizedItemName(language,item.itemId)}</Text>
            {gear?<Text style={s.itemMeta}>{t(meta.label)}{typeof item.quality==='number'?' · Q'+number(item.quality):''}</Text>:null}
          </View>
          <Text style={s.quantity}>×{number(item.quantity)}</Text>

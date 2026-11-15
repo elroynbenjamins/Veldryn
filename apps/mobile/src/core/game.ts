@@ -174,7 +174,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   let gearAttack=0,gearDefense=0;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
@@ -207,8 +207,12 @@ export function effectiveStats(state:GameState){
     critMultiplier:1.5+setStats.critDamage,
     accuracy:Math.min(.99,.84+setStats.accuracy+mastery.accuracy),
     evasion:Math.min(.50,baseEvasion+setStats.evasion+mastery.evasion),
-    haste:.05+setStats.haste,
-    armor:setStats.armor,ward:setStats.ward,tenacity:setStats.tenacity,potency:setStats.potency,penetration:setStats.penetration,
+    haste:.05+setStats.haste+mastery.haste,
+    armor:setStats.armor,
+    // Stack equipment and class wards multiplicatively.
+    ward:1-(1-setStats.ward)*(1-mastery.ward),
+    tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,
+    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,
   }
 }
 
@@ -466,7 +470,11 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const bossPowerMultiplier=m.boss?1+effectGems.boss_power:1;
   const boostedPower=Math.max(1,Math.round(stats.power*bossPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier;
+  const skillEffects=characterClassEffects(c);
+  // Hexcraft improves spell-infused attacks. On legacy timer hunts Breaking
+  // is a modest tempo bonus; on damage-led hunts it reduces target armor.
+  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier*(1+skillEffects.potency)*
+    (usesDamageDrivenHunts(m.zone)?1:1+skillEffects.penetration);
   const combatCandy=eventCandyUtilityMultiplier(state,nowMs,'combat');
   // Regional elites are the first real reason to finish the current tier. A
   // player can still scout them in starter gear, but the missing tier creates
@@ -494,8 +502,8 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // the search phase limits easy-area kill rates without artificial HP.
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
-    playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
+    playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense*(1-skillEffects.penetration),
+      setCombat.penetrationMultiplier*(1+skillEffects.potency)*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
@@ -513,7 +521,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds}=runtime;
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
- const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
+ const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
  // Ravager's Bloodrush converts its offensive investment into modest
  // post-kill sustain. It cannot prevent a lethal hit and remains much weaker
  // when nearly all equipment slots are missing. This belongs to the same
@@ -681,7 +689,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
    const guarded=huntTankGuardEvents(heals,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
-   return huntClassSurvivalEvents(guarded,{...classTechniqueInput,...cooldownTiming});
+   return huntClassSurvivalEvents(guarded,{...classTechniqueInput,...cooldownTiming,classHealingMultiplier:runtime.stats.classHealing});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -1600,11 +1608,12 @@ export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSn
   return {
     name:character.name,classId:character.classId,classSkillLevel:characterClassSkills(character)[0]?.level??1,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
     attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
+    armorPenetration:characterClassEffects(character).penetration,classHealingMultiplier:stats.classHealing,hexPotency:characterClassEffects(character).potency,
     damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier*(prep?.outgoing??1),
     // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
     // Do not apply them again through actionSpeedMultiplier.
     actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed))*gear.actionSpeedMultiplier,
-    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
+    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
     potionHeal:potion?.effect.kind==='healing'?Math.ceil(stats.hp*potion.effect.maxHpFraction*multipliers.healingEffectivenessMultiplier):0,potionQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
   };
 }

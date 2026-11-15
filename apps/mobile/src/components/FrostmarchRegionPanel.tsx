@@ -13,7 +13,7 @@ export function FrostmarchRegionPanel({zones,progress,contentVersion,dungeons,on
  const pct=completionPercentV21(progress);
  return <View style={s.wrap}>
    <View style={s.hero}>
-     <Text style={s.eyebrow}>{t("REGION III · LEVEL 45–70")}</Text>
+     <Text style={s.eyebrow}>{p("REGION III · LEVEL 51–75")}</Text>
      <View style={s.headRow}><Text style={s.title}>Frostmarch</Text><Text style={s.percent}>{pct}{t("% REGION")}</Text></View>
      <Text numberOfLines={2} style={s.copy}>{p(nextRegionalGoalV21(progress))}</Text>
      {contentVersion?<Text style={s.version}>{t("Active content ·")} {contentVersion}</Text>:null}

@@ -21,6 +21,7 @@ import {itemDef} from '../content/items';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentSetDef} from '../content/equipment-sets';
+import {localizedItemName} from '../i18n/starter-item-names';
 
 type Props={
  state:GameState;slot:GearSlot;
@@ -92,30 +93,31 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
     {old?<EquipmentArtwork item={old} rarity={oldRarity?.id} size={46} framed={false}/>:<View style={s.emptyArt}><Text style={s.emptyArtLabel}>+</Text></View>}
     <View style={s.flex}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>
-     <Text numberOfLines={2} style={[s.currentName,oldRarity&&{color:rarityNameColor(oldRarity.id,C.dark,C.text)}]}>{old?.name??gl('Empty slot')}{oldRank?' +'+oldRank:''}</Text>
+     <Text numberOfLines={2} style={[s.currentName,oldRarity&&{color:rarityNameColor(oldRarity.id,C.dark,C.text)}]}>{old?localizedItemName(language,old.id):gl('Empty slot')}{oldRank?' +'+oldRank:''}</Text>
      <Text style={s.meta}>{currentSet?currentSet.path+' · '+currentSet.buildFocus+' · ':''}{oldRarity?.label??gl(slot)}</Text>
     </View>
     <Text style={s.currentPower}>{gl('Power')} {displayStat(before.power)}</Text>
    </View>
+   {slot==='weapon'&&state.activity?.kind==='combat'?<Text style={s.huntHint}>{gt('Weapon swaps keep your hunt running. Health is not restored.')}</Text>:null}
    <View style={s.sectionRow}><Text style={s.heading}>{gl('AVAILABLE EQUIPMENT')}</Text><Text style={s.count}>{choices.length}</Text></View>
    {choices.length?choices.map(choice=>{
     const rarity=rarityMeta(choice.instance?.rarity??itemRarity(choice.item)),rank=gearEnhancement(choice.projected,choice.itemId).rank;
     const candidateSet=equipmentSetDef(choice.item.equipmentSetId);
     const active=choice.key===(selected?.key);
     return <Pressable key={choice.key} accessibilityRole="button" accessibilityState={{selected:active,disabled:busy}}
-     accessibilityLabel={choice.item.name+' · '+rarity.label+(choice.instance?' · Q'+craftedGearDisplayQuality(choice.instance):'')+' · '+gl('Power')+' '+delta(choice.powerDelta)}
+     accessibilityLabel={localizedItemName(language,choice.item.id)+' · '+rarity.label+(choice.instance?' · Q'+craftedGearDisplayQuality(choice.instance):'')+' · '+gl('Power')+' '+delta(choice.powerDelta)}
      disabled={busy} onPress={()=>{setSelectedKey(choice.key);setDetails(false);setError('');}}
-     style={[s.choice,active&&s.choiceActive]}>
+     style={({pressed})=>[s.choice,active&&s.choiceActive,pressed&&!busy&&s.choicePressed]}>
       <EquipmentArtwork item={choice.item} rarity={rarity.id} size={44} framed={false}/>
       <View style={s.flex}>
-       <Text numberOfLines={1} style={[s.choiceName,{color:rarityNameColor(rarity.id,C.dark,C.text)}]}>{choice.item.name}{rank?' +'+rank:''}</Text>
+       <Text numberOfLines={1} style={[s.choiceName,{color:rarityNameColor(rarity.id,C.dark,C.text)}]}>{localizedItemName(language,choice.item.id)}{rank?' +'+rank:''}</Text>
        <Text numberOfLines={1} style={s.meta}>{rarity.label}{choice.instance?' · Q'+craftedGearDisplayQuality(choice.instance):''}{' · '+(choice.source==='equipment_pouch'?gl('Equipment Pouch'):gl('Inventory'))}</Text>
        {candidateSet?<Text numberOfLines={1} style={s.meta}>{candidateSet.path+' · '+candidateSet.buildFocus}</Text>:null}
       </View>
       <View style={s.choiceEnd}><Text style={[s.choiceDelta,{color:changeColor(C,choice.powerDelta)}]}>{delta(choice.powerDelta)}</Text><Text style={s.powerLabel}>{gl('PWR')}</Text></View>
       <Text style={[s.selectDot,active&&s.selectActive]}>{active?'●':'○'}</Text>
      </Pressable>
-   }):<View style={s.empty}><Text style={s.note}>{profileText(language,'None available in Inventory.')}</Text><GameButton compact tone="secondary" title={gl('Open Inventory')} onPress={()=>{close();onInventory?.()}} disabled={!onInventory}/></View>}
+   }):<View style={s.empty}><Text style={s.note}>{gt('No spare equipment in Inventory or Equipment Pouch.')}</Text><GameButton compact tone="secondary" title={gl('Open Inventory')} onPress={()=>{close();onInventory?.()}} disabled={!onInventory}/></View>}
    {selected&&trade?<View style={s.preview}>
     <View style={s.previewHead}><Text style={s.heading}>{gl('SWAP PREVIEW')}</Text>
      <Text style={[s.previewPower,{color:changeColor(C,selected.powerDelta)}]}>{gl('Power')} {delta(selected.powerDelta)}</Text>
@@ -160,7 +162,7 @@ function makeStyles(C:ThemeColors){
   flex:{flex:1,minWidth:0},
   kicker:{...typography.caption,fontSize:9,fontWeight:'900',letterSpacing:.5,color:E.goldSoft},
   currentName:{...typography.bodyStrong,color:C.text},
-  currentPower:{...typography.caption,color:C.muted,alignSelf:'flex-start'},
+  currentPower:{...typography.caption,color:C.muted,alignSelf:'flex-start'},huntHint:{...typography.caption,color:C.muted,lineHeight:17,paddingHorizontal:2},
   meta:{...typography.caption,color:C.muted},
   emptyArt:{width:46,height:46,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm},
   emptyArtLabel:{fontSize:23,color:C.muted},
@@ -168,7 +170,7 @@ function makeStyles(C:ThemeColors){
   heading:{...typography.caption,fontSize:10,fontWeight:'900',color:E.goldSoft,letterSpacing:.7},
   count:{...typography.caption,color:C.muted},
   choice:{minHeight:60,padding:7,flexDirection:'row',alignItems:'center',gap:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
-  choiceActive:{borderWidth:2,borderColor:E.selectedLine,backgroundColor:E.stage,padding:6},
+  choiceActive:{borderWidth:2,borderColor:E.selectedLine,backgroundColor:E.stage,padding:6},choicePressed:{backgroundColor:C.selection},
   choiceName:{...typography.bodyStrong,color:C.text},
   choiceEnd:{alignItems:'flex-end',minWidth:38},
   choiceDelta:{...typography.bodyStrong,fontWeight:'900'},
@@ -179,9 +181,9 @@ function makeStyles(C:ThemeColors){
   previewHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   previewPower:{...typography.bodyStrong,fontWeight:'900'},
   trade:{...typography.caption,fontWeight:'800'},
-  chips:{flexDirection:'row',gap:6},
-  chip:{flex:1,minWidth:0,paddingVertical:7,alignItems:'center',backgroundColor:C.panel2,borderRadius:radii.sm,borderWidth:1,borderColor:C.line},
-  chipLabel:{...typography.caption,fontSize:10,color:C.muted},
+  chips:{flexDirection:'row',flexWrap:'wrap',gap:6},
+  chip:{flexGrow:1,flexBasis:'29%',minWidth:88,paddingVertical:7,alignItems:'center',backgroundColor:C.panel2,borderRadius:radii.sm,borderWidth:1,borderColor:C.line},
+  chipLabel:{...typography.caption,fontSize:10,color:C.muted,textAlign:'center'},
   chipValue:{...typography.bodyStrong,fontSize:16,fontWeight:'900'},
   warning:{...typography.caption,color:C.warning,lineHeight:17},
   more:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},

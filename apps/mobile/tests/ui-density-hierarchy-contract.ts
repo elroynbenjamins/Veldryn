@@ -345,9 +345,9 @@ ok(accountBonuses.includes('source:{minHeight:52'),'Account bonus sources must a
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('<GameButton compact title={st("Refresh")} tone="secondary"'),"Rankings refresh must remain a secondary compact action");
-ok(rankings.includes('const podium=activeSnapshot?.entries.filter(entry=>entry.rank<=3)')&&rankings.includes('const remaining=activeSnapshot?.entries.filter(entry=>entry.rank>3)'),"Rankings podium must not duplicate names in the compact list");
-ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('if(value.id!==board||page!==0){setBoard(value.id);setPage(0);setSnapshot(null);setHasNext(false);}setBoardPickerOpen(false)'),"Rankings board picker must reset page when necessary without blanking the active board");
-ok(rankings.includes('function selectGroup(value:RankingGroup){if(value===group)return;'),"Selecting the active rankings group must preserve the loaded board");
+ok(rankings.includes('const podium=page===0?(activeSnapshot?.entries.filter(entry=>entry.rank<=3)')&&rankings.includes('entry=>page>0||entry.rank>3'),"Ranking podium is first-page only; tied players on later pages remain visible");
+ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>selectBoard(value.id)}')&&rankings.includes('if(next===board)return;'),"Rankings board picker changes pages safely without resetting an unchanged board");
+ok(rankings.includes('function selectGroup(value:RankingGroup){')&&rankings.includes('if(value===group)return;'),"Selecting the active rankings group must preserve the loaded board");
 ok(rankings.includes('RANKING_PAGE_SIZE+1')&&rankings.includes('rankingPageOffset(page)')&&rankings.includes('projectRankingPage(next.entries,page)'),"Rankings pagination must use an authoritative server page with a one-row lookahead");
 ok(rankings.includes('const version=++request.current')&&rankings.includes('version===request.current')&&rankings.includes('request.current++'),"Rankings must guard against stale requests when changing boards or pages");
 ok(rankings.includes('scrollRef.current?.scrollTo({y:0,animated:false})'),"Moving between pages must return the player to the top of the board");

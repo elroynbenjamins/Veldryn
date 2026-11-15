@@ -35,7 +35,7 @@ export function CompanionBondProgressPanel({progress,companionId,claims,traitNam
  const header=<>
   <View style={s.head}>
    <Text style={s.title}>{t('Bond')} {bond.level}/10</Text>
-   <Text style={s.counter}>{bond.maxed?t('MAX BOND'):t('Level {value0}',{value0:bond.nextLevel})}</Text>
+   <Text style={s.counter}>{bond.maxed?t('MAX BOND'):t('Level {value0}',{value0:bond.nextLevel??10})}</Text>
   </View>
   <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:100,now:bond.percent}} style={s.track}>
    <View style={[s.fill,{width:(bond.percent+'%') as any}]}/>
@@ -47,7 +47,7 @@ export function CompanionBondProgressPanel({progress,companionId,claims,traitNam
  </>;
  if(mode==='compact')return <Pressable accessibilityRole="button" accessibilityLabel={t('Bond {value0} of 10. Open Bond rewards.',{value0:bond.level})} onPress={onOpen} style={({pressed})=>[s.card,pressed&&s.pressed]}>
    {header}
-   {claimable.length?<Text style={s.claimReady}>{t('{value0} Bond reward(s) ready to claim',{value0:claimable.length})}</Text>:<Text style={s.next}>{bond.maxed?t('Unique trait unlocked'):t('Next reward: Bond {value0} · {value1}',{value0:upcoming,value1:upcomingReward})}</Text>}
+   {claimable.length?<Text style={s.claimReady}>{t('{value0} Bond reward(s) ready to claim',{value0:claimable.length})}</Text>:<Text style={s.next}>{bond.maxed?t('Unique trait unlocked'):t('Next reward: Bond {value0} · {value1}',{value0:upcoming??10,value1:upcomingReward})}</Text>}
    <Text style={s.open}>{t('Bond milestones & trait')} ›</Text>
   </Pressable>;
  const sourceXp=COMPANION_BOND_CONFIG.sourceXp;

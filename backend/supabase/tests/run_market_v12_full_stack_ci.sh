@@ -44,11 +44,12 @@ for migration in \
   20261113110000_market_unified_browse_private_v24.sql \
   20261113111000_market_unified_inbox_private_v24.sql \
   20261113112000_market_resale_expiry_private_v24.sql \
-  20261113112500_market_v12_browser_reconciliation_private_v24.sql
+  20261113112500_market_v12_browser_reconciliation_private_v24.sql \
+  20261115210000_market_authenticated_read_bridge_private_v26.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 35 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 36 dependency-ordered private Market migrations compile on clean PG17"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_acquisition_v18.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_provenance_v19.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_recipient_transfer_v20.sql"
@@ -56,6 +57,7 @@ psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_ban
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_resale_chain_v22.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_resale_lifecycle_v23.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_visibility_expiry_v24.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_authenticated_read_v26.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
@@ -93,6 +95,8 @@ begin
  or has_table_privilege('authenticated','private.market_equipment_resale_offers_v23','SELECT')
  or has_table_privilege('authenticated','private.market_equipment_resale_chain_v23','SELECT')
  or has_function_privilege('authenticated','private.market_purchase_equipment_resale_v23(uuid,uuid,bigint,bigint,bigint,text,text)','EXECUTE')
+ or has_function_privilege('anon','public.market_read_gateway_v26(text,boolean,integer,text,text,text,text,bigint,bigint,integer)','EXECUTE')
+ or has_function_privilege('service_role','public.market_read_gateway_v26(text,boolean,integer,text,text,text,text,bigint,bigint,integer)','EXECUTE')
  or has_function_privilege('authenticated','private.market_browse_combined_v24(text,text,text,text,bigint,bigint,integer,integer)','EXECUTE')
  or has_function_privilege('authenticated','private.market_inbox_unified_v24(uuid,boolean,integer)','EXECUTE')
  or has_function_privilege('service_role','private.market_due_resales_v24(integer)','EXECUTE')

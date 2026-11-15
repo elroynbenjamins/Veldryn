@@ -1,4 +1,4 @@
-# Re-run after full ten-PR 1.0.10 staging consolidation, including class/gem/server sources.
+# Rebuild after final 1.0.10 live-queue replay hardening; preserve canonical engine and co-op parity.
 name: Veldryn 1.0.10 reconcile generated Edge bundles
 
 on:

@@ -47,13 +47,14 @@ export function CompanionBondProgressPanel({progress,companionId,claims,traitNam
  </>;
  if(mode==='compact')return <Pressable accessibilityRole="button" accessibilityLabel={t('Bond {value0} of 10. Open Bond rewards.',{value0:bond.level})} onPress={onOpen} style={({pressed})=>[s.card,pressed&&s.pressed]}>
    {header}
-   {claimable.length?<Text style={s.claimReady}>{t('{value0} Bond reward(s) ready to claim',{value0:claimable.length})}</Text>:<Text style={s.next}>{bond.maxed?t('Unique trait unlocked'):t('Next reward: Bond {value0} · {value1}',{value0:upcoming??10,value1:upcomingReward})}</Text>}
-   <Text style={s.open}>{t('Bond milestones & trait')} ›</Text>
+   {claimable.length?<Text style={s.claimReady}>{t('{value0} Bond reward(s) ready to claim',{value0:claimable.length})}</Text>:null}
+   <Text style={s.next}>{bond.maxed?t('Bond 10 trait active · {value0}',{value0:traitName}):t('Next reward: Bond {value0} · {value1}',{value0:upcoming??10,value1:upcomingReward})}</Text>
+   <Text style={s.open}>{t('View Bond rewards & trait')} ›</Text>
   </Pressable>;
  const sourceXp=COMPANION_BOND_CONFIG.sourceXp;
  const hallBonus=Math.min(15,Math.max(0,Math.floor(bondHallLevel))*5);
  return <View style={s.full}>
-  <View style={s.card}>{header}<Text style={s.hint}>{t('Bond grows by adventuring together. Companion Level XP is separate.')}</Text></View>
+  <View style={s.card}>{header}<Text style={s.next}>{bond.maxed?t('Bond 10 trait active · {value0}',{value0:traitName}):t('Next reward: Bond {value0} · {value1}',{value0:upcoming??10,value1:upcomingReward})}</Text><Text style={s.hint}>{t('Bond grows by adventuring together. Companion Level XP is separate.')}</Text></View>
   {claimable.length?<View style={s.readyCard}><Text style={s.readyTitle}>{t('Ready to claim')} · {claimable.length}</Text>
    <Text style={s.hint}>{t('Collect the Essence earned from your Bond milestones below.')}</Text></View>:null}
   <Text style={s.section}>{t('Bond milestones')}</Text>
@@ -65,7 +66,7 @@ export function CompanionBondProgressPanel({progress,companionId,claims,traitNam
    const reward=isTrait?traitName:value(COMPANION_BOND_ESSENCE_REWARDS[level])+' '+t('Essence');
    const status=claimed?(isTrait?t('Unlocked'):t('Claimed')):ready?t('Ready to claim'):next?t('Next'):t('Locked');
    return <View key={level} style={[s.milestone,ready&&s.milestoneReady]}>
-    <View style={[s.levelMark,claimed&&s.markDone,ready&&s.markReady]}><Text style={s.markText}>{claimed?'✓':level}</Text></View>
+    <View style={[s.levelMark,claimed&&s.markDone,ready&&s.markReady]}><Text style={s.markText}>{claimed?'✓':level===10?'✦':level}</Text></View>
     <View style={s.details}><Text style={s.reward}>{reward}</Text><Text style={[s.status,ready&&s.claimReady,claimed&&s.claimed]}>{t('Bond {value0}',{value0:level})} · {status}</Text></View>
     {ready&&onClaim?<GameButton compact title={t('Claim')} disabled={busy} onPress={()=>onClaim(level as RewardLevel)}/>:null}
    </View>;
@@ -96,7 +97,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  section:{color:C.accent,fontWeight:'900',fontSize:11,letterSpacing:.7,marginTop:3},
  hint:{color:C.muted,fontSize:11,lineHeight:16},readyCard:{borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface,borderRadius:8,padding:10,gap:3},
  readyTitle:{color:C.good,fontWeight:'900',fontSize:12},milestones:{borderWidth:1,borderColor:C.line,borderRadius:9,overflow:'hidden'},
- milestone:{minHeight:51,paddingHorizontal:9,paddingVertical:7,flexDirection:'row',alignItems:'center',gap:9,borderBottomWidth:1,borderBottomColor:C.line,backgroundColor:C.panel2},
+ milestone:{minHeight:54,paddingHorizontal:9,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:9,borderBottomWidth:1,borderBottomColor:C.line,backgroundColor:C.panel2},
  milestoneReady:{backgroundColor:C.goodSurface},
  levelMark:{width:29,height:29,justifyContent:'center',alignItems:'center',borderColor:C.line,borderWidth:1,borderRadius:6,backgroundColor:C.bg},
  markDone:{borderColor:C.good},markReady:{borderColor:C.accent},markText:{color:C.text,fontWeight:'900',fontSize:12},

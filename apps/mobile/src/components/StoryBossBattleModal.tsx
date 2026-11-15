@@ -1,7 +1,8 @@
-import {useGameplayText} from '../i18n/gameplay';
+import {useGameplayText,type GameplayKey} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {MONSTERS} from '../content/monsters';
+import {ITEMS} from '../content/items';
 import {displayStat} from '../core/stat-display';
 import {WORLD_ZONES} from '../content/world-map';
 import type {GameState} from '../core/types';
@@ -17,6 +18,10 @@ import {CombatEffectShape} from './CombatAttackSprite';
 import {CLASS_ICON_ACCENT} from '../content/class-icon-colors';
 import {battleText} from '../i18n/battle';
 import {storyBossPlaybackEvents} from '../core/story-boss-playback';
+import {storyBossRewardDisplay,type StoryBossLootDisplay} from '../core/story-boss-reward-display';
+import {ItemArtwork} from './ItemArtwork';
+import {GoldIcon} from './GoldIcon';
+import {rarityMeta} from '../core/item-rarity';
 
 function pct(current:number,max:number){return Math.max(0,Math.min(100,max>0?current/max*100:0));}
 function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
@@ -89,6 +94,12 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
     return event.label;
   };
 
+  // After settlement, replace the combat theatre entirely with a reward-first
+  // result. It keeps the same modal footprint and doesn't expose live events early.
+  if(finished)return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={closeAfterBattle} dismissOnBackdrop={false} backdropLabel={gt("Story boss battle")} surfaceStyle={s.modal}>
+    <StoryBossResult battle={battle} message={message} onClose={onClose}/>
+  </GameModalSurface>;
+
   return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={closeAfterBattle} dismissOnBackdrop={false} backdropLabel={gt("Story boss battle")} surfaceStyle={s.modal}>
       <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.top}>
@@ -142,15 +153,96 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
           }):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 
-        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{gl(message)}</Text></View>:null}
-
-        <View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>
+        <View style={s.actions}><Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text></View>
       </ScrollView>
   </GameModalSurface>;
 }
 
+
+const bossItemNames=new Map(ITEMS.map(item=>[item.name.toLocaleLowerCase('en'),item]));
+
+function BossLootSection({title,items,accent,complete=false}:{title:GameplayKey;items:StoryBossLootDisplay[];accent:string;complete?:boolean}){
+  const {gt,gl}=useGameplayText();
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+  const {width,fontScale}=useWindowDimensions(),singleColumn=width<330||fontScale>1.25;
+  return <View style={s.rewardSection}>
+    <View style={s.rewardSectionHead}>
+      <Text style={[s.rewardSectionTitle,{color:accent}]}>{gt(title)}</Text>
+      {complete?<Text style={[s.rewardComplete,{color:accent,borderColor:accent}]}>{gt("COMPLETE")}</Text>:null}
+    </View>
+    {items.length?<View style={[s.rewardLootGrid,singleColumn&&s.rewardLootSingleColumn]}>
+      {items.map((reward,index)=>{
+        const item=reward.itemId?ITEMS.find(row=>row.id===reward.itemId):bossItemNames.get(reward.name.toLocaleLowerCase('en'));
+        const rare=item?.rarity&&item.rarity!=='common'?rarityMeta(item.rarity):null;
+        return <View key={(reward.itemId??reward.name)+':'+index} accessible accessibilityLabel={`${reward.quantity} ${gl(reward.name)}`} style={[s.rewardLootTile,singleColumn&&s.rewardLootFullTile,rare&&{borderColor:rare.color}]}>
+          <View style={s.rewardLootArt}>{item?<ItemArtwork itemId={item.id} size={31}/>:<Text style={s.rewardLootSymbol}>◆</Text>}</View>
+          <View style={s.rewardLootText}>
+            <Text numberOfLines={singleColumn?3:2} style={s.rewardLootName}>{gl(reward.name)}</Text>
+            <Text style={[s.rewardLootQty,rare&&{color:rare.color}]}>×{reward.quantity.toLocaleString()}</Text>
+          </View>
+        </View>;
+      })}
+    </View>:<Text style={s.rewardEmpty}>{gt("No bonus item drops this time.")}</Text>}
+  </View>;
+}
+
+function StoryBossResult({battle,message,onClose}:{battle:FallenKnightBattleResult;message:string;onClose:()=>void}){
+  const {gt,gl}=useGameplayText();
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+  const rewards=useMemo(()=>storyBossRewardDisplay(message),[message]);
+  const seconds=Math.max(1,Math.round(battle.durationMs/1000));
+  const currencies=[
+    {key:'gold',label:gt("GOLD"),value:rewards.gold},
+    {key:'xp',label:gt("XP"),value:rewards.xp},
+    {key:'essence',label:gt("ESSENCE"),value:rewards.essence},
+  ].filter(row=>row.value!==null);
+  return <View style={s.resultShell}>
+    <View style={[s.outcomeHero,battle.won?s.outcomeVictory:s.outcomeDefeat]}>
+      <View style={s.outcomeHeroRow}>
+        <View style={s.outcomeHeroCopy}>
+          <Text style={[s.outcomeKicker,{color:battle.won?C.good:C.bad}]}>{battle.won?gt("✦ BOSS DEFEATED"):gt("BOSS BATTLE ENDED")}</Text>
+          <Text accessibilityRole="header" style={s.outcomeTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text>
+          <Text style={s.outcomeBoss}>{gt("The Fallen Knight")}</Text>
+        </View>
+        <View style={s.outcomePortrait} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <MonsterPortraitFrame monster={MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!} size={61} framed={false} active={false} reduceMotion/>
+        </View>
+      </View>
+      <View style={s.outcomeDetails}>
+        <Text style={s.outcomeDetail}>{battle.mode==='story'?gt("STORY CLEAR"):gt("WEEKLY REMATCH")}</Text>
+        {rewards.weeklyClear?<Text style={s.outcomeDetail}>{gt("CLEAR")} {rewards.weeklyClear}</Text>:null}
+        <Text style={s.outcomeDetail}>{seconds}s</Text>
+      </View>
+    </View>
+    <ScrollView style={s.resultScroller} contentContainerStyle={s.rewardBody} showsVerticalScrollIndicator={false}>
+      {!battle.won?<View style={s.defeatGuidance}><Text style={s.rewardSectionTitle}>{gt("BATTLE SUMMARY")}</Text><Text style={s.rewardGuidanceText}>{gl(message)}</Text></View>:
+      !rewards.recognized?<View style={s.defeatGuidance}><Text style={s.rewardSectionTitle}>{gt("REWARDS RECEIVED")}</Text><Text style={s.rewardGuidanceText}>{gl(message)}</Text></View>:
+      <>
+        {currencies.length?<View style={s.rewardCurrencyRow}>
+          {currencies.map(row=><View key={row.key} style={s.rewardCurrencyTile}>
+            <Text style={s.rewardCurrencyValue}>+{row.value!.toLocaleString()}</Text>
+            <View style={s.rewardCurrencyLabel}>
+              {row.key==='gold'?<GoldIcon size={14}/>:<Text style={s.rewardCurrencyMark}>{row.key==='xp'?'✦':'◆'}</Text>}
+              <Text style={s.rewardCurrencyText}>{row.label}</Text>
+            </View>
+          </View>)}
+        </View>:null}
+        {rewards.bondstones!==null?<View style={s.bondstoneBonus}>
+          <Text style={s.bondstoneIcon}>✧</Text>
+          <View style={s.bondstoneCopy}><Text style={s.bondstoneHeading}>{gt("BONUS REWARD")}</Text><Text style={s.bondstoneText}>{gt("Bondstone")}</Text></View>
+          <Text style={s.bondstoneValue}>+{rewards.bondstones.toLocaleString()}</Text>
+        </View>:rewards.bondstoneCapped?<Text style={s.rewardNote}>{gt("Weekly Bondstone limit reached")}</Text>:null}
+        {rewards.bountyCompleted?<BossLootSection title="OATHGLASS BOUNTY" items={rewards.bounty} accent={C.special} complete/>:null}
+        {rewards.guaranteed.length?<BossLootSection title="GUARANTEED REWARDS" items={rewards.guaranteed} accent={C.good}/>:null}
+        <BossLootSection title="BOSS DROPS" items={rewards.drops} accent={C.accent}/>
+      </>}
+    </ScrollView>
+    <View style={s.resultFooter}><GameButton title={gt("Continue")} style={s.resultContinue} onPress={onClose}/></View>
+  </View>;
+}
+
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  modal:{maxHeight:'94%',overflow:'hidden',padding:0,borderColor:C.lineStrong,backgroundColor:C.bg},scroll:{maxHeight:'100%'},modalContent:{gap:10,padding:12},
+  modal:{height:'88%',maxHeight:'94%',overflow:'hidden',padding:0,borderColor:C.lineStrong,backgroundColor:C.bg},scroll:{maxHeight:'100%'},modalContent:{gap:10,padding:12},
   top:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   kicker:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},title:{...typography.hero,color:C.text},
   phaseBadge:{paddingHorizontal:9,paddingVertical:5,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},phaseDanger:{borderColor:C.bad,backgroundColor:C.badSurface},phaseText:{fontSize:9,color:C.text,fontWeight:'900',letterSpacing:.7},
@@ -164,4 +256,43 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   log:{gap:4,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},logHead:{flexDirection:'row',justifyContent:'space-between',gap:8},logTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.7},logMeta:{fontSize:9,color:C.muted,fontWeight:'800'},logRow:{flexDirection:'row',gap:8},logTime:{width:34,fontSize:9,color:C.muted,fontVariant:['tabular-nums']},logText:{flex:1,fontSize:10,color:C.text,fontWeight:'700'},warn:{color:C.warning},phaseLog:{color:C.info,fontWeight:'900'},critLog:{color:C.warning,fontWeight:'900'},
   result:{gap:4,padding:9,borderLeftWidth:4,borderRadius:radii.sm},win:{borderLeftColor:C.good,backgroundColor:C.goodSurface},loss:{borderLeftColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.title,color:C.text},resultCopy:{...typography.body,color:C.text},
   actions:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10},live:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:1.2},
+  resultShell:{flex:1,minHeight:0},
+  outcomeHero:{paddingHorizontal:14,paddingVertical:12,gap:8,borderBottomWidth:1},
+  outcomeHeroRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+  outcomeHeroCopy:{flex:1,minWidth:0,gap:2},
+  outcomePortrait:{width:64,height:64,borderRadius:12,overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.stage,alignItems:'center',justifyContent:'center'},
+  outcomeVictory:{backgroundColor:C.goodSurface,borderBottomColor:C.good},
+  outcomeDefeat:{backgroundColor:C.badSurface,borderBottomColor:C.bad},
+  outcomeKicker:{fontSize:10,fontWeight:'900',letterSpacing:1.2},
+  outcomeTitle:{...typography.hero,color:C.text,fontWeight:'900'},
+  outcomeBoss:{...typography.bodyStrong,color:C.text},
+  outcomeDetails:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:6},
+  outcomeDetail:{fontSize:9,fontWeight:'900',letterSpacing:.55,color:C.muted,backgroundColor:C.panel2,paddingHorizontal:8,paddingVertical:4,borderRadius:99},
+  resultScroller:{flex:1},rewardBody:{padding:12,gap:12,paddingBottom:20},
+  rewardCurrencyRow:{flexDirection:'row',gap:7},
+  rewardCurrencyTile:{flex:1,minWidth:0,paddingVertical:12,paddingHorizontal:4,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,alignItems:'center',gap:5},
+  rewardCurrencyValue:{...typography.title,color:C.good,fontWeight:'900',fontVariant:['tabular-nums']},
+  rewardCurrencyLabel:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4},
+  rewardCurrencyMark:{fontSize:12,color:C.accent,fontWeight:'900'},
+  rewardCurrencyText:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.4},
+  bondstoneBonus:{flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:C.special,borderRadius:radii.sm,backgroundColor:C.specialSurface,paddingVertical:10,paddingHorizontal:12},
+  bondstoneIcon:{fontSize:24,color:C.special,fontWeight:'900'},
+  bondstoneCopy:{flex:1,gap:2},bondstoneHeading:{fontSize:9,color:C.special,fontWeight:'900',letterSpacing:.7},bondstoneText:{...typography.bodyStrong,color:C.text},
+  bondstoneValue:{...typography.title,color:C.special,fontWeight:'900'},
+  rewardNote:{...typography.caption,color:C.muted},
+  rewardSection:{gap:7},
+  rewardSectionHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
+  rewardSectionTitle:{fontSize:10,color:C.accent,fontWeight:'900',letterSpacing:.8},
+  rewardComplete:{fontSize:8,fontWeight:'900',letterSpacing:.5,borderWidth:1,borderRadius:99,paddingHorizontal:7,paddingVertical:3},
+  rewardLootGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},rewardLootSingleColumn:{flexDirection:'column'},rewardLootFullTile:{width:'100%',flexBasis:'auto'},
+  rewardLootTile:{flexBasis:'47%',flexGrow:1,minWidth:125,flexDirection:'row',gap:7,alignItems:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel,padding:6,minHeight:52},
+  rewardLootArt:{width:34,height:34,alignItems:'center',justifyContent:'center'},rewardLootSymbol:{fontSize:21,color:C.info,fontWeight:'900'},
+  rewardLootText:{flex:1,minWidth:0,gap:3},
+  rewardLootName:{fontSize:10,lineHeight:13,color:C.text,fontWeight:'800'},
+  rewardLootQty:{fontSize:11,color:C.good,fontWeight:'900'},
+  rewardEmpty:{...typography.caption,color:C.muted,padding:6},
+  defeatGuidance:{gap:8,padding:12,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},
+  rewardGuidanceText:{...typography.body,color:C.text,lineHeight:21},
+  resultFooter:{minHeight:68,paddingHorizontal:12,paddingVertical:10,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.bg,justifyContent:'center'},resultContinue:{width:'100%'},
+
 });}

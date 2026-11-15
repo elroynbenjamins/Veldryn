@@ -184,7 +184,8 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
  const friendInviteSheet=<PartyFriendInviteSheet key={social.accountId+':'+(social.party?.id??'none')} visible={showFriendInvites&&!!social.party} partyId={social.party?.id} openSpots={Math.max(0,4-(social.party?.members.length??0))} pendingAccountIds={outgoingPartyInvites.map(invite=>invite.recipientAccountId)} onClose={()=>setShowFriendInvites(false)} onInvited={()=>{void load();onInvitationsChanged?.();}}/>;
  if(mode!=='legacy'){
   const recruitment=mode==='recruitment',leader=!!social.party?.members.some(member=>member.accountId===social.accountId&&member.isLeader),openSpots=Math.max(0,4-(social.party?.members.length??0));
-   const expiredPartyPost=leader&&openSpots>0?own.find(card=>card.postType==='party_recruiting'&&card.partyId===social.party?.id&&recruitmentPostExpired(card,at)):undefined;
+   const hasActivePartyPost=own.some(card=>card.postType==='party_recruiting'&&card.partyId===social.party?.id&&card.status!=='closed'&&!recruitmentPostExpired(card,at));
+   const expiredPartyPost=leader&&openSpots>0&&!hasActivePartyPost?own.find(card=>card.postType==='party_recruiting'&&card.partyId===social.party?.id&&recruitmentPostExpired(card,at)):undefined;
   const claimReadyCount=social.party?partyContractClaimableRewardIds(social.contracts).length:0;
   const switchParty=(view:'Overview'|'Contracts'|'Chat')=>{setPartyView(view);setTab(view==='Chat'?'chat':'party')};
   return <View style={s.page}>

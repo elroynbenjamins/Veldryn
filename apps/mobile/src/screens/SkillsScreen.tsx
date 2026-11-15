@@ -75,18 +75,17 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
       <View style={[s.region,{borderColor:region.accent}]}>
         <ZoneSceneArtwork regionId={region.id}/>
         <View pointerEvents="none" style={s.regionShade}/>
-        <View style={s.flex}><Text style={s.regionLabel}>{gl("CURRENT REGION GATHERING")}</Text><Text accessibilityRole="header" style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gl("All gathering activities available in this region are shown together.")}</Text></View>
+        <View style={s.flex}><Text style={s.regionLabel}>{gl("CURRENT REGION GATHERING")}</Text><Text accessibilityRole="header" style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gt("All four gathering skills are shown here. Locked resources display their requirements.")}</Text></View>
       </View>
       {availableAreas.length>0?<View style={s.areaPicker}>
         <Pressable accessibilityRole="button" accessibilityState={{selected:!selectedArea}} onPress={()=>setSelectedAreaId(undefined)}
           style={[s.areaChip,!selectedArea&&s.areaChipSelected]}><Text style={[s.areaChipText,!selectedArea&&s.areaChipTextSelected]}>{gl('All')}</Text></Pressable>
         {availableAreas.map(area=><Pressable accessibilityRole="button" key={area.id}
           accessibilityLabel={area.name+' · Lv '+area.minLevel+'+'}
-          accessibilityState={{disabled:(state.character?.level??1)<area.minLevel,selected:selectedArea?.id===area.id}}
-          disabled={(state.character?.level??1)<area.minLevel}
+          accessibilityState={{selected:selectedArea?.id===area.id}}
           onPress={()=>setSelectedAreaId(area.id)}
           style={[s.areaChip,selectedArea?.id===area.id&&s.areaChipSelected,(state.character?.level??1)<area.minLevel&&s.areaChipLocked]}>
-          <Text numberOfLines={1} style={[s.areaChipText,selectedArea?.id===area.id&&s.areaChipTextSelected]}>{area.name}</Text>
+          <Text numberOfLines={1} style={[s.areaChipText,selectedArea?.id===area.id&&s.areaChipTextSelected]}>{area.name}{(state.character?.level??1)<area.minLevel?' · Lv '+area.minLevel:''}</Text>
         </Pressable>)}
       </View>:null}
       {gatheringSkillIds.map(skillId=>{
@@ -118,7 +117,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
 
 
     {goalAction?<View style={s.goalTarget}><Text style={s.goalTargetLabel}>{gt("WORKING TOWARD TARGET")}</Text><Text style={s.goalTargetName}>{goalAction.name}</Text><Text style={s.sub}>{initialRecipe?gt("The recipe list is filtered to this target."):gt("The target activity is shown first in this skill.")}</Text></View>:null}
-    {mode==='gathering'&&<View style={[s.region,{borderColor:region.accent}]}><ZoneSceneArtwork regionId={region.id}/><View pointerEvents="none" style={s.regionShade}/><View style={s.flex}><Text style={s.regionLabel}>{gt("CURRENT REGION")}</Text><Text style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gt("Only gathering nodes in this region are shown.")}</Text></View></View>}
+    {mode==='gathering'&&<View style={[s.region,{borderColor:region.accent}]}><ZoneSceneArtwork regionId={region.id}/><View pointerEvents="none" style={s.regionShade}/><View style={s.flex}><Text style={s.regionLabel}>{gt("CURRENT REGION")}</Text><Text style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.regionSub}>{gt("Ready here first, then reachable zones and locked resources.")}</Text></View></View>}
     {mode==='gathering'&&initialSkill==='herbalism'?<HerbalismMethodPanel state={state} onCommand={onCommand}/>:null}
     {(mode==='faith'||initialSkill==='faith')&&<FaithPanel state={state} onCommand={onCommand}/>}
     {mode==='novice'&&<NoviceWorkshop state={state} onCraft={onCraft} onCharacter={onCharacter}/>}

@@ -136,7 +136,7 @@ export function verifyPrivatePartyEventEvidenceV27(
     'frozen_character_not_active');
   must(IDENTITY_ROLES.has(p.rosterRole)
     &&['standard','veteran','heroic'].includes(p.difficulty)
-    &&p.weekStage===3&&p.weekStatus!=='settled'
+    &&p.weekStage===3&&['active','closed'].includes(p.weekStatus)
     &&p.settlementWindowOpen===true,
     'invalid_week_or_settlement_window');
   must(p.rewardModel==='party-event-rewards-v2'
@@ -200,7 +200,7 @@ export function verifyPrivatePartyEventEvidenceV27(
   // The three v25 revisions and the wallet-before are historical previews:
   // subsequent ordinary gameplay may legitimately advance them. Never reuse
   // these values as optimistic-lock requirements for a future payout.
-  must(Number.isSafeInteger(p.onlineRevision)&&p.onlineRevision>=0,
+  must(typeof p.onlineRevision==='number'\n    &&Number.isSafeInteger(p.onlineRevision)&&p.onlineRevision>=0,
     'online_state_missing');
   must(Number.isSafeInteger(intent.onlineRevision)
     &&Number.isSafeInteger(preflight.onlineRevision)

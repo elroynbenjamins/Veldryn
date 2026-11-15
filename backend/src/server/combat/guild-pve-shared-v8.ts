@@ -245,10 +245,15 @@ export class GuildPveV8InMemoryGuild{
    // produce more than the real remaining shared node HP.
    target.hp=round(Math.max(0,target.hp-Math.min(target.hp,combat.bossHpRemoved)));
    const phases=GUILD_PVE_V7_PHASES[node.boss!];
+   // Patrols, corridor, overseers and lift are one-phase skirmishes.
+   // Only the three named guardians own multi-phase threshold transitions.
+   const staged=node.kind==='guardian'||node.kind==='final';
    const beforeIndex=phases.indexOf(target.phase!);
-   const after=target.hp===0?phases[2]:this.currentPhase(node,target.hp,target.maxHp)!;
+   const after=staged
+    ?target.hp===0?phases[2]:this.currentPhase(node,target.hp,target.maxHp)!
+    :phases[0];
    const afterIndex=phases.indexOf(after);
-   transitions=phases.slice(beforeIndex+1,afterIndex+1);
+   transitions=staged?phases.slice(beforeIndex+1,afterIndex+1):[];
    for(const p of transitions)if(!target.triggered.includes(p))target.triggered.push(p);
    target.phase=after;
    target.cleared=target.hp<=0;

@@ -26,10 +26,13 @@ export function RankingsScreen(){
  const scrollRef=useRef<ScrollViewInstance|null>(null);
  // Opaque server cursor per page; never derived from account IDs or scores.
  const frozenCursors=useRef<Map<number,string>>(new Map());
+ const frozenExpiresAt=useRef<number>(0);
+ const snapshotExpired=()=>rankingsFrozenConfigured
+   &&frozenExpiresAt.current>0&&Date.now()>=frozenExpiresAt.current;
  function selectGroup(value:RankingGroup){
    if(value===group)return;
    request.current++;
-   frozenCursors.current.clear();
+   frozenCursors.current.clear();frozenExpiresAt.current=0;
    const first=RANKING_BOARDS.find(row=>row.group===value);
    setGroup(value);setPage(0);setHasNext(false);setSnapshot(null);setError('');setLoading(false);
    if(first&&!RANKING_BOARDS.some(row=>row.id===board&&row.group===value))setBoard(first.id);
@@ -39,13 +42,16 @@ export function RankingsScreen(){
    setBoardPickerOpen(false);
    if(next===board)return;
    request.current++;
-   frozenCursors.current.clear();
+   frozenCursors.current.clear();frozenExpiresAt.current=0;
    setBoard(next);setPage(0);setHasNext(false);setSnapshot(null);setError('');setLoading(false);
    scrollRef.current?.scrollTo({y:0,animated:false});
  }
  function goToPage(next:number){
    if(loading||!Number.isSafeInteger(next)||next<0||next===page)return;
    try{rankingPageOffset(next);}catch{return;}
+   if(snapshotExpired()){
+     setError(st("Ranking snapshot expired. Refresh to load updated results."));return;
+   }
    if(rankingsFrozenConfigured&&!frozenCursors.current.has(next))return;
    request.current++;
    scrollRef.current?.scrollTo({y:0,animated:false});
@@ -53,7 +59,7 @@ export function RankingsScreen(){
  }
  function refreshRankings(){
    if(rankingsFrozenConfigured){
-     frozenCursors.current.clear();
+     frozenCursors.current.clear();frozenExpiresAt.current=0;
      setHasNext(false);
      if(page!==0){
        request.current++;
@@ -72,7 +78,12 @@ export function RankingsScreen(){
    setLoading(true);setError('');
    try{
      if(rankingsFrozenConfigured){
-       const cursor=forceNewSnapshot?undefined:frozenCursors.current.get(page);
+       const expired=snapshotExpired();
+       if(expired&&page>0&&!forceNewSnapshot){
+         setError(st("Ranking snapshot expired. Refresh to load updated results."));
+         return;
+       }
+       const cursor=(forceNewSnapshot||expired)?undefined:frozenCursors.current.get(page);
        if(page>0&&!cursor)throw new Error('ranking_snapshot_missing_cursor');
        const next=cursor
          ?await frozenRankingsClient.page(cursor)
@@ -81,6 +92,7 @@ export function RankingsScreen(){
          if(next.board!==board||!Array.isArray(next.entries)
            ||next.pageSize!==RANKING_PAGE_SIZE)throw new Error('invalid_frozen_ranking_response');
          if(page===0&&!cursor)frozenCursors.current.clear();
+         frozenExpiresAt.current=next.expiresAtMs;
          frozenCursors.current.set(page,next.cursor);
          if(next.nextCursor)frozenCursors.current.set(page+1,next.nextCursor);
          else frozenCursors.current.delete(page+1);

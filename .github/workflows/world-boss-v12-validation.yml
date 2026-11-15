@@ -20,6 +20,7 @@ on:
       - 'backend/online/world-boss-rewards-pg-v28.ts'
       - 'backend/online/world-boss-reward-runtime-v28.ts'
       - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
+      - 'docs/roadmap/world-boss-v28-concurrent-claims-ci.sh'
       - 'docs/roadmap/world-boss-war-camp-transactions-v27*.sql'
       - 'docs/roadmap/world-boss-war-camp-policy-init-v27.sql'
       - 'backend/online/world-boss-consented-echoes-v20.ts'
@@ -153,3 +154,4 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-transactions-v27-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-reward-ledger-v28.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-reward-ledger-v28-smoke.sql
+          bash docs/roadmap/world-boss-v28-concurrent-claims-ci.sh

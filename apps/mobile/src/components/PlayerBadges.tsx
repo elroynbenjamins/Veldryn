@@ -14,7 +14,6 @@ const artwork:Record<Exclude<PlayerBadgeId,'vip'|'vip_plus'>,number>={
  supporter_6m:require('../../assets/player-badges-v1/supporter_6m.webp'),
  supporter_12m:require('../../assets/player-badges-v1/supporter_12m.webp'),
  founder:require('../../assets/player-badges-v1/founder.webp'),
- beta_tester:require('../../assets/player-badges-v1/beta_tester.webp'),
  veteran:require('../../assets/player-badges-v1/veteran.webp'),
  guild_leader:require('../../assets/player-badges-v1/guild_leader.webp'),
  community_champion:require('../../assets/player-badges-v1/community_champion.webp'),

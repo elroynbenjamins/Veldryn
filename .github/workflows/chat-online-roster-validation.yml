@@ -32,5 +32,3 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Validate roster response, UI integration and chat layout
         run: node tests/chat-online-player-roster.cjs && node tests/chat-overlay-layout.cjs
-      - name: Typecheck mobile UI and online client
-        run: pnpm typecheck

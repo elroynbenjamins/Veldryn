@@ -72,4 +72,28 @@ equal(soloDeleted.account.premiumCurrencyBalance,123,'solo deletion must preserv
 equal(soloDeleted.account.guildMember,true,'solo deletion must preserve account Guild membership');
 equal(soloDeleted.account.unlockedCharacterSlots,earnedBeforeDelete,'skill-earned character slots must be banked permanently before deleting the character');
 
+// Deleting a character must recover an exact crafted copy, even when the Bank
+// and Inventory also contain otherwise identical untagged gear.
+let unique=executeGameCommand(newGame(1),{type:'create',args:{classId:'IRONWARDEN',name:'Unique',body:'male'}},1,{characterId:firstId}).state;
+const uniqueItem=unique.character!.equipment.weapon!;
+const uniqueId='gear:test:unique-001';
+unique={
+ ...unique,
+ character:{...unique.character!,equipmentInstanceIds:{weapon:uniqueId}},
+ inventory:{...unique.inventory,stacks:[...unique.inventory.stacks,{itemId:uniqueItem,quantity:1}]},
+ bank:{...unique.bank,stacks:[{itemId:uniqueItem,quantity:1}]},
+ account:{...unique.account,craftedGearInstances:[{
+  id:uniqueId,itemId:uniqueItem,ownerCharacterId:firstId,rarity:'rare',
+  acquireSource:'craft',sourceReceiptKey:'test-unique-001',createdAtMs:1,
+  enhancement:{rank:0,failures:0,gemIds:[]}
+ }]},
+};
+equal(characterDeleteBlockReason(unique,firstId),undefined,'equipped crafted gear must not demand a manual Bank transfer');
+const uniqueDeleted=executeGameCommand(unique,{type:'roster_delete',args:{id:firstId,confirmation:characterDeleteConfirmation('Unique')}},4).state;
+equal(uniqueDeleted.character,null,'deleting the only crafted-geared character should return to creation');
+equal(uniqueDeleted.bank.stacks.filter(row=>row.itemId===uniqueItem).length,3,'crafted and untagged copies must stay physically distinct');
+equal(uniqueDeleted.bank.stacks.filter(row=>row.instanceId===uniqueId).length,1,'exact crafted gear receipt must survive deletion');
+equal(uniqueDeleted.bank.stacks.find(row=>row.instanceId===uniqueId)?.quantity,1,'tagged gear copy must never merge into a multi-item stack');
+ok(uniqueDeleted.account.craftedGearInstances?.some(row=>row.id===uniqueId),'account crafted-quality metadata must survive character deletion');
+
 console.log('PASS safe character delete/reroll management preserves account scope, blocks unsafe deletion and recovers character-held items');

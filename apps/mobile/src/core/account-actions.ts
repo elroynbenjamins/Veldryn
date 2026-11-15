@@ -1,4 +1,4 @@
-import type {GameState,ClassId,BodyPresentation,ItemStack,OverflowState} from './types';
+import type {GameState,ClassId,BodyPresentation,ItemStack,OverflowState,GearSlot} from './types';
 import {itemDef} from '../content/items';
 import {newGame,createCharacter} from './game';
 import {accountCharacters,unlockedCharacterSlots} from './account-roster';
@@ -38,11 +38,17 @@ function mergeStacks(stacks:ItemStack[]){
  const merged:ItemStack[]=[];
  for(const stack of stacks){
   if(!stack||typeof stack.itemId!=='string'||!Number.isFinite(stack.quantity)||stack.quantity<=0)continue;
+  // Crafted copies are distinct physical items; their instance IDs must never be merged away.
+  if(stack.instanceId){
+   if(stack.quantity!==1)throw new Error('Invalid crafted equipment stack during character deletion.');
+   merged.push({...stack,quantity:1});
+   continue;
+  }
   const cap=stackCap(stack.itemId);let remaining=Math.floor(stack.quantity);
   while(remaining>0){
-   const existing=merged.find(row=>row.itemId===stack.itemId&&row.quantity<cap);
+   const existing=merged.find(row=>row.itemId===stack.itemId&&!row.instanceId&&row.quantity<cap);
    if(existing){const moved=Math.min(cap-existing.quantity,remaining);existing.quantity+=moved;remaining-=moved;continue;}
-   const moved=Math.min(cap,remaining);merged.push({itemId:stack.itemId,quantity:moved});remaining-=moved;
+   const moved=Math.min(cap,remaining);merged.push({...stack,quantity:moved});remaining-=moved;
   }
  }
  return merged;
@@ -50,8 +56,14 @@ function mergeStacks(stacks:ItemStack[]){
 function routeToBank(bank:GameState['bank'],baseOverflow:OverflowState,incoming:ItemStack[],now:number){
  const stacks=bank.stacks.map(row=>({...row})),overflow=baseOverflow.stacks.map(row=>({...row}));
  for(const incomingStack of mergeStacks(incoming)){
+  if(incomingStack.instanceId){
+   if([...stacks,...overflow].some(row=>row.instanceId===incomingStack.instanceId))
+    throw new Error('Duplicate crafted equipment copy during character deletion.');
+   (stacks.length<bank.capacity?stacks:overflow).push({...incomingStack});
+   continue;
+  }
   let remaining=incomingStack.quantity,cap=stackCap(incomingStack.itemId);
-  for(const existing of stacks.filter(row=>row.itemId===incomingStack.itemId)){
+  for(const existing of stacks.filter(row=>row.itemId===incomingStack.itemId&&!row.instanceId)){
    if(remaining<=0)break;const room=Math.max(0,cap-existing.quantity),moved=Math.min(room,remaining);existing.quantity+=moved;remaining-=moved;
   }
   while(remaining>0&&stacks.length<bank.capacity){const moved=Math.min(cap,remaining);stacks.push({itemId:incomingStack.itemId,quantity:moved});remaining-=moved;}
@@ -61,18 +73,20 @@ function routeToBank(bank:GameState['bank'],baseOverflow:OverflowState,incoming:
  return {bank:{...bank,stacks},overflow:{stacks:overflowStacks,expiresAtMs:overflowStacks.length?Math.max(baseOverflow.expiresAtMs??0,now+72*60*60*1000):null}};
 }
 function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['bank']){
- const equipped=[...new Set(Object.values(entry.character.equipment).filter((id):id is string=>typeof id==='string'&&!!id))];
+ const equipped=Object.entries(entry.character.equipment)
+  .filter((entry):entry is [string,string]=>typeof entry[1]==='string'&&!!entry[1])
+  .map(([slot,itemId])=>{const instanceId=entry.character.equipmentInstanceIds?.[slot as GearSlot];return {itemId,quantity:1,...(instanceId?{instanceId}:{})};});
  const tools=[...new Set(Object.values(entry.character.equippedToolIds??{}).filter((id):id is string=>typeof id==='string'&&!!id))];
- const held=[...equipped,...tools];
+ const held=[...equipped,...tools.map(itemId=>({itemId,quantity:1}))];
  const ownedGearIds=new Set<string>([
-  ...equipped,
+  ...equipped.map(row=>row.itemId),
   ...entry.inventory.stacks.map(row=>row.itemId),
   ...(entry.character.equipmentPouch?.stacks??[]).map(row=>row.itemId),
   ...entry.overflow.stacks.map(row=>row.itemId),
   ...sharedBank.stacks.map(row=>row.itemId),
  ]);
  const socketed=Object.entries(entry.character.gearEnhancements??{}).flatMap(([itemId,enhancement])=>ownedGearIds.has(itemId)?[enhancement.statGemId,enhancement.effectGemId].filter((id):id is string=>Boolean(id)):[]);
- return [...entry.inventory.stacks,...(entry.character.equipmentPouch?.stacks??[]),...entry.overflow.stacks,...held.map(itemId=>({itemId,quantity:1})),...socketed.map(itemId=>({itemId,quantity:1}))];
+ return [...entry.inventory.stacks,...(entry.character.equipmentPouch?.stacks??[]),...entry.overflow.stacks,...held,...socketed.map(itemId=>({itemId,quantity:1}))];
 }
 function accountAfterCharacterDelete(state:GameState,character:CharacterSnapshot['character']){
  const earnedSlots=unlockedCharacterSlots(state);
@@ -95,8 +109,10 @@ export function characterDeleteBlockReason(state:GameState,id:string){
  if(!stored)return 'Character is not owned.';
  if(stored.activity)return 'Stop or claim this character’s current activity before deleting it.';
  if(equipmentCraftingQueue(state).some(job=>job.ownerCharacterId===id))return 'Claim this character’s queued equipment crafts before deleting it.';
- if(auditCraftedGearOwnership(state).linked.some(row=>row.holderCharacterId===id&&row.place!=='bank'))
-   return 'Transfer unique equipment copies to the shared Bank before deleting this character.';
+ // Unique equipment is recovered to the shared Bank/Overflow by the deletion routine.
+ // Only genuine identity inconsistencies remain a blocker: never silently lose copies.
+ if(auditCraftedGearOwnership(state).problems.length)
+   return 'Equipment identity conflict. Contact support before deleting this character.';
  return undefined;
 }
 export function deleteAccountCharacter(state:GameState,id:string,confirmation:string,now:number){

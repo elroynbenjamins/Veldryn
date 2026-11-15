@@ -1,6 +1,6 @@
 import {accountText,accountError,accountDuration} from '../i18n/account';
-import {useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {GameTextInput} from '../components/GameTextInput';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
@@ -24,6 +24,14 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const entries=accountCharacters(state).map(entry=>({character:entry.character,activity:entry.character.id===state.character?.id?state.activity:(state.otherCharacters??[]).find(other=>other.character.id===entry.character.id)?.activity??null})).sort((a,b)=>Number(Boolean(b.activity))-Number(Boolean(a.activity)));
  const slots=unlockedCharacterSlots(state),skillTotal=accountSkillLevel(state),nextThreshold=slots<5?CHARACTER_SLOT_THRESHOLDS[slots]:undefined;
  const [managingId,setManagingId]=useState<string>(),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[showDeleteDetails,setShowDeleteDetails]=useState(false);
+ const modalScrollRef=useRef<ScrollView>(null);
+ useEffect(()=>{
+  if(!managingId)return;
+  const listener=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',()=>{
+   requestAnimationFrame(()=>modalScrollRef.current?.scrollToEnd({animated:true}));
+  });
+  return ()=>listener.remove();
+ },[managingId]);
  const target=entries.find(entry=>entry.character.id===managingId);
  const required=target?characterDeleteConfirmation(target.character.name):'';
  const confirmed=!!target&&confirmation===required;
@@ -64,7 +72,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
   </ScrollView>
   <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a("Close character management")}>
    <GameModalHeader eyebrow={a("CHARACTER MANAGEMENT")} title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
-   {target?<ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="none" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+   {target?<ScrollView ref={modalScrollRef} style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.warning}><Text style={s.warningTitle}>{a("What you lose")}</Text><Text style={s.warningText}>{a("Your character, levels, Gold, skills, quests, loadouts and equipment upgrades are permanently removed.")}</Text>
       <Text style={s.warningText}>{a("Equipment and items return to the shared Bank or Overflow, with upgrades removed.")}</Text>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteDetails}} style={s.detailsToggle} onPress={()=>setShowDeleteDetails(value=>!value)}><Text style={s.detailsToggleText}>{showDeleteDetails?a("Hide deletion details"):a("Read full deletion details")} {showDeleteDetails?'−':'+'}</Text></Pressable>
@@ -73,7 +81,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     <View accessibilityLabel={a("ACCOUNT PROGRESS STAYS")} style={s.preserved}><Text style={s.preservedTitle}>{a("What you keep")}</Text><Text style={s.preservedText}>{a("Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.")}</Text></View>
     {blockReason?<View style={s.block}><Text accessibilityRole="alert" style={s.blockTitle}>{a("Finish before deleting")}</Text><Text style={s.blockText}>{a(blockReason)}</Text>{craftCount>0?<Text style={s.blockText}>{a('{count} equipment crafts are still linked to this character.',{count:craftCount})}</Text>:null}</View>:null}
     <Text style={s.confirmLabel}>{a('Type {confirmation} to unlock the delete actions.',{confirmation:required})}</Text>
-    <GameTextInput accessibilityLabel={a("Character deletion confirmation")} autoCapitalize="characters" autoCorrect={false} showSoftInputOnFocus returnKeyType="done" editable={!busy} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
+    <GameTextInput accessibilityLabel={a("Character deletion confirmation")} autoCapitalize="characters" autoCorrect={false} showSoftInputOnFocus returnKeyType="done" onFocus={()=>requestAnimationFrame(()=>modalScrollRef.current?.scrollToEnd({animated:true}))} onSubmitEditing={()=>Keyboard.dismiss()} editable={!busy} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
     {!!error&&<Text accessibilityRole="alert" style={s.error}>{accountError(language,error)}</Text>}
     <GameButton title={busy?a("Deleting…"):a("Delete & choose new class")} loading={busy} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="danger" onPress={()=>remove(true)}/>
     {entries.length>1?<GameButton title={a("Delete character only")} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="secondary" onPress={()=>remove(false)}/>:null}

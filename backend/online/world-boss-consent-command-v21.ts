@@ -82,7 +82,9 @@ export function createWorldBossPrivateConsentPgV21(
   throw Error('world_boss_v21_private_pg_required');
  return {
   async setConsent(input){
-   validate(input);
+   validate({eventId:input.eventId,characterId:input.characterId,
+    requestId:input.requestId,enabled:input.enabled,
+    expectedRevision:input.expectedRevision});
    if(!UUID.test(input.ownerAccountId))
     throw Error('world_boss_v21_invalid_private_owner');
    const result=await pg.query<{receipt:WorldBossConsentReceiptV21}>(

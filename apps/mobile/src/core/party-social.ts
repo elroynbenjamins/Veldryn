@@ -278,6 +278,11 @@ export function shouldShowPartyChat(party: PersistentPartySummary | null, accoun
   return !!party && party.members.some(member => member.accountId === accountId);
 }
 
+/** Expiry can be set by maintenance or reached locally before a refresh. Closed posts cannot be renewed. */
+export function recruitmentPostExpired(post:Pick<RecruitmentCardView,'status'|'expiresAtMs'>,nowMs:number):boolean{
+ return post.status!=='closed'&&(post.status==='expired'||post.expiresAtMs<=nowMs);
+}
+
 export function recruitmentTimeLabel(expiresAtMs: number, nowMs: number): { text: string; urgency: 'normal' | 'soon' | 'expired' } {
   const remaining = expiresAtMs - nowMs;
   if (remaining <= 0) return { text: 'Expired', urgency: 'expired' };

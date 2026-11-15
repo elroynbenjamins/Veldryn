@@ -6,6 +6,7 @@ import {
   partyOpenSpots,
   personalContributionEligible,
   recruitmentTimeLabel,
+  recruitmentPostExpired,
   recruitmentPostTypePresentation,
   recruitmentContextLabels,
   shouldShowPartyChat,
@@ -36,6 +37,10 @@ const filters={query:'',postTypes:[],focuses:[],roles:[],activityTags:[],availab
 assert(filterRecruitmentCards([{...card,region:'EU',minCombatLevel:10}],filters,now).length===1,'extended availability/playstyle/region/level filters');
 assert(filterRecruitmentCards([{...card,expiresAtMs:now}],{...filters,region:undefined},now).length===0,'expired cards disappear at the exact deadline');
 assert(filterRecruitmentCards([{...card,status:'closed'}],{...filters,region:undefined},now).length===0,'closed advert cannot remain visible');
+assert(!recruitmentPostExpired(card,now),'unexpired recruitment post remains active');
+assert(recruitmentPostExpired({...card,status:'expired'},now),'server-expired posts must offer renewal');
+assert(recruitmentPostExpired({...card,expiresAtMs:now},now),'deadline-expired posts must offer renewal even before background sync');
+assert(!recruitmentPostExpired({...card,status:'closed',expiresAtMs:now},now),'closed posts must not offer renewal');
 assert(recruitmentPostTypePresentation('looking_for_party').shortLabel==='LFG','Looking for Party uses compact LFG identity');
 assert(recruitmentPostTypePresentation('party_recruiting').shortLabel==='LFM','Party recruiting uses compact LFM identity');
 assert(recruitmentPostTypePresentation('looking_for_guild').subject==='PLAYER','Guild seeker is presented as a player identity');

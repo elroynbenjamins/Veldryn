@@ -5,9 +5,14 @@ on:
     paths:
       - 'backend/src/server/rankings/**'
       - 'backend/supabase/tests/leaderboards_v3_*.sql'
+      - 'backend/supabase/tests/leaderboards_v4_*.sql'
+      - 'backend/supabase/tests/leaderboards_arena_*.sql'
+      - 'backend/supabase/tests/leaderboards_world_boss_*.sql'
       - 'backend/tsconfig.rankings.json'
       - 'docs/roadmap/leaderboards-authoritative-scoring-v3-proposal.sql'
       - 'docs/roadmap/leaderboards-v4-frozen-snapshots-proposal.sql'
+      - 'docs/roadmap/leaderboards-arena-final-history-v1-proposal.sql'
+      - 'docs/roadmap/leaderboards-world-boss-final-history-v1-proposal.sql'
       - 'docs/roadmap/leaderboards-competitive-policy-v1.md'
       - 'tools/verify-rankings-v3-draft.mjs'
       - 'tools/verify-rankings-v4-draft.mjs'
@@ -35,6 +40,8 @@ jobs:
         run: node backend/.rankings-build/server/rankings/__tests__/ranking-application.js
       - name: Verify frozen snapshot account binding and fail-closed gates
         run: node backend/.rankings-build/server/rankings/__tests__/frozen-rankings.js
+      - name: Verify World Boss and Arena independent finalized-history gates
+        run: node backend/.rankings-build/server/rankings/__tests__/event-history-gates.js
       - name: Verify service-only staging SQL and fixture contracts
         run: node tools/verify-rankings-v3-draft.mjs
       - name: Verify frozen snapshot draft SQL safety contracts

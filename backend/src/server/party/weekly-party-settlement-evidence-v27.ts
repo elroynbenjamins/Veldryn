@@ -101,6 +101,7 @@ export interface VerifiedPartyEventEvidenceV27{
   readonly trustedAccountId:string;
   readonly frozenCharacterId:string;
   readonly quoteHash:string;
+  readonly difficulty:WeeklyPartyDifficulty;
   readonly reward:PartyEventRewardBundle;
   readonly historicalSnapshotsStale:boolean;
   readonly onlineRevision:number;
@@ -223,7 +224,7 @@ export function verifyPrivatePartyEventEvidenceV27(
   return {
     offerId:p.offerId,trustedAccountId:p.accountId,
     frozenCharacterId:p.frozenCharacterId,
-    quoteHash:intent.quoteHash,reward:intent.quote,
+    quoteHash:intent.quoteHash,difficulty:p.difficulty,reward:intent.quote,
     historicalSnapshotsStale,onlineRevision:p.onlineRevision,
     evidenceReconciled:true,claimable:false,entitled:false,claimed:false,
     economyApplied:false,inboxDelivered:false,payoutEnabled:false,

@@ -4,6 +4,12 @@
 -- Depends on the hidden v11-v25 Party Event migrations (not deployed).
 begin;
 
+-- The existing v24 offer ID is globally unique, but Postgres requires an
+-- exact unique key to enforce the frozen reservation/week/owner tuple.
+create unique index party_event_offer_settlement_tuple_v29
+ on private.party_event_reward_offers_v24(
+  id,reservation_id,event_starts_at,account_id);
+
 -- Receipt and mailbox rows are future "paid" records, not provisional grants.
 -- Neither can be inserted by ordinary service_role credentials: only a future
 -- separately reviewed SECURITY DEFINER atomic payout writer could do so.
@@ -38,12 +44,15 @@ create table private.party_event_paid_claim_receipts_v29 (
  created_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
  unique(account_id,request_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
  foreign key(character_id,account_id)
    references public.characters(id,account_id) on delete cascade,
+ foreign key(offer_id,reservation_id,event_starts_at,account_id)
+   references private.party_event_reward_offers_v24(
+     id,reservation_id,event_starts_at,account_id) on delete cascade,
  check((profession_xp_delta>0)=(profession_skill_id is not null)),
  check(profession_skill_id is null or profession_skill_id in
    ('mining','woodcutting','fishing','smithing','cooking','herbalism',
@@ -65,7 +74,7 @@ create table private.party_event_paid_claim_inbox_v29 (
    check(delivery_state='delivered'),
  delivered_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -78,13 +87,13 @@ create table private.party_event_paid_claim_inbox_v29 (
 -- A receipt cannot survive without its own Inbox message and vice versa.
 alter table private.party_event_paid_claim_receipts_v29
  add constraint party_event_v29_receipt_inbox_pair
- foreign key(inbox_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,reward_hash)
+ foreign key(inbox_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 alter table private.party_event_paid_claim_inbox_v29
  add constraint party_event_v29_inbox_receipt_pair
- foreign key(receipt_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,reward_hash)
+ foreign key(receipt_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 
 alter table private.party_event_paid_claim_receipts_v29 enable row level security;
@@ -167,12 +176,15 @@ commit;
  created_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
  unique(account_id,request_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
  foreign key(character_id,account_id)
    references public.characters(id,account_id) on delete cascade,
+ foreign key(offer_id,reservation_id,event_starts_at,account_id)
+   references private.party_event_reward_offers_v24(
+     id,reservation_id,event_starts_at,account_id) on delete cascade,
  check((profession_xp_delta>0)=(profession_skill_id is not null)),
  check(profession_skill_id is null or profession_skill_id in
    ('mining','woodcutting','fishing','smithing','cooking','herbalism',
@@ -194,7 +206,7 @@ create table private.party_event_paid_claim_inbox_v29 (
    check(delivery_state='delivered'),
  delivered_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -207,13 +219,13 @@ create table private.party_event_paid_claim_inbox_v29 (
 -- A receipt cannot survive without its own Inbox message and vice versa.
 alter table private.party_event_paid_claim_receipts_v29
  add constraint party_event_v29_receipt_inbox_pair
- foreign key(inbox_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,reward_hash)
+ foreign key(inbox_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 alter table private.party_event_paid_claim_inbox_v29
  add constraint party_event_v29_inbox_receipt_pair
- foreign key(receipt_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,reward_hash)
+ foreign key(receipt_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 
 alter table private.party_event_paid_claim_receipts_v29 enable row level security;
@@ -282,7 +294,7 @@ commit;
    check(delivery_state='delivered'),
  delivered_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -295,13 +307,13 @@ commit;
 -- A receipt cannot survive without its own Inbox message and vice versa.
 alter table private.party_event_paid_claim_receipts_v29
  add constraint party_event_v29_receipt_inbox_pair
- foreign key(inbox_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,reward_hash)
+ foreign key(inbox_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 alter table private.party_event_paid_claim_inbox_v29
  add constraint party_event_v29_inbox_receipt_pair
- foreign key(receipt_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,reward_hash)
+ foreign key(receipt_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 
 alter table private.party_event_paid_claim_receipts_v29 enable row level security;
@@ -384,12 +396,15 @@ commit;
  created_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
  unique(account_id,request_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
  foreign key(character_id,account_id)
    references public.characters(id,account_id) on delete cascade,
+ foreign key(offer_id,reservation_id,event_starts_at,account_id)
+   references private.party_event_reward_offers_v24(
+     id,reservation_id,event_starts_at,account_id) on delete cascade,
  check((profession_xp_delta>0)=(profession_skill_id is not null)),
  check(profession_skill_id is null or profession_skill_id in
    ('mining','woodcutting','fishing','smithing','cooking','herbalism',
@@ -411,7 +426,7 @@ create table private.party_event_paid_claim_inbox_v29 (
    check(delivery_state='delivered'),
  delivered_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -424,13 +439,13 @@ create table private.party_event_paid_claim_inbox_v29 (
 -- A receipt cannot survive without its own Inbox message and vice versa.
 alter table private.party_event_paid_claim_receipts_v29
  add constraint party_event_v29_receipt_inbox_pair
- foreign key(inbox_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,reward_hash)
+ foreign key(inbox_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 alter table private.party_event_paid_claim_inbox_v29
  add constraint party_event_v29_inbox_receipt_pair
- foreign key(receipt_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,reward_hash)
+ foreign key(receipt_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 
 alter table private.party_event_paid_claim_receipts_v29 enable row level security;
@@ -499,7 +514,7 @@ commit;
    check(delivery_state='delivered'),
  delivered_at timestamptz not null default now(),
  unique(event_starts_at,account_id),
- unique(id,account_id,offer_id,reward_hash),
+ unique(id,account_id,offer_id,event_starts_at,reward_hash),
  foreign key(event_starts_at,account_id)
    references private.party_event_reward_offers_v24(event_starts_at,account_id)
    on delete cascade,
@@ -512,13 +527,13 @@ commit;
 -- A receipt cannot survive without its own Inbox message and vice versa.
 alter table private.party_event_paid_claim_receipts_v29
  add constraint party_event_v29_receipt_inbox_pair
- foreign key(inbox_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,reward_hash)
+ foreign key(inbox_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_inbox_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 alter table private.party_event_paid_claim_inbox_v29
  add constraint party_event_v29_inbox_receipt_pair
- foreign key(receipt_id,account_id,offer_id,reward_hash)
- references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,reward_hash)
+ foreign key(receipt_id,account_id,offer_id,event_starts_at,reward_hash)
+ references private.party_event_paid_claim_receipts_v29(id,account_id,offer_id,event_starts_at,reward_hash)
  deferrable initially deferred;
 
 alter table private.party_event_paid_claim_receipts_v29 enable row level security;

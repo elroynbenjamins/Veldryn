@@ -264,6 +264,39 @@ BEGIN
 END
 $reserve$;
 
+-- Read-only board projection: community progress is server-owned. After
+-- Saturday, the first reader freezes the snapshot; no last-second donation
+-- can sneak across the event-row transaction boundary.
+CREATE FUNCTION private.world_boss_v27_progress(p_event uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $progress$
+DECLARE
+ e private.world_boss_events_v17%ROWTYPE;
+ w private.world_boss_war_camps_v27%ROWTYPE;
+ frozen jsonb;
+BEGIN
+ SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB27_EVENT_MISSING'; END IF;
+ IF clock_timestamp()>=e.starts_at+interval '5 days'
+ THEN PERFORM private.world_boss_v27_freeze(p_event); END IF;
+ SELECT * INTO w FROM private.world_boss_war_camps_v27 WHERE event_id=p_event;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB27_WAR_CAMP_MISSING'; END IF;
+ RETURN jsonb_build_object(
+  'eventId',p_event::text,
+  'revision',w.revision,
+  'contributions',jsonb_build_object(
+   'fortifications',w.fortifications,
+   'fieldProvisions',w.field_provisions,
+   'siegecraft',w.siegecraft),
+  'goals',jsonb_build_object(
+   'fortifications',jsonb_build_object('tier1At',w.fort_tier1,'tier2At',w.fort_tier2),
+   'fieldProvisions',jsonb_build_object('tier1At',w.field_tier1,'tier2At',w.field_tier2),
+   'siegecraft',jsonb_build_object('tier1At',w.siege_tier1,'tier2At',w.siege_tier2)),
+  'frozen',w.frozen_snapshot IS NOT NULL,
+  'snapshot',w.frozen_snapshot);
+END
+$progress$;
+
 ALTER TABLE private.world_boss_war_camps_v27 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE private.world_boss_war_recipes_v27 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE private.world_boss_war_donations_v27 ENABLE ROW LEVEL SECURITY;
@@ -273,6 +306,7 @@ REVOKE ALL ON private.world_boss_war_camps_v27,
 REVOKE ALL ON FUNCTION private.world_boss_v27_snapshot(uuid,bigint,integer,integer,integer)
  FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION private.world_boss_v27_freeze(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.world_boss_v27_progress(uuid) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION private.world_boss_v27_donate(uuid,uuid,uuid,text,text)
  FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION private.world_boss_v27_reserve_frozen(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)
@@ -282,6 +316,7 @@ GRANT SELECT,INSERT,UPDATE ON private.world_boss_war_camps_v27,
 GRANT EXECUTE ON FUNCTION private.world_boss_v27_snapshot(uuid,bigint,integer,integer,integer)
  TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v27_freeze(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION private.world_boss_v27_progress(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v27_donate(uuid,uuid,uuid,text,text)
  TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v27_reserve_frozen(uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)

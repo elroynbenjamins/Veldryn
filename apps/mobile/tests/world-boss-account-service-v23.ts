@@ -43,6 +43,7 @@ type Reservation={
  record:WorldBossAttemptViewV19;
  frozen:FrozenAccountPacketV23;seed:string;digest:string;
  phase:'armored'|'exposed'|'enraged';engine:string;warCampDigest:string;
+ reservedAt:number;
  encounterDigest:string;generation:number;settlement?:WorldBossSettlementViewV19;
 };
 function fixture(){
@@ -97,7 +98,7 @@ function fixture(){
    history.set(input.requestId,{record:{
     characterId:input.characterId,order:input.order,status:'reserved',ordinal,
    },frozen,seed:input.seed,digest:input.digest,phase,
-   engine:input.engineVersion,warCampDigest:camp.digest,
+   engine:input.engineVersion,warCampDigest:camp.digest,reservedAt:now,
    encounterDigest:profile(phase).digest,generation:1});
    return {status:'reserved',ordinal,generation:1,repeated:false};
   },
@@ -106,6 +107,12 @@ function fixture(){
    assert.equal(workerId,'WB23_SERVER_WORKER');
    const item=history.get(requestId);
    if(!item)throw Error('WB23_NOT_FOUND');
+   // V18 voids a reservation after 15 minutes or sooner at the event
+   // closing grace boundary; durable retries cannot run forever.
+   const hardExpiry=Math.min(item.reservedAt+15*60*1000,
+    MONDAY+7*DAY+15*60*1000);
+   if(item.record.status==='reserved'&&now>=hardExpiry)
+    item.record.status='voided';
    const lease:WorldBossLeaseV19={
     status:item.record.status,ordinal:item.record.ordinal,
     generation:item.generation,repeated:false,
@@ -224,6 +231,9 @@ async function main(){
  },f.deps);
  assert.equal(repeatedCommit.repeated,true);
  assert.equal(f.metrics().settleCalls,1);
+ // Create two reservations in the final weekend minutes, not on Saturday:
+ // the actual V18 lease lasts no more than fifteen minutes.
+ f.setNow(MONDAY+7*DAY-6*60*1000);
  const secondId='WB23_ATTEMPT_TWO';
  await reserveAuthenticatedWorldBossAccountV23({
   token:'auth-token-verified',selection:selection(secondId),
@@ -242,9 +252,17 @@ async function main(){
   phase:f.history.get(secondId)!.phase,gearBand:2,
   attack:1000,defense:700,guardMax:5000,
  });}
- // Even if a reservation was created Sunday, new attempts close Monday;
- // the old reservation may still be recovered by the worker.
- f.setNow(MONDAY+7*DAY);
+ // The third attempt still fits before the weekend closes.
+ f.setNow(MONDAY+7*DAY-5*60*1000);
+ await reserveAuthenticatedWorldBossAccountV23({
+  token:'auth-token-verified',selection:selection('WB23_ATTEMPT_THREE'),
+ },f.deps);
+ await fail(()=>reserveAuthenticatedWorldBossAccountV23({
+  token:'auth-token-verified',selection:selection('WB23_ATTEMPT_FOUR'),
+ },f.deps),'ACCOUNT_ATTEMPT_LIMIT');
+ // At Monday 00:01 no NEW reservations, but Sunday 23:54's committed
+ // reservation can finish within V18's limited grace period.
+ f.setNow(MONDAY+7*DAY+60*1000);
  await fail(()=>reserveAuthenticatedWorldBossAccountV23({
   token:'auth-token-verified',selection:selection('WB23_WEEKEND_CLOSED'),
  },f.deps),'weekend_closed');
@@ -252,13 +270,6 @@ async function main(){
   eventId:EVENT,accountId:ACCOUNT,requestId:secondId,
  },f.deps);
  assert.equal(recovered.status,'committed');
- f.setNow(SATURDAY+20*HOUR);
- await reserveAuthenticatedWorldBossAccountV23({
-  token:'auth-token-verified',selection:selection('WB23_ATTEMPT_THREE'),
- },f.deps);
- await fail(()=>reserveAuthenticatedWorldBossAccountV23({
-  token:'auth-token-verified',selection:selection('WB23_ATTEMPT_FOUR'),
- },f.deps),'ACCOUNT_ATTEMPT_LIMIT');
  // Refuse forged mutable roster identity and retain reserved attempt.
  f.tamper('WB23_ATTEMPT_THREE',x=>{
   x.frozen.characters[0].characterId='20000000-0000-4000-8000-000000000099';
@@ -267,6 +278,13 @@ async function main(){
   eventId:EVENT,accountId:ACCOUNT,requestId:'WB23_ATTEMPT_THREE',
  },f.deps),'roster_identity_mismatch');
  assert.equal(f.history.get('WB23_ATTEMPT_THREE')?.record.status,'reserved');
+ // Delayed beyond the 15-minute hard lease: no replay and no debit.
+ f.setNow(MONDAY+7*DAY+20*60*1000);
+ const expired=await settleTrustedWorldBossAccountV23({
+  eventId:EVENT,accountId:ACCOUNT,requestId:'WB23_ATTEMPT_THREE',
+ },f.deps);
+ assert.equal(expired.status,'voided');
+ assert.equal(f.metrics().settleCalls,2);
  console.log('WORLD_BOSS_V23_HIDDEN_ACCOUNT_SETTLEMENT='+JSON.stringify({
   charactersFrozen:2,exactlyOnce:true,replayFirst:true,
   closesMonday:true,graceRecovery:true,attemptsAccountWide:3,

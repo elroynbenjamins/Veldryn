@@ -68,8 +68,8 @@ approx(finished.players[0].stats.attackPower,finisher.stats.attackPower*1.03);
 assert.equal(applyDungeonCompanionCounters([finisher],[neutral]).matchups.length,0,'Finishing counter needs an actual sustained encounter');
 
 const wisp=equipped('Ironwarden','wisp','UNIT_005');
-assert.equal(assist(wisp).effects[0].kind,'heal');
-assert.equal(applyDungeonCompanionCounters([wisp],[neutral]).players[0],wisp,'Wisp must retain heal when no cast exists');
+assert.equal(assist(wisp).effects[0].kind,'interrupt','Wisp always reserves its interrupt for a real cast');
+assert.equal(applyDungeonCompanionCounters([wisp],[neutral]).players[0],wisp,'Wisp must retain its native interrupt when no cast is available');
 const spellbreak=applyDungeonCompanionCounters([wisp],[caster]);
 const castBreaker=assist(spellbreak.players[0]);
 assert.equal(spellbreak.matchups[0].id,'spellbreak');
@@ -101,4 +101,19 @@ const replay=resolveExpeditionCombat({
 assert.equal(matchRoom.resultJson.eventDigest,replay.resultJson.eventDigest,'Room counters stay deterministic under replay');
 assert.equal(applyDungeonCompanionCounters([owner('Ironwarden','bare')],[armor]).matchups.length,0,'No companion means no counter');
 assert.equal(applyDungeonCompanionCounters([breaker],[armor,swarm]).matchups.length,1,'A companion can get only one encounter counter');
+// Original companions must have real, server-matched tactical reasons to be picked.
+for(const [id,trait,expected] of [
+ ['UNIT_001',sustain,'finisher'],
+ ['UNIT_004',armor,'armor_break'],
+ ['UNIT_006',pressure,'bulwark'],
+ ['UNIT_008',attrition,'recovery'],
+ ['UNIT_009',swarm,'swarm_hunt'],
+ ['UNIT_011',armor,'armor_break'],
+] as const){
+ const player=equipped('Wayfinder',id,id),countered=applyDungeonCompanionCounters([player],[trait]);
+ assert.equal(countered.matchups[0]?.id,expected,`${id}: intended tactical counter missing`);
+}
+const dawn=equipped('Wayfinder','dawn','UNIT_008');
+const dawnCounter=applyDungeonCompanionCounters([dawn],[attrition]);
+approx(assist(dawnCounter.players[0]).effects[0].flat!,assist(dawn).effects[0].flat!*1.06);
 console.log('Dungeon companion matchup counterplay OK');

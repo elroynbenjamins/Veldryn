@@ -55,7 +55,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_starter:['id'],companion_recruit:['id'],companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_formation:['ids'],companion_trial_fight:['ids','requestId'],companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],boss_start:[],boss_heal:[],boss_finish:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],boss_start:[],boss_heal:[],boss_finish:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],boss_potion_preference:['mode','thresholdPct'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
@@ -361,6 +361,15 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'use_potion':state=game.usePotion(state,text(a,'id'));break;
   case 'select_healing_potion':state=game.selectHealingPotion(state,text(a,'id'));break;
+  case 'boss_potion_preference':{
+   if(!state.character)throw new Error('Select a character first.');
+   const mode=oneOf(a.mode,['manual','auto']);
+   const thresholdPct=integer(a,'thresholdPct',20,80);
+   if(!([20,40,60,80] as number[]).includes(thresholdPct))throw new Error('Invalid boss potion threshold.');
+   state={...state,character:{...state.character,bossPotionMode:mode,bossPotionThresholdPct:thresholdPct as 20|40|60|80}};
+   message=mode==='auto'?`Boss potions will activate at ${thresholdPct}% HP.`:'Manual boss healing enabled.';
+   break;
+  }
   case 'discard_preparation':state=game.discardPreparation(state);break;
   case 'gear_link_legacy':state=linkLegacyCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.from,['inventory','bank']),integer(a,'stackIndex',0,1000));message='Legacy Forge copy linked to its existing rarity and quality record';break;
   case 'gear_autosell':{if(typeof a.enabled!=='boolean')throw new Error('invalid_autosell_preference');state={...state,account:{...state.account,craftedGearAutoSellMode:a.enabled?'keep_best_seven':'off'}};message=a.enabled?'Keep Best 7 enabled — only verified, unprotected copies can be sold':'Automatic equipment selling disabled';break;}

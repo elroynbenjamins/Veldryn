@@ -23,6 +23,7 @@ export const WORLD_BOSS_V25_AUTHORED_ENCOUNTERS_LIVE=false as const;
 export const WORLD_BOSS_V25_ENGINE_VERSION='world-boss-account-rounds-v25-prototype' as const;
 const ID=/^[A-Za-z0-9][A-Za-z0-9:_-]{0,159}$/;
 const DIGEST=/^[a-f0-9]{64}$/;
+const SERVER_SEED=/^[A-Za-z0-9:_-]{24,512}$/;
 const finite=(x:number)=>Number.isFinite(x)&&x>=0;
 const hash=(obj:unknown)=>bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(obj))));
 const near=(a:number,b:number)=>Math.abs(a-b)<=.05;
@@ -59,7 +60,7 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
  warCamp?:WorldBossWarCampSnapshotV11;
 }):WorldBossAccountEncounterOutputV25{
  if(!input||!ID.test(input.eventId)||!ID.test(input.requestId)||
-  !ID.test(input.serverSeed)||input.serverSeed.length<24||
+  !SERVER_SEED.test(input.serverSeed)||
   !['steady_assault','hold_line','break_armor'].includes(input.order)||
   !['hollowroot','sunscar','frostmarch'].includes(input.boss)||
   !['armored','exposed','enraged'].includes(input.phase))

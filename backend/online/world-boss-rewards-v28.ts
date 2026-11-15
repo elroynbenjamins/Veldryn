@@ -112,6 +112,54 @@ function viewValid(r:WorldBossRewardViewV28,accountId:string,eventId:string){
   throw Error('world_boss_v28_untrusted_reward_view');
  return r;
 }
+/**
+ * Read-only account overview, normalized Impact payout deliberately absent.
+ * Each raw stat is credited to the engine-verified character who earned it.
+ * Never use these totals as approved role scores or a direct wallet input.
+ */
+export function summarizeWorldBossRoleEvidenceV28(view:WorldBossRewardViewV28){
+ if(!view||!Array.isArray(view.roleContributions))
+  throw Error('world_boss_v28_invalid_role_evidence');
+ const roles={
+  tank:{damage:0,guard:0,healing:0,shields:0,protection:0,
+   cleanses:0,interrupts:0,participants:0},
+  damage:{damage:0,guard:0,healing:0,shields:0,protection:0,
+   cleanses:0,interrupts:0,participants:0},
+  support:{damage:0,guard:0,healing:0,shields:0,protection:0,
+   cleanses:0,interrupts:0,participants:0},
+ };
+ const seenOrdinals=new Set<number>();
+ for(const result of view.roleContributions){
+  if(!Number.isInteger(result.attempt)||result.attempt<1||
+   result.attempt>3||seenOrdinals.has(result.attempt)||
+   !Array.isArray(result.characterLedger)||
+   result.characterLedger.length<1||result.characterLedger.length>5)
+   throw Error('world_boss_v28_invalid_impact_source');
+  seenOrdinals.add(result.attempt);
+  const ids=new Set<string>();
+  for(const p of result.characterLedger){
+   if(!p||!Object.hasOwn(roles,p.role)||typeof p.characterId!=='string'||
+    ids.has(p.characterId)||
+    !safeNumber(p.bossHpDamage)||!safeNumber(p.localGuardDamage)||
+    !safeNumber(p.effectiveHealing)||!safeNumber(p.shieldConsumed)||
+    !safeNumber(p.tankProtection)||!safeNumber(p.cleansePrevented)||
+    !Number.isSafeInteger(p.interrupts)||p.interrupts<0)
+    throw Error('world_boss_v28_unverified_role_ledger');
+   ids.add(p.characterId);
+   const role=roles[p.role as keyof typeof roles];
+   role.damage+=p.bossHpDamage;
+   role.guard+=p.localGuardDamage;
+   role.healing+=p.effectiveHealing;
+   role.shields+=p.shieldConsumed;
+   role.protection+=p.tankProtection;
+   role.cleanses+=p.cleansePrevented;
+   role.interrupts+=p.interrupts;
+   role.participants++;
+  }
+ }
+ return {status:'impact_pending_approval' as const,roles,
+  payoutsAuthorized:false as const};
+}
 /** This is a private job, NOT a user-accessible command. It proves a
  * V18-committed attempt against the exact content-addressed V26 replay.
  * DB separately rehashes the same bytes and verifies committed fields.
@@ -147,8 +195,8 @@ export async function recordTrustedWorldBossReplayV28(job:{
   replay?.schema!=='world-boss-v25-authored-account-rounds'||
   replay.accountId!==job.accountId||replay.eventId!==job.eventId||
   replay.requestId!==job.requestId||
-  !Number.isInteger(replay.roundsCompleted)||replay.roundsCompleted!<1||
-  replay.roundsCompleted!>14||
+  !Number.isInteger(replay.roundsCompleted)||
+  (replay.roundsCompleted??0)<1||(replay.roundsCompleted??0)>14||
   typeof replay.survived!=='boolean'||
   !safeNumber(replay.proposedWorldHpDamage)||
   !safeNumber(replay.localGuardDamage)||

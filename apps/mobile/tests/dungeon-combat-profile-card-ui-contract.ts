@@ -29,7 +29,11 @@ ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generi
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
 ok(enemyArt.includes("'bell-warden':'Oathglass Sentinel'")&&enemyArt.includes("'bell warden':'Oathglass Sentinel'"),'Bell-Warden must resolve an existing humanoid portrait rather than the placeholder crown');
 
-ok(card.includes('enemyStatusRow')&&card.includes('enemyStatusEffects')&&card.includes('castInlineName')&&!card.includes('enemyInfoCasting'),'Boss casts must share a preallocated status row without changing boss-card height');
+ok(card.includes('enemyStatusRow:{height:22')&&card.includes('enemyStatusEffects')&&card.includes('castInlineName')&&!card.includes('enemyInfoCasting'),'Boss casts must share a fixed-height status row without changing boss-card height');
+ok(card.includes('BossCastInline')&&card.includes('castInlineTrack')&&card.includes('castInlineFill')&&card.includes('Animated.timing(progress'),'Boss casts retain compact animated progress feedback inside their inline chip');
+ok(card.includes('bossCast?1:Math.min(statusLimit,2)')&&card.includes('phaseInline')&&!card.includes('bossPhaseRow:{'),'Cast and phase summaries must share one reserved row, with overflow-safe effect pills');
+ok(stage.includes('displayDurationMs:playbackCastDisplayMs(currentBossCast,1)')&&stage.includes('animationKey:`${replayKey}:${cueIndex}`'),'Cast animation must follow fixed replay playback time and reset for every cast');
+ok(stage.includes('reduceMotion={reduceMotion} onPress={()=>toggleInspect(key)}')&&stage.includes("reduceMotion={reduceMotion} onPress={()=>toggleInspect('enemy:fallback')}"),'Reduced-motion preference must reach real and fallback boss cards');
 // Keep enemy portraits unobstructed in normal and boss rooms. Their names remain
 // available through tap-to-inspect and the existing accessibility label.
 ok(!card.includes('s.enemyPlate')&&!card.includes('s.enemyBossPlate'),'Enemy portraits must not be covered by an encounter/name plate');

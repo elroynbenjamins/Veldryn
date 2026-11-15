@@ -23,12 +23,14 @@ ok(Math.abs((knifeAfter.accuracy-knifeBefore.accuracy)-.03)<1e-9,'Precision gran
 ok(Math.abs((knifeAfter.evasion-knifeBefore.evasion)-.06)<1e-9,'Precision grants +6 percentage points of evasion at level 100');
 ok(knifeAfter.attack===knifeBefore.attack&&knifeAfter.defense===knifeBefore.defense,'Precision does not grant misleading Attack/Defense bonuses');
 
- // Character training must not mutate class identity or remove previous skills.
- const trained=structuredClone(fresh(cls.id));
+// Class training must not mutate base equipment or create negative stats.
+for(const cls of CLASSES){
+ const untrained=fresh(cls.id),before=effectiveStats(untrained),trained=structuredClone(untrained);
  trained.character!.classSkills=classSkillsFor(cls.id).map(d=>({skillId:d.id,xp:MAX_CLASS_SKILL_XP,level:100}));
  const buffed=effectiveStats(trained);
  ok(buffed.hp>=before.hp&&buffed.attack>=before.attack&&buffed.defense>=before.defense,'specialist class stats never penalize base equipment: '+cls.id);
  ok([buffed.accuracy,buffed.evasion,buffed.haste,buffed.ward,buffed.potency,buffed.penetration,buffed.classHealing].every(Number.isFinite),'specialist secondary ratings remain finite: '+cls.id);
+}
 // Both support classes have real, deterministic restorative improvements.
 const incomingHit=[{fraction:.5,actor:'enemy' as const,damage:100,healing:0,critical:false,index:0}];
 for(const [id,skillHealing] of [['DAWNKEEPER',1.10],['STONECALLER',1.08]] as const){

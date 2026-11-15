@@ -85,7 +85,7 @@ function mitigation(defense:number){
   return clamp(defense/Math.max(1,defense+110),0,.72);
 }
 
-export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapshot,seed:string,mode:'story'|'rematch'='story',manualPotionAtMs?:readonly number[]):FallenKnightBattleResult{
+export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapshot,seed:string,mode:'story'|'rematch'='story',manualPotionAtMs?:readonly number[],autoPotionCooldownMs=0):FallenKnightBattleResult{
   const monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT');
   if(!monster)throw new Error('fallen_knight_missing');
   const bossSecondary=regionalEnemySecondaryStats(monster);
@@ -99,7 +99,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
      manualTimes.some((at,i)=>!Number.isSafeInteger(at)||at<0||at>=FALLEN_KNIGHT_MAX_DURATION_MS||
        (i>0&&at-manualTimes[i-1]<FALLEN_KNIGHT_MANUAL_POTION_COOLDOWN_MS)))
     throw new Error('invalid_boss_potion_schedule');
-  let nextManual=0;
+  let nextManual=0,lastAutoPotionAtMs=-Infinity;
   let phase=1,phaseWardUntilMs=0,rngIndex=0,bossAttackCount=0;
   // Boss techniques use the same authored identities as ordinary hunts and
   // dungeons, but cooldowns are anchored to this encounter's own clock.
@@ -128,13 +128,13 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   const maybePotion=(atMs:number)=>{
     if(manualMode)return;
     const threshold=clamp(player.autoEatThresholdPct,10,90)/100;
-    if(player.potionHeal<=0)return;
+    if(player.potionHeal<=0||atMs-lastAutoPotionAtMs<autoPotionCooldownMs)return;
     // No more than one potion after a boss hit, with a strict fight-wide cap.
     if(playerHp>0&&playerHp/playerMaxHp<=threshold&&potionLeft>0){
       const healed=Math.min(playerMaxHp-playerHp,Math.max(1,Math.round(player.potionHeal)));
       if(healed>0){
-        playerHp+=healed;potionLeft--;potionConsumed++;
-        push({atMs:atMs+40,type:'heal',label:'Healing potion',amount:healed});
+        playerHp+=healed;potionLeft--;potionConsumed++;lastAutoPotionAtMs=atMs;
+        push({atMs:atMs+40,type:'heal',label:'Automatic healing potion',amount:healed});
       }
     }
   };

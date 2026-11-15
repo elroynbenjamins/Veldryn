@@ -203,7 +203,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       <View style={s.summary}>
        <View style={s.grow}>
         <Text style={s.title}>{gt('DUNGEON TONIC')}</Text>
-        {dungeonTonic.preparedName?<Text style={s.copy}>{dungeonTonic.preparedName} · {gt('Active')}</Text>:<Text style={s.copy}>{gt('Choose a tonic before the first room.')}</Text>}
+        {dungeonTonic.preparedName?<Text style={s.copy}>{dungeonTonic.preparedName} · {gt('Active for full run')}</Text>:<Text style={s.copy}>{gt('Choose one tonic before the first room. It is consumed even if your run fails.')}</Text>}
        </View>
        <StateChip label={gt('One per run')} tone={dungeonTonic.preparedName?'success':'neutral'}/>
       </View>

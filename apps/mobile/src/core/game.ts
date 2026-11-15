@@ -486,7 +486,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const progressionSpeedPenalty=tierGap===0?1:Math.max(.50,1-tierGap*.24);
   const progressionDamagePenalty=tierGap===0?1:1+tierGap*.20;
   const gearAttritionMultiplier=1+tierGap*MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
-  // Damage tonics affect actual resolved hunt output, rather than merely changing the displayed Attack stat.
+  // Legacy preparations are inert outside dungeons; dungeon boosts use a server-owned snapshot.
   const outgoingPreparation=c.preparation?preparationEffects(c.preparation).outgoing:1;
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
   // Early regions resolve actual landed attacks rather than scaling an
@@ -1336,10 +1336,10 @@ export function selectHealingPotion(state:GameState,itemId:string):GameState{
 export function usePotion(state:GameState,itemId:string):GameState{
  if(!state.character)throw new Error('Create a character first.');
  const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');
- if(potion.effect.kind==='healing')throw new Error('Healing potions are reserved for boss encounters. Select one under the HP bar; ordinary hunts use food.');
- if(state.activity?.kind==='combat')throw new Error('Tonics cannot be used during a hunt.');
- const stacks=consume(state.inventory.stacks,itemId,1);
- return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};
+ if(potion.effect.kind==='healing')throw new Error('Select a healing potion under the HP bar for boss fights and dungeons.');
+ // Only the authoritative co-op dungeon preparation transaction may consume tonics.
+ // Never spend one locally or allow it to buff hunts/story bosses.
+ throw new Error('Tonics are dungeon-only. Select one before the first dungeon room. It lasts the full run, even if the run fails.');
 }
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;if(state.character.equipmentInstanceIds?.[slot])throw new Error('Choose the exact equipped copy before unequipping uniquely identified gear');const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}

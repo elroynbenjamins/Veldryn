@@ -1,6 +1,6 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
-import {useRef,useState} from 'react';
+import {type ComponentRef,useRef,useState} from 'react';
 import {ScrollView,StyleSheet,Text} from 'react-native';
 import {ChatComposer} from '../ChatComposer';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
@@ -10,7 +10,7 @@ import type {CoopChatMessage} from '../../online/coop-client';
 export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[];busy?:boolean;onSend:(text:string)=>Promise<void>} ){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
- const messagesScroll=useRef<ScrollView>(null);
+ const messagesScroll=useRef<ComponentRef<typeof ScrollView>>(null);
  const [text,setText]=useState('');
  const [sending,setSending]=useState(false);
  const [error,setError]=useState('');

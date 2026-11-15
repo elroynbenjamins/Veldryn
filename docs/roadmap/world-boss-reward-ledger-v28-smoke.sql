@@ -62,7 +62,7 @@ DECLARE
  ord integer;
  error_code text;
  proof jsonb;
- balance bigint;
+ wallet_value bigint;
  sum_amount bigint;
  keys integer;
 BEGIN
@@ -187,8 +187,8 @@ BEGIN
  WHERE event_id=e AND account_id=acct;
  IF sum_amount<>65 OR keys<>8
  THEN RAISE EXCEPTION 'WB28_BAD_REWARD_LEDGER % %',sum_amount,keys; END IF;
- SELECT balance INTO balance FROM private.world_boss_wallet_v28 WHERE account_id=acct;
- IF balance<>65 THEN RAISE EXCEPTION 'WB28_WALLET_TOTAL_WRONG'; END IF;
+ SELECT w.balance INTO wallet_value FROM private.world_boss_wallet_v28 w WHERE w.account_id=acct;
+ IF wallet_value<>65 THEN RAISE EXCEPTION 'WB28_WALLET_TOTAL_WRONG'; END IF;
  SELECT private.world_boss_v28_view(acct,e) INTO view_data;
  IF (view_data->>'claimedThisEvent')::integer<>65 OR
     jsonb_array_length(view_data->'roleContributions')<>3 OR

@@ -172,7 +172,7 @@ BEGIN
   WITH scores AS (
     SELECT m.account_id,m.value,m.secondary_value
     FROM private.rankings_verified_metrics_v3(p_board) m
-  ), eligible AS (
+  ), public_scores AS (
     SELECT m.*,coalesce(nullif(btrim(p.display_name),''),'Adventurer') AS display_name,
       g.tag AS guild_tag,g.tag_color_id AS guild_tag_color_id
     FROM scores m
@@ -180,18 +180,24 @@ BEGIN
     LEFT JOIN public.guild_members gm ON gm.account_id=m.account_id
     LEFT JOIN public.guilds g ON g.id=gm.guild_id
     WHERE p.profile_visibility='public'
-      AND NOT EXISTS(
-        SELECT 1 FROM public.player_blocks b
-        WHERE (b.blocker_id=p_requester AND b.blocked_id=m.account_id)
-          OR (b.blocker_id=m.account_id AND b.blocked_id=p_requester)
-      )
   ), ranked AS (
+    -- A shared public rank must not change depending on who the viewer blocks.
+    -- Preserve rank() ties; stable account IDs are sorting keys only, never sent to clients.
     SELECT e.*,rank() OVER (
       ORDER BY e.value DESC,e.secondary_value DESC
     ) AS rank_position
-    FROM eligible e
-  ), page AS (
+    FROM public_scores e
+  ), viewable AS (
+    -- Reapply reciprocal blocks after assigning global ranks, before pagination.
+    -- Gaps in rank positions are intentional; nobody is silently promoted.
     SELECT r.* FROM ranked r
+    WHERE NOT EXISTS(
+      SELECT 1 FROM public.player_blocks b
+      WHERE (b.blocker_id=p_requester AND b.blocked_id=r.account_id)
+        OR (b.blocker_id=r.account_id AND b.blocked_id=p_requester)
+    )
+  ), page AS (
+    SELECT r.* FROM viewable r
     ORDER BY r.value DESC,r.secondary_value DESC,r.display_name,r.account_id
     LIMIT p_limit OFFSET p_offset
   )

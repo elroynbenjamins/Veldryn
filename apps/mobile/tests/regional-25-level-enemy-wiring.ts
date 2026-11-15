@@ -30,6 +30,13 @@ const models=[
 const assets=fs.readFileSync('src/theme/monster-assets.ts','utf8');
 const frame=fs.readFileSync('src/components/MonsterPortraitFrame.tsx','utf8');
 check(fs.existsSync('assets/monsters/regional-monsters-v2.png'),'New 3x3 portrait atlas absent');
+// PNG icon atlas: exactly three 48px cells across and down, with real alpha.
+const png=Buffer.from(fs.readFileSync('assets/monsters/regional-monsters-v2.png','base64'),'base64');
+check(png.subarray(1,4).toString('ascii')==='PNG','Portrait sheet is not a PNG');
+check(png.readUInt32BE(16)===144&&png.readUInt32BE(20)===144,'New icon atlas must remain 3x3 at 48px/cell');
+const pngColorType=png[25];
+check(pngColorType===6||pngColorType===4||(pngColorType===3&&png.includes(Buffer.from('tRNS'))),'Enemy portraits need real transparency');
+check(png.byteLength<32768,'New regional atlas exceeds the mobile 32KB asset budget');
 check(assets.includes('newRegionalMonsterPortraitAtlas'),'New atlas must be statically bundled');
 check(frame.includes('newRegionalMonsterPortraitCell(monster.id)'),'Portrait must select the new atlas cells');
 for(const [id,region,area,level] of models){

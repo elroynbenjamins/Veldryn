@@ -10,7 +10,7 @@ import {PGlite} from '@electric-sql/pglite';
 
 const SQL=fileURLToPath(new URL('../supabase/migrations/20261115173500_party_event_paid_receipt_inbox_v29.sql',import.meta.url));
 const migration=readFileSync(SQL,'utf8');
-const db=new PGlite();
+const db=await PGlite.create();
 
 const account='11111111-1111-4111-8111-111111111111';
 const outsider='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -27,7 +27,7 @@ const reward={kind:'participation',gold:420,version:'party-event-rewards-v2'};
 const json=JSON.stringify(reward);
 
 function assert(ok,label){if(!ok)throw new Error('party_v29_sql_integration: '+label);}
-async function q(sql,params=[]){return db.query(sql,params);}
+async function q(sql,params=[],handle=db){return handle.query(sql,params);}
 async function expectFailure(fn,label){
  await db.exec('begin');
  let error=null;

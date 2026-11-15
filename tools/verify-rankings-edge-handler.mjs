@@ -88,6 +88,13 @@ const test=async()=>{
  '&eventKey=campaign&metric=campaign_score&bracket=tier1'))).status,404);
 
  assert.equal((await handler(new Request('https://example.test/gameplay?view=rankings&action=snapshot-page&cursor='+cursor))).status,401);
+ const failedAuth=rankingsHandler({...services,
+   authenticate:async()=>{throw new Error('provider_api_key_internal_failure');}
+ },both);
+ const failedAuthResponse=await failedAuth(get('snapshot-page','&cursor='+cursor));
+ assert.equal(failedAuthResponse.status,503,'authentication outages must be handled');
+ assert.equal((await failedAuthResponse.json()).error,'rankings_request_unavailable',
+   'never expose upstream authentication failure details');
  const malformed=rankingsHandler({...services,rpc:async()=>({
    board:'mining',entries:[{rank:0,entityType:'account',displayName:'Tampered',value:5}]
  })},both);

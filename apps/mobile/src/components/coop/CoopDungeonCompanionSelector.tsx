@@ -42,7 +42,7 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
    const onExpedition=Boolean(state.account.companionAssignments?.some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)));
    const forbidden=Boolean(role&&!canEquipCompanion(role,def.role));
    const matchup=dungeonCompanionOpportunity(id,possibleCounterIds);
-   return {id,def,progress,busy:inTrial||onExpedition,forbidden,matchup,selected:id===equipped};
+   return {id,def,progress,inTrial,busy:onExpedition,forbidden,matchup,selected:id===equipped};
   }).filter((item):item is NonNullable<typeof item>=>Boolean(item))
    // Keep current selection first, then possible counters, legal choices, and reserved choices.
    .sort((a,b)=>Number(b.selected)-Number(a.selected)
@@ -79,7 +79,7 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
     <ScrollView style={s.scroll} contentContainerStyle={s.items} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      {entries.map(item=>{
       const art=companionArtSource(item.id),disabled=pending||busy||item.busy||item.forbidden||item.selected;
-      const status=item.busy?st('In Trial or Expedition'):item.forbidden?st('Same role as your class'):item.selected?st('Equipped'):item.matchup?st('Possible counter'):st('Available');
+      const status=item.busy?st('On Expedition'):item.forbidden?st('Same role as your class'):item.selected?st('Equipped'):item.inTrial?st('In Trial · Available'):item.matchup?st('Possible counter'):st('Available');
       const roleLabel=st(item.def.role==='damage'?'Damage':item.def.role==='tank'?'Tank':'Support');
       const assist=st(item.def.role==='damage'?'Damage assist':item.def.role==='tank'?'Shield assist':'Healing assist');
       return <Pressable key={item.id} accessibilityRole="button"
@@ -107,7 +107,7 @@ export function CoopDungeonCompanionSelector({state,visible,busy=false,possibleC
        {pending&&pendingId===null?<ActivityIndicator size="small" color={s.status.color}/>:!equipped?<Text style={s.status}>✓</Text>:null}
      </Pressable>
     </ScrollView>
-    <Text style={s.foot} accessibilityLiveRegion="polite">{pending||busy?st('Saving companion…'):st('Only companions outside your class role can assist.')}</Text>
+    <Text style={s.foot} accessibilityLiveRegion="polite">{pending||busy?st('Saving companion…'):st('Trial companions can assist. Expedition companions remain unavailable.')}</Text>
    </View>
   </View>
  </Modal>;

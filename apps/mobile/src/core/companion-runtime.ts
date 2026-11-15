@@ -289,8 +289,12 @@ export function claimCompanionTraining(input:GameState,now:number):GameState{
 }
 function stringArg(a:Record<string,unknown>,key:string){const v=a[key];if(typeof v!=='string'||!v||v.length>120)throw new Error(`Invalid ${key}.`);return v;}
 function idsArg(a:Record<string,unknown>){const v=a.ids;if(!Array.isArray(v)||v.length>3||v.some(x=>typeof x!=='string'||x.length>80)||new Set(v).size!==v.length)throw new Error('Choose unique companions.');return v as string[];}
-export function assertCompanionIdle(state:GameState,id:string){
-  if((state.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id))||state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id))throw new Error('Companion is busy. Finish or abandon its activity first.');
+/** Dungeon assists may overlap Companion Trials, but never Sanctuary Expeditions.
+ * All existing callers without this explicit exception retain the original reservation rule. */
+export function assertCompanionIdle(state:GameState,id:string,options:{allowActiveTrial?:boolean}={}){
+  const onExpedition=(state.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id));
+  const inTrial=state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)===true;
+  if(onExpedition||(inTrial&&!options.allowActiveTrial))throw new Error('Companion is busy. Finish or abandon its activity first.');
 }
 /** Synchronous domain entry point called only inside the existing trusted game transaction online. */
 export function executeCompanionActivity(input:GameState,type:string,a:Record<string,unknown>,now:number):GameState {

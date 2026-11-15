@@ -60,7 +60,7 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  const companionId=character.equippedCombatCompanionId;
  const companionPolicy=validateCompanionLoadout({classId:character.classId,companionId,ownedCompanionIds:state.account.unlockedCombatCompanionIds??[],combatMode:'dungeon'});
  if(!companionPolicy.ok)throw new Error(companionPolicy.reason);
- if(companionId)assertCompanionIdle(state,companionId);
+ if(companionId)assertCompanionIdle(state,companionId,{allowActiveTrial:true});
  const combatCompanion=companionId?companionOwned(state)[companionId]:undefined;
  if(companionId&&!combatCompanion)throw new Error('missing_companion_progress');
  return {accountId,characterId:character.id,classId:character.classId,loadoutId:'current',revision:version,characterLevel:character.level,combatPower:combatPowerRating(state).total,combatScalingLevel,

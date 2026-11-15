@@ -11,6 +11,7 @@ import {combatantFromVerifiedSnapshot} from '../../src/server/combat/snapshot-ad
 import {simulateCombat} from '../../src/server/combat/engine';
 import type {CraftedGearInstance} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../coop-loadout';
+import {assertCompanionIdle} from '../../../apps/mobile/src/core/companion-runtime';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 for(let oldLevel=1;oldLevel<=100;oldLevel++)assert.equal(rebaseLegacyCombatLevel(oldLevel),rebasedCombatLevelFromLegacyLevel(oldLevel),'backend co-op gates must match the mobile Combat XP curve');
 for(const definition of CLASSES){
@@ -35,6 +36,19 @@ for(const definition of CLASSES){
  state.character!.equipment.weapon=noviceItemId(definition.id,'boots');
  assert.equal(deriveOnlineCoopLoadout('owner',state,3).legalEquipment,false,'wrong-slot gear cannot publish an eligible loadout');
 }
+
+// An active Companion Trial reserves its team for companion-only activities,
+// but does not prevent a player from bringing that owned companion into a dungeon.
+const trialDungeonState=createCharacter(newGame(0),'IRONWARDEN','Trial Dungeon');
+trialDungeonState.account.unlockedCombatCompanionIds=['UNIT_001'];
+trialDungeonState.account.combatCompanionProgress={UNIT_001:{level:1,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false}};
+trialDungeonState.character!.equippedCombatCompanionId='UNIT_001';
+trialDungeonState.account.companionTrialProgress={season:{activeRun:{teamCompanionIds:['UNIT_001']}}} as any;
+assert.throws(()=>assertCompanionIdle(trialDungeonState,'UNIT_001'),/Companion is busy/,'Non-dungeon systems still reserve companions in active Trials');
+const trialDungeonLoadout=deriveOnlineCoopLoadout('owner',trialDungeonState,12);
+assert.equal(trialDungeonLoadout.stats.combatCompanion?.companionId,'UNIT_001','Dungeon server includes a companion actively participating in Trials');
+trialDungeonState.account.companionAssignments=[{companionIds:['UNIT_001'],status:'active'}] as any;
+assert.throws(()=>deriveOnlineCoopLoadout('owner',trialDungeonState,13),/Companion is busy/,'Sanctuary Expeditions remain incompatible with dungeon assists');
 
 /** Online Loadout -> frozen snapshot -> actual combat engine, using a real
  * forged gear instance instead of an invented client-side Effect Gem payload.

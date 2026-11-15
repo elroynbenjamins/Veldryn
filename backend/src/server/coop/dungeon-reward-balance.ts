@@ -1,4 +1,4 @@
-import {EXPEDITIONS} from '../expeditions/content/launch-content';
+import {frozenRunBaseMarks} from '../expeditions/reward-base';
 import {marksForRun,type RewardState} from '../expeditions/rewards';
 import type {QModeRun} from './qmode';
 
@@ -26,8 +26,7 @@ export function dungeonRewardState(run:QModeRun):RewardState{
  * payments for an already committed run. Fresh runs use the shared formula. */
 export function enhancedDungeonMarks(run:QModeRun):number{
  if(run.phase!=='completed'&&run.phase!=='failed')return 0;
- const definition=EXPEDITIONS[run.expeditionId];
- if(!definition)throw new Error('unknown_expedition');
- if(run.tierScalingVersion!==2)return Math.max(0,Math.round(definition.baseMarks*.8));
- return marksForRun(definition.baseMarks,run.tier,dungeonRewardState(run));
+ const mapBaseMarks=frozenRunBaseMarks(run);
+ if(run.tierScalingVersion!==2)return Math.max(0,Math.round(mapBaseMarks*.8));
+ return marksForRun(mapBaseMarks,run.tier,dungeonRewardState(run));
 }

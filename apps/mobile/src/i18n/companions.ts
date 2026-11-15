@@ -8,6 +8,18 @@ import {companionCombatDescriptionText} from './companion-combat-names-de';
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
  "Affinity":["Affinität","Afinidad","Affiniteit","Affinità","Affinité"],
+ // Companion screen refinement: compact Bond and always-visible Quarters.
+ "Companion Quarters": ["Gefährtenquartier","Alojamiento de compañeros","Metgezellenverblijf","Alloggi dei compagni","Quartiers des compagnons"],
+ "Choose a companion to view its housing tier and level cap.": ["Wähle einen Gefährten, um Quartierstufe und Levelgrenze zu sehen.","Elige un compañero para ver su alojamiento y límite de nivel.","Kies een metgezel om de verblijfsklasse en levellimiet te bekijken.","Scegli un compagno per vedere il livello dell'alloggio e il limite di livello.","Choisissez un compagnon pour voir son quartier et sa limite de niveau."],
+ "Tier {value0}/3": ["Stufe {value0}/3","Grado {value0}/3","Niveau {value0}/3","Grado {value0}/3","Palier {value0}/3"],
+ "Housing Tier {value0}": ["Quartierstufe {value0}","Alojamiento de grado {value0}","Verblijfsniveau {value0}","Alloggio di grado {value0}","Quartier de palier {value0}"],
+ "Tier {value0}": ["Stufe {value0}","Grado {value0}","Niveau {value0}","Grado {value0}","Palier {value0}"],
+ "Recruit a companion to unlock Quarters upgrades.": ["Rekrutiere einen Gefährten, um Quartierverbesserungen freizuschalten.","Recluta un compañero para desbloquear mejoras de alojamiento.","Rekruteer een metgezel om verblijfsupgrades te ontgrendelen.","Recluta un compagno per sbloccare i miglioramenti dell'alloggio.","Recrutez un compagnon pour débloquer les améliorations des quartiers."],
+ "Claim Bond reward": ["Bindungsbelohnung abholen","Reclamar recompensa de vínculo","Bondbeloning claimen","Riscatta premio legame","Récupérer la récompense de lien"],
+ "Bond MAX": ["Bindung MAX","Vínculo MÁX.","Bond MAX","Legame MAX","Lien MAX"],
+ "Bond 10 trait active · {value0}": ["Bindung-10-Eigenschaft aktiv · {value0}","Rasgo de vínculo 10 activo · {value0}","Bond 10-eigenschap actief · {value0}","Tratto legame 10 attivo · {value0}","Trait de lien 10 actif · {value0}"],
+ "View Bond rewards & trait": ["Bindungsbelohnungen und Eigenschaft ansehen","Ver recompensas y rasgo de vínculo","Bekijk Bondbeloningen en eigenschap","Visualizza premi e tratto legame","Voir les récompenses et le trait de lien"],
+
  "Shield":["Schild","Escudo","Schild","Scudo","Bouclier"],
  // Simplified Companion Index: three intent-based views and a compact role picker.
  "My companions":["Meine Begleiter","Mis compañeros","Mijn metgezellen","I miei compagni","Mes compagnons"],

@@ -14,6 +14,7 @@ on:
       - 'backend/online/world-boss-account-service-v26.ts'
       - 'backend/online/world-boss-account-pg-v26.ts'
       - 'backend/online/world-boss-war-camp-service-v27.ts'
+      - 'backend/online/world-boss-war-camp-policy-v27.ts'
       - 'docs/roadmap/world-boss-war-camp-transactions-v27*.sql'
       - 'backend/online/world-boss-consented-echoes-v20.ts'
       - 'backend/online/world-boss-consent-command-v21.ts'
@@ -141,4 +142,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-weekend-reservation-v22-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-authored-settlement-v26-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-transactions-v27.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-policy-init-v27.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-transactions-v27-smoke.sql

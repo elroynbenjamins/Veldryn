@@ -79,6 +79,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
   {model?<View style={s.hero}><View style={s.heroHead}>{companionArtSource(model.def.id)?<Image accessibilityLabel={model.def.name} source={companionArtSource(model.def.id)} resizeMode="contain" style={{width:76,height:76}}/>:null}<View style={s.flex}><Text style={s.eyebrow}>{t('COMPANION TRAINING')}</Text><Text style={s.heroName}>{model.def.name}</Text><Text style={s.copy}>{companionContent(language,rarity?.label??model.def.rarity)} · {label(model.def.role)}</Text></View></View>
     {progress?<><View style={s.progressHeading}><Text style={s.progressText}>{t("Companion XP {value0}{value1}",{value0:progress.xp.toLocaleString(),value1:xpTarget?' / '+xpTarget.toLocaleString():''})}</Text><Text style={s.progressText}>{t("Lv. {value0}",{value0:progress.level})}</Text></View><View style={s.track}><View style={[s.fill,{width:(Math.max(2,xpPct)+'%') as any}]}/></View></>:<Text style={s.lockBadge}>{t("LOCKED")}</Text>}
   </View>:null}
+  {showPicker?<GameButton compact tone="secondary" title={t('Change companion')} disabled={busy} onPress={()=>setTab('Roster')}/>:null}
   {model?.owned&&progress?<CompanionBondProgressPanel
    progress={progress} companionId={selection} claims={state.account.companionBondRewardClaims??[]}
    traitName={companionCombatBondName(language,model.def.id,model.def.bondTrait.name)}
@@ -86,7 +87,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
    bondHallLevel={state.account.companionSanctuary?.bondHallLevel??0}
    onOpen={()=>{setMessage('');setTab('Bond')}}
   />:null}
-{showPicker?<GameButton compact tone="secondary" title={t('Change companion')} disabled={busy} onPress={()=>setTab('Roster')}/>:null}
+
   {!model?<Text style={s.copy}>{t("No companion selected.")}</Text>:!model.owned?<View style={s.section}><Text style={s.sectionTitle}>{t("Unlock Requirements")}</Text>{model.def.unlockRequirements.map((req,index)=>{const p=companionRequirementProgress(state,req);return <View key={index} style={s.requirement}><Text style={p.complete?s.done:s.copy}>{p.complete ? '✓' : '○'}{companionContent(language,req.description)}</Text><Text style={p.complete?s.done:s.copy}>{p.current}/{p.total}</Text></View>})}<Text style={s.help}>{t("Unavailable requirements remain locked.")}</Text></View>:progress&&<>
    <View style={s.section}>
     <View style={s.between}><Text style={s.subheading}>{t('NEXT LEVEL')}</Text><Text style={s.ready}>{!idle(selection)?companionContent(language,companionAvailability(state,selection).label):model.nextLevelCost&&!affordable(model.nextLevelCost)?t('Materials Required'):model.nextLevelCost?t('Ready to train'):t('Max level reached.')}</Text></View>

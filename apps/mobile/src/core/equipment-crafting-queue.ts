@@ -108,6 +108,9 @@ function validateStart(state:GameState,recipe:Recipe){
 function validateGemCombineStart(state:GameState,recipeId:string){
   if(!state.character)throw new Error('Create a character first');
   const recipe=gemCombineRecipeV1(recipeId);if(!recipe)throw new Error('Unknown gem combination');
+  const sourceGemId=recipe.inputs[0].itemId;
+  if(state.settings.favoriteItemIds?.includes(sourceGemId)||state.settings.lockedItemIds?.includes(sourceGemId))
+    throw new Error('Unfavorite and unlock this gem before merging');
   if(!isGemFamilyRecipeUnlockedV1(state,recipe.familyId))throw new Error('Discover this Effect Gem recipe first');
   const skill=state.skills.find(row=>row.skillId==='enchanting');if(!skill||skill.level<recipe.level)throw new Error(`Requires enchanting level ${recipe.level}`);
   if(state.character.gold<recipe.gold)throw new Error(`Need ${recipe.gold} gold`);

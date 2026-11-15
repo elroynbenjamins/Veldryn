@@ -20,7 +20,7 @@ const byBestRoll=(a:ForgeCraftResult,b:ForgeCraftResult)=>
 export function forgeClaimAllSummaryGroups(results:readonly ForgeCraftResult[]){
   const kept=results.filter(result=>result.autoSold!=='incoming').sort(byBestRoll);
   const sold=results.filter(result=>result.autoSold==='incoming').sort(byBestRoll);
-  const soldGold=results.reduce((sum,result)=>sum+(result.autoSold?result.saleGold:0),0);
+  const soldGold=sold.reduce((sum,result)=>sum+result.saleGold,0);
   return {kept,sold,soldGold};
 }
 
@@ -59,7 +59,7 @@ export function ForgeClaimAllSummaryModal({results,reduceMotion,onClose,onInvent
   return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt('Close Forge collection')} surfaceStyle={s.dialog}>
     <GameModalHeader eyebrow={gt('FORGE · CLAIM ALL')} title={gt('Collection summary')} onClose={onClose}/>
     <View style={s.overview}>
-      <Text style={s.overviewCount}>{kept.length} {gt(kept.length===1?'equipment collected':'equipment collected')}</Text>
+      <Text style={s.overviewCount}>{kept.length} {gt('equipment collected')}</Text>
       <Text style={s.overviewDetail}>{gt('Equipment Pouch first · Inventory or Bank if full')}</Text>
       {sold.length>0?<Text style={s.soldCount}>{sold.length} {gt('auto-sold')} · +{soldGold} Gold</Text>:null}
     </View>

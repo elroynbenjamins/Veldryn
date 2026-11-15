@@ -3,7 +3,7 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel,socialText} from '../i18n/social';
 import {formatLocalizedNumber} from '../i18n/translator';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {AppState,Pressable,ScrollView,type ScrollViewInstance,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {ActionFeedback} from '../components/ActionFeedback';
@@ -23,7 +23,7 @@ export function RankingsScreen(){
  const rankingValueLabel=(id:RankingBoardId,value:number)=>{const unit=RANKING_BOARDS.find(row=>row.id===id)!.unit;const number=formatLocalizedNumber(language,Math.max(0,Math.floor(value)));return socialText(language,id==="dungeon_tier"?"Tier {value}":unit==="levels"?"{value} levels":unit==="points"?"{value} points":unit==="rating"?"{value} rating":unit==="wins"?"{value} wins":unit==="clears"?"{value} clears":"{value} level",{value:number});};
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<360||fontScale>=1.25;const[group,setGroup]=useState<RankingGroup>('Account'),[board,setBoard]=useState<RankingBoardId>('profession_total'),[snapshot,setSnapshot]=useState<RankingBoardSnapshot|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState(''),[boardPickerOpen,setBoardPickerOpen]=useState(false),[page,setPage]=useState(0),[loadedPage,setLoadedPage]=useState(0),[hasNext,setHasNext]=useState(false);const boards=useMemo(()=>RANKING_BOARDS.filter(row=>row.group===group),[group]);useEffect(()=>{if(!boards.some(row=>row.id===board))setBoard(boards[0].id)},[group]);
  const request=useRef(0);
- const scrollRef=useRef<ScrollView|null>(null);
+ const scrollRef=useRef<ScrollViewInstance|null>(null);
  function selectGroup(value:RankingGroup){if(value===group)return;const first=RANKING_BOARDS.find(row=>row.group===value);setGroup(value);setPage(0);setHasNext(false);setSnapshot(null);if(first&&!RANKING_BOARDS.some(row=>row.id===board&&row.group===value))setBoard(first.id);}
  function goToPage(next:number){if(next<0||loading)return;const offset=rankingPageOffset(next);if(offset>10000)return;scrollRef.current?.scrollTo({y:0,animated:false});setSnapshot(null);setHasNext(false);setPage(next);}
  async function load(){const version=++request.current;if(!rankingsOnlineConfigured){setSnapshot(null);setHasNext(false);setError(st("Rankings require the authenticated online server."));return;}setLoading(true);setError('');try{const next=await rankingsClient.board(board,RANKING_PAGE_SIZE+1,rankingPageOffset(page));if(version===request.current){const display=projectRankingPage(next.entries,page);setSnapshot({...next,entries:display.entries});setLoadedPage(page);setHasNext(display.hasNext);}}catch(e){if(version===request.current){setSnapshot(null);setHasNext(false);setError(e instanceof Error?e.message:st("Could not load Rankings."));}}finally{if(version===request.current)setLoading(false);}}

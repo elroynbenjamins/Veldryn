@@ -6,7 +6,7 @@
 -- on ANY day/time that CI executes. The real predicate is restored on rollback.
 BEGIN;
 CREATE OR REPLACE FUNCTION private.world_boss_v22_window_at(
- timestamptz,timestamptz) RETURNS integer
+ p_starts_at timestamptz,p_now timestamptz) RETURNS integer
  LANGUAGE sql IMMUTABLE STRICT SECURITY INVOKER SET search_path=''
  AS $$ SELECT 0::integer $$;
 

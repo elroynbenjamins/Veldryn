@@ -1033,6 +1033,21 @@ const crafting={
 "Multiple finished crafts produced rarer copies.":["Multiple finished crafts produced rarer copies.","Mehrere Fertigungen ergaben seltenere Exemplare.","Varias fabricaciones produjeron copias más raras.","Meerdere opdrachten leverden zeldzamere exemplaren op.","Più creazioni hanno prodotto copie più rare.","Plusieurs fabrications ont produit des exemplaires plus rares."],
 "First crafted copy owned":["First crafted copy owned","Erstes gefertigtes Exemplar im Besitz","Primera copia fabricada en posesión","Eerste gemaakt exemplaar in bezit","Prima copia creata posseduta","Premier exemplaire fabriqué possédé"],
 "Continue forging":["Continue forging","Weiter schmieden","Seguir forjando","Verder smeden","Continua a forgiare","Continuer à forger"],
+
+"Close Forge collection":["Close Forge collection","Schmiedesammlung schließen","Cerrar recogida de forja","Smeedoverzicht sluiten","Chiudi raccolta forgia","Fermer le récapitulatif de forge"],
+"FORGE · CLAIM ALL":["FORGE · CLAIM ALL","SCHMIEDE · ALLES ABHOLEN","FORJA · RECOGER TODO","SMEDERIJ · ALLES OPHALEN","FORGIA · RITIRA TUTTO","FORGE · TOUT RÉCUPÉRER"],
+"Collection summary":["Collection summary","Abholübersicht","Resumen de recogida","Overzicht opbrengst","Riepilogo raccolta","Récapitulatif des objets"],
+"Equipment collected: {count}":["Equipment collected: {count}","Ausrüstung abgeholt: {count}","Equipo recogido: {count}","Uitrusting opgehaald: {count}","Equipaggiamenti ritirati: {count}","Équipements récupérés : {count}"],
+"Equipment Pouch first · Inventory or Bank if full":["Equipment Pouch first · Inventory or Bank if full","Zuerst Ausrüstungstasche · bei Platzmangel Inventar oder Bank","Estore de equipo primero · si está lleno, Inventario o Banco","Eerst uitrustingstas · bij vol Inventaris of Bank","Prima borsa equipaggiamento · se piena, Inventario o Banca","Sac d'équipement en premier · sinon inventaire ou banque"],
+"Auto-sold incoming: {count}":["Auto-sold incoming: {count}","Neue Ausrüstung automatisch verkauft: {count}","Equipo nuevo vendido automáticamente: {count}","Nieuwe uitrusting automatisch verkocht: {count}","Nuovi equipaggiamenti venduti automaticamente: {count}","Équipements reçus revendus automatiquement : {count}"],
+"Weaker copies sold: {count}":["Weaker copies sold: {count}","Schwächere Exemplare verkauft: {count}","Copias inferiores vendidas: {count}","Zwakkere exemplaren verkocht: {count}","Copie inferiori vendute: {count}","Exemplaires plus faibles vendus : {count}"],
+"Auto-sold new gear":["Auto-sold new gear","Neue Ausrüstung automatisch verkauft","Equipo nuevo vendido automáticamente","Nieuwe uitrusting automatisch verkocht","Nuovo equipaggiamento venduto automaticamente","Nouvel équipement revendu automatiquement"],
+"Weaker copy sold":["Weaker copy sold","Schwächeres Exemplar verkauft","Copia inferior vendida","Zwakker exemplaar verkocht","Copia inferiore venduta","Exemplaire plus faible vendu"],
+"AUTO-SOLD · NOT COLLECTED":["AUTO-SOLD · NOT COLLECTED","AUTOMATISCH VERKAUFT · NICHT ABGEHOLT","VENTA AUTOMÁTICA · NO RECOGIDO","AUTOMATISCH VERKOCHT · NIET OPGEHAALD","VENDUTI AUTOMATICAMENTE · NON RITIRATI","REVENDU AUTOMATIQUEMENT · NON RÉCUPÉRÉ"],
+"View Gear storage":["View Gear storage","Ausrüstungslager öffnen","Ver almacén de equipo","Uitrustingsopslag bekijken","Apri deposito equipaggiamento","Voir le stockage d'équipement"],
+"Collected":["Collected","Abgeholt","Recogido","Opgehaald","Ritirato","Récupéré"],
+"Auto-sold":["Auto-sold","Automatisch verkauft","Venta automática","Automatisch verkocht","Venduto automaticamente","Revendu automatiquement"],
+
 "View inventory":["View inventory","Inventar ansehen","Ver inventario","Inventaris bekijken","Vedi inventario","Voir l’inventaire"],
 "Tap a resource to begin gathering.":["Tap a resource to begin gathering.","Tippe auf eine Ressource, um zu sammeln.","Toca un recurso para recolectar.","Tik op een grondstof om te verzamelen.","Tocca una risorsa per raccogliere.","Touchez une ressource pour récolter."],
 "HERE":["HERE","HIER","AQUÍ","HIER","QUI","ICI"],
@@ -1330,6 +1345,21 @@ for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){
 const forgeCopyLimitEarlyLocales={
   "Keep best {count}":["Сохранять лучшие {count}","En iyi {count} tanesini tut"],
   "Per equipment type":["Для каждого типа снаряжения","Ekipman türü başına"],
+
+  "Close Forge collection":["Закрыть итоги кузницы","Demirhane özetini kapat"],
+  "FORGE · CLAIM ALL":["КУЗНИЦА · ЗАБРАТЬ ВСЁ","DEMİRHANE · HEPSİNİ AL"],
+  "Collection summary":["Итоги получения","Alım özeti"],
+  "Equipment collected: {count}":["Получено снаряжения: {count}","Alınan ekipman: {count}"],
+  "Equipment Pouch first · Inventory or Bank if full":["Сначала сумка снаряжения · затем инвентарь или банк","Önce ekipman çantası · doluysa envanter veya banka"],
+  "Auto-sold incoming: {count}":["Автопродажа нового: {count}","Otomatik satılan yeni: {count}"],
+  "Weaker copies sold: {count}":["Продано слабых копий: {count}","Satılan zayıf kopya: {count}"],
+  "Auto-sold new gear":["Новое снаряжение продано автоматически","Yeni ekipman otomatik satıldı"],
+  "Weaker copy sold":["Слабая копия продана","Zayıf kopya satıldı"],
+  "AUTO-SOLD · NOT COLLECTED":["АВТОПРОДАЖА · НЕ ПОЛУЧЕНО","OTOMATİK SATILDI · ALINMADI"],
+  "View Gear storage":["Открыть хранилище снаряжения","Ekipman deposunu aç"],
+  "Collected":["Получено","Alındı"],
+  "Auto-sold":["Автопродажа","Otomatik satıldı"],
+
 } as const;
 for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];

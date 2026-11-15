@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V25 validation
+name: Hidden World Boss V10–V26 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -11,6 +11,8 @@ on:
       - 'backend/online/world-boss-account-pg-v23.ts'
       - 'backend/src/server/combat/world-boss-account-balance-v24.ts'
       - 'backend/src/server/combat/world-boss-account-encounter-v25.ts'
+      - 'backend/online/world-boss-account-service-v26.ts'
+      - 'backend/online/world-boss-account-pg-v26.ts'
       - 'backend/online/world-boss-consented-echoes-v20.ts'
       - 'backend/online/world-boss-consent-command-v21.ts'
       - 'backend/online/world-boss-frozen-modifiers-v20.ts'
@@ -31,6 +33,7 @@ on:
       - 'docs/roadmap/world-boss-consent-guard-v20*.sql'
       - 'docs/roadmap/world-boss-consent-lifecycle-v21*.sql'
       - 'docs/roadmap/world-boss-weekend-reservation-v22*.sql'
+      - 'docs/roadmap/world-boss-authored-settlement-v26*.sql'
       - '.github/workflows/world-boss-v12-validation.yml'
   workflow_dispatch:
 
@@ -60,7 +63,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v25 World Boss tests
+      - name: Run v7-v26 World Boss tests
         run: |
           set -e
           for suite in \
@@ -81,7 +84,8 @@ jobs:
             world-boss-weekend-account-raid-v22 \
             world-boss-account-service-v23 \
             world-boss-account-balance-v24 \
-            world-boss-authored-account-encounters-v25
+            world-boss-authored-account-encounters-v25 \
+            world-boss-authored-settlement-v26
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done
@@ -132,3 +136,4 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-lifecycle-v21-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-weekend-reservation-v22.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-weekend-reservation-v22-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-authored-settlement-v26-smoke.sql

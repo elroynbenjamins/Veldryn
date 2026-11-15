@@ -40,6 +40,7 @@ ok(Math.abs(masteryRewardBonuses(30).damageBonus-.02)<1e-12&&Math.abs(masteryRew
 ok(MONSTER_MASTERY_MILESTONES.some(row=>row.rank===5&&row.label==='Hunter Instinct')&&MONSTER_MASTERY_MILESTONES.some(row=>row.rank===15&&row.label==='Material Expertise')&&MONSTER_MASTERY_MILESTONES.some(row=>row.rank===30&&row.label==='Perfect Study'),'Canonical mastery milestones must appear on the Mastery ladder');
 const guidance4=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:100};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance4.rank===4&&guidance4.next?.rank===5&&guidance4.killsToNextMilestone===21,'Rank 4 guidance should point to Rank 5 combat milestone');const guidance10=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:monsterMasteryKillsForRank(10)};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance10.dropKnowledge&&nextMasteryMilestone(10)?.rank===15,'Rank 10 should reveal drop knowledge and point to Rank 15');
 const completeGuidance=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:1500};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(!completeGuidance.next&&completeGuidance.killsToNextMilestone===0,'Rank 30 mastery should complete the canonical milestone ladder');
+ok(completeGuidance.currentRankTarget>0&&completeGuidance.currentRankProgress===completeGuidance.currentRankTarget,'Rank 30 species bar is fully filled, never zero-width');
 // Every ordinary enemy belongs to exactly one family. Bosses cannot grant family progress.
 const ordinary=MONSTERS.filter(m=>!m.boss);
 const assigned=ENEMY_FAMILIES.flatMap(f=>f.monsterIds);
@@ -63,6 +64,10 @@ ok(masteryMilestoneAnticipation(monsterMasteryKillsForRank(5)-1)?.remaining===1,
 ok(monsterMasteryRankFromKills(750)<30&&monsterMasteryRankFromKills(1500)===30,'legacy 750 kills retain progress but are not reinterpreted as 1500');
 ok(normalizeMonsterMastery({MOSS_RAT:1500,IRONWOOD_WOLF:2000}).MOSS_RAT===1500&&normalizeMonsterMastery({IRONWOOD_WOLF:2000}).IRONWOOD_WOLF===1500,'species normalization accepts 1500 earned kills and clamps excess');
 ok(FAMILY_MASTERY_MAX_POINTS===50000&&familyMasteryPointsForRank(30)===50000,'maximum family mastery requires exactly 50000 points');
+const completedFamily=structuredClone(s);
+completedFamily.character!.familyMasteryPoints={BEAST:50000};
+const familyComplete=enemyFamilyMasteryGuidance(completedFamily,'BEAST');
+ok(familyComplete.currentRankTarget>0&&familyComplete.currentRankProgress===familyComplete.currentRankTarget&&familyComplete.pointsToNextRank===0,'Rank 30 family bar is filled without division by zero');
 for(const rank of [1,5,10,15,20,25,29,30]){
  const threshold=familyMasteryPointsForRank(rank);
  const exactly=structuredClone(s);

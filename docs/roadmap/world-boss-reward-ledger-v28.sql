@@ -127,9 +127,9 @@ BEGIN
  IF n NOT BETWEEN 1 AND 5
  THEN RAISE EXCEPTION 'WB28_INVALID_REPLAY_CHARACTERS'; END IF;
  IF (replay->>'roundsCompleted') !~ '^[0-9]{1,2}$'
-    OR (replay->>'rawBossHpDamage') !~ '^[0-9]+(\.[0-9]+)?$'
-    OR (replay->>'localGuardDamage') !~ '^[0-9]+(\.[0-9]+)?$'
-    OR (replay->>'proposedWorldHpDamage') !~ '^[0-9]+(\.[0-9]+)?$'
+    OR (replay->>'rawBossHpDamage') !~ '^[0-9]+([.][0-9]+)?$'
+    OR (replay->>'localGuardDamage') !~ '^[0-9]+([.][0-9]+)?$'
+    OR (replay->>'proposedWorldHpDamage') !~ '^[0-9]+([.][0-9]+)?$'
  THEN RAISE EXCEPTION 'WB28_INVALID_REPLAY_NUMBERS'; END IF;
  rounds:=(replay->>'roundsCompleted')::integer;
  guard:=(replay->>'localGuardDamage')::numeric;

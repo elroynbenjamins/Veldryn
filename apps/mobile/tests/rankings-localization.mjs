@@ -27,6 +27,7 @@ const keys=[
   'Previous','Next','Page',
   'Entries {first}–{last}',
   'Ranks {first}–{last}',
+  "Ranking snapshot expired. Refresh to load updated results.",
   'Live rankings can change while players progress.',
 ];
 for(const key of keys){

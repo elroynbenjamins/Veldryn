@@ -91,16 +91,37 @@ ok(radiantCatalystRecipe?.level===90&&radiantCatalystRecipe.inputs.some(row=>row
 state={...state,account:{...state.account,unlockedKnowledgeIds:[...(state.account.unlockedKnowledgeIds??[]),'recipe_gem_bulwark']}};
 ok(availableGemCombinesV1(state).some(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1&&row.recipeReady),'Discovered Effect Gem recipe should unlock the forge family account-wide');
 const recipeId=gemCombineRecipeIdV1('stat_might',1);
+for(const [grade,expected] of [[1,90],[2,80],[3,70],[4,60],[5,55],[6,50],[7,45],[14,10]] as const)
+ ok(gemCombineSuccessPercentV1(grade)===expected,'Combine success progression must match declared odds for grade '+grade);
+ok(gemCombineSucceededV1(1,.899999)&&!gemCombineSucceededV1(1,.9),'Gem rolls must honor exact odds boundaries');
 ok(availableGemCombinesV1(state).some(row=>row.recipe.id===recipeId&&!row.skillReady),'Gem combining should expose its Enchanting level requirement');
 state={...state,skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,level:60,xp:totalXpAtLevel(60)}:row)};
 ok(availableGemCombinesV1(state).some(row=>row.recipe.id===recipeId&&row.ready),'Owned three Cut Might Gems should be combine-ready once the Enchanting gate is met');
 const enchantingBeforeCombine=state.skills.find(row=>row.skillId==='enchanting')!.xp;
 const started=startGemCombine(state,recipeId,1000);
+ok(started.recipe.successChancePercent===90&&started.job.combineSuccessChancePercent===90,'New G1 merge jobs must freeze 90% odds at enqueue');
 ok(started.seconds===300,'Cut to Polished base combine should take five minutes without speed modifiers');
 ok(equipmentCraftQueueModel(started.state,1000).jobs.some(job=>job.id===started.job.id),'Gem combine must occupy the shared equipment forge queue');
-const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAtMs);
+const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAtMs,.1);
 ok(gemPouch(claimed.state).stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');
 ok(claimed.state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeCombine+140,'Gem combining should award Enchanting XP');
+ok(claimed.kind==='gem'&&claimed.gemSucceeded,'A low trusted roll should succeed');
+const failedStart=startGemCombine(state,recipeId,2000);
+const failed=claimForgeJob(failedStart.state,failedStart.job.id,failedStart.job.completesAtMs,.999);
+ok(failed.kind==='gem'&&!failed.gemSucceeded,'A high trusted roll should fail a 90% merge');
+ok(gemPouch(failed.state).stacks.find(row=>row.itemId==='gem:stat_might:g1')?.quantity===2,'Failed merge must return two gems, consuming one');
+ok(!gemPouch(failed.state).stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Failed merge must not mint the upgraded gem');
+ok(failed.state.character!.gold===state.character!.gold-failedStart.recipe.gold,'Failed merge must still charge Gold');
+ok(equipmentCraftQueueModel(failed.state,failedStart.job.completesAtMs).jobs.every(row=>row.id!==failedStart.job.id),'Failed merge must settle and leave the queue');
+const legacyStart=startGemCombine(state,recipeId,3000);
+const legacyMergeState={...legacyStart.state,account:{...legacyStart.state.account,equipmentCraftingQueue:[{...legacyStart.job,combineSuccessChancePercent:undefined}]}};
+const legacyClaim=claimForgeJob(legacyMergeState,legacyStart.job.id,legacyStart.job.completesAtMs,.999);
+ok(legacyClaim.kind==='gem'&&legacyClaim.gemSucceeded,'Already queued pre-change merges must remain guaranteed');
+const badSnapshot={...legacyStart.job,combineSuccessChancePercent:-20};
+ok(normalizeEquipmentCraftingQueue([badSnapshot])[0]?.combineSuccessChancePercent===90,'A damaged odds snapshot must fall back to configured odds, not legacy guaranteed success');
+let rejectedInvalidMergeRoll=false;
+try{claimForgeJob(failedStart.state,failedStart.job.id,failedStart.job.completesAtMs,1)}catch{rejectedInvalidMergeRoll=true}
+ok(rejectedInvalidMergeRoll,'Invalid server-provided merge rolls must be rejected before settlement');
 
 const cacheNow=Date.UTC(2026,8,21,12),cacheWeek='2026-09-21';
 const cacheReadyState={...claimed.state,account:{...claimed.state.account,resonanceCache:{weekKey:cacheWeek,liveClears:3,claimed:false,effectChoices:['effect_bulwark','effect_mercy','effect_flow'],dustReward:31,regionalCatalysts:1,radiantCatalysts:1}}};

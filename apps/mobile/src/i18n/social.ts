@@ -7,6 +7,9 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "Dungeon Finder": ["Dungeon-Suche","Buscador de mazmorras","Kerkervinder","Ricerca dungeon","Recherche de donjons"],
+  "Shop": ["Laden","Tienda","Winkel","Negozio","Boutique"],
+  "World Chat": ["Weltchat","Chat mundial","Wereldchat","Chat globale","Chat mondial"],
   "Back to Dungeons": ["Zurück zu den Dungeons","Volver a las mazmorras","Terug naar kerkers","Torna ai dungeon","Retour aux donjons"],
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],

@@ -10,7 +10,6 @@ import type {GameState,ClassId} from '../src/core/types';
 import {resolveRealWorldBossSnapshotV12} from '../../../backend/online/world-boss-loadout-v12';
 import {
  freezeWorldBossAccountRosterV22,
- type WorldBossAccountRosterV22,
 } from '../../../backend/src/server/combat/world-boss-account-raid-v22';
 import {
  WORLD_BOSS_ROUND_SCRIPTS,validateWorldBossScripts,simulateWorldBossRounds,
@@ -39,7 +38,7 @@ const fail=(f:()=>unknown,part:string)=>{
  let message='';try{f()}catch(e){message=String(e)}
  assert.ok(message.includes(part),'expected '+part+' got '+message);
 };
-async function sourceRoster():Promise<WorldBossAccountRosterV22>{
+async function sourceRoster(){
  const states=new Map<string,GameState>();
  for(let i=0;i<5;i++){
   const state=regionalCombatFixture({...T2,level:25,tier:'T2'},'prepared',classes[i]);
@@ -59,9 +58,9 @@ async function sourceRoster():Promise<WorldBossAccountRosterV22>{
    minimumCharacterLevel:1,policy,
   })
  ));
- return freezeWorldBossAccountRosterV22({
+ return {roster:freezeWorldBossAccountRosterV22({
   accountId:ACCOUNT,atUtcMs:NOW,verified,
- });
+ }),verified};
 }
 async function main(){
  assert.equal(WORLD_BOSS_V24_AUTHORED_ACCOUNT_RAID_LIVE,false);
@@ -72,13 +71,13 @@ async function main(){
   [.7,.78,.85,.93,1]);
  fail(()=>worldBossAccountPressureV24(0),'invalid_raid_size');
  fail(()=>worldBossAccountPressureV24(6),'invalid_raid_size');
- const roster=await sourceRoster();
+ const {roster,verified}=await sourceRoster();
  assert.equal(roster.characters.length,5);
  const camp=makeWorldBossWarCampSnapshotV11({
   eventId:EVENT,revision:7,
   levels:{fortifications:2,fieldProvisions:2,siegecraft:2},
  });
- const profiles=(boss:WorldBossId,phase:WorldBossPhase,attack=35)=>
+ const profiles=(boss:WorldBossId,phase:WorldBossPhase,attack=5)=>
   makeWorldBossEncounterProfileV13({
    eventId:EVENT,boss,phase,gearBand:2,
    configVersion:'wb24-offline-not-approved',attack,defense:240,guardMax:300,
@@ -88,7 +87,9 @@ async function main(){
  for(const boss of bosses){
   for(const phase of phases){
    for(let count=1;count<=5;count++){
-    const r=freezeWorldBossAccountRosterForPrefix(roster,count);
+    const r=freezeWorldBossAccountRosterV22({
+     accountId:ACCOUNT,atUtcMs:NOW,verified:verified.slice(0,count),
+    });
     const args={
      eventId:EVENT,requestId:'WB24_ACCOUNT_RAID_001',
      roster:r,boss,phase,order:'break_armor' as const,
@@ -153,7 +154,9 @@ async function main(){
   serverEncounterProfile:profiles('hollowroot','armored'),
  }), 'duplicate_account_character');
 
- const bad=freezeWorldBossAccountRosterForPrefix(roster,2);
+ const bad=freezeWorldBossAccountRosterV22({
+  accountId:ACCOUNT,atUtcMs:NOW,verified:verified.slice(0,2),
+ });
  const base={
   eventId:EVENT,requestId:'WB24_ACCOUNT_RAID_999',roster:bad,
   boss:'sunscar' as const,phase:'exposed' as const,order:'steady_assault' as const,
@@ -187,26 +190,5 @@ async function main(){
   oldFourRoleContractUnaffected:true,
   reservedSqlUnchanged:true,live:false,payouts:0,
  }));
-}
-function freezeWorldBossAccountRosterForPrefix(
- roster:WorldBossAccountRosterV22,count:number,
-):WorldBossAccountRosterV22{
- // Generate a VALID subset by retaining the trusted source snapshot hashes,
- // then freeze from the already V12-verified combatants. This test helper is
- // explicitly not available to any mobile/production caller.
- const selected=roster.characters.slice(0,count);
- // V22 hash is not a public constructor for an arbitrary subset; in the
- // synthetic test, build the exact V22 canonical payload.
- const {sha256}=require('@noble/hashes/sha256') as typeof import('@noble/hashes/sha256');
- const {bytesToHex}=require('@noble/hashes/utils') as typeof import('@noble/hashes/utils');
- const digest=bytesToHex(sha256(new TextEncoder().encode(JSON.stringify({
-  version:'world-boss-account-raid-v22-prototype',
-  accountId:roster.accountId,
-  characters:selected.map(c=>({
-   id:c.characterId,snapshotId:c.snapshotId,
-   sourceRevision:c.sourceRevision,sourceHash:c.sourceHash,combatant:c.combatant,
-  })),
- }))));
- return {...roster,characters:selected,rosterDigest:digest};
 }
 void main().catch(e=>{console.error(e);throw e;});

@@ -45,7 +45,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   // Disk-backed browse previews only: no loadouts, rewards or running state.
   const characterId=state.character?.id;
   const [savedTonic,setSavedTonic]=useState<{characterId:string;preference:DungeonTonicPreference}>();
-  const tonicPreference=savedTonic?.characterId===characterId?savedTonic.preference:undefined;
+  const tonicPreference=savedTonic&&savedTonic.characterId===characterId?savedTonic.preference:undefined;
   useEffect(()=>{
    let cancelled=false;setSavedTonic(undefined);
    void rememberedDungeonTonic(characterId).then(preference=>{if(!cancelled&&characterId)setSavedTonic({characterId,preference});});

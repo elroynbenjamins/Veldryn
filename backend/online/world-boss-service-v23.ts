@@ -75,7 +75,7 @@ interface FrozenAccountPacketV23{
  /** exact string — JSONB reorders object keys and would alter roster hashes */
  serializedRoster:string;
  /** minimal private SQL-owned-character membership selectors */
- characters:readonly {characterId:string}[];
+ characters:readonly {characterId:string;sourceRevision:number}[];
  warCamp:WorldBossFrozenRulesV20['warCamp'];
  encounterProfiles:WorldBossFrozenRulesV20['encounterProfiles'];
 }
@@ -141,7 +141,8 @@ function frozenPacket(input:unknown,job:{
  if(!roster||roster.accountId!==job.accountId||
   roster.rosterDigest!==job.rosterDigest||
   !Array.isArray(roster.characters)||roster.characters.length!==raw.characters.length||
-  roster.characters.some((r,i)=>r.characterId!==raw.characters?.[i]?.characterId))
+  roster.characters.some((r,i)=>r.characterId!==raw.characters?.[i]?.characterId||
+   r.sourceRevision!==raw.characters?.[i]?.sourceRevision))
   throw Error('world_boss_v23_serialized_roster_not_bound');
  const rules=verifyWorldBossFrozenRulesV20({
   frozen:{warCamp:raw.warCamp!,encounterProfiles:raw.encounterProfiles!},
@@ -233,7 +234,9 @@ export async function reserveAuthenticatedWorldBossAccountRaidV23(input:{
   order:selection.order,rulesVersion:event.rulesVersion,
   rosterDigest:roster.rosterDigest,
   serializedRoster:JSON.stringify(roster),
-  characters:roster.characters.map(c=>({characterId:c.characterId})),
+  characters:roster.characters.map(c=>({
+   characterId:c.characterId,sourceRevision:c.sourceRevision,
+  })),
   warCamp:rules.warCamp,encounterProfiles:rules.encounterProfiles,
  };
  if(JSON.stringify(packet).length>245760)

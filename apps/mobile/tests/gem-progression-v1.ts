@@ -1,6 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {equippedCanonicalStatGemBonusesV1,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
-import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
+import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel,normalizeEquipmentCraftingQueue} from '../src/core/equipment-crafting-queue';
 import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemCombineSuccessPercentV1,gemCombineSucceededV1,gemRefineRecipeIdV1,gemUnsocketCostV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
@@ -117,6 +117,11 @@ const legacyStart=startGemCombine(state,recipeId,3000);
 const legacyMergeState={...legacyStart.state,account:{...legacyStart.state.account,equipmentCraftingQueue:[{...legacyStart.job,combineSuccessChancePercent:undefined}]}};
 const legacyClaim=claimForgeJob(legacyMergeState,legacyStart.job.id,legacyStart.job.completesAtMs,.999);
 ok(legacyClaim.kind==='gem'&&legacyClaim.gemSucceeded,'Already queued pre-change merges must remain guaranteed');
+const badSnapshot={...legacyStart.job,combineSuccessChancePercent:-20};
+ok(normalizeEquipmentCraftingQueue([badSnapshot])[0]?.combineSuccessChancePercent===90,'A damaged odds snapshot must fall back to configured odds, not legacy guaranteed success');
+let rejectedInvalidMergeRoll=false;
+try{claimForgeJob(failedStart.state,failedStart.job.id,failedStart.job.completesAtMs,1)}catch{rejectedInvalidMergeRoll=true}
+ok(rejectedInvalidMergeRoll,'Invalid server-provided merge rolls must be rejected before settlement');
 
 const cacheNow=Date.UTC(2026,8,21,12),cacheWeek='2026-09-21';
 const cacheReadyState={...claimed.state,account:{...claimed.state.account,resonanceCache:{weekKey:cacheWeek,liveClears:3,claimed:false,effectChoices:['effect_bulwark','effect_mercy','effect_flow'],dustReward:31,regionalCatalysts:1,radiantCatalysts:1}}};

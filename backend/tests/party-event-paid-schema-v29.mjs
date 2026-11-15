@@ -56,21 +56,21 @@ insert into private.party_event_paid_claim_inbox_v29 (
  $1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6::timestamptz,
  'Party Event Rewards',$7::jsonb,$8
 )`;
-async function writeReceipt(options={}){
+async function writeReceipt(options={},handle=db){
  return q(receiptSql,[
   options.receipt??receipt,options.inbox??inbox,
   options.offer??offer,options.account??account,character,
   reservation,options.start??startsAt,options.request??requestId,
   options.hash??rewardHash,options.json??json,stateHash,
- ]);
+ ],handle);
 }
-async function writeInbox(options={}){
+async function writeInbox(options={},handle=db){
  return q(inboxSql,[
   options.inbox??inbox,options.receipt??receipt,
   options.offer??offer,options.account??account,character,
   options.start??startsAt,options.json??json,
   options.hash??rewardHash,
- ]);
+ ],handle);
 }
 let rewardHash='';
 
@@ -105,18 +105,18 @@ async function run(){
  await q('insert into private.party_event_reward_offers_v24(id,event_starts_at,account_id) values($1::uuid,$2::timestamptz,$3::uuid)',[otherOffer,'2026-11-22T00:00:00Z',account]);
 
  // In either direction the cyclic deferred FKs reject orphan records at COMMIT.
- await expectFailure(()=>writeReceipt(),'receipt without Inbox must rollback');
+ await expectFailure(tx=>writeReceipt({},tx),'receipt without Inbox must rollback');
  assert((await q('select count(*)::int as n from private.party_event_paid_claim_receipts_v29')).rows[0].n===0,
    'orphan receipt rolled back');
- await expectFailure(()=>writeInbox(),'Inbox without receipt must rollback');
+ await expectFailure(tx=>writeInbox({},tx),'Inbox without receipt must rollback');
  assert((await q('select count(*)::int as n from private.party_event_paid_claim_inbox_v29')).rows[0].n===0,
    'orphan Inbox rolled back');
 
  // The ONLY successful insertion is a linked pair in the same SQL transaction.
- await db.exec('begin');
- await writeReceipt();
- await writeInbox();
- await db.exec('commit');
+ await db.transaction(async tx=>{
+  await writeReceipt({},tx);
+  await writeInbox({},tx);
+ });
  assert((await q('select count(*)::int as n from private.party_event_paid_claim_receipts_v29')).rows[0].n===1,
    'one durable receipt after paired commit');
  assert((await q('select count(*)::int as n from private.party_event_paid_claim_inbox_v29')).rows[0].n===1,
@@ -133,23 +133,23 @@ async function run(){
   'other account cannot read unrelated Inbox messages');
 
  // The SQL uniqueness constraints deny replay/double-credit even with new UUIDs.
- await expectFailure(()=>writeReceipt({
+ await expectFailure(tx=>writeReceipt({
   receipt:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   inbox:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   offer:otherOffer,start:'2026-11-22T00:00:00Z',
   request:requestId,
- }), 'same account/request across weeks');
- await expectFailure(()=>writeReceipt({
+ },tx), 'same account/request across weeks');
+ await expectFailure(tx=>writeReceipt({
   receipt:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   inbox:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   offer,start:startsAt,request:'another-v29-idempotency-key',
- }), 'same event/account across requests');
- await expectFailure(()=>writeReceipt({
+ },tx), 'same event/account across requests');
+ await expectFailure(tx=>writeReceipt({
   receipt:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   inbox:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   offer:otherOffer,start:'2026-11-22T00:00:00Z',
   request:'another-v29-key-0001',hash:'f'.repeat(64),
- }), 'receipt quote hash cannot diverge from reward JSON');
+ },tx), 'receipt quote hash cannot diverge from reward JSON');
 
  // Edits to paid records are forbidden; cascade deletion remains possible
  // for legitimate account erasure by the owner.

@@ -34,6 +34,15 @@ Staging PostgreSQL EXPLAIN ANALYZE completed a 50,000-row synthetic ranking/wind
 
 Before release, run production-shaped concurrent tests against **staging** across 19 boards, with current/guild joins and multi-character saves, taking p50/p95/p99, peak private snapshot storage, maintenance throughput, and 10-minute expiration behavior. Establish and enforce the resource budget; do not extrapolate from those two synthetic numbers.
 
+## Follow-up hardening — snapshot expiry, guild identity, public projection
+
+- **Mobile expiration behavior:** page one may re-create an expired snapshot; page two or later explicitly requests refresh rather than repeatedly querying an expired cursor. The message is localized in all eight supported languages.
+- **Guild self standing:** the frozen server reader now determines the requester's guild membership at read time, highlights that guild as **YOU**, and exposes its frozen rank in the self-standing panel. A member who leaves loses the personal guild standing immediately; rejoining restores it without changing any public official ranks.
+- **Defense-in-depth privacy:** the authenticated Edge reader now allowlists top-level fields, individual leaderboard entries, self standing and staff/supporter badges. Unrecognized internal account/entity/receipt metadata is stripped; malformed rank/value rows and oversized responses fail closed. The corresponding Edge tests were committed, but the GitHub-hosted job has **not run**.
+- **Workflow permission hardening:** the generated Edge bundle repair no longer runs pull request code with repository write permission or auto-pushes artifacts. It runs read-only and uploads a short-lived build artifact for a reviewed commit.
+- **Staging re-verification:** all five SQL proposals plus all eight independent rollback/savepoint fixtures passed after the guild change. No new SQL functions, indexes, tables or release flags were deployed.
+- **GitHub Actions blocker:** current PR checks report `action_required` with zero jobs rather than a pass/fail. An authorized repository maintainer must approve the checks through GitHub before treating the combined TypeScript, mobile and Edge bundles as verified.
+
 ## Current integration boundaries
 
 The existing Edge gameplay entrypoint has a `view=rankings` read-only handler in the draft, with authenticated account ownership sourced from the session. It exposes gated **start/page** snapshot reads, Arena history, World Boss history and Party/Guild finalized history. There is **no client seal endpoint, reward payout endpoint, public finalizer or active release switch**.

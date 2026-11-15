@@ -1,10 +1,14 @@
 import {createCharacter,newGame,startCombat,claimActivity,previewActivityReward} from '../src/core/game';
-import {monsterMastery,recordMonsterMastery,normalizeMonsterMastery,monsterMasteryCombatBonuses} from '../src/core/monster-mastery';
+import {monsterMastery,recordMonsterMastery,normalizeMonsterMastery,monsterMasteryCombatBonuses,monsterMasteryKillsForRank,monsterMasteryRankFromKills,MONSTER_MASTERY_MAX_KILLS} from '../src/core/monster-mastery';
 import {ENEMY_FAMILIES,enemyFamilyForMonster} from '../src/content/enemy-families';
 import {MONSTERS} from '../src/content/monsters';
 import {enemyFamilyMastery,normalizeEnemyFamilyMastery,backfillEnemyFamilyMastery,ENEMY_FAMILY_MASTERY_MILESTONES,recordEnemyFamilyMastery,enemyFamilyMasteryPointsPerKill,familyMasteryPointsForRank,FAMILY_MASTERY_MAX_POINTS,enemyFamilyMasteryGuidance} from '../src/core/enemy-family-mastery';
 import {MONSTER_MASTERY_MILESTONES,monsterMasteryGuidance,nextMasteryMilestone} from '../src/core/monster-mastery-presentation';
 import {activityCycleSeconds} from '../src/core/dashboard';
+import {masteryRewardBonuses} from '../src/core/mastery-rewards';
+import {MASTERY_ANTICIPATION_MILESTONES,masteryMilestoneAnticipation} from '../src/core/progress-anticipation';
+import {combatCompanionDef} from '../src/content/combat-companions';
+import {companionUnlockRequirementMet} from '../src/core/combat-companions';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {itemDef} from '../src/content/items';
@@ -13,10 +17,29 @@ let s=createCharacter(newGame(now),'WAYFINDER','Mastery Test');s=startCombat(s,'
 const claimed=claimActivity(s,now+60000);ok(monsterMastery(claimed.state,'MOSS_RAT').points===claimed.reward.kills,'one point per verified kill');ok(monsterMastery(claimActivity(claimed.state,now+60000).state,'MOSS_RAT').points===claimed.reward.kills,'no repeat points');
 ok(enemyFamilyMastery(claimed.state,'BEAST').points===claimed.reward.kills,'each verified kill also advances the matching enemy family');
 ok(enemyFamilyMastery(claimActivity(claimed.state,now+60000).state,'BEAST').points===claimed.reward.kills,'reclaim cannot repeat family mastery points');
-for(const [points,rank,damage,yieldBonus] of [[124,4,0,0],[125,5,.01,0],[250,10,.01,0],[375,15,.01,.03],[750,30,.02,.05]]){const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:points};const m=monsterMastery(x,'MOSS_RAT');ok(m.rank===rank&&m.damageBonus===damage&&m.materialBonus===yieldBonus,'rank bonuses '+rank);}
+for(const rank of [0,1,4,5,10,15,20,25,29,30]){
+ const threshold=monsterMasteryKillsForRank(rank),x=structuredClone(s);
+ x.character!.monsterMasteryPoints={MOSS_RAT:threshold};
+ const m=monsterMastery(x,'MOSS_RAT'),expected=masteryRewardBonuses(rank);
+ ok(m.rank===rank&&Math.abs(m.damageBonus-expected.damageBonus)<1e-12&&Math.abs(m.materialBonus-expected.materialBonus)<1e-12,'species mastery rank and rewards at '+rank);
+ if(rank>0){
+  x.character!.monsterMasteryPoints={MOSS_RAT:threshold-1};
+  ok(monsterMastery(x,'MOSS_RAT').rank===rank-1,'one kill short of species Rank '+rank);
+ }
+}
+ok(MONSTER_MASTERY_MAX_KILLS===1500&&monsterMasteryKillsForRank(30)===1500,'species mastery caps at 1500 kills');
+ok(monsterMasteryKillsForRank(1)===20&&monsterMasteryKillsForRank(5)===121&&monsterMasteryKillsForRank(10)===293&&monsterMasteryKillsForRank(15)===517&&monsterMasteryKillsForRank(20)===793,'species reward milestones use progressive kill thresholds');
+for(let rank=1;rank<=30;rank++){
+ const previous=monsterMasteryKillsForRank(rank-1),next=monsterMasteryKillsForRank(rank);
+ ok(next>previous,'species ranks increase strictly');
+ if(rank>=2)ok(next-previous>=previous-monsterMasteryKillsForRank(rank-2),'later species ranks do not become cheaper');
+ const earned=masteryRewardBonuses(rank),earlier=masteryRewardBonuses(rank-1);
+ ok(earned.damageBonus>=earlier.damageBonus&&earned.materialBonus>=earlier.materialBonus,'every gained species rank preserves or improves its bonuses');
+}
+ok(Math.abs(masteryRewardBonuses(30).damageBonus-.02)<1e-12&&Math.abs(masteryRewardBonuses(30).materialBonus-.05)<1e-12,'rank 30 retains controlled passive caps');
 ok(MONSTER_MASTERY_MILESTONES.some(row=>row.rank===5&&row.label==='Hunter Instinct')&&MONSTER_MASTERY_MILESTONES.some(row=>row.rank===15&&row.label==='Material Expertise')&&MONSTER_MASTERY_MILESTONES.some(row=>row.rank===30&&row.label==='Perfect Study'),'Canonical mastery milestones must appear on the Mastery ladder');
-const guidance4=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:100};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance4.rank===4&&guidance4.next?.rank===5&&guidance4.killsToNextMilestone===25,'Rank 4 guidance should point to Rank 5 combat milestone');const guidance10=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:250};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance10.dropKnowledge&&nextMasteryMilestone(10)?.rank===15,'Rank 10 should reveal drop knowledge and point to Rank 15');
-const completeGuidance=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:750};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(!completeGuidance.next&&completeGuidance.killsToNextMilestone===0,'Rank 30 mastery should complete the canonical milestone ladder');
+const guidance4=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:100};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance4.rank===4&&guidance4.next?.rank===5&&guidance4.killsToNextMilestone===21,'Rank 4 guidance should point to Rank 5 combat milestone');const guidance10=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:monsterMasteryKillsForRank(10)};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance10.dropKnowledge&&nextMasteryMilestone(10)?.rank===15,'Rank 10 should reveal drop knowledge and point to Rank 15');
+const completeGuidance=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:1500};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(!completeGuidance.next&&completeGuidance.killsToNextMilestone===0,'Rank 30 mastery should complete the canonical milestone ladder');
 // Every ordinary enemy belongs to exactly one family. Bosses cannot grant family progress.
 const ordinary=MONSTERS.filter(m=>!m.boss);
 const assigned=ENEMY_FAMILIES.flatMap(f=>f.monsterIds);
@@ -27,15 +50,16 @@ ok(ENEMY_FAMILIES.find(f=>f.id==='ORC')?.monsterIds.length===0,'future Orc famil
 ok(enemyFamilyForMonster('IRONWOOD_WOLF')?.id==='BEAST'&&enemyFamilyForMonster('OATHGLASS_REVENANT')?.id==='UNDEAD','distinct biological families map correctly');
 ok(enemyFamilyForMonster('SAFFRON_MARAUDER')?.id==='HUMAN','human combatants are separately classified from undead');
 
-for(const [points,rank,damage,yieldBonus] of [[1766,4,0,0],[1767,5,.01,0],[4828,10,.01,0],[9181,15,.01,.03],[30000,30,.02,.05]]){
+for(const [points,rank] of [[2442,4],[2443,5],[7241,10],[14397,15],[50000,30]]){
  const x=structuredClone(s);
  x.character!.familyMasteryPoints={BEAST:points};
  const p=enemyFamilyMastery(x,'BEAST');
- ok(p.rank===rank&&p.damageBonus===damage&&p.materialBonus===yieldBonus,'family rank milestones '+rank);
+ const expected=masteryRewardBonuses(rank);
+ ok(p.rank===rank&&Math.abs(p.damageBonus-expected.damageBonus)<1e-12&&Math.abs(p.materialBonus-expected.materialBonus)<1e-12,'family rank milestones '+rank);
 }
 ok(ENEMY_FAMILY_MASTERY_MILESTONES.length===6,'type mastery mirrors all six species milestone levels');
-ok(FAMILY_MASTERY_MAX_POINTS===30000&&familyMasteryPointsForRank(30)===30000,'maximum family mastery requires exactly 30000 points');
-ok(familyMasteryPointsForRank(1)===250&&familyMasteryPointsForRank(5)===1767&&familyMasteryPointsForRank(10)===4828,'early family ranks use progressive costs instead of an abrupt flat grind');
+ok(FAMILY_MASTERY_MAX_POINTS===50000&&familyMasteryPointsForRank(30)===50000,'maximum family mastery requires exactly 50000 points');
+ok(familyMasteryPointsForRank(1)===300&&familyMasteryPointsForRank(5)===2443&&familyMasteryPointsForRank(10)===7241,'early family ranks use progressively higher requirements');
 for(let rank=1;rank<=30;rank++)ok(familyMasteryPointsForRank(rank)>familyMasteryPointsForRank(rank-1),'every successive rank threshold increases');
 for(let rank=2;rank<=30;rank++)ok(
  familyMasteryPointsForRank(rank)-familyMasteryPointsForRank(rank-1)>=familyMasteryPointsForRank(rank-1)-familyMasteryPointsForRank(rank-2),
@@ -76,18 +100,18 @@ const wolfAndRat=recordMonsterMastery(recordMonsterMastery(s,'MOSS_RAT',600),'IR
 ok(enemyFamilyMastery(wolfAndRat,'BEAST').points===1100,'different species contribute to the same family');
 ok(monsterMastery(wolfAndRat,'MOSS_RAT').points===600&&monsterMastery(wolfAndRat,'IRONWOOD_WOLF').points===500,'species tracks remain separate');
 const postSpeciesCap=recordMonsterMastery(recordMonsterMastery(s,'MOSS_RAT',1000),'MOSS_RAT',1000);
-ok(monsterMastery(postSpeciesCap,'MOSS_RAT').points===750&&enemyFamilyMastery(postSpeciesCap,'BEAST').points===2000,'family progress continues after species Rank 30');
+ok(monsterMastery(postSpeciesCap,'MOSS_RAT').points===1500&&enemyFamilyMastery(postSpeciesCap,'BEAST').points===2000,'family progress continues after species Rank 30');
 const excluded=recordEnemyFamilyMastery(s,'FALLEN_KNIGHT',1500);
 ok(!excluded.character?.familyMasteryPoints,'boss kill bypasses family mastery');
 const backfill=backfillEnemyFamilyMastery({MOSS_RAT:750,IRONWOOD_WOLF:750,FIELD_WISP:125,FALLEN_KNIGHT:9999});
 ok(backfill.BEAST===1500&&backfill.ELEMENTAL===125&&!('UNDEAD' in backfill),'legacy species progress backfills the right families once');
 ok(Object.keys(normalizeEnemyFamilyMastery({UNKNOWN:25,BEAST:Infinity,HUMAN:10200,UNDEAD:-1})).join(',')==='HUMAN','family progress normalization rejects fake/invalid counters');
-ok(normalizeEnemyFamilyMastery({HUMAN:50000}).HUMAN===30000,'family progress is capped at 30000');
-const stacked=structuredClone(s);stacked.character!.monsterMasteryPoints={MOSS_RAT:750};stacked.character!.familyMasteryPoints={BEAST:30000};
+ok(normalizeEnemyFamilyMastery({HUMAN:80000}).HUMAN===50000,'family progress is capped at 50000');
+const stacked=structuredClone(s);stacked.character!.monsterMasteryPoints={MOSS_RAT:1500};stacked.character!.familyMasteryPoints={BEAST:50000};
 const bonus=monsterMasteryCombatBonuses(stacked,'MOSS_RAT');
 ok(Math.abs(bonus.damageMultiplier-1.02*1.02)<1e-12&&Math.abs(bonus.materialBonus-.10)<1e-12,'species and family bonuses stack multiplicatively for damage and additively for materials');
 ok(monsterMasteryCombatBonuses(stacked,'FIELD_WISP').damageMultiplier===1&&monsterMasteryCombatBonuses(stacked,'FALLEN_KNIGHT').damageMultiplier===1,'family effects apply only against a qualifying family');
-const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'MOSS_RAT').points===750,'points cap');ok(monsterMastery(master,'FIELD_WISP').damageBonus===0&&monsterMastery(master,'FALLEN_KNIGHT').damageBonus===0,'species only, excludes boss');
+const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'MOSS_RAT').points===1500,'species kill cap');ok(monsterMastery(master,'FIELD_WISP').damageBonus===0&&monsterMastery(master,'FALLEN_KNIGHT').damageBonus===0,'species only, excludes boss');
 // Early regions now resolve real landed strikes instead of dividing an authored
 // timer, so mastery damage reaches the hunt through huntBasePlayerHit. A +2% bonus
 // is too small to remove a whole strike from an early hunt, so the shown cycle can
@@ -104,14 +128,14 @@ const sampleAtKills=(game:typeof s,target:number)=>{
  return previewActivityReward(game,right);
 };
 const speciesOnly=structuredClone(s);
-speciesOnly.character!.monsterMasteryPoints={MOSS_RAT:750};
+speciesOnly.character!.monsterMasteryPoints={MOSS_RAT:1500};
 speciesOnly.character!.familyMasteryPoints={};
 const before=sampleAtKills(s,20),after=sampleAtKills(speciesOnly,20);
 ok(before.kills===20&&after.kills===20,'compare identical verified kill counts, not fixed-time random encounters');const material=before.items.find(i=>i.itemId==='MOSS_FIBER')!;ok(after.items.find(i=>i.itemId==='MOSS_FIBER')!.quantity===material.quantity+Math.floor(material.quantity*.05),'5% actual normal material yield');
 const combinedRewards=sampleAtKills(stacked,20);
 ok(combinedRewards.items.find(i=>i.itemId==='MOSS_FIBER')!.quantity===material.quantity+Math.floor(material.quantity*.10),'both masteries grant 10% real normal material yield without double rounding');
 ok(before.items.every(item=>itemDef(item.itemId).type!=='gear')&&after.items.every(item=>itemDef(item.itemId).type!=='gear'),'Normal monster rewards should feed crafting rather than drop legacy finished gear');
-let forest=createCharacter(newGame(now),'WAYFINDER','Forest Test');forest.character!.level=25;forest.character!.hp=10000;forest.character!.currentHp=10000;forest.character!.monsterMasteryPoints={FOREST_TROLL:499};forest.currentRegionId='IRONWOOD';forest.unlockedMonsterIds.push('FOREST_TROLL');forest=startCombat(forest,'FOREST_TROLL',now);forest=claimActivity(forest,now+600000).state;
+let forest=createCharacter(newGame(now),'WAYFINDER','Forest Test');forest.character!.level=25;forest.character!.hp=10000;forest.character!.currentHp=10000;forest.character!.monsterMasteryPoints={FOREST_TROLL:monsterMasteryKillsForRank(20)-1};forest.currentRegionId='IRONWOOD';forest.unlockedMonsterIds.push('FOREST_TROLL');forest=startCombat(forest,'FOREST_TROLL',now);forest=claimActivity(forest,now+600000).state;
 ok(forest.account.unlockedCombatCompanionIds?.includes('UNIT_004'),'real Forest Troll combat unlocks Briarhorn Cub');
 const saved=parseSaveBackup(createSaveBackup(forest));ok(monsterMastery(saved,'FOREST_TROLL').points===monsterMastery(forest,'FOREST_TROLL').points,'save keeps mastery');
 ok(enemyFamilyMastery(saved,'GIANT').points===enemyFamilyMastery(forest,'GIANT').points,'save keeps independent family progression');

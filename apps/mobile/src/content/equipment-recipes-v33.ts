@@ -99,6 +99,16 @@ function mergeInputs(inputs:{itemId:string;quantity:number}[]){
   const totals=new Map<string,number>();for(const input of inputs)totals.set(input.itemId,(totals.get(input.itemId)??0)+input.quantity);
   return [...totals].map(([itemId,quantity])=>({itemId,quantity}));
 }
+/** Reduce the primary equipment material by two per piece, after tier/slot scaling.
+ * The first ingredient in each crafting profession/tier is its main resource;
+ * path materials, catalysts, and other secondary inputs remain unchanged. */
+export const EQUIPMENT_PRIMARY_MATERIAL_REDUCTION=2;
+function reducePrimaryEquipmentMaterial(inputs:{itemId:string;quantity:number}[]){
+  return inputs.map((input,index)=>index===0
+    ?{...input,quantity:Math.max(1,input.quantity-EQUIPMENT_PRIMARY_MATERIAL_REDUCTION)}
+    :input);
+}
+
 function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing'|'tailoring'){
   multiplier*=TIER_MATERIAL_MULTIPLIER[tier]??1;
   if(skillId==='tailoring'){
@@ -158,7 +168,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     xp:craftXp,
     gold:roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1)),
     seconds:clamp(Math.round(baseSeconds*(t5Affix?T5_AFFIX_TIME_MULTIPLIER:1)),range.min,range.max),
-    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier*(t5Affix?T5_AFFIX_MATERIAL_MULTIPLIER:1),skillId),infusion]),
+    inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier*(t5Affix?T5_AFFIX_MATERIAL_MULTIPLIER:1),skillId)),infusion]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

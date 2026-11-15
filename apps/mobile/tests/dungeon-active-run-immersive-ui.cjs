@@ -55,5 +55,5 @@ assert(shell.includes('hideHeader=false')&&shell.includes('{!hideHeader&&<View s
 assert(shell.indexOf('{banner?<View style={s.banner}>')<shell.indexOf('<ScrollView style={s.scroll}'),'Mode/phase strip remains above the room list');
 assert(run.indexOf('<DungeonRouteChoices')<run.indexOf('Party & formation'),'Room choices stay ahead of optional details');
 assert(run.includes('Return to dungeon list'),'Completed run still has an explicit exit');
-assert(browser.includes('onBack={onBack} backLabel={a("Back")}'),'Normal browser retains its navigation');
+assert(browser.includes('accessibilityLabel={a("Back")} onPress={onBack}'),'Compact dungeon toolbar retains its navigation');
 console.log('PASS standalone Account Dungeon screen, immersive run and safe exit; no World dungeon tabs');

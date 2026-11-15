@@ -1,25 +1,47 @@
-# Enemy Type Mastery — design and implementation (15 November 2026)
+# Veldryn Mastery Rebalance — species 1,500 kills / family 50,000 points
+**Design & implementation:** 15 November 2026 · GitHub PR #1170 · Three refinement passes
 
-## Goal
-Add a second layer of character-bound mastery on top of individual Monster Mastery. Each **verified ordinary-monster kill** awards exactly **one species point** and **1–6 enemy-family points** depending on the monster’s authored level and region. Mastering Beasts improves hunts against every Beast, not every enemy in Veldryn. No unrelated families receive the buff.
+## Goal and non-negotiable boundaries
+- **Individual Monster Mastery:** one point per verified kill **of that species**, capped at **1,500 kills / Rank 30**.
+- **Enemy Type Mastery:** an additional **1–6 points per verified ordinary kill**, awarded to that monster's single authored enemy family, capped at **50,000 points / Rank 30**.
+- Species bonuses affect that exact monster; family bonuses affect only ordinary members of its enemy family. Bonuses stack with each other.
+- Neither system awards points from unrelated monsters or the current story boss. No client-submitted command may create mastery points or ranks.
+- Character-bound counters for both systems; no change to existing class/companion XP or season progression.
 
-## Progression and rewards
-| Milestone | Species mastery | Enemy Type mastery |
-|---|---:|---:|
-| Points per rank | 25 kills | Increasing thresholds; first rank 250 points |
-| Maximum rank | 30 (750 kills) | 30 (30,000 points) |
-| Rank 5 | +1% damage | +1% damage vs family |
-| Rank 10 | Full base species drop table | Base drop tables for discovered species in family |
-| Rank 15 | +3% normal material yield | +3% normal materials vs family |
-| Rank 20 | Advanced knowledge | Advanced family knowledge (informational milestone; no new combat access) |
-| Rank 25 | Species mastery marker | Family mastery emblem (UI marker; not an account equipable badge) |
-| Rank 30 | +2% damage, +5% normal materials | +2% damage, +5% normal materials |
+## Pass 1 — Progressive curves and reward pacing
+### New cumulative thresholds
+| Rank | Individual kills | Enemy family points |
+|---:|---:|---:|
+| 1 | 20 | 300 |
+| 5 | 121 | 2,443 |
+| 10 | 293 | 7,241 |
+| 15 | 517 | 14,397 |
+| 20 | 793 | 23,908 |
+| 25 | 1,121 | 35,776 |
+| 29 | 1,420 | 46,967 |
+| 30 | **1,500** | **50,000** |
 
-The family curve is cumulative **P(r) = round(250r + 750r(r−1)/29)**, bounded to ranks 0–30. The milestones require 1,767 / 4,828 / 9,181 / 14,828 / 21,767 / 30,000 points at ranks 5 / 10 / 15 / 20 / 25 / 30. This keeps introductory milestones within reach and makes later ranks increasingly demanding.
+The exact monotone curves are:
+- Individual species `K(r) = round(20r + 900r(r-1)/870)`.
+- Enemy family `P(r) = round(300r + 41000r(r-1)/870)`.
+- `r` is capped to the integer 0–30. The first individual rank costs 20 kills, the final rank costs 80 kills; family rank 1 costs 300 points, final rank costs 3,033 points.
+- Rank 5/10/15/20/25/30 remain **the canonical milestone ranks**, but every milestone's kill/point threshold is recalculated from these functions. UI, anticipation hints and companion requirements use the same functions, avoiding separate hardcoded reward curves.
 
-**Points per verified ordinary kill** are selected from the monster’s actual zone and level (the higher eligible tier is used, not the sum):
+### Rewards: meaningful progress between milestone ranks
+Both mastery tracks use the same **capped rank-to-bonus function**, scaled by their own independently earned rank:
+- Before rank 5: no damage bonus. At rank 5: **+1.00% damage** against eligible monsters. Each additional rank gradually increases it to **+2.00% at rank 30**.
+- Before rank 15: no normal-material yield bonus. At rank 15: **+3.00% normal materials** from eligible monsters. Each additional rank gradually increases it to **+5.00% at rank 30**.
+- Rank 10 unlocks base drop knowledge. Species knowledge applies to that monster; family knowledge applies to already discovered members of that family only.
+- Rank 20 reveals advanced knowledge. It does not fabricate an extra combat bonus or grant dungeon access.
+- Rank 25 displays a mastery emblem/marker; family emblems are not equippable account badges.
+- Rank 30 finishes both gradually increasing passive curves.
 
-| Enemy region | Typical points / kill |
+This replaces long unrewarded periods between milestones with incremental rank-by-rank growth while retaining the existing maximum multipliers.
+
+**Stacking at maximum ranks**: Damage = `1.02 × 1.02 = 1.0404`, **+4.04%** against a monster with both tracks mastered. Normal-material bonus = `5% + 5% = +10%`, and both use one fractional-material remainder for fair small yields.
+
+### Type points by monster difficulty
+| Enemy region | Base family points per verified kill |
 |---|---:|
 | Greenfields, Silverbrook, Ironwood Forest | 1 |
 | Old Mines, King's Road | 2 |
@@ -27,38 +49,30 @@ The family curve is cumulative **P(r) = round(250r + 750r(r−1)/29)**, bounded 
 | Frostmarch | 4 |
 | Ashlands | 6 |
 
-Monster level thresholds (20 / 35 / 55 / 75) provide 2 / 3 / 4 / 6 points respectively if the monster level warrants more than its region. Rank 30 therefore needs **30,000 low-zone kills** at 1 point each, or **5,000 top-zone kills** at 6 points each. Mixed hunting routes use the actual points earned for each kill. Reward calculations never depend on the player's current level or chosen region.
+Monster level raises the point award when relevant: level 20+ at least 2, level 35+ at least 3, level 55+ at least 4, level 75+ at least 6. Region and level are **not added**; the higher valid value wins. Player level and selected region never change awards. The rate remains between 1 and 6. Rank 30 requires 50,000 low-zone kills (1 point each) or approximately 8,334 kills of top-region 6-point enemies, excluding other accumulated family credits.
 
-Rank 30 overrides earlier Rank 5/15 values **within the same track**; it does not add to them. Species and family damage bonuses multiply: maxed species + maxed family = 1.02 × 1.02 = **+4.04% total damage**. Material bonuses add to +10% and use a single fractional remainder to avoid lost amounts on low-quantity drops.
+## Pass 2 — Compatibility, settlement and data integrity
+- Increase species normalization and recording caps to 1,500. Previously earned valid kills remain as their recorded kill totals. **Historical kills beyond the old 750-counter cap cannot be recreated.**
+- Enemy family normalization and cap increase to 50,000. On migration of a save **without a family counter**, backfill that family once from valid recorded species kills, weighted by their monster's level/region. Includes inactive character slots. Existing family counters are not overwritten or credited twice on subsequent loads.
+- A previous 750-kill species counter is **not treated as 1,500 kills**. Under the revised rank curve, its displayed rank can therefore change until new kills are earned. We deliberately do not manufacture kill progress.
+- Important exception: previously attained **account-wide companion unlock qualifications** are monotonic. Never overwrite old companion mastery-unlock counters with a lower recalculated rank; previously unlocked companions remain owned. New players use the revised Rank 20 requirement (793 kills of the corresponding species).
+- Species and family points are recorded only through the verified ordinary hunt settlement with a valid positive integer kill count. Reclaims, zero kills, boss rewards and fabricated enemy IDs cannot grant points.
+- Species kill counts cap at 1,500, but family point accumulation continues normally until 50,000.
+- Combined damage is calculated once per hunt, and material bonuses share the same fractional remainder.
 
-## Enemy families (41 ordinary enemies)
-- **Undead**: oathfallen, drowned revenants, wraiths and specters
-- **Humans**: mortal adventurers, raiders, soldiers and spellcasters
-- **Orcs**: predefined, currently empty; no live enemy is claimed to be an Orc
-- **Beasts**: common wildlife, wolves, aquatic fauna, bats and striders
-- **Vermin**: arachnids, mites and scorpions
-- **Natureborn**: treants, thornlings and plant creatures
-- **Constructs**: animated sentinels and guardians
-- **Elementals**: magical wisps and living flame
-- **Spirits**: mirage-born noncorporeal entities
-- **Giants**: forest trolls
+## Pass 3 — Presentation and regression
+- Both mastery panels are collapsed by default and use one-expanded-entry-at-a-time layouts rather than showing long drop-table walls.
+- Individual monster rows show species Rank, current / 1,500 kills, exact **variable-rank progress**, kills to next rank and current +X.XX% damage/materials. Expanded details show family bonuses, next milestone and source drops where knowledge is unlocked.
+- Enemy type rows show family Rank, current / 50,000 points, exact variable-rank progress, points to next rank, known contributing enemies and actual +1–6 points per kill.
+- UI formats numbers per selected language and uses current bonuses to **two decimal places**. Generic translation fallback is used for newly authored copy; comprehensive translations can be added separately.
+- Family Rank 10 knowledge also unlocks the matching discovered species drop table in the species panel. Undiscovered species remain hidden.
+- The 41 current ordinary enemies are explicitly mapped into Undead, Humans, Beasts, Vermin, Natureborn, Constructs, Elementals, Spirits and Giants. Orcs are reserved as an empty future family, not fabricated enemies.
+- Tests exercise both rank curves, **every adjacent rank boundary**, bonus monotonicity and caps, region/level point awards, no duplication, companion unlock stability, inactive-save normalization, cross-family boundaries, reward stacking, material fractional remainders and UI source-of-truth bindings.
 
-All 41 ordinary enemies belong to exactly one of nine populated families, with Orcs ready for future content. The Fallen Knight story boss has no family mastery; boss victory cannot generate regular kill mastery. The assignments are authored in `src/content/enemy-families.ts` rather than inferred from the enemy's combat pressure profile. Lore review can update classifications without modifying combat algorithms.
+## Release gates and out-of-scope
+1. Mobile/core TypeScript checks and combat/regional tests must pass. If they fail, distinguish feature regressions from the pre-existing Activity Overview ScrollView typing issue and Edge-bundle source/hash mismatch previously observed in CI.
+2. Verify online persistence of `familyMasteryPoints` on active/inactive characters. This PR does not perform a production SQL migration or forcibly reset mastery progress.
+3. Bonuses currently apply to **ordinary hunts**. The Fallen Knight and server-authoritative dungeons have separate combat paths; species/type mastery does not automatically apply to them. Extend server-trusted snapshots separately before claiming parity across modes.
+4. No account badge entitlement or collectible art is created by the family marker alone.
 
-## Legacy accounts and safeguards
-Family mastery is **character-bound**, matching current individual Monster Mastery. It is not shared between different character slots. On the first upgraded save only, existing valid species kill counts (maximum 750 for each species) are multiplied by each monster's authored zone/level weight and summed into the corresponding family. The total may be incomplete for users who killed a species after its individual cap because those excess historical kills are not recorded. Later saves always retain the independent family total and never reapply the backfill. Progression continues normally after an individual species reaches its cap. No old species ranks are reset.
-
-Family points are granted only through the same verified ordinary-combat settlement that grants species points. Claiming the same period twice yields no duplicate family points; forged family-rank commands are not accepted. Preview calculations are pure and cannot grant ranks.
-
-## UI and knowledge
-The Combat screen shows Monster Mastery and a second collapsible Enemy Type Mastery panel. Only the selected family expands; the compact rows show rank, points to next rank, actual known-enemy points per kill and stacked effects. Progress bars use the current rank's **variable** point interval, not a fixed number of kills. Type-specific drop knowledge reveals base drop tables for discovered family members only; the panel does not bypass region visibility or progression unlocks. Rank 25 shows a visual emblem only, not an equippable account badge (no such new badge entitlement is implemented).
-
-## Deployment considerations
-- The implementation adds `familyMasteryPoints` to each `CharacterState` and the save normalizer, including inactive character slots. No database table change is requested here, but live persistence of the character JSON needs confirmation.
-- The new bonuses are applied in ordinary solo-hunt combat and material drop settlement. Dungeon and boss combat paths that do not use the ordinary monster mastery resolver **do not yet receive these buffs**, matching the existing species-mastery boundary. Do not advertise cross-mode bonuses without separately integrating server-authoritative combat snapshots.
-- Existing skill, companion and progression records remain unaffected.
-- Regression coverage checks all 41 mappings, the progressive 30,000-point curve, minimum one point per kill, higher-zone scaling, total damage/yield, no replay, weighted historical backfill, caps and compact UI discovery.
-
-## Two refinement passes
-1. **Progression and settlement:** single mastery-bonus resolution per hunt; progressive family-rank thresholds, weighted region/monster-level rewards, safe capped persistence, and level/zone-consistent backfill of already recorded kills.
-2. **Presentation:** compact per-family accordion, point-based progress labels instead of inaccurate kill estimates, localized number formatting, explicit reward scaling and known-monster values, and a collapsed default to preserve combat-screen space.
+These boundaries preserve progression integrity while delivering the requested longer, smoother mastery objectives.

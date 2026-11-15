@@ -38,7 +38,15 @@ assert.equal(combined.gems.find(v=>v.grade===2)?.quantity,1);
 const failed=combineGemV1(wallet,'stat_might',1,.99);
 assert.equal(failed.gems.find(v=>v.grade===1)?.quantity,2,'Failed merges lose just one gem');
 assert.equal(failed.gems.some(v=>v.grade===2),false,'Failed merges never mint a higher gem');
-assert.equal(failed.gold,wallet.gold-1500,'Failed merges still pay costs');
+assert.equal(failed.gold,wallet.gold-1800,'Failed merges still pay the current Forge Gold cost');
+const radiantWallet:GemWallet={...wallet,gems:[{familyId:'stat_might',grade:4,quantity:3}]};
+const radiantFailure=combineGemV1(radiantWallet,'stat_might',4,.99);
+assert.equal(radiantFailure.gems.find(v=>v.grade===4)?.quantity,2,'A failed G4 merge must return 2 Flawless gems');
+assert.equal(radiantFailure.gold,radiantWallet.gold-72000,'G4 merge must use the same 20%-increased Forge Gold cost');
+assert.equal(radiantFailure.dust,radiantWallet.dust-40,'Failed G4 merge spends Gem Dust');
+assert.equal(radiantFailure.radiantCatalysts,0,'Failed G4 merge consumes its Radiant Catalyst');
+const radiantSuccess=combineGemV1(radiantWallet,'stat_might',4,.1);
+assert.equal(radiantSuccess.gems.find(v=>v.grade===5)?.quantity,1,'Successful G4 merge must award 1 Radiant gem');
 const dismantled=dismantleGemV1(combined,'stat_might',2,1);
 assert.equal(dismantled.dust,103);
 

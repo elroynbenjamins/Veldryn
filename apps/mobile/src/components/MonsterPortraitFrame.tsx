@@ -3,13 +3,18 @@ import {visualText} from '../i18n/visuals';
 import {useEffect,useRef} from 'react';
 import {Animated,Easing,Image,StyleSheet,Text,View} from 'react-native';
 import type {MonsterDef} from '../content/monsters';
-import {monsterPortraitSource,regionalMonsterPortraitAtlas,regionalMonsterPortraitCell,REGIONAL_MONSTER_CELL,REGIONAL_MONSTER_SHEET_SIZE} from '../theme/monster-assets';
+import {monsterPortraitSource,regionalMonsterPortraitAtlas,regionalMonsterPortraitCell,REGIONAL_MONSTER_CELL,REGIONAL_MONSTER_SHEET_SIZE,newRegionalMonsterPortraitAtlas,newRegionalMonsterPortraitCell,NEW_REGIONAL_MONSTER_CELL,NEW_REGIONAL_MONSTER_SHEET_SIZE} from '../theme/monster-assets';
 import {C,radii} from '../theme/theme';
 
 export function MonsterPortraitFrame({monster,size=96,active=false,framed=true,reduceMotion=false}:{monster:MonsterDef;size?:number;active?:boolean;framed?:boolean;reduceMotion?:boolean}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
   const accent=monster.boss?'#e2ad52':monster.level>=20?'#a783d8':monster.level>=10?'#5ea3c7':C.good;
   const portrait=monsterPortraitSource(monster.id),regionalCell=regionalMonsterPortraitCell(monster.id);
+  const newCell=newRegionalMonsterPortraitCell(monster.id);
+  const activeCell=newCell??regionalCell;
+  const activeAtlas=newCell?newRegionalMonsterPortraitAtlas:regionalMonsterPortraitAtlas;
+  const activeCellSize=newCell?NEW_REGIONAL_MONSTER_CELL:REGIONAL_MONSTER_CELL;
+  const activeSheetSize=newCell?NEW_REGIONAL_MONSTER_SHEET_SIZE:REGIONAL_MONSTER_SHEET_SIZE;
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
     pulse.setValue(0);
@@ -22,7 +27,7 @@ export function MonsterPortraitFrame({monster,size=96,active=false,framed=true,r
   },[active,pulse,reduceMotion]);
   const scale=pulse.interpolate({inputRange:[0,1],outputRange:[1,1.035]});
   return <Animated.View accessibilityLabel={tr('{name} pixel portrait',{name:monster.name})} style={[s.frame,!framed&&s.unframed,{width:size,height:size,borderColor:active?C.accent:accent},active&&framed&&s.active,{transform:[{scale}]}]}>
-    {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={{width:size-10,height:size-10}}/>:regionalCell?<View style={{width:size-10,height:size-10,overflow:'hidden'}}><Image source={regionalMonsterPortraitAtlas} resizeMode="stretch" fadeDuration={0} style={{position:'absolute',width:(size-10)/REGIONAL_MONSTER_CELL*REGIONAL_MONSTER_SHEET_SIZE,height:(size-10)/REGIONAL_MONSTER_CELL*REGIONAL_MONSTER_SHEET_SIZE,left:-regionalCell.column*(size-10),top:-regionalCell.row*(size-10)}}/></View>:<View style={[s.fallback,{width:size-10,height:size-10,borderColor:accent}]}><Text style={[s.fallbackMark,{color:accent}]}>{monster.name.slice(0,1).toUpperCase()}</Text></View>}
+    {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={{width:size-10,height:size-10}}/>:activeCell?<View style={{width:size-10,height:size-10,overflow:'hidden'}}><Image source={activeAtlas} resizeMode="stretch" fadeDuration={0} style={{position:'absolute',width:(size-10)/activeCellSize*activeSheetSize,height:(size-10)/activeCellSize*activeSheetSize,left:-activeCell.column*(size-10),top:-activeCell.row*(size-10)}}/></View>:<View style={[s.fallback,{width:size-10,height:size-10,borderColor:accent}]}><Text style={[s.fallbackMark,{color:accent}]}>{monster.name.slice(0,1).toUpperCase()}</Text></View>}
     {active&&!reduceMotion&&<Animated.View pointerEvents="none" style={[s.activeGlow,{opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.08,.28]})}]}/>}
     {framed&&<View style={[s.level,{backgroundColor:accent}]}><Text style={s.levelText}>{monster.boss?tr('BOSS'):tr('LV {level}',{level:monster.level})}</Text></View>}
   </Animated.View>;

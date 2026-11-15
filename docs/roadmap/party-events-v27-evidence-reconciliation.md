@@ -12,7 +12,7 @@
 ## Required evidence before even preparing a payout
 
 1. Event/offer/account/week/party/character match with live account ownership; the **frozen** enrolled character must still be the active character.
-2. Event is in its final stage; Day 8 settlement hour has arrived; week isn't settled.
+2. Event is in its final stage and Day 8 settlement hour has arrived. A previously attested reward remains eligible for inspection even after the **global week status becomes settled**; the paid-receipt guard prevents repeat payment.
 3. v23 boss attestation and v24 prepared batch have matching candidate/replay hashes and reward band; canonical ruleset and vetted gathering audit match.
 4. Every nonpaying record has its immutable, release-disabled flags intact. A full offer has exactly one locked, account-owned Warrior / Artisan / Companion selection. A participation offer has no choice.
 5. All three independent v25 records have the same `offer_id`, account, frozen character, event week, reservation, reward kind/model and quote hash, and each reward independently matches the deterministic v2 model.

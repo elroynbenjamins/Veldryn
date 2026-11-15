@@ -64,7 +64,7 @@ BEGIN
   IF jsonb_typeof(r)<>'object' OR
      r->>'id' IS NULL OR r->>'id' !~ '^[A-Z0-9_]{4,100}$' OR
      r->>'track' IS NULL OR
-     r->>'track'<>ALL(tracks) AND r->>'track'<>ANY(tracks) OR
+     NOT ((r->>'track')=ANY(tracks)) OR
      (r->>'tier') !~ '^[1-4]$' OR
      jsonb_typeof(r->'materials')<>'array' OR
      jsonb_array_length(r->'materials')<>2

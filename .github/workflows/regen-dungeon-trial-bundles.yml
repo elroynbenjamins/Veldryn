@@ -1,0 +1,37 @@
+name: Regenerate dungeon Trial companion Edge bundles
+on:
+  push:
+    branches:
+      - fix/dungeon-companions-active-trials-20261115
+permissions:
+  contents: write
+jobs:
+  rebuild:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild committed online Edge functions
+        run: pnpm --dir backend build:online
+      - name: Commit regenerated bundles to this feature branch
+        shell: bash
+        run: |
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'build: regenerate Edge bundles for dungeon Trial companions'
+            git push origin HEAD:fix/dungeon-companions-active-trials-20261115
+          fi

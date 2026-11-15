@@ -74,7 +74,7 @@ function routeToBank(bank:GameState['bank'],baseOverflow:OverflowState,incoming:
 }
 function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['bank']){
  const equipped=Object.entries(entry.character.equipment)
-  .filter(([,id]):id is string=>typeof id==='string'&&!!id)
+  .filter((entry):entry is [string,string]=>typeof entry[1]==='string'&&!!entry[1])
   .map(([slot,itemId])=>({itemId,quantity:1,...(entry.character.equipmentInstanceIds?.[slot as GearSlot]?{instanceId:entry.character.equipmentInstanceIds[slot as GearSlot]}:{})}));
  const tools=[...new Set(Object.values(entry.character.equippedToolIds??{}).filter((id):id is string=>typeof id==='string'&&!!id))];
  const held=[...equipped,...tools.map(itemId=>({itemId,quantity:1}))];

@@ -19,6 +19,9 @@ on:
       - 'apps/mobile/tests/ui-density-hierarchy-contract.ts'
       - '.github/workflows/rankings-readonly-validation.yml'
 
+permissions:
+  contents: read
+
 jobs:
   rankings:
     runs-on: ubuntu-latest

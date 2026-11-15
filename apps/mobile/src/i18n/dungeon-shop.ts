@@ -91,27 +91,47 @@ const materialNames:Readonly<Record<string,string>>={
  'GEM DUST':'Edelsteinstaub',
  'TEMPERING CORE':'Härtekern',
 };
-const bonusNames:Readonly<Record<string,string>>={
- craftingSpeed:'Herstellungsgeschwindigkeit',
- skillXp:'Fertigkeits-EP',
- dropChance:'Beutechance',
- gatheringYield:'Sammelertrag',
- hp:'Lebenspunkte',
- healingEffectiveness:'Heilwirkung',
- fishingSpeed:'Angelgeschwindigkeit',
- defense:'Verteidigung',
- actionSpeed:'Aktionsgeschwindigkeit',
+/** Only these reviewed server bonus identifiers are converted to display labels. */
+const bonusNames:Readonly<Record<string,Readonly<Record<Language,string>>>>={
+ craftingSpeed:{en:'Crafting speed',de:'Herstellungsgeschwindigkeit',es:'Velocidad de fabricación',nl:'Productiesnelheid',it:'Velocità di creazione',fr:'Vitesse de fabrication',ru:'Скорость изготовления',tr:'Üretim hızı'},
+ skillXp:{en:'Skill XP',de:'Fertigkeits-EP',es:'Experiencia de habilidades',nl:'Vaardigheids-XP',it:'PE abilità',fr:'XP de compétence',ru:'Опыт навыков',tr:'Beceri XP'},
+ dropChance:{en:'Drop chance',de:'Beutechance',es:'Probabilidad de botín',nl:'Dropkans',it:'Probabilità di bottino',fr:'Chances de butin',ru:'Шанс добычи',tr:'Düşürme şansı'},
+ gatheringYield:{en:'Gathering yield',de:'Sammelertrag',es:'Rendimiento de recolección',nl:'Verzamelopbrengst',it:'Resa di raccolta',fr:'Rendement de récolte',ru:'Объём сбора',tr:'Toplama verimi'},
+ hp:{en:'Health',de:'Lebenspunkte',es:'Salud',nl:'Levenspunten',it:'Salute',fr:'Points de vie',ru:'Здоровье',tr:'Can'},
+ healingEffectiveness:{en:'Healing effectiveness',de:'Heilwirkung',es:'Eficacia de curación',nl:'Genezingseffectiviteit',it:'Efficacia delle cure',fr:'Efficacité des soins',ru:'Эффективность лечения',tr:'İyileştirme etkisi'},
+ fishingSpeed:{en:'Fishing speed',de:'Angelgeschwindigkeit',es:'Velocidad de pesca',nl:'Vissnelheid',it:'Velocità di pesca',fr:'Vitesse de pêche',ru:'Скорость рыбалки',tr:'Balık tutma hızı'},
+ defense:{en:'Defense',de:'Verteidigung',es:'Defensa',nl:'Verdediging',it:'Difesa',fr:'Défense',ru:'Защита',tr:'Savunma'},
+ actionSpeed:{en:'Action speed',de:'Aktionsgeschwindigkeit',es:'Velocidad de acción',nl:'Actiesnelheid',it:"Velocità d'azione",fr:"Vitesse d'action",ru:'Скорость действий',tr:'Eylem hızı'},
 };
+const bonusContext:Readonly<Record<Language,Readonly<{equipped:string;owned:string}>>>={
+ en:{equipped:'when equipped',owned:'while owned'},
+ de:{equipped:'ausgerüstet',owned:'im Besitz'},
+ es:{equipped:'al equipar',owned:'al poseer'},
+ nl:{equipped:'uitgerust',owned:'in bezit'},
+ it:{equipped:'quando equipaggiato',owned:'quando posseduto'},
+ fr:{equipped:'si équipé',owned:'si possédé'},
+ ru:{equipped:'при экипировке',owned:'при владении'},
+ tr:{equipped:'kuşanıldığında',owned:'sahip olunduğunda'},
+};
+const bonusSummaryPattern=/^\+ ([0-9]+(?:\.[0-9]{1,2})?)% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+(?:\.[0-9]{1,2})?)% owned$/;
 
-/** The Edge service emits only these reviewed offer-summary structures. */
+/** Decode only reviewed catalogue summary formats; raw stat IDs are never UI copy. */
 export function dungeonShopOfferSummary(language:Language,source:string):string{
- if(language!=='de')return source;
- const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
- if(material)return material[1]+' × '+materialNames[material[2]];
- const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);
- if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?(essence[1]==='1'?'Bindungsstein':'Bindungssteine'):'Begleiteressenz');
- const bonus=/^\+ ([0-9]+\.[0-9]{2})% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+\.[0-9]{2})% owned$/.exec(source);
- if(bonus)return '+'+bonus[1].replace('.',',')+' % '+bonusNames[bonus[2]]+' ausgerüstet; +'+bonus[3].replace('.',',')+' % im Besitz';
+ const bonus=bonusSummaryPattern.exec(source);
+ if(bonus){
+  const label=bonusNames[bonus[2]]?.[language];
+  if(label){
+   const percent=(value:string)=>language==='en'?value:value.replace('.',',');
+   const context=bonusContext[language];
+   return '+'+percent(bonus[1])+'% '+label+' ('+context.equipped+'); +'+percent(bonus[3])+'% ('+context.owned+')';
+  }
+ }
+ if(language==='de'){
+  const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
+  if(material)return material[1]+' × '+materialNames[material[2]];
+  const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);
+  if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?(essence[1]==='1'?'Bindungsstein':'Bindungssteine'):'Begleiteressenz');
+ }
  return dungeonShopText(language,source);
 }
 

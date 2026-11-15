@@ -1,0 +1,46 @@
+name: Hidden Guild PvE V7 real-engine calibration
+
+# Restricted to test-only Guild PvE files. Never deploys, migrates or grants.
+on:
+  push:
+    paths:
+      - 'backend/src/server/combat/guild-pve-broken-forge-v7.ts'
+      - 'apps/mobile/tests/guild-pve-real-combat-v7.ts'
+      - 'apps/mobile/tsconfig.guild-pve-v7.json'
+      - '.github/workflows/guild-pve-v7-validation.yml'
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/guild-pve-broken-forge-v7.ts'
+      - 'apps/mobile/tests/guild-pve-real-combat-v7.ts'
+      - 'apps/mobile/tsconfig.guild-pve-v7.json'
+      - '.github/workflows/guild-pve-v7-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verified-coop-equipment-and-guardian-fights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck source-derived Guild PvE combat
+        run: pnpm exec tsc -p tsconfig.guild-pve-v7.json --noEmit
+      - name: Compile hidden Guild PvE test only
+        run: pnpm exec tsc -p tsconfig.guild-pve-v7.json --outDir .core-build
+      - name: Run 1,944 phase-local fights
+        run: node .core-build/apps/mobile/tests/guild-pve-real-combat-v7.js

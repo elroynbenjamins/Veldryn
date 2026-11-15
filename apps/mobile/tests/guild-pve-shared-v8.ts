@@ -193,7 +193,7 @@ async function main(){
  const results=[] as Array<{members:number;tier:string;attempts:number;
   creditedHp:number;clearedMandatory:number;finished:boolean;phaseTransitions:number;
   pressure:number;supportFightCount:number;stale:number}>;
- for(const n of [4,8,12,20])for(const tier of ['Scout','Veteran','Mythic'] as const){
+ for(const n of [1,2,3,4,8,12,20])for(const tier of ['Scout','Veteran','Mythic'] as const){
   const group=members(n);
   const run=create('GXV8_MATRIX_'+n+'_'+tier,group,{attack:1000,difficulty:tier});
   let attempts=0,creditedHp=0,transitions=0,guardOrRally=0,staleEvents=0;
@@ -229,10 +229,10 @@ async function main(){
    phaseTransitions:transitions,pressure:snap.pressure,
    supportFightCount:guardOrRally,stale:staleEvents});
  }
- assert.equal(results.length,12);
+ assert.equal(results.length,21);
  console.log('GUILD_PVE_V8_METADATA='+JSON.stringify({
   sharedRunModel:true,inMemoryOnly:true,realEngineV7Preview:true,
-  authenticatedLiveDb:false,rosterCounts:[4,8,12,20],
+  authenticatedLiveDb:false,rosterCounts:[1,2,3,4,8,12,20],
   difficultyModes:['Scout','Veteran','Mythic'],scenarios:results.length,
   fullCampaignClearNotGuaranteed:true,phaseMechanicsCrossAttemptOnly:true,
   accountBoundSeals:true,resourceAndVotingNodesNotImplemented:true,

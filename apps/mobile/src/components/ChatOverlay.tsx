@@ -138,16 +138,16 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
         <Text style={s.title}>{st("Chat")}</Text>
        </View>
        <View style={s.headerSpacer}/>
-       {onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Online players')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View the list of players online')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{st('Online')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
+       {onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Online players')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View the list of players online')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{st('Online')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
       </View>
-      <View accessibilityRole="tablist" style={[s.tabs,compactTabs&&s.tabsCompact]}>
+      <View accessibilityRole="tablist" accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'} style={[s.tabs,compactTabs&&s.tabsCompact]}>
        <ChatTab channel="world" label={st("World")} selected={channel==='world'} onPress={()=>selectChannel('world')} compact={compactTabs}/>
        <ChatTab channel="guild" label={st("Guild")} selected={channel==='guild'} disabled={!guildAvailable} unread={guildAvailable?guildUnread:0} mentions={guildAvailable?guildMentions:0} onPress={()=>selectChannel('guild')} compact={compactTabs}/>
        <PartyChatGate party={party} accountId={accountId}><ChatTab channel="party" label={st("Party")} selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>selectChannel('party')} compact={compactTabs}/></PartyChatGate>
        <ChatTab channel="system" label={st("System")} selected={channel==='system'} onPress={()=>selectChannel('system')} compact={compactTabs}/>
       </View>
-      <View style={s.channelMeta}>
+      <View style={s.channelMeta} accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'}>
        <ChatChannelIcon channel={channel} color={C.accent}/>
        <Text numberOfLines={1} style={s.channelName}>{activeLabel}</Text>
        <View style={s.headerSpacer}/>
@@ -164,7 +164,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
        </ScrollView>
        <Pressable accessibilityRole="button" accessibilityLabel={guildGuideDoneText(state.settings.language)} onPress={()=>setGuildHelpOpen(false)} style={{minHeight:44,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{guildGuideDoneText(state.settings.language)}</Text></Pressable>
       </View>:null}
-      <View style={s.content} accessibilityElementsHidden={languageMenuOpen} importantForAccessibility={languageMenuOpen?'no-hide-descendants':'auto'}>
+      <View style={s.content} accessibilityElementsHidden={languageMenuOpen||onlinePlayersOpen} importantForAccessibility={languageMenuOpen||onlinePlayersOpen?'no-hide-descendants':'auto'}>
        <View style={[s.channelPanel,channel!=='world'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>
         {onlineConfigured?<OnlineWorldChat active={visible&&channel==='world'} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character?.name??''} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} embedded/>:__DEV__?<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} embedded/>:<View style={s.chatUnavailable}><Text style={s.chatUnavailableTitle}>{socialLabel(state.settings.language,"Online chat unavailable")}</Text><Text style={s.chatUnavailableText}>{socialLabel(state.settings.language,"This release is missing its online service configuration. Update or reinstall the production build rather than using temporary demo chat.")}</Text></View>}
        </View>

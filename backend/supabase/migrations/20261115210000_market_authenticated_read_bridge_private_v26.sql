@@ -93,7 +93,7 @@ begin
   -- Concurrent workers cannot overrun the per-minute cap through a SELECT
   -- then UPDATE race. The 30/20 limits are independent of Edge processes.
   v_max := case when p_action = 'browse' then 30 else 20 end;
-  v_window := pg_catalog.date_trunc('minute', pg_catalog.clock_timestamp());
+  v_window := pg_catalog.date_trunc('minute', pg_catalog.transaction_timestamp());
   insert into market_api_internal.market_read_buckets_v26 as bucket
     (account_id,action,window_start,hit_count)
     values (v_actor,p_action,v_window,1)

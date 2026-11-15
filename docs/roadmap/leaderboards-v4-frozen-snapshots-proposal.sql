@@ -82,7 +82,7 @@ DECLARE
 BEGIN
   IF p_requester IS NULL OR p_cursor IS NULL
   THEN RAISE EXCEPTION 'INVALID_RANKING_CURSOR'; END IF;
-  SELECT s.* ,c.raw_after INTO v_snapshot,v_after
+  SELECT s,c.raw_after INTO v_snapshot,v_after
   FROM private.rankings_frozen_cursors_v1 c
   JOIN private.rankings_frozen_snapshots_v1 s ON s.id=c.snapshot_id
   WHERE c.id=p_cursor AND s.requester_id=p_requester

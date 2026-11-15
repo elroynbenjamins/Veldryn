@@ -33,7 +33,7 @@ on conflict (item_id) do nothing;
 
 create or replace function public.dungeon_shop_purchase_server_v1(
  p_account_id uuid,p_item_id text,p_request_id text
-) returns jsonb language plpgsql security invoker set search_path='' as $
+) returns jsonb language plpgsql security invoker set search_path='' as $$
 declare
  v_rec public.dungeon_shop_receipts_v1%rowtype;
  v_offer public.dungeon_shop_catalogue_v1%rowtype;

@@ -67,7 +67,7 @@ ok(!stage.includes('playbackSpeed')&&!stage.includes('DUNGEON_PLAYBACK_SPEEDS'),
 ok(!stage.includes('Skip combat replay to result')&&!stage.includes('Pause combat replay'),'Dungeon theater must advance automatically without Live or Solo transport controls');
 ok(stage.includes('playbackAdvanceDelayMs(current,next,1)')&&read('src/core/dungeon-combat-playback.ts').includes('playbackCastDisplayMs(current,speed)'),'Dungeon combat cues and casts run at fixed normal speed');
 ok(stage.includes('playbackVisualDurationMs(fx.durationMs,1)'),'Combat effects use the same fixed normal speed');
-ok(card.includes('FOCUS →')&&card.includes('bossCast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
+ok(card.includes('FOCUS →')&&card.includes('cast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
 ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield must feed the cast cue target into the boss focus label');
 ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('Encounter totals')&&stage.includes('replay.contributions??[]'),'Completed combat replay must show factual contribution totals from its authoritative replay');
 ok(stage.includes("role==='tank'")&&stage.includes('TAKEN')&&stage.includes("role==='support'")&&stage.includes('HEAL'),'Contribution recap must emphasize role-relevant factual metrics');

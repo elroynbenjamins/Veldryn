@@ -322,6 +322,12 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     if(!runId)return;
     if(entrySource.kind!=='real'){if(entry?.activeRun)setRun(entry.activeRun);return;}
     void action(async()=>{
+      // Reuse the original idempotency key if the app closed during a POST.
+      // Never replay a mutation for a different run or a new room choice.
+      if(await coopClient.hasPendingForRun(runId)){
+        try{await coopClient.retryPending();}
+        catch(reason){setNotice(coopErrorMessage(reason));}
+      }
       const value=await coopClient.run(runId);
       if('team' in value){acceptRun(value);setSyncError('');return;}
       // Older endpoints may already return the validated presentation form.

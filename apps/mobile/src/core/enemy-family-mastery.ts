@@ -1,5 +1,4 @@
 import {ENEMY_FAMILIES,enemyFamilyForMonster,type EnemyFamilyId} from '../content/enemy-families';
-import {normalizeMonsterMastery} from './monster-mastery';
 import type {GameState} from './types';
 
 /** Four times the species-mastery requirement (100 vs 25 kills per rank).
@@ -27,10 +26,15 @@ export function normalizeEnemyFamilyMastery(raw:unknown):Record<string,number>{
  * past each species's cap without creating a duplicate backfill.
  */
 export function backfillEnemyFamilyMastery(speciesPoints:unknown):Record<string,number>{
- const species=normalizeMonsterMastery(speciesPoints),points:Record<string,number>={};
- for(const [monsterId,count] of Object.entries(species)){
+ const species=speciesPoints&&typeof speciesPoints==='object'&&!Array.isArray(speciesPoints)
+  ?speciesPoints as Record<string,unknown>:{};
+ const points:Record<string,number>={};
+ for(const [monsterId,value] of Object.entries(species)){
   const id=enemyFamilyForMonster(monsterId)?.id;
-  if(id)points[id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[id]??0)+count);
+  if(!id||typeof value!=='number'||!Number.isFinite(value)||value<=0)continue;
+  // Original species counters are capped at 750 verified kills.
+  const count=Math.min(750,Math.floor(value));
+  points[id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[id]??0)+count);
  }
  return points;
 }

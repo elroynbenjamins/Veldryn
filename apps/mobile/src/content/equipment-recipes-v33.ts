@@ -46,8 +46,9 @@ const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10
 const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 /** Boost final equipment assembly XP for T2–T4, including the existing T3/T4 +20 XP. */
 export const T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER=1.25;
-/** Further +20% on the current T2 crafting XP (after the shared T2–T4 boost). */
+/** Further +20% on the current T2–T4 crafting XP (after the shared 25% boost). */
 export const T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER=1.20;
+export const T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER=1.20;
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
   T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'IRONWOOD_BINDING_RESIN',quantity:1},
   T3:{itemId:'SUNSCAR_DUNE_BINDER',quantity:1},T4:{itemId:'GLASSBOUND_BINDER',quantity:1},
@@ -159,7 +160,8 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const range=timerRange[tier]??timerRange.T1;
   const baseCraftXp=q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0);
   const standardCraftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
-  const boostedCraftXp=tier==='T2'?Math.round(standardCraftXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardCraftXp;
+  const boostedCraftXp=tier==='T2'?Math.round(standardCraftXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
+    :['T3','T4'].includes(tier)?Math.round(standardCraftXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardCraftXp;
   const craftXp=t5Affix?Math.round(boostedCraftXp*T5_AFFIX_XP_MULTIPLIER):boostedCraftXp;
   const infusion={...infusionByTier[tier],quantity:infusionByTier[tier].quantity+(t5Affix?T5_AFFIX_EXTRA_FIXATIVE:0)};
   const baseSeconds=clamp(Math.round(range.base*multiplier),range.min,range.max);

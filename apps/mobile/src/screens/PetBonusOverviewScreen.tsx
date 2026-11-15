@@ -15,7 +15,7 @@ import {earlyFeatureUnlockProgress} from '../core/feature-unlocks';
 
 const PETS=COLLECTIBLES.filter(row=>row.kind==='pet');
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
-const viewOptions=['All','Owned','Locked','Core','Event'] as const;
+const viewOptions=['All','Owned','Locked','Core','Event','Dungeon'] as const;
 const regionOptions=['All regions','Asterfall','Sunscar','Frostmarch','Ashlands'] as const;
 type ViewFilter=typeof viewOptions[number];
 type RegionFilter=typeof regionOptions[number];
@@ -31,7 +31,7 @@ export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChang
  const corePets=journal.filter(row=>row.collectionGroup==='core'),eventPets=journal.filter(row=>row.collectionGroup==='event');
  const visiblePets=journal.filter(row=>{
   if(viewFilter==='Owned'&&!row.owned)return false;if(viewFilter==='Locked'&&row.owned)return false;
-  if(viewFilter==='Core'&&row.collectionGroup!=='core')return false;if(viewFilter==='Event'&&row.collectionGroup!=='event')return false;
+  if(viewFilter==='Core'&&row.collectionGroup!=='core')return false;if(viewFilter==='Event'&&row.collectionGroup!=='event')return false;if(viewFilter==='Dungeon'&&row.collectionGroup!=='dungeon')return false;
   if(regionFilter!=='All regions'&&row.region!==regionFilter)return false;return true;
  });
  const choose=(id?:string)=>{onChange(selectCollectible(state,'pet',id));setPickerOpen(false)};

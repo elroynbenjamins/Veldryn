@@ -1,8 +1,8 @@
 /**
  * Dungeon Marks Shop catalogue. Server validates IDs, while PostgreSQL owns
  * live prices, weekly caps, entitlements and the global release switch.
- * Only preverified account-bound SKUs can be enabled in the database; the
- * remainder stay preview-only until art and reward provenance are complete.
+ * The database gates each SKU. Reviewed crafting bundles are delivered directly
+ * to the shared Bank; legacy bound-material offers remain preview-only.
  */
 export const DUNGEON_SHOP_LIVE_V1 = true as const;
 export const DUNGEON_SHOP_CATALOG_VERSION = 'dungeon-marks-shop-v3-2026-11-15' as const;

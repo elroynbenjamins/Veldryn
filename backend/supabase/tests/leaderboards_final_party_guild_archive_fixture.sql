@@ -155,5 +155,31 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM<>'INVALID_COMPETITIVE_FINAL_ENTRIES' THEN RAISE; END IF;
   END;
+
+  -- Even a privileged accidental UPDATE/DELETE cannot rewrite an official
+  -- finalized result or its matching settlement receipt.
+  BEGIN
+    UPDATE private.rankings_final_mode_archives_v1
+    SET rows='[]'::jsonb
+    WHERE mode='party_event' AND event_key=event_id
+      AND metric='damage' AND bracket='standard:4';
+    RAISE EXCEPTION 'PUBLISHED_ARCHIVE_MUTATION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'FINAL_RANKING_RECORD_IMMUTABLE' THEN RAISE; END IF;
+  END;
+  BEGIN
+    DELETE FROM private.rankings_final_mode_settlement_receipts_v1
+    WHERE id=receipt;
+    RAISE EXCEPTION 'CERTIFIED_RECEIPT_DELETION_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'FINAL_RANKING_RECORD_IMMUTABLE' THEN RAISE; END IF;
+  END;
+  BEGIN
+    UPDATE private.rankings_final_mode_settlement_receipts_v1
+    SET entries_digest=repeat('0',32) WHERE id=receipt;
+    RAISE EXCEPTION 'CERTIFIED_RECEIPT_TAMPER_ACCEPTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'FINAL_RANKING_RECORD_IMMUTABLE' THEN RAISE; END IF;
+  END;
   RAISE NOTICE 'Party and Guild finalized archive gating, ties, immutability and identity passed';
 END $final_modes$;

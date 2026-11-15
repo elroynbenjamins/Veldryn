@@ -19,7 +19,8 @@
     "tests/world-boss-consented-echoes-v20.ts",
     "tests/world-boss-consent-command-v21.ts",
     "tests/world-boss-weekend-account-raid-v22.ts",
-    "tests/world-boss-account-service-v23.ts"
+    "tests/world-boss-account-service-v23.ts",
+    "tests/world-boss-account-balance-v24.ts"
   ],
   "exclude": []
 }

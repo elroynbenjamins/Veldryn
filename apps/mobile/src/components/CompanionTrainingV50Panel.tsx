@@ -109,7 +109,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
         {item.owned<item.quantity&&source&&source.kind!=='info'?<GameButton compact tone="secondary" title={t('Go')} onPress={()=>openSource(source)}/>:null}
       </View>})}
       <GameButton title={quartersUpgrade.ready?t('Upgrade Quarters'):t('Materials Required')} disabled={busy||!quartersUpgrade.ready} onPress={()=>act('companion_housing_upgrade',{id:selection})}/>
-    </View>:<Text style={s.done}>{t('Maximum Quarters quality reached.')}</Text>}
+    </View>:<Text style={s.done}>{t('No further Quarters upgrade is needed for this rarity.')}</Text>}
   </View>:null}
   {!model?<Text style={s.copy}>{t("No companion selected.")}</Text>:!model.owned?<View style={s.section}><Text style={s.sectionTitle}>{t("Unlock Requirements")}</Text>{model.def.unlockRequirements.map((req,index)=>{const p=companionRequirementProgress(state,req);return <View key={index} style={s.requirement}><Text style={p.complete?s.done:s.copy}>{p.complete ? '✓' : '○'}{companionContent(language,req.description)}</Text><Text style={p.complete?s.done:s.copy}>{p.current}/{p.total}</Text></View>})}<Text style={s.help}>{t("Unavailable requirements remain locked.")}</Text></View>:progress&&<>
    <View style={s.section}>

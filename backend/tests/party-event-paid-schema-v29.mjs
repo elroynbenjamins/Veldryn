@@ -151,6 +151,32 @@ async function run(){
   request:'another-v29-key-0001',hash:'f'.repeat(64),
  },tx), 'receipt quote hash cannot diverge from reward JSON');
 
+ // Even two individually valid reward hashes must match across the pair.
+ const changedJson=JSON.stringify({...reward,gold:421});
+ const changed=await q("select encode(sha256(convert_to($1::jsonb::text,'UTF8')),'hex') as h",[changedJson]);
+ await expectFailure(async tx=>{
+  await writeReceipt({
+   receipt:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+   inbox:'ffffffff-ffff-4fff-8fff-ffffffffffff',
+   offer:otherOffer,start:'2026-11-22T00:00:00Z',
+   request:'party-v29-quote-drift-0001',
+  },tx);
+  await writeInbox({
+   receipt:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+   inbox:'ffffffff-ffff-4fff-8fff-ffffffffffff',
+   offer:otherOffer,start:'2026-11-22T00:00:00Z',
+   json:changedJson,hash:changed.rows[0].h,
+  },tx);
+ },'Inbox/receipt mismatched reward hashes must rollback');
+ assert((await q('select count(*)::int as n from private.party_event_paid_claim_inbox_v29')).rows[0].n===1,
+  'mismatched pair never writes a second Inbox record');
+ await expectFailure(tx=>writeReceipt({
+  receipt:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+  inbox:'ffffffff-ffff-4fff-8fff-ffffffffffff',
+  offer:otherOffer,account:outsider,start:'2026-11-22T00:00:00Z',
+  request:'party-v29-foreign-owner-0001',
+ },tx),'account/offer mismatch is rejected');
+
  // Edits to paid records are forbidden; cascade deletion remains possible
  // for legitimate account erasure by the owner.
  await expectFailure(tx=>q(`update private.party_event_paid_claim_receipts_v29

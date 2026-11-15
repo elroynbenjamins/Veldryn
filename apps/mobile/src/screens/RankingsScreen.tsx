@@ -55,7 +55,7 @@ export function RankingsScreen(){
    try{
      const next=await rankingsClient.board(board,RANKING_PAGE_SIZE+1,rankingPageOffset(page));
      if(version===request.current){
-       if(next.board!==board||!Array.isArray(next.entries))throw new Error('Invalid rankings response.');
+       if(next.board!==board||!Array.isArray(next.entries))throw new Error('invalid_rankings_response');
        const display=projectRankingPage(next.entries,page);
        setSnapshot({...next,entries:display.entries});
        setLoadedPage(page);setHasNext(display.hasNext);
@@ -64,7 +64,7 @@ export function RankingsScreen(){
      // Keep the last successful snapshot for this board and page when refreshing
      // fails. Previous/Next and board switches clear that snapshot explicitly.
      if(version===request.current){
-       setError(e instanceof Error?e.message:st("Could not load Rankings."));
+       setError(st("Could not load Rankings."));
      }
    }finally{if(version===request.current)setLoading(false);}
  }

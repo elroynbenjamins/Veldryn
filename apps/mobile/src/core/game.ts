@@ -1,4 +1,5 @@
 import {ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
+import {creditMonthlyQuestMilestone} from './monthly-quest-milestones';
 import {hasFrozenLegacySeasonalGrant} from './legacy-seasonal-claim';
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
@@ -1075,7 +1076,10 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const updatedLedger=Object.fromEntries([...Object.entries(ledger).filter(([id])=>activeIds.has(id)),[contract.id,[...previousClaimants,state.character.id]]]);
   const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),personalSeasonalClaimLedger:updatedLedger,seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
   const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
-  return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices})),nowMs);
+  const withCharacterQuestReceipt=updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices});
+  // Keep per-character objective claims independent, but aggregate verified character/quest receipts account-wide.
+  const withMilestone=creditMonthlyQuestMilestone(withCharacterQuestReceipt,period,`${state.character!.id}:${contract.id}`,nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(withMilestone),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */

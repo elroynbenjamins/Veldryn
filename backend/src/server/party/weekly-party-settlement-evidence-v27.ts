@@ -200,7 +200,8 @@ export function verifyPrivatePartyEventEvidenceV27(
   // The three v25 revisions and the wallet-before are historical previews:
   // subsequent ordinary gameplay may legitimately advance them. Never reuse
   // these values as optimistic-lock requirements for a future payout.
-  must(typeof p.onlineRevision==='number'\n    &&Number.isSafeInteger(p.onlineRevision)&&p.onlineRevision>=0,
+  must(typeof p.onlineRevision==='number'
+    &&Number.isSafeInteger(p.onlineRevision)&&p.onlineRevision>=0,
     'online_state_missing');
   must(Number.isSafeInteger(intent.onlineRevision)
     &&Number.isSafeInteger(preflight.onlineRevision)

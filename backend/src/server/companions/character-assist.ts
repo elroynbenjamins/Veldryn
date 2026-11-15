@@ -57,15 +57,17 @@ export function applyCharacterCompanionAssist(owner:CombatantDefinition,progress
   target='lowest_hp_ally';condition='ally_below_80';
   effects=[{kind:'heal',flat:ownerHp*budget*.60*(1+value('heal_strength'))*multiplier('activeHealMultiplier'),tag:'companion_assist'},...signatureAssistEffects(def.id,ownerHp)];
  }else if(kind==='mitigation'){
-  effects=[{kind:'buff',value:-clamp(def.active.baseCoeff*multiplier('mitigationMultiplier'),.035,.10),durationMs:6000,tag:'damage_taken'}];
+  effects=[{kind:'buff',value:-clamp(def.active.baseCoeff*multiplier('mitigationMultiplier')*(1+value('shield_strength')*.5),.035,.10),durationMs:6000,tag:'damage_taken'}];
  }else{
   // Utility is a true short owner buff. The old companion_utility tag was not
   // consumed by the combat engine and gave players no meaningful effect.
-  effects=[{kind:'buff',value:clamp((def.id==='UNIT_012'?.05:def.active.baseCoeff)*multiplier('utilityMultiplier'),.035,.075),durationMs:6000,tag:'damage_done'}];
+  effects=[{kind:'buff',value:clamp((def.id==='UNIT_012'?.05:def.active.baseCoeff)*multiplier('utilityMultiplier')*(1+value('damage')),.035,.075),durationMs:6000,tag:'damage_done'},...(def.id==='UNIT_012'?[]:[{kind:'heal' as const,flat:ownerHp*budget*.20*(1+value('heal_strength')),tag:'companion_utility_heal'}])];
  }
  const ability:AbilityDefinition={...active,id:`${owner.id}:${def.id}:assist`,name:`${def.name}: ${active.name}`,target,aiCondition:condition,effects,tags:['combat_companion',def.id,def.role,`companion_signature:${def.id}`]};
  // The disruptor retains a tiny always-on tempo niche when a fight has no casts;
  // unlike the interrupt, this does not add actions or another party member.
- const stats=def.id==='UNIT_005'?{...owner.stats,haste:clamp(owner.stats.haste+.015,0,.75)}:owner.stats;
+ const extraHaste=clamp(value('haste')+(def.id==='UNIT_005'?.015:0),-.15,.15);
+ const extraDefense=clamp(value('defense'),-.15,.15);
+ const stats=extraHaste||extraDefense?{...owner.stats,haste:clamp(owner.stats.haste+extraHaste,0,.75),defense:owner.stats.defense*(1+extraDefense)}:owner.stats;
  return {...owner,stats,abilities:[...owner.abilities,ability],tags:[...(owner.tags??[]),`companion:${def.id}`]};
 }

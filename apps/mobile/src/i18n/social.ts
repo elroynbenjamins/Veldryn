@@ -7,6 +7,21 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  // Read-only Rankings pagination.
+  "No further ranked entries": ["Keine weiteren Ranglisteneinträge","No hay más entradas en la clasificación","Geen verdere ranglijstvermeldingen","Nessun'altra voce in classifica","Aucune autre entrée au classement"],
+  "Return to the previous page to view ranked entries.": ["Kehre zur vorherigen Seite zurück, um Ranglisteneinträge anzusehen.","Vuelve a la página anterior para consultar la clasificación.","Ga terug naar de vorige pagina om de ranglijst te bekijken.","Torna alla pagina precedente per vedere la classifica.","Revenez à la page précédente pour consulter le classement."],
+  "Previous": ["Zurück","Anterior","Vorige","Precedente","Précédent"],
+  "Next": ["Weiter","Siguiente","Volgende","Successiva","Suivant"],
+  "Page": ["Seite","Página","Pagina","Pagina","Page"],
+  "Entries {first}–{last}": ["Einträge {first}–{last}","Entradas {first}–{last}","Posities {first}–{last}","Voci {first}–{last}","Entrées {first}–{last}"],
+  "Live rankings can change while players progress.": ["Live-Ranglisten können sich ändern, während Spieler Fortschritte machen.","Las clasificaciones en vivo pueden cambiar a medida que progresan los jugadores.","Live-ranglijsten kunnen veranderen terwijl spelers vooruitgang boeken.","Le classifiche in tempo reale possono cambiare mentre i giocatori avanzano.","Les classements en direct peuvent évoluer à mesure que les joueurs progressent."],
+  "Reward amount is being prepared.": ["Der Belohnungsbetrag wird vorbereitet.","Se está preparando la cantidad de recompensa.","De beloningshoeveelheid wordt voorbereid.","La quantità della ricompensa è in preparazione.","Le montant de la récompense est en préparation."],
+  "Estimated · final Marks confirmed when claimed.": ["Geschätzt · endgültige Marken werden beim Abholen bestätigt.","Estimado · las marcas definitivas se confirman al reclamar.","Schatting · definitieve expeditiezegels worden bij het claimen bevestigd.","Stima · i marchi definitivi vengono confermati al riscatto.","Estimation · marques définitives confirmées lors de la récupération."],
+  "Refresh battle status": ["Kampfstatus aktualisieren","Actualizar estado de batalla","Gevechtsstatus vernieuwen","Aggiorna stato della battaglia","Actualiser l’état du combat"],
+  "You are already friends with {name}.": ["Du bist bereits mit {name} befreundet.","Ya eres amigo de {name}.","Je bent al bevriend met {name}.","Sei già amico di {name}.","Vous êtes déjà ami avec {name}."],
+  "You already have a friend request from {name}. Check Requests.": ["Du hast bereits eine Freundschaftsanfrage von {name}. Sieh unter Anfragen nach.","Ya tienes una solicitud de amistad de {name}. Revisa Solicitudes.","Je hebt al een vriendschapsverzoek van {name}. Bekijk Verzoeken.","Hai già una richiesta di amicizia da {name}. Controlla Richieste.","Vous avez déjà une demande d’ami de {name}. Consultez les demandes."],
+  "Your friend request is already pending.": ["Deine Freundschaftsanfrage wartet bereits auf eine Antwort.","Tu solicitud de amistad ya está pendiente.","Je vriendschapsverzoek staat al open.","La tua richiesta di amicizia è già in attesa.","Votre demande d’ami est déjà en attente."],
+  "Already friends": ["Bereits befreundet","Ya sois amigos","Al vrienden","Già amici","Déjà amis"],
   "Back to Dungeons": ["Zurück zu den Dungeons","Volver a las mazmorras","Terug naar kerkers","Torna ai dungeon","Retour aux donjons"],
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],

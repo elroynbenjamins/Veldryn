@@ -11,6 +11,7 @@ on:
       - 'apps/mobile/tests/rankings.ts'
       - 'apps/mobile/tests/run-rankings-standalone.mjs'
       - 'apps/mobile/tests/rankings-ui-contract.mjs'
+      - 'apps/mobile/tests/rankings-localization.mjs'
       - 'apps/mobile/tsconfig.rankings.json'
       - 'apps/mobile/tests/localization-social.mjs'
       - 'apps/mobile/tests/ui-density-hierarchy-contract.ts'
@@ -41,4 +42,4 @@ jobs:
       - name: Rankings mobile interaction contract
         run: node tests/rankings-ui-contract.mjs
       - name: Rankings translation coverage
-        run: node tests/localization-social.mjs
+        run: node tests/rankings-localization.mjs

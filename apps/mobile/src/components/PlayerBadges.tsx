@@ -49,7 +49,7 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  };
  return <>
   <Pressable ref={badgeRef} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={detail}
-   hitSlop={8} onPress={open} style={({pressed})=>[s.badge,pressed&&s.pressed]}>{content}</Pressable>
+   hitSlop={6} onPress={event=>{event.stopPropagation();open();}} style={({pressed})=>[s.badge,pressed&&s.pressed]}>{content}</Pressable>
   {anchor?<Modal visible transparent statusBarTranslucent animationType="fade" onRequestClose={()=>setAnchor(null)}>
    <View style={s.infoLayer}>
     <Pressable accessible={false} accessibilityLabel="Close badge information" style={StyleSheet.absoluteFill} onPress={()=>setAnchor(null)}/>

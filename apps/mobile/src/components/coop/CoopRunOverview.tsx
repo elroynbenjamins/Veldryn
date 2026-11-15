@@ -287,7 +287,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
      </ScrollView>
     </View>
    </Modal>:null}
-   {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={closeTheater} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion} footer={showBattleAction?<GameButton title={terminal?st('View rewards'):st('Continue dungeon')} onPress={closeTheater}/>:undefined}>
+   {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={closeTheater} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion} footer={showBattleAction?<GameButton title={terminal?st('View rewards'):st('Continue dungeon')} onPress={closeTheater}/>:onRefresh&&(inCombat||enteringCombat||awaitingCombatPlayback)?<GameButton title={st('Refresh battle status')} tone="secondary" disabled={busy} onPress={onRefresh}/>:undefined}>
     <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} previewArchetypes={entryCombatArchetypes} onPresentationComplete={()=>setBattlePresentationReady(true)} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={(entryCombatKind??run.selectedNodeKind)==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;

@@ -226,10 +226,10 @@ async function main(){
   assert.equal(raid.roundsCompleted,14);
   assert.ok(raid.events.some(e=>e.type==='telegraph'&&
    e.abilityId===signature[boss][phase]));
+  const expectedActor=boss==='hollowroot'?'HOLLOWROOT':
+   boss==='sunscar'?'SUNSCAR':'FROSTMARCH';
   assert.ok(raid.events.some(e=>e.type==='strike'&&
-   e.actorId==='HOLLOWROOT'||e.type==='strike'&&
-   e.actorId==='SUNSCAR'||e.type==='strike'&&
-   e.actorId==='FROSTMARCH'));
+   e.actorId===expectedActor));
   authoredSpikes++;
   if(phase==='exposed'){
    const kind=boss==='hollowroot'?'VINES':

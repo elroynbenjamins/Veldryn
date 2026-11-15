@@ -324,7 +324,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
-    :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
+    :result.gemAction==='refine'
+      ?`Refined ${result.recipe.name} · Gem Pouch`
+      :result.gemSucceeded
+        ?`Combined ${result.recipe.name} · Gem Pouch`
+        :`Gem merge failed · 1 gem lost, 2 returned · Gold and reagents spent`;
    break;
   }
   case 'craft_claim_all':{
@@ -342,7 +346,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
       ?`Check your equipment copies. ${result.blocked[0].reason}`
       :'Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'}${result.gemFailed?` (${result.gemFailed} failed merge${result.gemFailed===1?'':'s'})`:''} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }

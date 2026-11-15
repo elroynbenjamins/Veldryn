@@ -8,7 +8,7 @@ import {C,radii} from '../theme/theme';
 
 export function MonsterPortraitFrame({monster,size=96,active=false,framed=true,reduceMotion=false}:{monster:MonsterDef;size?:number;active?:boolean;framed?:boolean;reduceMotion?:boolean}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
-  const accent=monster.boss?'#e2ad52':monster.level>=20?'#a783d8':monster.level>=10?'#5ea3c7':C.good;
+  const accent=monster.boss?'#e2ad52':monster.zone==='Sunscar'?'#d7a164':monster.zone==='Frostmarch'?'#8fc4dd':monster.level>=20?'#a783d8':monster.level>=10?'#5ea3c7':C.good;
   const portrait=monsterPortraitSource(monster.id),regionalCell=regionalMonsterPortraitCell(monster.id);
   const newCell=newRegionalMonsterPortraitCell(monster.id);
   const activeCell=newCell??regionalCell;

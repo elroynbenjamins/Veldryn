@@ -23,3 +23,17 @@ export function projectRankingPage(
     lastPosition:visible.length?offset+visible.length:0,
   };
 }
+
+/**
+ * The podium is a visual highlight, not a separate ranking. Three equal #1
+ * scores are shown together; additional tied players remain in the normal list.
+ * On later pages every row stays in the normal list, preserving absolute ranks.
+ */
+export function splitRankingDisplay(
+  entries:readonly RankingEntry[],page:number,
+):{podium:RankingEntry[];remaining:RankingEntry[]}{
+  rankingPageOffset(page);
+  return page===0
+    ?{podium:entries.slice(0,3),remaining:entries.slice(3)}
+    :{podium:[],remaining:entries.slice()};
+}

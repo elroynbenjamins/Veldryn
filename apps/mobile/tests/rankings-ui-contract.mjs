@@ -20,4 +20,25 @@ includes('accessibilityLiveRegion="polite"','pagination announces page changes a
 includes('Entries {first}–{last}','pagination displays an entry range');
 includes('Live rankings can change while players progress.','live rankings must not imply frozen snapshots');
 assert.ok(pager.includes('Number.isSafeInteger')&&pager.includes('RANKING_MAX_OFFSET'),'pagination input is bounded');
+const client=readFileSync(new URL('../src/online/rankings-client.ts',import.meta.url),'utf8');
+for(const term of [
+  "EXPO_PUBLIC_RANKINGS_SNAPSHOT_V1==='true'",
+  'EXPO_PUBLIC_RANKINGS_EDGE_URL',
+  'rankings_frozen_start_server_v1',
+]){
+  // RPC names live server-side; client calls only routed actions.
+  if(term==='rankings_frozen_start_server_v1')continue;
+  assert.ok(client.includes(term),'missing explicit client frozen gate / URL: '+term);
+}
+assert.ok(client.includes('action=snapshot-start')&&client.includes('action=snapshot-page'),
+ 'client must call gated authenticated Edge endpoints');
+includes('const frozenCursors=useRef<Map<number,string>>(new Map())',
+ 'opaque cursors must be stored per-page only in memory');
+includes('frozenCursors.current.clear()', 'changing board must discard prior snapshot cursors');
+includes('if(page>0&&!cursor)', 'later pages must require server-issued cursor');
+includes('next.pageSize!==RANKING_PAGE_SIZE','reject unexpected server snapshot page size');
+includes('frozenCursors.current.set(page+1,next.nextCursor)',
+ 'next page must use the server-provided opaque token');
+includes('if(rankingsFrozenConfigured&&!frozenCursors.current.has(next))return;',
+ 'cannot jump to arbitrary pages without a verified cursor');
 console.log('rankings UI/navigation contract PASS');

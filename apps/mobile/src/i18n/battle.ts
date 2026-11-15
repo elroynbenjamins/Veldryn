@@ -1,5 +1,8 @@
 import {createSourceTranslator,type TranslationRow} from './source-catalog';
 export const BATTLE_MESSAGES={
+ 'Favorable class matchup':['Günstiges Klassenmatchup','Enfrentamiento favorable para la clase','Gunstige klassenmatch-up','Scontro favorevole per la classe','Affrontement favorable à la classe'],
+ 'strike damage':['Trefferschaden','daño por golpe','schade per aanval','danni del colpo','dégâts par frappe'],
+ 'enemy pressure':['Gegnerdruck','presión enemiga','druk van de vijand','pressione nemica','pression ennemie'],
  'CLASS SKILLS · PASSIVE':['KLASSENFERTIGKEITEN · PASSIV','HABILIDADES DE CLASE · PASIVAS','KLASSEVAARDIGHEDEN · PASSIEF','ABILITÀ DI CLASSE · PASSIVE','COMPÉTENCES DE CLASSE · PASSIVES'],
  'COMBAT STYLE · PASSIVE':['KAMPFSTIL · PASSIV','ESTILO DE COMBATE · PASIVO','VECHTSTIJL · PASSIEF','STILE DI COMBATTIMENTO · PASSIVO','STYLE DE COMBAT · PASSIF'],
  'COMPANION · PASSIVE BONUS':['BEGLEITER · PASSIVER BONUS','COMPAÑERO · BONO PASIVO','METGEZEL · PASSIEVE BONUS','COMPAGNO · BONUS PASSIVO','COMPAGNON · BONUS PASSIF'],

@@ -1448,6 +1448,18 @@ for(const [english,pair] of Object.entries(forgeCopyLimitEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
+// Russian and Turkish gem merge confirmation, matching the newly typed gameplay keys.
+const gemMergeEarlyLocales={
+ "success":["успех","başarı"],
+ "Success: receive 1 higher-grade gem.":["Успех: получите 1 самоцвет рангом выше.","Başarı: 1 üst seviye mücevher kazanırsın."],
+ "Failure: 1 gem lost, 2 returned. Gold and reagents spent.":["Неудача: 1 самоцвет потерян, 2 возвращены. Золото и материалы потрачены.","Başarısızlık: 1 mücevher kaybolur, 2'si iade edilir. Altın ve malzemeler harcanır."],
+ "Confirm this merge? The result is rolled when you claim the finished Forge job.":["Подтвердить слияние? Результат определяется при получении готового изделия из кузницы.","Birleştirme onaylansın mı? Sonuç, tamamlanan demirhane işini aldığında belirlenir."],
+ "Confirm merge":["Подтвердить слияние","Birleştirmeyi onayla"],
+} as const;
+for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{

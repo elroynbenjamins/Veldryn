@@ -104,22 +104,15 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
 
   {model?.owned&&progress?<View style={s.section}>
     <Text style={s.subheading}>{t('Other ways to grow')}</Text>
-    <View style={s.growthGrid}>
-     <View style={s.growthPair}>
-      {([
-       ['Bond',t('Bond'),progress.bondLevel+'/10'],
-       ['Skills',t('Abilities & Techniques'),'›'],
-      ] as const).map(([key,title,value])=><Pressable key={key} accessibilityRole="button" accessibilityLabel={title+' · '+value} onPress={()=>{setMessage('');setTab(key)}} style={({pressed})=>[s.growthTile,s.growthHalfTile,pressed&&s.growthPressed]}>
-       <View style={s.growthTileHead}><UiIcon name={key==='Bond'?'companions':'skills'} size={21}/><Text style={s.growthValue}>{value}</Text></View>
-       <Text style={s.growthTitle}>{title}</Text>
-      </Pressable>)}
-     </View>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Materials & Ascension')+' · '+progress.ascensionTier} onPress={()=>{setMessage('');setTab('Materials')}} style={({pressed})=>[s.growthTile,s.growthTileWide,pressed&&s.growthPressed]}>
-      <UiIcon name="inventory" size={21}/>
-      <Text style={[s.growthTitle,s.growthWideTitle]}>{t('Materials & Ascension')}</Text>
-      <Text style={s.growthValue}>{progress.ascensionTier} ›</Text>
-     </Pressable>
-    </View>
+    <View style={s.growthPair}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Abilities & Techniques')} onPress={()=>{setMessage('');setTab('Skills')}} style={({pressed})=>[s.growthTile,s.growthHalfTile,pressed&&s.growthPressed]}>
+        <View style={s.growthTileHead}><UiIcon name="skills" size={21}/><Text style={s.growthValue}>›</Text></View>
+        <Text style={s.growthTitle}>{t('Abilities & Techniques')}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Materials & Ascension')} onPress={()=>{setMessage('');setTab('Materials')}} style={({pressed})=>[s.growthTile,s.growthHalfTile,pressed&&s.growthPressed]}>
+        <View style={s.growthTileHead}><UiIcon name="inventory" size={21}/><Text style={s.growthValue}>{progress.ascensionTier} ›</Text></View>
+        <Text style={s.growthTitle}>{t('Materials & Ascension')}</Text>
+      </Pressable>    </View>
   </View>:null}
   <GameModalSurface visible={tab!==null} onClose={()=>setTab(null)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.9}}>
    <GameModalHeader title={tab==='Roster'?t('Change companion'):tab==='Bond'?t('Bond'):tab==='Skills'?t('Abilities & Techniques'):t('Materials & Ascension')} onClose={()=>setTab(null)}/>

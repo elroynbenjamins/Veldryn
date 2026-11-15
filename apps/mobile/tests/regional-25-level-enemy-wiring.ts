@@ -5,6 +5,11 @@ import {encounterIdentity,encounterProfileCoverage} from '../src/core/encounter-
 import {regionalEnemySecondaryStats} from '../src/core/regional-enemy-stats';
 import {regionalClassCounter,regionalCounterCoverage} from '../src/core/regional-class-counter';
 import {CLASSES} from '../src/content/classes';
+import {itemDef} from '../src/content/items';
+import {cumulativeMonsterUnlockIds,encounterLockRequirement} from '../src/core/world-navigation';
+import {combatSustainProjection,startCombat} from '../src/core/game';
+import {regionalCombatFixture} from '../src/core/regional-combat-fixtures';
+import type {GameState} from '../src/core/types';
 import {validateRegionalAreaContent} from '../src/core/region-area-activities';
 
 const fs=require('fs') as {
@@ -65,6 +70,44 @@ for(const [id] of models){
  }
 }
 check(regionalClassCounter('MOSS_RAT','WAYFINDER').outputMultiplier===1,'Asterfall must retain neutral regional matchup');
+// Regression: saved/cumulative region flags never bypass the new enemy level curve.
+// Existing Asterfall and legacy regional monster unlocks are unchanged.
+const balanceRows:Array<{id:string;classId:string;killsPerHour:number;foodPerHour:number}>=[];
+for(const [id,region,area] of models){
+ const monster=MONSTERS.find(m=>m.id===id)!;
+ for(const drop of monster.drops){
+  check(!!itemDef(drop.itemId),id+' loot must resolve to a valid item: '+drop.itemId);
+  check(drop.chance>=0&&drop.chance<=1&&drop.min>=1&&drop.max>=drop.min,id+' invalid drop probability or stack');
+ }
+ const regionId=region.toUpperCase();
+ const isFrost=region==='Frostmarch';
+ const preparedLevel=monster.unlockLevel;
+ const base={regionId,regionName:region,monsterId:id,level:preparedLevel,tier:isFrost?'T5':preparedLevel>=42?'T4':'T3',foodId:isFrost?'FROSTED_ICEFIN':'GRILLED_OASIS_CARP'};
+ const early=regionalCombatFixture({...base,level:preparedLevel-1},'prepared','WAYFINDER');
+ const blocked=encounterLockRequirement(early,monster);
+ check(blocked?.kind==='level'&&blocked.level===monster.unlockLevel,id+' is accessible too early despite saved unlock ID');
+ let started=false;try{startCombat(early,id,0);started=true;}catch{}
+ check(!started,id+' can start a locked hunt');
+ const unseen={...early,unlockedMonsterIds:early.unlockedMonsterIds.filter(x=>x!==id)} as GameState;
+ check(!cumulativeMonsterUnlockIds(unseen).includes(id),id+' must not be pre-granted by cumulative unlock reconciliation');
+ const ready=regionalCombatFixture(base,'prepared','WAYFINDER');
+ check(!encounterLockRequirement(ready,monster),id+' should unlock at its authored level');
+ for(const cls of CLASSES){
+  const state=regionalCombatFixture(base,'prepared',cls.id);
+  const projected=combatSustainProjection(state,id);
+  check(!!projected,id+' '+cls.id+' missing long-hunt forecast');
+  check(Number.isFinite(projected!.killsPerHour)&&projected!.killsPerHour>.5,id+' '+cls.id+' nonviable kill cadence');
+  check(Number.isFinite(projected!.xpPerHour)&&projected!.xpPerHour>0,id+' '+cls.id+' invalid combat XP');
+  check(Number.isFinite(projected!.goldPerHour)&&projected!.goldPerHour>0,id+' '+cls.id+' invalid Gold');
+  check(Number.isFinite(projected!.foodPerHour)&&projected!.foodPerHour>=0,id+' '+cls.id+' invalid food projection');
+  balanceRows.push({id,classId:cls.id,killsPerHour:projected!.killsPerHour,foodPerHour:projected!.foodPerHour});
+ }
+}
+check(balanceRows.length===72,'Need all nine classes tested against the eight new encounters');
+console.log('REGIONAL BALANCE '+JSON.stringify(models.map(([id])=>{
+ const values=balanceRows.filter(x=>x.id===id);
+ return {id,killsPerHourMin:Number(Math.min(...values.map(x=>x.killsPerHour)).toFixed(1)),killsPerHourMax:Number(Math.max(...values.map(x=>x.killsPerHour)).toFixed(1)),foodPerHourMax:Number(Math.max(...values.map(x=>x.foodPerHour)).toFixed(1))};
+})));
 check(REGIONAL_AREAS.length===8,'Do not introduce additional subzones');
 check(MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')?.level===25,'Asterfall story boss unchanged');
 console.log('PASS regional enemy wiring: 8 new portraits, 24 normal hunts, overlapping 26–75 chapter bands');

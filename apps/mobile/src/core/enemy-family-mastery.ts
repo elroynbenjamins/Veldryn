@@ -2,31 +2,31 @@ import {ENEMY_FAMILIES,enemyFamilyForMonster,type EnemyFamilyId} from '../conten
 import {MONSTERS} from '../content/monsters';
 import type {GameState} from './types';
 
-/** Weighted family-mastery points: a kill is worth at least 2 points.
- * 250 points/rank requires 125 entry-zone kills versus 25 species kills,
- * and still takes at least 42 top-zone kills per family rank.
+/** Progressive family mastery: Rank 1 costs 250 points, the final rank
+ * costs approximately 1,750 more; Rank 30 is exactly 30,000 total points.
+ * Lower-level hunts award 1 point, while tougher enemies give up to 6.
+ * Thresholds grow smoothly rather than giving an abrupt 1,000-point first rank.
  */
-export const FAMILY_MASTERY_POINTS_PER_RANK=250;
 export const FAMILY_MASTERY_MAX_RANK=30;
-export const FAMILY_MASTERY_MAX_POINTS=FAMILY_MASTERY_POINTS_PER_RANK*FAMILY_MASTERY_MAX_RANK;
+export const FAMILY_MASTERY_MAX_POINTS=30_000;
+export function familyMasteryPointsForRank(rank:number):number{
+ const r=Number.isFinite(rank)?Math.max(0,Math.min(FAMILY_MASTERY_MAX_RANK,Math.floor(rank))):0;
+ return Math.round(250*r+750*r*(r-1)/29);
+}
 
-/** Reward the monster's authored difficulty, never the player's current
- * location or character level (which could be changed without a harder fight).
- * Region floors and enemy-level thresholds both contribute. The maximum of
- * the two avoids inflating rewards by counting the same difficulty twice.
+/** Authoritative monster difficulty, not a player's level or selected region.
+ * The level- and zone-based scales overlap using max rather than sum.
  */
-const ZONE_MASTERY_POINTS:Readonly<Record<string,number>>={
- 'Greenfields':2,'Silverbrook':2,'Ironwood Forest':2,
- 'Old Mines':3,"King's Road":3,'Sunscar':4,'Frostmarch':5,'Ashlands':6,
+export const FAMILY_MASTERY_ZONE_REWARDS:Readonly<Record<string,number>>={
+ 'Greenfields':1,'Silverbrook':1,'Ironwood Forest':1,
+ 'Old Mines':2,"King's Road":2,'Sunscar':3,'Frostmarch':4,'Ashlands':6,
 };
 export function enemyFamilyMasteryPointsPerKill(monsterId:string):number{
- const family=enemyFamilyForMonster(monsterId);
- if(!family)return 0;
+ if(!enemyFamilyForMonster(monsterId))return 0;
  const monster=MONSTERS.find(row=>row.id===monsterId&&!row.boss);
  if(!monster)return 0;
- const byLevel=monster.level>=75?6:monster.level>=55?5:monster.level>=35?4:monster.level>=20?3:2;
- const byZone=ZONE_MASTERY_POINTS[monster.zone]??2;
- return Math.max(2,Math.min(6,Math.max(byZone,byLevel)));
+ const byLevel=monster.level>=75?6:monster.level>=55?4:monster.level>=35?3:monster.level>=20?2:1;
+ return Math.max(1,Math.min(6,Math.max(FAMILY_MASTERY_ZONE_REWARDS[monster.zone]??1,byLevel)));
 }
 
 export function normalizeEnemyFamilyMastery(raw:unknown):Record<string,number>{
@@ -66,10 +66,11 @@ export function backfillEnemyFamilyMastery(speciesPoints:unknown):Record<string,
 
 export function enemyFamilyMastery(state:GameState,id:EnemyFamilyId){
  const points=normalizeEnemyFamilyMastery(state.character?.familyMasteryPoints)[id]??0;
- const rank=Math.min(FAMILY_MASTERY_MAX_RANK,Math.floor(points/FAMILY_MASTERY_POINTS_PER_RANK));
+ let rank=0;
+ while(rank<FAMILY_MASTERY_MAX_RANK&&points>=familyMasteryPointsForRank(rank+1))rank++;
  return {
   points,rank,
-  nextRankPoints:rank>=FAMILY_MASTERY_MAX_RANK?FAMILY_MASTERY_MAX_POINTS:(rank+1)*FAMILY_MASTERY_POINTS_PER_RANK,
+  nextRankPoints:familyMasteryPointsForRank(Math.min(FAMILY_MASTERY_MAX_RANK,rank+1)),
   damageBonus:rank>=30?.02:rank>=5?.01:0,
   materialBonus:rank>=30?.05:rank>=15?.03:0,
   dropKnowledge:rank>=10,
@@ -85,7 +86,7 @@ export function recordEnemyFamilyMastery(state:GameState,monsterId:string,kills:
  const family=enemyFamilyForMonster(monsterId);
  if(!family||!state.character||!Number.isSafeInteger(kills)||kills<=0)return state;
  const perKill=enemyFamilyMasteryPointsPerKill(monsterId);
- if(perKill<2)return state;
+ if(perKill<1)return state;
  const points=normalizeEnemyFamilyMastery(state.character.familyMasteryPoints);
  // Multiply only after validating the authoritative kill count; bounded at cap.
  points[family.id]=Math.min(FAMILY_MASTERY_MAX_POINTS,(points[family.id]??0)+kills*perKill);
@@ -103,6 +104,11 @@ export const ENEMY_FAMILY_MASTERY_MILESTONES=[
 export function enemyFamilyMasteryGuidance(state:GameState,id:EnemyFamilyId){
  const mastery=enemyFamilyMastery(state,id);
  const next=ENEMY_FAMILY_MASTERY_MILESTONES.find(row=>row.rank>mastery.rank);
- return {...mastery,next,killsToNextRank:Math.max(0,mastery.nextRankPoints-mastery.points),
-  killsToNextMilestone:next?Math.max(0,next.rank*FAMILY_MASTERY_POINTS_PER_RANK-mastery.points):0};
+ const currentRankPoints=familyMasteryPointsForRank(mastery.rank);
+ const nextRankPoints=mastery.nextRankPoints;
+ return {...mastery,next,
+  pointsToNextRank:Math.max(0,nextRankPoints-mastery.points),
+  pointsToNextMilestone:next?Math.max(0,familyMasteryPointsForRank(next.rank)-mastery.points):0,
+  currentRankProgress:mastery.points-currentRankPoints,
+  currentRankTarget:nextRankPoints-currentRankPoints};
 }

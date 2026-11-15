@@ -33,7 +33,7 @@ export function CoopLiveChatBar({messages,onSend,reduceMotion=false}:{messages:C
   </Pressable>
   <Modal visible={open} transparent statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={close}>
    <KeyboardAvoidingView style={s.overlay} behavior={Platform.OS==='ios'?'padding':'height'}>
-    <Pressable style={StyleSheet.absoluteFillObject} onPress={close} accessibilityLabel={st('Close chat')}/>
+    <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel={st('Close chat')}/>
     <View style={s.sheet} accessibilityViewIsModal>
      <View style={s.header}><View style={s.headerTitle}><Text style={s.title}>{st('Party Chat')}</Text><Text style={s.subtitle}>{st('Only current Live party members can read this room.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={st('Close chat')} onPress={close} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
      <View style={s.body}>

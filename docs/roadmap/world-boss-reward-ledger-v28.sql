@@ -155,12 +155,12 @@ BEGIN
      jsonb_typeof(participant->'interrupts')<>'number'
   THEN RAISE EXCEPTION 'WB28_INVALID_ROLE_EVIDENCE'; END IF;
   participant_ids:=array_append(participant_ids,participant_id);
-  IF (participant->>'bossHpDamage') !~ '^[0-9]+(\\.[0-9]+)?$'
-     OR (participant->>'localGuardDamage') !~ '^[0-9]+(\\.[0-9]+)?$'
-     OR (participant->>'effectiveHealing') !~ '^[0-9]+(\\.[0-9]+)?$'
-     OR (participant->>'shieldConsumed') !~ '^[0-9]+(\\.[0-9]+)?$'
-     OR (participant->>'tankProtection') !~ '^[0-9]+(\\.[0-9]+)?$'
-     OR (participant->>'cleansePrevented') !~ '^[0-9]+(\\.[0-9]+)?$'
+  IF (participant->>'bossHpDamage') !~ '^[0-9]+([.][0-9]+)?$'
+     OR (participant->>'localGuardDamage') !~ '^[0-9]+([.][0-9]+)?$'
+     OR (participant->>'effectiveHealing') !~ '^[0-9]+([.][0-9]+)?$'
+     OR (participant->>'shieldConsumed') !~ '^[0-9]+([.][0-9]+)?$'
+     OR (participant->>'tankProtection') !~ '^[0-9]+([.][0-9]+)?$'
+     OR (participant->>'cleansePrevented') !~ '^[0-9]+([.][0-9]+)?$'
      OR (participant->>'interrupts') !~ '^[0-9]{1,6}$'
   THEN RAISE EXCEPTION 'WB28_INVALID_ROLE_METRICS'; END IF;
   damage_sum:=damage_sum+(participant->>'bossHpDamage')::numeric;

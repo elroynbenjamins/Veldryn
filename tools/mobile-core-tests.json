@@ -89,6 +89,7 @@
   "tests/starter-item-names-localization.cjs",
   "tests/gem-pouch-ui-localization.cjs",
   "tests/equipment-pouch-ui-localization.cjs",
+  "tests/disposal-preview-ui-localization.cjs",
   "tests/extended-item-names-localization.cjs",
   "tests/alchemy-item-names-localization.cjs",
   "tests/crafting-recipe-names-localization.cjs",

@@ -21,6 +21,18 @@ BEGIN
 END
 $win$;
 
+-- Pure schema/engine coupling: disallow a V22 timed worker from taking
+-- a V26 authored packet (and vice versa), independent of current UTC clock.
+CREATE FUNCTION private.world_boss_v26_valid_packet_engine(
+ p_schema text,p_engine text
+) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT SECURITY INVOKER
+ SET search_path='' AS $pair$
+ SELECT (p_schema='world-boss-v22-account-raid-prototype'
+         AND p_engine='world-boss-account-raid-v22-prototype')
+     OR (p_schema='world-boss-v26-authored-account-packet'
+         AND p_engine='world-boss-account-rounds-v25-prototype');
+$pair$;
+
 -- No public RPC. Trusted service supplies authenticated account ID and V12
 -- owner-bound character snapshots; this function only checks DB invariants.
 -- Packet/engine schema pairing is explicit so an old V22 settlement worker
@@ -67,13 +79,8 @@ BEGIN
 
  IF p_account_roster IS NULL
     OR jsonb_typeof(p_account_roster)<>'object'
-    OR NOT (
-      (p_account_roster->>'schema'='world-boss-v22-account-raid-prototype'
-       AND p_engine='world-boss-account-raid-v22-prototype')
-      OR
-      (p_account_roster->>'schema'='world-boss-v26-authored-account-packet'
-       AND p_engine='world-boss-account-rounds-v25-prototype')
-    )
+    OR private.world_boss_v26_valid_packet_engine(
+        p_account_roster->>'schema',p_engine) IS DISTINCT FROM true
     OR p_account_roster->>'accountId' IS DISTINCT FROM p_account::text
     OR p_account_roster->>'eventId' IS DISTINCT FROM p_event::text
     OR p_account_roster->>'requestId' IS DISTINCT FROM p_request
@@ -132,11 +139,15 @@ BEGIN
 END
 $raid$;
 
+REVOKE ALL ON FUNCTION private.world_boss_v26_valid_packet_engine(
+ text,text) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION private.world_boss_v22_window_at(
  timestamptz,timestamptz) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION private.world_boss_v22_reserve_account(
  uuid,uuid,uuid,text,text,text,text,jsonb,text,text,text,text)
  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION private.world_boss_v26_valid_packet_engine(
+ text,text) TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v22_window_at(
  timestamptz,timestamptz) TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v22_reserve_account(

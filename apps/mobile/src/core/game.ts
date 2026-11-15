@@ -205,8 +205,8 @@ export function effectiveStats(state:GameState){
     hp,attack,defense,power:Math.round(basePower*(1+setStats.power)),
     critChance:Math.min(.75,baseCritChance+setStats.critRate),
     critMultiplier:1.5+setStats.critDamage,
-    accuracy:Math.min(.99,.84+setStats.accuracy),
-    evasion:Math.min(.50,baseEvasion+setStats.evasion),
+    accuracy:Math.min(.99,.84+setStats.accuracy+mastery.accuracy),
+    evasion:Math.min(.50,baseEvasion+setStats.evasion+mastery.evasion),
     haste:.05+setStats.haste,
     armor:setStats.armor,ward:setStats.ward,tenacity:setStats.tenacity,potency:setStats.potency,penetration:setStats.penetration,
   }

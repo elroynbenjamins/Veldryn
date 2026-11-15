@@ -18,6 +18,14 @@ const dependencies={
  '../theme/ThemeContext':{useGameTheme:()=>({muted:'#999',warning:'#fc0',selection:'#111',selectionLine:'#aaa',info:'#fff'})},
  '../core/chat-read-ack':{ChatReadAcknowledgement}
 };
+// Party Chat must share the same shrinkable keyboard viewport as Guild Chat.
+// The ChatLog below already tests following the latest item during IME resizing.
+const partyChatSource=fs.readFileSync(path.join(__dirname,'../src/components/OnlinePartyChat.tsx'),'utf8');
+assert.match(partyChatSource,/useChatViewportStyle\(\)/,'Party Chat consumes the shared chat viewport sizing');
+assert.match(partyChatSource,/style=\{\[s\.root,expanded&&s\.expanded,viewportStyle\]\}/,'Party Chat applies the viewport style to its root');
+assert.match(partyChatSource,/root:\{[^}]*flexShrink:1[^}]*minHeight:0/,'Party Chat can shrink when the keyboard opens');
+assert.match(partyChatSource,/<ChatLog expanded=\{expanded\}/,'Party Chat uses the shared latest-message scroll behavior');
+
 const source=fs.readFileSync(path.join(__dirname,'../src/components/ChatLog.tsx'),'utf8');
 const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
 const sandbox={exports:{},require:name=>dependencies[name]??{},requestAnimationFrame:callback=>{frames.push(callback);return frames.length;}};

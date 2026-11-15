@@ -1,5 +1,5 @@
 import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
-import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,EQUIPMENT_PRIMARY_MATERIAL_REDUCTION,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
@@ -14,13 +14,14 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from '../src/content/crafting-gold-cost';
-import {isT5EquipmentAffixSlot,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
+import {isT5EquipmentAffixSlot,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
 ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a recipe');
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
+ok(EQUIPMENT_PRIMARY_MATERIAL_REDUCTION===2,'Each equipment piece must cost two fewer primary resources');
 ok(T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER===1.25,'T2–T4 equipment forge XP must be increased by exactly 25%');
 ok(T3_T4_DUNEWOOD_REDUCTION_FACTOR===0.8,'T3/T4 assembly Dunewood must be 20% below the recently tripled cost');
 ok(roundEquipmentCraftingGoldCost(1286)===1300,'1286 Gold must round up to 1300');
@@ -32,6 +33,52 @@ ok(roundEquipmentCraftingGoldCost(49)===100,'Positive gear crafts must not becom
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
+// Verify the primary-material reduction across all 1,620 standard equipment recipes.
+ // Path materials, other ingredients and alchemy binders must not receive the discount.
+const primaryByTier:Record<string,{smithing:string;tailoring:string}>={
+  T1:{smithing:'GREENWOOD_LOG',tailoring:'MOSS_FIBER'},
+  T2:{smithing:'IRONWOOD_LOG',tailoring:'WOLF_PELT'},
+  T3:{smithing:'DUNEWOOD',tailoring:'SUNSCALE'},
+  T4:{smithing:'SUNSTONE_INGOT',tailoring:'SUNSCALE'},
+  T5:{smithing:'SUNSTONE_INGOT',tailoring:'SUNSCALE'},
+  T6:{smithing:'SUNSTONE_INGOT',tailoring:'SUNSCALE'},
+  T7:{smithing:'FROSTIRON_INGOT',tailoring:'FROSTBLOOM'},
+  T8:{smithing:'FROSTIRON_INGOT',tailoring:'FROSTBLOOM'},
+  T9:{smithing:'BLACKGLASS_INGOT',tailoring:'ASHEN_MYRRH'},
+};
+const primaryBase:Record<string,{smithing:number;tailoring:number}>={
+  T1:{smithing:28,tailoring:22},T2:{smithing:34,tailoring:22},T3:{smithing:22,tailoring:18},
+  T4:{smithing:9,tailoring:19},T5:{smithing:10,tailoring:25},T6:{smithing:15,tailoring:30},
+  T7:{smithing:16,tailoring:32},T8:{smithing:18,tailoring:36},T9:{smithing:20,tailoring:40},
+};
+const materialTierMultiplier:Record<string,number>={
+  T1:3,T2:2.5,T3:1.35,T4:1.5,T5:1.2,T6:.8,T7:.8,T8:.75,T9:.75,
+};
+for(const recipe of V33_EQUIPMENT_RECIPES){
+  const slot=itemDef(recipe.output.itemId).slot!;
+  const tier=recipe.v33EquipmentTier,skill=recipe.skillId;
+  const primaryId=primaryByTier[tier][skill];
+  const affixMultiplier=tier==='T5'&&isT5EquipmentAffixSlot(slot)?T5_AFFIX_MATERIAL_MULTIPLIER:1;
+  const scale=materialTierMultiplier[tier]*originalSlotGold[slot]*affixMultiplier;
+  const basicQuantity=Math.max(1,Math.round(primaryBase[tier][skill]*scale));
+  const undiscountedQuantity=tier==='T3'&&skill==='smithing'
+    ?Math.max(1,Math.round(basicQuantity*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR))
+    :tier==='T9'&&skill==='tailoring'?Math.max(23,basicQuantity):basicQuantity;
+  const expectedQuantity=Math.max(1,undiscountedQuantity-EQUIPMENT_PRIMARY_MATERIAL_REDUCTION);
+  ok(recipe.inputs.find(input=>input.itemId===primaryId)?.quantity===expectedQuantity,
+    recipe.id+' must reduce only its scaled primary material by two');
+  ok(recipe.inputs.every(input=>input.quantity>=1),recipe.id+' ingredients must remain positive');
+  if(tier==='T2'){
+    const secondaryId=skill==='smithing'
+      ?(recipe.v33Path==='Alternate'?'IRONWOOD_FANG':'WOLF_PELT')
+      :(recipe.v33Path==='Alternate'?'TROLL_HIDE':'THORN_SAP');
+    const secondaryBase=skill==='smithing'?10:9;
+    const secondaryExpected=Math.max(1,Math.round(secondaryBase*scale));
+    ok(recipe.inputs.find(input=>input.itemId===secondaryId)?.quantity===secondaryExpected,
+      recipe.id+' T2 secondary/path material must not be discounted');
+  }
+}
+
 for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const previousPrice=Math.max(1,Math.round(originalTierGold[recipe.v33EquipmentTier]*originalSlotGold[slot]));
@@ -143,14 +190,14 @@ for(const recipe of t3){
   const woodBase=recipe.skillId==='tailoring'?10:22;
   const previousWood=Math.max(1,Math.round(woodBase*1.35*originalSlotGold[slot]));
   const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
-  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR)),recipe.id+' must reduce recently tripled T3 Dunewood by 20% after slot rounding');
+  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR))-(recipe.skillId==='smithing'?EQUIPMENT_PRIMARY_MATERIAL_REDUCTION:0),recipe.id+' must preserve the T3 20% timber cut and additionally discount primary smithing timber by two');
   ok(recipe.inputs.find(row=>row.itemId==='SUNSCAR_DUNE_BINDER')?.quantity===1,recipe.id+' must preserve one Dune Binding Resin');
 }
 for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
   for(const path of ['Foundation','Alternate']){
     const set=t3.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
-    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?643:290),classId+' / '+path+' T3 set must reflect the 20% cut, rounded for every piece');
+    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?623:290),classId+' / '+path+' T3 set must reflect the 20% cut, rounded for every piece');
     ok(set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='SUNSCAR_DUNE_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T3 set must still require ten Dune Binders');
   }
 }

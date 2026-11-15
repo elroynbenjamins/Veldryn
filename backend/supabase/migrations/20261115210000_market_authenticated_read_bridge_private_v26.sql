@@ -45,7 +45,7 @@ begin
   -- Calling this from a service-role RPC or from a forged account parameter
   -- is intentionally impossible: verified PostgREST authenticated JWT context
   -- is the ONLY account selector. There is NO p_account_id input.
-  if pg_catalog.coalesce(
+  if coalesce(
        nullif(pg_catalog.current_setting('request.jwt.claims', true),'')::jsonb->>'role',
        nullif(pg_catalog.current_setting('request.jwt.claim.role', true),'')
      ) is distinct from 'authenticated'

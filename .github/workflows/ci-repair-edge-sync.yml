@@ -1,0 +1,47 @@
+name: One-time canonical Edge bundle regeneration (CI repair)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/mobile/tests/gathering-availability.ts'
+      - 'apps/mobile/tests/dungeon-flow-simplicity-ui.cjs'
+      - '.github/workflows/ci-repair-edge-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/ci-gathering-dungeon-contracts-20261115'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build:online
+      - run: node tools/verify-gameplay-edge.mjs
+      - name: Commit source-exact generated bundles on this feature branch only
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git diff --cached --stat
+            git commit -m 'build: synchronize gameplay and co-op Edge bundles with main'
+            git push origin HEAD:refs/heads/fix/ci-gathering-dungeon-contracts-20261115
+          fi

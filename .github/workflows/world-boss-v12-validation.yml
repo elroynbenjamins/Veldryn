@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V23 validation
+name: Hidden World Boss V10–V24 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -59,7 +59,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v23 World Boss tests
+      - name: Run v7-v24 World Boss tests
         run: |
           set -e
           for suite in \
@@ -78,7 +78,8 @@ jobs:
             world-boss-consented-echoes-v20 \
             world-boss-consent-command-v21 \
             world-boss-weekend-account-raid-v22 \
-            world-boss-account-service-v23
+            world-boss-account-service-v23 \
+            world-boss-account-script-v24
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done

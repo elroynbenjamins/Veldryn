@@ -109,6 +109,11 @@ export function enemyFamilyMasteryGuidance(state:GameState,id:EnemyFamilyId){
  return {...mastery,next,
   pointsToNextRank:Math.max(0,nextRankPoints-mastery.points),
   pointsToNextMilestone:next?Math.max(0,familyMasteryPointsForRank(next.rank)-mastery.points):0,
-  currentRankProgress:mastery.points-currentRankPoints,
-  currentRankTarget:nextRankPoints-currentRankPoints};
+  // Preserve a valid complete progress bar at Rank 30 (never max=0).
+  currentRankProgress:mastery.rank>=FAMILY_MASTERY_MAX_RANK
+   ?FAMILY_MASTERY_MAX_POINTS-familyMasteryPointsForRank(29)
+   :mastery.points-currentRankPoints,
+  currentRankTarget:mastery.rank>=FAMILY_MASTERY_MAX_RANK
+   ?FAMILY_MASTERY_MAX_POINTS-familyMasteryPointsForRank(29)
+   :nextRankPoints-currentRankPoints};
 }

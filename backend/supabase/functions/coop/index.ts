@@ -723,6 +723,10 @@ function increasedCraftingGoldCost(baseGold) {
   if (!Number.isSafeInteger(baseGold) || baseGold < 0) throw new Error("invalid_crafting_gold");
   return Math.ceil(baseGold * 6 / 5);
 }
+function roundEquipmentCraftingGoldCost(gold) {
+  if (!Number.isSafeInteger(gold) || gold < 0) throw new Error("invalid_crafting_gold");
+  return gold === 0 ? 0 : Math.max(100, Math.round(gold / 100) * 100);
+}
 
 // ../apps/mobile/src/content/t5-equipment-affix-spec.ts
 var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
@@ -42425,7 +42429,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     skillId,
     level,
     xp: craftXp,
-    gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1),
+    gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
     seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
@@ -42491,7 +42495,7 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
     // Keep the existing novice-set baseline and apply the same equipment-only
     // forge gold increase used by the regional T1–T9 equipment recipes.
     xp: stage * 50,
-    gold: increasedCraftingGoldCost((slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER),
+    gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost((slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER)),
     seconds: 0,
     inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
     output: { itemId: item.id, quantity: 1 }
@@ -50398,7 +50402,7 @@ var OnlineQModeRuntime = class {
     const duration = chosen?.kind === "boss" ? 1800 : chosen?.kind === "elite" ? 1400 : chosen?.kind === "battle" ? 900 : 0;
     const resolvesAtMs = loaded.serverNow + duration;
     const client = { ...projection(before, loaded.stateVersion + 1, seed), phase: "resolving_node", options: [], selectedNodeId: request.optionId, resolvesAtMs, boonOffers: void 0 };
-    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState), settlement: settlement(run, loaded.stateVersion + 2, seed) } }, p_client_projection: client });
+    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState) } }, p_client_projection: client });
   }
 };
 

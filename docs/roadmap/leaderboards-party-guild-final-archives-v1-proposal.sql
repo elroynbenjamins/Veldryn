@@ -4,6 +4,29 @@
 -- Storage and reads are service-role-only, feature gated independently.
 -- This design must NOT be migrated until mode-specific server finalizers are wired.
 BEGIN;
+-- Trusted mode-specific finalizers will register exactly one verified
+-- settlement receipt per metric/bracket, with a digest of FINAL score rows.
+-- This table intentionally has no public write RPC or generic registration
+-- endpoint. Nothing in this proposal can finalize live event progress.
+CREATE TABLE IF NOT EXISTS private.rankings_final_mode_settlement_receipts_v1 (
+  id uuid PRIMARY KEY,
+  mode text NOT NULL CHECK(mode IN ('party_event','guild_pve')),
+  event_key text NOT NULL CHECK(length(event_key) BETWEEN 1 AND 120),
+  metric text NOT NULL,
+  bracket text NOT NULL,
+  event_ends_at timestamptz NOT NULL,
+  finalized_at timestamptz NOT NULL,
+  source_version integer NOT NULL CHECK(source_version>=1),
+  entries_digest text NOT NULL CHECK(entries_digest ~ '^[0-9a-f]{32}$'),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  UNIQUE(mode,event_key,metric,bracket),
+  CHECK(event_ends_at<=finalized_at)
+);
+ALTER TABLE private.rankings_final_mode_settlement_receipts_v1
+  ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE private.rankings_final_mode_settlement_receipts_v1
+  FROM PUBLIC,anon,authenticated;
+
 CREATE TABLE IF NOT EXISTS private.rankings_final_mode_archives_v1 (
   mode text NOT NULL CHECK(mode IN ('party_event','guild_pve')),
   event_key text NOT NULL,
@@ -78,6 +101,24 @@ BEGIN
       OR coalesce(x.item->>'secondaryValue','0') !~ '^[0-9]{1,15}$'
   )
   THEN RAISE EXCEPTION 'INVALID_COMPETITIVE_FINAL_ENTRIES'; END IF;
+
+  -- A random UUID is not evidence of a settled event. Require a private
+  -- authoritative receipt registered by a mode-specific server finalizer.
+  -- Match the exact metric, bracket, event timestamps and frozen score rows;
+  -- mismatched or provisional submissions fail closed, including retries.
+  IF NOT EXISTS(
+    SELECT 1 FROM private.rankings_final_mode_settlement_receipts_v1 receipt
+    WHERE receipt.id=p_receipt_id
+      AND receipt.mode=p_mode
+      AND receipt.event_key=p_event_key
+      AND receipt.metric=p_metric
+      AND receipt.bracket=p_bracket
+      AND receipt.event_ends_at=p_ends_at
+      AND receipt.finalized_at=p_finalized_at
+      AND receipt.source_version>=1
+      AND receipt.entries_digest=pg_catalog.md5(p_entries::text)
+  )
+  THEN RAISE EXCEPTION 'COMPETITIVE_FINAL_RECEIPT_NOT_REGISTERED'; END IF;
 
   WITH parsed AS (
     SELECT x.item->>'entityId' AS entity_id,

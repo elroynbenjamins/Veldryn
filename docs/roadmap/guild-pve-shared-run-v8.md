@@ -59,7 +59,7 @@ At each committed attack, V8:
 - Two concurrent attacks on near-defeated shared HP: one accepted, one stale and not charged.
 - A shared process-local cycle registry prevents one account from claiming actions in different guilds.
 - Real V7 deterministic combat output and frozen profile, with HP credited only until true zero and phases tracked once.
-- **12 scenario campaigns**: guild sizes 4/8/12/20 × Scout/Veteran/Mythic using actual nine-class game-kit fixtures and alternate Assault/Guard/Rally. Their results are **synthetic observed completions** only within the emulator, not actual game completion predictions.
+- **21 scenario campaigns**: guild sizes 1/2/3/4/8/12/20 × Scout/Veteran/Mythic using actual nine-class game-kit fixtures and alternate Assault/Guard/Rally. Their results are **synthetic observed completions** only within the emulator, not actual game completion predictions.
 - All code remains reward-free and never persists state.
 
 The focused read-only CI job is [`guild-pve-v8-validation.yml`](../../.github/workflows/guild-pve-v8-validation.yml). **Do not claim this suite passes until a completed successful Actions run exists.** When it passes, preserve its exact scenario metrics as an evidence CSV rather than inferring any success rates.

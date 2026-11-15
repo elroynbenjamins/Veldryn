@@ -73,6 +73,13 @@
 5. Add privacy/deletion tests: profile visibility, mutual blocks, guest accounts, renamed characters, disbanded guilds, and cache invalidation. Avoid exposing account UUIDs or banned users in projections.
 6. Verify staging and device behavior, locale coverage, rendering for large font scale and poor network, then deliberately enable server/client gates in a separate release.
 
+## 15 November continuation — competitive ranking policy
+
+- Drafted `docs/roadmap/leaderboards-competitive-policy-v1.md`: current vs previous seasons, finalized event archives, Party Event and Guild PvE independent gates, multi-character World Boss account ranking, server snapshot pagination and anti-abuse acceptance scenarios.
+- Current World Boss proposal reflects five preparation days and six provisional 30-minute weekend attack windows eight hours apart, **without** changing the existing three scored attempts per account. Exact scheduling and multi-character balancing still need game-mode implementation review.
+- Fixed hidden mobile Rankings group/board reselection clearing an unchanged snapshot with no reload, and updated the UI contract regression assertion.
+- The competition/season/archive policy is **design only**. No new historical UI, snapshot cursor API, scoring migration, permissions or production release flags have been deployed.
+
 ## Release checklist
 - [x] V2 RPC identity and permissions checked read-only on both staging and production (2026-11-13)
 - [x] Read-only staging v2 permissions preflight passed

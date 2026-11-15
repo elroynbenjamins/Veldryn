@@ -80,6 +80,14 @@
 - Fixed hidden mobile Rankings group/board reselection clearing an unchanged snapshot with no reload, and updated the UI contract regression assertion.
 - The competition/season/archive policy is **design only**. No new historical UI, snapshot cursor API, scoring migration, permissions or production release flags have been deployed.
 
+## 15 November scoring correctness hardening (staging rollback verified)
+
+- Fixed the **viewer-dependent global-rank bug** in the v3 proposal: calculate public global ranks, including shared ties, **before** applying reciprocal block filters; apply blocks before pagination. Blocked rows can create intentional gaps, but unblocked players retain their official ranks across viewers.
+- Fixed inconsistent profession tie-breaking: duplicate saved snapshots now choose a single coherent (level, XP) pair per owned character/skill, and individual profession boards take XP from the character that actually has the highest level.
+- Strengthened the scoring contract for primary + secondary descending order and shared ties. Extended privacy fixture to compare requester rank before/after blocks, and added deterministic tie/gap and coherent XP snapshot fixtures.
+- Re-ran the 19-board v3 scoring contract and global privacy fixtures together on **Veldryn Staging** inside one transaction, ending with `ROLLBACK`. The database returned success with no persisted functions, records, grants, or gate changes from this test.
+- Remaining blockers: long-form seeded results for all 19 boards, score-source performance on realistic high-volume saves, durable snapshot/keyset pagination, seasonal/event history, current-branch CI and Android QA. All release gates remain disabled.
+
 ## Release checklist
 - [x] V2 RPC identity and permissions checked read-only on both staging and production (2026-11-13)
 - [x] Read-only staging v2 permissions preflight passed

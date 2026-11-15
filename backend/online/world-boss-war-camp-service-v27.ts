@@ -76,12 +76,45 @@ export interface WorldBossWarCampDonationReceiptV27{
  paidMaterials:readonly {itemId:string;quantity:number}[];
  repeated:boolean;
 }
+export interface WorldBossWarCampProgressV27{
+ eventId:string;revision:number;
+ contributions:Record<WorldBossWarCampTrackV27,number>;
+ goals:Record<WorldBossWarCampTrackV27,{tier1At:number;tier2At:number}>;
+ frozen:boolean;snapshot:WorldBossWarCampSnapshotV11|null;
+}
+export function validateWorldBossWarCampProgressV27(
+ row:WorldBossWarCampProgressV27,eventId:string,
+):WorldBossWarCampProgressV27{
+ if(!row||row.eventId!==eventId||
+  !Number.isSafeInteger(row.revision)||row.revision<0||
+  typeof row.frozen!=='boolean'||
+  (row.frozen&&row.snapshot===null)||
+  (!row.frozen&&row.snapshot!==null))
+  throw Error('world_boss_v27_invalid_private_progress');
+ const tracks:WorldBossWarCampTrackV27[]=[
+  'fortifications','fieldProvisions','siegecraft'];
+ for(const t of tracks){
+  const c=row.contributions?.[t],g=row.goals?.[t];
+  if(!Number.isSafeInteger(c)||c<0||!g||
+   !Number.isSafeInteger(g.tier1At)||g.tier1At<1||
+   !Number.isSafeInteger(g.tier2At)||g.tier2At<=g.tier1At||
+   c>g.tier2At)
+   throw Error('world_boss_v27_invalid_community_progress');
+ }
+ if(row.snapshot){
+  if(row.snapshot.eventId!==eventId||row.snapshot.revision!==row.revision)
+   throw Error('world_boss_v27_mismatched_frozen_progress');
+  deriveWorldBossWarCampEffectsV11(row.snapshot);
+ }
+ return row;
+}
 export interface WorldBossWarCampPrivateRepositoryV27{
  donateAtomic(input:{
   eventId:string;accountId:string;characterId:string;requestId:string;
   recipeId:string;
  }):Promise<WorldBossWarCampDonationReceiptV27>;
  freeze(eventId:string):Promise<WorldBossWarCampSnapshotV11>;
+ progress(eventId:string):Promise<WorldBossWarCampProgressV27>;
 }
 export interface WorldBossWarCampDepsV27{
  authenticate(token:string):Promise<string|null>;
@@ -123,6 +156,20 @@ export async function donateAuthenticatedWorldBossV27(input:{
  });
  return validateReceipt(result,input.selection,accountId);
 }
+export async function readAuthenticatedWorldBossWarCampV27(
+ input:{token:string;eventId:string},deps:WorldBossWarCampDepsV27,
+):Promise<WorldBossWarCampProgressV27>{
+ if(!deps||typeof deps.authenticate!=='function'||
+  !deps.db||typeof deps.db.progress!=='function'||
+  !input||typeof input.token!=='string'||
+  input.token.length<8||input.token.length>8192||
+  !validUuid(input.eventId))
+  throw Error('world_boss_v27_progress_auth_required');
+ const accountId=await deps.authenticate(input.token);
+ if(!validUuid(accountId))throw Error('world_boss_v27_progress_auth_required');
+ const progress=await deps.db.progress(input.eventId);
+ return validateWorldBossWarCampProgressV27(progress,input.eventId);
+}
 export function createWorldBossWarCampPgV27(
  pg:WorldBossPgExecutorV19,
 ):WorldBossWarCampPrivateRepositoryV27{
@@ -141,6 +188,13 @@ export function createWorldBossWarCampPgV27(
     'SELECT private.world_boss_v27_donate($1::uuid,$2::uuid,$3::uuid,$4::text,$5::text) AS receipt',
     [input.eventId,input.accountId,input.characterId,input.requestId,input.recipeId]);
    return one(q.rows,'world_boss_v27_missing_donation_receipt').receipt;
+  },
+  async progress(eventId){
+   if(!validUuid(eventId))throw Error('world_boss_v27_pg_event_invalid');
+   const q=await pg.query<{progress:WorldBossWarCampProgressV27}>(
+    'SELECT private.world_boss_v27_progress($1::uuid) AS progress',[eventId]);
+   return validateWorldBossWarCampProgressV27(
+    one(q.rows,'world_boss_v27_missing_progress').progress,eventId);
   },
   async freeze(eventId){
    if(!validUuid(eventId))throw Error('world_boss_v27_pg_event_invalid');

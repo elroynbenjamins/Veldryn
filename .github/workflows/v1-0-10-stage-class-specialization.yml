@@ -1,0 +1,55 @@
+name: Stage v1.0.10 class skill specialization
+
+on:
+  push:
+    branches: ['release/1.0.10-merge-resolution-20261115']
+    paths: ['.github/workflows/v1-0-10-stage-class-specialization.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  class-skills:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/1.0.10-merge-resolution-20261115
+          fetch-depth: 0
+      - name: Integrate class-specialized passives without dropping mastery fields
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin refs/heads/feat/class-skill-specialization-pass-20261115:refs/remotes/origin/feat/class-skill-specialization-pass-20261115
+          git merge --squash -X ours origin/feat/class-skill-specialization-pass-20261115
+          node <<'NODE'
+          const fs=require('fs');
+          const file='apps/mobile/src/core/game.ts';
+          let s=fs.readFileSync(file,'utf8');
+          const before=s;
+          s=s.replace(
+            'armor:0,ward:0,tenacity:0,potency:0,penetration:0};',
+            'armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};',
+          );
+          const old='    haste:.05+setStats.haste,\n    armor:setStats.armor,ward:setStats.ward,tenacity:setStats.tenacity,potency:setStats.potency,penetration:setStats.penetration,';
+          const replacement='    haste:.05+setStats.haste+mastery.haste,\n    armor:setStats.armor,\n    ward:1-(1-setStats.ward)*(1-mastery.ward),\n    tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,\n    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,';
+          if(s.includes(old))s=s.replace(old,replacement);
+          if(!s.includes('classHealing:mastery.classHealing')) throw Error('Class healing must be included in effectiveStats');
+          if(!s.includes('ward:1-(1-setStats.ward)*(1-mastery.ward)'))throw Error('Class ward must combine with equipment');
+          if(!s.includes('mastery.haste'))throw Error('Class haste must be reflected in character stats');
+          fs.writeFileSync(file,s);
+          console.log('EffectiveStats class passive integration:',before===s?'already in source':'amended');
+          NODE
+          git add apps/mobile/src/core/game.ts
+          if git grep -n -e '^<<<<<<<' -e '^=======' -e '^>>>>>>>' -- apps/mobile/src backend/src; then
+            echo 'Conflict markers detected' >&2
+            exit 1
+          fi
+          git diff --cached --stat
+          git commit -m "release(v1.0.10): integrate class-specialized passives with monster mastery"
+          git push origin HEAD:release/1.0.10-merge-resolution-20261115
+          echo 'Code integrated on scratch branch only. Typechecks, combat and Android validations are still required.'

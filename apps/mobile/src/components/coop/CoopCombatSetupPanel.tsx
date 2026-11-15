@@ -21,24 +21,36 @@ function tonicEffect(potion:(typeof POTIONS)[number]):string{
  if(effect.healingStrengthFraction)parts.push('+'+Math.round(effect.healingStrengthFraction*100)+'% healing/shields');
  return parts.join(' · ');
 }
-type SetupProps={state:GameState;compact?:boolean;onChooseCompanion?:()=>void;companionDisabled?:boolean;tonicPreference?:DungeonTonicPreference;onTonicPreferenceChange?:(next:DungeonTonicPreference)=>void};
-export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,companionDisabled=false,tonicPreference,onTonicPreferenceChange}:SetupProps){
+type SetupProps={state:GameState;compact?:boolean;onChooseCompanion?:()=>void;companionDisabled?:boolean;tonicPreference?:DungeonTonicPreference;onTonicPreferenceChange?:(next:DungeonTonicPreference)=>void;onSelectHealingPotion?:(id:string)=>Promise<void>};
+export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,companionDisabled=false,tonicPreference,onTonicPreferenceChange,onSelectHealingPotion}:SetupProps){
  const {colors:C,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
  const setup=useMemo(()=>coopCombatSetup(state),[state]);
  const [expanded,setExpanded]=useState<'companion'|'healing'|null>(null);
  const [tonicPickerVisible,setTonicPickerVisible]=useState(false);
+ const [healingPickerVisible,setHealingPickerVisible]=useState(false);
+ const [healingBusy,setHealingBusy]=useState(false),[healingError,setHealingError]=useState('');
  const tonics=useMemo(()=>POTIONS.filter(p=>p.effect.kind==='preparation').map(p=>({
   id:p.id,name:p.name,tier:p.tier,effect:tonicEffect(p),
   owned:state.inventory.stacks.filter(stack=>stack.itemId===p.id&&Number.isFinite(stack.quantity)&&stack.quantity>0).reduce((sum,stack)=>sum+Math.floor(stack.quantity),0),
  })).sort((a,b)=>a.tier-b.tier||a.name.localeCompare(b.name)),[state.inventory.stacks]);
+ const healingPotions=useMemo(()=>POTIONS.filter(p=>p.effect.kind==='healing').map(p=>({
+  id:p.id,name:p.name,tier:p.tier,percent:p.effect.kind==='healing'?Math.round(p.effect.maxHpFraction*100):0,
+  owned:state.inventory.stacks.filter(stack=>stack.itemId===p.id&&Number.isFinite(stack.quantity)&&stack.quantity>0).reduce((sum,stack)=>sum+Math.floor(stack.quantity),0),
+ })).sort((a,b)=>a.tier-b.tier),[state.inventory.stacks]);
  const selectedTonic=tonics.find(p=>p.id===tonicPreference?.potionId);
- const autoUse=Boolean(selectedTonic&&tonicPreference?.autoUse);
- const canEdit=Boolean(onTonicPreferenceChange&&tonicPreference);
+  const canEdit=Boolean(onTonicPreferenceChange&&tonicPreference);
  const chooseTonic=(id:string|null)=>{
   if(!canEdit||!tonicPreference)return;
-  onTonicPreferenceChange?.({potionId:id,autoUse:id?tonicPreference.autoUse:false});
+  onTonicPreferenceChange?.({potionId:id,autoUse:Boolean(id)});
   setTonicPickerVisible(false);
+ };
+ const chooseHealing=async(id:string)=>{
+  if(!onSelectHealingPotion||healingBusy)return;
+  setHealingBusy(true);setHealingError('');
+  try{await onSelectHealingPotion(id);setHealingPickerVisible(false);}
+  catch(error){setHealingError(error instanceof Error?error.message:String(error));}
+  finally{setHealingBusy(false);}
  };
  const art=setup.companion?companionArtSource(setup.companion.id):undefined;
  const toggle=(id:'companion'|'healing')=>setExpanded(current=>current===id?null:id);
@@ -67,8 +79,8 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
     </View>
    </Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Healing potion')+': '+(setup.healing?.name??st('None selected'))}
-    accessibilityState={{expanded:expanded==='healing'}} accessibilityHint={st('Healing uses carried potions; food is disabled in dungeons.')}
-    onPress={()=>toggle('healing')} style={({pressed})=>[s.tile,compact&&s.compactTile,pressed&&s.pressed]}>
+    accessibilityState={{expanded:Boolean(onSelectHealingPotion?healingPickerVisible:expanded==='healing'),disabled:healingBusy}} accessibilityHint={st('Choose the healing potion type to use in this dungeon.')}
+    onPress={onSelectHealingPotion?()=>{setHealingError('');setHealingPickerVisible(true)}:()=>toggle('healing')} style={({pressed})=>[s.tile,compact&&s.compactTile,pressed&&s.pressed]}>
     <View style={s.itemTop}>
      <View style={s.artFrame}>{setup.healing?<ItemArtwork itemId={setup.healing.id} size={30}/>:<UiIcon name="inventory" size={30}/>}</View>
      <View style={s.itemContent}>
@@ -77,34 +89,24 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
      </View>
     </View>
     <Text style={[s.status,setup.healing&&setup.healing.carried>0?s.positive:setup.healing?s.warning:s.muted]} numberOfLines={1}>
-     {setup.healing?st('{percent}% HP · {count} carried',{percent:setup.healing.percent,count:setup.healing.carried}):st('Select in HP menu')}
+     {setup.healing?st('{percent}% HP · {count} carried',{percent:setup.healing.percent,count:setup.healing.carried}):onSelectHealingPotion?st('Tap to choose potion ›'):st('Select in HP menu')}
     </Text>
    </Pressable>
   </View>
   <View style={s.tonicContainer}>
    <Pressable accessibilityRole="button" accessibilityLabel={st('Choose dungeon tonic')}
-    accessibilityHint={st('Select a tonic from your inventory. Selection does not spend it.')}
+    accessibilityHint={st('Choose one buff tonic for the run. It is spent before the first room, never while queueing.')}
     disabled={!canEdit} onPress={()=>setTonicPickerVisible(true)}
     style={({pressed})=>[s.tonicRow,compact&&s.compactTonic,pressed&&s.pressed]}>
     <View style={s.tonicIcon}>{selectedTonic?<ItemArtwork itemId={selectedTonic.id} size={26}/>:setup.tonicPreviewId?<ItemArtwork itemId={setup.tonicPreviewId} size={26}/>:<UiIcon name="skills" size={23}/>}</View>
     <View style={s.tonicText}>
      <Text style={s.tonicTitle}>{selectedTonic?.name??st('Choose enhancement tonic')}</Text>
-     <Text style={s.caption} numberOfLines={2}>{selectedTonic?selectedTonic.effect:st('Select a tonic for this dungeon')}</Text>
+     <Text style={s.caption} numberOfLines={2}>{selectedTonic?selectedTonic.effect:st('Tap to choose your dungeon tonic')}</Text>
     </View>
     <Text numberOfLines={1} style={[s.count,selectedTonic?.owned?s.positive:s.muted]}>{selectedTonic?st('{count} carried',{count:selectedTonic.owned}):st('{count} total',{count:setup.tonicCount})}</Text>
     <Text style={s.chevron}>›</Text>
    </Pressable>
-   <Pressable accessibilityRole="checkbox" accessibilityLabel={st('Auto-use selected tonic')}
-    accessibilityState={{checked:autoUse,disabled:!canEdit||!selectedTonic}}
-    disabled={!canEdit||!selectedTonic}
-    onPress={()=>tonicPreference&&onTonicPreferenceChange?.({...tonicPreference,autoUse:!autoUse})}
-    style={({pressed})=>[s.autoRow,pressed&&s.pressed]}>
-    <View style={[s.checkBox,autoUse&&s.checkBoxOn]}><Text style={s.checkMark}>{autoUse?'✓':''}</Text></View>
-    <View style={s.tonicText}>
-     <Text style={s.tonicTitle}>{st('Auto-use selected tonic')}</Text>
-     <Text style={s.caption}>{selectedTonic&&autoUse&&selectedTonic.owned===0?st('Out of stock — select or craft more before the run.'):st('Uses one before the first room, never while queueing.')}</Text>
-    </View>
-   </Pressable>
+   
   </View>
   {expanded?<View style={s.detail} accessibilityLiveRegion="polite">
    <Text style={s.detailText}>{expanded==='companion'?
@@ -139,11 +141,49 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
      <Pressable accessibilityRole="radio" accessibilityState={{selected:!tonicPreference?.potionId}} onPress={()=>chooseTonic(null)}
       style={[s.option,!tonicPreference?.potionId&&s.optionSelected]}>
       <UiIcon name="skills" size={30}/>
-      <View style={s.tonicText}><Text style={s.optionTitle}>{st('No automatic tonic')}</Text><Text style={s.caption}>{st('You can still prepare a tonic manually during the run.')}</Text></View>
+      <View style={s.tonicText}><Text style={s.optionTitle}>{st('No tonic for this run')}</Text><Text style={s.caption}>{st('No buff tonic will be consumed. You can still prepare one manually before the first room.')}</Text></View>
       {!tonicPreference?.potionId?<Text style={s.optionCount}>✓</Text>:null}
      </Pressable>
     </ScrollView>
     <Text style={s.caption}>{st('One buff tonic per run, plus one selected healing potion type. You can use multiple carried healing potions between rooms.')}</Text>
+   </View>
+  </View>
+ </Modal>
+ <Modal visible={healingPickerVisible} transparent animationType="fade" onRequestClose={()=>{if(!healingBusy)setHealingPickerVisible(false)}}>
+  <View style={s.overlay}>
+   <View style={s.sheet}>
+    <View style={s.modalHeader}>
+     <View style={s.tonicText}>
+      <Text accessibilityRole="header" style={s.modalTitle}>{st('Choose healing potion')}</Text>
+      <Text style={s.caption}>{st('Select one healing potion type. Potions are only consumed when you heal during the dungeon; choosing one is free.')}</Text>
+     </View>
+     <Pressable accessibilityRole="button" accessibilityLabel={st('Close')} disabled={healingBusy} onPress={()=>setHealingPickerVisible(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
+    </View>
+    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+     {healingPotions.map(option=>{
+      const selected=state.character?.equippedHealingPotionId===option.id,disabled=healingBusy||option.owned<=0;
+      return <Pressable key={option.id} accessibilityRole="radio" accessibilityLabel={option.name+', '+option.owned+' carried'} accessibilityState={{selected,disabled}}
+       disabled={disabled} onPress={()=>void chooseHealing(option.id)}
+       style={({pressed})=>[s.option,selected&&s.optionSelected,disabled&&s.optionUnavailable,pressed&&s.pressed]}>
+       <ItemArtwork itemId={option.id} size={34}/>
+       <View style={s.tonicText}>
+        <Text style={s.optionTitle}>{option.name} · T{option.tier}</Text>
+        <Text style={s.caption}>{st('Restores {percent}% maximum HP',{percent:option.percent})}</Text>
+       </View>
+       <Text style={[s.optionCount,option.owned>0?s.positive:s.muted]}>{option.owned}× {selected?'✓':''}</Text>
+      </Pressable>;
+     })}
+     <Pressable accessibilityRole="radio" accessibilityState={{selected:!state.character?.equippedHealingPotionId,disabled:healingBusy}}
+      disabled={healingBusy} onPress={()=>void chooseHealing('none')}
+      style={[s.option,!state.character?.equippedHealingPotionId&&s.optionSelected]}>
+      <UiIcon name="inventory" size={30}/>
+      <View style={s.tonicText}><Text style={s.optionTitle}>{st('No healing potion')}</Text><Text style={s.caption}>{st('Keep your healing potion slot empty for this dungeon.')}</Text></View>
+      {!state.character?.equippedHealingPotionId?<Text style={s.optionCount}>✓</Text>:null}
+     </Pressable>
+    </ScrollView>
+    {healingError?<Text accessibilityRole="alert" style={s.warning}>{healingError}</Text>:null}
+    {healingBusy?<Text style={s.caption}>{st('Saving healing potion selection…')}</Text>:null}
+    <Text style={s.caption}>{st('Healing potion charges still follow dungeon difficulty limits. Food is disabled.')}</Text>
    </View>
   </View>
  </Modal></>;

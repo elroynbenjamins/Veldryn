@@ -19,6 +19,7 @@ import {StatBar} from '../components/StatBar';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
 import {CombatXpSplit} from '../components/CombatXpSplit';
 import {MonsterMasteryPanel} from '../components/MonsterMasteryPanel';
+import {EnemyFamilyMasteryPanel} from '../components/EnemyFamilyMasteryPanel';
 import {progressionT} from '../i18n/progression';
 
 export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onBoss,initialMonsterId,initialAreaId}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>;onChangeRegion:()=>void;onStart:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void;initialMonsterId?:string;initialAreaId?:string}){
@@ -67,6 +68,7 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
       {showTraining?<CombatXpSplit state={state} onCommand={onCommand}/>:null}
     </View>
     <MonsterMasteryPanel state={state}/>
+    <EnemyFamilyMasteryPanel state={state}/>
   </ScrollView></View>;
 }
 

@@ -143,7 +143,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    {selectMode?<>
     <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
     <GameButton compact tone="secondary" title={p('Select safe to salvage')} disabled={busy||!onAction} onPress={selectSafeSalvage}/>
-    <GameButton compact tone="secondary" title={p('Clear')} disabled={busy||!selectedIds.length} onPress={()=>setSelectedIds([])}/>
+    {selectedIds.length>0?<GameButton compact tone="secondary" title={p('Clear')} disabled={busy} onPress={()=>setSelectedIds([])}/>:null}
     <GameButton compact tone="secondary" title={p('Done')} disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
    </>:<>
     <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
@@ -158,7 +158,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       <Text style={s.selectionStatLabel}>{p(stat.label)}</Text>
     </View>)}
    </View>
-   <Text style={s.meta}>{p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)})}{salvageCount?` · ${salvageMaterials(eligibleSalvages)}`:''}</Text>
+   <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}{salvageCount?` · ${salvageMaterials(eligibleSalvages)}`:''}</Text>
    <View style={s.sellToolbar}>
     <GameButton compact title={saleCount?p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Nothing sellable')} tone="danger"
      disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id),selectedSales.length-saleCount)}/>
@@ -178,7 +178,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       accessibilityLabel={descriptor?localizedItemName(language,descriptor.id)+(copy?' · '+p(rar?.label??'Equipment')+', '+p('quality {quality}',{quality:craftedGearDisplayQuality(copy)}):'')+(selectMode&&candidate&&!candidate.eligible&&!salvage?.eligible?' · '+p(candidate.reason??'Protected equipment'):''):p('Empty equipment slot')}
       disabled={!stack||busy} onPress={()=>choose(stack,index)}
       style={[s.slot,{width:slotWidth,minHeight:Math.max(62,slotWidth)},stack&&s.filled,rar&&{borderColor:rar.color},checked&&s.slotChecked,selectMode&&!candidate?.eligible&&!salvage?.eligible&&!checked&&s.slotProtected]}>
-      {stack?<>{selectMode&&checked?<View style={s.selectionCheck}><Text style={s.selectionCheckText}>✓</Text></View>:null}<ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text style={[s.quantity,{color:rar?.color??C.text}]} numberOfLines={1}>{selectMode?(checked?'✓':candidate?.eligible||salvage?.eligible?'○':copy?.locked||state.settings.lockedItemIds?.includes(stack.itemId)?'🔒':'—'):copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity}</Text></>:<Text style={s.empty}>·</Text>}
+      {stack?<>{selectMode&&checked?<View style={s.selectionCheck}><Text style={s.selectionCheckText}>✓</Text></View>:null}<ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text style={[s.quantity,{color:rar?.color??C.text}]} numberOfLines={1}>{selectMode?(checked?(copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity):candidate?.eligible||salvage?.eligible?'○':copy?.locked||state.settings.lockedItemIds?.includes(stack.itemId)?'🔒':'—'):copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity}</Text></>:<Text style={s.empty}>·</Text>}
      </Pressable>;
    })}
   </View>
@@ -251,7 +251,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  sellToolbar:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  sellSummary:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
  selectionStats:{flexDirection:'row',gap:6},selectionStat:{flex:1,alignItems:'center',gap:2,paddingVertical:8,paddingHorizontal:4,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
- selectionStatNumber:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},selectionStatLabel:{...typography.caption,color:C.muted,fontSize:10,fontWeight:'800'},
+ selectionStatNumber:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},selectionStatLabel:{...typography.caption,color:C.muted,fontSize:11,fontWeight:'800'},
  saleWarning:{...typography.caption,color:C.warning},
  upgrade:{flexDirection:'row',gap:8,alignItems:'center',borderTopWidth:1,borderColor:C.line,paddingTop:spacing.sm},
  modal:{maxHeight:'90%'},details:{gap:spacing.md,paddingBottom:spacing.md},

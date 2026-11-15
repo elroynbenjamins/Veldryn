@@ -153,11 +153,11 @@ async function run(){
 
  // Edits to paid records are forbidden; cascade deletion remains possible
  // for legitimate account erasure by the owner.
- await expectFailure(()=>q(`update private.party_event_paid_claim_receipts_v29
-  set gold_delta=gold_delta+1 where id=$1::uuid`,[receipt]),
+ await expectFailure(tx=>q(`update private.party_event_paid_claim_receipts_v29
+  set gold_delta=gold_delta+1 where id=$1::uuid`,[receipt],tx),
   'immutable receipt');
- await expectFailure(()=>q(`update private.party_event_paid_claim_inbox_v29
-  set title='Changed' where id=$1::uuid`,[inbox]),
+ await expectFailure(tx=>q(`update private.party_event_paid_claim_inbox_v29
+  set title='Changed' where id=$1::uuid`,[inbox],tx),
   'immutable Inbox');
 
  const perms=await q(`select

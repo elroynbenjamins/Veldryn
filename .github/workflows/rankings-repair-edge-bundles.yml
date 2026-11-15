@@ -1,0 +1,48 @@
+name: Rankings branch - repair generated Edge parity
+
+on:
+  push:
+    branches:
+      - chatgpt/rankings-snapshot-histories-20261115
+    paths:
+      - '.github/workflows/rankings-repair-edge-bundles.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/chatgpt/rankings-snapshot-histories-20261115'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: chatgpt/rankings-snapshot-histories-20261115
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild exactly the two canonical Edge bundles
+        run: node tools/build-online.mjs
+      - name: Verify regenerated bundles match the shared engine
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit only the generated Edge artifacts to this draft branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Both generated bundles already match."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(edge): regenerate gameplay and coop from canonical shared engine"
+          git push origin HEAD:chatgpt/rankings-snapshot-histories-20261115

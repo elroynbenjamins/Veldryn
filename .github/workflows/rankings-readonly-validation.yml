@@ -6,6 +6,7 @@ on:
       - 'apps/mobile/src/core/ranking-pagination.ts'
       - 'apps/mobile/src/core/rankings.ts'
       - 'apps/mobile/src/screens/RankingsScreen.tsx'
+      - 'apps/mobile/src/online/rankings-client.ts'
       - 'apps/mobile/src/i18n/social.ts'
       - 'apps/mobile/src/i18n/social-early-coverage.ts'
       - 'apps/mobile/tests/rankings.ts'

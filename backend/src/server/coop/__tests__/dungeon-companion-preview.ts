@@ -23,6 +23,6 @@ const potential:readonly DungeonCompanionCounterId[]=['armor_break','spellbreak'
 assert.equal(dungeonCompanionOpportunity('UNIT_005',potential),'spellbreak');
 assert.equal(dungeonCompanionOpportunity('UNIT_015',potential),'bulwark');
 assert.equal(dungeonCompanionOpportunity('UNIT_021',potential),'armor_break');
-assert.equal(dungeonCompanionOpportunity('UNIT_001',potential),undefined,'No unsupported bonus for generic damage companion');
+assert.equal(dungeonCompanionOpportunity('UNIT_001',potential),'finisher','Ironwood Hound should counter sustained enemies');
 assert.equal(dungeonCompanionOpportunity('UNIT_005',['armor_break']),undefined,'Cannot recommend an absent matchup');
 console.log('Dungeon companion possible-counter previews OK');

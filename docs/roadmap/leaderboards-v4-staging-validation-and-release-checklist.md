@@ -43,6 +43,16 @@ Before release, run production-shaped concurrent tests against **staging** acros
 - **Staging re-verification:** all five SQL proposals plus all eight independent rollback/savepoint fixtures passed after the guild change. No new SQL functions, indexes, tables or release flags were deployed.
 - **GitHub Actions blocker:** current PR checks report `action_required` with zero jobs rather than a pass/fail. An authorized repository maintainer must approve the checks through GitHub before treating the combined TypeScript, mobile and Edge bundles as verified.
 
+## Final settlement provenance hardening (15 November)
+
+The Party Event / Guild PvE archive now refuses to seal any score array without a **private, pre-registered authoritative settlement receipt** with the exact event key, mode, metric, bracket, version, completion timestamps, and canonical JSONB score digest. A syntactically plausible UUID or an altered score array is insufficient. Receipt registration has **no public client RPC**; only the eventual trusted end-of-event finalizer may create the private receipt.
+
+The archive has a foreign key to the receipt, and database triggers reject UPDATE/DELETE on finalized receipt and history rows, including accidental privileged writes. Repeated calls with the same certified receipt are idempotent; forged retries fail closed. Neither table has client write grants. **This is not a substitute for a real Party Day-8 or Guild six-week finalizer:** those modes still must produce server-verified final score records before the archive can be used.
+
+Combined staging verification after these changes: the five SQL proposals and eight fixtures all passed inside a single transaction, with individual savepoint rollback for each fixture. The tests include refusal of unregistered receipts, altered scoring, duplicate participants, attempted sealed result mutation and receipt deletion. The proposed SQL remains absent on both staging (after rollback) and production.
+
+Additional Edge hardening: upstream authentication outages return sanitized 503 errors, rather than unhandled promise rejections. The new Edge regression test still needs GitHub Actions authorization before its actual CI result is known.
+
 ## Current integration boundaries
 
 The existing Edge gameplay entrypoint has a `view=rankings` read-only handler in the draft, with authenticated account ownership sourced from the session. It exposes gated **start/page** snapshot reads, Arena history, World Boss history and Party/Guild finalized history. There is **no client seal endpoint, reward payout endpoint, public finalizer or active release switch**.

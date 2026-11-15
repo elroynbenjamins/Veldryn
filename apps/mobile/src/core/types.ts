@@ -53,6 +53,10 @@ export interface CharacterState {
   foodQueueIds?:string[];
   /** Character-bound boss healing potion; selected in the HP menu, consumed only in eligible boss battles. */
   equippedHealingPotionId?:string;
+  /** Character-bound boss potion behavior, configured alongside the selected potion. */
+  bossPotionMode?:'manual'|'auto';
+  /** HP percentage at which automatic boss potion use begins (20, 40, 60 or 80). */
+  bossPotionThresholdPct?:20|40|60|80;
   bodyPresentation?:BodyPresentation;
   craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
   /** Permanently collected pets that provide permanent boosts. */

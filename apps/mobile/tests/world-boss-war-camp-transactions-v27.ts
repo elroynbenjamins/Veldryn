@@ -13,6 +13,9 @@ import {WORLD_BOSS_V27_WAR_CAMP_LIVE,WORLD_BOSS_V27_RECIPES,
  createWorldBossWarCampPgV27,
  type WorldBossWarCampProgressV27} from
  '../../../backend/online/world-boss-war-camp-service-v27';
+import {WORLD_BOSS_V27_POLICY_INITIALIZER_LIVE,
+ proposeWorldBossWarCampGoalsV27,initializeWorldBossWarCampV27} from
+ '../../../backend/online/world-boss-war-camp-policy-v27';
 import type {WorldBossRulesSourceV20} from
  '../../../backend/online/world-boss-frozen-modifiers-v20';
 
@@ -41,6 +44,33 @@ const fail=async(f:()=>Promise<unknown>,fragment:string)=>{
 };
 async function main(){
  assert.equal(WORLD_BOSS_V27_WAR_CAMP_LIVE,false);
+ assert.equal(WORLD_BOSS_V27_POLICY_INITIALIZER_LIVE,false);
+ const forecast={eventId:EVENT,eligibleAccounts:40,expectedBundleRate:.75};
+ const targets=proposeWorldBossWarCampGoalsV27(forecast);
+ assert.deepEqual(targets.fortifications,{tier1At:3,tier2At:5});
+ assert.deepEqual(targets.fieldProvisions,targets.fortifications);
+ assert.deepEqual(targets.siegecraft,targets.fortifications);
+ await fail(()=>initializeWorldBossWarCampV27({
+  async query(){throw Error('initializer must validate before database');},
+ },{...forecast,expectedBundleRate:10}),'invalid_private_goal_cohort');
+ let policyQueries=0;
+ const installed=await initializeWorldBossWarCampV27({
+  async query<T extends object>(sql:string,args:readonly unknown[]){
+   policyQueries++;
+   assert.equal(sql,
+    'SELECT private.world_boss_v27_initialize($1::uuid,$2::jsonb,$3::jsonb) AS receipt');
+   assert.equal(args[0],EVENT);
+   assert.deepEqual(JSON.parse(args[1] as string),targets);
+   const recipes=JSON.parse(args[2] as string) as typeof WORLD_BOSS_V27_RECIPES;
+   assert.equal(recipes.length,12);
+   assert.ok(recipes.every(r=>r.materials.length===2));
+   return {rows:[{receipt:{
+    eventId:EVENT,recipesInstalled:12,policyLocked:true,
+   }} as unknown as T]};
+  },
+ },forecast);
+ assert.equal(installed.policyLocked,true);
+ assert.equal(policyQueries,1);
  assert.equal(validateWorldBossV27Recipes(),12);
  assert.equal(WORLD_BOSS_V27_RECIPES.length,12);
  assert.equal(new Set(WORLD_BOSS_V27_RECIPES.map(x=>x.id)).size,12);
@@ -144,7 +174,7 @@ async function main(){
  assert.equal(queries.every(q=>!q.sql.includes(requestId)),true);
  assert.equal(queries.filter(q=>q.sql.includes('_donate')).length,2);
  console.log('WORLD_BOSS_V27_PRIVATE_WAR_CAMP='+JSON.stringify({
-  realItemRecipes:12,tiers:4,tracks:3,inventorySource:'owned-character-inventory',
+  realItemRecipes:12,tiers:4,tracks:3,adminPolicyPreinitialized:true,inventorySource:'owned-character-inventory',
   accountBundleCap:2,weekdayDonationCutoff:'Saturday 00:00 UTC',
   authRequired:true,sqlParameterized:true,privateDigestValidated:true,
   receiptsValidated:true,noWalletCredits:true,noLiveRoutes:true,

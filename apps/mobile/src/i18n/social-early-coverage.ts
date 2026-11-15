@@ -8,6 +8,8 @@ export const socialEarlyRows={
   "Previous": ["Назад","Önceki"],
   "Next": ["Далее","Sonraki"],
   "Page": ["Страница","Sayfa"],
+  "Entries {first}–{last}": ["Строки {first}–{last}","Kayıtlar {first}–{last}"],
+  "Live rankings can change while players progress.": ["Рейтинг может измениться по мере развития игроков.","Oyuncular ilerledikçe canlı sıralamalar değişebilir."],
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
   "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],

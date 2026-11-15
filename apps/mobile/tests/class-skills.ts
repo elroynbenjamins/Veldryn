@@ -3,6 +3,7 @@ import {createCharacter,newGame,startCombat,startClassTraining,claimActivity,eff
 import {characterClassSkills,CLASS_DRILL_BASE_XP,normalizeClassDrills,normalizeClassSkills,MAX_CLASS_SKILL_XP,awardClassSkillXp} from '../src/core/class-skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {classSkillsFor} from '../src/content/class-skills';
+import {huntClassSurvivalEvents} from '../src/core/hunt-class-identity';
 import {classCombatSkillTotalXpAtLevel} from '../src/core/progression';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {settleStartupActivity} from '../src/core/playability';
@@ -28,6 +29,16 @@ ok(knifeAfter.attack===knifeBefore.attack&&knifeAfter.defense===knifeBefore.defe
  const buffed=effectiveStats(trained);
  ok(buffed.hp>=before.hp&&buffed.attack>=before.attack&&buffed.defense>=before.defense,'specialist class stats never penalize base equipment: '+cls.id);
  ok([buffed.accuracy,buffed.evasion,buffed.haste,buffed.ward,buffed.potency,buffed.penetration,buffed.classHealing].every(Number.isFinite),'specialist secondary ratings remain finite: '+cls.id);
+// Both support classes have real, deterministic restorative improvements.
+const incomingHit=[{fraction:.5,actor:'enemy' as const,damage:100,healing:0,critical:false,index:0}];
+for(const [id,skillHealing] of [['DAWNKEEPER',1.10],['STONECALLER',1.08]] as const){
+ const options={classId:id,classSkillLevel:1,combatStartedAtMs:0,encounterStartedAtMs:0,cycleSeconds:10};
+ const basic=huntClassSurvivalEvents(incomingHit,{...options,classHealingMultiplier:1});
+ const trained=huntClassSurvivalEvents(incomingHit,{...options,classHealingMultiplier:skillHealing});
+ const healed=(hits:typeof basic)=>hits.reduce((sum,hit)=>sum+hit.healing,0);
+ ok(healed(trained)>healed(basic),id+' class specialization improves real landed-hit healing');
+ ok(incomingHit[0].healing===0,'class heal simulation never mutates the source encounter');
+}
 let train=startClassTraining(fresh(),now);train.character!.currentHp=5;const inventory=JSON.stringify(train.inventory);const first=claimActivity(train,now+60000);ok(first.reward.trainingActions===1&&total(first.state)===CLASS_DRILL_BASE_XP,'24 XP per drill');ok(first.state.character!.currentHp===5&&JSON.stringify(first.state.inventory)===inventory,'drills do not heal or spend food');ok(first.reward.xp===0&&first.reward.gold===0&&first.reward.kills===0&&!first.reward.eventDrops,'no unrelated rewards');
 let chunks=train;for(let sec=10;sec<=600;sec+=10)chunks=claimActivity(chunks,now+sec*1000).state;const long=claimActivity(train,now+600000).state;ok(JSON.stringify(chunks.character)===JSON.stringify(long.character),'drills independent of claim chunking');
 let focused=executeGameCommand(train,{type:'class_focus',args:{focus:'primary'}},now+30000).state;focused=claimActivity(focused,now+60000).state;ok(characterClassSkills(focused.character!).every(s=>s.xp===12),'partial drill keeps old focus');focused=claimActivity(focused,now+120000).state;ok(characterClassSkills(focused.character!)[0].xp===30&&characterClassSkills(focused.character!)[1].xp===18,'next drill uses focus');

@@ -198,6 +198,49 @@ async function main(){
    }
   }
  }
+ // Controlled low-threat authored-mechanic regression: full 14 rounds
+ // guarantee that the unique channels and statuses actually execute rather
+ // than merely appearing in narrative or skipped early-wipe telemetry.
+ const owned=await resolveCohort(cohorts[0]);
+ const full=freezeWorldBossAccountRosterV22({
+  accountId:ACCOUNT,atUtcMs:NOW,verified:owned,
+ });
+ const lowCamp=makeWorldBossWarCampSnapshotV11({
+  eventId:EVENT,revision:5,levels:{
+   fortifications:0,fieldProvisions:0,siegecraft:0,
+  },
+ });
+ let authoredStatuses=0,authoredSpikes=0;
+ for(const boss of bosses)for(const phase of phases){
+  const lowProfile=makeWorldBossEncounterProfileV13({
+   eventId:EVENT,boss,phase,gearBand:2,
+   configVersion:'wb25-mechanics-isolated-not-balanced',
+   attack:35,defense:100,guardMax:1700,
+  });
+  const raid=simulateWorldBossAuthoredAccountEncounterV25({
+   eventId:EVENT,requestId:'WB25_MECHANIC_'+boss+'_'+phase,
+   roster:full,order:'steady_assault',boss,phase,
+   serverSeed:'WB25_MECHANICS_SERVER_SEED_NONCE_123456789',
+   encounter:lowProfile,warCamp:lowCamp,
+  });
+  assert.equal(raid.roundsCompleted,14);
+  assert.ok(raid.events.some(e=>e.type==='telegraph'&&
+   e.abilityId===signature[boss][phase]));
+  assert.ok(raid.events.some(e=>e.type==='strike'&&
+   e.actorId==='HOLLOWROOT'||e.type==='strike'&&
+   e.actorId==='SUNSCAR'||e.type==='strike'&&
+   e.actorId==='FROSTMARCH'));
+  authoredSpikes++;
+  if(phase==='exposed'){
+   const kind=boss==='hollowroot'?'VINES':
+    boss==='sunscar'?'SCORCH_MARK':'FREEZING_CHAINS';
+   assert.ok(raid.events.some(e=>e.type==='status_apply'&&e.abilityId===kind),
+    boss+' must apply its unique status, not merely display a telegraph');
+   authoredStatuses++;
+  }
+ }
+ assert.equal(authoredStatuses,3);
+ assert.equal(authoredSpikes,9);
  assert.equal(fights,90);
  assert.equal(tactical,36);
  assert.equal(sampleResults.length,18);
@@ -208,7 +251,8 @@ async function main(){
   authoredCuePositions:126,encounters:fights,
   alternativeWarOrders:tactical,roleAndClassCount:9,
   accountSizes:[1,2,3,4,5],bosses:[...bosses],phases:[...phases],
-  signatureObserved,statusEvents,protectionObserved,cleansesObserved,
+  signatureObserved,statusEvents,authoredStatuses,authoredSpikes,
+  protectionObserved,cleansesObserved,
   interruptsObserved,guardRefreshObserved,wipes,sampleResults,
   noLiveRoutes:true,noSettlement:true,noSigils:true,live:false,
  }));

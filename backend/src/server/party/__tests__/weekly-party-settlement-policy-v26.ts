@@ -33,9 +33,8 @@ const base={
  artisanSkillTarget:'mining',permittedArtisanSkills:['mining','woodcutting'],
  permittedCombatSkills:['swordsmanship'],
 };
-const snapshot=JSON.stringify({
- ...source,walletGold:source.walletGold.toString(),
-});
+const snapshot=JSON.stringify(source,(_key,value)=>
+ typeof value==='bigint'?value.toString():value);
 const plan=planPrivatePartyEventSettlementV26(base);
 ok(PARTY_EVENT_SETTLEMENT_V26_RELEASED===false,'feature remains hidden');
 ok(plan.after.gold===6700n&&plan.after.artisanSkillXp===2550n,
@@ -47,8 +46,8 @@ ok(!plan.claimed&&!plan.entitled&&!plan.economyApplied
  &&!plan.inboxDelivered&&plan.previewOnly,
  'plan never grants anything');
 ok(source.walletGold===5000n&&source.artisanSkillXp===300n
- &&JSON.stringify({...source,walletGold:source.walletGold.toString()})
- ===snapshot,'no source mutation');
+ &&JSON.stringify(source,(_key,value)=>
+ typeof value==='bigint'?value.toString():value)===snapshot,'no source mutation');
 
 rejected(()=>planPrivatePartyEventSettlementV26({
  ...base,stores:{...source,characterProjectionGold:4999n},

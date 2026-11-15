@@ -14,7 +14,8 @@ import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG
 import {combatCompanionUiModel,companionXpToNextLevel,companionSanctuaryUpgradeCost,companionCombatContribution,companionCanRecruitFromRequirements} from '../core/combat-companions';
 import {companionAvailability,companionView,companionEconomy,assertCompanionIdle,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam,recommendedCompanionTrialStageTeam} from '../core/companion-runtime';
 import {challengeBoard} from '../core/companion-challenge-board';
-import {COMPANION_MISSIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,COMPANION_TRIAL_BOSS_INTERVAL,COMPANION_TRIAL_FLOOR_COUNT,COMPANION_WEEKLY_CHALLENGES,companionTrialSeasonDefinition,companionTechniques,companionTrialRecommendedPower} from '../../../../backend/src/server/companions/content';
+import {COMPANION_MISSIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,COMPANION_TRIAL_BOSS_INTERVAL,COMPANION_TRIAL_FLOOR_COUNT,COMPANION_WEEKLY_CHALLENGES,companionTrialSeasonDefinition,companionTechniques,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {buildOwnedCompanionCombatant} from '../../../../backend/src/server/companions/combat-adapter';
 import {companionAssignmentStatusLabel,companionMaterialName,companionMaterialSourceTargets,companionHousingMaterialSource,companionNextMasteryTargets,companionNextUnlockTargets,companionProgressionRoadmap,companionRequirementProgress,companionRecoverySeconds,companionRewardLabel,companionStarterTeamProgress,companionStarterMilestone,companionUnlockGuidance} from '../core/companion-presentation';
 import type {CompanionMaterialSourceTarget} from '../core/companion-presentation';
 import {companionTrialBossPreview,companionTrialEncounterTheme} from '../../../../backend/src/server/companions/trials';
@@ -108,6 +109,14 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initi
   const model=useMemo(()=>combatCompanionUiModel(state,selection),[state,selection]);
   const e=useMemo(()=>companionEconomy(state),[state]);
   const progress=model?.progress;
+  // Read actual server ability cadence, including Bond and chosen Technique, instead
+  // of displaying a legacy fixed cooldown that can differ by several seconds.
+  const selectedAbilityCooldown=useMemo(()=>{
+    if(!model)return 0;
+    if(!companionServerDefinition(model.def.id))return model.def.activeAbility.cooldownSeconds;
+    const snapshot=model.progress?{...model.progress,companionId:model.def.id}:{companionId:model.def.id,level:1,xp:0,ascensionTier:0 as const,bondLevel:1,bondXp:0,bondTraitUnlocked:false};
+    return Math.round(buildOwnedCompanionCombatant(snapshot,{mode:'character_assist'}).abilities[0].cooldownMs/100)/10;
+  },[model]);
   const equipped=state.character?.equippedCombatCompanionId,contribution=useMemo(()=>companionCombatContribution(state),[state]),run=view.trial.progress.season.activeRun;
   const recovery=companionRecoverySeconds(state,now),season=companionTrialSeasonDefinition(view.trial.progress.season.seasonKey),rotationPreview=useMemo(()=>companionTrialRotationPreview(now),[now]),specialFacts=useMemo(()=>companionUnlockFacts(state),[state]),trialSuggestion=useMemo(()=>recommendedCompanionTrialTeam(state,now),[state,now]),expeditionSuggestion=useMemo(()=>recommendedCompanionMissionTeam(state,mission,now),[state,mission,now]);
   const safeTeam=team.filter(id=>!!view.owned[id]);
@@ -220,7 +229,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
     </CompanionDisclosure>
     {model&&selectedCodexEntry?.state!=='unknown'?<CompanionDisclosure key={'abilities:'+selection} title={t('Abilities & Traits')} summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}>
       <Text style={s.name}>{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>
-      <Text style={s.body}>{t("{value0} · {value1}s cooldown", {value0: companionContent(language,model.def.activeAbility.description), value1: model.def.activeAbility.cooldownSeconds})}</Text>
+      <Text style={s.body}>{t("{value0} · {value1}s cooldown", {value0: companionContent(language,model.def.activeAbility.description), value1: selectedAbilityCooldown})}</Text>
       <Text style={s.name}>{t('Passive ability')}</Text><Text style={s.body}>{companionContent(language,model.def.passiveAbility.description)}</Text>
       <Text style={s.name}>{t('Bond trait')}</Text><Text style={s.body}>{t("Bond 10: {value0}", {value0: companionContent(language,model.def.bondTrait.description)})}</Text>
     </CompanionDisclosure>:null}

@@ -12,6 +12,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {gemPouchText} from '../i18n/gem-pouch-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {ItemArtwork} from './ItemArtwork';
+import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
 import {ConfirmModal} from './ConfirmModal';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -62,7 +63,11 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     </View>:null}
     <GameModalSurface visible={!!selectedStack} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}
       backdropLabel={p('Close Gem Pouch item details')} surfaceStyle={s.sheet}>
-      <GameModalHeader eyebrow={p('GEM POUCH · ACCOUNT STORAGE')} title={selectedItem?localizedItemName(language,selectedItem.id):p('Gem details')} onClose={()=>setSelected(null)}/>
+      <GameModalHeader eyebrow={p('GEM POUCH · ACCOUNT STORAGE')} title={selectedItem?localizedItemName(language,selectedItem.id):p('Gem details')} onClose={()=>setSelected(null)}
+        trailing={selectedStack?<InventoryItemHeaderControls favorite={favorite} locked={locked}
+          onFavorite={onFavorite?()=>onFavorite(selectedStack.itemId):undefined}
+          onLock={onLock?()=>onLock(selectedStack.itemId):undefined}
+          disabled={busy} onClose={()=>setSelected(null)} showClose={false}/>:undefined}/>
       {selectedStack&&selectedItem?<ScrollView style={s.sheetScroll} contentContainerStyle={s.sheetBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.gemHero}>
           <View style={[s.largeArt,{borderColor:selectedRarity?.color??C.lineStrong}]}><ItemArtwork itemId={selectedStack.itemId} size={76}/></View>
@@ -97,10 +102,6 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
           {protectedGem?<Text style={[s.meta,{color:C.warning}]}>{p('★ Protected: remove Favorite and Lock before selling or dismantling.')}</Text>:null}
         </View>
         <Text style={s.actionTitle}>{p('ACTIONS')}</Text>
-        <View style={s.actions}>
-          <GameButton compact tone="secondary" title={p(favorite?'★ Favorited':'☆ Favorite')} disabled={!onFavorite||busy} onPress={()=>onFavorite?.(selectedStack.itemId)}/>
-          <GameButton compact tone="secondary" title={p(locked?'Unlock':'Lock')} disabled={!onLock||busy} onPress={()=>onLock?.(selectedStack.itemId)}/>
-        </View>
         {selectedRaw&&refinement?<View style={s.refinement}>
           <Text style={s.itemName}>{p('Enchanting · Grade {grade}',{grade:selectedRaw.grade})}</Text>
           <Text style={s.meta}>{p('Requires Lv {level} · {gold} Gold · {materials}',{level:refinement.recipe.level,gold:refinement.recipe.gold.toLocaleString(language),materials:refinement.recipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', ')})}</Text>

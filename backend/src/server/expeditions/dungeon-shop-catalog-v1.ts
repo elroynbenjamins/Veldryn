@@ -1,19 +1,20 @@
 /**
  * Dungeon Marks Shop catalogue. Server validates IDs, while PostgreSQL owns
  * live prices, weekly caps, entitlements and the global release switch.
- * Only preverified account-bound SKUs can be enabled in the database; the
- * remainder stay preview-only until art and reward provenance are complete.
+ * The database gates each SKU. Reviewed crafting bundles are delivered directly
+ * to the shared Bank; legacy bound-material offers remain preview-only.
  */
 export const DUNGEON_SHOP_LIVE_V1 = true as const;
-export const DUNGEON_SHOP_CATALOG_VERSION = 'dungeon-marks-shop-v2-2026-11-11' as const;
+export const DUNGEON_SHOP_CATALOG_VERSION = 'dungeon-marks-shop-v3-2026-11-15' as const;
 
 export type DungeonShopRegion = 'Asterfall' | 'Sunscar' | 'Frostmarch';
-export type DungeonShopCategory = 'supply' | 'companion' | 'icon' | 'border' | 'background' | 'pet';
+export type DungeonShopCategory = 'supply' | 'material' | 'companion' | 'icon' | 'border' | 'background' | 'pet';
 export type DungeonShopBonusTarget =
   | 'craftingSpeed' | 'skillXp' | 'dropChance' | 'gatheringYield' | 'hp' | 'healingEffectiveness'
   | 'fishingSpeed' | 'defense' | 'actionSpeed';
 export type DungeonShopGrant =
   | {kind:'material'; itemId:'TEMPERING_DUST'|'GEM_DUST'|'TEMPERING_CORE'; quantity:number; accountBound:true}
+  | {kind:'crafting_bundle'; itemId:'MOSS_FIBER'|'GREENWOOD_LOG'|'WOLF_PELT'|'IRONWOOD_LOG'|'DUNEWOOD'|'SUNSCALE'|'SUNSTONE_INGOT'; quantity:100; tier:1|2|3|4}
   | {kind:'account_resource'; field:'companionEssence'|'bondstones'; quantity:number}
   | {kind:'profile_collectible'; accountField:'unlockedProfileIconIds'|'unlockedProfileBorderIds'|'unlockedProfileBackgroundIds'|'unlockedCosmeticPetIds'; rewardId:string; rarity:'Rare'|'Epic'; bonus?:{target:DungeonShopBonusTarget; ownedBps:50; activeBps:200|300}};
 
@@ -36,6 +37,13 @@ export const DUNGEON_SHOP_CATALOG_V1:readonly DungeonShopOfferV1[] = Object.free
   {id:'dshop_tempering_satchel',name:'Delver Tempering Satchel',category:'supply',marks:120,perUtcWeek:2,grant:{kind:'material',itemId:'TEMPERING_DUST',quantity:10,accountBound:true}},
   {id:'dshop_gem_dust_cache',name:'Gem Dust Cache',category:'supply',marks:240,perUtcWeek:1,grant:{kind:'material',itemId:'GEM_DUST',quantity:8,accountBound:true}},
   {id:'dshop_tempering_core_cache',name:'Tempering Core Cache',category:'supply',marks:450,perUtcWeek:1,grant:{kind:'material',itemId:'TEMPERING_CORE',quantity:2,accountBound:true}},
+  {id:'dshop_moss_fiber_100',name:'Moss Fiber ×100',category:'material',marks:150,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'MOSS_FIBER',quantity:100,tier:1}},
+  {id:'dshop_greenwood_log_100',name:'Greenwood Log ×100',category:'material',marks:150,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'GREENWOOD_LOG',quantity:100,tier:1}},
+  {id:'dshop_wolf_pelt_100',name:'Wolf Pelt ×100',category:'material',marks:300,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'WOLF_PELT',quantity:100,tier:2}},
+  {id:'dshop_ironwood_log_100',name:'Ironwood Log ×100',category:'material',marks:300,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'IRONWOOD_LOG',quantity:100,tier:2}},
+  {id:'dshop_dunewood_100',name:'Dunewood ×100',category:'material',marks:600,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'DUNEWOOD',quantity:100,tier:3}},
+  {id:'dshop_sunscale_100',name:'Sunscale ×100',category:'material',marks:600,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'SUNSCALE',quantity:100,tier:3}},
+  {id:'dshop_sunstone_ingot_100',name:'Sunstone Ingot ×100',category:'material',marks:1000,perUtcWeek:1,grant:{kind:'crafting_bundle',itemId:'SUNSTONE_INGOT',quantity:100,tier:4}},
   {id:'dshop_companion_essence',name:'Companion Essence Cache',category:'companion',marks:400,perUtcWeek:1,grant:{kind:'account_resource',field:'companionEssence',quantity:100}},
   {id:'dshop_bondstone',name:'Bondstone',category:'companion',marks:750,perUtcWeek:1,grant:{kind:'account_resource',field:'bondstones',quantity:1}},
 
@@ -106,6 +114,7 @@ export function validateDungeonShopCatalogV1():void {
     if(offer.permanent===true && offer.grant.kind!=='profile_collectible')throw new Error('permanent_offer_without_entitlement');
     if(offer.permanent===true && offer.perUtcWeek!==undefined)throw new Error('permanent_offer_weekly_limit');
     if(offer.perUtcWeek!==undefined&&(!Number.isSafeInteger(offer.perUtcWeek)||offer.perUtcWeek<1))throw new Error('invalid_dungeon_shop_limit');
+    if(offer.grant.kind==='crafting_bundle'&&(offer.category!=='material'||offer.grant.quantity!==100||!([1,2,3,4] as number[]).includes(offer.grant.tier)||offer.perUtcWeek!==1||offer.permanent))throw new Error('invalid_crafting_bundle');
     if(offer.grant.kind==='profile_collectible'){
       if(!offer.permanent||rewardIds.has(offer.grant.rewardId))throw new Error('duplicate_or_unbounded_dungeon_collectible');
       rewardIds.add(offer.grant.rewardId);

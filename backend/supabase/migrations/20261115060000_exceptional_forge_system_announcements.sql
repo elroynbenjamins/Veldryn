@@ -7,7 +7,7 @@ create or replace function private.publish_exceptional_forge_crafts_v1()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_result jsonb;

@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from './equipment-vendor-value';
 import {itemDef} from '../content/items';
 import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from './crafted-gear-instances';
 import type {CraftedGearInstance} from './types';
@@ -85,8 +86,8 @@ export function proposeCraftedGearSettlement(args:{
     :existing.find(entry=>entry.instance.id===sold.id)?.holderCharacterId;
   if(location!=='bank'&&!currentHolder)throw new Error('Missing verified sale recipient');
   const credit:CraftedGearSaleCredit=location==='bank'
-    ?{amount:def.value,destination:'bank'}
-    :{amount:def.value,destination:'character',characterId:currentHolder};
+    ?{amount:itemVendorSellGold(def),destination:'bank'}
+    :{amount:itemVendorSellGold(def),destination:'character',characterId:currentHolder};
   const instances=retention.action==='sell_incoming'
     ?owned
     :[...owned.filter(row=>row.id!==sold.id),incoming];

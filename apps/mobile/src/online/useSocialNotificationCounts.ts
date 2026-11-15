@@ -2,8 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import {friendRequests,guildApplications,myGuild,socialChatAttention,socialInvitations} from './social';
 import {useAuthSession} from './AuthSessionProvider';
-import {loadOnlineGuildProjectsV18} from './guild-projects-v18';
-import {claimableGuildProjectRewardIds} from '../core/guild-project-reward-attention';
+import {claimableOnlineGuildProjectRewardCount} from './guild-projects-v18';
 
 export interface SocialNotificationCounts{
   friendRequests:number;
@@ -41,16 +40,15 @@ export function useSocialNotificationCounts(){
     do{
     request.refreshAgain=false;
     try{
-      const [requests,invites,chat,mine,guildProjects]=await Promise.all([
+      const [requests,invites,chat,mine,guildProjectRewards]=await Promise.all([
         friendRequests(),
         socialInvitations().catch(()=>null),
         socialChatAttention().catch(()=>null),
         myGuild().catch(()=>null),
-        loadOnlineGuildProjectsV18().catch(()=>null),
+        claimableOnlineGuildProjectRewardCount().catch(()=>0),
       ]);
       const incoming=requests.filter(request=>request.direction==='incoming').length;
       let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
-      const guildProjectRewards=guildProjects?claimableGuildProjectRewardIds(guildProjects.projects).length:0;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
       if(invites){guildInvites=invites.guild.length;partyInvites=invites.party.length;}
       if(chat)chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};

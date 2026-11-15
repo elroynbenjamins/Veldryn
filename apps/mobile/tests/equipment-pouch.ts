@@ -1,3 +1,4 @@
+import {itemVendorSellGold,EQUIPMENT_FORGE_SELL_REFUND_RATE} from '../src/core/equipment-vendor-value';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {ITEMS,itemDef} from '../src/content/items';
 import {createCharacter,newGame,routeRewards} from '../src/core/game';
@@ -18,6 +19,9 @@ const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='BASTION'&&row.v33Equ
 const otherRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!;
 const gem=ITEMS.find(item=>item.type==='gem'||!!item.rawGemFamilyId)!;
 const output=recipe.output.itemId;
+ok(itemVendorSellGold(itemDef(output))===Math.max(itemDef(output).value*2,Math.round(recipe.gold*EQUIPMENT_FORGE_SELL_REFUND_RATE)),
+ 'Forge equipment vendor Gold should refund 40% of the crafting Gold fee or exceed the legacy value floor');
+ok(itemVendorSellGold(itemDef(gem.id))===itemDef(gem.id).value,'Non-equipment vendor Gold is unchanged');
 let base=createCharacter(newGame(0),'BASTION','Pouch Tester');
 ok(equipmentPouch(base).capacity===30&&equipmentPouch(base).stacks.length===0,'Every character starts with an empty 30-slot Equipment Pouch');
 const grants=routeRewards(base,[{itemId:gem.id,quantity:3},{itemId:output,quantity:2}],1000);
@@ -83,7 +87,7 @@ ok(auditCraftedGearOwnership(cappedBank).consistent,'Inactive owner auto-sale fi
 const priorOwnerGold=cappedBank.otherCharacters![0].character.gold,priorBankGold=cappedBank.bank.gold??0;
 const autoSale=claimEquipmentCraft(cappedBank,job.id,job.completesAtMs,.9);
 ok(autoSale.result.autoSold==='incoming','The 26th weaker forged copy must honor the opt-in 25-copy auto-sell setting');
-ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemDef(output).value
+ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemVendorSellGold(itemDef(output))
  &&(autoSale.state.bank.gold??0)===priorBankGold,
  'Auto-sale of an inactive character\'s would-be Equipment Pouch item must credit that character, never the shared Bank');
 ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve 25 exact physical copies');
@@ -92,10 +96,11 @@ ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sal
 // supplied as a substitute for a physical pouch entry or its exact Forge receipt.
 const legacyCandidates=equipmentPouchSaleCandidates(back);
 ok(legacyCandidates.length===2&&legacyCandidates.every(row=>row.eligible),'Both ordinary unenhanced pouch copies should be sellable');
+ok(legacyCandidates.every(row=>row.gold===itemVendorSellGold(itemDef(output))),'Pouch preview must equal the server-settled per-copy Gold');
 const saleIds=legacyCandidates.map(row=>row.id);
 const initialGold=back.character!.gold;
 const soldLegacy=executeGameCommand(back,{type:'equipment_pouch_sell',args:{ids:saleIds}},1005).state;
-ok(equipmentPouch(soldLegacy).stacks.length===0&&soldLegacy.character!.gold===initialGold+2*itemDef(output).value,
+ok(equipmentPouch(soldLegacy).stacks.length===0&&soldLegacy.character!.gold===initialGold+2*itemVendorSellGold(itemDef(output)),
  'Bulk sale removes exactly the selected legacy pouch copies and adds correct character Gold');
 ok(back.character!.gold===initialGold&&equipmentPouch(back).stacks.length===2,'Selling must not mutate previous saved state');
 let duplicateSaleRejected=false;
@@ -105,7 +110,7 @@ let forgedSaleRejected=false;
 try{validateGameCommand({type:'equipment_pouch_sell',args:{ids:saleIds,gold:999999}})}catch{forgedSaleRejected=true}
 ok(forgedSaleRejected,'Server must not accept user-provided Gold on equipment sale');
 const firstSingle=executeGameCommand(back,{type:'equipment_pouch_sell',args:{ids:[saleIds[0]]}},1005).state;
-ok(equipmentPouch(firstSingle).stacks.length===1&&firstSingle.character!.gold===initialGold+itemDef(output).value,
+ok(equipmentPouch(firstSingle).stacks.length===1&&firstSingle.character!.gold===initialGold+itemVendorSellGold(itemDef(output)),
  'Selling one unmarked equipment slot must not consume a second copy');
 const reserved:GameState={...back,character:{...back.character!,gearEnhancements:{
  [output]:{rank:1,failures:0,gemIds:[]}}}};
@@ -127,7 +132,7 @@ const exactCandidate=equipmentPouchSaleCandidates(tagged)[0];
 ok(exactCandidate.id==='copy:'+record.id&&exactCandidate.eligible,'Exact Forge copy is selectable only through its unique receipt');
 const soldExact=executeGameCommand(tagged,{type:'equipment_pouch_sell',args:{ids:[exactCandidate.id]}},1007).state;
 ok(!equipmentPouch(soldExact).stacks.length&&!soldExact.account.craftedGearInstances?.some(row=>row.id===record.id)
- &&soldExact.character!.gold===tagged.character!.gold+itemDef(output).value
+ &&soldExact.character!.gold===tagged.character!.gold+itemVendorSellGold(itemDef(output))
  &&auditCraftedGearOwnership(soldExact).consistent,
  'Selling exact Forge receipt must remove its one owned instance and credit only its original character');
 // Production Forge receipts can be 120 characters before the "copy:" selector
@@ -144,7 +149,7 @@ ok(longSelector.length===125,'Exact forged-copy selection adds the 5-character p
 ok(equipmentPouchSaleCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy sale must be eligible');
 ok(equipmentPouchSalvageCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy salvage must be eligible');
 const longSold=executeGameCommand(longTagged,{type:'equipment_pouch_sell',args:{ids:[longSelector]}},1007).state;
-ok(equipmentPouch(longSold).stacks.length===0&&longSold.character!.gold===longTagged.character!.gold+itemDef(output).value,
+ok(equipmentPouch(longSold).stacks.length===0&&longSold.character!.gold===longTagged.character!.gold+itemVendorSellGold(itemDef(output)),
  'Long forged-copy sale settles once, credits Gold and removes the exact pouch instance');
 const longSalvaged=executeGameCommand(longTagged,{type:'equipment_pouch_salvage',args:{ids:[longSelector]}},1011).state;
 ok(equipmentPouch(longSalvaged).stacks.length===0&&

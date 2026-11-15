@@ -24,12 +24,12 @@ begin
  perform pg_advisory_xact_lock(
   hashtextextended('party-account:'||p_account_id::text,0));
 
+ -- Follow v25's lock order: locate the immutable offer without a row
+ -- lock, then lock WEEK, then lock OFFER. Locking offer before the week
+ -- can deadlock concurrent v25 preflight writers (week -> offer).
  select * into o from private.party_event_reward_offers_v24
-  where id=p_offer_id and account_id=p_account_id for update;
+  where id=p_offer_id and account_id=p_account_id;
  if not found then raise exception 'party_event_v30_offer_not_owned';end if;
- if o.reward_model<>'party-event-rewards-v2'
-  or o.claimable or o.granted
- then raise exception 'party_event_v30_offer_status_invalid';end if;
 
  select * into w from private.party_event_weeks_v11
   where party_id=o.party_id and event_starts_at=o.event_starts_at
@@ -38,6 +38,13 @@ begin
   or w.status not in ('active','closed','settled')
   or now()<w.event_ends_at+interval '1 hour'
  then raise exception 'party_event_v30_window_unavailable';end if;
+ select * into o from private.party_event_reward_offers_v24
+  where id=p_offer_id and account_id=p_account_id for update;
+ if not found or o.party_id is distinct from w.party_id
+  or o.event_starts_at is distinct from w.event_starts_at
+  or o.reward_model<>'party-event-rewards-v2'
+  or o.claimable or o.granted
+ then raise exception 'party_event_v30_offer_status_invalid';end if;
 
  select * into r from private.party_event_roster_v11
   where party_id=o.party_id and event_starts_at=o.event_starts_at

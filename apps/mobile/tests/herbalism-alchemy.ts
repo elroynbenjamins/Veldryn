@@ -68,6 +68,38 @@ test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and tr
  equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.inputs,[{itemId:'DEWLEAF',quantity:20}],'tonic herbs now cost ×5');
  equal(alchemyRecipeDef('BREW_VERDANT_BINDING_RESIN')!.xp,95,'infusion XP is unchanged');
 });
+test('T2 healing uses 25 River Mint without Dewleaf and all T2 potions are Dewleaf-free',()=>{
+ const riverheart=alchemyRecipeDef('BREW_RIVERHEART_DRAUGHT')!;
+ equal(riverheart.inputs,[{itemId:'RIVER_MINT',quantity:25}],'new Riverheart ingredient requirement');
+ for(const potion of POTIONS.filter(row=>row.tier===2)){
+  for(const recipe of ALCHEMY_RECIPES.filter(row=>row.output.itemId===potion.id)){
+   ok(recipe.inputs.every(input=>input.itemId!=='DEWLEAF'),recipe.id+' does not require a T1 herb');
+  }
+ }
+ const state=skilled(fresh(),'alchemy',25);
+ state.character!.gold=10000;
+ state.inventory.stacks=[{itemId:'RIVER_MINT',quantity:25}];
+ const availability=alchemyAvailability(state,riverheart.id);
+ ok(availability.ready,'a T2 player can brew Riverheart with no Dewleaf');
+ equal(availability.maxBatches,1,'available quantity matches the new 25 Mint requirement');
+ const started=startAlchemyBatch(state,riverheart.id,1,T);
+ equal(started.activity?.brew?.inputsPerBatch,riverheart.inputs,'escrow contains only River Mint');
+ equal(qty(started,'RIVER_MINT'),0,'all 25 River Mint are reserved');
+ const cancelled=stopActivity(started);
+ equal(qty(cancelled,'RIVER_MINT'),25,'cancelling returns exactly 25 River Mint');
+});
+test('previous Riverheart draught ingredient reservations stay loadable and cannot be forged',()=>{
+ const recipe=alchemyRecipeDef('BREW_RIVERHEART_DRAUGHT')!;
+ for(const ingredients of [
+  [{itemId:'DEWLEAF',quantity:15},{itemId:'RIVER_MINT',quantity:15}],
+  [{itemId:'DEWLEAF',quantity:3},{itemId:'RIVER_MINT',quantity:3}],
+ ]){
+  const reserved={version:1 as const,recipeId:recipe.id,totalBatches:2,remainingBatches:1,
+   inputsPerBatch:ingredients,goldPerBatch:110,outputPerBatch:{...recipe.output},cycleSeconds:recipe.seconds,xpPerBatch:recipe.xp};
+  equal(normalizeAlchemyBatch(reserved,recipe.id).inputsPerBatch,ingredients,'previously paid Dewleaf and Mint are preserved');
+  throws(()=>normalizeAlchemyBatch({...reserved,inputsPerBatch:[{itemId:'DEWLEAF',quantity:16},{itemId:'RIVER_MINT',quantity:15}]},recipe.id),'reject invented escrow amounts');
+ }
+});
 test('Ironwood Binding Resin resolves canonical and legacy item-ID aliases without unknown recipe errors',()=>{
  const id='BREW_IRONWOOD_BINDING_RESIN',recipe=alchemyRecipeDef(id)!;
  ok(!!recipe&&recipe.output.itemId==='IRONWOOD_BINDING_RESIN','Ironwood resin is an Alchemy recipe');

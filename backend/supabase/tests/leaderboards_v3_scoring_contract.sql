@@ -114,3 +114,31 @@ BEGIN
   THEN RAISE EXCEPTION 'V3_PROFESSION_PAIR_IMPLEMENTATION_MISSING'; END IF;
   RAISE NOTICE 'V3 profession level/XP snapshot pairing contract passed';
 END $profession_pair$;
+
+-- Schema guard: guild_members has composite (guild_id,account_id) PK, so a
+-- member can have duplicate account rows across guilds. The projection must
+-- choose at most one guild tag; never duplicate a player or shift official ranks.
+DO $one_account_one_row$
+DECLARE projected_count integer;
+BEGIN
+  WITH scores(account_key,value) AS (
+    VALUES ('alpha',100),('beta',50)
+  ), memberships(account_key,guild_key) AS (
+    VALUES ('alpha','guild-1'),('alpha','guild-2'),('beta','guild-3')
+  ), projected AS (
+    SELECT s.account_key,gm.guild_key
+    FROM scores s
+    LEFT JOIN LATERAL (
+      SELECT m.guild_key FROM memberships m
+      WHERE m.account_key=s.account_key
+      ORDER BY m.guild_key LIMIT 1
+    ) gm ON true
+  )
+  SELECT COUNT(*) INTO projected_count FROM projected;
+  IF projected_count<>2 THEN
+    RAISE EXCEPTION 'DUPLICATE_GUILD_MEMBERSHIP_INFLATES_LEADERBOARD'; END IF;
+  IF position('LEFT JOIN LATERAL' IN
+    pg_get_functiondef('public.rankings_board_server_v3(uuid,text,integer,integer)'::regprocedure))=0
+  THEN RAISE EXCEPTION 'V3_GUILD_DEDUP_QUERY_MISSING'; END IF;
+  RAISE NOTICE 'One-account-one-score guild membership projection passed';
+END $one_account_one_row$;

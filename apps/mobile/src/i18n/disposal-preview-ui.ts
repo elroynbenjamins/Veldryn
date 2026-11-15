@@ -18,6 +18,9 @@ export const disposalPreviewUiRows={
  'No recoverable materials':['Keine verwertbaren Materialien','No se pueden recuperar materiales','Geen materialen terug te winnen','Nessun materiale recuperabile','Aucun matériau récupérable','Нет извлекаемых материалов','Geri kazanılabilir malzeme yok'],
  'This action cannot be undone.':['Diese Aktion kann nicht rückgängig gemacht werden.','Esta acción no se puede deshacer.','Deze actie kan niet ongedaan worden gemaakt.','Questa azione non può essere annullata.','Cette action est irréversible.','Это действие нельзя отменить.','Bu işlem geri alınamaz.'],
  'PREVIEW':['VORSCHAU','VISTA PREVIA','VOORBEELD','ANTEPRIMA','APERÇU','ПРЕДПРОСМОТР','ÖNİZLEME'],
+ 'SELECTED':['AUSGEWÄHLT','SELECCIONADOS','GESELECTEERD','SELEZIONATI','SÉLECTIONNÉS','ВЫБРАНО','SEÇİLEN'],
+ 'PROTECTED':['GESCHÜTZT','PROTEGIDOS','BESCHERMD','PROTETTI','PROTÉGÉS','ЗАЩИЩЕНО','KORUMALI'],
+ 'ELIGIBLE':['VERFÜGBAR','APTOS','GESCHIKT','IDONEI','ADMISSIBLES','ДОСТУПНО','UYGUN'],
 } as const satisfies Record<string,SevenLanguages>;
 
 export function disposalPreviewText(language:Language,source:string,params:TranslationParams={}):string{

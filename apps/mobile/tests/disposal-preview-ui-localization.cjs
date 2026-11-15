@@ -28,11 +28,17 @@ for(const [name,source] of [['DisposalPreview',component],['InventoryScreen',inv
  const ast=ts.createSourceFile(name+'.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(ast.parseDiagnostics.length,0,name+' must parse as valid TSX');
 }
-for(const marker of ['formatLocalizedNumber(language,n)','disposalPreviewText(language,key,params)','itemDef(item.itemId)','items.slice(0,3)','rewards.map(reward','GOLD TO RECEIVE','MATERIALS TO RECEIVE','This action cannot be undone.'])
+for(const marker of ['formatLocalizedNumber(language,n)','disposalPreviewText(language,key,params)','itemDef(item.itemId)','items.slice(0,3)','rewards.map(reward','GOLD TO RECEIVE','MATERIALS TO RECEIVE','This action cannot be undone.','summary.selected','summary.protected','summary.eligible','metricCard'])
  assert.ok(component.includes(marker),'Missing localized or correct receipt UI: '+marker);
 assert.ok(confirm.includes('disabled={busy||confirmDisabled}'),'Stale confirmation must be disabled');
+for(const key of ['SELECTED','PROTECTED','ELIGIBLE'])assert.ok(Object.hasOwn(disposalPreviewUiRows,key),'Missing localized summary label: '+key);
 assert.ok(inventory.includes('bulkSelectionSummary(state,bulkPending.ids'), 'Bulk preview uses the pending selection, not changing background selection');
 assert.ok(inventory.includes('confirmDisabled={!disposalSelectionValid'),'Cannot dispose changed bulk items');
+assert.ok(inventory.includes('protectedUnits:Math.max(0,selectionSummary.selectedUnitCount-eligibleUnits)'),'Inventory disposal preview accounts for skipped protected units');
+assert.ok(inventory.includes('protectedStacks:Math.max(0,selectionSummary.selectedStackCount-eligibleStacks)'),'Inventory protected note uses stack units');
+assert.ok(pouch.includes('protected:pendingSale.protectedCount')&&pouch.includes('protected:pendingSalvage.protectedCount'),'Pouch confirmations display copy-safe exclusions');
+assert.ok(pouch.includes("const selectionValid=saleCount>0;")&&pouch.includes("const salvageSelectionValid=salvageCount>0;"),'Mixed protected selection still allows eligible-only disposal');
+assert.ok(pouch.includes("p('Quick sell')")&&pouch.includes("p('Quick salvage')"),'One-tap quick actions open safety confirmation');
 assert.ok(inventory.includes('confirmDisabled={!copyDisposalValid'),'Cannot dispose stale exact equipment');
 for(const file of [inventory,pouch]){
  assert.ok(file.includes('<DisposalPreview mode="sell"')||file.includes('<DisposalPreview mode={'), 'Sell receipt preview is present');

@@ -49,7 +49,7 @@ import {mealBonusDef} from '../core/meal-buffs';
 
 type Pending={kind:'sell'|'bank_sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
-type BulkPending={kind:BulkAction;ids:string[]}|null;
+type BulkPending={kind:BulkAction;ids:string[];protectedUnits?:number;protectedStacks?:number}|null;
 const STORAGE_PAGE_SIZE=30;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
@@ -183,7 +183,13 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
      setError(combined.length>100?gt('Select up to 100 item stacks at once.'):'');
    };
   const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
-  const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
+  const beginBulk=(kind:BulkAction)=>{
+    const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;
+    if(!ids.length)return;
+    const eligibleUnits=kind==='sell'?selectionSummary.sellableUnitCount:selectionSummary.salvageableUnitCount;
+    const eligibleStacks=kind==='sell'?selectionSummary.sellableStackCount:selectionSummary.salvageableStackCount;
+    setBulkPending({kind,ids,...(kind==='transfer'?{}:{protectedUnits:Math.max(0,selectionSummary.selectedUnitCount-eligibleUnits),protectedStacks:Math.max(0,selectionSummary.selectedStackCount-eligibleStacks)})});
+  };
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
     const item=itemDef(stack.itemId),exactRecord=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(inventoryBulkSelectionId(stack)),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
@@ -462,7 +468,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {pending&&pending.kind!=='deposit'?<DisposalPreview mode={pending.kind==='salvage'?'salvage':'sell'} items={[{itemId:pending.item.id,quantity:pending.quantity}]} gold={pending.item.value*pending.quantity} rewards={pending.kind==='salvage'?equipmentSalvageRewards(pending.item.id):[]} note={[pending.kind==='bank_sell'?gt('Gold will be added to Bank.'):null,foodWarning,goalWarningText].filter(Boolean).join(' ')||undefined}/>:null}
   </ConfirmModal>
   <ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?gt('{action} selected stacks?',{action:gt(location==='inventory'?'Deposit':'Withdraw')}):bulkPending?.kind==='sell'?gt("Sell selected items?"):gt("Salvage selected equipment?")} message={bulkPending?.kind==='transfer'?bulkMessage:undefined} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?gt("Deposit selected"):gt("Withdraw selected")):bulkPending?.kind==='sell'?gt("Sell eligible"):gt("Salvage eligible")} danger={bulkPending?.kind!=='transfer'} confirmDisabled={!disposalSelectionValid||inventoryBusyLabel!==null} reduceMotion={state.settings.reduceMotion} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}>
-    {bulkPending&&bulkPending.kind!=='transfer'?<DisposalPreview mode={bulkPending.kind} items={bulkDisposalItems} gold={disposalSummary?.sellGold??0} rewards={bulkPending.kind==='salvage'?bulkSalvageRewards:[]} note={!disposalSelectionValid?gt('Selection has changed. Close and review the equipment.'):(bulkPending.kind==='sell'?disposalSummary?.sellProtectedCount:disposalSummary?.salvageProtectedCount)?gt('{count} selected stacks remain protected.',{count:bulkPending.kind==='sell'?disposalSummary?.sellProtectedCount??0:disposalSummary?.salvageProtectedCount??0}):undefined}/>:null}
+    {bulkPending&&bulkPending.kind!=='transfer'?<DisposalPreview mode={bulkPending.kind} items={bulkDisposalItems} gold={disposalSummary?.sellGold??0} rewards={bulkPending.kind==='salvage'?bulkSalvageRewards:[]} summary={{selected:(bulkPending.kind==='sell'?disposalSummary?.sellableUnitCount??0:disposalSummary?.salvageableUnitCount??0)+(bulkPending.protectedUnits??0),eligible:bulkPending.kind==='sell'?disposalSummary?.sellableUnitCount??0:disposalSummary?.salvageableUnitCount??0,protected:bulkPending.protectedUnits??0}} note={!disposalSelectionValid?gt('Selection has changed. Close and review the equipment.'):(bulkPending.protectedStacks??0)>0?gt('{count} selected stacks remain protected.',{count:bulkPending.protectedStacks??0}):undefined}/>:null}
   </ConfirmModal><Modal transparent visible={inventoryBusyLabel!==null} animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{}}><View style={s.transactionBackdrop}><View accessibilityRole="progressbar" accessibilityLabel={inventoryBusyLabel??gt("Updating inventory")} accessibilityState={{busy:true}} style={s.transactionCard}><ActivityIndicator size="large" color={C.accent}/><Text style={s.transactionTitle}>{inventoryBusyLabel}</Text><Text style={s.transactionCopy}>{gt("Please wait while your inventory is updated.")}</Text></View></View></Modal></>;
 }
 /** Concept 1: a squared, centered padlock badge that stays legible at item-card scale. */

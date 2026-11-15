@@ -19,13 +19,15 @@ export interface DisposalPreviewItem{
  rarity?:ItemRarity;
  quality?:number;
 }
-export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning}:{
+export interface DisposalPreviewSummary{selected:number;eligible:number;protected:number;}
+export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning,summary}:{
  mode:'sell'|'salvage';
  items:readonly DisposalPreviewItem[];
  gold?:number;
  rewards?:readonly ItemStack[];
  note?:string;
  warning?:string;
+ summary?:DisposalPreviewSummary;
 }){
  const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height}=useWindowDimensions();
  const t=(key:string,params?:Record<string,string|number>)=>disposalPreviewText(language,key,params);
@@ -42,6 +44,16 @@ export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning}:{
        <Text style={s.headingTitle}>{t(mode==='sell'?'SELLING':'SALVAGING')}</Text></View>
      <View style={s.countPill}><Text style={s.countText}>{t(count===1?'{count} item':'{count} items',{count:number(count)})}</Text></View>
    </View>
+   {summary?<View style={s.metrics} accessibilityRole="summary">
+     {([
+       {label:'SELECTED',value:summary.selected,color:C.text},
+       {label:'PROTECTED',value:summary.protected,color:summary.protected?C.warning:C.muted},
+       {label:'ELIGIBLE',value:summary.eligible,color:C.good},
+     ] as const).map(metric=><View key={metric.label} style={s.metricCard}>
+       <Text style={[s.metricValue,{color:metric.color}]}>{number(metric.value)}</Text>
+       <Text style={s.metricLabel}>{t(metric.label)}</Text>
+     </View>)}
+   </View>:null}
    <View style={s.itemList}>
      {visibleItems.map((item,index)=>{
        let definition:ReturnType<typeof itemDef>|null=null;
@@ -90,6 +102,10 @@ function styles(C:ThemeColors){return StyleSheet.create({
  headingTitle:{...typography.bodyStrong,color:C.text,fontWeight:'900',letterSpacing:.3},
  countPill:{paddingHorizontal:10,paddingVertical:6,borderRadius:99,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2},
  countText:{...typography.caption,color:C.text,fontWeight:'800'},
+ metrics:{flexDirection:'row',gap:6},
+ metricCard:{flex:1,minWidth:0,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2,paddingVertical:9,paddingHorizontal:5,alignItems:'center',gap:2},
+ metricValue:{...typography.title,fontWeight:'900',fontVariant:['tabular-nums']},
+ metricLabel:{...typography.caption,fontSize:10,color:C.muted,fontWeight:'800',letterSpacing:.3,textAlign:'center'},
  itemList:{gap:5},
  itemRow:{flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:C.line,borderRadius:10,padding:7,backgroundColor:C.panel2},
  art:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1.5},

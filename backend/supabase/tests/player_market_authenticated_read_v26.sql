@@ -31,7 +31,6 @@ begin
       'market_api_internal.market_read_buckets_v26','SELECT')
    or has_table_privilege('service_role',
       'market_api_internal.market_read_buckets_v26','INSERT')
-   or has_schema_privilege('authenticated','private','USAGE')
  then raise exception 'market_v26_acl_fail';end if;
 
  if not exists(select 1 from pg_catalog.pg_class c

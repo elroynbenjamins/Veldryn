@@ -28,7 +28,7 @@ assert(screen.includes('setMyLiveVote({runId:run.runId,decisionId:run.decisionId
 assert(screen.includes("myLiveVote.decisionId===run.decisionId"),'Vote marker must reset when decision changes');
 assert(screen.includes('const result=voting?await coopClient.vote('),'Votes must use real Live server command');
 assert(run.indexOf('<DungeonRouteChoices')<run.indexOf("Party & formation"),'Current room choices must precede secondary party details');
-assert(run.includes("Objectives & mechanics")&&run.includes("Party Chat"),'Details and chat remain accessible in disclosures');
+assert(run.includes("Objectives & mechanics")&&run.includes("run.mode==='live'&&onChatSend&&!terminal?<CoopLiveChatBar")&&!run.includes("<DungeonDisclosure title={st('Party Chat')}"),'Mechanics stay in a disclosure while Live Party Chat stays available in the dedicated dock');
 assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombatStage run={run}'),'Run must retain cinematic combat for Live and Solo');
 assert(stage.includes('CombatAttackSprite')&&stage.includes('CombatImpactBurst'),'Animated attack and impact effects remain in the Live combat stage');
 assert(theater.includes('{footer?<View style={[s.footer')&&theater.includes('paddingBottom:Math.max(insets.bottom,12)'), 'Combat theater keeps the main action fixed above device safe area');

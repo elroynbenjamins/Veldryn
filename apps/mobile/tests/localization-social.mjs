@@ -46,13 +46,14 @@ const sourceAdditions=[
   "Final encounter cleared. Your reward entitlement is being prepared.",
   "This expedition has ended. Review any available rewards before returning."
 ];
-assert.equal(Object.keys(socialEarlyRows).length,184,'RU/TR Dungeon and Social copy includes Rankings pagination labels');
-for(const key of ['No further ranked entries','Return to the previous page to view ranked entries.','Previous','Next','Page']){
+assert.equal(Object.keys(socialEarlyRows).length,186,'RU/TR Dungeon and Social copy includes polished Rankings labels');
+for(const key of ['No further ranked entries','Return to the previous page to view ranked entries.','Previous','Next','Page','Entries {first}–{last}','Live rankings can change while players progress.']){
  assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'Ranking pagination missing DE/ES/NL/IT/FR: '+key);
  assert.ok(Object.prototype.hasOwnProperty.call(socialEarlyRows,key),'Ranking pagination missing RU/TR: '+key);
  for(const lang of SUPPORTED_LANGUAGES)assert.ok(socialText(lang,key).trim(),'Ranking pagination empty: '+lang+' '+key);
 }
 assert.equal(sourceAdditions.length,20,'Live Dungeon, combat inspect and terminal states require 20 new messages');
+assert.equal(socialText('nl','Entries {first}–{last}',{first:'1',last:'50'}),'Posities 1–50','Localized ranking range must interpolate both endpoints');
 for(const [key,values] of Object.entries(socialEarlyRows)){
  assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'RU/TR overlay key must exist in base Social catalog: '+key);
  assert.equal(values.length,2,'RU/TR overlay must provide both languages: '+key);

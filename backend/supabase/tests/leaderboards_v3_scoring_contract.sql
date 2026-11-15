@@ -7,8 +7,11 @@ DECLARE
  v_board text;
  v_out jsonb;
  v_previous bigint;
+ v_previous_secondary numeric;
+ v_previous_rank bigint;
  v_position bigint;
  v_value bigint;
+ v_secondary numeric;
  v_row jsonb;
 BEGIN
  IF to_regprocedure('public.rankings_board_server_v3(uuid,text,integer,integer)') IS NULL
@@ -35,13 +38,26 @@ BEGIN
       OR jsonb_typeof(v_out->'self')<>'object'
    THEN RAISE EXCEPTION 'V3_BOARD_PROJECTION_INVALID: %',v_board; END IF;
    v_previous := NULL;
+   v_previous_secondary := NULL;
+   v_previous_rank := NULL;
    FOR v_row IN SELECT value FROM jsonb_array_elements(v_out->'entries') LOOP
       v_value := (v_row->>'value')::bigint;
+      v_secondary := (v_row->>'secondaryValue')::numeric;
       v_position := (v_row->>'rank')::bigint;
       IF v_value<0 OR v_position<1 OR
-         (v_previous IS NOT NULL AND v_value>v_previous)
-      THEN RAISE EXCEPTION 'V3_RANKING_ORDER_INVALID: %',v_board; END IF;
+         (v_previous IS NOT NULL AND (
+            v_value>v_previous
+            OR (v_value=v_previous AND v_secondary>v_previous_secondary)
+            OR v_position<v_previous_rank
+            OR (v_value=v_previous AND v_secondary=v_previous_secondary
+                AND v_position<>v_previous_rank)
+            OR ((v_value,v_secondary) IS DISTINCT FROM
+                (v_previous,v_previous_secondary) AND v_position<=v_previous_rank)
+         ))
+      THEN RAISE EXCEPTION 'V3_RANKING_ORDER_OR_TIE_INVALID: %',v_board; END IF;
       v_previous := v_value;
+      v_previous_secondary := v_secondary;
+      v_previous_rank := v_position;
    END LOOP;
  END LOOP;
 
@@ -65,3 +81,36 @@ BEGIN
  END;
  RAISE NOTICE 'V3 trusted scoring and read-only access tests passed';
 END $leaderboards$;
+
+-- Deterministic score-pair regression: when cached saves disagree, level and
+-- tiebreak XP must belong to the same chosen skill record/character.
+DO $profession_pair$
+DECLARE
+  best_level bigint;
+  best_xp numeric;
+  combined_levels bigint;
+  combined_xp numeric;
+BEGIN
+  WITH saves(character_key,skill_id,skill_level,skill_xp) AS (
+    VALUES
+      ('main','mining',60,110::numeric),
+      ('main','mining',59,999::numeric), -- stale duplicate: do NOT use its XP
+      ('alt','mining',55,300::numeric)    -- lower-level character: not the tie XP
+  ), per_character AS (
+    SELECT DISTINCT ON (character_key,skill_id)
+      character_key,skill_id,skill_level::bigint AS lvl,skill_xp AS xp
+    FROM saves
+    ORDER BY character_key,skill_id,skill_level DESC,skill_xp DESC
+  )
+  SELECT MAX(lvl),(array_agg(xp ORDER BY lvl DESC,xp DESC))[1],
+    SUM(lvl),SUM(xp)
+  INTO best_level,best_xp,combined_levels,combined_xp
+  FROM per_character;
+  IF best_level<>60 OR best_xp<>110
+    OR combined_levels<>115 OR combined_xp<>410
+  THEN RAISE EXCEPTION 'V3_PROFESSION_LEVEL_XP_PAIR_REGRESSION'; END IF;
+  IF position('DISTINCT ON (sr.account_id,sr.character_id,sr.skill_id)' IN
+    pg_get_functiondef('private.rankings_verified_metrics_v3(text)'::regprocedure))=0
+  THEN RAISE EXCEPTION 'V3_PROFESSION_PAIR_IMPLEMENTATION_MISSING'; END IF;
+  RAISE NOTICE 'V3 profession level/XP snapshot pairing contract passed';
+END $profession_pair$;

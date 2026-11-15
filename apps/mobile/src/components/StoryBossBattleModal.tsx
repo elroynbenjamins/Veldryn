@@ -12,6 +12,7 @@ import {CharacterPortrait} from './CharacterVisual';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {RegionArtwork} from './RegionArtwork';
 import {GameButton} from './GameButton';
+import {ItemArtwork} from './ItemArtwork';
 import {GameModalSurface} from './GameModalSurface';
 import {CombatEffectShape} from './CombatAttackSprite';
 import {CLASS_ICON_ACCENT} from '../content/class-icon-colors';
@@ -28,24 +29,25 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
   const reduceMotion=state.settings.reduceMotion;
   const classTint=state.character?CLASS_ICON_ACCENT[state.character.classId]:C.accent;
   const session=state.storyBossSession;
-  const manual=Boolean(session&&onHeal&&onFinish);
-  const playbackRealMs=manual?battle.durationMs:Math.min(38_000,Math.max(12_000,battle.durationMs));
+  const liveBattle=Boolean(session&&onHeal&&onFinish);
+  const autoHealing=liveBattle&&session?.healingMode==='auto';
+  const playbackRealMs=liveBattle?battle.durationMs:Math.min(38_000,Math.max(12_000,battle.durationMs));
   const simPerRealMs=battle.durationMs/playbackRealMs;
   const [playhead,setPlayhead]=useState(0);
   const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current,phasePulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
     let lastTick=Date.now();
-    setPlayhead(manual&&session?Math.min(battle.durationMs,Math.max(0,lastTick-session.startedAtMs)):0);
+    setPlayhead(liveBattle&&session?Math.min(battle.durationMs,Math.max(0,lastTick-session.startedAtMs)):0);
     const id=setInterval(()=>{
       const now=Date.now(),delta=Math.max(0,Math.min(250,now-lastTick));lastTick=now;
       // Live fights advance on the server's wall clock; a backgrounded app
       // must not freeze or replay time and allow a late healing command.
-      if(manual&&session){setPlayhead(Math.min(battle.durationMs,Math.max(0,now-session.startedAtMs)));return;}
+      if(liveBattle&&session){setPlayhead(Math.min(battle.durationMs,Math.max(0,now-session.startedAtMs)));return;}
       if(AppState.currentState!=='background'&&AppState.currentState!=='inactive')
         setPlayhead(previous=>Math.min(battle.durationMs,previous+delta*simPerRealMs));
     },80);
     return()=>clearInterval(id);
-  },[battle.durationMs,simPerRealMs,manual,session?.startedAtMs]);
+  },[battle.durationMs,simPerRealMs,liveBattle,session?.startedAtMs]);
   // Retroactive telegraphs retain their labels, but must never reveal HP from
   // an attack that has not yet appeared in the on-screen replay.
   const playbackEvents=useMemo(()=>storyBossPlaybackEvents(battle),[battle]);
@@ -85,7 +87,7 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
   const damageEvent=current?.type==='player_hit'||current?.type==='boss_hit'?current:undefined;
 
   // Android Back and accessibility Escape cannot bypass the fight; Continue unlocks after the full timeline.
-  const closeAfterBattle=()=>{if(finished){if(manual&&onFinish)void onFinish();else onClose();}};
+  const closeAfterBattle=()=>{if(finished){if(liveBattle&&onFinish)void onFinish();else onClose();}};
   const eventText=(event:StoryBossEvent)=>{
     if(event.type==='player_hit')return event.skillKind==='damage'
       ?`${battleText(language,event.label)} · ${battleText(language,'SKILL DAMAGE · {amount}',{amount:displayStat(event.amount??0).toLocaleString()})}`
@@ -152,14 +154,21 @@ export function StoryBossBattleModal({state,battle,message,onClose,onHeal,onFini
           }):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 
-        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{manual?'Confirm to settle this battle and its rewards on the server.':gl(message)}</Text></View>:null}
+        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{liveBattle?'Confirm to settle this battle and its rewards on the server.':gl(message)}</Text></View>:null}
 
-        {!manual?<View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>:null}
+        {!liveBattle?<View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>:null}
       </ScrollView>
-      {manual?<View style={s.fixedHealFooter}>
-        {finished?<GameButton title="Confirm result" onPress={onFinish!}/>:<View style={s.healRow}>
-          <GameButton compact title={'HEAL NOW · '+potionRemaining+' left'} onPress={()=>onHeal?.()} disabled={potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0}/>
-          <Text style={s.healHint}>{cooldownRemaining>0?'Cooldown '+(cooldownRemaining/1000).toFixed(1)+'s':'Restores '+Math.round(session?.snapshot.potionHeal??0)+' HP · manual'}</Text>
+      {liveBattle?<View style={s.fixedHealFooter}>
+        {finished?<GameButton title={gt('Confirm result')} onPress={onFinish!}/>:<View style={s.healRow}>
+          {session?.potionId?<ItemArtwork itemId={session.potionId} size={32}/>:null}
+          {autoHealing?<View style={s.healCopy}>
+            <Text accessibilityRole="text" style={s.healTitle}>{gt('AUTO HEAL')} · {session?.autoThresholdPct??40}% HP</Text>
+            <Text style={s.healHint}>{potionRemaining} {gt('potions left')} · {gt('4.5s cooldown')}</Text>
+            {!session?.potionId?<Text style={s.healHint}>{gt('No potion selected before battle')}</Text>:null}
+          </View>:<>
+            <GameButton compact title={`${gt('HEAL NOW')} · ×${potionRemaining}`} accessibilityLabel={`${gt('Use healing potion')}. ${potionRemaining} ${gt('potions left')}`} onPress={onHeal!} disabled={!session?.potionId||potionRemaining<=0||cooldownRemaining>0||playerHp<=0||playerHp>=battle.playerMaxHp||bossHp<=0} style={s.healButton}/>
+            <Text style={s.healHint}>{cooldownRemaining>0?`${gt('Cooldown')} ${(cooldownRemaining/1000).toFixed(1)}s`: `+${Math.min(Math.round(session?.snapshot.potionHeal??0),Math.max(0,battle.playerMaxHp-playerHp))} HP`}</Text>
+          </>}
         </View>}
       </View>:null}
   </GameModalSurface>;
@@ -180,6 +189,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   log:{gap:4,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},logHead:{flexDirection:'row',justifyContent:'space-between',gap:8},logTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.7},logMeta:{fontSize:9,color:C.muted,fontWeight:'800'},logRow:{flexDirection:'row',gap:8},logTime:{width:34,fontSize:9,color:C.muted,fontVariant:['tabular-nums']},logText:{flex:1,fontSize:10,color:C.text,fontWeight:'700'},warn:{color:C.warning},phaseLog:{color:C.info,fontWeight:'900'},critLog:{color:C.warning,fontWeight:'900'},
   result:{gap:4,padding:9,borderLeftWidth:4,borderRadius:radii.sm},win:{borderLeftColor:C.good,backgroundColor:C.goodSurface},loss:{borderLeftColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.title,color:C.text},resultCopy:{...typography.body,color:C.text},
   fixedHealFooter:{padding:8,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.bg},
-  healRow:{flexDirection:'row',alignItems:'center',gap:10,padding:7,borderWidth:1,borderColor:C.good,borderRadius:radii.sm,backgroundColor:C.goodSurface},healHint:{flex:1,fontSize:10,color:C.text},
+  healRow:{minHeight:58,flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.good,borderRadius:radii.sm,backgroundColor:C.goodSurface},healButton:{flexShrink:1},healCopy:{flex:1,minWidth:0,gap:3},healTitle:{fontSize:12,fontWeight:'900',color:C.good},healHint:{flex:1,fontSize:10,color:C.text},
   actions:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10},live:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:1.2},
 });}

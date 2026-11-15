@@ -6,6 +6,6 @@ const projected=frostmarchProgressFromState({regionalProgressById:{REG_003:{stor
 assert.equal(projected.storyCompleted,2);assert.equal(projected.collectionEntries,2);assert.equal(projected.bossMasteryTier,1);
 const bounded=frostmarchProgressFromState({regionalProgressById:{REG_003:{storyCompleted:-10,sideQuestsCompleted:Number.NaN}},unlockedMonsterIds:[],defeatedBossIds:[]});assert.equal(bounded.storyCompleted,0);assert.equal(bounded.sideQuestsCompleted,0);assert.equal(completionPercentV21({...p,storyTotal:0}),0);
 assert.equal(['COP_007','COP_008','COP_009'].join(','),'COP_007,COP_008,COP_009');
-assert.equal(validateFrostmarchCardsV21().length,0);assert.equal(frostmarchCardsV21(52).zones.filter(v=>v.locked).length,2);assert.equal(frostmarchCardsV21(52).dungeons.filter(v=>v.locked).length,2);
+assert.equal(validateFrostmarchCardsV21().length,0);assert.equal(frostmarchCardsV21(52).zones.filter(v=>v.locked).length,3);assert.equal(frostmarchCardsV21(52).dungeons.filter(v=>v.locked).length,2);
 assert.equal(isValidRegionProgressV21(p),true);assert.equal(isValidRegionProgressV21({...p,collectionEntries:99}),false);
 assert.equal(isValidRegionProgressV21({...p,storyCompleted:1.5}),false);assert.equal(isValidRegionProgressV21({...p,storyTotal:0}),false);assert.equal(nextRegionalGoalV21({...p,storyTotal:0}),'Regional progress unavailable');assert.equal(frostmarchCardsV21(Number.NaN).zones.every(v=>v.locked),true);assert.equal(formatRegionTimerV21(Number.NaN),'0m');

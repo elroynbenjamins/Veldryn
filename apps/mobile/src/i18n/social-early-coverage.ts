@@ -8,6 +8,7 @@ export const socialEarlyRows={
   "Previous": ["Назад","Önceki"],
   "Next": ["Далее","Sonraki"],
   "Page": ["Страница","Sayfa"],
+  "Ranks {first}–{last}": ["Места {first}–{last}","Sıralar {first}–{last}"],
   "Entries {first}–{last}": ["Строки {first}–{last}","Kayıtlar {first}–{last}"],
   "Live rankings can change while players progress.": ["Рейтинг может измениться по мере развития игроков.","Oyuncular ilerledikçe canlı sıralamalar değişebilir."],
   "Reward amount is being prepared.": ["Размер награды уточняется.","Ödül miktarı hazırlanıyor."],

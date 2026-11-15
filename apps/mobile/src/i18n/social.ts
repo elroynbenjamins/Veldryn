@@ -13,6 +13,7 @@ export const socialTranslationRows = {
   "Previous": ["Zurück","Anterior","Vorige","Precedente","Précédent"],
   "Next": ["Weiter","Siguiente","Volgende","Successiva","Suivant"],
   "Page": ["Seite","Página","Pagina","Pagina","Page"],
+  "Ranks {first}–{last}": ["Ränge {first}–{last}","Puestos {first}–{last}","Rangen {first}–{last}","Posizioni {first}–{last}","Rangs {first}–{last}"],
   "Entries {first}–{last}": ["Einträge {first}–{last}","Entradas {first}–{last}","Posities {first}–{last}","Voci {first}–{last}","Entrées {first}–{last}"],
   "Live rankings can change while players progress.": ["Live-Ranglisten können sich ändern, während Spieler Fortschritte machen.","Las clasificaciones en vivo pueden cambiar a medida que progresan los jugadores.","Live-ranglijsten kunnen veranderen terwijl spelers vooruitgang boeken.","Le classifiche in tempo reale possono cambiare mentre i giocatori avanzano.","Les classements en direct peuvent évoluer à mesure que les joueurs progressent."],
   "Reward amount is being prepared.": ["Der Belohnungsbetrag wird vorbereitet.","Se está preparando la cantidad de recompensa.","De beloningshoeveelheid wordt voorbereid.","La quantità della ricompensa è in preparazione.","Le montant de la récompense est en préparation."],

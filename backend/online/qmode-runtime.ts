@@ -11,6 +11,7 @@ import type {PublishedEcho} from '../src/server/coop/echo-recruitment';
 import {createQModeNpcAllies} from '../src/server/coop/qmode-npc-allies';
 import type {CoopRunRequest,CoopDecisionCommand} from '../src/shared/coop-types';
 import {marksForRun} from '../src/server/expeditions/rewards';
+import {frozenRunBaseMarks} from '../src/server/expeditions/reward-base';
 import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
@@ -25,11 +26,11 @@ const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value))
 const content=ONLINE_COOP_BALANCE_VERSION;
 const projection=(run:QModeRun,version:number,seed:string)=>({...projectQModeRun(run,'qmode',seed),stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version});
 function settlement(run:QModeRun,version:number,seed:string){
- const definition=EXPEDITIONS[run.expeditionId],last=run.lastResolution!;
+ const mapBaseMarks=frozenRunBaseMarks(run),last=run.lastResolution!;
  const node=run.graph.nodes.find(row=>row.nodeId===last.nodeId)!;
  const cleared=run.persistentState.visitedNodeIds.filter(id=>id!==run.graph.bossNodeId).length;
  const terminal=run.phase==='completed'||run.phase==='failed';
- return {projection:projection(run,version,seed),enhancedMarks:terminal?marksForRun(definition.baseMarks,run.tier,run.tierScalingVersion===2?dungeonRewardState(run):{cleared:run.phase==='completed',routeProgress:cleared/run.graph.preBossNodeCount,reachedFinalBoss:node.kind==='boss'}):null,assistanceMarks:terminal?Math.max(1,Math.round(definition.baseMarks*.1)):null};
+ return {projection:projection(run,version,seed),enhancedMarks:terminal?marksForRun(mapBaseMarks,run.tier,run.tierScalingVersion===2?dungeonRewardState(run):{cleared:run.phase==='completed',routeProgress:cleared/run.graph.preBossNodeCount,reachedFinalBoss:node.kind==='boss'}):null,assistanceMarks:terminal?Math.max(1,Math.round(mapBaseMarks*.1)):null};
 }
 
 /** Composes the existing Q-Mode domain with transactional persistence. Pending

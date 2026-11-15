@@ -6,6 +6,7 @@
   "include": [
     "src/server/coop/__tests__/phase11-rewards.ts",
     "src/server/coop/__tests__/tier-reward-balance.ts",
+    "src/server/coop/__tests__/dungeon-marks-progression.ts",
     "src/server/coop/__tests__/tier-full-matrix.ts"
   ]
 }

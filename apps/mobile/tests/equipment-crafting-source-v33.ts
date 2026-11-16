@@ -1,5 +1,5 @@
 import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
-import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,EQUIPMENT_PRIMARY_MATERIAL_REDUCTION,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,EQUIPMENT_PRIMARY_MATERIAL_REDUCTION,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
@@ -88,10 +88,12 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
   const previousXp=baselineXp+(highSunscar?20:0);
   const boostedTier=['T2','T3','T4'].includes(recipe.v33EquipmentTier);
-  const standardXp=boostedTier?Math.round(previousXp*1.25):previousXp;
+  const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
+  const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
+    :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
   // Three of the ten T5 slots carry a secondary stat and pay for it in profession XP.
   const t5Affix=recipe.v33EquipmentTier==='T5'&&isT5EquipmentAffixSlot(slot);
-  ok(recipe.xp===(t5Affix?Math.round(standardXp*T5_AFFIX_XP_MULTIPLIER):standardXp),recipe.id+' must apply 25% more equipment crafting XP only to T2–T4 and the T5 affix bonus only to affix slots, retaining the T3/T4 +20 baseline');
+  ok(recipe.xp===(t5Affix?Math.round(improvedXp*T5_AFFIX_XP_MULTIPLIER):improvedXp),recipe.id+' must preserve the existing T2–T4 25% XP increase, the subsequent 20% T2–T4 increase, the T3/T4 flat +20 baseline, and the T5 affix-only bonus');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }

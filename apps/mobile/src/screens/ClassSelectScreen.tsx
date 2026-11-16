@@ -30,10 +30,12 @@ type Props={
  onSelect:(id:ClassId,name:string,body:BodyPresentation)=>Promise<void>|void;
  onCancel?:()=>void;
  cancelLabel?:string;
+ /** Occupied account roles cannot be selected for a second or third character. */
+ lockedRoles?:ReadonlyArray<'Tank'|'Damage'|'Support'>;
  onSignInExisting?:()=>void;
 };
 
-export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTheme,onSelect,onCancel,cancelLabel,onSignInExisting}:Props){
+export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTheme,onSelect,onCancel,cancelLabel,lockedRoles=[],onSignInExisting}:Props){
  const gameLanguage=useGameLanguage(),language=languageProp??gameLanguage;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {width,fontScale}=useWindowDimensions();
@@ -41,7 +43,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
  const classWidth=Math.floor((Math.min(width-32,488)-16)/3);
  const scroll=useRef<ScrollViewInstance>(null),submitting=useRef(false);
  const [step,setStep]=useState<Step>(onCancel?'class':'welcome');
- const [index,setIndex]=useState(0);
+ const [index,setIndex]=useState(()=>Math.max(0,CLASSES.findIndex(item=>!lockedRoles.includes(item.role))));
  const [name,setName]=useState('');
  const [nameTouched,setNameTouched]=useState(false);
  const [nameFocused,setNameFocused]=useState(false);
@@ -50,6 +52,8 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
  const [saving,setSaving]=useState(false);
  const [saveError,setSaveError]=useState('');
  const selected=CLASSES[index]??CLASSES[0];
+ const selectedLocked=lockedRoles.includes(selected.role);
+ useEffect(()=>{if(selectedLocked){const next=CLASSES.findIndex(item=>!lockedRoles.includes(item.role));if(next>=0)setIndex(next);}},[selectedLocked,lockedRoles.join('|')]);
  const details=useMemo(()=>classSelectionDetails(selected.id),[selected.id]);
  const activeThemeId=themeId??C.id;
  const activeTheme=UI_THEMES[activeThemeId];
@@ -60,6 +64,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
  useEffect(()=>{scroll.current?.scrollTo({y:0,animated:false})},[step]);
  const goNext=()=>{
   if(submitting.current)return;
+  if(step==='class'&&selectedLocked)return;
   if(step==='identity'&&nameError){setNameTouched(true);return;}
   Keyboard.dismiss();setNameFocused(false);setSaveError('');
   if(step==='welcome')setStep('class');
@@ -78,6 +83,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
  async function finish(){
   if(submitting.current)return;
   const error=characterNameError(name);
+  if(selectedLocked){setConfirming(false);setStep('class');return;}
   if(error){setConfirming(false);setNameTouched(true);setSaveError(error);setStep('identity');return;}
   submitting.current=true;setSaving(true);setSaveError('');setConfirming(false);Keyboard.dismiss();
   try{await onSelect(selected.id,normalizeCharacterName(name),LEGACY_BODY);}
@@ -85,7 +91,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
   finally{submitting.current=false;setSaving(false);}
  }
  const selectClass=(nextIndex:number)=>{
-  if(submitting.current)return;
+  if(submitting.current||!CLASSES[nextIndex]||lockedRoles.includes(CLASSES[nextIndex].role))return;
   setIndex(nextIndex);setDetailsOpen(false);
  };
  const stepName=step==='class'?t(language,'onboarding.stepClass'):step==='identity'?t(language,'onboarding.stepIdentity'):t(language,'onboarding.stepReview');
@@ -132,6 +138,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
      <Text style={s.eyebrow}>{ct(language,'CREATE A CHARACTER')} · 1 / 3</Text>
      <Text accessibilityRole="header" style={s.heading}>{t(language,'onboarding.chooseCalling')}</Text>
      <Text style={s.description}>{ct(language,'Select one of nine classes to see its strengths.')}</Text>
+     {!!lockedRoles.length&&<Text style={s.description}>{ct(language,'One Tank, one Damage, one Support. Pick any order.')}</Text>}
      <View style={s.hero}>
       <View style={s.heroRow}>
        <View style={s.heroArtFrame}><Image accessible={false} source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.heroArt}/></View>
@@ -150,12 +157,16 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
       })}</View>
      </View>
      <Text style={s.label}>{ct(language,'AVAILABLE CLASSES')} · {CLASSES.length}</Text>
-     <View style={s.classGrid}>{CLASSES.map((item,i)=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={ct(language,'Select {name}',{name:item.name})} accessibilityState={{selected:item.id===selected.id,disabled:saving}} disabled={saving} onPress={()=>selectClass(i)} style={({pressed})=>[s.classCard,{width:classWidth},item.id===selected.id&&s.classCardSelected,pressed&&s.pressed]}>
-      {item.id===selected.id&&<Text style={s.classSelectedMark}>✓</Text>}
-      <Image accessible={false} source={classEmblemIconArtwork[item.id]} style={s.classIcon} resizeMode="contain"/>
-      <Text style={s.className} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={2}>{item.name}</Text>
-      <Text style={s.classRole}>{ct(language,item.role)}</Text>
-     </Pressable>)}</View>
+     <View style={s.classGrid}>{CLASSES.map((item,i)=>{
+      const locked=lockedRoles.includes(item.role);
+      return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={locked?item.name+' · '+ct(language,'Role already filled'):ct(language,'Select {name}',{name:item.name})} accessibilityState={{selected:!locked&&item.id===selected.id,disabled:saving||locked}} disabled={saving||locked} onPress={()=>selectClass(i)} style={({pressed})=>[s.classCard,{width:classWidth},!locked&&item.id===selected.id&&s.classCardSelected,locked&&s.classCardLocked,pressed&&!locked&&s.pressed]}>
+       {!locked&&item.id===selected.id&&<Text style={s.classSelectedMark}>✓</Text>}
+       <Image accessible={false} source={classEmblemIconArtwork[item.id]} style={[s.classIcon,locked&&s.classIconLocked]} resizeMode="contain"/>
+       <Text style={[s.className,locked&&s.classTextLocked]} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={2}>{item.name}</Text>
+       <Text style={[s.classRole,locked&&s.classTextLocked]}>{ct(language,item.role)}</Text>
+       {locked&&<Text style={s.classLockLabel}>{ct(language,'Role already filled')}</Text>}
+      </Pressable>;
+     })}</View>
      <Pressable accessibilityRole="button" accessibilityLabel={ct(language,'Ability details')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(open=>!open)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
       <Text style={s.disclosureTitle}>{ct(language,'Encounter abilities')} &amp; {ct(language,'Idle hunting')}</Text>
       <Text style={s.disclosureChevron}>{detailsOpen?'−':'+'}</Text>
@@ -234,7 +245,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
     {(step!=='welcome'||!!onCancel)&&<Pressable accessibilityRole="button" disabled={saving} onPress={goBack} style={({pressed})=>[s.secondaryAction,pressed&&s.pressed]}>
      <Text style={s.secondaryText}>{step==='class'&&onCancel?cancelLabel??t(language,'common.back'):t(language,'common.back')}</Text>
     </Pressable>}
-    <Pressable accessibilityRole="button" disabled={saving||(step==='identity'&&!!nameError)} onPress={goNext} style={({pressed})=>[s.primaryAction,(saving||(step==='identity'&&!!nameError))&&s.disabled,pressed&&s.pressed]}>
+    <Pressable accessibilityRole="button" disabled={saving||(step==='class'&&selectedLocked)||(step==='identity'&&!!nameError)} onPress={goNext} style={({pressed})=>[s.primaryAction,(saving||(step==='class'&&selectedLocked)||(step==='identity'&&!!nameError))&&s.disabled,pressed&&s.pressed]}>
      <Text style={s.primaryText}>{saving?ct(language,'Saving character…'):step==='welcome'?ct(language,'CREATE A CHARACTER'):step==='class'?t(language,'onboarding.chooseIdentity'):step==='identity'?t(language,'onboarding.reviewCharacter'):ct(language,'Enter Asterfall')}</Text>
     </Pressable>
    </View>
@@ -293,6 +304,10 @@ function makeStyles(C:ThemeColors){
  classGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'flex-start'},
  classCard:{minHeight:92,borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel,alignItems:'center',justifyContent:'center',paddingHorizontal:4,paddingVertical:7,gap:3,position:'relative'},
  classCardSelected:{borderColor:C.selectionLine,backgroundColor:C.selection,borderWidth:2},
+ classCardLocked:{backgroundColor:C.panel2,opacity:0.48,borderColor:C.line},
+ classIconLocked:{opacity:0.38},
+ classTextLocked:{color:C.muted},
+ classLockLabel:{fontSize:9,lineHeight:12,fontWeight:'800',textAlign:'center',color:C.muted},
  classSelectedMark:{position:'absolute',right:6,top:3,fontSize:11,fontWeight:'900',color:C.accentSoft},
  classIcon:{width:44,height:44},
  className:{fontSize:11,lineHeight:14,fontWeight:'800',color:C.text,textAlign:'center'},

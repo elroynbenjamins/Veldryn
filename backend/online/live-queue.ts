@@ -30,6 +30,9 @@ export class OnlineLiveQueue {
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
+  // The gameplay revision may advance after a successful queue commit. Recheck
+  // the receipt before attempting another write so lost-ACK retries remain idempotent.
+  if(request.loadoutRevision<game.version){const settled=await replay();if(settled)return settled.response;}
   // Unrelated gathering/combat can advance the account revision after the UI preview.
   // Rebuild stats and eligibility from the newest server state and let the atomic
   // join transaction guard the actual revision. Reject only impossible future versions.
@@ -58,6 +61,9 @@ export class OnlineLiveQueue {
   const game=await this.services.rpc<{state:GameState|null;version:number}>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
+  // The gameplay revision may advance after a successful queue commit. Recheck
+  // the receipt before attempting another write so lost-ACK retries remain idempotent.
+  if(request.loadoutRevision<game.version){const settled=await replay();if(settled)return settled.response;}
   // Unrelated gathering/combat can advance the account revision after the UI preview.
   // Rebuild stats and eligibility from the newest server state and let the atomic
   // join transaction guard the actual revision. Reject only impossible future versions.

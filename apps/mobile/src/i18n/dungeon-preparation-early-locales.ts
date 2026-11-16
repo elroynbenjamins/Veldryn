@@ -2,6 +2,9 @@ import type {Language} from './languages';
 
 /** Dungeon preparation labels for Russian and Turkish, matching the five established locale keys. */
 export const dungeonPreparationEarlyRows={
+  "Available dungeons": ["Доступные подземелья","Kullanılabilir zindanlar"],
+  "Live difficulty is selected automatically": ["Сложность совместного похода выбирается автоматически","Canlı zorluk otomatik seçilir"],
+  "Other": ["Другое","Diğer"],
   "Choose a dungeon and plan your route.": [
     "Выберите подземелье и спланируйте маршрут.",
     "Bir zindan seç ve rotanı planla."

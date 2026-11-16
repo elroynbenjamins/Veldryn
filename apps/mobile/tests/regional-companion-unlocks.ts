@@ -1,4 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {monsterMasteryKillsForRank} from '../src/core/monster-mastery';
 import {COMBAT_COMPANIONS,combatCompanionDef} from '../src/content/combat-companions';
 import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks} from '../src/core/combat-companions';
 
@@ -59,7 +60,7 @@ for(const [id,target] of prestigeTargets){
 
 let all=createCharacter(newGame(1),'IRONWARDEN','Regional Tester');
 all={...all,
-  character:{...all.character!,monsterMasteryPoints:{SUNSCAR_SCORPION:500,FROSTWOLF:500,BLACKGLASS_MIRELING:500}},
+  character:{...all.character!,monsterMasteryPoints:{SUNSCAR_SCORPION:monsterMasteryKillsForRank(20),FROSTWOLF:monsterMasteryKillsForRank(20),BLACKGLASS_MIRELING:monsterMasteryKillsForRank(20)}},
   account:{...all.account,
     unlockedCombatCompanionIds:['UNIT_017','UNIT_021'],
     combatCompanionProgress:{

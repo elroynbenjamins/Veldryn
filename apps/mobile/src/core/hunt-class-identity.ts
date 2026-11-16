@@ -24,6 +24,7 @@ export function isHuntDefensiveClass(id:ClassId):id is DefensiveClassId{
 }
 export function huntClassSurvivalEvents(events:readonly HuntHit[],input:{
  classId:ClassId;classSkillLevel:number;
+ classHealingMultiplier?:number;
  combatStartedAtMs:number;encounterStartedAtMs:number;cycleSeconds:number;
 }):HuntHit[]{
  const result=events.map(event=>({...event}));
@@ -34,13 +35,14 @@ export function huntClassSurvivalEvents(events:readonly HuntHit[],input:{
  if(pulse===undefined)return result;
  const rank=Math.min(100,Math.max(1,Math.floor(Number.isFinite(input.classSkillLevel)?input.classSkillLevel:1)));
  const scale=1+.30*(rank-1)/99;
+ const healScale=Math.max(1,Math.min(1.20,input.classHealingMultiplier??1));
  const eligible=result.filter(event=>(event.actor==='enemy'||(profile.mechanic==='sun_heal'&&event.actor==='fatigue'))
   &&event.damage>0
   &&input.encounterStartedAtMs+event.fraction*input.cycleSeconds*1000>=pulse-1e-3);
  const first=eligible[0];
  if(!first)return result;
  if(profile.mechanic==='sun_heal'){
-  const bonus=Math.max(0,Math.min(first.damage*.15,first.damage*profile.healingOfIncomingPct*scale));
+  const bonus=Math.max(0,Math.min(first.damage*.18,first.damage*profile.healingOfIncomingPct*scale*healScale));
   if(bonus>1e-6){
    first.healing+=bonus;
    first.classHealingBudget=(first.classHealingBudget??0)+bonus;
@@ -54,7 +56,7 @@ export function huntClassSurvivalEvents(events:readonly HuntHit[],input:{
  hit.damage=Math.max(0,hit.damage-prevented);
  hit.classGuardAbility={source:'class',id:ability.id,name:ability.name,kind:'shield',amount:prevented};
  if(profile.recoveryOfPreventedPct>0){
-  const siphon=prevented*profile.recoveryOfPreventedPct;
+  const siphon=prevented*profile.recoveryOfPreventedPct*healScale;
   if(siphon>1e-6){
    hit.healing+=siphon;
    hit.classHealingBudget=(hit.classHealingBudget??0)+siphon;

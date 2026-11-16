@@ -5,6 +5,7 @@ import { EXPEDITIONS } from '../expeditions/content/launch-content';
 import { initialPersistentRunState, purchaseMerchantOffer, resolveCoopNode, type PersistentRunState, type NodeResolutionResult } from '../expeditions/node-resolution';
 import { generateCoopRouteGraph } from '../expeditions/route-generation';
 import { marksForRun } from '../expeditions/rewards';
+import {currentDungeonBaseMarks,frozenRunBaseMarks} from '../expeditions/reward-base';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
 import { recruitQModeAllies, type PublishedEcho } from './echo-recruitment';
 import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
@@ -16,7 +17,7 @@ import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices'
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>;
+ players:CombatantDefinition[]; persistentState:PersistentRunState; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>;
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -83,7 +84,7 @@ export class QModeService{
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';
   else if(selected.kind==='boss'){
-   run.phase='completed';const def=EXPEDITIONS[run.expeditionId];run.rewardMarks=marksForRun(def.baseMarks,run.tier,{cleared:true,routeProgress:1,reachedFinalBoss:true});
+   run.phase='completed';run.rewardMarks=marksForRun(frozenRunBaseMarks(run),run.tier,{cleared:true,routeProgress:1,reachedFinalBoss:true});
   }
   this.repository.save(run);return structuredClone(run);
  }
@@ -95,7 +96,7 @@ export class QModeService{
  }
  private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];qmodePressureVersion?:1;echoSourceAccountIds:string[];npcCharacterIds?:string[]}):QModeRun{
   const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion);
-  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
+  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
   this.repository.save(run);return structuredClone(run);
  }
 }

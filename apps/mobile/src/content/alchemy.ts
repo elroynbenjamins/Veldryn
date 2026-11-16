@@ -5,7 +5,7 @@ import {increasedCraftingGoldCost} from './crafting-gold-cost';
 export type PotionTier=1|2|3;
 export const POTION_TIER_UNLOCK_LEVELS:Record<PotionTier,number>={1:1,2:25,3:60};
 export type PotionEffect = {kind:'healing';maxHpFraction:number} |
-  {kind:'preparation';attackFraction:number;damageDealtFraction:number;damageReductionFraction:number;healingStrengthFraction:number;shieldStrengthFraction:number;encounters:number};
+  {kind:'preparation';attackFraction:number;damageDealtFraction:number;damageReductionFraction:number;healingStrengthFraction:number;shieldStrengthFraction:number;encounters:number}; // encounters is retained only for old save compatibility; tonics no longer affect hunts.
 export interface PotionDefinition {id:string;name:string;tier:PotionTier;effect:PotionEffect;description:string;}
 export interface AlchemyRecipe {
   id:string;name:string;skillId:'alchemy';level:number;seconds:number;xp:number;gold:number;
@@ -23,15 +23,15 @@ export const POTIONS:readonly PotionDefinition[]=[
   {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',tier:1,effect:{kind:'healing',maxHpFraction:.20},description:'Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts.'},
   {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',tier:2,effect:{kind:'healing',maxHpFraction:.35},description:'Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts.'},
   {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',tier:3,effect:{kind:'healing',maxHpFraction:.50},description:'Restore 50% max HP in boss fights or dungeons. Not usable in ordinary hunts.'},
-  {id:'VIGOR_TONIC',name:'Vigor Tonic',tier:1,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.05,damageReductionFraction:0,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:30},description:'+5% damage dealt; one active preparation, lasts 30 ordinary encounters.'},
-  {id:'GREATER_VIGOR_TONIC',name:'Greater Vigor Tonic',tier:2,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.10,damageReductionFraction:0,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:45},description:'+10% damage dealt; one active preparation, lasts 45 ordinary encounters.'},
-  {id:'OATH_VIGOR_TONIC',name:'Oath Vigor Tonic',tier:3,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.15,damageReductionFraction:0,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:60},description:'+15% damage dealt; one active preparation, lasts 60 ordinary encounters.'},
-  {id:'WARD_TONIC',name:'Ward Tonic',tier:1,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:0,damageReductionFraction:.05,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:30},description:'5% less incoming damage; one active preparation, lasts 30 ordinary encounters.'},
-  {id:'GREATER_WARD_TONIC',name:'Greater Ward Tonic',tier:2,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:0,damageReductionFraction:.10,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:45},description:'10% less incoming damage; one active preparation, lasts 45 ordinary encounters.'},
-  {id:'OATH_WARD_TONIC',name:'Oath Ward Tonic',tier:3,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:0,damageReductionFraction:.15,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:60},description:'15% less incoming damage; one active preparation, lasts 60 ordinary encounters.'},
-  {id:'HARMONY_TONIC',name:'Harmony Tonic',tier:1,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.02,damageReductionFraction:0,healingStrengthFraction:.05,shieldStrengthFraction:.05,encounters:30},description:'+2% damage and +5% ability healing/shielding. Lasts 30 ordinary encounters; dungeon support requires server integration.'},
-  {id:'GREATER_HARMONY_TONIC',name:'Greater Harmony Tonic',tier:2,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.04,damageReductionFraction:0,healingStrengthFraction:.10,shieldStrengthFraction:.10,encounters:45},description:'+4% damage and +10% ability healing/shielding. Lasts 45 ordinary encounters; dungeon support requires server integration.'},
-  {id:'OATH_HARMONY_TONIC',name:'Oath Harmony Tonic',tier:3,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.06,damageReductionFraction:0,healingStrengthFraction:.15,shieldStrengthFraction:.15,encounters:60},description:'+6% damage and +15% ability healing/shielding. Lasts 60 ordinary encounters; dungeon support requires server integration.'},
+  {id:'VIGOR_TONIC',name:'Vigor Tonic',tier:1,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.05,damageReductionFraction:0,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:30},description:'+5% damage throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'GREATER_VIGOR_TONIC',name:'Greater Vigor Tonic',tier:2,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.10,damageReductionFraction:0,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:45},description:'+10% damage throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'OATH_VIGOR_TONIC',name:'Oath Vigor Tonic',tier:3,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.15,damageReductionFraction:0,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:60},description:'+15% damage throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'WARD_TONIC',name:'Ward Tonic',tier:1,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:0,damageReductionFraction:.05,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:30},description:'5% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'GREATER_WARD_TONIC',name:'Greater Ward Tonic',tier:2,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:0,damageReductionFraction:.10,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:45},description:'10% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'OATH_WARD_TONIC',name:'Oath Ward Tonic',tier:3,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:0,damageReductionFraction:.15,healingStrengthFraction:0,shieldStrengthFraction:0,encounters:60},description:'15% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'HARMONY_TONIC',name:'Harmony Tonic',tier:1,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.02,damageReductionFraction:0,healingStrengthFraction:.05,shieldStrengthFraction:.05,encounters:30},description:'+2% damage and +5% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'GREATER_HARMONY_TONIC',name:'Greater Harmony Tonic',tier:2,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.04,damageReductionFraction:0,healingStrengthFraction:.10,shieldStrengthFraction:.10,encounters:45},description:'+4% damage and +10% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure.'},
+  {id:'OATH_HARMONY_TONIC',name:'Oath Harmony Tonic',tier:3,effect:{kind:'preparation',attackFraction:0,damageDealtFraction:.06,damageReductionFraction:0,healingStrengthFraction:.15,shieldStrengthFraction:.15,encounters:60},description:'+6% damage and +15% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure.'},
 ];
 /** Regional infusion reagents turn Alchemy into a deliberate part of the gear
  * loop. They are consumed for initial assembly and naturally reappear in the
@@ -46,6 +46,7 @@ export const ALCHEMY_EQUIPMENT_INFUSIONS=Object.freeze([
   {id:'RIMEWARD_DISTILLATE',name:'Rimeward Distillate',rarity:'epic' as const,value:1320,description:'A frostbound distillate for Frostmarch equipment.'},
   {id:'CINDERHEART_ELIXIR',name:'Cinderheart Elixir',rarity:'legendary' as const,value:1600,description:'A volatile Ashlands elixir for capstone equipment.'},
 ] as const);
+const potionDefById=(itemId:string)=>POTIONS.find(p=>p.id===itemId);
 const recipe=(potionId:string,level:number,seconds:number,xp:number,gold:number,inputs:ItemStack[],suffix=''):AlchemyRecipe=>({
   id:`BREW_${potionId}${suffix}`,name:POTIONS.find(p=>p.id===potionId)!.name,skillId:'alchemy',level,seconds,xp,gold,inputs,output:{itemId:potionId,quantity:1},
 });
@@ -82,10 +83,12 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
 ] as AlchemyRecipe[]).map(recipe=>{
   const combatPotion=POTIONS.some(potion=>potion.id===recipe.output.itemId);
   const costMultiplier=combatPotion?COMBAT_POTION_CRAFT_COST_MULTIPLIER:1;
+  const isTonic=potionDefById(recipe.output.itemId)?.effect.kind==='preparation';
   return {...recipe,
     xp:recipe.xp*(combatPotion?COMBAT_POTION_XP_MULTIPLIER:1),
     gold:increasedCraftingGoldCost(recipe.gold)*costMultiplier,
-    inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*costMultiplier}))};
+    inputs:[...recipe.inputs.map(input=>({...input,quantity:input.quantity*costMultiplier})),
+      ...(isTonic?[{itemId:'HOLY_WATER',quantity:3},{itemId:'TEMPERING_DUST',quantity:2}]:[])]};
 });
 export const POTION_ITEMS:ItemDef[]=POTIONS.map(potion=>({id:potion.id,name:potion.name,type:'potion',
   value:potion.id==='DEWLEAF_DRAUGHT'?4:potion.id.includes('OATH')?32:potion.id.includes('GREATER')?20:8,

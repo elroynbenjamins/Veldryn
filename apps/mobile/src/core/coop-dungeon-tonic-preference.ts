@@ -3,7 +3,7 @@ import {POTIONS} from '../content/alchemy';
 import type {GameState} from './types';
 import type {CoopRunView} from './coop-presentation';
 
-/** An opt-in, per-character preference. This never consumes or reserves items. */
+/** A per-character run selection. Choosing a tonic opts into first-room use; selection never reserves an item. */
 export interface DungeonTonicPreference {
  potionId:string|null;
  autoUse:boolean;
@@ -20,14 +20,14 @@ export async function rememberedDungeonTonic(characterId:string|undefined):Promi
   const raw=await AsyncStorage.getItem(KEY+characterId);
   const value=raw?JSON.parse(raw) as Partial<DungeonTonicPreference>:null;
   const potionId=typeof value?.potionId==='string'&&preparationIds.has(value.potionId)?value.potionId:null;
-  return {potionId,autoUse:Boolean(potionId&&value?.autoUse===true)};
+  return {potionId,autoUse:Boolean(potionId)};
  }catch{return {...DEFAULT_DUNGEON_TONIC_PREFERENCE};}
 }
 
 export function rememberDungeonTonic(characterId:string|undefined,preference:DungeonTonicPreference):Promise<void>{
  if(!characterId)return Promise.resolve();
  const potionId=preference.potionId&&preparationIds.has(preference.potionId)?preference.potionId:null;
- const next={potionId,autoUse:Boolean(potionId&&preference.autoUse)};
+ const next={potionId,autoUse:Boolean(potionId)};
  const write=()=>AsyncStorage.setItem(KEY+characterId,JSON.stringify(next)).then(()=>{},()=>{});
  // Sequential writes prevent a quick toggle/select from persisting out of order.
  lastWrite=lastWrite.then(write,write);

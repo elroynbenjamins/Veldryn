@@ -56,5 +56,18 @@ const totalGuard=(events:typeof none.events)=>events.filter(e=>e.type==='class_s
 assert.ok(totalGuard(max.events)>=totalGuard(none.events),'Higher combat skill ranks must not reduce guard protection');
 assert.ok(totalGuard(max.events)>0,'A real incoming hit should activate the guard');
 assert.equal(none.foodConsumed,0,'No boss food under any combat class');
+// Specialized passive stats must change resolved boss outcomes, not merely the UI.
+const firstLanded=(events:typeof none.events)=>events.find(e=>e.type==='player_hit'&&(e.amount??0)>0)?.amount??0;
+const ravagerBase=simulateFallenKnightStoryBattle({...dummy,classId:'RAVAGER',armorPenetration:0},'specialist-ravager','rematch');
+const ravagerBreak=simulateFallenKnightStoryBattle({...dummy,classId:'RAVAGER',armorPenetration:.05},'specialist-ravager','rematch');
+assert.ok(firstLanded(ravagerBreak.events)>=firstLanded(ravagerBase.events),'Breaking must reduce actual target armor in boss combat');
+const hexBase=simulateFallenKnightStoryBattle({...dummy,classId:'HEXWEAVER',hexPotency:0},'specialist-hex','rematch');
+const hexBoost=simulateFallenKnightStoryBattle({...dummy,classId:'HEXWEAVER',hexPotency:.05},'specialist-hex','rematch');
+assert.ok(firstLanded(hexBoost.events)>firstLanded(hexBase.events),'Hexcraft must increase resolved boss damage');
+const dawnBase=simulateFallenKnightStoryBattle({...dummy,classId:'DAWNKEEPER',classHealingMultiplier:1},'specialist-dawn','rematch');
+const dawnBoost=simulateFallenKnightStoryBattle({...dummy,classId:'DAWNKEEPER',classHealingMultiplier:1.1},'specialist-dawn','rematch');
+const firstClassHeal=(events:typeof none.events)=>events.find(e=>e.type==='class_skill'&&e.skillKind==='heal')?.amount??0;
+assert.ok(firstClassHeal(dawnBoost.events)>=firstClassHeal(dawnBase.events),'Restoration must improve real boss class healing');
+
 console.log('BOSS_CLASS_TECHNIQUES '+labels.join(','));
 console.log('PASS real nine-class story boss techniques, class XP potency, bounded HP, deterministic replay and potion limits');

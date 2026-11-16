@@ -27,6 +27,14 @@ assert.equal(summary.tonicCount,3,'sum only owned preparation tonics');
 assert.equal(summary.tonicPreviewId,'VIGOR_TONIC','preview the real carried potion atlas');
 assert.equal(JSON.stringify(state),original,'preview cannot spend or equip items');
 assert.equal(coopCombatSetup({...state,inventory:{...state.inventory,stacks:[]}}).healing?.carried,0,'selected but empty is not falsely ready');
+const {selectHealingPotion}=require('../src/core/game') as typeof import('../src/core/game');
+const chosen=selectHealingPotion({...state,character:{...c,equippedHealingPotionId:undefined}},'DEWLEAF_DRAUGHT');
+assert.equal(chosen.character?.equippedHealingPotionId,'DEWLEAF_DRAUGHT','dungeon picker uses the same selected healing slot as HP menu');
+assert.equal(chosen.inventory.stacks.find(row=>row.itemId==='DEWLEAF_DRAUGHT')?.quantity,7,'selecting the type does not consume a potion');
+const cleared=selectHealingPotion(chosen,'none');
+assert.equal(cleared.character?.equippedHealingPotionId,undefined,'selecting none clears the same slot');
+assert.equal(cleared.inventory.stacks.find(row=>row.itemId==='DEWLEAF_DRAUGHT')?.quantity,7,'clearing a selection never consumes supplies');
+
 assert.equal(coopCombatSetup({...state,character:{...c,equippedHealingPotionId:'WARD_TONIC'}}).healing,undefined,'tonic is not healing');
 assert.equal(coopCombatSetup({...state,character:{...c,equippedCombatCompanionId:'UNRECOGNIZED'}}).companion,undefined,'no invented companion identity');
 assert.equal(coopCombatSetup({...state,character:null}).companion,undefined,'safe when character is absent');

@@ -7,6 +7,7 @@ import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {chooseBoundedCoopMatch,type CoopQueueTicket} from '../../src/server/coop/queue-service';
 import {OnlineLiveReady} from '../live-ready';
+import {OnlineLiveRuntime} from '../live-runtime';
 import {coopHandler} from '../coop';
 
 async function main(){
@@ -67,6 +68,18 @@ async function main(){
  const handoff=calls.find(row=>row.name==='online_live_committed_sources_server_v1')!;
  assert.deepEqual(handoff.args,{p_account_id:members[0].accountId,p_check_id:checkId},'Run lookup uses authenticated membership');
  assert.equal(calls.some(row=>row.name==='start_online_live_server_v1'),false,'Existing run is not created again on receipt replay');
+ // A committed ready source for a retired or development dungeon cannot create
+ // a new Live run, even if its ticket bypassed the earlier queue validation.
+ for(const dungeonId of ['EXP_002','EXP_004','EXP_005','EXP_006','EXP_007','EXP_008']){
+  const blocked=new OnlineLiveRuntime({
+   randomId:()=>{throw new Error('should_not_allocate_run_id');},
+   rpc:async<T>(name:string):Promise<T>=>{
+    if(name==='online_live_committed_sources_server_v1')return {runId:null,dungeonId,tier:1,frozenRoster:[{},{},{},{}],roster:[]} as T;
+    throw new Error('unexpected_rpc:'+name);
+   },
+  } as unknown as ConstructorParameters<typeof OnlineLiveRuntime>[0]);
+  await assert.rejects(()=>blocked.startFromReady(members[0].accountId,checkId),/dungeon_unavailable/,'Retired or development dungeons cannot start a new Live run: '+dungeonId);
+ }
  console.log('PASS Live ready bounded retained-roster matching, authoritative four-player freeze, stale gear, concurrent receipt recovery and authenticated strict HTTP');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

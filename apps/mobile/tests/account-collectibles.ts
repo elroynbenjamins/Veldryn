@@ -58,7 +58,7 @@ primary=reconcileAccountCollections(primary);
 if(!primary.account.unlockedTitleIds?.includes('oathbound'))fail('earned titles persist as account unlocks');
 if(!primary.account.unlockedProfileBackgroundIds?.includes('oathglass-hall'))fail('earned backgrounds persist as account unlocks');
 if(!primary.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('legacy character pet becomes account owned');
-let alternate=createAccountCharacter(primary,'BASTION','Collection Alt','male',now+1);
+let alternate=createAccountCharacter(primary,'DAWNKEEPER','Collection Alt','male',now+1);
 equal(alternate.character?.selectedCosmeticPetId,undefined,'new character has independent pet selection');
 if(!alternate.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('account pet collection shared across characters');
 if(!profileTitleUnlocked(alternate,'oathbound'))fail('account-earned title available to low-level alt');

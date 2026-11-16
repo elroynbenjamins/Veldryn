@@ -73,12 +73,13 @@ async function main(){
  assert.equal(quickWrite.args.p_tier,regularDungeonReadyTier(EXPEDITIONS.EXP_003,quickRecord.characterLevel,quickReadiness.normalizedScore,quickRecord.combatPower),'Quick Match uses the XP-derived level and verified readiness for its tier');
  prior=null;reads=0;calls.length=0;committedTickets=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
+ const firstBody=await first.json();
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
  const frozen=write.args.p_snapshot as {accountId:string;readiness:{role:string;ready:boolean}};
  assert.equal(frozen.accountId,account);assert.equal(frozen.readiness.role,'tank');assert.equal(frozen.readiness.ready,true);
  assert.equal(write.args.p_game_version,7);assert.equal(write.args.p_ticket_id,ticket);assert.equal(write.args.p_tier,2,'Manual Live tier choice is preserved when level-eligible');
  version=8;
- assert.deepEqual(await (await handler(request('queue',body))).json(),await first.json(),'uncertain join replays after gameplay advances');
+ assert.deepEqual(await (await handler(request('queue',body))).json(),firstBody,'uncertain join replays after gameplay advances');
  // A missed first read must be recovered by the second receipt check, with no second join write.
  hiddenReceiptReads=1;reads=0;
  assert.equal((await handler(request('queue',body))).status,200,'concurrent commit visible after stale load');
@@ -87,7 +88,7 @@ async function main(){
  // If both receipt reads miss (replica lag or lost ACK), retry the SAME atomic RPC.
  // PostgreSQL must replay the first ticket by request ID and reject changed payloads.
  hiddenReceiptReads=2;reads=0;
- assert.deepEqual(await (await handler(request('queue',body))).json(),await first.json(),'double-missed receipt must reuse the first atomic queue ticket');
+ assert.deepEqual(await (await handler(request('queue',body))).json(),firstBody,'double-missed receipt must reuse the first atomic queue ticket');
  assert.equal(hiddenReceiptReads,0,'two stale receipt observations must be exercised');
  assert.equal((await handler(request('queue',{...body,tier:3}))).status,409);
  assert.equal((await handler(request('queue'))).status,200);

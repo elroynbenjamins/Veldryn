@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V28 validation
+name: Hidden World Boss V10–V29 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -16,6 +16,8 @@ on:
       - 'backend/online/world-boss-war-camp-service-v27.ts'
       - 'backend/online/world-boss-war-camp-policy-v27.ts'
       - 'backend/online/world-boss-account-runtime-v27.ts'
+      - 'backend/online/world-boss-impact-audit-v29.ts'
+      - 'docs/roadmap/world-boss-impact-audit-v29.md'
       - 'backend/online/world-boss-rewards-v28.ts'
       - 'backend/online/world-boss-rewards-pg-v28.ts'
       - 'backend/online/world-boss-reward-runtime-v28.ts'
@@ -73,7 +75,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v28 World Boss tests
+      - name: Run v7-v29 World Boss tests
         run: |
           set -e
           for suite in \
@@ -97,7 +99,8 @@ jobs:
             world-boss-authored-account-encounters-v25 \
             world-boss-authored-settlement-v26 \
             world-boss-war-camp-transactions-v27 \
-            world-boss-reward-ledger-v28
+            world-boss-reward-ledger-v28 \
+            world-boss-impact-audit-v29
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done

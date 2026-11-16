@@ -177,7 +177,12 @@ begin
    'title',m.title,'rewardKind',r.reward_kind,
    'reward',m.reward_json,'rewardHash',m.reward_hash,
    'deliveredAt',m.delivered_at,'deliveryState',m.delivery_state,
-   'claimed',true,'economyApplied',true,'inboxDelivered',true)
+   -- v29 records prove a linked receipt+Inbox pair, NOT account-state
+   -- transfers. Only a future independent after-state audit may confirm
+   -- actual Gold/XP/items/companion/renown credits to a player.
+   'receiptRecorded',true,'inboxRecordPresent',true,
+   'claimed',false,'economyApplied',false,'inboxDelivered',false,
+   'status','receipt_requires_economy_verification'
    order by m.delivered_at desc,m.id),'[]'::jsonb) into v_items
  from private.party_event_paid_claim_inbox_v29 m
  join private.party_event_paid_claim_receipts_v29 r
@@ -187,7 +192,7 @@ begin
  return jsonb_build_object(
    'items',v_items,
    'claimEndpointEnabled',false,
-   'payoutWriterInstalled',false);
+   'payoutWriterInstalled',false,'economyReconciled',false);
 end;$$;
 
 revoke all on function private.read_party_event_paid_inbox_v29(uuid)

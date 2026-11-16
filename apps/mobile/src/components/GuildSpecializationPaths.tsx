@@ -50,7 +50,10 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
  const affordable=known&&costsKnown&&Object.entries(cost).length>0&&Object.entries(cost).every(([id,n])=>(metrics?.[`guild_bank_${id}`]??0)>=n);
  const ready=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
  const reviewable=known&&costsKnown&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3;
- const bonus=(n:GuildSkillNode,r:number,compact=false)=>n.id==='fellowship_projects'\n  ? (r===0?'0% saved':`-${r*5}% materials${r===3&&!compact?' · +10% completion Tokens':''}`)\n  :n.id==='fellowship_quests'?`+${r*10}% Tokens`\n  :`+${r*n.perTier}${n.id==='fellowship_membership'?(language==='de'?' Mitglieder':' members'):'%'}`;
+ const bonus=(n:GuildSkillNode,r:number,compact=false)=>n.id==='fellowship_projects'
+  ? (r===0?'0% saved':`-${r*5}% materials${r===3&&!compact?' · +10% completion Tokens':''}`)
+  :n.id==='fellowship_quests'?`+${r*10}% Tokens`
+  :`+${r*n.perTier}${n.id==='fellowship_membership'?(language==='de'?' Mitglieder':' members'):'%'}`;
  const active=known?GUILD_SKILL_NODES.filter(n=>rank(n.id)>0):[];
  const changeBranch=(value:typeof GUILD_MAJOR_BRANCHES[number])=>{
   setBranch(value);setSelected(GUILD_SKILL_NODES.find(n=>n.major===value)?.id??selected);setReview(false);

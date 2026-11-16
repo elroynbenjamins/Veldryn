@@ -3,7 +3,7 @@ import {createGameGuideReadPreferenceStore} from '../src/core/game-guide-read-pr
 import {acknowledgeGameGuide,guideDefinition,GAME_GUIDE_STEPS,newlyUnlockedGameGuide,normalizeOnboardingGuideState,unlockedGameGuide} from '../src/core/onboarding';
 import {migrateSave} from '../src/core/save-migrations';
 import {browseGameGuides} from '../src/core/game-guide-browse';
-import {GAME_GUIDE,GAME_GUIDE_CATEGORIES} from '../src/core/onboarding';
+import {GAME_GUIDE,GAME_GUIDE_CATEGORIES,type GameGuideId} from '../src/core/onboarding';
 import {newGame,createCharacter} from '../src/core/game';
 const state:any=createCharacter(newGame(1),'IRONWARDEN','Guide Tester');state.character.level=2;state.account.guildMember=false;state.account.unlockedCharacterSlots=1;
 equal(unlockedGameGuide(state).some(item=>item.id==='getting_started'),true,'starter guide unlocks');equal(newlyUnlockedGameGuide(state).length>=2,true,'initial guides are discoverable');
@@ -64,7 +64,7 @@ void (async()=>{
 // Guide library regression: search, categories, progress and locked previews.
 const guideState:any=createCharacter(newGame(2),'IRONWARDEN','Guide Hub Test');
 const openIds=new Set(unlockedGameGuide(guideState).map(entry=>entry.id));
-const readIds=new Set(['getting_started'] as const);
+const readIds=new Set<GameGuideId>(['getting_started']);
 const browse=(category:'all'|'basics'|'progress'|'social'|'adventures',query='',unreadOnly=false)=>browseGameGuides({unlockedIds:openIds,readIds,category,query,unreadOnly});
 equal(Object.keys(GAME_GUIDE_CATEGORIES).length,GAME_GUIDE.length,'every topic has a category');
 equal(browse('basics').every(entry=>GAME_GUIDE_CATEGORIES[entry.id]==='basics'),true,'category filtering stays precise');

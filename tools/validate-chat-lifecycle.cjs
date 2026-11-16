@@ -664,6 +664,9 @@ async function overlayLifecycle() {
     for(const [module,name] of [['OnlineWorldChat','world'],['WorldChat','offline'],['GuildChat','guild'],['OnlinePartyChat','party'],['SystemNoticeLog','system'],['ChatDock','dock']])h.mocks.set(path.join(app,'src/components',module),{[module]:panel(name)});
     h.mocks.set(path.join(app,'src/components/ChatChannelIcon'),{ChatChannelIcon:()=>null});
     h.mocks.set(path.join(app,'src/components/PartyChatGate'),{PartyChatGate:({children})=>children});
+    // Mock online roster API for lifecycle isolation; the dedicated roster suite tests it separately.
+    h.mocks.set(path.join(app,'src/components/ChatOnlinePlayersPanel'),{ChatOnlinePlayersPanel:()=>null});
+    h.mocks.set(path.join(app,'src/online/online-player-roster'),{useOnlinePlayerRoster:()=>({count:0,players:[],loading:false,error:'',refresh:async()=>{}})});
     const party={party:{id:'p1',members:[]},accountId:'alpha',refresh:async()=>{partyRefresh++;}};
     h.mocks.set(path.join(app,'src/online/PartySocialProvider'),{usePartySocial:()=>party});
     h.mocks.set(path.join(app,'src/online/social'),{myGuild:async()=>{guildReads++;return{id:'g1'};},WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'},{id:'de',name:'Deutsch'},{id:'es',name:'Español'}],VISIBLE_WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}]});

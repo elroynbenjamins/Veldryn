@@ -9,6 +9,9 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Equipment for all classes":["Equipment for all classes","Ausrüstung für alle Klassen","Equipo para todas las clases","Uitrusting voor alle klassen","Equipaggiamento per tutte le classi","Équipement pour toutes les classes"],
+ "All classes":["All classes","Alle Klassen","Todas las clases","Alle klassen","Tutte le classi","Toutes les classes"],
+ "My class":["My class","Meine Klasse","Mi clase","Mijn klasse","La mia classe","Ma classe"],
  // Exact-copy and bulk-disposal confirmation safety messages.
  "Sell this copy?":["Sell this copy?","Diese Kopie verkaufen?","¿Vender esta copia?","Deze kopie verkopen?","Vendere questa copia?","Vendre cet exemplaire ?"],
  "Salvage this copy?":["Salvage this copy?","Diese Kopie zerlegen?","¿Desguazar esta copia?","Deze kopie ontmantelen?","Recuperare materiali da questa copia?","Démanteler cet exemplaire ?"],

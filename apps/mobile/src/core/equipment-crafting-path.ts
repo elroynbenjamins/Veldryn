@@ -58,7 +58,7 @@ export function equipmentCraftingPath(state:GameState,itemId:string):EquipmentCr
     return {itemId:input.itemId,name:itemDef(input.itemId).name,required:input.quantity,owned:quantity,missing:Math.max(0,input.quantity-quantity),source,availability:workingTowardDestinationAvailability(state,source)};
   });
   const blockers:EquipmentCraftingBlocker[]=[];
-  if(recipe.classId&&recipe.classId!==state.character.classId)blockers.push({kind:'class',label:'Wrong class',detail:`Requires ${label(recipe.classId)}.`});
+  if(recipe.classId&&!recipe.v33SetId&&recipe.classId!==state.character.classId)blockers.push({kind:'class',label:'Wrong class',detail:`Requires ${label(recipe.classId)}.`});
   const characterLevel=recipe.characterLevel??1;
   if(state.character.level<characterLevel)blockers.push({kind:'character_level',label:`Character Lv ${characterLevel}`,detail:`Reach character level ${characterLevel}.`,destination:{kind:'info',button:'Level character',detail:`Reach character level ${characterLevel}.`}});
   const skill=state.skills.find(row=>row.skillId===recipe.skillId),skillLevel=skill?.level??1;

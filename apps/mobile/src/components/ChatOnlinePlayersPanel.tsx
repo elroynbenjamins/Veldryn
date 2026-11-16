@@ -57,6 +57,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
     keyExtractor={item=>item.account_id}
     keyboardShouldPersistTaps="handled"
     showsVerticalScrollIndicator={false}
+    showsHorizontalScrollIndicator={false}
     contentContainerStyle={displayed.length===0?s.emptyList:s.list}
     renderItem={({item})=><Pressable accessibilityRole="button" accessibilityLabel={item.sender_name+', level '+item.level} accessibilityHint={st('View player profile and social actions')} onPress={()=>{Keyboard.dismiss();setSelected({account_id:item.account_id,sender_name:item.sender_name});}} style={({pressed})=>[s.player,pressed&&s.pressed]}>
      <View style={s.statusDot}/>

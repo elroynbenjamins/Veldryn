@@ -211,8 +211,11 @@ async function replayControlsAndTiming() {
     assert.equal(enemy(tree).props.bossCast.targetLabel, 'Tank');
     assert.equal(enemy(tree).props.bossCast.interruptible, true);
     assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[2], cues[3], 1));
-    assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration,
+    assert.equal(enemy(tree).props.bossCast.displayDurationMs,
       timing.playbackCastDisplayMs(cues[2], 1), 'boss cast-bar timing follows normal replay speed');
+    const realCardSource=fs.readFileSync(path.join(app,'src/components/coop/CombatantProfileCard.tsx'),'utf8');
+    assert.ok(realCardSource.includes('Animated.timing(progress,{toValue:1,duration:cast.displayDurationMs,useNativeDriver:false})'),
+      'actual cast bar must animate with the authored display duration (render harness stubs the card)');
     const castDelay = timing.playbackAdvanceDelayMs(cues[2], cues[3], 1);
     await h.tick(castDelay - 1);
     assert.strictEqual(currentCue(tree), cues[2], 'the boss cast hold remains visible until the next cue');

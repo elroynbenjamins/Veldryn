@@ -9,7 +9,7 @@ import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSel
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {itemRarity} from '../src/core/item-rarity';
 import {auditCraftedGearOwnership,equipCraftedGearInstance,moveCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
-import {characterDeleteBlockReason} from '../src/core/account-actions';
+import {characterDeleteBlockReason,deleteAccountCharacter} from '../src/core/account-actions';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import type {GameState} from '../src/core/types';
 
@@ -50,7 +50,9 @@ ok(equipped.character!.equipmentInstanceIds?.[itemDef(output).slot!]===record.id
  'Direct equip from Equipment Pouch must preserve exact item rarity/quality receipts');
 const unequipped=unequipCraftedGearInstance(equipped,record.id);
 ok(equipmentPouch(unequipped).stacks.some(row=>row.instanceId===record.id),'Unequip should return exact gear to character Equipment Pouch');
-ok(characterDeleteBlockReason(unequipped,base.character!.id)?.includes('Transfer unique equipment')===true,'Character deletion cannot silently strip unique equipment identity');
+ok(!characterDeleteBlockReason(unequipped,base.character!.id),'Valid unique equipment must not prevent deletion when exact copies can be recovered');
+const deletion=deleteAccountCharacter(unequipped,base.character!.id,'DELETE '+base.character!.name,2000);
+ok(deletion.bank.stacks.some(row=>row.instanceId===record.id)&&auditCraftedGearOwnership(deletion).consistent,'Character deletion must recover the exact unique equipment copy into shared Bank, preserving its receipt');
 const inBank=moveCraftedGearInstance(unequipped,record.id,'bank');
 ok(auditCraftedGearOwnership(inBank).consistent&&inBank.bank.stacks.some(row=>row.instanceId===record.id),'Bank transfer must retain exact receipt and free pouch slot');
 ok(!characterDeleteBlockReason(inBank,base.character!.id),'Character can be deleted after moving exact owned copies to Bank');

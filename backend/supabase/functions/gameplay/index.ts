@@ -49972,7 +49972,9 @@ function restoreCharacterWorldProgress(entry2) {
 }
 
 // ../apps/mobile/src/core/account-roster.ts
-var CHARACTER_SLOT_THRESHOLDS = [0, 250, 550, 1050, 1750];
+var MAX_NEW_ACCOUNT_CHARACTERS = 3;
+var CHARACTER_SLOT_THRESHOLDS = [0, 250, 550];
+var REGION_AFK_MILESTONES = ["SUNSCAR", "FROSTMARCH", "ASHLANDS"];
 var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
 var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;
 function characterSkillTotal(skills, character) {
@@ -49995,13 +49997,36 @@ function accountSkillLevel(state) {
   for (const entry2 of state.otherCharacters ?? []) total += characterSkillTotal(entry2.skills, entry2.character);
   return total;
 }
-function unlockedCharacterSlots(state) {
-  const earned = Number(state.account.unlockedCharacterSlots ?? 0);
-  const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
-  return Math.min(5, Math.max(1, earned, threshold, accountCharacters(state).length));
-}
 function accountCharacters(state) {
   return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
+}
+function occupiedCharacterRoles(state) {
+  const occupied = new Set(accountCharacters(state).map((entry2) => CLASSES.find((def) => def.id === entry2.character.classId)?.role).filter((role) => !!role));
+  return ["Tank", "Damage", "Support"].filter((role) => occupied.has(role));
+}
+function unlockedCharacterSlots(state) {
+  const saved = Number(state.account.unlockedCharacterSlots ?? 0), earned = Number.isFinite(saved) ? Math.max(0, Math.floor(saved)) : 0;
+  const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
+  return Math.min(5, Math.max(accountCharacters(state).length, Math.min(MAX_NEW_ACCOUNT_CHARACTERS, Math.max(1, earned, threshold))));
+}
+function accountRegionAfkUnlocked(state, id) {
+  const zone = WORLD_ZONES.find((row) => row.id === id);
+  if (!zone || worldZoneInDevelopment(zone)) return false;
+  if (state.account.earnedAfkRegionIds?.includes(id)) return true;
+  const targetIndex = WORLD_ZONES.findIndex((row) => row.id === id);
+  const roster = [{ character: state.character, currentRegionId: state.currentRegionId, defeatedBossIds: state.defeatedBossIds, exploredRouteIds: state.exploredRouteIds }, ...state.otherCharacters ?? []];
+  return roster.some((entry2) => {
+    if (!entry2.character) return false;
+    const visitedIndex = WORLD_ZONES.findIndex((row) => row.id === entry2.currentRegionId);
+    if (visitedIndex >= targetIndex && !worldZoneInDevelopment(WORLD_ZONES[visitedIndex])) return true;
+    const personal = { ...state, character: entry2.character, defeatedBossIds: entry2.defeatedBossIds ?? [], exploredRouteIds: entry2.exploredRouteIds ?? [] };
+    return !regionTravelLockReason(personal, zone);
+  });
+}
+function recordAccountProgress(state) {
+  const slots2 = unlockedCharacterSlots(state);
+  const regions = REGION_AFK_MILESTONES.filter((id) => accountRegionAfkUnlocked(state, id));
+  return { ...state, account: { ...state.account, unlockedCharacterSlots: slots2, earnedAfkRegionIds: [...regions] } };
 }
 
 // ../apps/mobile/src/core/gem-pouch.ts
@@ -52819,25 +52844,22 @@ var MIN_UNHEALED_HP_FRACTION_PER_HOUR = 0.08;
 var OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE = 0.05;
 var GATHER_TIME_SCALE = 1.25;
 function offlineCapBreakdown(state) {
-  const setComplete = !!state.character && noviceSetFor(state.character.classId).slots.every((slot) => state.character.craftedNoviceItemIds?.includes(noviceItemId(state.character.classId, slot)));
   const questMilestone = state.quests.some((q2) => q2.questId === "QST_005" && q2.status === "claimed");
   const unlockedSlots = unlockedCharacterSlots(state);
   const secondSlot = unlockedSlots >= 2;
   const thirdSlot = unlockedSlots >= 3;
-  const fourthSlot = unlockedSlots >= 4;
-  const fifthSlot = unlockedSlots >= 5;
   const guildMember = state.account.guildMember;
   const firstBoss = state.defeatedBossIds.length > 0;
   const benefits = accountEntitlementBenefits(state), vip = benefits.vip, vipPlus = benefits.vipPlus, supporter = benefits.supporter;
   const sources = [
-    { id: "class_set", name: "Complete first class set", category: "progression", hours: setComplete ? 2 : 0, earned: setComplete },
+    { id: "region_sunscar", name: "Unlock Sunscar", category: "progression", hours: accountRegionAfkUnlocked(state, "SUNSCAR") ? 2 : 0, earned: accountRegionAfkUnlocked(state, "SUNSCAR") },
     { id: "quest_milestone", name: "Claim chapter 5", category: "progression", hours: questMilestone ? 2 : 0, earned: questMilestone },
     { id: "first_boss", name: "Defeat first boss", category: "progression", hours: firstBoss ? 2 : 0, earned: firstBoss },
     { id: "character_slot_2", name: "Unlock character slot #2", category: "progression", hours: secondSlot ? 2 : 0, earned: secondSlot },
     { id: "guild", name: "Join a guild", category: "progression", hours: guildMember ? 2 : 0, earned: guildMember },
     { id: "character_slot_3", name: "Unlock character slot #3", category: "progression", hours: thirdSlot ? 2 : 0, earned: thirdSlot },
-    { id: "character_slot_4", name: "Unlock character slot #4", category: "progression", hours: fourthSlot ? 2 : 0, earned: fourthSlot },
-    { id: "character_slot_5", name: "Unlock character slot #5", category: "progression", hours: fifthSlot ? 2 : 0, earned: fifthSlot },
+    { id: "region_frostmarch", name: "Unlock Frostmarch", category: "progression", hours: accountRegionAfkUnlocked(state, "FROSTMARCH") ? 2 : 0, earned: accountRegionAfkUnlocked(state, "FROSTMARCH") },
+    { id: "region_ashlands", name: "Unlock Ashlands", category: "progression", hours: accountRegionAfkUnlocked(state, "ASHLANDS") ? 2 : 0, earned: accountRegionAfkUnlocked(state, "ASHLANDS") },
     { id: "vip", name: "VIP", category: "paid", hours: vip ? 2 : 0, earned: vip },
     { id: "vip_plus", name: "VIP+", category: "paid", hours: vipPlus ? 2 : 0, earned: vipPlus },
     { id: "supporter", name: "Supporter", category: "paid", hours: supporter ? 2 : 0, earned: supporter }
@@ -55278,7 +55300,11 @@ function snapshot(state) {
 function createAccountCharacter(state, classId, name, body, now) {
   state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
   if (!state.character) return createCharacter(state, classId, name, body);
+  if (accountCharacters(state).length >= MAX_NEW_ACCOUNT_CHARACTERS) throw new Error("Maximum 3 characters: one Tank, one Damage and one Support.");
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
+  const candidate = CLASSES.find((def) => def.id === classId);
+  if (!candidate) throw new Error("Invalid character class.");
+  if (occupiedCharacterRoles(state).includes(candidate.role)) throw new Error(`Your account already has a ${candidate.role} character. Choose a different role.`);
   const next = createCharacter(newGame(now), classId, name, body);
   const active2 = snapshot(state);
   const sequence = Math.max(state.account.createdCharacterCount ?? 0, accountCharacters(state).length) + 1;
@@ -55402,7 +55428,7 @@ function characterDeleteBlockReason(state, id) {
   return void 0;
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
-  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
+  state = recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
   if (!state.character) throw new Error("Create a character first.");
   const active2 = state.character.id === id;
   const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
@@ -58430,7 +58456,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       throw new Error("invalid_command");
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
-  state = reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now));
+  state = recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now)));
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
   return { state, reward: reward3, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }

@@ -67,7 +67,7 @@ export function GameGuidePanel({state,onOpen,onStartTour,seenGuideIds}:{
    />
    {query?<Pressable accessibilityRole="button" accessibilityLabel={a('Clear')} onPress={()=>setQuery('')} style={s.clearButton}><Text style={s.clearText}>×</Text></Pressable>:null}
   </View>
-  <ScrollView horizontal nestedScrollEnabled keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRow}>
+  <ScrollView horizontal nestedScrollEnabled keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.categoryRow}>
    {categories.map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:category===value}} onPress={()=>setCategory(value)} style={({pressed})=>[s.categoryChip,category===value&&s.categorySelected,pressed&&s.pressed]}>
     <Text style={[s.categoryText,category===value&&s.categoryTextSelected]}>{t(categoryLabels[value])}</Text>
    </Pressable>)}

@@ -929,7 +929,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   const navigationBadgeModel=buildNavigationBadges(primaryNavigationNotifications);
   const quickNavigationBadges=buildQuickNavigationBadges(navigationNotifications);
   const primaryBadges:Partial<Record<PrimaryTab,number|'dot'>>={
-    Home:0,
+    Home:navigationBadgeModel.home.display?navigationBadgeModel.home.count:navigationBadgeModel.home.dot?'dot':0,
     Character:navigationBadgeModel.character.dot?'dot':0,
     Skills:navigationBadgeModel.skills.display?navigationBadgeModel.skills.count:navigationBadgeModel.skills.dot?'dot':0,
     World:navigationBadgeModel.world.display?navigationBadgeModel.world.count:navigationBadgeModel.world.dot?'dot':0,

@@ -64,6 +64,8 @@ jobs:
         run: pnpm --dir ../../backend test:market-readiness
       - name: Typecheck mobile app
         run: pnpm typecheck
+      - name: Validate chat unread opening and keyboard anchor
+        run: node tests/chat-keyboard-anchor.cjs
       - name: Verify native Google nonce generation, identity binding, and account safety
         run: pnpm test:google-native-auth
       - name: Validate Google Play billing

@@ -50,7 +50,9 @@ export function accountRegionAfkUnlocked(state:GameState,id:RegionAfkMilestone):
 export function recordAccountProgress(state:GameState){
  const slots=unlockedCharacterSlots(state);
  const regions=REGION_AFK_MILESTONES.filter(id=>accountRegionAfkUnlocked(state,id));
- return {...state,account:{...state.account,unlockedCharacterSlots:slots,earnedAfkRegionIds:[...regions]}};
+ // The former fourth-character Forge reward is retained as an independent 1,050 account-skill milestone.
+ const forgeMastery1050Earned=state.account.forgeMastery1050Earned===true||Number(state.account.unlockedCharacterSlots??0)>=4||accountSkillLevel(state)>=1050;
+ return {...state,account:{...state.account,unlockedCharacterSlots:slots,forgeMastery1050Earned,earnedAfkRegionIds:[...regions]}};
 }
 export function characterCreationError(state:GameState){
  if(!state.character)return undefined;

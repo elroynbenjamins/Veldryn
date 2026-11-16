@@ -12,6 +12,7 @@ import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining,recordCompanionActivity} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
+import {recordAccountProgress} from './account-roster';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';

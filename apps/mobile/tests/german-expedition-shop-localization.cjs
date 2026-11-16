@@ -67,13 +67,20 @@ assert.equal(dungeonShopOfferSummary('de','100 Companion Essence'),'100 Begleite
 assert.equal(dungeonShopOfferSummary('de','1 Bondstones'),'1 Bindungsstein');
 assert.equal(dungeonShopOfferSummary('de','2 Bondstones'),'2 Bindungssteine');
 assert.equal(dungeonShopOfferSummary('de','Profile icon · visual only'),'Profilsymbol · nur optisch');
+assert.equal(dungeonShopOfferSummary('de','100 × MOSS FIBER · Shared Bank'),'100 × Moosfaser · Gemeinsame Bank');
+assert.equal(dungeonShopOfferSummary('de','100 × WOLF PELT · Shared Bank'),'100 × Wolfspelz · Gemeinsame Bank');
+assert.equal(dungeonShopOfferSummary('de','100 × SUNSTONE INGOT · Shared Bank'),'100 × Sonnensteinbarren · Gemeinsame Bank');
 for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp','healingEffectiveness','fishingSpeed','defense','actionSpeed']){
  const source='+ 2.00% '+target+' equipped; +0.50% owned';
  const result=dungeonShopOfferSummary('de',source);
  assert.notEqual(result,source,'Untranslated live bonus stat: '+target);
- assert.match(result,/\+2,00 %/,'German bonus should use comma decimals');
- assert.match(result,/\+0,50 % im Besitz/);
- assert.equal(dungeonShopOfferSummary('en',source),source,'English server description changed');
+ assert.match(result,/\+2,00% /,'German bonus should use comma decimals');
+ assert.match(result,/\+0,50% \(im Besitz\)/,'Owned bonus must remain distinct from the equipped bonus');
+ assert.ok(!result.includes(target),'Raw server bonus keys must not appear in German UI: '+target);
+ const english=dungeonShopOfferSummary('en',source);
+ assert.match(english,/\+2\.00% /,'English bonus keeps decimal precision');
+ assert.match(english,/\+0\.50% \(owned\)/,'English bonus explains permanent ownership');
+ assert.ok(!english.includes(target),'English UI must use the readable stat label: '+target);
 }
 assert.equal(dungeonShopOfferSummary('de','Unknown effect {whatever}'),'Unknown effect {whatever}');
 for(const region of ['Asterfall','Sunscar','Frostmarch'])

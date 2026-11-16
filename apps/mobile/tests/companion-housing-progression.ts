@@ -1,11 +1,13 @@
 import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
-import {unlockCombatCompanion,sanitizeCombatCompanionState,purchaseCompanionLevel,applyCompanionXp,combatCompanionUiModel,grantCompanionBondFromUse,grantEquippedCompanionUse} from '../src/core/combat-companions';
+import {unlockCombatCompanion,sanitizeCombatCompanionState,purchaseCompanionLevel,applyCompanionXp,combatCompanionUiModel,companionCombatContribution,grantCompanionBondFromUse,grantEquippedCompanionUse} from '../src/core/combat-companions';
 import {companionHousingBonuses,companionHousingLevelEssenceCost,companionHousingTier,companionHousingUpgradeCost,upgradeCompanionHousing,normalizeCompanionHousingTiers} from '../src/core/companion-housing';
 import {normalizeCompanionRuntimeSave} from '../src/core/companion-save';
 import {combatCompanionDef} from '../src/content/combat-companions';
 import {awardCompanionXpServer} from '../../../backend/src/server/companions/progression-v2';
-import {awardCompanionCandyXp} from '../src/core/companion-runtime';
+import {awardCompanionCandyXp,companionOwned} from '../src/core/companion-runtime';
+import {individualCompanionPower} from '../../../backend/src/server/companions/team';
+import {buildOwnedCompanionCombatant,companionVerifiedHousingStatMultiplier} from '../../../backend/src/server/companions/combat-adapter';
 
 function rejected(fn:()=>unknown,reason:string){
  let message='';try{fn();}catch(error){message=String(error);}
@@ -35,9 +37,9 @@ fresh.inventory.stacks.push({itemId:'IRONWOOD_LOG',quantity:40},{itemId:'ASTER_I
 fresh.bank.stacks.push({itemId:'REINFORCED_FITTING',quantity:3});
 const upgraded=upgradeCompanionHousing(fresh,id);
 assert.equal(companionHousingTier(id,upgraded.account.companionHousingTiers),1);
-assert.deepEqual(companionHousingBonuses(0),{trainingXpPct:0,bondXpPct:0,essenceDiscountPct:0});
-assert.deepEqual(companionHousingBonuses(1),{trainingXpPct:5,bondXpPct:5,essenceDiscountPct:3});
-assert.deepEqual(companionHousingBonuses(3),{trainingXpPct:15,bondXpPct:15,essenceDiscountPct:10});
+assert.deepEqual(companionHousingBonuses(0),{trainingXpPct:0,statPct:0,essenceDiscountPct:0});
+assert.deepEqual(companionHousingBonuses(1),{trainingXpPct:5,statPct:1,essenceDiscountPct:3});
+assert.deepEqual(companionHousingBonuses(3),{trainingXpPct:15,statPct:3,essenceDiscountPct:10});
 assert.equal(companionHousingLevelEssenceCost(100,1),97);
 assert.equal(companionHousingLevelEssenceCost(1,3),1);
 const upgradedCost=combatCompanionUiModel(upgraded,id)!.nextLevelCost!;
@@ -48,15 +50,27 @@ assert.equal(purchaseCompanionLevel(upgraded,id).account.combatCompanionProgress
 
 const bondBasic=grantCompanionBondFromUse(fresh,id,'boss').account.combatCompanionProgress![id].bondXp;
 const bondUpgraded=grantCompanionBondFromUse(upgraded,id,'boss').account.combatCompanionProgress![id].bondXp;
-assert.ok(bondUpgraded>bondBasic);
+assert.equal(bondUpgraded,bondBasic); // Bond Hall stays separate; Housing no longer accelerates Bond
+const baseSnapshot=companionOwned(fresh)[id],upgradedSnapshot=companionOwned(upgraded)[id];
+assert.equal(baseSnapshot.housingStatMultiplier,1);
+assert.equal(upgradedSnapshot.housingStatMultiplier,1.01);
+assert.ok(individualCompanionPower(upgradedSnapshot)>individualCompanionPower(baseSnapshot));
+const baseCombat=buildOwnedCompanionCombatant(baseSnapshot,{mode:'companion_trial'}).stats;
+const upgradedCombat=buildOwnedCompanionCombatant(upgradedSnapshot,{mode:'companion_trial'}).stats;
+assert.ok(upgradedCombat.maxHp>baseCombat.maxHp);
+assert.ok(upgradedCombat.attackPower>baseCombat.attackPower);
+assert.ok(upgradedCombat.defense>baseCombat.defense);
+assert.equal(companionVerifiedHousingStatMultiplier({...upgradedSnapshot,housingStatMultiplier:999}),1.03); // clamp untrusted values
 const equippedBasic={...fresh,character:{...fresh.character!,equippedCombatCompanionId:id}};
 const equippedUpgraded={...upgraded,character:{...upgraded.character!,equippedCombatCompanionId:id}};
 const xpBasic=grantEquippedCompanionUse(equippedBasic,'boss').account.combatCompanionProgress![id].xp;
 const xpUpgraded=grantEquippedCompanionUse(equippedUpgraded,'boss').account.combatCompanionProgress![id].xp;
 assert.ok(xpUpgraded>=xpBasic);
+assert.ok(companionCombatContribution(equippedUpgraded).contributionPct>companionCombatContribution(equippedBasic).contributionPct);
 const onlineBasic=awardCompanionCandyXp(fresh,id,200,now).account.combatCompanionProgress![id].xp;
 const onlineUpgraded=awardCompanionCandyXp(upgraded,id,200,now).account.combatCompanionProgress![id].xp;
 assert.ok(onlineUpgraded>onlineBasic); // server-authoritative settlement also boosts XP
+assert.ok(!Object.hasOwn(awardCompanionCandyXp(upgraded,id,200,now).account.combatCompanionProgress![id],'housingStatMultiplier')); // ephemeral only
 
 // Save round-trip and one-time veteran grants do not reset purchased quarters.
 const freshRestore=normalizeCompanionRuntimeSave(upgraded.account);
@@ -77,4 +91,4 @@ assert.deepEqual(normalizeCompanionHousingTiers({UNIT_004:99,OTHER:-1,WRONG:'3'}
 assert.ok(companionHousingUpgradeCost('UNIT_001',{UNIT_001:1}));
 assert.ok(companionHousingUpgradeCost('UNIT_004',{UNIT_004:2}));
 assert.ok(!companionHousingUpgradeCost('UNIT_004',{UNIT_004:3}));
-console.log('PASS housing bonuses: ascension-only caps, XP/Bond/Essence boosts, legacy credit and save round-trip');
+console.log('PASS housing bonuses: ascension-only caps, XP/stats/Essence boosts, no Bond acceleration, verified combat, legacy credit and save round-trip');

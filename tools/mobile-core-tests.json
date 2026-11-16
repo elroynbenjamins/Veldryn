@@ -17,6 +17,7 @@
   ".core-build/apps/mobile/tests/world-boss-impact-prototype.js",
   ".core-build/apps/mobile/tests/world-boss-role-counterfactual-v8.js",
   ".core-build/apps/mobile/tests/world-boss-equipped-brackets-v8.js",
+  ".core-build/apps/mobile/tests/world-boss-bracket-audit-v14.js",
   ".core-build/apps/mobile/tests/world-boss-verified-roster-v9.js",
   ".core-build/apps/mobile/tests/world-boss-atomic-emulator-v9.js",
   ".core-build/apps/mobile/tests/world-boss-reservation-v10.js",

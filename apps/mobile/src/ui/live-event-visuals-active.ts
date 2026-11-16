@@ -6,6 +6,21 @@ const VEILBREAK:LiveEventVisualBundle={
  discoveryArt:{gloam_cinder:require('../../assets/events/veilbreak/discovery_gloam_cinder_runtime.webp'),waxen_sigil:require('../../assets/events/veilbreak/discovery_waxen_sigil_runtime.webp'),breach_fragment:require('../../assets/events/veilbreak/discovery_breach_fragment_runtime.webp')},
  rewardArt:{EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin_runtime.webp'),EVT_PET_014:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic_runtime.webp'),EVT_UNIT_007:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound_runtime.webp'),EVT_UNIT_008:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_008_Hollow_Knightling_runtime.webp'),EVT_UNIT_011:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_011_Lantern_Keeper_runtime.webp'),'event:veilbreak-2026-lantern-warden':require('../../assets/profile-icons-v1/veilbreak-2026-lantern-warden_runtime.webp'),'event:veilbreak-2026-pumpkin-moon':require('../../assets/profile-icons-v1/veilbreak-2026-pumpkin-moon_runtime.webp'),bg_veilbreak:require('../../assets/profile-backgrounds/bg_veilbreak.webp'),frame_gloamward:require('../../assets/profile-borders/frame_gloamward.png'),border_halloween_veil:require('../../assets/guild-customization/borders/border_halloween_veil_runtime.webp'),halloween_pumpkin_lantern:require('../../assets/guild-customization/banners/banner_halloween_pumpkin_lantern_runtime.webp'),halloween_bat_moon:require('../../assets/guild-customization/banners/banner_halloween_bat_moon_runtime.webp'),'EVT_ANNUAL_010_2026:candy:skill':require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),'EVT_ANNUAL_010_2026:candy:combat':require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),'EVT_ANNUAL_010_2026:candy:companion':require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),emote_candle_circle:require('../../assets/events/veilbreak/emote_gloam_facepalm_runtime.webp'),emote_laughing_crow:require('../../assets/events/veilbreak/emote_laughing_crow_runtime.webp'),emote_lantern_watch:require('../../assets/events/veilbreak/emote_lantern_watch_runtime.webp'),emote_sleeping_scarecrow:require('../../assets/events/veilbreak/emote_sleeping_scarecrow_runtime.webp'),emote_veil_salute:require('../../assets/events/veilbreak/emote_pumpkin_panic_runtime.webp')},
 };
+const FROSTFALL:LiveEventVisualBundle={
+ heroBackground:require('../../assets/profile-backgrounds/bg_frostfall.webp'),
+ badgeIcon:require('../../assets/events/frostfall/badge.png'),
+ commonCurrencyIcon:require('../../assets/events/frostfall/currency_frostbell_token.png'),
+ prestigeCurrencyIcon:require('../../assets/events/frostfall/currency_aurora_chime.png'),
+ candyIcon:require('../../assets/events/frostfall/candy_frostmint.png'),
+ discoveryArt:EMPTY_ART,
+ rewardArt:{
+  EVT_PET_015:require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png'),
+  EVT_PET_017:require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_017_Aurora_Fox.png'),
+  EVT_UNIT_009:require('../../assets/event_collectibles/frostfall_festival/companions/EVT_UNIT_009_Frostbell_Herald.png'),
+  bg_frostfall:require('../../assets/profile-backgrounds/bg_frostfall.webp'),
+  'event:frostfall-2026-snowbell':require('../../assets/events/frostfall/badge.png'),
+ },
+};
 const GENERIC:LiveEventVisualBundle={heroBackground:require('../../assets/card-backgrounds/veilbreak_portrait.webp'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART};
-export function liveEventVisuals(visualKey?:LiveEventVisualKey){return visualKey==='veilbreak'?VEILBREAK:GENERIC;}
-export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryIds:readonly string[]=[]){const bundle=liveEventVisuals(visualKey);return {dedicatedBundle:visualKey==='veilbreak',badgeArt:!!bundle.badgeIcon,commonCurrencyArt:!!bundle.commonCurrencyIcon,prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,discoveryTotal:discoveryIds.length};}
+export function liveEventVisuals(visualKey?:LiveEventVisualKey){return visualKey==='veilbreak'?VEILBREAK:visualKey==='frostfall'?FROSTFALL:GENERIC;}
+export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryIds:readonly string[]=[]){const bundle=liveEventVisuals(visualKey);return {dedicatedBundle:visualKey==='veilbreak'||visualKey==='frostfall',badgeArt:!!bundle.badgeIcon,commonCurrencyArt:!!bundle.commonCurrencyIcon,prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,discoveryTotal:discoveryIds.length};}

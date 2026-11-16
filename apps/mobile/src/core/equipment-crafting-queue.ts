@@ -41,7 +41,7 @@ export function equipmentCraftSlotBreakdown(state:GameState){
     {id:'supporter',label:'Supporter',earned:accountEntitlementBenefits(state).supporter,slots:1},
     {id:'vip_plus',label:'VIP+',earned:accountEntitlementBenefits(state).vipPlus,slots:1},
     {id:'character_2',label:'Unlock character slot #2',earned:unlocked>=2,slots:1},
-    {id:'character_4',label:'Unlock character slot #4',earned:unlocked>=4,slots:1},
+    {id:'account_skill_1050',label:'Reach 1,050 account skill levels',earned:accountSkillLevel(state)>=1050||state.account.forgeMastery1050Earned===true||Number(state.account.unlockedCharacterSlots??0)>=4,slots:1},
   ];
   const raw=sources.filter(row=>row.earned).reduce((sum,row)=>sum+row.slots,0);
   return {base:BASE_EQUIPMENT_CRAFT_SLOTS,max:MAX_EQUIPMENT_CRAFT_SLOTS,capacity:Math.min(MAX_EQUIPMENT_CRAFT_SLOTS,raw),raw,sources};

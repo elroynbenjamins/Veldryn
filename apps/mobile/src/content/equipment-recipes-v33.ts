@@ -98,9 +98,10 @@ export const T3_T4_DUNEWOOD_REDUCTION_FACTOR=0.8;
 export const T2_ALT_IRONWOOD_FANG_FACTOR=.77;
 export const T2_ALT_TROLL_HIDE_FACTOR=.858;
 export const T3_SMITHING_DUNEWOOD_FINAL_FACTOR=.735;
-export const T4_SMITHING_DUNEWOOD_FINAL_FACTOR=.738;
-export const T4_TAILORING_SUNSCALE_FACTOR=.907;
-export const T4_ASTRAL_SCRIPT_FACTOR=.88;
+// Current main already reduces T4 materials; retain its .8 timber factor.
+export const T4_SMITHING_DUNEWOOD_FINAL_FACTOR=.8;
+export const T4_TAILORING_SUNSCALE_FACTOR=1;
+export const T4_ASTRAL_SCRIPT_FACTOR=1;
 function reducedSunscarDunewood(base:number,multiplier:number,factor=T3_T4_DUNEWOOD_REDUCTION_FACTOR){
   return Math.max(1,Math.round(q(base,multiplier)*3*factor));
 }

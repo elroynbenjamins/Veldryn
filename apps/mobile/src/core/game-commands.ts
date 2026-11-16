@@ -242,7 +242,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'companion_recruit':state=companions.recruitEligibleCombatCompanion(state,text(a,'id'),now);message='Companion recruited';break;
   case 'companion_equip':state=companions.equipCombatCompanion(state,text(a,'id'));break;
   case 'companion_unequip':state=companions.unequipCombatCompanion(state);break;
-  case 'companion_housing_upgrade':state=upgradeCompanionHousing(state,text(a,'id'));message='Companion quarters upgraded';break;
+  case 'companion_housing_upgrade':state=upgradeCompanionHousing(companions.sanitizeCombatCompanionState(state),text(a,'id'));message='Companion quarters upgraded';break;
   case 'companion_level':state=companions.purchaseCompanionLevel(state,text(a,'id'));break;
   case 'companion_ascend':state=companions.ascendCombatCompanion(state,text(a,'id'));break;
   case 'companion_master':state=companions.masterPrestigeCompanion(state,text(a,'id'));break;

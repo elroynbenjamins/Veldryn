@@ -49,14 +49,14 @@ function clear(seed:number,legacy:boolean):boolean{
  const repository=new MemoryQModeRunRepository(),service=new QModeService(repository,'published-loadout-balance-v1');
  let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  if(legacy){repository.save({...run,qmodePressureVersion:undefined});run=repository.get(run.id)!;}
- for(let room=0;room<6&&run.phase==='awaiting_choice';room++){
+ for(let room=0;room<run.graph.nodes.length&&run.phase==='awaiting_choice';room++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
   run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(options.find(node=>node.kind==='camp')??options[0]).nodeId});
  }
  return run.phase==='completed';
 }
-// Temporary diagnostic: identify a genuinely ready roster baseline without altering live balance.
+// Temporary diagnostic: traverse the entire 8-10 node generated route and compare realistic readiness levels.
 for(const [level,factor] of [[10,1.05],[15,1.5],[15,2],[15,3],[25,2],[25,3.5],[25,5]] as const){
  roster=buildRoster(level,factor);let b=0,q=0;
  for(let seed=0;seed<50;seed++){if(clear(seed,true))b++;if(clear(seed,false))q++;}
@@ -74,7 +74,7 @@ function tunedClear(seed:number,attackMultiplier:number):boolean{
  const repo=new MemoryQModeRunRepository(),service=new QModeService(repo,'published-loadout-balance-v1');
  const run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  let state=run.persistentState,currentId=run.currentNodeId;
- for(let room=0;room<6;room++){
+ for(let room=0;room<run.graph.nodes.length;room++){
   const current=run.graph.nodes.find(node=>node.nodeId===currentId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
   if(!options.length)return false;

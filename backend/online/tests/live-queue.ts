@@ -90,7 +90,6 @@ async function main(){
  assert.equal((await handler(request('queue/'+ticket+'/cancel',{requestId:'cancel-001'}))).status,200);
  assert.equal((await handler(request('queue/'+ticket+'/cancel'))).status,405);
  const joinWrites=calls.filter(row=>row.name==='join_online_live_queue_server_v1');
- console.error('LIVE_QUEUE_REPLAY_DIAG',JSON.stringify({joinWrites:joinWrites.map(row=>({requestId:row.args.p_request_id,requestHash:row.args.p_request_hash,ticketId:row.args.p_ticket_id})),committedTickets,reads,version}));
  assert.equal(joinWrites.length,2,'a missing first receipt may produce one safe retry of the same join RPC');
  assert.equal(new Set(joinWrites.map(row=>row.args.p_request_id)).size,1,'retries must use the same idempotency request ID');
  assert.equal(new Set(joinWrites.map(row=>row.args.p_request_hash)).size,1,'retries must retain the same request payload hash');

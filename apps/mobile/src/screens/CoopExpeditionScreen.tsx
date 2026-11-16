@@ -345,7 +345,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     if(entrySource.kind!=='real'||finished.mode!=='qmode'||!finished.expeditionId||!finished.tier||!['completed','failed'].includes(finished.phase))throw new Error(st('This dungeon run cannot be restarted.'));
     const latest=await coopClient.entry();
     const dungeon=latest.dungeons.find(item=>item.id===finished.expeditionId);
-    if(!dungeon?.available||!dungeon.difficulties.includes(finished.tier))throw new Error(st('This dungeon or difficulty is no longer available.'));
+    if(!dungeon?.available||!dungeon.difficulties?.includes(finished.tier))throw new Error(st('This dungeon or difficulty is no longer available.'));
     const loadout=latest.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready&&item.characterId===characterId);
     if(!loadout)throw new Error(st('Your dungeon loadout changed. Refresh your equipment before running again.'));
     const started=await realCoopQModeSource.start({

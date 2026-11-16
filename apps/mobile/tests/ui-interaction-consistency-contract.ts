@@ -41,7 +41,7 @@ for(const forbidden of ["rgba(0,0,0,.78)","rgba(67,189,242,.07)","rgba(4,10,17,.
 ok(enhancement.includes('loading={busy}'),'Upgrade action must expose a real loading state');
 
 const guide=read('src/components/GuideTopicModal.tsx');
-ok(guide.includes('<GameModalHeader eyebrow={a("GAME GUIDE")} title={a(definition.title)} onClose={onClose}')&&guide.includes('<GameButton compact title={a("Close")} tone="secondary" onPress={onClose}'),"Help modal must use shared header and compact close action");
+ok(guide.includes('<GameModalHeader eyebrow={t(category)} title={a(definition.title)} onClose={onClose}/>')&&guide.includes('<GameModalSurface visible={visible} onClose={onClose}')&&!guide.includes('<GameButton compact title={a("Close")}'),"Help modal must use the shared accessible header close without a duplicate footer close");
 
 const save=read('src/components/SaveTransferPanel.tsx');
 ok(save.includes('loading={exportBusy}')&&save.includes('loading={busy}'),'Save transfer must expose loading state for export and import');

@@ -1,0 +1,43 @@
+name: v1.0.10 mainline merge conflict diagnostics (branch only)
+# Disposable diagnostics. It never commits or pushes.
+on:
+  push:
+    branches: ['integration/v1010-mainline-reconcile-safe-20261116']
+    paths: ['.github/workflows/v1010-mainline-merge-diagnostics-temp.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  conflict-diagnosis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/v1010-mainline-reconcile-safe-20261116
+          fetch-depth: 0
+      - name: Test a real Git three-way merge without modifying the branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.email 'ci-reconciliation@veldryn.invalid'
+          git config user.name 'Veldryn CI reconciliation'
+          git fetch --no-tags origin release/1.0.10-aab-prep-20261115
+          set +e
+          git merge --no-edit --no-commit --no-ff origin/release/1.0.10-aab-prep-20261115 > /tmp/merge-check.txt 2>&1
+          status=$?
+          set -e
+          echo "MERGE_STATUS=$status"
+          cat /tmp/merge-check.txt | tail -70
+          echo "=== Unresolved paths (conflicts requiring source review) ==="
+          git diff --name-only --diff-filter=U | tee /tmp/merge-conflicts.txt
+          echo "UNRESOLVED_PATHS=$(wc -l < /tmp/merge-conflicts.txt)"
+          echo "=== Conflict block counts ==="
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            count=$(grep -c '^<<<<<<< ' "$file" || true)
+            printf '%s conflict blocks in %s\n' "$count" "$file"
+          done < /tmp/merge-conflicts.txt
+          echo "=== Generated Edge bundle status ==="
+          git diff --name-only | grep 'backend/supabase/functions/' || true
+          git merge --abort || true
+          echo "Diagnostic only: no changes committed or pushed."

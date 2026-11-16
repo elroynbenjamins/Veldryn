@@ -16,4 +16,6 @@ for(const id of required)ok(mapping.includes(id+':'),'Missing unified regional a
 ok(mapping.includes("require('../../assets/regional-resources-v2.png')"),'Regional resource atlas must be a real bundled asset');
 ok(resolver.includes('hasRegionalResourceArtwork(itemId)'), 'Shared resource resolver must recognize regional atlas artwork');
 ok(artwork.includes('regionalResourceCell(itemId)')&&artwork.includes('AtlasCell')&&artwork.includes('column*displaySize')&&artwork.includes('row*displaySize')&&artwork.includes('width:displaySize,height:displaySize'),'ResourceArtwork must crop the correct atlas cell');
+ok(artwork.includes('DUNEWOOD:1.32')&&artwork.includes('zoom={regionalSpriteZoom[itemId]??1}'),'Dunewood should use a dedicated atlas-cell scale without enlarging other regional items');
+ok(artwork.includes('offset=(size-displaySize)/2'),'Zoomed atlas cells must remain centered in the item frame');
 console.log('PASS: unified Sunscar/Frostmarch resource artwork is mapped into shared item UI');

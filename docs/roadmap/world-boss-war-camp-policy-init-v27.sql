@@ -25,7 +25,7 @@ DECLARE
  seen_recipe_ids text[]:=ARRAY[]::text[];
  seen_positions text[]:=ARRAY[]::text[];
  seen_material_ids text[];
- id text;
+ material_id text;
  q bigint;
  count_recipes integer:=0;
 BEGIN
@@ -78,15 +78,15 @@ BEGIN
   seen_positions:=array_append(seen_positions,track||':'||tier::text);
   seen_material_ids:=ARRAY[]::text[];
   FOR m IN SELECT value FROM jsonb_array_elements(r->'materials') LOOP
-   id:=m->>'itemId';
-   IF id IS NULL OR id !~ '^[A-Z0-9_]{2,100}$' OR
-      id=ANY(seen_material_ids) OR
+   material_id:=m->>'itemId';
+   IF material_id IS NULL OR material_id !~ '^[A-Z0-9_]{2,100}$' OR
+      material_id=ANY(seen_material_ids) OR
       (m->>'quantity') IS NULL OR
       (m->>'quantity') !~ '^[0-9]{1,9}$'
    THEN RAISE EXCEPTION 'WB27_INIT_INVALID_MATERIAL'; END IF;
    q:=(m->>'quantity')::bigint;
    IF q<1 OR q>1000000 THEN RAISE EXCEPTION 'WB27_INIT_INVALID_MATERIAL'; END IF;
-   seen_material_ids:=array_append(seen_material_ids,id);
+   seen_material_ids:=array_append(seen_material_ids,material_id);
   END LOOP;
   INSERT INTO private.world_boss_war_recipes_v27(
    event_id,recipe_id,tier,track,materials)

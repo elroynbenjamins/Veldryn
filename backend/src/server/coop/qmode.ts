@@ -81,10 +81,10 @@ export class QModeService{
   const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
   // Solar's repeated 5,200-HP Ward disproportionately blocks the Hexweaver/
   // Knife Dancer pairing despite verified entry CP. Slow only that ability on
-  // newly versioned regional runs; keep the opening Ward, boss phases and all
+  // newly versioned regional Tier I runs; keep opening Ward, boss phases and all
   // historical saved-run combat unchanged. The full 2,400-run published roster
   // matrix must keep every composition above the existing 85% clear-rate floor.
-  const bossTuning=run.regionalBalanceVersion===1&&selected.contentId==='BOSS_EXP_SOLAR'
+  const bossTuning=run.regionalBalanceVersion===1&&run.tier===1&&selected.contentId==='BOSS_EXP_SOLAR'
    ?{profileId:'sunscar-regional-solar-ward-cadence-v1',abilityCooldownMultipliers:{BOSS_EXP_SOLAR_WARD:3}}
    :undefined;
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1),enemyHpMultiplier:regional?.hp,enemyDefenseMultiplier:regional?.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});

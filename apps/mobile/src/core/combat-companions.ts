@@ -351,10 +351,10 @@ function setProgress<T extends CombatCompanionStateHost>(state:T,id:string,progr
 export function purchaseCompanionLevel<T extends CombatCompanionStateHost>(state:T,id:string):T{
   let clean=sanitizeCombatCompanionState(state);if(!clean.character)throw new Error('Create a character first.');
   const def=combatCompanionDef(id);if(!def||!(clean.account.unlockedCombatCompanionIds??[]).includes(id))throw new Error('Combat companion is locked.');
-  const p=progressFor(clean,id),cap=Math.min(companionCurrentLevelCap(def,p),housingCap),max=companionMaxLevel(def);
+  const p=progressFor(clean,id),ascensionCap=companionCurrentLevelCap(def,p),housingCap=companionHousingLevelCap(companionHousingTier(id,clean.account.companionHousingTiers)),max=companionMaxLevel(def);
   if(p.level>=max)throw new Error('Maximum companion level reached.');
-  if(p.level>=cap)throw new Error('Ascension required before further leveling.');
-  if(p.level>=companionHousingLevelCap(companionHousingTier(id,clean.account.companionHousingTiers)))throw new Error('Upgrade Companion Quarters before further training.');
+  if(p.level>=ascensionCap)throw new Error('Ascension required before further leveling.');
+  if(p.level>=housingCap)throw new Error('Upgrade Companion Quarters before further training.');
   const cost=companionRemainingLevelCost(def,p);
   if(clean.character.gold<cost.gold)throw new Error('Not enough Gold.');
   if((clean.account.companionEssence??0)<cost.companionEssence)throw new Error('Not enough Companion Essence.');

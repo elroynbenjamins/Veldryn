@@ -33,7 +33,7 @@ export function ChatTranslatableBody({messageId,body,mentionName,compact=false,s
  const language=useGameLanguage(),{session}=useAuthSession(),C=useGameTheme();
  const s=useMemo(()=>makeStyles(C),[C]),copy=COPY[language];
  const account=session?.user.id;
- const enabled=Boolean(account&&messageId&&UUID.test(messageId)&&/[\p{L}]/u.test(body));
+ const enabled=Boolean(account&&messageId&&UUID.test(messageId)&&/[\p{L}]/u.test(body.replace(/:[a-z0-9_]+:/gi,'')));
  const key=account&&messageId?account+':'+messageId+':'+language+':'+body:'';
  const [translated,setTranslated]=useState<string|null>(null);
  const [show,setShow]=useState(false);

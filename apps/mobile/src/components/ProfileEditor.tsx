@@ -4,6 +4,7 @@ import {memo,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {FlatList,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameTextInput} from './GameTextInput';
 import {profileIconCollection,canUseProfileIcon} from '../core/profile-icons';
+import {dungeonShopOfferName} from '../i18n/dungeon-shop';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {invalidatePlayerIdentity,publishOwnProfileIcon} from '../online/player-identity-cache';
 import {ProfileIcon} from './ProfileIcon';
@@ -41,6 +42,13 @@ const CosmeticTile=memo(function CosmeticTile({name,status,detail,selected,onPre
   <Text numberOfLines={compact?1:undefined} style={[s.name,compact&&s.compactName]}>{name}</Text>{detail?<Text numberOfLines={compact?2:undefined} style={[s.detail,compact&&s.compactDetail]}>{detail}</Text>:null}
  </Pressable>;
 },(previous,next)=>previous.name===next.name&&previous.status===next.status&&previous.detail===next.detail&&previous.selected===next.selected&&previous.framed===next.framed&&previous.compact===next.compact);
+/** Mobile-only labels; backend catalogue and account reward IDs remain stable. */
+const DUNGEON_PORTRAIT_SKUS:Readonly<Record<string,string>>={
+ 'dungeon:asterfall:wardens-lantern':'dshop_asterfall_icon',
+ 'dungeon:sunscar:solar-vault-key':'dshop_sunscar_icon',
+ 'dungeon:frostmarch:resonant-bell':'dshop_frostmarch_icon',
+};
+
 export function ProfileEditor({state,onChange,onCommand,onSaveNameStyle,active=true,showLoadouts=true,onNavigateSource,onDirtyChange,onPreviewStateChange}:{state:GameState;onChange:(next:GameState)=>void|Promise<void>;onCommand?:(command:GameCommand)=>void|Promise<void>;onSaveNameStyle?:SavePlayerNameStyle;active?:boolean;showLoadouts?:boolean;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;onPreviewStateChange?:(preview:GameState)=>void}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -85,8 +93,8 @@ export function ProfileEditor({state,onChange,onCommand,onSaveNameStyle,active=t
   {tab==='Pets'&&<Text style={s.sub}>{profileT(language,"Cosmetic Pets are separate from Combat Companions. This gallery only shows owned Pets you can equip now; browse Collections to discover locked Pets and their sources.")}</Text>}
   <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} showsVerticalScrollIndicator={false}>{(['Icons','Backgrounds','Borders','Titles','Pets','Badges','Name Style'] as Tab[]).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,tab===value&&s.tabOn]}><Text style={[s.tabText,tab===value&&s.selectedText]}>{profileText(language,value)}</Text>{tab===value?<View style={s.tabIndicator}/>:null}</Pressable>)}</ScrollView>
   {tab==='Icons'&&<>
-   <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} showsVerticalScrollIndicator={false}>{['All','Starter','Class','Combat','Event'].map(group=><Pressable key={group} accessibilityRole="button" accessibilityLabel={group+' profile icons'} accessibilityState={{selected:iconGroup===group}} onPress={()=>setIconGroup(group)} style={[s.tab,iconGroup===group&&s.tabOn]}><Text style={[s.tabText,iconGroup===group&&s.selectedText]}>{group}</Text></Pressable>)}</ScrollView>
-   <FlatList horizontal data={iconColumns} keyExtractor={(_,index)=>'icon-column:'+index} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.iconGallery} initialNumToRender={3} maxToRenderPerBatch={3} windowSize={3} removeClippedSubviews renderItem={({item:column})=><View style={s.iconColumn}>{column.map(row=><CosmeticTile compact key={row.id} name={row.name} status={profileT(language,row.unlocked?"Available":"LOCKED")} detail={row.group+' · '+row.source} selected={icon===row.id} onPress={()=>setIcon(row.id)}><ProfileIcon id={row.id} classId={character.classId} size={58}/></CosmeticTile>)}</View>} showsVerticalScrollIndicator={false}/>
+   <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} showsVerticalScrollIndicator={false}>{['All','Starter','Class','Combat','Dungeon','Event'].map(group=><Pressable key={group} accessibilityRole="button" accessibilityLabel={group+' profile icons'} accessibilityState={{selected:iconGroup===group}} onPress={()=>setIconGroup(group)} style={[s.tab,iconGroup===group&&s.tabOn]}><Text style={[s.tabText,iconGroup===group&&s.selectedText]}>{group}</Text></Pressable>)}</ScrollView>
+   <FlatList horizontal data={iconColumns} keyExtractor={(_,index)=>'icon-column:'+index} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.iconGallery} initialNumToRender={3} maxToRenderPerBatch={3} windowSize={3} removeClippedSubviews renderItem={({item:column})=><View style={s.iconColumn}>{column.map(row=><CosmeticTile compact key={row.id} name={dungeonShopOfferName(language,DUNGEON_PORTRAIT_SKUS[row.id]??"",row.name)} status={profileT(language,row.unlocked?"Available":"LOCKED")} detail={row.group+' · '+row.source} selected={icon===row.id} onPress={()=>setIcon(row.id)}><ProfileIcon id={row.id} classId={character.classId} size={58}/></CosmeticTile>)}</View>} showsVerticalScrollIndicator={false}/>
   </>}
   {tab==='Backgrounds'&&<ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery} showsVerticalScrollIndicator={false}>
    {BASE_PROFILE_BACKGROUNDS.map(item=><CosmeticTile key={item.id} name={item.name} status={profileT(language,"Available")} selected={background===item.id} onPress={()=>setBackground(item.id)}><View style={s.sceneThumb}><RegionArtwork regionId={item.region}/></View></CosmeticTile>)}

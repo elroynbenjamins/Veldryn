@@ -17,6 +17,7 @@ import {GemPouchPanel} from '../components/GemPouchPanel';
 import {accountText} from '../i18n/account';
 import {gemPouch,gemDepositDestination} from '../core/gem-pouch';
 import {equipmentPouch} from '../core/equipment-pouch';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {EquipmentPouchPanel} from '../components/EquipmentPouchPanel';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {DisposalPreview} from '../components/DisposalPreview';
@@ -95,6 +96,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [inventoryIntent,setInventoryIntent]=useState<InventoryFeedbackIntent|null>(null),[inventoryFeedback,setInventoryFeedback]=useState<InventoryActionFeedback|null>(null);
   const [inventoryBusyLabel,setInventoryBusyLabel]=useState<string|null>(null),inventoryBusyRef=useRef(false);
   const carriedGold=state.character?.gold??0,bankGold=state.bank.gold??0,customGoldAmount=Number(bankGoldAmount),validCustomGold=Number.isSafeInteger(customGoldAmount)&&customGoldAmount>0;
+ const gearStorage=equipmentPouch(state),freeGearSlots=Math.max(0,gearStorage.capacity-gearStorage.stacks.length);
+ const gearLabel=(label:string,params:Record<string,string|number>={})=>equipmentPouchText(language,label,params);
   useEffect(()=>{const next=equipmentSnapshot,previous=equipmentSnapshotRef.current;equipmentSnapshotRef.current=next;if(previous.characterId!==next.characterId){setEquipMoment(null);return;}const result=equipmentChangeFeedback(previous,next);if(result)setEquipMoment(result)},[equipmentSnapshot]);
   useEffect(()=>{if(!inventoryIntent)return;const result=resolveInventoryActionFeedback(inventoryIntent,state);if(result){setInventoryFeedback(result);setInventoryIntent(null)}},[state,inventoryIntent]);
   useEffect(()=>{if(!inventoryIntent)return;const timer=setTimeout(()=>setInventoryIntent(null),12000);return()=>clearTimeout(timer)},[inventoryIntent]);
@@ -271,6 +274,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     :[];
   const inspectStock=inspected?state[location].stacks.reduce((total,stack)=>total+(stack.itemId===inspected.id&&!stack.instanceId?stack.quantity:0),0):0;
   const inspectAmount=Math.max(1,Math.min(inspectStock,inspectQuantity));
+  const gearMoveAmount=inspected?.type==='gear'?Math.min(inspectStock,transferAmount(inspectStock,quantity),100):0;
   const inspectFavorite=!!inspected&&favoriteSet.has(inspected.id);
   const inspectLocked=!!inspected&&(lockedSet.has(inspected.id)||selectedCopy?.locked===true);
   const previewRecord=previewInstanceId?exactRecordsById.get(previewInstanceId):undefined;
@@ -317,7 +321,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {carried&&inspected.type==='food'?<GameButton compact title={recoveryAmount(healthState,inspected.id)===0?gt("Health full"):gt('Eat 1 · up to {hp} HP',{hp:formatGameNumber(displayStat(Math.round(foodHealingAmount(healthState,inspected.id))),state.settings.numberMode,state.settings.language)})} disabled={recoveryAmount(healthState,inspected.id)===0} tone="secondary" onPress={()=>{run(()=>onEat(inspected.id));closeInspect()}}/>:null}
     <GameButton compact title={favoriteSet.has(inspected.id)?gt("Remove favorite"):gt("Favorite")} tone="secondary" onPress={()=>{run(()=>onToggleFavorite(inspected.id));closeInspect()}}/>
     <GameButton compact title={lockedSet.has(inspected.id)?gt("Unlock item"):gt("Lock item")} tone="secondary" onPress={()=>{run(()=>onToggleLock(inspected.id));closeInspect()}}/>
-    {hasLegacyStack&&inspected.type==='gear'&&onCommand?<GameButton compact title={gl('To Equipment')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{await onCommand({type:'equipment_pouch_move',args:{itemId:inspected.id,quantity:1,from:location,to:'equipment_pouch'}});closeInspect()})}/>:null}
+    {hasLegacyStack&&inspected.type==='gear'&&onCommand?<GameButton compact title={freeGearSlots<gearMoveAmount?gearLabel('Not enough Gear slots'):gearLabel('Store {count} in Gear',{count:gearMoveAmount})} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null||gearMoveAmount<1||freeGearSlots<gearMoveAmount} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{const result=await onCommand({type:'equipment_pouch_move',args:{itemId:inspected.id,quantity:gearMoveAmount,from:location,to:'equipment_pouch'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');closeInspect()})}/>:null}
     {hasLegacyStack&&inspected.type!=='material'&&(carried?<GameButton compact title={gt('Deposit {count}',{count:formatGameNumber(transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})+(gemDepositDestination(state,inspected.id)==='gem_pouch'?' · Gem Pouch':'')} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);if(state.character?.equippedFoodId===inspected.id)setPending({kind:"deposit",item:inspected,quantity:amount});else runInventory({kind:"deposit",itemId:inspected.id,quantity:amount},()=>onDeposit(inspected.id,amount));closeInspect()}}/>:<GameButton compact title={gt('Withdraw {count}',{count:formatGameNumber(transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);runInventory({kind:"withdraw",itemId:inspected.id,quantity:amount},()=>onWithdraw(inspected.id,amount));closeInspect()}}/>)}
     {hasLegacyStack&&inspected.type!=='material'&&!carried&&inspected.value>0&&!favoriteSet.has(inspected.id)&&!lockedSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:formatGameNumber(inspected.value*transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);beginInventorySubmission(gt("Selling items…"),()=>onBankSell(inspected.id,amount));closeInspect()}}/>:null}
     {hasLegacyStack&&inspected.type!=='material'&&carried&&inspected.value>0&&!favoriteSet.has(inspected.id)&&!lockedSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:formatGameNumber(inspected.value*transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);setPending({kind:"sell",item:inspected,quantity:amount});closeInspect()}}/>:null}
@@ -342,7 +346,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
           
           {carried?<GameButton compact title={gl('Compare & Equip')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>{setPreviewInstanceId(selectedCopy.id);setPreviewId(inspected.id);closeInspect()}}/>:null}
           <GameButton compact title={gl(carried?'To Bank':'Withdraw')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Transferring equipment…',async()=>{await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:carried?'bank':'inventory'}});closeInspect()})}/>
-        {selectedCopy.ownerCharacterId===state.character?.id?<GameButton compact title={gl('To Equipment')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}});closeInspect()})}/>:null}
+        <GameButton compact title={freeGearSlots===0?gearLabel('Gear storage full'):gearLabel('Store in Gear')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||freeGearSlots===0} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');closeInspect()})}/>
         </View>
         <View style={s.row}>
           <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={!onCommand||selectedCopy.locked||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'sell',name:inspected.name});closeInspect()}}/>
@@ -372,6 +376,16 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   onToggleLock={previewId?changePreviewLock:undefined}
   canSell={previewDisposal.sell&&inventoryBusyLabel===null}
   canSalvage={previewDisposal.salvage&&inventoryBusyLabel===null}
+  canStoreInGear={freeGearSlots>0}
+  onStoreInGear={previewId&&onCommand?async()=>{
+    const id=previewId,instanceId=previewInstanceId;
+    const success=await beginInventorySubmission('Moving equipment to Gear…',async()=>{
+      const result=await onCommand(instanceId?{type:'gear_move',args:{instanceId,to:'equipment_pouch'}}:{type:'equipment_pouch_move',args:{itemId:id,quantity:1,from:'inventory',to:'equipment_pouch'}});
+      if(result===false)throw new Error('Equipment transfer was not confirmed.');
+    });
+    if(!success)throw new Error('Unable to store this equipment in Gear.');
+    setPreviewId(null);setPreviewInstanceId(null);
+  }:undefined}
   onSell={previewId?()=>{
     if(!previewDisposal.sell||inventoryBusyLabel!==null)return;
     const item=itemDef(previewId);

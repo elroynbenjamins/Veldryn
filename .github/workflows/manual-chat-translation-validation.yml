@@ -1,0 +1,24 @@
+name: Manual chat translation contract
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/components/ChatTranslatableBody.tsx'
+      - 'apps/mobile/src/components/ChatMessageRow.tsx'
+      - 'apps/mobile/src/components/coop/CoopPartyChat.tsx'
+      - 'apps/mobile/src/components/OnlineWorldChat.tsx'
+      - 'apps/mobile/src/components/OnlinePartyChat.tsx'
+      - 'apps/mobile/src/components/GuildChat.tsx'
+      - 'apps/mobile/src/online/chat-translation.ts'
+      - 'apps/mobile/tests/chat-translation-contract.cjs'
+      - 'backend/supabase/functions/translate-chat-message/**'
+      - '.github/workflows/manual-chat-translation-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify manual translation and RLS proxy contract
+        run: node --test apps/mobile/tests/chat-translation-contract.cjs

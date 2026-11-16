@@ -39,6 +39,15 @@ for(const id of ['COPPER_INGOT','ASTER_IRON_INGOT','SUNSTONE_INGOT',
   id+' should pay ingredients, crafting Gold, 15% labor and integer-rounded 5% tax');
  assert(quote.unitMax>=quote.unitMin*4);
 }
+// New cross-profession intermediates must be priced by their complete
+// Smithing or Tailoring recipe, never by an unverified NPC resale fallback.
+for(const id of ['METAL_CLASPS','REINFORCED_BUCKLES','ARMOR_RIVETS',
+ 'CLOTH_BINDINGS','PADDED_LININGS','REINFORCED_STRAPS']){
+ const quote=resource(id);
+ assert.equal(quote.source,'crafted_recipe',id+' must use cost-aware component pricing');
+ assert(quote.recipeCost&&quote.recipeCost.ingredientFloorGold>0&&quote.recipeCost.craftingGold>0);
+ assert(quote.unitMin- Math.ceil(quote.unitMin*.05)>=quote.recipeCost!.unitProductionCostGold*1.15-1e-8);
+}
 const copper=resource('COPPER_INGOT');
 assert.equal(copper.recipeCost?.unitProductionCostGold,82/5);
 assert.equal(copper.unitMin,20);

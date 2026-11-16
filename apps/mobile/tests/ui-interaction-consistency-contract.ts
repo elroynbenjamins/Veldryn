@@ -160,7 +160,7 @@ ok(petBonus.includes('GameModalHeader')&&petBonus.includes('GameModalSurface'),'
 ok(petBonus.includes('accessibilityRole="radio"')&&petBonus.includes('accessibilityState={{selected:row.selected}}'),'Active Pet choices must expose single-selection semantics');
 
 const characterManage=read('src/screens/ActivityOverviewScreen.tsx');
-ok(characterManage.includes('<GameModalSurface')&&characterManage.includes('<ScrollView style={s.modalScroll}'),'Character management must keep long destructive-flow content inside reachable scroll content');
+ok(characterManage.includes('<GameModalSurface')&&characterManage.includes('<ScrollView ref={modalScrollRef} style={s.modalScroll}'),'Character management must keep long destructive-flow content inside reachable scroll content');
 ok(characterManage.includes('keyboardShouldPersistTaps="handled"')&&characterManage.includes('keyboardDismissMode="on-drag"'),'Character management actions must stay tappable without dismissing the confirmation keyboard');
 
 const settings=read('src/screens/SettingsScreen.tsx');

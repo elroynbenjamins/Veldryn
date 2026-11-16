@@ -70,7 +70,7 @@ test('All seven guide sections have translations for all supported languages',()
   const end=guide.indexOf('\n },',start);
   assert.ok(end>start,'Unterminated guide localization row '+text);
   const row=guide.slice(start,end);
-  for(const language of languages)assert.match(row,new RegExp('(?:^|\\s)'+language+':'),text+' lacks '+language);
+  for(const language of languages)assert.match(row,new RegExp('(?:^|[\\s,])'+language+':'),text+' lacks '+language);
  }
  assert.match(guide,/export function dungeonGuideText\(language:Language,value:string\):string\{return rows\[value\]\?\.\[language\]\?\?value;\}/);
 });

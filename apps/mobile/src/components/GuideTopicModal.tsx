@@ -3,7 +3,7 @@ import {guideHubText} from '../i18n/game-guide-hub';
 import type {Language} from '../i18n/languages';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useEffect,useMemo,useRef} from 'react';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
 import {GAME_GUIDE_CATEGORIES,GAME_GUIDE_STEPS,type GameGuideDestination,type GameGuideDefinition} from '../core/onboarding';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -26,7 +26,7 @@ export function GuideTopicModal({language:languageOverride,definition,visible,on
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
  const t=(label:Parameters<typeof guideHubText>[1])=>guideHubText(language,label);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const scrollRef=useRef<ScrollView>(null);
+ const scrollRef=useRef<ScrollViewInstance>(null);
  useEffect(()=>{if(visible)scrollRef.current?.scrollTo({y:0,animated:false});},[definition?.id,visible]);
  if(!definition)return null;
  const steps=GAME_GUIDE_STEPS[definition.id];
@@ -34,7 +34,7 @@ export function GuideTopicModal({language:languageOverride,definition,visible,on
  const target=definition.destination==='More'?'Account':definition.destination==='Coop'?'Co-op Dungeons':definition.destination;
  return <GameModalSurface visible={visible} onClose={onClose} backdropLabel={a('Close Game Guide')}>
   <GameModalHeader eyebrow={t(category)} title={a(definition.title)} onClose={onClose}/>
-  <ScrollView ref={scrollRef} style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+  <ScrollView ref={scrollRef} style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
    {position?<Text style={s.pageCount}>{position.index} / {position.total} {t('Guides').toLocaleLowerCase()}</Text>:null}
    <View style={s.summaryCard}>
     <Text style={s.summary}>{a(definition.summary)}</Text>

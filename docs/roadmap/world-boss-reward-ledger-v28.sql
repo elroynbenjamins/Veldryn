@@ -333,7 +333,7 @@ GRANT SELECT,INSERT ON private.world_boss_replay_proofs_v28,
  private.world_boss_claim_receipts_v28 TO service_role;
 GRANT SELECT,INSERT,UPDATE ON private.world_boss_wallet_v28 TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v28_record_replay(
- uuid,uuid,text) TO service_role;
+ uuid,uuid,text,text) TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v28_claim(
  uuid,uuid,text) TO service_role;
 GRANT EXECUTE ON FUNCTION private.world_boss_v28_view(

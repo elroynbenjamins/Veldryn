@@ -70,6 +70,7 @@ equal(Object.keys(GAME_GUIDE_CATEGORIES).length,GAME_GUIDE.length,'every topic h
 equal(browse('basics').every(entry=>GAME_GUIDE_CATEGORIES[entry.id]==='basics'),true,'category filtering stays precise');
 equal(browse('all','expedition marks').some(entry=>entry.id==='dungeon_shop'),true,'search includes locked guide content');
 equal(browse('all','NO SUCH GUIDE').length,0,'no matches for an unrelated query');
+equal(browseGameGuides({unlockedIds:openIds,readIds,category:'all',query:'rüstung',unreadOnly:false,localize:copy=>copy==='Equipment & Inventory'?'Ausrüstung und Inventar':copy}).some(entry=>entry.id==='equipment_inventory'),true,'localized search indexes translated topics');
 equal(browse('all','',true).every(entry=>openIds.has(entry.id)&&!readIds.has(entry.id)),true,'unread filter excludes read and locked entries');
 equal(browse('all').some(entry=>entry.id==='coop_dungeons'),true,'locked features can be previewed');
 equal(guideDefinition('additional_characters').summary.includes('three'),true,'character guide reflects the three-character roster');

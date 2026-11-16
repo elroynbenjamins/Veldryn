@@ -10,7 +10,7 @@ import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
-import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason} from '../../i18n/dungeon-shop';
+import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason} from '../../i18n/dungeon-shop';
 
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
@@ -124,6 +124,8 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const offerStatus=t(statusSource);
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);
+   const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
+   const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
    const previewArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
@@ -133,8 +135,8 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
-      <Text style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
-      <View style={s.price}><ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
+      <Text numberOfLines={2} style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
+      <View style={s.price}>{previewOnly?<Text style={s.priceHint}>{dungeonShopBonusLabel(language,'preview')}</Text>:null}<ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
      </View>
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
@@ -143,11 +145,18 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
       ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
       :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
      }</View>:null}
-     <Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>
+     {bonusDetails?<View style={s.bonusBlock}>
+      <Text style={s.bonusName}>{bonusDetails.stat}</Text>
+      <View style={s.bonusGrid}>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.equipped}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'equipped')}</Text></View>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.owned}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'owned')}</Text></View>
+      </View>
+     </View>:<Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>}
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
      {item.status==='already_owned'||item.owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
-     {item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
+     {previewOnly&&!item.owned?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
+      :item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
      {offerEligible?<GameButton title={pending===item.id?t('Processing…'):t('Confirm purchase · {marks} Marks',{marks:localizedMarks})} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
      {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>{t('Not enough Expedition Marks.')}</Text>:null}
     </View>:null}
@@ -167,10 +176,17 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
  art:{width:48,height:48,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center'},
  title:{...typography.bodyStrong,color:C.text},
- price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:3},priceText:{...typography.bodyStrong,color:C.accent},
+ price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:5,flexWrap:'wrap'},priceText:{...typography.bodyStrong,color:C.accent},
+ priceHint:{...typography.caption,color:C.muted,fontSize:11,marginRight:2},
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
- description:{...typography.body,color:C.text},
+ description:{...typography.body,color:C.text,lineHeight:22},
+ bonusBlock:{gap:8},bonusName:{...typography.bodyStrong,color:C.text,fontSize:15},
+ bonusGrid:{flexDirection:'row',gap:8},
+ bonusCell:{flex:1,minWidth:0,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panelRaised,padding:10,gap:3},
+ bonusAmount:{...typography.bodyStrong,color:C.good,fontSize:17},
+ bonusCaption:{...typography.caption,color:C.muted,lineHeight:16},
+ previewNote:{...typography.caption,color:C.muted,lineHeight:18},
  cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
  petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  offerStatus:{...typography.caption,fontWeight:'800'},

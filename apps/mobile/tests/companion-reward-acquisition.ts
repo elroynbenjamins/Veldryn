@@ -16,7 +16,9 @@ const original:GameState={...starter,account:{...starter.account,
   eventProgressById:{[eventId]:22000},eventCurrencyBalanceById:{[eventId]:20000},
 }};
 const veilbreakIds=['EVT_UNIT_007','EVT_UNIT_008','EVT_UNIT_011'];
-assert(JSON.stringify(RELEASED_EVENT_COMPANIONS.map(c=>c.id).sort())===JSON.stringify([...veilbreakIds].sort()),'Only the released Veilbreak trio is in the live roster');
+const scheduledFrostfallIds=['EVT_UNIT_009'];
+assert(JSON.stringify(RELEASED_EVENT_COMPANIONS.map(c=>c.id).sort())===JSON.stringify([...veilbreakIds,...scheduledFrostfallIds].sort()),'Runtime roster includes Veilbreak companions and scheduled Frostfall Herald');
+for(const id of scheduledFrostfallIds)assert(!!combatCompanionDef(id),'Scheduled Frostfall companion must resolve before the event starts');
 for(const id of veilbreakIds)assert(!!combatCompanionDef(id),'Every released event reward must resolve to a playable companion');
 let state=original;
 for(const id of ['EVT_UNIT_008','EVT_UNIT_007']){

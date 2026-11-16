@@ -8,6 +8,7 @@ import {activeLiveEvent,setLocalEventEnabled} from '../src/core/live-events';
 import {profileIconCollection,canUseProfileIcon} from '../src/core/profile-icons';
 import {canUseProfileCosmetic} from '../src/core/profile-cosmetics';
 import {executeGameCommand} from '../src/core/game-commands';
+import {FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 
 const now=Date.UTC(2026,9,13);
 const enabled=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','Event Review'),true,now);
@@ -39,6 +40,10 @@ for(const event of LIVE_EVENT_CATALOG){
   for(const reward of rewards){
    if(reward.kind==='pet'){
     const pet=COLLECTIBLES.find(row=>row.kind==='pet'&&row.id===reward.id);
+    if(!FROSTFALL_REWARDS_RELEASED&&(reward.id==='EVT_PET_015'||reward.id==='EVT_PET_017')){
+     assert.ok(!pet,`${reward.id} must remain hidden from the released catalog until Frostfall starts`);
+     continue;
+    }
     assert.ok(pet,`${reward.id} must be selectable after claiming`);
     assert.equal(pet?.name,reward.name,`${reward.id} uses one identity across event and collection`);
    }

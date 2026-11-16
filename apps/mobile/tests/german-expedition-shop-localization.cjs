@@ -16,7 +16,7 @@ const app=path.resolve(__dirname,'..');
 const backend=fs.readFileSync(path.join(app,'../../backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'),'utf8');
 const offers=[...backend.matchAll(/\{id:'(dshop_[^']+)',name:(?:"([^"]+)"|'([^']+)')/g)]
  .map(match=>({id:match[1],name:match[2]??match[3]}));
-assert.equal(offers.length,17,'Expected all 17 canonical Expedition Shop offers');
+assert.equal(offers.length,24,'Expected all 24 canonical Expedition Shop offers, including seven 100-unit crafting bundles');
 assert.equal(Object.keys(germanDungeonShopOfferNames).length,offers.length,'German offer names must cover every canonical offer ID');
 for(const {id,name} of offers){
  assert.equal(germanDungeonShopOfferNames[id]?.[0],name,'German source guard drifted for '+id);
@@ -96,4 +96,4 @@ for(const marker of [
  "t('Loading Expedition Shop…')",
  "t('Purchase confirmed. Reopen your inventory to refresh rewards.')",
 ])assert.ok(shell.includes(marker),'Expedition shell translation missing: '+marker);
-console.log('PASS: 17 guarded German Expedition Shop offers, 45 UI keys, descriptions, statuses, placeholders and a11y wiring');
+console.log('PASS: 24 guarded German Expedition Shop offers, 45 UI keys, descriptions, statuses, placeholders and a11y wiring');

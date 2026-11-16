@@ -39,9 +39,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\\.ts$' || true)
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
           if [ -n "$unexpected" ]; then
-            printf 'Unrelated files modified:\\n%s\\n' "$unexpected"
+            printf 'Unrelated files modified:\n%s\n' "$unexpected"
             exit 1
           fi
       - name: Commit generated bundles to this feature branch only

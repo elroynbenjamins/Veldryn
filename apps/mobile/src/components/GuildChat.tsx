@@ -47,7 +47,7 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayId
 
  const caughtUp=async(messageId:string)=>{if(!activeRef.current||currentScope.current!==scope||!guild)throw new Error('Chat scope changed.');await markSocialChatRead('guild',guild.id,messageId);if(activeRef.current&&currentScope.current===scope)onReadRef.current?.();};
  return <><GuildChatView embedded={embedded} active={active} channelKey={scope} language={language} currentPlayerName={currentPlayerName} unlockedEmoteIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} onTrayChange={onTrayChange} onManageEmotes={onManageEmotes} firstUnreadMessageId={firstUnreadMessageId} reduceMotion={reduceMotion} guild={guild} messages={messages} body={body} onBodyChange={setBody} mentionNames={mentionNames} busy={busy} error={error} onSend={()=>send()} onRetry={()=>{setError('');return load();}} onSelectMessage={setSelected} onCaughtUp={caughtUp}/>
-  <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
+  <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?.account_id?{...selected,account_id:selected.account_id,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
  </>;
 }
 

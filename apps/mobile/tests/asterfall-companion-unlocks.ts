@@ -1,5 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {combatCompanionDef} from '../src/content/combat-companions';
+import {monsterMasteryKillsForRank} from '../src/core/monster-mastery';
 import {companionRequirementProgress,companionStarterTeamProgress,companionUnlockGuidance} from '../src/core/companion-presentation';
 import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks,unlockCombatCompanion} from '../src/core/combat-companions';
 
@@ -47,7 +48,7 @@ for(const [id,type,target,amount] of expected){
 }
 
 let mastery=createCharacter(newGame(1),'IRONWARDEN','Asterfall Mastery');
-mastery={...mastery,character:{...mastery.character!,monsterMasteryPoints:{LANTERN_WRETCH:500,ECHO_BAT:500}}};
+mastery={...mastery,character:{...mastery.character!,monsterMasteryPoints:{LANTERN_WRETCH:monsterMasteryKillsForRank(20),ECHO_BAT:monsterMasteryKillsForRank(20)}}};
 mastery=reconcileCombatCompanionUnlocks(mastery,100);
 ok(mastery.account.unlockedCombatCompanionIds?.includes('UNIT_005'),'Lantern Wisp unlocks through Lantern Wretch mastery');
 ok(mastery.account.unlockedCombatCompanionIds?.includes('UNIT_009'),'Echo Stalker unlocks through Echo Bat mastery');

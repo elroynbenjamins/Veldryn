@@ -13,9 +13,9 @@ for(const classId of Object.keys(CLASS_SKILLS) as ClassId[]){
   const character={...base,classSkills:characterClassSkills(base).map(row=>({...row,xp:totalXpAtLevel(level)}))};
   const bonuses=CLASS_SKILLS[classId].flatMap(skill=>classSkillBonuses(character,skill.id));
   const actual=characterClassEffects(character);
-  for(const stat of ['attack','hp','defense','accuracy','evasion'] as const){
+  for(const stat of ['attack','hp','defense','accuracy','evasion','haste','ward','penetration','potency','classHealing'] as const){
    const sum=bonuses.filter(row=>row.stat===stat).reduce((sum,row)=>sum+row.currentPercent,0);
-   const baseline=stat==='accuracy'||stat==='evasion'?0:1;
+   const baseline=['attack','hp','defense','classHealing'].includes(stat)?1:0;
    ok(near(sum,(actual[stat]-baseline)*100),`${classId} level ${level}: displayed ${stat} matches combat`);
   }
   for(const bonus of bonuses)ok(bonus.currentPercent>=0&&bonus.currentPercent<=bonus.maxPercent,`${classId}: bonuses remain bounded`);
@@ -33,15 +33,15 @@ for(const classId of Object.keys(CLASS_SKILLS) as ClassId[]){
 // These are the bonuses the live passive combat engine currently grants; tooltips
 // must read those same values, not a separate hand-written flavor description.
 const expectedEffects:Record<ClassId,readonly [string,string]>={
- IRONWARDEN:['hp:12','defense:10'],
- BASTION:['hp:12','defense:10'],
- DREADGUARD:['hp:12','defense:10'],
- DAWNKEEPER:['attack:10','hp:10'],
- WAYFINDER:['attack:7','attack:3,defense:6'],
- RAVAGER:['attack:7','attack:3,defense:6'],
- HEXWEAVER:['attack:7','attack:3,defense:6'],
- KNIFE_DANCER:['attack:7','accuracy:3,evasion:6'],
- STONECALLER:['attack:10','hp:10'],
+ IRONWARDEN:['defense:8','ward:5'],
+ BASTION:['defense:10','ward:6'],
+ DREADGUARD:['attack:7','ward:5'],
+ DAWNKEEPER:['attack:4,classHealing:10','hp:6,ward:4'],
+ WAYFINDER:['attack:7','accuracy:4,haste:2'],
+ RAVAGER:['attack:7','attack:2,penetration:5'],
+ HEXWEAVER:['attack:7','attack:2,potency:5'],
+ KNIFE_DANCER:['attack:3,haste:4','accuracy:3,evasion:6'],
+ STONECALLER:['attack:4,classHealing:8','defense:8,ward:3'],
 };
 let auditedSlots=0;
 for(const classId of Object.keys(CLASS_SKILLS) as ClassId[]){

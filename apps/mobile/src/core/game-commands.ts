@@ -59,7 +59,7 @@ const fields:Record<string,readonly string[]>={
  create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
- bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
+ bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
@@ -85,7 +85,7 @@ export function validateGameCommand(value:unknown):GameCommand{
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>,kind=oneOf(start.kind,row.type==='queue_add'?['combat','gathering','faith','exploration','alchemy','processing']:['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');if(row.type==='queue_add'){if(kind==='faith')integer(start,'count',1,1000);if(kind!=='faith'&&start.count!==undefined)throw new Error('invalid_count');const goal=start.goal===undefined?undefined:normalizeActivityQueueGoal(start.goal);if(start.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');if(goal&&(kind==='faith'||kind==='alchemy'||kind==='processing'||kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||kind==='gathering'&&goal.kind==='session_kills'||kind==='exploration'&&goal.kind!=='duration_seconds'))throw new Error('invalid_queue_goal');}}
  if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
- if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
+ if(row.type==='bulk_sell'||row.type==='bulk_salvage'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,180);if(bulk.location!==undefined)oneOf(bulk.location,['inventory','bank']);}
  return {type:row.type,args:args as Record<string,unknown>};
 }
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}
@@ -386,14 +386,15 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
   case 'salvage':state=game.salvageItem(state,text(a,'id'));break;
   case 'bank_sell':state=game.sellBankItem(state,text(a,'id'),integer(a,'quantity'));break;
+  case 'bank_salvage':state=game.salvageBankItem(state,text(a,'id'));break;
   case 'bank_gold_deposit':state=game.depositGoldToBank(state,integer(a,'amount'));break;
   case 'bank_gold_withdraw':state=game.withdrawGoldFromBank(state,integer(a,'amount'));break;
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
   case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
-  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
-  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'));break;
+  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank']));break;
+  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank']));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
   case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}

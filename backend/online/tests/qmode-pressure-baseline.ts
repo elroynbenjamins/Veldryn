@@ -9,16 +9,17 @@ import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
+import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers} from '../../src/server/coop/regional-power-balance';
 import {resolveCoopNode} from '../../src/server/expeditions/node-resolution';
 
 const classes=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as ClassId[];
 const dungeon=EXPEDITIONS.EXP_001;
 assert.ok(dungeon);
-// A "prepared roster" must meet the published dungeon entry power floor.
-// Previously the synthetic level-100 party wore only novice equipment and
-// cleared 23/100 runs; that was an underpowered fixture, not a Q-Mode tune.
-// Mirror the independent published regional 105%-of-floor calibration while
-// retaining both original/new-pressure simulation paths and the 85% guard.
+// Validate the ACTIVE regional dungeon balance, not the retired online-coop-loadout-v1
+// encounter scaling. The 105%-of-required-CP fixture is generated from the
+// same trusted entry thresholds that server Q-Mode enforces. Saved runs without
+// regionalBalanceVersion keep their historical combat and are covered separately.
+// Toggle only Q-Mode pressure, leaving regional difficulty identical in both paths.
 const requiredLevel=regularDungeonTierRequiredLevel(dungeon,1);
 const requiredPower=regularDungeonTierRequiredPower(dungeon,1);
 const roster=classes.map((classId,index)=>{
@@ -46,7 +47,7 @@ const roster=classes.map((classId,index)=>{
 function clear(seed:number,legacy:boolean):boolean{
  const id='pressure-'+seed;
  const repository=new MemoryQModeRunRepository(),service=new QModeService(repository,'published-loadout-balance-v1');
- let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
+ let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  if(legacy){repository.save({...run,qmodePressureVersion:undefined});run=repository.get(run.id)!;}
  for(let room=0;room<6&&run.phase==='awaiting_choice';room++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
@@ -64,14 +65,15 @@ for(let seed=0;seed<100;seed++){
 function tunedClear(seed:number,attackMultiplier:number):boolean{
  const id='pressure-'+seed;
  const repo=new MemoryQModeRunRepository(),service=new QModeService(repo,'published-loadout-balance-v1');
- const run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
+ const run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  let state=run.persistentState,currentId=run.currentNodeId;
  for(let room=0;room<6;room++){
   const current=run.graph.nodes.find(node=>node.nodeId===currentId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
   if(!options.length)return false;
   const selected=options.find(node=>node.kind==='camp')??options[0];
-  const result=resolveCoopNode({runId:run.id,serverSecret:'published-loadout-balance-v1',node:selected,players:run.players,state,tier:1,enemyAttackMultiplier:attackMultiplier,enemyDamageProfile:'qmode-v1'});
+  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
+  const result=resolveCoopNode({runId:run.id,serverSecret:'published-loadout-balance-v1',node:selected,players:run.players,state,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:attackMultiplier*(regional?.attack??1),enemyHpMultiplier:regional?.hp,enemyDefenseMultiplier:regional?.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:'qmode-v1'});
   if(!result.success)return false;
   state=result.state;currentId=selected.nodeId;
   if(selected.kind==='boss')return true;

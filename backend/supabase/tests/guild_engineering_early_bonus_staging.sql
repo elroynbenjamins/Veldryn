@@ -4,7 +4,7 @@
 BEGIN;
 DO $guild_engineering_polish_test$
 DECLARE
- v_user uuid; v_guild uuid; v_project uuid; v_template record;
+ v_user uuid; v_late_user uuid; v_guild uuid; v_project uuid; v_template record;
  v_week timestamptz := date_trunc('week',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
  v_complete timestamptz := now() - interval '5 minutes';
  v_claimed timestamptz := now() - interval '15 minutes';
@@ -12,12 +12,16 @@ DECLARE
 BEGIN
  SELECT id INTO v_user FROM auth.users ORDER BY created_at LIMIT 1;
  IF v_user IS NULL THEN RAISE EXCEPTION 'test_requires_staging_auth_user'; END IF;
+ SELECT id INTO v_late_user FROM auth.users ORDER BY created_at OFFSET 1 LIMIT 1;
+ IF v_late_user IS NULL THEN RAISE EXCEPTION 'test_requires_second_staging_auth_user'; END IF;
  SELECT * INTO v_template FROM public.guild_project_definitions ORDER BY template_id,version LIMIT 1;
  IF v_template.template_id IS NULL THEN RAISE EXCEPTION 'test_requires_project_template'; END IF;
  INSERT INTO public.guilds(name,owner_account_id,level,member_cap)
  VALUES('FellowshipTest',v_user,10,12) RETURNING id INTO v_guild;
  INSERT INTO public.guild_members(guild_id,account_id,role,joined_at)
  VALUES(v_guild,v_user,'leader',v_week) ON CONFLICT DO NOTHING;
+ INSERT INTO public.guild_members(guild_id,account_id,role,joined_at)
+ VALUES(v_guild,v_late_user,'member',v_week) ON CONFLICT DO NOTHING;
 
  FOR v_rank IN 0..3 LOOP
   INSERT INTO public.guild_skill_allocations(guild_id,skill_id,rank)
@@ -56,19 +60,18 @@ BEGIN
  THEN RAISE EXCEPTION 'early_bonus_not_eligible';END IF;
  IF private.guild_weekly_project_tokens_v1(v_user)<>44
  THEN RAISE EXCEPTION 'late_claim_should_be_44';END IF;
- -- A player who waited for completion already gets 44 Tokens, not 44+4.
- UPDATE public.guild_shop_claim_sources SET reward_amount=44,
-  consumed_at=now()-interval '1 minute'
- WHERE account_id=v_user AND claim_key='guild-weekly:'||v_week::date::text||':project';
- IF private.guild_weekly_project_early_bonus_eligible_v1(v_user)
+ -- A second player who waited for completion got the entire 44 Tokens.
+ -- Claim sources are immutable, so use a separate verified synthetic receipt.
+ INSERT INTO public.guild_project_member_progress(
+  project_instance_id,account_id,raw_points,first_contribution_at,last_contribution_at)
+ VALUES(v_project,v_late_user,100,now()-interval '30 minutes',now()-interval '10 minutes');
+ INSERT INTO public.guild_shop_claim_sources(account_id,claim_key,reward_amount,reward_kind,consumed_at)
+ VALUES(v_late_user,'guild-weekly:'||v_week::date::text||':project',44,'standard',now()-interval '1 minute');
+ IF private.guild_weekly_project_early_bonus_eligible_v1(v_late_user)
  THEN RAISE EXCEPTION 'late_44_token_claim_must_not_get_extra_4';END IF;
- IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.guild_shop_weekly_rewards_server_v1(v_user)) x
+ IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.guild_shop_weekly_rewards_server_v1(v_late_user)) x
     WHERE x->>'kind'='project_bonus')
  THEN RAISE EXCEPTION 'unearned_bonus_row_visible';END IF;
- -- Restore the genuinely early 40-Token receipt and check the catch-up.
- UPDATE public.guild_shop_claim_sources SET reward_amount=40,
-  consumed_at=v_claimed
- WHERE account_id=v_user AND claim_key='guild-weekly:'||v_week::date::text||':project';
  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.guild_shop_weekly_rewards_server_v1(v_user)) x
     WHERE x->>'kind'='project_bonus' AND x->>'eligible'='true' AND x->>'claimed'='false')
  THEN RAISE EXCEPTION 'bonus_row_not_visible_when_earned';END IF;

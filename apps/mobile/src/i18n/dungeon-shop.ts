@@ -91,12 +91,17 @@ export function dungeonShopText(language:Language,source:string,params:Record<st
  return accountText(language,source,params);
 }
 
+/** Legacy server text for three SKUs whose artwork has become character portraits.
+ * Guard every other catalogue row and pass through unknown future server names. */
+const LEGACY_DUNGEON_PROFILE_ICON_NAMES:Readonly<Record<string,string>>={
+ dshop_asterfall_icon:"Warden's Lantern",
+ dshop_sunscar_icon:'Solar Vault Key',
+ dshop_frostmarch_icon:'Resonant Bell',
+};
 export function dungeonShopOfferName(language:Language,id:string,source:string):string{
  const known=germanDungeonShopOfferNames[id];
- // Immutable reward/SKU IDs intentionally retain their original internal object names.
- // The cosmetic portraits supersede those objects even when the DB catalogue
- // still returns the historical English name. No purchase or ownership changes.
- if(id==='dshop_asterfall_icon'||id==='dshop_sunscar_icon'||id==='dshop_frostmarch_icon')
+ const legacy=LEGACY_DUNGEON_PROFILE_ICON_NAMES[id];
+ if(known&&legacy&&(source===legacy||source===known[0]))
   return language==='de'?known[1]:known[0];
  return language==='de'&&known?.[0]===source?known[1]:source;
 }

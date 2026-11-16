@@ -394,7 +394,8 @@ export function masterPrestigeCompanion<T extends CombatCompanionStateHost>(stat
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence,bondstones:(clean.account.bondstones??0)-cost.bondstones}} as T;clean=consumeMaterial(clean,cost.materialId,cost.materialQuantity??0);return setProgress(clean,id,{...p,mastered:true});
 }
 
-export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDefinition,amount:number):OwnedCompanionProgress{
+/** The former fourth argument is accepted for old callers but cannot impose a Housing cap. */
+export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDefinition,amount:number,_deprecatedHousingCap?:number):OwnedCompanionProgress{
    let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount)),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
    while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;}
   if(p.level>=cap||p.level>=max)p.xp=0;return p;

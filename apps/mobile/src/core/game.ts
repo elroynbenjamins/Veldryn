@@ -40,7 +40,7 @@ import {SeasonalPeriod,seasonalQuestBoard,recordSeasonalActivity} from './season
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEventDrops,grantEventActivity,eventCandyUtilityMultiplier} from './live-events';
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
-import {unlockedCharacterSlots} from './account-roster';
+import {unlockedCharacterSlots,accountRegionAfkUnlocked} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
 import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
@@ -123,25 +123,22 @@ export const OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE=.05;
 export const GATHER_TIME_SCALE=1.25;
 
 export function offlineCapBreakdown(state:GameState){
-  const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
   const unlockedSlots=unlockedCharacterSlots(state);
   const secondSlot=unlockedSlots>=2;
   const thirdSlot=unlockedSlots>=3;
-  const fourthSlot=unlockedSlots>=4;
-  const fifthSlot=unlockedSlots>=5;
   const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
   const benefits=accountEntitlementBenefits(state),vip=benefits.vip,vipPlus=benefits.vipPlus,supporter=benefits.supporter;
   const sources=[
-    {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},
+    {id:'region_sunscar',name:'Unlock Sunscar',category:'progression' as const,hours:accountRegionAfkUnlocked(state,'SUNSCAR')?2:0,earned:accountRegionAfkUnlocked(state,'SUNSCAR')},
     {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?2:0,earned:questMilestone},
     {id:'first_boss',name:'Defeat first boss',category:'progression' as const,hours:firstBoss?2:0,earned:firstBoss},
     {id:'character_slot_2',name:'Unlock character slot #2',category:'progression' as const,hours:secondSlot?2:0,earned:secondSlot},
     {id:'guild',name:'Join a guild',category:'progression' as const,hours:guildMember?2:0,earned:guildMember},
     {id:'character_slot_3',name:'Unlock character slot #3',category:'progression' as const,hours:thirdSlot?2:0,earned:thirdSlot},
-    {id:'character_slot_4',name:'Unlock character slot #4',category:'progression' as const,hours:fourthSlot?2:0,earned:fourthSlot},
-    {id:'character_slot_5',name:'Unlock character slot #5',category:'progression' as const,hours:fifthSlot?2:0,earned:fifthSlot},
+    {id:'region_frostmarch',name:'Unlock Frostmarch',category:'progression' as const,hours:accountRegionAfkUnlocked(state,'FROSTMARCH')?2:0,earned:accountRegionAfkUnlocked(state,'FROSTMARCH')},
+    {id:'region_ashlands',name:'Unlock Ashlands',category:'progression' as const,hours:accountRegionAfkUnlocked(state,'ASHLANDS')?2:0,earned:accountRegionAfkUnlocked(state,'ASHLANDS')},
     {id:'vip',name:'VIP',category:'paid' as const,hours:vip?2:0,earned:vip},
     {id:'vip_plus',name:'VIP+',category:'paid' as const,hours:vipPlus?2:0,earned:vipPlus},
     {id:'supporter',name:'Supporter',category:'paid' as const,hours:supporter?2:0,earned:supporter},

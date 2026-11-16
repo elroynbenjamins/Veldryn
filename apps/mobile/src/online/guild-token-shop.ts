@@ -17,7 +17,7 @@ export interface GuildConstructionProgress{
 export interface GuildTokenEventBonus{
  eventId:string;milestonePercent:number;tokens:number;claimed:boolean;
 }
-export type GuildWeeklyRewardKind='attendance'|'project'|'boss';
+export type GuildWeeklyRewardKind='attendance'|'project'|'boss'|'quest';
 export interface GuildTokenWeeklyReward{
  kind:GuildWeeklyRewardKind;tokens:number;eligible:boolean;claimed:boolean;
 }
@@ -98,9 +98,9 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
  const weeklyRewards:GuildTokenWeeklyReward[]=o.weeklyRewards.map((value:unknown)=>{
   if(!value||typeof value!=='object')throw new Error('Invalid weekly Guild reward.');
   const reward=value as Record<string,unknown>;
-  const expected={attendance:50,project:40,boss:30} as const;
-  if(typeof reward.kind!=='string'||!(reward.kind in expected)
-    ||reward.tokens!==expected[reward.kind as GuildWeeklyRewardKind]
+  const amounts:Record<GuildWeeklyRewardKind,readonly number[]>={attendance:[50],project:[40,44],boss:[30],quest:[20,22,24,26]};
+  if(typeof reward.kind!=='string'||!Object.prototype.hasOwnProperty.call(amounts,reward.kind)
+    ||!Number.isSafeInteger(reward.tokens)||!amounts[reward.kind as GuildWeeklyRewardKind].includes(reward.tokens as number)
     ||typeof reward.eligible!=='boolean'||typeof reward.claimed!=='boolean')
    throw new Error('Invalid weekly Guild reward.');
   return reward as unknown as GuildTokenWeeklyReward;

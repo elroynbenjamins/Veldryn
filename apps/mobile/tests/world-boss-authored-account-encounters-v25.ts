@@ -195,7 +195,7 @@ async function main(){
      reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
       ...args,roster:{...roster,
        characters:[roster.characters[0],roster.characters[0]],
-     }), 'invalid_verified_character');
+     }}), 'invalid_verified_character');
     }
     fights++;
     if(size===5){

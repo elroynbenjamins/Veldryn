@@ -429,7 +429,7 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 });
 
 // ../apps/mobile/src/content/event-companions-active.ts
-var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
+var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011", "EVT_UNIT_009"]);
 var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id));
 
 // ../apps/mobile/src/core/release-flags.ts
@@ -43691,6 +43691,199 @@ var FROSTFALL_EVENT = {
   ]
 };
 
+// ../apps/mobile/src/content/equipment-main-resource-shop.ts
+var EQUIPMENT_MAIN_RESOURCE_BUNDLES = [
+  { itemId: "MOSS_FIBER", name: "Moss Fiber", tier: 1, dungeonMarks: 150, frostfallTokens: 400 },
+  { itemId: "GREENWOOD_LOG", name: "Greenwood Log", tier: 1, dungeonMarks: 150, frostfallTokens: 400 },
+  { itemId: "WOLF_PELT", name: "Wolf Pelt", tier: 2, dungeonMarks: 300, frostfallTokens: 850 },
+  { itemId: "IRONWOOD_LOG", name: "Ironwood Log", tier: 2, dungeonMarks: 300, frostfallTokens: 850 },
+  { itemId: "DUNEWOOD", name: "Dunewood", tier: 3, dungeonMarks: 600, frostfallTokens: 1600 },
+  { itemId: "SUNSCALE", name: "Sunscale", tier: 3, dungeonMarks: 600, frostfallTokens: 1600 },
+  { itemId: "SUNSTONE_INGOT", name: "Sunstone Ingot", tier: 4, dungeonMarks: 1e3, frostfallTokens: 2800 }
+];
+
+// ../apps/mobile/src/content/annual-events-v2.ts
+var gifts2 = [
+  { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
+  { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
+  { day: 3, rewardCurrency: 200, rewardPrestige: 0 },
+  { day: 4, rewardCurrency: 250, rewardPrestige: 0 },
+  { day: 5, rewardCurrency: 300, rewardPrestige: 0 },
+  { day: 6, rewardCurrency: 400, rewardPrestige: 0 },
+  { day: 7, rewardCurrency: 500, rewardPrestige: 1 }
+];
+var VEILBREAK_EVENT2 = {
+  id: "EVT_ANNUAL_010_2026",
+  name: "The Veilbreak",
+  summary: "The boundary between Asterfall and the Gloam thins. Reinforce lantern wards, hunt escaped shades, and recover what crossed the veil.",
+  currencyId: "VEIL_SHARD",
+  currencyName: "Veil Shards",
+  prestigeCurrencyId: "LANTERN_EMBER",
+  prestigeCurrencyName: "Lantern Embers",
+  accent: "#f47a36",
+  progressionName: "Veil Reputation",
+  maxProgress: 2e4,
+  claimGraceDays: 7,
+  visualKey: "veilbreak",
+  signature: { kind: "ritual", label: "SIGNATURE \xB7 BREACH WATCH", title: "Hold the veil together while hunting what slips through", description: "Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season\u2019s persistent expedition.", highlights: ["Ward-focused seasonal projects", "Gloam-touched discovery chase", "Gloam Breach seasonal expedition"] },
+  ui: {
+    prepareTitle: "Prepare the lantern wards",
+    dailyGiftTitle: "Today\u2019s Lantern Gift",
+    cacheName: "Veil Cache",
+    communityName: "Lantern Ward",
+    projectTitle: "Ward preparation",
+    projectNoun: "ward focus",
+    contractsTitle: "DAILY VEIL CONTRACTS",
+    shopTitle: "VEILBREAK SHOP",
+    collectionTitle: "Veilbreak collection",
+    closedTitle: "The veil is sealing",
+    closedBody: "No new Veil Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
+  },
+  dropRates: { combat: 0.2, gathering: 1, crafting: 28, boss: 260 },
+  milestones: () => [
+    { points: 250, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:skill", name: "Gloam Candy", rarity: "common", quantity: 2 } },
+    { points: 400, reward: { kind: "title", id: "title_veil_watcher", name: "Veil Watcher", rarity: "rare" } },
+    { points: 750, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:combat", name: "Gloam Candy \xB7 Battle", rarity: "common", quantity: 2 } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_lantern_watch", name: "Lantern Watch", rarity: "rare" } },
+    { points: 1500, reward: { kind: "candy", id: "EVT_ANNUAL_010_2026:candy:companion", name: "Gloam Candy \xB7 Bond", rarity: "common", quantity: 2 } },
+    { points: 2500, reward: { kind: "guild_name_color", id: "name_halloween_orange", name: "Halloworange", rarity: "epic" } },
+    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_013", name: "Gloomkin", rarity: "rare" } },
+    { points: 5500, reward: { kind: "guild_frame", id: "border_halloween_veil", name: "Veil Masquerade", rarity: "epic" } },
+    { points: 6500, reward: { kind: "title", id: "title_veilbound", name: "Veilbound", rarity: "epic" } },
+    { points: 7e3, reward: { kind: "guild_banner", id: "halloween_pumpkin_lantern", name: "Pumpkin Lantern Flag", rarity: "rare" } },
+    { points: 8500, reward: { kind: "guild_banner", id: "halloween_bat_moon", name: "Bat Moon Flag", rarity: "epic" } },
+    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_007", name: "Veil Hound", rarity: "epic" } },
+    { points: 2e4, reward: { kind: "companion", id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "epic" } }
+  ],
+  objectives: [
+    { id: "veil_hunt", name: "Veil Hunt", description: "Defeat 350 ordinary enemies while the veil is thin.", source: "combat", required: 350, rewardCurrency: 320, rewardPrestige: 1 },
+    { id: "ward_supplies", name: "Ward Supplies", description: "Spend 180 active minutes gathering ward materials.", source: "gathering", required: 180, rewardCurrency: 250, rewardPrestige: 1 },
+    { id: "lantern_craft", name: "Lantern Craft", description: "Complete 12 crafting recipes for the ward effort.", source: "crafting", required: 12, rewardCurrency: 340, rewardPrestige: 1 },
+    { id: "breach_guardian", name: "Breach Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 520, rewardPrestige: 2 }
+  ],
+  weeklyObjectives: [
+    { id: "weekly_veil_hunt", name: "Night Watch", description: "Defeat 1,900 ordinary enemies this week.", source: "combat", required: 1900, rewardCurrency: 1050, rewardPrestige: 2 },
+    { id: "weekly_ward_supply", name: "Ward Quartermaster", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 900, rewardPrestige: 2 },
+    { id: "weekly_lantern_craft", name: "Master Lanternwright", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1100, rewardPrestige: 2 }
+  ],
+  shop: [
+    { id: "veil_salute", reward: { kind: "emote", id: "emote_veil_salute", name: "Pumpkin Panic", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "candlewarden_title", reward: { kind: "title", id: "title_candlewarden", name: "Candlewarden", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "night_patrol_title", reward: { kind: "title", id: "title_night_patrol", name: "Night Patrol", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
+    { id: "veil_lantern_mimic", reward: { kind: "pet", id: "EVT_PET_014", name: "Lantern Mimic", rarity: "epic" }, currency: "prestige", cost: 10, limit: 1 },
+    { id: "lanternwing_companion", reward: { kind: "companion", id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "epic" }, currency: "prestige", cost: 14, limit: 1 }
+  ],
+  choices: [
+    { id: "lantern_patrols", name: "Lantern Patrols", description: "Walk the roads and hunt creatures drawn through the veil.", bonusLabel: "+20% Veil Shards from combat", dropMultipliers: { combat: 1.2 } },
+    { id: "ward_gathering", name: "Ward Gathering", description: "Gather resin, herbs, ore, and fuel for the ward lanterns.", bonusLabel: "+20% Veil Shards from gathering", dropMultipliers: { gathering: 1.2 } },
+    { id: "sigil_workshop", name: "Sigil Workshop", description: "Craft replacement wards and binding seals.", bonusLabel: "+20% Veil Shards from crafting", dropMultipliers: { crafting: 1.2 } },
+    { id: "breach_hunters", name: "Breach Hunters", description: "Prioritize the strongest creatures crossing through.", bonusLabel: "+20% boss Veil Shards", dropMultipliers: { boss: 1.2 } }
+  ],
+  dailyGifts: [...gifts2],
+  communityEnabled: false,
+  communityGoal: 1e5,
+  communityMilestones: [],
+  discoveries: [
+    { id: "gloam_cinder", name: "Gloam Cinder", description: "A cold ember sometimes left behind after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_gloam_touched", name: "Gloam-Touched", rarity: "rare" } },
+    { id: "waxen_sigil", name: "Waxen Sigil", description: "A binding mark occasionally left after crafting.", source: "crafting", chance: 0.06, required: 3, reward: { kind: "emote", id: "emote_candle_circle", name: "Gloam Facepalm", rarity: "rare" } },
+    { id: "breach_fragment", name: "Breach Fragment", description: "A shard of condensed veil carried by eligible bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "title", id: "title_breach_sealer", name: "Breach Sealer", rarity: "epic" } }
+  ]
+};
+var FROSTFALL_EVENT2 = {
+  id: "EVT_ANNUAL_012_2026",
+  name: "Frostfall Festival",
+  summary: "Winter bells ring across Asterfall. Gather provisions, light the roads, and earn gifts beneath the aurora.",
+  currencyId: "FROSTBELL_TOKEN",
+  currencyName: "Frostbell Tokens",
+  prestigeCurrencyId: "AURORA_CHIME",
+  prestigeCurrencyName: "Aurora Chimes",
+  accent: "#9be7ff",
+  progressionName: "Frostfall Reputation",
+  maxProgress: 1e4,
+  // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
+  claimGraceDays: 2,
+  visualKey: "frostfall",
+  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Prepare a winter celebration across Asterfall", description: "Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.", highlights: ["Personal winter festival milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
+  ui: {
+    prepareTitle: "Prepare for Frostfall",
+    dailyGiftTitle: "Today\u2019s Frostfall Gift",
+    cacheName: "Frostfall Cache",
+    communityName: "Winter Hearth",
+    projectTitle: "Festival preparation",
+    projectNoun: "festival focus",
+    contractsTitle: "DAILY FROSTFALL CONTRACTS",
+    shopTitle: "FROSTFALL SHOP",
+    collectionTitle: "Frostfall collection",
+    closedTitle: "Frostfall festivities are ending",
+    closedBody: "No new Frostfall Reputation, daily gifts, contracts, or activity drops can be earned. Completed rewards and shop purchases remain claimable during the grace period."
+  },
+  dropRates: { combat: 0.17, gathering: 1.2, crafting: 30, boss: 250 },
+  milestones: () => [
+    { points: 400, reward: { kind: "title", id: "title_frostfall_guest", name: "Frostfall Guest", rarity: "common" } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Snowbell Ring", rarity: "rare" } },
+    { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
+    { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
+    { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
+  ],
+  objectives: [
+    { id: "winter_watch", name: "Winter Watch", description: "Defeat 300 ordinary enemies along the winter roads.", source: "combat", required: 300, rewardCurrency: 300, rewardPrestige: 1 },
+    { id: "winter_provisions", name: "Winter Provisions", description: "Spend 180 active minutes gathering festival supplies.", source: "gathering", required: 180, rewardCurrency: 280, rewardPrestige: 1 },
+    { id: "gift_orders", name: "Gift Orders", description: "Complete 12 crafting recipes for Frostfall.", source: "crafting", required: 12, rewardCurrency: 350, rewardPrestige: 1 },
+    { id: "winter_guardian", name: "Winter Guardian", description: "Defeat an eligible event boss.", source: "boss", required: 1, rewardCurrency: 500, rewardPrestige: 2 }
+  ],
+  weeklyObjectives: [
+    { id: "weekly_winter_watch", name: "Roadkeeper", description: "Defeat 1,800 ordinary enemies this week.", source: "combat", required: 1800, rewardCurrency: 1e3, rewardPrestige: 2 },
+    { id: "weekly_provisions", name: "Festival Supplier", description: "Spend 900 active minutes gathering this week.", source: "gathering", required: 900, rewardCurrency: 950, rewardPrestige: 2 },
+    { id: "weekly_gifts", name: "Master Giftmaker", description: "Complete 50 crafting recipes this week.", source: "crafting", required: 50, rewardCurrency: 1150, rewardPrestige: 2 }
+  ],
+  shop: [
+    // Existing IDs and permanent rewards are preserved.
+    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frostfall Wave", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "hearth_guest_title", reward: { kind: "title", id: "title_hearth_guest", name: "Hearth Guest", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
+    { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
+    { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
+    { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
+    { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
+    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "2026 Snowbell Crest", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
+    { id: "frostmint_battle", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:combat", name: "Frostmint \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5 },
+    { id: "frostmint_bond", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:companion", name: "Frostmint \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5 },
+    { id: "frostfall_companion_essence", reward: { kind: "companion_essence", id: "frostfall_essence_100", name: "Companion Essence \xB7 100", rarity: "uncommon", quantity: 100 }, currency: "common", cost: 750, limit: 3 },
+    { id: "frostfall_gold_pouch", reward: { kind: "gold", id: "frostfall_gold_2500", name: "Winter Coin Purse", rarity: "common", quantity: 2500 }, currency: "common", cost: 450, limit: 5 },
+    { id: "frostfall_gold_chest", reward: { kind: "gold", id: "frostfall_gold_10000", name: "Festival Treasury", rarity: "uncommon", quantity: 1e4 }, currency: "common", cost: 1600, limit: 2 },
+    // Select any main resource, 100 at a time; same item/tier gating as Dungeon Marks.
+    // Each material has its own once-per-UTC-week cap, resetting Monday.
+    ...EQUIPMENT_MAIN_RESOURCE_BUNDLES.map((bundle) => ({
+      id: "frostfall_" + bundle.itemId.toLowerCase() + "_100",
+      reward: { kind: "crafting_material", id: bundle.itemId, name: bundle.name + " \xD7100", rarity: "uncommon", quantity: 100, tier: bundle.tier },
+      currency: "common",
+      cost: bundle.frostfallTokens,
+      limit: 1,
+      perUtcWeek: 1
+    }))
+  ],
+  choices: [
+    { id: "snow_patrols", name: "Snow Patrols", description: "Keep roads clear and defend travelers during the festival.", bonusLabel: "+20% Frostbell Tokens from combat", dropMultipliers: { combat: 1.2 } },
+    { id: "hearth_supplies", name: "Hearth Supplies", description: "Gather fuel, fish, herbs, and provisions for winter feasts.", bonusLabel: "+20% Frostbell Tokens from gathering", dropMultipliers: { gathering: 1.2 } },
+    { id: "gift_workshop", name: "Gift Workshop", description: "Craft decorations, gifts, and supplies for the festival.", bonusLabel: "+20% Frostbell Tokens from crafting", dropMultipliers: { crafting: 1.2 } },
+    { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
+  ],
+  dailyGifts: [...gifts2],
+  communityEnabled: true,
+  communityGoal: 1e5,
+  communityMilestones: [
+    { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
+    { percent: 50, rewardCurrency: 350, rewardPrestige: 1 },
+    { percent: 75, rewardCurrency: 500, rewardPrestige: 1 },
+    { percent: 100, rewardCurrency: 750, rewardPrestige: 2, reward: { kind: "title", id: "title_hearth_builder", name: "Hearth Builder", rarity: "epic" } }
+  ],
+  discoveries: [
+    { id: "snowbell_fragment", name: "Snowbell Fragment", description: "A tiny frozen bell-clapper found after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_snowbell_seeker", name: "Snowbell Seeker", rarity: "rare" } },
+    { id: "gift_ribbon_scrap", name: "Enchanted Ribbon Scrap", description: "A festive ribbon hidden among gathered supplies.", source: "gathering", chance: 0.015, required: 5, reward: { kind: "title", id: "title_ribbon_finder", name: "Ribbon Finder", rarity: "rare" } },
+    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Chime", rarity: "epic" } }
+  ]
+};
+
 // ../apps/mobile/src/content/world-map.ts
 init_progression();
 var WORLD_ZONES = [
@@ -45287,7 +45480,9 @@ init_faith2();
 // ../apps/mobile/src/content/event-collectible-content-active.ts
 var EVENT_PET_COLLECTIBLES = [
   { id: "EVT_PET_013", kind: "pet", name: "Gloomkin", bonusFamilyId: "EVT_PET_013", target: "dropChance", ownedBps: 50, activeBps: 300, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Rare", buff: "+3% relative Combat Drop Chance", description: "A playful void kitten carrying a small spectral lantern." },
-  { id: "EVT_PET_014", kind: "pet", name: "Lantern Mimic", bonusFamilyId: "EVT_PET_014", target: "dungeonReward", ownedBps: 50, activeBps: 400, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Epic", buff: "+4% Dungeon Reward Quantity Chance", description: "A compact mimic filled with ghost-fire and lantern light." }
+  { id: "EVT_PET_014", kind: "pet", name: "Lantern Mimic", bonusFamilyId: "EVT_PET_014", target: "dungeonReward", ownedBps: 50, activeBps: 400, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Epic", buff: "+4% Dungeon Reward Quantity Chance", description: "A compact mimic filled with ghost-fire and lantern light." },
+  { id: "EVT_PET_015", kind: "pet", name: "Snowbell Pup", bonusFamilyId: "EVT_PET_015", target: "fishingSpeed", ownedBps: 50, activeBps: 200, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Common", buff: "+2% Fishing Speed", description: "A fluffy winter pup with a bell collar and scarf." },
+  { id: "EVT_PET_017", kind: "pet", name: "Aurora Fox", bonusFamilyId: "EVT_PET_017", target: "skillXp", ownedBps: 50, activeBps: 500, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Mythic", buff: "+5% Offline Skill XP", description: "A luminous frost fox wrapped in aurora ribbons and ice crystal ornaments." }
 ];
 
 // ../apps/mobile/src/content/core-pets.ts
@@ -46869,7 +47064,7 @@ var EVENT_EXPEDITIONS = Object.freeze([
     startMonth: 12,
     startDay: 3,
     endMonth: 12,
-    endDay: 21,
+    endDay: 26,
     encounterPrefix: "EVENT_FROSTFALL",
     bossEncounterId: "EVENT_FROSTFALL_BOSS",
     routeNodeCount: 6,
@@ -49187,7 +49382,7 @@ function dungeonShopQuoteV1(itemId, account, serverPrice) {
   const purchased = account.purchasesThisUtcWeek[itemId] ?? 0;
   const remaining = offer.perUtcWeek === void 0 ? null : Math.max(0, offer.perUtcWeek - purchased);
   const ownedId = offer.grant.kind === "profile_collectible" ? offer.grant.rewardId : null;
-  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < price ? "insufficient_marks" : "eligible";
+  const status = offer.firstClearRegion && !account.clearedRegions.includes(offer.firstClearRegion) ? "region_locked" : offer.grant.kind === "crafting_bundle" && !account.unlockedCraftingTiers.includes(offer.grant.tier) ? "crafting_tier_locked" : ownedId && account.ownedRewardIds.includes(ownedId) ? "already_owned" : remaining !== null && remaining === 0 ? "weekly_limit" : account.marks < price ? "insufficient_marks" : "eligible";
   return { status, marks: account.marks, price, remaining };
 }
 function dungeonShopPurchasesEnabledV1() {
@@ -49217,15 +49412,15 @@ var category = (offer) => offer.grant.kind === "crafting_bundle" ? offer.grant.q
 function sanitizedSnapshot(raw2) {
   if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const s2 = raw2;
-  if (!Number.isSafeInteger(s2.marks) || Number(s2.marks) < 0 || !Array.isArray(s2.clearedRegions) || !Array.isArray(s2.ownedRewardIds) || !s2.purchasesThisUtcWeek || typeof s2.purchasesThisUtcWeek !== "object") throw new GameplayError("invalid_dungeon_shop_snapshot");
+  if (!Number.isSafeInteger(s2.marks) || Number(s2.marks) < 0 || !Array.isArray(s2.clearedRegions) || !Array.isArray(s2.ownedRewardIds) || !(s2.unlockedCraftingTiers === void 0 || Array.isArray(s2.unlockedCraftingTiers)) || !s2.purchasesThisUtcWeek || typeof s2.purchasesThisUtcWeek !== "object") throw new GameplayError("invalid_dungeon_shop_snapshot");
   const regions = ["Asterfall", "Sunscar", "Frostmarch"];
-  if (s2.clearedRegions.some((v) => !regions.includes(v)) || s2.ownedRewardIds.some((v) => typeof v !== "string")) throw new GameplayError("invalid_dungeon_shop_snapshot");
+  if (s2.clearedRegions.some((v) => !regions.includes(v)) || s2.ownedRewardIds.some((v) => typeof v !== "string") || s2.unlockedCraftingTiers?.some((v) => typeof v !== "number" || ![1, 2, 3, 4].includes(v))) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const purchases = s2.purchasesThisUtcWeek;
   if (Object.entries(purchases).some(([key, value]) => !/^dshop_[a-z0-9_]{1,80}$/.test(key) || !Number.isSafeInteger(value) || Number(value) < 0)) throw new GameplayError("invalid_dungeon_shop_snapshot");
   if (typeof s2.shopEnabled !== "boolean" || !s2.releasedPrices || typeof s2.releasedPrices !== "object" || Array.isArray(s2.releasedPrices)) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const released = s2.releasedPrices;
   if (Object.entries(released).some(([key, value]) => !DUNGEON_SHOP_CATALOG_V1.some((offer) => offer.id === key) || !Number.isSafeInteger(value) || Number(value) < 1 || Number(value) >= 1e6)) throw new GameplayError("invalid_dungeon_shop_snapshot");
-  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, purchasesThisUtcWeek: purchases, releasedPrices: released, shopEnabled: s2.shopEnabled };
+  return { marks: Number(s2.marks), clearedRegions: s2.clearedRegions, ownedRewardIds: s2.ownedRewardIds, unlockedCraftingTiers: s2.unlockedCraftingTiers ?? [], purchasesThisUtcWeek: purchases, releasedPrices: released, shopEnabled: s2.shopEnabled };
 }
 function nextUtcMonday(nowMs) {
   const week = dungeonShopUtcWeekKey(nowMs);
@@ -49281,7 +49476,7 @@ function makeDungeonShopController(services) {
             materialItemId: offer.grant.kind === "crafting_bundle" ? offer.grant.itemId : void 0,
             remainingThisUtcWeek: quote.remaining,
             owned,
-            lockReason: !published ? "Not yet released \u2014 no Marks can be spent on this offer." : quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
+            lockReason: !published ? "Not yet released \u2014 no Marks can be spent on this offer." : quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : quote.status === "crafting_tier_locked" && offer.grant.kind === "crafting_bundle" ? "Unlock Tier " + offer.grant.tier + " equipment crafting first." : void 0
           };
         })
       };

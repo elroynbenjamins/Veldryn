@@ -56,6 +56,19 @@ BEGIN
  THEN RAISE EXCEPTION 'early_bonus_not_eligible';END IF;
  IF private.guild_weekly_project_tokens_v1(v_user)<>44
  THEN RAISE EXCEPTION 'late_claim_should_be_44';END IF;
+ -- A player who waited for completion already gets 44 Tokens, not 44+4.
+ UPDATE public.guild_shop_claim_sources SET reward_amount=44,
+  consumed_at=now()-interval '1 minute'
+ WHERE account_id=v_user AND claim_key='guild-weekly:'||v_week::date::text||':project';
+ IF private.guild_weekly_project_early_bonus_eligible_v1(v_user)
+ THEN RAISE EXCEPTION 'late_44_token_claim_must_not_get_extra_4';END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.guild_shop_weekly_rewards_server_v1(v_user)) x
+    WHERE x->>'kind'='project_bonus')
+ THEN RAISE EXCEPTION 'unearned_bonus_row_visible';END IF;
+ -- Restore the genuinely early 40-Token receipt and check the catch-up.
+ UPDATE public.guild_shop_claim_sources SET reward_amount=40,
+  consumed_at=v_claimed
+ WHERE account_id=v_user AND claim_key='guild-weekly:'||v_week::date::text||':project';
  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(public.guild_shop_weekly_rewards_server_v1(v_user)) x
     WHERE x->>'kind'='project_bonus' AND x->>'eligible'='true' AND x->>'claimed'='false')
  THEN RAISE EXCEPTION 'bonus_row_not_visible_when_earned';END IF;

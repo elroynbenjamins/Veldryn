@@ -22,6 +22,6 @@ assert(overview.includes('Return to dungeon list')&&overview.includes('onQueueAg
 assert(screen.includes("run?.mode==='qmode'&&run.expeditionId&&run.tier"),'Run again works after restoring a completed Solo run');
 assert(screen.includes("const latest=await coopClient.entry()")&&screen.includes("dungeonId:finished.expeditionId,tier:finished.tier")&&screen.includes("loadoutRevision:loadout.revision"),'Solo retry keeps the authoritative dungeon and tier while refreshing the loadout');
 assert(screen.includes("started.run.runId===finished.runId")&&screen.includes("key={run.runId}")&&!screen.includes("lastQModeIntent"),'Solo retry creates a new run and resets local per-run UI');
-assert(read('apps/mobile/src/core/coop-qmode.ts').includes('expeditionId:projection.expeditionId')&&read('apps/mobile/src/core/coop-presentation.ts').includes('expeditionId?:string'),'Resumed runs retain their server dungeon identity');
+assert(read('core/coop-qmode.ts').includes('expeditionId:projection.expeditionId')&&read('core/coop-presentation.ts').includes('expeditionId?:string'),'Resumed runs retain their server dungeon identity');
 assert(screen.includes('Find new Live party')&&screen.includes('coopClient.quickLive('),'Live action must indicate that it creates a new matchmaking party');
 console.log('PASS compact dungeon flow, elapsed timer, reward popup and repeat-run safety');

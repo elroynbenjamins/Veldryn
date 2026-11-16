@@ -18,10 +18,15 @@ const offers=[...backend.matchAll(/\{id:'(dshop_[^']+)',name:(?:"([^"]+)"|'([^']
  .map(match=>({id:match[1],name:match[2]??match[3]}));
 assert.equal(offers.length,24,'Expected all 24 canonical Expedition Shop offers, including seven 100-unit crafting bundles');
 assert.equal(Object.keys(germanDungeonShopOfferNames).length,offers.length,'German offer names must cover every canonical offer ID');
+const approvedDungeonAvatarDisplayNames={
+ dshop_asterfall_icon:'Thornwarden',
+ dshop_sunscar_icon:'Dune Sovereign',
+ dshop_frostmarch_icon:'Rimebound',
+};
 for(const {id,name} of offers){
- assert.equal(germanDungeonShopOfferNames[id]?.[0],name,'German source guard drifted for '+id);
+ assert.equal(germanDungeonShopOfferNames[id]?.[0],approvedDungeonAvatarDisplayNames[id]??name,'German source guard drifted for '+id);
  assert.notEqual(dungeonShopOfferName('de',id,name),name,'German offer name missing: '+id);
- assert.equal(dungeonShopOfferName('en',id,name),name,'English offer name changed: '+id);
+ assert.equal(dungeonShopOfferName('en',id,name),approvedDungeonAvatarDisplayNames[id]??name,'English offer name display drifted: '+id);
  assert.equal(dungeonShopOfferName('de',id,'Renamed server item'), 'Renamed server item','Changed server source should remain unchanged: '+id);
 }
 const expectedCopy=[

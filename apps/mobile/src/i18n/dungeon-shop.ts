@@ -71,15 +71,15 @@ export const germanDungeonShopOfferNames:Readonly<Record<string,readonly [string
  dshop_sunstone_ingot_100:['Sunstone Ingot ×100','Sonnensteinbarren ×100'],
  dshop_companion_essence:['Companion Essence Cache','Begleiteressenz-Vorrat'],
  dshop_bondstone:['Bondstone','Bindungsstein'],
- dshop_asterfall_icon:["Warden's Lantern",'Wächterlaterne'],
+ dshop_asterfall_icon:['Thornwarden','Dornenwächter'],
  dshop_asterfall_border:['Briarbound Frame','Dornengebundener Rahmen'],
  dshop_asterfall_background:['Rootbound Sanctuary','Wurzelgebundenes Heiligtum'],
  dshop_asterfall_pet:['Oathroot Seedling','Eidwurzel-Spross'],
- dshop_sunscar_icon:['Solar Vault Key','Schlüssel zum Sonnengewölbe'],
+ dshop_sunscar_icon:['Dune Sovereign','Dünenherrscher'],
  dshop_sunscar_border:['Amberglass Loop','Bernsteinglas-Rahmen'],
  dshop_sunscar_background:['Buried Observatory','Verschüttetes Observatorium'],
  dshop_sunscar_pet:['Vaultscarab','Gewölbeskarabäus'],
- dshop_frostmarch_icon:['Resonant Bell','Resonanzglocke'],
+ dshop_frostmarch_icon:['Rimebound','Reifgebundener'],
  dshop_frostmarch_border:['Frostbound Chime','Frostgebundenes Glockenspiel'],
  dshop_frostmarch_background:['Shiverlake Reflections','Spiegelungen des Zittersees'],
  dshop_frostmarch_pet:['Choirbell Sprite','Chorglocken-Wicht'],
@@ -91,8 +91,18 @@ export function dungeonShopText(language:Language,source:string,params:Record<st
  return accountText(language,source,params);
 }
 
+/** Legacy server text for three SKUs whose artwork has become character portraits.
+ * Guard every other catalogue row and pass through unknown future server names. */
+const LEGACY_DUNGEON_PROFILE_ICON_NAMES:Readonly<Record<string,string>>={
+ dshop_asterfall_icon:"Warden's Lantern",
+ dshop_sunscar_icon:'Solar Vault Key',
+ dshop_frostmarch_icon:'Resonant Bell',
+};
 export function dungeonShopOfferName(language:Language,id:string,source:string):string{
  const known=germanDungeonShopOfferNames[id];
+ const legacy=LEGACY_DUNGEON_PROFILE_ICON_NAMES[id];
+ if(known&&legacy&&(source===legacy||source===known[0]))
+  return language==='de'?known[1]:known[0];
  return language==='de'&&known?.[0]===source?known[1]:source;
 }
 

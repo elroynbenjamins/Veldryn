@@ -37,7 +37,7 @@ export function DisposalPreview({mode,items,gold=0,rewards=[],note,warning,summa
  return <ScrollView
    style={{maxHeight:Math.max(144,Math.min(396,height*.50))}}
    contentContainerStyle={s.root}
-   nestedScrollEnabled showsVerticalScrollIndicator={items.length>3||rewards.length>4}
+   nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}
    keyboardShouldPersistTaps="handled">
    <View style={s.heading}>
      <View style={s.headingText}><Text style={s.eyebrow}>{t('PREVIEW')}</Text>

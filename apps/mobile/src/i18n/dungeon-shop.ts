@@ -13,6 +13,9 @@ export const germanDungeonShopCopy:Readonly<Record<string,string>>={
  'Refresh':'Aktualisieren',
  'Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.':'Wöchentliche Vorräte werden montags um 00:00 UTC zurückgesetzt. Dauerhafte Sammlerstücke wechseln nicht.',
  'Supplies':'Vorräte',
+ 'material':'Material',
+ 'Equipment crafting materials · 100 per bundle':'Ausrüstungsmaterialien · 100 pro Bündel',
+ 'Choose a tier and resource. Purchases go directly to your shared Bank.':'Wähle eine Stufe und einen Rohstoff. Einkäufe landen direkt in deiner gemeinsamen Bank.',
  'Collections':'Sammlerstücke',
  'Owned':'Im Besitz',
  'Unable to refresh the Dungeon Shop. Please retry.':'Dungeon-Shop konnte nicht aktualisiert werden. Bitte versuche es erneut.',
@@ -59,6 +62,13 @@ export const germanDungeonShopOfferNames:Readonly<Record<string,readonly [string
  dshop_tempering_satchel:['Delver Tempering Satchel','Härtestaubbeutel des Erkunders'],
  dshop_gem_dust_cache:['Gem Dust Cache','Edelsteinstaub-Vorrat'],
  dshop_tempering_core_cache:['Tempering Core Cache','Härtekern-Vorrat'],
+ dshop_moss_fiber_100:['Moss Fiber ×100','Moosfaser ×100'],
+ dshop_greenwood_log_100:['Greenwood Log ×100','Grünholzstamm ×100'],
+ dshop_wolf_pelt_100:['Wolf Pelt ×100','Wolfspelz ×100'],
+ dshop_ironwood_log_100:['Ironwood Log ×100','Eisenholzstamm ×100'],
+ dshop_dunewood_100:['Dunewood ×100','Dünenholz ×100'],
+ dshop_sunscale_100:['Sunscale ×100','Sonnenschuppe ×100'],
+ dshop_sunstone_ingot_100:['Sunstone Ingot ×100','Sonnensteinbarren ×100'],
  dshop_companion_essence:['Companion Essence Cache','Begleiteressenz-Vorrat'],
  dshop_bondstone:['Bondstone','Bindungsstein'],
  dshop_asterfall_icon:['Thornwarden','Dornenwächter'],
@@ -81,7 +91,8 @@ export function dungeonShopText(language:Language,source:string,params:Record<st
  return accountText(language,source,params);
 }
 
-/** Rename only the approved character portraits, preserving unknown server catalogue sources. */
+/** Legacy server text for three SKUs whose artwork has become character portraits.
+ * Guard every other catalogue row and pass through unknown future server names. */
 const LEGACY_DUNGEON_PROFILE_ICON_NAMES:Readonly<Record<string,string>>={
  dshop_asterfall_icon:"Warden's Lantern",
  dshop_sunscar_icon:'Solar Vault Key',
@@ -90,7 +101,8 @@ const LEGACY_DUNGEON_PROFILE_ICON_NAMES:Readonly<Record<string,string>>={
 export function dungeonShopOfferName(language:Language,id:string,source:string):string{
  const known=germanDungeonShopOfferNames[id];
  const legacy=LEGACY_DUNGEON_PROFILE_ICON_NAMES[id];
- if(known&&legacy&&(source===legacy||source===known[0]))return language==='de'?known[1]:known[0];
+ if(known&&legacy&&(source===legacy||source===known[0]))
+  return language==='de'?known[1]:known[0];
  return language==='de'&&known?.[0]===source?known[1]:source;
 }
 

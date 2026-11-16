@@ -391,8 +391,8 @@ export function masterPrestigeCompanion<T extends CombatCompanionStateHost>(stat
 }
 
 export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDefinition,amount:number,housingCap=35):OwnedCompanionProgress{
-  let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount)),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
-  while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;cap=companionCurrentLevelCap(def,p);}
+  let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount)),housingLimit=Number.isFinite(housingCap)?Math.max(1,Math.floor(housingCap)):35,cap=Math.min(companionCurrentLevelCap(def,p),housingLimit),max=companionMaxLevel(def);
+  while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;cap=Math.min(companionCurrentLevelCap(def,p),housingLimit);}
   if(p.level>=cap||p.level>=max)p.xp=0;return p;
 }
 const LEGACY_BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
@@ -419,7 +419,7 @@ export function grantEquippedCompanionUse<T extends CombatCompanionStateHost>(st
   const clean=sanitizeCombatCompanionState(state),id=clean.character?.equippedCombatCompanionId;if(!id||units<=0)return clean;
   const def=combatCompanionDef(id)!;let p=progressFor(clean,id);const count=Math.max(1,Math.floor(units));
   const xpPerUnit=source==='boss'?120:source==='dungeon'?55:source==='companion_objective'?70:source==='future_activity'?20:9;
-  p=applyCompanionXp(p,def,xpPerUnit*count);
+  p=applyCompanionXp(p,def,xpPerUnit*count,companionHousingLevelCap(companionHousingTier(id,clean.account.companionHousingTiers)));
   const bondBase=bondSourceXp(source)*count;p=applyCompanionBondXp(p,Math.round(bondBase*companionBondXpMultiplier(clean)));
   return setProgress(clean,id,p);
 }

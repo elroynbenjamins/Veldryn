@@ -27,6 +27,10 @@ const upgradeError:Record<string,string>={
  insufficient_guild_bank_materials:'The Guild Bank is missing required materials.',
  guild_membership_required:'Join a Guild to allocate Guild Skills.',
  guild_skill_request_conflict:'That upgrade is already being processed. Refresh to confirm.',
+ guild_skill_officer_required:'Only Officers and Leaders can allocate Guild Skills.',
+ guild_skill_points_exhausted:'No Guild Skill points remaining.',
+ guild_skill_bank_materials_missing:'The Guild Bank is missing required materials.',
+ guild_skill_service_unavailable:'The Guild upgrade service is temporarily unavailable. Refresh Guild Skills before retrying.',
 };
 
 export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
@@ -75,7 +79,7 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
    await load();
   }catch(reason){
    const code=reason instanceof Error?reason.message:'';
-   setNotice(de(upgradeError[code]??'Could not complete the upgrade. Try again.'));setNoticeSuccess(false);
+   setNotice(de(upgradeError[code]??'Could not confirm this Guild upgrade. Refresh Guild Skills before retrying.'));setNoticeSuccess(false);
   }finally{upgradeFlight.current=false;if(mounted.current)setBusy(false);}
  };
 

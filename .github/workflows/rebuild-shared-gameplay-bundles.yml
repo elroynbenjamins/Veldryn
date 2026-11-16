@@ -51,6 +51,9 @@ on:
       - 'apps/mobile/src/core/game.ts'
       - 'apps/mobile/src/core/game-commands.ts'
       - 'apps/mobile/src/core/combat-companions.ts'
+      - 'apps/mobile/src/content/combat-companions.ts'
+      - 'backend/src/server/companions/progression-v2.ts'
+      - 'backend/src/server/companions/content.ts'
 
 permissions:
   contents: write

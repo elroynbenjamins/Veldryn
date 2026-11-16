@@ -9,13 +9,14 @@ import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 
-export function GameGuidePanel({state,onOpen,onStartTour}:{state:GameState;onOpen:(id:GameGuideId)=>void;onStartTour?:()=>void}){
+export function GameGuidePanel({state,onOpen,onStartTour,seenGuideIds}:{state:GameState;onOpen:(id:GameGuideId)=>void;onStartTour?:()=>void;seenGuideIds?:readonly GameGuideId[]}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showLocked,setShowLocked]=useState(false);
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const saved=normalizeOnboardingGuideState(state.account.guideState);
+  const readIds=new Set([...saved.seenGuideIds,...(seenGuideIds??[])]);
   const unlocked=new Set(unlockedGameGuide(state).map(entry=>entry.id));
   const ready=GAME_GUIDE.filter(entry=>unlocked.has(entry.id));
   const locked=GAME_GUIDE.filter(entry=>!unlocked.has(entry.id));
@@ -25,7 +26,7 @@ export function GameGuidePanel({state,onOpen,onStartTour}:{state:GameState;onOpe
       <Text style={s.progress}>{a('{count}/{total} topics discovered',{count:ready.length,total:GAME_GUIDE.length})}</Text>
       {onStartTour?<GameButton compact title={a("Start main screen tour")} tone="secondary" onPress={onStartTour}/>:null}
     </Panel>
-    {ready.map(entry=>{const seen=saved.seenGuideIds.includes(entry.id);return <Panel key={entry.id}>
+    {ready.map(entry=>{const seen=readIds.has(entry.id);return <Panel key={entry.id}>
       <View style={s.row}><View style={s.copy}><Text style={s.topic}>{seen?'✓ ':''}{a(entry.title)}</Text>
       <Text style={s.body}>{a(entry.summary)}</Text></View></View>
       <GameButton compact title={seen?a("Replay topic"):a("Read topic")} tone="secondary" onPress={()=>onOpen(entry.id)}/>

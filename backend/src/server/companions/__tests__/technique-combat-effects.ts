@@ -81,7 +81,7 @@ assert.ok(emergency.events.some(e=>e.type==='status_remove'&&e.abilityId==='UNIT
 
 
 const withTechnique=(id:string,suffix:string):OwnedCompanionSnapshot=>({...baseProgress(id),selectedTechniqueId:`${id}_${suffix}`});
-const ownedAssist=(progress:OwnedCompanionSnapshot)=>applyCharacterCompanionAssist({...actor('owner','players'),classId:'WAYFINDER'},progress);
+const ownedAssist=(progress:OwnedCompanionSnapshot)=>applyCharacterCompanionAssist({...actor('owner','players'),basicAttackCoeff:.65,classId:'WAYFINDER'},progress);
 const effectAmount=(progress:OwnedCompanionSnapshot,kind:string)=>ownedAssist(progress).abilities.at(-1)!.effects.find(e=>e.kind===kind)!;
 for(let i=1;i<=12;i++){
  const id=`UNIT_${String(i).padStart(3,'0')}`;

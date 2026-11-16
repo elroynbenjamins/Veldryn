@@ -15,7 +15,7 @@ BEGIN
  SELECT * INTO v_template FROM public.guild_project_definitions ORDER BY template_id,version LIMIT 1;
  IF v_template.template_id IS NULL THEN RAISE EXCEPTION 'test_requires_project_template'; END IF;
  INSERT INTO public.guilds(name,owner_account_id,level,member_cap)
- VALUES('Temporary Fellowship Audit',v_user,10,12) RETURNING id INTO v_guild;
+ VALUES('FellowshipTest',v_user,10,12) RETURNING id INTO v_guild;
  INSERT INTO public.guild_members(guild_id,account_id,role)
  VALUES(v_guild,v_user,'leader') ON CONFLICT DO NOTHING;
 

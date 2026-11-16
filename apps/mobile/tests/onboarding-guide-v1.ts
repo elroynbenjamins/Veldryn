@@ -59,7 +59,7 @@ void (async()=>{
  deepEqual(await restarted.load('account-b'),[],'guide read flags do not leak to another account');
  equal(JSON.stringify(state),snapshot,'reading online guide never mutates server-owned game state');
  console.log('online guide read preferences passed');
-})().catch(error=>{console.error(error);process.exitCode=1});
+})().catch(error=>{console.error(error);throw error;});
 
 // Guide library regression: search, categories, progress and locked previews.
 const guideState:any=createCharacter(newGame(2),'IRONWARDEN','Guide Hub Test');

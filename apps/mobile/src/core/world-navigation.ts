@@ -1,4 +1,4 @@
-import {MONSTERS,MonsterDef} from '../content/monsters';
+import {MONSTERS,REGIONAL_CHAPTER_NEW_MONSTER_IDS,type MonsterDef} from '../content/monsters';
 import {regionalArea} from '../content/regional-areas';
 import {WORLD_ZONES,type WorldZoneDef,worldZoneInDevelopment} from '../content/world-map';
 import {GATHERING} from '../content/skills';
@@ -18,13 +18,22 @@ const REGION_SCOUT_REQUIREMENTS:Partial<Record<string,string>>={
  FROSTMARCH:'SCOUT_SUNSCAR',
  ASHLANDS:'SCOUT_FROSTMARCH',
 };
+function retainedRegionalVisit(state:GameState,zone:WorldZoneDef){
+  if(zone.id!=='SUNSCAR'&&zone.id!=='FROSTMARCH')return false;
+  // Only a persisted visit or actual monster mastery counts as old access.
+  // A monster unlock ID alone is insufficient because old saves can auto-grant
+  // all ordinary hunts in a visited region. Never inspect otherCharacters.
+  return state.currentRegionId===zone.id||MONSTERS.some(monster=>monster.zone===zone.name
+    &&(state.character?.monsterMasteryPoints?.[monster.id]??0)>0);
+}
 export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
   if(worldZoneInDevelopment(zone))return zone.name+' is still in development';
   const level=state.character?.level??1;
-  if(level<zone.minLevel)return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
-  if(POST_CHAPTER_ONE_REGIONS.has(zone.id)&&!(state.defeatedBossIds??[]).includes(FIRST_CHAPTER_BOSS_ID))return `Defeat the Fallen Knight to unlock ${zone.name}`;
+  const retainedVisit=retainedRegionalVisit(state,zone);
+  if(level<zone.minLevel&&!retainedVisit)return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if(POST_CHAPTER_ONE_REGIONS.has(zone.id)&&!(state.defeatedBossIds??[]).includes(FIRST_CHAPTER_BOSS_ID)&&!retainedVisit)return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId=REGION_SCOUT_REQUIREMENTS[zone.id];
-  if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)){
+  if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)&&!retainedVisit){
     const source=routeId.replace(/^SCOUT_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
     return `Complete ${source} scouting to discover the route to ${zone.name}`;
   }
@@ -75,7 +84,12 @@ export function cumulativeMonsterUnlockIds(state:GameState):string[]{
   if(!furthest)return original;
   const released=WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone));
   const maxIndex=released.findIndex(zone=>zone.id===furthest.id);
-  const eligible=MONSTERS.filter(monster=>!monster.boss&&released.some((zone,index)=>index<=maxIndex&&zone.name===monster.zone)).map(monster=>monster.id);
+  const level=state.character?.level??0;
+  // Only the eight new encounters follow staged level gates. The old roster
+  // remains cumulative for returning characters and migrated save files.
+  const eligible=MONSTERS.filter(monster=>!monster.boss
+   &&(!REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monster.id)||level>=monster.unlockLevel)
+   &&released.some((zone,index)=>index<=maxIndex&&zone.name===monster.zone)).map(monster=>monster.id);
   return [...new Set([...original,...eligible])];
 }
 
@@ -95,7 +109,13 @@ export function regionEncounters(state:GameState,zoneName:string,query:string,av
   if(zone&&worldZoneInDevelopment(zone))return [];
   const regionId=zone?.id;
   const area=regionId?regionalArea(regionId,areaId):undefined;
-  return MONSTERS.filter(monster=>monster.zone===zoneName&&(!area||monster.areaId===area.id)&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
+  const encounters=MONSTERS.filter(monster=>monster.zone===zoneName&&(!area||monster.areaId===area.id)&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
+  // Authoring order differs from level order in Mirage Basin and Whitepine Reach.
+  // Show the easiest enemy first in the new 25-level chapters; do not
+  // rearrange the historical Asterfall hunt list or its tutorial order.
+  return regionId==='SUNSCAR'||regionId==='FROSTMARCH'
+    ?encounters.sort((a,b)=>a.level-b.level||a.unlockLevel-b.unlockLevel||a.id.localeCompare(b.id))
+    :encounters;
 }
 export type EncounterLockRequirement=
   |{kind:'level';level:number}
@@ -107,6 +127,14 @@ export function encounterLockRequirement(state:GameState,monster:MonsterDef):Enc
   // Authored future-region encounters must stay unplayable even when old save
   // data contains their unlock IDs or the character is above the level gate.
   if(region&&worldZoneInDevelopment(region))return {kind:'regionProgression'};
+  // New regional enemies must never be farmable before their authored unlock,
+  // even if a legacy snapshot already contains their ID or the region is open.
+  // This is intentionally narrower than changing old cumulative hunt access.
+  if(REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monster.id)){
+    const area=region?regionalArea(region.id,monster.areaId):undefined;
+    const required=Math.max(monster.unlockLevel,area?.minLevel??1,region?.minLevel??1);
+    if(level<required)return {kind:'level',level:required};
+  }
   // Already-reached zones never lose ordinary encounters due to missing
   // per-monster flags, backtracking, class changes or level rescaling.
   if(!monster.boss&&cumulativeMonsterUnlockIds(state).includes(monster.id))return undefined;

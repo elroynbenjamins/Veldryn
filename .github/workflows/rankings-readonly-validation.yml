@@ -35,6 +35,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install backend Node types needed by Rankings core
+        run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Typecheck Rankings core only
         run: node node_modules/typescript/lib/tsc.js -p tsconfig.rankings.json --noEmit
       - name: Rankings core pagination and boundaries

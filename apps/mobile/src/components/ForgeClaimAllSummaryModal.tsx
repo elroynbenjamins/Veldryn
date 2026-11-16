@@ -73,7 +73,7 @@ export function ForgeClaimAllSummaryModal({results,remainingCount=0,reduceMotion
       {replaced.length>0?<Text style={s.soldCount}>{gt('Weaker copies sold: {count}',{count:replaced.length})} · +{replacedGold.toLocaleString()} Gold</Text>:null}
     </View>
     {remainingCount>0?<Text accessibilityRole="alert" style={s.pendingNote}>{gt('Forge jobs still waiting: {count}',{count:remainingCount})}</Text>:null}
-    <ScrollView style={{maxHeight:Math.max(128,height*0.48)}} contentContainerStyle={s.results} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{maxHeight:Math.max(128,height*0.48)}} contentContainerStyle={s.results} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       {kept.map(result=><ForgeResultRow key={result.instanceId} result={result}/>)}
       {sold.length>0?<View style={s.sectionDivider}><Text style={s.sectionLabel}>{gt('AUTO-SOLD · NOT COLLECTED')}</Text></View>:null}
       {sold.map(result=><ForgeResultRow key={result.instanceId} result={result} sold/>)}

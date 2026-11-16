@@ -30,8 +30,15 @@ const platedDishZoom:Readonly<Partial<Record<string,number>>>={
   CHARRED_EMBERFIN:1.42,
 };
 
-function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size}:{source:any;column:number;row:number;cell:number;sheetWidth:number;sheetHeight:number;size:number}){
-  const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/cell,offset=size*inset;
+// Dunewood has more empty space inside its regional atlas cell than the
+// standalone log icons. Scale only this cell's artwork so its visible bundle
+// reads at the same size as other wood stacks in the inventory and codex.
+const regionalSpriteZoom:Readonly<Partial<Record<string,number>>>={
+  DUNEWOOD:1.32,
+};
+
+function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size,zoom=1}:{source:any;column:number;row:number;cell:number;sheetWidth:number;sheetHeight:number;size:number;zoom?:number}){
+  const inset=.06,displaySize=size*(1-inset*2)*zoom,scale=displaySize/cell,offset=(size-displaySize)/2;
   return <View style={{width:size,height:size,overflow:'hidden'}}><View style={{position:'absolute',left:offset,top:offset,width:displaySize,height:displaySize,overflow:'hidden'}}>
     <Image
       source={source}
@@ -67,7 +74,7 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
 
 
   const regional=regionalResourceCell(itemId);
-  if(regional)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={regionalResourceSheet} column={regional.column} row={regional.row} cell={REGIONAL_RESOURCE_CELL} sheetWidth={REGIONAL_RESOURCE_SHEET_WIDTH} sheetHeight={REGIONAL_RESOURCE_SHEET_HEIGHT} size={size}/></View>;
+  if(regional)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={regionalResourceSheet} column={regional.column} row={regional.row} cell={REGIONAL_RESOURCE_CELL} sheetWidth={REGIONAL_RESOURCE_SHEET_WIDTH} sheetHeight={REGIONAL_RESOURCE_SHEET_HEIGHT} size={size} zoom={regionalSpriteZoom[itemId]??1}/></View>;
 
   const asterfallOre=asterfallOreCell(itemId);
   if(asterfallOre)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={asterfallOreSheet} column={asterfallOre.column} row={asterfallOre.row} cell={ASTERFALL_ORE_CELL} sheetWidth={ASTERFALL_ORE_SHEET_WIDTH} sheetHeight={ASTERFALL_ORE_SHEET_HEIGHT} size={size}/></View>;

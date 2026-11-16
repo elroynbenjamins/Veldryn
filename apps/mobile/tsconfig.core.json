@@ -9,7 +9,14 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0",
     "rootDir": "../..",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../backend/node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src/core/**/*.ts",

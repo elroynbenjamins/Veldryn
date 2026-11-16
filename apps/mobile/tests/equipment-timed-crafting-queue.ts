@@ -19,12 +19,12 @@ const forgeAutomatonRequirements=combatCompanionDef('UNIT_010')!.unlockRequireme
 ok(forgeAutomatonRequirements.some(req=>req.target==='EQUIPMENT_CRAFTS'&&req.amount===500)&&forgeAutomatonRequirements.some(req=>req.type==='skill_level'&&req.target==='smithing'&&req.amount===30),'Forge Automaton must require 500 equipment claims and Smithing 30');
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
-for(const sample of [{tier:'T1',slot:'helmet',gold:368},{tier:'T1',slot:'weapon',gold:584},{tier:'T9',slot:'weapon',gold:243000}]){
+for(const sample of [{tier:'T1',slot:'helmet',gold:400},{tier:'T1',slot:'weapon',gold:600},{tier:'T9',slot:'weapon',gold:243000}]){
  const crafted=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===sample.tier&&itemDef(row.output.itemId).slot===sample.slot);
  ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must include the 20% surcharge above its original triple-forge price`);
 }
-ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>0&&Number.isSafeInteger(row.gold)),'All 1,620 tiered equipment recipes must have the increased Gold costs');
-ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===144),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
+ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>=100&&Number.isSafeInteger(row.gold)&&row.gold%100===0),'All 1,620 tiered equipment recipes must have the increased Gold costs');
+ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===100),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');

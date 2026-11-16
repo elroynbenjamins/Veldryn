@@ -878,9 +878,9 @@ async function pendingReadAcknowledgements() {
     assert.deepEqual(requests,['1','3'],'a pending success cannot acknowledge a newer message that arrived while scrolled up');
     await act(async()=>{tree.update(render(['1','2','3','4'],false));});
     await act(async()=>{tree.update(render(['1','2','3','4'],true));});await h.tick(0);
-    assert.deepEqual(requests,['1','3'],'hiding and showing a manually scrolled log preserves its unread cursor');
+    assert.deepEqual(requests,['1','3','4'],'reopening at the newest messages acknowledges the visible unread cursor');
     await act(async()=>{scroll(900);});
-    assert.deepEqual(requests,['1','3','4'],'reaching the actual bottom acknowledges the remaining displayed message');
+    assert.deepEqual(requests,['1','3','4'],'visiting the already-read bottom cannot send a duplicate acknowledgement');
     await act(async()=>{pending.shift().resolve();tree.unmount();});tree=null;
     assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
     console.log('PASS pending read acknowledgements: serial latest-cursor coalescing, confirmed older results, and manually scrolled new-message protection');

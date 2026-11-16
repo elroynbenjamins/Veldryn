@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.guild-pve-v7.json",
+  "include": ["tests/guild-pve-shared-v8.ts"],
+  "exclude": []
+}

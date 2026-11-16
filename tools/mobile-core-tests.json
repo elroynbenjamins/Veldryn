@@ -85,6 +85,8 @@
   "tests/live-dungeon-online-guild-localization.cjs",
   "tests/guild-hall-construction-localization.cjs",
   "tests/guild-bank-token-shop-localization.cjs",
+  "tests/expedition-marks-shop-contract.cjs",
+  "tests/dungeon-shop-bonus-localization.cjs",
   "tests/dungeon-dynamic-replay-localization.cjs",
   "tests/enemy-stat-display-scale.cjs",
   "tests/equipment-metadata-localization.cjs",

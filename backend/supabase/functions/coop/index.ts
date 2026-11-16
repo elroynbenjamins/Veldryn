@@ -49082,11 +49082,18 @@ function coopEntryHandler(services) {
 
 // src/server/expeditions/dungeon-shop-catalog-v1.ts
 var DUNGEON_SHOP_LIVE_V1 = true;
-var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v2-2026-11-11";
+var DUNGEON_SHOP_CATALOG_VERSION = "dungeon-marks-shop-v3-2026-11-15";
 var DUNGEON_SHOP_CATALOG_V1 = Object.freeze([
   { id: "dshop_tempering_satchel", name: "Delver Tempering Satchel", category: "supply", marks: 120, perUtcWeek: 2, grant: { kind: "material", itemId: "TEMPERING_DUST", quantity: 10, accountBound: true } },
   { id: "dshop_gem_dust_cache", name: "Gem Dust Cache", category: "supply", marks: 240, perUtcWeek: 1, grant: { kind: "material", itemId: "GEM_DUST", quantity: 8, accountBound: true } },
   { id: "dshop_tempering_core_cache", name: "Tempering Core Cache", category: "supply", marks: 450, perUtcWeek: 1, grant: { kind: "material", itemId: "TEMPERING_CORE", quantity: 2, accountBound: true } },
+  { id: "dshop_moss_fiber_100", name: "Moss Fiber \xD7100", category: "material", marks: 150, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "MOSS_FIBER", quantity: 100, tier: 1 } },
+  { id: "dshop_greenwood_log_100", name: "Greenwood Log \xD7100", category: "material", marks: 150, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "GREENWOOD_LOG", quantity: 100, tier: 1 } },
+  { id: "dshop_wolf_pelt_100", name: "Wolf Pelt \xD7100", category: "material", marks: 300, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "WOLF_PELT", quantity: 100, tier: 2 } },
+  { id: "dshop_ironwood_log_100", name: "Ironwood Log \xD7100", category: "material", marks: 300, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "IRONWOOD_LOG", quantity: 100, tier: 2 } },
+  { id: "dshop_dunewood_100", name: "Dunewood \xD7100", category: "material", marks: 600, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "DUNEWOOD", quantity: 100, tier: 3 } },
+  { id: "dshop_sunscale_100", name: "Sunscale \xD7100", category: "material", marks: 600, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "SUNSCALE", quantity: 100, tier: 3 } },
+  { id: "dshop_sunstone_ingot_100", name: "Sunstone Ingot \xD7100", category: "material", marks: 1e3, perUtcWeek: 1, grant: { kind: "crafting_bundle", itemId: "SUNSTONE_INGOT", quantity: 100, tier: 4 } },
   { id: "dshop_companion_essence", name: "Companion Essence Cache", category: "companion", marks: 400, perUtcWeek: 1, grant: { kind: "account_resource", field: "companionEssence", quantity: 100 } },
   { id: "dshop_bondstone", name: "Bondstone", category: "companion", marks: 750, perUtcWeek: 1, grant: { kind: "account_resource", field: "bondstones", quantity: 1 } },
   { id: "dshop_asterfall_icon", name: "Warden's Lantern", category: "icon", marks: 500, firstClearRegion: "Asterfall", permanent: true, grant: { kind: "profile_collectible", accountField: "unlockedProfileIconIds", rewardId: "dungeon:asterfall:wardens-lantern", rarity: "Rare" } },
@@ -49135,6 +49142,7 @@ function validateDungeonShopCatalogV1() {
     if (offer.permanent === true && offer.grant.kind !== "profile_collectible") throw new Error("permanent_offer_without_entitlement");
     if (offer.permanent === true && offer.perUtcWeek !== void 0) throw new Error("permanent_offer_weekly_limit");
     if (offer.perUtcWeek !== void 0 && (!Number.isSafeInteger(offer.perUtcWeek) || offer.perUtcWeek < 1)) throw new Error("invalid_dungeon_shop_limit");
+    if (offer.grant.kind === "crafting_bundle" && (offer.category !== "material" || offer.grant.quantity !== 100 || ![1, 2, 3, 4].includes(offer.grant.tier) || offer.perUtcWeek !== 1 || offer.permanent)) throw new Error("invalid_crafting_bundle");
     if (offer.grant.kind === "profile_collectible") {
       if (!offer.permanent || rewardIds.has(offer.grant.rewardId)) throw new Error("duplicate_or_unbounded_dungeon_collectible");
       rewardIds.add(offer.grant.rewardId);
@@ -49146,7 +49154,7 @@ function validateDungeonShopCatalogV1() {
 validateDungeonShopCatalogV1();
 
 // online/dungeon-shop.ts
-var category = (offer) => offer.grant.kind === "material" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") : offer.grant.kind === "account_resource" ? offer.grant.quantity + " " + (offer.grant.field === "bondstones" ? "Bondstones" : "Companion Essence") : offer.grant.bonus ? "+ " + (offer.grant.bonus.activeBps / 100).toFixed(2) + "% " + offer.grant.bonus.target + " equipped; +" + (offer.grant.bonus.ownedBps / 100).toFixed(2) + "% owned" : "Profile icon \xB7 visual only";
+var category = (offer) => offer.grant.kind === "crafting_bundle" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") + " \xB7 Shared Bank" : offer.grant.kind === "material" ? offer.grant.quantity + " \xD7 " + offer.grant.itemId.replace(/_/g, " ") : offer.grant.kind === "account_resource" ? offer.grant.quantity + " " + (offer.grant.field === "bondstones" ? "Bondstones" : "Companion Essence") : offer.grant.bonus ? "+ " + (offer.grant.bonus.activeBps / 100).toFixed(2) + "% " + offer.grant.bonus.target + " equipped; +" + (offer.grant.bonus.ownedBps / 100).toFixed(2) + "% owned" : "Profile icon \xB7 visual only";
 function sanitizedSnapshot(raw2) {
   if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) throw new GameplayError("invalid_dungeon_shop_snapshot");
   const s2 = raw2;
@@ -49182,6 +49190,8 @@ function makeDungeonShopController(services) {
           status: "unreleased",
           rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
           region: offer.firstClearRegion,
+          tier: offer.grant.kind === "crafting_bundle" ? offer.grant.tier : void 0,
+          materialItemId: offer.grant.kind === "crafting_bundle" ? offer.grant.itemId : void 0,
           owned: false,
           remainingThisUtcWeek: offer.perUtcWeek ?? null,
           lockReason: "Shop preview only \u2014 no purchases are available."
@@ -49208,6 +49218,8 @@ function makeDungeonShopController(services) {
             status: published ? quote.status : "unreleased",
             rarity: offer.grant.kind === "profile_collectible" ? offer.grant.rarity : void 0,
             region: offer.firstClearRegion,
+            tier: offer.grant.kind === "crafting_bundle" ? offer.grant.tier : void 0,
+            materialItemId: offer.grant.kind === "crafting_bundle" ? offer.grant.itemId : void 0,
             remainingThisUtcWeek: quote.remaining,
             owned,
             lockReason: !published ? "Not yet released \u2014 no Marks can be spent on this offer." : quote.status === "region_locked" ? "Clear a " + offer.firstClearRegion + " dungeon first." : void 0
@@ -50183,7 +50195,8 @@ var QModeService = class {
     } else if (input.boonId) throw new Error("invalid_boon_choice");
     const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
     const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId);
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1), enemyHpMultiplier: regional2?.hp, enemyDefenseMultiplier: regional2?.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const bossTuning = run.regionalBalanceVersion === 1 && run.tier === 1 && selected2.contentId === "BOSS_EXP_SOLAR" ? { profileId: "sunscar-regional-solar-ward-cadence-v1", abilityCooldownMultipliers: { BOSS_EXP_SOLAR_WARD: 3 } } : void 0;
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1), enemyHpMultiplier: regional2?.hp, enemyDefenseMultiplier: regional2?.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, bossTuning, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;

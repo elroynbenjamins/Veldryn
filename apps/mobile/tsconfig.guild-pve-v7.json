@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.world-boss-v12.json",
+  "include": ["tests/guild-pve-real-combat-v7.ts"],
+  "exclude": []
+}

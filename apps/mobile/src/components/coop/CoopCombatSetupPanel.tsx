@@ -106,7 +106,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
     <Text numberOfLines={1} style={[s.count,selectedTonic?.owned?s.positive:s.muted]}>{selectedTonic?st('{count} carried',{count:selectedTonic.owned}):st('{count} total',{count:setup.tonicCount})}</Text>
     <Text style={s.chevron}>›</Text>
    </Pressable>
-   
+
   </View>
   {expanded?<View style={s.detail} accessibilityLiveRegion="polite">
    <Text style={s.detailText}>{expanded==='companion'?

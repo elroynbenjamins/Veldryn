@@ -35,7 +35,7 @@ const zone=state(regionLevel('SUNSCAR'),'SUNSCAR',{
 });
 check(entry(zone,'OASIS_CARP_POOL',1).status==='skill-locked','Unlocked region must still check profession level');
 const glassfinArea=regionalArea('SUNSCAR','ZONE_008');
-check(glassfinArea,'Mirage Basin area exists');
+if(!glassfinArea)throw new Error('Mirage Basin area exists');
 const earlySunscar=state(glassfinArea.minLevel-1,'SUNSCAR',{
  defeatedBossIds:['FALLEN_KNIGHT'],exploredRouteIds:['SCOUT_KINGS_ROAD'],
 });

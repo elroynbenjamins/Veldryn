@@ -74,3 +74,25 @@ migrations were run in this pass.
    the v1.0.10 production rollout.
 
 **Party Events, payout and player UI remain disabled.**
+
+## Additional safety refinement — do not falsely show paid in the private Inbox
+
+The unpublished v29 `private.read_party_event_paid_inbox_v29` previously
+returned `claimed=true`, `economyApplied=true` and
+`inboxDelivered=true` solely because a paired receipt/Inbox row existed.
+That SQL query never checked the account's committed wallet, online save,
+profession/combat XP, Companion Essence, Bondstones, Party Renown or
+inventory. Those assertions were therefore stronger than its evidence.
+
+The read-only output now says `receiptRecorded=true`,
+`inboxRecordPresent=true` and
+`status=receipt_requires_economy_verification`, while keeping
+`claimed=false`, `economyApplied=false`,
+`inboxDelivered=false`, `economyReconciled=false`.
+The PGlite schema fixture asserts these exact safe flags. A real future
+payout writer must publish separately reviewed, atomically reconciled
+post-commit status before the client can show a successful claim.
+
+The v29 migration is still **unapplied** and this adjustment is only on
+the hidden draft branch. PGlite tests are registered but not verified as
+passing on the exact integrated branch head.

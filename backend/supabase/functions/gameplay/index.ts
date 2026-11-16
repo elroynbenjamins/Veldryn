@@ -44589,12 +44589,25 @@ function recordMonsterMastery(state, id, kills) {
 }
 
 // ../apps/mobile/src/core/companion-housing.ts
-var COMPANION_HOUSING_MILESTONES = [
-  { levelCap: 10, housingTier: 0, label: "Basic Quarters" },
-  { levelCap: 20, housingTier: 1, label: "Reinforced Quarters" },
-  { levelCap: 25, housingTier: 2, label: "Veteran Quarters" },
-  { levelCap: 35, housingTier: 3, label: "Master Quarters" }
+var COMPANION_HOUSING_BONUSES = [
+  { trainingXpPct: 0, bondXpPct: 0, essenceDiscountPct: 0 },
+  { trainingXpPct: 5, bondXpPct: 5, essenceDiscountPct: 3 },
+  { trainingXpPct: 10, bondXpPct: 10, essenceDiscountPct: 6 },
+  { trainingXpPct: 15, bondXpPct: 15, essenceDiscountPct: 10 }
 ];
+function companionHousingBonuses(tier) {
+  const index = Number.isFinite(tier) ? Math.max(0, Math.min(3, Math.floor(tier))) : 0;
+  return COMPANION_HOUSING_BONUSES[index];
+}
+function companionHousingTrainingXpMultiplier(tier) {
+  return 1 + companionHousingBonuses(tier).trainingXpPct / 100;
+}
+function companionHousingBondXpMultiplier(tier) {
+  return 1 + companionHousingBonuses(tier).bondXpPct / 100;
+}
+function companionHousingLevelEssenceCost(baseCost, tier) {
+  return Math.max(1, Math.ceil(baseCost * (100 - companionHousingBonuses(tier).essenceDiscountPct) / 100));
+}
 var COMPANION_HOUSING_UPGRADES = [
   { tier: 1, gold: 8e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 40 }, { itemId: "ASTER_IRON_INGOT", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] },
   { tier: 2, gold: 35e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 80 }, { itemId: "OATHSTONE_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 6 }] },
@@ -44611,17 +44624,12 @@ function companionHousingEarnedTier(level) {
 function companionHousingTier(companionId, tiers) {
   return Math.max(0, Math.min(3, Math.floor(tiers?.[companionId] ?? 0)));
 }
-function companionHousingLevelCap(housingTier) {
-  const tier = Math.max(0, Math.min(3, Math.floor(housingTier)));
-  return COMPANION_HOUSING_MILESTONES[tier].levelCap;
-}
 function qty(stacks, id) {
   return stacks.reduce((total, stack) => total + (stack.itemId === id ? Math.max(0, stack.quantity) : 0), 0);
 }
 function companionHousingUpgradeCost(companionId, tiers) {
   const def = combatCompanionDef(companionId);
   if (!def) return void 0;
-  if (companionHousingLevelCap(companionHousingTier(companionId, tiers)) >= COMPANION_RARITY_CONFIG[def.rarity].maxLevel) return void 0;
   const next = companionHousingTier(companionId, tiers) + 1;
   return COMPANION_HOUSING_UPGRADES.find((row) => row.tier === next);
 }
@@ -44707,6 +44715,10 @@ function companionRemainingLevelCost(def, progress) {
   const remaining = Math.max(1, needed - Math.max(0, progress.xp)), ratio = Math.min(1, remaining / needed);
   const baseRemainingGold = Math.max(1, Math.ceil(baseCompanionLevelGold(def.rarity, progress.level) * ratio));
   return { gold: roundGoldUp(baseRemainingGold * COMPANION_LEVEL_GOLD_MULTIPLIER, 10), companionEssence: Math.max(1, Math.ceil(full.companionEssence * ratio)) };
+}
+function companionHousingAdjustedLevelCost(def, progress, housingTier) {
+  const base = companionRemainingLevelCost(def, progress);
+  return { ...base, companionEssence: companionHousingLevelEssenceCost(base.companionEssence, housingTier) };
 }
 function companionCurrentLevelCap(def, progress) {
   return Math.min(COMPANION_RARITY_CONFIG[def.rarity].maxLevel, COMPANION_STAGE_CAPS[def.rarity][Math.max(0, Math.min(3, progress.ascensionTier))]);
@@ -44963,11 +44975,10 @@ function purchaseCompanionLevel(state, id) {
   if (!clean2.character) throw new Error("Create a character first.");
   const def = combatCompanionDef(id);
   if (!def || !(clean2.account.unlockedCombatCompanionIds ?? []).includes(id)) throw new Error("Combat companion is locked.");
-  const p = progressFor(clean2, id), ascensionCap = companionCurrentLevelCap(def, p), housingCap = companionHousingLevelCap(companionHousingTier(id, clean2.account.companionHousingTiers)), max = companionMaxLevel(def);
+  const p = progressFor(clean2, id), ascensionCap = companionCurrentLevelCap(def, p), max = companionMaxLevel(def);
   if (p.level >= max) throw new Error("Maximum companion level reached.");
   if (p.level >= ascensionCap) throw new Error("Ascension required before further leveling.");
-  if (p.level >= housingCap) throw new Error("Upgrade Companion Quarters before further training.");
-  const cost = companionRemainingLevelCost(def, p);
+  const cost = companionHousingAdjustedLevelCost(def, p, companionHousingTier(id, clean2.account.companionHousingTiers));
   if (clean2.character.gold < cost.gold) throw new Error("Not enough Gold.");
   if ((clean2.account.companionEssence ?? 0) < cost.companionEssence) throw new Error("Not enough Companion Essence.");
   clean2 = { ...clean2, character: { ...clean2.character, gold: clean2.character.gold - cost.gold }, account: { ...clean2.account, companionEssence: (clean2.account.companionEssence ?? 0) - cost.companionEssence } };
@@ -47808,10 +47819,13 @@ function awardUse(state, ids2, xp, bond, now) {
   const earnedXp = companionMasteryCompanionXp(xp, state.account.companionMasteryXp);
   for (const id of ids2) {
     if (!owned[id]) continue;
-    const r = awardCompanionXpServer({ progress: owned[id], amount: earnedXp, companionEssence: essence, overflow, serverNowMs: now, maxLevelCap: companionHousingLevelCap(companionHousingTier(id, state.account.companionHousingTiers)) });
+    const housing = companionHousingTier(id, state.account.companionHousingTiers);
+    const xp2 = Math.round(earnedXp * companionHousingTrainingXpMultiplier(housing));
+    const bondXp = Math.round(earnedBond * companionHousingBondXpMultiplier(housing));
+    const r = awardCompanionXpServer({ progress: owned[id], amount: xp2, companionEssence: essence, overflow, serverNowMs: now });
     essence = r.companionEssence;
     overflow = r.overflow;
-    owned[id] = awardCompanionBondXpServer(r.progress, earnedBond);
+    owned[id] = awardCompanionBondXpServer(r.progress, bondXp);
   }
   return { ...setOwned(state, owned), account: { ...setOwned(state, owned).account, companionEssence: essence, companionOverflow: overflow } };
 }

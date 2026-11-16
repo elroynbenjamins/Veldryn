@@ -9,6 +9,40 @@ const filepath=fileURLToPath(new URL(
  '../supabase/migrations/20261115190000_party_event_locked_claim_snapshot_v30.sql',
  import.meta.url));
 const migration=readFileSync(filepath,'utf8');
+// Regression for EVERY draft writer touching an event-claim account.
+ // The prior v25 preflight locked character -> online, while quote locked
+ // wallet -> online; both differed from v30's online -> character -> wallet.
+ // This graph check prevents restoring their opposite acquisition order.
+const v25Files=[
+ ['prepare_party_event_claim_preflight_v25',
+  '20261113224500_party_event_claim_preflight_v25.sql',
+  ['perform pg_advisory_xact_lock(', 
+   'select * into w from private.party_event_weeks_v11',
+   'where id=p_offer_id for update;',
+   'select * into game from public.online_game_states',
+   'select c.inventory_capacity into v_cap from public.characters']],
+ ['prepare_party_event_claim_quote_v25',
+  '20261113230000_party_event_reward_claim_quote_v25.sql',
+  ['perform pg_advisory_xact_lock(',
+   'select * into w from private.party_event_weeks_v11',
+   'where id=p_offer_id for update;',
+   'select state into v_state from public.online_game_states',
+   'select gold into v_wallet_gold from public.character_wallets']],
+];
+for(const [name,file,steps] of v25Files){
+ const source=readFileSync(fileURLToPath(new URL(
+  '../supabase/migrations/'+file,import.meta.url)),'utf8');
+ const start=source.indexOf('create or replace function private.'+name+'(');
+ const end=source.indexOf('end;$;',start);
+ if(start<0||end<start)throw Error('v30_missing_v25_writer_'+name);
+ const body=source.slice(start,end);
+ const positions=steps.map(step=>body.indexOf(step));
+ if(positions.some(x=>x<0)||
+   positions.some((x,i)=>i>0&&x<=positions[i-1])||
+   !body.includes("hashtextextended('party-account:'||p_account_id::text,0)")){
+  throw Error('v30_v25_lock_hierarchy_regression_'+name);
+ }
+}
 // Prevent account/offer lock inversion with the existing v25 week-first
 // preflight: an unlocked offer locator must precede WEEK row locking,
 // which must precede taking the OFFER update lock.

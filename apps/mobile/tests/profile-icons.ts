@@ -13,7 +13,7 @@ const otherClassCharacter=createCharacter(newGame(1000),'WAYFINDER','New Wayfind
 check(otherClassCharacter.character!.profileIconId==='class:WAYFINDER','another class starts with its own portrait');
 check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'another class starter icon is not announced');
 check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
-check(profileIconCollection(state).length===14,'catalog includes a locked guild icon alongside class, starters, boss and two event icons');
+check(profileIconCollection(state).length===15,'catalog includes a locked guild icon alongside class, starters, boss and three event icons');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
 check(!canUseProfileIcon(state,'guild:stormwatch-crest'),'guild icon is locked until purchased');
@@ -52,6 +52,8 @@ for(const id of ['event:veilbreak-2026-lantern-warden','event:veilbreak-2026-pum
  check(EVENT_PROFILE_ICON_ARTWORK_IDS.has(id),'Veilbreak event profile icon is registered as having dedicated artwork');
  check(profileIconCollection({...state,account:{...state.account,unlockedProfileIconIds:[id]}}).find(row=>row.id===id)?.artworkReady,'Veilbreak event profile icon reports its artwork as ready');
 }
+check(EVENT_PROFILE_ICON_ARTWORK_IDS.has('event:frostfall-2026-snowbell'),'Frostfall icon must have runtime artwork before launch');
+check(profileIconCollection(state).find(row=>row.id==='event:frostfall-2026-snowbell')?.artworkReady,'Frostfall shop icon must render as artwork ready');
 check(JSON.stringify(effectiveStats(eventSelected))===before,'event icon grants no bonus');
 check(collectionOwnershipSnapshotFromGameState(earned).ownedKeys['profile_icon:'+eventIcon.id],'event icon tracked in collections');
 check(normalizeProfileIcon({...state,character:{...state.character!,profileIconId:'unknown'}}).character!.profileIconId==='class:IRONWARDEN','invalid icon falls back to class');

@@ -1,43 +1,116 @@
-name: v1.0.10 mainline merge conflict diagnostics (branch only)
-# Disposable diagnostics. It never commits or pushes.
+name: v1.0.10 mainline conflict-aware rehearsal (branch only)
+# Disposable, pinned two-parent merge on an isolated integration branch.
 on:
   push:
     branches: ['integration/v1010-mainline-reconcile-safe-20261116']
     paths: ['.github/workflows/v1010-mainline-merge-diagnostics-temp.yml']
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: v1010-mainline-merge-rehearsal
+  cancel-in-progress: false
 jobs:
-  conflict-diagnosis:
+  merge-and-validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
         with:
           ref: integration/v1010-mainline-reconcile-safe-20261116
           fetch-depth: 0
-      - name: Test a real Git three-way merge without modifying the branch
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Merge pinned, validated release commit into isolated main-derived branch
         shell: bash
         run: |
           set -euo pipefail
-          git config user.email 'ci-reconciliation@veldryn.invalid'
-          git config user.name 'Veldryn CI reconciliation'
-          git fetch --no-tags origin release/1.0.10-aab-prep-20261115
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git fetch origin ff628071873215781ce4508bc394b61911e9d334
           set +e
-          git merge --no-edit --no-commit --no-ff origin/release/1.0.10-aab-prep-20261115 > /tmp/merge-check.txt 2>&1
-          status=$?
+          git merge --no-commit --no-ff ff628071873215781ce4508bc394b61911e9d334
+          merge_result=$?
           set -e
-          echo "MERGE_STATUS=$status"
-          cat /tmp/merge-check.txt | tail -70
-          echo "=== Unresolved paths (conflicts requiring source review) ==="
-          git diff --name-only --diff-filter=U | tee /tmp/merge-conflicts.txt
-          echo "UNRESOLVED_PATHS=$(wc -l < /tmp/merge-conflicts.txt)"
-          echo "=== Conflict block counts ==="
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            count=$(grep -c '^<<<<<<< ' "$file" || true)
-            printf '%s conflict blocks in %s\n' "$count" "$file"
-          done < /tmp/merge-conflicts.txt
-          echo "=== Generated Edge bundle status ==="
-          git diff --name-only | grep 'backend/supabase/functions/' || true
-          git merge --abort || true
-          echo "Diagnostic only: no changes committed or pushed."
+          test "$merge_result" -eq 1
+          git diff --name-only --diff-filter=U | sort > /tmp/unresolved.txt
+          echo 'Unresolved pre-reviewed paths:'
+          cat /tmp/unresolved.txt
+      - name: Resolve only pre-audited, bounded conflicts; preserve nonoverlapping Git edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,re,subprocess
+          choices={
+            '.github/workflows/mobile-ux-validation.yml':('theirs',1),
+            'apps/mobile/src/components/coop/CoopPartyChat.tsx':('ours',2),
+            'apps/mobile/src/components/coop/DungeonMarksShopView.tsx':('ours',6),
+            'apps/mobile/src/i18n/dungeon-shop.ts':('ours',2),
+            'apps/mobile/src/i18n/gameplay.ts':('union',1),
+            'apps/mobile/src/screens/CoopExpeditionScreen.tsx':('theirs',2),
+            'apps/mobile/tests/companion-codex-focused-ui.cjs':('ours',1),
+            'apps/mobile/tests/companion-layout-refinement-ui.cjs':('ours',2),
+            'apps/mobile/tests/dungeon-compact-completion-ui.cjs':('ours',1),
+            'apps/mobile/tests/dungeon-flow-simplicity-ui.cjs':('ours',1),
+            'apps/mobile/tests/dungeon-room-outcomes-merchant-ui.cjs':('theirs',1),
+            'apps/mobile/tests/german-expedition-shop-localization.cjs':('ours',3),
+            'apps/mobile/tests/localization-social.mjs':('ours',1),
+          }
+          actual=set(pathlib.Path('/tmp/unresolved.txt').read_text().splitlines())
+          if actual!=set(choices):
+            raise RuntimeError('Unexpected conflict list: '+repr(sorted(actual.symmetric_difference(choices))))
+          pattern=re.compile(r'^<<<<<<<[^\n]*\n(.*?)^=======\n(.*?)^>>>>>>>[^\n]*(?:\n|$)',re.M|re.S)
+          for path,(policy,count) in choices.items():
+            p=pathlib.Path(path)
+            source=p.read_text()
+            matches=list(pattern.finditer(source))
+            if len(matches)!=count:
+              raise RuntimeError(f'Unexpected {path} conflict count {len(matches)} vs {count}')
+            def resolve(m):
+              ours,theirs=m.group(1),m.group(2)
+              if policy=='union':
+                return ours.rstrip('\n')+'\n'+theirs.lstrip('\n')
+              return ours if policy=='ours' else theirs
+            result=pattern.sub(resolve,source)
+            if '<<<<<<<' in result or '>>>>>>>' in result:
+              raise RuntimeError('Unresolved marker in '+path)
+            p.write_text(result)
+          subprocess.run(['git','add',*sorted(choices)],check=True)
+          PY
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git diff --cached --check
+      - name: Install locked mobile/backend dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild and verify authoritative gameplay and co-op Edge outputs
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Verify mobile/backend typing, full mobile core and focused release UI tests
+        run: |
+          pnpm --dir apps/mobile typecheck
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          pnpm --dir apps/mobile test:core
+          node apps/mobile/tests/german-expedition-shop-localization.cjs
+          node apps/mobile/tests/dungeon-compact-completion-ui.cjs
+          node apps/mobile/tests/dungeon-room-outcomes-merchant-ui.cjs
+      - name: Require only expected source or canonical generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git diff --cached --check
+          git status --short | tail -50
+          test -z "$(git diff --name-only)"
+      - name: Commit verified two-parent merge without touching main or production
+        shell: bash
+        run: |
+          set -euo pipefail
+          git commit -m 'merge(v1.0.10): review release plus mainline sources with canonical Edge rebuild'
+          git push origin HEAD:integration/v1010-mainline-reconcile-safe-20261116

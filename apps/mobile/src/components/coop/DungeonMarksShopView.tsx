@@ -5,6 +5,8 @@ import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {ResourceIcon} from '../ResourceIcon';
 import {UiIcon} from '../UiIcon';
+import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
@@ -137,7 +139,10 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.detail}>
-     {previewArt?<View style={s.cosmeticPreview}><Image source={previewArt} resizeMode="contain" style={item.category==='border'||item.category==='background'?s.widePreviewImage:s.petPreviewImage}/></View>:null}
+     {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
+      ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
+     }</View>:null}
      <Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
@@ -167,7 +172,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
  description:{...typography.body,color:C.text},
  cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
- petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%'},
+ petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

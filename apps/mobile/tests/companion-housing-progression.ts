@@ -5,6 +5,7 @@ import {companionHousingBonuses,companionHousingLevelEssenceCost,companionHousin
 import {normalizeCompanionRuntimeSave} from '../src/core/companion-save';
 import {combatCompanionDef} from '../src/content/combat-companions';
 import {awardCompanionXpServer} from '../../../backend/src/server/companions/progression-v2';
+import {awardCompanionCandyXp} from '../src/core/companion-runtime';
 
 function rejected(fn:()=>unknown,reason:string){
  let message='';try{fn();}catch(error){message=String(error);}
@@ -53,6 +54,9 @@ const equippedUpgraded={...upgraded,character:{...upgraded.character!,equippedCo
 const xpBasic=grantEquippedCompanionUse(equippedBasic,'boss').account.combatCompanionProgress![id].xp;
 const xpUpgraded=grantEquippedCompanionUse(equippedUpgraded,'boss').account.combatCompanionProgress![id].xp;
 assert.ok(xpUpgraded>=xpBasic);
+const onlineBasic=awardCompanionCandyXp(fresh,id,200,now).account.combatCompanionProgress![id].xp;
+const onlineUpgraded=awardCompanionCandyXp(upgraded,id,200,now).account.combatCompanionProgress![id].xp;
+assert.ok(onlineUpgraded>onlineBasic); // server-authoritative settlement also boosts XP
 
 // Save round-trip and one-time veteran grants do not reset purchased quarters.
 const freshRestore=normalizeCompanionRuntimeSave(upgraded.account);

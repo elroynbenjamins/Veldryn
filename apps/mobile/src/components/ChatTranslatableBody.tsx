@@ -97,7 +97,7 @@ export function ChatTranslationMessage({controller,mentionName,compact=false,sty
  return <View style={s.message}>
   <ChatMessageText body={controller.body} mentionName={mentionName} compact={compact} style={style}/>
   {controller.showing?<Text style={s.note} accessibilityLiveRegion="polite">{controller.copy.translated}</Text>:null}
-  {controller.error?<Text accessibilityRole="alert" style={s.error}>{controller.copy[controller.error]}</Text>:null}
+  {controller.error?<Text accessibilityRole="alert" style={s.error}>{controller.error==='unavailable'?controller.copy.error:controller.copy[controller.error]}</Text>:null}
  </View>;
 }
 

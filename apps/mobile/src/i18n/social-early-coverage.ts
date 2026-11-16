@@ -3,6 +3,10 @@ import type {SocialMessageKey} from './social';
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
+  "+{marks} Expedition Marks earned": ["Получено +{marks} знаков экспедиции","+{marks} Sefer Nişanı kazanıldı"],
+  "Reward amount is being prepared.": ["Количество награды рассчитывается.","Ödül miktarı hazırlanıyor."],
+  "Estimated · final Marks confirmed when claimed.": ["Оценка · окончательное число знаков подтверждается при получении.","Tahmini · kesin Nişan miktarı ödül alınırken onaylanır."],
+  "Refresh battle status": ["Обновить состояние боя","Savaş durumunu yenile"],
   "Echo sharing unlocks at character level 10.": ["Публикация Эха открывается на 10-м уровне персонажа.","Yankı paylaşımı 10. karakter seviyesinde açılır."],
   "Echo sharing requires 2,500 Combat Power.": ["Для публикации Эха нужно 2 500 боевой мощи.","Yankı paylaşımı için 2.500 Savaş Gücü gerekir."],
   "{points} shared points left": ["Осталось {points} общих очков","{points} ortak puan kaldı"],

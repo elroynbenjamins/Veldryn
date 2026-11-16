@@ -12,7 +12,7 @@ export interface RouteNode { index: number; type: ExpeditionNodeType; depth: num
 function weightedNode(secret: string, expeditionId: string, index: number): ExpeditionNodeType {
   const def = EXPEDITIONS[expeditionId];
   if (!def) throw new Error('unknown_expedition');
-  const entries = Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType, number]>;
+  const entries = (Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType, number]>).filter(([kind]) => kind !== 'merchant');
   const total = entries.reduce((s,[,w]) => s + w, 0);
   let roll = deterministicUnit(secret, expeditionId, 'node', index) * total;
   for (const [type, weight] of entries) {
@@ -29,7 +29,7 @@ export function generateRoute(secret: string, expeditionId: string, runId: strin
   const nodes: RouteNode[] = [];
   for (let i=0;i<count;i++) {
     let type: ExpeditionNodeType = weightedNode(secret, expeditionId, i);
-    if (i === 0 && ['boss','secret','merchant','forge'].includes(type)) type = 'battle';
+    if (i === 0 && ['boss','secret','forge'].includes(type)) type = 'battle';
     if (i === count - 1) type = 'boss';
     nodes.push({ index:i, type, depth:i, risk:type === 'risk' ? 1.15 : type === 'elite' ? 1.08 : 1.0 });
   }
@@ -51,7 +51,7 @@ function coopKind(secret:string, expeditionId:string, runId:string, contentVersi
   if (choice === 0) return 'battle';
   if (depth === 3 && choice === 1) return 'camp';
   const def=EXPEDITIONS[expeditionId];
-  const entries=(Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType,number]>).filter(([kind])=>kind!=='boss');
+  const entries=(Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType,number]>).filter(([kind])=>kind!=='boss'&&kind!=='merchant');
   const total=entries.reduce((sum,[,weight])=>sum+weight,0);
   let roll=deterministicUnit(secret,'coop-route-v1',runId,expeditionId,contentVersion,balanceVersion,'kind',depth,choice)*total;
   for(const [kind,weight] of entries){roll-=weight;if(roll<=0)return kind as Exclude<ExpeditionNodeType,'boss'>;}

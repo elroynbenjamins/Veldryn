@@ -56,7 +56,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  const ascentBlocked=!!progress&&progress.level>=ascentCap&&progress.level<(model?.maxLevel??35);
  const successMessage=(type:string,args?:Record<string,unknown>)=>{
   const target=combatCompanionUiModel(state,typeof args?.id==='string'?args.id:selection),name=target?.def.name??'Companion';
-  if(type==='companion_housing_upgrade')return 'QUARTERS UPGRADED · '+name+' gains stronger training, Bond and Essence bonuses.';
+  if(type==='companion_housing_upgrade')return 'QUARTERS UPGRADED · '+name+' gains stronger training, stats and Essence bonuses.';
   if(type==='companion_level'&&target?.progress)return 'TRAINING COMPLETE · '+name+' reached Level '+Math.min(target.maxLevel,target.progress.level+1)+'.';
   if(type==='companion_ascend'&&target?.nextAscensionTier)return 'ASCENSION COMPLETE · '+name+' reached Tier '+target.nextAscensionTier+'.';
   if(type==='companion_master')return 'PRESTIGE MASTERY COMPLETE · '+name+' reached its final mastery milestone.';
@@ -106,13 +106,13 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
       </View>
       <Text style={s.quartersCap}>{t('Tier {value0}/3',{value0:quartersTier})}</Text>
     </View>
-    <Text style={s.copy}>{t('Housing improves training and Bond rewards. Only Ascension and rarity limit levels.')}</Text>
-     <Text style={s.done}>{t('Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%',{value0:quartersBonus.trainingXpPct,value1:quartersBonus.bondXpPct,value2:quartersBonus.essenceDiscountPct})}</Text>
+    <Text style={s.copy}>{t('Housing improves training and companion stats. Only Ascension and rarity limit levels.')}</Text>
+     <Text style={s.done}>{t('Training XP +{value0}% · Stats +{value1}% · Essence cost -{value2}%',{value0:quartersBonus.trainingXpPct,value1:quartersBonus.statPct,value2:quartersBonus.essenceDiscountPct})}</Text>
     {quartersUpgrade?.cost&&nextQuarters?<View style={s.quartersNext}>
       <View style={s.between}>
         <Text style={s.sectionTitle}>{t('Next: {value0}',{value0:companionContent(language,nextQuarters.label)})}</Text>
       </View>
-      <Text style={s.done}>{t('Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%',{value0:companionHousingBonuses(quartersTier+1).trainingXpPct,value1:companionHousingBonuses(quartersTier+1).bondXpPct,value2:companionHousingBonuses(quartersTier+1).essenceDiscountPct})}</Text>
+      <Text style={s.done}>{t('Training XP +{value0}% · Stats +{value1}% · Essence cost -{value2}%',{value0:companionHousingBonuses(quartersTier+1).trainingXpPct,value1:companionHousingBonuses(quartersTier+1).statPct,value2:companionHousingBonuses(quartersTier+1).essenceDiscountPct})}</Text>
       <Text style={s.copy}>{t('{value0} Gold', {value0:amount(quartersUpgrade.cost.gold)})}</Text>
       {quartersUpgrade.materials.map(item=>{const source=companionHousingMaterialSource(item.itemId);return <View key={item.itemId} style={s.quartersMaterial}>
         <Text style={[s.quartersResource,item.owned>=item.quantity?s.done:s.ready]}>{item.owned>=item.quantity?'✓ ':'○ '}{companionMaterialName(item.itemId)} · {amount(item.owned)}/{amount(item.quantity)}</Text>

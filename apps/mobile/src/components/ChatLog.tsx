@@ -33,7 +33,7 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  // its caught-up message ID until the player can actually see the conversation.
  const caughtUp=()=>{if(!visible())return;setPendingNew(0);if(latestId){setDividerCleared(true);readAck.caughtUp(latestId);}};
  useEffect(()=>{nearBottomRef.current=true;userScrollingRef.current=false;initializedRef.current=false;previousIdsRef.current=new Set();setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
- useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId){nearBottomRef.current=false;setDividerId(firstUnreadMessageId)}},[firstUnreadMessageId,dividerId]);
+ useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId)setDividerId(firstUnreadMessageId);},[firstUnreadMessageId,dividerId]);
  useEffect(()=>{if(!initializedRef.current&&dividerId&&items.length&&!items.some(item=>item.id===dividerId))setDividerId(items[0].id);},[items,dividerId]);
  useEffect(()=>{
   // Native content-size events need not fire when another account/channel has

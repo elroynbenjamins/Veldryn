@@ -11,7 +11,7 @@ throws(()=>executeGameCommand(state,{type:'roster_create',args:{classId:'BASTION
 throws(()=>executeGameCommand(state,{type:'roster_create',args:{classId:'NOT_A_CLASS',name:'Invalid',body:'male'}},2,{characterId:secondId}),'unknown roster class must reject creation');
 throws(()=>executeGameCommand(state,{type:'roster_switch',args:{id:secondId}},2),'unknown roster member must reject switching');
 state={...state,version:11,account:{...state.account,unlockedCharacterSlots:2}};
-state=executeGameCommand(state,{type:'roster_create',args:{classId:'BASTION',name:'Second',body:'female'}},2,{characterId:secondId}).state;
+state=executeGameCommand(state,{type:'roster_create',args:{classId:'DAWNKEEPER',name:'Second',body:'female'}},2,{characterId:secondId}).state;
 equal(state.character?.id,secondId,'active created roster member');
 equal(state.version,11,'roster creation retains schema version');
 equal(state.otherCharacters?.length,1,'previous character retained');

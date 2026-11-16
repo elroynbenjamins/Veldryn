@@ -21,12 +21,12 @@ assert.ok(dungeon);
 // retaining both original/new-pressure simulation paths and the 85% guard.
 const requiredLevel=regularDungeonTierRequiredLevel(dungeon,1);
 const requiredPower=regularDungeonTierRequiredPower(dungeon,1);
-const roster=classes.map((classId,index)=>{
+const buildRoster=(level:number,powerFactor:number)=>classes.map((classId,index)=>{
  const state=createCharacter(newGame(0),classId,'Pressure Baseline');
  const char=state.character!;char.id='pressure-'+index;
- char.level=requiredLevel;char.xp=characterTotalXpAtLevel(requiredLevel);
+ char.level=level;char.xp=characterTotalXpAtLevel(level);
  char.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
- const base={attack:char.attack,defense:char.defense,hp:char.hp},target=requiredPower*1.05;
+ const base={attack:char.attack,defense:char.defense,hp:char.hp},target=requiredPower*powerFactor;
  let low=.01,high=80;
  for(let n=0;n<22;n++){
   const scale=(low+high)/2;
@@ -43,6 +43,7 @@ const roster=classes.map((classId,index)=>{
  const record=deriveOnlineCoopLoadout('pressure-account-'+index,state,1);
  return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:requiredLevel,minCombatPower:requiredPower,syncLevel:dungeon.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
 });
+let roster=buildRoster(15,2.5);
 function clear(seed:number,legacy:boolean):boolean{
  const id='pressure-'+seed;
  const repository=new MemoryQModeRunRepository(),service=new QModeService(repository,'published-loadout-balance-v1');
@@ -55,6 +56,13 @@ function clear(seed:number,legacy:boolean):boolean{
  }
  return run.phase==='completed';
 }
+// Temporary diagnostic: identify a genuinely ready roster baseline without altering live balance.
+for(const [level,factor] of [[10,1.05],[15,1.5],[15,2],[15,3],[25,2],[25,3.5],[25,5]] as const){
+ roster=buildRoster(level,factor);let b=0,q=0;
+ for(let seed=0;seed<50;seed++){if(clear(seed,true))b++;if(clear(seed,false))q++;}
+ console.log('QMODE_ROSTER_SCAN',JSON.stringify({level,powerFactor:factor,baseline:b,qmode:q,samples:50}));
+}
+roster=buildRoster(15,2.5);
 let baselineClears=0,qmodeClears=0;
 for(let seed=0;seed<100;seed++){
  if(clear(seed,true))baselineClears++;

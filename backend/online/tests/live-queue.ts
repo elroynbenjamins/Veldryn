@@ -22,13 +22,21 @@ async function main(){
   }
   assert.ok(combatPowerRating(state).total>=7700,'Sunscar fixture must satisfy published Combat Power requirement');
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
- let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0;
+ let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0,committedTickets=0;
  const handler=coopHandler({authenticate:async token=>token==='valid'?account:null,randomId:()=>ticket,randomRoll:()=>0,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    calls.push({name,args});
    if(name==='read_online_coop_receipt_server_v1'){reads++;return (receiptOnSecondRead&&reads===1?null:prior) as T;}
    if(name==='load_online_game_server_v1')return {state,version} as T;
    if(name==='join_online_live_queue_server_v1'){
+    // PostgreSQL serializes admission and replays the receipt by request ID
+    // before checking the (possibly advanced) game revision. An obscured first
+    // receipt can cause a second RPC without creating a second queue ticket.
+    if(prior){
+      assert.equal(args.p_request_hash,prior.requestHash,'lost-ACK retry must keep the exact request hash');
+      return prior.response as T;
+    }
+    committedTickets++;
     prior={requestHash:args.p_request_hash as string,response:{ticket:{ticketId:ticket,status:'queued'}}};return prior.response as T;
    }
    if(name==='online_live_queue_state_server_v1')return {ticket:null} as T;
@@ -63,7 +71,7 @@ async function main(){
  assert.equal(quickWrite.args.p_expedition_id,'EXP_003','Quick Match should send the Tank to the nearly complete dungeon pool');
  const quickRecord=deriveOnlineCoopLoadout(account,state,version),quickReadiness=assessOnlineCoopLoadout(quickRecord).readiness;
  assert.equal(quickWrite.args.p_tier,regularDungeonReadyTier(EXPEDITIONS.EXP_003,quickRecord.characterLevel,quickReadiness.normalizedScore,quickRecord.combatPower),'Quick Match uses the XP-derived level and verified readiness for its tier');
- prior=null;reads=0;calls.length=0;
+ prior=null;reads=0;calls.length=0;committedTickets=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
  const frozen=write.args.p_snapshot as {accountId:string;readiness:{role:string;ready:boolean}};
@@ -81,7 +89,12 @@ async function main(){
  assert.equal((await handler(request('queue/'+account+'/cancel',{requestId:'cancel-001'}))).status,403);
  assert.equal((await handler(request('queue/'+ticket+'/cancel',{requestId:'cancel-001'}))).status,200);
  assert.equal((await handler(request('queue/'+ticket+'/cancel'))).status,405);
- assert.equal(calls.filter(row=>row.name==='join_online_live_queue_server_v1').length,1);
- console.log('PASS Live queue authentication, server-derived role/equipment, ownership, content gates, replay/race/conflict, status, heartbeat and cancellation boundary');
+ const joinWrites=calls.filter(row=>row.name==='join_online_live_queue_server_v1');
+ assert.equal(joinWrites.length,2,'a missing first receipt may produce one safe retry of the same join RPC');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_request_id)).size,1,'retries must use the same idempotency request ID');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_request_hash)).size,1,'retries must retain the same request payload hash');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_ticket_id)).size,1,'retries must preserve the ticket identity');
+ assert.equal(committedTickets,1,'the authoritative database must create only one ticket despite two transport attempts');
+ console.log('PASS Live queue authentication, single-ticket retry safety, server-derived role/equipment, ownership, content gates, replay/race/conflict, status, heartbeat and cancellation boundary');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

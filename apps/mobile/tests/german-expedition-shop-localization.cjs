@@ -43,7 +43,9 @@ const expectedCopy=[
  'The Expedition Shop is temporarily unavailable.',
  'Purchase confirmed. Reopen your inventory to refresh rewards.',
  '‹ Back to Dungeons','Loading Expedition Shop…',
- 'Rare','Epic','supply','companion','icon','border','background','pet',
+ 'Rare','Epic','supply','material','companion','icon','border','background','pet',
+ 'Equipment crafting materials · 100 per bundle',
+ 'Choose a tier and resource. Purchases go directly to your shared Bank.',
  'Profile icon · visual only',
 ];
 const placeholders=source=>[...source.matchAll(/\{(\w+)\}/g)].map(match=>match[1]).sort();
@@ -96,4 +98,4 @@ for(const marker of [
  "t('Loading Expedition Shop…')",
  "t('Purchase confirmed. Reopen your inventory to refresh rewards.')",
 ])assert.ok(shell.includes(marker),'Expedition shell translation missing: '+marker);
-console.log('PASS: 24 guarded German Expedition Shop offers, 45 UI keys, descriptions, statuses, placeholders and a11y wiring');
+console.log('PASS: 24 guarded German Expedition Shop offers, 48 UI keys, descriptions, statuses, placeholders and a11y wiring');

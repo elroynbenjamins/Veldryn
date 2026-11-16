@@ -131,6 +131,27 @@ const bonusContext:Readonly<Record<Language,Readonly<{equipped:string;owned:stri
 };
 const bonusSummaryPattern=/^\+ ([0-9]+(?:\.[0-9]{1,2})?)% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+(?:\.[0-9]{1,2})?)% owned$/;
 
+const bonusTileLabels:Readonly<Record<Language,Readonly<{equipped:string;owned:string;preview:string}>>>={
+ en:{equipped:'While equipped',owned:'Permanent when owned',preview:'Preview price'},
+ de:{equipped:'Beim Ausrüsten',owned:'Dauerhaft im Besitz',preview:'Vorschaupreis'},
+ es:{equipped:'Al equipar',owned:'Permanente al poseer',preview:'Precio de vista previa'},
+ nl:{equipped:'Bij uitrusten',owned:'Permanent bij bezit',preview:'Voorbeeldprijs'},
+ it:{equipped:'Se equipaggiato',owned:'Permanente se posseduto',preview:'Prezzo di anteprima'},
+ fr:{equipped:'Si équipé',owned:'Permanent si possédé',preview:'Prix indicatif'},
+ ru:{equipped:'При экипировке',owned:'Навсегда при владении',preview:'Предварительная цена'},
+ tr:{equipped:'Kuşanıldığında',owned:'Sahipken kalıcı',preview:'Önizleme fiyatı'},
+};
+export function dungeonShopBonusLabel(language:Language,kind:'equipped'|'owned'|'preview'):string{return bonusTileLabels[language][kind];}
+
+/** Decode only the published server bonus format; never display raw code keys. */
+export function dungeonShopOfferBonusDetails(language:Language,source:string):{stat:string;equipped:string;owned:string}|null{
+ const match=bonusSummaryPattern.exec(source);
+ const stat=match?bonusNames[match[2]]?.[language]:undefined;
+ if(!match||!stat)return null;
+ const percent=(value:string)=>'+'+(language==='en'?String(Number(value)):String(Number(value)).replace('.',','))+'%';
+ return {stat,equipped:percent(match[1]),owned:percent(match[3])};
+}
+
 /** Decode only reviewed catalogue summary formats; raw stat IDs are never UI copy. */
 export function dungeonShopOfferSummary(language:Language,source:string):string{
  const bonus=bonusSummaryPattern.exec(source);

@@ -183,7 +183,7 @@ DECLARE v_src text; v_old text; v_new text;
 BEGIN
  v_src:=pg_get_functiondef('public.guild_shop_weekly_eligible_server_v1(uuid,text)'::regprocedure);
  v_old:='if p_kind=''attendance'' then';
- v_new:='if p_kind=''quest'' then return private.guild_weekly_quest_eligible_v1(p_account_id);'||
+ v_new:='if p_kind=''quest'' then return private.guild_weekly_quest_eligible_v1(p_account_id); end if;'||
         E'\n '||v_old;
  IF position('guild_weekly_quest_eligible_v1' IN v_src)=0 THEN
   IF position(v_old IN v_src)=0 THEN RAISE EXCEPTION 'guild_weekly_eligibility_source_mismatch'; END IF;

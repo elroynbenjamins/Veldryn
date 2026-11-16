@@ -124,7 +124,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={st('Close')} onPress={()=>setTonicPickerVisible(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
     </View>
-    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      {tonics.map(option=>{
       const selected=tonicPreference?.potionId===option.id,disabled=option.owned<=0;
       return <Pressable key={option.id} accessibilityRole="radio" accessibilityLabel={option.name+', '+option.owned+' carried'} accessibilityState={{selected,disabled}}

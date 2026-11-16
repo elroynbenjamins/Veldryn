@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": ".rankings-build"
+  },
+  "include": [
+    "src/server/rankings/ranking-application.ts",
+    "src/server/rankings/ranking-api-contracts.ts",
+    "src/server/rankings/ranking-http-application.ts",
+    "src/server/rankings/ranking-persistence.ts",
+    "src/server/rankings/ranking-types.ts",
+    "src/server/rankings/supabase-ranking-repository.ts",
+    "src/server/rankings/__tests__/ranking-application.ts"
+  ]
+}

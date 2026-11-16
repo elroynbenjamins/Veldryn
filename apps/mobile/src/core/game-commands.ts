@@ -395,8 +395,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
   case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
-  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank']));break;
-  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank']));break;
+  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
+  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
   case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}

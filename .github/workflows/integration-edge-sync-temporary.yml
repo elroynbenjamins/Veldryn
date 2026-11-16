@@ -40,9 +40,12 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          # This branch-only workflow is a build tool, not a release feature.
+          # Remove it in the same canonical-artifact commit so main stays clean.
+          git rm -- .github/workflows/integration-edge-sync-temporary.yml
           if git diff --cached --quiet; then
             echo 'Canonical bundles are already current.'
             exit 0
           fi
-          git commit -m 'build(edge): regenerate regional and companion combat bundles'
+          git commit -m 'build(edge): regenerate regional and companion combat bundles; remove temporary sync workflow'
           git push origin HEAD:integration/regional-monsters-companion-combat-20261116

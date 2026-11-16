@@ -1,0 +1,53 @@
+name: Inventory Bank and Gem Pouch canonical gameplay Edge parity (integration only)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+      - '.github/patches/inventory-bank-gem-app.patch'
+      - '.github/workflows/inventory-disposal-edge-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'integration/inventory-bank-gem-bulk-post-quarters-20261116'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Apply exact App inventory integration patch
+        run: |
+          git apply --check .github/patches/inventory-bank-gem-app.patch
+          git apply .github/patches/inventory-bank-gem-app.patch
+      - run: pnpm --dir backend build:online
+      - run: node tools/verify-gameplay-edge.mjs
+      - name: Commit only source-exact Edge bundles to this feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -- .github/patches/inventory-bank-gem-app.patch
+          git add -- apps/mobile/App.tsx backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'build: synchronize inventory Bank/Gem disposal and generated gameplay bundles'
+            git push origin HEAD:refs/heads/integration/inventory-bank-gem-bulk-post-quarters-20261116
+          fi

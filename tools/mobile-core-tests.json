@@ -108,6 +108,7 @@
   ".core-build/apps/mobile/tests/gold-economy-costs.js",
   ".core-build/apps/mobile/tests/item-rarity-v2.js",
   ".core-build/apps/mobile/tests/inventory-storage-ui-contract.js",
+  ".core-build/apps/mobile/tests/inventory-bank-gem-bulk-disposal.js",
   ".core-build/apps/mobile/tests/regional-food-pressure.js",
   ".core-build/apps/mobile/tests/food-queue.js",
   ".core-build/apps/mobile/tests/regional-monster-pressure-bands.js",

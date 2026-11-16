@@ -111,8 +111,8 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
     {quartersUpgrade?.cost&&nextQuarters?<View style={s.quartersNext}>
       <View style={s.between}>
         <Text style={s.sectionTitle}>{t('Next: {value0}',{value0:companionContent(language,nextQuarters.label)})}</Text>
-        <Text style={s.done}>{t('Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%',{value0:companionHousingBonuses(quartersTier+1).trainingXpPct,value1:companionHousingBonuses(quartersTier+1).bondXpPct,value2:companionHousingBonuses(quartersTier+1).essenceDiscountPct})}</Text>
       </View>
+      <Text style={s.done}>{t('Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%',{value0:companionHousingBonuses(quartersTier+1).trainingXpPct,value1:companionHousingBonuses(quartersTier+1).bondXpPct,value2:companionHousingBonuses(quartersTier+1).essenceDiscountPct})}</Text>
       <Text style={s.copy}>{t('{value0} Gold', {value0:amount(quartersUpgrade.cost.gold)})}</Text>
       {quartersUpgrade.materials.map(item=>{const source=companionHousingMaterialSource(item.itemId);return <View key={item.itemId} style={s.quartersMaterial}>
         <Text style={[s.quartersResource,item.owned>=item.quantity?s.done:s.ready]}>{item.owned>=item.quantity?'✓ ':'○ '}{companionMaterialName(item.itemId)} · {amount(item.owned)}/{amount(item.quantity)}</Text>

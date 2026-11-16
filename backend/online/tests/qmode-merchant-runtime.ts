@@ -33,9 +33,10 @@ async function main(){
    assert.equal(args.p_offer_id,offerId);
    assert.equal(args.p_actor_id,player.id);
    assert.equal(args.p_expected_version,5);
-   const client=args.p_client_projection as {merchantShop?:{resources:number;offers:Array<{id:string;purchased:boolean}>};lastRoomOutcome?:{kind:string;resourcesDelta:number;boonCount:number}};
-   assert.equal(client.merchantShop?.resources,3);
-   assert.equal(client.merchantShop?.offers.find(offer=>offer.id===offerId)?.purchased,true);
+   const client=args.p_client_projection as {resources:number;personalEffects:Record<string,{purchases:string[]}>;lastRoomOutcome?:{kind:string;resourcesDelta:number;boonCount:number}};
+   assert.equal(client.resources,3);
+   assert.ok(client.personalEffects[player.id]?.purchases.includes(offerId),'historical offer is recorded on the purchasing actor');
+   assert.ok(!Object.hasOwn(client,'merchantShop'),'retired Merchant shop offers are not exposed to current clients');
    assert.equal(client.lastRoomOutcome?.kind,'merchant_purchase');
    assert.equal(client.lastRoomOutcome?.resourcesDelta,-2);
    assert.equal(client.lastRoomOutcome?.boonCount,1);
@@ -45,7 +46,7 @@ async function main(){
   throw new Error('unexpected_rpc:'+name);
  }});
  const purchased=await runtime.purchaseMerchant(accountId,runId,request);
- assert.equal((purchased as {merchantShop?:{resources:number}}).merchantShop?.resources,3);
+ assert.equal((purchased as {resources:number}).resources,3);
  assert.deepEqual(await runtime.purchaseMerchant(accountId,runId,request),purchased);
  assert.equal(commits,1);
  assert.equal(loads,1);

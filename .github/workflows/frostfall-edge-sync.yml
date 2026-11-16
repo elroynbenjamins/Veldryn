@@ -1,0 +1,52 @@
+name: Regenerate Frostfall gameplay Edge bundles (feature branch only)
+# Source parity only; never deploys, runs on main, or changes release flags.
+on:
+  push:
+    branches:
+      - feat/frostfall-shop-tier-locked-crafting-bundles-20261116
+    paths:
+      - '.github/workflows/frostfall-edge-sync.yml'
+      - 'apps/mobile/src/core/release-flags.ts'
+      - 'apps/mobile/src/content/live-events.ts'
+      - 'backend/online/dungeon-shop.ts'
+      - 'backend/src/server/expeditions/**'
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/feat/frostfall-shop-tier-locked-crafting-bundles-20261116'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout immutable feature branch commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild gameplay and co-op Edge artifacts
+        run: pnpm --dir backend build:online
+      - name: Check bundle parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit only generated Edge bundles to feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git diff --cached --stat
+            git commit -m 'build: synchronize Frostfall gameplay and co-op Edge bundles'
+            git push origin HEAD:refs/heads/feat/frostfall-shop-tier-locked-crafting-bundles-20261116
+          else
+            echo 'Bundles already match source.'
+          fi

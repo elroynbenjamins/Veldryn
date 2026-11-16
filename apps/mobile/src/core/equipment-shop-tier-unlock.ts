@@ -19,7 +19,7 @@ export function grantMainEquipmentShopResource(state:GameState,itemId:string,qua
  if(!item||quantity!==100||!equipmentShopTierUnlocked(state,item.tier))throw new Error(item?equipmentShopTierLockReason(item.tier):'Unknown equipment resource.');
  if(!Array.isArray(state.bank.stacks)||!Number.isSafeInteger(state.bank.capacity)||state.bank.capacity<1)throw new Error('Invalid shared Bank.');
  const stacks=state.bank.stacks.map(stack=>({...stack}));
- const idx=stacks.findIndex(stack=>stack.itemId===itemId&&!('instanceId' in stack)&&stack.bound!==true&&Number.isSafeInteger(stack.quantity)&&stack.quantity>=0&&stack.quantity+quantity<=99999);
+ const idx=stacks.findIndex(stack=>stack.itemId===itemId&&!('instanceId' in stack)&&Number.isSafeInteger(stack.quantity)&&stack.quantity>=0&&stack.quantity+quantity<=99999);
  if(idx>=0)stacks[idx].quantity+=quantity;
  else{
   if(stacks.length>=state.bank.capacity)throw new Error('Shared Bank is full; free a slot before purchasing.');

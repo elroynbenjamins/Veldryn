@@ -28,15 +28,15 @@ const category=(offer:typeof DUNGEON_SHOP_CATALOG_V1[number])=>
 function sanitizedSnapshot(raw:unknown):DungeonShopAccountViewV1 & Pick<DungeonShopServerAccountSnapshot,'releasedPrices'|'shopEnabled'>{
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new GameplayError('invalid_dungeon_shop_snapshot');
  const s=raw as Record<string,unknown>;
- if(!Number.isSafeInteger(s.marks)||Number(s.marks)<0||!Array.isArray(s.clearedRegions)||!Array.isArray(s.ownedRewardIds)||!Array.isArray(s.unlockedCraftingTiers)||!s.purchasesThisUtcWeek||typeof s.purchasesThisUtcWeek!=='object')throw new GameplayError('invalid_dungeon_shop_snapshot');
+ if(!Number.isSafeInteger(s.marks)||Number(s.marks)<0||!Array.isArray(s.clearedRegions)||!Array.isArray(s.ownedRewardIds)||!(s.unlockedCraftingTiers===undefined||Array.isArray(s.unlockedCraftingTiers))||!s.purchasesThisUtcWeek||typeof s.purchasesThisUtcWeek!=='object')throw new GameplayError('invalid_dungeon_shop_snapshot');
  const regions=['Asterfall','Sunscar','Frostmarch'] as const;
- if(s.clearedRegions.some(v=>!regions.includes(v as DungeonShopRegion))||s.ownedRewardIds.some(v=>typeof v!=='string')||s.unlockedCraftingTiers.some(v=>![1,2,3,4].includes(v)))throw new GameplayError('invalid_dungeon_shop_snapshot');
+ if(s.clearedRegions.some(v=>!regions.includes(v as DungeonShopRegion))||s.ownedRewardIds.some(v=>typeof v!=='string')||(s.unlockedCraftingTiers as unknown[]|undefined)?.some(v=>![1,2,3,4].includes(v)))throw new GameplayError('invalid_dungeon_shop_snapshot');
  const purchases=s.purchasesThisUtcWeek as Record<string,unknown>;
  if(Object.entries(purchases).some(([key,value])=>!/^dshop_[a-z0-9_]{1,80}$/.test(key)||!Number.isSafeInteger(value)||Number(value)<0))throw new GameplayError('invalid_dungeon_shop_snapshot');
  if(typeof s.shopEnabled!=='boolean'||!s.releasedPrices||typeof s.releasedPrices!=='object'||Array.isArray(s.releasedPrices))throw new GameplayError('invalid_dungeon_shop_snapshot');
  const released=s.releasedPrices as Record<string,unknown>;
  if(Object.entries(released).some(([key,value])=>!DUNGEON_SHOP_CATALOG_V1.some(offer=>offer.id===key)||!Number.isSafeInteger(value)||Number(value)<1||Number(value)>=1000000))throw new GameplayError('invalid_dungeon_shop_snapshot');
- return {marks:Number(s.marks),clearedRegions:s.clearedRegions as DungeonShopRegion[],ownedRewardIds:s.ownedRewardIds as string[],unlockedCraftingTiers:s.unlockedCraftingTiers as number[],purchasesThisUtcWeek:purchases as Record<string,number>,releasedPrices:released as Record<string,number>,shopEnabled:s.shopEnabled};
+ return {marks:Number(s.marks),clearedRegions:s.clearedRegions as DungeonShopRegion[],ownedRewardIds:s.ownedRewardIds as string[],unlockedCraftingTiers:(s.unlockedCraftingTiers??[]) as number[],purchasesThisUtcWeek:purchases as Record<string,number>,releasedPrices:released as Record<string,number>,shopEnabled:s.shopEnabled};
 }
 function nextUtcMonday(nowMs:number):string{
  const week=dungeonShopUtcWeekKey(nowMs);

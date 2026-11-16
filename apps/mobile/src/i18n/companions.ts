@@ -1167,6 +1167,14 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
 }
 companionCatalogs.ru["COMPANION QUARTERS"]="ПОКОИ СПУТНИКОВ";
 companionCatalogs.tr["COMPANION QUARTERS"]="YOLDAŞ ODALARI";
+companionCatalogs.ru["Housing improves training and Bond rewards. Only Ascension and rarity limit levels."]="Покои повышают опыт тренировки и связи. Предел уровня зависит только от Вознесения и редкости.";
+companionCatalogs.tr["Housing improves training and Bond rewards. Only Ascension and rarity limit levels."]="Odalar, eğitim ve Bağ deneyimini artırır. Seviye sınırını yalnızca Yükseliş ve nadirlik belirler.";
+companionCatalogs.ru["Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%"]="Опыт тренировки +{value0}% · Опыт связи +{value1}% · Расход эссенции −{value2}%";
+companionCatalogs.tr["Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%"]="Eğitim XP +{value0}% · Bağ XP +{value1}% · Öz maliyeti −{value2}%";
+companionCatalogs.ru["Housing fully upgraded."]="Покои улучшены до максимума.";
+companionCatalogs.tr["Housing fully upgraded."]="Odalar tamamen yükseltildi.";
+companionCatalogs.ru["Choose a companion to view its Housing bonuses."]="Выберите спутника, чтобы посмотреть бонусы покоев.";
+companionCatalogs.tr["Choose a companion to view its Housing bonuses."]="Oda bonuslarını görmek için bir yoldaş seç.";
 companionCatalogs.ru["LEVEL CAP {value0}"]="ПРЕДЕЛ УРОВНЯ {value0}";
 companionCatalogs.tr["LEVEL CAP {value0}"]="SEVİYE SINIRI {value0}";
 companionCatalogs.ru["Quarters and Ascension both limit training. Earned levels and combat abilities are never removed."]="Покои и Вознесение ограничивают тренировку. Полученные уровни и боевые способности сохраняются.";

@@ -7,6 +7,12 @@
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {PGlite} from '@electric-sql/pglite';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {
+ PARTY_EVENT_RECEIPT_RECOVERY_QUERY_V31,
+ inspectPrivatePartyEventReceiptV31,
+}=require('../dist/online/backend/online/party-event-receipt-recovery-v31.js');
 
 const SQL=fileURLToPath(new URL('../supabase/migrations/20261115173500_party_event_paid_receipt_inbox_v29.sql',import.meta.url));
 const migration=readFileSync(SQL,'utf8');
@@ -144,6 +150,44 @@ async function run(){
  const other=await q('select private.read_party_event_paid_inbox_v29($1::uuid) as value',[outsider]);
  assert(other.rows[0].value.items.length===0,
   'other account cannot read unrelated Inbox messages');
+
+ // v31 must recover the *stored* paired receipt after a lost response, but
+ // must NOT allow a client success or an automatic second grant. This exercises
+ // the REAL parameterized query against the v29 tables, not a mock SQL result.
+ const recoveryDb={queryOne:async(sql,params)=>{
+  assert(sql===PARTY_EVENT_RECEIPT_RECOVERY_QUERY_V31,
+   'v31 uses only approved account/offer/request SQL');
+  const rows=await q(sql,params);
+  return rows.rows[0]??null;
+ }};
+ const inspect=(accountId,offerId,requestKey)=>
+  inspectPrivatePartyEventReceiptV31({
+   gateEnabled:true,trustedAccountId:accountId,offerId,requestId:requestKey,
+   db:recoveryDb,
+  });
+ const afterCommit=await inspect(account,offer,requestId);
+ assert(afterCommit.status==='paired_receipt_present'
+  &&afterCommit.receiptId===receipt
+  &&afterCommit.retryAuthorized===false
+  &&afterCommit.clientSuccessAllowed===false
+  &&afterCommit.economyIndependentlyVerified===false,
+  'receipt + Inbox pair is visible but does not certify economy transfer');
+ const unrelated=await inspect(outsider,offer,requestId);
+ assert(unrelated.status==='not_recorded'&&unrelated.receiptId===null
+  &&!unrelated.retryAuthorized,
+  'another account cannot discover or replay this receipt');
+ const genuinelyAbsent=await inspect(account,otherOffer,'party-v31-new-req-0002');
+ assert(genuinelyAbsent.status==='not_recorded'
+  &&!genuinelyAbsent.retryAuthorized,
+  'no recorded receipt never automatically authorizes a payout retry');
+ for(const [offerId,requestKey] of [
+   [otherOffer,requestId],[offer,'party-v31-changed-key-0003'],
+ ]){
+  let rejected=false;
+  try{await inspect(account,offerId,requestKey);}
+  catch(e){rejected=String(e).includes('receipt_request_conflict');}
+  assert(rejected,'changed offer or reused request must fail closed');
+ }
 
  // The SQL uniqueness constraints deny replay/double-credit even with new UUIDs.
  await expectFailure(tx=>writeReceipt({

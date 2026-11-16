@@ -92,8 +92,8 @@ END $project_topup_shop_snapshot$;
 DO $project_topup_contract$
 BEGIN
  IF private.guild_weekly_project_early_bonus_eligible_v1(null)
-   OR (select count(*) from public.guild_shop_weekly_rewards_server_v1(null) s
-       where s->>'kind'='project_bonus')<>0
+   OR (select count(*) from jsonb_array_elements(public.guild_shop_weekly_rewards_server_v1(null)) AS s(value)
+       where s.value->>'kind'='project_bonus')<>0
    OR position('when ''project_bonus'' then 4' in
      pg_get_functiondef('public.guild_shop_claim_weekly_server_v1(uuid,text)'::regprocedure))=0
  THEN RAISE EXCEPTION 'guild_weekly_project_bonus_contract_failed'; END IF;

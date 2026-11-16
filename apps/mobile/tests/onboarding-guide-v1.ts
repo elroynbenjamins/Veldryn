@@ -2,6 +2,8 @@ import {equal,deepEqual} from './assertions';
 import {createGameGuideReadPreferenceStore} from '../src/core/game-guide-read-preferences';
 import {acknowledgeGameGuide,guideDefinition,GAME_GUIDE_STEPS,newlyUnlockedGameGuide,normalizeOnboardingGuideState,unlockedGameGuide} from '../src/core/onboarding';
 import {migrateSave} from '../src/core/save-migrations';
+import {browseGameGuides} from '../src/core/game-guide-browse';
+import {GAME_GUIDE,GAME_GUIDE_CATEGORIES} from '../src/core/onboarding';
 import {newGame,createCharacter} from '../src/core/game';
 const state:any=createCharacter(newGame(1),'IRONWARDEN','Guide Tester');state.character.level=2;state.account.guildMember=false;state.account.unlockedCharacterSlots=1;
 equal(unlockedGameGuide(state).some(item=>item.id==='getting_started'),true,'starter guide unlocks');equal(newlyUnlockedGameGuide(state).length>=2,true,'initial guides are discoverable');
@@ -58,3 +60,18 @@ void (async()=>{
  equal(JSON.stringify(state),snapshot,'reading online guide never mutates server-owned game state');
  console.log('online guide read preferences passed');
 })().catch(error=>{console.error(error);process.exitCode=1});
+
+// Guide library regression: search, categories, progress and locked previews.
+const guideState:any=createCharacter(newGame(2),'IRONWARDEN','Guide Hub Test');
+const openIds=new Set(unlockedGameGuide(guideState).map(entry=>entry.id));
+const readIds=new Set(['getting_started'] as const);
+const browse=(category:'all'|'basics'|'progress'|'social'|'adventures',query='',unreadOnly=false)=>browseGameGuides({unlockedIds:openIds,readIds,category,query,unreadOnly});
+equal(Object.keys(GAME_GUIDE_CATEGORIES).length,GAME_GUIDE.length,'every topic has a category');
+equal(browse('basics').every(entry=>GAME_GUIDE_CATEGORIES[entry.id]==='basics'),true,'category filtering stays precise');
+equal(browse('all','expedition marks').some(entry=>entry.id==='dungeon_shop'),true,'search includes locked guide content');
+equal(browse('all','NO SUCH GUIDE').length,0,'no matches for an unrelated query');
+equal(browse('all','',true).every(entry=>openIds.has(entry.id)&&!readIds.has(entry.id)),true,'unread filter excludes read and locked entries');
+equal(browse('all').some(entry=>entry.id==='coop_dungeons'),true,'locked features can be previewed');
+equal(guideDefinition('additional_characters').summary.includes('three'),true,'character guide reflects the three-character roster');
+equal(GAME_GUIDE_STEPS.coop_dungeons.some(step=>step.includes('Asterfall')),true,'dungeon guide describes Asterfall solo access');
+console.log('guide hub navigation and current-copy contract passed');

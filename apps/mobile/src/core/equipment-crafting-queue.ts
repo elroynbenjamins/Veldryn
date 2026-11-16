@@ -2,7 +2,7 @@ import {captureSkillAffinity,normalizeSkillAffinitySnapshot,affinityXpRemainderK
 import {professionActionPace} from './profession-action-pace';
 import {RECIPES,recipeDef,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
-import {unlockedCharacterSlots} from './account-roster';
+import {unlockedCharacterSlots,accountSkillLevel} from './account-roster';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';

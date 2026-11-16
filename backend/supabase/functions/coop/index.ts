@@ -43393,6 +43393,9 @@ function companionCombatContribution(state) {
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
 
+// ../apps/mobile/src/core/equipment-vendor-value.ts
+var forgeGoldCostByItemId = new Map(V33_EQUIPMENT_RECIPES.map((recipe2) => [recipe2.output.itemId, recipe2.gold]));
+
 // ../apps/mobile/src/core/monthly-quest-milestones.ts
 init_progression();
 init_faith2();

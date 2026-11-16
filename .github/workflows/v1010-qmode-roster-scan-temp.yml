@@ -1,3 +1,4 @@
+# Exact-path replay after replacing fixed six-room limit with generated route bound.
 name: v1.0.10 Q-Mode roster diagnostic (branch only)
 on:
   push:

@@ -78,11 +78,14 @@ BEGIN
  SELECT level INTO v_level FROM public.guilds WHERE id=NEW.guild_id;
  IF coalesce(v_level,0)<3 THEN RETURN NEW; END IF;
  IF clock_timestamp()<NEW.starts_at OR clock_timestamp()>=NEW.ends_at THEN RETURN NEW; END IF;
- IF TG_OP='INSERT' OR (TG_OP='UPDATE' AND NEW.damage>OLD.damage) THEN
+ IF TG_OP='INSERT' THEN
   PERFORM public.guild_chat_post_system_event_v1(NEW.guild_id,'boss:'||NEW.id||':ready',
    'Guild Boss available: '||left(NEW.name,90)||'. Rally your guild!');
+  RETURN NEW;
  END IF;
- IF TG_OP='UPDATE' AND NEW.damage>OLD.damage THEN
+ IF NEW.damage>OLD.damage THEN
+  PERFORM public.guild_chat_post_system_event_v1(NEW.guild_id,'boss:'||NEW.id||':ready',
+   'Guild Boss available: '||left(NEW.name,90)||'. Rally your guild!');
   v_before:=floor(100*OLD.damage::numeric/NEW.max_hp)::integer;
   v_after:=floor(100*NEW.damage::numeric/NEW.max_hp)::integer;
   FOREACH v_pct IN ARRAY ARRAY[25,50,100] LOOP

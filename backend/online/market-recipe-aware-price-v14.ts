@@ -133,7 +133,7 @@ function materialQuote(id:string,seen:Set<string>,depth:number):MaterialQuote|un
  if(depth>10||seen.has(id)||!validMaterial(id))return undefined;
  const producers=RECIPES.filter(r=>r.output.itemId===id
    &&r.output.quantity>0&&!r.requiredKnowledgeId
-   &&(r.skillId==='smithing'||r.skillId==='alchemy'||r.skillId==='enchanting'));
+   &&(r.skillId==='smithing'||r.skillId==='tailoring'||r.skillId==='alchemy'||r.skillId==='enchanting'));
  if(!producers.length)return inputAnchor(id);
  const next=new Set(seen);next.add(id);
  const costs=producers.map(r=>recipeCost(r,next,depth+1)).filter((row):row is MarketRecipeCostV14=>row!==undefined);

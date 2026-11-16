@@ -272,7 +272,7 @@ export function guildShopWeeklyClaimHandler(services:GuildShopReadServices){
   try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
   if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
   const body=input as Record<string,unknown>;
-  if(Object.keys(body).length!==1||!['attendance','project','boss','quest'].includes(body.kind as string))
+  if(Object.keys(body).length!==1||!['attendance','project','boss','quest','project_bonus'].includes(body.kind as string))
    return json({error:"invalid_weekly_guild_reward"},400);
   try{
    const credited=await services.rpc<number>("guild_shop_claim_weekly_server_v1",{

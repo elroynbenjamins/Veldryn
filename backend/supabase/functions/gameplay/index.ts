@@ -48600,6 +48600,11 @@ var DUNGEON_SHOP_COLLECTIBLES_V1 = [
   reward2("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
   reward2("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
 ];
+var DUNGEON_SHOP_PROFILE_ICONS_V1 = [
+  { id: "dungeon:asterfall:wardens-lantern", name: "Warden's Lantern", rarity: "Rare", group: "Dungeon", region: "Asterfall" },
+  { id: "dungeon:sunscar:solar-vault-key", name: "Solar Vault Key", rarity: "Rare", group: "Dungeon", region: "Sunscar" },
+  { id: "dungeon:frostmarch:resonant-bell", name: "Resonant Bell", rarity: "Rare", group: "Dungeon", region: "Frostmarch" }
+];
 
 // ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
@@ -51609,7 +51614,8 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:runic-scholar", name: "Runic Scholar", group: "Starter", source: "Available from the start." },
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
-  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" }
+  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 function profileIconCollection(state) {
   const selected2 = state.character?.profileIconId ?? `class:${state.character?.classId ?? "IRONWARDEN"}`;
@@ -51617,7 +51623,7 @@ function profileIconCollection(state) {
   const base = CLASSES.filter((row) => row.id === activeClass).map((row) => ({ id: `class:${row.id}`, name: row.name, group: "Class", source: "Your active character class.", unlocked: true, artworkReady: true, selected: selected2 === `class:${row.id}` }));
   const owned = new Set(state.account.unlockedProfileIconIds ?? []);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
-  const portraits = PROFILE_ICON_CATALOG.map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)).map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
   const known2 = new Set(portraits.map((row) => row.id));
   const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
   const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id)).map((row) => [row.id, row])).values()];

@@ -71,7 +71,9 @@ for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp
  assert.notEqual(result,source,'Untranslated live bonus stat: '+target);
  assert.match(result,/\+2,00%/,'German bonus should use comma decimals');
  assert.match(result,/\+0,50% \(im Besitz\)/);
- assert.equal(dungeonShopOfferSummary('en',source),source,'English server description changed');
+ const english=dungeonShopOfferSummary('en',source);
+ assert.ok(english.includes('when equipped')&&english.includes('while owned'),'English bonus should explain equipped/owned effects');
+ assert.ok(!english.includes(target),'English benefit copy must not leak raw stat IDs');
 }
 assert.equal(dungeonShopOfferSummary('de','Unknown effect {whatever}'),'Unknown effect {whatever}');
 for(const region of ['Asterfall','Sunscar','Frostmarch'])

@@ -5,6 +5,7 @@ import {RELEASED_EVENT_COMPANIONS} from '../src/content/event-companions-active'
 import {GUILD_COMBAT_COMPANIONS} from '../src/content/guild-companions-v1';
 import {GUILD_SHOP_CATALOGUE} from '../../../packages/guild-shop/src/catalogue';
 import {combatCompanionDef} from '../src/content/combat-companions';
+import {FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import type {GameState} from '../src/core/types';
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
@@ -17,7 +18,7 @@ const original:GameState={...starter,account:{...starter.account,
 }};
 const veilbreakIds=['EVT_UNIT_007','EVT_UNIT_008','EVT_UNIT_011'];
 const scheduledFrostfallIds=['EVT_UNIT_009'];
-assert(JSON.stringify(RELEASED_EVENT_COMPANIONS.map(c=>c.id).sort())===JSON.stringify([...veilbreakIds,...scheduledFrostfallIds].sort()),'Runtime roster includes Veilbreak companions and scheduled Frostfall Herald');
+assert(JSON.stringify(RELEASED_EVENT_COMPANIONS.map(c=>c.id).sort())===JSON.stringify([...veilbreakIds,...(FROSTFALL_REWARDS_RELEASED?scheduledFrostfallIds:[])].sort()),'Runtime roster keeps Frostfall companions behind their release flag');
 for(const id of scheduledFrostfallIds)assert(!!combatCompanionDef(id),'Scheduled Frostfall companion must resolve before the event starts');
 for(const id of veilbreakIds)assert(!!combatCompanionDef(id),'Every released event reward must resolve to a playable companion');
 let state=original;

@@ -11,9 +11,9 @@ import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
 type GuideText={title:string;body:string;detail?:string;topics?:readonly {id:string;title:string;body:string}[]};
-type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean;placement?:'card'|'header';header?:ReactNode};
+type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean;placement?:'card'|'header';header?:ReactNode;stepThrough?:boolean};
 /** One unobtrusive tip on first entry to each tab. Tabs and actions remain usable. */
-export function SectionGuide({scope,area,section,guide,translate,showReplay=true,placement='card',header}:Props){
+export function SectionGuide({scope,area,section,guide,translate,showReplay=true,placement='card',header,stepThrough=false}:Props){
  const C=useGameTheme(),language=useGameLanguage();
  const t=(value:string)=>{const mapped=translate?.(value)??value;return mapped===value?accountText(language,value):mapped;};
  const identity=area+':'+scope;
@@ -34,6 +34,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
  const topics=guide.topics??[];
  const selectedTopic=topics[Math.min(topicIndex,Math.max(0,topics.length-1))];
  const displayTitle=area==='guild'?guildGuideSectionTitle(language,section,t(guide.title)):t(guide.title);
+ const dungeonHeader=area==='dungeon';
  const expanded=!seen||open?.identity===identity&&open?.section===section;
  const close=()=>{
   setOpen(null);setMore(false);setTopicIndex(0);
@@ -46,8 +47,8 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
   const visible=open?.identity===identity&&open?.section===section;
   const trigger=<Pressable
     accessibilityRole="button"
-    accessibilityLabel={t('Show guide for this tab')}
-    accessibilityHint={t('Open help for the current Guild section')}
+    accessibilityLabel={dungeonHeader?t('Open dungeon guide'):t('Show guide for this tab')}
+    accessibilityHint={dungeonHeader?t('Dungeon handbook'):t('Open help for the current Guild section')}
     accessibilityState={{expanded:visible}}
     hitSlop={4}
     onPress={()=>{setOpen({identity,section});setMore(false);setTopicIndex(0)}}
@@ -64,7 +65,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
       <View style={styles.dialogHeading}>
        {area==='guild'?<View style={[styles.guideIcon,{backgroundColor:C.selection,borderColor:C.selectionLine}]}><ThemedIcon name="guild" size={22}/></View>:null}
        <View style={styles.copy}>
-        <Text style={[styles.dialogEyebrow,{color:C.accent}]}>{t('SECTION GUIDE')}</Text>
+        <Text style={[styles.dialogEyebrow,{color:C.accent}]}>{t(dungeonHeader?'Dungeon guide':'SECTION GUIDE')}</Text>
         <Text accessibilityRole="header" style={[styles.dialogTitle,{color:C.text}]}>{displayTitle}</Text>
        </View>
        <Pressable accessibilityRole="button" accessibilityLabel={t('Close guide')} onPress={close} style={[styles.closeButton,{borderColor:C.line}]}>
@@ -83,6 +84,13 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
         <View style={styles.topicContent}>
          <Text accessibilityRole="header" style={[styles.topicHeading,{color:C.text}]}>{t(selectedTopic.title)}</Text>
          <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
+        </View>
+       </View>:null}
+       {stepThrough&&topics.length>1?<View style={styles.walkthrough}>
+        <Text accessibilityRole="text" style={[styles.stepCount,{color:C.muted}]}>{t('Step {current} of {total}').replace('{current}',String(topicIndex+1)).replace('{total}',String(topics.length))}</Text>
+        <View style={styles.stepActions}>
+         <Pressable accessibilityRole="button" accessibilityLabel={t('Previous topic')} disabled={topicIndex===0} accessibilityState={{disabled:topicIndex===0}} onPress={()=>setTopicIndex(index=>Math.max(0,index-1))} style={[styles.stepButton,{borderColor:C.line,backgroundColor:C.panel2},topicIndex===0&&styles.stepDisabled]}><Text style={[styles.stepButtonText,{color:C.text}]}>{t('Previous topic')}</Text></Pressable>
+         <Pressable accessibilityRole="button" accessibilityLabel={t(topicIndex===topics.length-1?'Finish guide':'Next topic')} onPress={()=>topicIndex===topics.length-1?close():setTopicIndex(index=>Math.min(topics.length-1,index+1))} style={[styles.stepButton,styles.stepNext,{borderColor:C.selectionLine,backgroundColor:C.selection}]}><Text style={[styles.stepButtonText,{color:C.text}]}>{t(topicIndex===topics.length-1?'Finish guide':'Next topic')}</Text></Pressable>
         </View>
        </View>:null}
        {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(value=>!value)} style={styles.detailButton}>
@@ -144,6 +152,11 @@ const styles=StyleSheet.create({
  dialogHeading:{flexDirection:'row',alignItems:'flex-start',gap:12},
  guideIcon:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
  topicArea:{gap:9,minHeight:0},
+ walkthrough:{gap:8,paddingTop:5,borderTopWidth:StyleSheet.hairlineWidth,borderColor:'rgba(140,150,155,.3)'},
+ stepCount:{fontSize:11,lineHeight:15,fontWeight:'700'},
+ stepActions:{flexDirection:'row',gap:8},
+ stepButton:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:7,borderRadius:9,borderWidth:1},
+ stepNext:{flex:1},stepDisabled:{opacity:.35},stepButtonText:{fontSize:12,fontWeight:'800',textAlign:'center'},
  topicTabs:{gap:6,paddingVertical:2},
  topicTab:{minHeight:44,justifyContent:'center',paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderRadius:9},
  topicTabLabel:{fontSize:12,fontWeight:'800'},

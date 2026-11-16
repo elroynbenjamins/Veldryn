@@ -2,6 +2,7 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "This dungeon run cannot be restarted.": ["Этот забег в подземелье нельзя начать заново.","Bu zindan koşusu yeniden başlatılamaz."],
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Only your Party leader can invite other players.": ["Только лидер вашей группы может приглашать игроков.","Diğer oyuncuları yalnızca grup liderin davet edebilir."],
   "This player already belongs to another Party.": ["Этот игрок уже состоит в другой группе.","Bu oyuncu zaten başka bir grupta."],

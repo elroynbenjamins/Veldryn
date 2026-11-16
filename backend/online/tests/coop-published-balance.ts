@@ -53,6 +53,7 @@ for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])
  for(const dungeon of publishedDungeonIds){
   const roster=[tank,...damage,support].map((id,index)=>frozen(id,index,dungeon));
   const samples=100;let clears=0;
+  const bossOutcome:Record<string,{attempts:number;clears:number;failedBeforeBoss:number}>={};
   for(let seed=0;seed<samples;seed++){
    const id=`${dungeon}-${tank}-${support}-${damage[0]}-${seed}`;
    const service=new QModeService(new MemoryQModeRunRepository(),'published-loadout-balance-v1');
@@ -63,9 +64,15 @@ for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])
     assert.ok(choices.length>0,'Published route must offer a path to the final boss');
     run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(choices.find(node=>node.kind==='camp')??choices[0]).nodeId});
    }
-   if(run.phase==='completed')clears++;
+   const bossId=run.graph.nodes.find(node=>node.kind==='boss')?.contentId;
+   assert.ok(bossId,'Every published Q-Mode route must have a final boss');
+   const bucket=bossOutcome[bossId]??{attempts:0,clears:0,failedBeforeBoss:0};
+   bucket.attempts++;
+   if(run.phase==='completed'){clears++;bucket.clears++;}
+   else if(run.lastResolution?.nodeId!==run.graph.bossNodeId)bucket.failedBeforeBoss++;
+   bossOutcome[bossId]=bucket;
   }
-  const result={dungeon,tank,support,damage,clears,samples};
+  const result={dungeon,tank,support,damage,clears,samples,bossOutcome};
   results.push(result);console.log(JSON.stringify(result));
   assert.ok(clears/samples>=.85,'Published regional roster below launch clear-rate floor: '+JSON.stringify(result));
  }

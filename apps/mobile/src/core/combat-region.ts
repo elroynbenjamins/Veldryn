@@ -11,9 +11,11 @@ export function currentRegionId(state:GameState){
   if(activityZone)return activityZone;
   // Existing saves may point into a newly story-locked *or unreleased* region.
   // Resolve to the nearest earlier playable region without altering stored progress.
-  const savedZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId);
-  if(savedZone){
-    const previous=[...WORLD_ZONES].reverse().find(zone=>zone.minLevel<savedZone.minLevel&&usable(zone.id));
+  const savedIndex=WORLD_ZONES.findIndex(zone=>zone.id===state.currentRegionId);
+  if(savedIndex>0){
+    // Chapter level ranges were rebased separately from legacy unreleased
+    // chapters, so numeric minimum levels are NOT a reliable geographic order.
+    const previous=[...WORLD_ZONES.slice(0,savedIndex)].reverse().find(zone=>usable(zone.id));
     if(previous)return previous.id;
   }
   return WORLD_ZONES[0].id;

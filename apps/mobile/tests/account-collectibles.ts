@@ -75,7 +75,7 @@ if(!alternate.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('deleting
 if(!alternate.account.unlockedTitleIds?.includes('oathbound'))fail('deleting original owner must preserve earned title');
 if(!alternate.account.unlockedProfileBackgroundIds?.includes('oathglass-hall'))fail('deleting original owner must preserve earned background');
 
-const legacyAltOnly=JSON.parse(JSON.stringify(createAccountCharacter(primary,'BASTION','Legacy Alt','male',now+7)));
+const legacyAltOnly=JSON.parse(JSON.stringify(createAccountCharacter(primary,'DAWNKEEPER','Legacy Alt','male',now+7)));
 legacyAltOnly.account.unlockedCosmeticPetIds=[];
 legacyAltOnly.otherCharacters[0].character.ownedPetIds=['PET_018'];
 legacyAltOnly.character.selectedCosmeticPetId='PET_018';

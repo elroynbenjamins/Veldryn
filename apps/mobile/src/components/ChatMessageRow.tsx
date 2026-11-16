@@ -2,14 +2,14 @@ import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {IdentityArtwork} from './SocialIdentity';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
-import {ChatMessageText} from './ChatMessageText';
+import {ChatTranslatableBody} from './ChatTranslatableBody';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import {useSocialText} from '../i18n/social';
 
-export function ChatMessageRow({accountId,name,body,createdAt,guildTag,tagColorId,nameStyle,badges,role,mentionName,onPress,reduceMotion=false,avatar=true,compact=false}:{accountId?:string;name:string;body:string;createdAt?:string;guildTag?:string|null;tagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;badges?:PlayerBadgeIdentity;role?:'leader'|'officer'|'member'|null;mentionName?:string;onPress?:()=>void;reduceMotion?:boolean;avatar?:boolean;compact?:boolean}){
+export function ChatMessageRow({accountId,name,body,createdAt,guildTag,tagColorId,nameStyle,badges,role,mentionName,onPress,reduceMotion=false,avatar=true,compact=false,messageId}:{accountId?:string;name:string;body:string;createdAt?:string;guildTag?:string|null;tagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;badges?:PlayerBadgeIdentity;role?:'leader'|'officer'|'member'|null;mentionName?:string;onPress?:()=>void;reduceMotion?:boolean;avatar?:boolean;compact?:boolean;messageId?:string}){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const roleLabel=role?st(role==='leader'?'Guild Leader':role==='officer'?'Officer':'Member'):'';
  return <View style={[s.row,compact&&s.compactRow]}>
@@ -23,7 +23,7 @@ export function ChatMessageRow({accountId,name,body,createdAt,guildTag,tagColorI
     {role?<View accessibilityRole="image" accessibilityLabel={roleLabel} style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text accessible={false} style={[s.roleGlyph,role==='leader'?s.roleGlyphLeader:role==='officer'?s.roleGlyphOfficer:s.roleGlyphMember]}>{role==='leader'?'✦✦✦':role==='officer'?'✦✦':'✦'}</Text></View>:null}
     {createdAt?<Text style={s.time}>{new Date(createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</Text>:null}
    </View>
-   <ChatMessageText body={body} mentionName={mentionName} compact={compact} style={[s.message,compact&&s.compactMessage]}/>
+   <ChatTranslatableBody messageId={messageId} body={body} mentionName={mentionName} compact={compact} style={[s.message,compact&&s.compactMessage]}/>
   </View>
  </View>;
 }

@@ -1,7 +1,8 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useRef,useState,type ElementRef} from 'react';
-import {ScrollView,StyleSheet,Text} from 'react-native';
+import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ChatTranslatableBody} from '../ChatTranslatableBody';
 import {ChatComposer} from '../ChatComposer';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel} from './CoopVisualKit';
@@ -24,7 +25,7 @@ export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[]
  };
  return <FantasyPanel variant="selected">
   <ScrollView ref={messagesScroll} style={s.messages} contentContainerStyle={s.messageList} keyboardShouldPersistTaps="handled" onContentSizeChange={()=>messagesScroll.current?.scrollToEnd({animated:false})} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
-   {messages.length?messages.slice(-20).map(message=><Text key={message.id} style={s.message}><Text style={s.sender}>{message.senderName}: </Text>{message.body}</Text>):<Text style={s.copy}>{st("No messages yet.")}</Text>}
+   {messages.length?messages.slice(-20).map(message=><View key={message.id}><Text style={[s.message,s.sender]}>{message.senderName}:</Text><ChatTranslatableBody messageId={message.id} body={message.body} compact style={s.message}/></View>):<Text style={s.copy}>{st("No messages yet.")}</Text>}
   </ScrollView>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   <ChatComposer accessibilityLabel={st("Party chat message")} value={text} onChangeText={setText} onSend={()=>void send()} busy={busy||sending} editable={!busy&&!sending} placeholder={st("Message your party…")}/>

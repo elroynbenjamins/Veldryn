@@ -1,6 +1,8 @@
 import {strict as assert} from 'node:assert';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
-import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
+import {characterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
+import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
+import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../../src/server/coop/dungeon-entry-policy';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import type {ClassId} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
@@ -12,13 +14,34 @@ import {resolveCoopNode} from '../../src/server/expeditions/node-resolution';
 const classes=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as ClassId[];
 const dungeon=EXPEDITIONS.EXP_001;
 assert.ok(dungeon);
+// A "prepared roster" must meet the published dungeon entry power floor.
+// Previously the synthetic level-100 party wore only novice equipment and
+// cleared 23/100 runs; that was an underpowered fixture, not a Q-Mode tune.
+// Mirror the independent published regional 105%-of-floor calibration while
+// retaining both original/new-pressure simulation paths and the 85% guard.
+const requiredLevel=regularDungeonTierRequiredLevel(dungeon,1);
+const requiredPower=regularDungeonTierRequiredPower(dungeon,1);
 const roster=classes.map((classId,index)=>{
  const state=createCharacter(newGame(0),classId,'Pressure Baseline');
- state.character!.id='pressure-'+index;
- state.character!.level=100;state.character!.xp=legacyCharacterTotalXpAtLevel(100);
- state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
+ const char=state.character!;char.id='pressure-'+index;
+ char.level=requiredLevel;char.xp=characterTotalXpAtLevel(requiredLevel);
+ char.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
+ const base={attack:char.attack,defense:char.defense,hp:char.hp},target=requiredPower*1.05;
+ let low=.01,high=80;
+ for(let n=0;n<22;n++){
+  const scale=(low+high)/2;
+  char.attack=Math.max(1,Math.round(base.attack*scale));
+  char.defense=Math.max(1,Math.round(base.defense*scale));
+  char.hp=Math.max(1,Math.round(base.hp*scale));
+  if(combatPowerRating(state).total<target)low=scale;else high=scale;
+ }
+ char.attack=Math.max(1,Math.round(base.attack*high));
+ char.defense=Math.max(1,Math.round(base.defense*high));
+ char.hp=Math.max(1,Math.round(base.hp*high));
+ const cp=combatPowerRating(state).total;
+ assert.ok(cp>=requiredPower,'Synthetic prepared Echo must meet the published entry CP floor');
  const record=deriveOnlineCoopLoadout('pressure-account-'+index,state,1);
- return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:dungeon.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
+ return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:requiredLevel,minCombatPower:requiredPower,syncLevel:dungeon.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
 });
 function clear(seed:number,legacy:boolean):boolean{
  const id='pressure-'+seed;
@@ -62,6 +85,6 @@ for(const attack of [1,1.005,1.01,1.015,1.02,1.03,1.04]){
  candidates[String(attack)]=clears;
 }
 console.log('Q-Mode calibrated attack candidates:',JSON.stringify(candidates));
-console.log('Q-Mode baseline comparison:',JSON.stringify({baselineClears,qmodeClears,samples:100,delta:qmodeClears-baselineClears}));
+console.log('Q-Mode prepared-roster baseline comparison:',JSON.stringify({requiredPower,requiredLevel,baselineClears,qmodeClears,samples:100,delta:qmodeClears-baselineClears}));
 assert.ok(baselineClears>=85,'Baseline prepared-roster clear rate must remain healthy independently of new tuning');
 assert.ok(qmodeClears>=baselineClears-15,'New pressure should not collapse prepared Echo clear rates');

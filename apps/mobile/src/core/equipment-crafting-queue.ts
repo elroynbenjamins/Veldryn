@@ -23,7 +23,7 @@ export const MAX_WAITING_EQUIPMENT_CRAFTS=5;
 export const MAX_READY_EQUIPMENT_CRAFTS=20;
 
 export interface EquipmentCraftSlotSource{
-  id:'base'|'supporter'|'vip_plus'|'character_2'|'character_4';
+  id:'base'|'supporter'|'vip_plus'|'character_2'|'account_skill_1050';
   label:string;
   earned:boolean;
   slots:number;

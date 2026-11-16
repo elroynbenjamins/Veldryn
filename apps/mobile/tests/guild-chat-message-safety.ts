@@ -29,6 +29,16 @@ ok(normal[1].body===history[1].body,'Valid message text remains unchanged.');
 const leader=normalizeGuildChatMessages([{...history[0],id:'leader-message',guild_role:'leader'}]);
 ok(leader[0].guild_role==='leader','Leader badge remains available.');
 
+// Guild Herald entries are server-only notices: no profile or cosmetic identity.
+const herald=normalizeGuildChatMessages([
+ {id:'project-complete',account_id:null,sender_name:'Guild Herald',body:'Project completed: United for Veldryn.',created_at:'2026-11-16T18:00:00Z'},
+ {...history[0],id:'player-impersonating-herald',sender_name:'Guild Herald'},
+ {id:'another-null',account_id:null,sender_name:'Unknown',body:'No account linked',created_at:'2026-11-16T18:00:00Z'},
+]);
+ok(herald[0].is_system===true&&herald[0].account_id==='','A verified null-account Guild Herald line is a system notice.');
+ok(herald[1].is_system===false,'A player cannot impersonate the Guild Herald by setting a display name.');
+ok(herald[2].is_system===false,'Arbitrary missing identities must not be treated as system notices.');
+
 const malformed=normalizeGuildChatMessages([
  {...history[0],id:'bad-identity',sender_name:null,body:0,created_at:'not a date',guild_role:'guild_master',
  guild_tag:'INVALID',player_name_style:{mode:'gradient',gradientColors:{broken:true}},player_badges:{staff:['admin'],validUntilMs:'never'}},

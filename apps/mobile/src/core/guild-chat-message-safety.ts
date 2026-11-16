@@ -5,6 +5,7 @@ import {normalizePlayerNameStyle,type PlayerNameStylePreference} from './player-
 export interface SafeGuildChatMessage {
  id:string;
  account_id:string;
+ is_system:boolean;
  sender_name:string;
  body:string;
  created_at:string;
@@ -47,6 +48,7 @@ export function normalizeGuildChatMessages(value:unknown):SafeGuildChatMessage[]
   const role=row.guild_role==='leader'||row.guild_role==='officer'||row.guild_role==='member'?row.guild_role:null;
   result.push({
    id:row.id,account_id:typeof row.account_id==='string'?row.account_id:'',
+   is_system:row.account_id===null&&name==='Guild Herald',
    sender_name:name,body,created_at:createdAt,
    guild_tag:guildTag,guild_tag_color_id:optionalString(row.guild_tag_color_id),
    player_name_style:playerNameStyle(row.player_name_style),

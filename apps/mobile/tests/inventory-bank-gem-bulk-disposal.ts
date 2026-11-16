@@ -28,7 +28,7 @@ const bankSaleSummary=bulkSelectionSummary(singleSalvage,['COPPER_ORE'],'bank');
 ok(bankSaleSummary.sellableUnitCount===8,'Bank bulk select counts only its own stacks');
 const allBankSold=executeGameCommand(singleSalvage,{type:'bulk_sell',args:{location:'bank',ids:['COPPER_ORE']}},1002).state;
 ok(!allBankSold.bank.stacks.some(row=>row.itemId==='COPPER_ORE'),'Bank bulk sale removes requested bank material');
-ok(allBankSold.bank.gold===singleSalvage.bank.gold+copperPrice*8&&allBankSold.character!.gold===800,'Bank bulk proceeds must never enter carried Gold');
+ok((allBankSold.bank.gold??0)===(singleSalvage.bank.gold??0)+copperPrice*8&&allBankSold.character!.gold===800,'Bank bulk proceeds must never enter carried Gold');
 const allBankSalvaged=executeGameCommand(allBankSold,{type:'bulk_salvage',args:{location:'bank',ids:[gearId]}},1003).state;
 ok(!allBankSalvaged.bank.stacks.some(row=>row.itemId===gearId),'Bank bulk salvage removes requested gear');
 ok((allBankSalvaged.inventory.stacks.find(row=>row.itemId===reward.itemId)?.quantity??0)===startingDust+2*reward.quantity,'Bank bulk salvage grants each reward once');

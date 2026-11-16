@@ -79,6 +79,9 @@ begin
   or p_request_id is null or length(p_request_id) not between 8 and 180
  then raise exception 'party_event_v25_invalid_quote_request';end if;
 
+ -- Serialize before week and offer locks, matching gameplay and v30.
+ perform pg_advisory_xact_lock(
+  hashtextextended('party-account:'||p_account_id::text,0));
  select * into o from private.party_event_reward_offers_v24
  where id=p_offer_id;
  if not found then raise exception 'party_event_v25_offer_missing';end if;
@@ -189,18 +192,20 @@ begin
  -- destination is present and structurally valid. NO values are changed.
  -- Capacity, level-up and account-wide companion/renown/Inbox paths remain
  -- UNVERIFIED, and therefore the whole quote stays nonclaimable.
- select gold into v_wallet_gold from public.character_wallets
-  where character_id=p_character_id for update;
- if not found or v_wallet_gold<0
- then raise exception 'party_event_v25_wallet_unavailable';end if;
- if v_wallet_gold>9223372036854775807::numeric-v_gold
- then raise exception 'party_event_v25_gold_overflow';end if;
+ -- Online save must precede the Gold wallet, as in v30. Wallet-first
+ -- could invert an overlapping account's online/wallet lock acquisition.
  select state into v_state from public.online_game_states
   where account_id=p_account_id and character_id=p_character_id for update;
  if not found or v_state is null
   or jsonb_typeof(v_state#>'{inventory,stacks}')<>'array'
   or jsonb_typeof(coalesce(v_state#>'{settings,lockedItemIds}','[]'::jsonb))<>'array'
  then raise exception 'party_event_v25_online_inventory_unavailable';end if;
+ select gold into v_wallet_gold from public.character_wallets
+  where character_id=p_character_id for update;
+ if not found or v_wallet_gold<0
+ then raise exception 'party_event_v25_wallet_unavailable';end if;
+ if v_wallet_gold>9223372036854775807::numeric-v_gold
+ then raise exception 'party_event_v25_gold_overflow';end if;
 
  insert into private.party_event_reward_claim_quotes_v25(
   offer_id,reservation_id,party_id,event_starts_at,account_id,

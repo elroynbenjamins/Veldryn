@@ -31,8 +31,9 @@ export const COMPANION_BOND_ESSENCE_REWARDS={2:20,4:35,6:55,8:80} as const;
 
 export const COMPANION_BOND_CONFIG={
   maxLevel:10,
-  // cumulative XP required for Bond Levels 1-10
-  xpThresholds:[0,90,210,370,580,840,1160,1540,1990,2520] as const,
+  curveVersion:2,
+  // Cumulative XP. Tripled versus the original Bond curve, preserving its shape.
+  xpThresholds:[0,270,630,1110,1740,2520,3480,4620,5970,7560] as const,
   rewards:{2:'20 Essence',4:'35 Essence',6:'55 Essence',8:'80 Essence',10:'Bond Trait'} as Record<number,string>,
   sourceXp:{battle:4,boss:60,dungeon:32,companion_objective:45,future_activity:12} as const,
 } as const;

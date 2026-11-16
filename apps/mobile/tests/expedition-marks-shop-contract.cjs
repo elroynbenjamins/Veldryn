@@ -70,6 +70,28 @@ assert(shopView.includes('<DungeonShopOfferIcon item={item}/>'),'offers must ren
 assert(shopView.includes('CATEGORY_PREVIEW_ART[item.category]'),'unreleased collectible previews must have category artwork');
 assert(!shopView.includes('◇'),'generic diamond shop-item placeholder must not return');
 
+// Dungeon Shop pet rewards have three distinct packed assets and a single
+// reward-ID resolver used by the shop, Pet Collection and profile showcases.
+const dungeonPetArt=read('apps/mobile/src/theme/dungeon-shop-pet-art.ts');
+const petRegistry=read('apps/mobile/src/theme/pet-art.ts');
+const petDefinitions=read('apps/mobile/src/content/dungeon-shop-collectibles-v1.ts');
+for(const [offerId,petId,assetName] of [
+ ['dshop_asterfall_pet','DUNGEON_PET_ASTERFALL_001','DUNGEON_PET_ASTERFALL_001_Oathroot_Seedling.webp'],
+ ['dshop_sunscar_pet','DUNGEON_PET_SUNSCAR_001','DUNGEON_PET_SUNSCAR_001_Vaultscarab.webp'],
+ ['dshop_frostmarch_pet','DUNGEON_PET_FROSTMARCH_001','DUNGEON_PET_FROSTMARCH_001_Choirbell_Sprite.webp'],
+]){
+ const asset=path.join(root,'apps/mobile/assets/dungeon-shop/pets',assetName);
+ assert(fs.existsSync(asset),'missing packed pet artwork: '+assetName);
+ const bytes=fs.readFileSync(asset);
+ assert(bytes.length>1000&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP','invalid WebP asset: '+assetName);
+ assert(dungeonPetArt.includes(petId+':require('),'pet art resolver missing '+petId);
+ assert(dungeonPetArt.includes(offerId+":'"+petId+"'"),'shop SKU mapping missing '+offerId);
+ assert(petDefinitions.includes(petId),'shop pet must retain its collectible ID: '+petId);
+}
+assert(petRegistry.includes('??dungeonShopPetArtSource(id)'),'Pet Collection must resolve Dungeon Shop art');
+assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offers must use unique pet art and expanded preview');
+assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'new pet art must not bypass collectible release gate');
+
 // V3 extends the baseline 17 SKUs with seven one-per-week, x100 crafting inputs.
 // Preserve the baseline resource artwork improvements from main.
 assert(bundles.includes("'crafting_bundle'")&&bundles.includes("'quantity',v_offer.reward_quantity"),'bank grant must be server-owned');

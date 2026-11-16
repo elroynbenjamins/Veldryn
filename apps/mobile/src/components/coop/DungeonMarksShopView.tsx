@@ -1,5 +1,5 @@
 import {useRef,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
@@ -12,6 +12,7 @@ import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShop
 
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
+import {dungeonShopPetOfferArt} from '../../theme/dungeon-shop-pet-art';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
 
 type Shelf='Supplies'|'Collections'|'Owned';
@@ -30,6 +31,8 @@ const CATEGORY_PREVIEW_ART:Record<DungeonMarksShopCard['category'],UiIconName>={
  supply:'inventory',material:'inventory',companion:'companions',icon:'account',border:'character',background:'world',pet:'companions',
 };
 function DungeonShopOfferIcon({item}:{item:DungeonMarksShopCard}){
+ const petArt=dungeonShopPetOfferArt(item.id);
+ if(petArt)return <Image source={petArt} resizeMode="contain" style={{width:44,height:44}}/>;
  const resourceId=item.materialItemId??OFFER_RESOURCE_ART[item.id];
  return resourceId?<ResourceIcon resourceId={resourceId} size={42}/>:<UiIcon name={CATEGORY_PREVIEW_ART[item.category]} size={36}/>;
 }
@@ -132,6 +135,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.detail}>
+     {dungeonShopPetOfferArt(item.id)?<View style={s.petPreview}><Image source={dungeonShopPetOfferArt(item.id)!} resizeMode="contain" style={s.petPreviewImage}/></View>:null}
      <Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
@@ -160,6 +164,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
  description:{...typography.body,color:C.text},
+ petPreview:{alignItems:'center',justifyContent:'center',minHeight:96},petPreviewImage:{width:96,height:96},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

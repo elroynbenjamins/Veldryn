@@ -12,6 +12,7 @@ import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining,recordCompanionActivity} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
+import {recordAccountProgress} from './account-roster';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
@@ -38,6 +39,7 @@ import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 import {reconcileAccountCollections} from './account-collections';
+import {claimMonthlyQuestMilestone} from './monthly-quest-milestones';
 import {recordSeasonalActivity} from './seasonal-quests';
 import {ensurePersonalSeasonalState} from './personal-seasonal-state';
 import {snapshotEarnedLegacySeasonalClaims} from './legacy-seasonal-claim';
@@ -60,7 +62,7 @@ const fields:Record<string,readonly string[]>={
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id','choiceId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -162,7 +164,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  // Event weekly contracts are automatic. Keep the retired accept command
  // compatible with older clients without needlessly settling an activity.
- const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
+ const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='monthly_quest_milestone'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
  // Starting a new activity replaces the old one in a single trusted operation. This also
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
@@ -324,7 +326,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
-    :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
+    :result.gemAction==='refine'
+      ?`Refined ${result.recipe.name} · Gem Pouch`
+      :result.gemSucceeded
+        ?`Combined ${result.recipe.name} · Gem Pouch`
+        :`Gem merge failed: ${result.recipe.name} · 1 gem lost, 2 returned · Gold and reagents spent`;
    break;
   }
   case 'craft_claim_all':{
@@ -342,7 +348,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
       ?`Check your equipment copies. ${result.blocked[0].reason}`
       :'Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'}${result.gemFailed?` (${result.gemFailed} failed merge${result.gemFailed===1?'':'s'})`:''} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }
@@ -444,6 +450,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
   case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now,a.choiceId===undefined?undefined:text(a,'choiceId',100));break;
+  case 'monthly_quest_milestone':state=claimMonthlyQuestMilestone(state,text(a,'month',7),integer(a,'threshold',30,100),text(a,'characterId',100),oneOf(a.skillId,['mining','woodcutting','fishing','herbalism','smithing','cooking','alchemy','exploration','tailoring','enchanting','faith']),now);break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;
   case 'inventory_preference':{
     // Only the requested preference changes; legacy settings cannot break locks.
@@ -494,7 +501,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Includes loot added by combat, quests, co-op and old save actions.
  // Re-evaluate milestones earned by this command (fishing, mastery, bosses,
  // crafting or quests), not just those completed before it started.
- state=reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now));
+ state=recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now)));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

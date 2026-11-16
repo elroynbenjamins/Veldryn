@@ -53,12 +53,12 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   if(!potion)return gl(output.passive??'Equipment infusion material');
   const effect=potion.effect;
   if(effect.kind==='healing')return gt('Restores {percent}% maximum HP in boss fights or between dungeon rooms.',{percent:Math.round(effect.maxHpFraction*100)});
-  const count=effect.encounters;
+  // One prepared tonic remains active for the entire dungeon run.
   if(effect.healingStrengthFraction>0||effect.shieldStrengthFraction>0)
-   return gt('+{damage}% damage · +{strength}% healing and shielding for {count} ordinary encounters.',{damage:Math.round(effect.damageDealtFraction*100),strength:Math.round(effect.healingStrengthFraction*100),count});
+   return gt('+{damage}% damage · +{strength}% healing and shielding for the full dungeon run.',{damage:Math.round(effect.damageDealtFraction*100),strength:Math.round(effect.healingStrengthFraction*100)});
   if(effect.damageReductionFraction>0)
-   return gt('Takes {percent}% less damage for {count} ordinary encounters.',{percent:Math.round(effect.damageReductionFraction*100),count});
-  return gt('Deals {percent}% more damage for {count} ordinary encounters.',{percent:Math.round(effect.damageDealtFraction*100),count});
+   return gt('Takes {percent}% less damage for the full dungeon run.',{percent:Math.round(effect.damageReductionFraction*100)});
+  return gt('Deals {percent}% more damage for the full dungeon run.',{percent:Math.round(effect.damageDealtFraction*100)});
  };
  const all=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId).sort((a,b)=>a.level-b.level),[skillId]);
  const groups=categories[skillId],preferred=all.find(r=>r.id===preferredRecipeId)??all.find(r=>r.output.itemId===preferredRecipeId);
@@ -183,7 +183,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   {busy?<Text accessibilityLiveRegion="polite" style={[s.caption,{color:C.info}]}>{gt('Starting…')}</Text>:null}
   {error?<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
   {potionList?<View style={s.potionList}>
-    <Text style={[s.caption,{color:C.muted}]}>{gt('Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.')}</Text>
+    <Text style={[s.caption,{color:C.muted}]}>{gt('Draughts heal in boss fights and dungeons. Select one buff tonic per dungeon run. It lasts the full run and is consumed even on failure.')}</Text>
     {([1,2,3] as const).map(tier=>{
       const rows=recipes.filter(recipe=>potionDef(recipe.output.itemId)?.tier===tier);
       return rows.length?<View key={tier} style={s.potionTierGroup}>

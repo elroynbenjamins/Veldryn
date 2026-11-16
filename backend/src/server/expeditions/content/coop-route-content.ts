@@ -21,7 +21,7 @@ function mergePools(a:ContentPools,b:ContentPools):ContentPools{
  return merged;
 }
 export const COOP_ROUTE_CONTENT:Readonly<Record<string,ContentPools>>=Object.freeze({
-  EXP_001:mergePools(ROOTBOUND,themed('LANTERN')),EXP_002:themed('LANTERN'),EXP_003:mergePools(themed('SUN_OBS'),themed('SUN_MIRAGE')),EXP_004:themed('SUN_MIRAGE'),EXP_005:themed('FROST_LAKE'),EXP_006:themed('FROST_CHOIR'),EXP_007:themed('ASH_FEN'),EXP_008:themed('ASH_CRUCIBLE'),
+  EXP_001:mergePools(ROOTBOUND,themed('LANTERN')),EXP_002:themed('LANTERN'),EXP_003:mergePools(themed('SUN_OBS'),themed('SUN_MIRAGE')),EXP_004:themed('SUN_MIRAGE'),EXP_005:mergePools(themed('FROST_LAKE'),themed('FROST_CHOIR')),EXP_006:themed('FROST_CHOIR'),EXP_007:mergePools(themed('ASH_FEN'),themed('ASH_CRUCIBLE')),EXP_008:themed('ASH_CRUCIBLE'),
 });
 
 export function coopContentPool(expeditionId:string,kind:NonBossKind):readonly string[]{

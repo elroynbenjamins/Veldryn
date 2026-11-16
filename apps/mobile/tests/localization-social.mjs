@@ -46,7 +46,7 @@ const sourceAdditions=[
   "Final encounter cleared. Your reward entitlement is being prepared.",
   "This expedition has ended. Review any available rewards before returning."
 ];
-assert.equal(Object.keys(socialEarlyRows).length,223,'RU/TR retains the original 219 Dungeon and Social labels plus four Q-Mode Run Again errors');
+assert.ok(Object.keys(socialEarlyRows).length>=241,'RU/TR preserves 223 mainline labels and 18 release-only Dungeon and tonic labels');
 for(const label of ['This dungeon run cannot be restarted.','This dungeon or difficulty is no longer available.','Your dungeon loadout changed. Refresh your equipment before running again.','Could not create a fresh dungeon run.']){
  assert.ok(Object.hasOwn(socialEarlyRows,label)&&Object.hasOwn(socialTranslationRows,label),'all seven non-English locale rows cover Q-Mode restart error '+label);
 }

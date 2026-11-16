@@ -1,10 +1,11 @@
 import type {GameState} from './types';
+import type {AnnouncedForgeRarity} from './forge-system-announcements';
 import {equipmentCraftingQueue} from './equipment-crafting-queue';
 import {eventLifecycle} from './live-events';
 import {navigationText} from '../i18n/navigation';
 
 export type SystemNoticeTone='info'|'good'|'warning';
-export interface SystemNotice{id:string;title:string;body:string;tone:SystemNoticeTone}
+export interface SystemNotice{id:string;title:string;body:string;tone:SystemNoticeTone;forge?:{rarity:AnnouncedForgeRarity;quality:number}}
 
 /** Builds the read-only system feed from actionable, persisted game state. */
 export function systemNotifications(state:GameState,nowMs=Date.now()):SystemNotice[]{

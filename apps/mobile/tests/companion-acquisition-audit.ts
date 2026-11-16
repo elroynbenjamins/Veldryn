@@ -3,6 +3,7 @@ import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,combatCompanionDef} from '../src
 import {EVENT_COMPANIONS} from '../src/content/event-companions-v2';
 import {GUILD_COMBAT_COMPANIONS} from '../src/content/guild-companions-v1';
 import {MONSTERS} from '../src/content/monsters';
+import {monsterMasteryKillsForRank} from '../src/core/monster-mastery';
 import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks,companionCanRecruitFromRequirements,recruitEligibleCombatCompanion,starterCombatCompanionChoices,starterCombatCompanionChoicePending,chooseStarterCombatCompanion} from '../src/core/combat-companions';
 import {validateGameCommand} from '../src/core/game-commands';
 import {companionRequirementProgress} from '../src/core/companion-presentation';
@@ -42,7 +43,7 @@ ok(COMBAT_COMPANIONS.every(def=>ids.includes(def.id)),'All visible companions mu
 // qualifying character is not the active one.
 let main=createCharacter(newGame(0),'IRONWARDEN','Roster Main');
 const alt=createCharacter(newGame(0),'KNIFE_DANCER','Roster Alt');
-const boostedAlt={...alt.character!,classSkills:(alt.character?.classSkills??[]).map(row=>({...row,xp:classCombatSkillTotalXpAtLevel(45),level:45})),monsterMasteryPoints:{FOREST_TROLL:500}};
+const boostedAlt={...alt.character!,classSkills:(alt.character?.classSkills??[]).map(row=>({...row,xp:classCombatSkillTotalXpAtLevel(45),level:45})),monsterMasteryPoints:{FOREST_TROLL:monsterMasteryKillsForRank(20)}};
 main={...main,otherCharacters:[{character:boostedAlt,skills:alt.skills.map(s=>s.skillId==='smithing'?{...s,level:30,xp:totalXpAtLevel(30)}:s),quests:alt.quests,inventory:alt.inventory,overflow:alt.overflow,activity:null,currentRegionId:alt.currentRegionId}]};
 const knifeRequirement=combatCompanionDef('UNIT_007')!.unlockRequirements[0];
 const trollRequirement=combatCompanionDef('UNIT_004')!.unlockRequirements[0];

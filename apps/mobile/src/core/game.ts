@@ -15,7 +15,7 @@ import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAf
 import {CLASSES} from '../content/classes';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
-import {MONSTERS} from '../content/monsters';
+import {MONSTERS,REGIONAL_CHAPTER_NEW_MONSTER_IDS} from '../content/monsters';
 import {regionalClassCounter} from './regional-class-counter';
 import {MAX_RELEASED_EQUIPMENT_TIER} from '../content/equipment-release';
 import {REGIONAL_AREAS} from '../content/regional-areas';
@@ -50,7 +50,7 @@ import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
-import {regionTravelAvailability,regionTravelLockReason,cumulativeMonsterUnlockIds} from './world-navigation';
+import {regionTravelAvailability,regionTravelLockReason,cumulativeMonsterUnlockIds,encounterLockRequirement} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment} from './equipment-enhancement';
 import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from './equipment-set-runtime';
@@ -234,6 +234,11 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   state=settleOutOfCombatRecovery(finishClassDrills(state,nowMs),nowMs);
   if(!state.character)throw new Error('Create a character first');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
+  // Newly authored chapter encounters have hard level/area gates even if a
+  // saved unlock ID was granted before the regional rescale. Older monsters
+  // intentionally retain their original cumulative unlock behavior.
+  if(REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monsterId)&&encounterLockRequirement(state,m))
+    throw new Error('Monster is locked by regional progression');
   if(state.character.currentHp<=1)throw new Error('Too injured to fight. Eat food or recover health before starting combat.');
   // Area encounters added after initial release use region + level progression.
   // Existing exploration-unlocked monsters retain their original unlock rules.

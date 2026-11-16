@@ -50026,7 +50026,8 @@ function accountRegionAfkUnlocked(state, id) {
 function recordAccountProgress(state) {
   const slots2 = unlockedCharacterSlots(state);
   const regions = REGION_AFK_MILESTONES.filter((id) => accountRegionAfkUnlocked(state, id));
-  return { ...state, account: { ...state.account, unlockedCharacterSlots: slots2, earnedAfkRegionIds: [...regions] } };
+  const forgeMastery1050Earned = state.account.forgeMastery1050Earned === true || Number(state.account.unlockedCharacterSlots ?? 0) >= 4 || accountSkillLevel(state) >= 1050;
+  return { ...state, account: { ...state.account, unlockedCharacterSlots: slots2, forgeMastery1050Earned, earnedAfkRegionIds: [...regions] } };
 }
 
 // ../apps/mobile/src/core/gem-pouch.ts
@@ -54784,7 +54785,7 @@ function equipmentCraftSlotBreakdown(state) {
     { id: "supporter", label: "Supporter", earned: accountEntitlementBenefits(state).supporter, slots: 1 },
     { id: "vip_plus", label: "VIP+", earned: accountEntitlementBenefits(state).vipPlus, slots: 1 },
     { id: "character_2", label: "Unlock character slot #2", earned: unlocked >= 2, slots: 1 },
-    { id: "character_4", label: "Unlock character slot #4", earned: unlocked >= 4, slots: 1 }
+    { id: "account_skill_1050", label: "Reach 1,050 account skill levels", earned: accountSkillLevel(state) >= 1050 || state.account.forgeMastery1050Earned === true || Number(state.account.unlockedCharacterSlots ?? 0) >= 4, slots: 1 }
   ];
   const raw2 = sources.filter((row) => row.earned).reduce((sum, row) => sum + row.slots, 0);
   return { base: BASE_EQUIPMENT_CRAFT_SLOTS, max: MAX_EQUIPMENT_CRAFT_SLOTS, capacity: Math.min(MAX_EQUIPMENT_CRAFT_SLOTS, raw2), raw: raw2, sources };

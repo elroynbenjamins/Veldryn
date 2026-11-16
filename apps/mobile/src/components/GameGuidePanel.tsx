@@ -31,7 +31,7 @@ export function GameGuidePanel({state,onOpen,onStartTour,seenGuideIds}:{
  const readCount=unlocked.filter(entry=>readIds.has(entry.id)).length;
  const percent=unlocked.length?Math.round(readCount/unlocked.length*100):0;
  const firstUnread=unlocked.find(entry=>!readIds.has(entry.id));
- const entries=browseGameGuides({unlockedIds,readIds,category,query,unreadOnly});
+ const entries=browseGameGuides({unlockedIds,readIds,category,query,unreadOnly,localize:a});
  return <View style={s.root}>
   <View style={s.hero}>
    <Text style={s.eyebrow}>{t('Learning library')}</Text>

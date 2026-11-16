@@ -10,7 +10,9 @@ const i18n=read('i18n/companions.ts');
 assert(screen.includes('<CombatCompanionPanel'),'Companion screen must still use the owning panel');
 assert(panel.includes('<CompanionIndex'),'Collection must use the index');
 assert(panel.includes('onOpen={id=>{setSelection(id);setDetailOpen(true)}}'),'Companion detail sheet must stay wired');
-assert(panel.includes("onTrain={id=>{setSelection(id);setSection('Training')}}"),'Training route must stay wired');
+assert(panel.includes("onTrain={id=>{setSelection(id);setOpenBondOnEntry(false);setSection('Training')}}"),'Training route must stay wired');
+assert(panel.includes("onBond={id=>{setSelection(id);setOpenBondOnEntry(true);setSection('Training')}}"),'Claimable Bond rewards must open their modal directly');
+assert(index.includes('bondRewardReady?onBond(def.id):onOpen(def.id)'),'Claim-ready roster entries must deep-link to Bond while other entries open details');
 assert(panel.includes("onCodex={()=>setSection('Codex')}"),'Codex navigation must remain available');
 
 for(const key of ['My companions','Unlock','Past events','Your companions','Companions to unlock','Previously released companions','Manage','Details','Filter roles']){
@@ -19,7 +21,7 @@ for(const key of ['My companions','Unlock','Past events','Your companions','Comp
 for(const needle of [
  '<SearchField',
  "type IndexTab='owned'|'unlock'|'event'",
- "useState<IndexTab>('unlock')",
+ "useState<IndexTab>(()=>(state.account.unlockedCombatCompanionIds?.length??0)>0?'owned':'unlock')",
  "tab==='owned'&&!owned",
  "tab==='unlock'&&(owned||group!=='available')",
  "tab==='event'&&group!=='event'",
@@ -68,6 +70,7 @@ assert(!index.includes("t('Coming soon')")&&!index.includes('UNRELEASED_SEASONAL
 assert(index.includes("tab==='event'&&group!=='event'"),'Past-event tab is limited to released event companions');
 assert(index.includes("tab==='owned'&&!owned"),'Owned tab must include acquired past-event companions');
 assert(index.includes('setRole(\'all\');setQuery(\'\');setRoleMenuOpen(false);'),'Switching tabs must clear stale filters');
+assert(index.includes('companionBondProgress')&&index.includes('bondRewardReady'),'Owned companion rows must show Bond progression and rewards ready to claim');
 assert(index.includes("tab==='owned'&&unlocked===0"),'Empty owned roster must suggest recruiting instead of showing an unhelpful reset');
 assert(index.includes("tab==='unlock'&&unlockCount===0"),'Fully collected roster must offer owned companions');
 assert(index.includes("tab==='owned'&&unlocked>0"),'Training shortcut belongs to owned tab');

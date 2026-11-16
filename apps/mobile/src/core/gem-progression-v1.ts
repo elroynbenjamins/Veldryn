@@ -66,6 +66,7 @@ function consumeStackV1(stacks:readonly ItemStack[],itemId:string,amount:number)
 function addStackV1(stacks:readonly ItemStack[],capacity:number,itemId:string,quantityToAdd:number){if(quantityToAdd<=0)return [...stacks];const existing=stacks.find(row=>row.itemId===itemId);if(existing)return stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row);if(stacks.length>=capacity)throw new Error('Inventory and Bank are full');return [...stacks,{itemId,quantity:quantityToAdd}];}
 export function dismantleGemV1(state:GameState,itemId:string,quantityToDismantle=1){
  const meta=canonicalGemMetaV1(itemId);if(!meta)throw new Error('Only canonical gems can be dismantled');
+ if(state.settings.favoriteItemIds?.includes(itemId)||state.settings.lockedItemIds?.includes(itemId))throw new Error('Favorite or locked gems cannot be dismantled');
  if(!Number.isSafeInteger(quantityToDismantle)||quantityToDismantle<1)throw new Error('Invalid dismantle quantity');
  if(combinedGemQuantityV1(state,itemId)<quantityToDismantle)throw new Error('You do not own enough of this gem');
  const dustPer=GEM_DISMANTLE_DUST_V1[meta.grade],afterGem=consumeGemFromStorage(state,itemId,quantityToDismantle),dust=dustPer*quantityToDismantle;

@@ -10,7 +10,8 @@ test('manual UI never auto-translates messages',()=>{
  const row=read(mobile,'src/components/ChatTranslatableBody.tsx');
  assert.match(row,/onPress=\{\(\)=>void toggle\(\)\}/);
  assert.match(row,/translateChatMessage\(messageId,language\)/);
- assert.doesNotMatch(row,/useEffect\([^]*translateChatMessage\(/);
+ assert.equal((row.match(/translateChatMessage\(/g)||[]).length,1);
+ assert.ok(row.indexOf('const toggle=async()=>')<row.indexOf('translateChatMessage('));
  for(const language of ['en','de','es','nl','it','fr','ru','tr'])assert.match(row,new RegExp(' '+language+':'));
 });
 test('translation API never sends user-supplied message text',()=>{

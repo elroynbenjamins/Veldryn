@@ -2,7 +2,7 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useRef,useState,type ElementRef} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
-import {ChatTranslatableBody} from '../ChatTranslatableBody';
+import {ChatTranslateAction,ChatTranslationMessage,useManualChatTranslation} from '../ChatTranslatableBody';
 import {ChatComposer} from '../ChatComposer';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel} from './CoopVisualKit';
@@ -25,11 +25,23 @@ export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[]
  };
  return <FantasyPanel variant="selected">
   <ScrollView ref={messagesScroll} style={s.messages} contentContainerStyle={s.messageList} keyboardShouldPersistTaps="handled" onContentSizeChange={()=>messagesScroll.current?.scrollToEnd({animated:false})} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
-   {messages.length?messages.slice(-20).map(message=><View key={message.id}><Text style={[s.message,s.sender]}>{message.senderName}:</Text><ChatTranslatableBody messageId={message.id} body={message.body} compact style={s.message}/></View>):<Text style={s.copy}>{st("No messages yet.")}</Text>}
+   {messages.length?messages.slice(-20).map(message=><CoopPartyMessageRow key={message.id} message={message}/>):<Text style={s.copy}>{st("No messages yet.")}</Text>}
   </ScrollView>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   <ChatComposer accessibilityLabel={st("Party chat message")} value={text} onChangeText={setText} onSend={()=>void send()} busy={busy||sending} editable={!busy&&!sending} placeholder={st("Message your party…")}/>
  </FantasyPanel>;
 }
 
-const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({copy:{...coopTypography.body,color:coopColors.textSecondary},messages:{maxHeight:220},messageList:{gap:coopSpacing.xs},message:{...coopTypography.body,color:coopColors.text},sender:{color:coopColors.cyan,fontWeight:'900'},error:{...coopTypography.meta,color:coopColors.danger}});
+function CoopPartyMessageRow({message}:{message:CoopChatMessage}){
+ const {styles:s}=useCoopStyles(makeStyles);
+ const translation=useManualChatTranslation(message.id,message.body);
+ return <View>
+  <View style={s.messageHeader}>
+   <Text style={[s.message,s.sender]}>{message.senderName}:</Text>
+   <ChatTranslateAction controller={translation}/>
+  </View>
+  <ChatTranslationMessage controller={translation} compact style={s.message}/>
+ </View>;
+}
+
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({messageHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:28},copy:{...coopTypography.body,color:coopColors.textSecondary},messages:{maxHeight:220},messageList:{gap:coopSpacing.xs},message:{...coopTypography.body,color:coopColors.text},sender:{color:coopColors.cyan,fontWeight:'900'},error:{...coopTypography.meta,color:coopColors.danger}});

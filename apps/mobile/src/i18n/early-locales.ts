@@ -11,6 +11,7 @@ import {RUSSIAN_FINAL_PROGRESSION_ROWS} from './russian-final-progression';
 import {RUSSIAN_FINAL_GAMEPLAY_ROWS} from './russian-final-gameplay';
 import {RUSSIAN_FINAL_COMPANION_ROWS} from './russian-final-companions';
 import {RUSSIAN_FINAL_ACCOUNT_ROWS} from './russian-final-account';
+import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
@@ -2639,6 +2640,8 @@ export function earlyLocaleText(language:Language,source:string):string|undefine
     return RUSSIAN_FINAL_PROGRESSION_ROWS[source as keyof typeof RUSSIAN_FINAL_PROGRESSION_ROWS];
   if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_FINAL_SOCIAL_ROWS,source))
     return RUSSIAN_FINAL_SOCIAL_ROWS[source as keyof typeof RUSSIAN_FINAL_SOCIAL_ROWS];
+  if(language==='ru'&&Object.prototype.hasOwnProperty.call(RUSSIAN_RELEASE_POLISH_ROWS,source))
+    return RUSSIAN_RELEASE_POLISH_ROWS[source as keyof typeof RUSSIAN_RELEASE_POLISH_ROWS];
   const row=Object.prototype.hasOwnProperty.call(EARLY_LOCALE_ROWS,source)
     ? EARLY_LOCALE_ROWS[source as keyof typeof EARLY_LOCALE_ROWS]:undefined;
   return row?.[language==='ru'?0:1]??(language==='tr'?TURKISH_COVERAGE[source as keyof typeof TURKISH_COVERAGE]:undefined);

@@ -44590,10 +44590,10 @@ function recordMonsterMastery(state, id, kills) {
 
 // ../apps/mobile/src/core/companion-housing.ts
 var COMPANION_HOUSING_BONUSES = [
-  { trainingXpPct: 0, bondXpPct: 0, essenceDiscountPct: 0 },
-  { trainingXpPct: 5, bondXpPct: 5, essenceDiscountPct: 3 },
-  { trainingXpPct: 10, bondXpPct: 10, essenceDiscountPct: 6 },
-  { trainingXpPct: 15, bondXpPct: 15, essenceDiscountPct: 10 }
+  { trainingXpPct: 0, statPct: 0, essenceDiscountPct: 0 },
+  { trainingXpPct: 5, statPct: 1, essenceDiscountPct: 3 },
+  { trainingXpPct: 10, statPct: 2, essenceDiscountPct: 6 },
+  { trainingXpPct: 15, statPct: 3, essenceDiscountPct: 10 }
 ];
 function companionHousingBonuses(tier) {
   const index = Number.isFinite(tier) ? Math.max(0, Math.min(3, Math.floor(tier))) : 0;
@@ -44602,8 +44602,8 @@ function companionHousingBonuses(tier) {
 function companionHousingTrainingXpMultiplier(tier) {
   return 1 + companionHousingBonuses(tier).trainingXpPct / 100;
 }
-function companionHousingBondXpMultiplier(tier) {
-  return 1 + companionHousingBonuses(tier).bondXpPct / 100;
+function companionHousingStatMultiplier(tier) {
+  return 1 + companionHousingBonuses(tier).statPct / 100;
 }
 function companionHousingLevelEssenceCost(baseCost, tier) {
   return Math.max(1, Math.ceil(baseCost * (100 - companionHousingBonuses(tier).essenceDiscountPct) / 100));
@@ -45042,7 +45042,7 @@ function companionCombatContribution(state) {
   if (!id) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   if (clean2.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) || (clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id))) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   const def = combatCompanionDef(id), p = progressFor(clean2, id), rarity = COMPANION_RARITY_CONFIG[def.rarity];
-  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, baseContribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance), contribution = baseContribution * (1 + companionMasteryBonuses(clean2.account.companionMasteryXp).assistPct);
+  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, baseContribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance), contribution = baseContribution * (1 + companionMasteryBonuses(clean2.account.companionMasteryXp).assistPct) * companionHousingStatMultiplier(companionHousingTier(id, clean2.account.companionHousingTiers));
   const effects = [def.activeAbility.effect.kind, def.passiveAbility.kind, ...p.bondTraitUnlocked ? [def.bondTrait.effect.kind] : []];
   const has3 = (...kinds) => effects.some((kind) => kinds.includes(kind));
   const restorative = has3("heal");
@@ -46715,6 +46715,9 @@ function companionBalancedBaseStats(def) {
     attackSpeed: a.attackSpeed * clamp5(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
   };
 }
+function companionVerifiedHousingStatMultiplier(progress) {
+  return clamp5(Number.isFinite(progress.housingStatMultiplier) ? progress.housingStatMultiplier : 1, 1, 1.03);
+}
 function companionInvestmentMultiplier(def, progress) {
   const max = COMPANION_RARITY_MAX_LEVEL[def.rarity];
   const endpoint = COMMON_MAX_INVESTMENT_MULTIPLIER * COMPANION_RARITY_TARGET[def.rarity];
@@ -46767,7 +46770,7 @@ function engineEffects(def, progress, context) {
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
   const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp5(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp5(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
-  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery;
+  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery * companionVerifiedHousingStatMultiplier(progress);
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
   const healingPower = standalone ? def.role === "support" ? maxHp * 2.5 : def.role === "tank" ? maxHp * 2 : attackPower * 0.35 : base.power * (def.role === "support" ? 0.9 : 0.35) * derived;
@@ -46790,7 +46793,7 @@ function individualCompanionPower(progress) {
   const activeIdentity = def.active.effectKind === "damage" ? 1 + Math.max(-5e-3, Math.min(5e-3, (def.active.baseCoeff - 1) * 0.01)) : 1 + Math.max(-5e-3, Math.min(5e-3, (22e3 - def.active.cooldownMs) / 4e5));
   const levelMultiplier = 1 + 0.3 * fraction, rarityMultiplier = 1 + (COMPANION_RARITY_TARGET[def.rarity] - 1) * fraction, ascensionMultiplier = 1 + progress.ascensionTier * 6e-3, bondMultiplier = 1 + 0.025 * Math.max(0, Math.min(9, progress.bondLevel - 1)) / 9;
   const traitMultiplier = progress.bondTraitUnlocked ? 1.01 : 1, techniqueMultiplier = progress.selectedTechniqueId ? 1.015 : 1;
-  return Math.max(1, Math.round(950 * levelMultiplier * rarityMultiplier * ascensionMultiplier * bondMultiplier * traitMultiplier * techniqueMultiplier * statIdentity * activeIdentity * Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1))));
+  return Math.max(1, Math.round(950 * levelMultiplier * rarityMultiplier * ascensionMultiplier * bondMultiplier * traitMultiplier * techniqueMultiplier * statIdentity * activeIdentity * Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)) * companionVerifiedHousingStatMultiplier(progress)));
 }
 function companionTeamViews(ids2, owned) {
   return ids2.map((id) => {
@@ -47756,7 +47759,7 @@ var companionCombatExecutor = { simulate: (input) => simulateCombat(input) };
 function companionOwned(state) {
   return Object.fromEntries((state.account.unlockedCombatCompanionIds ?? []).flatMap((id) => {
     const p = state.account.combatCompanionProgress?.[id];
-    return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp) }]] : [];
+    return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp), housingStatMultiplier: companionHousingStatMultiplier(companionHousingTier(id, state.account.companionHousingTiers)) }]] : [];
   }));
 }
 function companionEconomy(state) {
@@ -47807,7 +47810,7 @@ function companionMetricMany(state, entries) {
 }
 function setOwned(state, owned) {
   return { ...state, account: { ...state.account, unlockedCombatCompanionIds: Object.keys(owned), combatCompanionProgress: Object.fromEntries(Object.entries(owned).map(([id, p]) => {
-    const { masteryStatMultiplier: _transient, ...saved } = p;
+    const { masteryStatMultiplier: _transient, housingStatMultiplier: _housingTransient, ...saved } = p;
     return [id, { ...state.account.combatCompanionProgress?.[id], ...saved }];
   })) } };
 }
@@ -47821,7 +47824,7 @@ function awardUse(state, ids2, xp, bond, now) {
     if (!owned[id]) continue;
     const housing = companionHousingTier(id, state.account.companionHousingTiers);
     const xp2 = Math.round(earnedXp * companionHousingTrainingXpMultiplier(housing));
-    const bondXp = Math.round(earnedBond * companionHousingBondXpMultiplier(housing));
+    const bondXp = earnedBond;
     const r = awardCompanionXpServer({ progress: owned[id], amount: xp2, companionEssence: essence, overflow, serverNowMs: now });
     essence = r.companionEssence;
     overflow = r.overflow;

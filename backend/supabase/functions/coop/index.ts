@@ -43223,6 +43223,19 @@ var FAMILY_BY_MONSTER = new Map(
 var ORDINARY_MONSTER_IDS = new Set(MONSTERS.filter((monster) => !monster.boss).map((monster) => monster.id));
 
 // ../apps/mobile/src/core/companion-housing.ts
+var COMPANION_HOUSING_BONUSES = [
+  { trainingXpPct: 0, statPct: 0, essenceDiscountPct: 0 },
+  { trainingXpPct: 5, statPct: 1, essenceDiscountPct: 3 },
+  { trainingXpPct: 10, statPct: 2, essenceDiscountPct: 6 },
+  { trainingXpPct: 15, statPct: 3, essenceDiscountPct: 10 }
+];
+function companionHousingBonuses(tier) {
+  const index = Number.isFinite(tier) ? Math.max(0, Math.min(3, Math.floor(tier))) : 0;
+  return COMPANION_HOUSING_BONUSES[index];
+}
+function companionHousingStatMultiplier(tier) {
+  return 1 + companionHousingBonuses(tier).statPct / 100;
+}
 function normalizeCompanionHousingTiers(raw2) {
   if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
   return Object.fromEntries(Object.entries(raw2).filter(([id, tier]) => id.length <= 80 && typeof tier === "number" && Number.isInteger(tier) && tier >= 0).slice(0, 150).map(([id, tier]) => [id, Math.min(3, tier)]));
@@ -43230,6 +43243,9 @@ function normalizeCompanionHousingTiers(raw2) {
 function companionHousingEarnedTier(level) {
   if (!Number.isFinite(level)) return 0;
   return level > 25 ? 3 : level > 20 ? 2 : level > 10 ? 1 : 0;
+}
+function companionHousingTier(companionId, tiers2) {
+  return Math.max(0, Math.min(3, Math.floor(tiers2?.[companionId] ?? 0)));
 }
 
 // ../apps/mobile/src/core/combat-companions.ts
@@ -43375,7 +43391,7 @@ function companionCombatContribution(state) {
   if (!id) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   if (clean2.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) || (clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id))) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   const def = combatCompanionDef(id), p = progressFor(clean2, id), rarity = COMPANION_RARITY_CONFIG[def.rarity];
-  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, baseContribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance), contribution = baseContribution * (1 + companionMasteryBonuses(clean2.account.companionMasteryXp).assistPct);
+  const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, baseContribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance), contribution = baseContribution * (1 + companionMasteryBonuses(clean2.account.companionMasteryXp).assistPct) * companionHousingStatMultiplier(companionHousingTier(id, clean2.account.companionHousingTiers));
   const effects = [def.activeAbility.effect.kind, def.passiveAbility.kind, ...p.bondTraitUnlocked ? [def.bondTrait.effect.kind] : []];
   const has3 = (...kinds) => effects.some((kind) => kinds.includes(kind));
   const restorative = has3("heal");
@@ -45133,6 +45149,9 @@ function companionBalancedBaseStats(def) {
     attackSpeed: a.attackSpeed * clamp3(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
   };
 }
+function companionVerifiedHousingStatMultiplier(progress) {
+  return clamp3(Number.isFinite(progress.housingStatMultiplier) ? progress.housingStatMultiplier : 1, 1, 1.03);
+}
 function companionInvestmentMultiplier(def, progress) {
   const max = COMPANION_RARITY_MAX_LEVEL[def.rarity];
   const endpoint = COMMON_MAX_INVESTMENT_MULTIPLIER * COMPANION_RARITY_TARGET[def.rarity];
@@ -45185,7 +45204,7 @@ function engineEffects(def, progress, context) {
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
   const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp3(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp3(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
-  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery;
+  const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, mastery = Math.min(1.05, Math.max(1, Number.isFinite(progress.masteryStatMultiplier) ? progress.masteryStatMultiplier : 1)), derived = scale * synergy * bond * ascension * mastery * companionVerifiedHousingStatMultiplier(progress);
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
   const healingPower = standalone ? def.role === "support" ? maxHp * 2.5 : def.role === "tank" ? maxHp * 2 : attackPower * 0.35 : base.power * (def.role === "support" ? 0.9 : 0.35) * derived;
@@ -45250,7 +45269,7 @@ var EARLY_FEATURE_UNLOCKS = {
 function companionOwned(state) {
   return Object.fromEntries((state.account.unlockedCombatCompanionIds ?? []).flatMap((id) => {
     const p = state.account.combatCompanionProgress?.[id];
-    return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp) }]] : [];
+    return p ? [[id, { ...p, companionId: id, masteryStatMultiplier: companionMasteryStatMultiplier(state.account.companionMasteryXp), housingStatMultiplier: companionHousingStatMultiplier(companionHousingTier(id, state.account.companionHousingTiers)) }]] : [];
   }));
 }
 var companionEquipmentRecipeIds = new Set(RECIPES.filter((recipe2) => itemDef(recipe2.output.itemId).type === "gear").map((recipe2) => recipe2.id));

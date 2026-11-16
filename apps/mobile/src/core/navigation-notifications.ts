@@ -1,5 +1,5 @@
 import type {QuickNavDestination} from './quick-navigation';
-export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
+export type PrimaryNavigationId='home'|'character'|'skills'|'world'|'inventory'|'account';
 export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready'|'party_contract_reward_ready'|'guild_project_reward_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
@@ -23,14 +23,14 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  event_reward_ready:{primary:'account',subroute:'events.rewards',mode:'count'},
  account_action:{primary:'account',subroute:'account',mode:'dot'},
  companion_attention:{primary:'account',subroute:'companions',mode:'dot'},
- equipment_craft_ready:{primary:'skills',subroute:'skills.smithing.forge',mode:'count'},
+ equipment_craft_ready:{primary:'home',subroute:'home.forge',mode:'count'},
 };
 
 const empty=():NavigationBadge=>({count:0,dot:false});
 export function badgeDisplay(count:number){return count>99?'99+':count>0?String(count):undefined}
 
 export function buildNavigationBadges(rows:NavigationNotification[]):NavigationBadgeMap{
- const out:NavigationBadgeMap={character:empty(),skills:empty(),world:empty(),inventory:empty(),account:empty()},seen=new Set<string>();
+ const out:NavigationBadgeMap={home:empty(),character:empty(),skills:empty(),world:empty(),inventory:empty(),account:empty()},seen=new Set<string>();
  for(const row of rows){
   if(!row.unread||row.kind==='event_reward_ready'||seen.has(row.key))continue;
   seen.add(row.key);
@@ -80,7 +80,7 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  event_reward_ready:'Events',
  account_action:'Account',
  companion_attention:'Companions',
- equipment_craft_ready:'Skills',
+ equipment_craft_ready:'Home',
 };
 
 export type QuickNavigationBadgeMap=Partial<Record<QuickNavDestination,NavigationBadge>>;

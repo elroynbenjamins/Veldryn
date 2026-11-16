@@ -4,6 +4,7 @@ import {useAuthSession} from '../online/AuthSessionProvider';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import type {Language} from '../i18n/languages';
 import {ChatTranslationError,translateChatMessage} from '../online/chat-translation';
+import {CHAT_TRANSLATION_RELEASED} from '../core/release-flags';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import {ChatMessageText} from './ChatMessageText';
@@ -46,7 +47,7 @@ const initial=(key:string):TranslationViewState=>({key,translated:null,showing:f
 export function useManualChatTranslation(messageId:string|undefined,body:string){
  const language=useGameLanguage(),{session}=useAuthSession();
  const account=session?.user.id;
- const eligible=Boolean(account&&messageId&&UUID.test(messageId)&&canTranslateChatBody(body));
+ const eligible=CHAT_TRANSLATION_RELEASED&&Boolean(account&&messageId&&UUID.test(messageId)&&canTranslateChatBody(body));
  const key=account&&messageId?account+':'+messageId+':'+language+':'+body:'';
  const copy=COPY[language];
  const [stored,setStored]=useState<TranslationViewState>(()=>initial(key));

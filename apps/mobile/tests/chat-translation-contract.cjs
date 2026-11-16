@@ -55,3 +55,14 @@ test('existing Guild chat contract points to the emote-aware translated wrapper'
  assert.match(validation,/ChatTranslationMessage/);
  assert.match(validation,/ChatTranslatableBody\.tsx/);
 });
+
+test('manual translation remains disabled until service and privacy release gates clear',()=>{
+ const flags=read(mobile,'src/core/release-flags.ts');
+ assert.match(flags,/CHAT_TRANSLATION_RELEASED=false/);
+ const ui=read(mobile,'src/components/ChatTranslatableBody.tsx');
+ assert.match(ui,/CHAT_TRANSLATION_RELEASED&&Boolean/);
+ const settings=read(mobile,'src/screens/SettingsScreen.tsx');
+ assert.match(settings,/chatTranslationPrivacy\(language\)\.description/);
+ const privacy=read(mobile,'src/i18n/chat-translation-privacy.ts');
+ for(const code of ['en','de','es','nl','it','fr','ru','tr'])assert.match(privacy,new RegExp(' '+code+':'));
+});

@@ -112,7 +112,8 @@ create trigger party_event_claim_preflight_immutable_v25
 
 -- A trusted, session-authorized server passes the account ID. The private
 -- function cross-checks against frozen roster and current account ownership.
--- It serializes on the event week -> offer -> online inventory snapshot.
+-- It serializes on account lock -> event week -> offer -> online inventory
+-- -> character snapshot, matching v30's lock hierarchy.
 -- NO balance is moved. Inventory revision/capacity are only a DRY-RUN
 -- diagnostic and MUST be rechecked in a future atomic grant transaction.
 create or replace function private.prepare_party_event_claim_preflight_v25(
@@ -137,6 +138,9 @@ begin
  if p_offer_id is null or p_account_id is null or p_character_id is null
   or p_request_id is null or length(p_request_id) not between 8 and 180
  then raise exception 'party_event_v25_invalid_preflight';end if;
+ -- Acquire the gameplay account lock BEFORE any event or economy row lock.
+ perform pg_advisory_xact_lock(
+  hashtextextended('party-account:'||p_account_id::text,0));
  select * into o from private.party_event_reward_offers_v24
   where id=p_offer_id;
  if not found then raise exception 'party_event_v25_offer_missing';end if;
@@ -216,15 +220,17 @@ begin
   w.difficulty,o.reward_band,o.personal_points,v_kind);
  v_hash:=encode(sha256(convert_to(v_reward::text,'UTF8')),'hex');
 
- select c.inventory_capacity into v_cap from public.characters c
-  where id=p_character_id and account_id=p_account_id for update;
- if not found or v_cap<1 or v_cap>10000
- then raise exception 'party_event_v25_invalid_capacity';end if;
+ -- Read the online save before locking the character, as v30 does.
+ -- Never hold a character lock while awaiting this account's online row.
  select * into game from public.online_game_states
   where account_id=p_account_id and character_id=p_character_id for update;
  if not found or game.state is null or game.revision<0
   or jsonb_typeof(game.state#>'{inventory,stacks}')<>'array'
  then raise exception 'party_event_v25_online_inventory_required';end if;
+ select c.inventory_capacity into v_cap from public.characters c
+  where id=p_character_id and account_id=p_account_id for update;
+ if not found or v_cap<1 or v_cap>10000
+ then raise exception 'party_event_v25_invalid_capacity';end if;
  v_used:=jsonb_array_length(game.state#>'{inventory,stacks}');
  -- Conservative reservation calculation: GEM_DUST needs one free slot even
  -- when an existing stack might merge. No stack is mutated or reserved.

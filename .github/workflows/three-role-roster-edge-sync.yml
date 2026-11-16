@@ -39,7 +39,7 @@ jobs:
           pnpm --dir backend install --frozen-lockfile
       - name: Validate role creation and AFK milestone contracts before rebuilding
         run: |
-          node tools/run-mobile-tests.mjs account-progression offline-cap character-creation-onboarding
+          node tools/run-mobile-tests.mjs account-progression offline-cap character-creation-onboarding equipment-timed-crafting-queue vip-supporter-entitlements character-delete-management online-roster account-collectibles
           pnpm --dir apps/mobile typecheck
       - name: Build both canonical gameplay and co-op Edge functions
         run: |

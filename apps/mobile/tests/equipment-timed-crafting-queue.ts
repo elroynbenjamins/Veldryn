@@ -61,7 +61,7 @@ ok(slots.capacity===4,'VIP+ must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:2}});
 ok(slots.capacity===4,'Unlocking character slot #2 must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4}});
-ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap through character progression');
+ok(slots.capacity===5,'Legacy fourth-slot Forge perk must remain earned after roster cap reduction');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
 ok(slots.capacity===7&&slots.raw===7,'Progression + VIP+ + Supporter should stack to seven active Forge slots');
 

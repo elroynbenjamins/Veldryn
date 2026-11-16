@@ -7,6 +7,9 @@ const shell=readFileSync('src/components/OnboardingModalShell.tsx','utf8');
 
 assert.ok(creation.includes("onCancel?'class':'welcome'"),'first character opens a welcome page, while roster creation skips it');
 assert.ok(creation.includes("const CREATION_STEPS")&&creation.includes("'class','identity','review'"),'class, identity and review retain three meaningful steps');
+assert.ok(creation.includes('lockedRoles.includes(item.role)')&&creation.includes('disabled={saving||locked}')&&creation.includes('classCardLocked')&&creation.includes('classIconLocked'),'account character creation must grey out occupied-role cards and disable pressing them');
+assert.ok(creation.includes('CLASSES.findIndex(item=>!lockedRoles.includes(item.role))')&&creation.includes('selectedLocked')&&creation.includes('if(selectedLocked)'),'the chosen class must start in a free role and reject stale locked selection');
+assert.ok(app.includes('lockedRoles={occupiedCharacterRoles(state)}'),'roster must pass the server-owned roster roles to the class selector');
 assert.ok(creation.includes("CLASSES.map((item,i)")&&creation.includes('classEmblemIconArtwork[item.id]'),'all nine classes are offered directly in a compact grid with real art');
 assert.ok(creation.includes('classEmblemArtwork[selected.id]'),'selected class uses high-quality existing class artwork');
 assert.ok(creation.includes('selected.roleRatings'),'role ratings come from the live class catalog');

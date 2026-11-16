@@ -14,7 +14,7 @@ const secondId='22222222-2222-4222-8222-222222222222';
 
 let state=executeGameCommand(newGame(1),{type:'create',args:{classId:'IRONWARDEN',name:'First',body:'male'}},1,{characterId:firstId}).state;
 state={...state,account:{...state.account,unlockedCharacterSlots:2,premiumCurrencyBalance:77,guildMember:true,arenaSquadCharacterIds:[firstId,secondId],unlockedCosmeticPetIds:[],ownedBoostIds:[]}};
-state=executeGameCommand(state,{type:'roster_create',args:{classId:'BASTION',name:'Second',body:'female'}},2,{characterId:secondId}).state;
+state=executeGameCommand(state,{type:'roster_create',args:{classId:'DAWNKEEPER',name:'Second',body:'female'}},2,{characterId:secondId}).state;
 
 const equipped=state.character!.equipment.weapon!;
 state={...state,
@@ -58,7 +58,7 @@ equal(storedQty(deleted,'EMBER_SHARD'),storedBeforeDelete.inventory+3,'character
 
 let inactiveBusy=executeGameCommand(newGame(1),{type:'create',args:{classId:'IRONWARDEN',name:'Runner',body:'male'}},1,{characterId:firstId}).state;
 inactiveBusy={...inactiveBusy,account:{...inactiveBusy.account,unlockedCharacterSlots:2}};
-inactiveBusy=executeGameCommand(inactiveBusy,{type:'roster_create',args:{classId:'BASTION',name:'Keeper',body:'female'}},2,{characterId:secondId}).state;
+inactiveBusy=executeGameCommand(inactiveBusy,{type:'roster_create',args:{classId:'DAWNKEEPER',name:'Keeper',body:'female'}},2,{characterId:secondId}).state;
 inactiveBusy={...inactiveBusy,otherCharacters:inactiveBusy.otherCharacters!.map(entry=>entry.character.id===firstId?{...entry,activity:{kind:'mining',targetId:'COPPER_VEIN',startedAtMs:1,lastClaimAtMs:1} as any}:entry)};
 throws(()=>executeGameCommand(inactiveBusy,{type:'roster_delete',args:{id:firstId,confirmation:characterDeleteConfirmation('Runner')}},3),'inactive characters with an activity must require switch/stop before deletion');
 

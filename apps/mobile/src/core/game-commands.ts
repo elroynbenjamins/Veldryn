@@ -12,6 +12,7 @@ import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining,recordCompanionActivity} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
+import {recordAccountProgress} from './account-roster';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
@@ -500,7 +501,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Includes loot added by combat, quests, co-op and old save actions.
  // Re-evaluate milestones earned by this command (fishing, mastery, bosses,
  // crafting or quests), not just those completed before it started.
- state=reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now));
+ state=recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now)));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

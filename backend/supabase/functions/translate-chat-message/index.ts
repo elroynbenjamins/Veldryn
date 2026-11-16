@@ -59,20 +59,35 @@ Deno.serve(async(request:Request)=>{
   });
   if(!claim.ok)return reply(503,{error:'quota_unavailable'});
   if(await claim.json()!==true)return reply(429,{error:'translation_limit',retryAfterSeconds:3});
-  const apiUrl=Deno.env.get('DEEPL_API_TIER')==='pro'
-   ?'https://api.deepl.com/v2/translate'
-   :'https://api-free.deepl.com/v2/translate';
+  // Keep Veldryn's :emote_tokens: intact instead of passing them through ML translation.
+  const segments=body.split(/(:[a-z0-9_]+:)/gi);
+  const textIndexes:number[]=[],texts:string[]=[];
+  segments.forEach((segment,index)=>{
+   if(!/^:[a-z0-9_]+:$/i.test(segment)&&/[\p{L}]/u.test(segment)){
+    textIndexes.push(index);texts.push(segment);
+   }
+  });
+  if(!texts.length)return reply(200,{text:body,sourceLanguage:null});
+  // DeepL now offers Developer/Growth subscriptions on the standard endpoint.
+  // Legacy Free keys conventionally end in :fx; tier can be overridden explicitly.
+  const tier=Deno.env.get('DEEPL_API_TIER');
+  const free=tier==='free'||(tier!=='pro'&&apiKey.endsWith(':fx'));
+  const apiUrl=free?'https://api-free.deepl.com/v2/translate':'https://api.deepl.com/v2/translate';
   const translated=await fetch(apiUrl,{
    method:'POST',
    headers:{Authorization:'DeepL-Auth-Key '+apiKey,'Content-Type':'application/json'},
-   body:JSON.stringify({text:[body],target_lang:allowedTargets[target]}),
+   body:JSON.stringify({text:texts,target_lang:allowedTargets[target]}),
    signal:AbortSignal.timeout(9000),
   });
   if(!translated.ok)return reply(translated.status===429?429:503,{error:'translation_unavailable'});
   const result=await translated.json() as {translations?:Array<{text?:unknown;detected_source_language?:unknown}>};
-  const first=result.translations?.[0];
-  if(typeof first?.text!=='string'||!first.text.trim())return reply(503,{error:'translation_unavailable'});
-  return reply(200,{text:first.text,sourceLanguage:typeof first.detected_source_language==='string'?first.detected_source_language:null});
+  const responses=result.translations;
+  if(!Array.isArray(responses)||responses.length!==texts.length||responses.some(item=>typeof item.text!=='string')){
+   return reply(503,{error:'translation_unavailable'});
+  }
+  textIndexes.forEach((index,i)=>{segments[index]=responses[i].text as string;});
+  const detected=responses.find(item=>typeof item.detected_source_language==='string')?.detected_source_language;
+  return reply(200,{text:segments.join(''),sourceLanguage:typeof detected==='string'?detected:null});
  }catch{
   return reply(503,{error:'translation_unavailable'});
  }

@@ -23,7 +23,7 @@ export const DUNGEON_SHOP_COLLECTIBLES_V1:readonly CollectibleDefinition[] = [
 ] as const;
 
 export const DUNGEON_SHOP_PROFILE_ICONS_V1 = [
- {id:'dungeon:asterfall:wardens-lantern',name:"Warden's Lantern",rarity:'Rare',group:'Dungeon',region:'Asterfall'},
- {id:'dungeon:sunscar:solar-vault-key',name:'Solar Vault Key',rarity:'Rare',group:'Dungeon',region:'Sunscar'},
- {id:'dungeon:frostmarch:resonant-bell',name:'Resonant Bell',rarity:'Rare',group:'Dungeon',region:'Frostmarch'},
+ {id:'dungeon:asterfall:wardens-lantern',name:'Thornwarden',rarity:'Rare',group:'Dungeon',region:'Asterfall'},
+ {id:'dungeon:sunscar:solar-vault-key',name:'Dune Sovereign',rarity:'Rare',group:'Dungeon',region:'Sunscar'},
+ {id:'dungeon:frostmarch:resonant-bell',name:'Rimebound',rarity:'Rare',group:'Dungeon',region:'Frostmarch'},
 ] as const;

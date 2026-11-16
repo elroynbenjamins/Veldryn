@@ -6,6 +6,12 @@ import {accountText} from './account';
 /** New player-facing copy in Roadmap, Market Inbox and badges. Columns DE/ES/NL/IT/FR/RU/TR.
  * Only fixed product-authored UI strings belong here; never translate player or server content. */
 export const recentScreenTranslationRows = {
+  "VIP badges": ["VIP-Abzeichen","Insignias VIP","VIP-badges","Distintivi VIP","Badges VIP","Значки VIP","VIP rozetleri"],
+
+  "VIP": ["VIP","VIP","VIP","VIP","VIP","VIP","VIP"],
+  "VIP+": ["VIP+","VIP+","VIP+","VIP+","VIP+","VIP+","VIP+"],
+  "Unlock with VIP or VIP+ on your account.": ["Mit VIP oder VIP+ auf deinem Konto freischalten.","Desbloquéalo con VIP o VIP+ en tu cuenta.","Ontgrendel met VIP of VIP+ op je account.","Sblocca con VIP o VIP+ sul tuo account.","Débloquez avec VIP ou VIP+ sur votre compte.","Доступно с VIP или VIP+ в вашем аккаунте.","Hesabında VIP veya VIP+ ile açılır."],
+  "Unlock with VIP+ on your account.": ["Mit VIP+ auf deinem Konto freischalten.","Desbloquéalo con VIP+ en tu cuenta.","Ontgrendel met VIP+ op je account.","Sblocca con VIP+ sul tuo account.","Débloquez avec VIP+ sur votre compte.","Доступно с VIP+ в вашем аккаунте.","Hesabında VIP+ ile açılır."],
   "Updates every 2 hours": [
     "Aktualisierung alle 2 Stunden",
     "Se actualiza cada 2 horas",

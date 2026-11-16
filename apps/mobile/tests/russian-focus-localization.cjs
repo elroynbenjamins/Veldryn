@@ -16,12 +16,13 @@ const {RUSSIAN_FINAL_ACCOUNT_ROWS}=require('../src/i18n/russian-final-account.ts
 const {RUSSIAN_PROFILE_ROWS}=require('../src/i18n/russian-profile.ts');
 const {RUSSIAN_ACCOUNT_ROWS}=require('../src/i18n/russian-account.ts');
 const {RUSSIAN_SOCIAL_ROWS}=require('../src/i18n/russian-social.ts');
+const {RUSSIAN_RELEASE_POLISH_ROWS}=require('../src/i18n/russian-release-polish.ts');
 const continuationKeys=Object.keys(RUSSIAN_CONTINUATION_ROWS);
 for(const key of continuationKeys)assert.ok(!Object.prototype.hasOwnProperty.call(RUSSIAN_FOCUS_ROWS,key),'Duplicate focused/continuation RU key: '+key);
 const {earlyLocaleText,EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {createSourceTranslator}=require('../src/i18n/source-catalog.ts');
 const {createTranslator}=require('../src/i18n/translator.ts');
-const russianCatalogs=[RUSSIAN_FOCUS_ROWS,RUSSIAN_CONTINUATION_ROWS,RUSSIAN_PROGRESS_ROWS,RUSSIAN_PROFILE_ROWS,RUSSIAN_ACCOUNT_ROWS,RUSSIAN_SOCIAL_ROWS,RUSSIAN_FINAL_ACCOUNT_ROWS,RUSSIAN_FINAL_COMPANION_ROWS,RUSSIAN_FINAL_GAMEPLAY_ROWS,RUSSIAN_FINAL_PROGRESSION_ROWS,RUSSIAN_FINAL_SOCIAL_ROWS];
+const russianCatalogs=[RUSSIAN_FOCUS_ROWS,RUSSIAN_CONTINUATION_ROWS,RUSSIAN_PROGRESS_ROWS,RUSSIAN_PROFILE_ROWS,RUSSIAN_ACCOUNT_ROWS,RUSSIAN_SOCIAL_ROWS,RUSSIAN_FINAL_ACCOUNT_ROWS,RUSSIAN_FINAL_COMPANION_ROWS,RUSSIAN_FINAL_GAMEPLAY_ROWS,RUSSIAN_FINAL_PROGRESSION_ROWS,RUSSIAN_FINAL_SOCIAL_ROWS,RUSSIAN_RELEASE_POLISH_ROWS];
 const seen=new Set();
 for(const catalog of russianCatalogs)for(const key of Object.keys(catalog)){
   assert.ok(!seen.has(key),'Duplicate Russian translation: '+key);
@@ -143,7 +144,9 @@ assert.equal(typedTranslator('ru','a',{count:1}),'Надето: 1/10');
 for(const key of keys)assert.ok(!Object.hasOwn(EARLY_LOCALE_ROWS,key),'Duplicate RU entry in starter catalog: '+key);
 const russianOwned=new Set([...keys,...Object.keys(EARLY_LOCALE_ROWS)].filter(key=>owned.has(key)));
 const coverage=(100*russianOwned.size/owned.size).toFixed(1);
-assert.ok(Number(coverage)>=99.0,'Russian authored UI coverage dropped below 99%');
+assert.ok(Number(coverage)>=99.0,'Russian authored UI coverage dropped below 99% ('+coverage+'%; '+(owned.size-russianOwned.size)+' missing)');
+for(const [key,expected] of Object.entries({'Bond milestones':'Этапы связи','No automatic tonic':'Без автоматического тоника','FORGE · CLAIM ALL':'КУЗНИЦА · ЗАБРАТЬ ВСЁ','Show doable resources only':'Показать только доступные ресурсы'}))
+  assert.equal(earlyLocaleText('ru',key),expected,'Release Russian UI copy must resolve: '+key);
 for(const key of ['guild_recruiting','looking_for_guild','party_recruiting','NPC','Rootbound Colossus']){
   assert.ok(owned.has(key),'Expected canonical or technical key '+key);
   assert.equal(earlyLocaleText('ru',key),undefined,'Technical ID or canonical name should retain source '+key);

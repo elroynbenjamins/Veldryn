@@ -42,8 +42,15 @@ ok(mergeXpBefore===mergeBase.skills.find(row=>row.skillId==='enchanting')!.xp,'S
 ok(gemStorageQuantity(mergeStarted,'gem:stat_might:g1')===0,'Starting a Gem Pouch merge consumes exactly three source gems');
 const mergeJob=mergeStarted.account.equipmentCraftingQueue?.find(row=>row.recipeId==='gem_combine:stat_might:g1');
 ok(!!mergeJob,'Gem Pouch merge must enter the existing authoritative Forge queue');
-const mergeClaimed=claimForgeJob(mergeStarted,mergeJob!.id,mergeJob!.completesAtMs).state;
-ok(gemPouch(mergeClaimed).stacks.some(row=>row.itemId==='gem:stat_might:g2'&&row.quantity===1),'Finished merge returns upgraded gem to shared Gem Pouch');
+const successfulMerge=claimForgeJob(mergeStarted,mergeJob!.id,mergeJob!.completesAtMs,0);
+const mergeClaimed=successfulMerge.state;
+ok(successfulMerge.gemSucceeded===true&&gemPouch(mergeClaimed).stacks.some(row=>row.itemId==='gem:stat_might:g2'&&row.quantity===1),'Successful merge returns upgraded gem to shared Gem Pouch');
+// New combinations are probabilistic (G1 -> G2 = 90%). A failed claim
+// destroys one of the three reserved gems and refunds two to shared storage.
+const failedMerge=claimForgeJob(mergeStarted,mergeJob!.id,mergeJob!.completesAtMs,0.99);
+ok(failedMerge.gemSucceeded===false,'Trusted roll above G1 success threshold must fail');
+ok(gemStorageQuantity(failedMerge.state,'gem:stat_might:g1')===2&&gemStorageQuantity(failedMerge.state,'gem:stat_might:g2')===0,'Failed merge returns exactly two reserved gems without creating the upgraded gem');
+ok(!failedMerge.state.account.equipmentCraftingQueue?.some(row=>row.id===mergeJob!.id),'Failed gem merge settles its Forge job exactly once');
 ok(mergeJob!.xpPerCraft!==undefined&&mergeJob!.xpPerCraft>0,'Gem combination must snapshot positive Enchanting XP in the Forge job');
 ok(mergeClaimed.skills.find(row=>row.skillId==='enchanting')!.xp-mergeXpBefore===Math.floor(mergeJob!.xpPerCraft!+1e-9),'Claiming a completed merge awards the configured Enchanting XP to its owner');
 let repeatMergeClaimBlocked=false;try{claimForgeJob(mergeClaimed,mergeJob!.id,mergeJob!.completesAtMs)}catch{repeatMergeClaimBlocked=true}

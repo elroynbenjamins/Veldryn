@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {accountDuration} from '../i18n/account';
 import {recentScreenText} from '../i18n/recent-screens';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
@@ -22,6 +23,7 @@ import {GameGuidePanel} from '../components/GameGuidePanel';
 import {ChatEmotePicker} from '../components/ChatEmotePicker';
 import {GuideTopicModal} from '../components/GuideTopicModal';
 import {acknowledgeGameGuide,guideDefinition} from '../core/onboarding';
+import {createGameGuideReadPreferenceStore} from '../core/game-guide-read-preferences';
 import {offlineCapBreakdown} from '../core/game';
 import {activityQueueCrossRegionAllowed} from '../core/activity-queue';
 import type {GameGuideId,GameGuideDestination} from '../core/onboarding';
@@ -52,6 +54,7 @@ type Props={
 export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
 const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value==='store'?'account':value??'account';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
+const guideReadPreferences=createGameGuideReadPreferenceStore(AsyncStorage);
 const openExternal=(url:string)=>{void Linking.openURL(url)};
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){
@@ -67,6 +70,23 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   // Respect deep links to Settings while normalizing retired section IDs.
   useEffect(()=>{setSelectedSection(normalizeSettingsSection(initialSection));},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
+  const guideScope=state.account.longTermAccountScopeId||state.character?.id||String(state.createdAtMs);
+  const [localGuideRead,setLocalGuideRead]=useState<{scope:string;ids:GameGuideId[]}>({scope:'',ids:[]});
+  useEffect(()=>{
+    if(!online)return;
+    let active=true;
+    void guideReadPreferences.load(guideScope).then(ids=>{
+      if(active)setLocalGuideRead(previous=>({scope:guideScope,ids:[...new Set([...(previous.scope===guideScope?previous.ids:[]),...ids])]}));
+    });
+    return()=>{active=false};
+  },[guideScope,online]);
+  const openGuide=(id:GameGuideId)=>{
+    setGuideId(id);
+    if(online){
+      setLocalGuideRead(previous=>({scope:guideScope,ids:[...new Set([...(previous.scope===guideScope?previous.ids:[]),id])]}));
+      void guideReadPreferences.markRead(guideScope,id);
+    }else onChange(acknowledgeGameGuide(state,id,true));
+  };
   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(focusChatEmotes),[showDeleteControls,setShowDeleteControls]=useState(false);
   const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
@@ -103,7 +123,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       </Pressable>
     </View>
     {section==='display'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(uiThemeId??state.settings.uiTheme??'obsidian')===id} onPress={()=>onUiThemeChange?onUiThemeChange(id):update({uiTheme:id})}/>)}</View></Panel>}
-    {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
+    {section==='guide'&&<GameGuidePanel state={state} seenGuideIds={online&&localGuideRead.scope===guideScope?localGuideRead.ids:undefined} onStartTour={onStartMainScreenTour} onOpen={openGuide}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
 

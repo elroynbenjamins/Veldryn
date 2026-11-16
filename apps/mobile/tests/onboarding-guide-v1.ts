@@ -1,4 +1,5 @@
 import {equal,deepEqual} from './assertions';
+import {createGameGuideReadPreferenceStore} from '../src/core/game-guide-read-preferences';
 import {acknowledgeGameGuide,guideDefinition,GAME_GUIDE_STEPS,newlyUnlockedGameGuide,normalizeOnboardingGuideState,unlockedGameGuide} from '../src/core/onboarding';
 import {migrateSave} from '../src/core/save-migrations';
 import {newGame,createCharacter} from '../src/core/game';
@@ -42,3 +43,18 @@ state.character.level=25;state.defeatedBossIds=[];
 equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide needs the Chapter I clear');
 state.defeatedBossIds=['FALLEN_KNIGHT'];
 equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide unlocks at 25 after boss');
+
+// Reading online help is a device preference. It must not mutate the authoritative game state.
+void (async()=>{
+ const stored=new Map<string,string>();
+ const adapter={getItem:async(key:string)=>stored.get(key)??null,setItem:async(key:string,value:string)=>{stored.set(key,value)}};
+ const readPreferences=createGameGuideReadPreferenceStore(adapter);
+ const snapshot=JSON.stringify(state);
+ await Promise.all([readPreferences.markRead('account-a','getting_started'),readPreferences.markRead('account-a','faith_blessings')]);
+ deepEqual(await readPreferences.load('account-a'),['getting_started','faith_blessings'],'multiple quick guide reads are kept');
+ const restarted=createGameGuideReadPreferenceStore(adapter);
+ deepEqual(await restarted.load('account-a'),['getting_started','faith_blessings'],'online guide read flags persist on device');
+ deepEqual(await restarted.load('account-b'),[],'guide read flags do not leak to another account');
+ equal(JSON.stringify(state),snapshot,'reading online guide never mutates server-owned game state');
+ console.log('online guide read preferences passed');
+})().catch(error=>{console.error(error);process.exitCode=1});

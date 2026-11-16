@@ -17,7 +17,7 @@ import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {REGIONAL_AREAS} from '../content/regional-areas';
 import {itemDef} from '../content/items';
-import {equipmentSalvageReward} from './equipment-salvage';
+import {equipmentSalvageReward,inventoryWithSalvageRewards} from './equipment-salvage';
 import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
 import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
@@ -1409,6 +1409,22 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   const proceeds=def.value*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
+}
+/** Salvage legacy equipment from the shared Bank. Materials go to active
+ * Inventory; the Bank must never silently receive salvage output or Gold. */
+export function salvageBankItem(state:GameState,itemId:string):GameState{
+  if(!state.character)throw new Error('Character required.');
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected.');
+  if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected.');
+  const def=itemDef(itemId),reward=equipmentSalvageReward(itemId);
+  if(def.type!=='gear'||!reward)throw new Error('Cannot salvage');
+  if(!state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0))
+    throw new Error('Choose an individual equipment copy for salvage');
+  if(!canDisposeLegacyEquipment(state,itemId,'bank',1))
+    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  const bankStacks=consume(state.bank.stacks,itemId,1);
+  const inventory=inventoryWithSalvageRewards(state.inventory,[reward],entitlementStorageCapacity(state,'inventory'));
+  return {...state,bank:{...state.bank,stacks:bankStacks},inventory};
 }
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');

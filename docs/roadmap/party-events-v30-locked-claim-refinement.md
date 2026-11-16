@@ -66,3 +66,25 @@ No live user, economy, event state, Inbox item or character was mutated; no prod
 Build a server-owned transaction that holds the **party-account advisory lock** from source verification through commit; reruns v30-style proof checks, recomputes v28 canonical state from locked rows and resolves the authenticated profession target, then updates online state/revision, wallet, character, applicable skill rows and all account resources. Insert both v29 receipt and Inbox within that same transaction. Roll back everything on failure. Distinguish completed receipt replay, conflicting request ID and retryable transaction failure. Verify with live isolated staging transactions, PGlite and CI before exposing anything to players.
 
 This documentation is a release gate, not an approval to enable claims.
+
+## 16 November follow-up — lock-order repair across old claim preparation
+
+The v30 inspector's week-first refinement alone was insufficient: the earlier v25
+preflight held a **character** row before awaiting the **online save**, and the
+other v25 quote held the **Gold wallet** before the online save. This conflicted
+with v30's online-save-first order and could create opposing lock acquisition
+in overlapping event-week/account operations.
+
+The two unpublished v25 SQL migrations have now been repaired **in place**:
+both acquire the ordinary `party-account:` advisory transaction lock before
+any event-week row locks; preflight locks online save before character capacity;
+quote locks online save before the wallet. Their week → offer ordering, frozen
+identity/replay checks, reward formulas, replay behavior and permanently disabled
+claim status are preserved. The v30 PGlite regression now inspects the v25
+function bodies and fails if these ordered locks or account lock key regress.
+
+**Verification boundary:** changes are committed to the hidden draft branch
+only. The new static lock-order regression has not yet been confirmed green in
+a fresh exact-head CI run, and simultaneous Postgres sessions against complete
+staging Party Event fixtures have not been exercised. No claimed payment safety,
+production migration, release switch, grant, payout or Inbox delivery.

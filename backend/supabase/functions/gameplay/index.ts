@@ -54294,6 +54294,7 @@ function equipItemFromEquipmentPouch(state, itemId) {
   if (!state.character) throw new Error("No character");
   const def = itemDef(itemId);
   if (def.type !== "gear" || !def.slot) throw new Error("Not gear");
+  if (state.activity?.kind === "combat" && def.slot !== "weapon") throw new Error("Stop combat before equipping");
   if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
   if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires character level ${def.requiredLevel}`);
   if (state.character.equipmentInstanceIds?.[def.slot]) throw new Error("Select the exact equipped copy before replacing uniquely identified gear");
@@ -54307,13 +54308,14 @@ function equipItemFromEquipmentPouch(state, itemId) {
   if (updatedStacks.length > pouch.capacity) throw new Error("Equipment Pouch is full");
   const temp = { ...state, character: { ...state.character, equipment: { ...state.character.equipment, [def.slot]: itemId }, equipmentPouch: { ...pouch, stacks: updatedStacks } } };
   const maxHp = effectiveStats(temp).hp;
-  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (def.hp || 0));
+  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (state.activity?.kind === "combat" ? 0 : def.hp || 0));
   return applyLocalBalanceSnapshot(refreshQuests(temp), Date.now());
 }
 function equipItem(state, itemId) {
   if (!state.character) throw new Error("No character");
   const d = itemDef(itemId);
   if (d.type !== "gear" || !d.slot) throw new Error("Not gear");
+  if (state.activity?.kind === "combat" && d.slot !== "weapon") throw new Error("Stop combat before equipping");
   if (d.classRestriction && d.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
   if (state.character.level < (d.requiredLevel ?? 1)) throw new Error(`Requires character level ${d.requiredLevel}`);
   if (state.character.equipmentInstanceIds?.[d.slot]) throw new Error("Select the exact equipped copy before replacing uniquely identified gear");
@@ -54322,7 +54324,7 @@ function equipItem(state, itemId) {
   if (old) stacks = stackItems(stacks, [{ itemId: old, quantity: 1 }]);
   const temp = { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, equipment: { ...state.character.equipment, [d.slot]: itemId } } };
   const maxHp = effectiveStats(temp).hp;
-  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (d.hp || 0));
+  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (state.activity?.kind === "combat" ? 0 : d.hp || 0));
   return applyLocalBalanceSnapshot(refreshQuests(temp), Date.now());
 }
 function equipFood(state, itemId) {
@@ -54978,12 +54980,12 @@ function linkLegacyCraftedGearInstance(state, instanceId, from, stackIndex) {
 }
 function equipCraftedGearInstance(state, instanceId) {
   if (!state.character) throw new Error("No active character");
-  if (state.activity?.kind === "combat") throw new Error("Stop combat before equipping");
   const { record, location } = resolveTracked(state, instanceId);
   if (!["inventory", "equipment_pouch"].includes(location.place) || location.holderCharacterId !== state.character.id)
     throw new Error("Move this exact equipment copy into your character storage first");
   const def = itemDef(record.itemId);
   if (def.type !== "gear" || !def.slot) throw new Error("Not equipment");
+  if (state.activity?.kind === "combat" && def.slot !== "weapon") throw new Error("Stop combat before equipping");
   if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This equipment belongs to another class");
   if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires level ${def.requiredLevel}`);
   const oldId = state.character.equipment[def.slot], oldInstanceId = state.character.equipmentInstanceIds?.[def.slot];
@@ -58543,10 +58545,13 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = a.enabled ? "Keep Best 7 enabled \u2014 only verified, unprotected copies can be sold" : "Automatic equipment selling disabled";
       break;
     }
-    case "gear_equip":
+    case "gear_equip": {
+      const healthBeforeSwap = state.activity?.kind === "combat" ? state.character?.currentHp : void 0;
       state = equipCraftedGearInstance(state, text(a, "instanceId", 180));
+      if (healthBeforeSwap !== void 0 && state.character) state.character.currentHp = Math.min(healthBeforeSwap, effectiveStats(state).hp);
       message = "Equipment copy equipped";
       break;
+    }
     case "gear_unequip":
       state = unequipCraftedGearInstance(state, text(a, "instanceId", 180));
       message = "Equipment copy unequipped";

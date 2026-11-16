@@ -11,6 +11,7 @@ const normalization=fs.readFileSync('src/core/save-normalization.ts','utf8');
 const commands=fs.readFileSync('src/core/game-commands.ts','utf8');
 const bulk=fs.readFileSync('src/core/inventory-bulk.ts','utf8');
 const inspect=fs.readFileSync('src/components/ItemQuickInspect.tsx','utf8');
+const gearPreview=fs.readFileSync('src/components/EquipmentPreview.tsx','utf8');
 const inspectModel=fs.readFileSync('src/core/item-inspect.ts','utf8');
 
 ok(!screenSource.includes('FILTERS & DISPLAY'),'Inventory must not regress to the large filters disclosure');
@@ -39,7 +40,8 @@ ok(screenSource.includes('Moving items to Bank…')&&screenSource.includes('Movi
 ok(screenSource.includes("accessibilityRole={selectMode?'checkbox':'button'}")&&screenSource.includes('itemSelectedOn'),'Inventory grid tiles must expose accessible selection controls only in selection mode');
 ok(bulk.includes('bulkTransferSelected')&&bulk.includes('bulkSellSelected')&&bulk.includes('bulkSalvageSelected'),'Bulk actions must use shared core helpers');
 ok(bulk.includes("state.settings.favoriteItemIds")&&bulk.includes("state.settings.lockedItemIds")&&bulk.includes('canDisposeLegacyEquipment')&&bulk.includes('equippedFoodId'),'Bulk disposal must protect favorites, locked items, enhanced gear, and auto-eat food');
-ok(commands.includes("bulk_transfer:['location','ids']")&&commands.includes("bulk_sell:['ids']")&&commands.includes("bulk_salvage:['ids']"),'Online commands must expose atomic bulk actions');
+ok(commands.includes("bulk_transfer:['location','ids']")&&commands.includes("bulk_sell:['location','ids']")&&commands.includes("bulk_salvage:['location','ids']"),'Online commands must expose atomic source-scoped bulk actions');
+ok(commands.includes("oneOf(a.location??'inventory',['inventory','bank'] as const)")&&commands.includes("if(bulk.location!==undefined)oneOf(bulk.location,['inventory','bank'])"),'Bulk sell and salvage must default legacy clients to Inventory and validate optional Bank source');
 ok(screenSource.includes('ItemArtwork itemId={item.id} size={iconSize}')&&screenSource.includes('gridColumns=gridWidth<235?3:gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4')&&screenSource.includes('const STORAGE_PAGE_SIZE=30;')&&screenSource.includes('Math.min(960,event.nativeEvent.layout.width)-32')&&screenSource.includes('<FlatList key={gridColumns}')&&screenSource.includes('numColumns={gridColumns}')&&screenSource.includes('windowSize={3}'), 'Inventory must show a virtualized artwork grid that adapts to the bounded content width');
 ok(screenSource.includes("if(item.type==='gear'&&location==='inventory'){setPreviewInstanceId(stack.instanceId??null);setPreviewId(item.id);return;}")&&screenSource.includes('instanceId={previewInstanceId}')&&screenSource.includes("type:'gear_equip'")&&screenSource.includes('onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);'),'All carried gear, including exact Forge copies, must open a copy-aware comparison before equipping and retain Quick Inspect access');
 ok(inspect.includes('HOW TO GET')&&inspect.includes('USED IN CRAFTING')&&inspect.includes('UPGRADE')&&inspect.includes('craftingDisclosure')&&inspect.includes('Show crafting uses'),'Quick Inspect sheet must show sources, a closed crafting disclosure, and equipment upgrade information');
@@ -75,5 +77,10 @@ ok(artwork.includes('borderWidth:framed?meta.borderWidth:0'),'Framed equipment a
 ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use rarity border strength');
 ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
 ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
+
+ok(screenSource.includes('onStoreInGear={previewId&&onCommand?async()=>')&&screenSource.includes("type:'gear_move',args:{instanceId,to:'equipment_pouch'}")&&screenSource.includes("type:'equipment_pouch_move',args:{itemId:id,quantity:1,from:'inventory',to:'equipment_pouch'}"),'Equipment comparison must allow one-tap Inventory-to-Gear storage for exact and ordinary copies');
+ok(gearPreview.includes("gearText('Store in Gear')")&&gearPreview.includes('canStoreInGear')&&gearPreview.includes('onStoreInGear'),'Equipment comparison must expose a distinct storage action with a capacity guard');
+ok(screenSource.includes('gearMoveAmount=')&&screenSource.includes('quantity:gearMoveAmount')&&screenSource.includes('freeGearSlots<gearMoveAmount'),'Quick Inspect must respect selected transfer quantity and remaining Gear slots');
+ok(screenSource.includes("const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}})")&&!screenSource.includes("selectedCopy.ownerCharacterId===state.character?.id?<GameButton"),'Shared Bank copies must remain transferable to the active character Gear storage without tying the transfer to their original crafter');
 
 console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, Quick Inspect gear decisions and availability, capacity feedback, rarity frames and rarity-colored names');

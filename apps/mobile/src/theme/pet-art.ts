@@ -1,6 +1,7 @@
 import type {ImageSourcePropType} from 'react-native';
 import {masterPetSourceById} from './master-roster-assets';
 import {eventPetSourceById} from './event-collectible-assets-active';
+import {dungeonShopPetArtSource} from './dungeon-shop-pet-art';
 
 const guildPetSourceById=new Map<string,ImageSourcePropType>([
  ['GUILD_PET_001',require('../../assets/guild-token-shop/pets/GUILD_PET_001_Stormwatch_Fox.webp')],
@@ -16,7 +17,8 @@ const guildPetSourceById=new Map<string,ImageSourcePropType>([
 export function petArtSource(id:string):ImageSourcePropType|undefined{
   return masterPetSourceById.get(id)
     ??eventPetSourceById.get(id)
-    ??guildPetSourceById.get(id);
+    ??guildPetSourceById.get(id)
+    ??dungeonShopPetArtSource(id);
 }
 
 /**
@@ -76,5 +78,5 @@ const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
 ]);
 
 export function petDetailArtSource(id:string):ImageSourcePropType|undefined{
- return masterPetPortraitSourceById.get(id)??eventPetSourceById.get(id)??guildPetPortraitSourceById.get(id);
+ return masterPetPortraitSourceById.get(id)??eventPetSourceById.get(id)??guildPetPortraitSourceById.get(id)??dungeonShopPetArtSource(id);
 }

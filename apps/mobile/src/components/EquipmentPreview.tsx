@@ -13,6 +13,7 @@ import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {EquipmentArtwork} from './EquipmentArtwork';
 import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
@@ -21,6 +22,7 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 type Props={
  state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'equipment_pouch';
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
+ onStoreInGear?:()=>unknown|Promise<unknown>;canStoreInGear?:boolean;
  onSell?:()=>void;onSalvage?:()=>void;canSell?:boolean;canSalvage?:boolean;
  favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>;
 };
@@ -31,8 +33,9 @@ function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.b
 
 /** Inventory's single, authoritative compare-before-equipping surface.
  * The footer deliberately stays outside the scroll area on small devices. */
-export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false}:Props){
+export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,onStoreInGear,canStoreInGear=false}:Props){
  const {gt,gl}=useGameplayText();
+ const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
  const [more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -61,7 +64,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
  const blocked=state.character&&state.character.level<(item.requiredLevel??1)
   ?gl('Requires level')+' '+String(item.requiredLevel??1)
-  :state.activity?.kind==='combat'?gl('Stop combat before equipping')
+  :state.activity?.kind==='combat'&&slot!=='weapon'?gl('Stop combat before equipping')
   :undefined;
  const sets=comparison.sets;
  const stats=[
@@ -74,6 +77,13 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   if(!onEquip||alreadyEquipped||blocked||busy)return;
   setBusy(true);setError('');
   try{await onEquip()}catch(cause){
+   setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
+  }finally{setBusy(false)}
+ }
+ async function storeInGear(){
+  if(!onStoreInGear||!canStoreInGear||busy)return;
+  setBusy(true);setError('');
+  try{await onStoreInGear()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
   }finally{setBusy(false)}
  }
@@ -156,6 +166,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       {onEquip?<View style={s.footerPrimary}><GameButton title={alreadyEquipped?gl('Currently equipped'):busy?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
         loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/></View>:null}
     </View>
+    {onStoreInGear?<GameButton title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy} onPress={()=>void storeInGear()}/>:null}
   </View>
  </GameModalSurface>;
 }

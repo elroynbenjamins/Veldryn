@@ -10,6 +10,17 @@ import type {GearSlot} from './types';
 // New gem refining and combining fees are 20% higher. Previously queued jobs
 // keep their original reserved Gold snapshots for cancellation/refunds.
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
+/** Odds refer to the consumed grade (G1→G2 = 90%). G5+ are future-ready. */
+export const GEM_COMBINE_SUCCESS_PERCENT_V1={1:90,2:80,3:70,4:60,5:55,6:50} as const;
+export function gemCombineSuccessPercentV1(fromGrade:number):number{
+ if(!Number.isSafeInteger(fromGrade)||fromGrade<1)throw new Error('Invalid gem grade');
+ if(fromGrade<=6)return GEM_COMBINE_SUCCESS_PERCENT_V1[fromGrade as keyof typeof GEM_COMBINE_SUCCESS_PERCENT_V1];
+ return Math.max(10,50-(fromGrade-6)*5);
+}
+export function gemCombineSucceededV1(fromGrade:number,trustedRoll:number):boolean{
+ if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid trusted gem combination roll');
+ return trustedRoll<gemCombineSuccessPercentV1(fromGrade)/100;
+}
 export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
  1:{to:2,copies:3,dust:0,gold:1800,seconds:5*60,level:8,xp:140},
  2:{to:3,copies:3,dust:5,gold:6000,seconds:15*60,level:20,xp:420},
@@ -55,6 +66,7 @@ function consumeStackV1(stacks:readonly ItemStack[],itemId:string,amount:number)
 function addStackV1(stacks:readonly ItemStack[],capacity:number,itemId:string,quantityToAdd:number){if(quantityToAdd<=0)return [...stacks];const existing=stacks.find(row=>row.itemId===itemId);if(existing)return stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row);if(stacks.length>=capacity)throw new Error('Inventory and Bank are full');return [...stacks,{itemId,quantity:quantityToAdd}];}
 export function dismantleGemV1(state:GameState,itemId:string,quantityToDismantle=1){
  const meta=canonicalGemMetaV1(itemId);if(!meta)throw new Error('Only canonical gems can be dismantled');
+ if(state.settings.favoriteItemIds?.includes(itemId)||state.settings.lockedItemIds?.includes(itemId))throw new Error('Favorite or locked gems cannot be dismantled');
  if(!Number.isSafeInteger(quantityToDismantle)||quantityToDismantle<1)throw new Error('Invalid dismantle quantity');
  if(combinedGemQuantityV1(state,itemId)<quantityToDismantle)throw new Error('You do not own enough of this gem');
  const dustPer=GEM_DISMANTLE_DUST_V1[meta.grade],afterGem=consumeGemFromStorage(state,itemId,quantityToDismantle),dust=dustPer*quantityToDismantle;
@@ -206,14 +218,14 @@ export function parseGemCombineRecipeIdV1(recipeId:string){
  const familyId=match[1],fromGrade=Number(match[2]) as 1|2|3|4;if(!mobileGemFamilyV1(familyId))return undefined;
  return {familyId,fromGrade};
 }
-export interface GemCombineRecipeV1{id:string;familyId:string;fromGrade:1|2|3|4;toGrade:2|3|4|5;name:string;skillId:'enchanting';level:number;xp:number;inputs:ItemStack[];output:ItemStack;gold:number;seconds:number;}
+export interface GemCombineRecipeV1{id:string;familyId:string;fromGrade:1|2|3|4;toGrade:2|3|4|5;successChancePercent:number;name:string;skillId:'enchanting';level:number;xp:number;inputs:ItemStack[];output:ItemStack;gold:number;seconds:number;}
 export function gemCombineRecipeV1(recipeId:string):GemCombineRecipeV1|undefined{
  const parsed=parseGemCombineRecipeIdV1(recipeId);if(!parsed)return undefined;
  const family=mobileGemFamilyV1(parsed.familyId)!;const cost=GEM_COMBINE_COSTS_V1[parsed.fromGrade];
  const inputs:ItemStack[]=[{itemId:mobileGemItemIdV1(parsed.familyId,parsed.fromGrade),quantity:3}];
  if(cost.dust)inputs.push({itemId:'GEM_DUST',quantity:cost.dust});
  if(cost.catalystId)inputs.push({itemId:cost.catalystId,quantity:1});
- return {id:recipeId,familyId:parsed.familyId,fromGrade:parsed.fromGrade,toGrade:cost.to,name:GEM_GRADE_LABEL_V1[cost.to]+' '+family.name+' Gem',skillId:'enchanting',level:cost.level,xp:cost.xp,inputs,output:{itemId:mobileGemItemIdV1(parsed.familyId,cost.to),quantity:1},gold:cost.gold,seconds:cost.seconds};
+ return {id:recipeId,familyId:parsed.familyId,fromGrade:parsed.fromGrade,toGrade:cost.to,successChancePercent:gemCombineSuccessPercentV1(parsed.fromGrade),name:GEM_GRADE_LABEL_V1[cost.to]+' '+family.name+' Gem',skillId:'enchanting',level:cost.level,xp:cost.xp,inputs,output:{itemId:mobileGemItemIdV1(parsed.familyId,cost.to),quantity:1},gold:cost.gold,seconds:cost.seconds};
 }
 export function availableGemCombinesV1(state:GameState){
  return MOBILE_GEM_FAMILIES_V1.flatMap(family=>([1,2,3,4] as const).map(fromGrade=>{

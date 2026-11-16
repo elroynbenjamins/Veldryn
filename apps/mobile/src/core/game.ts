@@ -1,4 +1,5 @@
 import {ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
+import {creditMonthlyQuestMilestone} from './monthly-quest-milestones';
 import {hasFrozenLegacySeasonalGrant} from './legacy-seasonal-claim';
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
@@ -16,7 +17,7 @@ import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {REGIONAL_AREAS} from '../content/regional-areas';
 import {itemDef} from '../content/items';
-import {equipmentSalvageReward} from './equipment-salvage';
+import {equipmentSalvageReward,inventoryWithSalvageRewards} from './equipment-salvage';
 import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
 import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
@@ -39,7 +40,7 @@ import {SeasonalPeriod,seasonalQuestBoard,recordSeasonalActivity} from './season
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEventDrops,grantEventActivity,eventCandyUtilityMultiplier} from './live-events';
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
-import {unlockedCharacterSlots} from './account-roster';
+import {unlockedCharacterSlots,accountRegionAfkUnlocked} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
 import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
@@ -52,7 +53,7 @@ import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDispose
 import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
-import {monsterMastery,recordMonsterMastery} from './monster-mastery';
+import {monsterMasteryCombatBonuses,recordMonsterMastery} from './monster-mastery';
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
@@ -122,25 +123,22 @@ export const OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE=.05;
 export const GATHER_TIME_SCALE=1.25;
 
 export function offlineCapBreakdown(state:GameState){
-  const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
   const unlockedSlots=unlockedCharacterSlots(state);
   const secondSlot=unlockedSlots>=2;
   const thirdSlot=unlockedSlots>=3;
-  const fourthSlot=unlockedSlots>=4;
-  const fifthSlot=unlockedSlots>=5;
   const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
   const benefits=accountEntitlementBenefits(state),vip=benefits.vip,vipPlus=benefits.vipPlus,supporter=benefits.supporter;
   const sources=[
-    {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},
+    {id:'region_sunscar',name:'Unlock Sunscar',category:'progression' as const,hours:accountRegionAfkUnlocked(state,'SUNSCAR')?2:0,earned:accountRegionAfkUnlocked(state,'SUNSCAR')},
     {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?2:0,earned:questMilestone},
     {id:'first_boss',name:'Defeat first boss',category:'progression' as const,hours:firstBoss?2:0,earned:firstBoss},
     {id:'character_slot_2',name:'Unlock character slot #2',category:'progression' as const,hours:secondSlot?2:0,earned:secondSlot},
     {id:'guild',name:'Join a guild',category:'progression' as const,hours:guildMember?2:0,earned:guildMember},
     {id:'character_slot_3',name:'Unlock character slot #3',category:'progression' as const,hours:thirdSlot?2:0,earned:thirdSlot},
-    {id:'character_slot_4',name:'Unlock character slot #4',category:'progression' as const,hours:fourthSlot?2:0,earned:fourthSlot},
-    {id:'character_slot_5',name:'Unlock character slot #5',category:'progression' as const,hours:fifthSlot?2:0,earned:fifthSlot},
+    {id:'region_frostmarch',name:'Unlock Frostmarch',category:'progression' as const,hours:accountRegionAfkUnlocked(state,'FROSTMARCH')?2:0,earned:accountRegionAfkUnlocked(state,'FROSTMARCH')},
+    {id:'region_ashlands',name:'Unlock Ashlands',category:'progression' as const,hours:accountRegionAfkUnlocked(state,'ASHLANDS')?2:0,earned:accountRegionAfkUnlocked(state,'ASHLANDS')},
     {id:'vip',name:'VIP',category:'paid' as const,hours:vip?2:0,earned:vip},
     {id:'vip_plus',name:'VIP+',category:'paid' as const,hours:vipPlus?2:0,earned:vipPlus},
     {id:'supporter',name:'Supporter',category:'paid' as const,hours:supporter?2:0,earned:supporter},
@@ -174,7 +172,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   let gearAttack=0,gearDefense=0;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
@@ -207,8 +205,12 @@ export function effectiveStats(state:GameState){
     critMultiplier:1.5+setStats.critDamage,
     accuracy:Math.min(.99,.84+setStats.accuracy+mastery.accuracy),
     evasion:Math.min(.50,baseEvasion+setStats.evasion+mastery.evasion),
-    haste:.05+setStats.haste,
-    armor:setStats.armor,ward:setStats.ward,tenacity:setStats.tenacity,potency:setStats.potency,penetration:setStats.penetration,
+    haste:.05+setStats.haste+mastery.haste,
+    armor:setStats.armor,
+    // Stack equipment and class wards multiplicatively.
+    ward:1-(1-setStats.ward)*(1-mastery.ward),
+    tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,
+    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,
   }
 }
 
@@ -455,6 +457,9 @@ function regionalHuntSeed(state:GameState,monsterId:string,index:number){
 function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now()){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
   const m=baseMonster,stats=effectiveStats(state),modifiers=characterPermanentMultipliers(state),companion=companionCombatContribution(state);
+  // Resolve overlapping mastery once for this encounter. A family bonus
+  // never leaks to a monster with a different authored enemy type.
+  const masteryBonuses=monsterMasteryCombatBonuses(state,monsterId);
   const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.kind==='combat'?state.activity.combatTacticId:undefined);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
@@ -466,7 +471,11 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const bossPowerMultiplier=m.boss?1+effectGems.boss_power:1;
   const boostedPower=Math.max(1,Math.round(stats.power*bossPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier;
+  const skillEffects=characterClassEffects(c);
+  // Hexcraft improves spell-infused attacks. On legacy timer hunts Breaking
+  // is a modest tempo bonus; on damage-led hunts it reduces target armor.
+  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier*(1+skillEffects.potency)*
+    (usesDamageDrivenHunts(m.zone)?1:1+skillEffects.penetration);
   const combatCandy=eventCandyUtilityMultiplier(state,nowMs,'combat');
   // Regional elites are the first real reason to finish the current tier. A
   // player can still scout them in starter gear, but the missing tier creates
@@ -486,16 +495,16 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const progressionSpeedPenalty=tierGap===0?1:Math.max(.50,1-tierGap*.24);
   const progressionDamagePenalty=tierGap===0?1:1+tierGap*.20;
   const gearAttritionMultiplier=1+tierGap*MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
-  // Damage tonics affect actual resolved hunt output, rather than merely changing the displayed Attack stat.
+  // Legacy preparations are inert outside dungeons; dungeon boosts use a server-owned snapshot.
   const outgoingPreparation=c.preparation?preparationEffects(c.preparation).outgoing:1;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*masteryBonuses.damageMultiplier*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
   // Early regions resolve actual landed attacks rather than scaling an
   // authored monster timer. Crits and misses can change the number of swings;
   // the search phase limits easy-area kill rates without artificial HP.
   const huntOptions=usesDamageDrivenHunts(m.zone)&&!m.boss?{
     zone:m.zone,monsterHp:m.hp,
     playerHit:huntBasePlayerHit(Math.round(stats.attack),m.defense,
-      setCombat.penetrationMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
+      setCombat.penetrationMultiplier*masteryBonuses.damageMultiplier*progressionSpeedPenalty*outgoingPreparation)*style.soloHuntDamageMultiplier,
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
@@ -513,7 +522,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds}=runtime;
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
- const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
+ const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
  // Ravager's Bloodrush converts its offensive investment into modest
  // post-kill sustain. It cannot prevent a lethal hit and remains much weaker
  // when nearly all equipment slots are missing. This belongs to the same
@@ -570,7 +579,7 @@ function averagedRegionalHunt(state:GameState,monsterId:string,runtime:ReturnTyp
     cooldownSeconds:equippedGuardCompanion.activeAbility.cooldownSeconds,
     incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier,
    }:undefined});
-   const cast=huntClassSurvivalEvents(guarded,{classId:runtime.c.classId,classSkillLevel,...timing});
+   const cast=huntClassSurvivalEvents(guarded,{classId:runtime.c.classId,classSkillLevel,...timing,classHealingMultiplier:runtime.stats.classHealing});
    seconds+=plan.cycleSeconds;
    damage+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.damage,0);
    healing+=cast.filter(hit=>hit.actor!=='player').reduce((sum,hit)=>sum+hit.healing,0);
@@ -681,7 +690,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
    const guarded=huntTankGuardEvents(heals,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,incomingDamageMultiplier:runtime.companion.incomingDamageMultiplier}:undefined});
-   return huntClassSurvivalEvents(guarded,{...classTechniqueInput,...cooldownTiming});
+   return huntClassSurvivalEvents(guarded,{...classTechniqueInput,...cooldownTiming,classHealingMultiplier:runtime.stats.classHealing});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -886,7 +895,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   for(const drop of m.drops){const dropDef=itemDef(drop.itemId),blueprintKnowledge=dropDef.knowledgeUnlockId;if(blueprintKnowledge&&((state.account.unlockedKnowledgeIds??[]).includes(blueprintKnowledge)||combinedQty(state,drop.itemId)+(state.overflow.stacks.find(stack=>stack.itemId===drop.itemId)?.quantity??0)>0))continue;let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++){if(random01(seed,i)>=chance)continue;qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(blueprintKnowledge){qty=1;break;}}if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
   const candyKills=sim.completed.filter(row=>row.candy).length,combatCandy=sim.kills?1+.1*candyKills/sim.kills:1;
   const classGain=awardCombatClassXp(state.character,sim.kills,m.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*combatCandy,state.activity.classFocus);
-  const mastery=monsterMastery(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
+  const mastery=monsterMasteryCombatBonuses(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
@@ -1075,7 +1084,10 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const updatedLedger=Object.fromEntries([...Object.entries(ledger).filter(([id])=>activeIds.has(id)),[contract.id,[...previousClaimants,state.character.id]]]);
   const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),personalSeasonalClaimLedger:updatedLedger,seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
   const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
-  return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices})),nowMs);
+  const withCharacterQuestReceipt=updatePersonalSeasonalState(grantBondstones(withEssence,chosen.rewardBondstones??0),{claimIds:claimed,rewardChoices:recordedChoices});
+  // Keep per-character objective claims independent, but aggregate verified character/quest receipts account-wide.
+  const withMilestone=creditMonthlyQuestMilestone(withCharacterQuestReceipt,period,`${state.character!.id}:${contract.id}`,nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(withMilestone),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */
@@ -1297,6 +1309,7 @@ export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameS
   if(!state.character)throw new Error('No character');
   const def=itemDef(itemId);
   if(def.type!=='gear'||!def.slot)throw new Error('Not gear');
+  if(state.activity?.kind==='combat'&&def.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(def.requiredLevel??1))throw new Error(`Requires character level ${def.requiredLevel}`);
   if(state.character.equipmentInstanceIds?.[def.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
@@ -1310,17 +1323,19 @@ export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameS
   if(updatedStacks.length>pouch.capacity)throw new Error('Equipment Pouch is full');
   const temp={...state,character:{...state.character,equipment:{...state.character.equipment,[def.slot]:itemId},equipmentPouch:{...pouch,stacks:updatedStacks}}} as GameState;
   const maxHp=effectiveStats(temp).hp;
-  temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(def.hp||0));
+  // A weapon swap must not serve as a free heal during an active hunt.
+  temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(state.activity?.kind==='combat'?0:(def.hp||0)));
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now());
 }
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
+  if(state.activity?.kind==='combat'&&d.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(d.requiredLevel??1))throw new Error(`Requires character level ${d.requiredLevel}`);
   if(state.character.equipmentInstanceIds?.[d.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
   let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
   const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
-  const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
+  const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(state.activity?.kind==='combat'?0:(d.hp||0)));
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now())
 }
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId,foodQueueIds:(state.character.foodQueueIds??[]).filter(id=>id!==itemId)}}}
@@ -1336,10 +1351,10 @@ export function selectHealingPotion(state:GameState,itemId:string):GameState{
 export function usePotion(state:GameState,itemId:string):GameState{
  if(!state.character)throw new Error('Create a character first.');
  const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');
- if(potion.effect.kind==='healing')throw new Error('Healing potions are reserved for boss encounters. Select one under the HP bar; ordinary hunts use food.');
- if(state.activity?.kind==='combat')throw new Error('Tonics cannot be used during a hunt.');
- const stacks=consume(state.inventory.stacks,itemId,1);
- return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};
+ if(potion.effect.kind==='healing')throw new Error('Select a healing potion under the HP bar for boss fights and dungeons.');
+ // Only the authoritative co-op dungeon preparation transaction may consume tonics.
+ // Never spend one locally or allow it to buff hunts/story bosses.
+ throw new Error('Tonics are dungeon-only. Select one before the first dungeon room. It lasts the full run, even if the run fails.');
 }
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;if(state.character.equipmentInstanceIds?.[slot])throw new Error('Choose the exact equipped copy before unequipping uniquely identified gear');const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
@@ -1397,6 +1412,22 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   const proceeds=def.value*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
+}
+/** Salvage legacy equipment from the shared Bank. Materials go to active
+ * Inventory; the Bank must never silently receive salvage output or Gold. */
+export function salvageBankItem(state:GameState,itemId:string):GameState{
+  if(!state.character)throw new Error('Character required.');
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected.');
+  if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected.');
+  const def=itemDef(itemId),reward=equipmentSalvageReward(itemId);
+  if(def.type!=='gear'||!reward)throw new Error('Cannot salvage');
+  if(!state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0))
+    throw new Error('Choose an individual equipment copy for salvage');
+  if(!canDisposeLegacyEquipment(state,itemId,'bank',1))
+    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  const bankStacks=consume(state.bank.stacks,itemId,1);
+  const inventory=inventoryWithSalvageRewards(state.inventory,[reward],entitlementStorageCapacity(state,'inventory'));
+  return {...state,bank:{...state.bank,stacks:bankStacks},inventory};
 }
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');
@@ -1600,11 +1631,12 @@ export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSn
   return {
     name:character.name,classId:character.classId,classSkillLevel:characterClassSkills(character)[0]?.level??1,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
     attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
+    armorPenetration:characterClassEffects(character).penetration,classHealingMultiplier:stats.classHealing,hexPotency:characterClassEffects(character).potency,
     damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier*(prep?.outgoing??1),
     // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
     // Do not apply them again through actionSpeedMultiplier.
     actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed))*gear.actionSpeedMultiplier,
-    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
+    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
     potionHeal:potion?.effect.kind==='healing'?Math.ceil(stats.hp*potion.effect.maxHpFraction*multipliers.healingEffectivenessMultiplier):0,potionQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
   };
 }

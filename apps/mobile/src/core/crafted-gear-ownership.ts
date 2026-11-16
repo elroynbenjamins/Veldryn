@@ -188,12 +188,13 @@ export function linkLegacyCraftedGearInstance(state:GameState,instanceId:string,
 /** Exact-copy equipment changes require a server-validated command. */
 export function equipCraftedGearInstance(state:GameState,instanceId:string):GameState{
   if(!state.character)throw new Error('No active character');
-  if(state.activity?.kind==='combat')throw new Error('Stop combat before equipping');
   const {record,location}=resolveTracked(state,instanceId);
   if(!['inventory','equipment_pouch'].includes(location.place)||location.holderCharacterId!==state.character.id)
     throw new Error('Move this exact equipment copy into your character storage first');
   const def=itemDef(record.itemId);
   if(def.type!=='gear'||!def.slot)throw new Error('Not equipment');
+  // The command handler settles previous hunt progress before a weapon changes.
+  if(state.activity?.kind==='combat'&&def.slot!=='weapon')throw new Error('Stop combat before equipping');
   if(def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error('This equipment belongs to another class');
   if(state.character.level<(def.requiredLevel??1))throw new Error(`Requires level ${def.requiredLevel}`);
   const oldId=state.character.equipment[def.slot],oldInstanceId=state.character.equipmentInstanceIds?.[def.slot];

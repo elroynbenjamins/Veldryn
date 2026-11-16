@@ -45,7 +45,7 @@ import {itemDef} from '../content/items';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {ResourceArtwork} from '../components/ResourceArtwork';
 import {GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityBonuses} from '../core/guild-activity';
-import {guildSkillPointsForLevelV1,guildXpThresholdForLevelV1} from '../core/guild-progression-v1';
+import {guildXpThresholdForLevelV1} from '../core/guild-progression-v1';
 
 const ROSTER=[['Elowen','Dawnkeeper',28,'Leader'],['Brann','Ironwarden',24,'Officer'],['Mira','Wayfinder',21,'Member'],['Tovan','Ravager',19,'Member'],['Sera','Hexweaver',17,'Member']];
 type GuildSection='Home'|'PvE'|'Roster'|'Skills'|'Bank';
@@ -223,7 +223,7 @@ function GuildLocalHome({state,joined,project,contribution,bossHp,onNavigate,onC
  const guildXp=Math.max(0,Math.floor(metrics.guild_xp??0),Math.floor(contribution));
  const guildLevel=Math.max(1,Math.min(10,Array.from({length:10},(_,i)=>i+1).filter(level=>guildXp>=guildXpThresholdForLevelV1(level)).pop()??1));
  const spent=GUILD_SKILL_NODES.reduce((total,row)=>total+Math.min(3,Math.max(0,Math.floor(metrics[`guild_skill_${row.id}`]??0))),0);
- const skillPoints=Math.max(0,guildSkillPointsForLevelV1(guildLevel)-spent);
+ const skillPoints=Math.max(0,2*Math.max(0,guildLevel-1)-spent);
  const claimed=GUILD_ACTIVITY_MILESTONE_DEFS.filter(row=>metrics[`guild_activity_claim_${row.threshold}`]===1).map(row=>row.threshold);
  const contribute=()=>onChange({...state,account:{...state.account,guildContribution:contribution+100,guildProjectProgress:Math.min(1000,project+100),longTermMetrics:{...metrics,guild_xp:guildXp+100}}});
  const claim=(threshold:number)=>{if(activity<threshold||claimed.includes(threshold))return;const gold=threshold===100?50000:threshold===80?25000:threshold===60?15000:threshold===40?7500:2500;const items=threshold===100?[{itemId:'OATHGLASS_SHARD',quantity:2}]:threshold===60?[{itemId:'MOSS_FIBER',quantity:10}]:[];onChange({...state,character:state.character?{...state.character,gold:state.character.gold+gold}:state.character,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,items)},account:{...state.account,longTermMetrics:{...metrics,[`guild_activity_claim_${threshold}`]:1}}})};
@@ -248,7 +248,7 @@ function GuildLocalSkillsScreen({state,contribution,canUpgrade,onChange,onViewBa
  const guildXp=Math.max(0,Math.floor(metrics.guild_xp??0),Math.floor(contribution));
  const guildLevel=Math.max(1,Math.min(10,Array.from({length:10},(_,i)=>i+1).filter(level=>guildXp>=guildXpThresholdForLevelV1(level)).pop()??1));
  const spent=GUILD_SKILL_NODES.reduce((total,row)=>total+Math.min(3,Math.max(0,Math.floor(metrics[`guild_skill_${row.id}`]??0))),0);
- const skillPoints=Math.max(0,guildSkillPointsForLevelV1(guildLevel)-spent);
+ const skillPoints=Math.max(0,2*Math.max(0,guildLevel-1)-spent);
  const spend=(id:string)=>{const node=GUILD_SKILL_NODES.find(row=>row.id===id),current=Math.max(0,Math.floor(metrics[`guild_skill_${id}`]??0)),cost=node?.costs[current]??{};if(!node||!canUpgrade||skillPoints<=0||current>=3||!Object.entries(cost).every(([resource,quantity])=>Math.max(0,Math.floor(metrics[`guild_bank_${resource}`]??0))>=quantity))return;const nextMetrics:Record<string,number>={...metrics,[`guild_skill_${id}`]:current+1};for(const [resource,quantity] of Object.entries(cost))nextMetrics[`guild_bank_${resource}`]=Math.max(0,Math.floor(metrics[`guild_bank_${resource}`]??0))-quantity;onChange({...state,account:{...state.account,longTermMetrics:nextMetrics}})};
  return <View style={{gap:10}}><GuildSpecializationPaths guildLevel={guildLevel} skillPoints={skillPoints} metrics={metrics} canUpgrade={canUpgrade} onSpend={spend} onViewBank={onViewBank}/></View>;
 }

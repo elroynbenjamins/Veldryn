@@ -444,3 +444,8 @@ enabled = true
 # Google Pub/Sub does not send a Supabase JWT. The handler verifies Google OIDC itself.
 verify_jwt = false
 entrypoint = "./functions/play-billing-rtdn/index.ts"
+
+[functions.translate-chat-message]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/translate-chat-message/index.ts"

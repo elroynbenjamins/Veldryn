@@ -72,12 +72,13 @@ for(const key of [
  'That skill is already at its maximum rank.','No Guild Skill points remaining.',
  'The Guild Bank is missing required materials.','Join a Guild to allocate Guild Skills.',
  'That upgrade is already being processed. Refresh to confirm.',
- 'Already applied. Synced your ranks.','Could not complete the upgrade. Try again.'
+ 'Already applied. Synced your ranks.','Could not complete the upgrade. Try again.',
+ 'Could not confirm this Guild upgrade. Refresh Guild Skills before retrying.'
 ])isGerman(key,'online Guild Skills');
 
 for(const callsite of [
  "setNotice(de(upgradeError.guild_skill_not_released))",
- "setNotice(de(upgradeError[code]??'Could not complete the upgrade. Try again.'))",
+ "setNotice(de(upgradeError[code]??'Could not confirm this Guild upgrade. Refresh Guild Skills before retrying.'))",
  "setNoticeSuccess(true)","color:noticeSuccess?C.good:C.warning",
  "de('Loading Guild Skills…')","de('Refresh Guild Skills')"
 ]){

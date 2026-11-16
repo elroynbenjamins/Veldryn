@@ -16,3 +16,6 @@ export const MARKET_AUTHENTICATED_SERVICE_READY=false;
 
 /** Dungeon Marks Shop authored across three regions; keep collectible passives and shop UI hidden until server and art release. */
 export const DUNGEON_MARKS_SHOP_RELEASED=false;
+
+/** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
+export const CHAT_TRANSLATION_RELEASED=false;

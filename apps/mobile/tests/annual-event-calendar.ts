@@ -16,7 +16,7 @@ equal(rows[1]?.eventId,'EVT_ANNUAL_002_2026','Heartbond follows Turning');
 equal(rows.at(-1)?.eventId,'EVT_ANNUAL_012_2026','Frostfall closes the annual calendar');
 equal(rows.find(row=>row.eventId==='EVT_ANNUAL_010_2026')?.windowLabel,'Oct 10 – Nov 2','Veilbreak publishes its exact window');
 ok(!rows.find(row=>row.eventId==='EVT_ANNUAL_011_2026'),'Merchant & Guild no longer advertises a November 2026 window');
-equal(rows.find(row=>row.eventId==='EVT_ANNUAL_012_2026')?.windowLabel,'Dec 3 – Dec 29','Frostfall publishes its exact window');
+equal(rows.find(row=>row.eventId==='EVT_ANNUAL_012_2026')?.windowLabel,'Dec 3 – Dec 26','Frostfall publishes the shortened Dec 26 playable finale');
 ok(rows.every(row=>row.collectionTotal>0),'every production event exposes collection rewards');
 ok(rows.every(row=>row.collectionOwned===0),'fresh account starts with no annual event collection ownership');
 

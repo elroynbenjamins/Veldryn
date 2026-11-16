@@ -37,7 +37,8 @@ assert.ok(guild.includes('<ChatLog expanded={embedded}')&&guild.includes('embedd
 assert.ok(party.includes('<ChatLog expanded={expanded}')&&system.includes('<ChatLog expanded={expanded}'),'Party and System expand');
 assert.ok(rows.includes('compact&&s.compactRow')&&rows.includes('compact&&s.compactMessage'),'compact rows without removing profile action');
 assert.ok(rows.includes('compact={compact} style={[s.message,compact&&s.compactMessage]}'),'compact chat passes inline emote sizing to message text');
-assert.ok(messageText.includes('emoteImage:{width:20,height:20},emoteImageCompact:{width:17,height:17}'),'inline emotes fit regular and compact message line heights');
+assert.ok(messageText.includes('emoteImage:{width:24,height:24},emoteImageCompact:{width:21,height:21}'),'larger inline emotes are retained');
+assert.ok(messageText.includes('fontSize:14,lineHeight:26')&&messageText.includes('fontSize:13,lineHeight:23')&&rows.includes('compactMessage:{fontSize:13,lineHeight:23}')&&rows.includes('fontSize:14,lineHeight:26,paddingRight:2'),'regular and compact chat line heights fit the emote artwork without clipping');
 assert.ok(log.includes('inner:{paddingTop:2,paddingBottom:16}'),'chat scroll reserves safe clearance under final message');
 assert.ok(log.includes('onLayout={onViewportLayout}')&&log.includes('onContentSizeChange={onContentSizeChange}')&&log.includes('followLatestAfterLayout'),'chat follows the bottom after keyboard and content resize');
 assert.ok(composer.includes('<ChatEmotePicker {...emotes} compact'),'composer keeps quick emotes');

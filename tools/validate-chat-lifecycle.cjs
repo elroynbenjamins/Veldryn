@@ -731,9 +731,9 @@ async function realChatLogVisibility() {
     const scrolledRows=[...backgroundRows,{id:'4'}];
     await act(async()=>{tree.update(React.createElement(Wrapper,{active:false,items:scrolledRows}));});await h.tick(0);
     await act(async()=>{tree.update(React.createElement(Wrapper,{active:true,items:scrolledRows}));});await h.tick(0);
-    assert.equal(marked,3,'returning to a manually scrolled history must not mark unread new rows');
+    assert.equal(marked,4,'reopening a chat anchors to the latest message and marks newly visible rows read');
     await act(async()=>{tree.root.findByType('ScrollView').props.onScroll({nativeEvent:{contentOffset:{y:800},contentSize:{height:1000},layoutMeasurement:{height:260}}});});
-    assert.equal(marked,4,'reaching the bottom marks new rows normally');
+    assert.equal(marked,4,'scrolling to the already caught-up bottom does not acknowledge twice');
     await act(async()=>{tree.update(React.createElement(Wrapper,{active:true,items:[...scrolledRows,{id:'5'}]}));});
     await act(async()=>{tree.unmount();});tree=null;await h.tick(0);
     assert.equal(marked,4,'queued animation frame after unmount cannot mark another owner read');
@@ -878,9 +878,9 @@ async function pendingReadAcknowledgements() {
     assert.deepEqual(requests,['1','3'],'a pending success cannot acknowledge a newer message that arrived while scrolled up');
     await act(async()=>{tree.update(render(['1','2','3','4'],false));});
     await act(async()=>{tree.update(render(['1','2','3','4'],true));});await h.tick(0);
-    assert.deepEqual(requests,['1','3'],'hiding and showing a manually scrolled log preserves its unread cursor');
+    assert.deepEqual(requests,['1','3','4'],'reopening at the newest messages acknowledges the visible unread cursor');
     await act(async()=>{scroll(900);});
-    assert.deepEqual(requests,['1','3','4'],'reaching the actual bottom acknowledges the remaining displayed message');
+    assert.deepEqual(requests,['1','3','4'],'visiting the already-read bottom cannot send a duplicate acknowledgement');
     await act(async()=>{pending.shift().resolve();tree.unmount();});tree=null;
     assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
     console.log('PASS pending read acknowledgements: serial latest-cursor coalescing, confirmed older results, and manually scrolled new-message protection');

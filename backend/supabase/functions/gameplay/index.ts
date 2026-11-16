@@ -357,6 +357,115 @@ function updatePersonalSeasonalState(state, changes) {
   return { ...ready, character, account: personalSeasonalAccountView(ready.account, character) };
 }
 
+// ../apps/mobile/src/core/monthly-quest-milestones.ts
+init_progression();
+init_faith2();
+var MONTHLY_QUEST_MILESTONES = [
+  { points: 30, xp: 1e3 },
+  { points: 60, xp: 2500 },
+  { points: 100, xp: 5e3 }
+];
+var MONTHLY_QUEST_POINTS = { daily: 1, weekly: 3, monthly: 5 };
+var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
+var MAX_XP2 = totalXpAtLevel(100);
+function utcQuestMonth(nowMs) {
+  return new Date(nowMs).toISOString().slice(0, 7);
+}
+function previousMonth(key) {
+  const [year, month] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 2, 1));
+  return date.toISOString().slice(0, 7);
+}
+function monthStartMs(key) {
+  return Date.parse(key + "-01T00:00:00.000Z");
+}
+function normalizeMonthlyQuestMilestones(raw2) {
+  const input = raw2 && typeof raw2 === "object" ? raw2.months : void 0;
+  if (!Array.isArray(input)) return { months: [] };
+  const allowedSkills = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "herbalism", "smithing", "cooking", "alchemy", "exploration", "tailoring", "enchanting", "faith"]);
+  const months = [];
+  for (const value of input) {
+    if (!value || typeof value !== "object") continue;
+    const row = value;
+    if (typeof row.key !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.key)) continue;
+    const claimed = {};
+    for (const milestone of MONTHLY_QUEST_MILESTONES) {
+      const record = row.claimed?.[milestone.points];
+      if (!record || typeof record.characterId !== "string" || !record.characterId || !allowedSkills.has(record.skillId) || !Number.isFinite(record.claimedAtMs) || !Number.isFinite(record.xpGranted) || record.xpGranted < 1 || record.xpGranted > milestone.xp) continue;
+      claimed[milestone.points] = { characterId: record.characterId, skillId: record.skillId, claimedAtMs: record.claimedAtMs, xpGranted: record.xpGranted };
+    }
+    months.push({
+      key: row.key,
+      points: Number.isSafeInteger(row.points) && Number(row.points) >= 0 ? Math.min(300, Number(row.points)) : 0,
+      creditedQuestIds: Array.isArray(row.creditedQuestIds) ? [...new Set(row.creditedQuestIds.filter((id) => typeof id === "string" && id.length < 120))].slice(-150) : [],
+      claimed
+    });
+  }
+  return { months: [...new Map(months.map((row) => [row.key, row])).values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-2) };
+}
+function readMonths(state) {
+  return normalizeMonthlyQuestMilestones(state.account.monthlyQuestMilestones).months;
+}
+function eligibleMonth(key, nowMs) {
+  const current = utcQuestMonth(nowMs);
+  if (key === current) return true;
+  return key === previousMonth(current) && nowMs < monthStartMs(current) + GRACE_MS;
+}
+function activeMonths(state, nowMs) {
+  return readMonths(state).filter((row) => eligibleMonth(row.key, nowMs));
+}
+function creditMonthlyQuestMilestone(state, period, questId, nowMs) {
+  const key = utcQuestMonth(nowMs), months = activeMonths(state, nowMs);
+  const existing = months.find((row) => row.key === key) ?? { key, points: 0, creditedQuestIds: [], claimed: {} };
+  if (existing.creditedQuestIds.includes(questId)) return state;
+  const next = {
+    ...existing,
+    points: existing.points + MONTHLY_QUEST_POINTS[period],
+    creditedQuestIds: [...existing.creditedQuestIds, questId].slice(-150)
+  };
+  return { ...state, account: { ...state.account, monthlyQuestMilestones: { months: [...months.filter((row) => row.key !== key), next] } } };
+}
+function claimMonthlyQuestMilestone(state, key, threshold, characterId, skillId, nowMs) {
+  const milestone = MONTHLY_QUEST_MILESTONES.find((row2) => row2.points === threshold);
+  if (!milestone) throw new Error("Unknown monthly quest milestone.");
+  if (!eligibleMonth(key, nowMs)) throw new Error("This monthly milestone has expired.");
+  const months = activeMonths(state, nowMs), row = months.find((entry2) => entry2.key === key);
+  if (!row || row.points < milestone.points) throw new Error("Earn more Quest Points before claiming this milestone.");
+  if (row.claimed[milestone.points]) throw new Error("This monthly milestone was already claimed.");
+  const isActive2 = state.character?.id === characterId;
+  const parkedIndex = isActive2 ? -1 : (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === characterId);
+  if (!isActive2 && parkedIndex < 0) throw new Error("Select a character on this account.");
+  const originalSkills = isActive2 ? state.skills : state.otherCharacters[parkedIndex].skills;
+  const targetCharacter = isActive2 ? state.character : state.otherCharacters[parkedIndex].character;
+  const selected2 = originalSkills.find((skill2) => skill2.skillId === skillId);
+  if (!selected2 || !Number.isFinite(selected2.xp) || selected2.xp < 0) throw new Error("Select an unlocked skill.");
+  const faith = skillId === "faith" ? normalizeFaith(targetCharacter.faith) : void 0;
+  const baseXp = faith ? Math.max(selected2.xp, faith.xp) : selected2.xp;
+  const award = Math.min(milestone.xp, Math.max(0, MAX_XP2 - baseXp));
+  const nextXp = Math.min(MAX_XP2, baseXp + award);
+  if (award < 1) throw new Error("This skill is already at maximum level.");
+  const updatedSkills = originalSkills.map((skill2) => {
+    if (skill2.skillId !== skillId) return skill2;
+    return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
+  });
+  const updatedMonth = {
+    ...row,
+    claimed: { ...row.claimed, [milestone.points]: { characterId, skillId, claimedAtMs: nowMs, xpGranted: award } }
+  };
+  const updatedAccount = { ...state.account, monthlyQuestMilestones: { months: months.map((entry2) => entry2.key === key ? updatedMonth : entry2) } };
+  if (isActive2) return {
+    ...state,
+    account: updatedAccount,
+    skills: updatedSkills,
+    ...faith ? { character: { ...state.character, faith: { ...faith, xp: nextXp } } } : {}
+  };
+  return { ...state, account: updatedAccount, otherCharacters: (state.otherCharacters ?? []).map((entry2, index) => index === parkedIndex ? {
+    ...entry2,
+    skills: updatedSkills,
+    ...faith ? { character: { ...entry2.character, faith: { ...faith, xp: nextXp } } } : {}
+  } : entry2) };
+}
+
 // ../apps/mobile/src/content/classes.ts
 var CLASSES = [
   { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
@@ -41978,6 +42087,8 @@ var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 6e3, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1200, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.25;
+var T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
+var T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER = 1.2;
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
@@ -42025,6 +42136,10 @@ function mergeInputs(inputs) {
   const totals = /* @__PURE__ */ new Map();
   for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
   return [...totals].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 }));
+}
+var EQUIPMENT_PRIMARY_MATERIAL_REDUCTION = 2;
+function reducePrimaryEquipmentMaterial(inputs) {
+  return inputs.map((input, index) => index === 0 ? { ...input, quantity: Math.max(1, input.quantity - EQUIPMENT_PRIMARY_MATERIAL_REDUCTION) } : input);
 }
 function ingredients(tier, path, multiplier, skillId) {
   multiplier *= TIER_MATERIAL_MULTIPLIER[tier] ?? 1;
@@ -42092,7 +42207,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
-  const craftXp = t5Affix ? Math.round(standardCraftXp * T5_AFFIX_XP_MULTIPLIER) : standardCraftXp;
+  const boostedCraftXp = tier === "T2" ? Math.round(standardCraftXp * T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : ["T3", "T4"].includes(tier) ? Math.round(standardCraftXp * T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : standardCraftXp;
+  const craftXp = t5Affix ? Math.round(boostedCraftXp * T5_AFFIX_XP_MULTIPLIER) : boostedCraftXp;
   const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
   const baseSeconds = clamp(Math.round(range.base * multiplier), range.min, range.max);
   return {
@@ -42103,7 +42219,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     xp: craftXp,
     gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
     seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
-    inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId), infusion]),
+    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId)), infusion]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -42285,15 +42401,15 @@ var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", tier: 3, effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
-  { id: "VIGOR_TONIC", name: "Vigor Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.05, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "+5% damage dealt; one active preparation, lasts 30 ordinary encounters." },
-  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.1, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "+10% damage dealt; one active preparation, lasts 45 ordinary encounters." },
-  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.15, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "+15% damage dealt; one active preparation, lasts 60 ordinary encounters." },
-  { id: "WARD_TONIC", name: "Ward Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.05, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "5% less incoming damage; one active preparation, lasts 30 ordinary encounters." },
-  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.1, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "10% less incoming damage; one active preparation, lasts 45 ordinary encounters." },
-  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.15, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "15% less incoming damage; one active preparation, lasts 60 ordinary encounters." },
-  { id: "HARMONY_TONIC", name: "Harmony Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.02, damageReductionFraction: 0, healingStrengthFraction: 0.05, shieldStrengthFraction: 0.05, encounters: 30 }, description: "+2% damage and +5% ability healing/shielding. Lasts 30 ordinary encounters; dungeon support requires server integration." },
-  { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% ability healing/shielding. Lasts 45 ordinary encounters; dungeon support requires server integration." },
-  { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% ability healing/shielding. Lasts 60 ordinary encounters; dungeon support requires server integration." }
+  { id: "VIGOR_TONIC", name: "Vigor Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.05, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "+5% damage throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.1, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "+10% damage throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.15, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "+15% damage throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "WARD_TONIC", name: "Ward Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.05, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "5% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.1, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "10% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.15, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "15% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "HARMONY_TONIC", name: "Harmony Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.02, damageReductionFraction: 0, healingStrengthFraction: 0.05, shieldStrengthFraction: 0.05, encounters: 30 }, description: "+2% damage and +5% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." }
 ];
 var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", rarity: "rare", value: 70, description: "A dewleaf resin that binds first-tier gear." },
@@ -42305,6 +42421,7 @@ var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "RIMEWARD_DISTILLATE", name: "Rimeward Distillate", rarity: "epic", value: 1320, description: "A frostbound distillate for Frostmarch equipment." },
   { id: "CINDERHEART_ELIXIR", name: "Cinderheart Elixir", rarity: "legendary", value: 1600, description: "A volatile Ashlands elixir for capstone equipment." }
 ]);
+var potionDefById = (itemId) => POTIONS.find((p) => p.id === itemId);
 var recipe = (potionId, level, seconds, xp, gold, inputs, suffix = "") => ({
   id: `BREW_${potionId}${suffix}`,
   name: POTIONS.find((p) => p.id === potionId).name,
@@ -42321,7 +42438,7 @@ var ALCHEMY_RECIPES = [
   recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
   recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
   recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
-  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "RIVER_MINT", quantity: 5 }]),
   recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
   recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
   recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),
@@ -42349,11 +42466,15 @@ var ALCHEMY_RECIPES = [
 ].map((recipe2) => {
   const combatPotion = POTIONS.some((potion) => potion.id === recipe2.output.itemId);
   const costMultiplier = combatPotion ? COMBAT_POTION_CRAFT_COST_MULTIPLIER : 1;
+  const isTonic = potionDefById(recipe2.output.itemId)?.effect.kind === "preparation";
   return {
     ...recipe2,
     xp: recipe2.xp * (combatPotion ? COMBAT_POTION_XP_MULTIPLIER : 1),
     gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
-    inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
+    inputs: [
+      ...recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier })),
+      ...isTonic ? [{ itemId: "HOLY_WATER", quantity: 3 }, { itemId: "TEMPERING_DUST", quantity: 2 }] : []
+    ]
   };
 });
 var POTION_ITEMS = POTIONS.map((potion) => ({
@@ -42951,11 +43072,12 @@ function huntClassSurvivalEvents(events, input) {
   if (pulse === void 0) return result;
   const rank = Math.min(100, Math.max(1, Math.floor(Number.isFinite(input.classSkillLevel) ? input.classSkillLevel : 1)));
   const scale = 1 + 0.3 * (rank - 1) / 99;
+  const healScale = Math.max(1, Math.min(1.2, input.classHealingMultiplier ?? 1));
   const eligible = result.filter((event) => (event.actor === "enemy" || profile.mechanic === "sun_heal" && event.actor === "fatigue") && event.damage > 0 && input.encounterStartedAtMs + event.fraction * input.cycleSeconds * 1e3 >= pulse - 1e-3);
   const first = eligible[0];
   if (!first) return result;
   if (profile.mechanic === "sun_heal") {
-    const bonus = Math.max(0, Math.min(first.damage * 0.15, first.damage * profile.healingOfIncomingPct * scale));
+    const bonus = Math.max(0, Math.min(first.damage * 0.18, first.damage * profile.healingOfIncomingPct * scale * healScale));
     if (bonus > 1e-6) {
       first.healing += bonus;
       first.classHealingBudget = (first.classHealingBudget ?? 0) + bonus;
@@ -42969,7 +43091,7 @@ function huntClassSurvivalEvents(events, input) {
   hit.damage = Math.max(0, hit.damage - prevented);
   hit.classGuardAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "shield", amount: prevented };
   if (profile.recoveryOfPreventedPct > 0) {
-    const siphon = prevented * profile.recoveryOfPreventedPct;
+    const siphon = prevented * profile.recoveryOfPreventedPct * healScale;
     if (siphon > 1e-6) {
       hit.healing += siphon;
       hit.classHealingBudget = (hit.classHealingBudget ?? 0) + siphon;
@@ -43419,8 +43541,9 @@ var COMPANION_LEVEL_CURVE = { baseXp: 65, xpGrowth: 1.16, goldBase: 38, goldGrow
 var COMPANION_BOND_ESSENCE_REWARDS = { 2: 20, 4: 35, 6: 55, 8: 80 };
 var COMPANION_BOND_CONFIG = {
   maxLevel: 10,
-  // cumulative XP required for Bond Levels 1-10
-  xpThresholds: [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520],
+  curveVersion: 2,
+  // Cumulative XP. Tripled versus the original Bond curve, preserving its shape.
+  xpThresholds: [0, 270, 630, 1110, 1740, 2520, 3480, 4620, 5970, 7560],
   rewards: { 2: "20 Essence", 4: "35 Essence", 6: "55 Essence", 8: "80 Essence", 10: "Bond Trait" },
   sourceXp: { battle: 4, boss: 60, dungeon: 32, companion_objective: 45, future_activity: 12 }
 };
@@ -43540,12 +43663,12 @@ var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.i
 // ../apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
-var ward = skill("warding", "Warding", "Magical protection");
+var ward = skill("warding", "Warding", "Damage warding");
 var CLASS_SKILLS = {
   IRONWARDEN: [guard, ward],
   BASTION: [guard, ward],
   DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
-  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Protection and cleansing")],
+  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
   WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
   RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
   HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
@@ -43594,15 +43717,28 @@ function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFoc
 }
 function characterClassEffects(c) {
   const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
-  const tank = ["IRONWARDEN", "BASTION", "DREADGUARD"].includes(c.classId), support = ["DAWNKEEPER", "STONECALLER"].includes(c.classId);
-  const precision = c.classId === "KNIFE_DANCER";
-  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b, accuracy: 0, evasion: 0 } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1, accuracy: 0, evasion: 0 } : {
-    attack: 1 + 0.07 * a + (precision ? 0 : 0.03 * b),
-    hp: 1,
-    defense: 1 + (precision ? 0 : 0.06 * b),
-    accuracy: precision ? 0.03 * b : 0,
-    evasion: precision ? 0.06 * b : 0
-  };
+  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
+  switch (c.classId) {
+    case "IRONWARDEN":
+      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
+    case "BASTION":
+      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
+    case "DREADGUARD":
+      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
+    case "DAWNKEEPER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
+    case "WAYFINDER":
+      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
+    case "RAVAGER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
+    case "HEXWEAVER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
+    case "KNIFE_DANCER":
+      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
+    case "STONECALLER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
+  }
+  return base;
 }
 function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
@@ -44150,30 +44286,325 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   };
 });
 
+// ../apps/mobile/src/content/enemy-families.ts
+var ENEMY_FAMILIES = [
+  {
+    "id": "UNDEAD",
+    "name": "Undead",
+    "description": "Revenants, wraiths, spirits bound to death and the oathfallen.",
+    "monsterIds": [
+      "LANTERN_WRETCH",
+      "DROWNED_PILGRIM",
+      "OATHBOUND_SQUIRE",
+      "BANNER_SHADE",
+      "FALLEN_SENTINEL",
+      "OATHGLASS_REVENANT",
+      "BELLWRAITH",
+      "LAKEBOUND_SPECTER",
+      "ASHEN_REVENANT"
+    ]
+  },
+  {
+    "id": "HUMAN",
+    "name": "Humans",
+    "description": "Living mortal raiders, scouts, soldiers and spellcasters.",
+    "monsterIds": [
+      "RUNEBOUND_MINER",
+      "DUNE_ORACLE",
+      "SAFFRON_MARAUDER",
+      "ROYAL_SANDGUARD",
+      "ICEBOUND_RAIDER",
+      "CHOIR_HUNTER"
+    ]
+  },
+  {
+    "id": "ORC",
+    "name": "Orcs",
+    "description": "Orc warriors and raiders. Reserved for future enemy content.",
+    "monsterIds": []
+  },
+  {
+    "id": "BEAST",
+    "name": "Beasts",
+    "description": "Natural predators, wildlife and monstrous animals.",
+    "monsterIds": [
+      "MOSS_RAT",
+      "ROADSIDE_BOAR",
+      "SILVERFIN_SWARM",
+      "IRONWOOD_WOLF",
+      "MIRE_HERON",
+      "IRONBACK_MOLE",
+      "ECHO_BAT",
+      "GLASS_DUNE_STRIDER",
+      "FROSTWOLF",
+      "RIME_STALKER"
+    ]
+  },
+  {
+    "id": "VERMIN",
+    "name": "Vermin",
+    "description": "Arachnids, insects and smaller venomous swarms.",
+    "monsterIds": [
+      "VENOM_WEAVER",
+      "CAVE_SKITTER",
+      "GLOAM_MITE",
+      "SUNSCAR_SCORPION"
+    ]
+  },
+  {
+    "id": "NATURE",
+    "name": "Natureborn",
+    "description": "Living plants, treants and creatures of corrupted growth.",
+    "monsterIds": [
+      "THORNLING",
+      "BRIAR_HUSK",
+      "ANCIENT_TREANT",
+      "SNOW_TREANT",
+      "BLACKGLASS_MIRELING"
+    ]
+  },
+  {
+    "id": "CONSTRUCT",
+    "name": "Constructs",
+    "description": "Animated guardians, sentinels and artificial protectors.",
+    "monsterIds": [
+      "GLASSBOUND_SENTINEL",
+      "OBSERVATORY_KEEPER",
+      "WYRMSPINE_GUARDIAN"
+    ]
+  },
+  {
+    "id": "ELEMENTAL",
+    "name": "Elementals",
+    "description": "Living elemental forces, embers and magical wisps.",
+    "monsterIds": [
+      "FIELD_WISP",
+      "CINDER_TITAN"
+    ]
+  },
+  {
+    "id": "SPIRIT",
+    "name": "Spirits",
+    "description": "Mirage-born noncorporeal entities.",
+    "monsterIds": [
+      "MIRAGE_SHADE"
+    ]
+  },
+  {
+    "id": "GIANT",
+    "name": "Giants",
+    "description": "Trolls and other massive living giants.",
+    "monsterIds": [
+      "FOREST_TROLL"
+    ]
+  }
+];
+var FAMILY_BY_MONSTER = new Map(
+  ENEMY_FAMILIES.flatMap((family) => family.monsterIds.map((id) => [id, family]))
+);
+var ORDINARY_MONSTER_IDS = new Set(MONSTERS.filter((monster) => !monster.boss).map((monster) => monster.id));
+function enemyFamilyForMonster(monsterId) {
+  return ORDINARY_MONSTER_IDS.has(monsterId) ? FAMILY_BY_MONSTER.get(monsterId) : void 0;
+}
+
+// ../apps/mobile/src/core/mastery-rewards.ts
+function masteryRewardBonuses(rank) {
+  const safe = Number.isFinite(rank) ? Math.max(0, Math.min(30, Math.floor(rank))) : 0;
+  return {
+    damageBonus: safe < 5 ? 0 : 0.01 + 0.01 * (safe - 5) / 25,
+    materialBonus: safe < 15 ? 0 : 0.03 + 0.02 * (safe - 15) / 15
+  };
+}
+
+// ../apps/mobile/src/core/enemy-family-mastery.ts
+var FAMILY_MASTERY_MAX_RANK = 30;
+var FAMILY_MASTERY_MAX_POINTS = 5e4;
+function familyMasteryPointsForRank(rank) {
+  const r = Number.isFinite(rank) ? Math.max(0, Math.min(FAMILY_MASTERY_MAX_RANK, Math.floor(rank))) : 0;
+  return Math.round(300 * r + 41e3 * r * (r - 1) / (30 * 29));
+}
+var FAMILY_MASTERY_ZONE_REWARDS = {
+  "Greenfields": 1,
+  "Silverbrook": 1,
+  "Ironwood Forest": 1,
+  "Old Mines": 2,
+  "King's Road": 2,
+  "Sunscar": 3,
+  "Frostmarch": 4,
+  "Ashlands": 6
+};
+function enemyFamilyMasteryPointsPerKill(monsterId) {
+  if (!enemyFamilyForMonster(monsterId)) return 0;
+  const monster = MONSTERS.find((row) => row.id === monsterId && !row.boss);
+  if (!monster) return 0;
+  const byLevel = monster.level >= 75 ? 6 : monster.level >= 55 ? 4 : monster.level >= 35 ? 3 : monster.level >= 20 ? 2 : 1;
+  return Math.max(1, Math.min(6, Math.max(FAMILY_MASTERY_ZONE_REWARDS[monster.zone] ?? 1, byLevel)));
+}
+function normalizeEnemyFamilyMastery(raw2) {
+  const data = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
+  const out = {};
+  for (const family of ENEMY_FAMILIES) {
+    if (!family.monsterIds.length) continue;
+    const n = data[family.id];
+    if (typeof n === "number" && Number.isFinite(n) && Number.isSafeInteger(n) && n > 0) {
+      out[family.id] = Math.min(FAMILY_MASTERY_MAX_POINTS, n);
+    }
+  }
+  return out;
+}
+function enemyFamilyMastery(state, id) {
+  const points = normalizeEnemyFamilyMastery(state.character?.familyMasteryPoints)[id] ?? 0;
+  let rank = 0;
+  while (rank < FAMILY_MASTERY_MAX_RANK && points >= familyMasteryPointsForRank(rank + 1)) rank++;
+  return {
+    points,
+    rank,
+    nextRankPoints: familyMasteryPointsForRank(Math.min(FAMILY_MASTERY_MAX_RANK, rank + 1)),
+    ...masteryRewardBonuses(rank),
+    dropKnowledge: rank >= 10,
+    eliteKnowledge: rank >= 20,
+    badgeUnlocked: rank >= 25
+  };
+}
+function recordEnemyFamilyMastery(state, monsterId, kills) {
+  const family = enemyFamilyForMonster(monsterId);
+  if (!family || !state.character || !Number.isSafeInteger(kills) || kills <= 0) return state;
+  const perKill = enemyFamilyMasteryPointsPerKill(monsterId);
+  if (perKill < 1) return state;
+  const points = normalizeEnemyFamilyMastery(state.character.familyMasteryPoints);
+  points[family.id] = Math.min(FAMILY_MASTERY_MAX_POINTS, (points[family.id] ?? 0) + kills * perKill);
+  return { ...state, character: { ...state.character, familyMasteryPoints: points } };
+}
+
 // ../apps/mobile/src/core/monster-mastery.ts
-var MASTERY_POINTS_PER_RANK = 25;
+var MONSTER_MASTERY_MAX_RANK = 30;
+var MONSTER_MASTERY_MAX_KILLS = 1500;
+function monsterMasteryKillsForRank(rank) {
+  const r = Number.isFinite(rank) ? Math.max(0, Math.min(MONSTER_MASTERY_MAX_RANK, Math.floor(rank))) : 0;
+  return Math.round(20 * r + 900 * r * (r - 1) / (30 * 29));
+}
+function monsterMasteryRankFromKills(kills) {
+  const points = Number.isFinite(kills) ? Math.max(0, Math.floor(kills)) : 0;
+  let rank = 0;
+  while (rank < MONSTER_MASTERY_MAX_RANK && points >= monsterMasteryKillsForRank(rank + 1)) rank++;
+  return rank;
+}
 function normalizeMonsterMastery(raw2) {
-  const input = raw2 && typeof raw2 === "object" ? raw2 : {};
+  const input = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
   return Object.fromEntries(MONSTERS.filter((m) => !m.boss).flatMap((m) => {
     const n = input[m.id];
-    return typeof n === "number" && Number.isFinite(n) && n > 0 ? [[m.id, Math.min(750, Math.floor(n))]] : [];
+    return typeof n === "number" && Number.isFinite(n) && Number.isSafeInteger(n) && n > 0 ? [[m.id, Math.min(MONSTER_MASTERY_MAX_KILLS, n)]] : [];
   }));
 }
 function monsterMastery(state, id) {
   const monster = MONSTERS.find((m) => m.id === id);
   const points = monster && !monster.boss ? normalizeMonsterMastery(state.character?.monsterMasteryPoints)[id] ?? 0 : 0;
-  const rank = Math.min(30, Math.floor(points / MASTERY_POINTS_PER_RANK));
-  return { points, rank, nextRankPoints: rank >= 30 ? 750 : (rank + 1) * MASTERY_POINTS_PER_RANK, damageBonus: rank >= 30 ? 0.02 : rank >= 5 ? 0.01 : 0, materialBonus: rank >= 30 ? 0.05 : rank >= 15 ? 0.03 : 0, dropKnowledge: rank >= 10, eliteKnowledge: rank >= 20, badgeUnlocked: rank >= 25 };
+  const rank = monsterMasteryRankFromKills(points);
+  const reward3 = masteryRewardBonuses(rank);
+  return {
+    points,
+    rank,
+    nextRankPoints: monsterMasteryKillsForRank(Math.min(MONSTER_MASTERY_MAX_RANK, rank + 1)),
+    ...reward3,
+    dropKnowledge: rank >= 10,
+    eliteKnowledge: rank >= 20,
+    badgeUnlocked: rank >= 25
+  };
+}
+function monsterMasteryCombatBonuses(state, id) {
+  const species = monsterMastery(state, id);
+  const familyId = enemyFamilyForMonster(id)?.id;
+  const family = familyId ? enemyFamilyMastery(state, familyId) : void 0;
+  return {
+    species,
+    family,
+    familyId,
+    damageMultiplier: (1 + species.damageBonus) * (1 + (family?.damageBonus ?? 0)),
+    materialBonus: species.materialBonus + (family?.materialBonus ?? 0)
+  };
 }
 function recordMonsterMastery(state, id, kills) {
   if (!state.character || !MONSTERS.some((m) => m.id === id && !m.boss) || !Number.isSafeInteger(kills) || kills <= 0) return state;
   const points = normalizeMonsterMastery(state.character.monsterMasteryPoints);
-  points[id] = Math.min(750, (points[id] ?? 0) + kills);
-  const next = { ...state, character: { ...state.character, monsterMasteryPoints: points } };
-  const counters = { ...state.account.companionUnlockProgress };
-  for (const [target2, n] of Object.entries(points)) counters[target2] = Math.floor(n / 25);
-  counters.ASTERFALL_MASTERY_20_ALL = MONSTERS.filter((m) => !m.boss && (points[m.id] ?? 0) >= 500).length;
+  points[id] = Math.min(MONSTER_MASTERY_MAX_KILLS, (points[id] ?? 0) + kills);
+  const next = recordEnemyFamilyMastery({ ...state, character: { ...state.character, monsterMasteryPoints: points } }, id, kills);
+  const counters = { ...next.account.companionUnlockProgress };
+  for (const [target2, n] of Object.entries(points))
+    counters[target2] = Math.max(counters[target2] ?? 0, monsterMasteryRankFromKills(n));
+  const rank20Count = MONSTERS.filter((m) => !m.boss && monsterMasteryRankFromKills(points[m.id] ?? 0) >= 20).length;
+  counters.ASTERFALL_MASTERY_20_ALL = Math.max(counters.ASTERFALL_MASTERY_20_ALL ?? 0, rank20Count);
   return { ...next, account: { ...next.account, companionUnlockProgress: counters } };
+}
+
+// ../apps/mobile/src/core/companion-housing.ts
+var COMPANION_HOUSING_MILESTONES = [
+  { levelCap: 10, housingTier: 0, label: "Basic Quarters" },
+  { levelCap: 20, housingTier: 1, label: "Reinforced Quarters" },
+  { levelCap: 25, housingTier: 2, label: "Veteran Quarters" },
+  { levelCap: 35, housingTier: 3, label: "Master Quarters" }
+];
+var COMPANION_HOUSING_UPGRADES = [
+  { tier: 1, gold: 8e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 40 }, { itemId: "ASTER_IRON_INGOT", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] },
+  { tier: 2, gold: 35e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 80 }, { itemId: "OATHSTONE_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 6 }] },
+  { tier: 3, gold: 1e5, inputs: [{ itemId: "WHITEPINE_LOG", quantity: 110 }, { itemId: "FROSTIRON_INGOT", quantity: 45 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] }
+];
+function normalizeCompanionHousingTiers(raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
+  return Object.fromEntries(Object.entries(raw2).filter(([id, tier]) => id.length <= 80 && typeof tier === "number" && Number.isInteger(tier) && tier >= 0).slice(0, 150).map(([id, tier]) => [id, Math.min(3, tier)]));
+}
+function companionHousingEarnedTier(level) {
+  if (!Number.isFinite(level)) return 0;
+  return level > 25 ? 3 : level > 20 ? 2 : level > 10 ? 1 : 0;
+}
+function companionHousingTier(companionId, tiers) {
+  return Math.max(0, Math.min(3, Math.floor(tiers?.[companionId] ?? 0)));
+}
+function companionHousingLevelCap(housingTier) {
+  const tier = Math.max(0, Math.min(3, Math.floor(housingTier)));
+  return COMPANION_HOUSING_MILESTONES[tier].levelCap;
+}
+function qty(stacks, id) {
+  return stacks.reduce((total, stack) => total + (stack.itemId === id ? Math.max(0, stack.quantity) : 0), 0);
+}
+function companionHousingUpgradeCost(companionId, tiers) {
+  const def = combatCompanionDef(companionId);
+  if (!def) return void 0;
+  if (companionHousingLevelCap(companionHousingTier(companionId, tiers)) >= COMPANION_RARITY_CONFIG[def.rarity].maxLevel) return void 0;
+  const next = companionHousingTier(companionId, tiers) + 1;
+  return COMPANION_HOUSING_UPGRADES.find((row) => row.tier === next);
+}
+function companionHousingUpgradeAffordability(state, companionId) {
+  const cost = companionHousingUpgradeCost(companionId, state.account.companionHousingTiers);
+  if (!cost) return { ready: false, cost: void 0, materials: [] };
+  const all = [...state.inventory.stacks, ...state.bank.stacks], materials = cost.inputs.map((input) => ({ ...input, owned: qty(all, input.itemId) }));
+  return { ready: (state.character?.gold ?? 0) >= cost.gold && materials.every((x) => x.owned >= x.quantity), cost, materials };
+}
+function upgradeCompanionHousing(state, companionId) {
+  if (!state.character) throw new Error("character_required");
+  if (!state.account.unlockedCombatCompanionIds?.includes(companionId)) throw new Error("companion_not_owned");
+  const check = companionHousingUpgradeAffordability(state, companionId);
+  if (!check.cost) throw new Error("companion_housing_max");
+  if (!check.ready) throw new Error("companion_housing_resources");
+  const spend2 = (stacks, id, amount) => {
+    let left = amount;
+    return stacks.map((s) => {
+      if (s.itemId !== id || left <= 0) return s;
+      const used = Math.min(Math.max(0, s.quantity), left);
+      left -= used;
+      return { ...s, quantity: s.quantity - used };
+    }).filter((s) => s.quantity > 0);
+  };
+  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
+  for (const input of check.cost.inputs) {
+    let remaining = input.quantity, have = qty(inventory, input.itemId), take4 = Math.min(have, remaining);
+    if (take4) {
+      inventory = spend2(inventory, input.itemId, take4);
+      remaining -= take4;
+    }
+    if (remaining) bank = spend2(bank, input.itemId, remaining);
+  }
+  const tier = companionHousingTier(companionId, state.account.companionHousingTiers) + 1;
+  return { ...state, character: { ...state.character, gold: state.character.gold - check.cost.gold }, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, companionHousingTiers: { ...state.account.companionHousingTiers ?? {}, [companionId]: tier } } };
 }
 
 // ../apps/mobile/src/core/combat-companions.ts
@@ -44246,10 +44677,10 @@ function normalizeProgress(def, value, fallback2) {
   const max = companionMaxLevel(def), level = int(value?.level ?? fallback2.level, 1, max);
   const inferred = requiredAscensionTierForLevel(def, level), ascensionTier = Math.max(inferred, int(value?.ascensionTier ?? fallback2.ascensionTier, 0, 3));
   let bondLevel = int(value?.bondLevel ?? fallback2.bondLevel, 1, COMPANION_BOND_CONFIG.maxLevel);
-  const rawBondXp = int(value?.bondXp ?? fallback2.bondXp), minimumBondXp = COMPANION_BOND_CONFIG.xpThresholds[Math.max(0, bondLevel - 1)] ?? 0;
-  let normalizedBondXp = bondLevel >= 10 ? COMPANION_BOND_CONFIG.xpThresholds[9] ?? 0 : rawBondXp < minimumBondXp ? minimumBondXp + rawBondXp : rawBondXp;
-  while (bondLevel < 10 && normalizedBondXp >= (COMPANION_BOND_CONFIG.xpThresholds[bondLevel] ?? Number.MAX_SAFE_INTEGER)) bondLevel++;
-  if (bondLevel >= 10) normalizedBondXp = COMPANION_BOND_CONFIG.xpThresholds[9] ?? normalizedBondXp;
+  const rawBondXp = int(value?.bondXp ?? fallback2.bondXp);
+  let normalizedBondXp = value?.bondCurveVersion === 2 ? Math.max(bondThreshold(bondLevel), rawBondXp) : rebaseLegacyBondXp(bondLevel, rawBondXp);
+  while (bondLevel < 10 && normalizedBondXp >= bondThreshold(bondLevel + 1)) bondLevel++;
+  if (bondLevel >= 10) normalizedBondXp = bondThreshold(10);
   const cap = COMPANION_STAGE_CAPS[def.rarity][ascensionTier];
   const safeLevel2 = Math.min(level, cap, max), nextXp = companionXpToNextLevel(def.rarity, safeLevel2);
   return {
@@ -44258,6 +44689,7 @@ function normalizeProgress(def, value, fallback2) {
     ascensionTier,
     bondLevel,
     bondXp: normalizedBondXp,
+    bondCurveVersion: 2,
     bondTraitUnlocked: bondLevel >= 10,
     mastered: def.rarity === "prestige" && safeLevel2 === 35 && value?.mastered === true,
     obtainedAtMs: Number.isFinite(value?.obtainedAtMs) ? value.obtainedAtMs : fallback2.obtainedAtMs,
@@ -44332,7 +44764,11 @@ function sanitizeCombatCompanionState(state) {
     const valid = !!id && !!def && owned.includes(id);
     return { ...character, equippedCombatCompanionId: valid ? id : void 0 };
   };
-  return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress } };
+  const housing = normalizeCompanionHousingTiers(state.account.companionHousingTiers);
+  if (state.account.companionHousingMigratedV1 !== true) {
+    for (const [id, earned] of Object.entries(progress)) housing[id] = Math.max(housing[id] ?? 0, companionHousingEarnedTier(earned.level));
+  }
+  return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress, companionHousingTiers: housing, companionHousingMigratedV1: true } };
 }
 function isCombatCompanionMastered(def, progress) {
   const requiredAscension = def.rarity === "standard" || def.rarity === "rare" ? 2 : 3;
@@ -44343,8 +44779,8 @@ function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
   if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
-  if (requirement.type === "monster_mastery") return characters.some((character) => Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) / 25) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
-  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => n >= 500).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (requirement.type === "monster_mastery") return characters.some((character) => monsterMasteryRankFromKills(normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
+  if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => monsterMasteryRankFromKills(n) >= 20).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
     const companionId = target2.slice("COMPANION_BOND:".length), progress = state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel ?? 0) >= amount;
@@ -44475,9 +44911,10 @@ function purchaseCompanionLevel(state, id) {
   if (!clean2.character) throw new Error("Create a character first.");
   const def = combatCompanionDef(id);
   if (!def || !(clean2.account.unlockedCombatCompanionIds ?? []).includes(id)) throw new Error("Combat companion is locked.");
-  const p = progressFor(clean2, id), cap = companionCurrentLevelCap(def, p), max = companionMaxLevel(def);
+  const p = progressFor(clean2, id), ascensionCap = companionCurrentLevelCap(def, p), housingCap = companionHousingLevelCap(companionHousingTier(id, clean2.account.companionHousingTiers)), max = companionMaxLevel(def);
   if (p.level >= max) throw new Error("Maximum companion level reached.");
-  if (p.level >= cap) throw new Error("Ascension required before further leveling.");
+  if (p.level >= ascensionCap) throw new Error("Ascension required before further leveling.");
+  if (p.level >= housingCap) throw new Error("Upgrade Companion Quarters before further training.");
   const cost = companionRemainingLevelCost(def, p);
   if (clean2.character.gold < cost.gold) throw new Error("Not enough Gold.");
   if ((clean2.account.companionEssence ?? 0) < cost.companionEssence) throw new Error("Not enough Companion Essence.");
@@ -44520,6 +44957,18 @@ function masterPrestigeCompanion(state, id) {
   clean2 = { ...clean2, character: { ...clean2.character, gold: clean2.character.gold - cost.gold }, account: { ...clean2.account, companionEssence: (clean2.account.companionEssence ?? 0) - cost.companionEssence, bondstones: (clean2.account.bondstones ?? 0) - cost.bondstones } };
   clean2 = consumeMaterial(clean2, cost.materialId, cost.materialQuantity ?? 0);
   return setProgress(clean2, id, { ...p, mastered: true });
+}
+var LEGACY_BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
+function bondThreshold(level) {
+  return COMPANION_BOND_CONFIG.xpThresholds[Math.max(0, Math.min(9, level - 1))] ?? Number.MAX_SAFE_INTEGER;
+}
+function rebaseLegacyBondXp(level, rawXp) {
+  const index = Math.max(0, Math.min(9, level - 1)), oldFloor = LEGACY_BOND_THRESHOLDS[index];
+  if (level >= 10) return bondThreshold(10);
+  const oldNext = LEGACY_BOND_THRESHOLDS[index + 1], newFloor = bondThreshold(level), newNext = bondThreshold(level + 1);
+  const earned = rawXp < oldFloor ? rawXp : rawXp - oldFloor;
+  const ratio = Math.max(0, Math.min(1, earned / Math.max(1, oldNext - oldFloor)));
+  return Math.min(newNext - 1, newFloor + Math.round((newNext - newFloor) * ratio));
 }
 function companionAbilityValue(def, progress) {
   const scaling = def.activeAbility.scaling, value = scaling.baseValue + scaling.perLevel * Math.max(0, progress.level - 1);
@@ -46847,7 +47296,8 @@ function validateProgressionSnapshot(companionId, input) {
 
 // src/server/companions/progression-v2.ts
 var XP_MULT = { standard: 1, rare: 1.08, elite: 1.16, prestige: 1.25 };
-var BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
+var BOND_THRESHOLDS = [0, 270, 630, 1110, 1740, 2520, 3480, 4620, 5970, 7560];
+var LEGACY_BOND_THRESHOLDS2 = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
 function companionXpToNextServer(companionId, level) {
   const def = companionServerDefinition(companionId);
   if (!def) throw new Error("unknown_companion");
@@ -46881,7 +47331,7 @@ function awardCompanionXpServer(input) {
   const def = companionServerDefinition(input.progress.companionId);
   if (!def) throw new Error("unknown_companion");
   let p = { ...input.progress }, remaining = Math.max(0, Math.floor(input.amount));
-  const rarityMax = COMPANION_RARITY_MAX_LEVEL[def.rarity], currentCap = companionLevelCap(def.id, p.ascensionTier);
+  const rarityMax = COMPANION_RARITY_MAX_LEVEL[def.rarity], currentCap = Math.min(companionLevelCap(def.id, p.ascensionTier), Number.isFinite(input.maxLevelCap) ? Math.max(1, Math.floor(input.maxLevelCap)) : 35);
   while (remaining > 0 && p.level < Math.min(rarityMax, currentCap)) {
     const needed = companionXpToNextServer(def.id, p.level) - p.xp;
     if (remaining < needed) {
@@ -46907,11 +47357,19 @@ function normalizeOverflow(value, nowMs) {
   const weekKey = companionTrialWeekKey(nowMs);
   return value?.weekKey === weekKey ? { weekKey, essenceConvertedThisWeek: Math.max(0, Math.floor(value.essenceConvertedThisWeek)) } : { weekKey, essenceConvertedThisWeek: 0 };
 }
+function rebaseLegacyBondXp2(level, rawXp) {
+  const index = Math.max(0, Math.min(9, level - 1)), oldFloor = LEGACY_BOND_THRESHOLDS2[index];
+  if (level >= 10) return BOND_THRESHOLDS[9];
+  const oldNext = LEGACY_BOND_THRESHOLDS2[index + 1], newFloor = BOND_THRESHOLDS[index], newNext = BOND_THRESHOLDS[index + 1];
+  const earned = rawXp < oldFloor ? rawXp : rawXp - oldFloor, ratio = Math.max(0, Math.min(1, earned / Math.max(1, oldNext - oldFloor)));
+  return Math.min(newNext - 1, newFloor + Math.round((newNext - newFloor) * ratio));
+}
 function awardCompanionBondXpServer(progress, amount) {
-  let total = Math.max(0, progress.bondXp + Math.floor(amount)), level = progress.bondLevel;
+  let level = Math.max(1, Math.min(10, progress.bondLevel));
+  let total = Math.max(BOND_THRESHOLDS[level - 1], progress.bondCurveVersion === 2 ? progress.bondXp : rebaseLegacyBondXp2(level, progress.bondXp)) + Math.max(0, Math.floor(amount));
   while (level < 10 && total >= BOND_THRESHOLDS[level]) level++;
-  if (level >= 10) return { ...progress, bondLevel: 10, bondXp: BOND_THRESHOLDS[9], bondTraitUnlocked: true };
-  return { ...progress, bondLevel: level, bondXp: total, bondTraitUnlocked: progress.bondTraitUnlocked };
+  if (level >= 10) return { ...progress, bondLevel: 10, bondXp: BOND_THRESHOLDS[9], bondCurveVersion: 2, bondTraitUnlocked: true };
+  return { ...progress, bondLevel: level, bondXp: total, bondCurveVersion: 2, bondTraitUnlocked: progress.bondTraitUnlocked };
 }
 function companionUnlockRequirementSatisfied(r, f) {
   switch (r.type) {
@@ -47291,13 +47749,14 @@ function setOwned(state, owned) {
   })) } };
 }
 function awardUse(state, ids2, xp, bond, now) {
+  if (state.account.companionHousingMigratedV1 !== true) state = sanitizeCombatCompanionState(state);
   const owned = companionOwned(state);
   let essence = state.account.companionEssence ?? 0, overflow = state.account.companionOverflow;
   const earnedBond = Math.round(bond * (1 + (state.account.companionSanctuary?.bondHallLevel ?? 0) * 0.05));
   const earnedXp = companionMasteryCompanionXp(xp, state.account.companionMasteryXp);
   for (const id of ids2) {
     if (!owned[id]) continue;
-    const r = awardCompanionXpServer({ progress: owned[id], amount: earnedXp, companionEssence: essence, overflow, serverNowMs: now });
+    const r = awardCompanionXpServer({ progress: owned[id], amount: earnedXp, companionEssence: essence, overflow, serverNowMs: now, maxLevelCap: companionHousingLevelCap(companionHousingTier(id, state.account.companionHousingTiers)) });
     essence = r.companionEssence;
     overflow = r.overflow;
     owned[id] = awardCompanionBondXpServer(r.progress, earnedBond);
@@ -48218,6 +48677,11 @@ var DUNGEON_SHOP_COLLECTIBLES_V1 = [
   reward2("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
   reward2("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
 ];
+var DUNGEON_SHOP_PROFILE_ICONS_V1 = [
+  { id: "dungeon:asterfall:wardens-lantern", name: "Warden's Lantern", rarity: "Rare", group: "Dungeon", region: "Asterfall" },
+  { id: "dungeon:sunscar:solar-vault-key", name: "Solar Vault Key", rarity: "Rare", group: "Dungeon", region: "Sunscar" },
+  { id: "dungeon:frostmarch:resonant-bell", name: "Resonant Bell", rarity: "Rare", group: "Dungeon", region: "Frostmarch" }
+];
 
 // ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
@@ -49101,16 +49565,8 @@ function previewAlchemyReward(state, elapsed) {
 function alchemyRefund(brew) {
   return { items: brew.inputsPerBatch.map((input) => ({ itemId: input.itemId, quantity: input.quantity * brew.remainingBatches })), gold: brew.goldPerBatch * brew.remainingBatches };
 }
-function preparationEffects(preparation) {
-  const def = preparation && preparation.remainingEncounters > 0 ? potionDef(preparation.itemId) : void 0;
-  return def?.effect.kind === "preparation" ? {
-    attack: 1 + def.effect.attackFraction,
-    outgoing: 1 + def.effect.damageDealtFraction,
-    damage: 1 - def.effect.damageReductionFraction,
-    healing: 1 + def.effect.healingStrengthFraction,
-    shielding: 1 + def.effect.shieldStrengthFraction,
-    itemId: def.id
-  } : { attack: 1, outgoing: 1, damage: 1, healing: 1, shielding: 1, itemId: void 0 };
+function preparationEffects(_preparation) {
+  return { attack: 1, outgoing: 1, damage: 1, healing: 1, shielding: 1, itemId: void 0 };
 }
 function spendPreparationEncounter(preparation, itemId) {
   if (!itemId || !preparation || preparation.itemId !== itemId) return preparation;
@@ -49937,7 +50393,9 @@ function restoreCharacterWorldProgress(entry2) {
 }
 
 // ../apps/mobile/src/core/account-roster.ts
-var CHARACTER_SLOT_THRESHOLDS = [0, 250, 550, 1050, 1750];
+var MAX_NEW_ACCOUNT_CHARACTERS = 3;
+var CHARACTER_SLOT_THRESHOLDS = [0, 250, 550];
+var REGION_AFK_MILESTONES = ["SUNSCAR", "FROSTMARCH", "ASHLANDS"];
 var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
 var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;
 function characterSkillTotal(skills, character) {
@@ -49960,13 +50418,37 @@ function accountSkillLevel(state) {
   for (const entry2 of state.otherCharacters ?? []) total += characterSkillTotal(entry2.skills, entry2.character);
   return total;
 }
-function unlockedCharacterSlots(state) {
-  const earned = Number(state.account.unlockedCharacterSlots ?? 0);
-  const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
-  return Math.min(5, Math.max(1, earned, threshold, accountCharacters(state).length));
-}
 function accountCharacters(state) {
   return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
+}
+function occupiedCharacterRoles(state) {
+  const occupied = new Set(accountCharacters(state).map((entry2) => CLASSES.find((def) => def.id === entry2.character.classId)?.role).filter((role) => !!role));
+  return ["Tank", "Damage", "Support"].filter((role) => occupied.has(role));
+}
+function unlockedCharacterSlots(state) {
+  const saved = Number(state.account.unlockedCharacterSlots ?? 0), earned = Number.isFinite(saved) ? Math.max(0, Math.floor(saved)) : 0;
+  const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
+  return Math.min(5, Math.max(accountCharacters(state).length, Math.min(MAX_NEW_ACCOUNT_CHARACTERS, Math.max(1, earned, threshold))));
+}
+function accountRegionAfkUnlocked(state, id) {
+  const zone = WORLD_ZONES.find((row) => row.id === id);
+  if (!zone || worldZoneInDevelopment(zone)) return false;
+  if (state.account.earnedAfkRegionIds?.includes(id)) return true;
+  const targetIndex = WORLD_ZONES.findIndex((row) => row.id === id);
+  const roster = [{ character: state.character, currentRegionId: state.currentRegionId, defeatedBossIds: state.defeatedBossIds, exploredRouteIds: state.exploredRouteIds }, ...state.otherCharacters ?? []];
+  return roster.some((entry2) => {
+    if (!entry2.character) return false;
+    const visitedIndex = WORLD_ZONES.findIndex((row) => row.id === entry2.currentRegionId);
+    if (visitedIndex >= targetIndex && !worldZoneInDevelopment(WORLD_ZONES[visitedIndex])) return true;
+    const personal = { ...state, character: entry2.character, defeatedBossIds: entry2.defeatedBossIds ?? [], exploredRouteIds: entry2.exploredRouteIds ?? [] };
+    return !regionTravelLockReason(personal, zone);
+  });
+}
+function recordAccountProgress(state) {
+  const slots2 = unlockedCharacterSlots(state);
+  const regions = REGION_AFK_MILESTONES.filter((id) => accountRegionAfkUnlocked(state, id));
+  const forgeMastery1050Earned = state.account.forgeMastery1050Earned === true || Number(state.account.unlockedCharacterSlots ?? 0) >= 4 || accountSkillLevel(state) >= 1050;
+  return { ...state, account: { ...state.account, unlockedCharacterSlots: slots2, forgeMastery1050Earned, earnedAfkRegionIds: [...regions] } };
 }
 
 // ../apps/mobile/src/core/gem-pouch.ts
@@ -50395,6 +50877,9 @@ function craftedInstanceResult(state, instance) {
     rarity: instance.rarity,
     quality: instance.quality,
     baseRarity,
+    // Trusted command response metadata for read-only public forge announcements.
+    itemName: itemDef(instance.itemId).name,
+    crafterName: state.character?.id === instance.ownerCharacterId ? state.character.name : (state.otherCharacters ?? []).find((row) => row.character.id === instance.ownerCharacterId)?.character.name ?? "Adventurer",
     qualityProc: instance.rarity !== baseRarity,
     duplicateCount: Math.max(0, copies.length - 1),
     statMultiplier: craftedRarityStatMultiplier(instance.itemId, instance.rarity) * (instance.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality)),
@@ -50406,6 +50891,12 @@ function craftedInstanceResult(state, instance) {
 // ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
 var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
+var GEM_COMBINE_SUCCESS_PERCENT_V1 = { 1: 90, 2: 80, 3: 70, 4: 60, 5: 55, 6: 50 };
+function gemCombineSuccessPercentV1(fromGrade) {
+  if (!Number.isSafeInteger(fromGrade) || fromGrade < 1) throw new Error("Invalid gem grade");
+  if (fromGrade <= 6) return GEM_COMBINE_SUCCESS_PERCENT_V1[fromGrade];
+  return Math.max(10, 50 - (fromGrade - 6) * 5);
+}
 var GEM_COMBINE_COSTS_V1 = {
   1: { to: 2, copies: 3, dust: 0, gold: 1800, seconds: 5 * 60, level: 8, xp: 140 },
   2: { to: 3, copies: 3, dust: 5, gold: 6e3, seconds: 15 * 60, level: 20, xp: 420 },
@@ -50476,6 +50967,7 @@ function addStackV1(stacks, capacity, itemId, quantityToAdd) {
 function dismantleGemV1(state, itemId, quantityToDismantle = 1) {
   const meta = canonicalGemMetaV1(itemId);
   if (!meta) throw new Error("Only canonical gems can be dismantled");
+  if (state.settings.favoriteItemIds?.includes(itemId) || state.settings.lockedItemIds?.includes(itemId)) throw new Error("Favorite or locked gems cannot be dismantled");
   if (!Number.isSafeInteger(quantityToDismantle) || quantityToDismantle < 1) throw new Error("Invalid dismantle quantity");
   if (combinedGemQuantityV1(state, itemId) < quantityToDismantle) throw new Error("You do not own enough of this gem");
   const dustPer = GEM_DISMANTLE_DUST_V1[meta.grade], afterGem = consumeGemFromStorage(state, itemId, quantityToDismantle), dust = dustPer * quantityToDismantle;
@@ -50604,7 +51096,7 @@ function gemCombineRecipeV1(recipeId) {
   const inputs = [{ itemId: mobileGemItemIdV1(parsed.familyId, parsed.fromGrade), quantity: 3 }];
   if (cost.dust) inputs.push({ itemId: "GEM_DUST", quantity: cost.dust });
   if (cost.catalystId) inputs.push({ itemId: cost.catalystId, quantity: 1 });
-  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", skillId: "enchanting", level: cost.level, xp: cost.xp, inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
+  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, successChancePercent: gemCombineSuccessPercentV1(parsed.fromGrade), name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", skillId: "enchanting", level: cost.level, xp: cost.xp, inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
 }
 var RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 = 3;
 function resonanceWeekKeyV1(nowMs) {
@@ -50759,7 +51251,7 @@ function upgradeQuote(state, itemId, instanceId) {
   const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
   return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: upgradeGoldCost(itemId, targetRank, rarity), materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
 }
-function qty(stacks, id) {
+function qty2(stacks, id) {
   return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
 }
 function combinedQuantity(state, id) {
@@ -50777,7 +51269,7 @@ function consume(stacks, id, amount) {
 function consumeAcross(state, id, amount) {
   if (isGemPouchItemId(id)) return consumeGemFromStorage(state, id, amount);
   if (combinedQuantity(state, id) < amount) throw new Error(`Need ${amount} ${itemDef(id).name}`);
-  const inventory = consume(state.inventory.stacks, id, amount), used = qty(state.inventory.stacks, id) - qty(inventory, id);
+  const inventory = consume(state.inventory.stacks, id, amount), used = qty2(state.inventory.stacks, id) - qty2(inventory, id);
   return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: consume(state.bank.stacks, id, amount - used) } };
 }
 function setEnhancement(state, itemId, value) {
@@ -50813,7 +51305,7 @@ function socketGem(state, itemId, gemId, randomRoll = Math.random()) {
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (kind === "stat" && enhancement.statGemId) throw new Error("The Stat Gem socket is already filled");
   if (kind === "effect" && enhancement.effectGemId) throw new Error("The Effect Gem socket is already filled");
-  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
+  const rollPercent = gemRollPercentFromUnitV1(randomRoll);
   let next = consumeAcross(state, gemId, 1);
   next = setEnhancement(next, itemId, {
     ...enhancement,
@@ -50860,8 +51352,6 @@ function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   const kind = gemSocketKind(gemId), enhancement = gearEnhancement(state, itemId), currentId = kind === "stat" ? enhancement.statGemId : enhancement.effectGemId;
   if (!currentId) return socketGem(state, itemId, gemId, randomRoll);
   if (currentId === gemId) {
-    const meta = canonicalGemMetaV1(gemId);
-    if (!meta) throw new Error("Only graded gems can be rerolled");
     const candidate = gemRollPercentFromUnitV1(randomRoll);
     const previous = kind === "stat" ? enhancement.statGemRollPercent : enhancement.effectGemRollPercent;
     if ((previous ?? 100) >= 120) throw new Error("This gem already has its maximum roll");
@@ -50878,7 +51368,7 @@ function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   const fee = gemUnsocketCostForStateV1(state, currentId);
   if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
   if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
-  const rollPercent = canonicalGemMetaV1(gemId) ? gemRollPercentFromUnitV1(randomRoll) : void 0;
+  const rollPercent = gemRollPercentFromUnitV1(randomRoll);
   let next = consumeAcross(state, gemId, 1);
   next = { ...next, character: { ...next.character, gold: next.character.gold - fee.gold } };
   if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
@@ -50941,6 +51431,11 @@ function equippedCanonicalStatGemBonusesV1(state) {
   }
   return { statPercent, statPercentagePoints };
 }
+function legacyGemBonusValue(gemId, rollPercent) {
+  const gem2 = itemDef(gemId);
+  const base = gem2.gemStat ? gem2.gemPercent ?? 0 : gem2.gemEffectValue ?? 0;
+  return base * (normalizeGemRollPercentV1(rollPercent) ?? 100) / 100;
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -50950,7 +51445,7 @@ function equippedGemBonuses(state) {
     if (!gemId) continue;
     if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
-    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
+    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += legacyGemBonusValue(gemId, gearEnhancement(state, itemId).statGemRollPercent);
   }
   return result;
 }
@@ -50962,7 +51457,7 @@ function equippedEffectGemBonuses(state) {
     const enhancement = gearEnhancement(state, itemId), gemId = enhancement.effectGemId;
     if (!gemId) continue;
     const gem2 = itemDef(gemId), meta = canonicalGemMetaV1(gemId);
-    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, meta ? gemRolledValueV1(meta.familyId, meta.grade, enhancement.effectGemRollPercent) : gem2.gemEffectValue ?? 0);
+    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, meta ? gemRolledValueV1(meta.familyId, meta.grade, enhancement.effectGemRollPercent) : legacyGemBonusValue(gemId, enhancement.effectGemRollPercent));
   }
   result.combat_speed = Math.min(0.1, result.combat_speed);
   result.boss_power = Math.min(0.15, result.boss_power);
@@ -51223,7 +51718,8 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:runic-scholar", name: "Runic Scholar", group: "Starter", source: "Available from the start." },
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
-  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" }
+  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 function profileIconCollection(state) {
   const selected2 = state.character?.profileIconId ?? `class:${state.character?.classId ?? "IRONWARDEN"}`;
@@ -51231,7 +51727,7 @@ function profileIconCollection(state) {
   const base = CLASSES.filter((row) => row.id === activeClass).map((row) => ({ id: `class:${row.id}`, name: row.name, group: "Class", source: "Your active character class.", unlocked: true, artworkReady: true, selected: selected2 === `class:${row.id}` }));
   const owned = new Set(state.account.unlockedProfileIconIds ?? []);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
-  const portraits = PROFILE_ICON_CATALOG.map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)).map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
   const known2 = new Set(portraits.map((row) => row.id));
   const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
   const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id)).map((row) => [row.id, row])).values()];
@@ -52502,6 +52998,9 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const classAbility = classId ? HUNT_CLASS_TECHNIQUES[classId] : void 0;
   const classRank = Number.isFinite(player.classSkillLevel) ? Math.max(1, Math.min(100, Math.floor(player.classSkillLevel))) : 1;
   const classScale = 1 + 0.3 * (classRank - 1) / 99;
+  const armorBreak = classId === "RAVAGER" ? clamp8(player.armorPenetration ?? 0, 0, 0.05) : 0;
+  const hexPower = classId === "HEXWEAVER" ? clamp8(player.hexPotency ?? 0, 0, 0.05) : 0;
+  const classHealingScale = clamp8(player.classHealingMultiplier ?? 1, 1, 1.2);
   let nextClassReadyAtMs = 0, fortressFollowup = false, hexMarkPending = false;
   const phasesReached = [1], events = [];
   const playerHitChance = clamp8(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
@@ -52545,11 +53044,11 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
         const critical = random01(seed, rngIndex++) < clamp8(player.critChance, 0, 0.75);
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
-        const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
+        const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * (1 - armorBreak) * 15);
         const offensive = !!classAbility && now >= nextClassReadyAtMs && (classId === "WAYFINDER" || classId === "RAVAGER" || classId === "HEXWEAVER" || classId === "KNIFE_DANCER");
         const bonus = offensive ? classId === "WAYFINDER" ? 0.025 : classId === "RAVAGER" ? 0.045 : classId === "HEXWEAVER" ? 0.02 : 0.025 : 0;
         const markedBonus = hexMarkPending ? 0.02 : 0;
-        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1) * (1 + Math.min(0.05, bonus * classScale) + markedBonus)));
+        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * (1 + hexPower) * bossWard * (critical ? player.critMultiplier : 1) * (1 + Math.min(0.05, bonus * classScale) + markedBonus)));
         let nextBossHp = Math.max(0, bossHp - rolledAmount);
         if (mode === "story" && phase === 1 && nextBossHp <= bossMaxHp * 0.65) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.65));
         else if (mode === "story" && phase === 2 && nextBossHp <= bossMaxHp * 0.3) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.3));
@@ -52624,7 +53123,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
         const restorationPct = classId === "DAWNKEEPER" ? 0.12 : classId === "DREADGUARD" ? 0.3 : classId === "STONECALLER" ? 0.2 : 0;
         const restorationBase = classId === "DAWNKEEPER" ? amount : prevented;
         if (playerHp > 0 && restorationPct > 0) {
-          const healBudget = Math.floor(restorationBase * (classId === "DAWNKEEPER" ? Math.min(0.15, restorationPct * classScale) : restorationPct * classScale));
+          const healBudget = Math.floor(restorationBase * (classId === "DAWNKEEPER" ? Math.min(0.18, restorationPct * classScale * classHealingScale) : restorationPct * classScale * classHealingScale));
           restored = Math.max(0, Math.min(playerMaxHp - playerHp, healBudget));
           if (restored > 0) playerHp += restored;
         }
@@ -52783,25 +53282,22 @@ var MIN_UNHEALED_HP_FRACTION_PER_HOUR = 0.08;
 var OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE = 0.05;
 var GATHER_TIME_SCALE = 1.25;
 function offlineCapBreakdown(state) {
-  const setComplete = !!state.character && noviceSetFor(state.character.classId).slots.every((slot) => state.character.craftedNoviceItemIds?.includes(noviceItemId(state.character.classId, slot)));
   const questMilestone = state.quests.some((q2) => q2.questId === "QST_005" && q2.status === "claimed");
   const unlockedSlots = unlockedCharacterSlots(state);
   const secondSlot = unlockedSlots >= 2;
   const thirdSlot = unlockedSlots >= 3;
-  const fourthSlot = unlockedSlots >= 4;
-  const fifthSlot = unlockedSlots >= 5;
   const guildMember = state.account.guildMember;
   const firstBoss = state.defeatedBossIds.length > 0;
   const benefits = accountEntitlementBenefits(state), vip = benefits.vip, vipPlus = benefits.vipPlus, supporter = benefits.supporter;
   const sources = [
-    { id: "class_set", name: "Complete first class set", category: "progression", hours: setComplete ? 2 : 0, earned: setComplete },
+    { id: "region_sunscar", name: "Unlock Sunscar", category: "progression", hours: accountRegionAfkUnlocked(state, "SUNSCAR") ? 2 : 0, earned: accountRegionAfkUnlocked(state, "SUNSCAR") },
     { id: "quest_milestone", name: "Claim chapter 5", category: "progression", hours: questMilestone ? 2 : 0, earned: questMilestone },
     { id: "first_boss", name: "Defeat first boss", category: "progression", hours: firstBoss ? 2 : 0, earned: firstBoss },
     { id: "character_slot_2", name: "Unlock character slot #2", category: "progression", hours: secondSlot ? 2 : 0, earned: secondSlot },
     { id: "guild", name: "Join a guild", category: "progression", hours: guildMember ? 2 : 0, earned: guildMember },
     { id: "character_slot_3", name: "Unlock character slot #3", category: "progression", hours: thirdSlot ? 2 : 0, earned: thirdSlot },
-    { id: "character_slot_4", name: "Unlock character slot #4", category: "progression", hours: fourthSlot ? 2 : 0, earned: fourthSlot },
-    { id: "character_slot_5", name: "Unlock character slot #5", category: "progression", hours: fifthSlot ? 2 : 0, earned: fifthSlot },
+    { id: "region_frostmarch", name: "Unlock Frostmarch", category: "progression", hours: accountRegionAfkUnlocked(state, "FROSTMARCH") ? 2 : 0, earned: accountRegionAfkUnlocked(state, "FROSTMARCH") },
+    { id: "region_ashlands", name: "Unlock Ashlands", category: "progression", hours: accountRegionAfkUnlocked(state, "ASHLANDS") ? 2 : 0, earned: accountRegionAfkUnlocked(state, "ASHLANDS") },
     { id: "vip", name: "VIP", category: "paid", hours: vip ? 2 : 0, earned: vip },
     { id: "vip_plus", name: "VIP+", category: "paid", hours: vipPlus ? 2 : 0, earned: vipPlus },
     { id: "supporter", name: "Supporter", category: "paid", hours: supporter ? 2 : 0, earned: supporter }
@@ -52854,7 +53350,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -52901,12 +53397,14 @@ function effectiveStats(state) {
     critMultiplier: 1.5 + setStats.critDamage,
     accuracy: Math.min(0.99, 0.84 + setStats.accuracy + mastery.accuracy),
     evasion: Math.min(0.5, baseEvasion + setStats.evasion + mastery.evasion),
-    haste: 0.05 + setStats.haste,
+    haste: 0.05 + setStats.haste + mastery.haste,
     armor: setStats.armor,
-    ward: setStats.ward,
+    // Stack equipment and class wards multiplicatively.
+    ward: 1 - (1 - setStats.ward) * (1 - mastery.ward),
     tenacity: setStats.tenacity,
-    potency: setStats.potency,
-    penetration: setStats.penetration
+    potency: setStats.potency + mastery.potency,
+    penetration: setStats.penetration + mastery.penetration,
+    classHealing: mastery.classHealing
   };
 }
 function settleOutOfCombatRecovery(state, nowMs) {
@@ -53142,6 +53640,7 @@ function regionalHuntSeed(state, monsterId, index) {
 function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const c = state.character, baseMonster = MONSTERS.find((x) => x.id === monsterId);
   const m = baseMonster, stats4 = effectiveStats(state), modifiers = characterPermanentMultipliers(state), companion = companionCombatContribution(state);
+  const masteryBonuses = monsterMasteryCombatBonuses(state, monsterId);
   const style = classCombatStyle(c.classId), tactic = combatTactic(state.activity?.kind === "combat" ? state.activity.combatTacticId : void 0);
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === c.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
@@ -53150,7 +53649,8 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const bossPowerMultiplier = m.boss ? 1 + effectGems.boss_power : 1;
   const boostedPower = Math.max(1, Math.round(stats4.power * bossPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
-  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
+  const skillEffects = characterClassEffects(c);
+  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier * (1 + skillEffects.potency) * (usesDamageDrivenHunts(m.zone) ? 1 : 1 + skillEffects.penetration);
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
   const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
   const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
@@ -53159,14 +53659,14 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.2;
   const gearAttritionMultiplier = 1 + tierGap * MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   const outgoingPreparation = c.preparation ? preparationEffects(c.preparation).outgoing : 1;
-  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
+  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * masteryBonuses.damageMultiplier * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
   const huntOptions = usesDamageDrivenHunts(m.zone) && !m.boss ? {
     zone: m.zone,
     monsterHp: m.hp,
     playerHit: huntBasePlayerHit(
       Math.round(stats4.attack),
       m.defense,
-      setCombat.penetrationMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * progressionSpeedPenalty * outgoingPreparation
+      setCombat.penetrationMultiplier * masteryBonuses.damageMultiplier * progressionSpeedPenalty * outgoingPreparation
     ) * style.soloHuntDamageMultiplier,
     hitChance: secondary.playerHitChance,
     critChance: stats4.critChance,
@@ -53186,7 +53686,7 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
   const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds } = runtime;
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
-  const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
+  const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - stats4.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const fatigue = runtime.huntOptions ? Math.max(floor, Math.min(stats4.hp * 6e-4, m.hp * 0.02) * runtime.gearAttritionMultiplier) : 0;
   const huntPlan = runtime.huntOptions && (enemyAttackCount === void 0 || fightSeconds === void 0) ? regionalHuntPlan(runtime.huntOptions) : void 0;
@@ -53275,7 +53775,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
       ...cooldownTiming,
       companion: commonCompanion ? { ...commonCompanion, incomingDamageMultiplier: runtime.companion.incomingDamageMultiplier } : void 0
     });
-    return huntClassSurvivalEvents(guarded, { ...classTechniqueInput, ...cooldownTiming });
+    return huntClassSurvivalEvents(guarded, { ...classTechniqueInput, ...cooldownTiming, classHealingMultiplier: runtime.stats.classHealing });
   };
   if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
     const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
@@ -53442,7 +53942,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   }
   const candyKills = sim.completed.filter((row) => row.candy).length, combatCandy = sim.kills ? 1 + 0.1 * candyKills / sim.kills : 1;
   const classGain = awardCombatClassXp(state.character, sim.kills, m.xp * effect2.xpMultiplier * multipliers.skillXpMultiplier * combatCandy, state.activity.classFocus);
-  const mastery = monsterMastery(state, m.id), materialRemainders = { ...state.character.masteryMaterialRemainders };
+  const mastery = monsterMasteryCombatBonuses(state, m.id), materialRemainders = { ...state.character.masteryMaterialRemainders };
   if (mastery.materialBonus) for (const item of items) {
     if (itemDef(item.itemId).type !== "material") continue;
     const extra = item.quantity * mastery.materialBonus + (materialRemainders[item.itemId] ?? 0), whole = Math.floor(extra + 1e-9);
@@ -53650,7 +54150,9 @@ function claimSeasonalContract(state, period, contractId2, nowMs = Date.now(), c
   const updatedLedger = Object.fromEntries([...Object.entries(ledger).filter(([id]) => activeIds.has(id)), [contract.id, [...previousClaimants, state.character.id]]]);
   const withRewards = { ...state, ...routed, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + contract.rewardGold }, account: { ...state.account, ...routed.account ?? {}, personalSeasonalClaimLedger: updatedLedger, seasonalContractClaimIds: claimed, seasonalContractRewardChoices: recordedChoices } };
   const withEssence = grantCompanionEssence(withRewards, chosen.rewardCompanionEssence ?? 0);
-  return applyLocalBalanceSnapshot(refreshQuests(updatePersonalSeasonalState(grantBondstones(withEssence, chosen.rewardBondstones ?? 0), { claimIds: claimed, rewardChoices: recordedChoices })), nowMs);
+  const withCharacterQuestReceipt = updatePersonalSeasonalState(grantBondstones(withEssence, chosen.rewardBondstones ?? 0), { claimIds: claimed, rewardChoices: recordedChoices });
+  const withMilestone = creditMonthlyQuestMilestone(withCharacterQuestReceipt, period, `${state.character.id}:${contract.id}`, nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests(withMilestone), nowMs);
 }
 function queuedReservationEnd(state) {
   const activity = state.activity;
@@ -53870,6 +54372,7 @@ function equipItemFromEquipmentPouch(state, itemId) {
   if (!state.character) throw new Error("No character");
   const def = itemDef(itemId);
   if (def.type !== "gear" || !def.slot) throw new Error("Not gear");
+  if (state.activity?.kind === "combat" && def.slot !== "weapon") throw new Error("Stop combat before equipping");
   if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
   if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires character level ${def.requiredLevel}`);
   if (state.character.equipmentInstanceIds?.[def.slot]) throw new Error("Select the exact equipped copy before replacing uniquely identified gear");
@@ -53883,13 +54386,14 @@ function equipItemFromEquipmentPouch(state, itemId) {
   if (updatedStacks.length > pouch.capacity) throw new Error("Equipment Pouch is full");
   const temp = { ...state, character: { ...state.character, equipment: { ...state.character.equipment, [def.slot]: itemId }, equipmentPouch: { ...pouch, stacks: updatedStacks } } };
   const maxHp = effectiveStats(temp).hp;
-  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (def.hp || 0));
+  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (state.activity?.kind === "combat" ? 0 : def.hp || 0));
   return applyLocalBalanceSnapshot(refreshQuests(temp), Date.now());
 }
 function equipItem(state, itemId) {
   if (!state.character) throw new Error("No character");
   const d = itemDef(itemId);
   if (d.type !== "gear" || !d.slot) throw new Error("Not gear");
+  if (state.activity?.kind === "combat" && d.slot !== "weapon") throw new Error("Stop combat before equipping");
   if (d.classRestriction && d.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
   if (state.character.level < (d.requiredLevel ?? 1)) throw new Error(`Requires character level ${d.requiredLevel}`);
   if (state.character.equipmentInstanceIds?.[d.slot]) throw new Error("Select the exact equipped copy before replacing uniquely identified gear");
@@ -53898,7 +54402,7 @@ function equipItem(state, itemId) {
   if (old) stacks = stackItems(stacks, [{ itemId: old, quantity: 1 }]);
   const temp = { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, equipment: { ...state.character.equipment, [d.slot]: itemId } } };
   const maxHp = effectiveStats(temp).hp;
-  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (d.hp || 0));
+  temp.character.currentHp = Math.min(maxHp, temp.character.currentHp + (state.activity?.kind === "combat" ? 0 : d.hp || 0));
   return applyLocalBalanceSnapshot(refreshQuests(temp), Date.now());
 }
 function equipFood(state, itemId) {
@@ -53929,10 +54433,8 @@ function usePotion(state, itemId) {
   if (!state.character) throw new Error("Create a character first.");
   const potion = potionDef(itemId);
   if (!potion) throw new Error("Unknown potion.");
-  if (potion.effect.kind === "healing") throw new Error("Healing potions are reserved for boss encounters. Select one under the HP bar; ordinary hunts use food.");
-  if (state.activity?.kind === "combat") throw new Error("Tonics cannot be used during a hunt.");
-  const stacks = consume2(state.inventory.stacks, itemId, 1);
-  return { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, preparation: { itemId, remainingEncounters: potion.effect.encounters } } };
+  if (potion.effect.kind === "healing") throw new Error("Select a healing potion under the HP bar for boss fights and dungeons.");
+  throw new Error("Tonics are dungeon-only. Select one before the first dungeon room. It lasts the full run, even if the run fails.");
 }
 function discardPreparation(state) {
   return state.character?.preparation ? { ...state, character: { ...state.character, preparation: void 0 } } : state;
@@ -54002,6 +54504,20 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   const proceeds = def.value * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
+}
+function salvageBankItem(state, itemId) {
+  if (!state.character) throw new Error("Character required.");
+  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected.");
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected.");
+  const def = itemDef(itemId), reward3 = equipmentSalvageReward(itemId);
+  if (def.type !== "gear" || !reward3) throw new Error("Cannot salvage");
+  if (!state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0))
+    throw new Error("Choose an individual equipment copy for salvage");
+  if (!canDisposeLegacyEquipment(state, itemId, "bank", 1))
+    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+  const bankStacks = consume2(state.bank.stacks, itemId, 1);
+  const inventory = inventoryWithSalvageRewards(state.inventory, [reward3], entitlementStorageCapacity(state, "inventory"));
+  return { ...state, bank: { ...state.bank, stacks: bankStacks }, inventory };
 }
 function depositToBank(state, itemId, quantity2) {
   if (!Number.isSafeInteger(quantity2)) throw new Error("Invalid deposit quantity");
@@ -54237,11 +54753,14 @@ function fallenKnightPlayerSnapshot(state) {
     critChance: stats4.critChance,
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
+    armorPenetration: characterClassEffects(character).penetration,
+    classHealingMultiplier: stats4.classHealing,
+    hexPotency: characterClassEffects(character).potency,
     damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier * (prep?.outgoing ?? 1),
     // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
     // Do not apply them again through actionSpeedMultiplier.
     actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed)) * gear.actionSpeedMultiplier,
-    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
+    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - stats4.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
     potionHeal: potion?.effect.kind === "healing" ? Math.ceil(stats4.hp * potion.effect.maxHpFraction * multipliers.healingEffectivenessMultiplier) : 0,
     potionQuantity,
     autoEatThresholdPct: state.settings.autoEatThresholdPct
@@ -54553,12 +55072,12 @@ function linkLegacyCraftedGearInstance(state, instanceId, from, stackIndex) {
 }
 function equipCraftedGearInstance(state, instanceId) {
   if (!state.character) throw new Error("No active character");
-  if (state.activity?.kind === "combat") throw new Error("Stop combat before equipping");
   const { record, location } = resolveTracked(state, instanceId);
   if (!["inventory", "equipment_pouch"].includes(location.place) || location.holderCharacterId !== state.character.id)
     throw new Error("Move this exact equipment copy into your character storage first");
   const def = itemDef(record.itemId);
   if (def.type !== "gear" || !def.slot) throw new Error("Not equipment");
+  if (state.activity?.kind === "combat" && def.slot !== "weapon") throw new Error("Stop combat before equipping");
   if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This equipment belongs to another class");
   if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires level ${def.requiredLevel}`);
   const oldId = state.character.equipment[def.slot], oldInstanceId = state.character.equipmentInstanceIds?.[def.slot];
@@ -54726,7 +55245,7 @@ function equipmentCraftSlotBreakdown(state) {
     { id: "supporter", label: "Supporter", earned: accountEntitlementBenefits(state).supporter, slots: 1 },
     { id: "vip_plus", label: "VIP+", earned: accountEntitlementBenefits(state).vipPlus, slots: 1 },
     { id: "character_2", label: "Unlock character slot #2", earned: unlocked >= 2, slots: 1 },
-    { id: "character_4", label: "Unlock character slot #4", earned: unlocked >= 4, slots: 1 }
+    { id: "account_skill_1050", label: "Reach 1,050 account skill levels", earned: accountSkillLevel(state) >= 1050 || state.account.forgeMastery1050Earned === true || Number(state.account.unlockedCharacterSlots ?? 0) >= 4, slots: 1 }
   ];
   const raw2 = sources.filter((row) => row.earned).reduce((sum, row) => sum + row.slots, 0);
   return { base: BASE_EQUIPMENT_CRAFT_SLOTS, max: MAX_EQUIPMENT_CRAFT_SLOTS, capacity: Math.min(MAX_EQUIPMENT_CRAFT_SLOTS, raw2), raw: raw2, sources };
@@ -54742,7 +55261,10 @@ function normalizeEquipmentCraftingQueue(raw2) {
     xpPerCraft: typeof row.xpPerCraft === "number" && Number.isFinite(row.xpPerCraft) && row.xpPerCraft >= 0 && row.xpPerCraft <= 1e6 ? row.xpPerCraft : void 0,
     skillAffinity: normalizeSkillAffinitySnapshot(row.skillAffinity),
     reservedGold: Number.isFinite(Number(row.reservedGold)) ? Math.max(0, Math.floor(Number(row.reservedGold))) : void 0,
-    reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0
+    reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0,
+    // A malformed odds field must not become a guaranteed legacy claim.
+    // Only jobs with no odds field at all retain the old 100% outcome.
+    combineSuccessChancePercent: row.combineSuccessChancePercent === void 0 ? void 0 : Number.isInteger(row.combineSuccessChancePercent) && row.combineSuccessChancePercent >= 1 && row.combineSuccessChancePercent <= 100 ? row.combineSuccessChancePercent : gemCombineRecipeV1(String(row.recipeId).slice(0, 120))?.successChancePercent
   })).filter((row) => row.completesAtMs >= row.startedAtMs).slice(-(MAX_READY_EQUIPMENT_CRAFTS + MAX_EQUIPMENT_CRAFT_SLOTS + MAX_WAITING_EQUIPMENT_CRAFTS));
 }
 function equipmentCraftingQueue(state) {
@@ -54790,6 +55312,9 @@ function validateGemCombineStart(state, recipeId) {
   if (!state.character) throw new Error("Create a character first");
   const recipe2 = gemCombineRecipeV1(recipeId);
   if (!recipe2) throw new Error("Unknown gem combination");
+  const sourceGemId = recipe2.inputs[0].itemId;
+  if (state.settings.favoriteItemIds?.includes(sourceGemId) || state.settings.lockedItemIds?.includes(sourceGemId))
+    throw new Error("Unfavorite and unlock this gem before merging");
   if (!isGemFamilyRecipeUnlockedV1(state, recipe2.familyId)) throw new Error("Discover this Effect Gem recipe first");
   const skill2 = state.skills.find((row) => row.skillId === "enchanting");
   if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
@@ -54886,6 +55411,7 @@ function startGemCombine(state, recipeId, nowMs) {
     id: `gemcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
     recipeId,
     ownerCharacterId: projected.character.id,
+    combineSuccessChancePercent: recipe2.successChancePercent,
     startedAtMs: startsNow ? nowMs : nowMs + 1,
     completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
     reservedGold: recipe2.gold,
@@ -55087,14 +55613,21 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
       result: { ...craftedInstanceResult(next, draft), autoSold, saleGold }
     };
   }
-  next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
+  const gemSucceeded = !gemCombineRecipe || job.combineSuccessChancePercent === void 0 ? true : (() => {
+    if (!Number.isFinite(rarityRoll) || rarityRoll < 0 || rarityRoll >= 1) throw new Error("Invalid trusted gem combination roll");
+    return rarityRoll < job.combineSuccessChancePercent / 100;
+  })();
+  if (gemCombineRecipe && !gemSucceeded) {
+    const inputId = gemCombineRecipe.inputs[0].itemId;
+    next = storePouchGem(next, inputId, gemCombineRecipe.inputs[0].quantity - 1);
+  } else next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
   next = awardOwnerSkillXp(next, job.ownerCharacterId, gemRecipe, job);
   next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
   next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: gemRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
-  return { state: next, recipe: gemRecipe, job, kind: "gem", gemAction: gemRefineRecipe ? "refine" : "combine" };
+  return { state: next, recipe: gemRecipe, job, kind: "gem", gemSucceeded, gemAction: gemRefineRecipe ? "refine" : "combine" };
 }
 function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
-  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0;
+  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0, gemFailed = 0;
   const blocked = [];
   for (const job of equipmentCraftingQueue(next).filter((row) => isReady(row, nowMs))) {
     try {
@@ -55102,7 +55635,10 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       next = result.state;
       claimed.push(job.id);
       if (result.kind === "equipment") results.push(result.result);
-      else gemClaims++;
+      else {
+        gemClaims++;
+        if (!result.gemSucceeded) gemFailed++;
+      }
     } catch (error) {
       const reason = error instanceof Error ? error.message : "";
       if (reason === "Gem Pouch, Inventory and Bank are full" || reason === "Equipment Pouch, Inventory and Bank are full" || reason.startsWith("Equipment Pouch and Bank are full") || reason === "Inventory and Bank are full" || reason.startsWith("Bank is full") || reason === "Crafting recipe is no longer available" || reason.startsWith("Crafted equipment storage is full") || reason.startsWith("Equipment copy limit reached") || reason.startsWith("Equipment copy ownership requires manual review") || reason.startsWith("Equipment requires manual review")) {
@@ -55112,7 +55648,7 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       throw error;
     }
   }
-  return { state: next, claimed, results, gemClaims, blocked };
+  return { state: next, claimed, results, gemClaims, gemFailed, blocked };
 }
 var EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND = 0;
 function addStackable(stacks, capacity, itemId, quantityToAdd) {
@@ -55242,7 +55778,11 @@ function snapshot(state) {
 function createAccountCharacter(state, classId, name, body, now) {
   state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
   if (!state.character) return createCharacter(state, classId, name, body);
+  if (accountCharacters(state).length >= MAX_NEW_ACCOUNT_CHARACTERS) throw new Error("Maximum 3 characters: one Tank, one Damage and one Support.");
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
+  const candidate = CLASSES.find((def) => def.id === classId);
+  if (!candidate) throw new Error("Invalid character class.");
+  if (occupiedCharacterRoles(state).includes(candidate.role)) throw new Error(`Your account already has a ${candidate.role} character. Choose a different role.`);
   const next = createCharacter(newGame(now), classId, name, body);
   const active2 = snapshot(state);
   const sequence = Math.max(state.account.createdCharacterCount ?? 0, accountCharacters(state).length) + 1;
@@ -55366,7 +55906,7 @@ function characterDeleteBlockReason(state, id) {
   return void 0;
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
-  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
+  state = recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
   if (!state.character) throw new Error("Create a character first.");
   const active2 = state.character.id === id;
   const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
@@ -55396,9 +55936,9 @@ function isReleasedEquipmentItemId(itemId) {
 }
 
 // ../apps/mobile/src/core/loadout-storage.ts
-var qty2 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
+var qty3 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
 var take3 = (stacks, id) => {
-  if (qty2(stacks, id) < 1) throw new Error(`MISSING:${id}`);
+  if (qty3(stacks, id) < 1) throw new Error(`MISSING:${id}`);
   return stacks.map((entry2) => entry2.itemId === id ? { ...entry2, quantity: entry2.quantity - 1 } : { ...entry2 }).filter((entry2) => entry2.quantity > 0);
 };
 var put = (stacks, capacity, id) => {
@@ -55417,8 +55957,8 @@ function planLoadoutStorage(input) {
   for (const slot of slots2) {
     const wanted = input.desiredEquipment[slot], equipped = input.currentEquipment[slot];
     if (!wanted || wanted === equipped) continue;
-    if (qty2(inventory, wanted) > 0) inventory = take3(inventory, wanted);
-    else if (qty2(bank, wanted) > 0) bank = take3(bank, wanted);
+    if (qty3(inventory, wanted) > 0) inventory = take3(inventory, wanted);
+    else if (qty3(bank, wanted) > 0) bank = take3(bank, wanted);
     else throw new Error(`MISSING:${wanted}`);
   }
   for (const slot of slots2) {
@@ -56221,11 +56761,11 @@ function bulkSelectionSummary(state, itemIds2, location) {
   const autoEatId = state.character?.equippedFoodId, goalProtection = workingTowardInventoryProtectionMap(state), goalProtectedIds = new Set(goalProtection.keys());
   const goalProtected = stacks.filter((stack) => goalProtectedIds.has(stack.itemId));
   const transferable = stacks.filter((stack) => !stack.instanceId && (location === "bank" || stack.itemId !== autoEatId));
-  const sellable = location === "inventory" ? stacks.filter((stack) => {
+  const sellable = stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
     if (stack.itemId === autoEatId || stack.itemId === HOLY_WATER_ID || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId || goalProtectedIds.has(stack.itemId)) return false;
     if (stack.instanceId) {
-      if (state.settings.lockedItemIds?.includes(stack.itemId)) return false;
+      if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId)) return false;
       try {
         disposeCraftedGearInstance(state, stack.instanceId, "sell");
         return true;
@@ -56234,12 +56774,12 @@ function bulkSelectionSummary(state, itemIds2, location) {
       }
     }
     return !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
-  }) : [];
-  const salvageable = location === "inventory" ? stacks.filter((stack) => {
+  });
+  const salvageable = stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
     if (item.type !== "gear" || !equipmentSalvageReward(stack.itemId) || goalProtectedIds.has(stack.itemId)) return false;
     if (stack.instanceId) {
-      if (state.settings.lockedItemIds?.includes(stack.itemId)) return false;
+      if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId)) return false;
       try {
         disposeCraftedGearInstance(state, stack.instanceId, "salvage");
         return true;
@@ -56248,7 +56788,7 @@ function bulkSelectionSummary(state, itemIds2, location) {
       }
     }
     return !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
-  }) : [];
+  });
   return {
     selectedStackCount: stacks.length,
     selectedUnitCount: stacks.reduce((sum, stack) => sum + stack.quantity, 0),
@@ -56280,8 +56820,8 @@ function bulkTransferSelected(state, itemIds2, from) {
   }
   return next;
 }
-function bulkSellSelected(state, itemIds2) {
-  const summary = bulkSelectionSummary(state, itemIds2, "inventory");
+function bulkSellSelected(state, itemIds2, location = "inventory") {
+  const summary = bulkSelectionSummary(state, itemIds2, location);
   if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
   for (const id of summary.sellableIds) {
@@ -56289,13 +56829,13 @@ function bulkSellSelected(state, itemIds2) {
       next = disposeCraftedGearInstance(next, id.slice(5), "sell");
       continue;
     }
-    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
-    if (quantity2 > 0) next = sellItem(next, id, quantity2);
+    const quantity2 = next[location].stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    if (quantity2 > 0) next = location === "bank" ? sellBankItem(next, id, quantity2) : sellItem(next, id, quantity2);
   }
   return next;
 }
-function bulkSalvageSelected(state, itemIds2) {
-  const summary = bulkSelectionSummary(state, itemIds2, "inventory");
+function bulkSalvageSelected(state, itemIds2, location = "inventory") {
+  const summary = bulkSelectionSummary(state, itemIds2, location);
   if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.");
   let next = state;
   for (const id of summary.salvageableIds) {
@@ -56303,8 +56843,8 @@ function bulkSalvageSelected(state, itemIds2) {
       next = disposeCraftedGearInstance(next, id.slice(5), "salvage");
       continue;
     }
-    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
-    for (let count = 0; count < quantity2; count++) next = salvageItem(next, id);
+    const quantity2 = next[location].stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    for (let count = 0; count < quantity2; count++) next = location === "bank" ? salvageBankItem(next, id) : salvageItem(next, id);
   }
   return next;
 }
@@ -57190,6 +57730,38 @@ function normalizeChatEmoteTrayIds(value) {
   return [...new Set(value.filter((id) => typeof id === "string" && known.has(id)))].slice(0, CHAT_EMOTE_TRAY_SIZE);
 }
 
+// ../apps/mobile/src/core/gem-pouch-bulk.ts
+function gemPouchBulkSummary(state, ids2) {
+  const selected2 = new Set(ids2);
+  const goalProtected = ids2.length ? new Set(workingTowardInventoryProtectionMap(state).keys()) : /* @__PURE__ */ new Set();
+  const stacks = gemPouch(state).stacks.filter((stack) => stack.quantity > 0 && selected2.has(stack.itemId));
+  const safe = stacks.filter((stack) => !state.settings.favoriteItemIds?.includes(stack.itemId) && !state.settings.lockedItemIds?.includes(stack.itemId) && !goalProtected.has(stack.itemId));
+  const sellable = safe.filter((stack) => itemDef(stack.itemId).value > 0);
+  const dismantleable = safe.filter((stack) => !!canonicalGemMetaV1(stack.itemId));
+  return {
+    selectedCount: stacks.length,
+    selectedUnits: stacks.reduce((sum, stack) => sum + stack.quantity, 0),
+    sellableIds: sellable.map((stack) => stack.itemId),
+    sellGold: sellable.reduce((sum, stack) => sum + stack.quantity * itemDef(stack.itemId).value, 0),
+    dismantleIds: dismantleable.map((stack) => stack.itemId),
+    dismantleDust: dismantleable.reduce((sum, stack) => sum + stack.quantity * GEM_DISMANTLE_DUST_V1[canonicalGemMetaV1(stack.itemId).grade], 0),
+    protectedCount: stacks.length - safe.length
+  };
+}
+function disposeGemPouchSelected(state, ids2, method) {
+  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || ids2.some((id) => typeof id !== "string" || !id || id.length > 120) || new Set(ids2).size !== ids2.length) throw new Error("Select 1\u2013100 unique gem stacks");
+  const summary = gemPouchBulkSummary(state, ids2), eligible = method === "sell" ? summary.sellableIds : summary.dismantleIds;
+  if (eligible.length !== ids2.length || ids2.some((id) => !eligible.includes(id)))
+    throw new Error("Selection changed or includes protected gems; review your selection");
+  let next = state;
+  for (const id of ids2) {
+    const quantity2 = gemPouch(next).stacks.find((stack) => stack.itemId === id)?.quantity ?? 0;
+    if (quantity2 < 1) throw new Error("Selected gem is no longer in the pouch");
+    next = method === "sell" ? sellPouchGem(next, id, quantity2) : dismantleGemV1(next, id, quantity2);
+  }
+  return next;
+}
+
 // ../apps/mobile/src/core/equipment-pouch-selling.ts
 var EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH = 180;
 function equipmentPouchSaleId(stack, index) {
@@ -57474,47 +58046,6 @@ function reconcileWorkingTowardGeneratedRules(state) {
   return { ...state, character: { ...state.character, idleRulesV40: nextRules, activeIdleRuleIdV40 } };
 }
 
-// ../apps/mobile/src/core/companion-housing.ts
-var COMPANION_HOUSING_UPGRADES = [
-  { tier: 1, gold: 12e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 80 }, { itemId: "ASTER_IRON_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 8 }] },
-  { tier: 2, gold: 45e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 120 }, { itemId: "OATHSTONE_INGOT", quantity: 45 }, { itemId: "REINFORCED_FITTING", quantity: 16 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }] },
-  { tier: 3, gold: 14e4, inputs: [{ itemId: "WHITEPINE_LOG", quantity: 150 }, { itemId: "FROSTIRON_INGOT", quantity: 60 }, { itemId: "RIMEGLASS", quantity: 18 }, { itemId: "CHOIR_BLOOM", quantity: 6 }] }
-];
-function companionHousingTier(companionId, tiers) {
-  return Math.max(0, Math.min(3, Math.floor(tiers?.[companionId] ?? 0)));
-}
-function qty3(stacks, id) {
-  return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
-}
-function companionHousingUpgradeCost(companionId, tiers) {
-  const next = companionHousingTier(companionId, tiers) + 1;
-  return COMPANION_HOUSING_UPGRADES.find((row) => row.tier === next);
-}
-function companionHousingUpgradeAffordability(state, companionId) {
-  const cost = companionHousingUpgradeCost(companionId, state.account.companionHousingTiers);
-  if (!cost) return { ready: false, cost: void 0, materials: [] };
-  const all = [...state.inventory.stacks, ...state.bank.stacks], materials = cost.inputs.map((input) => ({ ...input, owned: qty3(all, input.itemId) }));
-  return { ready: (state.character?.gold ?? 0) >= cost.gold && materials.every((x) => x.owned >= x.quantity), cost, materials };
-}
-function upgradeCompanionHousing(state, companionId) {
-  if (!state.character) throw new Error("character_required");
-  const check = companionHousingUpgradeAffordability(state, companionId);
-  if (!check.cost) throw new Error("companion_housing_max");
-  if (!check.ready) throw new Error("companion_housing_resources");
-  const spend2 = (stacks, id, amount) => stacks.map((s) => s.itemId === id ? { ...s, quantity: s.quantity - amount } : s).filter((s) => s.quantity > 0);
-  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
-  for (const input of check.cost.inputs) {
-    let remaining = input.quantity, have = qty3(inventory, input.itemId), take4 = Math.min(have, remaining);
-    if (take4) {
-      inventory = spend2(inventory, input.itemId, take4);
-      remaining -= take4;
-    }
-    if (remaining) bank = spend2(bank, input.itemId, remaining);
-  }
-  const tier = companionHousingTier(companionId, state.account.companionHousingTiers) + 1;
-  return { ...state, character: { ...state.character, gold: state.character.gold - check.cost.gold }, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, companionHousingTiers: { ...state.account.companionHousingTiers ?? {}, [companionId]: tier } } };
-}
-
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
 var fields = {
@@ -57601,17 +58132,20 @@ var fields = {
   sell: ["id", "quantity"],
   salvage: ["id"],
   bank_sell: ["id", "quantity"],
+  bank_salvage: ["id"],
   bank_gold_deposit: ["amount"],
   bank_gold_withdraw: ["amount"],
   deposit: ["id", "quantity"],
   withdraw: ["id", "quantity"],
   deposit_materials: [],
   bulk_transfer: ["location", "ids"],
-  bulk_sell: ["ids"],
-  bulk_salvage: ["ids"],
+  bulk_sell: ["location", "ids"],
+  bulk_salvage: ["location", "ids"],
   storage: ["location"],
   gem_pouch_upgrade: [],
   gem_pouch_sell: ["itemId", "quantity"],
+  gem_pouch_bulk_sell: ["ids"],
+  gem_pouch_bulk_dismantle: ["ids"],
   overflow: [],
   equip_tool: ["id"],
   equip_set: [],
@@ -57635,6 +58169,7 @@ var fields = {
   daily_supplies_activate: ["type"],
   quest: ["id"],
   seasonal: ["period", "id", "choiceId"],
+  monthly_quest_milestone: ["month", "threshold", "characterId", "skillId"],
   settings: ["settings"],
   inventory_preference: ["id", "kind", "enabled"],
   inventory_seen_all: [],
@@ -57689,7 +58224,12 @@ function validateGameCommand(value) {
     oneOf(bulk.location, ["inventory", "bank"]);
     stringArray(bulk, "ids");
   }
-  if (row.type === "bulk_sell" || row.type === "bulk_salvage") stringArray(args, "ids");
+  if (row.type === "gem_pouch_bulk_sell" || row.type === "gem_pouch_bulk_dismantle") stringArray(args, "ids", 100, 120);
+  if (row.type === "bulk_sell" || row.type === "bulk_salvage") {
+    const bulk = args;
+    stringArray(bulk, "ids", 100, 180);
+    if (bulk.location !== void 0) oneOf(bulk.location, ["inventory", "bank"]);
+  }
   return { type: row.type, args };
 }
 function text(args, key, max = 100) {
@@ -57774,7 +58314,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -57887,7 +58427,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = unequipCombatCompanion(state);
       break;
     case "companion_housing_upgrade":
-      state = upgradeCompanionHousing(state, text(a, "id"));
+      state = upgradeCompanionHousing(sanitizeCombatCompanionState(state), text(a, "id"));
       message = "Companion quarters upgraded";
       break;
     case "companion_level":
@@ -58039,7 +58579,7 @@ function executeGameCommand(previous, value, now, options = {}) {
         forgeResults = [result.result];
       }
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
-      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.gemAction === "refine" ? "Refined" : "Combined"} ${result.recipe.name} \xB7 Gem Pouch`;
+      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : result.gemAction === "refine" ? `Refined ${result.recipe.name} \xB7 Gem Pouch` : result.gemSucceeded ? `Combined ${result.recipe.name} \xB7 Gem Pouch` : `Gem merge failed: ${result.recipe.name} \xB7 1 gem lost, 2 returned \xB7 Gold and reagents spent`;
       break;
     }
     case "craft_claim_all": {
@@ -58057,7 +58597,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       const equipmentCount = result.claimed.length - result.gemClaims, procCount = result.results.filter((row) => row.qualityProc).length;
       const blockedCount = result.blocked.length;
       const blockedReason = result.blocked.some((row) => row.reason === "Crafting recipe is no longer available") ? "Some jobs use retired recipes; please contact support." : result.blocked.some((row) => row.reason.startsWith("Equipment copy") || row.reason.startsWith("Equipment requires") || row.reason.startsWith("Crafted equipment")) ? `Check your equipment copies. ${result.blocked[0].reason}` : "Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.";
-      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
+      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"}${result.gemFailed ? ` (${result.gemFailed} failed merge${result.gemFailed === 1 ? "" : "s"})` : ""} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
       break;
     }
     case "craft_cancel": {
@@ -58096,10 +58636,13 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = a.enabled ? "Keep Best 7 enabled \u2014 only verified, unprotected copies can be sold" : "Automatic equipment selling disabled";
       break;
     }
-    case "gear_equip":
+    case "gear_equip": {
+      const healthBeforeSwap = state.activity?.kind === "combat" ? state.character?.currentHp : void 0;
       state = equipCraftedGearInstance(state, text(a, "instanceId", 180));
+      if (healthBeforeSwap !== void 0 && state.character) state.character.currentHp = Math.min(healthBeforeSwap, effectiveStats(state).hp);
       message = "Equipment copy equipped";
       break;
+    }
     case "gear_unequip":
       state = unequipCraftedGearInstance(state, text(a, "instanceId", 180));
       message = "Equipment copy unequipped";
@@ -58176,6 +58719,9 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "bank_sell":
       state = sellBankItem(state, text(a, "id"), integer(a, "quantity"));
       break;
+    case "bank_salvage":
+      state = salvageBankItem(state, text(a, "id"));
+      break;
     case "bank_gold_deposit":
       state = depositGoldToBank(state, integer(a, "amount"));
       break;
@@ -58195,10 +58741,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = bulkTransferSelected(state, stringArray(a, "ids"), oneOf(a.location, ["inventory", "bank"]));
       break;
     case "bulk_sell":
-      state = bulkSellSelected(state, stringArray(a, "ids"));
+      state = bulkSellSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "bulk_salvage":
-      state = bulkSalvageSelected(state, stringArray(a, "ids"));
+      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "storage":
       state = upgradeStorage(state, oneOf(a.location, ["inventory", "bank"]));
@@ -58213,6 +58759,14 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = "Gems sold from Gem Pouch";
       break;
     }
+    case "gem_pouch_bulk_sell":
+      state = disposeGemPouchSelected(state, stringArray(a, "ids", 100, 120), "sell");
+      message = "Selected Gem Pouch stacks sold";
+      break;
+    case "gem_pouch_bulk_dismantle":
+      state = disposeGemPouchSelected(state, stringArray(a, "ids", 100, 120), "dismantle");
+      message = "Selected Gem Pouch stacks dismantled";
+      break;
     case "overflow":
       state = claimOverflowToBank(state);
       break;
@@ -58314,6 +58868,9 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "seasonal":
       state = claimSeasonalContract(state, oneOf(a.period, ["daily", "weekly", "monthly"]), text(a, "id"), now, a.choiceId === void 0 ? void 0 : text(a, "choiceId", 100));
       break;
+    case "monthly_quest_milestone":
+      state = claimMonthlyQuestMilestone(state, text(a, "month", 7), integer(a, "threshold", 30, 100), text(a, "characterId", 100), oneOf(a.skillId, ["mining", "woodcutting", "fishing", "herbalism", "smithing", "cooking", "alchemy", "exploration", "tailoring", "enchanting", "faith"]), now);
+      break;
     case "settings":
       state = { ...state, settings: validateGameSettings(a.settings) };
       break;
@@ -58394,7 +58951,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       throw new Error("invalid_command");
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
-  state = reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now));
+  state = recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state), now)));
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
   return { state, reward: reward3, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }
@@ -58992,7 +59549,7 @@ function redistributeCompanionCombatPower(personal, companion) {
   return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
 }
 var statScore = (stats4, level) => Math.max(0, Math.round(
-  stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135
+  stats4.attack * 18 + stats4.defense * 11 + stats4.hp * 0.7 + (stats4.power ?? 0) * 4 + level * 12 + (stats4.critChance ?? 0) * 220 + (stats4.critMultiplier ?? 1.5) * 18 + (stats4.accuracy ?? 0.84) * 45 + (stats4.evasion ?? 0.04) * 50 + (stats4.haste ?? 0.05) * 150 + (stats4.armor ?? 0) * 110 + (stats4.ward ?? 0) * 140 + (stats4.tenacity ?? 0) * 60 + (stats4.potency ?? 0) * 80 + (stats4.penetration ?? 0) * 135 + Math.max(0, (stats4.classHealing ?? 1) - 1) * 80
 ));
 function combatPowerRating(state) {
   const character = state.character;

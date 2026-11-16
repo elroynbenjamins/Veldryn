@@ -1,6 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {EFFECT_GEMS_V1,STAT_GEMS_V1,validateGemCatalogV1} from './gem-catalog-v1';
-import {combineGemV1,dismantleGemV1,type GemWallet} from './gem-progression-v1';
+import {combineGemV1,dismantleGemV1,gemCombineSuccessPercentV1,type GemWallet} from './gem-progression-v1';
 import {summarizeGemLoadoutV1} from './gem-runtime-v1';
 import {buildGemDropsForSourceV1,gemPoolForSourceV1,settleGemSourceV1,validateGemAcquisitionV1} from './gem-acquisition-v1';
 
@@ -32,8 +32,21 @@ assert.equal(summary.effects[0]?.copies,3);
 assert.equal(summary.statPercent.power,.01);
 
 const wallet:GemWallet={gold:100000,dust:100,regionalCatalysts:2,radiantCatalysts:1,gems:[{familyId:'stat_might',grade:1,quantity:3}]};
-const combined=combineGemV1(wallet,'stat_might',1);
+assert.deepEqual([1,2,3,4,5,6,7].map(gemCombineSuccessPercentV1),[90,80,70,60,55,50,45]);
+const combined=combineGemV1(wallet,'stat_might',1,.1);
 assert.equal(combined.gems.find(v=>v.grade===2)?.quantity,1);
+const failed=combineGemV1(wallet,'stat_might',1,.99);
+assert.equal(failed.gems.find(v=>v.grade===1)?.quantity,2,'Failed merges lose just one gem');
+assert.equal(failed.gems.some(v=>v.grade===2),false,'Failed merges never mint a higher gem');
+assert.equal(failed.gold,wallet.gold-1800,'Failed merges still pay the current Forge Gold cost');
+const radiantWallet:GemWallet={...wallet,gems:[{familyId:'stat_might',grade:4,quantity:3}]};
+const radiantFailure=combineGemV1(radiantWallet,'stat_might',4,.99);
+assert.equal(radiantFailure.gems.find(v=>v.grade===4)?.quantity,2,'A failed G4 merge must return 2 Flawless gems');
+assert.equal(radiantFailure.gold,radiantWallet.gold-72000,'G4 merge must use the same 20%-increased Forge Gold cost');
+assert.equal(radiantFailure.dust,radiantWallet.dust-40,'Failed G4 merge spends Gem Dust');
+assert.equal(radiantFailure.radiantCatalysts,0,'Failed G4 merge consumes its Radiant Catalyst');
+const radiantSuccess=combineGemV1(radiantWallet,'stat_might',4,.1);
+assert.equal(radiantSuccess.gems.find(v=>v.grade===5)?.quantity,1,'Successful G4 merge must award 1 Radiant gem');
 const dismantled=dismantleGemV1(combined,'stat_might',2,1);
 assert.equal(dismantled.dust,103);
 

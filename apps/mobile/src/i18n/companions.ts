@@ -7,6 +7,43 @@ import {companionCombatDescriptionText} from './companion-combat-names-de';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // New Companion Quarters training guidance — authored across all supported UI languages.
+ "COMPANION QUARTERS": ["GEFÄHRTENQUARTIER","ALOJAMIENTO DE COMPAÑEROS","METGEZELLENVERBLIJF","ALLOGGI DEI COMPAGNI","QUARTIERS DES COMPAGNONS"],
+ "LEVEL CAP {value0}": ["LEVELGRENZE {value0}","LÍMITE DE NIVEL {value0}","NIVEAULIMIET {value0}","LIMITE LIVELLO {value0}","NIVEAU MAX. {value0}"],
+ "Quarters and Ascension both limit training. Earned levels and combat abilities are never removed.": ["Quartier und Aufstieg begrenzen das Training. Erreichte Level und Kampffähigkeiten bleiben erhalten.","Alojamiento y ascensión limitan el entrenamiento. Los niveles y habilidades obtenidos nunca se pierden.","Verblijf en ascensie beperken de training. Behaalde niveaus en gevechtsvaardigheden blijven behouden.","Alloggio e ascensione limitano l'allenamento. Livelli e abilità ottenuti non si perdono.","Les quartiers et l'ascension limitent l'entraînement. Les niveaux et capacités acquis sont conservés."],
+ "Cap {value0}": ["Grenze {value0}","Límite {value0}","Limiet {value0}","Limite {value0}","Limite {value0}"],
+ "No further Quarters upgrade is needed for this rarity.": ["Für diese Seltenheit ist keine weitere Quartierverbesserung nötig.","Esta rareza no necesita más mejoras de alojamiento.","Voor deze zeldzaamheid is geen verdere verblijfsupgrade nodig.","Questa rarità non richiede altri miglioramenti dell'alloggio.","Aucune autre amélioration des quartiers n'est nécessaire pour cette rareté."],
+ "Quarters & Ascension required": ["Quartier und Aufstieg erforderlich","Se necesitan alojamiento y ascensión","Verblijf en ascensie vereist","Servono alloggio e ascensione","Quartiers et ascension requis"],
+ "Ascension required": ["Aufstieg erforderlich","Se necesita ascensión","Ascensie vereist","Ascensione necessaria","Ascension requise"],
+ "Training unavailable": ["Training nicht verfügbar","Entrenamiento no disponible","Training niet beschikbaar","Allenamento non disponibile","Entraînement indisponible"],
+ "Upgrade Quarters to resume training.": ["Verbessere das Quartier, um weiter zu trainieren.","Mejora el alojamiento para seguir entrenando.","Verbeter het verblijf om verder te trainen.","Migliora l'alloggio per riprendere l'allenamento.","Améliorez les quartiers pour reprendre l'entraînement."],
+ "Ascend your companion to resume training.": ["Lass deinen Gefährten aufsteigen, um weiter zu trainieren.","Asciende a tu compañero para seguir entrenando.","Laat je metgezel ascenderen om verder te trainen.","Fai ascendere il compagno per riprendere l'allenamento.","Faites progresser votre compagnon par ascension pour reprendre l'entraînement."],
+ "Training unavailable.": ["Training nicht verfügbar.","Entrenamiento no disponible.","Training niet beschikbaar.","Allenamento non disponibile.","Entraînement indisponible."],
+ // Bond progression: every label used by the shared Bond summary and rewards UI.
+ "All rewards unlocked":["Alle Belohnungen freigeschaltet","Todas las recompensas desbloqueadas","Alle beloningen ontgrendeld","Tutte le ricompense sbloccate","Toutes les récompenses débloquées"],
+ "MAX BOND":["MAX. BINDUNG","VÍNCULO MÁX.","MAX. BAND","LEGAME MAX","LIEN MAX."],
+ "Bond complete":["Bindung abgeschlossen","Vínculo completado","Band voltooid","Legame completato","Lien terminé"],
+ "{value0} / {value1} Bond XP":["{value0} / {value1} Bindungs-EP","{value0} / {value1} EXP de vínculo","{value0} / {value1} band-XP","{value0} / {value1} PE legame","{value0} / {value1} XP de lien"],
+ "{value0} XP left":["Noch {value0} EP","Quedan {value0} EXP","Nog {value0} XP","Mancano {value0} PE","{value0} XP restantes"],
+ "Bond {value0} of 10. Open Bond rewards.":["Bindung {value0} von 10. Bindungsbelohnungen öffnen.","Vínculo {value0} de 10. Abrir recompensas de vínculo.","Band {value0} van 10. Open bandbeloningen.","Legame {value0} di 10. Apri le ricompense.","Lien {value0} sur 10. Ouvrir les récompenses."],
+ "{value0} Bond reward(s) ready to claim":["{value0} Bindungsbelohnung(en) abholbereit","{value0} recompensas de vínculo disponibles","{value0} bandbeloning(en) klaar om te claimen","{value0} ricompense legame da riscattare","{value0} récompense(s) de lien à récupérer"],
+ "Next reward: Bond {value0} · {value1}":["Nächste Belohnung: Bindung {value0} · {value1}","Próxima recompensa: vínculo {value0} · {value1}","Volgende beloning: band {value0} · {value1}","Prossima ricompensa: legame {value0} · {value1}","Prochaine récompense : lien {value0} · {value1}"],
+ "Bond grows by adventuring together. Companion Level XP is separate.":["Bindung wächst durch gemeinsame Abenteuer. Begleiter-Level-EP werden separat gesammelt.","El vínculo crece al aventurarse juntos. La EXP de nivel del compañero es independiente.","De band groeit door samen op avontuur te gaan. Metgezelniveau-XP staat hier los van.","Il legame cresce vivendo avventure insieme. I PE livello del compagno sono separati.","Le lien progresse en partant à l'aventure ensemble. L'XP de niveau du compagnon est distincte."],
+ "Collect the Essence earned from your Bond milestones below.":["Hole unten die Essenz aus deinen Bindungsmeilensteinen ab.","Recoge abajo la esencia obtenida en los hitos de vínculo.","Claim hieronder de essentie van je bandmijlpalen.","Riscatta qui sotto l'essenza ottenuta dalle tappe del legame.","Récupère ci-dessous l'essence gagnée aux paliers de lien."],
+ "Bond milestones":["Bindungsmeilensteine","Hitos de vínculo","Bandmijlpalen","Tappe del legame","Paliers de lien"],
+ "Unlocked":["Freigeschaltet","Desbloqueado","Ontgrendeld","Sbloccato","Débloqué"],
+ "Next":["Nächste","Siguiente","Volgende","Prossimo","Suivant"],
+ "Bond 10 trait":["Bindung-10-Eigenschaft","Rasgo de vínculo 10","Band 10-eigenschap","Tratto legame 10","Trait de lien 10"],
+ "Unlocked and active":["Freigeschaltet und aktiv","Desbloqueado y activo","Ontgrendeld en actief","Sbloccato e attivo","Débloqué et actif"],
+ "Unlocks at Bond 10":["Freischaltung bei Bindung 10","Se desbloquea en vínculo 10","Ontgrendelt bij band 10","Si sblocca a legame 10","Débloqué au lien 10"],
+ "How to earn Bond XP":["So erhältst du Bindungs-EP","Cómo conseguir EXP de vínculo","Zo verdien je band-XP","Come ottenere PE legame","Comment gagner de l'XP de lien"],
+ "Dungeon":["Dungeon","Mazmorra","Kerker","Dungeon","Donjon"],
+ "Battle":["Kampf","Batalla","Gevecht","Battaglia","Combat"],
+ "Objective":["Ziel","Objetivo","Doel","Obiettivo","Objectif"],
+ "Bond Hall bonus":["Bindungshallen-Bonus","Bonificación de la sala de vínculos","Bandhalbonus","Bonus sala dei legami","Bonus du hall des liens"],
+ "Upgrade the Sanctuary Bond Hall to earn up to 15% more Bond XP.":["Verbessere die Bindungshalle im Heiligtum für bis zu 15 % mehr Bindungs-EP.","Mejora la sala de vínculos del santuario para ganar hasta un 15 % más de EXP de vínculo.","Verbeter de bandhal in het heiligdom voor tot 15% meer band-XP.","Migliora la sala dei legami del santuario per guadagnare fino al 15% di PE legame in più.","Améliore le hall des liens du sanctuaire pour gagner jusqu'à 15 % d'XP de lien supplémentaire."],
+ "At Bond 7, techniques can unlock (or at Ascension II).":["Ab Bindung 7 können Techniken freigeschaltet werden (oder bei Aufstieg II).","Las técnicas pueden desbloquearse en vínculo 7 (o ascensión II).","Technieken kunnen vrijkomen bij band 7 (of ascensie II).","Le tecniche si sbloccano al legame 7 (o all'ascensione II).","Les techniques peuvent être débloquées au lien 7 (ou à l'ascension II)."],
+ "Companion XP {value0}{value1}":["Begleiter-EP {value0}{value1}","EXP de compañero {value0}{value1}","Metgezel-XP {value0}{value1}","PE compagno {value0}{value1}","XP de compagnon {value0}{value1}"],
  "Affinity":["Affinität","Afinidad","Affiniteit","Affinità","Affinité"],
  // Companion screen refinement: compact Bond and always-visible Quarters.
  "Companion Quarters": ["Gefährtenquartier","Alojamiento de compañeros","Metgezellenverblijf","Alloggi dei compagni","Quartiers des compagnons"],
@@ -1123,6 +1160,28 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
  companionCatalogs.ru[key]=key;
  companionCatalogs.tr[key]=key;
 }
+companionCatalogs.ru["COMPANION QUARTERS"]="ПОКОИ СПУТНИКОВ";
+companionCatalogs.tr["COMPANION QUARTERS"]="YOLDAŞ ODALARI";
+companionCatalogs.ru["LEVEL CAP {value0}"]="ПРЕДЕЛ УРОВНЯ {value0}";
+companionCatalogs.tr["LEVEL CAP {value0}"]="SEVİYE SINIRI {value0}";
+companionCatalogs.ru["Quarters and Ascension both limit training. Earned levels and combat abilities are never removed."]="Покои и Вознесение ограничивают тренировку. Полученные уровни и боевые способности сохраняются.";
+companionCatalogs.tr["Quarters and Ascension both limit training. Earned levels and combat abilities are never removed."]="Odalar ve Yükseliş eğitimi sınırlar. Kazanılan seviyeler ve savaş yetenekleri korunur.";
+companionCatalogs.ru["Cap {value0}"]="Предел {value0}";
+companionCatalogs.tr["Cap {value0}"]="Sınır {value0}";
+companionCatalogs.ru["No further Quarters upgrade is needed for this rarity."]="Для этой редкости дальнейшие улучшения покоев не нужны.";
+companionCatalogs.tr["No further Quarters upgrade is needed for this rarity."]="Bu nadirlik için başka oda yükseltmesi gerekmiyor.";
+companionCatalogs.ru["Quarters & Ascension required"]="Требуются покои и Вознесение";
+companionCatalogs.tr["Quarters & Ascension required"]="Odalar ve Yükseliş gerekli";
+companionCatalogs.ru["Ascension required"]="Требуется Вознесение";
+companionCatalogs.tr["Ascension required"]="Yükseliş gerekli";
+companionCatalogs.ru["Training unavailable"]="Тренировка недоступна";
+companionCatalogs.tr["Training unavailable"]="Eğitim kullanılamıyor";
+companionCatalogs.ru["Upgrade Quarters to resume training."]="Улучшите покои, чтобы продолжить тренировку.";
+companionCatalogs.tr["Upgrade Quarters to resume training."]="Eğitime devam etmek için odaları yükselt.";
+companionCatalogs.ru["Ascend your companion to resume training."]="Вознесите спутника, чтобы продолжить тренировку.";
+companionCatalogs.tr["Ascend your companion to resume training."]="Eğitime devam etmek için yoldaşını yükselt.";
+companionCatalogs.ru["Training unavailable."]="Тренировка недоступна.";
+companionCatalogs.tr["Training unavailable."]="Eğitim kullanılamıyor.";
 companionCatalogs.ru["Recruit companion"]="Нанять спутника";
 companionCatalogs.tr["Recruit companion"]="Yoldaş edin";
 export const translateCompanion=createTranslator(companionCatalogs);

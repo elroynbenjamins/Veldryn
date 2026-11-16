@@ -69,7 +69,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
     <View style={s.flex}>
      <Text style={s.eyebrow}>{de('PERMANENT GUILD BONUSES')}</Text>
      <Text style={s.title} accessibilityRole="header">{de('Guild Skills')}</Text>
-     <Text style={s.copy}>{guildLevel===undefined?de('Shared guild progression'):language==='de'?`Gildenstufe ${guildLevel}`:`Guild Level ${guildLevel}`}</Text>
+     <Text style={s.copy}>{guildLevel===undefined?de('Shared guild progression'):language==='de'?`Gildenstufe ${guildLevel} · +2 pro Aufstieg`:`Guild Level ${guildLevel} · +2 per level-up`}</Text>
     </View>
     <View style={s.points}><Text style={s.pointsValue}>{skillPoints===undefined?'—':skillPoints.toLocaleString()}</Text><Text style={s.pointsLabel}>{de('Skill points')}</Text></View>
    </View>

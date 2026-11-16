@@ -10,6 +10,7 @@ import {RECIPES} from '../src/content/skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftAvailability,equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
+import {recordAccountProgress,accountSkillLevel} from '../src/core/account-roster';
 import {accountBonusOverview} from '../src/core/account-bonuses';
 import type {GameState} from '../src/core/types';
 
@@ -19,12 +20,12 @@ const forgeAutomatonRequirements=combatCompanionDef('UNIT_010')!.unlockRequireme
 ok(forgeAutomatonRequirements.some(req=>req.target==='EQUIPMENT_CRAFTS'&&req.amount===500)&&forgeAutomatonRequirements.some(req=>req.type==='skill_level'&&req.target==='smithing'&&req.amount===30),'Forge Automaton must require 500 equipment claims and Smithing 30');
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
-for(const sample of [{tier:'T1',slot:'helmet',gold:368},{tier:'T1',slot:'weapon',gold:584},{tier:'T9',slot:'weapon',gold:243000}]){
+for(const sample of [{tier:'T1',slot:'helmet',gold:400},{tier:'T1',slot:'weapon',gold:600},{tier:'T9',slot:'weapon',gold:243000}]){
  const crafted=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===sample.tier&&itemDef(row.output.itemId).slot===sample.slot);
  ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must include the 20% surcharge above its original triple-forge price`);
 }
-ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>0&&Number.isSafeInteger(row.gold)),'All 1,620 tiered equipment recipes must have the increased Gold costs');
-ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===144),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
+ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>=100&&Number.isSafeInteger(row.gold)&&row.gold%100===0),'All 1,620 tiered equipment recipes must have the increased Gold costs');
+ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===100),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');
@@ -61,9 +62,16 @@ ok(slots.capacity===4,'VIP+ must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:2}});
 ok(slots.capacity===4,'Unlocking character slot #2 must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4}});
-ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap through character progression');
+ok(slots.capacity===5,'Legacy fourth-slot Forge perk must remain earned after roster cap reduction');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
 ok(slots.capacity===7&&slots.raw===7,'Progression + VIP+ + Supporter should stack to seven active Forge slots');
+const skillMastery=recordAccountProgress({...state,skills:state.skills.map(row=>({...row,xp:totalXpAtLevel(100),level:100}))});
+ok(accountSkillLevel(skillMastery)>=1050,'the independent Forge milestone can be earned without a fourth character');
+ok(equipmentCraftSlotBreakdown(skillMastery).sources.some(source=>source.id==='account_skill_1050'&&source.earned&&source.slots===1),'1,050 account-skill progression must independently unlock the Forge slot');
+const masteredBacktracked={...skillMastery,skills:state.skills,account:{...skillMastery.account,unlockedCharacterSlots:3}};
+ok(equipmentCraftSlotBreakdown(masteredBacktracked).capacity===5,'earned 1,050 Forge slot survives reduced skill total and the three-character cap');
+ok(equipmentCraftSlotBreakdown(normalizeSave(JSON.parse(JSON.stringify(masteredBacktracked)))).capacity===5,'earned Forge milestone must survive save normalization');
+
 
 const startingGold=state.character!.gold;
 const started1=startEquipmentCraft(state,recipe.id,1000);

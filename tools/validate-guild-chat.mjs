@@ -31,7 +31,7 @@ for(const rpc of ['guild_chat_state_v1','send_guild_chat_v1'])need(client,"rpc('
 for(const [needle,label] of [
  ['ChatPlayerSheet','player profile inspection'],
  ['GuildTaggedPlayerName','Guild tag presentation'],
- ['ChatMessageText','emote-aware message rendering'],
+ ['ChatTranslationMessage','shared emote-aware translation presentation'],
  ['chatEmoteCount','client emote limit'],
  ['guildChatCommandKey','idempotent send key'],
  ['useChatFeed<GuildChatState|null>','shared, foreground-only Guild chat refresh'],
@@ -43,6 +43,8 @@ reject(component,"chat.preview",'preview copy');
 need(overlay,"myGuild","live Guild membership lookup");
 need(overlay,"onlineGuildAvailable","live Guild tab state");
 
+
+need(fs.readFileSync(path.join(root,'apps/mobile/src/components/ChatTranslatableBody.tsx'),'utf8'),'ChatMessageText','emote-aware base rendering is preserved inside translation wrapper');
 
 for(const [needle,label] of [
  ["channelType:'guild'",'Guild channel realtime activation'],

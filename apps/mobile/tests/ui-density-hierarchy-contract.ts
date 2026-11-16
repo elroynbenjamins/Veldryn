@@ -85,7 +85,7 @@ const masteryCore=read('src/core/profession-mastery-v40.ts');
 ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');
 
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
-ok(gatheringSkills.includes('Tap a resource to begin gathering.'),'Normal gathering skills must state their direct-tap interaction');
+ok(gatheringSkills.includes('Ready resources appear first. Travel to other unlocked regions for more.')&&gatheringSkills.includes('if(readyHere){onGather(activity.id);return;}'),'Gathering should describe location readiness and immediately start a tapped available resource');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
 ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
@@ -345,8 +345,12 @@ ok(accountBonuses.includes('source:{minHeight:52'),'Account bonus sources must a
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('<GameButton compact title={st("Refresh")} tone="secondary"'),"Rankings refresh must remain a secondary compact action");
-ok(rankings.includes('const podium=activeSnapshot?.entries.filter(entry=>entry.rank<=3)')&&rankings.includes('const remaining=activeSnapshot?.entries.filter(entry=>entry.rank>3)'),"Rankings podium must not duplicate names in the compact list");
-ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>{setBoard(value.id);setBoardPickerOpen(false)}}'),"Rankings board selection must stay actionable and use the server board ID");
+ok(rankings.includes('splitRankingDisplay(activeSnapshot?.entries??[],page)'),"Ranking podium must cap at three highlights and retain all tied players in the main list");
+ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>selectBoard(value.id)}')&&rankings.includes('if(next===board)return;'),"Rankings board picker changes pages safely without resetting an unchanged board");
+ok(rankings.includes('function selectGroup(value:RankingGroup){')&&rankings.includes('if(value===group)return;'),"Selecting the active rankings group must preserve the loaded board");
+ok(rankings.includes('RANKING_PAGE_SIZE+1')&&rankings.includes('rankingPageOffset(page)')&&rankings.includes('projectRankingPage(next.entries,page)'),"Rankings pagination must use an authoritative server page with a one-row lookahead");
+ok(rankings.includes('const version=++request.current')&&rankings.includes('version===request.current')&&rankings.includes('request.current++'),"Rankings must guard against stale requests when changing boards or pages");
+ok(rankings.includes('scrollRef.current?.scrollTo({y:0,animated:false})'),"Moving between pages must return the player to the top of the board");
 ok(rankings.includes('activeSnapshot?.self')&&rankings.includes('s.selfCard'),"Rankings must keep own standing visible independently of the top places");
 const journalPage=read('src/screens/AdventurersJournalScreen.tsx');
 ok(journalPage.includes('journal?.unlockedAchievements')&&journalPage.includes('journal?.unlockedTitles')&&journalPage.includes('journal?.records'),"Journal summary must show earned counts, not full catalog counts");

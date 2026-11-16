@@ -1,0 +1,35 @@
+name: Rankings v3 scoring proposal safety
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/rankings/**'
+      - 'backend/supabase/tests/leaderboards_v3_*.sql'
+      - 'backend/tsconfig.rankings.json'
+      - 'docs/roadmap/leaderboards-authoritative-scoring-v3-proposal.sql'
+      - 'docs/roadmap/leaderboards-competitive-policy-v1.md'
+      - 'tools/verify-rankings-v3-draft.mjs'
+      - '.github/workflows/rankings-v3-proposal-validation.yml'
+
+jobs:
+  rankings-v3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile isolated Rankings adapter and route contracts
+        run: node backend/node_modules/typescript/lib/tsc.js -p backend/tsconfig.rankings.json
+      - name: Verify v2 default, v3 opt-in and no silent fallback
+        run: node backend/.rankings-build/server/rankings/__tests__/ranking-application.js
+      - name: Verify service-only staging SQL and fixture contracts
+        run: node tools/verify-rankings-v3-draft.mjs

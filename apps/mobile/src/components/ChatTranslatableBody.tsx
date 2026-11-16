@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View,type StyleProp,type TextStyle} from 'react-native';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';

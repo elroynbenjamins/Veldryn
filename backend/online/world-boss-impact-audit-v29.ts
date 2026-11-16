@@ -116,6 +116,7 @@ export function auditProvenWorldBossImpactV29(input:{
  // supplied class, bracket, role, CP, and proof status are untrusted inputs.
  const attemptKeys=new Set<string>(),requestKeys=new Set<string>();
  const digestKeys=new Set<string>(),accounts=new Set<string>();
+ const characterOwners=new Map<string,{accountId:string;classId:string;role:Role}>();
  const byCell=new Map<string,Map<string,number[]>>();
  const survival=new Map<string,Map<string,boolean[]>>();
  for(const a of input.attempts){
@@ -130,21 +131,29 @@ export function auditProvenWorldBossImpactV29(input:{
    a.participants.length>5)
    throw Error('world_boss_v29_unproved_or_invalid_attempt');
   const key=a.accountId+':'+a.attempt;
-  if(attemptKeys.has(key)||requestKeys.has(a.requestId)||
+  if(attemptKeys.has(key)||requestKeys.has(a.accountId+':'+a.requestId)||
    digestKeys.has(a.replaySha256))
    throw Error('world_boss_v29_duplicate_attempt_or_replay');
-  attemptKeys.add(key);requestKeys.add(a.requestId);
+  attemptKeys.add(key);requestKeys.add(a.accountId+':'+a.requestId);
   digestKeys.add(a.replaySha256);accounts.add(a.accountId);
   const ids=new Set<string>();
   for(const p of a.participants){
    if(!p||!UUID.test(p.characterId)||ids.has(p.characterId)||
-    classes.get(p.classId)!==p.role||!positivePower(p.combatPower)||
+    !classes.has(p.classId)||classes.get(p.classId)!==p.role||
+    !ROLES.includes(p.role)||!positivePower(p.combatPower)||
     !metric(p.bossHpDamage)||!metric(p.localGuardDamage)||
     !metric(p.effectiveHealing)||!metric(p.shieldConsumed)||
     !metric(p.tankProtection)||!metric(p.cleansePrevented)||
     !Number.isSafeInteger(p.interrupts)||p.interrupts<0||
     p.interrupts>1000||typeof p.survived!=='boolean')
     throw Error('world_boss_v29_unverified_character');
+   const owner=characterOwners.get(p.characterId);
+   if(owner&&(owner.accountId!==a.accountId||
+    owner.classId!==p.classId||owner.role!==p.role))
+    throw Error('world_boss_v29_foreign_or_changed_character');
+   characterOwners.set(p.characterId,{
+    accountId:a.accountId,classId:p.classId,role:p.role,
+   });
    ids.add(p.characterId);
    const cell=cellKey(a.boss,a.bracket,p.classId);
    const perAccount=byCell.get(cell)??new Map<string,number[]>();

@@ -50890,6 +50890,7 @@ function addStackV1(stacks, capacity, itemId, quantityToAdd) {
 function dismantleGemV1(state, itemId, quantityToDismantle = 1) {
   const meta = canonicalGemMetaV1(itemId);
   if (!meta) throw new Error("Only canonical gems can be dismantled");
+  if (state.settings.favoriteItemIds?.includes(itemId) || state.settings.lockedItemIds?.includes(itemId)) throw new Error("Favorite or locked gems cannot be dismantled");
   if (!Number.isSafeInteger(quantityToDismantle) || quantityToDismantle < 1) throw new Error("Invalid dismantle quantity");
   if (combinedGemQuantityV1(state, itemId) < quantityToDismantle) throw new Error("You do not own enough of this gem");
   const dustPer = GEM_DISMANTLE_DUST_V1[meta.grade], afterGem = consumeGemFromStorage(state, itemId, quantityToDismantle), dust = dustPer * quantityToDismantle;
@@ -54427,6 +54428,20 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
 }
+function salvageBankItem(state, itemId) {
+  if (!state.character) throw new Error("Character required.");
+  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected.");
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected.");
+  const def = itemDef(itemId), reward3 = equipmentSalvageReward(itemId);
+  if (def.type !== "gear" || !reward3) throw new Error("Cannot salvage");
+  if (!state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0))
+    throw new Error("Choose an individual equipment copy for salvage");
+  if (!canDisposeLegacyEquipment(state, itemId, "bank", 1))
+    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+  const bankStacks = consume2(state.bank.stacks, itemId, 1);
+  const inventory = inventoryWithSalvageRewards(state.inventory, [reward3], entitlementStorageCapacity(state, "inventory"));
+  return { ...state, bank: { ...state.bank, stacks: bankStacks }, inventory };
+}
 function depositToBank(state, itemId, quantity2) {
   if (!Number.isSafeInteger(quantity2)) throw new Error("Invalid deposit quantity");
   if (quantity2 <= 0) return state;
@@ -56669,11 +56684,11 @@ function bulkSelectionSummary(state, itemIds2, location) {
   const autoEatId = state.character?.equippedFoodId, goalProtection = workingTowardInventoryProtectionMap(state), goalProtectedIds = new Set(goalProtection.keys());
   const goalProtected = stacks.filter((stack) => goalProtectedIds.has(stack.itemId));
   const transferable = stacks.filter((stack) => !stack.instanceId && (location === "bank" || stack.itemId !== autoEatId));
-  const sellable = location === "inventory" ? stacks.filter((stack) => {
+  const sellable = stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
     if (stack.itemId === autoEatId || stack.itemId === HOLY_WATER_ID || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId || goalProtectedIds.has(stack.itemId)) return false;
     if (stack.instanceId) {
-      if (state.settings.lockedItemIds?.includes(stack.itemId)) return false;
+      if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId)) return false;
       try {
         disposeCraftedGearInstance(state, stack.instanceId, "sell");
         return true;
@@ -56682,12 +56697,12 @@ function bulkSelectionSummary(state, itemIds2, location) {
       }
     }
     return !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
-  }) : [];
-  const salvageable = location === "inventory" ? stacks.filter((stack) => {
+  });
+  const salvageable = stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
     if (item.type !== "gear" || !equipmentSalvageReward(stack.itemId) || goalProtectedIds.has(stack.itemId)) return false;
     if (stack.instanceId) {
-      if (state.settings.lockedItemIds?.includes(stack.itemId)) return false;
+      if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId)) return false;
       try {
         disposeCraftedGearInstance(state, stack.instanceId, "salvage");
         return true;
@@ -56696,7 +56711,7 @@ function bulkSelectionSummary(state, itemIds2, location) {
       }
     }
     return !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
-  }) : [];
+  });
   return {
     selectedStackCount: stacks.length,
     selectedUnitCount: stacks.reduce((sum, stack) => sum + stack.quantity, 0),
@@ -56728,8 +56743,8 @@ function bulkTransferSelected(state, itemIds2, from) {
   }
   return next;
 }
-function bulkSellSelected(state, itemIds2) {
-  const summary = bulkSelectionSummary(state, itemIds2, "inventory");
+function bulkSellSelected(state, itemIds2, location = "inventory") {
+  const summary = bulkSelectionSummary(state, itemIds2, location);
   if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
   for (const id of summary.sellableIds) {
@@ -56737,13 +56752,13 @@ function bulkSellSelected(state, itemIds2) {
       next = disposeCraftedGearInstance(next, id.slice(5), "sell");
       continue;
     }
-    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
-    if (quantity2 > 0) next = sellItem(next, id, quantity2);
+    const quantity2 = next[location].stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    if (quantity2 > 0) next = location === "bank" ? sellBankItem(next, id, quantity2) : sellItem(next, id, quantity2);
   }
   return next;
 }
-function bulkSalvageSelected(state, itemIds2) {
-  const summary = bulkSelectionSummary(state, itemIds2, "inventory");
+function bulkSalvageSelected(state, itemIds2, location = "inventory") {
+  const summary = bulkSelectionSummary(state, itemIds2, location);
   if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.");
   let next = state;
   for (const id of summary.salvageableIds) {
@@ -56751,8 +56766,8 @@ function bulkSalvageSelected(state, itemIds2) {
       next = disposeCraftedGearInstance(next, id.slice(5), "salvage");
       continue;
     }
-    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
-    for (let count = 0; count < quantity2; count++) next = salvageItem(next, id);
+    const quantity2 = next[location].stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    for (let count = 0; count < quantity2; count++) next = location === "bank" ? salvageBankItem(next, id) : salvageItem(next, id);
   }
   return next;
 }
@@ -57638,6 +57653,38 @@ function normalizeChatEmoteTrayIds(value) {
   return [...new Set(value.filter((id) => typeof id === "string" && known.has(id)))].slice(0, CHAT_EMOTE_TRAY_SIZE);
 }
 
+// ../apps/mobile/src/core/gem-pouch-bulk.ts
+function gemPouchBulkSummary(state, ids2) {
+  const selected2 = new Set(ids2);
+  const goalProtected = ids2.length ? new Set(workingTowardInventoryProtectionMap(state).keys()) : /* @__PURE__ */ new Set();
+  const stacks = gemPouch(state).stacks.filter((stack) => stack.quantity > 0 && selected2.has(stack.itemId));
+  const safe = stacks.filter((stack) => !state.settings.favoriteItemIds?.includes(stack.itemId) && !state.settings.lockedItemIds?.includes(stack.itemId) && !goalProtected.has(stack.itemId));
+  const sellable = safe.filter((stack) => itemDef(stack.itemId).value > 0);
+  const dismantleable = safe.filter((stack) => !!canonicalGemMetaV1(stack.itemId));
+  return {
+    selectedCount: stacks.length,
+    selectedUnits: stacks.reduce((sum, stack) => sum + stack.quantity, 0),
+    sellableIds: sellable.map((stack) => stack.itemId),
+    sellGold: sellable.reduce((sum, stack) => sum + stack.quantity * itemDef(stack.itemId).value, 0),
+    dismantleIds: dismantleable.map((stack) => stack.itemId),
+    dismantleDust: dismantleable.reduce((sum, stack) => sum + stack.quantity * GEM_DISMANTLE_DUST_V1[canonicalGemMetaV1(stack.itemId).grade], 0),
+    protectedCount: stacks.length - safe.length
+  };
+}
+function disposeGemPouchSelected(state, ids2, method) {
+  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || ids2.some((id) => typeof id !== "string" || !id || id.length > 120) || new Set(ids2).size !== ids2.length) throw new Error("Select 1\u2013100 unique gem stacks");
+  const summary = gemPouchBulkSummary(state, ids2), eligible = method === "sell" ? summary.sellableIds : summary.dismantleIds;
+  if (eligible.length !== ids2.length || ids2.some((id) => !eligible.includes(id)))
+    throw new Error("Selection changed or includes protected gems; review your selection");
+  let next = state;
+  for (const id of ids2) {
+    const quantity2 = gemPouch(next).stacks.find((stack) => stack.itemId === id)?.quantity ?? 0;
+    if (quantity2 < 1) throw new Error("Selected gem is no longer in the pouch");
+    next = method === "sell" ? sellPouchGem(next, id, quantity2) : dismantleGemV1(next, id, quantity2);
+  }
+  return next;
+}
+
 // ../apps/mobile/src/core/equipment-pouch-selling.ts
 var EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH = 180;
 function equipmentPouchSaleId(stack, index) {
@@ -58049,17 +58096,20 @@ var fields = {
   sell: ["id", "quantity"],
   salvage: ["id"],
   bank_sell: ["id", "quantity"],
+  bank_salvage: ["id"],
   bank_gold_deposit: ["amount"],
   bank_gold_withdraw: ["amount"],
   deposit: ["id", "quantity"],
   withdraw: ["id", "quantity"],
   deposit_materials: [],
   bulk_transfer: ["location", "ids"],
-  bulk_sell: ["ids"],
-  bulk_salvage: ["ids"],
+  bulk_sell: ["location", "ids"],
+  bulk_salvage: ["location", "ids"],
   storage: ["location"],
   gem_pouch_upgrade: [],
   gem_pouch_sell: ["itemId", "quantity"],
+  gem_pouch_bulk_sell: ["ids"],
+  gem_pouch_bulk_dismantle: ["ids"],
   overflow: [],
   equip_tool: ["id"],
   equip_set: [],
@@ -58138,7 +58188,12 @@ function validateGameCommand(value) {
     oneOf(bulk.location, ["inventory", "bank"]);
     stringArray(bulk, "ids");
   }
-  if (row.type === "bulk_sell" || row.type === "bulk_salvage") stringArray(args, "ids");
+  if (row.type === "gem_pouch_bulk_sell" || row.type === "gem_pouch_bulk_dismantle") stringArray(args, "ids", 100, 120);
+  if (row.type === "bulk_sell" || row.type === "bulk_salvage") {
+    const bulk = args;
+    stringArray(bulk, "ids", 100, 180);
+    if (bulk.location !== void 0) oneOf(bulk.location, ["inventory", "bank"]);
+  }
   return { type: row.type, args };
 }
 function text(args, key, max = 100) {
@@ -58628,6 +58683,9 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "bank_sell":
       state = sellBankItem(state, text(a, "id"), integer(a, "quantity"));
       break;
+    case "bank_salvage":
+      state = salvageBankItem(state, text(a, "id"));
+      break;
     case "bank_gold_deposit":
       state = depositGoldToBank(state, integer(a, "amount"));
       break;
@@ -58647,10 +58705,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = bulkTransferSelected(state, stringArray(a, "ids"), oneOf(a.location, ["inventory", "bank"]));
       break;
     case "bulk_sell":
-      state = bulkSellSelected(state, stringArray(a, "ids"));
+      state = bulkSellSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "bulk_salvage":
-      state = bulkSalvageSelected(state, stringArray(a, "ids"));
+      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "storage":
       state = upgradeStorage(state, oneOf(a.location, ["inventory", "bank"]));
@@ -58665,6 +58723,14 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = "Gems sold from Gem Pouch";
       break;
     }
+    case "gem_pouch_bulk_sell":
+      state = disposeGemPouchSelected(state, stringArray(a, "ids", 100, 120), "sell");
+      message = "Selected Gem Pouch stacks sold";
+      break;
+    case "gem_pouch_bulk_dismantle":
+      state = disposeGemPouchSelected(state, stringArray(a, "ids", 100, 120), "dismantle");
+      message = "Selected Gem Pouch stacks dismantled";
+      break;
     case "overflow":
       state = claimOverflowToBank(state);
       break;

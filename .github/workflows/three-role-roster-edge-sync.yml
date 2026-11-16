@@ -1,6 +1,7 @@
 name: Three-role roster branch-only Edge parity rebuild
 # Disposable integration-only helper. Remove before merging into main.
 # Retrigger after exact-boundary account-skill fixture repair; no production writes.
+# Rerun after verified all role-order tests passed and final 13-skill watermark expectation corrected.
 on:
   push:
     branches: ['feat/three-role-roster-region-afk-milestones-20261116']

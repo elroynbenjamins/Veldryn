@@ -7,6 +7,29 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  // Online roster: compact, accessible social discovery across supported languages.
+  "VELDRYN COMMUNITY": ["VELDRYN-GEMEINSCHAFT","COMUNIDAD DE VELDRYN","VELDRYN-GEMEENSCHAP","COMUNITÀ DI VELDRYN","COMMUNAUTÉ VELDRYN"],
+  "Online players": ["Spieler online","Jugadores conectados","Online spelers","Giocatori online","Joueurs en ligne"],
+  "Online": ["Online","En línea","Online","Online","En ligne"],
+  "loading": ["lädt","cargando","laden","caricamento","chargement"],
+  "View the list of players online": ["Online-Spielerliste ansehen","Ver jugadores conectados","Bekijk de online spelers","Mostra i giocatori online","Voir les joueurs en ligne"],
+  "Close online players": ["Spielerliste schließen","Cerrar lista de jugadores","Online spelers sluiten","Chiudi elenco giocatori","Fermer la liste des joueurs"],
+  "Search online players": ["Online-Spieler suchen","Buscar jugadores conectados","Online spelers zoeken","Cerca giocatori online","Rechercher des joueurs en ligne"],
+  "Search players...": ["Spieler suchen ...","Buscar jugadores...","Spelers zoeken...","Cerca giocatori...","Rechercher des joueurs..."],
+  "Clear search": ["Suche löschen","Borrar búsqueda","Zoekopdracht wissen","Cancella ricerca","Effacer la recherche"],
+  "Active within the last few minutes": ["In den letzten Minuten aktiv","Activo en los últimos minutos","Actief in de afgelopen minuten","Attivi negli ultimi minuti","Actifs ces dernières minutes"],
+  "Unable to refresh online players.": ["Online-Spieler konnten nicht aktualisiert werden.","No se pudo actualizar la lista de jugadores.","Online spelers konden niet worden vernieuwd.","Impossibile aggiornare i giocatori online.","Impossible d'actualiser les joueurs en ligne."],
+  "View player profile and social actions": ["Spielerprofil und Aktionen öffnen","Ver perfil y acciones sociales","Spelersprofiel en sociale acties bekijken","Apri profilo e azioni sociali","Voir le profil et les actions sociales"],
+  " (You)": [" (Du)"," (Tú)"," (Jij)"," (Tu)"," (Vous)"],
+  "Lv.": ["St.","Nv.","Lv.","Liv.","Niv."],
+  "Friend": ["Freund","Amigo","Vriend","Amico","Ami"],
+  "Loading players...": ["Spieler werden geladen ...","Cargando jugadores...","Spelers laden...","Caricamento giocatori...","Chargement des joueurs..."],
+  "Online list unavailable": ["Online-Liste nicht verfügbar","Lista de jugadores no disponible","Onlinelijst niet beschikbaar","Elenco online non disponibile","Liste en ligne indisponible"],
+  "No matching players": ["Keine passenden Spieler","No se encontraron jugadores","Geen overeenkomende spelers","Nessun giocatore corrispondente","Aucun joueur correspondant"],
+  "No players online": ["Keine Spieler online","No hay jugadores conectados","Geen spelers online","Nessun giocatore online","Aucun joueur en ligne"],
+  "Try another search or filter.": ["Andere Suche oder Filter versuchen.","Prueba otra búsqueda o filtro.","Probeer een andere zoekterm of filter.","Prova un'altra ricerca o filtro.","Essayez une autre recherche ou un filtre."],
+  "Players appear here when they are active in Veldryn.": ["Aktive Veldryn-Spieler erscheinen hier.","Los jugadores activos en Veldryn aparecerán aquí.","Actieve Veldryn-spelers verschijnen hier.","Qui compaiono i giocatori attivi in Veldryn.","Les joueurs actifs de Veldryn apparaissent ici."],
+  "Showing the first {count} players.": ["Die ersten {count} Spieler werden angezeigt.","Mostrando los primeros {count} jugadores.","De eerste {count} spelers worden getoond.","Visualizzati i primi {count} giocatori.","Affichage des {count} premiers joueurs."],
   // Read-only Rankings pagination.
   "No further ranked entries": ["Keine weiteren Ranglisteneinträge","No hay más entradas en la clasificación","Geen verdere ranglijstvermeldingen","Nessun'altra voce in classifica","Aucune autre entrée au classement"],
   "Return to the previous page to view ranked entries.": ["Kehre zur vorherigen Seite zurück, um Ranglisteneinträge anzusehen.","Vuelve a la página anterior para consultar la clasificación.","Ga terug naar de vorige pagina om de ranglijst te bekijken.","Torna alla pagina precedente per vedere la classifica.","Revenez à la page précédente pour consulter le classement."],

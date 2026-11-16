@@ -2,6 +2,29 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  // Online roster additions.
+  "VELDRYN COMMUNITY": ["СООБЩЕСТВО VELDRYN","VELDRYN TOPLULUĞU"],
+  "Online players": ["Игроки в сети","Çevrimiçi oyuncular"],
+  "Online": ["В сети","Çevrimiçi"],
+  "loading": ["загрузка","yükleniyor"],
+  "View the list of players online": ["Посмотреть список игроков в сети","Çevrimiçi oyuncuları gör"],
+  "Close online players": ["Закрыть список игроков","Oyuncu listesini kapat"],
+  "Search online players": ["Поиск игроков в сети","Çevrimiçi oyuncu ara"],
+  "Search players...": ["Поиск игроков...","Oyuncu ara..."],
+  "Clear search": ["Очистить поиск","Aramayı temizle"],
+  "Active within the last few minutes": ["Активны за последние минуты","Son birkaç dakikada aktif"],
+  "Unable to refresh online players.": ["Не удалось обновить список игроков.","Çevrimiçi oyuncular yenilenemedi."],
+  "View player profile and social actions": ["Открыть профиль и действия","Profili ve sosyal işlemleri gör"],
+  " (You)": [" (Вы)"," (Sen)"],
+  "Lv.": ["Ур.","Sv."],
+  "Friend": ["Друг","Arkadaş"],
+  "Loading players...": ["Загрузка игроков...","Oyuncular yükleniyor..."],
+  "Online list unavailable": ["Список недоступен","Çevrimiçi liste kullanılamıyor"],
+  "No matching players": ["Игроки не найдены","Eşleşen oyuncu yok"],
+  "No players online": ["Нет игроков в сети","Çevrimiçi oyuncu yok"],
+  "Try another search or filter.": ["Попробуйте другой поиск или фильтр.","Başka bir arama veya filtre deneyin."],
+  "Players appear here when they are active in Veldryn.": ["Здесь появятся активные игроки Veldryn.","Veldryn'de aktif oyuncular burada görünür."],
+  "Showing the first {count} players.": ["Показаны первые {count} игроков.","İlk {count} oyuncu gösteriliyor."],
   // Read-only Rankings pagination.
   "No further ranked entries": ["Больше записей в рейтинге нет","Başka sıralama kaydı yok"],
   "Return to the previous page to view ranked entries.": ["Вернитесь на предыдущую страницу, чтобы увидеть рейтинг.","Sıralamayı görmek için önceki sayfaya dön."],

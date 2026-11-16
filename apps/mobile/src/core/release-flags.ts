@@ -19,3 +19,6 @@ export const DUNGEON_MARKS_SHOP_RELEASED=false;
 
 /** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
 export const CHAT_TRANSLATION_RELEASED=false;
+
+/** Online player roster requires privacy-reviewed production RPC before player-visible activation. */
+export const ONLINE_PLAYER_ROSTER_RELEASED=false;

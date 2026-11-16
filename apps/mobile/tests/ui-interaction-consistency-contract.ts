@@ -8,7 +8,7 @@ ok(shell.includes('useSafeAreaInsets'),'Shared modal shell must honor native saf
 ok(shell.includes('backgroundColor:C.overlay'),'Shared modal shell must use the active theme overlay');
 ok(shell.includes("width:44,height:44"),'Shared modal close target must remain at least 44px');
 ok(shell.includes("presentation='sheet'")&&shell.includes("presentation?:Presentation"),'Shared modal shell must support sheet and dialog presentations');
-ok(shell.includes("Platform.OS==='ios'?'padding':'height'"),'Shared modal shell must protect Android inputs with height-based keyboard avoidance');
+ok(shell.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&shell.includes("Keyboard.addListener('keyboardDidShow'")&&shell.includes('keyboardOverlap>0&&{paddingBottom:keyboardOverlap}'),'Shared modal shell must explicitly measure and clear Android keyboard overlap without double-resizing');
 ok(shell.includes('dismissOnBackdrop=true')&&shell.includes('dismissOnBackdrop?'),'Shared modal shell must allow critical flows to disable accidental backdrop dismissal');
 ok(shell.includes('paddingTop:Math.max(spacing.sm,insets.top)')&&shell.includes('paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)'),'Shared dialog/sheet layout must honor top and bottom safe areas');
 

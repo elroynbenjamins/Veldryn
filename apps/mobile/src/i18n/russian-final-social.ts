@@ -3,13 +3,11 @@ export const RUSSIAN_FINAL_SOCIAL_ROWS = {
   // Account-scoped online roster, authored RU matching the multilingual Social source.
   "VELDRYN COMMUNITY": "СООБЩЕСТВО VELDRYN",
   "Online players": "Игроки в сети",
-  "Online": "В сети",
   "loading": "загрузка",
   "View the list of players online": "Посмотреть список игроков в сети",
   "Close online players": "Закрыть список игроков",
   "Search online players": "Поиск игроков в сети",
   "Search players...": "Поиск игроков...",
-  "Clear search": "Очистить поиск",
   "Active within the last few minutes": "Активны за последние минуты",
   "Unable to refresh online players.": "Не удалось обновить список игроков.",
   "View player profile and social actions": "Открыть профиль и действия",

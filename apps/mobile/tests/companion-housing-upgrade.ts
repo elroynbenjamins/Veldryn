@@ -17,7 +17,8 @@ assert.equal(next.inventory.stacks.some((x:any)=>x.itemId==='IRONWOOD_LOG'),fals
 assert.equal(next.bank.stacks.some((x:any)=>x.itemId==='REINFORCED_FITTING'),false);
 const extra={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'IRONWOOD_LOG',quantity:20}]}};
 const afterExtra=upgradeCompanionHousing(extra as any,'UNIT_001');
-assert.equal(afterExtra.inventory.stacks.filter(x=>x.itemId==='IRONWOOD_LOG').reduce((total,x)=>total+x.quantity,0),20);
+const retainedStacks=afterExtra.inventory.stacks as Array<{itemId:string;quantity:number}>;
+assert.equal(retainedStacks.filter(x=>x.itemId==='IRONWOOD_LOG').reduce((total,x)=>total+x.quantity,0),20);
 let unownedRejected=false;try{upgradeCompanionHousing({...state,account:{...state.account,unlockedCombatCompanionIds:[]}} as any,'UNIT_001');}catch(error){unownedRejected=String(error).includes('companion_not_owned');}
 assert.ok(unownedRejected);
 console.log('PASS companion Housing upgrade spends mixed stacks and rejects unowned upgrades');

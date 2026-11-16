@@ -42,7 +42,7 @@ assert.equal(companionHousingTier(id,migrated.account.companionHousingTiers),1);
 assert.equal(companionHousingTier(id,again.account.companionHousingTiers),1);
 assert.equal(migrated.account.companionHousingMigratedV1,true);
 // No repeat grants after migration, even if an unusually high level appears in an imported record.
-const tampered={...migrated,account:{...migrated.account,combatCompanionProgress:{...migrated.account.combatCompanionProgress,[id]:{...migrated.account.combatCompanionProgress![id],level:25,ascensionTier:2}}}};
+const tampered={...migrated,account:{...migrated.account,combatCompanionProgress:{...migrated.account.combatCompanionProgress,[id]:{...migrated.account.combatCompanionProgress![id],level:25,ascensionTier:2 as const}}}};
 assert.equal(companionHousingTier(id,sanitizeCombatCompanionState(tampered).account.companionHousingTiers),1);
 assert.deepEqual(normalizeCompanionHousingTiers({UNIT_004:99,OTHER:-1,WRONG:'3'}),{UNIT_004:3});
 assert.equal(companionHousingUpgradeCost('UNIT_001',{UNIT_001:1}),undefined);

@@ -145,7 +145,14 @@ async function run(){
   &&response.rows[0].value.items[0].receiptId===receipt
   &&response.rows[0].value.items[0].inboxId===inbox
   &&response.rows[0].value.claimEndpointEnabled===false
-  &&response.rows[0].value.payoutWriterInstalled===false,
+  &&response.rows[0].value.payoutWriterInstalled===false
+  &&response.rows[0].value.economyReconciled===false
+  &&response.rows[0].value.items[0].receiptRecorded===true
+  &&response.rows[0].value.items[0].inboxRecordPresent===true
+  &&response.rows[0].value.items[0].claimed===false
+  &&response.rows[0].value.items[0].economyApplied===false
+  &&response.rows[0].value.items[0].inboxDelivered===false
+  &&response.rows[0].value.items[0].status==='receipt_requires_economy_verification',
   'read-only account mailbox reflects exactly one paid pair');
  const other=await q('select private.read_party_event_paid_inbox_v29($1::uuid) as value',[outsider]);
  assert(other.rows[0].value.items.length===0,

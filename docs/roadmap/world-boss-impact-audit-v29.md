@@ -5,7 +5,7 @@
 ## Preserved decisions
 
 - World Boss cycle: **5 full preparation days**, **48 continuous hours Saturday–Sunday (00:00 Saturday to 00:00 Monday UTC)**, then cooldown until the next 14-day cycle.
-- **3 account-wide battle attempts per event**, not 3 per character; 1–5 owned characters may participate in one attempt, but no duplicate per-character rewards.
+- **3 account-wide battle attempts per event**, not 3 per character. The new 1.0.10 character-creation limit is 3 (one Tank, one Damage, one Support), while grandfathered 4–5-character accounts remain intact. Private older World Boss replay contracts therefore still accept 1–5 owned characters in a single attempt; no duplicate per-character rewards.
 - Up to **2 account-wide War Camp donations** with committed resource deductions, frozen before Saturday.
 - V26 immutable authored 14-round replay, V18 global HP transaction, V27 War Camp receipts, and V28 *private* Sigil accounting remain the only trusted reward facts.
 - **World Impact milestones of 5 / 10 / 15 Sigils at 0.8 / 1.8 / 3.0 remain DISABLED.** V28 currently only allows up to 70 event Sigils from verified battle, shared boss HP and supply sources. V29 never writes a wallet or claims a milestone.
@@ -24,7 +24,7 @@ Reference warnings flag absent/underpopulated cells, zero utility, survival belo
 
 ## Still required before approving any Impact rewards
 
-1. Independently establish the real **nine class IDs and server-owned role mapping**, integrate a secured V28 replay + owner CP join (not the provisional test catalog). Honor the current live character limit even if older prototype supports 1–5.
+1. Independently establish the real **nine class IDs and server-owned role mapping**, integrate a secured V28 replay + owner CP join (not the provisional test catalog). Honor the new three-character creation cap and three-role diversity while preserving the permitted legacy 4–5-character accounts in all fairness cohorts.
 2. Run representative **real population** balance batches for Hollowroot, Sunscar, Frostmarch in five brackets with sufficient classes and accounts. Audit phase/order, endgame vs beginner cohorts, survival, and class/role asymmetry over all 14 authored rounds.
 3. Detect and clamp timing/interrupt exploit loops, class switching, extreme utility outliers, missing/retired classes and repeated contributions across events. Add replay integrity/anti-farming adversarial CI with two independent database workers.
 4. Have economy/gameplay approve the final normalization weights and 0.8/1.8/3.0 achievement behavior; only then add a **versioned immutable** SQL migration, real-wallet integration, appropriate release-gated UI, localization and measured rewards backfill.

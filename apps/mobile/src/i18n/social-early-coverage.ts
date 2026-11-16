@@ -3,6 +3,16 @@ import type {SocialMessageKey} from './social';
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
+  "Only your Party leader can invite other players.": ["Только лидер вашей группы может приглашать игроков.","Diğer oyuncuları yalnızca grup liderin davet edebilir."],
+  "This player already belongs to another Party.": ["Этот игрок уже состоит в другой группе.","Bu oyuncu zaten başka bir grupta."],
+  "Your Party recruitment post expired": ["Объявление вашей группы о наборе истекло","Grubunun üye arama ilanının süresi doldu"],
+  "Your Party is hidden from recruitment until the post is renewed.": ["Ваша группа скрыта из поиска, пока объявление не обновлено.","İlan yenilenene kadar grubun üye aramada görünmez."],
+  "Renew post": ["Обновить объявление","İlanı yenile"],
+  "Your recruitment posts": ["Ваши объявления о наборе","Üye arama ilanların"],
+  "EXPIRED": ["ИСТЕКЛО","SÜRESİ DOLDU"],
+  "This post is no longer visible in Recruitment. Renew it to reopen.": ["Объявление больше не видно в поиске группы. Обновите его, чтобы снова открыть.","Bu ilan artık üye aramada görünmüyor. Yeniden açmak için yenile."],
+  "Renewal is available only while you can recruit for this group.": ["Обновление доступно, только если вы можете набирать игроков в эту группу.","Yenileme yalnızca bu gruba üye alma yetkin varsa kullanılabilir."],
+  "No recruitment posts": ["Нет объявлений о наборе","Üye arama ilanı yok"],
   "Selected tonic prepared automatically for this dungeon.": ["Выбранный тоник автоматически подготовлен для этого подземелья.","Seçilen tonik bu zindan için otomatik hazırlandı."],
   "Invalid active dungeon run response.": ["Недопустимый ответ об активном походе.","Aktif zindan koşusu için geçersiz yanıt."],
   "Choose dungeon tonic": ["Выбрать тоник подземелья","Zindan toniği seç"],

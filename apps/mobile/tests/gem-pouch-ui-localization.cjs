@@ -28,7 +28,7 @@ for(const key of keys){
  for(const [i,language] of languages.slice(1).entries()){
   assert.ok(row[i].trim(),key+' missing '+language);
   assert.deepEqual(placeholders(row[i]),placeholders(key),key+' mismatched interpolations '+language);
-  const values={used:4,capacity:30,name:'OPAQUE',count:3,level:7,gold:'123',grade:2,materials:'OPAQUE'};
+  const values={used:4,capacity:30,name:'OPAQUE',count:3,level:7,gold:'123',grade:2,materials:'OPAQUE',xp:350};
   const expected=row[i].replace(/\{(\w+)\}/g,(_,name)=>String(values[name]));
   assert.equal(gemPouchText(language,key,values),expected,key+' translation '+language);
  }

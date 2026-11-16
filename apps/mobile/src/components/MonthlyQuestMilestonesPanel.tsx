@@ -85,7 +85,7 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
   </View>)}
   <GameModalSurface visible={selection!==null} onClose={close} reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={!busy}>
    <GameModalHeader eyebrow={t('MONTHLY MILESTONE')} title={(selectedReward?.xp??0).toLocaleString(language)+' '+t('Skill XP')} onClose={close} closeDisabled={busy}/>
-   <ScrollView style={{maxHeight:480}} contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
+   <ScrollView style={{maxHeight:480}} contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text style={styles.muted}>{t('Choose one character and an eligible skill. The reward is granted immediately and cannot be reassigned.')}</Text>
     <Text style={styles.sectionTitle}>{t('Character')}</Text>
     <View style={styles.choices}>

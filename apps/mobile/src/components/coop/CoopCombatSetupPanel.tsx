@@ -124,7 +124,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={st('Close')} onPress={()=>setTonicPickerVisible(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
     </View>
-    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      {tonics.map(option=>{
       const selected=tonicPreference?.potionId===option.id,disabled=option.owned<=0;
       return <Pressable key={option.id} accessibilityRole="radio" accessibilityLabel={option.name+', '+option.owned+' carried'} accessibilityState={{selected,disabled}}
@@ -159,7 +159,7 @@ export function CoopCombatSetupPanel({state,compact=false,onChooseCompanion,comp
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={st('Close')} disabled={healingBusy} onPress={()=>setHealingPickerVisible(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
     </View>
-    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView style={s.tonicScroll} contentContainerStyle={s.tonicList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      {healingPotions.map(option=>{
       const selected=state.character?.equippedHealingPotionId===option.id,disabled=healingBusy||option.owned<=0;
       return <Pressable key={option.id} accessibilityRole="radio" accessibilityLabel={option.name+', '+option.owned+' carried'} accessibilityState={{selected,disabled}}

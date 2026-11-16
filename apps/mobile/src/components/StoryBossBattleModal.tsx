@@ -214,7 +214,7 @@ function StoryBossResult({battle,message,onClose}:{battle:FallenKnightBattleResu
         <Text style={s.outcomeDetail}>{seconds}s</Text>
       </View>
     </View>
-    <ScrollView style={s.resultScroller} contentContainerStyle={s.rewardBody} showsVerticalScrollIndicator={false}>
+    <ScrollView style={s.resultScroller} contentContainerStyle={s.rewardBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       {!battle.won?<View style={s.defeatGuidance}><Text style={s.rewardSectionTitle}>{gt("BATTLE SUMMARY")}</Text><Text style={s.rewardGuidanceText}>{gl(message)}</Text></View>:
       !rewards.recognized?<View style={s.defeatGuidance}><Text style={s.rewardSectionTitle}>{gt("REWARDS RECEIVED")}</Text><Text style={s.rewardGuidanceText}>{gl(message)}</Text></View>:
       <>

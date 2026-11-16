@@ -1,5 +1,5 @@
 name: Integration Edge parity sync (temporary)
-# Re-run after the latest locked-combat-gate repair; guard against stale branch pushes.
+# Build final combined source after main fellowship+Game Guide merge, chapter fixes and 82 localized techniques.
 on:
   push:
     branches:

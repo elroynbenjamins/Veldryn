@@ -69,6 +69,11 @@ assert.equal(first.attempts,3);
 assert.equal(first.provisionalImpact,3);
 assert.equal(auditedTriple.referenceCells[0].uniqueAccounts,20);
 assert.equal(auditedTriple.uniqueAccounts,2700);
+// Request IDs are scoped per account; independent accounts may share a
+// string. The replay digest and attempt/account ownership remain distinct.
+const sharedRequest:WorldBossV29ProvenAttempt[]=[
+ base[0],{...base[1],requestId:base[0].requestId},...base.slice(2)];
+assert.equal(audit(sharedRequest).uniqueAccounts,2700);
 const mixed:WorldBossV29ProvenAttempt[]=[{
  ...base[0],participants:[...base[0].participants,
   actor('damage_1',60001),actor('support_1',60002)],
@@ -93,6 +98,17 @@ fail(()=>audit([{...base[0],bracket:0 as never}]),
 fail(()=>audit([{...base[0],participants:[{
  ...base[0].participants[0],role:'support' as const,
  }]}]),'unverified_character');
+fail(()=>audit([{...base[0],participants:[{
+ ...base[0].participants[0],classId:'unknown_class',
+  role:'unknown' as never,
+ }]}]),'unverified_character');
+fail(()=>audit([base[0],{...base[1],participants:[
+ base[0].participants[0]],
+ }]),'foreign_or_changed_character');
+fail(()=>audit([base[0],{...base[0],attempt:2,
+  requestId:'V29_CHANGED_CLASS',replaySha256:digest(4000),
+  participants:[{...base[0].participants[0],classId:'tank_2'}],
+ }]),'foreign_or_changed_character');
 fail(()=>audit([{...base[0],participants:[{
  ...base[0].participants[0],effectiveHealing:-1,
  }]}]),'unverified_character');

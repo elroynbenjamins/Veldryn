@@ -4,6 +4,8 @@ import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
 import {DungeonHero,DungeonBossPreview,DungeonDisclosure,DungeonPartyRoles,DungeonReward} from './DungeonPreparation';
 import {coopUiAssets} from '../../theme/coop-ui-assets';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
+import {SectionGuide} from '../SectionGuide';
+import {DUNGEON_HOME_GUIDE,dungeonGuideText} from '../../i18n/dungeon-home-guide';
 import {liveEventDef} from '../../content/live-events';
 import {liveEventVisuals} from '../../ui/live-event-visuals-active';
 import {dungeonText as accountText} from '../../i18n/dungeon-preparation';
@@ -31,10 +33,10 @@ const REGION_ACCENT:Record<string,'gold'|'cyan'|'violet'|'danger'>={
  Asterfall:'gold',Sunscar:'danger',Frostmarch:'cyan',Ashlands:'violet',
 };
 
-type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onOpenChat?:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+type BrowseProps={language:Language;guideScope:string;currentLevel:number;currentPower:number;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onOpenChat?:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
 
 /** Single unfiltered list: seasonal events first, all currently available dungeons next. */
-export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onOpenChat,onSelect,onSelectEvent,onResume}:BrowseProps){
+export function CoopDungeonList({language,guideScope,currentLevel,currentPower,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onOpenChat,onSelect,onSelectEvent,onResume}:BrowseProps){
  const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
  const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false),[showEchoTools,setShowEchoTools]=useState(false);
@@ -45,14 +47,17 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
  const sortedEvents=[...eventExpeditions].sort((a,b)=>(a.status==='available'?0:1)-(b.status==='available'?0:1)||a.name.localeCompare(b.name));
  const hasUsableSnapshot=dungeons.length>0||eventExpeditions.length>0||!!activeRun;
  const showCatalog=(!loading&&!error)||hasUsableSnapshot;
- return <ExpeditionScreenShell compactHeader hideHeader eyebrow="" title={st("Dungeons")} banner={<View style={s.browseToolbar}><Pressable accessibilityRole="button" accessibilityLabel={a("Back")} onPress={onBack} style={({pressed})=>[s.toolbarBack,pressed&&s.pressed]}><Text style={s.toolbarBackText}>‹</Text></Pressable><Text style={s.toolbarTitle}>{st("Dungeons")}</Text><View style={s.flex}/>{onOpenChat?<Pressable accessibilityRole="button" accessibilityLabel={st("World Chat")} onPress={onOpenChat} style={({pressed})=>[s.toolbarChat,pressed&&s.pressed]}><Text style={s.toolbarChatText}>☏</Text></Pressable>:null}</View>}>
+ return <ExpeditionScreenShell compactHeader hideHeader eyebrow="" title={st("Dungeons")} banner={<View style={s.browseToolbar}><Pressable accessibilityRole="button" accessibilityLabel={a("Back")} onPress={onBack} style={({pressed})=>[s.toolbarBack,pressed&&s.pressed]}><Text style={s.toolbarBackText}>‹</Text></Pressable><Text numberOfLines={1} style={[s.toolbarTitle,s.flex]}>{st("Dungeons")}</Text><SectionGuide scope={guideScope} area="dungeon" section="home" placement="header" guide={DUNGEON_HOME_GUIDE} translate={value=>dungeonGuideText(language,value)} stepThrough/><Pressable accessibilityRole="button" accessibilityLabel={st("Open Expedition shop")} onPress={onShop} style={({pressed})=>[s.shopShortcut,pressed&&s.pressed]}><ExpeditionMarkIcon size={18}/><Text style={s.shopShortcutText}>{st("Shop")}</Text></Pressable>{onOpenChat?<Pressable accessibilityRole="button" accessibilityLabel={st("World Chat")} onPress={onOpenChat} style={({pressed})=>[s.toolbarChat,pressed&&s.pressed]}><Text style={s.toolbarChatText}>☏</Text></Pressable>:null}</View>}>
    {notice?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{notice}</Text></FantasyPanel>:null}
    {activeRun?<FantasyPanel variant="selected"><View style={s.modeHead}><Text style={[s.cardTitle,s.flex]}>{ct(language,'browse.resumeTitle')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></View></FantasyPanel>:null}
    {showCatalog?<>
      <View style={s.finderHeader}>
        <View style={s.flex}><Text style={s.finderTitle}>{st("Dungeon Finder")}</Text><Text style={s.finderSubtitle}>{a("Choose a dungeon and plan your route.")}</Text></View>
-       <Pressable accessibilityRole="button" accessibilityLabel={st("Open Expedition shop")} onPress={onShop} style={({pressed})=>[s.shopShortcut,pressed&&s.pressed]}><ExpeditionMarkIcon size={21}/><Text style={s.shopShortcutText}>{st("Shop")}</Text></Pressable>
      </View>
+     {sortedEvents.length>0?<View style={s.eventSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{ct(language,'event.section')}</Text><View style={s.dividerLine}/></View>
+     {sortedEvents.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}
+   </View>:null}
+     <Text style={s.partyHeading}>{dungeonGuideText(language,"Choose your party")}</Text>
      <View style={s.modeSegment}>
        <Pressable accessibilityRole="button" accessibilityState={{selected:mode==='qmode'}} onPress={()=>onMode('qmode')} style={({pressed})=>[s.modeOption,mode==='qmode'&&s.modeOptionSelected,pressed&&s.pressed]}><Text style={[s.modeOptionText,mode==='qmode'&&s.modeOptionTextSelected]}>{a("Solo")}</Text></Pressable>
        <Pressable accessibilityRole="button" accessibilityState={{selected:mode==='live',disabled:!liveAvailable}} disabled={!liveAvailable} onPress={()=>onMode('live')} style={({pressed})=>[s.modeOption,mode==='live'&&s.modeOptionSelected,!liveAvailable&&s.lockedQuest,pressed&&s.pressed]}><Text style={[s.modeOptionText,mode==='live'&&s.modeOptionTextSelected]}>{a("Live")}</Text></Pressable>
@@ -65,22 +70,20 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
    {loading&&!hasUsableSnapshot?<View style={s.skeletonList}>{[0,1,2].map(index=><View key={index} style={s.skeletonCard}><View style={s.skeletonThumb}/><View style={s.skeletonCopy}><View style={s.skeletonLine}/><View style={[s.skeletonLine,s.skeletonLineShort]}/><View style={[s.skeletonLine,s.skeletonLineMid]}/></View></View>)}</View>:null}
    {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{hasUsableSnapshot?a('Could not refresh. Showing previously loaded dungeons.')+' '+error:error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}
    {showCatalog&&available.length===0&&locked.length===0&&sortedEvents.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
-   {showCatalog&&sortedEvents.length>0?<View style={s.eventSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{ct(language,'event.section')}</Text><View style={s.dividerLine}/></View>
-     {sortedEvents.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}
-   </View>:null}
-   {showCatalog&&available.length>0?<View style={s.availableSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{a("Available dungeons")}</Text><View style={s.dividerLine}/></View>
-     {available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} mode={mode} expanded={expandedId===dungeon.id} selectedTier={quickTier} onTier={setQuickTier} onPress={()=>{setExpandedId(current=>current===dungeon.id?null:dungeon.id);setQuickTier(dungeon.difficulties[0]??1);}} onPrepare={tier=>onSelect(dungeon,tier)}/>)}
+   {showCatalog&&available.length>0?<View style={s.availableSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{dungeonGuideText(language,'Regional dungeons')}</Text><View style={s.dividerLine}/></View>
+     {available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} currentLevel={currentLevel} currentPower={currentPower} mode={mode} expanded={expandedId===dungeon.id} selectedTier={quickTier} onTier={setQuickTier} onPress={()=>{setExpandedId(current=>current===dungeon.id?null:dungeon.id);setQuickTier(dungeon.difficulties[0]??1);}} onPrepare={tier=>onSelect(dungeon,tier)}/>)}
    </View>:null}
    {showCatalog&&mode==='qmode'&&echoTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoTools}} onPress={()=>setShowEchoTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("My Echo & sharing")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showEchoTools?'−':'+'}</Text></Pressable>{showEchoTools?echoTools:null}</>:null}
-   {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?<View style={s.availableSection}>{locked.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} mode={mode} expanded={false} selectedTier={1} onTier={()=>{}} onPress={()=>onSelect(dungeon)} onPrepare={()=>onSelect(dungeon)}/>)}</View>:null}</>:null}
+   {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?<View style={s.availableSection}>{locked.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} currentLevel={currentLevel} currentPower={currentPower} mode={mode} expanded={false} selectedTier={1} onTier={()=>{}} onPress={()=>onSelect(dungeon)} onPrepare={()=>onSelect(dungeon)}/>)}</View>:null}</>:null}
  </ExpeditionScreenShell>;
 }
 
-function DungeonCard({language,dungeon,mode,onPress,onPrepare,onTier,selectedTier,expanded}:{language:Language;dungeon:CoopDungeonView;mode:CoopMode;onPress:()=>void;onPrepare:(tier:CoopTier)=>void;onTier:(tier:CoopTier)=>void;selectedTier:CoopTier;expanded:boolean}){
+function DungeonCard({language,dungeon,currentLevel,currentPower,mode,onPress,onPrepare,onTier,selectedTier,expanded}:{language:Language;dungeon:CoopDungeonView;currentLevel:number;currentPower:number;mode:CoopMode;onPress:()=>void;onPrepare:(tier:CoopTier)=>void;onTier:(tier:CoopTier)=>void;selectedTier:CoopTier;expanded:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
  const status=dungeon.available?ct(language,'browse.available'):ct(language,'browse.locked')+': '+dungeon.lockedReason;
  const inDev=dungeon.lockedReason==='In Development';
+ const selectedEligibility=coopTierEligibility(dungeon,selectedTier,currentLevel,currentPower);
  const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
  return <View style={[s.questCard,expanded&&s.expandedQuest,!dungeon.available&&s.lockedQuest]}>
    <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={dungeon.name+'. '+status+'. '+ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.cardPressArea,pressed&&s.pressed]}>
@@ -89,7 +92,7 @@ function DungeonCard({language,dungeon,mode,onPress,onPrepare,onTier,selectedTie
        <Text style={s.compactChevron}>{expanded?'⌄':'›'}</Text>
      </View>
    </Pressable>
-   {expanded&&dungeon.available?<View style={s.expandArea}><Text style={s.tierHeading}>{mode==='live'?a("Live difficulty is selected automatically"):ct(language,'details.difficulty')}</Text>{mode!=='live'?<View style={s.quickTierRow}>{dungeon.difficulties.map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={ct(language,'details.difficulty')+' '+value} accessibilityState={{selected:selectedTier===value}} onPress={()=>onTier(value)} style={[s.quickTierButton,selectedTier===value&&s.quickTierSelected]}><Text style={[s.quickTierText,selectedTier===value&&s.quickTierTextSelected]}>{'T'+value}</Text></Pressable>)}</View>:null}<PrimaryAction label={a("Prepare Loadout")} onPress={()=>onPrepare(mode==='live'?dungeon.difficulties[0]:dungeon.difficulties.includes(selectedTier)?selectedTier:dungeon.difficulties[0])}/></View>:null}
+   {expanded&&dungeon.available?<View style={s.expandArea}><Text style={s.tierHeading}>{mode==='live'?a("Live difficulty is selected automatically"):ct(language,'details.difficulty')}</Text>{mode!=='live'?<View style={s.quickTierRow}>{dungeon.difficulties.map(value=>{const eligibility=coopTierEligibility(dungeon,value,currentLevel,currentPower),locked=!eligibility.eligible;return <Pressable key={value} accessibilityRole="button" accessibilityLabel={`${ct(language,'details.difficulty')} ${value}, ${eligibility.requiredLevel} ${clt(language,'level')}, ${eligibility.requiredPower} CP`} accessibilityState={{selected:selectedTier===value,disabled:locked}} disabled={locked} onPress={()=>onTier(value)} style={[s.quickTierButton,selectedTier===value&&s.quickTierSelected,locked&&s.quickTierLocked]}><Text style={[s.quickTierText,selectedTier===value&&s.quickTierTextSelected]}>{'T'+value}</Text><Text style={s.tierRequirement} numberOfLines={1}>{eligibility.requiredPower>0?eligibility.requiredPower.toLocaleString()+' CP':clt(language,'level')+' '+eligibility.requiredLevel}</Text></Pressable>})}</View>:null}{mode!=='live'&&!selectedEligibility.eligible?<Text style={s.lock}>{ct(language,'browse.locked')}: {clt(language,'level')} {selectedEligibility.requiredLevel} · {selectedEligibility.requiredPower.toLocaleString()} CP</Text>:null}<PrimaryAction label={a("Prepare Loadout")} disabled={mode!=='live'&&!selectedEligibility.eligible} onPress={()=>onPrepare(mode==='live'?dungeon.difficulties[0]:selectedTier)}/></View>:null}
  </View>;
 }
 
@@ -246,8 +249,8 @@ function RoomTile({language,room}:{language:Language;room:CoopRoomType}){
  const {styles:s}=useCoopStyles(makeStyles);return <View style={s.room}><CoopImageSlot assetId={roomAsset[room]} size="node" accessibilityLabel={ct(language,roomKey[room])}/><Text numberOfLines={2} style={s.roomLabel}>{ct(language,roomKey[room])}</Text></View>}
 
 const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
-  browseToolbar:{flexDirection:'row',alignItems:'center',gap:12,minHeight:44},
-  toolbarChat:{minWidth:40,minHeight:38,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:coopColors.line,borderRadius:8,backgroundColor:coopColors.surfaceRaised},
+  browseToolbar:{flexDirection:'row',alignItems:'center',gap:6,minHeight:44},
+  toolbarChat:{minWidth:38,minHeight:40,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:coopColors.line,borderRadius:8,backgroundColor:coopColors.surfaceRaised},
   toolbarChatText:{fontSize:20,lineHeight:25,color:coopColors.cyan,fontWeight:'700'},
   toolbarBack:{width:34,minHeight:40,justifyContent:'center',alignItems:'center'},
   toolbarBackText:{fontSize:27,lineHeight:31,color:coopColors.cyan,fontWeight:'600'},
@@ -255,8 +258,9 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   finderHeader:{flexDirection:'row',alignItems:'center',gap:12,marginTop:2},
   finderTitle:{fontSize:23,lineHeight:28,fontWeight:'800',color:coopColors.text},
   finderSubtitle:{fontSize:12,lineHeight:17,color:coopColors.textMuted,marginTop:3},
-  shopShortcut:{minWidth:94,minHeight:42,paddingHorizontal:10,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,borderWidth:1,borderColor:coopColors.cyan,borderRadius:10,backgroundColor:coopColors.surfaceRaised},
+  shopShortcut:{minWidth:74,minHeight:42,paddingHorizontal:7,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,borderWidth:1,borderColor:coopColors.cyan,borderRadius:10,backgroundColor:coopColors.surfaceRaised},
   shopShortcutText:{fontSize:13,fontWeight:'800',color:coopColors.text},
+  partyHeading:{fontSize:12,lineHeight:17,fontWeight:'800',color:coopColors.textSecondary,marginTop:4},
   modeSegment:{flexDirection:'row',gap:4,padding:4,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},
   modeOption:{flex:1,minHeight:42,justifyContent:'center',alignItems:'center',borderRadius:9},
   modeOptionSelected:{backgroundColor:coopColors.selection,borderWidth:1,borderColor:coopColors.cyan},
@@ -278,13 +282,14 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   expandArea:{gap:9,padding:12,paddingTop:8,borderTopWidth:1,borderTopColor:coopColors.line},
   tierHeading:{fontSize:12,lineHeight:17,color:coopColors.textSecondary,fontWeight:'700'},
   quickTierRow:{flexDirection:'row',gap:7},
-  quickTierButton:{flex:1,minHeight:40,paddingHorizontal:4,justifyContent:'center',alignItems:'center',borderRadius:8,borderWidth:1,borderColor:coopColors.line,backgroundColor:coopColors.surface},
+  quickTierButton:{flex:1,minHeight:50,paddingHorizontal:4,justifyContent:'center',alignItems:'center',borderRadius:8,borderWidth:1,borderColor:coopColors.line,backgroundColor:coopColors.surface},
   quickTierSelected:{borderColor:coopColors.cyan,backgroundColor:coopColors.selection},
+  quickTierLocked:{opacity:.4},tierRequirement:{fontSize:9,lineHeight:13,color:coopColors.textMuted,fontWeight:'600'},
   quickTierText:{fontSize:11,fontWeight:'700',color:coopColors.textMuted},
   quickTierTextSelected:{color:coopColors.text},
-  eventCard:{minHeight:88,padding:10,borderRadius:12,borderWidth:2,borderLeftWidth:4},
-  eventThumb:{width:65,height:69,borderRadius:8},
-  eventFallback:{width:65,height:69,borderWidth:1,borderRadius:8,backgroundColor:coopColors.surface,alignItems:'center',justifyContent:'center'},
+  eventCard:{minHeight:98,padding:11,borderRadius:12,borderWidth:2,borderLeftWidth:4},
+  eventThumb:{width:78,height:78,borderRadius:8},
+  eventFallback:{width:78,height:78,borderWidth:1,borderRadius:8,backgroundColor:coopColors.surface,alignItems:'center',justifyContent:'center'},
   eventStatus:{fontSize:10,lineHeight:13,fontWeight:'800',letterSpacing:.7},
   catalogIntro:{...coopTypography.body,color:coopColors.textSecondary},catalogHeading:{flexDirection:'row',alignItems:'baseline',justifyContent:'space-between',gap:8},catalogCount:{...coopTypography.meta,color:coopColors.textMuted},questCard:{minHeight:88,padding:0,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},featuredQuest:{borderColor:coopColors.goldDim,backgroundColor:coopColors.surfaceRaised},cardNameRow:{flexDirection:'row',alignItems:'center',gap:6,minWidth:0},lockedQuest:{opacity:.65},questMeta:{...coopTypography.meta,color:coopColors.textSecondary},routeHint:{fontSize:12,lineHeight:17,color:coopColors.gold,fontWeight:'600'},
   skeletonList:{gap:coopSpacing.sm},

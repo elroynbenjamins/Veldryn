@@ -38,13 +38,13 @@ equal(unlockedGameGuide(state).some(row=>row.id==='live_events'),true,'released 
 state.character.level=1;
 state.otherCharacters=[{level:10,quests:[]}];
 equal(unlockedGameGuide(state).some(row=>row.id==='parties'),true,'Party Guide honors another character reaching Level 10');
-// The dungeon guide follows the separate Level 25 + Chapter I boss gate.
-state.character.level=24;state.defeatedBossIds=['FALLEN_KNIGHT'];
-equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide stays locked at 24');
-state.character.level=25;state.defeatedBossIds=[];
-equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide needs the Chapter I clear');
-state.defeatedBossIds=['FALLEN_KNIGHT'];
-equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide unlocks at 25 after boss');
+// Solo/NPC dungeons can be explained at Level 10; live entry still has separate server-owned requirements.
+state.character.level=9;state.defeatedBossIds=[];
+equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide waits until Level 10');
+state.character.level=10;
+equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide opens for Solo/NPC at Level 10');
+state.character.level=25;
+equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide remains available regardless of a live boss gate');
 
 // Reading online help is a device preference. It must not mutate the authoritative game state.
 void (async()=>{

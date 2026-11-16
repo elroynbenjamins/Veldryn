@@ -25,7 +25,8 @@ import {CompanionProgressMoment,isCompanionProgressMoment} from './CompanionProg
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {CompanionHero,CompanionDisclosure,companionRarityBorder} from './CompanionPresentation';
-import {CompanionCostBreakdown,CompanionBondMilestone} from './CompanionUpgradePresentation';
+import {CompanionCostBreakdown} from './CompanionUpgradePresentation';
+import {CompanionBondProgressPanel} from './CompanionBondProgressPanel';
 
 type DetailTab='Roster'|'Bond'|'Skills'|'Materials'|null;
 
@@ -33,12 +34,12 @@ const roleGlyph={damage:'⚔',tank:'◆',support:'✦'};
 const portraitIds=['IRONWOOD_WOLF','OATHBOUND_SQUIRE','FIELD_WISP','VENOM_WEAVER','FOREST_TROLL','ECHO_BAT','MIRE_HERON','THORNLING','CAVE_SKITTER','LANTERN_WRETCH'];
 
 
-export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,initialSelection,onSelectionChange,showPicker=true}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;initialSelection?:string;onSelectionChange?:(id:string)=>void;showPicker?:boolean;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
+export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,initialSelection,onSelectionChange,showPicker=true,initialTab=null}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;initialSelection?:string;onSelectionChange?:(id:string)=>void;showPicker?:boolean;initialTab?:'Bond'|null;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
  const amount=(value:number)=>value.toLocaleString(language);
 
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [selection,setLocalSelection]=useState(initialSelection??state.character?.equippedCombatCompanionId??'UNIT_001'),[tab,setTab]=useState<DetailTab>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[messageError,setMessageError]=useState(false);
+ const [selection,setLocalSelection]=useState(initialSelection??state.character?.equippedCombatCompanionId??'UNIT_001'),[tab,setTab]=useState<DetailTab>(initialTab),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[messageError,setMessageError]=useState(false);
  const [rosterOwnership,setRosterOwnership]=useState<'Owned'|'All'|'Locked'>('Owned'),[rosterRarity,setRosterRarity]=useState<'All'|'standard'|'rare'|'elite'|'prestige'>('All'),[rosterRole,setRosterRole]=useState<'All'|'tank'|'damage'|'support'>('All');
  const {height:windowHeight}=useWindowDimensions();
  const setSelection=(id:string)=>{setTab(null);setMessage('');setMessageError(false);setLocalSelection(id);onSelectionChange?.(id);};
@@ -76,9 +77,17 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  return <View style={s.root}>
   {showPicker?<View><Text style={s.heading}>{t('Training Grounds')}</Text><Text style={s.copy}>{t('Spend Gold and Essence to level up.')}</Text></View>:null}
   {model?<View style={s.hero}><View style={s.heroHead}>{companionArtSource(model.def.id)?<Image accessibilityLabel={model.def.name} source={companionArtSource(model.def.id)} resizeMode="contain" style={{width:76,height:76}}/>:null}<View style={s.flex}><Text style={s.eyebrow}>{t('COMPANION TRAINING')}</Text><Text style={s.heroName}>{model.def.name}</Text><Text style={s.copy}>{companionContent(language,rarity?.label??model.def.rarity)} · {label(model.def.role)}</Text></View></View>
-    {progress?<><View style={s.progressHeading}><Text style={s.progressText}>{t("XP {value0}{value1}",{value0:progress.xp.toLocaleString(),value1:xpTarget?' / '+xpTarget.toLocaleString():''})}</Text><Text style={s.progressText}>{t("Bond {value0}/10",{value0:progress.bondLevel})}</Text></View><View style={s.track}><View style={[s.fill,{width:(Math.max(2,xpPct)+'%') as any}]}/></View></>:<Text style={s.lockBadge}>{t("LOCKED")}</Text>}
+    {progress?<><View style={s.progressHeading}><Text style={s.progressText}>{t("Companion XP {value0}{value1}",{value0:progress.xp.toLocaleString(),value1:xpTarget?' / '+xpTarget.toLocaleString():''})}</Text><Text style={s.progressText}>{t("Lv. {value0}",{value0:progress.level})}</Text></View><View style={s.track}><View style={[s.fill,{width:(Math.max(2,xpPct)+'%') as any}]}/></View></>:<Text style={s.lockBadge}>{t("LOCKED")}</Text>}
   </View>:null}
-{showPicker?<GameButton compact tone="secondary" title={t('Change companion')} disabled={busy} onPress={()=>setTab('Roster')}/>:null}
+  {showPicker?<GameButton compact tone="secondary" title={t('Change companion')} disabled={busy} onPress={()=>setTab('Roster')}/>:null}
+  {model?.owned&&progress?<CompanionBondProgressPanel
+   progress={progress} companionId={selection} claims={state.account.companionBondRewardClaims??[]}
+   traitName={companionCombatBondName(language,model.def.id,model.def.bondTrait.name)}
+   traitDescription={companionContent(language,model.def.bondTrait.description)}
+   bondHallLevel={state.account.companionSanctuary?.bondHallLevel??0}
+   onOpen={()=>{setMessage('');setTab('Bond')}}
+  />:null}
+
   {!model?<Text style={s.copy}>{t("No companion selected.")}</Text>:!model.owned?<View style={s.section}><Text style={s.sectionTitle}>{t("Unlock Requirements")}</Text>{model.def.unlockRequirements.map((req,index)=>{const p=companionRequirementProgress(state,req);return <View key={index} style={s.requirement}><Text style={p.complete?s.done:s.copy}>{p.complete ? '✓' : '○'}{companionContent(language,req.description)}</Text><Text style={p.complete?s.done:s.copy}>{p.current}/{p.total}</Text></View>})}<Text style={s.help}>{t("Unavailable requirements remain locked.")}</Text></View>:progress&&<>
    <View style={s.section}>
     <View style={s.between}><Text style={s.subheading}>{t('NEXT LEVEL')}</Text><Text style={s.ready}>{!idle(selection)?companionContent(language,companionAvailability(state,selection).label):model.nextLevelCost&&!affordable(model.nextLevelCost)?t('Materials Required'):model.nextLevelCost?t('Ready to train'):t('Max level reached.')}</Text></View>
@@ -96,22 +105,15 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
 
   {model?.owned&&progress?<View style={s.section}>
     <Text style={s.subheading}>{t('Other ways to grow')}</Text>
-    <View style={s.growthGrid}>
-     <View style={s.growthPair}>
-      {([
-       ['Bond',t('Bond'),progress.bondLevel+'/10'],
-       ['Skills',t('Abilities & Techniques'),'›'],
-      ] as const).map(([key,title,value])=><Pressable key={key} accessibilityRole="button" accessibilityLabel={title+' · '+value} onPress={()=>{setMessage('');setTab(key)}} style={({pressed})=>[s.growthTile,s.growthHalfTile,pressed&&s.growthPressed]}>
-       <View style={s.growthTileHead}><UiIcon name={key==='Bond'?'companions':'skills'} size={21}/><Text style={s.growthValue}>{value}</Text></View>
-       <Text style={s.growthTitle}>{title}</Text>
-      </Pressable>)}
-     </View>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Materials & Ascension')+' · '+progress.ascensionTier} onPress={()=>{setMessage('');setTab('Materials')}} style={({pressed})=>[s.growthTile,s.growthTileWide,pressed&&s.growthPressed]}>
-      <UiIcon name="inventory" size={21}/>
-      <Text style={[s.growthTitle,s.growthWideTitle]}>{t('Materials & Ascension')}</Text>
-      <Text style={s.growthValue}>{progress.ascensionTier} ›</Text>
-     </Pressable>
-    </View>
+    <View style={s.growthPair}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Abilities & Techniques')} onPress={()=>{setMessage('');setTab('Skills')}} style={({pressed})=>[s.growthTile,s.growthHalfTile,pressed&&s.growthPressed]}>
+        <View style={s.growthTileHead}><UiIcon name="skills" size={21}/><Text style={s.growthValue}>›</Text></View>
+        <Text style={s.growthTitle}>{t('Abilities & Techniques')}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Materials & Ascension')} onPress={()=>{setMessage('');setTab('Materials')}} style={({pressed})=>[s.growthTile,s.growthHalfTile,pressed&&s.growthPressed]}>
+        <View style={s.growthTileHead}><UiIcon name="inventory" size={21}/><Text style={s.growthValue}>{progress.ascensionTier} ›</Text></View>
+        <Text style={s.growthTitle}>{t('Materials & Ascension')}</Text>
+      </Pressable>    </View>
   </View>:null}
   <GameModalSurface visible={tab!==null} onClose={()=>setTab(null)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.9}}>
    <GameModalHeader title={tab==='Roster'?t('Change companion'):tab==='Bond'?t('Bond'):tab==='Skills'?t('Abilities & Techniques'):t('Materials & Ascension')} onClose={()=>setTab(null)}/>
@@ -137,7 +139,13 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
       </ScrollView>
       <Text style={s.rosterCount}>{t("{value0}/{value1} companions owned",{value0:ownedCount,value1:COMBAT_COMPANIONS.length})}</Text>
     </>:null}
-    {model?.owned&&progress?<>   {tab==='Bond'?<View style={s.section}><Text style={s.sectionTitle}>{t("Bond")}</Text><Text style={s.copy}>{t("Bond 2, 4, 6 and 8 grant Essence. Bond 10 unlocks a unique combat trait.")}</Text><View style={s.bondRow}><Text style={s.bondBig}>{progress.bondLevel}</Text><View style={s.flex}><Text style={s.sectionTitle}>{t("Bond Level / 10")}</Text><Text style={s.copy}>{t("{value0} total Bond XP", {value0: progress.bondXp.toLocaleString()})}</Text></View></View><View style={s.trait}><Text style={s.sectionTitle}>{companionCombatBondName(language,model.def.id,model.def.bondTrait.name)}</Text><Text style={s.copy}>{companionContent(language,model.def.bondTrait.description)}</Text></View>{([2,4,6,8] as const).map(level=>{const reward=COMPANION_BOND_ESSENCE_REWARDS[level],claimed=state.account.companionBondRewardClaims?.includes(selection+':'+level);return <CompanionBondMilestone key={level} level={level} claimed={!!claimed} ready={progress.bondLevel>=level&&!claimed} reward={t("{value0} Essence{value1}",{value0:reward,value1:''})}><GameButton title={claimed ? t("Bond {value0} Reward Claimed", {value0: level}) : t("Claim Bond {value0} · {value1} Essence{value2}", {value0: level, value1: reward, value2: ''})} disabled={busy||progress.bondLevel<level||!!claimed} onPress={()=>act('companion_bond_reward',{id:selection,level})}/></CompanionBondMilestone>})}</View>:null}
+    {model?.owned&&progress?<>   {tab==='Bond'?<CompanionBondProgressPanel
+  mode="full" progress={progress} companionId={selection} claims={state.account.companionBondRewardClaims??[]}
+  traitName={companionCombatBondName(language,model.def.id,model.def.bondTrait.name)}
+  traitDescription={companionContent(language,model.def.bondTrait.description)}
+  bondHallLevel={state.account.companionSanctuary?.bondHallLevel??0}
+  busy={busy} onClaim={level=>void act('companion_bond_reward',{id:selection,level})}
+ />:null}
    {tab==='Skills'?<View style={s.section}><Text style={s.sectionTitle}>{t("Abilities & Techniques")}</Text><View style={s.ability}><Text style={s.abilityType}>{t("ACTIVE · {value0}s", {value0: model.def.activeAbility.cooldownSeconds})}</Text><Text style={s.sectionTitle}>{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text><Text style={s.copy}>{companionContent(language,model.def.activeAbility.description)}</Text></View><View style={s.ability}><Text style={s.abilityType}>{t("PASSIVE")}</Text><Text style={s.sectionTitle}>{t("Passive Effect")}</Text><Text style={s.copy}>{companionContent(language,model.def.passiveAbility.description)}</Text></View><Text style={s.subheading}>{t("TECHNIQUE CHOICE")}</Text>{companionTechniques(selection).map(technique=>{const selected=progress.selectedTechniqueId===technique.id,unlocked=techniqueUnlocked(view.owned[selection],technique.id),switchCost=!!progress.selectedTechniqueId&&!selected;return <View key={technique.id} style={[s.technique,selected&&s.techniqueActive]}><View style={s.flex}><Text style={s.sectionTitle}>{companionTechniqueName(language,technique.id,technique.name)}</Text><Text style={s.copy}>{companionContent(language,technique.description)}</Text></View><GameButton title={selected ? t("Selected") : switchCost ? t("Switch · {value0}g + {value1} Essence", {value0: amount(COMPANION_TECHNIQUE_SWITCH_COST.gold), value1: amount(COMPANION_TECHNIQUE_SWITCH_COST.companionEssence)}) : t("Choose")} tone={selected?'primary':'secondary'} disabled={busy||!idle(selection)||!unlocked||selected||(switchCost&&(economy.gold<COMPANION_TECHNIQUE_SWITCH_COST.gold||economy.companionEssence<COMPANION_TECHNIQUE_SWITCH_COST.companionEssence))} onPress={()=>act('companion_technique',{id:selection,technique:technique.id})}/></View>})}<Text style={s.help}>{t("Techniques unlock at Ascension II or Bond 7.")}</Text></View>:null}
    {tab==='Materials'?<View style={s.section}>
     <Text style={s.sectionTitle}>{t("Materials & Ascension")}</Text>

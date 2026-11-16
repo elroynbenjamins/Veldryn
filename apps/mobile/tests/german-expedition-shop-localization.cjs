@@ -79,7 +79,8 @@ for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp
  assert.ok(!result.includes(target),'Raw server bonus keys must not appear in German UI: '+target);
  const english=dungeonShopOfferSummary('en',source);
  assert.match(english,/\+2\.00% /,'English bonus keeps decimal precision');
- assert.match(english,/\+0\.50% \(owned\)/,'English bonus explains permanent ownership');
+ assert.match(english,/\+2\.00% [^\n]+ \(when equipped\)/,'English bonus explains when the equipped benefit applies');
+ assert.match(english,/\+0\.50% \(while owned\)/,'English bonus explains the ownership benefit');
  assert.ok(!english.includes(target),'English UI must use the readable stat label: '+target);
 }
 assert.equal(dungeonShopOfferSummary('de','Unknown effect {whatever}'),'Unknown effect {whatever}');

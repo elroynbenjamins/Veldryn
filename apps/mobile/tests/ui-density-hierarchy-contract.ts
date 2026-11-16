@@ -85,7 +85,7 @@ const masteryCore=read('src/core/profession-mastery-v40.ts');
 ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');
 
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
-ok(gatheringSkills.includes('Tap a resource to begin gathering.'),'Normal gathering skills must state their direct-tap interaction');
+ok(gatheringSkills.includes('Ready resources appear first. Travel to other unlocked regions for more.')&&gatheringSkills.includes('if(readyHere){onGather(activity.id);return;}'),'Gathering should describe location readiness and immediately start a tapped available resource');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
 ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');

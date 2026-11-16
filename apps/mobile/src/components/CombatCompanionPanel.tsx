@@ -242,7 +242,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
         <View style={s.flex}><Text style={s.name}>{t('Companion Quarters')}</Text><Text style={s.body}>{t('Choose a companion to view its housing tier and level cap.')}</Text></View>
         {model?.owned?<Text style={s.quartersTier}>{t('Tier {value0}/3',{value0:selectedHousingTier})}</Text>:null}
        </View>
-       {ownedIds.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quartersChoices}>
+       {ownedIds.length?<ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.quartersChoices}>
         {ownedIds.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),art=companionArtSource(id),tier=companionHousingTier(id,(state.account as any).companionHousingTiers);if(!def)return null;return <Pressable key={id} accessibilityRole="button" accessibilityState={{selected:selection===id}} accessibilityLabel={def.name+' · '+t('Housing Tier {value0}',{value0:tier})} onPress={()=>setSelection(id)} style={({pressed})=>[s.quartersChoice,selection===id&&s.quartersChoiceSelected,pressed&&s.pressed]}>
          {art?<Image source={art} resizeMode="contain" style={s.quartersArt}/>:<UiIcon name="companions" size={30}/>}
          <Text numberOfLines={1} style={s.quartersName}>{def.name}</Text>

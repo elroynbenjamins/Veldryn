@@ -3,7 +3,7 @@ import {guideHubText} from '../i18n/game-guide-hub';
 import type {Language} from '../i18n/languages';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useEffect,useMemo,useRef} from 'react';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
 import {GAME_GUIDE_CATEGORIES,GAME_GUIDE_STEPS,type GameGuideDestination,type GameGuideDefinition} from '../core/onboarding';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -26,7 +26,7 @@ export function GuideTopicModal({language:languageOverride,definition,visible,on
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
  const t=(label:Parameters<typeof guideHubText>[1])=>guideHubText(language,label);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const scrollRef=useRef<ScrollView>(null);
+ const scrollRef=useRef<ScrollViewInstance>(null);
  useEffect(()=>{if(visible)scrollRef.current?.scrollTo({y:0,animated:false});},[definition?.id,visible]);
  if(!definition)return null;
  const steps=GAME_GUIDE_STEPS[definition.id];

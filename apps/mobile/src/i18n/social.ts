@@ -8,6 +8,10 @@ import {socialEarlyText} from './social-early-coverage';
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
   "Back to Dungeons": ["Zurück zu den Dungeons","Volver a las mazmorras","Terug naar kerkers","Torna ai dungeon","Retour aux donjons"],
+  "+{marks} Expedition Marks earned": ["+{marks} Expeditionsmarken verdient","+{marks} marcas de expedición ganadas","+{marks} expeditiemarken verdiend","+{marks} marchi spedizione ottenuti","+{marks} marques d’expédition gagnées"],
+  "Reward amount is being prepared.": ["Belohnungsmenge wird vorbereitet.","Se está preparando la cantidad de recompensa.","Het beloningsaantal wordt voorbereid.","La quantità della ricompensa è in preparazione.","Le montant de la récompense est en préparation."],
+  "Estimated · final Marks confirmed when claimed.": ["Geschätzt · endgültige Marken beim Abholen bestätigt.","Estimado · las marcas definitivas se confirman al reclamar.","Geschat · definitieve marken worden bevestigd bij het claimen.","Stima · i marchi definitivi sono confermati al riscatto.","Estimation · marques définitives confirmées lors de la récupération."],
+  "Refresh battle status": ["Kampfstatus aktualisieren","Actualizar el estado del combate","Gevechtsstatus vernieuwen","Aggiorna stato battaglia","Actualiser l’état du combat"],
   // Dungeon companion preparation, server-projected situational matchups.
   "Available companions: {count}": ["Verfügbare Gefährten: {count}","Compañeros disponibles: {count}","Beschikbare metgezellen: {count}","Compagni disponibili: {count}","Compagnons disponibles : {count}"],
   "Damage assist": ["Schadenshilfe","Ayuda de daño","Hulp bij schade","Assistenza ai danni","Assistance offensive"],

@@ -16,8 +16,8 @@ BEGIN
  IF v_template.template_id IS NULL THEN RAISE EXCEPTION 'test_requires_project_template'; END IF;
  INSERT INTO public.guilds(name,owner_account_id,level,member_cap)
  VALUES('FellowshipTest',v_user,10,12) RETURNING id INTO v_guild;
- INSERT INTO public.guild_members(guild_id,account_id,role)
- VALUES(v_guild,v_user,'leader') ON CONFLICT DO NOTHING;
+ INSERT INTO public.guild_members(guild_id,account_id,role,joined_at)
+ VALUES(v_guild,v_user,'leader',v_week) ON CONFLICT DO NOTHING;
 
  FOR v_rank IN 0..3 LOOP
   INSERT INTO public.guild_skill_allocations(guild_id,skill_id,rank)

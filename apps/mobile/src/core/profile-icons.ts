@@ -24,15 +24,8 @@ export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [
  {id:'starter:dune-warden',name:'Dune Warden',group:'Starter',source:'Available from the start.'},
  {id:'creature:FALLEN_KNIGHT',name:'Fallen Knight',group:'Combat',source:'Defeat the Fallen Knight.',bossId:'FALLEN_KNIGHT'},
  {id:'guild:stormwatch-crest',name:'Stormwatch Crest',group:'Guild',source:'Guild Token Shop · Guild Level 4'},
- ...DUNGEON_SHOP_PROFILE_ICONS_V1.map(row=>({id:row.id,name:DUNGEON_PROFILE_AVATAR_NAMES[row.id]??row.name,group:'Dungeon',source:'Dungeon Marks Shop · '+row.region})),
+ ...DUNGEON_SHOP_PROFILE_ICONS_V1.map(row=>({id:row.id,name:row.name,group:'Dungeon',source:'Dungeon Marks Shop · '+row.region})),
 ];
-/** Mobile-only presentation names for regional Dungeon Shop character portraits.
- * Preserve server-authored legacy reward IDs and generated Edge bundle parity. */
-const DUNGEON_PROFILE_AVATAR_NAMES:Readonly<Record<string,string>>={
- 'dungeon:asterfall:wardens-lantern':'Thornwarden',
- 'dungeon:sunscar:solar-vault-key':'Dune Sovereign',
- 'dungeon:frostmarch:resonant-bell':'Rimebound',
-};
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}
 export function profileIconCollection(state:GameState):ProfileIconEntry[]{
  const selected=state.character?.profileIconId??`class:${state.character?.classId??'IRONWARDEN'}`;

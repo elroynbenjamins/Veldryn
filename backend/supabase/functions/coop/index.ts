@@ -45230,6 +45230,11 @@ var DUNGEON_SHOP_COLLECTIBLES_V1 = [
   reward("dungeon:frostmarch:shiverlake-reflections", "background", "Shiverlake Reflections", "defense", "Frostmarch", 200),
   reward("DUNGEON_PET_FROSTMARCH_001", "pet", "Choirbell Sprite", "actionSpeed", "Frostmarch", 300)
 ];
+var DUNGEON_SHOP_PROFILE_ICONS_V1 = [
+  { id: "dungeon:asterfall:wardens-lantern", name: "Warden's Lantern", rarity: "Rare", group: "Dungeon", region: "Asterfall" },
+  { id: "dungeon:sunscar:solar-vault-key", name: "Solar Vault Key", rarity: "Rare", group: "Dungeon", region: "Sunscar" },
+  { id: "dungeon:frostmarch:resonant-bell", name: "Resonant Bell", rarity: "Rare", group: "Dungeon", region: "Frostmarch" }
+];
 
 // ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
@@ -46335,6 +46340,22 @@ function activeEquipmentBuildStats(state) {
 // ../apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
+
+// ../apps/mobile/src/core/profile-icons.ts
+var PROFILE_ICON_CATALOG = [
+  { id: "starter:hooded-ranger", name: "Hooded Ranger", group: "Starter", source: "Available from the start." },
+  { id: "starter:armored-sentinel", name: "Armored Sentinel", group: "Starter", source: "Available from the start." },
+  { id: "starter:masked-spellcaster", name: "Masked Spellcaster", group: "Starter", source: "Available from the start." },
+  { id: "starter:traveling-alchemist", name: "Traveling Alchemist", group: "Starter", source: "Available from the start." },
+  { id: "starter:dawn-priestess", name: "Dawn Priestess", group: "Starter", source: "Available from the start." },
+  { id: "starter:stonebound-explorer", name: "Stonebound Explorer", group: "Starter", source: "Available from the start." },
+  { id: "starter:gilded-duelist", name: "Gilded Duelist", group: "Starter", source: "Available from the start." },
+  { id: "starter:runic-scholar", name: "Runic Scholar", group: "Starter", source: "Available from the start." },
+  { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
+  { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
+  { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
+];
 
 // ../apps/mobile/src/core/collection-sets-v45.ts
 var COLLECTION_SETS_V45 = [

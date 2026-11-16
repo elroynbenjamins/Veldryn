@@ -34,7 +34,7 @@ export function GuideTopicModal({language:languageOverride,definition,visible,on
  const target=definition.destination==='More'?'Account':definition.destination==='Coop'?'Co-op Dungeons':definition.destination;
  return <GameModalSurface visible={visible} onClose={onClose} backdropLabel={a('Close Game Guide')}>
   <GameModalHeader eyebrow={t(category)} title={a(definition.title)} onClose={onClose}/>
-  <ScrollView ref={scrollRef} style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+  <ScrollView ref={scrollRef} style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
    {position?<Text style={s.pageCount}>{position.index} / {position.total} {t('Guides').toLocaleLowerCase()}</Text>:null}
    <View style={s.summaryCard}>
     <Text style={s.summary}>{a(definition.summary)}</Text>

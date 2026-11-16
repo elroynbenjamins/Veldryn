@@ -1,4 +1,5 @@
 name: Integration Edge parity sync (temporary)
+# Re-run after the latest locked-combat-gate repair; guard against stale branch pushes.
 on:
   push:
     branches:

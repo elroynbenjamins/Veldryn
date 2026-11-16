@@ -15,6 +15,7 @@ on:
       - 'apps/mobile/src/screens/SettingsScreen.tsx'
       - 'apps/mobile/tests/chat-translation-contract.cjs'
       - 'backend/supabase/functions/translate-chat-message/**'
+      - 'backend/tests/chat-translation-edge.test.mjs'
       - '.github/workflows/manual-chat-translation-validation.yml'
   workflow_dispatch:
 
@@ -23,5 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify manual translation and RLS proxy contract
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify manual translation UI contract
         run: node --test apps/mobile/tests/chat-translation-contract.cjs
+      - name: Test real Edge handler against mocked RLS and DeepL transport
+        run: node --experimental-strip-types --test backend/tests/chat-translation-edge.test.mjs

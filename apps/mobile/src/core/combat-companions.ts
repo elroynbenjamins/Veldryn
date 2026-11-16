@@ -121,13 +121,12 @@ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompa
   const max=companionMaxLevel(def),level=int(value?.level??fallback.level,1,max);
   const inferred=requiredAscensionTierForLevel(def,level),ascensionTier=Math.max(inferred,int(value?.ascensionTier??fallback.ascensionTier,0,3)) as 0|1|2|3;
   let bondLevel=int(value?.bondLevel??fallback.bondLevel,1,COMPANION_BOND_CONFIG.maxLevel);
-  const rawBondXp=int(value?.bondXp??fallback.bondXp),minimumBondXp=COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,bondLevel-1)]??0;
-  // v13 and earlier local saves stored Bond XP as progress within the current
-  // level, while the authoritative server uses cumulative Bond XP. Detect the
-  // residual form and promote it without losing earned progress.
-  let normalizedBondXp=bondLevel>=10?(COMPANION_BOND_CONFIG.xpThresholds[9]??0):(rawBondXp<minimumBondXp?minimumBondXp+rawBondXp:rawBondXp);
-  while(bondLevel<10&&normalizedBondXp>=(COMPANION_BOND_CONFIG.xpThresholds[bondLevel]??Number.MAX_SAFE_INTEGER))bondLevel++;
-  if(bondLevel>=10)normalizedBondXp=COMPANION_BOND_CONFIG.xpThresholds[9]??normalizedBondXp;
+  const rawBondXp=int(value?.bondXp??fallback.bondXp);
+  // Keep existing Bond ranks and their within-level progress when the curve changes.
+  // The version marker prevents re-applying the tripling on subsequent loads.
+  let normalizedBondXp=value?.bondCurveVersion===2?Math.max(bondThreshold(bondLevel),rawBondXp):rebaseLegacyBondXp(bondLevel,rawBondXp);
+  while(bondLevel<10&&normalizedBondXp>=bondThreshold(bondLevel+1))bondLevel++;
+  if(bondLevel>=10)normalizedBondXp=bondThreshold(10);
   const cap=COMPANION_STAGE_CAPS[def.rarity][ascensionTier];
   const safeLevel=Math.min(level,cap,max),nextXp=companionXpToNextLevel(def.rarity,safeLevel);
   return {
@@ -136,6 +135,7 @@ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompa
     ascensionTier,
     bondLevel,
     bondXp:normalizedBondXp,
+    bondCurveVersion:2,
     bondTraitUnlocked:bondLevel>=10,
     mastered:def.rarity==='prestige'&&safeLevel===35&&value?.mastered===true,
     obtainedAtMs:Number.isFinite(value?.obtainedAtMs)?value.obtainedAtMs:fallback.obtainedAtMs,
@@ -387,12 +387,23 @@ export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDe
   while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;cap=companionCurrentLevelCap(def,p);}
   if(p.level>=cap||p.level>=max)p.xp=0;return p;
 }
+const LEGACY_BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
 function bondThreshold(level:number){return COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,Math.min(9,level-1))]??Number.MAX_SAFE_INTEGER;}
+/** One-time migration: preserve the earned rank and fractional progress in that rank. */
+function rebaseLegacyBondXp(level:number,rawXp:number){
+ const index=Math.max(0,Math.min(9,level-1)),oldFloor=LEGACY_BOND_THRESHOLDS[index];
+ if(level>=10)return bondThreshold(10);
+ const oldNext=LEGACY_BOND_THRESHOLDS[index+1],newFloor=bondThreshold(level),newNext=bondThreshold(level+1);
+ // Older local saves used within-level XP; newer saves used cumulative XP.
+ const earned=rawXp<oldFloor?rawXp:rawXp-oldFloor;
+ const ratio=Math.max(0,Math.min(1,earned/Math.max(1,oldNext-oldFloor)));
+ return Math.min(newNext-1,newFloor+Math.round((newNext-newFloor)*ratio));
+}
 export function applyCompanionBondXp(progress:OwnedCompanionProgress,amount:number):OwnedCompanionProgress{
-  let level=progress.bondLevel,xp=Math.max(bondThreshold(level),progress.bondXp)+Math.max(0,Math.floor(amount));
+  let level=progress.bondLevel,xp=Math.max(bondThreshold(level),progress.bondCurveVersion===2?progress.bondXp:rebaseLegacyBondXp(level,progress.bondXp))+Math.max(0,Math.floor(amount));
   while(level<10&&xp>=bondThreshold(level+1))level++;
   if(level>=10)xp=bondThreshold(10);
-  return {...progress,bondLevel:level,bondXp:xp,bondTraitUnlocked:level>=10||progress.bondTraitUnlocked};
+  return {...progress,bondLevel:level,bondXp:xp,bondCurveVersion:2,bondTraitUnlocked:level>=10||progress.bondTraitUnlocked};
 }
 export function companionBondXpMultiplier(state:CombatCompanionStateHost){const level=int(state.account.companionSanctuary?.bondHallLevel,0,3);return 1+COMPANION_SANCTUARY_BOND_BONUS[level];}
 function bondSourceXp(source:CompanionBondSource){const value=(COMPANION_BOND_CONFIG.sourceXp as Record<string,number>)[source];if(!Number.isFinite(value))throw new Error('Invalid Companion Bond source.');return value;}

@@ -97,6 +97,8 @@ export interface OwnedCompanionProgress{
   ascensionTier:0|1|2|3;
   bondLevel:number;
   bondXp:number;
+  /** Marks the tripled Bond curve so legacy cumulative XP is rebased only once. */
+  bondCurveVersion?:2;
   bondTraitUnlocked:boolean;
   mastered?:boolean;
   obtainedAtMs?:number;

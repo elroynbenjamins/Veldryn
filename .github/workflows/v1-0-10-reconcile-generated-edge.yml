@@ -44,20 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
-          if git diff --cached --quiet; then
-            echo 'Generated Edge bundles already match shared code.'
-            exit 0
-          fi
-          git commit -m 'build(edge): synchronize 1.0.10 release candidate gameplay and co-op bundles'
-          git push origin HEAD:release/1.0.10-aab-prep-20261115
-          echo 'Release branch Edge bundles updated; re-run all release CI on the resulting SHA.'
- || true)
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
           if [ -n "$unexpected" ]; then
             echo 'Refusing to commit generated artifacts alongside unrelated source changes:'
             printf '%s\n' "$unexpected"

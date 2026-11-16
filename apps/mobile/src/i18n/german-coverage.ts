@@ -90,6 +90,7 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   "That upgrade is already being processed. Refresh to confirm.": "Diese Verbesserung wird bereits verarbeitet. Aktualisiere die Ansicht, um sie zu prüfen.",
   "Already applied. Synced your ranks.": "Bereits angewendet. Deine Ränge wurden synchronisiert.",
   "Could not complete the upgrade. Try again.": "Verbesserung fehlgeschlagen. Versuche es erneut.",
+  "Could not confirm this Guild upgrade. Refresh Guild Skills before retrying.": "Die Gildenverbesserung konnte nicht bestätigt werden. Aktualisiere die Gildenfertigkeiten, bevor du es erneut versuchst.",
   "Ready": "Bereit",
   "MAX": "MAX.",
   "members": "Mitglieder",

@@ -44184,6 +44184,77 @@ function recordMonsterMastery(state, id, kills) {
   return { ...next, account: { ...next.account, companionUnlockProgress: counters } };
 }
 
+// ../apps/mobile/src/core/companion-housing.ts
+var COMPANION_HOUSING_MILESTONES = [
+  { levelCap: 10, housingTier: 0, label: "Basic Quarters" },
+  { levelCap: 20, housingTier: 1, label: "Reinforced Quarters" },
+  { levelCap: 25, housingTier: 2, label: "Veteran Quarters" },
+  { levelCap: 35, housingTier: 3, label: "Master Quarters" }
+];
+var COMPANION_HOUSING_UPGRADES = [
+  { tier: 1, gold: 8e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 40 }, { itemId: "ASTER_IRON_INGOT", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] },
+  { tier: 2, gold: 35e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 80 }, { itemId: "OATHSTONE_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 6 }] },
+  { tier: 3, gold: 1e5, inputs: [{ itemId: "WHITEPINE_LOG", quantity: 110 }, { itemId: "FROSTIRON_INGOT", quantity: 45 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] }
+];
+function normalizeCompanionHousingTiers(raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
+  return Object.fromEntries(Object.entries(raw2).filter(([id, tier]) => id.length <= 80 && typeof tier === "number" && Number.isInteger(tier) && tier >= 0).slice(0, 150).map(([id, tier]) => [id, Math.min(3, tier)]));
+}
+function companionHousingEarnedTier(level) {
+  if (!Number.isFinite(level)) return 0;
+  return level > 25 ? 3 : level > 20 ? 2 : level > 10 ? 1 : 0;
+}
+function companionHousingTier(companionId, tiers) {
+  return Math.max(0, Math.min(3, Math.floor(tiers?.[companionId] ?? 0)));
+}
+function companionHousingLevelCap(housingTier) {
+  const tier = Math.max(0, Math.min(3, Math.floor(housingTier)));
+  return COMPANION_HOUSING_MILESTONES[tier].levelCap;
+}
+function qty(stacks, id) {
+  return stacks.reduce((total, stack) => total + (stack.itemId === id ? Math.max(0, stack.quantity) : 0), 0);
+}
+function companionHousingUpgradeCost(companionId, tiers) {
+  const def = combatCompanionDef(companionId);
+  if (!def) return void 0;
+  if (companionHousingLevelCap(companionHousingTier(companionId, tiers)) >= COMPANION_RARITY_CONFIG[def.rarity].maxLevel) return void 0;
+  const next = companionHousingTier(companionId, tiers) + 1;
+  return COMPANION_HOUSING_UPGRADES.find((row) => row.tier === next);
+}
+function companionHousingUpgradeAffordability(state, companionId) {
+  const cost = companionHousingUpgradeCost(companionId, state.account.companionHousingTiers);
+  if (!cost) return { ready: false, cost: void 0, materials: [] };
+  const all = [...state.inventory.stacks, ...state.bank.stacks], materials = cost.inputs.map((input) => ({ ...input, owned: qty(all, input.itemId) }));
+  return { ready: (state.character?.gold ?? 0) >= cost.gold && materials.every((x) => x.owned >= x.quantity), cost, materials };
+}
+function upgradeCompanionHousing(state, companionId) {
+  if (!state.character) throw new Error("character_required");
+  if (!state.account.unlockedCombatCompanionIds?.includes(companionId)) throw new Error("companion_not_owned");
+  const check = companionHousingUpgradeAffordability(state, companionId);
+  if (!check.cost) throw new Error("companion_housing_max");
+  if (!check.ready) throw new Error("companion_housing_resources");
+  const spend2 = (stacks, id, amount) => {
+    let left = amount;
+    return stacks.map((s) => {
+      if (s.itemId !== id || left <= 0) return s;
+      const used = Math.min(Math.max(0, s.quantity), left);
+      left -= used;
+      return { ...s, quantity: s.quantity - used };
+    }).filter((s) => s.quantity > 0);
+  };
+  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
+  for (const input of check.cost.inputs) {
+    let remaining = input.quantity, have = qty(inventory, input.itemId), take4 = Math.min(have, remaining);
+    if (take4) {
+      inventory = spend2(inventory, input.itemId, take4);
+      remaining -= take4;
+    }
+    if (remaining) bank = spend2(bank, input.itemId, remaining);
+  }
+  const tier = companionHousingTier(companionId, state.account.companionHousingTiers) + 1;
+  return { ...state, character: { ...state.character, gold: state.character.gold - check.cost.gold }, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, companionHousingTiers: { ...state.account.companionHousingTiers ?? {}, [companionId]: tier } } };
+}
+
 // ../apps/mobile/src/core/combat-companions.ts
 var CLASS_COMPANION_ROLE = {
   IRONWARDEN: "tank",
@@ -44341,7 +44412,11 @@ function sanitizeCombatCompanionState(state) {
     const valid = !!id && !!def && owned.includes(id);
     return { ...character, equippedCombatCompanionId: valid ? id : void 0 };
   };
-  return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress } };
+  const housing = normalizeCompanionHousingTiers(state.account.companionHousingTiers);
+  if (state.account.companionHousingMigratedV1 !== true) {
+    for (const [id, earned] of Object.entries(progress)) housing[id] = Math.max(housing[id] ?? 0, companionHousingEarnedTier(earned.level));
+  }
+  return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress, companionHousingTiers: housing, companionHousingMigratedV1: true } };
 }
 function isCombatCompanionMastered(def, progress) {
   const requiredAscension = def.rarity === "standard" || def.rarity === "rare" ? 2 : 3;
@@ -44484,9 +44559,10 @@ function purchaseCompanionLevel(state, id) {
   if (!clean2.character) throw new Error("Create a character first.");
   const def = combatCompanionDef(id);
   if (!def || !(clean2.account.unlockedCombatCompanionIds ?? []).includes(id)) throw new Error("Combat companion is locked.");
-  const p = progressFor(clean2, id), cap = companionCurrentLevelCap(def, p), max = companionMaxLevel(def);
+  const p = progressFor(clean2, id), ascensionCap = companionCurrentLevelCap(def, p), housingCap = companionHousingLevelCap(companionHousingTier(id, clean2.account.companionHousingTiers)), max = companionMaxLevel(def);
   if (p.level >= max) throw new Error("Maximum companion level reached.");
-  if (p.level >= cap) throw new Error("Ascension required before further leveling.");
+  if (p.level >= ascensionCap) throw new Error("Ascension required before further leveling.");
+  if (p.level >= housingCap) throw new Error("Upgrade Companion Quarters before further training.");
   const cost = companionRemainingLevelCost(def, p);
   if (clean2.character.gold < cost.gold) throw new Error("Not enough Gold.");
   if ((clean2.account.companionEssence ?? 0) < cost.companionEssence) throw new Error("Not enough Companion Essence.");
@@ -46903,7 +46979,7 @@ function awardCompanionXpServer(input) {
   const def = companionServerDefinition(input.progress.companionId);
   if (!def) throw new Error("unknown_companion");
   let p = { ...input.progress }, remaining = Math.max(0, Math.floor(input.amount));
-  const rarityMax = COMPANION_RARITY_MAX_LEVEL[def.rarity], currentCap = companionLevelCap(def.id, p.ascensionTier);
+  const rarityMax = COMPANION_RARITY_MAX_LEVEL[def.rarity], currentCap = Math.min(companionLevelCap(def.id, p.ascensionTier), Number.isFinite(input.maxLevelCap) ? Math.max(1, Math.floor(input.maxLevelCap)) : 35);
   while (remaining > 0 && p.level < Math.min(rarityMax, currentCap)) {
     const needed = companionXpToNextServer(def.id, p.level) - p.xp;
     if (remaining < needed) {
@@ -47321,13 +47397,14 @@ function setOwned(state, owned) {
   })) } };
 }
 function awardUse(state, ids2, xp, bond, now) {
+  if (state.account.companionHousingMigratedV1 !== true) state = sanitizeCombatCompanionState(state);
   const owned = companionOwned(state);
   let essence = state.account.companionEssence ?? 0, overflow = state.account.companionOverflow;
   const earnedBond = Math.round(bond * (1 + (state.account.companionSanctuary?.bondHallLevel ?? 0) * 0.05));
   const earnedXp = companionMasteryCompanionXp(xp, state.account.companionMasteryXp);
   for (const id of ids2) {
     if (!owned[id]) continue;
-    const r = awardCompanionXpServer({ progress: owned[id], amount: earnedXp, companionEssence: essence, overflow, serverNowMs: now });
+    const r = awardCompanionXpServer({ progress: owned[id], amount: earnedXp, companionEssence: essence, overflow, serverNowMs: now, maxLevelCap: companionHousingLevelCap(companionHousingTier(id, state.account.companionHousingTiers)) });
     essence = r.companionEssence;
     overflow = r.overflow;
     owned[id] = awardCompanionBondXpServer(r.progress, earnedBond);
@@ -50794,7 +50871,7 @@ function upgradeQuote(state, itemId, instanceId) {
   const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
   return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: upgradeGoldCost(itemId, targetRank, rarity), materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
 }
-function qty(stacks, id) {
+function qty2(stacks, id) {
   return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
 }
 function combinedQuantity(state, id) {
@@ -50812,7 +50889,7 @@ function consume(stacks, id, amount) {
 function consumeAcross(state, id, amount) {
   if (isGemPouchItemId(id)) return consumeGemFromStorage(state, id, amount);
   if (combinedQuantity(state, id) < amount) throw new Error(`Need ${amount} ${itemDef(id).name}`);
-  const inventory = consume(state.inventory.stacks, id, amount), used = qty(state.inventory.stacks, id) - qty(inventory, id);
+  const inventory = consume(state.inventory.stacks, id, amount), used = qty2(state.inventory.stacks, id) - qty2(inventory, id);
   return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: consume(state.bank.stacks, id, amount - used) } };
 }
 function setEnhancement(state, itemId, value) {
@@ -55432,9 +55509,9 @@ function isReleasedEquipmentItemId(itemId) {
 }
 
 // ../apps/mobile/src/core/loadout-storage.ts
-var qty2 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
+var qty3 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
 var take3 = (stacks, id) => {
-  if (qty2(stacks, id) < 1) throw new Error(`MISSING:${id}`);
+  if (qty3(stacks, id) < 1) throw new Error(`MISSING:${id}`);
   return stacks.map((entry2) => entry2.itemId === id ? { ...entry2, quantity: entry2.quantity - 1 } : { ...entry2 }).filter((entry2) => entry2.quantity > 0);
 };
 var put = (stacks, capacity, id) => {
@@ -55453,8 +55530,8 @@ function planLoadoutStorage(input) {
   for (const slot of slots2) {
     const wanted = input.desiredEquipment[slot], equipped = input.currentEquipment[slot];
     if (!wanted || wanted === equipped) continue;
-    if (qty2(inventory, wanted) > 0) inventory = take3(inventory, wanted);
-    else if (qty2(bank, wanted) > 0) bank = take3(bank, wanted);
+    if (qty3(inventory, wanted) > 0) inventory = take3(inventory, wanted);
+    else if (qty3(bank, wanted) > 0) bank = take3(bank, wanted);
     else throw new Error(`MISSING:${wanted}`);
   }
   for (const slot of slots2) {
@@ -57510,47 +57587,6 @@ function reconcileWorkingTowardGeneratedRules(state) {
   return { ...state, character: { ...state.character, idleRulesV40: nextRules, activeIdleRuleIdV40 } };
 }
 
-// ../apps/mobile/src/core/companion-housing.ts
-var COMPANION_HOUSING_UPGRADES = [
-  { tier: 1, gold: 12e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 80 }, { itemId: "ASTER_IRON_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 8 }] },
-  { tier: 2, gold: 45e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 120 }, { itemId: "OATHSTONE_INGOT", quantity: 45 }, { itemId: "REINFORCED_FITTING", quantity: 16 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }] },
-  { tier: 3, gold: 14e4, inputs: [{ itemId: "WHITEPINE_LOG", quantity: 150 }, { itemId: "FROSTIRON_INGOT", quantity: 60 }, { itemId: "RIMEGLASS", quantity: 18 }, { itemId: "CHOIR_BLOOM", quantity: 6 }] }
-];
-function companionHousingTier(companionId, tiers) {
-  return Math.max(0, Math.min(3, Math.floor(tiers?.[companionId] ?? 0)));
-}
-function qty3(stacks, id) {
-  return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
-}
-function companionHousingUpgradeCost(companionId, tiers) {
-  const next = companionHousingTier(companionId, tiers) + 1;
-  return COMPANION_HOUSING_UPGRADES.find((row) => row.tier === next);
-}
-function companionHousingUpgradeAffordability(state, companionId) {
-  const cost = companionHousingUpgradeCost(companionId, state.account.companionHousingTiers);
-  if (!cost) return { ready: false, cost: void 0, materials: [] };
-  const all = [...state.inventory.stacks, ...state.bank.stacks], materials = cost.inputs.map((input) => ({ ...input, owned: qty3(all, input.itemId) }));
-  return { ready: (state.character?.gold ?? 0) >= cost.gold && materials.every((x) => x.owned >= x.quantity), cost, materials };
-}
-function upgradeCompanionHousing(state, companionId) {
-  if (!state.character) throw new Error("character_required");
-  const check = companionHousingUpgradeAffordability(state, companionId);
-  if (!check.cost) throw new Error("companion_housing_max");
-  if (!check.ready) throw new Error("companion_housing_resources");
-  const spend2 = (stacks, id, amount) => stacks.map((s) => s.itemId === id ? { ...s, quantity: s.quantity - amount } : s).filter((s) => s.quantity > 0);
-  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
-  for (const input of check.cost.inputs) {
-    let remaining = input.quantity, have = qty3(inventory, input.itemId), take4 = Math.min(have, remaining);
-    if (take4) {
-      inventory = spend2(inventory, input.itemId, take4);
-      remaining -= take4;
-    }
-    if (remaining) bank = spend2(bank, input.itemId, remaining);
-  }
-  const tier = companionHousingTier(companionId, state.account.companionHousingTiers) + 1;
-  return { ...state, character: { ...state.character, gold: state.character.gold - check.cost.gold }, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, companionHousingTiers: { ...state.account.companionHousingTiers ?? {}, [companionId]: tier } } };
-}
-
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
 var fields = {
@@ -57923,7 +57959,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = unequipCombatCompanion(state);
       break;
     case "companion_housing_upgrade":
-      state = upgradeCompanionHousing(state, text(a, "id"));
+      state = upgradeCompanionHousing(sanitizeCombatCompanionState(state), text(a, "id"));
       message = "Companion quarters upgraded";
       break;
     case "companion_level":

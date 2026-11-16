@@ -46,7 +46,13 @@ const sourceAdditions=[
   "Final encounter cleared. Your reward entitlement is being prepared.",
   "This expedition has ended. Review any available rewards before returning."
 ];
-assert.ok(Object.keys(socialEarlyRows).length>=241,'RU/TR preserves 223 mainline labels and 18 release-only Dungeon and tonic labels');
+assert.ok(Object.keys(socialEarlyRows).length>=248,'RU/TR preserves existing 241+ labels plus seven Rankings pagination labels');
+for(const key of ['No further ranked entries','Return to the previous page to view ranked entries.','Previous','Next','Page','Entries {first}–{last}','Live rankings can change while players progress.']){
+ assert.ok(Object.hasOwn(socialTranslationRows,key),'Rankings missing DE/ES/NL/IT/FR: '+key);
+ assert.ok(Object.hasOwn(socialEarlyRows,key),'Rankings missing RU/TR: '+key);
+ for(const lang of SUPPORTED_LANGUAGES)assert.ok(socialText(lang,key).trim(),'empty ranking pagination translation '+lang+' '+key);
+}
+assert.equal(socialText('nl','Entries {first}–{last}',{first:'1',last:'50'}),'Posities 1–50','Ranking range interpolates both values');
 for(const label of ['This dungeon run cannot be restarted.','This dungeon or difficulty is no longer available.','Your dungeon loadout changed. Refresh your equipment before running again.','Could not create a fresh dungeon run.']){
  assert.ok(Object.hasOwn(socialEarlyRows,label)&&Object.hasOwn(socialTranslationRows,label),'all seven non-English locale rows cover Q-Mode restart error '+label);
 }

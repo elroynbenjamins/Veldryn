@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'backend/online/live-runtime.ts'
+      - 'backend/online/live-queue.ts'
+      - 'backend/online/tests/live-queue.ts'
       - 'backend/online/dungeon-shop.ts'
       - 'backend/online/coop.ts'
       - 'backend/online/tests/dungeon-shop.ts'
@@ -22,6 +24,8 @@ on:
     branches: [main]
     paths:
       - 'backend/online/live-runtime.ts'
+      - 'backend/online/live-queue.ts'
+      - 'backend/online/tests/live-queue.ts'
       - 'backend/online/tests/dungeon-variety.ts'
       - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'

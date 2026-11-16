@@ -102,9 +102,12 @@ export function auditProvenWorldBossImpactV29(input:{
   !Array.isArray(input.attempts)||!input.attempts.length||
   input.attempts.length>50000)
   throw Error('world_boss_v29_invalid_audit_scope');
+ // Retain declared element types after Array.isArray runtime validation.
+ const expectedClasses:readonly WorldBossV29ClassRole[]=input.expectedClasses;
+ const attempts:readonly WorldBossV29ProvenAttempt[]=input.attempts;
  const classes=new Map<string,Role>(),roleCounts:Record<Role,number>={
   tank:0,damage:0,support:0};
- for(const x of input.expectedClasses){
+ for(const x of expectedClasses){
   if(!x||!ID.test(x.classId)||classes.has(x.classId)||
    !ROLES.includes(x.role))throw Error('world_boss_v29_invalid_class_catalog');
   classes.set(x.classId,x.role);roleCounts[x.role]++;
@@ -119,7 +122,7 @@ export function auditProvenWorldBossImpactV29(input:{
  const characterOwners=new Map<string,{accountId:string;classId:string;role:Role}>();
  const byCell=new Map<string,Map<string,number[]>>();
  const survival=new Map<string,Map<string,boolean[]>>();
- for(const a of input.attempts){
+ for(const a of attempts){
   if(!a||a.eventId!==input.eventId||!UUID.test(a.accountId)||
    !REQUEST.test(a.requestId)||!Number.isSafeInteger(a.attempt)||
    a.attempt<1||a.attempt>3||!BOSSES.includes(a.boss)||
@@ -169,7 +172,7 @@ export function auditProvenWorldBossImpactV29(input:{
  const references:WorldBossV29ReferenceCell[]=[];
  const baseline=new Map<string,number>(),warnings:string[]=[];
  for(const boss of BOSSES)for(const bracket of [1,2,3,4,5] as const){
-  for(const x of input.expectedClasses){
+  for(const x of expectedClasses){
    const cell=cellKey(boss,bracket,x.classId);
    const members=byCell.get(cell)??new Map<string,number[]>();
    // Per-account median avoids overrepresenting high-activity accounts.
@@ -207,7 +210,7 @@ export function auditProvenWorldBossImpactV29(input:{
  const preview:WorldBossV29ImpactPreview[]=[];
  if(ready){
   const total=new Map<string,{attacks:number;impact:number}>();
-  for(const a of input.attempts){
+  for(const a of attempts){
    const ratios=a.participants.map(p=>{
     const base=baseline.get(cellKey(a.boss,a.bracket,p.classId))!;
     return Math.min(2,provisionalWorldBossRoleUtilityV29(p)/base);

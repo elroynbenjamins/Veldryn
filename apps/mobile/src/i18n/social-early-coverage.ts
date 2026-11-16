@@ -3,6 +3,10 @@ import type {SocialMessageKey} from './social';
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
+  "You are already friends with {name}.": ["Вы уже друзья с {name}.","{name} ile zaten arkadaşsın."],
+  "You already have a friend request from {name}. Check Requests.": ["У вас уже есть заявка в друзья от {name}. Проверьте запросы.","{name} sana zaten arkadaşlık isteği gönderdi. İstekleri kontrol et."],
+  "Your friend request is already pending.": ["Ваш запрос в друзья уже ожидает ответа.","Arkadaşlık isteğin zaten beklemede."],
+  "Already friends": ["Уже друзья","Zaten arkadaş"],
   "+{marks} Expedition Marks earned": ["Получено +{marks} знаков экспедиции","+{marks} Sefer Nişanı kazanıldı"],
   "Reward amount is being prepared.": ["Количество награды рассчитывается.","Ödül miktarı hazırlanıyor."],
   "Estimated · final Marks confirmed when claimed.": ["Оценка · окончательное число знаков подтверждается при получении.","Tahmini · kesin Nişan miktarı ödül alınırken onaylanır."],

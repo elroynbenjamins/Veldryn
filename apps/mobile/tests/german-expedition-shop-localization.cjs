@@ -18,12 +18,51 @@ const offers=[...backend.matchAll(/\{id:'(dshop_[^']+)',name:(?:"([^"]+)"|'([^']
  .map(match=>({id:match[1],name:match[2]??match[3]}));
 assert.equal(offers.length,17,'Expected all 17 canonical Expedition Shop offers');
 assert.equal(Object.keys(germanDungeonShopOfferNames).length,offers.length,'German offer names must cover every canonical offer ID');
+const regionalPortraitNames={dshop_asterfall_icon:'Thornwarden',dshop_sunscar_icon:'Dune Sovereign',dshop_frostmarch_icon:'Rimebound'};
 for(const {id,name} of offers){
- assert.equal(germanDungeonShopOfferNames[id]?.[0],name,'German source guard drifted for '+id);
+ assert.equal(germanDungeonShopOfferNames[id]?.[0],regionalPortraitNames[id]??name,'German source guard drifted for '+id);
  assert.notEqual(dungeonShopOfferName('de',id,name),name,'German offer name missing: '+id);
- assert.equal(dungeonShopOfferName('en',id,name),name,'English offer name changed: '+id);
- assert.equal(dungeonShopOfferName('de',id,'Renamed server item'), 'Renamed server item','Changed server source should remain unchanged: '+id);
+ assert.equal(dungeonShopOfferName('en',id,name),regionalPortraitNames[id]??name,'English portrait name drifted for '+id);
+ assert.equal(dungeonShopOfferName('de',id,'Renamed server item'),'Renamed server item','Unknown server source must remain unchanged: '+id);
 }
+const approvedPortraitMasters=[
+ ['dshop_asterfall_icon','dungeon:asterfall:wardens-lantern','dungeon-asterfall-wardens-lantern.webp','3b1e9bbc946c37d2da0454146763c04a221d0a2305ed44ea844b1818ff4a4a73'],
+ ['dshop_sunscar_icon','dungeon:sunscar:solar-vault-key','dungeon-sunscar-solar-vault-key.webp','0963cc3bf00fc59a2521d8f1fb65f4f6aab2be898d87d240459f173ff182ec19'],
+ ['dshop_frostmarch_icon','dungeon:frostmarch:resonant-bell','dungeon-frostmarch-resonant-bell.webp','e3d37e8cc2ccaf657a41fb969283fece28e346bc889aaec4c79bf29b774ce690'],
+];
+const crypto=require('node:crypto');
+const profileEditor=fs.readFileSync(path.join(app,'src/components/ProfileEditor.tsx'),'utf8');
+const preview=fs.readFileSync(path.join(app,'src/components/coop/DungeonMarksShopView.tsx'),'utf8');
+const iconRegistry=fs.readFileSync(path.join(app,'src/theme/profile-icon-assets.ts'),'utf8');
+const cosmeticRegistry=fs.readFileSync(path.join(app,'src/theme/dungeon-shop-cosmetic-art.ts'),'utf8');
+const petRegistry=fs.readFileSync(path.join(app,'src/theme/dungeon-shop-pet-art.ts'),'utf8');
+assert(profileEditor.includes('dungeonShopOfferName(language,DUNGEON_PORTRAIT_SKUS[row.id]'),'profile gallery must label regional portraits');
+assert(preview.includes('dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id)'),'shop card must show actual cosmetics and pet artwork');
+for(const [sku,rewardId,filename,hash] of approvedPortraitMasters){
+ assert(profileEditor.includes("'"+rewardId+"':'"+sku+"'"),'portrait SKU must retain stable account reward '+sku);
+ assert(cosmeticRegistry.includes(sku+':'),'shop cosmetics must resolve '+sku);
+ assert(iconRegistry.includes(filename),'profile avatar artwork registry missing '+filename);
+ const image=fs.readFileSync(path.join(app,'assets/profile-icons-v1',filename));
+ assert.equal(crypto.createHash('sha256').update(image).digest('hex'),hash,'approved regional portrait changed: '+filename);
+}
+for(const [sku,file] of [
+ ['dshop_asterfall_pet','DUNGEON_PET_ASTERFALL_001_Oathroot_Seedling.webp'],
+ ['dshop_sunscar_pet','DUNGEON_PET_SUNSCAR_001_Vaultscarab.webp'],
+ ['dshop_frostmarch_pet','DUNGEON_PET_FROSTMARCH_001_Choirbell_Sprite.webp']
+]){
+ assert(petRegistry.includes(sku+':'),'pet offer artwork mapping missing: '+sku);
+ const asset=fs.readFileSync(path.join(app,'assets/dungeon-shop/pets',file));
+ assert.equal(asset.toString('ascii',0,4),'RIFF','pet must be a WebP: '+file);
+ assert.equal(asset.toString('ascii',8,12),'WEBP','pet must be a WebP: '+file);
+}
+for(const [dir,files] of [
+ ['profile-borders',['dungeon-asterfall-briarbound-frame.webp','dungeon-sunscar-amberglass-loop.webp','dungeon-frostmarch-frostbound-chime.webp']],
+ ['profile-backgrounds',['dungeon-asterfall-rootbound-sanctuary.webp','dungeon-sunscar-buried-observatory.webp','dungeon-frostmarch-shiverlake-reflections.webp']]
+]){for(const filename of files){
+ const asset=fs.readFileSync(path.join(app,'assets',dir,filename));
+ assert.equal(asset.toString('ascii',0,4),'RIFF','profile artwork must be WebP: '+filename);
+ assert.equal(asset.toString('ascii',8,12),'WEBP','profile artwork must be WebP: '+filename);
+}}
 const expectedCopy=[
  'Expedition Marks','Permanent account currency','Shop not available yet','Refresh',
  'Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.',

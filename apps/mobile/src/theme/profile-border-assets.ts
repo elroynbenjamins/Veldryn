@@ -8,5 +8,8 @@ export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['guild-border-silver',require('../../assets/profile-borders/guild-border-silver.png')],
   ['guild-border-emerald',require('../../assets/profile-borders/guild-border-emerald.png')],
   ['guild-border-royal',require('../../assets/profile-borders/guild-border-royal.png')],
+  ['dungeon:asterfall:briarbound-frame',require('../../assets/profile-borders/dungeon-asterfall-briarbound-frame.webp')],
+  ['dungeon:sunscar:amberglass-loop',require('../../assets/profile-borders/dungeon-sunscar-amberglass-loop.webp')],
+  ['dungeon:frostmarch:frostbound-chime',require('../../assets/profile-borders/dungeon-frostmarch-frostbound-chime.webp')],
   ...EVENT_DECORATIONS.map(({borderId,border}):[string,ImageSourcePropType]=>[borderId,border]),
 ]);

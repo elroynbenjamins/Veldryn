@@ -1,12 +1,16 @@
 import {useRef,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
+import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
 import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason} from '../../i18n/dungeon-shop';
+import {dungeonShopPetOfferArt} from '../../theme/dungeon-shop-pet-art';
+import {dungeonShopCosmeticOfferArt} from '../../theme/dungeon-shop-cosmetic-art';
 
 import type {DungeonMarksShopSnapshot} from '../../core/dungeon-marks-shop-types';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
@@ -88,11 +92,12 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);
    const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
+    const previewArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
      disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={s.itemHead}>
-     <View style={s.art}><Text style={s.artGlyph}>◇</Text></View>
+     <View style={s.art} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{previewArt?<Image source={previewArt} resizeMode="contain" style={s.artImage}/>:<Text style={s.artGlyph}>◇</Text>}</View>
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
@@ -102,6 +107,10 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.detail}>
+     {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
+      ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
+     }</View>:null}
      {bonusDetails?<View style={s.bonusBlock}>
       <Text style={s.bonusName}>{bonusDetails.stat}</Text>
       <View style={s.bonusGrid}>
@@ -131,6 +140,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
  art:{width:48,height:48,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center'},
  artGlyph:{color:C.accent,fontSize:25,fontWeight:'800'},
+ artImage:{width:44,height:44},
+ cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
+ petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  title:{...typography.bodyStrong,color:C.text},
  price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:3},priceText:{...typography.bodyStrong,color:C.accent},
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},

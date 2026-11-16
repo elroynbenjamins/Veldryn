@@ -12,6 +12,7 @@ import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {ItemArtwork} from './ItemArtwork';
+import {DisposalPreview} from './DisposalPreview';
 import {GameButton} from './GameButton';
 import {EquipmentPreview} from './EquipmentPreview';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -19,6 +20,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 
 const PAGE_SIZE=30;
+type PendingPouchDisposal={ids:string[];protectedCount:number};
 /** Each character has a separate pouch. Forge equipment keeps its exact receipt,
  * rarity and quality, and can be equipped without passing through Inventory. */
 export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState;busy?:boolean;onAction?:(command:GameCommand)=>void|Promise<unknown>}){
@@ -29,7 +31,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
  const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
  const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]);
- const [pendingSale,setPendingSale]=useState<string[]|null>(null),[pendingSalvage,setPendingSalvage]=useState<string[]|null>(null),saleInFlight=useRef(false);
+ const [pendingSale,setPendingSale]=useState<PendingPouchDisposal|null>(null),[pendingSalvage,setPendingSalvage]=useState<PendingPouchDisposal|null>(null),saleInFlight=useRef(false);
  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
  const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
  const pages=Math.max(1,Math.ceil(Math.max(pouch.capacity,pouch.stacks.length)/PAGE_SIZE)),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
@@ -45,21 +47,27 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const eligibleSalvages=selectedSalvages.filter(row=>row.eligible);
  const salvageCount=eligibleSalvages.length;
  const unlockableSales=selectedSales.filter(row=>{const stack=pouch.stacks[row.index];return !!stack&&(!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked)||!!state.settings.lockedItemIds?.includes(stack.itemId));});
- const pendingSet=new Set(pendingSale??[]),pendingRows=saleCandidates.filter(row=>pendingSet.has(row.id));
- const pendingSalvageRows=useMemo(()=>pendingSalvage?equipmentPouchSalvageCandidates(state,pendingSalvage):[],[state,pendingSalvage]);
+ const pendingSet=new Set(pendingSale?.ids??[]),pendingRows=saleCandidates.filter(row=>pendingSet.has(row.id));
+ const pendingSalvageRows=useMemo(()=>pendingSalvage?equipmentPouchSalvageCandidates(state,pendingSalvage.ids):[],[state,pendingSalvage]);
  const saleCount=eligibleSales.length,saleGold=eligibleSales.reduce((sum,row)=>sum+row.gold,0);
  const excludedSelected=selectedSales.length-saleCount;
  const pendingGold=pendingRows.reduce((sum,row)=>sum+row.gold,0);
- const selectionValid=saleCount>0&&selectedSales.length===selectedIds.length;
- const salvageSelectionValid=salvageCount>0&&selectedSalvages.length===selectedIds.length;
- const confirmationValid=pendingRows.length>0&&pendingRows.length===(pendingSale?.length??0)&&pendingRows.every(row=>row.eligible);
- const salvageConfirmationValid=pendingSalvageRows.length>0&&pendingSalvageRows.length===(pendingSalvage?.length??0)&&pendingSalvageRows.every(row=>row.eligible);
+ const selectionValid=saleCount>0;
+ const salvageSelectionValid=salvageCount>0;
+ const confirmationValid=pendingRows.length>0&&pendingRows.length===(pendingSale?.ids.length??0)&&pendingRows.every(row=>row.eligible);
+ const salvageConfirmationValid=pendingSalvageRows.length>0&&pendingSalvageRows.length===(pendingSalvage?.ids.length??0)&&pendingSalvageRows.every(row=>row.eligible);
  const salvageCandidate=selectedIndex===null?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
- const salvageMaterials=(rows:typeof salvageCandidates)=>{
+ const salvageRewards=(rows:typeof salvageCandidates):ItemStack[]=>{
   const amounts=new Map<string,number>();
   for(const row of rows)for(const reward of row.rewards??(row.reward?[row.reward]:[]))amounts.set(reward.itemId,(amounts.get(reward.itemId)??0)+reward.quantity);
-  return [...amounts].map(([id,amount])=>`${amount.toLocaleString(language)}× ${localizedItemName(language,id)}`).join(' · ');
+  return [...amounts].map(([itemId,quantity])=>({itemId,quantity}));
  };
+ const salvageMaterials=(rows:typeof salvageCandidates)=>salvageRewards(rows)
+  .map(row=>`${row.quantity.toLocaleString(language)}× ${localizedItemName(language,row.itemId)}`).join(' · ');
+ const disposalItems=(rows:readonly {itemId:string;index:number}[])=>rows.map(row=>{
+  const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
+  return {itemId:row.itemId,quantity:1,rarity:copy?.rarity??itemRarity(itemDef(row.itemId)),quality:copy?craftedGearDisplayQuality(copy):undefined};
+ });
  const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
  const toggleSelected=(candidate:EquipmentPouchSaleCandidate)=>{
   if(busy)return;
@@ -72,8 +80,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const selectSafeSalvage=()=>{
   setSelectedIds(equipmentPouchQuickSalvageIds(state,salvageCandidates));setSelectMode(true);setSelectedIndex(null);
  };
- const startSale=(ids:string[])=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSale(ids)};
- const startSalvage=(ids:string[])=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSalvage(ids)};
+ const startSale=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSale({ids,protectedCount})};
+ const startSalvage=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSalvage({ids,protectedCount})};
  const unlockSelected=async()=>{
   if(busy||!onAction||!unlockableSales.length)return;
   const updatedTypes=new Set<string>();
@@ -92,7 +100,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   }
  };
  const confirmSale=async()=>{
-  const ids=pendingSale;
+  const ids=pendingSale?.ids;
   if(!ids||busy||!confirmationValid||saleInFlight.current||!onAction)return;
   saleInFlight.current=true;
   try{
@@ -101,7 +109,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   }finally{saleInFlight.current=false;}
  };
  const confirmSalvage=async()=>{
-  const ids=pendingSalvage;
+  const ids=pendingSalvage?.ids;
   if(!ids||busy||!salvageConfirmationValid||saleInFlight.current||!onAction)return;
   saleInFlight.current=true;
   try{
@@ -135,22 +143,27 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    {selectMode?<>
     <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
     <GameButton compact tone="secondary" title={p('Select safe to salvage')} disabled={busy||!onAction} onPress={selectSafeSalvage}/>
-    <GameButton compact tone="secondary" title={p('Clear')} disabled={busy||!selectedIds.length} onPress={()=>setSelectedIds([])}/>
+    {selectedIds.length>0?<GameButton compact tone="secondary" title={p('Clear')} disabled={busy} onPress={()=>setSelectedIds([])}/>:null}
     <GameButton compact tone="secondary" title={p('Done')} disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
    </>:<>
     <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
-    <GameButton compact title={p('Select safe to sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={selectSafe}/>
-    <GameButton compact tone="secondary" title={p('Select safe to salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={selectSafeSalvage}/>
+    <GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
+    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates),salvageCandidates.filter(row=>!row.eligible).length)}/>
    </>}
   </View>
   {selectMode?<View style={s.sellSummary}>
-   <Text style={s.meta}>{p('{count} selected · {gold} Gold',{count:selectedSales.length,gold:saleGold.toLocaleString(language)})} · {p('{count} eligible',{count:saleCount})}{excludedSelected?p(' · {count} protected',{count:excludedSelected}):''}</Text>
-   <Text style={s.meta}>{p('{count} salvageable',{count:salvageCount})}{salvageCount?` · ${salvageMaterials(eligibleSalvages)}`:''}</Text>
+   <View style={s.selectionStats}>
+    {([{label:'Selected',value:selectedIds.length},{label:'Sellable',value:saleCount},{label:'Salvageable',value:salvageCount}] as const).map(stat=><View key={stat.label} style={s.selectionStat}>
+      <Text style={s.selectionStatNumber}>{stat.value.toLocaleString(language)}</Text>
+      <Text style={s.selectionStatLabel}>{p(stat.label)}</Text>
+    </View>)}
+   </View>
+   <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}</Text>
    <View style={s.sellToolbar}>
     <GameButton compact title={saleCount?p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Nothing sellable')} tone="danger"
-     disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id))}/>
+     disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id),selectedSales.length-saleCount)}/>
     <GameButton compact title={salvageCount?p('Salvage eligible · {count}',{count:salvageCount}):p('Nothing salvageable')} tone="danger"
-     disabled={!onAction||busy||!salvageSelectionValid} onPress={()=>startSalvage(eligibleSalvages.map(row=>row.id))}/>
+     disabled={!onAction||busy||!salvageSelectionValid} onPress={()=>startSalvage(eligibleSalvages.map(row=>row.id),selectedSalvages.length-salvageCount)}/>
     {unlockableSales.length>0?<GameButton compact title={p('Unlock selected · {count}',{count:unlockableSales.length})} tone="secondary" disabled={!onAction||busy} onPress={()=>{void unlockSelected()}}/>:null}
    </View>
    {excludedSelected>0?<Text style={s.meta}>{p('Protected copies are excluded from the sale. Unlock locked gear or open a copy to review other protections.')}</Text>:null}
@@ -165,7 +178,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       accessibilityLabel={descriptor?localizedItemName(language,descriptor.id)+(copy?' · '+p(rar?.label??'Equipment')+', '+p('quality {quality}',{quality:craftedGearDisplayQuality(copy)}):'')+(selectMode&&candidate&&!candidate.eligible&&!salvage?.eligible?' · '+p(candidate.reason??'Protected equipment'):''):p('Empty equipment slot')}
       disabled={!stack||busy} onPress={()=>choose(stack,index)}
       style={[s.slot,{width:slotWidth,minHeight:Math.max(62,slotWidth)},stack&&s.filled,rar&&{borderColor:rar.color},checked&&s.slotChecked,selectMode&&!candidate?.eligible&&!salvage?.eligible&&!checked&&s.slotProtected]}>
-      {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text style={[s.quantity,{color:rar?.color??C.text}]} numberOfLines={1}>{selectMode?(checked?'✓':candidate?.eligible||salvage?.eligible?'○':copy?.locked||state.settings.lockedItemIds?.includes(stack.itemId)?'🔒':'—'):copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity}</Text></>:<Text style={s.empty}>·</Text>}
+      {stack?<>{selectMode&&checked?<View style={s.selectionCheck}><Text style={s.selectionCheckText}>✓</Text></View>:null}<ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text style={[s.quantity,{color:rar?.color??C.text}]} numberOfLines={1}>{selectMode?(checked?(copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity):candidate?.eligible||salvage?.eligible?'○':copy?.locked||state.settings.lockedItemIds?.includes(stack.itemId)?'🔒':'—'):copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity}</Text></>:<Text style={s.empty}>·</Text>}
      </Pressable>;
    })}
   </View>
@@ -175,9 +188,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
    <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
-    <Text style={s.itemName}>{p('{count} selected {unit}',{count:pendingRows.length,unit:pendingRows.length===1?'copy':'copies'})}</Text>
-    <Text style={[s.itemName,{color:C.good}]}>{p('You receive: +{gold} Gold',{gold:pendingGold.toLocaleString(language)})}</Text>
-    <Text style={s.meta}>{p('This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}</Text>
+    <DisposalPreview mode="sell" items={disposalItems(pendingRows)} gold={pendingGold} summary={pendingSale?{selected:pendingSale.ids.length+pendingSale.protectedCount,eligible:pendingSale.ids.length,protected:pendingSale.protectedCount}:undefined} note={p('Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}/>
     {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
      <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSale(null)}/>
@@ -188,9 +199,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
    <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}}/>
    <View style={s.details}>
-    <Text style={s.itemName}>{p('{count} copies to salvage',{count:pendingSalvageRows.length})}</Text>
-    <Text style={s.meta}>{salvageMaterials(pendingSalvageRows)}</Text>
-    <Text style={s.meta}>{p('Materials go to Inventory. This cannot be undone; protected gear is excluded.')}</Text>
+    <DisposalPreview mode="salvage" items={disposalItems(pendingSalvageRows)} rewards={salvageRewards(pendingSalvageRows)} summary={pendingSalvage?{selected:pendingSalvage.ids.length+pendingSalvage.protectedCount,eligible:pendingSalvage.ids.length,protected:pendingSalvage.protectedCount}:undefined} note={p('Materials go to Inventory. Protected gear is excluded.')}/>
     {!salvageConfirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
      <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSalvage(null)}/>
@@ -235,10 +244,14 @@ function styles(C:ThemeColors){return StyleSheet.create({
  hint:{...typography.caption,color:C.muted,lineHeight:16,paddingHorizontal:spacing.xs},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:5},
  slot:{padding:3,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.bg},
- filled:{backgroundColor:C.panel2},slotChecked:{backgroundColor:C.selection,borderWidth:2},slotProtected:{opacity:.44},quantity:{...typography.caption,fontWeight:'900'},empty:{fontSize:16,color:C.muted},
+ filled:{backgroundColor:C.panel2},slotChecked:{backgroundColor:C.selection,borderColor:C.selectionLine,borderWidth:2},slotProtected:{opacity:.68},quantity:{...typography.caption,fontWeight:'900'},empty:{fontSize:16,color:C.muted},
+ selectionCheck:{position:'absolute',right:1,top:1,zIndex:1,minWidth:18,minHeight:18,borderRadius:9,backgroundColor:C.selectionLine,alignItems:'center',justifyContent:'center'},
+ selectionCheckText:{fontSize:12,fontWeight:'900',color:C.bg},
  paging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  sellToolbar:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  sellSummary:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+ selectionStats:{flexDirection:'row',gap:6},selectionStat:{flex:1,alignItems:'center',gap:2,paddingVertical:8,paddingHorizontal:4,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
+ selectionStatNumber:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},selectionStatLabel:{...typography.caption,color:C.muted,fontSize:11,fontWeight:'800'},
  saleWarning:{...typography.caption,color:C.warning},
  upgrade:{flexDirection:'row',gap:8,alignItems:'center',borderTopWidth:1,borderColor:C.line,paddingTop:spacing.sm},
  modal:{maxHeight:'90%'},details:{gap:spacing.md,paddingBottom:spacing.md},

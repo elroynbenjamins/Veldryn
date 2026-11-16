@@ -19,6 +19,7 @@ export interface DungeonShopServerAccountSnapshot {
  shopEnabled:boolean;
 }
 const category=(offer:typeof DUNGEON_SHOP_CATALOG_V1[number])=>
+ offer.grant.kind==='crafting_bundle'?offer.grant.quantity+' × '+offer.grant.itemId.replace(/_/g,' ')+' · Shared Bank':
  offer.grant.kind==='material'?offer.grant.quantity+' × '+offer.grant.itemId.replace(/_/g,' '):
  offer.grant.kind==='account_resource'?offer.grant.quantity+' '+(offer.grant.field==='bondstones'?'Bondstones':'Companion Essence'):
  offer.grant.bonus?'+ '+(offer.grant.bonus.activeBps/100).toFixed(2)+'% '+offer.grant.bonus.target+' equipped; +'+(offer.grant.bonus.ownedBps/100).toFixed(2)+'% owned':'Profile icon · visual only';
@@ -53,7 +54,7 @@ export function makeDungeonShopController(services:Services){
      id:offer.id,name:offer.name,category:offer.category,marks:offer.marks,
      summary:category(offer),status:'unreleased' as const,
      rarity:offer.grant.kind==='profile_collectible'?offer.grant.rarity:undefined,
-     region:offer.firstClearRegion,owned:false,remainingThisUtcWeek:offer.perUtcWeek??null,
+     region:offer.firstClearRegion,tier:offer.grant.kind==='crafting_bundle'?offer.grant.tier:undefined,materialItemId:offer.grant.kind==='crafting_bundle'?offer.grant.itemId:undefined,owned:false,remainingThisUtcWeek:offer.perUtcWeek??null,
      lockReason:'Shop preview only — no purchases are available.',
     })),
    };
@@ -72,7 +73,7 @@ export function makeDungeonShopController(services:Services){
      return {
       id:offer.id,name:offer.name,category:offer.category,marks:price,
       summary:category(offer),status:published?quote.status:'unreleased' as const,rarity:offer.grant.kind==='profile_collectible'?offer.grant.rarity:undefined,
-      region:offer.firstClearRegion,remainingThisUtcWeek:quote.remaining,
+      region:offer.firstClearRegion,tier:offer.grant.kind==='crafting_bundle'?offer.grant.tier:undefined,materialItemId:offer.grant.kind==='crafting_bundle'?offer.grant.itemId:undefined,remainingThisUtcWeek:quote.remaining,
       owned,
       lockReason:!published?'Not yet released — no Marks can be spent on this offer.':quote.status==='region_locked'?'Clear a '+offer.firstClearRegion+' dungeon first.':undefined,
      };

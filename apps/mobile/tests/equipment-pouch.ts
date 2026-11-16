@@ -1,4 +1,3 @@
-import {itemVendorSellGold,EQUIPMENT_FORGE_SELL_REFUND_RATE} from '../src/core/equipment-vendor-value';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {ITEMS,itemDef} from '../src/content/items';
 import {createCharacter,newGame,routeRewards} from '../src/core/game';
@@ -10,7 +9,7 @@ import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSel
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {itemRarity} from '../src/core/item-rarity';
 import {auditCraftedGearOwnership,equipCraftedGearInstance,moveCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
-import {characterDeleteBlockReason} from '../src/core/account-actions';
+import {characterDeleteBlockReason,deleteAccountCharacter} from '../src/core/account-actions';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import type {GameState} from '../src/core/types';
 
@@ -19,9 +18,6 @@ const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='BASTION'&&row.v33Equ
 const otherRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!;
 const gem=ITEMS.find(item=>item.type==='gem'||!!item.rawGemFamilyId)!;
 const output=recipe.output.itemId;
-ok(itemVendorSellGold(itemDef(output))===Math.max(itemDef(output).value,Math.round(recipe.gold*EQUIPMENT_FORGE_SELL_REFUND_RATE)),
- 'Forge equipment vendor Gold should refund 40% of the crafting Gold fee or exceed the legacy value floor');
-ok(itemVendorSellGold(itemDef(gem.id))===itemDef(gem.id).value,'Non-equipment vendor Gold is unchanged');
 let base=createCharacter(newGame(0),'BASTION','Pouch Tester');
 ok(equipmentPouch(base).capacity===30&&equipmentPouch(base).stacks.length===0,'Every character starts with an empty 30-slot Equipment Pouch');
 const grants=routeRewards(base,[{itemId:gem.id,quantity:3},{itemId:output,quantity:2}],1000);
@@ -34,6 +30,17 @@ ok(equipmentPouch(transferred).stacks.filter(row=>row.itemId===output).length===
  'Manual legacy equipment transfer must preserve exactly one physical copy');
 const back=moveLegacyEquipmentPouchStack(transferred,output,1,'inventory','equipment_pouch');
 ok(equipmentPouch(back).stacks.filter(row=>row.itemId===output).length===2,'Manual character storage movement must be reversible');
+const groupedInventory:GameState={...base,inventory:{...base.inventory,stacks:[{itemId:output,quantity:3}]}};
+const groupedMoved=executeGameCommand(groupedInventory,{type:'equipment_pouch_move',args:{itemId:output,quantity:2,from:'inventory',to:'equipment_pouch'}},1001).state;
+ok(equipmentPouch(groupedMoved).stacks.length===2&&groupedMoved.inventory.stacks[0]?.quantity===1,
+ 'Storing multiple ordinary copies must split Inventory stacks without losing or duplicating gear');
+ok(groupedInventory.inventory.stacks[0].quantity===3&&equipmentPouch(groupedInventory).stacks.length===0,
+ 'Inventory-to-Gear movement must not mutate the previous saved state');
+const noRoom:GameState={...groupedInventory,character:{...groupedInventory.character!,equipmentPouch:{capacity:30,stacks:Array.from({length:29},()=>({itemId:otherRecipe.output.itemId,quantity:1}))}}};
+let capacityRejected=false;
+try{executeGameCommand(noRoom,{type:'equipment_pouch_move',args:{itemId:output,quantity:2,from:'inventory',to:'equipment_pouch'}},1001)}catch{capacityRejected=true}
+ok(capacityRejected&&noRoom.inventory.stacks[0].quantity===3&&equipmentPouch(noRoom).stacks.length===29,
+ 'Storing more gear than free Gear slots must fail atomically without removing any Inventory copy');
 const inventoryFull={...back,inventory:{...back.inventory,capacity:back.inventory.stacks.length}};
 const legacyEquipped=executeGameCommand({...inventoryFull,character:{...back.character!,level:100}},{type:'equipment_pouch_equip',args:{itemId:output}},1002).state;
 ok(legacyEquipped.character?.equipment[itemDef(output).slot!]===output&&equipmentPouch(legacyEquipped).stacks.filter(row=>row.itemId===output).length===1,'Legacy equipment can be equipped directly from its character pouch');
@@ -49,12 +56,20 @@ ok(equipmentPouchUpgradePreview(base)?.capacity===40&&equipmentPouch(afterUpgrad
 const record=draftCraftedGearInstance({itemId:output,ownerCharacterId:base.character!.id,jobId:'pouch-unique-1',createdAtMs:1000,roll:.003});
 const tagged:GameState={...base,character:{...base.character!,level:100,equipmentPouch:{capacity:30,stacks:[{itemId:output,quantity:1,instanceId:record.id}]}},account:{...base.account,craftedGearInstances:[record]}};
 ok(auditCraftedGearOwnership(tagged).consistent,'Unique gear in Equipment Pouch must retain exact physical ownership');
+const verifiedInInventory:GameState={...tagged,inventory:{...tagged.inventory,stacks:[{itemId:output,quantity:1,instanceId:record.id}]},
+ character:{...tagged.character!,equipmentPouch:{capacity:30,stacks:[]}}};
+const verifiedStored=executeGameCommand(verifiedInInventory,{type:'gear_move',args:{instanceId:record.id,to:'equipment_pouch'}},1002).state;
+ok(verifiedStored.inventory.stacks.length===0&&equipmentPouch(verifiedStored).stacks[0]?.instanceId===record.id
+ &&auditCraftedGearOwnership(verifiedStored).consistent,
+ 'Moving exact crafted gear from Inventory to Gear must preserve the unique receipt and ownership audit');
 const equipped=equipCraftedGearInstance(tagged,record.id);
 ok(equipped.character!.equipmentInstanceIds?.[itemDef(output).slot!]===record.id&&auditCraftedGearOwnership(equipped).consistent,
  'Direct equip from Equipment Pouch must preserve exact item rarity/quality receipts');
 const unequipped=unequipCraftedGearInstance(equipped,record.id);
 ok(equipmentPouch(unequipped).stacks.some(row=>row.instanceId===record.id),'Unequip should return exact gear to character Equipment Pouch');
-ok(characterDeleteBlockReason(unequipped,base.character!.id)?.includes('Transfer unique equipment')===true,'Character deletion cannot silently strip unique equipment identity');
+ok(!characterDeleteBlockReason(unequipped,base.character!.id),'Valid unique equipment must not prevent deletion when exact copies can be recovered');
+const deletion=deleteAccountCharacter(unequipped,base.character!.id,'DELETE '+base.character!.name,2000);
+ok(deletion.bank.stacks.some(row=>row.instanceId===record.id)&&auditCraftedGearOwnership(deletion).consistent,'Character deletion must recover the exact unique equipment copy into shared Bank, preserving its receipt');
 const inBank=moveCraftedGearInstance(unequipped,record.id,'bank');
 ok(auditCraftedGearOwnership(inBank).consistent&&inBank.bank.stacks.some(row=>row.instanceId===record.id),'Bank transfer must retain exact receipt and free pouch slot');
 ok(!characterDeleteBlockReason(inBank,base.character!.id),'Character can be deleted after moving exact owned copies to Bank');
@@ -87,7 +102,7 @@ ok(auditCraftedGearOwnership(cappedBank).consistent,'Inactive owner auto-sale fi
 const priorOwnerGold=cappedBank.otherCharacters![0].character.gold,priorBankGold=cappedBank.bank.gold??0;
 const autoSale=claimEquipmentCraft(cappedBank,job.id,job.completesAtMs,.9);
 ok(autoSale.result.autoSold==='incoming','The 26th weaker forged copy must honor the opt-in 25-copy auto-sell setting');
-ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemVendorSellGold(itemDef(output))
+ok(autoSale.state.otherCharacters?.[0].character.gold===priorOwnerGold+itemDef(output).value
  &&(autoSale.state.bank.gold??0)===priorBankGold,
  'Auto-sale of an inactive character\'s would-be Equipment Pouch item must credit that character, never the shared Bank');
 ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sale must preserve 25 exact physical copies');
@@ -96,11 +111,10 @@ ok(auditCraftedGearOwnership(autoSale.state).consistent,'Inactive-owner auto-sal
 // supplied as a substitute for a physical pouch entry or its exact Forge receipt.
 const legacyCandidates=equipmentPouchSaleCandidates(back);
 ok(legacyCandidates.length===2&&legacyCandidates.every(row=>row.eligible),'Both ordinary unenhanced pouch copies should be sellable');
-ok(legacyCandidates.every(row=>row.gold===itemVendorSellGold(itemDef(output))),'Pouch preview must equal the server-settled per-copy Gold');
 const saleIds=legacyCandidates.map(row=>row.id);
 const initialGold=back.character!.gold;
 const soldLegacy=executeGameCommand(back,{type:'equipment_pouch_sell',args:{ids:saleIds}},1005).state;
-ok(equipmentPouch(soldLegacy).stacks.length===0&&soldLegacy.character!.gold===initialGold+2*itemVendorSellGold(itemDef(output)),
+ok(equipmentPouch(soldLegacy).stacks.length===0&&soldLegacy.character!.gold===initialGold+2*itemDef(output).value,
  'Bulk sale removes exactly the selected legacy pouch copies and adds correct character Gold');
 ok(back.character!.gold===initialGold&&equipmentPouch(back).stacks.length===2,'Selling must not mutate previous saved state');
 let duplicateSaleRejected=false;
@@ -110,7 +124,7 @@ let forgedSaleRejected=false;
 try{validateGameCommand({type:'equipment_pouch_sell',args:{ids:saleIds,gold:999999}})}catch{forgedSaleRejected=true}
 ok(forgedSaleRejected,'Server must not accept user-provided Gold on equipment sale');
 const firstSingle=executeGameCommand(back,{type:'equipment_pouch_sell',args:{ids:[saleIds[0]]}},1005).state;
-ok(equipmentPouch(firstSingle).stacks.length===1&&firstSingle.character!.gold===initialGold+itemVendorSellGold(itemDef(output)),
+ok(equipmentPouch(firstSingle).stacks.length===1&&firstSingle.character!.gold===initialGold+itemDef(output).value,
  'Selling one unmarked equipment slot must not consume a second copy');
 const reserved:GameState={...back,character:{...back.character!,gearEnhancements:{
  [output]:{rank:1,failures:0,gemIds:[]}}}};
@@ -132,7 +146,7 @@ const exactCandidate=equipmentPouchSaleCandidates(tagged)[0];
 ok(exactCandidate.id==='copy:'+record.id&&exactCandidate.eligible,'Exact Forge copy is selectable only through its unique receipt');
 const soldExact=executeGameCommand(tagged,{type:'equipment_pouch_sell',args:{ids:[exactCandidate.id]}},1007).state;
 ok(!equipmentPouch(soldExact).stacks.length&&!soldExact.account.craftedGearInstances?.some(row=>row.id===record.id)
- &&soldExact.character!.gold===tagged.character!.gold+itemVendorSellGold(itemDef(output))
+ &&soldExact.character!.gold===tagged.character!.gold+itemDef(output).value
  &&auditCraftedGearOwnership(soldExact).consistent,
  'Selling exact Forge receipt must remove its one owned instance and credit only its original character');
 // Production Forge receipts can be 120 characters before the "copy:" selector
@@ -149,7 +163,7 @@ ok(longSelector.length===125,'Exact forged-copy selection adds the 5-character p
 ok(equipmentPouchSaleCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy sale must be eligible');
 ok(equipmentPouchSalvageCandidates(longTagged)[0].eligible,'Valid 125-character forged-copy salvage must be eligible');
 const longSold=executeGameCommand(longTagged,{type:'equipment_pouch_sell',args:{ids:[longSelector]}},1007).state;
-ok(equipmentPouch(longSold).stacks.length===0&&longSold.character!.gold===longTagged.character!.gold+itemVendorSellGold(itemDef(output)),
+ok(equipmentPouch(longSold).stacks.length===0&&longSold.character!.gold===longTagged.character!.gold+itemDef(output).value,
  'Long forged-copy sale settles once, credits Gold and removes the exact pouch instance');
 const longSalvaged=executeGameCommand(longTagged,{type:'equipment_pouch_salvage',args:{ids:[longSelector]}},1011).state;
 ok(equipmentPouch(longSalvaged).stacks.length===0&&
@@ -217,5 +231,5 @@ ok(validateGameCommand({type:'equipment_pouch_salvage',args:{ids:salvageIds}}).t
 const fs=require('fs') as {readFileSync:(p:string,e:string)=>string};
 const view=fs.readFileSync('src/screens/InventoryScreen.tsx','utf8'),panel=fs.readFileSync('src/components/EquipmentPouchPanel.tsx','utf8');
 ok(view.includes('<EquipmentPouchPanel')&&view.includes('Equipment')&&panel.includes('To Inventory')&&panel.includes('To Bank')&&panel.includes('Equip'),'Inventory must expose usable Equipment Pouch actions');
-ok(panel.includes('Select safe to sell')&&panel.includes('Sell selected')&&panel.includes("type:'equipment_pouch_sell'")&&panel.includes('Sell selected equipment?'),'Pouch must provide direct sale, safe mass selection and explicit irreversible-sale confirmation');
+ok(panel.includes('Quick sell')&&panel.includes('Quick salvage')&&panel.includes('Sell selected')&&panel.includes("type:'equipment_pouch_sell'")&&panel.includes('Sell selected equipment?'),'Pouch must provide direct sale, safe mass selection and explicit irreversible-sale confirmation');
 console.log('PASS: Equipment Pouch bulk sale and salvage, authored materials, Forge ownership, transfers and protections');

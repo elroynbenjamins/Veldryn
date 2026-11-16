@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useMemo,type ReactNode} from 'react';
 import {StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -7,13 +7,13 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {sharedText} from '../i18n/shared';
 
-export function ConfirmModal({visible,title,message,reward,confirmLabel,danger=false,reduceMotion=false,busy=false,onConfirm,onCancel}:{visible:boolean;title:string;message:string;reward?:string;confirmLabel:string;danger?:boolean;reduceMotion?:boolean;busy?:boolean;onConfirm:()=>void;onCancel:()=>void}){
+export function ConfirmModal({visible,title,message,children,confirmLabel,danger=false,reduceMotion=false,busy=false,confirmDisabled=false,onConfirm,onCancel}:{visible:boolean;title:string;message?:string;children?:ReactNode;confirmLabel:string;danger?:boolean;reduceMotion?:boolean;busy?:boolean;confirmDisabled?:boolean;onConfirm:()=>void;onCancel:()=>void}){
   const language=useGameLanguage();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25;
   return <GameModalSurface visible={visible} presentation="dialog" surfaceStyle={s.surface} reduceMotion={reduceMotion} onClose={()=>{if(!busy)onCancel()}} dismissOnBackdrop={!busy} backdropLabel={sharedText(language,'Cancel confirmation')}>
     <GameModalHeader title={title} closeDisabled={busy} onClose={()=>{if(!busy)onCancel()}}/>
-    <View style={s.content}>{reward?<Text style={s.reward}>{reward}</Text>:null}<Text style={s.message}>{message}</Text></View>
-    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.flex,stackActions&&s.actionStack]}><GameButton title={sharedText(language,'Cancel')} tone="secondary" disabled={busy} onPress={onCancel}/></View><View style={[s.flex,stackActions&&s.actionStack]}><GameButton title={confirmLabel} tone={danger?'danger':'primary'} loading={busy} onPress={onConfirm}/></View></View>
+    <View style={s.content}>{children??(message?<Text style={s.message}>{message}</Text>:null)}</View>
+    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.flex,stackActions&&s.actionStack]}><GameButton title={sharedText(language,'Cancel')} tone="secondary" disabled={busy} onPress={onCancel}/></View><View style={[s.flex,stackActions&&s.actionStack]}><GameButton title={confirmLabel} tone={danger?'danger':'primary'} loading={busy} disabled={busy||confirmDisabled} onPress={onConfirm}/></View></View>
   </GameModalSurface>;
 }
-function makeStyles(C:ThemeColors){return StyleSheet.create({surface:{maxWidth:460,padding:spacing.md,paddingBottom:spacing.lg},content:{paddingTop:spacing.xs,paddingBottom:spacing.md},message:{...typography.body,color:C.muted,lineHeight:21},reward:{...typography.bodyStrong,color:C.good,marginBottom:spacing.sm},actions:{flexDirection:'row',gap:spacing.sm,flexShrink:0},actionsStack:{flexDirection:'column'},flex:{flex:1,minWidth:0},actionStack:{flex:0,width:'100%'}});}
+function makeStyles(C:ThemeColors){return StyleSheet.create({surface:{maxWidth:460,padding:spacing.md,paddingBottom:spacing.lg},content:{paddingTop:spacing.xs,paddingBottom:spacing.md},message:{...typography.body,color:C.muted,lineHeight:21},actions:{flexDirection:'row',gap:spacing.sm,flexShrink:0},actionsStack:{flexDirection:'column'},flex:{flex:1,minWidth:0},actionStack:{flex:0,width:'100%'}});}

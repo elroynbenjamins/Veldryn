@@ -1,7 +1,8 @@
 import type {GameState,ClassId,BodyPresentation,ItemStack,OverflowState,GearSlot} from './types';
 import {itemDef} from '../content/items';
 import {newGame,createCharacter} from './game';
-import {accountCharacters,unlockedCharacterSlots} from './account-roster';
+import {accountCharacters,unlockedCharacterSlots,occupiedCharacterRoles,MAX_NEW_ACCOUNT_CHARACTERS,recordAccountProgress} from './account-roster';
+import {CLASSES} from '../content/classes';
 import {equipmentCraftingQueue} from './equipment-crafting-queue';
 import {reconcileAccountCollections} from './account-collections';
 import {auditCraftedGearOwnership} from './crafted-gear-ownership';
@@ -12,12 +13,18 @@ function snapshot(state:GameState){return {character:structuredClone(state.chara
 export function createAccountCharacter(state:GameState,classId:ClassId,name:string,body:BodyPresentation,now:number){
  state=ensurePersonalSeasonalState(reconcileAccountCollections(state));
  if(!state.character) return createCharacter(state,classId,name,body);
+ if(accountCharacters(state).length>=MAX_NEW_ACCOUNT_CHARACTERS)throw new Error('Maximum 3 characters: one Tank, one Damage and one Support.');
  if(accountCharacters(state).length>=unlockedCharacterSlots(state))throw new Error('Character slot is locked.');
+ const candidate=CLASSES.find(def=>def.id===classId);
+ if(!candidate)throw new Error('Invalid character class.');
+ if(occupiedCharacterRoles(state).includes(candidate.role))throw new Error(`Your account already has a ${candidate.role} character. Choose a different role.`);
  const next=createCharacter(newGame(now),classId,name,body);const active=snapshot(state);
  // Never reuse deleted character IDs: account-wide claim receipts and co-op identity retain historical IDs.
  const sequence=Math.max(state.account.createdCharacterCount??0,accountCharacters(state).length)+1;
  const id=`LOCAL_CHAR_${sequence}`;next.character!.id=id;
- const account={...state.account,createdCharacterCount:sequence};
+ // Persist the earned-slot watermark when a character is created so a later
+ // progression recalculation or character deletion cannot revoke that slot.
+ const account={...state.account,createdCharacterCount:sequence,unlockedCharacterSlots:Math.max(state.account.unlockedCharacterSlots??1,unlockedCharacterSlots(state))};
  return {...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:personalSeasonalAccountView(account,next.character),otherCharacters:[...(state.otherCharacters??[]),active]};
 }
 export function transitionAccountFaithPractice(state:GameState,now:number,tierId:string,count:number){const {reserveFaithPractice}=require('./faith') as typeof import('./faith');return {state:reserveFaithPractice(state,tierId,count,now)};}
@@ -116,7 +123,8 @@ export function characterDeleteBlockReason(state:GameState,id:string){
  return undefined;
 }
 export function deleteAccountCharacter(state:GameState,id:string,confirmation:string,now:number){
- state=ensurePersonalSeasonalState(reconcileAccountCollections(state));
+ // Freeze earned region rewards before removing the character that originally unlocked them.
+ state=recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
  if(!state.character)throw new Error('Create a character first.');
  const active=state.character.id===id;
  const stored=active?snapshot(state):(state.otherCharacters??[]).find(entry=>entry.character.id===id);

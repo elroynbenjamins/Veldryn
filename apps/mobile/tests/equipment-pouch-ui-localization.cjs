@@ -11,7 +11,7 @@ const {gemPouchUiRows,gemPouchText}=require('../src/i18n/gem-pouch-ui.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
-assert.equal(keys.length,82,'all authored Equipment Pouch copy plus rarity and exact eligibility reasons');
+assert.equal(keys.length,92,'all authored Equipment Pouch copy plus quick disposal, selection metrics, rarity and eligibility reasons');
 const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT',name:'DUST'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
@@ -38,14 +38,20 @@ const screen=fs.readFileSync(path.join(__dirname,'../src/components/EquipmentPou
 for(const marker of [
  "equipmentPouchText(language,text,params)",
  "p('Equipment Pouch')",
- "p('Select safe to sell')",
+ "p('Quick sell')",
+ "p('Quick salvage')",
+ "label:'Selected',value:selectedIds.length",
+ "label:'Sellable',value:saleCount",
+ "label:'Salvageable',value:salvageCount",
+ "p(stat.label)",
  "p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')",
  "p('Sell selected equipment?')",
  "p('Salvage selected equipment?')",
  "p('Select safe to salvage')",
  "p('Confirm salvage')",
  "p('Selection has changed. Close and review the equipment.')",
- "p('{count} selected · {gold} Gold'",
+ "p('Sell eligible · {gold}g'",
+ "p('Estimated sale · {gold} Gold'",
  "p('Sell · {gold}g'",
  "p('quality {quality}'",
  "p('Protected')",
@@ -61,4 +67,4 @@ for(const marker of [
  ])assert.ok(screen.includes(marker),'canonical sale protection/action removed: '+marker);
 const ast=ts.createSourceFile('EquipmentPouchPanel.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Equipment Pouch must parse as TSX');
-console.log('PASS: 82 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');
+console.log('PASS: 92 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');

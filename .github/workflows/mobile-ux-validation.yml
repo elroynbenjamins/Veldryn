@@ -42,7 +42,9 @@ jobs:
           node tests/ux-popup-reliability-ui.cjs
           node tests/settings-simplicity-ui.cjs
       - name: Verify immersive active Dungeon flow and Live vote UI
-        run: node tests/dungeon-active-run-immersive-ui.cjs && node tests/dungeon-flow-simplicity-ui.cjs && node tests/dungeon-route-choice-ui.cjs && node tests/dungeon-live-pacing-ui.cjs && node tests/dungeon-room-outcomes-merchant-ui.cjs
+        run: node tests/dungeon-active-run-immersive-ui.cjs && node tests/dungeon-flow-simplicity-ui.cjs && node tests/dungeon-route-choice-ui.cjs && node tests/dungeon-live-pacing-ui.cjs && node tests/dungeon-room-outcomes-merchant-ui.cjs && node tests/dungeon-compact-completion-ui.cjs
+      - name: Verify approved Dungeon Shop portrait, pet and cosmetic artwork
+        run: node tests/german-expedition-shop-localization.cjs
       - name: Verify compact dungeon lobby equipment and Echo companion UI
         run: node tests/coop-combat-setup-ui.cjs
       - name: Verify dungeon reward, tier and weekly budget UX
@@ -52,7 +54,7 @@ jobs:
       - name: Validate chat emote Settings navigation
         run: node tests/chat-emote-settings-navigation.cjs
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
-        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs
+        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate focused Home layout and queue/reward safety

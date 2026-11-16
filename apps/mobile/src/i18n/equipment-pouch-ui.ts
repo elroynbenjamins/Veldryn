@@ -7,6 +7,17 @@ import {interpolateTranslation,type TranslationParams} from './translator';
  * server-generated sale reasons and canonical IDs/commands. DE/ES/NL/IT/FR/RU/TR. */
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const equipmentPouchUiRows={
+  "Store in Gear": ["In Ausrüstung lagern","Guardar en equipo","Opbergen bij uitrusting","Riponi nell'equipaggiamento","Ranger dans l'équipement","Убрать в снаряжение","Ekipmana koy"],
+  "Store {count} in Gear": ["{count} in Ausrüstung lagern","Guardar {count} en equipo","{count} bij uitrusting opbergen","Riponi {count} nell'equipaggiamento","Ranger {count} dans l'équipement","Убрать {count} в снаряжение","{count} eşyayı ekipmana koy"],
+  "Gear storage full": ["Ausrüstungslager voll","Almacén de equipo lleno","Uitrustingsopslag vol","Deposito equipaggiamento pieno","Stockage d'équipement plein","Хранилище снаряжения заполнено","Ekipman deposu dolu"],
+  "Not enough Gear slots": ["Zu wenige Ausrüstungsplätze","No hay suficientes espacios de equipo","Niet genoeg uitrustingsvakken","Spazi equipaggiamento insufficienti","Pas assez d'emplacements d'équipement","Недостаточно ячеек снаряжения","Yeterli ekipman yuvası yok"],
+
+  "Estimated sale · {gold} Gold": ["Voraussichtlicher Verkauf · {gold} Gold","Venta estimada · {gold} de oro","Verwachte verkoop · {gold} goud","Vendita prevista · {gold} oro","Vente estimée · {gold} or","Ожидаемая продажа · {gold} золота","Tahmini satış · {gold} altın"],
+  "Quick sell": ["Schnell verkaufen","Venta rápida","Snel verkopen","Vendita rapida","Vente rapide","Быстрая продажа","Hızlı sat"],
+  "Quick salvage": ["Schnell zerlegen","Desguace rápido","Snel ontmantelen","Smontaggio rapido","Recyclage rapide","Быстрая разборка","Hızlı sök"],
+  "Selected": ["Ausgewählt","Seleccionado","Geselecteerd","Selezionati","Sélectionnés","Выбрано","Seçilen"],
+  "Sellable": ["Verkaufbar","Vendibles","Verkoopbaar","Vendibili","Vendables","Можно продать","Satılabilir"],
+  "Salvageable": ["Zerlegbar","Reciclables","Te ontmantelen","Smontabili","Recyclables","Можно разобрать","Sökülebilir"],
   "Equipment Pouch": [
     "Ausrüstungsbeutel",
     "Bolsa de equipo",

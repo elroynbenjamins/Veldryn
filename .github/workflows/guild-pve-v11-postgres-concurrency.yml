@@ -1,0 +1,52 @@
+name: Hidden Guild PvE V11 real PostgreSQL concurrency QA
+
+# Ephemeral PostgreSQL service only. NO Supabase project, user data,
+# production credentials, migrations, payouts or live route invocations.
+on:
+  pull_request:
+    paths:
+      - 'tools/guild-pve-v11-postgres-qa.sql'
+      - 'tools/guild-pve-v11-postgres-seed.sql'
+      - 'tools/guild-pve-v11-postgres-concurrency.mjs'
+      - '.github/workflows/guild-pve-v11-postgres-concurrency.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-postgres-independent-session-race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: veldryn_ci
+          POSTGRES_PASSWORD: local_ci_fixture_only
+          POSTGRES_DB: guild_pve_v11_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U veldryn_ci -d guild_pve_v11_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: veldryn_ci
+      PGPASSWORD: local_ci_fixture_only
+      PGDATABASE: guild_pve_v11_ci
+      PGCONNECT_TIMEOUT: '5'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install PostgreSQL client if unavailable
+        run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+      - name: Parse V11 multi-process test script
+        run: node --check tools/guild-pve-v11-postgres-concurrency.mjs
+      - name: Verify private normalized rows and cross-connection atomicity
+        run: node tools/guild-pve-v11-postgres-concurrency.mjs

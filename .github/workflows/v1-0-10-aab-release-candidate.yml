@@ -1,0 +1,96 @@
+name: Veldryn 1.0.10 AAB release candidate
+
+on:
+  push:
+    branches: ['release/1.0.10-aab-prep-20261115']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-gates:
+    name: Verify release metadata, Edge parity, types and core suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Verify 1.0.10 Android version and AAB metadata
+        run: node tools/check-v110-aab-readiness.mjs
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Require committed gameplay and co-op bundles to match shared source
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Check mobile TypeScript
+        run: pnpm --dir apps/mobile typecheck
+      - name: Run full mobile core regression suite
+        run: pnpm --dir apps/mobile test:core
+      - name: Validate Expo SDK dependencies
+        working-directory: apps/mobile
+        run: npx -y expo-doctor
+
+  unsigned-android-aab-smoke:
+    name: Build native AAB for validation only (not Google Play signing)
+    needs: release-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      NODE_ENV: production
+      EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID: '1011264688445'
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: '1011264688445-389ovdnl0rk6bmk6scq8uooktt5jgb7m.apps.googleusercontent.com'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            apps/mobile
+            backend/src
+            packages/guild-shop/src
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Android API 36 toolchain
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Install mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Bundle Android release AAB for local/native inspection
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:bundleRelease --stacktrace --no-daemon
+      - name: Check file and SHA-256
+        working-directory: apps/mobile/android
+        run: |
+          test -s app/build/outputs/bundle/release/app-release.aab
+          sha256sum app/build/outputs/bundle/release/app-release.aab
+      - name: Save CI-only unsigned/test-signed AAB (never publish to Play)
+        uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-1-0-10-ci-only-aab-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 3

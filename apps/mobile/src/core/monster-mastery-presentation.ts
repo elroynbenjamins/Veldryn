@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import {MASTERY_POINTS_PER_RANK,MONSTER_MASTERY_MAX_RANK,monsterMastery} from './monster-mastery';
+import {MONSTER_MASTERY_MAX_RANK,monsterMastery,monsterMasteryKillsForRank} from './monster-mastery';
 
 export interface MasteryMilestone{
  rank:number;
@@ -9,24 +9,31 @@ export interface MasteryMilestone{
 }
 
 const FIXED_MILESTONES:MasteryMilestone[]=[
- {rank:5,label:'Hunter Instinct',detail:'+1% damage against this species.',kind:'combat'},
+ {rank:5,label:'Hunter Instinct',detail:'Unlock +1% damage against this species; improves each following rank.',kind:'combat'},
  {rank:10,label:'Drop Knowledge',detail:'Reveal the full base drop table.',kind:'knowledge'},
- {rank:15,label:'Material Expertise',detail:'+3% normal material yield from this species.',kind:'materials'},
+ {rank:15,label:'Material Expertise',detail:'Unlock +3% normal material yield; improves each following rank.',kind:'materials'},
  {rank:20,label:'Elite Knowledge',detail:'Reveal advanced mastery knowledge and Nemesis access.',kind:'knowledge'},
  {rank:25,label:'Mastery Badge',detail:'Unlock the species mastery badge.',kind:'cosmetic'},
- {rank:30,label:'Perfect Study',detail:'+2% damage and +5% normal material yield.',kind:'capstone'},
+ {rank:30,label:'Perfect Study',detail:'Reach +2% damage and +5% normal material yield.',kind:'capstone'},
 ];
 export const MONSTER_MASTERY_MILESTONES:readonly MasteryMilestone[]=[...FIXED_MILESTONES].sort((a,b)=>a.rank-b.rank||a.label.localeCompare(b.label));
 
 export function unlockedMasteryMilestones(rank:number){return MONSTER_MASTERY_MILESTONES.filter(row=>rank>=row.rank);}
 export function nextMasteryMilestone(rank:number){return MONSTER_MASTERY_MILESTONES.find(row=>rank<row.rank);}
 export function monsterMasteryGuidance(state:GameState,id:string){
- const mastery=monsterMastery(state,id),next=nextMasteryMilestone(mastery.rank),nextRankPoints=mastery.rank>=MONSTER_MASTERY_MAX_RANK?MASTERY_POINTS_PER_RANK*MONSTER_MASTERY_MAX_RANK:(mastery.rank+1)*MASTERY_POINTS_PER_RANK;
+ const mastery=monsterMastery(state,id),next=nextMasteryMilestone(mastery.rank);
+ const currentRankKills=monsterMasteryKillsForRank(mastery.rank);
  return {
-  ...mastery,
-  next,
-  killsToNextRank:Math.max(0,nextRankPoints-mastery.points),
-  killsToNextMilestone:next?Math.max(0,next.rank*MASTERY_POINTS_PER_RANK-mastery.points):0,
+  ...mastery,next,
+  killsToNextRank:Math.max(0,mastery.nextRankPoints-mastery.points),
+  killsToNextMilestone:next?Math.max(0,monsterMasteryKillsForRank(next.rank)-mastery.points):0,
+  // A mastered rank must render a full bar, not pass max=0 to StatBar.
+  currentRankProgress:mastery.rank>=MONSTER_MASTERY_MAX_RANK
+   ?monsterMasteryKillsForRank(30)-monsterMasteryKillsForRank(29)
+   :mastery.points-currentRankKills,
+  currentRankTarget:mastery.rank>=MONSTER_MASTERY_MAX_RANK
+   ?monsterMasteryKillsForRank(30)-monsterMasteryKillsForRank(29)
+   :mastery.nextRankPoints-currentRankKills,
  };
 }
 export function masterySummary(state:GameState,ids:string[]){

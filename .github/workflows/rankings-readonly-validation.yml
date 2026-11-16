@@ -1,0 +1,47 @@
+name: Rankings read-only validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/ranking-pagination.ts'
+      - 'apps/mobile/src/core/rankings.ts'
+      - 'apps/mobile/src/screens/RankingsScreen.tsx'
+      - 'apps/mobile/src/i18n/social.ts'
+      - 'apps/mobile/src/i18n/social-early-coverage.ts'
+      - 'apps/mobile/tests/rankings.ts'
+      - 'apps/mobile/tests/run-rankings-standalone.mjs'
+      - 'apps/mobile/tests/rankings-ui-contract.mjs'
+      - 'apps/mobile/tests/rankings-localization.mjs'
+      - 'apps/mobile/tsconfig.rankings.json'
+      - 'apps/mobile/tests/localization-social.mjs'
+      - 'apps/mobile/tests/ui-density-hierarchy-contract.ts'
+      - '.github/workflows/rankings-readonly-validation.yml'
+
+jobs:
+  rankings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install backend Node types needed by Rankings core
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck Rankings core only
+        run: node node_modules/typescript/lib/tsc.js -p tsconfig.rankings.json --noEmit
+      - name: Rankings core pagination and boundaries
+        run: node tests/run-rankings-standalone.mjs
+      - name: Rankings mobile interaction contract
+        run: node tests/rankings-ui-contract.mjs
+      - name: Rankings translation coverage
+        run: node tests/rankings-localization.mjs

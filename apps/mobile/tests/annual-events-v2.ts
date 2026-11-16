@@ -36,6 +36,7 @@ veil={...veil,account:{...veil.account,eventPrestigeBalanceById:{...(veil.accoun
 veil=purchaseEventOffer(veil,'lanternwing_companion',now);
 ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_011'),'Veilbreak prestige shop grants Lanternwing');
 
+equal(FROSTFALL_EVENT.claimGraceDays,2,'Frostfall claim grace follows the Dec 27–28 plan');
 let frost=withEvent('EVT_ANNUAL_012_2026');
 equal(eventLifecycle(frost,now)?.definition.name,'Frostfall Festival','Frostfall runtime resolves');
 frost=applyEventDrops(frost,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'Frostbell Tokens',quantity:4000}]);

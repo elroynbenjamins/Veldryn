@@ -8,6 +8,7 @@ on:
       - 'backend/src/server/coop/__tests__/phase6-qmode.ts'
       - 'backend/src/server/expeditions/node-resolution.ts'
       - 'backend/online/tests/qmode-hit-variance.ts'
+      - 'backend/online/tests/qmode-pressure-baseline.ts'
       - 'backend/online/tests/coop-published-balance.ts'
       - 'backend/package.json'
       - '.github/workflows/qmode-pressure-validation.yml'

@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'backend/online/live-runtime.ts'
+      - 'backend/online/live-queue.ts'
+      - 'backend/online/tests/live-queue.ts'
       - 'backend/online/dungeon-shop.ts'
       - 'backend/online/coop.ts'
       - 'backend/online/tests/dungeon-shop.ts'
@@ -22,6 +24,8 @@ on:
     branches: [main]
     paths:
       - 'backend/online/live-runtime.ts'
+      - 'backend/online/live-queue.ts'
+      - 'backend/online/tests/live-queue.ts'
       - 'backend/online/tests/dungeon-variety.ts'
       - 'backend/online/tests/regional-dungeon-clear-rates.ts'
       - 'backend/src/server/expeditions/**'
@@ -51,8 +55,14 @@ jobs:
       - name: Validate hidden Dungeon Marks Shop catalogue and purchase eligibility
         run: pnpm test:dungeon-shop-catalog
         working-directory: backend
+      - name: Validate one dungeon per region, retired content, and frozen two-boss rotation
+        run: pnpm test:regional-dungeon-rotation
+        working-directory: backend
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
+        working-directory: backend
+      - name: Validate rebalanced Expedition Marks and unchanged tier multipliers
+        run: pnpm test:dungeon-tier-balance
         working-directory: backend
       - name: Validate hidden Dungeon Shop HTTP authorization and preview gate
         run: node dist/online/backend/online/tests/dungeon-shop.js

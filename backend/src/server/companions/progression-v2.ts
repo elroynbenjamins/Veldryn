@@ -4,7 +4,8 @@ import {companionTrialWeekKey} from './trial-season';
 import type {CompanionAdvancedUnlockRequirement,CompanionCodexProfileState,CompanionEconomyState,CompanionOverflowState,CompanionUnlockFacts,OwnedCompanionSnapshot} from './domain';
 
 const XP_MULT={standard:1,rare:1.08,elite:1.16,prestige:1.25} as const;
-const BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
+const BOND_THRESHOLDS=[0,270,630,1110,1740,2520,3480,4620,5970,7560] as const;
+const LEGACY_BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
 export function companionXpToNextServer(companionId:string,level:number){const def=companionServerDefinition(companionId);if(!def)throw new Error('unknown_companion');if(level>=COMPANION_RARITY_MAX_LEVEL[def.rarity])return 0;return Math.max(1,Math.round(65*Math.pow(1.16,Math.max(0,level-1))*XP_MULT[def.rarity]));}
 export function techniqueUnlocked(progress:OwnedCompanionSnapshot,techniqueId:string){const t=companionTechnique(techniqueId);if(!t||t.companionId!==progress.companionId)return false;const asc=progress.ascensionTier>=t.unlock.ascensionTier,bond=progress.bondLevel>=t.unlock.bondLevel;return t.unlock.mode==='all'?asc&&bond:asc||bond;}
 export function selectCompanionTechnique(progress:OwnedCompanionSnapshot,techniqueId:string,economy:CompanionEconomyState){
@@ -18,15 +19,29 @@ export function grantCombatCompanionOrConvertDuplicate(input:{companionId:string
  const def=companionServerDefinition(input.companionId);if(!def)throw new Error('unknown_companion');if(input.owned[input.companionId])return {owned:input.owned,companionEssence:input.companionEssence+COMPANION_DUPLICATE_ESSENCE[def.rarity],duplicate:true,convertedEssence:COMPANION_DUPLICATE_ESSENCE[def.rarity]};
  const p=input.obtainedProgress??{companionId:def.id,level:1,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false};return {owned:{...input.owned,[def.id]:p},companionEssence:input.companionEssence,duplicate:false,convertedEssence:0};
 }
-export function awardCompanionXpServer(input:{progress:OwnedCompanionSnapshot;amount:number;companionEssence:number;overflow?:CompanionOverflowState;serverNowMs:number}){
- const def=companionServerDefinition(input.progress.companionId);if(!def)throw new Error('unknown_companion');let p={...input.progress},remaining=Math.max(0,Math.floor(input.amount));const rarityMax=COMPANION_RARITY_MAX_LEVEL[def.rarity],currentCap=companionLevelCap(def.id,p.ascensionTier);
+export function awardCompanionXpServer(input:{progress:OwnedCompanionSnapshot;amount:number;companionEssence:number;overflow?:CompanionOverflowState;serverNowMs:number;maxLevelCap?:number}){
+ const def=companionServerDefinition(input.progress.companionId);if(!def)throw new Error('unknown_companion');let p={...input.progress},remaining=Math.max(0,Math.floor(input.amount));const rarityMax=COMPANION_RARITY_MAX_LEVEL[def.rarity],currentCap=Math.min(companionLevelCap(def.id,p.ascensionTier),Number.isFinite(input.maxLevelCap)?Math.max(1,Math.floor(input.maxLevelCap!)):35);
  while(remaining>0&&p.level<Math.min(rarityMax,currentCap)){const needed=companionXpToNextServer(def.id,p.level)-p.xp;if(remaining<needed){p.xp+=remaining;remaining=0;break;}remaining-=needed;p.level++;p.xp=0;}
  if(p.level>=currentCap&&currentCap<rarityMax){p.xp=0;return {progress:p,companionEssence:input.companionEssence,overflow:normalizeOverflow(input.overflow,input.serverNowMs),convertedEssence:0,droppedXp:remaining};}
  if(p.level>=rarityMax&&remaining>0){const overflow=normalizeOverflow(input.overflow,input.serverNowMs),room=Math.max(0,COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP-overflow.essenceConvertedThisWeek),converted=Math.min(room,Math.floor(remaining*COMPANION_MAX_XP_ESSENCE_RATE));return {progress:{...p,xp:0},companionEssence:input.companionEssence+converted,overflow:{...overflow,essenceConvertedThisWeek:overflow.essenceConvertedThisWeek+converted},convertedEssence:converted,droppedXp:remaining};}
  return {progress:p,companionEssence:input.companionEssence,overflow:normalizeOverflow(input.overflow,input.serverNowMs),convertedEssence:0,droppedXp:0};
 }
 function normalizeOverflow(value:CompanionOverflowState|undefined,nowMs:number):CompanionOverflowState{const weekKey=companionTrialWeekKey(nowMs);return value?.weekKey===weekKey?{weekKey,essenceConvertedThisWeek:Math.max(0,Math.floor(value.essenceConvertedThisWeek))}:{weekKey,essenceConvertedThisWeek:0};}
-export function awardCompanionBondXpServer(progress:OwnedCompanionSnapshot,amount:number){let total=Math.max(0,progress.bondXp+Math.floor(amount)),level=progress.bondLevel;while(level<10&&total>=BOND_THRESHOLDS[level])level++;if(level>=10)return {...progress,bondLevel:10,bondXp:BOND_THRESHOLDS[9],bondTraitUnlocked:true};return {...progress,bondLevel:level,bondXp:total,bondTraitUnlocked:progress.bondTraitUnlocked};}
+/** Rebase old cumulative (or legacy within-level) XP exactly once. */
+function rebaseLegacyBondXp(level:number,rawXp:number){
+ const index=Math.max(0,Math.min(9,level-1)),oldFloor=LEGACY_BOND_THRESHOLDS[index];
+ if(level>=10)return BOND_THRESHOLDS[9];
+ const oldNext=LEGACY_BOND_THRESHOLDS[index+1],newFloor=BOND_THRESHOLDS[index],newNext=BOND_THRESHOLDS[index+1];
+ const earned=rawXp<oldFloor?rawXp:rawXp-oldFloor,ratio=Math.max(0,Math.min(1,earned/Math.max(1,oldNext-oldFloor)));
+ return Math.min(newNext-1,newFloor+Math.round((newNext-newFloor)*ratio));
+}
+export function awardCompanionBondXpServer(progress:OwnedCompanionSnapshot,amount:number){
+ let level=Math.max(1,Math.min(10,progress.bondLevel));
+ let total=Math.max(BOND_THRESHOLDS[level-1],progress.bondCurveVersion===2?progress.bondXp:rebaseLegacyBondXp(level,progress.bondXp))+Math.max(0,Math.floor(amount));
+ while(level<10&&total>=BOND_THRESHOLDS[level])level++;
+ if(level>=10)return {...progress,bondLevel:10,bondXp:BOND_THRESHOLDS[9],bondCurveVersion:2 as const,bondTraitUnlocked:true};
+ return {...progress,bondLevel:level,bondXp:total,bondCurveVersion:2 as const,bondTraitUnlocked:progress.bondTraitUnlocked};
+}
 
 export function companionUnlockRequirementSatisfied(r:CompanionAdvancedUnlockRequirement,f:CompanionUnlockFacts){switch(r.type){
  case 'trial_floor':return f.highestTrialFloor>=(r.amount??1);case 'special_boss_clear':return !!r.target&&f.specialBossClears.has(r.target);case 'boss_clear_count':return !!r.target&&(f.bossClearCounts[r.target]??0)>=(r.amount??1);case 'region_completion':return !!r.target&&f.regionCompletion.has(r.target);case 'event_completion':return !!r.target&&f.eventCompletion.has(r.target);case 'companion_owned':return !!r.target&&f.ownedCompanionIds.has(r.target);case 'companion_role_owned':return !!r.target&&(f.ownedByRole[r.target as keyof typeof f.ownedByRole]??0)>=(r.amount??1);case 'companion_bond_total':return (r.originId?(f.bondTotalByOrigin?.[r.originId]??0):f.bondTotal)>=(r.amount??1);case 'companion_level_total':return (r.originId?(f.levelTotalByOrigin?.[r.originId]??0):f.levelTotal)>=(r.amount??1);case 'achievement':return !!r.target&&f.achievements.has(r.target);case 'currency_cost':return f.companionEssence>=(r.amount??0);case 'mastery':return !!r.target&&(f.mastery[r.target]??0)>=(r.amount??1);case 'reputation':return !!r.target&&(f.reputation[r.target]??0)>=(r.amount??1);case 'event_challenge':return !!r.target&&f.eventChallenges.has(r.target);default:return false;}}

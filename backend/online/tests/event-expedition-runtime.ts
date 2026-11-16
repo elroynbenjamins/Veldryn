@@ -100,6 +100,7 @@ async function main(){
  const echoRecords=echoStates.map((state,index)=>deriveOnlineCoopLoadout(`00000000-0000-4000-8000-00000000000${index+2}`,state,3));
  let liveEvent={eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
  let stored:{stateVersion:number;eventCursor:number;privateState:any;clientProjection:any;serverNow:number}|undefined;
+ let frozenControllerSnapshot:{revision:number;characterId:string;accountId:string;snapshotHash:string}|undefined;
  const randomIds=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','33333333-3333-4333-8333-333333333333'];
  const services={
   randomId:()=>randomIds.shift()??'44444444-4444-4444-8444-444444444444',
@@ -108,6 +109,9 @@ async function main(){
    if(name==='load_online_game_server_v1')return {state:controllerState,version:7,serverNow:now,liveEvent} as T;
    if(name==='eligible_online_coop_echoes_server_v1')return echoRecords.map((record,index)=>({profileId:`55555555-5555-4555-8555-55555555555${index}`,sourceAccountId:record.accountId,publishedAtMs:now-1000,record})) as T;
    if(name==='start_online_event_expedition_server_v1'){
+    const members=args.p_members as Array<{snapshot:{revision:number;characterId:string;accountId:string;snapshotHash:string}}>;
+    assert.equal(members.length,4,'event roster must commit four frozen loadout snapshots');
+    frozenControllerSnapshot=members[0]?.snapshot;
     stored={stateVersion:1,eventCursor:1,privateState:args.p_private_state,clientProjection:args.p_client_projection,serverNow:now};return args.p_client_projection as T;
    }
    if(name==='load_online_event_expedition_server_v1'){if(!stored)throw new Error('missing_store');return stored as T;}
@@ -118,7 +122,12 @@ async function main(){
   },
  };
  const runtime=new OnlineEventExpeditionRuntime(services);
- const start=await runtime.start(controllerRecord.accountId,{requestId:'event-start-0001',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
+ const start=await runtime.start(controllerRecord.accountId,{requestId:'event-start-0001',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:6}) as any;
+ assert.ok(stored,'an older UI revision must still start an eligible seasonal dungeon from authoritative server gear');
+ assert.equal(frozenControllerSnapshot?.revision,7,'event controller must be frozen from current server revision');
+ assert.equal(frozenControllerSnapshot?.characterId,controllerRecord.characterId,'event controller snapshot must belong to the authenticated character');
+ assert.equal(frozenControllerSnapshot?.accountId,controllerRecord.accountId,'event controller snapshot must belong to the authenticated account');
+ assert.ok(frozenControllerSnapshot?.snapshotHash,'event controller must commit an immutable server-derived snapshot hash');
  assert.equal(start.eventExpeditionId,'EVENT_SUNCREST_SHATTERED_ISLES');assert.equal(start.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(start.team.length,4);assert.equal(start.options.length,3);assert.equal(start.stateVersion,1);
  assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.equal(start.objective.label,'Champion Laurels');assert.equal(start.objective.count,0);assert.equal(start.bossMechanic.label,'Champion’s Reception');assert.match(start.bossMechanic.summary,/Laurels|crowd/i);assert.ok(start.bossMechanic.telegraph.phases.some((phase:any)=>phase.label==='Pressure Break'));assert.ok(start.bossMechanic.telegraph.castAbilities.some((ability:any)=>ability.label==='Solar Nova'&&ability.interruptible));assert.equal(start.bossRecap,undefined);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)&&Number.isFinite(option.objectiveDelta)));assert.ok(start.options.filter((option:any)=>['battle','elite','boss'].includes(option.kind)).every((option:any)=>option.encounterPreview?.summary));assert.equal(JSON.stringify(start.options).includes('attackPower'),false);assert.equal(JSON.stringify(start.options).includes('coeff'),false);
  const chosen=await runtime.choose(controllerRecord.accountId,start.runId,{requestId:'event-choice-0001',decisionId:start.decisionId,decisionRevision:start.decisionRevision,optionId:start.options[0].nodeId}) as any;

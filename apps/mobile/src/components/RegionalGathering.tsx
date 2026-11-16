@@ -3,7 +3,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState,GatheringSkillId} from '../core/types';
 import {currentRegionId} from '../core/combat-region';
 import {WORLD_ZONES} from '../content/world-map';
-import {regionalGatheringNodes} from '../core/regional-gathering';
+import {gatheringNodeAvailability,regionalGatheringNodes} from '../core/regional-gathering';
 import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
@@ -17,13 +17,13 @@ export function RegionalGathering({state,preferredActionId,onGather,onNavigate,o
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{gt,gl}=useGameplayText();
  const [showSkills,setShowSkills]=useState(false);
  const region=WORLD_ZONES.find(row=>row.id===currentRegionId(state))??WORLD_ZONES[0],nodes=regionalGatheringNodes(state),skills=[...new Set(nodes.map(row=>row.skillId))];
- const level=(id:string)=>state.skills.find(row=>row.skillId===id)?.level??1,ready=nodes.filter(row=>level(row.skillId)>=row.unlockLevel).length;
+ const level=(id:string)=>state.skills.find(row=>row.skillId===id)?.level??1,ready=nodes.filter(row=>{const availability=gatheringNodeAvailability(state,row);return availability.readyHere||availability.active;}).length;
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.heading}>{onBack?<Pressable accessibilityRole="button" onPress={onBack} style={s.back}><Text style={s.backText}>‹ {gt('World')}</Text></Pressable>:null}<Text accessibilityRole="header" style={s.title}>{gt('Gathering')}</Text></View>
-  <View style={s.hero}><ZoneSceneArtwork regionId={region.id}/><View style={s.shade}/><View style={s.heroCopy}><Text style={s.eyebrow}>{gt('CURRENT REGION')}</Text><Text style={s.region}>{region.name}</Text><Text style={s.heroMeta}>{ready} / {nodes.length} resources ready</Text></View></View>
+  <View style={s.hero}><ZoneSceneArtwork regionId={region.id}/><View style={s.shade}/><View style={s.heroCopy}><Text style={s.eyebrow}>{gt('CURRENT REGION')}</Text><Text style={s.region}>{region.name}</Text><Text style={s.heroMeta}>{gt('{ready} / {total} resources ready here',{ready,total:nodes.length})}</Text></View></View>
   <DisclosureControl label={gt('Skills')} expanded={showSkills} onPress={()=>setShowSkills(value=>!value)}/>
   {showSkills&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.skills} showsVerticalScrollIndicator={false}>{skills.map(skill=><Pressable key={skill} accessibilityRole="button" accessibilityLabel={gl(skill)+' · '+gt('Skills')} onPress={()=>onManageSkill(skill as GatheringSkillId)} style={({pressed})=>[s.skill,pressed&&s.pressed]}><ActivityArtwork id={skill} size={22}/><View style={s.skillCopy}><Text style={s.skillName}>{gl(skill)}</Text><Text style={s.sub}>{gt('Level {value}',{value:level(skill)})}</Text></View><Text style={s.sub}>›</Text></Pressable>)}</ScrollView>}
-  <View style={s.section}><View style={s.skillCopy}><Text style={s.sectionTitle}>Regional resources</Text><Text style={s.sub}>{gt('Tap a resource to begin gathering.')}</Text></View><Text style={s.count}>{nodes.length}</Text></View>
+  <View style={s.section}><View style={s.skillCopy}><Text style={s.sectionTitle}>{gt('Regional resources')}</Text><Text style={s.sub}>{gt('Ready resources first. Locked ones show requirements.')}</Text></View><Text style={s.count}>{nodes.length}</Text></View>
   {skills.map(skill=><View key={skill} style={s.skillSection}><Text style={s.skillHeading}>{gl(skill)}</Text><GatheringActivityList state={state} skillId={skill as GatheringSkillId} skillLevel={level(skill)} preferredActionId={preferredActionId} onGather={onGather} onNavigate={onNavigate} currentRegionOnly showInstruction={false}/></View>)}
  </ScrollView>;
 }

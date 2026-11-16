@@ -125,8 +125,8 @@ export const setRecruitmentAlertSubscription=(filters:RecruitmentClientFilters,e
 export const recruitmentMatchAlerts=()=>rpc<RecruitmentMatchAlert[]>('recruitment_match_alerts_v1',{p_limit:20});
 export const ackRecruitmentMatchAlerts=()=>rpc('ack_recruitment_match_alerts_v1');
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
-export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
-export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(CHAT_RECENT_MESSAGE_LIMIT);if(error)throw error;return withChatIdentities(((data??[]) as PartyChatMessage[]).reverse());}
+export type PartyChatMessage={id:string;account_id:string|null;is_system?:boolean;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
+export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,is_system,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(CHAT_RECENT_MESSAGE_LIMIT);if(error)throw error;return withChatIdentities(((data??[]) as PartyChatMessage[]).reverse());}
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{
  const identity=await partySocialIdentity(); if(!identity)return null;

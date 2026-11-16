@@ -13,6 +13,9 @@ export const germanDungeonShopCopy:Readonly<Record<string,string>>={
  'Refresh':'Aktualisieren',
  'Weekly supplies reset Monday 00:00 UTC. Permanent collectibles do not rotate.':'Wöchentliche Vorräte werden montags um 00:00 UTC zurückgesetzt. Dauerhafte Sammlerstücke wechseln nicht.',
  'Supplies':'Vorräte',
+ 'material':'Material',
+ 'Equipment crafting materials · 100 per bundle':'Ausrüstungsmaterialien · 100 pro Bündel',
+ 'Choose a tier and resource. Purchases go directly to your shared Bank.':'Wähle eine Stufe und einen Rohstoff. Einkäufe landen direkt in deiner gemeinsamen Bank.',
  'Collections':'Sammlerstücke',
  'Owned':'Im Besitz',
  'Unable to refresh the Dungeon Shop. Please retry.':'Dungeon-Shop konnte nicht aktualisiert werden. Bitte versuche es erneut.',
@@ -59,17 +62,24 @@ export const germanDungeonShopOfferNames:Readonly<Record<string,readonly [string
  dshop_tempering_satchel:['Delver Tempering Satchel','Härtestaubbeutel des Erkunders'],
  dshop_gem_dust_cache:['Gem Dust Cache','Edelsteinstaub-Vorrat'],
  dshop_tempering_core_cache:['Tempering Core Cache','Härtekern-Vorrat'],
+ dshop_moss_fiber_100:['Moss Fiber ×100','Moosfaser ×100'],
+ dshop_greenwood_log_100:['Greenwood Log ×100','Grünholzstamm ×100'],
+ dshop_wolf_pelt_100:['Wolf Pelt ×100','Wolfspelz ×100'],
+ dshop_ironwood_log_100:['Ironwood Log ×100','Eisenholzstamm ×100'],
+ dshop_dunewood_100:['Dunewood ×100','Dünenholz ×100'],
+ dshop_sunscale_100:['Sunscale ×100','Sonnenschuppe ×100'],
+ dshop_sunstone_ingot_100:['Sunstone Ingot ×100','Sonnensteinbarren ×100'],
  dshop_companion_essence:['Companion Essence Cache','Begleiteressenz-Vorrat'],
  dshop_bondstone:['Bondstone','Bindungsstein'],
- dshop_asterfall_icon:["Warden's Lantern",'Wächterlaterne'],
+ dshop_asterfall_icon:['Thornwarden','Dornenwächter'],
  dshop_asterfall_border:['Briarbound Frame','Dornengebundener Rahmen'],
  dshop_asterfall_background:['Rootbound Sanctuary','Wurzelgebundenes Heiligtum'],
  dshop_asterfall_pet:['Oathroot Seedling','Eidwurzel-Spross'],
- dshop_sunscar_icon:['Solar Vault Key','Schlüssel zum Sonnengewölbe'],
+ dshop_sunscar_icon:['Dune Sovereign','Dünenherrscher'],
  dshop_sunscar_border:['Amberglass Loop','Bernsteinglas-Rahmen'],
  dshop_sunscar_background:['Buried Observatory','Verschüttetes Observatorium'],
  dshop_sunscar_pet:['Vaultscarab','Gewölbeskarabäus'],
- dshop_frostmarch_icon:['Resonant Bell','Resonanzglocke'],
+ dshop_frostmarch_icon:['Rimebound','Reifgebundener'],
  dshop_frostmarch_border:['Frostbound Chime','Frostgebundenes Glockenspiel'],
  dshop_frostmarch_background:['Shiverlake Reflections','Spiegelungen des Zittersees'],
  dshop_frostmarch_pet:['Choirbell Sprite','Chorglocken-Wicht'],
@@ -81,37 +91,96 @@ export function dungeonShopText(language:Language,source:string,params:Record<st
  return accountText(language,source,params);
 }
 
+/** Legacy server text for three SKUs whose artwork has become character portraits.
+ * Guard every other catalogue row and pass through unknown future server names. */
+const LEGACY_DUNGEON_PROFILE_ICON_NAMES:Readonly<Record<string,string>>={
+ dshop_asterfall_icon:"Warden's Lantern",
+ dshop_sunscar_icon:'Solar Vault Key',
+ dshop_frostmarch_icon:'Resonant Bell',
+};
 export function dungeonShopOfferName(language:Language,id:string,source:string):string{
  const known=germanDungeonShopOfferNames[id];
+ const legacy=LEGACY_DUNGEON_PROFILE_ICON_NAMES[id];
+ if(known&&legacy&&(source===legacy||source===known[0]))
+  return language==='de'?known[1]:known[0];
  return language==='de'&&known?.[0]===source?known[1]:source;
 }
 
 const materialNames:Readonly<Record<string,string>>={
+ 'MOSS FIBER':'Moosfaser',
+ 'GREENWOOD LOG':'Grünholzstamm',
+ 'WOLF PELT':'Wolfspelz',
+ 'IRONWOOD LOG':'Eisenholzstamm',
+ 'DUNEWOOD':'Dünenholz',
+ 'SUNSCALE':'Sonnenschuppe',
+ 'SUNSTONE INGOT':'Sonnensteinbarren',
  'TEMPERING DUST':'Härtungsstaub',
  'GEM DUST':'Edelsteinstaub',
  'TEMPERING CORE':'Härtekern',
 };
-const bonusNames:Readonly<Record<string,string>>={
- craftingSpeed:'Herstellungsgeschwindigkeit',
- skillXp:'Fertigkeits-EP',
- dropChance:'Beutechance',
- gatheringYield:'Sammelertrag',
- hp:'Lebenspunkte',
- healingEffectiveness:'Heilwirkung',
- fishingSpeed:'Angelgeschwindigkeit',
- defense:'Verteidigung',
- actionSpeed:'Aktionsgeschwindigkeit',
+const bonusNames:Readonly<Record<string,Readonly<Record<Language,string>>>>={
+ craftingSpeed:{en:'Crafting speed',de:'Herstellungsgeschwindigkeit',es:'Velocidad de fabricación',nl:'Productiesnelheid',it:'Velocità di creazione',fr:'Vitesse de fabrication',ru:'Скорость изготовления',tr:'Üretim hızı'},
+ skillXp:{en:'Skill XP',de:'Fertigkeits-EP',es:'Experiencia de habilidades',nl:'Vaardigheids-XP',it:'PE abilità',fr:'XP de compétence',ru:'Опыт навыков',tr:'Beceri XP'},
+ dropChance:{en:'Drop chance',de:'Beutechance',es:'Probabilidad de botín',nl:'Dropkans',it:'Probabilità di bottino',fr:'Chances de butin',ru:'Шанс добычи',tr:'Düşürme şansı'},
+ gatheringYield:{en:'Gathering yield',de:'Sammelertrag',es:'Rendimiento de recolección',nl:'Verzamelopbrengst',it:'Resa di raccolta',fr:'Rendement de récolte',ru:'Объём сбора',tr:'Toplama verimi'},
+ hp:{en:'Health',de:'Lebenspunkte',es:'Salud',nl:'Levenspunten',it:'Salute',fr:'Points de vie',ru:'Здоровье',tr:'Can'},
+ healingEffectiveness:{en:'Healing effectiveness',de:'Heilwirkung',es:'Eficacia de curación',nl:'Genezingseffectiviteit',it:'Efficacia delle cure',fr:'Efficacité des soins',ru:'Эффективность лечения',tr:'İyileştirme etkisi'},
+ fishingSpeed:{en:'Fishing speed',de:'Angelgeschwindigkeit',es:'Velocidad de pesca',nl:'Vissnelheid',it:'Velocità di pesca',fr:'Vitesse de pêche',ru:'Скорость рыбалки',tr:'Balık tutma hızı'},
+ defense:{en:'Defense',de:'Verteidigung',es:'Defensa',nl:'Verdediging',it:'Difesa',fr:'Défense',ru:'Защита',tr:'Savunma'},
+ actionSpeed:{en:'Action speed',de:'Aktionsgeschwindigkeit',es:'Velocidad de acción',nl:'Actiesnelheid',it:"Velocità d'azione",fr:"Vitesse d'action",ru:'Скорость действий',tr:'Eylem hızı'},
 };
+const bonusContext:Readonly<Record<Language,Readonly<{equipped:string;owned:string}>>>={
+ en:{equipped:'when equipped',owned:'while owned'},
+ de:{equipped:'ausgerüstet',owned:'im Besitz'},
+ es:{equipped:'al equipar',owned:'al poseer'},
+ nl:{equipped:'uitgerust',owned:'in bezit'},
+ it:{equipped:'quando equipaggiato',owned:'quando posseduto'},
+ fr:{equipped:'si équipé',owned:'si possédé'},
+ ru:{equipped:'при экипировке',owned:'при владении'},
+ tr:{equipped:'kuşanıldığında',owned:'sahip olunduğunda'},
+};
+const bonusSummaryPattern=/^\+ ([0-9]+(?:\.[0-9]{1,2})?)% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+(?:\.[0-9]{1,2})?)% owned$/;
 
-/** The Edge service emits only these reviewed offer-summary structures. */
+const bonusTileLabels:Readonly<Record<Language,Readonly<{equipped:string;owned:string;preview:string}>>>={
+ en:{equipped:'While equipped',owned:'Permanent when owned',preview:'Preview price'},
+ de:{equipped:'Beim Ausrüsten',owned:'Dauerhaft im Besitz',preview:'Vorschaupreis'},
+ es:{equipped:'Al equipar',owned:'Permanente al poseer',preview:'Precio de vista previa'},
+ nl:{equipped:'Bij uitrusten',owned:'Permanent bij bezit',preview:'Voorbeeldprijs'},
+ it:{equipped:'Se equipaggiato',owned:'Permanente se posseduto',preview:'Prezzo di anteprima'},
+ fr:{equipped:'Si équipé',owned:'Permanent si possédé',preview:'Prix indicatif'},
+ ru:{equipped:'При экипировке',owned:'Навсегда при владении',preview:'Предварительная цена'},
+ tr:{equipped:'Kuşanıldığında',owned:'Sahipken kalıcı',preview:'Önizleme fiyatı'},
+};
+export function dungeonShopBonusLabel(language:Language,kind:'equipped'|'owned'|'preview'):string{return bonusTileLabels[language][kind];}
+
+/** Decode only the published server bonus format; never display raw code keys. */
+export function dungeonShopOfferBonusDetails(language:Language,source:string):{stat:string;equipped:string;owned:string}|null{
+ const match=bonusSummaryPattern.exec(source);
+ const stat=match?bonusNames[match[2]]?.[language]:undefined;
+ if(!match||!stat)return null;
+ const percent=(value:string)=>'+'+(language==='en'?String(Number(value)):String(Number(value)).replace('.',','))+'%';
+ return {stat,equipped:percent(match[1]),owned:percent(match[3])};
+}
+
+/** Decode only reviewed catalogue summary formats; raw stat IDs are never UI copy. */
 export function dungeonShopOfferSummary(language:Language,source:string):string{
- if(language!=='de')return source;
- const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
- if(material)return material[1]+' × '+materialNames[material[2]];
- const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);
- if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?(essence[1]==='1'?'Bindungsstein':'Bindungssteine'):'Begleiteressenz');
- const bonus=/^\+ ([0-9]+\.[0-9]{2})% (craftingSpeed|skillXp|dropChance|gatheringYield|hp|healingEffectiveness|fishingSpeed|defense|actionSpeed) equipped; \+([0-9]+\.[0-9]{2})% owned$/.exec(source);
- if(bonus)return '+'+bonus[1].replace('.',',')+' % '+bonusNames[bonus[2]]+' ausgerüstet; +'+bonus[3].replace('.',',')+' % im Besitz';
+ const bonus=bonusSummaryPattern.exec(source);
+ if(bonus){
+  const label=bonusNames[bonus[2]]?.[language];
+  if(label){
+   const percent=(value:string)=>language==='en'?value:value.replace('.',',');
+   const context=bonusContext[language];
+   return '+'+percent(bonus[1])+'% '+label+' ('+context.equipped+'); +'+percent(bonus[3])+'% ('+context.owned+')';
+  }
+ }
+ if(language==='de'){
+  const bundle=/^100 × (MOSS FIBER|GREENWOOD LOG|WOLF PELT|IRONWOOD LOG|DUNEWOOD|SUNSCALE|SUNSTONE INGOT) · Shared Bank$/.exec(source);
+  if(bundle)return '100 × '+materialNames[bundle[1]]+' · Gemeinsame Bank';
+  const material=/^(\d+) × (TEMPERING DUST|GEM DUST|TEMPERING CORE)$/.exec(source);
+  if(material)return material[1]+' × '+materialNames[material[2]];
+  const essence=/^(\d+) (Bondstones|Companion Essence)$/.exec(source);
+  if(essence)return essence[1]+' '+(essence[2]==='Bondstones'?(essence[1]==='1'?'Bindungsstein':'Bindungssteine'):'Begleiteressenz');
+ }
  return dungeonShopText(language,source);
 }
 

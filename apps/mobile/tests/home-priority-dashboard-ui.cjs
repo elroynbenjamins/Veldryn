@@ -26,4 +26,10 @@ assert.ok(home.includes('queueComposerOpen')&&home.includes('GameModalSurface vi
 assert.ok(queue.includes('normalizeActivityQueue(state.character?.activityQueue,capacity)')&&queue.includes('queuedActivityReadiness(state,next)')&&queue.includes('activityQueueHandoffStatus(state)'),'Queue summary must honour real readiness');
 assert.ok(home.includes('showProgress&&<View style={s.expanded}>')&&home.includes('showLedger&&<View style={s.expanded}>')&&home.includes('onSetCurrentHandoff={onSetCurrentHandoff}'),'Secondary and handoff features must remain');
 assert.ok(home.includes('GuildDashboardCard')&&home.includes('HomeCommandDeck'),'Guild and quick actions retained');
+const hunting=src('components/HuntingPreview.tsx');
+const huntingDiagnostics=ts.transpileModule(hunting,{fileName:'HuntingPreview.tsx',reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).diagnostics??[];
+assert.equal(huntingDiagnostics.filter(x=>x.category===ts.DiagnosticCategory.Error).length,0,'Shared Home combat scene must parse cleanly');
+assert.ok(focus.includes('kind===\'combat\'&&monster&&props.gameState?<HuntingPreview')&&focus.includes('sceneOnly/>'),'Active combat must use the same scene position as gathering');
+assert.ok(home.includes('gameState={state}')&&!home.includes('showEncounter'),'Home must pass live combat state without a duplicate battle preview');
+assert.ok(hunting.includes('sceneOnly=false')&&hunting.includes('!sceneOnly&&fight')&&hunting.includes('!sceneOnly&&!monster.boss'),'Compact combat must retain animation while hiding the large details and baseline rewards');
 console.log('PASS: Home approved hierarchy, server-backed rewards, confirmation, queue safety and native sheets');

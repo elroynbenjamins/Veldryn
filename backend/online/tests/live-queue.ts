@@ -22,13 +22,21 @@ async function main(){
   }
   assert.ok(combatPowerRating(state).total>=7700,'Sunscar fixture must satisfy published Combat Power requirement');
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
- let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0;
+ let prior:{requestHash:string;response:unknown}|null=null,version=7,hiddenReceiptReads=0,reads=0,committedTickets=0;
  const handler=coopHandler({authenticate:async token=>token==='valid'?account:null,randomId:()=>ticket,randomRoll:()=>0,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    calls.push({name,args});
-   if(name==='read_online_coop_receipt_server_v1'){reads++;return (receiptOnSecondRead&&reads===1?null:prior) as T;}
+   if(name==='read_online_coop_receipt_server_v1'){reads++;if(hiddenReceiptReads>0){hiddenReceiptReads--;return null as T;}return prior as T;}
    if(name==='load_online_game_server_v1')return {state,version} as T;
    if(name==='join_online_live_queue_server_v1'){
+    // PostgreSQL serializes admission and replays the receipt by request ID
+    // before checking the (possibly advanced) game revision. An obscured first
+    // receipt can cause a second RPC without creating a second queue ticket.
+    if(prior){
+      assert.equal(args.p_request_hash,prior.requestHash,'lost-ACK retry must keep the exact request hash');
+      return prior.response as T;
+    }
+    committedTickets++;
     prior={requestHash:args.p_request_hash as string,response:{ticket:{ticketId:ticket,status:'queued'}}};return prior.response as T;
    }
    if(name==='online_live_queue_state_server_v1')return {ticket:null} as T;
@@ -48,24 +56,40 @@ async function main(){
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_005'}))).status,400);
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_004'}))).status,400,'Retired Mirage Well cannot be joined');
  assert.equal((await handler(request('queue',{...body,characterId:'other'}))).status,403);
- assert.equal((await handler(request('queue',{...body,loadoutRevision:6}))).status,409);
+ assert.equal((await handler(request('queue',{...body,loadoutRevision:8}))).status,409,'future version is invalid');
+ // A background gather/hunt may increment the account revision between the Ready
+ // preview and queue submission. Server freezes current gear, not the stale preview.
+ const stalePreview={...body,requestId:'live-stale-preview-001',loadoutRevision:6};
+ assert.equal((await handler(request('queue',stalePreview))).status,200,'unrelated gameplay revision must not block joining');
+ const staleJoin=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
+ assert.equal(staleJoin.args.p_game_version,7,'join must commit using the fresh server revision');
+ assert.equal((staleJoin.args.p_snapshot as {revision:number}).revision,7,'combat snapshot must be derived from current server gear');
+ prior=null;reads=0;calls.length=0;
  const quick={requestId:'quick-start-001',characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
  const quickResponse=await handler(request('quick-queue',quick));assert.equal(quickResponse.status,200);
  const quickWrite=calls.filter(row=>row.name==='join_online_live_queue_server_v1').at(-1)!;
  assert.equal(quickWrite.args.p_expedition_id,'EXP_003','Quick Match should send the Tank to the nearly complete dungeon pool');
  const quickRecord=deriveOnlineCoopLoadout(account,state,version),quickReadiness=assessOnlineCoopLoadout(quickRecord).readiness;
  assert.equal(quickWrite.args.p_tier,regularDungeonReadyTier(EXPEDITIONS.EXP_003,quickRecord.characterLevel,quickReadiness.normalizedScore,quickRecord.combatPower),'Quick Match uses the XP-derived level and verified readiness for its tier');
- prior=null;reads=0;calls.length=0;
+ prior=null;reads=0;calls.length=0;committedTickets=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
+ const firstBody=await first.json();
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
  const frozen=write.args.p_snapshot as {accountId:string;readiness:{role:string;ready:boolean}};
  assert.equal(frozen.accountId,account);assert.equal(frozen.readiness.role,'tank');assert.equal(frozen.readiness.ready,true);
  assert.equal(write.args.p_game_version,7);assert.equal(write.args.p_ticket_id,ticket);assert.equal(write.args.p_tier,2,'Manual Live tier choice is preserved when level-eligible');
  version=8;
- assert.deepEqual(await (await handler(request('queue',body))).json(),await first.json(),'uncertain join replays after gameplay advances');
- receiptOnSecondRead=true;reads=0;
+ assert.deepEqual(await (await handler(request('queue',body))).json(),firstBody,'uncertain join replays after gameplay advances');
+ // A missed first read must be recovered by the second receipt check, with no second join write.
+ hiddenReceiptReads=1;reads=0;
  assert.equal((await handler(request('queue',body))).status,200,'concurrent commit visible after stale load');
- receiptOnSecondRead=false;
+ assert.equal(calls.filter(row=>row.name==='join_online_live_queue_server_v1').length,1,'the second receipt read must avoid redundant admission');
+ assert.ok(reads>=2,'lost first receipt must trigger a fresh recheck');
+ // If both receipt reads miss (replica lag or lost ACK), retry the SAME atomic RPC.
+ // PostgreSQL must replay the first ticket by request ID and reject changed payloads.
+ hiddenReceiptReads=2;reads=0;
+ assert.deepEqual(await (await handler(request('queue',body))).json(),firstBody,'double-missed receipt must reuse the first atomic queue ticket');
+ assert.equal(hiddenReceiptReads,0,'two stale receipt observations must be exercised');
  assert.equal((await handler(request('queue',{...body,tier:3}))).status,409);
  assert.equal((await handler(request('queue'))).status,200);
  assert.equal((await handler(request('queue/'+ticket+'/heartbeat',{requestId:'heartbeat-001',now:1}))).status,400);
@@ -73,7 +97,12 @@ async function main(){
  assert.equal((await handler(request('queue/'+account+'/cancel',{requestId:'cancel-001'}))).status,403);
  assert.equal((await handler(request('queue/'+ticket+'/cancel',{requestId:'cancel-001'}))).status,200);
  assert.equal((await handler(request('queue/'+ticket+'/cancel'))).status,405);
- assert.equal(calls.filter(row=>row.name==='join_online_live_queue_server_v1').length,1);
- console.log('PASS Live queue authentication, server-derived role/equipment, ownership, content gates, replay/race/conflict, status, heartbeat and cancellation boundary');
+ const joinWrites=calls.filter(row=>row.name==='join_online_live_queue_server_v1');
+ assert.equal(joinWrites.length,2,'a double-missed receipt may retry the original atomic join with the same request identity');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_request_id)).size,1,'both attempts must preserve the original idempotency request ID');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_request_hash)).size,1,'retries must retain the same request payload hash');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_ticket_id)).size,1,'retries must preserve the ticket identity');
+ assert.equal(committedTickets,1,'the authoritative database must create only one ticket despite two transport attempts');
+ console.log('PASS Live queue authentication, single-ticket retry safety, server-derived role/equipment, ownership, content gates, replay/race/conflict, status, heartbeat and cancellation boundary');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

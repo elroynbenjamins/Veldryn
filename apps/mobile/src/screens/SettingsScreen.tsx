@@ -1,6 +1,8 @@
 import {accountDuration} from '../i18n/account';
 import {recentScreenText} from '../i18n/recent-screens';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
+import {CHAT_TRANSLATION_RELEASED} from '../core/release-flags';
+import {chatTranslationPrivacy} from '../i18n/chat-translation-privacy';
 import {appBuildText} from '../i18n/app-build';
 import {APP_BUILD_INFO} from '../app-build';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -125,6 +127,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
         <View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={defaultVisibleWorldChatIndex(state.settings.defaultWorldChat)+1===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>
       </View>:null}
     </Panel>
+    {CHAT_TRANSLATION_RELEASED?<Panel><Text style={[s.title,{color:theme.text}]}>{chatTranslationPrivacy(language).title}</Text><Text style={[s.muted,{color:theme.muted}]}>{chatTranslationPrivacy(language).description}</Text></Panel>:null}
     <View onLayout={event=>{emotesOffset.current=event.nativeEvent.layout.y;scrollToEmotes();}}><Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showEmotes}} onPress={()=>setShowEmotes(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
         <View style={s.flex}><Text style={[s.title,{color:theme.text}]}>{a("Chat emotes")}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Choose the five emotes available from the chat composer.")}</Text></View>
         
@@ -154,6 +157,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Panel>
         <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.privacy')}</Text>
         <Text style={[s.sub,{color:theme.muted}]}>{online?a("Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device."):a("Offline progress remains on this device. Local progress cannot be uploaded as online rewards.")}</Text>
+        {CHAT_TRANSLATION_RELEASED?<Text style={[s.sub,{color:theme.muted}]}>{chatTranslationPrivacy(language).description}</Text>:null}
         <GameButton title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/>
       </Panel>
       {!online?<Panel>

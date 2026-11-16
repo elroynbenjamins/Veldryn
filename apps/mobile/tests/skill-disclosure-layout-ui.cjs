@@ -14,7 +14,8 @@ const browser=source('dev/BrowserReview.tsx');
 assert.match(gathering,/numberOfLines=\{2\} style=\{s\.name\}/,
  'Gathering title must wrap instead of covering the HERE badge or XP');
 assert.match(gathering,/s\.metaLine/, 'HERE must live in a separate, responsive metadata row');
-assert.match(gathering,/s\.regionTag/, 'Current-region marker is preserved');
+assert.match(gathering,/s\.locationMeta/, 'Current-region/location metadata is preserved');
+assert.match(gathering,/inCurrentRegion\?gt\('Here'\):regionName/, 'The current region still receives its localized Here marker');
 assert.match(gathering,/<DisclosureControl label=\{gt\('Drops'\)\}/, 'Drops use labeled disclosure');
 assert.doesNotMatch(gathering,/>\{expanded\?'⌃':'⌄'\}/, 'No tiny chevron-only Drops toggles');
 assert.match(tools,/size-inset\*2/, 'Tool icons fit within frames with real breathing room');

@@ -1,6 +1,6 @@
 {
   "name": "veldryn-offline-prototype",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "test:online-loading": "node tests/online-loading-interactions.cjs",
     "test:event-currency-promotion": "node ../../tools/run-mobile-tests.mjs event-currency-promotion",
     "test:frostfall-preview": "node ../../tools/run-mobile-tests.mjs frostfall-preview frostfall-preview-localization && node tests/frostfall-preview-ui.cjs && node ../../tools/validate-event-release-graph.mjs",
-    "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-drop-ui-contract",
+    "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-availability gathering-drop-ui-contract",
     "eas-build-post-install": "node scripts/write-build-source.mjs",
     "start": "expo start",
     "android": "expo run:android",
@@ -17,6 +17,7 @@
     "web": "expo start --web",
     "typecheck:core": "node node_modules/typescript/lib/tsc.js -p tsconfig.core.json --noEmit",
     "test:core": "node ../../tools/run-mobile-core-tests.mjs",
+    "test:forge-claim-all-summary": "node tests/forge-claim-all-summary-ui.cjs",
     "test:localization": "node ../../tools/run-mobile-localization-tests.mjs",
     "test:pets": "node -e \"require('fs').rmSync('.pet-test-build',{recursive:true,force:true})\" && tsc -p tsconfig.pet-tests.json && node .pet-test-build/apps/mobile/tests/core-pets.js && node .pet-test-build/apps/mobile/tests/core-pet-drops.js && node ../../tools/validate-master-roster-assets.mjs && node ../../tools/validate-companion-art-coverage.mjs",
     "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/offline-smoke.js && node .core-build/apps/mobile/tests/equipment-screen.js && node .core-build/apps/mobile/tests/quick-navigation.js && node .core-build/apps/mobile/tests/pre-codex-smoke.js",
@@ -31,7 +32,7 @@
     "test:release-bundle": "expo export --platform android --output-dir .release-bundle-audit && node ../../tools/validate-mobile-export-budget.mjs .release-bundle-audit",
     "test:online": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/online-gameplay.js",
     "test:online-staging-smoke": "node ../../tools/online-staging-smoke.mjs",
-    "test:v16": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/party-social-v16.js",
+    "test:v16": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/party-social-v16.js && node tests/party-herald-ui-contract.cjs",
     "typecheck:search-loadouts": "tsc -p tsconfig.search-loadouts.json --noEmit",
     "test:search-loadouts": "node -e \"require('fs').rmSync('.search-loadouts-build',{recursive:true,force:true})\" && tsc -p tsconfig.search-loadouts.json && node .search-loadouts-build/apps/mobile/tests/search-loadouts-v1.js",
     "typecheck:onboarding": "tsc -p tsconfig.onboarding.json --noEmit",
@@ -43,7 +44,8 @@
     "test:companion-trial-playback": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/companion-trial-playback.js",
     "test:onboarding-locks": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/pet-companion-onboarding-locks.js && node .core-build/apps/mobile/tests/pet-companion-unlock-moments.js && node .core-build/apps/mobile/tests/early-onboarding-exposure.js",
     "test:class-affinities": "node -e \"require('fs').rmSync('.affinity-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .affinity-build && node .affinity-build/apps/mobile/tests/class-skill-affinities.js",
-    "test:tool-artwork": "node tests/gathering-tool-individual-artwork.cjs"
+    "test:tool-artwork": "node tests/gathering-tool-individual-artwork.cjs",
+    "test:cross-profession-art": "node tests/cross-profession-art.cjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",

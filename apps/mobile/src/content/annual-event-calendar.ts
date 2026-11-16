@@ -31,7 +31,7 @@ const WINDOWS:Record<string,{windowLabel:string;order:number}>={
   EVT_ANNUAL_008_2026:{windowLabel:'August',order:8},
   EVT_ANNUAL_010_2026:{windowLabel:'Oct 10 – Nov 2',order:10},
   EVT_ANNUAL_011_2026:{windowLabel:'Nov 6 – Nov 26',order:11},
-  EVT_ANNUAL_012_2026:{windowLabel:'Dec 3 – Dec 29',order:12},
+  EVT_ANNUAL_012_2026:{windowLabel:'Dec 3 – Dec 26',order:12},
 };
 
 function rewards(definition:LiveEventDef,classId:ClassId){

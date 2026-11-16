@@ -16,3 +16,12 @@ export const MARKET_AUTHENTICATED_SERVICE_READY=false;
 
 /** Dungeon Marks Shop authored across three regions; keep collectible passives and shop UI hidden until server and art release. */
 export const DUNGEON_MARKS_SHOP_RELEASED=false;
+
+/** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
+export const CHAT_TRANSLATION_RELEASED=false;
+
+/** Online player roster requires privacy-reviewed production RPC before player-visible activation. */
+export const ONLINE_PLAYER_ROSTER_RELEASED=false;
+
+/** Vendor equipment resale uplift is source-prepared only. Gameplay Edge and staging payout parity must be proved before activation. */
+export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;

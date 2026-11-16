@@ -36,6 +36,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Validate Expo SDK dependency compatibility
         run: pnpm exec expo install --check
+      - name: Validate six transparent 64px cross-profession component icons
+        run: pnpm test:cross-profession-art
       - name: Install backend dependencies used by reconciliation tests
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Verify generated gameplay Edge bundle matches shared engine
@@ -64,6 +66,8 @@ jobs:
         run: pnpm --dir ../../backend test:market-readiness
       - name: Typecheck mobile app
         run: pnpm typecheck
+      - name: Validate chat unread opening and keyboard anchor
+        run: node tests/chat-keyboard-anchor.cjs
       - name: Verify native Google nonce generation, identity binding, and account safety
         run: pnpm test:google-native-auth
       - name: Validate Google Play billing

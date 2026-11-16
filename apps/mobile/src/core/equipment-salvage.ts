@@ -27,8 +27,8 @@ function eligibleOrdinaryIngredient(itemId:string){
  const ingredient=itemDef(itemId);
  return ingredient.type==='material'&&['common','uncommon'].includes(itemRarity(ingredient));
 }
-/** Refund 15% base ordinary materials, plus 2.5% for Rare or 5% Epic+
- * rolls and 2.5% at Q70+ or 5% at Q90+. Max 25%, each input rounded DOWN.
+/** Refund 20% base ordinary materials, plus 2.5% for Rare or 5% Epic+
+ * rolls and 2.5% at Q70+ or 5% at Q90+. Max 30%, each input rounded DOWN.
  * No rare ingredients, catalysts, gems or gold. An untracked legacy item
  * cannot claim ingredients for a Forge receipt that it does not have. */
 export function equipmentSalvageRewards(
@@ -43,7 +43,7 @@ export function equipmentSalvageRewards(
  const quality=crafted.quality;
  const qualityBps=typeof quality==='number'&&Number.isInteger(quality)&&quality>=0&&quality<=100
    ?quality>=90?500:quality>=70?250:0:0;
- const percentBps=Math.min(2500,1500+rarityBps+qualityBps);
+ const percentBps=Math.min(3000,2000+rarityBps+qualityBps);
  const materials=recipe.inputs.filter(input=>eligibleOrdinaryIngredient(input.itemId))
    .map(input=>({itemId:input.itemId,quantity:Math.floor(input.quantity*percentBps/10000)}))
    .filter(input=>input.quantity>0);

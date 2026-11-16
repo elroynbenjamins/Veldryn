@@ -23,7 +23,7 @@ import {activityTargetLabel} from '../core/activity-target-label';
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
 
-type ActiveActivityBarProps={state:GameState;nowMs:number;reward?:RewardBundle;onOpen:()=>void;onRecoverCombat?:()=>void};
+type ActiveActivityBarProps={state:GameState;nowMs:number;reward?:RewardBundle;onOpen:()=>void;onRecoverCombat?:()=>void;compact?:boolean};
 export function ActiveActivityBar(props:ActiveActivityBarProps){
  const {gt,gl}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  // Bucket time to cut the expensive offline-combat sim down to one recompute per 5s window.
@@ -40,7 +40,7 @@ export function ActiveActivityBar(props:ActiveActivityBarProps){
  }
  return props.state.activity?<RunningActivityBar {...props} combatKills={reward?.kills}/>:null;
 }
-function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarProps&{combatKills?:number}){
+function RunningActivityBar({state,nowMs,onOpen,combatKills,compact=false}:ActiveActivityBarProps&{combatKills?:number}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [localNowMs,setLocalNowMs]=useState(()=>Date.now());
@@ -71,6 +71,9 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  // The bar resets after a successful claim; persistent hunt progress stays in activity.sessionKills.
  const unclaimedKills=combat?unclaimedCombatKillCount(combatKills,completedCycles):0;
  const cycleCopy=faithFinishing?gl(phase).replace('…','').toLocaleUpperCase(language):combat?gt('Next kill {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
+ if(compact)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.compactRoot,pressed&&s.pressed]}>
+   <Text style={s.compactSymbol}>{combat?'⚔':'◈'}</Text><Text numberOfLines={1} style={s.compactLabel}>{name}</Text><Text numberOfLines={1} style={s.compactMeta}>{gl(labels[activity.kind])} · {cycleRemaining}s</Text><Text style={s.compactArrow}>›</Text>
+ </Pressable>;
  if(combat)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
   <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id="combat" size={28}/>}</View>
   <View style={s.copy}><Text numberOfLines={1} style={s.combatName}>{name}</Text><Text numberOfLines={1} style={s.combatMeta}>{cycleCopy} · {gt('{count} kills',{count:unclaimedKills})}</Text></View>
@@ -84,6 +87,11 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  </Pressable>;
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
+ compactRoot:{minHeight:30,maxHeight:34,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:14,paddingVertical:4,backgroundColor:C.panel,borderBottomWidth:1,borderBottomColor:C.line},
+ compactSymbol:{fontSize:13,color:C.info,fontWeight:'900'},
+ compactLabel:{fontSize:12,lineHeight:17,fontWeight:'800',color:C.text,flex:1,minWidth:0},
+ compactMeta:{fontSize:10,lineHeight:14,color:C.muted,fontWeight:'700'},
+ compactArrow:{fontSize:16,lineHeight:19,color:C.muted},
  recoverButton:{minHeight:38,minWidth:48,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:C.warningSurface},
  root:{minHeight:52,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingVertical:5,backgroundColor:C.panel,borderBottomWidth:1},
  combat:{minHeight:44,borderBottomColor:C.bad,position:'relative',paddingBottom:6},skilling:{borderBottomColor:C.info},pressed:{opacity:.78},

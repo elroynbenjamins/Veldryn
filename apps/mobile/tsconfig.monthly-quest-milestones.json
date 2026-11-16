@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.core.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../backend/node_modules/@types"
+    ],
+    "outDir": ".monthly-quest-build"
+  },
+  "include": [
+    "tests/monthly-quest-milestones.ts",
+    "tests/monthly-quest-copy.ts"
+  ]
+}

@@ -17,4 +17,6 @@ export class CoopCommandJournal{
   }finally{this.running=false;}
  }
  async pending(){return Boolean(await this.store.read());}
+ /** A pending command is retried only for its original dungeon, never another run. */
+ async pendingForRun(runId:string){const command=await this.store.read();return Boolean(command&&command.path.startsWith(`/coop/runs/${runId}/`));}
 }

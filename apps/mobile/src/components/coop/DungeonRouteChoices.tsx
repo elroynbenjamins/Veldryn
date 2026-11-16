@@ -45,6 +45,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
    const translatedRisk=localizedSeasonalDungeonRouteRisk(language,option.risk);
    const translatedReward=localizedSeasonalDungeonRouteReward(language,option.reward);
+    const combatMarks=option.kind==='battle'?3:option.kind==='elite'?5:0;
    return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
     accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?action:ui('Unavailable')})}
@@ -65,10 +66,11 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
       <Text style={s.actionCue}>{votedHere?ui('Your vote'):action} <Text style={s.chevron}>{'›'}</Text></Text>
      </View>
      {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
-     {(!riskBaseline||!redundantReward||modifier)?<View style={s.tags}>
+     {(!riskBaseline||!redundantReward||modifier||combatMarks>0)?<View style={s.tags}>
       {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
-      {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
+      {combatMarks>0?<View style={s.rewardTag}><Text style={s.rewardText}>+{combatMarks} {st('Marks')}</Text></View>:null}
+       {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
      </View>:null}
     </View>
    </Pressable></Animated.View>;

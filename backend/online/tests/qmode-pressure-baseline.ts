@@ -12,6 +12,9 @@ import {resolveCoopNode} from '../../src/server/expeditions/node-resolution';
 const classes=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as ClassId[];
 const dungeon=EXPEDITIONS.EXP_001;
 assert.ok(dungeon);
+// Cover every possible published graph path plus the terminal boss selection.
+// Fixed six-choice loops incorrectly counted valid 8–10-node runs as failures.
+const maximumChoices=dungeon.maxNodes+2;
 const roster=classes.map((classId,index)=>{
  const state=createCharacter(newGame(0),classId,'Pressure Baseline');
  state.character!.id='pressure-'+index;
@@ -25,7 +28,7 @@ function clear(seed:number,legacy:boolean):boolean{
  const repository=new MemoryQModeRunRepository(),service=new QModeService(repository,'published-loadout-balance-v1');
  let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  if(legacy){repository.save({...run,qmodePressureVersion:undefined});run=repository.get(run.id)!;}
- for(let room=0;room<6&&run.phase==='awaiting_choice';room++){
+ for(let room=0;room<maximumChoices&&run.phase==='awaiting_choice';room++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
   run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(options.find(node=>node.kind==='camp')??options[0]).nodeId});
@@ -37,13 +40,13 @@ for(let seed=0;seed<100;seed++){
  if(clear(seed,true))baselineClears++;
  if(clear(seed,false))qmodeClears++;
 }
-// Calibrate against the full six-room dungeon, not just damage in one fight.
+// Calibrate against the complete published dungeon graph, not just damage in one fight.
 function tunedClear(seed:number,attackMultiplier:number):boolean{
  const id='pressure-'+seed;
  const repo=new MemoryQModeRunRepository(),service=new QModeService(repo,'published-loadout-balance-v1');
  const run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
  let state=run.persistentState,currentId=run.currentNodeId;
- for(let room=0;room<6;room++){
+ for(let room=0;room<maximumChoices;room++){
   const current=run.graph.nodes.find(node=>node.nodeId===currentId)!;
   const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
   if(!options.length)return false;

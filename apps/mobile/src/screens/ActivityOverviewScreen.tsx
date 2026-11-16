@@ -72,7 +72,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
   </ScrollView>
   <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a("Close character management")}>
    <GameModalHeader eyebrow={a("CHARACTER MANAGEMENT")} title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
-   {target?<ScrollView ref={modalScrollRef} style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+   {target?<ScrollView ref={modalScrollRef} style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="none" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.warning}><Text style={s.warningTitle}>{a("What you lose")}</Text><Text style={s.warningText}>{a("Your character, levels, Gold, skills, quests, loadouts and equipment upgrades are permanently removed.")}</Text>
       <Text style={s.warningText}>{a("Equipment and items return to the shared Bank or Overflow, with upgrades removed.")}</Text>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteDetails}} style={s.detailsToggle} onPress={()=>setShowDeleteDetails(value=>!value)}><Text style={s.detailsToggleText}>{showDeleteDetails?a("Hide deletion details"):a("Read full deletion details")} {showDeleteDetails?'−':'+'}</Text></Pressable>

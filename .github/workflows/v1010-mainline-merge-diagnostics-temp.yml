@@ -83,6 +83,10 @@ jobs:
           subprocess.run(['git','add',*sorted(choices)],check=True)
           PY
           test -z "$(git diff --name-only --diff-filter=U)"
+          # Git's combined hunk reintroduced one pre-existing whitespace-only line.
+          # Normalize blanks in the already-merged panel without changing executable code.
+          sed -i 's/[[:blank:]]\+$//' apps/mobile/src/components/coop/CoopCombatSetupPanel.tsx
+          git add apps/mobile/src/components/coop/CoopCombatSetupPanel.tsx
           git diff --cached --check
       - name: Install locked mobile/backend dependencies
         run: |

@@ -46,7 +46,10 @@ const sourceAdditions=[
   "Final encounter cleared. Your reward entitlement is being prepared.",
   "This expedition has ended. Review any available rewards before returning."
 ];
-assert.equal(Object.keys(socialEarlyRows).length,219,'RU/TR Dungeon and Social copy includes the latest battle UI labels');
+assert.equal(Object.keys(socialEarlyRows).length,223,'RU/TR retains the original 219 Dungeon and Social labels plus four Q-Mode Run Again errors');
+for(const label of ['This dungeon run cannot be restarted.','This dungeon or difficulty is no longer available.','Your dungeon loadout changed. Refresh your equipment before running again.','Could not create a fresh dungeon run.']){
+ assert.ok(Object.hasOwn(socialEarlyRows,label)&&Object.hasOwn(socialTranslationRows,label),'all seven non-English locale rows cover Q-Mode restart error '+label);
+}
 assert.equal(sourceAdditions.length,20,'Live Dungeon, combat inspect and terminal states require 20 new messages');
 for(const [key,values] of Object.entries(socialEarlyRows)){
  assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'RU/TR overlay key must exist in base Social catalog: '+key);

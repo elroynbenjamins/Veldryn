@@ -23,7 +23,7 @@ export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[]
   finally{setSending(false);}
  };
  return <FantasyPanel variant="selected">
-  <ScrollView ref={messagesScroll} style={s.messages} contentContainerStyle={s.messageList} keyboardShouldPersistTaps="handled" onContentSizeChange={()=>messagesScroll.current?.scrollToEnd({animated:false})} nestedScrollEnabled>
+  <ScrollView ref={messagesScroll} style={s.messages} contentContainerStyle={s.messageList} keyboardShouldPersistTaps="handled" onContentSizeChange={()=>messagesScroll.current?.scrollToEnd({animated:false})} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} nestedScrollEnabled>
    {messages.length?messages.slice(-20).map(message=><Text key={message.id} style={s.message}><Text style={s.sender}>{message.senderName}: </Text>{message.body}</Text>):<Text style={s.copy}>{st("No messages yet.")}</Text>}
   </ScrollView>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}

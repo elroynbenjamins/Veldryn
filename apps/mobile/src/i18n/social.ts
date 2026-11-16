@@ -7,6 +7,7 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "This dungeon run cannot be restarted.": ["Dieser Dungeon-Durchlauf kann nicht neu gestartet werden.","No se puede reiniciar esta incursión en la mazmorra.","Deze kerkerrun kan niet opnieuw worden gestart.","Questa spedizione nel dungeon non può essere riavviata.","Cette expédition dans le donjon ne peut pas être relancée."],
   "Back to Dungeons": ["Zurück zu den Dungeons","Volver a las mazmorras","Terug naar kerkers","Torna ai dungeon","Retour aux donjons"],
   "Only your Party leader can invite other players.": ["Nur der Gruppenleiter kann andere Spieler einladen.","Solo el líder de tu grupo puede invitar a otros jugadores.","Alleen je groepsleider kan andere spelers uitnodigen.","Solo il capogruppo può invitare altri giocatori.","Seul le chef de votre groupe peut inviter d'autres joueurs."],
   "This player already belongs to another Party.": ["Dieser Spieler gehört bereits einer anderen Gruppe an.","Este jugador ya pertenece a otro grupo.","Deze speler zit al in een andere groep.","Questo giocatore fa già parte di un altro gruppo.","Ce joueur appartient déjà à un autre groupe."],

@@ -213,6 +213,7 @@ const baseline={
     "act('companion_ascend',{ id: selection })",
     "act('companion_bond_reward',{ id: selection, level })",
     "act('companion_equip',{ id: selection })",
+    "act('companion_housing_upgrade',{ id: selection })",
     "act('companion_level',{ id: selection })",
     "act('companion_master',{ id: selection })",
     "act('companion_technique',{ id: selection, technique: technique.id })",

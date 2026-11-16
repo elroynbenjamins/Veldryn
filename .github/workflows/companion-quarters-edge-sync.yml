@@ -1,0 +1,48 @@
+name: Companion Quarters combined gameplay Edge parity (integration only)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/mobile/src/core/combat-companions.ts'
+      - 'apps/mobile/src/core/companion-housing.ts'
+      - 'backend/src/server/companions/progression-v2.ts'
+      - '.github/workflows/companion-quarters-edge-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'integration/companion-quarters-post-weapon-swap-20261116'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build:online
+      - run: node tools/verify-gameplay-edge.mjs
+      - name: Commit only source-exact Edge bundles to this feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'build: synchronize combined weapon-swap and companion quarters Edge bundles'
+            git push origin HEAD:refs/heads/integration/companion-quarters-post-weapon-swap-20261116
+          fi

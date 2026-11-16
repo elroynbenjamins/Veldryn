@@ -8,7 +8,7 @@ export interface ChatLogItem{id:string}
 
 export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp,active=true,expanded=false}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:(messageId:string)=>void|Promise<void>;active?:boolean;expanded?:boolean}){
  const st=useSocialText();
- const C=useGameTheme(),scrollRef=useRef<ScrollViewInstance>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),userScrollingRef=useRef(false),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp);
+ const C=useGameTheme(),scrollRef=useRef<ScrollViewInstance>(null),nearBottomRef=useRef(true),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),userScrollingRef=useRef(false),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp),wasActiveRef=useRef(active);
  const [dividerId,setDividerId]=useState(firstUnreadMessageId),[dividerCleared,setDividerCleared]=useState(false),[pendingNew,setPendingNew]=useState(0),[foreground,setForeground]=useState(()=>AppState.currentState==='active'||AppState.currentState===null);
  activeRef.current=active&&foreground;onCaughtUpRef.current=onCaughtUp;
  const hasMessages=items.length>0,latestId=hasMessages?items[items.length-1].id:undefined;
@@ -32,13 +32,13 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  // A hidden panel can still receive an in-flight history result. Do not consume
  // its caught-up message ID until the player can actually see the conversation.
  const caughtUp=()=>{if(!visible())return;setPendingNew(0);if(latestId){setDividerCleared(true);readAck.caughtUp(latestId);}};
- useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;userScrollingRef.current=false;initializedRef.current=false;previousIdsRef.current=new Set();setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
- useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId){nearBottomRef.current=false;setDividerId(firstUnreadMessageId)}},[firstUnreadMessageId,dividerId]);
+ useEffect(()=>{nearBottomRef.current=true;userScrollingRef.current=false;initializedRef.current=false;previousIdsRef.current=new Set();setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
+ useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId)setDividerId(firstUnreadMessageId);},[firstUnreadMessageId,dividerId]);
  useEffect(()=>{if(!initializedRef.current&&dividerId&&items.length&&!items.some(item=>item.id===dividerId))setDividerId(items[0].id);},[items,dividerId]);
  useEffect(()=>{
   // Native content-size events need not fire when another account/channel has
   // the same layout. Reuse the measured log after the new rows have committed.
-  if(!visible()||initializedRef.current||!items.length||contentHeightRef.current<=0||firstUnreadMessageId||(!dividerCleared&&dividerId))return;
+  if(!visible()||initializedRef.current||!items.length||contentHeightRef.current<=0)return;
   let cancelled=false;
   requestAnimationFrame(()=>{
    if(cancelled||!visible()||initializedRef.current)return;
@@ -57,14 +57,16 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
   else setPendingNew(current=>current+added);
  },[items]);
  useEffect(()=>{
+  // Reopening a previously visited channel should show the latest messages,
+  // even if the player was reading older history before closing the chat.
+  const reopened=active&&!wasActiveRef.current;
+  wasActiveRef.current=active;
+  if(reopened)nearBottomRef.current=true;
   if(visible()&&initializedRef.current&&nearBottomRef.current)requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
  },[active,foreground]);
 
- const onDividerLayout=(event:LayoutChangeEvent)=>{
-  if(initializedRef.current||dividerCleared)return;
-  initializedRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));nearBottomRef.current=false;
-  requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-10),animated:false});if(contentHeightRef.current<=viewportHeightRef.current+44){nearBottomRef.current=true;caughtUp();}});
- };
+ // Opening a channel always anchors at the latest message. The unread divider
+ // remains in the history, but must never dictate the initial scroll position.
  // Native layout can change after the first scroll (emotes, font scaling,
  // composer resizing, keyboard opening/closing). Keep the end in view only
  // when the player was already following the latest messages.
@@ -79,7 +81,6 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
    if(previousHeight>0&&Math.abs(height-previousHeight)>1)followLatestAfterLayout();
    return;
   }
-  if(dividerId&&!dividerCleared)return;
   initializedRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));nearBottomRef.current=true;
   requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
  };
@@ -105,7 +106,7 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
 
  return <View style={[s.root,expanded&&s.expandedRoot]}>
   <ScrollView ref={scrollRef} style={[s.log,expanded&&s.expandedLog]} contentContainerStyle={[s.inner,expanded&&!hasMessages&&s.emptyInner]} keyboardShouldPersistTaps="handled" scrollEventThrottle={80} onLayout={onViewportLayout} onScroll={onScroll} onScrollBeginDrag={()=>{userScrollingRef.current=true;}} onScrollEndDrag={()=>{userScrollingRef.current=false;}} onMomentumScrollBegin={()=>{userScrollingRef.current=true;}} onMomentumScrollEnd={()=>{userScrollingRef.current=false;}} onContentSizeChange={onContentSizeChange} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-   {items.length?items.map((item,index)=>{const createdAt=typeof (item as {created_at?:unknown}).created_at==='string'?(item as unknown as {created_at:string}).created_at:undefined;const previous=items[index-1];const previousAt=previous&&typeof (previous as {created_at?:unknown}).created_at==='string'?(previous as unknown as {created_at:string}).created_at:undefined;const date=createdAt?new Date(createdAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;const previousDate=previousAt?new Date(previousAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;return <View key={item.id} onLayout={!dividerCleared&&dividerId===item.id?onDividerLayout:undefined}>{date&&date!==previousDate?<View style={s.dateDivider}><View style={s.line}/><Text style={s.dateText}>{date}</Text><View style={s.line}/></View>:null}{!dividerCleared&&dividerId===item.id?<View style={s.divider}><View style={[s.line,{backgroundColor:C.warning}]}/><Text style={[s.dividerText,{color:C.warning}]}>{st("NEW MESSAGES")}</Text><View style={[s.line,{backgroundColor:C.warning}]}/></View>:null}{renderItem(item)}</View>;}):<Text style={[s.empty,{color:C.muted}]}>{emptyText}</Text>}
+   {items.length?items.map((item,index)=>{const createdAt=typeof (item as {created_at?:unknown}).created_at==='string'?(item as unknown as {created_at:string}).created_at:undefined;const previous=items[index-1];const previousAt=previous&&typeof (previous as {created_at?:unknown}).created_at==='string'?(previous as unknown as {created_at:string}).created_at:undefined;const date=createdAt?new Date(createdAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;const previousDate=previousAt?new Date(previousAt).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'}):undefined;return <View key={item.id}>{date&&date!==previousDate?<View style={s.dateDivider}><View style={s.line}/><Text style={s.dateText}>{date}</Text><View style={s.line}/></View>:null}{!dividerCleared&&dividerId===item.id?<View style={s.divider}><View style={[s.line,{backgroundColor:C.warning}]}/><Text style={[s.dividerText,{color:C.warning}]}>{st("NEW MESSAGES")}</Text><View style={[s.line,{backgroundColor:C.warning}]}/></View>:null}{renderItem(item)}</View>;}):<Text style={[s.empty,{color:C.muted}]}>{emptyText}</Text>}
   </ScrollView>
   {pendingNew>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Jump to {count} new messages',{count:pendingNew})} onPress={jumpLatest} style={({pressed})=>[s.jump,{backgroundColor:C.selection,borderColor:C.selectionLine},pressed&&s.pressed]}><Text style={[s.jumpText,{color:C.info}]}>{st('↓ {count} NEW',{count:pendingNew>99?'99+':pendingNew})}</Text></Pressable>:null}
  </View>;

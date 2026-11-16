@@ -1,0 +1,42 @@
+name: Hidden Guild PvE V10 disk PostgreSQL QA
+
+# Test-only embedded PostgreSQL with temporary filesystem; no credentials,
+# no remote Supabase connections, migrations, gameplay routes or payouts.
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/guild-pve-pg-v10.ts'
+      - 'backend/src/server/combat/guild-pve-transaction-v9.ts'
+      - 'backend/tsconfig.guild-pve-v10.json'
+      - 'tools/guild-pve-v10-pglite-integration.mjs'
+      - 'tools/guild-pve-v10-pglite-qa-schema.sql'
+      - '.github/workflows/guild-pve-v10-pglite-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  persisted-receipt-and-rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck isolated PostgreSQL adapter
+        run: pnpm exec tsc -p tsconfig.guild-pve-v10.json --noEmit
+      - name: Compile hidden Guild PvE SQL adapter and combat dependency
+        run: pnpm exec tsc -p tsconfig.guild-pve-v10.json
+      - name: Reopen on-disk PostgreSQL and verify exact saved receipts
+        run: node ../tools/guild-pve-v10-pglite-integration.mjs

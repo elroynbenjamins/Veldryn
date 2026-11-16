@@ -10,7 +10,7 @@ require.extensions['.ts']=function(mod,filename){
 };
 const {
  germanDungeonShopCopy,germanDungeonShopOfferNames,dungeonShopText,
- dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason,
+ dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason,
 }=require('../src/i18n/dungeon-shop.ts');
 const app=path.resolve(__dirname,'..');
 const backend=fs.readFileSync(path.join(app,'../../backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'),'utf8');
@@ -69,9 +69,11 @@ for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp
  const source='+ 2.00% '+target+' equipped; +0.50% owned';
  const result=dungeonShopOfferSummary('de',source);
  assert.notEqual(result,source,'Untranslated live bonus stat: '+target);
- assert.match(result,/\+2,00 %/,'German bonus should use comma decimals');
- assert.match(result,/\+0,50 % im Besitz/);
- assert.equal(dungeonShopOfferSummary('en',source),source,'English server description changed');
+ assert.match(result,/\+2,00%/,'German bonus should use comma decimals');
+ assert.match(result,/\+0,50% \(im Besitz\)/);
+ const english=dungeonShopOfferSummary('en',source);
+ assert.ok(english.includes('when equipped')&&english.includes('while owned'),'English bonus should explain equipped/owned effects');
+ assert.ok(!english.includes(target),'English benefit copy must not leak raw stat IDs');
 }
 assert.equal(dungeonShopOfferSummary('de','Unknown effect {whatever}'),'Unknown effect {whatever}');
 for(const region of ['Asterfall','Sunscar','Frostmarch'])
@@ -96,4 +98,11 @@ for(const marker of [
  "t('Loading Expedition Shop…')",
  "t('Purchase confirmed. Reopen your inventory to refresh rewards.')",
 ])assert.ok(shell.includes(marker),'Expedition shell translation missing: '+marker);
-console.log('PASS: 17 guarded German Expedition Shop offers, 45 UI keys, descriptions, statuses, placeholders and a11y wiring');
+for(const lang of ['en','de','es','nl','it','fr','ru','tr']){
+ const details=dungeonShopOfferBonusDetails(lang,'+ 2.00% gatheringYield equipped; +0.50% owned');
+ assert.ok(details&&details.stat&&details.equipped==='+2%'&&details.owned==='+0,5%'.replace(',',lang==='en'?'.':','),'localized stat tiles '+lang);
+ assert.ok(dungeonShopBonusLabel(lang,'equipped')&&dungeonShopBonusLabel(lang,'owned'),'labels '+lang);
+ assert.ok(!details.stat.includes('gatheringYield'),'no raw server stat IDs '+lang);
+}
+assert.ok(shop.includes('dungeonShopOfferBonusDetails(language,item.summary)')&&shop.includes('bonusDetails.equipped')&&shop.includes('bonusDetails.owned'),'benefit tiles rendered without unrelated shop systems');
+console.log('PASS: 17 guarded German offers, 45 UI keys, multilingual readable bonus tiles and UI contracts');

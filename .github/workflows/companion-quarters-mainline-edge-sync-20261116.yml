@@ -1,0 +1,58 @@
+name: Companion Quarters mainline integration Edge sync (draft)
+on:
+  push:
+    branches: ['integration/companion-quarters-current-main-20261116']
+    paths:
+      - '.github/workflows/companion-quarters-mainline-edge-sync-20261116.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: companion-quarters-current-main-edge
+  cancel-in-progress: false
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/companion-quarters-current-main-20261116
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Regenerate and check canonical gameplay/co-op bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject unrelated source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit generated bundles to draft integration only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Already in sync'
+            exit 0
+          fi
+          git commit -m 'build: synchronize Companion Quarters current-main Edge outputs'
+          git push origin HEAD:integration/companion-quarters-current-main-20261116

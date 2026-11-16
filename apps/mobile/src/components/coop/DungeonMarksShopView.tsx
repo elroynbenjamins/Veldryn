@@ -5,6 +5,8 @@ import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {ResourceIcon} from '../ResourceIcon';
 import {UiIcon} from '../UiIcon';
+import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
@@ -13,6 +15,7 @@ import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShop
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
 import {dungeonShopPetOfferArt} from '../../theme/dungeon-shop-pet-art';
+import {dungeonShopCosmeticOfferArt} from '../../theme/dungeon-shop-cosmetic-art';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
 
 type Shelf='Supplies'|'Collections'|'Owned';
@@ -31,8 +34,8 @@ const CATEGORY_PREVIEW_ART:Record<DungeonMarksShopCard['category'],UiIconName>={
  supply:'inventory',material:'inventory',companion:'companions',icon:'account',border:'character',background:'world',pet:'companions',
 };
 function DungeonShopOfferIcon({item}:{item:DungeonMarksShopCard}){
- const petArt=dungeonShopPetOfferArt(item.id);
- if(petArt)return <Image source={petArt} resizeMode="contain" style={{width:44,height:44}}/>;
+ const cosmeticArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
+ if(cosmeticArt)return <Image source={cosmeticArt} resizeMode="contain" style={{width:44,height:44}}/>;
  const resourceId=item.materialItemId??OFFER_RESOURCE_ART[item.id];
  return resourceId?<ResourceIcon resourceId={resourceId} size={42}/>:<UiIcon name={CATEGORY_PREVIEW_ART[item.category]} size={36}/>;
 }
@@ -121,6 +124,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const offerStatus=t(statusSource);
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);
+   const previewArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
@@ -135,7 +139,10 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.detail}>
-     {dungeonShopPetOfferArt(item.id)?<View style={s.petPreview}><Image source={dungeonShopPetOfferArt(item.id)!} resizeMode="contain" style={s.petPreviewImage}/></View>:null}
+     {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
+      ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
+     }</View>:null}
      <Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
@@ -164,7 +171,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
  description:{...typography.body,color:C.text},
- petPreview:{alignItems:'center',justifyContent:'center',minHeight:96},petPreviewImage:{width:96,height:96},
+ cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
+ petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

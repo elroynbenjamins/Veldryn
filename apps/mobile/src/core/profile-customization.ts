@@ -2,6 +2,7 @@ import {LIVE_EVENT_CATALOG,type EventReward,type LiveEventDef} from '../content/
 import type {GameState} from './types';
 import {PROFILE_TITLES,profileTitleUnlocked,profileBackgroundUnlocked} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
+import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections';
 export type ProfileRewardKind='background'|'border'|'title';
@@ -90,6 +91,10 @@ function eventProfileRewardSource(state:GameState,kind:ProfileRewardKind,id:stri
 }
 
 export function profileRewardSource(state:GameState,kind:ProfileRewardKind,id:string):ProfileRewardSource{
+ const dungeon=DUNGEON_SHOP_COLLECTIBLES_V1.find(row=>row.kind===kind&&row.id===id);
+ if(dungeon)return {kind,id,name:dungeon.name,label:'Dungeon Marks Shop',
+  detail:(dungeon.region??'Dungeon')+' · Permanent Expedition Marks reward',
+  destination:'Collections',actionLabel:'Open Collections'};
  if(kind==='border'){
   const guildBorder={
    'guild-border-silver':{name:'Fellowship Silver',detail:'Guild Token Shop · Guild Level 2.'},
@@ -122,7 +127,8 @@ export function profileRewardSource(state:GameState,kind:ProfileRewardKind,id:st
 }
 
 function eventRewardName(state:GameState,kind:ProfileRewardKind,id:string){
- return eventProfileRewardSource(state,kind,id)?.name??humanize(id);
+ return DUNGEON_SHOP_COLLECTIBLES_V1.find(row=>row.kind===kind&&row.id===id)?.name
+  ??eventProfileRewardSource(state,kind,id)?.name??humanize(id);
 }
 function addedIds(before:string[]|undefined,after:string[]|undefined){
  const prior=new Set(before??[]);

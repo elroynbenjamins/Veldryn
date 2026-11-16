@@ -92,6 +92,58 @@ assert(petRegistry.includes('??dungeonShopPetArtSource(id)'),'Pet Collection mus
 assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offers must use unique pet art and expanded preview');
 assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'new pet art must not bypass collectible release gate');
 
+// Dungeon Shop cosmetics use stable reward IDs throughout the server, gallery
+// and shop; validate their exact runtime dimensions, unlike source art dimensions.
+const cosmeticOffers=read('apps/mobile/src/theme/dungeon-shop-cosmetic-art.ts');
+const profileBorders=read('apps/mobile/src/theme/profile-border-assets.ts');
+const profileScenes=read('apps/mobile/src/theme/profile-background-assets.ts');
+const profileIconsArt=read('apps/mobile/src/theme/profile-icon-assets.ts');
+const profileIconsCatalog=read('apps/mobile/src/core/profile-icons.ts');
+const profileWardrobe=read('apps/mobile/src/core/profile-wardrobe.ts');
+const profileSources=read('apps/mobile/src/core/profile-customization.ts');
+const crypto=require('node:crypto');
+const hashes=new Set();
+function webpSize(bytes){
+ assert.equal(bytes.toString('ascii',0,4),'RIFF','expected WebP RIFF header');
+ assert.equal(bytes.toString('ascii',8,12),'WEBP','expected WebP image');
+ const type=bytes.toString('ascii',12,16);
+ if(type==='VP8X')return [1+bytes[24]+(bytes[25]<<8)+(bytes[26]<<16),1+bytes[27]+(bytes[28]<<8)+(bytes[29]<<16)];
+ if(type==='VP8L'){const n=bytes.readUInt32LE(21);return [1+(n&16383),1+((n>>>14)&16383)];}
+ if(type==='VP8 ')return [bytes.readUInt16LE(26)&16383,bytes.readUInt16LE(28)&16383];
+ throw Error('unsupported WebP chunk '+type);
+}
+for(const [offerId,id,kind,filename,dims,registry] of [
+ ['dshop_asterfall_icon','dungeon:asterfall:wardens-lantern','icon','dungeon-asterfall-wardens-lantern.webp',[512,512],profileIconsArt],
+ ['dshop_sunscar_icon','dungeon:sunscar:solar-vault-key','icon','dungeon-sunscar-solar-vault-key.webp',[512,512],profileIconsArt],
+ ['dshop_frostmarch_icon','dungeon:frostmarch:resonant-bell','icon','dungeon-frostmarch-resonant-bell.webp',[512,512],profileIconsArt],
+ ['dshop_asterfall_border','dungeon:asterfall:briarbound-frame','border','dungeon-asterfall-briarbound-frame.webp',[1024,576],profileBorders],
+ ['dshop_sunscar_border','dungeon:sunscar:amberglass-loop','border','dungeon-sunscar-amberglass-loop.webp',[1024,576],profileBorders],
+ ['dshop_frostmarch_border','dungeon:frostmarch:frostbound-chime','border','dungeon-frostmarch-frostbound-chime.webp',[1024,576],profileBorders],
+ ['dshop_asterfall_background','dungeon:asterfall:rootbound-sanctuary','background','dungeon-asterfall-rootbound-sanctuary.webp',[320,180],profileScenes],
+ ['dshop_sunscar_background','dungeon:sunscar:buried-observatory','background','dungeon-sunscar-buried-observatory.webp',[320,180],profileScenes],
+ ['dshop_frostmarch_background','dungeon:frostmarch:shiverlake-reflections','background','dungeon-frostmarch-shiverlake-reflections.webp',[320,180],profileScenes],
+]){
+ const dir=kind==='icon'?'profile-icons-v1':kind==='border'?'profile-borders':'profile-backgrounds';
+ const file=path.join(root,'apps/mobile/assets',dir,filename);
+ assert(fs.existsSync(file),'missing cosmetic asset: '+filename);
+ const bytes=fs.readFileSync(file),hash=crypto.createHash('sha1').update(bytes).digest('hex');
+ assert(bytes.length>1000,'empty or placeholder artwork: '+filename);
+ assert.deepEqual(webpSize(bytes),dims,'wrong game runtime dimensions: '+filename);
+ assert(!hashes.has(hash),'two rewards reuse the same icon');
+ hashes.add(hash);
+ assert(registry.includes(id),'profile registry misses '+id);
+ assert(cosmeticOffers.includes(offerId+':{kind:\''+kind+'\',rewardId:\''+id+'\'}'),'shop reward art mismatch: '+offerId);
+ assert(catalog.includes(offerId),'server catalogue missing '+offerId);
+}
+assert(shopView.includes('dungeonShopCosmeticOfferArt(item.id)'),'shop needs unique cosmetic previews');
+assert(shopView.includes('s.widePreviewImage'),'wide assets need non-square previews');
+assert(shopView.includes('<ProfileFrameOverlay source={previewArt}/>'),'shop border previews must use production frame layout');
+assert(profileIconsCatalog.includes('DUNGEON_SHOP_PROFILE_ICONS_V1'),'profile icon collection missing Dungeon rewards');
+assert(profileIconsCatalog.includes('DUNGEON_MARKS_SHOP_RELEASED||owned.has(row.id)'),'unreleased icons must stay hidden unless owned');
+assert(profileWardrobe.includes("row.group==='Dungeon'?'DUNGEON'"),'Dungeon rewards need distinct wardrobe tagging');
+assert(profileSources.includes('DUNGEON_SHOP_COLLECTIBLES_V1.find'),'Dungeon reward names must be preserved');
+assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'art must not enable purchases or passives');
+
 // V3 extends the baseline 17 SKUs with seven one-per-week, x100 crafting inputs.
 // Preserve the baseline resource artwork improvements from main.
 assert(bundles.includes("'crafting_bundle'")&&bundles.includes("'quantity',v_offer.reward_quantity"),'bank grant must be server-owned');

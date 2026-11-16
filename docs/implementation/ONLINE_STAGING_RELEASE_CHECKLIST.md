@@ -37,3 +37,17 @@ Use two dedicated staging accounts: **A** owns the activity or Party, and **B** 
 1. Inspect the current hourly `ops_metric_buckets` rows for `gameplay.command.*`.
 2. Confirm command outcome and latency buckets are grouped only by command type—never account ID, request ID, or payload.
 3. Investigate spikes in `retryable_failure` or `conflict` before promoting the build.
+
+## Manual chat translation — 1.0.10 release gate
+
+- [x] Staging translation quota migration applied; caller-only quota RPC, no message content stored
+- [x] Staging Edge Function deployed with JWT verification enabled and caller-scoped chat RLS
+- [x] Dedicated translation contract and full mobile CI green on the refined PR branch before privacy-gate follow-up
+- [ ] Configure the server-only DEEPL_API_KEY secret in staging and verify a valid DeepL subscription; do not add keys to this repository
+- [ ] Publish docs/legal/manual-chat-translation-privacy-notice.md to the external Privacy Policy URL linked in Settings
+- [ ] With a dedicated authenticated staging user, translate chat messages into all 8 languages and back to original, including emotes and punctuation
+- [ ] Verify Guild, Party and Live Dungeon revoked membership cannot access messages through the translation function (404)
+- [ ] Verify unauthenticated (401), malformed request (400), inaccessible message (404), account rate-limit (429) and provider failure (503) paths
+- [ ] Verify account switch mid-request does not display another account's translation
+- [ ] Run the new deterministic Edge handler integration tests and full mobile CI, then set CHAT_TRANSLATION_RELEASED=true only after the privacy and provider gates are satisfied
+- [ ] Configure production provider credentials and deploy the tested SQL/function before the first enabled production client; do not turn on the feature in an unconfigured build

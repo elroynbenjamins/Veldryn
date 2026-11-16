@@ -106,14 +106,14 @@ const hashes=new Set();
 // Regional Dungeon profile avatars are character portraits, not inventory-object
 // illustrations. Keep the stable account reward IDs but assert the approved
 // portrait masters are installed before this branch is eligible to merge.
-const avatarMetadata=read('apps/mobile/src/content/dungeon-shop-collectibles-v1.ts');
+const avatarMetadata=read('apps/mobile/src/core/profile-icons.ts');
 const avatarLabels=read('apps/mobile/src/i18n/dungeon-shop.ts');
 for(const [sku,name,filename,hash] of [
  ['dshop_asterfall_icon','Thornwarden','dungeon-asterfall-wardens-lantern.webp','3b1e9bbc946c37d2da0454146763c04a221d0a2305ed44ea844b1818ff4a4a73'],
  ['dshop_sunscar_icon','Dune Sovereign','dungeon-sunscar-solar-vault-key.webp','0963cc3bf00fc59a2521d8f1fb65f4f6aab2be898d87d240459f173ff182ec19'],
  ['dshop_frostmarch_icon','Rimebound','dungeon-frostmarch-resonant-bell.webp','e3d37e8cc2ccaf657a41fb969283fece28e346bc889aaec4c79bf29b774ce690'],
 ]){
- assert(avatarMetadata.includes("name:'"+name+"'"),'avatar catalogue label must be '+name);
+ assert(avatarMetadata.includes("':'"+name+"'"),'mobile avatar catalogue label must be '+name);
  assert(avatarLabels.includes(sku+':['),'localized avatar name missing '+sku);
  const bytes=fs.readFileSync(path.join(root,'apps/mobile/assets/profile-icons-v1',filename));
  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),hash,'approved regional avatar portrait not installed: '+filename);

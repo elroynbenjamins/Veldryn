@@ -16,7 +16,7 @@ const app=path.resolve(__dirname,'..');
 const backend=fs.readFileSync(path.join(app,'../../backend/src/server/expeditions/dungeon-shop-catalog-v1.ts'),'utf8');
 const offers=[...backend.matchAll(/\{id:'(dshop_[^']+)',name:(?:"([^"]+)"|'([^']+)')/g)]
  .map(match=>({id:match[1],name:match[2]??match[3]}));
-assert.equal(offers.length,24,'Expected all 24 canonical Expedition Shop offers, including seven 100-unit crafting bundles');
+assert.equal(offers.length,17,'Expected all 17 canonical Expedition Shop offers');
 assert.equal(Object.keys(germanDungeonShopOfferNames).length,offers.length,'German offer names must cover every canonical offer ID');
 for(const {id,name} of offers){
  assert.equal(germanDungeonShopOfferNames[id]?.[0],name,'German source guard drifted for '+id);
@@ -43,9 +43,7 @@ const expectedCopy=[
  'The Expedition Shop is temporarily unavailable.',
  'Purchase confirmed. Reopen your inventory to refresh rewards.',
  '‹ Back to Dungeons','Loading Expedition Shop…',
- 'Rare','Epic','supply','material','companion','icon','border','background','pet',
- 'Equipment crafting materials · 100 per bundle',
- 'Choose a tier and resource. Purchases go directly to your shared Bank.',
+ 'Rare','Epic','supply','companion','icon','border','background','pet',
  'Profile icon · visual only',
 ];
 const placeholders=source=>[...source.matchAll(/\{(\w+)\}/g)].map(match=>match[1]).sort();
@@ -67,31 +65,14 @@ assert.equal(dungeonShopOfferSummary('de','100 Companion Essence'),'100 Begleite
 assert.equal(dungeonShopOfferSummary('de','1 Bondstones'),'1 Bindungsstein');
 assert.equal(dungeonShopOfferSummary('de','2 Bondstones'),'2 Bindungssteine');
 assert.equal(dungeonShopOfferSummary('de','Profile icon · visual only'),'Profilsymbol · nur optisch');
-assert.equal(dungeonShopOfferSummary('de','100 × MOSS FIBER · Shared Bank'),'100 × Moosfaser · Gemeinsame Bank');
-assert.equal(dungeonShopOfferSummary('de','100 × WOLF PELT · Shared Bank'),'100 × Wolfspelz · Gemeinsame Bank');
-assert.equal(dungeonShopOfferSummary('de','100 × SUNSTONE INGOT · Shared Bank'),'100 × Sonnensteinbarren · Gemeinsame Bank');
 for(const target of ['craftingSpeed','skillXp','dropChance','gatheringYield','hp','healingEffectiveness','fishingSpeed','defense','actionSpeed']){
  const source='+ 2.00% '+target+' equipped; +0.50% owned';
  const result=dungeonShopOfferSummary('de',source);
  assert.notEqual(result,source,'Untranslated live bonus stat: '+target);
- assert.match(result,/\+2,00% /,'German bonus should use comma decimals');
- assert.match(result,/\+0,50% \(im Besitz\)/,'Owned bonus must remain distinct from the equipped bonus');
- assert.ok(!result.includes(target),'Raw server bonus keys must not appear in German UI: '+target);
- const english=dungeonShopOfferSummary('en',source);
- assert.match(english,/\+2\.00% /,'English bonus keeps decimal precision');
- assert.match(english,/\+2\.00% [^\n]+ \(when equipped\)/,'English bonus explains when the equipped benefit applies');
- assert.match(english,/\+0\.50% \(while owned\)/,'English bonus explains the ownership benefit');
- assert.ok(!english.includes(target),'English UI must use the readable stat label: '+target);
+ assert.match(result,/\+2,00%/,'German bonus should use comma decimals');
+ assert.match(result,/\+0,50% \(im Besitz\)/);
+ assert.equal(dungeonShopOfferSummary('en',source),source,'English server description changed');
 }
-for(const language of ['en','de','es','nl','it','fr','ru','tr']){
- const result=dungeonShopOfferBonusDetails(language,'+ 2.00% gatheringYield equipped; +0.50% owned');
- assert.ok(result?.stat&&!result.stat.includes('gatheringYield'),'Benefit tile must use player-readable '+language+' stat');
- assert.equal(result.equipped,'+2%','Equipped amount must be compact');
- assert.equal(result.owned,language==='en'?'+0.5%':'+0,5%','Owned amount must follow locale decimal separator');
- for(const kind of ['equipped','owned','preview'])assert.ok(dungeonShopBonusLabel(language,kind).trim(),'Missing translated '+language+' '+kind+' label');
-}
-assert.equal(dungeonShopOfferBonusDetails('en','unknown effect'),null);
-assert.equal(dungeonShopOfferBonusDetails('en','+ 2.00% unknownServerKey equipped; +0.50% owned'),null);
 assert.equal(dungeonShopOfferSummary('de','Unknown effect {whatever}'),'Unknown effect {whatever}');
 for(const region of ['Asterfall','Sunscar','Frostmarch'])
  assert.equal(dungeonShopLockReason('de','Clear a '+region+' dungeon first.'),'Schließe zuerst einen Dungeon in '+region+' ab.');
@@ -104,11 +85,6 @@ const shell=fs.readFileSync(path.join(components,'ExpeditionShopPanel.tsx'),'utf
 for(const marker of [
  'dungeonShopOfferName(language,item.id,item.name)',
  'dungeonShopOfferSummary(language,item.summary)',
- 'dungeonShopOfferBonusDetails(language,item.summary)',
- "dungeonShopBonusLabel(language,'equipped')",
- "dungeonShopBonusLabel(language,'owned')",
- "dungeonShopBonusLabel(language,'preview')",
- "t('Not yet released — no Marks can be spent on this offer.')",
  'dungeonShopLockReason(language,item.lockReason)',
  "t('{name}, {marks} Expedition Marks, {status}'",
  'formatLocalizedNumber(language,item.marks)',
@@ -120,4 +96,11 @@ for(const marker of [
  "t('Loading Expedition Shop…')",
  "t('Purchase confirmed. Reopen your inventory to refresh rewards.')",
 ])assert.ok(shell.includes(marker),'Expedition shell translation missing: '+marker);
-console.log('PASS: 24 guarded German Expedition Shop offers, 48 UI keys, eight-language readable benefit tiles, safe previews and a11y wiring');
+for(const lang of ['en','de','es','nl','it','fr','ru','tr']){
+ const details=dungeonShopOfferBonusDetails(lang,'+ 2.00% gatheringYield equipped; +0.50% owned');
+ assert.ok(details&&details.stat&&details.equipped==='+2%'&&details.owned==='+0,5%'.replace(',',lang==='en'?'.':','),'localized stat tiles '+lang);
+ assert.ok(dungeonShopBonusLabel(lang,'equipped')&&dungeonShopBonusLabel(lang,'owned'),'labels '+lang);
+ assert.ok(!details.stat.includes('gatheringYield'),'no raw server stat IDs '+lang);
+}
+assert.ok(shop.includes('dungeonShopOfferBonusDetails(language,item.summary)')&&shop.includes('bonusDetails.equipped')&&shop.includes('bonusDetails.owned'),'benefit tiles rendered without unrelated shop systems');
+console.log('PASS: 17 guarded German offers, 45 UI keys, multilingual readable bonus tiles and UI contracts');

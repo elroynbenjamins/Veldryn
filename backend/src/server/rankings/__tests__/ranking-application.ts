@@ -25,6 +25,6 @@ const missing={rpc:async <T>(name:string,_args:Record<string,unknown>)=>{
  missingCalls.push(name);
  return {data:null as T|null,error:{code:'PGRST202',message:'not deployed'}};
 }};
-await assert.rejects(()=>new SupabaseRankingRepository(missing,true).board('account-a','mining',51,0,1234),/rankings_persistence/);
+let v3MissingRejected=false;try{await new SupabaseRankingRepository(missing,true).board('account-a','mining',51,0,1234)}catch(error){v3MissingRejected=String(error).includes('rankings_persistence')};assert.equal(v3MissingRejected,true,'missing v3 RPC must fail closed with persistence error');
 assert.deepEqual(missingCalls,['rankings_board_server_v3'],'missing v3 must fail closed and never query v2');
 console.log('ranking application PASS')};void main();

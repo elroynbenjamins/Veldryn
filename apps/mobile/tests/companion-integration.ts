@@ -14,7 +14,7 @@ import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,COMPANION_BOND_CONFIG} from '../src/content/combat-companions';
 import {companionBondProgress} from '../src/core/companion-bond-progress';
 import {companionAssignmentStatusLabel,companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
-import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques,companionMission} from '../../../backend/src/server/companions/content';
+import {COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP,COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques,companionMission} from '../../../backend/src/server/companions/content';
 import {awardCompanionBondXpServer,companionUnlockRequirementProgress} from '../../../backend/src/server/companions/progression-v2';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -215,8 +215,10 @@ const loadedQuest=parseSaveBackup(createSaveBackup({...quest,account:{...quest.a
 for(const payload of [{type:'companion_supplies',args:{gold:0}},{type:'companion_monthly',args:{id:'NO_PRESTIGE_15',complete:true}},{type:'companion_boss_rematch',args:{won:true}}])rejects(()=>validateGameCommand(payload),'new reward actions reject forged authority');
 let trained=fixture();for(const id of ids)trained.account.combatCompanionProgress![id]={...trained.account.combatCompanionProgress![id],level:20,ascensionTier:2};
 trained.account.companionSanctuary={...trained.account.companionSanctuary!,trainingGroundLevel:1,lastTrainingClaimAtMs:now-7*86400000};
-trained=command(trained,'companion_training');ok(trained.account.companionEssence===10048,'max-level Sanctuary training converts XP using shared weekly cap');
-ok(command(trained,'companion_training').account.companionEssence===10048,'training conversion cannot be repeatedly claimed');
+trained=command(trained,'companion_training');
+const convertedHousingEssence=trained.account.companionEssence!-10000;
+ok(convertedHousingEssence>0&&convertedHousingEssence<=COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP&&trained.account.companionOverflow?.essenceConvertedThisWeek===convertedHousingEssence,'max-level Sanctuary training converts Housing-boosted XP within shared weekly cap');
+ok(command(trained,'companion_training').account.companionEssence===trained.account.companionEssence,'training conversion cannot be repeatedly claimed');
 let bondLadder=fixture();bondLadder.account.combatCompanionProgress!.UNIT_001=applyCompanionBondXp(bondLadder.account.combatCompanionProgress!.UNIT_001,7560);const beforeBondRewards=bondLadder.account.companionEssence!;for(const level of [2,4,6,8])bondLadder=command(bondLadder,'companion_bond_reward',{id:'UNIT_001',level});ok(bondLadder.account.companionEssence===beforeBondRewards+190,'Bond 2/4/6/8 milestone rewards pay once');rejects(()=>command(bondLadder,'companion_bond_reward',{id:'UNIT_001',level:8}),'Bond milestone cannot replay');ok(!(bondLadder.account.companionPhase2Profile?.codexRewardIds??[]).some(id=>id.startsWith('COMPANION_PORTRAIT_')||id.startsWith('COMPANION_TITLE_')),'Bond claims no longer mint retired portrait or title entitlements');
 let legacyBond=fixture();legacyBond.account.combatCompanionProgress!.UNIT_001=applyCompanionBondXp(legacyBond.account.combatCompanionProgress!.UNIT_001,7560);legacyBond.account.companionPhase2Profile={showcaseCompanionIds:[],showcaseSlotsUnlocked:1,codexRewardIds:['COMPANION_PORTRAIT_UNIT_001']};legacyBond=command(legacyBond,'companion_bond_reward',{id:'UNIT_001',level:8});ok(legacyBond.account.companionPhase2Profile?.codexRewardIds?.includes('COMPANION_PORTRAIT_UNIT_001'),'existing legacy IDs are preserved on claim');ok(!legacyBond.account.companionPhase2Profile?.codexRewardIds?.includes('COMPANION_TITLE_UNIT_001'),'Bond 8 does not grant a new retired title');
 ok(companionTechniques('UNIT_013').some(t=>t.name==='Venom Ambush')&&companionTechniques('UNIT_017').some(t=>t.name==='Shatterfang'),'regional companions have authored techniques');
@@ -229,5 +231,5 @@ ok(companionAscensionCost(regentDef,2).materialId==='BLACKGLASS_CORE'&&companion
 ok(companionAscensionCost(heartbondDef,3).materialId==='TRIAL_SANCTUARY_MATERIAL'&&companionAscensionCost(heartbondDef,'mastery').materialQuantity===10,'event Prestige progression remains available through Trial materials');
 ok(companionMaterialSources('BLACKGLASS_CORE').some(source=>source.includes('Blackglass Mireling'))&&companionMaterialSources('REGENT_SIGIL').some(source=>source.includes('Ashen Revenant')),'new Ashlands ascension catalysts have live sources');
 const bondBase=command(fixture(),'companion_equip',{id:'UNIT_001'}),bondBoost=structuredClone(bondBase);bondBoost.account.companionSanctuary!.bondHallLevel=3;
-ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===460,'Bond Hall applies exactly once to hunting');
+ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===529,'Bond Hall and Master Quarters each apply exactly once to hunting');
 console.log(`PASS companion integration: ${checks} checks`);

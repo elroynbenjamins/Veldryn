@@ -2,7 +2,7 @@ import type {GameState} from './types';
 import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,sanitizeCombatCompanionState,classCompanionRole} from './combat-companions';
-import {companionHousingLevelCap,companionHousingTier} from './companion-housing';
+import {companionHousingBondXpMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier} from './companion-housing';
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
@@ -168,7 +168,14 @@ function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number)
   const owned=companionOwned(state);let essence=state.account.companionEssence??0,overflow=state.account.companionOverflow;
   const earnedBond=Math.round(bond*(1+(state.account.companionSanctuary?.bondHallLevel??0)*.05));
   const earnedXp=companionMasteryCompanionXp(xp,state.account.companionMasteryXp);
-  for(const id of ids){if(!owned[id])continue;const r=awardCompanionXpServer({progress:owned[id],amount:earnedXp,companionEssence:essence,overflow,serverNowMs:now,maxLevelCap:companionHousingLevelCap(companionHousingTier(id,state.account.companionHousingTiers))});essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,earnedBond);}
+  for(const id of ids){
+     if(!owned[id])continue;
+     const housing=companionHousingTier(id,state.account.companionHousingTiers);
+     const xp=Math.round(earnedXp*companionHousingTrainingXpMultiplier(housing));
+     const bondXp=Math.round(earnedBond*companionHousingBondXpMultiplier(housing));
+     const r=awardCompanionXpServer({progress:owned[id],amount:xp,companionEssence:essence,overflow,serverNowMs:now});
+     essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,bondXp);
+   }
   return {...setOwned(state,owned),account:{...setOwned(state,owned).account,companionEssence:essence,companionOverflow:overflow}};
 }
 export function awardCompanionCandyXp(state:GameState,companionId:string,xp:number,now:number):GameState{

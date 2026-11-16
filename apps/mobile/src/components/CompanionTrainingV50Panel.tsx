@@ -9,7 +9,7 @@ import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG
 import {MONSTERS} from '../content/monsters';
 import {assertCompanionIdle,companionAvailability,companionEconomy,companionView} from '../core/companion-runtime';
 import {combatCompanionUiModel,companionCurrentLevelCap,companionXpToNextLevel,sanitizeCombatCompanionState} from '../core/combat-companions';
-import {companionHousingLevelCap,companionHousingTier,companionHousingUpgradeAffordability,COMPANION_HOUSING_VISUALS} from '../core/companion-housing';
+import {companionHousingBonuses,companionHousingTier,companionHousingUpgradeAffordability,COMPANION_HOUSING_VISUALS} from '../core/companion-housing';
 import {companionAscensionReadiness} from '../core/companion-ascension-readiness';
 import {selectTrainingRoster,type TrainingRosterScope,type TrainingRosterRole,type TrainingRosterRarity} from '../core/companion-training-roster';
 import {companionHousingMaterialSource,companionMaterialName,companionMaterialSourceTargets,companionProgressionRoadmap,companionRequirementProgress} from '../core/companion-presentation';
@@ -48,15 +48,15 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  const equipped=state.character?.equippedCombatCompanionId;
  const housingState=useMemo(()=>sanitizeCombatCompanionState(state),[state]);
  const quartersTier=companionHousingTier(selection,housingState.account.companionHousingTiers);
- const quartersCap=companionHousingLevelCap(quartersTier),quarters=COMPANION_HOUSING_VISUALS[quartersTier];
+ const quarters=COMPANION_HOUSING_VISUALS[quartersTier],quartersBonus=companionHousingBonuses(quartersTier);
  const nextQuarters=COMPANION_HOUSING_VISUALS[quartersTier+1];
  const quartersUpgrade=model?.owned?companionHousingUpgradeAffordability(housingState,selection):undefined;
  const ascentCap=model?.progress?companionCurrentLevelCap(model.def,model.progress):0;
- const quartersBlocked=!!progress&&progress.level>=quartersCap&&progress.level<(model?.maxLevel??35);
+ 
  const ascentBlocked=!!progress&&progress.level>=ascentCap&&progress.level<(model?.maxLevel??35);
  const successMessage=(type:string,args?:Record<string,unknown>)=>{
   const target=combatCompanionUiModel(state,typeof args?.id==='string'?args.id:selection),name=target?.def.name??'Companion';
-  if(type==='companion_housing_upgrade')return 'QUARTERS UPGRADED · '+name+' can train toward a higher level cap.';
+  if(type==='companion_housing_upgrade')return 'QUARTERS UPGRADED · '+name+' gains stronger training, Bond and Essence bonuses.';
   if(type==='companion_level'&&target?.progress)return 'TRAINING COMPLETE · '+name+' reached Level '+Math.min(target.maxLevel,target.progress.level+1)+'.';
   if(type==='companion_ascend'&&target?.nextAscensionTier)return 'ASCENSION COMPLETE · '+name+' reached Tier '+target.nextAscensionTier+'.';
   if(type==='companion_master')return 'PRESTIGE MASTERY COMPLETE · '+name+' reached its final mastery milestone.';
@@ -104,32 +104,33 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
         <Text style={s.subheading}>{t('COMPANION QUARTERS')}</Text>
         <Text style={s.sectionTitle}>{companionContent(language,quarters.label)}</Text>
       </View>
-      <Text style={s.quartersCap}>{t('LEVEL CAP {value0}',{value0:quartersCap})}</Text>
+      <Text style={s.quartersCap}>{t('Tier {value0}/3',{value0:quartersTier})}</Text>
     </View>
-    <Text style={s.copy}>{t('Quarters and Ascension both limit training. Earned levels and combat abilities are never removed.')}</Text>
+    <Text style={s.copy}>{t('Housing improves training and Bond rewards. Only Ascension and rarity limit levels.')}</Text>
+     <Text style={s.done}>{t('Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%',{value0:quartersBonus.trainingXpPct,value1:quartersBonus.bondXpPct,value2:quartersBonus.essenceDiscountPct})}</Text>
     {quartersUpgrade?.cost&&nextQuarters?<View style={s.quartersNext}>
       <View style={s.between}>
         <Text style={s.sectionTitle}>{t('Next: {value0}',{value0:companionContent(language,nextQuarters.label)})}</Text>
-        <Text style={s.done}>{t('Cap {value0}',{value0:companionHousingLevelCap(quartersTier+1)})}</Text>
       </View>
+      <Text style={s.done}>{t('Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%',{value0:companionHousingBonuses(quartersTier+1).trainingXpPct,value1:companionHousingBonuses(quartersTier+1).bondXpPct,value2:companionHousingBonuses(quartersTier+1).essenceDiscountPct})}</Text>
       <Text style={s.copy}>{t('{value0} Gold', {value0:amount(quartersUpgrade.cost.gold)})}</Text>
       {quartersUpgrade.materials.map(item=>{const source=companionHousingMaterialSource(item.itemId);return <View key={item.itemId} style={s.quartersMaterial}>
         <Text style={[s.quartersResource,item.owned>=item.quantity?s.done:s.ready]}>{item.owned>=item.quantity?'✓ ':'○ '}{companionMaterialName(item.itemId)} · {amount(item.owned)}/{amount(item.quantity)}</Text>
         {item.owned<item.quantity&&source&&source.kind!=='info'?<GameButton compact tone="secondary" title={t('Go')} onPress={()=>openSource(source)}/>:null}
       </View>})}
       <GameButton title={quartersUpgrade.ready?t('Upgrade Quarters'):t('Materials Required')} disabled={busy||!quartersUpgrade.ready} onPress={()=>act('companion_housing_upgrade',{id:selection})}/>
-    </View>:<Text style={s.done}>{t('No further Quarters upgrade is needed for this rarity.')}</Text>}
+    </View>:<Text style={s.done}>{t('Housing fully upgraded.')}</Text>}
   </View>:null}
 
   {!model?<Text style={s.copy}>{t("No companion selected.")}</Text>:!model.owned?<View style={s.section}><Text style={s.sectionTitle}>{t("Unlock Requirements")}</Text>{model.def.unlockRequirements.map((req,index)=>{const p=companionRequirementProgress(state,req);return <View key={index} style={s.requirement}><Text style={p.complete?s.done:s.copy}>{p.complete ? '✓' : '○'}{companionContent(language,req.description)}</Text><Text style={p.complete?s.done:s.copy}>{p.current}/{p.total}</Text></View>})}<Text style={s.help}>{t("Unavailable requirements remain locked.")}</Text></View>:progress&&<>
    <View style={s.section}>
-    <View style={s.between}><Text style={s.subheading}>{t('NEXT LEVEL')}</Text><Text style={s.ready}>{!idle(selection)?companionContent(language,companionAvailability(state,selection).label):progress.level>=model.maxLevel?t('Maximum level'):quartersBlocked&&ascentBlocked?t('Quarters & Ascension required'):quartersBlocked?t('Upgrade Quarters'):ascentBlocked?t('Ascension required'):model.nextLevelCost&&!affordable(model.nextLevelCost)?t('Materials Required'):model.nextLevelCost?t('Ready to train'):t('Training unavailable')}</Text></View>
+    <View style={s.between}><Text style={s.subheading}>{t('NEXT LEVEL')}</Text><Text style={s.ready}>{!idle(selection)?companionContent(language,companionAvailability(state,selection).label):progress.level>=model.maxLevel?t('Maximum level'):ascentBlocked?t('Ascension required'):model.nextLevelCost&&!affordable(model.nextLevelCost)?t('Materials Required'):model.nextLevelCost?t('Ready to train'):t('Training unavailable')}</Text></View>
     {model.nextLevelCost?<><View style={s.upgradeCard}>
       <Text style={s.levelValue}>{t('Level {value0}',{value0:progress.level})} → {progress.level+1}</Text>
       <Text style={s.copy}>{t('Companion Power {value0}',{value0:amount(companionTeamPower([selection],view.owned))})} → {amount(companionTeamPower([selection],{...view.owned,[selection]:{...view.owned[selection],level:progress.level+1}}))}</Text>
       {costBreakdown(model.nextLevelCost)}
     </View>
-    <GameButton title={busy?t('Training…'):t('Train to Level {value0}',{value0:progress.level+1})} disabled={busy||!idle(selection)||!affordable(model.nextLevelCost)} onPress={()=>act('companion_level',{id:selection})}/></>:<View style={s.cost}><Text style={s.done}>{progress.level>=model.maxLevel?t('Maximum companion level reached.'):quartersBlocked?t('Upgrade Quarters to resume training.'):ascentBlocked?t('Ascend your companion to resume training.'):t('Training unavailable.')}</Text><Text style={s.copy}>{roadmap?companionContent(language,roadmap.nextStep):''}</Text></View>}
+    <GameButton title={busy?t('Training…'):t('Train to Level {value0}',{value0:progress.level+1})} disabled={busy||!idle(selection)||!affordable(model.nextLevelCost)} onPress={()=>act('companion_level',{id:selection})}/></>:<View style={s.cost}><Text style={s.done}>{progress.level>=model.maxLevel?t('Maximum companion level reached.'):ascentBlocked?t('Ascend your companion to resume training.'):t('Training unavailable.')}</Text><Text style={s.copy}>{roadmap?companionContent(language,roadmap.nextStep):''}</Text></View>}
     {model.equipped?<GameButton title={t("Unequip Companion")} disabled={busy} tone="secondary" onPress={()=>act('companion_unequip')}/>:<GameButton title={model.compatible ? t("Equip Companion") : t("Same role as your character")} disabled={busy||!model.compatible||!idle(selection)} onPress={()=>act('companion_equip',{id:selection})}/>}</View>
 
 

@@ -8,6 +8,11 @@ import {companionCombatDescriptionText} from './companion-combat-names-de';
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
  // New Companion Quarters training guidance — authored across all supported UI languages.
+ // Housing is optional: explain its benefits rather than a level gate.
+ "Housing improves training and Bond rewards. Only Ascension and rarity limit levels.": ["Das Quartier verbessert Trainings- und Bindungsbelohnungen. Nur Aufstieg und Seltenheit begrenzen das Level.","El alojamiento mejora el entrenamiento y las recompensas de vínculo. Solo la ascensión y la rareza limitan el nivel.","Verblijven verbeteren training en bandbeloningen. Alleen ascensie en zeldzaamheid bepalen het maximale niveau.","Gli alloggi migliorano addestramento e legame. Solo ascensione e rarità limitano il livello.","Les quartiers améliorent entraînement et lien. Seuls l’ascension et la rareté limitent le niveau."],
+ "Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%": ["Trainings-EP +{value0}% · Bindungs-EP +{value1}% · Essenzkosten -{value2}%","XP de entrenamiento +{value0}% · XP de vínculo +{value1}% · Coste de esencia -{value2}%","Training-XP +{value0}% · Band-XP +{value1}% · Essentiekosten -{value2}%","XP addestramento +{value0}% · XP legame +{value1}% · Costo essenza -{value2}%","XP d’entraînement +{value0}% · XP de lien +{value1}% · Coût en essence -{value2}%"],
+ "Housing fully upgraded.": ["Quartier vollständig verbessert.","Alojamiento mejorado al máximo.","Verblijf volledig verbeterd.","Alloggio potenziato al massimo.","Quartiers améliorés au maximum."],
+ "Choose a companion to view its Housing bonuses.": ["Wähle einen Gefährten, um seine Quartierboni zu sehen.","Elige un compañero para ver sus bonificaciones de alojamiento.","Kies een metgezel om de verblijfsbonussen te bekijken.","Scegli un compagno per vedere i bonus dell'alloggio.","Choisissez un compagnon pour voir les bonus des quartiers."],
  "COMPANION QUARTERS": ["GEFÄHRTENQUARTIER","ALOJAMIENTO DE COMPAÑEROS","METGEZELLENVERBLIJF","ALLOGGI DEI COMPAGNI","QUARTIERS DES COMPAGNONS"],
  "LEVEL CAP {value0}": ["LEVELGRENZE {value0}","LÍMITE DE NIVEL {value0}","NIVEAULIMIET {value0}","LIMITE LIVELLO {value0}","NIVEAU MAX. {value0}"],
  "Quarters and Ascension both limit training. Earned levels and combat abilities are never removed.": ["Quartier und Aufstieg begrenzen das Training. Erreichte Level und Kampffähigkeiten bleiben erhalten.","Alojamiento y ascensión limitan el entrenamiento. Los niveles y habilidades obtenidos nunca se pierden.","Verblijf en ascensie beperken de training. Behaalde niveaus en gevechtsvaardigheden blijven behouden.","Alloggio e ascensione limitano l'allenamento. Livelli e abilità ottenuti non si perdono.","Les quartiers et l'ascension limitent l'entraînement. Les niveaux et capacités acquis sont conservés."],
@@ -1162,6 +1167,14 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
 }
 companionCatalogs.ru["COMPANION QUARTERS"]="ПОКОИ СПУТНИКОВ";
 companionCatalogs.tr["COMPANION QUARTERS"]="YOLDAŞ ODALARI";
+companionCatalogs.ru["Housing improves training and Bond rewards. Only Ascension and rarity limit levels."]="Покои повышают опыт тренировки и связи. Предел уровня зависит только от Вознесения и редкости.";
+companionCatalogs.tr["Housing improves training and Bond rewards. Only Ascension and rarity limit levels."]="Odalar, eğitim ve Bağ deneyimini artırır. Seviye sınırını yalnızca Yükseliş ve nadirlik belirler.";
+companionCatalogs.ru["Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%"]="Опыт тренировки +{value0}% · Опыт связи +{value1}% · Расход эссенции −{value2}%";
+companionCatalogs.tr["Training XP +{value0}% · Bond XP +{value1}% · Essence cost -{value2}%"]="Eğitim XP +{value0}% · Bağ XP +{value1}% · Öz maliyeti −{value2}%";
+companionCatalogs.ru["Housing fully upgraded."]="Покои улучшены до максимума.";
+companionCatalogs.tr["Housing fully upgraded."]="Odalar tamamen yükseltildi.";
+companionCatalogs.ru["Choose a companion to view its Housing bonuses."]="Выберите спутника, чтобы посмотреть бонусы покоев.";
+companionCatalogs.tr["Choose a companion to view its Housing bonuses."]="Oda bonuslarını görmek için bir yoldaş seç.";
 companionCatalogs.ru["LEVEL CAP {value0}"]="ПРЕДЕЛ УРОВНЯ {value0}";
 companionCatalogs.tr["LEVEL CAP {value0}"]="SEVİYE SINIRI {value0}";
 companionCatalogs.ru["Quarters and Ascension both limit training. Earned levels and combat abilities are never removed."]="Покои и Вознесение ограничивают тренировку. Полученные уровни и боевые способности сохраняются.";

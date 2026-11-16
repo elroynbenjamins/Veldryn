@@ -86,18 +86,18 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
          <Text style={[styles.topicBody,{color:C.muted}]}>{t(selectedTopic.body)}</Text>
         </View>
        </View>:null}
-       {stepThrough&&topics.length>1?<View style={styles.walkthrough}>
-        <Text accessibilityRole="text" style={[styles.stepCount,{color:C.muted}]}>{t('Step {current} of {total}').replace('{current}',String(topicIndex+1)).replace('{total}',String(topics.length))}</Text>
-        <View style={styles.stepActions}>
-         <Pressable accessibilityRole="button" accessibilityLabel={t('Previous topic')} disabled={topicIndex===0} accessibilityState={{disabled:topicIndex===0}} onPress={()=>setTopicIndex(index=>Math.max(0,index-1))} style={[styles.stepButton,{borderColor:C.line,backgroundColor:C.panel2},topicIndex===0&&styles.stepDisabled]}><Text style={[styles.stepButtonText,{color:C.text}]}>{t('Previous topic')}</Text></Pressable>
-         <Pressable accessibilityRole="button" accessibilityLabel={t(topicIndex===topics.length-1?'Finish guide':'Next topic')} onPress={()=>topicIndex===topics.length-1?close():setTopicIndex(index=>Math.min(topics.length-1,index+1))} style={[styles.stepButton,styles.stepNext,{borderColor:C.selectionLine,backgroundColor:C.selection}]}><Text style={[styles.stepButtonText,{color:C.text}]}>{t(topicIndex===topics.length-1?'Finish guide':'Next topic')}</Text></Pressable>
-        </View>
-       </View>:null}
        {guide.detail?<Pressable accessibilityRole="button" accessibilityState={{expanded:more}} onPress={()=>setMore(value=>!value)} style={styles.detailButton}>
         <Text style={[styles.detailToggle,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
        </Pressable>:null}
        {more&&guide.detail?<Text style={[styles.dialogDetail,{color:C.info}]}>{t(guide.detail)}</Text>:null}
       </ScrollView>
+      {stepThrough&&topics.length>1?<View style={styles.walkthrough}>
+        <View style={styles.stepHead}><Text style={[styles.stepCount,{color:C.muted}]}>{t('Step {current} of {total}').replace('{current}',String(topicIndex+1)).replace('{total}',String(topics.length))}</Text><View accessibilityRole="progressbar" accessibilityLabel={t('Dungeon guide')} accessibilityValue={{min:1,max:topics.length,now:topicIndex+1}} style={[styles.stepTrack,{backgroundColor:C.panel2}]}><View style={{height:'100%',width:`${(topicIndex+1)/topics.length*100}%`,backgroundColor:C.accent,borderRadius:3}}/></View></View>
+        <View style={styles.stepActions}>
+         <Pressable accessibilityRole="button" accessibilityLabel={t('Previous topic')} disabled={topicIndex===0} accessibilityState={{disabled:topicIndex===0}} onPress={()=>setTopicIndex(index=>Math.max(0,index-1))} style={[styles.stepButton,{borderColor:C.line,backgroundColor:C.panel2},topicIndex===0&&styles.stepDisabled]}><Text style={[styles.stepButtonText,{color:C.text}]}>{t('Previous topic')}</Text></Pressable>
+         <Pressable accessibilityRole="button" accessibilityLabel={t(topicIndex===topics.length-1?'Finish guide':'Next topic')} onPress={()=>topicIndex===topics.length-1?close():setTopicIndex(index=>Math.min(topics.length-1,index+1))} style={[styles.stepButton,styles.stepNext,{borderColor:C.selectionLine,backgroundColor:C.selection}]}><Text style={[styles.stepButtonText,{color:C.text}]}>{t(topicIndex===topics.length-1?'Finish guide':'Next topic')}</Text></Pressable>
+        </View>
+       </View>:null}
       <Pressable accessibilityRole="button" accessibilityLabel={t('Got it')} onPress={close} style={({pressed})=>[styles.confirmButton,{backgroundColor:C.selection,borderColor:C.selectionLine},pressed&&styles.pressed]}>
        <Text style={[styles.confirmText,{color:C.text}]}>{t('Got it')} ✓</Text>
       </Pressable>
@@ -153,7 +153,8 @@ const styles=StyleSheet.create({
  guideIcon:{width:40,height:40,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
  topicArea:{gap:9,minHeight:0},
  walkthrough:{gap:8,paddingTop:5,borderTopWidth:StyleSheet.hairlineWidth,borderColor:'rgba(140,150,155,.3)'},
- stepCount:{fontSize:11,lineHeight:15,fontWeight:'700'},
+ stepHead:{flexDirection:'row',alignItems:'center',gap:10},
+ stepCount:{fontSize:11,lineHeight:15,fontWeight:'700'},stepTrack:{flex:1,height:5,borderRadius:3,overflow:'hidden'},
  stepActions:{flexDirection:'row',gap:8},
  stepButton:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:7,borderRadius:9,borderWidth:1},
  stepNext:{flex:1},stepDisabled:{opacity:.35},stepButtonText:{fontSize:12,fontWeight:'800',textAlign:'center'},

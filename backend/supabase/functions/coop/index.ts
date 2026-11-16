@@ -212,9 +212,9 @@ var CLASSES = [
 
 // src/server/expeditions/content/launch-content.ts
 var EXPEDITIONS = {
-  EXP_001: { id: "EXP_001", name: "Rootbound Vault", region: "Asterfall", minLevel: 10, recommendedLevel: 15, baseMarks: 74, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_ROOT", coopImplemented: true, nodeWeights: { battle: 30, elite: 10, event: 18, camp: 9, treasure: 8, echo: 8, forge: 5, merchant: 4, risk: 5, secret: 3 } },
+  EXP_001: { id: "EXP_001", name: "Rootbound Vault", region: "Asterfall", minLevel: 10, recommendedLevel: 15, baseMarks: 50, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_ROOT", coopImplemented: true, nodeWeights: { battle: 30, elite: 10, event: 18, camp: 9, treasure: 8, echo: 8, forge: 5, merchant: 4, risk: 5, secret: 3 } },
   EXP_002: { id: "EXP_002", name: "Lanternwatch Descent", region: "Asterfall", minLevel: 18, recommendedLevel: 25, baseMarks: 76, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_BELL", coopImplemented: true, nodeWeights: { battle: 28, elite: 11, event: 17, camp: 8, treasure: 8, echo: 12, forge: 5, merchant: 4, risk: 5, secret: 2 } },
-  EXP_003: { id: "EXP_003", name: "Buried Observatory", region: "Sunscar", minLevel: 36, recommendedLevel: 45, baseMarks: 80, minNodes: 9, maxNodes: 11, bossId: "BOSS_EXP_SOLAR", coopImplemented: true, nodeWeights: { battle: 29, elite: 12, event: 16, camp: 9, treasure: 7, echo: 6, forge: 5, merchant: 5, risk: 8, secret: 3 } },
+  EXP_003: { id: "EXP_003", name: "Buried Observatory", region: "Sunscar", minLevel: 36, recommendedLevel: 45, baseMarks: 72, minNodes: 9, maxNodes: 11, bossId: "BOSS_EXP_SOLAR", coopImplemented: true, nodeWeights: { battle: 29, elite: 12, event: 16, camp: 9, treasure: 7, echo: 6, forge: 5, merchant: 5, risk: 8, secret: 3 } },
   EXP_004: { id: "EXP_004", name: "Mirage Well", region: "Sunscar", minLevel: 32, recommendedLevel: 45, baseMarks: 80, minNodes: 9, maxNodes: 11, bossId: "BOSS_EXP_SPHINX", coopImplemented: true, nodeWeights: { battle: 27, elite: 11, event: 19, camp: 7, treasure: 8, echo: 7, forge: 4, merchant: 5, risk: 9, secret: 3 } },
   EXP_005: { id: "EXP_005", name: "Shiverlake Descent", region: "Frostmarch", minLevel: 52, recommendedLevel: 70, baseMarks: 84, minNodes: 9, maxNodes: 12, bossId: "BOSS_EXP_BELLBEAST", coopImplemented: true, nodeWeights: { battle: 30, elite: 12, event: 15, camp: 12, treasure: 6, echo: 5, forge: 5, merchant: 4, risk: 8, secret: 3 } },
   EXP_006: { id: "EXP_006", name: "Choir Caverns", region: "Frostmarch", minLevel: 57, recommendedLevel: 70, baseMarks: 85, minNodes: 9, maxNodes: 12, bossId: "BOSS_EXP_CANTOR", coopImplemented: true, nodeWeights: { battle: 28, elite: 13, event: 18, camp: 9, treasure: 6, echo: 8, forge: 5, merchant: 3, risk: 7, secret: 3 } },
@@ -565,12 +565,12 @@ var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.i
 // ../apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
-var ward = skill("warding", "Warding", "Magical protection");
+var ward = skill("warding", "Warding", "Damage warding");
 var CLASS_SKILLS = {
   IRONWARDEN: [guard, ward],
   BASTION: [guard, ward],
   DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
-  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Protection and cleansing")],
+  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
   WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
   RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
   HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
@@ -594,15 +594,28 @@ function normalizeClassSkills(id, raw2) {
 var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
 function characterClassEffects(c) {
   const [a, b] = characterClassSkills(c).map((s2) => (s2.level - 1) / 99);
-  const tank = ["IRONWARDEN", "BASTION", "DREADGUARD"].includes(c.classId), support = ["DAWNKEEPER", "STONECALLER"].includes(c.classId);
-  const precision = c.classId === "KNIFE_DANCER";
-  return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b, accuracy: 0, evasion: 0 } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1, accuracy: 0, evasion: 0 } : {
-    attack: 1 + 0.07 * a + (precision ? 0 : 0.03 * b),
-    hp: 1,
-    defense: 1 + (precision ? 0 : 0.06 * b),
-    accuracy: precision ? 0.03 * b : 0,
-    evasion: precision ? 0.06 * b : 0
-  };
+  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
+  switch (c.classId) {
+    case "IRONWARDEN":
+      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
+    case "BASTION":
+      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
+    case "DREADGUARD":
+      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
+    case "DAWNKEEPER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
+    case "WAYFINDER":
+      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
+    case "RAVAGER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
+    case "HEXWEAVER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
+    case "KNIFE_DANCER":
+      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
+    case "STONECALLER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
+  }
+  return base;
 }
 
 // ../apps/mobile/src/core/companion-mastery.ts
@@ -42655,15 +42668,15 @@ var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", tier: 3, effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
-  { id: "VIGOR_TONIC", name: "Vigor Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.05, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "+5% damage dealt; one active preparation, lasts 30 ordinary encounters." },
-  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.1, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "+10% damage dealt; one active preparation, lasts 45 ordinary encounters." },
-  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.15, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "+15% damage dealt; one active preparation, lasts 60 ordinary encounters." },
-  { id: "WARD_TONIC", name: "Ward Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.05, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "5% less incoming damage; one active preparation, lasts 30 ordinary encounters." },
-  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.1, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "10% less incoming damage; one active preparation, lasts 45 ordinary encounters." },
-  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.15, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "15% less incoming damage; one active preparation, lasts 60 ordinary encounters." },
-  { id: "HARMONY_TONIC", name: "Harmony Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.02, damageReductionFraction: 0, healingStrengthFraction: 0.05, shieldStrengthFraction: 0.05, encounters: 30 }, description: "+2% damage and +5% ability healing/shielding. Lasts 30 ordinary encounters; dungeon support requires server integration." },
-  { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% ability healing/shielding. Lasts 45 ordinary encounters; dungeon support requires server integration." },
-  { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% ability healing/shielding. Lasts 60 ordinary encounters; dungeon support requires server integration." }
+  { id: "VIGOR_TONIC", name: "Vigor Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.05, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "+5% damage throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.1, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "+10% damage throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.15, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "+15% damage throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "WARD_TONIC", name: "Ward Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.05, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "5% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.1, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "10% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.15, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "15% less damage taken throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "HARMONY_TONIC", name: "Harmony Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.02, damageReductionFraction: 0, healingStrengthFraction: 0.05, shieldStrengthFraction: 0.05, encounters: 30 }, description: "+2% damage and +5% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." },
+  { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% healing/shielding throughout one dungeon run. One tonic per run, consumed even on failure." }
 ];
 var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", rarity: "rare", value: 70, description: "A dewleaf resin that binds first-tier gear." },
@@ -42675,6 +42688,7 @@ var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "RIMEWARD_DISTILLATE", name: "Rimeward Distillate", rarity: "epic", value: 1320, description: "A frostbound distillate for Frostmarch equipment." },
   { id: "CINDERHEART_ELIXIR", name: "Cinderheart Elixir", rarity: "legendary", value: 1600, description: "A volatile Ashlands elixir for capstone equipment." }
 ]);
+var potionDefById = (itemId) => POTIONS.find((p) => p.id === itemId);
 var recipe = (potionId, level, seconds, xp, gold, inputs, suffix = "") => ({
   id: `BREW_${potionId}${suffix}`,
   name: POTIONS.find((p) => p.id === potionId).name,
@@ -42719,11 +42733,15 @@ var ALCHEMY_RECIPES = [
 ].map((recipe2) => {
   const combatPotion = POTIONS.some((potion) => potion.id === recipe2.output.itemId);
   const costMultiplier = combatPotion ? COMBAT_POTION_CRAFT_COST_MULTIPLIER : 1;
+  const isTonic = potionDefById(recipe2.output.itemId)?.effect.kind === "preparation";
   return {
     ...recipe2,
     xp: recipe2.xp * (combatPotion ? COMBAT_POTION_XP_MULTIPLIER : 1),
     gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
-    inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
+    inputs: [
+      ...recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier })),
+      ...isTonic ? [{ itemId: "HOLY_WATER", quantity: 3 }, { itemId: "TEMPERING_DUST", quantity: 2 }] : []
+    ]
   };
 });
 var POTION_ITEMS = POTIONS.map((potion) => ({
@@ -42735,7 +42753,6 @@ var POTION_ITEMS = POTIONS.map((potion) => ({
   passive: potion.description
 }));
 var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion) => ({ id: infusion.id, name: infusion.name, type: "material", value: infusion.value, rarity: infusion.rarity, passive: infusion.description }));
-var potionDef = (id) => POTIONS.find((p) => p.id === id);
 
 // ../apps/mobile/src/content/equipment-items-v33.ts
 init_progression();
@@ -43046,6 +43063,124 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   };
 });
 
+// ../apps/mobile/src/content/enemy-families.ts
+var ENEMY_FAMILIES = [
+  {
+    "id": "UNDEAD",
+    "name": "Undead",
+    "description": "Revenants, wraiths, spirits bound to death and the oathfallen.",
+    "monsterIds": [
+      "LANTERN_WRETCH",
+      "DROWNED_PILGRIM",
+      "OATHBOUND_SQUIRE",
+      "BANNER_SHADE",
+      "FALLEN_SENTINEL",
+      "OATHGLASS_REVENANT",
+      "BELLWRAITH",
+      "LAKEBOUND_SPECTER",
+      "ASHEN_REVENANT"
+    ]
+  },
+  {
+    "id": "HUMAN",
+    "name": "Humans",
+    "description": "Living mortal raiders, scouts, soldiers and spellcasters.",
+    "monsterIds": [
+      "RUNEBOUND_MINER",
+      "DUNE_ORACLE",
+      "SAFFRON_MARAUDER",
+      "ROYAL_SANDGUARD",
+      "ICEBOUND_RAIDER",
+      "CHOIR_HUNTER"
+    ]
+  },
+  {
+    "id": "ORC",
+    "name": "Orcs",
+    "description": "Orc warriors and raiders. Reserved for future enemy content.",
+    "monsterIds": []
+  },
+  {
+    "id": "BEAST",
+    "name": "Beasts",
+    "description": "Natural predators, wildlife and monstrous animals.",
+    "monsterIds": [
+      "MOSS_RAT",
+      "ROADSIDE_BOAR",
+      "SILVERFIN_SWARM",
+      "IRONWOOD_WOLF",
+      "MIRE_HERON",
+      "IRONBACK_MOLE",
+      "ECHO_BAT",
+      "GLASS_DUNE_STRIDER",
+      "FROSTWOLF",
+      "RIME_STALKER"
+    ]
+  },
+  {
+    "id": "VERMIN",
+    "name": "Vermin",
+    "description": "Arachnids, insects and smaller venomous swarms.",
+    "monsterIds": [
+      "VENOM_WEAVER",
+      "CAVE_SKITTER",
+      "GLOAM_MITE",
+      "SUNSCAR_SCORPION"
+    ]
+  },
+  {
+    "id": "NATURE",
+    "name": "Natureborn",
+    "description": "Living plants, treants and creatures of corrupted growth.",
+    "monsterIds": [
+      "THORNLING",
+      "BRIAR_HUSK",
+      "ANCIENT_TREANT",
+      "SNOW_TREANT",
+      "BLACKGLASS_MIRELING"
+    ]
+  },
+  {
+    "id": "CONSTRUCT",
+    "name": "Constructs",
+    "description": "Animated guardians, sentinels and artificial protectors.",
+    "monsterIds": [
+      "GLASSBOUND_SENTINEL",
+      "OBSERVATORY_KEEPER",
+      "WYRMSPINE_GUARDIAN"
+    ]
+  },
+  {
+    "id": "ELEMENTAL",
+    "name": "Elementals",
+    "description": "Living elemental forces, embers and magical wisps.",
+    "monsterIds": [
+      "FIELD_WISP",
+      "CINDER_TITAN"
+    ]
+  },
+  {
+    "id": "SPIRIT",
+    "name": "Spirits",
+    "description": "Mirage-born noncorporeal entities.",
+    "monsterIds": [
+      "MIRAGE_SHADE"
+    ]
+  },
+  {
+    "id": "GIANT",
+    "name": "Giants",
+    "description": "Trolls and other massive living giants.",
+    "monsterIds": [
+      "FOREST_TROLL"
+    ]
+  }
+];
+var FAMILY_BY_MONSTER = new Map(
+  ENEMY_FAMILIES.flatMap((family) => family.monsterIds.map((id) => [id, family]))
+);
+var ORDINARY_MONSTER_IDS = new Set(MONSTERS.filter((monster) => !monster.boss).map((monster) => monster.id));
+
 // ../apps/mobile/src/core/combat-companions.ts
 var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
@@ -43202,6 +43337,12 @@ function companionCombatContribution(state) {
   return { outputMultiplier: 1 + contribution * outputWeight, incomingDamageMultiplier: 1 - contribution * incomingWeight, recoveryMultiplier: 1 + contribution * recoveryWeight, directHealingPctPerHour, contributionPct: contribution };
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
+
+// ../apps/mobile/src/core/monthly-quest-milestones.ts
+init_progression();
+init_faith2();
+var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
+var MAX_XP2 = totalXpAtLevel(100);
 
 // ../apps/mobile/src/content/skills.ts
 init_progression();
@@ -45811,16 +45952,8 @@ init_faith2();
 
 // ../apps/mobile/src/core/alchemy.ts
 init_progression();
-function preparationEffects(preparation) {
-  const def = preparation && preparation.remainingEncounters > 0 ? potionDef(preparation.itemId) : void 0;
-  return def?.effect.kind === "preparation" ? {
-    attack: 1 + def.effect.attackFraction,
-    outgoing: 1 + def.effect.damageDealtFraction,
-    damage: 1 - def.effect.damageReductionFraction,
-    healing: 1 + def.effect.healingStrengthFraction,
-    shielding: 1 + def.effect.shieldStrengthFraction,
-    itemId: def.id
-  } : { attack: 1, outgoing: 1, damage: 1, healing: 1, shielding: 1, itemId: void 0 };
+function preparationEffects(_preparation) {
+  return { attack: 1, outgoing: 1, damage: 1, healing: 1, shielding: 1, itemId: void 0 };
 }
 
 // ../apps/mobile/src/core/processing.ts
@@ -46111,6 +46244,11 @@ function equippedCanonicalStatGemBonusesV1(state) {
   }
   return { statPercent, statPercentagePoints };
 }
+function legacyGemBonusValue(gemId, rollPercent) {
+  const gem2 = itemDef(gemId);
+  const base = gem2.gemStat ? gem2.gemPercent ?? 0 : gem2.gemEffectValue ?? 0;
+  return base * (normalizeGemRollPercentV1(rollPercent) ?? 100) / 100;
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -46120,7 +46258,7 @@ function equippedGemBonuses(state) {
     if (!gemId) continue;
     if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
-    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
+    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += legacyGemBonusValue(gemId, gearEnhancement(state, itemId).statGemRollPercent);
   }
   return result;
 }
@@ -46466,7 +46604,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -46513,12 +46651,14 @@ function effectiveStats(state) {
     critMultiplier: 1.5 + setStats.critDamage,
     accuracy: Math.min(0.99, 0.84 + setStats.accuracy + mastery.accuracy),
     evasion: Math.min(0.5, baseEvasion + setStats.evasion + mastery.evasion),
-    haste: 0.05 + setStats.haste,
+    haste: 0.05 + setStats.haste + mastery.haste,
     armor: setStats.armor,
-    ward: setStats.ward,
+    // Stack equipment and class wards multiplicatively.
+    ward: 1 - (1 - setStats.ward) * (1 - mastery.ward),
     tenacity: setStats.tenacity,
-    potency: setStats.potency,
-    penetration: setStats.penetration
+    potency: setStats.potency + mastery.potency,
+    penetration: setStats.penetration + mastery.penetration,
+    classHealing: mastery.classHealing
   };
 }
 
@@ -46532,7 +46672,7 @@ function redistributeCompanionCombatPower(personal, companion) {
   return { total, player: personal + reallocated, companion: reweightedCompanion, reallocated };
 }
 var statScore = (stats6, level) => Math.max(0, Math.round(
-  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135
+  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135 + Math.max(0, (stats6.classHealing ?? 1) - 1) * 80
 ));
 function combatPowerRating(state) {
   const character = state.character;
@@ -46885,6 +47025,14 @@ var DUNGEON_BOSS_VARIANTS = Object.freeze({
   EXP_003: [
     { bossId: "BOSS_EXP_SOLAR", name: "The Buried Heliarch", gemFamilies: ["effect_momentum", "effect_critical_surge", "effect_retaliation", "stat_precision"] },
     { bossId: "BOSS_EXP_SPHINX", name: "The Veiled Sphinx", gemFamilies: ["effect_momentum", "effect_flow", "effect_benediction", "stat_precision"] }
+  ],
+  EXP_005: [
+    { bossId: "BOSS_EXP_BELLBEAST", name: "The Bellbeast of Shiverlake", gemFamilies: ["effect_aegis", "effect_unyielding", "effect_guardians_gift", "stat_resolute"] },
+    { bossId: "BOSS_EXP_CANTOR", name: "The Frozen Cantor", gemFamilies: ["effect_shared_resolve", "effect_battle_rhythm", "effect_renewal", "stat_ward"] }
+  ],
+  EXP_007: [
+    { bossId: "BOSS_EXP_FEN", name: "The Blackglass Fen Prime", gemFamilies: ["effect_predator", "effect_execution", "effect_ruin", "stat_savage"] },
+    { bossId: "BOSS_EXP_PRIME", name: "The Crucible Prime", gemFamilies: ["effect_bulwark", "effect_aegis", "effect_retaliation", "stat_iron"] }
   ]
 });
 var dungeonBossVariantsFor = (expeditionId) => DUNGEON_BOSS_VARIANTS[expeditionId] ?? [];
@@ -47268,9 +47416,9 @@ var COOP_ROUTE_CONTENT = Object.freeze({
   EXP_002: themed("LANTERN"),
   EXP_003: mergePools(themed("SUN_OBS"), themed("SUN_MIRAGE")),
   EXP_004: themed("SUN_MIRAGE"),
-  EXP_005: themed("FROST_LAKE"),
+  EXP_005: mergePools(themed("FROST_LAKE"), themed("FROST_CHOIR")),
   EXP_006: themed("FROST_CHOIR"),
-  EXP_007: themed("ASH_FEN"),
+  EXP_007: mergePools(themed("ASH_FEN"), themed("ASH_CRUCIBLE")),
   EXP_008: themed("ASH_CRUCIBLE")
 });
 function coopContentPool(expeditionId, kind) {
@@ -48915,7 +49063,7 @@ function coopEntryHandler(services) {
         characterCombatPower: combatPower,
         liveRecruitment,
         ...rewardBudget ? { rewardBudget } : {},
-        dungeons: Object.values(EXPEDITIONS).filter(listedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: regularDungeonTierRequiredLevel(def, 1), recommendedLevel: Math.max(regularDungeonTierRequiredLevel(def, 1), rebasedCombatLevelFromLegacyLevel(def.recommendedLevel)), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level, combatPower) && prepared?.assessment.readiness.ready ? regularDungeonReadyTier(def, character.level, prepared.assessment.readiness.normalizedScore, combatPower) : void 0, recommendedPower: regularDungeonTierRequiredPower(def, 1), itemDropRates: [], bossVariants: publishedDungeonBossVariants(def.id), companionCounterIds: possibleDungeonCompanionCounters(def.id), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level, combatPower), lockedReason: regularDungeonLockedReason(def, gameState, character.level, combatPower), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredLevel(def, tier)])), tierMinPower: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredPower(def, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
+        dungeons: Object.values(EXPEDITIONS).filter(listedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: regularDungeonTierRequiredLevel(def, 1), recommendedLevel: Math.max(regularDungeonTierRequiredLevel(def, 1), rebasedCombatLevelFromLegacyLevel(def.recommendedLevel)), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level, combatPower) && prepared?.assessment.readiness.ready ? regularDungeonReadyTier(def, character.level, prepared.assessment.readiness.normalizedScore, combatPower) : void 0, recommendedPower: regularDungeonTierRequiredPower(def, 1), itemDropRates: [], bossVariants: publishedRegularDungeon(def) ? publishedDungeonBossVariants(def.id) : [], companionCounterIds: possibleDungeonCompanionCounters(def.id), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level, combatPower), lockedReason: regularDungeonLockedReason(def, gameState, character.level, combatPower), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredLevel(def, tier)])), tierMinPower: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredPower(def, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
           const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= (isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
           return { ...def, minLevel: isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel), tiers: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5] : [1], tierMinLevels: isFrostfallEventExpedition(def.id) ? [10, 15, 20, 25, 30] : [rebasedCombatLevelFromLegacyLevel(def.minLevel)], tierRewardMarks: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5].map((tier) => eventTierRewardMarks(def, tier)) : [def.rewardMarks], status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
@@ -49764,6 +49912,29 @@ function coopRouteClientProjection(graph2, revealedNodeIds = [graph2.entryNodeId
   return { ...graph2, nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
 }
 
+// src/server/expeditions/reward-base.ts
+var LEGACY_DUNGEON_BASE_MARKS = Object.freeze({
+  EXP_001: 74,
+  EXP_002: 76,
+  EXP_003: 80,
+  EXP_004: 80,
+  EXP_005: 84,
+  EXP_006: 85,
+  EXP_007: 88,
+  EXP_008: 90
+});
+function frozenRunBaseMarks(run) {
+  if (typeof run.rewardBaseMarks === "number" && Number.isSafeInteger(run.rewardBaseMarks) && run.rewardBaseMarks >= 0) return run.rewardBaseMarks;
+  const legacy = LEGACY_DUNGEON_BASE_MARKS[run.expeditionId];
+  if (legacy === void 0) throw new Error("unknown_expedition");
+  return legacy;
+}
+function currentDungeonBaseMarks(expeditionId) {
+  const amount = EXPEDITIONS[expeditionId]?.baseMarks;
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount < 0) throw new Error("unknown_expedition");
+  return amount;
+}
+
 // src/server/coop/echo-recruitment.ts
 function missingRoles(controllerRole) {
   const roles = ["tank", "damage", "damage", "support"];
@@ -50031,8 +50202,7 @@ var QModeService = class {
     if (!result.success) run.phase = "failed";
     else if (selected2.kind === "boss") {
       run.phase = "completed";
-      const def = EXPEDITIONS[run.expeditionId];
-      run.rewardMarks = marksForRun(def.baseMarks, run.tier, { cleared: true, routeProgress: 1, reachedFinalBoss: true });
+      run.rewardMarks = marksForRun(frozenRunBaseMarks(run), run.tier, { cleared: true, routeProgress: 1, reachedFinalBoss: true });
     }
     this.repository.save(run);
     return structuredClone(run);
@@ -50050,7 +50220,7 @@ var QModeService = class {
   }
   createRun(input) {
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion);
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }
@@ -50338,10 +50508,9 @@ function dungeonRewardState(run) {
 }
 function enhancedDungeonMarks(run) {
   if (run.phase !== "completed" && run.phase !== "failed") return 0;
-  const definition = EXPEDITIONS[run.expeditionId];
-  if (!definition) throw new Error("unknown_expedition");
-  if (run.tierScalingVersion !== 2) return Math.max(0, Math.round(definition.baseMarks * 0.8));
-  return marksForRun(definition.baseMarks, run.tier, dungeonRewardState(run));
+  const mapBaseMarks = frozenRunBaseMarks(run);
+  if (run.tierScalingVersion !== 2) return Math.max(0, Math.round(mapBaseMarks * 0.8));
+  return marksForRun(mapBaseMarks, run.tier, dungeonRewardState(run));
 }
 
 // online/qmode-runtime.ts
@@ -50349,11 +50518,11 @@ var digest = (value) => createHash4("sha256").update(JSON.stringify(value)).dige
 var content = ONLINE_COOP_BALANCE_VERSION;
 var projection = (run, version, seed) => ({ ...projectQModeRun(run, "qmode", seed), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
 function settlement(run, version, seed) {
-  const definition = EXPEDITIONS[run.expeditionId], last = run.lastResolution;
+  const mapBaseMarks = frozenRunBaseMarks(run), last = run.lastResolution;
   const node = run.graph.nodes.find((row) => row.nodeId === last.nodeId);
   const cleared = run.persistentState.visitedNodeIds.filter((id) => id !== run.graph.bossNodeId).length;
   const terminal = run.phase === "completed" || run.phase === "failed";
-  return { projection: projection(run, version, seed), enhancedMarks: terminal ? marksForRun(definition.baseMarks, run.tier, run.tierScalingVersion === 2 ? dungeonRewardState(run) : { cleared: run.phase === "completed", routeProgress: cleared / run.graph.preBossNodeCount, reachedFinalBoss: node.kind === "boss" }) : null, assistanceMarks: terminal ? Math.max(1, Math.round(definition.baseMarks * 0.1)) : null };
+  return { projection: projection(run, version, seed), enhancedMarks: terminal ? marksForRun(mapBaseMarks, run.tier, run.tierScalingVersion === 2 ? dungeonRewardState(run) : { cleared: run.phase === "completed", routeProgress: cleared / run.graph.preBossNodeCount, reachedFinalBoss: node.kind === "boss" }) : null, assistanceMarks: terminal ? Math.max(1, Math.round(mapBaseMarks * 0.1)) : null };
 }
 var OnlineQModeRuntime = class {
   constructor(services) {
@@ -50605,6 +50774,10 @@ var OnlineLiveQueue = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
+    if (request.loadoutRevision < game.version) {
+      const settled = await replay();
+      if (settled) return settled.response;
+    }
     if (request.loadoutRevision > game.version) {
       const receipt = await replay();
       if (receipt) return receipt.response;
@@ -50642,6 +50815,10 @@ var OnlineLiveQueue = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     if (!game.state?.character) throw new GameplayError("character_required");
     if (game.state.character.id !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
+    if (request.loadoutRevision < game.version) {
+      const settled = await replay();
+      if (settled) return settled.response;
+    }
     if (request.loadoutRevision > game.version) {
       const receipt = await replay();
       if (receipt) return receipt.response;
@@ -50781,7 +50958,7 @@ var OnlineLiveRuntime = class {
     if (source.runId) return source.runId;
     if (!source.frozenRoster || source.frozenRoster.length !== 4) throw new GameplayError("invalid_frozen_roster");
     const definition = EXPEDITIONS[source.dungeonId];
-    if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+    if (!definition || !publishedRegularDungeon(definition)) throw new GameplayError("dungeon_unavailable");
     if (source.frozenRoster.some((snapshot) => (snapshot.characterLevel ?? snapshot.normalized.before.level) < regularDungeonTierRequiredLevel(definition, source.tier) || !Number.isFinite(snapshot.combatPower) || snapshot.combatPower < regularDungeonTierRequiredPower(definition, source.tier))) throw new GameplayError("dungeon_power_requirement");
     const id = this.services.randomId(), seed = this.services.randomId() + this.services.randomId();
     const domain = new QModeService(new class {

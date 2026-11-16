@@ -60319,7 +60319,7 @@ function guildShopWeeklyClaimHandler(services2) {
     }
     if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
     const body = input;
-    if (Object.keys(body).length !== 1 || !["attendance", "project", "boss", "quest"].includes(body.kind))
+    if (Object.keys(body).length !== 1 || !["attendance", "project", "boss", "quest", "project_bonus"].includes(body.kind))
       return json4({ error: "invalid_weekly_guild_reward" }, 400);
     try {
       const credited = await services2.rpc("guild_shop_claim_weekly_server_v1", {

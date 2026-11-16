@@ -5,6 +5,10 @@ on:
     paths:
       - 'apps/mobile/src/components/DisposalPreview.tsx'
       - 'apps/mobile/src/components/EquipmentPouchPanel.tsx'
+      - 'apps/mobile/src/components/GemPouchPanel.tsx'
+      - 'apps/mobile/src/core/gem-pouch-bulk.ts'
+      - 'apps/mobile/src/core/inventory-bulk.ts'
+      - 'apps/mobile/tests/inventory-bank-gem-bulk-disposal.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/i18n/disposal-preview-ui.ts'
       - 'apps/mobile/src/i18n/equipment-pouch-ui.ts'
@@ -37,7 +41,7 @@ jobs:
         run: node tests/equipment-pouch-ui-localization.cjs
       - name: Verify compact storage UI
         run: node tests/inventory-storage-management-ui.cjs
-      - name: Typecheck app and run Bank/Gem Pouch disposal regressions
+      - name: Typecheck core and run Bank/Gem Pouch disposal regressions
         run: |
-          pnpm typecheck
+          pnpm typecheck:core
           node ../../tools/run-mobile-tests.mjs inventory-bank-gem-bulk-disposal

@@ -30,6 +30,17 @@ ok(equipmentPouch(transferred).stacks.filter(row=>row.itemId===output).length===
  'Manual legacy equipment transfer must preserve exactly one physical copy');
 const back=moveLegacyEquipmentPouchStack(transferred,output,1,'inventory','equipment_pouch');
 ok(equipmentPouch(back).stacks.filter(row=>row.itemId===output).length===2,'Manual character storage movement must be reversible');
+const groupedInventory:GameState={...base,inventory:{...base.inventory,stacks:[{itemId:output,quantity:3}]}};
+const groupedMoved=executeGameCommand(groupedInventory,{type:'equipment_pouch_move',args:{itemId:output,quantity:2,from:'inventory',to:'equipment_pouch'}},1001).state;
+ok(equipmentPouch(groupedMoved).stacks.length===2&&groupedMoved.inventory.stacks[0]?.quantity===1,
+ 'Storing multiple ordinary copies must split Inventory stacks without losing or duplicating gear');
+ok(groupedInventory.inventory.stacks[0].quantity===3&&equipmentPouch(groupedInventory).stacks.length===0,
+ 'Inventory-to-Gear movement must not mutate the previous saved state');
+const noRoom:GameState={...groupedInventory,character:{...groupedInventory.character!,equipmentPouch:{capacity:30,stacks:Array.from({length:29},()=>({itemId:otherRecipe.output.itemId,quantity:1}))}}};
+let capacityRejected=false;
+try{executeGameCommand(noRoom,{type:'equipment_pouch_move',args:{itemId:output,quantity:2,from:'inventory',to:'equipment_pouch'}},1001)}catch{capacityRejected=true}
+ok(capacityRejected&&noRoom.inventory.stacks[0].quantity===3&&equipmentPouch(noRoom).stacks.length===29,
+ 'Storing more gear than free Gear slots must fail atomically without removing any Inventory copy');
 const inventoryFull={...back,inventory:{...back.inventory,capacity:back.inventory.stacks.length}};
 const legacyEquipped=executeGameCommand({...inventoryFull,character:{...back.character!,level:100}},{type:'equipment_pouch_equip',args:{itemId:output}},1002).state;
 ok(legacyEquipped.character?.equipment[itemDef(output).slot!]===output&&equipmentPouch(legacyEquipped).stacks.filter(row=>row.itemId===output).length===1,'Legacy equipment can be equipped directly from its character pouch');
@@ -45,6 +56,12 @@ ok(equipmentPouchUpgradePreview(base)?.capacity===40&&equipmentPouch(afterUpgrad
 const record=draftCraftedGearInstance({itemId:output,ownerCharacterId:base.character!.id,jobId:'pouch-unique-1',createdAtMs:1000,roll:.003});
 const tagged:GameState={...base,character:{...base.character!,level:100,equipmentPouch:{capacity:30,stacks:[{itemId:output,quantity:1,instanceId:record.id}]}},account:{...base.account,craftedGearInstances:[record]}};
 ok(auditCraftedGearOwnership(tagged).consistent,'Unique gear in Equipment Pouch must retain exact physical ownership');
+const verifiedInInventory:GameState={...tagged,inventory:{...tagged.inventory,stacks:[{itemId:output,quantity:1,instanceId:record.id}]},
+ character:{...tagged.character!,equipmentPouch:{capacity:30,stacks:[]}}};
+const verifiedStored=executeGameCommand(verifiedInInventory,{type:'gear_move',args:{instanceId:record.id,to:'equipment_pouch'}},1002).state;
+ok(verifiedStored.inventory.stacks.length===0&&equipmentPouch(verifiedStored).stacks[0]?.instanceId===record.id
+ &&auditCraftedGearOwnership(verifiedStored).consistent,
+ 'Moving exact crafted gear from Inventory to Gear must preserve the unique receipt and ownership audit');
 const equipped=equipCraftedGearInstance(tagged,record.id);
 ok(equipped.character!.equipmentInstanceIds?.[itemDef(output).slot!]===record.id&&auditCraftedGearOwnership(equipped).consistent,
  'Direct equip from Equipment Pouch must preserve exact item rarity/quality receipts');

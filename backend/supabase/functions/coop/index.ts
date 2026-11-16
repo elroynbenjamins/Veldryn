@@ -43181,6 +43181,16 @@ var FAMILY_BY_MONSTER = new Map(
 );
 var ORDINARY_MONSTER_IDS = new Set(MONSTERS.filter((monster) => !monster.boss).map((monster) => monster.id));
 
+// ../apps/mobile/src/core/companion-housing.ts
+function normalizeCompanionHousingTiers(raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
+  return Object.fromEntries(Object.entries(raw2).filter(([id, tier]) => id.length <= 80 && typeof tier === "number" && Number.isInteger(tier) && tier >= 0).slice(0, 150).map(([id, tier]) => [id, Math.min(3, tier)]));
+}
+function companionHousingEarnedTier(level) {
+  if (!Number.isFinite(level)) return 0;
+  return level > 25 ? 3 : level > 20 ? 2 : level > 10 ? 1 : 0;
+}
+
 // ../apps/mobile/src/core/combat-companions.ts
 var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
@@ -43292,7 +43302,11 @@ function sanitizeCombatCompanionState(state) {
     const valid = !!id && !!def && owned.includes(id);
     return { ...character, equippedCombatCompanionId: valid ? id : void 0 };
   };
-  return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress } };
+  const housing = normalizeCompanionHousingTiers(state.account.companionHousingTiers);
+  if (state.account.companionHousingMigratedV1 !== true) {
+    for (const [id, earned] of Object.entries(progress)) housing[id] = Math.max(housing[id] ?? 0, companionHousingEarnedTier(earned.level));
+  }
+  return { ...state, character: cleanCharacter(state.character), otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: cleanCharacter(entry2.character) })), account: { ...state.account, ...migrated, unlockedCombatCompanionIds: owned, combatCompanionProgress: progress, companionHousingTiers: housing, companionHousingMigratedV1: true } };
 }
 function progressFor(state, id) {
   const progress = state.account.combatCompanionProgress?.[id];

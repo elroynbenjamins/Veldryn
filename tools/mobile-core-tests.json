@@ -8,6 +8,8 @@
   ".core-build/apps/mobile/tests/recipe-codex.js",
   ".core-build/apps/mobile/tests/unlock-inbox.js",
   ".core-build/apps/mobile/tests/companion-training-roster.js",
+  ".core-build/apps/mobile/tests/companion-housing-upgrade.js",
+  ".core-build/apps/mobile/tests/companion-housing-progression.js",
   ".core-build/apps/mobile/tests/companion-mastery.js",
   ".core-build/apps/mobile/tests/world-boss-hollowroot-calibration.js",
   ".core-build/apps/mobile/tests/world-boss-round-prototype.js",

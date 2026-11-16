@@ -34,7 +34,7 @@ const bondDisplay=companionBondProgress(4,1380);
 ok(bondDisplay.current===270&&bondDisplay.required===630&&bondDisplay.remaining===360&&bondDisplay.nextMilestone===6&&bondDisplay.nextReward==='55 Essence','Bond UI shows within-level XP, remaining XP, and next reward');
 ok(companionBondProgress(10,7560).maxed&&companionBondProgress(10,7560).percent===100,'max Bond progress is complete');
 
-function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
+function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.account.companionHousingTiers=Object.fromEntries(ids.map(id=>[id,3]));s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
   // Match the current food healing and mission duration instead of hardcoding ration quantities.
  const mission=type==='companion_assignment_start'?companionMission(String(args?.id??'')):undefined;

@@ -37,3 +37,7 @@ jobs:
         run: node tests/equipment-pouch-ui-localization.cjs
       - name: Verify compact storage UI
         run: node tests/inventory-storage-management-ui.cjs
+      - name: Typecheck app and run Bank/Gem Pouch disposal regressions
+        run: |
+          pnpm typecheck
+          node ../../tools/run-mobile-tests.mjs inventory-bank-gem-bulk-disposal

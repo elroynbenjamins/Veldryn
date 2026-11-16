@@ -2,7 +2,6 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
-  "This dungeon run cannot be restarted.": ["Этот забег в подземелье нельзя начать заново.","Bu zindan koşusu yeniden başlatılamaz."],
   "Back to Dungeons": ["Назад к подземельям","Zindanlara dön"],
   "Only your Party leader can invite other players.": ["Только лидер вашей группы может приглашать игроков.","Diğer oyuncuları yalnızca grup liderin davet edebilir."],
   "This player already belongs to another Party.": ["Этот игрок уже состоит в другой группе.","Bu oyuncu zaten başka bir grupta."],
@@ -16,6 +15,10 @@ export const socialEarlyRows={
   "No recruitment posts": ["Нет объявлений о наборе","Üye arama ilanı yok"],
   "Selected tonic prepared automatically for this dungeon.": ["Выбранный тоник автоматически подготовлен для этого подземелья.","Seçilen tonik bu zindan için otomatik hazırlandı."],
   "Invalid active dungeon run response.": ["Недопустимый ответ об активном походе.","Aktif zindan koşusu için geçersiz yanıt."],
+  "This dungeon run cannot be restarted.": ["Этот поход в подземелье нельзя начать заново.","Bu zindan koşusu yeniden başlatılamaz."],
+  "This dungeon or difficulty is no longer available.": ["Это подземелье или уровень сложности больше недоступны.","Bu zindan veya zorluk seviyesi artık mevcut değil."],
+  "Your dungeon loadout changed. Refresh your equipment before running again.": ["Снаряжение для подземелья изменилось. Обновите его перед новым заходом.","Zindan ekipmanın değişti. Yeniden başlamadan önce ekipmanını yenile."],
+  "Could not create a fresh dungeon run.": ["Не удалось создать новый поход в подземелье.","Yeni bir zindan koşusu başlatılamadı."],
   "Choose dungeon tonic": ["Выбрать тоник подземелья","Zindan toniği seç"],
   "Select a tonic from your inventory. Selection does not spend it.": ["Выберите тоник из инвентаря. Сам выбор его не расходует.","Envanterinden bir tonik seç. Seçmek onu tüketmez."],
   "Choose enhancement tonic": ["Выбрать усиливающий тоник","Güçlendirme toniği seç"],

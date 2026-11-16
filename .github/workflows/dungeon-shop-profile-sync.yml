@@ -1,0 +1,46 @@
+name: Temporary Dungeon Shop profile Edge sync
+on:
+  push:
+    branches:
+      - feat/dungeon-shop-profile-cosmetic-art-20261116
+    paths:
+      - .github/workflows/dungeon-shop-profile-sync.yml
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/dungeon-shop-profile-cosmetic-art-20261116
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked build dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild and verify canonical shared Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles to feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Both bundles are already synced."
+            exit 0
+          fi
+          git commit -m 'build(edge): synchronize Dungeon Shop profile icon catalogue'
+          git push origin HEAD:feat/dungeon-shop-profile-cosmetic-art-20261116

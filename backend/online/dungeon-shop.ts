@@ -30,7 +30,7 @@ function sanitizedSnapshot(raw:unknown):DungeonShopAccountViewV1 & Pick<DungeonS
  const s=raw as Record<string,unknown>;
  if(!Number.isSafeInteger(s.marks)||Number(s.marks)<0||!Array.isArray(s.clearedRegions)||!Array.isArray(s.ownedRewardIds)||!(s.unlockedCraftingTiers===undefined||Array.isArray(s.unlockedCraftingTiers))||!s.purchasesThisUtcWeek||typeof s.purchasesThisUtcWeek!=='object')throw new GameplayError('invalid_dungeon_shop_snapshot');
  const regions=['Asterfall','Sunscar','Frostmarch'] as const;
- if(s.clearedRegions.some(v=>!regions.includes(v as DungeonShopRegion))||s.ownedRewardIds.some(v=>typeof v!=='string')||(s.unlockedCraftingTiers as unknown[]|undefined)?.some(v=>![1,2,3,4].includes(v)))throw new GameplayError('invalid_dungeon_shop_snapshot');
+ if(s.clearedRegions.some(v=>!regions.includes(v as DungeonShopRegion))||s.ownedRewardIds.some(v=>typeof v!=='string')||(s.unlockedCraftingTiers as unknown[]|undefined)?.some(v=>typeof v!=='number'||![1,2,3,4].includes(v)))throw new GameplayError('invalid_dungeon_shop_snapshot');
  const purchases=s.purchasesThisUtcWeek as Record<string,unknown>;
  if(Object.entries(purchases).some(([key,value])=>!/^dshop_[a-z0-9_]{1,80}$/.test(key)||!Number.isSafeInteger(value)||Number(value)<0))throw new GameplayError('invalid_dungeon_shop_snapshot');
  if(typeof s.shopEnabled!=='boolean'||!s.releasedPrices||typeof s.releasedPrices!=='object'||Array.isArray(s.releasedPrices))throw new GameplayError('invalid_dungeon_shop_snapshot');

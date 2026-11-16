@@ -99,8 +99,8 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
   if(!value||typeof value!=='object')throw new Error('Invalid weekly Guild reward.');
   const reward=value as Record<string,unknown>;
   const amounts:Record<GuildWeeklyRewardKind,readonly number[]>={attendance:[50],project:[40,44],boss:[30],quest:[20,22,24,26]};
-  if(typeof reward.kind!=='string'||!(reward.kind in expected)
-    ||!Object.hasOwn(amounts,String(reward.kind))||!amounts[reward.kind as GuildWeeklyRewardKind].includes(reward.tokens)
+  if(typeof reward.kind!=='string'||!Object.prototype.hasOwnProperty.call(amounts,reward.kind)
+    ||!Number.isSafeInteger(reward.tokens)||!amounts[reward.kind as GuildWeeklyRewardKind].includes(reward.tokens as number)
     ||typeof reward.eligible!=='boolean'||typeof reward.claimed!=='boolean')
    throw new Error('Invalid weekly Guild reward.');
   return reward as unknown as GuildTokenWeeklyReward;

@@ -17,11 +17,11 @@ check(itemVendorSellGold(nonGear,true)===nonGear.value,'Non-equipment vendor pri
 let state=createCharacter(newGame(0),'BASTION','Vendor Gate QA');
 if(!state.character)throw new Error('Expected character');
 state={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:gear.id,quantity:2}]},bank:{...state.bank,stacks:[...state.bank.stacks,{itemId:gear.id,quantity:2}]}};
-const beforeGold=state.character.gold,bankGold=state.bank.gold??0;
+const beforeGold=state.character!.gold,bankGold=state.bank.gold??0;
 const sold=sellItem(state,gear.id,1);
 check(sold.character!.gold-beforeGold===gear.value,'Current Inventory settlement matches disabled vendor quote');
 check(sold.inventory.stacks.some(row=>row.itemId===gear.id&&row.quantity===1),'Inventory sale consumes precisely one item');
-check(state.character.gold===beforeGold,'Inventory sale never mutates input state');
+check(state.character!.gold===beforeGold,'Inventory sale never mutates input state');
 const bankSold=sellBankItem(state,gear.id,1);
 check((bankSold.bank.gold??0)-bankGold===gear.value,'Bank sale credits Bank, matching the disabled vendor quote');
 check(bankSold.character!.gold===beforeGold,'Bank sale never credits carried Gold');

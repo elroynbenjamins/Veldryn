@@ -33,3 +33,32 @@ Earlier weapon-swap PRs [#1209](https://github.com/elroynbenjamins/Veldryn/pull/
 6. Merge only after gates pass; publish release notes and activate feature flags only as separate approved rollout actions.
 
 This document does not deploy Supabase, distribute an AAB, alter feature flags or modify users' data.
+
+## Final v1.0.10 integration status — 16 November 2026
+
+- **Candidate:** `release/1.0.10-aab-prep-20261115` at `ff628071873215781ce4508bc394b61911e9d334`, linked from [#1185](https://github.com/elroynbenjamins/Veldryn/pull/1185). This is **not** merged to main or published.
+- **Approved regional artwork:** [#1287](https://github.com/elroynbenjamins/Veldryn/pull/1287), 9/9 exact-head workflows green; 12 bundled assets, portrait/gallery/shop wiring, guarded translations and regenerated authoritative Edge bundles.
+- **Three-role roster:** [#1288](https://github.com/elroynbenjamins/Veldryn/pull/1288), 9/9 exact-head workflows green; new character creation capped at 3 (Tank, Damage, Support), existing 4th/5th character saves preserved, account-wide Sunscar/Frostmarch/future Ashlands AFK milestone watermark, grandfathered old Forge slot benefit. [#1286](https://github.com/elroynbenjamins/Veldryn/pull/1286) remains its original mainline source draft pending live acceptance.
+- **CI Android:** release-native AAB check on artwork-inclusive `2dd88a2` passed at Actions run [43867466245](https://github.com/elroynbenjamins/Veldryn/actions/runs/43867466245). Exact combined `ff628071` passed metadata/Edge/TypeScript/mobile-core readiness; its native AAB job is pending at [43869857874](https://github.com/elroynbenjamins/Veldryn/actions/runs/43869857874). These are **CI-only bundles**, not signed EAS production artifacts.
+- **Unpublished copy:** [#1289](https://github.com/elroynbenjamins/Veldryn/pull/1289) corrected 1.0.10 release wording in main. The backend release-note row for Android 1.0.10 is still unpublished.
+
+### Three-way branch reconciliation — do not blanket-merge
+
+Against the common main ancestor `59c4f871`, main has advanced by 60 commits. Git-tree analysis of the exact 16 November snapshot found **25 paths modified differently on both sides**, including the two generated gameplay/co-op Edge files, 11 main-only modified files, 93 release-only modified files, and independently added content. The release PR is not mergeable into main until these source overlaps are resolved and the combined result is tested. Preserve unrelated hidden Guild PvE and Market prototypes, never replace latest main with the release tree, and always regenerate canonical Edge artifacts **after** conflict resolution.
+
+### Staging and production compatibility — read-only findings
+
+- Supabase migration histories differ: staging has **350** recorded migrations, production **394**. These are different histories, not a safe numerical diff: staging contains private Market foundations and a Dungeon Shop 100-material bundle migration that production does not; production has distinct live security and Guild migrations. Migration names/timestamps also differ. Never replay all missing migrations or deploy generated SQL blindly.
+- Staging Android release-policy latest/minimum are **0.1.0**; production latest/minimum remain **1.0.9**. Keep production minimum unchanged until the signed 1.0.10 Play release is verified.
+- Dungeon Shop database setting is **disabled on staging**, **enabled on production**, despite the 1.0.10 mobile release flag remaining off. The three shop server RPCs have service-role EXECUTE only, not anonymous/authenticated. Review the **actual Edge bridge** and rollout intent before altering the production switch.
+- Exceptional Forge announcement migration was deployed and function/trigger permissions checked **on staging only**. Production has not received that migration.
+
+### Final non-code release acceptance gates
+
+1. Complete the exact combined candidate native CI AAB and verify packaged regional WebPs on an Android device/emulator, plus **all three character-role orders**, occupied-role grey-outs, historic 4/5-character saves, and AFK progression across save/reentry.
+2. Bring staging DB/schema and gameplay/co-op Edge versions to a **reviewed compatibility baseline**; perform authorized real test-account multiplayer/economy/quest/gem/run-again checks and rollback/old-client compatibility, with receipt-idempotency verification. No production deployment from this checklist.
+3. Resolve the 25 source overlaps into a reviewable mainline integration PR, preserving current mainline fixes, followed by full mobile/backend/locale/regression/Edge parity CI on the final merge result.
+4. Verify EAS remote `versionCode` versus the largest uploaded Google Play build, build and inspect a **properly signed** 1.0.10 AAB, test on Play internal/closed testing, and approve rollout separately.
+5. Only after the release is actually available: publish release notes, review and then update the app's latest/minimum policy, and explicitly approve any new shop or hidden feature flags.
+
+No staging Edge deployment, production DB change, Google Play upload, app-version gate or feature-flag change is authorized by this document.

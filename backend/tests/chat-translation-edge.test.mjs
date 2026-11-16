@@ -111,7 +111,7 @@ test('authorized translation preserves Veldryn emote tokens and never stores tra
  const response=await invoke({messageId,targetLanguage:'en',body:'attacker supplied text must be ignored'});
  assert.equal(response.status,200);
  const data=await response.json();
- assert.equal(data.text,'¡Hello :wave: friends!');
+ assert.equal(data.text,'Hello :wave: friends!');
  assert.equal(data.sourceLanguage,'ES');
  assert.equal(response.headers.get('cache-control'),'no-store');
  assert.equal(reads().length,1);

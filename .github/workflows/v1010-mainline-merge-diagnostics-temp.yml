@@ -74,7 +74,17 @@ jobs:
             def resolve(m):
               ours,theirs=m.group(1),m.group(2)
               if policy=='union':
-                return ours.rstrip('\n')+'\n'+theirs.lstrip('\n')
+                # Both branches own six exact-item disposal labels. Keep main's
+                # latest translations while adding release-only gem/tonic rows.
+                row=re.compile(r'^\s*"([^\"]+)"\s*:')
+                existing={row.match(line).group(1) for line in ours.splitlines() if row.match(line)}
+                new_lines=[]
+                for line in theirs.splitlines():
+                  key=row.match(line)
+                  if key and key.group(1) in existing:
+                    continue
+                  new_lines.append(line)
+                return ours.rstrip('\n')+'\n'+'\n'.join(new_lines)+'\n'
               return ours if policy=='ours' else theirs
             result=pattern.sub(resolve,source)
             if '<<<<<<<' in result or '>>>>>>>' in result:

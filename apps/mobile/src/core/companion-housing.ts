@@ -11,17 +11,18 @@ export const COMPANION_HOUSING_MILESTONES=[
 ] as const;
 /** Existing paid and earned Quarters keep their value as per-companion bonuses. */
 export const COMPANION_HOUSING_BONUSES=[
- {trainingXpPct:0,bondXpPct:0,essenceDiscountPct:0},
- {trainingXpPct:5,bondXpPct:5,essenceDiscountPct:3},
- {trainingXpPct:10,bondXpPct:10,essenceDiscountPct:6},
- {trainingXpPct:15,bondXpPct:15,essenceDiscountPct:10},
+ {trainingXpPct:0,statPct:0,essenceDiscountPct:0},
+ {trainingXpPct:5,statPct:1,essenceDiscountPct:3},
+ {trainingXpPct:10,statPct:2,essenceDiscountPct:6},
+ {trainingXpPct:15,statPct:3,essenceDiscountPct:10},
 ] as const;
 export function companionHousingBonuses(tier:number){
  const index=Number.isFinite(tier)?Math.max(0,Math.min(3,Math.floor(tier))):0;
  return COMPANION_HOUSING_BONUSES[index];
 }
 export function companionHousingTrainingXpMultiplier(tier:number){return 1+companionHousingBonuses(tier).trainingXpPct/100;}
-export function companionHousingBondXpMultiplier(tier:number){return 1+companionHousingBonuses(tier).bondXpPct/100;}
+/** Verified per-companion combat stat bonus from owned Quarters; never an account-wide buff. */
+export function companionHousingStatMultiplier(tier:number){return 1+companionHousingBonuses(tier).statPct/100;}
 /** Only paid level-training Essence is discounted, not Ascension or Gold. */
 export function companionHousingLevelEssenceCost(baseCost:number,tier:number){
  return Math.max(1,Math.ceil(baseCost*(100-companionHousingBonuses(tier).essenceDiscountPct)/100));

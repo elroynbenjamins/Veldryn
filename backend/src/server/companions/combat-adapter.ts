@@ -26,6 +26,10 @@ export function companionBalancedBaseStats(def:CompanionServerDefinition){
  };
 }
 
+/** Runtime Housing stats are bounded to the maximum verified Master Quarters bonus. */
+export function companionVerifiedHousingStatMultiplier(progress:OwnedCompanionSnapshot){
+ return clamp(Number.isFinite(progress.housingStatMultiplier)?progress.housingStatMultiplier!:1,1,1.03);
+}
 /** Level scaling carries the systematic rarity advantage. */
 export function companionInvestmentMultiplier(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot){
  const max=COMPANION_RARITY_MAX_LEVEL[def.rarity];
@@ -70,7 +74,7 @@ function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnap
 export function buildCompanionCombatant(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):CompanionCombatantDefinition{
  if(progress.companionId!==def.id)throw new Error('companion_progress_definition_mismatch');
  const base=companionBalancedBaseStats(def),identity=identityModifiers(def,progress),scale=companionInvestmentMultiplier(def,progress),synergy=clamp(context.teamSynergyMultiplier??1,1,1.06),hasteBonus=clamp(context.teamHasteBonus??0,0,.06),cooldownChange=effectValue(progress,'cooldown'),target=resolvedTarget(def,context);
- const bond=progress.bondTraitUnlocked?1.03:1,ascension=1+progress.ascensionTier*.006,mastery=Math.min(1.05,Math.max(1,Number.isFinite(progress.masteryStatMultiplier)?progress.masteryStatMultiplier!:1)),derived=scale*synergy*bond*ascension*mastery;
+ const bond=progress.bondTraitUnlocked?1.03:1,ascension=1+progress.ascensionTier*.006,mastery=Math.min(1.05,Math.max(1,Number.isFinite(progress.masteryStatMultiplier)?progress.masteryStatMultiplier!:1)),derived=scale*synergy*bond*ascension*mastery*companionVerifiedHousingStatMultiplier(progress);
  const maxHp=Math.round(base.hp*derived),attackPower=Number((base.power*derived).toFixed(2));
  // Standalone Tank/Support coefficients represent percentages/utility in source
  // content. Calibrate healingPower to companion-scale HP so shields/heals matter in

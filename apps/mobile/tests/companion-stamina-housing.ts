@@ -9,7 +9,7 @@ assert.equal(companionFoodNeededForStamina('ASHLANDS_EMBER_STEW'),4);
 assert.equal(COMPANION_HOUSING_UNLIMITED,true);assert.equal(companionHousingTier('ANY_OWNED_COMPANION'),0);
 assert.deepEqual(COMPANION_HOUSING_MILESTONES.map(x=>x.label),['Basic Quarters','Reinforced Quarters','Veteran Quarters','Master Quarters']);
 assert.deepEqual(COMPANION_HOUSING_BONUSES.map(x=>x.trainingXpPct),[0,5,10,15]);
-assert.deepEqual(COMPANION_HOUSING_BONUSES.map(x=>x.bondXpPct),[0,5,10,15]);
+assert.deepEqual(COMPANION_HOUSING_BONUSES.map(x=>x.statPct),[0,1,2,3]);
 assert.deepEqual(COMPANION_HOUSING_BONUSES.map(x=>x.essenceDiscountPct),[0,3,6,10]);
 assert.equal(companionHousingLevelCap(0),35);assert.equal(companionHousingLevelCap(3),35);
 for(const upgrade of COMPANION_HOUSING_UPGRADES){assert.ok(upgrade.gold>0&&upgrade.inputs.length>=3);}

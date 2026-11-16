@@ -39,6 +39,8 @@ export interface OwnedCompanionSnapshot{
   obtainedAt?:string;originalEventReleaseYear?:number;veteranCosmeticEligible?:boolean;
   /** Runtime-only verified account mastery; never persist or accept as an entitlement. */
   masteryStatMultiplier?:number;
+  /** Runtime-only Housing stat bonus, calculated from persisted Quarters tier. */
+  housingStatMultiplier?:number;
 }
 export interface CompanionEconomyState{gold:number;companionEssence:number;bondstones:number;materials:Record<string,number>;}
 export interface SanctuaryProgress{trainingGroundLevel:number;essenceBasinLevel:number;bondHallLevel:number;expeditionPensLevel:number;masteryChamberLevel:number;}

@@ -2,7 +2,7 @@ import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,CO
 import {normalizeClassSkills} from './class-skills';
 import {companionMasteryBonuses} from './companion-mastery';
 import {normalizeMonsterMastery,monsterMasteryRankFromKills} from './monster-mastery';
-import {companionHousingBondXpMultiplier,companionHousingEarnedTier,companionHousingLevelEssenceCost,companionHousingTier,companionHousingTrainingXpMultiplier,normalizeCompanionHousingTiers} from './companion-housing';
+import {companionHousingEarnedTier,companionHousingLevelEssenceCost,companionHousingStatMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier,normalizeCompanionHousingTiers} from './companion-housing';
 import type {CombatCompanionRole,CompanionAscensionCost,CompanionBondSource,CompanionCombatContribution,CompanionDefinition,CompanionEffectKind,CompanionLevelCost,CompanionSanctuaryState,CompanionSanctuaryUpgrade,OwnedCompanionProgress,VeldrynClassId} from './combat-companion-types';
 
 interface HostItemStack{itemId:string;quantity:number;}
@@ -426,13 +426,13 @@ export function grantEquippedCompanionUse<T extends CombatCompanionStateHost>(st
   const xpPerUnit=source==='boss'?120:source==='dungeon'?55:source==='companion_objective'?70:source==='future_activity'?20:9;
   const housing=companionHousingTier(id,clean.account.companionHousingTiers);
   p=applyCompanionXp(p,def,Math.round(xpPerUnit*count*companionHousingTrainingXpMultiplier(housing)));
-  const bondBase=bondSourceXp(source)*count;p=applyCompanionBondXp(p,Math.round(bondBase*companionBondXpMultiplier(clean)*companionHousingBondXpMultiplier(housing)));
+  const bondBase=bondSourceXp(source)*count;p=applyCompanionBondXp(p,Math.round(bondBase*companionBondXpMultiplier(clean)));
   return setProgress(clean,id,p);
 }
 /** Bond XP has no generic resource-purchase entry point: callers must supply an allowed real-use source. */
 export function grantCompanionBondFromUse<T extends CombatCompanionStateHost>(state:T,id:string,source:CompanionBondSource,units=1):T{
   const clean=sanitizeCombatCompanionState(state);if(!(clean.account.unlockedCombatCompanionIds??[]).includes(id))throw new Error('Combat companion is locked.');
-  const p=progressFor(clean,id),housing=companionHousingTier(id,clean.account.companionHousingTiers),gain=Math.round(bondSourceXp(source)*Math.max(1,Math.floor(units))*companionBondXpMultiplier(clean)*companionHousingBondXpMultiplier(housing));return setProgress(clean,id,applyCompanionBondXp(p,gain));
+  const p=progressFor(clean,id),gain=Math.round(bondSourceXp(source)*Math.max(1,Math.floor(units))*companionBondXpMultiplier(clean));return setProgress(clean,id,applyCompanionBondXp(p,gain));
 }
 
 export function companionAbilityValue(def:CompanionDefinition,progress:OwnedCompanionProgress){const scaling=def.activeAbility.scaling,value=scaling.baseValue+scaling.perLevel*Math.max(0,progress.level-1);return Math.min(scaling.maxValue??Number.POSITIVE_INFINITY,value);}
@@ -441,7 +441,7 @@ export function companionCombatContribution(state:CombatCompanionStateHost):Comp
   if(clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)||(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)))return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:0};
   const def=combatCompanionDef(id)!,p=progressFor(clean,id),rarity=COMPANION_RARITY_CONFIG[def.rarity];
   // Rarity target is deliberately applied exactly once here. Level/Bond only move toward that budget.
-  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,baseContribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance),contribution=baseContribution*(1+companionMasteryBonuses(clean.account.companionMasteryXp).assistPct);
+  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,baseContribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance),contribution=baseContribution*(1+companionMasteryBonuses(clean.account.companionMasteryXp).assistPct)*companionHousingStatMultiplier(companionHousingTier(id,clean.account.companionHousingTiers));
   const effects=[def.activeAbility.effect.kind,def.passiveAbility.kind,...(p.bondTraitUnlocked?[def.bondTrait.effect.kind]:[])] as const;
   const has=(...kinds:CompanionEffectKind[])=>effects.some(kind=>kinds.includes(kind));
   const restorative=has('heal');

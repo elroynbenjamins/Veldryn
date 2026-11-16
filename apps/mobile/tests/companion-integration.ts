@@ -231,5 +231,5 @@ ok(companionAscensionCost(regentDef,2).materialId==='BLACKGLASS_CORE'&&companion
 ok(companionAscensionCost(heartbondDef,3).materialId==='TRIAL_SANCTUARY_MATERIAL'&&companionAscensionCost(heartbondDef,'mastery').materialQuantity===10,'event Prestige progression remains available through Trial materials');
 ok(companionMaterialSources('BLACKGLASS_CORE').some(source=>source.includes('Blackglass Mireling'))&&companionMaterialSources('REGENT_SIGIL').some(source=>source.includes('Ashen Revenant')),'new Ashlands ascension catalysts have live sources');
 const bondBase=command(fixture(),'companion_equip',{id:'UNIT_001'}),bondBoost=structuredClone(bondBase);bondBoost.account.companionSanctuary!.bondHallLevel=3;
-ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===529,'Bond Hall and Master Quarters each apply exactly once to hunting');
+ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===460,'Bond Hall applies exactly once to hunting (Housing no longer boosts Bond XP)');
 console.log(`PASS companion integration: ${checks} checks`);

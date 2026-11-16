@@ -2,7 +2,7 @@ import type {GameState} from './types';
 import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionXp,companionMasteryStatMultiplier} from './companion-mastery';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,sanitizeCombatCompanionState,classCompanionRole} from './combat-companions';
-import {companionHousingBondXpMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier} from './companion-housing';
+import {companionHousingStatMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier} from './companion-housing';
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
@@ -126,7 +126,7 @@ export function awardCompanionRematchBondstone(state:GameState,nowMs:number){
 export const companionCombatExecutor:CompanionCombatExecutor={simulate:input=>simulateCombat(input)};
 export function companionOwned(state:GameState):Record<string,OwnedCompanionSnapshot>{
   return Object.fromEntries((state.account.unlockedCombatCompanionIds??[]).flatMap(id=>{
-    const p=state.account.combatCompanionProgress?.[id];return p?[[id,{...p,companionId:id,masteryStatMultiplier:companionMasteryStatMultiplier(state.account.companionMasteryXp)}]]:[];
+    const p=state.account.combatCompanionProgress?.[id];return p?[[id,{...p,companionId:id,masteryStatMultiplier:companionMasteryStatMultiplier(state.account.companionMasteryXp),housingStatMultiplier:companionHousingStatMultiplier(companionHousingTier(id,state.account.companionHousingTiers))}]]:[];
   }));
 }
 export function companionEconomy(state:GameState):CompanionEconomyState {
@@ -160,7 +160,7 @@ function companionMetricMany(state:GameState,entries:Record<string,number>):Game
   let next=state;for(const [key,value] of Object.entries(entries))if(value)next=companionMetric(next,key,value);return next;
 }
 function setOwned(state:GameState,owned:Record<string,OwnedCompanionSnapshot>):GameState {
-  return {...state,account:{...state.account,unlockedCombatCompanionIds:Object.keys(owned),combatCompanionProgress:Object.fromEntries(Object.entries(owned).map(([id,p])=>{const {masteryStatMultiplier:_transient,...saved}=p;return [id,{...state.account.combatCompanionProgress?.[id],...saved}];}))}};
+  return {...state,account:{...state.account,unlockedCombatCompanionIds:Object.keys(owned),combatCompanionProgress:Object.fromEntries(Object.entries(owned).map(([id,p])=>{const {masteryStatMultiplier:_transient,housingStatMultiplier:_housingTransient,...saved}=p;return [id,{...state.account.combatCompanionProgress?.[id],...saved}];}))}};
 }
 function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number):GameState {
   // Activity settlements can run before any companion screen is visited.
@@ -172,7 +172,7 @@ function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number)
      if(!owned[id])continue;
      const housing=companionHousingTier(id,state.account.companionHousingTiers);
      const xp=Math.round(earnedXp*companionHousingTrainingXpMultiplier(housing));
-     const bondXp=Math.round(earnedBond*companionHousingBondXpMultiplier(housing));
+     const bondXp=earnedBond;
      const r=awardCompanionXpServer({progress:owned[id],amount:xp,companionEssence:essence,overflow,serverNowMs:now});
      essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,bondXp);
    }

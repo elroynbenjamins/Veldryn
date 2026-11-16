@@ -46,7 +46,8 @@ if(frostmarch.sources.find(source=>source.id==='region_ashlands')?.earned)throw 
 // Server-owned account records keep earned region AFK even when the unlocking character later changes.
 const earned=recordAccountProgress(state);
 if(JSON.stringify(earned.account.earnedAfkRegionIds)!==JSON.stringify(['SUNSCAR','FROSTMARCH']))throw new Error('Earned region milestones must be stored on account');
-const reset={...earned,character:{...earned.character!,level:1},exploredRouteIds:[],defeatedBossIds:[]};
+// A character may backtrack or lose scouting display data; the already-defeated story boss remains defeated.
+const reset={...earned,character:{...earned.character!,level:1},exploredRouteIds:[]};
 if(offlineCapBreakdown(reset).hours!==22)throw new Error('Account region AFK bonuses must not disappear on character backtracking');
 const restored=migrateSave(JSON.parse(JSON.stringify(reset)));
 if(offlineCapBreakdown(restored).hours!==22)throw new Error('Regional AFK entitlements must survive save migration');

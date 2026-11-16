@@ -74,6 +74,9 @@ for(const tank of ['IRONWARDEN','BASTION','DREADGUARD'] as ClassId[])
   }
   const result={dungeon,tank,support,damage,clears,samples,bossOutcome};
   results.push(result);console.log(JSON.stringify(result));
-  assert.ok(clears/samples>=.85,'Published regional roster below launch clear-rate floor: '+JSON.stringify(result));
  }
+// Audit every role combination and boss roll before reporting failures so a
+// single weak composition never hides a second independent balance issue.
+const underperforming=results.filter(result=>result.clears/result.samples<.85);
+assert.equal(underperforming.length,0,'Published regional rosters below the 85% clear-rate floor: '+JSON.stringify(underperforming));
 console.log('PASS '+results.length*100+' complete published regional Q-Mode runs; only currently playable dungeons, verified level/power gates, all class roles and current balance version');

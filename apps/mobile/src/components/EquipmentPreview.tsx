@@ -64,7 +64,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
  const blocked=state.character&&state.character.level<(item.requiredLevel??1)
   ?gl('Requires level')+' '+String(item.requiredLevel??1)
-  :state.activity?.kind==='combat'?gl('Stop combat before equipping')
+  :state.activity?.kind==='combat'&&slot!=='weapon'?gl('Stop combat before equipping')
   :undefined;
  const sets=comparison.sets;
  const stats=[

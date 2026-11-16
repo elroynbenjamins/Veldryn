@@ -10,6 +10,7 @@ import {RECIPES} from '../src/content/skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftAvailability,equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
+import {recordAccountProgress,accountSkillLevel} from '../src/core/account-roster';
 import {accountBonusOverview} from '../src/core/account-bonuses';
 import type {GameState} from '../src/core/types';
 
@@ -61,9 +62,16 @@ ok(slots.capacity===4,'VIP+ must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:2}});
 ok(slots.capacity===4,'Unlocking character slot #2 must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4}});
-ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap through character progression');
+ok(slots.capacity===5,'Legacy fourth-slot Forge perk must remain earned after roster cap reduction');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
 ok(slots.capacity===7&&slots.raw===7,'Progression + VIP+ + Supporter should stack to seven active Forge slots');
+const skillMastery=recordAccountProgress({...state,skills:state.skills.map(row=>({...row,xp:totalXpAtLevel(100),level:100}))});
+ok(accountSkillLevel(skillMastery)>=1050,'the independent Forge milestone can be earned without a fourth character');
+ok(equipmentCraftSlotBreakdown(skillMastery).sources.some(source=>source.id==='account_skill_1050'&&source.earned&&source.slots===1),'1,050 account-skill progression must independently unlock the Forge slot');
+const masteredBacktracked={...skillMastery,skills:state.skills,account:{...skillMastery.account,unlockedCharacterSlots:3}};
+ok(equipmentCraftSlotBreakdown(masteredBacktracked).capacity===5,'earned 1,050 Forge slot survives reduced skill total and the three-character cap');
+ok(equipmentCraftSlotBreakdown(normalizeSave(JSON.parse(JSON.stringify(masteredBacktracked)))).capacity===5,'earned Forge milestone must survive save normalization');
+
 
 const startingGold=state.character!.gold;
 const started1=startEquipmentCraft(state,recipe.id,1000);

@@ -167,4 +167,55 @@ if(effectGem){
   throw new Error('Combat effect gem changes must appear in the comparison');
 }
 
+// Weapon comparisons must remain valid while an ordinary hunt is active.
+// Equipment actions settle the previous combat interval before applying new
+// stats, but must retain the same target and activity afterwards.
+const huntAt=10_000;
+const combatGearState={...forged,activity:{kind:'combat' as const,targetId:'training_hunt_fixture',startedAtMs:huntAt,lastClaimAtMs:huntAt}};
+const combatPreview=previewEquipment(combatGearState,forgeWeapon.id,'COPY_HIGH');
+const combatEquipped=equipCraftedGearInstance(combatGearState,'COPY_HIGH');
+assertPreviewEqualsActual(combatPreview,combatEquipped,'in-combat exact-copy weapon swap');
+if(combatEquipped.character?.equipmentInstanceIds?.weapon!=='COPY_HIGH'
+ ||combatEquipped.activity?.targetId!==combatGearState.activity.targetId
+ ||combatEquipped.activity.lastClaimAtMs!==huntAt
+ ||combatGearState.character?.equipmentInstanceIds?.weapon)
+ throw new Error('Forged weapon swap must preserve the hunt and never mutate the previous loadout');
+const activeLegacy={...legacyState,activity:combatGearState.activity};
+const activeLegacyPouch={...legacyPouch,activity:combatGearState.activity};
+assertPreviewEqualsActual(previewEquipment(activeLegacy,'basic_sword'),equipItem(activeLegacy,'basic_sword'),'in-combat legacy weapon swap');
+assertPreviewEqualsActual(previewEquipment(activeLegacyPouch,'basic_sword',undefined,'equipment_pouch'),
+ equipItemFromEquipmentPouch(activeLegacyPouch,'basic_sword'),'in-combat pouch weapon swap');
+const otherGear=setItems.find(item=>item.slot&&item.slot!=='weapon');
+if(!otherGear)throw new Error('Missing non-weapon equipment fixture');
+const nonWeaponLegacy={...combatGearState,character:{...combatGearState.character!,level:100},inventory:{...combatGearState.inventory,
+ stacks:[...combatGearState.inventory.stacks,{itemId:otherGear.id,quantity:1}]}};
+let blockedLegacy=false;
+try{equipItem(nonWeaponLegacy,otherGear.id)}catch{blockedLegacy=true}
+if(!blockedLegacy)throw new Error('In-combat non-weapon legacy swaps must remain restricted');
+const nonWeaponCopy={...makeCopy('COPY_OTHER_GEAR',50),itemId:otherGear.id};
+const nonWeaponForged={...nonWeaponLegacy,account:{...nonWeaponLegacy.account,
+ craftedGearInstances:[...nonWeaponLegacy.account.craftedGearInstances,nonWeaponCopy]},
+ inventory:{...nonWeaponLegacy.inventory,stacks:[...nonWeaponLegacy.inventory.stacks,
+  {itemId:otherGear.id,instanceId:nonWeaponCopy.id,quantity:1}]}};
+let blockedForged=false;
+try{equipCraftedGearInstance(nonWeaponForged,nonWeaponCopy.id)}catch{blockedForged=true}
+if(!blockedForged)throw new Error('In-combat non-weapon forged swaps must remain restricted');
+
+// Compare-only UI projection and successful combat swaps must never increase HP.
+const damagedWeapon={...combatGearState,character:{...combatGearState.character!,currentHp:1}};
+const noHealPreview=previewEquipment(damagedWeapon,forgeWeapon.id,'COPY_HIGH');
+if(noHealPreview.character!.currentHp>damagedWeapon.character!.currentHp)
+ throw new Error('Previewing a combat weapon swap must not restore HP');
+const legacyDamaged={...activeLegacy,character:{...activeLegacy.character!,currentHp:1}};
+const legacySwapped=equipItem(legacyDamaged,'basic_sword');
+if(legacySwapped.character!.currentHp!==1||legacySwapped.activity?.kind!=='combat')
+ throw new Error('Equipping a legacy combat weapon must preserve HP and the active hunt');
+const pouchDamaged={...activeLegacyPouch,character:{...activeLegacyPouch.character!,currentHp:1}};
+const pouchSwapped=equipItemFromEquipmentPouch(pouchDamaged,'basic_sword');
+if(pouchSwapped.character!.currentHp!==1||pouchSwapped.activity?.kind!=='combat')
+ throw new Error('Equipping a pouch weapon during combat must preserve HP and the active hunt');
+const forgedSwapped=equipCraftedGearInstance(damagedWeapon,'COPY_HIGH');
+if(forgedSwapped.character!.currentHp!==1||forgedSwapped.activity?.kind!=='combat')
+ throw new Error('Equipping a forged weapon during combat must preserve HP and the active hunt');
+
 console.log('PASS: equipment screen uses ten live slots, canonical stats, loadout guides, contextual focus and saved presentation');

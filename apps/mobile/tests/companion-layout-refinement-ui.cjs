@@ -11,7 +11,7 @@ const resource=read('ResourceIcon.tsx');
 const skills=fs.readFileSync(path.join(root,'src/screens/SkillsScreen.tsx'),'utf8');
 
 // Companion Index opens on unlockable recruits, with owned and past-event views one tap away.
-assert(read('CompanionIndex.tsx').includes("useState<IndexTab>('unlock')"),'Companion Index defaults to obtainable recruits');
+assert(read('CompanionIndex.tsx').includes("useState<IndexTab>(()=>(state.account.unlockedCombatCompanionIds?.length??0)>0?'owned':'unlock')"),'Companion Index starts with owned roster for returning players and unlockable recruits for new players');
 assert(read('CompanionIndex.tsx').includes("type IndexTab='owned'|'unlock'|'event'"),'Owned and past-event groups must remain accessible');
 assert(read('CompanionIndex.tsx').includes('onCodex}'),'Companion discovery remains available through the Index header');
 assert(panel.includes("Train equipped companion"),'Equipped companion should have a shortcut to Training');

@@ -16,7 +16,7 @@ export function browseGameGuides(args:{
   if(args.category!=='all'&&GAME_GUIDE_CATEGORIES[entry.id]!==args.category)return false;
   if(args.unreadOnly&&(!args.unlockedIds.has(entry.id)||args.readIds.has(entry.id)))return false;
   if(!query)return true;
-  return [entry.title,entry.summary,entry.unlockHint,...GAME_GUIDE_STEPS[entry.id]].some(copy=>copy.toLocaleLowerCase().includes(query)||args.localize?.(copy).toLocaleLowerCase().includes(query));
+  return [entry.title,entry.summary,entry.unlockHint,...GAME_GUIDE_STEPS[entry.id]].some(copy=>copy.toLocaleLowerCase().includes(query)||(args.localize?.(copy)??'').toLocaleLowerCase().includes(query));
  }).sort((a,b)=>{
   const rank=(id:GameGuideId)=>args.unlockedIds.has(id)?args.readIds.has(id)?1:0:2;
   return rank(a.id)-rank(b.id)||GAME_GUIDE.indexOf(a)-GAME_GUIDE.indexOf(b);

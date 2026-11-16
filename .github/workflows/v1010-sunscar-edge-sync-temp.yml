@@ -1,0 +1,57 @@
+name: v1.0.10 Sunscar regional boss temporary Edge sync
+# Disposable draft-only helper. Remove before release integration.
+on:
+  push:
+    branches: ['fix/v1010-live-queue-double-receipt-replay-20261116']
+    paths: ['.github/workflows/v1010-sunscar-edge-sync-temp.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: v1010-sunscar-regional-edge-sync-temp
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/v1010-live-queue-double-receipt-replay-20261116
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Generate both canonical Edge bundles and verify parity
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject unrelated code mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Unexpected generated changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit only canonical generated Edge functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Canonical Edge output unchanged.'
+            exit 0
+          fi
+          git commit -m 'build(edge): synchronize new-regional Sunscar Solar Ward cadence'
+          git push origin HEAD:fix/v1010-live-queue-double-receipt-replay-20261116

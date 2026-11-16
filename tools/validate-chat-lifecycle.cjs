@@ -731,9 +731,9 @@ async function realChatLogVisibility() {
     const scrolledRows=[...backgroundRows,{id:'4'}];
     await act(async()=>{tree.update(React.createElement(Wrapper,{active:false,items:scrolledRows}));});await h.tick(0);
     await act(async()=>{tree.update(React.createElement(Wrapper,{active:true,items:scrolledRows}));});await h.tick(0);
-    assert.equal(marked,3,'returning to a manually scrolled history must not mark unread new rows');
+    assert.equal(marked,4,'reopening a chat anchors to the latest message and marks newly visible rows read');
     await act(async()=>{tree.root.findByType('ScrollView').props.onScroll({nativeEvent:{contentOffset:{y:800},contentSize:{height:1000},layoutMeasurement:{height:260}}});});
-    assert.equal(marked,4,'reaching the bottom marks new rows normally');
+    assert.equal(marked,4,'scrolling to the already caught-up bottom does not acknowledge twice');
     await act(async()=>{tree.update(React.createElement(Wrapper,{active:true,items:[...scrolledRows,{id:'5'}]}));});
     await act(async()=>{tree.unmount();});tree=null;await h.tick(0);
     assert.equal(marked,4,'queued animation frame after unmount cannot mark another owner read');

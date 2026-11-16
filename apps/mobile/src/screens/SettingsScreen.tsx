@@ -22,7 +22,7 @@ import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 import {GameGuidePanel} from '../components/GameGuidePanel';
 import {ChatEmotePicker} from '../components/ChatEmotePicker';
 import {GuideTopicModal} from '../components/GuideTopicModal';
-import {acknowledgeGameGuide,guideDefinition} from '../core/onboarding';
+import {acknowledgeGameGuide,guideDefinition,unlockedGameGuide} from '../core/onboarding';
 import {createGameGuideReadPreferenceStore} from '../core/game-guide-read-preferences';
 import {offlineCapBreakdown} from '../core/game';
 import {activityQueueCrossRegionAllowed} from '../core/activity-queue';
@@ -82,11 +82,15 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   },[guideScope,online]);
   const openGuide=(id:GameGuideId)=>{
     setGuideId(id);
+    // A locked topic may be previewed for information, but must never mark progression unlocked.
+    if(!guideDefinition(id).unlock(state))return;
     if(online){
       setLocalGuideRead(previous=>({scope:guideScope,ids:[...new Set([...(previous.scope===guideScope?previous.ids:[]),id])]}));
       void guideReadPreferences.markRead(guideScope,id);
     }else onChange(acknowledgeGameGuide(state,id,true));
   };
+  const availableGuideIds=unlockedGameGuide(state).map(entry=>entry.id);
+  const guideIndex=guideId?availableGuideIds.indexOf(guideId):-1;
   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(focusChatEmotes),[showDeleteControls,setShowDeleteControls]=useState(false);
   const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
@@ -199,7 +203,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
       {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
     </View>:null}
-  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmDefaults} title={a('Restore gameplay defaults?')} message={a('Combat safety and activity queue preferences will return to their defaults.')} confirmLabel={a('Restore defaults')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDefaults(false);restoreDefaults();}} onCancel={()=>setConfirmDefaults(false)}/><ConfirmModal visible={confirmDelete} title={a('Delete local save?')} message={a('This permanently removes local progress from this device. Online characters are not affected.')} confirmLabel={a('Delete local save')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDelete(false);onReset();}} onCancel={()=>setConfirmDelete(false)}/></View>;
+  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} canNavigate={guideId?guideDefinition(guideId).unlock(state):true} position={guideIndex>=0?{index:guideIndex+1,total:availableGuideIds.length}:undefined} onPrevious={guideIndex>0?()=>openGuide(availableGuideIds[guideIndex-1]):undefined} onNext={guideIndex>=0&&guideIndex<availableGuideIds.length-1?()=>openGuide(availableGuideIds[guideIndex+1]):undefined} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmDefaults} title={a('Restore gameplay defaults?')} message={a('Combat safety and activity queue preferences will return to their defaults.')} confirmLabel={a('Restore defaults')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDefaults(false);restoreDefaults();}} onCancel={()=>setConfirmDefaults(false)}/><ConfirmModal visible={confirmDelete} title={a('Delete local save?')} message={a('This permanently removes local progress from this device. Online characters are not affected.')} confirmLabel={a('Delete local save')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDelete(false);onReset();}} onCancel={()=>setConfirmDelete(false)}/></View>;
 }
 
 function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({

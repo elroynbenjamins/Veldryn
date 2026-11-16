@@ -1,0 +1,61 @@
+name: Draft mainline+1.0.10 Edge parity generator
+# Disposable test helper on isolated draft branch, no Supabase deployment.
+on:
+  push:
+    branches: ['integration/v1010-mainline-reconciliation-draft-20261116']
+    paths: ['.github/workflows/v1010-mainline-merge-edge-sync-temp.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: v1010-mainline-edge-draft
+  cancel-in-progress: false
+jobs:
+  compile-and-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/v1010-mainline-reconciliation-draft-20261116
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Validate combined app and backend typing before generation
+        run: |
+          pnpm --dir apps/mobile typecheck
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+      - name: Build canonical shared gameplay and coop Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Enforce generated-only changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Unexpected generated changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Save only generated Edge code to draft integration branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Canonical Edge bundles already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync combined mainline and v1.0.10 source (draft)'
+          git push origin HEAD:integration/v1010-mainline-reconciliation-draft-20261116

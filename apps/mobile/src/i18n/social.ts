@@ -7,6 +7,14 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  // Read-only Rankings pagination.
+  "No further ranked entries": ["Keine weiteren Ranglisteneinträge","No hay más entradas en la clasificación","Geen verdere ranglijstvermeldingen","Nessun'altra voce in classifica","Aucune autre entrée au classement"],
+  "Return to the previous page to view ranked entries.": ["Kehre zur vorherigen Seite zurück, um Ranglisteneinträge anzusehen.","Vuelve a la página anterior para consultar la clasificación.","Ga terug naar de vorige pagina om de ranglijst te bekijken.","Torna alla pagina precedente per vedere la classifica.","Revenez à la page précédente pour consulter le classement."],
+  "Previous": ["Zurück","Anterior","Vorige","Precedente","Précédent"],
+  "Next": ["Weiter","Siguiente","Volgende","Successiva","Suivant"],
+  "Page": ["Seite","Página","Pagina","Pagina","Page"],
+  "Entries {first}–{last}": ["Einträge {first}–{last}","Entradas {first}–{last}","Posities {first}–{last}","Voci {first}–{last}","Entrées {first}–{last}"],
+  "Live rankings can change while players progress.": ["Live-Ranglisten können sich ändern, während Spieler Fortschritte machen.","Las clasificaciones en vivo pueden cambiar a medida que progresan los jugadores.","Live-ranglijsten kunnen veranderen terwijl spelers vooruitgang boeken.","Le classifiche in tempo reale possono cambiare mentre i giocatori avanzano.","Les classements en direct peuvent évoluer à mesure que les joueurs progressent."],
   // Dungeon tonic / healing setup: explicit five-language translations.
   "Choose the healing potion type to use in this dungeon.": ["Wähle den Heiltranktyp für dieses Dungeon.","Elige la poción curativa para esta mazmorra.","Kies de genezingsdrank voor deze kerker.","Scegli la pozione curativa per questo dungeon.","Choisissez la potion de soin pour ce donjon."],
   "Tap to choose potion ›": ["Tippen, um einen Trank zu wählen ›","Toca para elegir una poción ›","Tik om een drankje te kiezen ›","Tocca per scegliere una pozione ›","Touchez pour choisir une potion ›"],

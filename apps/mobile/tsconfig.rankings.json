@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.core.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/core/rankings.ts",
+    "src/core/ranking-pagination.ts",
+    "tests/rankings.ts"
+  ],
+  "exclude": []
+}

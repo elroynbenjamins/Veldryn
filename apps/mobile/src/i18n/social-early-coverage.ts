@@ -2,6 +2,14 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  // Read-only Rankings pagination.
+  "No further ranked entries": ["Больше записей в рейтинге нет","Başka sıralama kaydı yok"],
+  "Return to the previous page to view ranked entries.": ["Вернитесь на предыдущую страницу, чтобы увидеть рейтинг.","Sıralamayı görmek için önceki sayfaya dön."],
+  "Previous": ["Назад","Önceki"],
+  "Next": ["Далее","Sonraki"],
+  "Page": ["Страница","Sayfa"],
+  "Entries {first}–{last}": ["Строки {first}–{last}","Kayıtlar {first}–{last}"],
+  "Live rankings can change while players progress.": ["Рейтинг может измениться по мере развития игроков.","Oyuncular ilerledikçe canlı sıralamalar değişebilir."],
   // RU/TR Dungeon tonic, healing and companion setup.
   "Choose the healing potion type to use in this dungeon.": ["Выберите тип лечебного зелья для этого подземелья.","Bu zindan için iyileştirme iksiri türünü seç."],
   "Tap to choose potion ›": ["Нажмите, чтобы выбрать зелье ›","İksir seçmek için dokun ›"],

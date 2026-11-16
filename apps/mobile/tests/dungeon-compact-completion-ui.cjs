@@ -20,8 +20,8 @@ assert(overview.includes('rewardsSecured&&onQueueAgain'),'Run-again action requi
 assert(!overview.includes('Spend at Expedition Shop')&&!overview.includes('onOpenShop'),'Victory popup no longer offers a direct Expedition Shop action');
 assert(overview.includes('Return to dungeon list')&&overview.includes('onQueueAgain.onPress'),'Return and run-again actions remain');
 assert(screen.includes("run?.mode==='qmode'&&run.expeditionId&&run.tier"),'Run again works after restoring a completed Solo run');
-assert(screen.includes("const latest=await coopClient.entry()")&&screen.includes("dungeonId:finished.expeditionId,tier:finished.tier")&&screen.includes("loadoutRevision:loadout.revision"),'Solo retry keeps the authoritative dungeon and tier while refreshing the loadout');
-assert(screen.includes("started.run.runId===finished.runId")&&screen.includes("key={run.runId}")&&!screen.includes("lastQModeIntent"),'Solo retry creates a new run and resets local per-run UI');
-assert(read('core/coop-qmode.ts').includes('expeditionId:projection.expeditionId')&&read('core/coop-presentation.ts').includes('expeditionId?:string'),'Resumed runs retain their server dungeon identity');
+assert(screen.includes('const latest=await coopClient.entry()')&&screen.includes('dungeonId:finished.expeditionId,tier:finished.tier')&&screen.includes('loadoutRevision:loadout.revision'),'Solo retry keeps authoritative dungeon and tier while refreshing loadout');
+assert(screen.includes('started.run.runId===finished.runId')&&screen.includes('key={run.runId}')&&!screen.includes('lastQModeIntent'),'Solo retry creates new run and resets local per-run UI');
+assert(read('core/coop-qmode.ts').includes('expeditionId:projection.expeditionId')&&read('core/coop-presentation.ts').includes('expeditionId?:string'),'Resumed runs retain their authoritative dungeon identity');
 assert(screen.includes('Find new Live party')&&screen.includes('coopClient.quickLive('),'Live action must indicate that it creates a new matchmaking party');
 console.log('PASS compact dungeon flow, elapsed timer, reward popup and repeat-run safety');

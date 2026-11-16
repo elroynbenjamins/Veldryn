@@ -1,5 +1,7 @@
 [
   ".core-build/apps/mobile/tests/combat-level-rebase.js",
+  ".core-build/apps/mobile/tests/monthly-quest-milestones.js",
+  ".core-build/apps/mobile/tests/monthly-quest-copy.js",
   "tests/profile-pet-art-assets.cjs",
   "tests/app-version-gate.cjs",
   ".core-build/apps/mobile/tests/resource-codex.js",
@@ -83,8 +85,6 @@
   "tests/live-dungeon-online-guild-localization.cjs",
   "tests/guild-hall-construction-localization.cjs",
   "tests/guild-bank-token-shop-localization.cjs",
-  "tests/expedition-marks-shop-contract.cjs",
-  "tests/dungeon-shop-bonus-localization.cjs",
   "tests/dungeon-dynamic-replay-localization.cjs",
   "tests/enemy-stat-display-scale.cjs",
   "tests/equipment-metadata-localization.cjs",
@@ -383,5 +383,6 @@
   ".core-build/apps/mobile/tests/companion-stamina-authority.js",
   ".core-build/apps/mobile/tests/companion-stamina-selection.js",
   ".core-build/apps/mobile/tests/companion-stamina-housing.js",
-  ".core-build/apps/mobile/tests/dungeon-reward-display.js"
+  ".core-build/apps/mobile/tests/dungeon-reward-display.js",
+  ".core-build/apps/mobile/tests/forge-system-announcements.js"
 ]

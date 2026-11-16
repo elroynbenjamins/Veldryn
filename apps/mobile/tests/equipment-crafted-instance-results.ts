@@ -81,6 +81,8 @@ let job=equipmentCraftingQueue(state)[0];
 const epicClaim=claimEquipmentCraft(state,job.id,job.completesAtMs,.004);
 state=epicClaim.state;
 ok(epicClaim.result.rarity==='epic'&&epicClaim.result.qualityProc,'Trusted .004 claim roll should produce an Epic rarity upgrade');
+ok(epicClaim.result.itemName===itemDef(recipe.output.itemId).name,'Trusted Forge results must include the actual equipment name for System chat');
+ok(epicClaim.result.crafterName==='Instance Crafter','Trusted Forge results must use the owning character name for System chat');
 ok(craftedGearInstances(state).length===1,'Claimed Forge gear must create a persisted instance');
 ok(craftedGearInstances(state)[0].id.includes(job.id),'Crafted instance identity must derive from its authoritative Forge receipt');
 ok(epicClaim.result.quality!==undefined&&epicClaim.result.quality>=0&&epicClaim.result.quality<=100,'Crafted equipment must persist a bounded 0–100 quality roll');

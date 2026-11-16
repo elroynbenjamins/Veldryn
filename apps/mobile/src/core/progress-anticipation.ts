@@ -1,3 +1,5 @@
+import {monsterMasteryKillsForRank} from './monster-mastery';
+
 export type AnticipationBand='none'|'near'|'urgent'|'next';
 
 export function progressAnticipation(current:number,target:number,{nearAt=.80,urgentAt=.95,integer=false}:{nearAt?:number;urgentAt?:number;integer?:boolean}={}):{band:AnticipationBand;remaining:number;ratio:number}{
@@ -27,12 +29,12 @@ export function forgeAnticipation(remainingSeconds:number,durationSeconds:number
 }
 
 export const MASTERY_ANTICIPATION_MILESTONES=Object.freeze([
-  {rank:5,points:125,label:'+1% damage bonus'},
-  {rank:10,points:250,label:'drop knowledge'},
-  {rank:15,points:375,label:'+3% material bonus'},
-  {rank:20,points:500,label:'elite knowledge'},
-  {rank:25,points:625,label:'mastery badge'},
-  {rank:30,points:750,label:'master bonuses'},
+  {rank:5,points:monsterMasteryKillsForRank(5),label:'+1% damage bonus'},
+  {rank:10,points:monsterMasteryKillsForRank(10),label:'drop knowledge'},
+  {rank:15,points:monsterMasteryKillsForRank(15),label:'+3% material bonus'},
+  {rank:20,points:monsterMasteryKillsForRank(20),label:'elite knowledge'},
+  {rank:25,points:monsterMasteryKillsForRank(25),label:'mastery badge'},
+  {rank:30,points:monsterMasteryKillsForRank(30),label:'master bonuses'},
 ] as const);
 
 export function masteryMilestoneAnticipation(points:number){

@@ -1,0 +1,43 @@
+name: Diagnose Veldryn 1.0.10 merge conflicts
+
+on:
+  push:
+    branches: ['release/1.0.10-aab-prep-20261115']
+    paths:
+      - '.github/workflows/v1-0-10-merge-conflict-diagnostics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-conflicts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/1.0.10-aab-prep-20261115
+          fetch-depth: 0
+      - name: Report exact merge conflicts without altering branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for branch in             feat/gem-combine-success-rates-20261115             feat/system-exceptional-forge-notices-20261115             ui/dungeon-command-event-first-nov14             feat/class-skill-specialization-pass-20261115; do
+            echo "::group::Compare $branch"
+            git fetch origin "refs/heads/$branch:refs/remotes/origin/$branch"
+            if git merge --no-commit --no-ff "origin/$branch" > /tmp/merge-result 2>&1; then
+              echo "CLEAN: $branch"
+            else
+              echo "CONFLICTS: $branch"
+              cat /tmp/merge-result
+              git diff --name-only --diff-filter=U
+              git diff --cc --stat || true
+            fi
+            if test -f .git/MERGE_HEAD; then
+              git merge --abort
+            fi
+            git reset --hard HEAD
+            echo "::endgroup::"
+          done

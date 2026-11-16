@@ -8,9 +8,10 @@ import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {isLiveSixPieceBonus} from './equipment-set-runtime';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
-import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,normalizeEnhancementGemSlots,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,normalizeEnhancementGemSlots,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,legacyGemBonusValue,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {canonicalGemMetaV1,formatGemValueV1} from './gem-progression-v1';
-import {mobileGemFamilyV1} from '../content/gems-v1';
+import {gemRolledValueV1,mobileGemFamilyV1} from '../content/gems-v1';
+import {gemPouchBonusDisplayV1} from './gem-pouch-bonus-display';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
@@ -134,10 +135,11 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
       const gems=enhancement.gemIds.map(id=>{
          const gem=itemDef(id),kind=gemSocketKind(id),meta=canonicalGemMetaV1(id);
          const family=meta?mobileGemFamilyV1(meta.familyId):undefined;
-         const value=meta&&family?family.values[meta.grade]:(kind==='stat'?gem.gemPercent:gem.gemEffectValue)??0;
+         const rollPercent=kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent;
+         const value=meta&&family?gemRolledValueV1(meta.familyId,meta.grade,rollPercent):legacyGemBonusValue(id,rollPercent);
          const detail=kind==='stat'
-           ?meta?formatGemValueV1(meta.familyId,meta.grade):`+${Number((value*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`
-           :meta?`${Number((value*100).toFixed(3))}% · ${gemEffectDescription(id)}`:gemEffectDescription(id);
+           ?meta?formatGemValueV1(meta.familyId,meta.grade,rollPercent):`+${Number((value*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`
+           :meta?`${Number((value*100).toFixed(3))}% · ${gemEffectDescription(id)}`:gemEffectDescription(id,rollPercent);
          return {id,name:gem.name,kind,detail,stat:kind==='stat'?family?.name??title(gem.gemStat??'stat'):'Effect',percent:value};
        });
       let after=before,maxAfter=before;
@@ -186,7 +188,9 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     const speed=Math.round((1-(item.actionTimeMultiplier??1))*100);
     effectLines.push(speed>0?`${speed}% shorter base action time`:'Baseline action time');
   }else if(item.type==='gem'){
-    const kind=gemSocketKind(item.id);effectLines.push(kind==='stat'?`Stat Gem · +${Math.round((item.gemPercent??0)*100)}% ${title(item.gemStat??'stat')} when socketed`:`Effect Gem · ${gemEffectDescription(item.id)}`);
+    const kind=gemSocketKind(item.id),bonus=gemPouchBonusDisplayV1(item.id);
+    effectLines.push((kind==='stat'?'Stat Gem · ':'Effect Gem · ')+bonus.bonus);
+    if(bonus.detail)effectLines.push(bonus.detail);
   }else if(item.passive){
     effectLines.push(item.passive);
   }

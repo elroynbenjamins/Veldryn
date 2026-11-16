@@ -28,7 +28,7 @@ for(const key of keys){
  for(const [i,language] of languages.slice(1).entries()){
   assert.ok(row[i].trim(),key+' missing '+language);
   assert.deepEqual(placeholders(row[i]),placeholders(key),key+' mismatched interpolations '+language);
-  const values={used:4,capacity:30,name:'OPAQUE',count:3,level:7,gold:'123',grade:2,materials:'OPAQUE'};
+  const values={used:4,capacity:30,name:'OPAQUE',count:3,level:7,gold:'123',grade:2,materials:'OPAQUE',xp:350,result:'OPAQUE'};
   const expected=row[i].replace(/\{(\w+)\}/g,(_,name)=>String(values[name]));
   assert.equal(gemPouchText(language,key,values),expected,key+' translation '+language);
  }
@@ -54,7 +54,7 @@ for(const command of ["type:'gem_pouch_sell'","type:'gem_refine'","type:'gem_dis
  assert.ok(source.includes(command),'server-authoritative gem command must be preserved '+command);
 }
 assert.ok(source.includes('protectedGem||selectedItem.value<=0'),'protected gems must still block selling');
-assert.ok(source.includes('onFavorite?.(selectedStack.itemId)')&&source.includes('onLock?.(selectedStack.itemId)'),'identity updates remain ID based');
+assert.ok(source.includes('onFavorite={onFavorite?()=>onFavorite(selectedStack.itemId):undefined}')&&source.includes('onLock={onLock?()=>onLock(selectedStack.itemId):undefined}'),'identity updates remain item-ID based through shared item header controls');
 const parsed=ts.createSourceFile('GemPouchPanel.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(parsed.parseDiagnostics.length,0,'Gem Pouch JSX must parse');
 console.log('PASS: '+keys.length+' Gem Pouch templates × 7 translations, including rolled-gem safety; preserved commands and fallback');

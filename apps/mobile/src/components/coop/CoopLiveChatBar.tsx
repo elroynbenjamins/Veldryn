@@ -33,7 +33,7 @@ export function CoopLiveChatBar({messages,onSend,reduceMotion=false}:{messages:C
   </Pressable>
   <Modal visible={open} transparent statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={close}>
    <KeyboardAvoidingView style={s.overlay} behavior={Platform.OS==='ios'?'padding':'height'}>
-    <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel={st('Close chat')}/>
+    <Pressable style={s.backdrop} onPress={close} accessibilityLabel={st('Close chat')}/>
     <View style={s.sheet} accessibilityViewIsModal>
      <View style={s.header}><View style={s.headerTitle}><Text style={s.title}>{st('Party Chat')}</Text><Text style={s.subtitle}>{st('Only current Live party members can read this room.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={st('Close chat')} onPress={close} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
      <View style={s.body}>
@@ -46,6 +46,7 @@ export function CoopLiveChatBar({messages,onSend,reduceMotion=false}:{messages:C
 }
 
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
+ backdrop:{position:'absolute',top:0,right:0,bottom:0,left:0},
  dock:{minHeight:54,flexDirection:'row',alignItems:'center',gap:10,paddingVertical:7,paddingHorizontal:12,borderTopWidth:1,borderColor:C.goldDim,backgroundColor:C.surfaceRaised},
  channel:{width:70,flexShrink:0,gap:2,borderRightWidth:StyleSheet.hairlineWidth,borderRightColor:C.line,paddingRight:8},
  channelTitle:{fontSize:11,fontWeight:'800',color:C.cyan},

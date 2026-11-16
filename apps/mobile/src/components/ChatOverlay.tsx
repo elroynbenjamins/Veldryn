@@ -20,6 +20,7 @@ import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {useOnlinePlayerRoster} from '../online/online-player-roster';
+import {ONLINE_PLAYER_ROSTER_RELEASED} from '../core/release-flags';
 import {ChatOnlinePlayersPanel} from './ChatOnlinePlayersPanel';
 
 type Channel='world'|'guild'|'party'|'system';
@@ -62,7 +63,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  const guildCheckedAt=useRef(0),guildLoading=useRef(false),mounted=useRef(true);
  const {party,accountId,refresh}=usePartySocial();
  const chatEnabled=state.settings.autoJoinWorldChat!==false;
- const onlineRoster=useOnlinePlayerRoster(visible&&chatEnabled);
+ const onlineRoster=useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled);
  const wasVisible=useRef(false);
  const selectChannel=(next:Channel)=>{
   if(next!==channel)Keyboard.dismiss();
@@ -138,7 +139,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
         <Text style={s.title}>{st("Chat")}</Text>
        </View>
        <View style={s.headerSpacer}/>
-       {onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Online players')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View the list of players online')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{st('Online')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
+       {ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Online players')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View the list of players online')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{st('Online')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
       </View>
       <View accessibilityRole="tablist" accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'} style={[s.tabs,compactTabs&&s.tabsCompact]}>
@@ -182,7 +183,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
       {languageMenuOpen&&channel==='world'&&<View accessibilityViewIsModal style={s.languagePopover}>
        <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{VISIBLE_WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
       </View>}
-      {onlinePlayersOpen&&<ChatOnlinePlayersPanel count={onlineRoster.count} players={onlineRoster.players} loading={onlineRoster.loading} error={onlineRoster.error} onRefresh={()=>void onlineRoster.refresh()} onClose={()=>setOnlinePlayersOpen(false)} reduceMotion={state.settings.reduceMotion}/>}
+      {ONLINE_PLAYER_ROSTER_RELEASED&&onlinePlayersOpen&&<ChatOnlinePlayersPanel count={onlineRoster.count} players={onlineRoster.players} loading={onlineRoster.loading} error={onlineRoster.error} onRefresh={()=>void onlineRoster.refresh()} onClose={()=>setOnlinePlayersOpen(false)} reduceMotion={state.settings.reduceMotion}/>}
      </View>
     </KeyboardAvoidingView>
    </View>

@@ -189,8 +189,7 @@ async function main(){
       ...args,roster:{...roster,accountId:'other_account'},
      }), 'roster_digest_mismatch');
      reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
-      ...args,roster:{...roster,characters:[...roster.characters,
-       ...roster.characters]},
+      ...args,roster:{...roster,characters:Array.from({length:6},()=>roster.characters[0])},
      }), 'invalid_frozen_roster');
      reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
       ...args,roster:{...roster,

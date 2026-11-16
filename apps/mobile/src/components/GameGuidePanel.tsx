@@ -6,7 +6,7 @@ import {browseGameGuides,type GameGuideFilter} from '../core/game-guide-browse';
 import {accountText} from '../i18n/account';
 import {guideHubText} from '../i18n/game-guide-hub';
 import {useGameTheme} from '../theme/ThemeContext';
-import {spacing,typography,type ThemeColors} from '../theme/theme';
+import {typography,type ThemeColors} from '../theme/theme';
 
 const categories:readonly GameGuideFilter[]=['all','basics','progress','social','adventures'];
 const categoryLabels:Record<GameGuideFilter,'All'|'Basics'|'Progress'|'Social'|'Adventures'>={all:'All',basics:'Basics',progress:'Progress',social:'Social',adventures:'Adventures'};

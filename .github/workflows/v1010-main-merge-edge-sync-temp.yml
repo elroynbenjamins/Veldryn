@@ -1,5 +1,6 @@
 name: v1.0.10 combined main/release Edge parity regeneration
 # Temporary integration-only workflow. Remove before main merge.
+# Revalidate after deduplicating merged Dungeon Shop styles.
 on:
   push:
     branches: ['integration/v1010-main-reconcile-20261116']

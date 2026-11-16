@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from '../core/equipment-vendor-value';
 import {useGameplayText} from '../i18n/gameplay';
 import {itemDetailText,itemDetailContent,type itemDetailRows} from '../i18n/item-details';
 import {localizedItemName} from '../i18n/starter-item-names';
@@ -112,7 +113,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
 
           {actions?(item.type==='food'?<Section title={gt("ACTIONS")}>{actions}</Section>:<><Pressable accessibilityRole="button" accessibilityState={{expanded:actionsOpen}} accessibilityLabel={gt("ACTIONS")} onPress={()=>setActionsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureText}>{gt("ACTIONS")}</Text><Text style={s.disclosureMark}>{actionsOpen?'−':'+'}</Text></Pressable>{actionsOpen?<Section title={gt("ACTIONS")}>{actions}</Section>:null}</>):null}
 
-          <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(item.value,state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
+          <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
         </ScrollView>
         {quickActions?<View style={s.quickFooter}>{quickActions}</View>:null}
   </GameModalSurface>;

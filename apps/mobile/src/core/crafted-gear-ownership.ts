@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from './equipment-vendor-value';
 import type {GameState,GearSlot,ItemStack,CraftedGearInstance} from './types';
 import {craftedGearInstances} from './crafted-gear-instances';
 import {entitlementStorageCapacity} from './account-entitlements';
@@ -256,12 +257,13 @@ export function disposeCraftedGearInstance(state:GameState,instanceId:string,met
   if(location.place==='equipment_pouch')next={...next,character:{...next.character!,equipmentPouch:{...equipmentPouch(next),stacks:removed}}};
   else next={...next,[location.place]:{...state[location.place],stacks:removed}};
   if(method==='sell'){
+    const proceeds=itemVendorSellGold(def);
     if(location.place==='bank'){
-      const gold=(next.bank.gold??0)+def.value;
+      const gold=(next.bank.gold??0)+proceeds;
       if(!Number.isSafeInteger(gold))throw new Error('Bank Gold overflow');
       next={...next,bank:{...next.bank,gold}};
     }else{
-      const gold=next.character!.gold+def.value;
+      const gold=next.character!.gold+proceeds;
       if(!Number.isSafeInteger(gold))throw new Error('Character Gold overflow');
       next={...next,character:{...next.character!,gold}};
     }

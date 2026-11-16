@@ -304,200 +304,11 @@ var init_faith2 = __esm({
   }
 });
 
-// ../apps/mobile/src/core/personal-seasonal-state.ts
-var periods = ["daily", "weekly", "monthly"];
-var SEASONAL_ACTIVITY_TAGS = ["combat", "gathering", "crafting", "exploration", "faith", "boss", "cooking", "alchemy", "smithing", "tailoring", "enchanting", "event"];
-var activityTags = SEASONAL_ACTIVITY_TAGS;
-function normalizeSeasonalProgress(raw2) {
-  const result = {};
-  if (!raw2 || typeof raw2 !== "object") return result;
-  for (const period of periods) {
-    const row = raw2[period];
-    if (!row || typeof row.key !== "string" || row.key.length > 32) continue;
-    const counts = {};
-    for (const tag of activityTags) {
-      const value = row.counts?.[tag];
-      if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value));
-    }
-    const tags = Array.isArray(row.tags) && row.tags.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
-    result[period] = { key: row.key, counts, ...tags ? { tags: [...tags] } : {} };
-  }
-  return result;
-}
-function normalizePersonalSeasonalState(raw2) {
-  const row = raw2 && typeof raw2 === "object" ? raw2 : {};
-  const claimIds = Array.isArray(row.claimIds) ? [...new Set(row.claimIds.filter((id) => typeof id === "string" && /^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id)))].slice(-120) : [];
-  const choices = row.rewardChoices && typeof row.rewardChoices === "object" && !Array.isArray(row.rewardChoices) ? Object.fromEntries(Object.entries(row.rewardChoices).filter(([id, choice]) => claimIds.includes(id) && typeof choice === "string" && choice.length <= 100)) : {};
-  return { progress: normalizeSeasonalProgress(row.progress), claimIds, rewardChoices: choices };
-}
-function normalizePersonalSeasonalClaimLedger(raw2) {
-  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
-  return Object.fromEntries(Object.entries(raw2).filter(([id, characters]) => /^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id) && Array.isArray(characters)).slice(-240).map(([id, characters]) => [id, [...new Set(characters.filter((value) => typeof value === "string" && value.length > 0 && value.length <= 100))].slice(0, 5)]));
-}
-function personalSeasonalAccountView(account, character) {
-  const data = normalizePersonalSeasonalState(character?.personalSeasonal);
-  return { ...account, seasonalContractProgress: data.progress, seasonalContractClaimIds: data.claimIds, seasonalContractRewardChoices: data.rewardChoices };
-}
-function ensurePersonalSeasonalState(state) {
-  if (!state.character) return state;
-  const source = state.character.personalSeasonal ?? {
-    progress: state.account.seasonalContractProgress,
-    claimIds: state.account.seasonalContractClaimIds,
-    rewardChoices: state.account.seasonalContractRewardChoices
-  };
-  const personalSeasonal = normalizePersonalSeasonalState(source);
-  const character = { ...state.character, personalSeasonal };
-  const ledger = state.account.personalSeasonalClaimLedger ? normalizePersonalSeasonalClaimLedger(state.account.personalSeasonalClaimLedger) : Object.fromEntries(personalSeasonal.claimIds.map((id) => [id, [character.id]]));
-  return { ...state, character, account: { ...personalSeasonalAccountView(state.account, character), personalSeasonalClaimLedger: ledger } };
-}
-function updatePersonalSeasonalState(state, changes) {
-  const ready = ensurePersonalSeasonalState(state);
-  if (!ready.character) return ready;
-  const character = { ...ready.character, personalSeasonal: normalizePersonalSeasonalState({ ...ready.character.personalSeasonal, ...changes }) };
-  return { ...ready, character, account: personalSeasonalAccountView(ready.account, character) };
-}
-
-// ../apps/mobile/src/core/monthly-quest-milestones.ts
-init_progression();
-init_faith2();
-var MONTHLY_QUEST_MILESTONES = [
-  { points: 30, xp: 1e3 },
-  { points: 60, xp: 2500 },
-  { points: 100, xp: 5e3 }
-];
-var MONTHLY_QUEST_POINTS = { daily: 1, weekly: 3, monthly: 5 };
-var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
-var MAX_XP2 = totalXpAtLevel(100);
-function utcQuestMonth(nowMs) {
-  return new Date(nowMs).toISOString().slice(0, 7);
-}
-function previousMonth(key) {
-  const [year, month] = key.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 2, 1));
-  return date.toISOString().slice(0, 7);
-}
-function monthStartMs(key) {
-  return Date.parse(key + "-01T00:00:00.000Z");
-}
-function normalizeMonthlyQuestMilestones(raw2) {
-  const input = raw2 && typeof raw2 === "object" ? raw2.months : void 0;
-  if (!Array.isArray(input)) return { months: [] };
-  const allowedSkills = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "herbalism", "smithing", "cooking", "alchemy", "exploration", "tailoring", "enchanting", "faith"]);
-  const months = [];
-  for (const value of input) {
-    if (!value || typeof value !== "object") continue;
-    const row = value;
-    if (typeof row.key !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.key)) continue;
-    const claimed = {};
-    for (const milestone of MONTHLY_QUEST_MILESTONES) {
-      const record = row.claimed?.[milestone.points];
-      if (!record || typeof record.characterId !== "string" || !record.characterId || !allowedSkills.has(record.skillId) || !Number.isFinite(record.claimedAtMs) || !Number.isFinite(record.xpGranted) || record.xpGranted < 1 || record.xpGranted > milestone.xp) continue;
-      claimed[milestone.points] = { characterId: record.characterId, skillId: record.skillId, claimedAtMs: record.claimedAtMs, xpGranted: record.xpGranted };
-    }
-    months.push({
-      key: row.key,
-      points: Number.isSafeInteger(row.points) && Number(row.points) >= 0 ? Math.min(300, Number(row.points)) : 0,
-      creditedQuestIds: Array.isArray(row.creditedQuestIds) ? [...new Set(row.creditedQuestIds.filter((id) => typeof id === "string" && id.length < 120))].slice(-150) : [],
-      claimed
-    });
-  }
-  return { months: [...new Map(months.map((row) => [row.key, row])).values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-2) };
-}
-function readMonths(state) {
-  return normalizeMonthlyQuestMilestones(state.account.monthlyQuestMilestones).months;
-}
-function eligibleMonth(key, nowMs) {
-  const current = utcQuestMonth(nowMs);
-  if (key === current) return true;
-  return key === previousMonth(current) && nowMs < monthStartMs(current) + GRACE_MS;
-}
-function activeMonths(state, nowMs) {
-  return readMonths(state).filter((row) => eligibleMonth(row.key, nowMs));
-}
-function creditMonthlyQuestMilestone(state, period, questId, nowMs) {
-  const key = utcQuestMonth(nowMs), months = activeMonths(state, nowMs);
-  const existing = months.find((row) => row.key === key) ?? { key, points: 0, creditedQuestIds: [], claimed: {} };
-  if (existing.creditedQuestIds.includes(questId)) return state;
-  const next = {
-    ...existing,
-    points: existing.points + MONTHLY_QUEST_POINTS[period],
-    creditedQuestIds: [...existing.creditedQuestIds, questId].slice(-150)
-  };
-  return { ...state, account: { ...state.account, monthlyQuestMilestones: { months: [...months.filter((row) => row.key !== key), next] } } };
-}
-function claimMonthlyQuestMilestone(state, key, threshold, characterId, skillId, nowMs) {
-  const milestone = MONTHLY_QUEST_MILESTONES.find((row2) => row2.points === threshold);
-  if (!milestone) throw new Error("Unknown monthly quest milestone.");
-  if (!eligibleMonth(key, nowMs)) throw new Error("This monthly milestone has expired.");
-  const months = activeMonths(state, nowMs), row = months.find((entry2) => entry2.key === key);
-  if (!row || row.points < milestone.points) throw new Error("Earn more Quest Points before claiming this milestone.");
-  if (row.claimed[milestone.points]) throw new Error("This monthly milestone was already claimed.");
-  const isActive2 = state.character?.id === characterId;
-  const parkedIndex = isActive2 ? -1 : (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === characterId);
-  if (!isActive2 && parkedIndex < 0) throw new Error("Select a character on this account.");
-  const originalSkills = isActive2 ? state.skills : state.otherCharacters[parkedIndex].skills;
-  const targetCharacter = isActive2 ? state.character : state.otherCharacters[parkedIndex].character;
-  const selected2 = originalSkills.find((skill2) => skill2.skillId === skillId);
-  if (!selected2 || !Number.isFinite(selected2.xp) || selected2.xp < 0) throw new Error("Select an unlocked skill.");
-  const faith = skillId === "faith" ? normalizeFaith(targetCharacter.faith) : void 0;
-  const baseXp = faith ? Math.max(selected2.xp, faith.xp) : selected2.xp;
-  const award = Math.min(milestone.xp, Math.max(0, MAX_XP2 - baseXp));
-  const nextXp = Math.min(MAX_XP2, baseXp + award);
-  if (award < 1) throw new Error("This skill is already at maximum level.");
-  const updatedSkills = originalSkills.map((skill2) => {
-    if (skill2.skillId !== skillId) return skill2;
-    return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
-  });
-  const updatedMonth = {
-    ...row,
-    claimed: { ...row.claimed, [milestone.points]: { characterId, skillId, claimedAtMs: nowMs, xpGranted: award } }
-  };
-  const updatedAccount = { ...state.account, monthlyQuestMilestones: { months: months.map((entry2) => entry2.key === key ? updatedMonth : entry2) } };
-  if (isActive2) return {
-    ...state,
-    account: updatedAccount,
-    skills: updatedSkills,
-    ...faith ? { character: { ...state.character, faith: { ...faith, xp: nextXp } } } : {}
-  };
-  return { ...state, account: updatedAccount, otherCharacters: (state.otherCharacters ?? []).map((entry2, index) => index === parkedIndex ? {
-    ...entry2,
-    skills: updatedSkills,
-    ...faith ? { character: { ...entry2.character, faith: { ...faith, xp: nextXp } } } : {}
-  } : entry2) };
-}
-
-// ../apps/mobile/src/content/classes.ts
-var CLASSES = [
-  { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
-  { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
-  { id: "DREADGUARD", name: "Dreadguard", role: "Tank", description: "Aggressive control tank using threat, dread and self-sustain.", hp: 150, attack: 17, defense: 17, roleRatings: { tank: 4, damage: 3, support: 1 }, starterEquipment: { weapon: "basic_chained_weapon" } },
-  { id: "WAYFINDER", name: "Wayfinder", role: "Damage", description: "Precise ranged hunter with reliable sustained damage.", hp: 110, attack: 21, defense: 11, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_bow" } },
-  { id: "RAVAGER", name: "Ravager", role: "Damage", description: "Aggressive heavy melee fighter built around breaking defenses.", hp: 128, attack: 22, defense: 10, roleRatings: { tank: 2, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_two_handed_weapon" } },
-  { id: "HEXWEAVER", name: "Hexweaver", role: "Damage", description: "Arcane damage caster weaving hexes through wand and focus.", hp: 108, attack: 17, defense: 11, roleRatings: { tank: 1, damage: 4, support: 2 }, starterEquipment: { weapon: "basic_wand" } },
-  { id: "KNIFE_DANCER", name: "Knife Dancer", role: "Damage", description: "Fast melee attacker built around precision, crits and execution.", hp: 106, attack: 22, defense: 10, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_main_hand_blade" } },
-  { id: "DAWNKEEPER", name: "Dawnkeeper", role: "Support", description: "Solar support focused on healing, cleansing and protection.", hp: 118, attack: 14, defense: 13, roleRatings: { tank: 2, damage: 1, support: 5 }, starterEquipment: { weapon: "basic_mace" } },
-  { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
-];
-
-// ../apps/mobile/src/core/rng.ts
-function hash32(input) {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function random01(seed, index) {
-  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
-  x ^= x << 13;
-  x ^= x >>> 17;
-  x ^= x << 5;
-  return (x >>> 0) / 4294967296;
-}
-
-// ../apps/mobile/src/content/skills.ts
-init_progression();
+// ../apps/mobile/src/core/release-flags.ts
+var EVENTS_RELEASED = true;
+var EVENT_COMMUNITY_ENABLED = false;
+var DUNGEON_MARKS_SHOP_RELEASED = false;
+var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
 
 // ../apps/mobile/src/content/crafting-gold-cost.ts
 function increasedCraftingGoldCost(baseGold) {
@@ -42251,6 +42062,210 @@ function v33EquipmentRecipeForItem(itemId) {
   return V33_EQUIPMENT_RECIPES.find((recipe2) => recipe2.output.itemId === itemId);
 }
 
+// ../apps/mobile/src/core/equipment-vendor-value.ts
+var EQUIPMENT_FORGE_SELL_REFUND_RATE = 0.4;
+var forgeGoldCostByItemId = new Map(V33_EQUIPMENT_RECIPES.map((recipe2) => [recipe2.output.itemId, recipe2.gold]));
+function itemVendorSellGold(item, uplift = EQUIPMENT_RESALE_UPLIFT_RELEASED) {
+  if (item.type !== "gear" || !uplift) return item.value;
+  const forgeGold = forgeGoldCostByItemId.get(item.id) ?? 0;
+  return forgeGold > 0 ? Math.max(item.value, Math.round(forgeGold * EQUIPMENT_FORGE_SELL_REFUND_RATE)) : item.value * 2;
+}
+
+// ../apps/mobile/src/core/personal-seasonal-state.ts
+var periods = ["daily", "weekly", "monthly"];
+var SEASONAL_ACTIVITY_TAGS = ["combat", "gathering", "crafting", "exploration", "faith", "boss", "cooking", "alchemy", "smithing", "tailoring", "enchanting", "event"];
+var activityTags = SEASONAL_ACTIVITY_TAGS;
+function normalizeSeasonalProgress(raw2) {
+  const result = {};
+  if (!raw2 || typeof raw2 !== "object") return result;
+  for (const period of periods) {
+    const row = raw2[period];
+    if (!row || typeof row.key !== "string" || row.key.length > 32) continue;
+    const counts = {};
+    for (const tag of activityTags) {
+      const value = row.counts?.[tag];
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value));
+    }
+    const tags = Array.isArray(row.tags) && row.tags.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
+    result[period] = { key: row.key, counts, ...tags ? { tags: [...tags] } : {} };
+  }
+  return result;
+}
+function normalizePersonalSeasonalState(raw2) {
+  const row = raw2 && typeof raw2 === "object" ? raw2 : {};
+  const claimIds = Array.isArray(row.claimIds) ? [...new Set(row.claimIds.filter((id) => typeof id === "string" && /^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id)))].slice(-120) : [];
+  const choices = row.rewardChoices && typeof row.rewardChoices === "object" && !Array.isArray(row.rewardChoices) ? Object.fromEntries(Object.entries(row.rewardChoices).filter(([id, choice]) => claimIds.includes(id) && typeof choice === "string" && choice.length <= 100)) : {};
+  return { progress: normalizeSeasonalProgress(row.progress), claimIds, rewardChoices: choices };
+}
+function normalizePersonalSeasonalClaimLedger(raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return {};
+  return Object.fromEntries(Object.entries(raw2).filter(([id, characters]) => /^(DAILY|WEEKLY|MONTHLY)_.{1,48}_[0-9]+$/.test(id) && Array.isArray(characters)).slice(-240).map(([id, characters]) => [id, [...new Set(characters.filter((value) => typeof value === "string" && value.length > 0 && value.length <= 100))].slice(0, 5)]));
+}
+function personalSeasonalAccountView(account, character) {
+  const data = normalizePersonalSeasonalState(character?.personalSeasonal);
+  return { ...account, seasonalContractProgress: data.progress, seasonalContractClaimIds: data.claimIds, seasonalContractRewardChoices: data.rewardChoices };
+}
+function ensurePersonalSeasonalState(state) {
+  if (!state.character) return state;
+  const source = state.character.personalSeasonal ?? {
+    progress: state.account.seasonalContractProgress,
+    claimIds: state.account.seasonalContractClaimIds,
+    rewardChoices: state.account.seasonalContractRewardChoices
+  };
+  const personalSeasonal = normalizePersonalSeasonalState(source);
+  const character = { ...state.character, personalSeasonal };
+  const ledger = state.account.personalSeasonalClaimLedger ? normalizePersonalSeasonalClaimLedger(state.account.personalSeasonalClaimLedger) : Object.fromEntries(personalSeasonal.claimIds.map((id) => [id, [character.id]]));
+  return { ...state, character, account: { ...personalSeasonalAccountView(state.account, character), personalSeasonalClaimLedger: ledger } };
+}
+function updatePersonalSeasonalState(state, changes) {
+  const ready = ensurePersonalSeasonalState(state);
+  if (!ready.character) return ready;
+  const character = { ...ready.character, personalSeasonal: normalizePersonalSeasonalState({ ...ready.character.personalSeasonal, ...changes }) };
+  return { ...ready, character, account: personalSeasonalAccountView(ready.account, character) };
+}
+
+// ../apps/mobile/src/core/monthly-quest-milestones.ts
+init_progression();
+init_faith2();
+var MONTHLY_QUEST_MILESTONES = [
+  { points: 30, xp: 1e3 },
+  { points: 60, xp: 2500 },
+  { points: 100, xp: 5e3 }
+];
+var MONTHLY_QUEST_POINTS = { daily: 1, weekly: 3, monthly: 5 };
+var GRACE_MS = 7 * 24 * 60 * 60 * 1e3;
+var MAX_XP2 = totalXpAtLevel(100);
+function utcQuestMonth(nowMs) {
+  return new Date(nowMs).toISOString().slice(0, 7);
+}
+function previousMonth(key) {
+  const [year, month] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 2, 1));
+  return date.toISOString().slice(0, 7);
+}
+function monthStartMs(key) {
+  return Date.parse(key + "-01T00:00:00.000Z");
+}
+function normalizeMonthlyQuestMilestones(raw2) {
+  const input = raw2 && typeof raw2 === "object" ? raw2.months : void 0;
+  if (!Array.isArray(input)) return { months: [] };
+  const allowedSkills = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "herbalism", "smithing", "cooking", "alchemy", "exploration", "tailoring", "enchanting", "faith"]);
+  const months = [];
+  for (const value of input) {
+    if (!value || typeof value !== "object") continue;
+    const row = value;
+    if (typeof row.key !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.key)) continue;
+    const claimed = {};
+    for (const milestone of MONTHLY_QUEST_MILESTONES) {
+      const record = row.claimed?.[milestone.points];
+      if (!record || typeof record.characterId !== "string" || !record.characterId || !allowedSkills.has(record.skillId) || !Number.isFinite(record.claimedAtMs) || !Number.isFinite(record.xpGranted) || record.xpGranted < 1 || record.xpGranted > milestone.xp) continue;
+      claimed[milestone.points] = { characterId: record.characterId, skillId: record.skillId, claimedAtMs: record.claimedAtMs, xpGranted: record.xpGranted };
+    }
+    months.push({
+      key: row.key,
+      points: Number.isSafeInteger(row.points) && Number(row.points) >= 0 ? Math.min(300, Number(row.points)) : 0,
+      creditedQuestIds: Array.isArray(row.creditedQuestIds) ? [...new Set(row.creditedQuestIds.filter((id) => typeof id === "string" && id.length < 120))].slice(-150) : [],
+      claimed
+    });
+  }
+  return { months: [...new Map(months.map((row) => [row.key, row])).values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-2) };
+}
+function readMonths(state) {
+  return normalizeMonthlyQuestMilestones(state.account.monthlyQuestMilestones).months;
+}
+function eligibleMonth(key, nowMs) {
+  const current = utcQuestMonth(nowMs);
+  if (key === current) return true;
+  return key === previousMonth(current) && nowMs < monthStartMs(current) + GRACE_MS;
+}
+function activeMonths(state, nowMs) {
+  return readMonths(state).filter((row) => eligibleMonth(row.key, nowMs));
+}
+function creditMonthlyQuestMilestone(state, period, questId, nowMs) {
+  const key = utcQuestMonth(nowMs), months = activeMonths(state, nowMs);
+  const existing = months.find((row) => row.key === key) ?? { key, points: 0, creditedQuestIds: [], claimed: {} };
+  if (existing.creditedQuestIds.includes(questId)) return state;
+  const next = {
+    ...existing,
+    points: existing.points + MONTHLY_QUEST_POINTS[period],
+    creditedQuestIds: [...existing.creditedQuestIds, questId].slice(-150)
+  };
+  return { ...state, account: { ...state.account, monthlyQuestMilestones: { months: [...months.filter((row) => row.key !== key), next] } } };
+}
+function claimMonthlyQuestMilestone(state, key, threshold, characterId, skillId, nowMs) {
+  const milestone = MONTHLY_QUEST_MILESTONES.find((row2) => row2.points === threshold);
+  if (!milestone) throw new Error("Unknown monthly quest milestone.");
+  if (!eligibleMonth(key, nowMs)) throw new Error("This monthly milestone has expired.");
+  const months = activeMonths(state, nowMs), row = months.find((entry2) => entry2.key === key);
+  if (!row || row.points < milestone.points) throw new Error("Earn more Quest Points before claiming this milestone.");
+  if (row.claimed[milestone.points]) throw new Error("This monthly milestone was already claimed.");
+  const isActive2 = state.character?.id === characterId;
+  const parkedIndex = isActive2 ? -1 : (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === characterId);
+  if (!isActive2 && parkedIndex < 0) throw new Error("Select a character on this account.");
+  const originalSkills = isActive2 ? state.skills : state.otherCharacters[parkedIndex].skills;
+  const targetCharacter = isActive2 ? state.character : state.otherCharacters[parkedIndex].character;
+  const selected2 = originalSkills.find((skill2) => skill2.skillId === skillId);
+  if (!selected2 || !Number.isFinite(selected2.xp) || selected2.xp < 0) throw new Error("Select an unlocked skill.");
+  const faith = skillId === "faith" ? normalizeFaith(targetCharacter.faith) : void 0;
+  const baseXp = faith ? Math.max(selected2.xp, faith.xp) : selected2.xp;
+  const award = Math.min(milestone.xp, Math.max(0, MAX_XP2 - baseXp));
+  const nextXp = Math.min(MAX_XP2, baseXp + award);
+  if (award < 1) throw new Error("This skill is already at maximum level.");
+  const updatedSkills = originalSkills.map((skill2) => {
+    if (skill2.skillId !== skillId) return skill2;
+    return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
+  });
+  const updatedMonth = {
+    ...row,
+    claimed: { ...row.claimed, [milestone.points]: { characterId, skillId, claimedAtMs: nowMs, xpGranted: award } }
+  };
+  const updatedAccount = { ...state.account, monthlyQuestMilestones: { months: months.map((entry2) => entry2.key === key ? updatedMonth : entry2) } };
+  if (isActive2) return {
+    ...state,
+    account: updatedAccount,
+    skills: updatedSkills,
+    ...faith ? { character: { ...state.character, faith: { ...faith, xp: nextXp } } } : {}
+  };
+  return { ...state, account: updatedAccount, otherCharacters: (state.otherCharacters ?? []).map((entry2, index) => index === parkedIndex ? {
+    ...entry2,
+    skills: updatedSkills,
+    ...faith ? { character: { ...entry2.character, faith: { ...faith, xp: nextXp } } } : {}
+  } : entry2) };
+}
+
+// ../apps/mobile/src/content/classes.ts
+var CLASSES = [
+  { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
+  { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
+  { id: "DREADGUARD", name: "Dreadguard", role: "Tank", description: "Aggressive control tank using threat, dread and self-sustain.", hp: 150, attack: 17, defense: 17, roleRatings: { tank: 4, damage: 3, support: 1 }, starterEquipment: { weapon: "basic_chained_weapon" } },
+  { id: "WAYFINDER", name: "Wayfinder", role: "Damage", description: "Precise ranged hunter with reliable sustained damage.", hp: 110, attack: 21, defense: 11, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_bow" } },
+  { id: "RAVAGER", name: "Ravager", role: "Damage", description: "Aggressive heavy melee fighter built around breaking defenses.", hp: 128, attack: 22, defense: 10, roleRatings: { tank: 2, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_two_handed_weapon" } },
+  { id: "HEXWEAVER", name: "Hexweaver", role: "Damage", description: "Arcane damage caster weaving hexes through wand and focus.", hp: 108, attack: 17, defense: 11, roleRatings: { tank: 1, damage: 4, support: 2 }, starterEquipment: { weapon: "basic_wand" } },
+  { id: "KNIFE_DANCER", name: "Knife Dancer", role: "Damage", description: "Fast melee attacker built around precision, crits and execution.", hp: 106, attack: 22, defense: 10, roleRatings: { tank: 1, damage: 5, support: 1 }, starterEquipment: { weapon: "basic_main_hand_blade" } },
+  { id: "DAWNKEEPER", name: "Dawnkeeper", role: "Support", description: "Solar support focused on healing, cleansing and protection.", hp: 118, attack: 14, defense: 13, roleRatings: { tank: 2, damage: 1, support: 5 }, starterEquipment: { weapon: "basic_mace" } },
+  { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
+];
+
+// ../apps/mobile/src/core/rng.ts
+function hash32(input) {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function random01(seed, index) {
+  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return (x >>> 0) / 4294967296;
+}
+
+// ../apps/mobile/src/content/skills.ts
+init_progression();
+
 // ../apps/mobile/src/content/novice-sets.ts
 var definitions = [
   { id: "ironwarden_recruit", classId: "IRONWARDEN", name: "Ironwarden Recruit", appearanceId: "beginner-ironwarden-recruit", weaponName: "Recruit Sword", weaponAttack: 6, offhandName: "Recruit Shield", setBonus: { name: "Runic Formation", attack: 3, defense: 8, hp: 28, description: "+8 DEF and +28 HP while the full set is equipped." }, theme: { accent: "#83a9c8", identity: "Disciplined steel frontline", material: "Steel, blue cloth and field leather" } },
@@ -43560,11 +43575,6 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 // ../apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
 var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id));
-
-// ../apps/mobile/src/core/release-flags.ts
-var EVENTS_RELEASED = true;
-var EVENT_COMMUNITY_ENABLED = false;
-var DUNGEON_MARKS_SHOP_RELEASED = false;
 
 // ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
@@ -54502,8 +54512,9 @@ function sellItem(state, itemId, quantity2 = 1) {
   if (d.knowledgeUnlockId) throw new Error("Blueprints cannot be sold. Learn the recipe by crafting its tool.");
   if (d.type === "gear" && state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "inventory", quantity2))
     throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
-  let next = { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold: state.character.gold + d.value * quantity2 } };
-  return next;
+  const proceeds = itemVendorSellGold(d) * quantity2, gold = state.character.gold + proceeds;
+  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(gold)) throw new Error("Gold amount exceeds supported limit.");
+  return { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold } };
 }
 function salvageItem(state, itemId) {
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before salvaging.");
@@ -54543,7 +54554,7 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   if (def.knowledgeUnlockId) throw new Error("Blueprints cannot be sold.");
   if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2)) throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
   const stacks = consume2(state.bank.stacks, itemId, quantity2);
-  const proceeds = def.value * quantity2;
+  const proceeds = itemVendorSellGold(def) * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
 }
@@ -55179,12 +55190,13 @@ function disposeCraftedGearInstance(state, instanceId, method) {
   if (location.place === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...equipmentPouch(next), stacks: removed } } };
   else next = { ...next, [location.place]: { ...state[location.place], stacks: removed } };
   if (method === "sell") {
+    const proceeds = itemVendorSellGold(def);
     if (location.place === "bank") {
-      const gold = (next.bank.gold ?? 0) + def.value;
+      const gold = (next.bank.gold ?? 0) + proceeds;
       if (!Number.isSafeInteger(gold)) throw new Error("Bank Gold overflow");
       next = { ...next, bank: { ...next.bank, gold } };
     } else {
-      const gold = next.character.gold + def.value;
+      const gold = next.character.gold + proceeds;
       if (!Number.isSafeInteger(gold)) throw new Error("Character Gold overflow");
       next = { ...next, character: { ...next.character, gold } };
     }
@@ -55263,7 +55275,7 @@ function proposeCraftedGearSettlement(args) {
   const location = retention.action === "sell_incoming" ? incomingStorage : existing.find((entry2) => entry2.instance.id === sold.id).location;
   const currentHolder = retention.action === "sell_incoming" ? args.incomingHolderCharacterId : existing.find((entry2) => entry2.instance.id === sold.id)?.holderCharacterId;
   if (location !== "bank" && !currentHolder) throw new Error("Missing verified sale recipient");
-  const credit = location === "bank" ? { amount: def.value, destination: "bank" } : { amount: def.value, destination: "character", characterId: currentHolder };
+  const credit = location === "bank" ? { amount: itemVendorSellGold(def), destination: "bank" } : { amount: itemVendorSellGold(def), destination: "character", characterId: currentHolder };
   const instances = retention.action === "sell_incoming" ? owned : [...owned.filter((row) => row.id !== sold.id), incoming];
   if (instances.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) throw new Error("Retention proposal exceeds crafted equipment limit");
   return { status: "ready", instances, retention, receipt: {
@@ -56841,7 +56853,7 @@ function bulkSelectionSummary(state, itemIds2, location) {
     sellableIds: sellable.map(inventoryBulkSelectionId),
     sellableStackCount: sellable.length,
     sellableUnitCount: sellable.reduce((sum, stack) => sum + stack.quantity, 0),
-    sellGold: sellable.reduce((sum, stack) => sum + itemDef(stack.itemId).value * stack.quantity, 0),
+    sellGold: sellable.reduce((sum, stack) => sum + itemVendorSellGold(itemDef(stack.itemId)) * stack.quantity, 0),
     sellProtectedCount: stacks.length - sellable.length,
     salvageableIds: salvageable.map(inventoryBulkSelectionId),
     salvageableStackCount: salvageable.length,
@@ -57823,7 +57835,7 @@ function sellLegacySlot(state, index, itemId) {
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
   if (characters.some((character) => character.savedLoadouts?.some((loadout) => Object.entries(loadout.equipment).some(([slot, id]) => id === itemId && !loadout.equipmentInstanceIds?.[slot]))))
     throw new Error("Saved loadouts protect this equipment");
-  const gold = state.character.gold + item.value;
+  const gold = state.character.gold + itemVendorSellGold(item);
   if (!Number.isSafeInteger(gold)) throw new Error("Character Gold overflow");
   const stacks = pouch.stacks.slice();
   if (stack.quantity === 1) stacks.splice(index, 1);

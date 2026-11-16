@@ -395,5 +395,6 @@
   ".core-build/apps/mobile/tests/companion-stamina-selection.js",
   ".core-build/apps/mobile/tests/companion-stamina-housing.js",
   ".core-build/apps/mobile/tests/dungeon-reward-display.js",
-  ".core-build/apps/mobile/tests/forge-system-announcements.js"
+  ".core-build/apps/mobile/tests/forge-system-announcements.js",
+  ".core-build/apps/mobile/tests/equipment-resale-gate.js"
 ]

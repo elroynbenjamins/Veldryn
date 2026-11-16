@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from './equipment-vendor-value';
 import {itemDef} from '../content/items';
 import {equipmentSalvageReward} from './equipment-salvage';
 import {HOLY_WATER_ID} from '../content/faith';
@@ -67,7 +68,7 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
     sellableIds:sellable.map(inventoryBulkSelectionId),
     sellableStackCount:sellable.length,
     sellableUnitCount:sellable.reduce((sum,stack)=>sum+stack.quantity,0),
-    sellGold:sellable.reduce((sum,stack)=>sum+itemDef(stack.itemId).value*stack.quantity,0),
+    sellGold:sellable.reduce((sum,stack)=>sum+itemVendorSellGold(itemDef(stack.itemId))*stack.quantity,0),
     sellProtectedCount:stacks.length-sellable.length,
     salvageableIds:salvageable.map(inventoryBulkSelectionId),
     salvageableStackCount:salvageable.length,

@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from './equipment-vendor-value';
 import {ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
 import {creditMonthlyQuestMilestone} from './monthly-quest-milestones';
 import {hasFrozenLegacySeasonalGrant} from './legacy-seasonal-claim';
@@ -1368,8 +1369,9 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   if(d.type==='gear'&&state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity))
     throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
-  let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
-  return next;
+  const proceeds=itemVendorSellGold(d)*quantity,gold=state.character.gold+proceeds;
+  if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger(gold))throw new Error('Gold amount exceeds supported limit.');
+  return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character,gold}};
 }
 export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
@@ -1409,7 +1411,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
   if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   const stacks=consume(state.bank.stacks,itemId,quantity);
-  const proceeds=def.value*quantity;
+  const proceeds=itemVendorSellGold(def)*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
 }

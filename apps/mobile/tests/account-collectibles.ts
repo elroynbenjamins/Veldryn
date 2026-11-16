@@ -18,7 +18,8 @@ validateCollectibleCatalog();
 validateCorePetCatalog();
 
 equal(CORE_PET_COLLECTIBLES.length,42,'canonical core pet count');
-equal(EVENT_PET_COLLECTIBLES.length,2,'released event pet count');
+equal(EVENT_PET_COLLECTIBLES.length,4,'Veilbreak and scheduled Frostfall event pet count');
+equal(EVENT_PET_COLLECTIBLES.map(row=>row.id).sort().join(','),'EVT_PET_013,EVT_PET_014,EVT_PET_015,EVT_PET_017','only the two Veilbreak and two scheduled Frostfall pets are included');
 equal(
   COLLECTIBLES.length,
   CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length,

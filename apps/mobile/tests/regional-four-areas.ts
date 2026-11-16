@@ -39,5 +39,7 @@ const frostmarch=MONSTERS.find(m=>m.id==='FROSTWOLF');
 check(frostmarch&&encounterLockRequirement(state,frostmarch)?.kind==='level','An unreached later region must remain locked');
 check(regionEncounters(state,'Sunscar','',false,'ZONE_006').length===3,'Area-filtered hunting should only show its own three enemies');
 check(regionEncounters(state,'Sunscar','',false,'ZONE_009').length===3,'Legacy area selection must map to the final area');
-check(regionEncounters(state,'Sunscar','',true,'ZONE_010').length===3,'Cumulative zone progress must expose all three later-area encounters in the Combat picker');
+check(regionEncounters(state,'Sunscar','',true,'ZONE_010').length===2,'Legacy area encounters remain cumulative but the new Crown Executioner obeys its level gate');
+const lateChapter={...state,character:{level:50}} as unknown as GameState;
+check(regionEncounters(lateChapter,'Sunscar','',true,'ZONE_010').length===3,'All three final-area enemies must appear after the authored chapter gate');
 console.log('PASS 4x3 regional areas, 12 enemies, 10 gathering nodes, old IDs and cumulative zone gates');

@@ -23,7 +23,11 @@ function retainedRegionalVisit(state:GameState,zone:WorldZoneDef){
   // Only a persisted visit or actual monster mastery counts as old access.
   // A monster unlock ID alone is insufficient because old saves can auto-grant
   // all ordinary hunts in a visited region. Never inspect otherCharacters.
-  return state.currentRegionId===zone.id||MONSTERS.some(monster=>monster.zone===zone.name
+  return state.currentRegionId===zone.id
+    // A historical Ashlands save necessarily crossed Frostmarch. Preserve this
+    // backwards-compatible return path while Ashlands itself stays unreleased.
+    ||(zone.id==='FROSTMARCH'&&state.currentRegionId==='ASHLANDS')
+    ||MONSTERS.some(monster=>monster.zone===zone.name
     &&(state.character?.monsterMasteryPoints?.[monster.id]??0)>0);
 }
 export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){

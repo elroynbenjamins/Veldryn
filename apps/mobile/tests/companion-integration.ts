@@ -62,8 +62,8 @@ const expectedEventIds=Array.from({length:11},(_,index)=>`EVT_UNIT_${String(inde
  ok(regionalCompanions.map(def=>def.id).sort().join(',')===expectedPermanentIds.join(','),'regional companion ids remain UNIT_001 through UNIT_024');
  ok(guildCompanions.map(def=>def.id).sort().join(',')==='GUILD_UNIT_001,GUILD_UNIT_002,GUILD_UNIT_003','Guild Token Shop companion IDs remain stable');
 ok(eventCompanions.length===11,'event roster contains the 11 authored companion rewards');
- ok(COMBAT_COMPANIONS.length===30,'active catalog contains permanent companions and the three released Veilbreak companions only');
- ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')==='EVT_UNIT_007,EVT_UNIT_008,EVT_UNIT_011','active catalog contains only released Veilbreak companions');
+ ok(COMBAT_COMPANIONS.length===31,'active catalog contains permanent companions, Veilbreak trio and scheduled Frostfall Herald');
+ ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')==='EVT_UNIT_007,EVT_UNIT_008,EVT_UNIT_009,EVT_UNIT_011','active catalog contains only Veilbreak companions and the scheduled Frostfall Herald');
 ok(new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id)).size===ALL_COMBAT_COMPANIONS.length,'permanent and event companion ids are unique');
 ok(eventCompanions.map(def=>def.id).sort().join(',')===expectedEventIds.join(','),'event companion ids cover EVT_UNIT_001 through EVT_UNIT_011');
 const mobileIds=new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id));

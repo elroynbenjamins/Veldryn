@@ -11,6 +11,7 @@ const normalization=fs.readFileSync('src/core/save-normalization.ts','utf8');
 const commands=fs.readFileSync('src/core/game-commands.ts','utf8');
 const bulk=fs.readFileSync('src/core/inventory-bulk.ts','utf8');
 const inspect=fs.readFileSync('src/components/ItemQuickInspect.tsx','utf8');
+const gearPreview=fs.readFileSync('src/components/EquipmentPreview.tsx','utf8');
 const inspectModel=fs.readFileSync('src/core/item-inspect.ts','utf8');
 
 ok(!screenSource.includes('FILTERS & DISPLAY'),'Inventory must not regress to the large filters disclosure');
@@ -75,5 +76,10 @@ ok(artwork.includes('borderWidth:framed?meta.borderWidth:0'),'Framed equipment a
 ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use rarity border strength');
 ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
 ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
+
+ok(screenSource.includes('onStoreInGear={previewId&&onCommand?async()=>')&&screenSource.includes("type:'gear_move',args:{instanceId,to:'equipment_pouch'}")&&screenSource.includes("type:'equipment_pouch_move',args:{itemId:id,quantity:1,from:'inventory',to:'equipment_pouch'}"),'Equipment comparison must allow one-tap Inventory-to-Gear storage for exact and ordinary copies');
+ok(gearPreview.includes("gearText('Store in Gear')")&&gearPreview.includes('canStoreInGear')&&gearPreview.includes('onStoreInGear'),'Equipment comparison must expose a distinct storage action with a capacity guard');
+ok(screenSource.includes('gearMoveAmount=')&&screenSource.includes('quantity:gearMoveAmount')&&screenSource.includes('freeGearSlots<gearMoveAmount'),'Quick Inspect must respect selected transfer quantity and remaining Gear slots');
+ok(screenSource.includes("const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}})")&&!screenSource.includes("selectedCopy.ownerCharacterId===state.character?.id?<GameButton"),'Shared Bank copies must remain transferable to the active character Gear storage without tying the transfer to their original crafter');
 
 console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, Quick Inspect gear decisions and availability, capacity feedback, rarity frames and rarity-colored names');

@@ -4,7 +4,7 @@ import {HOLY_WATER_ID} from '../content/faith';
 import type {GameState,ItemStack} from './types';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from './equipment-enhancement';
-import {depositToBank,salvageItem,sellItem,withdrawFromBank} from './game';
+import {depositToBank,salvageBankItem,salvageItem,sellBankItem,sellItem,withdrawFromBank} from './game';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
 export type BulkStorageLocation='inventory'|'bank';
@@ -38,24 +38,24 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
   const autoEatId=state.character?.equippedFoodId,goalProtection=workingTowardInventoryProtectionMap(state),goalProtectedIds=new Set(goalProtection.keys());
   const goalProtected=stacks.filter(stack=>goalProtectedIds.has(stack.itemId));
   const transferable=stacks.filter(stack=>!stack.instanceId&&(location==='bank'||stack.itemId!==autoEatId));
-  const sellable=location==='inventory'?stacks.filter(stack=>{
+  const sellable=stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
     if(stack.itemId===autoEatId||stack.itemId===HOLY_WATER_ID||item.value<=0||item.guildOnly||item.knowledgeUnlockId||goalProtectedIds.has(stack.itemId))return false;
     if(stack.instanceId){
-      if(state.settings.lockedItemIds?.includes(stack.itemId))return false;
+      if(state.settings.lockedItemIds?.includes(stack.itemId)||state.settings.favoriteItemIds?.includes(stack.itemId))return false;
       try{disposeCraftedGearInstance(state,stack.instanceId,'sell');return true;}catch{return false;}
     }
     return !protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
-  }):[];
-  const salvageable=location==='inventory'?stacks.filter(stack=>{
+  });
+  const salvageable=stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
     if(item.type!=='gear'||!equipmentSalvageReward(stack.itemId)||goalProtectedIds.has(stack.itemId))return false;
     if(stack.instanceId){
-      if(state.settings.lockedItemIds?.includes(stack.itemId))return false;
+      if(state.settings.lockedItemIds?.includes(stack.itemId)||state.settings.favoriteItemIds?.includes(stack.itemId))return false;
       try{disposeCraftedGearInstance(state,stack.instanceId,'salvage');return true;}catch{return false;}
     }
     return !protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
-  }):[];
+  });
   return {
     selectedStackCount:stacks.length,
     selectedUnitCount:stacks.reduce((sum,stack)=>sum+stack.quantity,0),
@@ -89,26 +89,26 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
   return next;
 }
 
-export function bulkSellSelected(state:GameState,itemIds:readonly string[]):GameState{
-  const summary=bulkSelectionSummary(state,itemIds,'inventory');
+export function bulkSellSelected(state:GameState,itemIds:readonly string[],location:BulkStorageLocation='inventory'):GameState{
+  const summary=bulkSelectionSummary(state,itemIds,location);
   if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
   let next=state;
   for(const id of summary.sellableIds){
     if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'sell');continue;}
-    const quantity=next.inventory.stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
-    if(quantity>0)next=sellItem(next,id,quantity);
+    const quantity=next[location].stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
+    if(quantity>0)next=location==='bank'?sellBankItem(next,id,quantity):sellItem(next,id,quantity);
   }
   return next;
 }
 
-export function bulkSalvageSelected(state:GameState,itemIds:readonly string[]):GameState{
-  const summary=bulkSelectionSummary(state,itemIds,'inventory');
+export function bulkSalvageSelected(state:GameState,itemIds:readonly string[],location:BulkStorageLocation='inventory'):GameState{
+  const summary=bulkSelectionSummary(state,itemIds,location);
   if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.');
   let next=state;
   for(const id of summary.salvageableIds){
     if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'salvage');continue;}
-    const quantity=next.inventory.stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
-    for(let count=0;count<quantity;count++)next=salvageItem(next,id);
+    const quantity=next[location].stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
+    for(let count=0;count<quantity;count++)next=location==='bank'?salvageBankItem(next,id):salvageItem(next,id);
   }
   return next;
 }

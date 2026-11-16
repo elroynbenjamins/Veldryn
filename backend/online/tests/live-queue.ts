@@ -90,8 +90,9 @@ async function main(){
  assert.equal((await handler(request('queue/'+ticket+'/cancel',{requestId:'cancel-001'}))).status,200);
  assert.equal((await handler(request('queue/'+ticket+'/cancel'))).status,405);
  const joinWrites=calls.filter(row=>row.name==='join_online_live_queue_server_v1');
- assert.equal(joinWrites.length,2,'a missing first receipt may produce one safe retry of the same join RPC');
- assert.equal(new Set(joinWrites.map(row=>row.args.p_request_id)).size,1,'retries must use the same idempotency request ID');
+ assert.equal(joinWrites.length,1,'the receipt recheck must prevent a second join write after the gameplay revision advances');
+ assert.ok(reads>=2,'lost first receipt must trigger a fresh receipt recheck before any duplicate write');
+ assert.equal(new Set(joinWrites.map(row=>row.args.p_request_id)).size,1,'the sole write must preserve the original idempotency request ID');
  assert.equal(new Set(joinWrites.map(row=>row.args.p_request_hash)).size,1,'retries must retain the same request payload hash');
  assert.equal(new Set(joinWrites.map(row=>row.args.p_ticket_id)).size,1,'retries must preserve the ticket identity');
  assert.equal(committedTickets,1,'the authoritative database must create only one ticket despite two transport attempts');

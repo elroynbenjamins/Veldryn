@@ -161,10 +161,8 @@ function validateRoster(players:readonly CombatantDefinition[]):void{
   ||new Set(players.map(p=>p.id)).size!==players.length
   ||players.some(p=>p.team!=='players'||p.level<1||!(p.role in counts)))
   throw Error('party_story_invalid_verified_roster');
- for(const actor of players)counts[actor.role as keyof typeof counts]++;
- if(counts.tank>1||counts.damage>2||counts.support>1
-  ||players.length===4&&(counts.tank!==1||counts.damage!==2||counts.support!==1))
-  throw Error('party_story_invalid_role_composition');
+ // V32: any verified 2–4-person Party composition may participate.
+ // Keep identity/team/role validity checks; do not impose forced roles.
 }
 export interface PartyEventStoryStageV9Input{
  family:WeeklyPartyFamily;variation:string;stage:StoryStageV9;

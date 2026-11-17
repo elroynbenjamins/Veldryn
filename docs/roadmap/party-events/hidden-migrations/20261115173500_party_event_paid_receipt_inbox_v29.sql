@@ -182,7 +182,7 @@ begin
    -- actual Gold/XP/items/companion/renown credits to a player.
    'receiptRecorded',true,'inboxRecordPresent',true,
    'claimed',false,'economyApplied',false,'inboxDelivered',false,
-   'status','receipt_requires_economy_verification'
+   'status','receipt_requires_economy_verification')
    order by m.delivered_at desc,m.id),'[]'::jsonb) into v_items
  from private.party_event_paid_claim_inbox_v29 m
  join private.party_event_paid_claim_receipts_v29 r

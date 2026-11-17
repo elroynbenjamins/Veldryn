@@ -4,7 +4,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
 import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
-import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine} from '../src/core/weapon-bonus-rolls';
+import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
 import type {CraftedGearInstance,GameState} from '../src/core/types';
 
@@ -27,19 +27,49 @@ ok(weaponBonusConfig(t4,'legendary')?.count===2,'T4 Legendary gets two stats');
 ok(weaponBonusConfig(t5,'common')?.count===2,'T5 Common gets two stats');
 ok(weaponBonusConfig(t9,'common')?.count===2,'T9 Common gets two stats');
 
-for(const [id,rarity,count,min,max] of [
-  [t3,'common',1,100,300],[t3,'epic',2,100,300],
-  [t4,'mythic',2,100,300],[t5,'common',2,200,400],[t9,'rare',2,400,600],
+for(const [id,rarity,count] of [
+  [t3,'common',1],[t3,'epic',2],
+  [t4,'mythic',2],[t5,'common',2],[t9,'rare',2],
 ] as const){
   const first=rollWeaponBonuses(id,rarity,'stable-receipt',.4);
   const again=rollWeaponBonuses(id,rarity,'stable-receipt',.4);
   ok(first?.length===count,'Wrong weapon roll count');
   ok(JSON.stringify(first)===JSON.stringify(again),'The same receipt must never reroll');
   ok(new Set(first!.map(row=>row.stat)).size===count,'Weapon stats must be distinct');
-  ok(first!.every(row=>row.basisPoints>=min&&row.basisPoints<=max&&(row.basisPoints-min)%10===0),
-    'Roll value must be inside tier range in 0.1% steps');
+  const tier=weaponBonusConfig(id,rarity)!.tier;
+  ok(first!.every(row=>{
+    const range=weaponBonusRange(tier,row.stat);
+    return !!range&&row.basisPoints>=range[0]&&row.basisPoints<=range[1]&&(row.basisPoints-range[0])%10===0;
+  }), 'Each rolled stat must use its own tier range in 0.1% steps');
   ok(first!.every(row=>weaponBonusLine(id,rarity,row).includes('roll)')),'Tooltip should show the range and roll strength');
   ok(JSON.stringify(normalizeWeaponBonuses(id,rarity,first))===JSON.stringify(first),'Valid rolls must survive normalization');
+}
+
+// Stat-specific balancing: high-value Crit Rate and Ward cap below broad HP / Tenacity.
+ok(weaponBonusRange(3,'critRate')?.join(',')==='50,150','T3 Crit Rate is 0.5–1.5%, not the old global range');
+ok(weaponBonusRange(3,'maxHp')?.join(',')==='200,400','T3 Max HP is 2.0–4.0%');
+ok(weaponBonusRange(5,'haste')?.join(',')==='120,250','T5 Haste is 1.2–2.5%');
+ok(weaponBonusRange(7,'potency')?.join(',')==='300,550','T7 Potency is 3.0–5.5%');
+ok(weaponBonusRange(9,'critRate')?.join(',')==='150,300','T9 Crit Rate is capped at 3.0%');
+ok(weaponBonusRange(9,'maxHp')?.join(',')==='500,800','T9 Max HP reaches 8.0%');
+ok(weaponBonusLine(t3,'common',{stat:'critRate',basisPoints:100}).includes('0.5–1.5%'),
+  'Tooltip displays the Crit Rate-specific tier range');
+ok(weaponBonusLine(t5,'common',{stat:'haste',basisPoints:200}).includes('1.2–2.5%'),
+  'Tooltip displays the Haste-specific tier range');
+ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:200}]),
+  'The former T3 2.0% Crit Rate value must be rejected under the new cap');
+ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'haste',basisPoints:200}]),
+  'T3 Haste can reach its valid 2.0% cap');
+for(const band of [3,5,7,9] as const){
+  for(const [stat,range] of Object.entries(WEAPON_BONUS_BPS_BY_BAND[band])){
+    ok(range.length===2&&range[0]<range[1]&&range.every(value=>Number.isInteger(value)&&value%10===0),
+      `The ${stat} tier ${band} range must contain valid tenth-percent endpoints`);
+    if(band>3){
+      const previous=WEAPON_BONUS_BPS_BY_BAND[band===5?3:band===7?5:7][stat as keyof typeof WEAPON_BONUS_BPS_BY_BAND[3]];
+      ok(range[0]>=previous[0]&&range[1]>=previous[1],
+        `The ${stat} tier ${band} range must not decrease from the previous tier`);
+    }
+  }
 }
 
 for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){

@@ -2,11 +2,6 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
-  // Dungeon effect-recipe unlock, rewards and account delivery copy.
-  "NEW EFFECT RECIPE UNLOCKED": ["ОТКРЫТ НОВЫЙ РЕЦЕПТ ЭФФЕКТА","YENİ ETKİ TARİFİ AÇILDI"],
-  "Effect Gem Recipe": ["Рецепт самоцвета эффекта","Etki Taşı Tarifi"],
-  "Permanently learned. Combine this Effect Gem family in Enchanting; this unlock is not a gem item.": ["Изучено навсегда. Объединяйте самоцветы этого семейства эффектов в зачаровании; открытие рецепта не выдаёт самоцвет.","Kalıcı olarak öğrenildi. Bu etki taşı ailesini Büyüleme bölümünde birleştir; bu açılış bir taş eşyası değildir."],
-  "Any additional gems or catalysts are delivered directly to your account on claim. Check your Gem Pouch and Enchanting.": ["Дополнительные самоцветы и катализаторы сразу поступят на аккаунт после получения награды. Проверьте сумку самоцветов и зачарование.","Ek taşlar veya katalizörler ödülü aldığında doğrudan hesabına eklenir. Taş Keseni ve Büyüleme bölümünü kontrol et."],
   // Online roster additions.
   "VELDRYN COMMUNITY": ["СООБЩЕСТВО VELDRYN","VELDRYN TOPLULUĞU"],
   "Online players": ["Игроки в сети","Çevrimiçi oyuncular"],

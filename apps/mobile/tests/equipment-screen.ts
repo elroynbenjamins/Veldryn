@@ -1,5 +1,7 @@
 import {createCharacter,newGame,effectiveStats,equipItem,equipItemFromEquipmentPouch} from '../src/core/game';
 import {equipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {executeGameCommand} from '../src/core/game-commands';
+import {previewCombatEquipmentCommand} from '../src/core/combat-equipment-optimistic';
 import {equipmentComparison} from '../src/core/equipment-comparison';
 import {itemDef,ITEMS} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
@@ -51,6 +53,21 @@ const forged={...state,
   {itemId:forgeWeapon.id,quantity:1,instanceId:'COPY_LOW'},
  ]},
 };
+// During a hunt, the client can display a safe weapon swap without making
+// any reward or ownership change to the authoritative state.
+const combatForged=executeGameCommand(forged,{type:'start',args:{kind:'combat',id:'MOSS_RAT'}},1000).state;
+const projectedCombatWeapon=previewCombatEquipmentCommand(combatForged,{type:'gear_equip',args:{instanceId:'COPY_HIGH'}});
+if(!projectedCombatWeapon||projectedCombatWeapon.character?.equipmentInstanceIds?.weapon!=='COPY_HIGH')
+ throw new Error('A valid live-hunt Forge weapon swap must preview immediately');
+if(combatForged.character?.equipmentInstanceIds?.weapon==='COPY_HIGH')
+ throw new Error('A pending equipment preview must not mutate the server snapshot');
+if(projectedCombatWeapon.character!.currentHp>combatForged.character!.currentHp)
+ throw new Error('Previewing a combat swap must never heal the player');
+if(previewCombatEquipmentCommand(combatForged,{type:'gear_equip',args:{instanceId:'MISSING_COPY'}})!==null)
+ throw new Error('Invalid equipment copies must be rejected from optimistic presentation');
+if(previewCombatEquipmentCommand(forged,{type:'gear_equip',args:{instanceId:'COPY_HIGH'}})!==null)
+ throw new Error('Non-combat equipment changes must keep their existing server-confirmed presentation');
+
 const highPreview=previewEquipment(forged,forgeWeapon.id,'COPY_HIGH');
 const lowPreview=previewEquipment(forged,forgeWeapon.id,'COPY_LOW');
 if(highPreview.character?.equipmentInstanceIds?.weapon!=='COPY_HIGH'

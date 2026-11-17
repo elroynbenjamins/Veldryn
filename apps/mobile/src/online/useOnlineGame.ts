@@ -9,6 +9,7 @@ import {saveAndRefreshPlayerNameStyle} from '../core/player-name-style-save';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 import {updateOnlinePlayerNameStyle} from './social';
 import {rememberOnlineSnapshot} from '../core/online-snapshot-cache';
+import {previewCombatEquipmentCommand} from '../core/combat-equipment-optimistic';
 export function useOnlineGame(){
  const {session}=useAuthSession(),accountId=session?.user.id;
  const repo=useMemo(()=>serverGameplayEnabled&&accountId?createOnlineGameRepository(accountId):null,[accountId]);
@@ -18,7 +19,7 @@ export function useOnlineGame(){
  const refreshInFlight=useRef<{repo:typeof repo;promise:Promise<OnlineSnapshot|undefined>}|null>(null);
  const [foregroundRevision,setForegroundRevision]=useState(0);
  const [snapshot,setSnapshot]=useState<OnlineSnapshot|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[pending,setPending]=useState(false);
- const refresh=useCallback(async()=>{if(!repo)return;if(refreshInFlight.current?.repo===repo)return refreshInFlight.current.promise;const promise=(async()=>{try{const next=await repo.refresh();const hasPending=await repo.hasPending();if(active.current===repo){rememberOnlineSnapshot(next);setSnapshot(repo.snapshot??next);setPending(hasPending);setError('');return next;}}catch(e){if(active.current===repo)setError(e instanceof Error?e.message:'Online service unavailable.');}})();refreshInFlight.current={repo,promise};try{return await promise;}finally{if(refreshInFlight.current?.promise===promise)refreshInFlight.current=null;}},[repo]);
+ const refresh=useCallback(async()=>{if(!repo)return;if(refreshInFlight.current?.repo===repo)return refreshInFlight.current.promise;const promise=(async()=>{try{const next=await repo.refresh();const hasPending=await repo.hasPending();if(active.current===repo){rememberOnlineSnapshot(next);if(commandSaving.current!==repo)setSnapshot(repo.snapshot??next);setPending(hasPending);setError('');return next;}}catch(e){if(active.current===repo)setError(e instanceof Error?e.message:'Online service unavailable.');}})();refreshInFlight.current={repo,promise};try{return await promise;}finally{if(refreshInFlight.current?.promise===promise)refreshInFlight.current=null;}},[repo]);
  const refreshCommerce=useCallback(async(expectedAccountId:string)=>{
   const current=()=>Boolean(repo&&active.current===repo&&repo.accountId===expectedAccountId);
   if(!repo||!current())throw new Error('Account changed while refreshing purchases.');
@@ -46,7 +47,14 @@ export function useOnlineGame(){
   return()=>{clearInterval(timer);sub.remove();};
  },[accountId]);
  const execute=async(command?:GameCommand)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');if(commandSaving.current===repo)throw new Error('A gameplay action is already being saved.');// Reserve the per-account command slot synchronously; the repository serializes and safely replays durable actions.
- commandSaving.current=repo;setBusy(true);setError('');try{const next=await repo.execute(command);if(active.current!==repo)throw new Error('Account changed while saving.');rememberOnlineSnapshot(next);setSnapshot(next);setPending(false);return next;}catch(e){if(active.current===repo){setPending(await repo.hasPending());if(repo.snapshot)setSnapshot(repo.snapshot);setError(e instanceof Error?e.message:'Unable to save. Retry the pending action.');}throw e;}finally{if(commandSaving.current===repo)commandSaving.current=null;if(active.current===repo)setBusy(false);}};
+ commandSaving.current=repo;setBusy(true);setError('');
+ // Preview only a validated weapon swap while a hunt is running. This is NOT
+ // written to the repository, pending-command store or server; a failed
+ // command restores the previous authoritative snapshot in catch.
+ const authoritative=repo.snapshot;
+ const projected=command&&!pending&&authoritative?.state?previewCombatEquipmentCommand(authoritative.state,command):null;
+ if(projected&&authoritative&&active.current===repo)setSnapshot({...authoritative,state:projected,reward:undefined});
+ try{const next=await repo.execute(command);if(active.current!==repo)throw new Error('Account changed while saving.');rememberOnlineSnapshot(next);setSnapshot(next);setPending(false);return next;}catch(e){if(active.current===repo){setPending(await repo.hasPending());if(repo.snapshot)setSnapshot(repo.snapshot);setError(e instanceof Error?e.message:'Unable to save. Retry the pending action.');}throw e;}finally{if(commandSaving.current===repo)commandSaving.current=null;if(active.current===repo)setBusy(false);}};
  const saveNameStyle=async(style:PlayerNameStylePreference)=>{
   if(!repo||active.current!==repo)throw new Error('Sign in before changing your name style.');
   if(busy||commandSaving.current===repo||nameStyleSaving.current===repo)throw new Error('Another change is still saving. Please wait.');

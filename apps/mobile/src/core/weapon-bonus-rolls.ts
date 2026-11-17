@@ -34,17 +34,19 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity){
   return {tier,role,range,count,pool:ROLE_POOL[role]};
 }
 
-/** Receipt-seeded rolls are independent of rarity/quality and stable across retries. */
-export function rollWeaponBonuses(itemId:string,rarity:ItemRarity,receiptKey:string):WeaponBonusRoll[]|undefined{
+/** Trusted claim-roll + receipt seeded; independent of rarity/quality and stable across retries. */
+export function rollWeaponBonuses(itemId:string,rarity:ItemRarity,receiptKey:string,trustedRoll:number):WeaponBonusRoll[]|undefined{
+  if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid trusted weapon roll');
   const cfg=weaponBonusConfig(itemId,rarity);
   if(!cfg)return undefined;
   const pool=[...cfg.pool],out:WeaponBonusRoll[]=[];
+  const seed=`${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   const steps=(cfg.range[1]-cfg.range[0])/STEP_BPS;
   for(let index=0;index<cfg.count;index++){
-    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v1:stat:${itemId}:${receiptKey}:${index}`);
+    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v1:stat:${seed}:${index}`);
     const position=Math.min(pool.length-1,Math.floor(statUnit*pool.length));
     const [stat]=pool.splice(position,1); // Two bonuses must have different stat types.
-    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v1:value:${itemId}:${receiptKey}:${index}`);
+    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v1:value:${seed}:${index}`);
     out.push({stat,basisPoints:cfg.range[0]+STEP_BPS*Math.min(steps,Math.floor(valueUnit*(steps+1)))});
   }
   return out;

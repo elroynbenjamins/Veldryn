@@ -27,7 +27,7 @@ async function denyAsync(fn:()=>Promise<unknown>,m:string){
 }
 function freshState(){
  const x=createCharacter(newGame(1700000000000),'IRONWARDEN',
-  'V30 Test Adventurer');
+  'Adventurer');
  return {...x,character:{...x.character!,id:character,gold:1000}};
 }
 function snapshot(

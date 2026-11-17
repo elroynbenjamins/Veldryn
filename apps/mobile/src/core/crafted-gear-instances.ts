@@ -3,6 +3,7 @@ import {craftedGearRarity,craftedRarityStatMultiplier,deterministicCraftRarityRo
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import {normalizeGemRollPercentV1} from '../content/gems-v1';
+import {normalizeWeaponBonuses,rollWeaponBonuses} from './weapon-bonus-rolls';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 /** Existing Forge records have no quality roll. Show them at the neutral midpoint without rewriting their receipts or treating them as safe auto-sale candidates. */
@@ -66,6 +67,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
           quality:isValidCraftedGearQuality(row.quality)?row.quality:undefined,
           locked:row.locked===true,
           statRoll:clampStatRoll(row.statRoll),
+          weaponBonuses:normalizeWeaponBonuses(item.id,rarity,row.weaponBonuses),
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
           enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,statGemRollPercent:normalizeGemRollPercentV1(enhancement.statGemRollPercent),effectGemRollPercent:normalizeGemRollPercentV1(enhancement.effectGemRollPercent),gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},
@@ -145,9 +147,11 @@ export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerChar
 }
 
 export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}):CraftedGearInstance{
+  const rarity=craftedGearRarity(args.itemId,args.roll);
   return {
     id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
-    rarity:craftedGearRarity(args.itemId,args.roll),quality:craftedGearQualityRoll(args.roll,args.jobId),
+    rarity,quality:craftedGearQualityRoll(args.roll,args.jobId),
+    weaponBonuses:rollWeaponBonuses(args.itemId,rarity,args.jobId),
     locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
 }
@@ -169,6 +173,7 @@ export function craftedInstanceResult(state:GameState,instance:CraftedGearInstan
   const copies=craftedInstancesForItem(state,instance.itemId,instance.ownerCharacterId),baseRarity:'common'='common';
   return {
     instanceId:instance.id,itemId:instance.itemId,rarity:instance.rarity,quality:instance.quality,baseRarity,
+    weaponBonuses:instance.weaponBonuses,
     // Trusted command response metadata for read-only public forge announcements.
     itemName:itemDef(instance.itemId).name,
     crafterName:state.character?.id===instance.ownerCharacterId

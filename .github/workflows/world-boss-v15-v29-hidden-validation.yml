@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V36 validation
+name: Hidden World Boss V10–V37 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -29,6 +29,7 @@ on:
       - 'docs/roadmap/world-boss-retired-consent-lifecycle-v35-smoke.sql'
       - 'docs/roadmap/world-boss-account-erasure-preflight-v36.sql'
       - 'docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql'
+      - 'docs/roadmap/world-boss-account-save-donation-v37-smoke.sql'
       - 'docs/roadmap/world-boss-v28-concurrent-claims-ci.sh'
       - 'docs/roadmap/world-boss-war-camp-transactions-v27*.sql'
       - 'docs/roadmap/world-boss-war-camp-policy-init-v27.sql'
@@ -82,7 +83,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v36 World Boss tests
+      - name: Run v7-v37 World Boss tests
         run: |
           set -e
           for suite in \
@@ -172,4 +173,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-retired-consent-lifecycle-v35-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-preflight-v36.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-save-donation-v37-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-private-access-audit-v32.sql

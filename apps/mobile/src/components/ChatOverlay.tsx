@@ -24,7 +24,7 @@ import {ONLINE_PLAYER_ROSTER_RELEASED} from '../core/release-flags';
 import {ChatOnlinePlayersPanel} from './ChatOnlinePlayersPanel';
 
 type Channel='world'|'guild'|'party'|'system';
-type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild'|'party';visible:boolean;hideDock?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
+type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild'|'party';visible:boolean;hideDock?:boolean;allowPartyChatWhenWorldDisabled?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
 
 export function ChatOverlay(props:ChatOverlayProps){
  const {session}=useAuthSession();
@@ -32,7 +32,7 @@ export function ChatOverlay(props:ChatOverlayProps){
  return <AccountChatOverlay key={session?.user.id??('local:'+props.state.createdAtMs)} {...props}/>;
 }
 
-function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
+function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false,allowPartyChatWhenWorldDisabled=false,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,height,fontScale}=useWindowDimensions();
  const compactTabs=width<360||fontScale>=1.25;
@@ -62,7 +62,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
  const guildCheckedAt=useRef(0),guildLoading=useRef(false),mounted=useRef(true);
  const {party,accountId,refresh}=usePartySocial();
- const chatEnabled=state.settings.autoJoinWorldChat!==false;
+ const chatEnabled=state.settings.autoJoinWorldChat!==false||(allowPartyChatWhenWorldDisabled&&Boolean(party));
  const onlineRoster=useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled);
  const wasVisible=useRef(false);
  const selectChannel=(next:Channel)=>{

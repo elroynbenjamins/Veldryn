@@ -130,7 +130,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
     {currentWeaponRolls.length?currentWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
       <Text style={s.rollValue}>{roll.short}</Text>
-      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%`,backgroundColor:C.muted}]}/></View>
+      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.muted}]}/></View>
       <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
     </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
     <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
@@ -138,7 +138,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       <View style={s.rollHead}><Text style={[s.rollValue,{color:C.good}]}>{roll.short}</Text>
         {roll.strength>=90?<Text style={[s.rollBadge,{color:C.good}]}>{gl(weaponBonusRollGrade(roll.strength))}</Text>:null}
       </View>
-      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%`,backgroundColor:C.good}]}/></View>
+      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.good}]}/></View>
       <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
     </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
    </View>:null}

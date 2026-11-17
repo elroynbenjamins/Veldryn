@@ -108,7 +108,8 @@ function assertWeek(week:PartyEventWeekRecordV10,nowMs:number,openedAtMs:number)
   ||new Set(members.map(m=>m.accountId)).size!==members.length
   ||new Set(members.map(m=>m.characterId)).size!==members.length)
   invalid('invalid_enrollment');
- const counts={tank:0,damage:0,support:0};
+ // Party Events allow flexible class-role mixes (2–4 members); every
+ // actor role is still checked against its real stored class below.
  const ids=new Set<string>();
  for(const member of members){
   const l=member.loadout,actor=l.actor;
@@ -129,11 +130,7 @@ function assertWeek(week:PartyEventWeekRecordV10,nowMs:number,openedAtMs:number)
    ||snapshotHash!==partyEventStageChecksumV10(payload))
    invalid('loadout_checksum_mismatch');
   ids.add(actor.id);
-  counts[actor.role as keyof typeof counts]++;
  }
- if(counts.tank>1||counts.damage>2||counts.support>1
-  ||members.length===4&&(counts.tank!==1||counts.damage!==2||counts.support!==1))
-  invalid('invalid_role_composition');
 }
 function assertStage(input:PartyEventTrustedStageContextV10):void{
  const {stageRecord:s,week,nowMs}=input;

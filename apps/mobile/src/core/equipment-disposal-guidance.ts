@@ -2,7 +2,7 @@ import {itemDef} from '../content/items';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {craftedGearInstances} from './crafted-gear-instances';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
-import type {GameState} from './types';
+import type {CraftedGearInstance,GameState} from './types';
 
 export type EquipmentDisposalMethod='sell'|'salvage';
 export interface EquipmentDisposalDecision {allowed:boolean;reason?:string;}
@@ -27,6 +27,10 @@ export function equipmentCopyDisposalDecision(
    return {allowed:false,reason:'This equipment is not available for disposal'};
  if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))
    return {allowed:false,reason:'This equipment has no vendor value'};
+ if(record.locked)return {allowed:false,reason:'This equipment copy is locked'};
+ const specific=specificGearProtectionReason(record,'Enhanced or socketed equipment cannot be sold or salvaged');
+ if(record.enhancement.rank>0||record.enhancement.statGemId||record.enhancement.effectGemId||record.enhancement.gemIds.length>0)
+   return {allowed:false,reason:specific};
  try{
    disposeCraftedGearInstance(state,instanceId,method);
    return {allowed:true};
@@ -55,4 +59,16 @@ export function equipmentDisposalExplanation(reason:string):EquipmentDisposalExp
  if(/location|identity|unrecognized|mismatch|conflict|unknown equipment/.test(value))
    return {title:'Copy needs review',nextStep:'This copy has an unresolved ownership record. Do not discard or reassign it until the record is checked.',canExtractGem:false};
  return {title:'Cannot dispose',nextStep:reason||'Review this equipment before trying again.',canExtractGem:false};
+}
+
+/** A UI-only refinement of the shared engine's generic safety error.
+ * Must not mutate equipment or change any authoritative disposal rule. */
+export function specificGearProtectionReason(
+ record:Pick<CraftedGearInstance,'enhancement'>|undefined,reason?:string,
+):string|undefined{
+ if(!record||!reason||!/Enhanced or socketed equipment cannot be sold or salvaged/i.test(reason))return reason;
+ if(record.enhancement.rank>0)return 'Enhanced (upgraded) equipment cannot be sold or salvaged';
+ if(record.enhancement.statGemId||record.enhancement.effectGemId||record.enhancement.gemIds.length>0)
+   return 'Socketed gems must be extracted before selling or salvaging';
+ return reason;
 }

@@ -51,8 +51,8 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
  const ready=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
  const reviewable=known&&costsKnown&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3;
  const bonus=(n:GuildSkillNode,r:number,compact=false)=>n.id==='fellowship_projects'
-  ? (r===0?'0% saved':`-${r*5}% materials${r===3&&!compact?' · +10% completion Tokens':''}`)
-  :n.id==='fellowship_quests'?`+${r*10}% Tokens`
+  ? (r===0?(language==='de'?'0 % gespart':'0% saved'):`-${r*5}${language==='de'?' % Material':'% materials'}${r===3&&!compact?(language==='de'?' · +10 % Abschlussmarken':' · +10% completion Tokens'):''}`)
+  :n.id==='fellowship_quests'?`+${r*10}${language==='de'?' % Gildenmarken':'% Tokens'}`
   :`+${r*n.perTier}${n.id==='fellowship_membership'?(language==='de'?' Mitglieder':' members'):'%'}`;
  const active=known?GUILD_SKILL_NODES.filter(n=>rank(n.id)>0):[];
  const changeBranch=(value:typeof GUILD_MAJOR_BRANCHES[number])=>{

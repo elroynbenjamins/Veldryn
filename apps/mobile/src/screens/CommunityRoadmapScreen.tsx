@@ -11,6 +11,10 @@ type Language=GameState['settings']['language'];
 // Stable database IDs, not localized display text. Unknown future ideas use a neutral glyph.
 const ROADMAP_GLYPHS:Record<string,keyof typeof navigationLinework>={
  dungeons:'dungeon',
+ released_dungeons:'dungeon',
+ released_seasonal_events:'events',
+ released_companions:'companions',
+ released_guilds:'guild',
  seasonal_events:'events',
  companion_refinement:'companions',
  achievements:'trophy',
@@ -31,8 +35,7 @@ const ROADMAP_GLYPHS:Record<string,keyof typeof navigationLinework>={
  overall_refinement:'roadmapRefinement',
 };
 const STATUS_OPTIONS:{id:CommunityRoadmapStatus;label:string}[]=[
- {id:'considering',label:'Vote'},
- {id:'planned',label:'Planned'},
+ {id:'considering',label:'Voting'},
  {id:'in_progress',label:'In Development'},
  {id:'released',label:'Released'},
 ];
@@ -102,7 +105,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
    </View>
 
    <View style={s.sectionHead}>
-     <Text style={s.sectionTitle}>{a(STATUS_OPTIONS.find(option=>option.id===selected)?.label??'Vote')}</Text>
+     <Text style={s.sectionTitle}>{a(STATUS_OPTIONS.find(option=>option.id===selected)?.label??'Voting')}</Text>
      <Text style={s.refreshText}>{a('Updates every 2 hours')}</Text>
    </View>
 
@@ -122,7 +125,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
          </View>
          <View style={s.flex}>
            <Text style={s.featureTitle}>{a(feature.title)}</Text>
-           <Text style={s.category}>{a(feature.category)} · {a(canVote?'Roadmap idea':STATUS_OPTIONS.find(option=>option.id===feature.status)?.label??'Planned')}</Text>
+           <Text style={s.category}>{a(feature.category)} · {a(canVote?'Roadmap idea':STATUS_OPTIONS.find(option=>option.id===feature.status)?.label??'Voting')}</Text>
          </View>
          {canVote?<Pressable accessibilityRole="button" accessibilityLabel={a(feature.voted?'Remove vote for':'Vote for')+' '+a(feature.title)} accessibilityState={{selected:feature.voted,disabled}} disabled={disabled} onPress={()=>void changeVote(feature.id)} style={({pressed})=>[s.voteButton,feature.voted&&s.voteButtonActive,disabled&&s.voteButtonDisabled,pressed&&s.pressed]}>
            <Text style={[s.voteButtonText,feature.voted&&s.voteButtonTextActive]}>{pending===feature.id?a('Saving…'):feature.voted?'✓ '+a('Voted'):'+ '+a('Vote')}</Text>
@@ -139,7 +142,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
      <Text style={s.emptyTitle}>{a(selected==='considering'?'No ideas open for voting':'Nothing here yet')}</Text>
      <Text style={s.emptyText}>{a('Major expansions will appear here when announced.')}</Text>
    </View>:null}
-   {snapshot&&selected==='considering'?<Text style={s.footnote}>{a('Votes are not a promise of a release date. The development team decides priorities. When an idea moves to Planned, its votes are returned.')}</Text>:null}
+   {snapshot&&selected==='considering'?<Text style={s.footnote}>{a('Votes help set priorities, but do not guarantee a release date. When an idea moves into development, its votes are returned.')}</Text>:null}
  </ScrollView>;
 }
 

@@ -45,6 +45,7 @@ const fail=async(fn:()=>Promise<unknown>,fragment:string)=>{
 };
 function fixture(){
  let damaged=false,badReceipt=false;
+ let overrideView:WorldBossRewardViewV28|null=null;
  let proofs=0,reads=0,claims=0;
  let balance=0,revision=0;
  const issued=new Map<string,{amount:number,balanceAfter:number,revision:number}>();
@@ -98,6 +99,7 @@ function fixture(){
   },
   async view(accountId,eventId){
    reads++;
+   if(overrideView)return overrideView;
    return {accountId,eventId,balance,walletRevision:revision,
     claimedThisEvent:balance,eventCap:100,
     impactStatus:'pending_balance_approval',
@@ -116,6 +118,7 @@ function fixture(){
   setTamper:(v:boolean)=>{damaged=v;},
   setBadReceipt:(v:boolean)=>{badReceipt=v;},
   addSource:(source:string,amount:number)=>sources.set(source,amount),
+  setViewOverride:(row:WorldBossRewardViewV28|null)=>{overrideView=row;},
  };
 }
 async function main(){
@@ -196,6 +199,30 @@ async function main(){
  assert.equal(utility.roles.tank.damage,300);
  assert.equal(utility.roles.tank.interrupts,2);
  assert.equal(utility.payoutsAuthorized,false);
+ // Read-only overview is still a sensitive boundary: malformed nested
+ // receipts must not be handed to the UI as trusted balance/role evidence.
+ const duplicate=structuredClone(overview);
+ duplicate.roleContributions.push(structuredClone(duplicate.roleContributions[0]));
+ f.setViewOverride(duplicate);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ const negative=structuredClone(overview);
+ negative.roleContributions[0].characterLedger[0].effectiveHealing=-1;
+ f.setViewOverride(negative);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ const exaggerated=structuredClone(overview);
+ exaggerated.claimedThisEvent=exaggerated.balance+1;
+ f.setViewOverride(exaggerated);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ f.setViewOverride(null);
+ assert.equal((await readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps)).claimedThisEvent,50);
  await fail(()=>readAuthenticatedWorldBossRewardsV28({
   token:'wrong-private-token',eventId:EVENT,
  },f.deps),'auth_required');

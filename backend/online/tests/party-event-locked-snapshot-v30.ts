@@ -90,7 +90,7 @@ async function test(){
  const a=await readPrivatePartyEventLockedSnapshotV30({
   gateEnabled:true,offerId:offer,trustedAccountId:account,db,
  });
- yes(calls===1&&a.reward.gold===snapshot().reward.gold&&!a.locksHeld,
+ yes(Number(calls)===1&&a.reward.gold===snapshot().reward.gold&&!a.locksHeld,
   'read_validated_not_payable');
 
  deny(()=>verify({...snapshot(),accountId:character}),

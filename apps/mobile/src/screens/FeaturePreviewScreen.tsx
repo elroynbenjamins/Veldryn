@@ -4,6 +4,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {usePartySocial} from '../online/PartySocialProvider';
 import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
+import {regionScenes} from '../theme/upgraded-artwork';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
@@ -20,11 +21,7 @@ const partyTabs:TabItem[]=[
 const marketTabs:TabItem[]=[
  {id:'browse',label:'Browse'},{id:'sell',label:'Sell'},{id:'listings',label:'My Listings'},{id:'inbox',label:'Inbox'},
 ];
-const art={
- boss:require('../../assets/card-backgrounds/kingdom_approach_portrait.webp'),
- party:require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp'),
- market:require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp'),
-};
+const marketArtwork=require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp');
 const meta={
  boss:{eyebrow:'WORLD ENCOUNTER',title:'World Bosses',subtitle:'One realm. One enormous threat.',accent:'#E8B66B'},
  party:{eyebrow:'CO-OP ADVENTURES',title:'Party Events',subtitle:'Shape the expedition together.',accent:'#91CFC4'},
@@ -35,8 +32,14 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const [tab,setTab]=useState(tabs[0].id),[guide,setGuide]=useState(false);
+ const [bossId,setBossId]=useState<(typeof bosses)[number]['id']>('hollow');
+ const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const title=meta[feature],accent=title.accent;
+ const title=meta[feature];
+ const selectedBoss=bosses.find(item=>item.id===bossId)??bosses[0];
+ const selectedStory=stories.find(item=>item.id===storyId)??stories[0];
+ const accent=feature==='boss'?selectedBoss.color:feature==='party'?selectedStory.accent:title.accent;
+ const heroSceneId=feature==='boss'?selectedBoss.scene:feature==='party'?selectedStory.scene:null;
  const social=usePartySocial();
  const partyConnected=Boolean(social.party?.id);
  const guideTopics=feature==='boss'?[
@@ -61,7 +64,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       <Pressable accessibilityRole="button" accessibilityLabel="Back to Account" onPress={onClose} style={s.smallButton}><Text style={s.smallButtonText}>‹ Back</Text></Pressable>
       <View style={s.headerRight}><Text style={s.privateLabel}>DESIGN QA</Text><Pressable accessibilityRole="button" accessibilityLabel={title.title+' guide'} onPress={()=>setGuide(true)} style={s.help}><Text style={s.helpText}>?</Text></Pressable></View>
     </View>
-    <ImageBackground source={art[feature]} resizeMode="cover" imageStyle={s.heroImage} style={[s.hero,{borderColor:accent}]}>
+    <ImageBackground source={heroSceneId?regionScenes[heroSceneId]:marketArtwork} resizeMode="cover" imageStyle={s.heroImage} style={[s.hero,{borderColor:accent}]}>
       <View style={s.heroShade}/>
       <View style={s.heroCopy}>
         <Text style={[s.eyebrow,{color:accent}]}>{title.eyebrow}</Text>
@@ -73,8 +76,8 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:tab===item.id}} onPress={()=>setTab(item.id)} style={[s.tab,tab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,tab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={tab} onTab={setTab}/>:null}
-    {feature==='party'?<PartyContents s={s} C={C} accent={accent} tab={tab} onTab={setTab} hasParty={partyConnected} members={social.party?.members.length??0} onOpenParty={onOpenParty}/>:null}
+    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={tab} onTab={setTab} selected={bossId} onSelect={setBossId}/>:null}
+    {feature==='party'?<PartyContents s={s} C={C} accent={accent} tab={tab} onTab={setTab} storyId={storyId} onStoryChange={setStoryId} hasParty={partyConnected} members={social.party?.members.length??0} onOpenParty={onOpenParty}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={tab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
@@ -107,12 +110,11 @@ function Progress({s,value,accent}:{s:Shared['s'];value:number;accent:string}){r
 function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){return <View style={[s.tag,accent&&{borderColor:accent}]}><Text style={[s.tagText,accent&&{color:accent}]}>{label}</Text></View>;}
 
 const bosses=[
- {id:'hollow',name:'Hollowroot',region:'Asterfall',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387'},
- {id:'sunscar',name:'Sunscar',region:'Sunscar',motif:'THE SUN-FORGED TITAN',color:'#E2AE73'},
- {id:'frost',name:'Frostmarch',region:'Frostmarch',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9'},
+ {id:'hollow',name:'Hollowroot',region:'Asterfall',scene:'IRONWOOD',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387'},
+ {id:'sunscar',name:'Sunscar',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73'},
+ {id:'frost',name:'Frostmarch',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9'},
 ] as const;
-function BossContents({s,C,accent,tab,onTab}:Shared&{tab:string;onTab:(value:string)=>void}){
- const [selected,setSelected]=useState<(typeof bosses)[number]['id']>('hollow');
+function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void}){
  const boss=bosses.find(item=>item.id===selected)??bosses[0];
  if(tab==='overview')return <>
   <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="The next great encounter" sub="Five days to prepare. One continuous weekend battle. A week to recover."/>
@@ -120,7 +122,7 @@ function BossContents({s,C,accent,tab,onTab}:Shared&{tab:string;onTab:(value:str
    <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={accent}/><Tag s={s} label="02 Battle"/><Tag s={s} label="03 Results"/></View>
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER CODEX" title="Choose a boss to inspect" sub="The following are design previews, not live boss availability."/>
-   {bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityState={{selected:selected===entry.id}} onPress={()=>setSelected(entry.id)} style={[s.choice,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
+   {bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityState={{selected:selected===entry.id}} onPress={()=>onSelect(entry.id)} style={[s.choice,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
      <View style={[s.motif,{backgroundColor:C.panel2,borderColor:entry.color}]}><Text style={[s.motifGlyph,{color:entry.color}]}>✥</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{entry.name}</Text><Text style={s.choiceSub}>{entry.region} · {entry.motif}</Text></View><Text style={[s.choiceArrow,{color:entry.color}]}>{selected===entry.id?'✓':'›'}</Text>
    </Pressable>)}
    <Action label={'Inspect '+boss.name+' War Camp'} s={s} onPress={()=>onTab('camp')}/>
@@ -158,13 +160,12 @@ function BossContents({s,C,accent,tab,onTab}:Shared&{tab:string;onTab:(value:str
 }
 
 const stories=[
- {id:'caravan',name:'Broken Caravan',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders']},
- {id:'hunt',name:'Nightfall Hunt',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha']},
- {id:'wards',name:'Broken Wards',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards']},
- {id:'reliquary',name:'Lost Reliquary',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals']},
+ {id:'caravan',name:'Broken Caravan',scene:'KINGS_ROAD',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders']},
+ {id:'hunt',name:'Nightfall Hunt',scene:'IRONWOOD',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha']},
+ {id:'wards',name:'Broken Wards',scene:'SILVERBROOK',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards']},
+ {id:'reliquary',name:'Lost Reliquary',scene:'OLD_MINES',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals']},
 ] as const;
-function PartyContents({s,C,accent,tab,onTab,hasParty,members,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;hasParty:boolean;members:number;onOpenParty:()=>void}){
- const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
+function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,members,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;members:number;onOpenParty:()=>void}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
  const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);
  const [ballot,setBallot]=useState<'approach'|'finale'>('approach');
@@ -176,7 +177,7 @@ function PartyContents({s,C,accent,tab,onTab,hasParty,members,onOpenParty}:Share
    {!hasParty?<Action label="Open Party" s={s} onPress={onOpenParty}/>:null}
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="STORY SELECTION · PREVIEW" title="Explore the event families"/>
-   {stories.map(storyOption=><Pressable key={storyOption.id} accessibilityRole="button" accessibilityState={{selected:story.id===storyOption.id}} onPress={()=>{setStoryId(storyOption.id);setChoice(null);setFinalChoice(null);setBallot('approach')}} style={[s.choice,story.id===storyOption.id&&{borderColor:storyOption.accent,backgroundColor:C.panelRaised}]}>
+   {stories.map(storyOption=><Pressable key={storyOption.id} accessibilityRole="button" accessibilityState={{selected:story.id===storyOption.id}} onPress={()=>{onStoryChange(storyOption.id);setChoice(null);setFinalChoice(null);setBallot('approach')}} style={[s.choice,story.id===storyOption.id&&{borderColor:storyOption.accent,backgroundColor:C.panelRaised}]}>
     <View style={[s.motif,{borderColor:storyOption.accent}]}><Text style={[s.motifGlyph,{color:storyOption.accent}]}>✦</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{storyOption.name}</Text><Text style={s.choiceSub}>{storyOption.summary}</Text></View>
    </Pressable>)}
    <Action label="Inspect the story stages" s={s} onPress={()=>onTab('stages')}/>

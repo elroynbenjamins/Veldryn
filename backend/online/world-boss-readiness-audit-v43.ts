@@ -125,9 +125,11 @@ export function reconcileWorldBossEconomyV43(
    throw Error('world_boss_v43_duplicate_supply');
   expected.set('supply:'+ordinal,5);
  }
+ const milestoneKeys=new Set<number>();
  for(const threshold of input.globalMilestones){
-  if(![70,30,0].includes(threshold))
+  if(![70,30,0].includes(threshold)||milestoneKeys.has(threshold))
    throw Error('world_boss_v43_invalid_milestone');
+  milestoneKeys.add(threshold);
   // Global milestones are earned only by accounts with a committed,
   // verified replay. An unparticipating donor cannot get these.
   if(!input.attempts.length)continue;

@@ -19,8 +19,9 @@ async function denied(action,expected){
 const uuid=(n)=>'10000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const characterId=(n)=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const party='30000000-0000-4000-8000-000000000032';
-const started=new Date(Date.now()-60*60*1000).toISOString();
-const ended=new Date(Date.now()+6*86400000).toISOString();
+const eventStartMs=Date.now()-60*60*1000;
+const started=new Date(eventStartMs).toISOString();
+const ended=new Date(eventStartMs+7*86400000).toISOString();
 try{
  await db.exec(`
   create schema auth;
@@ -29,12 +30,14 @@ try{
   create role authenticated;
   create role service_role;
   create table auth.users(id uuid primary key);
+  create table public.parties(id uuid primary key);
   create table public.characters(
    id uuid primary key,account_id uuid not null references auth.users(id),
    class_id text not null
   );
  `);
  await db.exec(sql);
+ await db.query('insert into public.parties(id) values($1::uuid)',[party]);
  for(let i=1;i<=6;i++){
   await db.query('insert into auth.users(id) values($1::uuid)',[uuid(i)]);
   await db.query('insert into public.characters(id,account_id,class_id) values($1::uuid,$2::uuid,$3::text)',

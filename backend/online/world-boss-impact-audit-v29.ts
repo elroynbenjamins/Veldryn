@@ -22,6 +22,17 @@ const EXPECTED_ROLE_COUNTS={tank:3,damage:4,support:2} as const;
 const SECONDARY=[1,.12,.07,.05,.04] as const;
 type Boss=typeof BOSSES[number];
 type Role=typeof ROLES[number];
+/**
+ * Intentional release gate: assert exact shipped class-to-role ownership.
+ * Keeping a snapshot here prevents server workers from trusting a user-provided
+ * role map. Test coverage compares every entry against mobile CLASSES so any
+ * future class/role change fails CI until reviewed and rebalanced.
+ */
+const RELEASED_CLASS_ROLES:Readonly<Record<string,Role>>=Object.freeze({
+ IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
+ WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',
+ KNIFE_DANCER:'damage',DAWNKEEPER:'support',STONECALLER:'support',
+});
 type Bracket=1|2|3|4|5;
 
 export interface WorldBossV29ClassRole {
@@ -117,6 +128,9 @@ export function auditProvenWorldBossImpactV29(input:{
  }
  if(ROLES.some(r=>roleCounts[r]!==EXPECTED_ROLE_COUNTS[r]))
   throw Error('world_boss_v29_invalid_class_role_distribution');
+ if(Object.keys(RELEASED_CLASS_ROLES).length!==WORLD_BOSS_V29_EXPECTED_CLASSES||
+  [...classes].some(([classId,role])=>RELEASED_CLASS_ROLES[classId]!==role))
+  throw Error('world_boss_v29_class_catalog_role_mismatch');
 
  // These replay/account keys must be unique across this ONE event. Client
  // supplied class, bracket, role, CP, and proof status are untrusted inputs.

@@ -4,18 +4,18 @@
 -- Pre-Saturday test: exact inventory debits/receipts; weekend test: freeze.
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.online_game_states(
- account_id uuid NOT NULL REFERENCES auth.users(id),
- character_id uuid NOT NULL REFERENCES public.characters(id),
- revision bigint NOT NULL DEFAULT 1,
+ -- Mirrors staging: one GameState (active + otherCharacters) per account.
+ account_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+ character_id uuid UNIQUE REFERENCES public.characters(id),
+ revision bigint NOT NULL DEFAULT 1 CHECK(revision>=0),
  state jsonb NOT NULL,
- updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
- PRIMARY KEY(account_id,character_id)
+ updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 INSERT INTO public.online_game_states(account_id,character_id,revision,state)
 VALUES(
  '10000000-0000-4000-8000-000000000001',
  '20000000-0000-4000-8000-000000000001',1,
- '{"inventory":{"stacks":[
+ '{"character":{"id":"20000000-0000-4000-8000-000000000001"},"inventory":{"stacks":[
   {"itemId":"GREENWOOD_LOG","quantity":150},
   {"itemId":"COPPER_INGOT","quantity":30},
   {"itemId":"DEWLEAF","quantity":100},

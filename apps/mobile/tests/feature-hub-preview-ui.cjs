@@ -133,3 +133,33 @@ test('guided help remains step-by-step and keyboard dismissible',()=>{
  assert.match(screen,/onRequestClose=\{\(\)=>setGuide\(false\)\}/);
  assert.match(screen,/onAccessibilityEscape=\{\(\)=>setGuide\(false\)\}/);
 });
+
+test('bosses and party adventures show distinct preview cues without implying live status',()=>{
+ for(const cue of ['root barricades','heatproof armor','blizzard','sweeping root warning','blazing ground markers','whiteout cast']){
+  assert.ok(screen.includes(cue),'boss-specific preview cue missing: '+cue);
+ }
+ for(const cue of ['damaged wagons','sturdy snares','wardstones','mirror-shield fittings','raider charge','alpha pack','ward barrier','final seal']){
+  assert.ok(screen.includes(cue),'party-specific preparation or finale cue missing: '+cue);
+ }
+ assert.match(screen,/boss\.supplies\.map/);
+ assert.match(screen,/boss\.mechanics\.map/);
+ assert.match(screen,/story\.supplies\.map/);
+ assert.match(screen,/story\.finaleThreat/);
+ assert.match(screen,/No current donation total is available in this preview/);
+ assert.match(screen,/No combat, event points or claims can be initiated/);
+});
+
+test('market browsing offers safe item inspection, reset and equipment gem trade rules',()=>{
+ assert.match(screen,/Example T3 Forged Blade/);
+ assert.match(screen,/requiredLevel:30/);
+ assert.match(screen,/label:'Name'/);
+ assert.match(screen,/sort==='name'\?a\.name\.localeCompare\(b\.name\)/);
+ assert.match(screen,/Clear search and filters/);
+ assert.match(screen,/setCategory\('All'\);setSelected\(null\)/);
+ assert.match(screen,/selectedItem\.type==='Equipment'/);
+ assert.match(screen,/Gem policy preview: socketed gems can be replaced, not removed or extracted/);
+ assert.match(screen,/Socketed gems are replace-only, not extractable/);
+ assert.match(screen,/Actual item sockets, lock state, ownership and tradability must come from the server/);
+ assert.match(screen,/Purchase · Market unavailable/);
+ assert.match(screen,/Publish listing · Not available/);
+});

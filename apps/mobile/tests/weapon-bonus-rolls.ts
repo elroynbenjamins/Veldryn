@@ -2,7 +2,8 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
-import {draftCraftedGearInstance,normalizeCraftedGearInstances} from '../src/core/crafted-gear-instances';
+import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
+import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
 import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
 import type {CraftedGearInstance,GameState} from '../src/core/types';
@@ -77,5 +78,14 @@ ok(Object.keys(equippedWeaponBonusStats({...withBonus,character:{...withBonus.ch
   'An untagged legacy equipped weapon must not inherit a newer copy roll');
 ok(normalizeCraftedGearInstances([{...copy,weaponBonuses:[{stat:'potency',basisPoints:9999}]}])[0].weaponBonuses===undefined,
   'Invalid persisted bonus values fail closed');
+
+const atCopyCap=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,index)=>({
+  instance:{...unrolled,id:`old-copy-${index}`,sourceReceiptKey:`old-receipt-${index}`},
+  location:'inventory' as const,holderCharacterId:owner,ownershipVerified:true,protectionsVerified:true,
+  locked:false,favorite:false,savedLoadout:false,
+}));
+const careful=planCraftedGearRetention(atCopyCap,normalized,'keep_best_seven');
+ok(careful.action==='manual_review'&&careful.reason==='weapon_bonus_choice',
+  'The auto-sell policy must never discard a rolled weapon based on quality alone');
 
 console.log('PASS: T3+ weapon bonus rolls, two-stat eligibility, persistence, combat and legacy safety');

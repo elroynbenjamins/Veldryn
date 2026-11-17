@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V40 validation
+name: Hidden World Boss V10–V41 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -24,6 +24,8 @@ on:
       - 'backend/online/world-boss-reward-runtime-v28.ts'
       - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
       - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
+      - 'docs/roadmap/world-boss-overview-v41*.sql'
+      - 'backend/online/world-boss-overview-v41.ts'
       - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
       - 'docs/roadmap/world-boss-character-lifecycle-v34.sql'
       - 'docs/roadmap/world-boss-retired-consent-lifecycle-v35-smoke.sql'
@@ -84,7 +86,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v40 World Boss tests
+      - name: Run v7-v41 World Boss tests
         run: |
           set -e
           for suite in \
@@ -111,7 +113,8 @@ jobs:
             world-boss-reward-ledger-v28 \
             world-boss-impact-audit-v29 \
             world-boss-roster-compatibility-v30 \
-            world-boss-account-state-v33
+            world-boss-account-state-v33 \\
+            world-boss-overview-v41
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done
@@ -176,4 +179,6 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-save-donation-v37-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-preparation-calendar-v38-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-overview-v41.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-overview-v41-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-private-access-audit-v32.sql

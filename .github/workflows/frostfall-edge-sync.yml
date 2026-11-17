@@ -1,9 +1,8 @@
 name: Regenerate Frostfall gameplay Edge bundles (feature branch only)
 # Source parity only; never deploys, runs on main, or changes release flags.
 on:
-  push:
-    branches:
-      - feat/frostfall-shop-tier-locked-crafting-bundles-20261116
+  pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/frostfall-edge-sync.yml'
       - 'apps/mobile/src/core/release-flags.ts'
@@ -14,14 +13,14 @@ permissions:
   contents: write
 jobs:
   regenerate:
-    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/feat/frostfall-shop-tier-locked-crafting-bundles-20261116'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/frostfall-shop-tier-locked-crafting-bundles-20261116'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout immutable feature branch commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: true
       - uses: pnpm/action-setup@v4
         with:

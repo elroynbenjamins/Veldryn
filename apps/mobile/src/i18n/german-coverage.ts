@@ -21,7 +21,7 @@ export const germanGameplayCoverage: Readonly<Record<string,string>>={
   "Guild Quest Tokens": "Gildenauftragsmarken",
   "Project materials": "Projektmaterialien",
   "Increases verified weekly Guild Quest Token rewards by 10% per rank. Completed quests and claimed rewards stay unchanged; no rerolls.": "Erhöht die bestätigten wöchentlichen Gildenauftragsmarken um 10 % je Rang. Abgeschlossene Aufträge und abgeholte Belohnungen bleiben unverändert; keine Neuwürfe.",
-  "New Guild's Choice projects need 5% fewer supply materials per rank. At rank 3, completed projects grant 10% more weekly Project Guild Tokens. If you claimed early, collect the bonus separately. Active project goals never change.": "Neue Projekte der Gildenwahl brauchen je Rang 5 % weniger Vorratsmaterial. Auf Rang 3 bringen abgeschlossene Projekte 10 % mehr wöchentliche Projekt-Gildenmarken. Bei vorzeitiger Abholung kannst du den Bonus separat erhalten. Laufende Projektziele bleiben unverändert.",
+  "New Guild’s Choice projects need 5% fewer supply materials per rank. At rank 3, completed projects grant 10% more weekly Project Guild Tokens. If you claimed early, collect the bonus separately. Active project goals never change.": "Neue Projekte der Gildenwahl brauchen je Rang 5 % weniger Vorratsmaterial. Auf Rang 3 bringen abgeschlossene Projekte 10 % mehr wöchentliche Projekt-Gildenmarken. Bei vorzeitiger Abholung kannst du den Bonus separat erhalten. Laufende Projektziele bleiben unverändert.",
   "Projects & Cooperation": "Projekte und Zusammenarbeit",
   "Defensive Doctrine": "Verteidigungsdoktrin",
   "Battle Support": "Kampfunterstützung",

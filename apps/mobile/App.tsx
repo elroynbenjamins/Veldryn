@@ -426,6 +426,7 @@ function VeldrynApp(){
       if(destination==='Settings'&&settingsSection)setSettingsSection(undefined);
       return;
     }
+    if(isFeatureHubPreviewRoute(destination)&&!FEATURE_HUB_QA_ENABLED)return;
     if(destination==='Rankings'&&!RANKINGS_RELEASED)return;
     const current=stateRef.current,lockReason=current?earlyFeatureLockReason(current,destination):'';
     if(lockReason){showAlert('Locked for now',lockReason);return;}

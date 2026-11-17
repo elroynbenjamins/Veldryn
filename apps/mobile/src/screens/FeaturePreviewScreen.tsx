@@ -108,8 +108,8 @@ function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){retur
 
 const bosses=[
  {id:'hollow',name:'Hollowroot',region:'Asterfall',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387'},
- {id:'sunscar',name:'Sunscar Colossus',region:'Sunscar',motif:'THE SUN-FORGED TITAN',color:'#E2AE73'},
- {id:'frost',name:'Frostmarch Warden',region:'Frostmarch',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9'},
+ {id:'sunscar',name:'Sunscar',region:'Sunscar',motif:'THE SUN-FORGED TITAN',color:'#E2AE73'},
+ {id:'frost',name:'Frostmarch',region:'Frostmarch',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9'},
 ] as const;
 function BossContents({s,C,accent,tab,onTab}:Shared&{tab:string;onTab:(value:string)=>void}){
  const [selected,setSelected]=useState<(typeof bosses)[number]['id']>('hollow');
@@ -158,14 +158,16 @@ function BossContents({s,C,accent,tab,onTab}:Shared&{tab:string;onTab:(value:str
 }
 
 const stories=[
- {id:'caravan',name:'Broken Caravan',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.'},
- {id:'hunt',name:'Nightfall Hunt',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.'},
- {id:'wards',name:'Broken Wards',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.'},
- {id:'reliquary',name:'Lost Reliquary',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.'},
+ {id:'caravan',name:'Broken Caravan',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders']},
+ {id:'hunt',name:'Nightfall Hunt',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha']},
+ {id:'wards',name:'Broken Wards',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards']},
+ {id:'reliquary',name:'Lost Reliquary',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals']},
 ] as const;
 function PartyContents({s,C,accent,tab,onTab,hasParty,members,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;hasParty:boolean;members:number;onOpenParty:()=>void}){
  const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
+ const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);
+ const [ballot,setBallot]=useState<'approach'|'finale'>('approach');
  const story=stories.find(e=>e.id===storyId)??stories[0];
  if(tab==='adventure')return <>
   <Card s={s}><SectionHeading s={s} kicker="WEEK-LONG ADVENTURES" title="One journey, four possible stories" sub="Three evolving stages, team decisions and a finale. The event cycle is 21 days."/>
@@ -174,7 +176,7 @@ function PartyContents({s,C,accent,tab,onTab,hasParty,members,onOpenParty}:Share
    {!hasParty?<Action label="Open Party" s={s} onPress={onOpenParty}/>:null}
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="STORY SELECTION · PREVIEW" title="Explore the event families"/>
-   {stories.map(storyOption=><Pressable key={storyOption.id} accessibilityRole="button" accessibilityState={{selected:story.id===storyOption.id}} onPress={()=>{setStoryId(storyOption.id);setChoice(null)}} style={[s.choice,story.id===storyOption.id&&{borderColor:storyOption.accent,backgroundColor:C.panelRaised}]}>
+   {stories.map(storyOption=><Pressable key={storyOption.id} accessibilityRole="button" accessibilityState={{selected:story.id===storyOption.id}} onPress={()=>{setStoryId(storyOption.id);setChoice(null);setFinalChoice(null);setBallot('approach')}} style={[s.choice,story.id===storyOption.id&&{borderColor:storyOption.accent,backgroundColor:C.panelRaised}]}>
     <View style={[s.motif,{borderColor:storyOption.accent}]}><Text style={[s.motifGlyph,{color:storyOption.accent}]}>✦</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{storyOption.name}</Text><Text style={s.choiceSub}>{storyOption.summary}</Text></View>
    </Pressable>)}
    <Action label="Inspect the story stages" s={s} onPress={()=>onTab('stages')}/>
@@ -194,11 +196,12 @@ function PartyContents({s,C,accent,tab,onTab,hasParty,members,onOpenParty}:Share
   {['Timber for defenses','Ore for reinforcement','Herbs for recovery'].map((entry,i)=><View key={entry} style={s.detailRow}><Text style={[s.index,{color:accent}]}>{i+1}</Text><View style={s.flex}><Text style={s.choiceTitle}>{entry}</Text><Text style={s.choiceSub}>Authoritative inventory check required</Text></View><Tag s={s} label="Preview"/></View>)}
   <Action label="Contribute · Not available" s={s} disabled/>
  </Card>;
- if(tab==='vote')return <Card s={s}><SectionHeading s={s} kicker="PARTY ROUTE VOTE" title="The party decides" sub="Try a choice below. This is a local design-state exercise; no votes are sent."/>
-  {[{id:'secure' as const,title:'Secure approach',body:'Prioritize defense and a safer route.'},{id:'swift' as const,title:'Swift approach',body:'Commit to speed and a more aggressive route.'}].map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:choice===option.id}} onPress={()=>setChoice(option.id)} style={[s.choice,choice===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}>
-   <View style={[s.radio,choice===option.id&&{borderColor:accent}]}>{choice===option.id?<View style={[s.radioInner,{backgroundColor:accent}]}/>:null}</View><View style={s.flex}><Text style={s.choiceTitle}>{option.title}</Text><Text style={s.choiceSub}>{option.body}</Text></View>
-  </Pressable>)}
-  <Text style={s.finePrint}>{choice?'Example selection: '+(choice==='secure'?'Secure approach':'Swift approach')+'. Nothing submitted.':'Select a route to preview the voting interaction.'}</Text>
+ if(tab==='vote')return <Card s={s}><SectionHeading s={s} kicker="TWO LOCKED PARTY BALLOTS" title="The party decides" sub="Every story has a Stage 2 route and a later Stage 3 finale plan. Try the local preview; no votes are sent."/>
+  <View style={s.stepRow}><Action label="Stage 2 · Approach" s={s} secondary={ballot!=='approach'} onPress={()=>setBallot('approach')}/><Action label="Stage 3 · Finale" s={s} secondary={ballot!=='finale'} onPress={()=>setBallot('finale')}/></View>
+  {([0,1] as const).map(index=>{const id=index===0?'secure':'swift';const selected=ballot==='approach'?choice:finalChoice;const title=(ballot==='approach'?story.approach:story.finale)[index];return <Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:selected===id}} onPress={()=>ballot==='approach'?setChoice(id):setFinalChoice(id)} style={[s.choice,selected===id&&{borderColor:accent,backgroundColor:C.panelRaised}]}>
+   <View style={[s.radio,selected===id&&{borderColor:accent}]}>{selected===id?<View style={[s.radioInner,{backgroundColor:accent}]}/>:null}</View><View style={s.flex}><Text style={s.choiceTitle}>{title}</Text><Text style={s.choiceSub}>{ballot==='approach'?'Stage 2 · Approach choice':'Stage 3 · Finale preparation'}</Text></View>
+  </Pressable>;})}
+  <Text style={s.finePrint}>Local example: Stage 2 · {choice?story.approach[choice==='secure'?0:1]:'no choice'}; Stage 3 · {finalChoice?story.finale[finalChoice==='secure'?0:1]:'no choice'}. Nothing submitted.</Text>
   <Action label="Cast vote · Server unavailable" s={s} disabled/>
  </Card>;
  return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>

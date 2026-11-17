@@ -138,16 +138,29 @@ for(const family of families){
    &&a.target==='current_target'),'cargo breaches are targeted, unlike AoE charge');
  }
 }
-// Full rosters cannot use four Damage or duplicate Tank even in hidden previews.
-// Small forming parties can run test-only previews if each role stays under cap.
+// V32: flexible Party Events deliberately permit all-Damage, all-Support
+// or mixed teams. Unique player identities and valid team roles remain mandatory.
 const sampleFamily:'broken_caravan'='broken_caravan',d=partyEventFamilyDesignV8(sampleFamily);
 const example=buildHiddenPartyFamilyEncounterV8({family:sampleFamily,
  variation:'bandits_crossing',stage2Choice:d.stage2[0].id,
  stage3Choice:d.stage3[0].id,tier:2,baseline:boss});
 const allDamage=Array.from({length:4},(_,i)=>({...launchPlayer('Wayfinder',25),id:'four-damage-'+i}));
-rejects(()=>previewHiddenPartyFamilyFinaleV8({
- encounter:example,players:allDamage,seed:'invalid',maxDurationMs:10000,
-}),'party_finale_role_composition_invalid');
+const allDamagePreview=previewHiddenPartyFamilyFinaleV8({
+ encounter:example,players:allDamage,seed:'valid-all-damage',maxDurationMs:10000,
+});
+assert(allDamagePreview.combat.players.length===4
+ &&allDamagePreview.objective.value>=0
+ &&allDamagePreview.objective.value<=100,
+ 'four Damage characters form a valid, non-rewarding Party Event preview');
+const allSupport=Array.from({length:4},(_,i)=>({
+ ...launchPlayer('Dawnkeeper',25),id:'four-support-'+i,
+}));
+const allSupportPreview=previewHiddenPartyFamilyFinaleV8({
+ encounter:example,players:allSupport,seed:'valid-all-support',maxDurationMs:10000,
+});
+assert(allSupportPreview.combat.players.length===4
+ &&Number.isFinite(allSupportPreview.objective.value),
+ 'four Supports may participate without a forced role mix');
 rejects(()=>previewHiddenPartyFamilyFinaleV8({
  encounter:example,players:[standard[0]!,standard[0]!],seed:'duplicate',
 }),'party_finale_invalid_roster');
@@ -169,4 +182,4 @@ assert(signatures.size===4&&metrics.size===4,
 assert(warnings>0,'warnings occur as combat events, not narrative placeholders');
 assert(companionEvents>0,'equipped companions change actual combat telemetry');
 console.log('PASS hidden Party Events v8: '+fights+' deterministic family / variation / route encounters'
- +', 4 unique engine signatures, real companions, exact 1T2D1S composition');
+ +', 4 unique engine signatures, real companions, flexible compositions');

@@ -23,6 +23,10 @@ for (const [id, name] of [
   assert.ok(source.includes("['" + id + "',require('../../" + compact + "')]"), id + ': compact registry must retain the thumbnail');
   assert.ok(shop.includes(compact), id + ': Guild Token Shop should retain lightweight thumbnail');
 }
+assert.ok(source.includes("const EVENT_PET_PORTRAIT_IDS=new Set(['EVT_PET_013','EVT_PET_014'])"), 'only portrait-grade event art may fill the detail stage');
+const detailResolver = source.split('export function petDetailArtSource(id:string)')[1] ?? '';
+assert.ok(!detailResolver.includes('dungeonShopPetArtSource(id)'), 'tiny Dungeon Shop pet sprites must not be enlarged as portraits');
+assert.ok(collections.includes('if(large)return <View style={s.petPreviewFrame}>'), 'low-resolution pets must use the inset preview');
 assert.ok(collections.includes('large?petDetailArtSource(row.id):undefined'), 'detail sheet must use portrait art');
 assert.ok(collections.includes('resizeMode="contain"'), 'portrait art must not be cropped');
 console.log('PASS: Guild Shop pet thumbnails and high-resolution collection portraits remain distinct');

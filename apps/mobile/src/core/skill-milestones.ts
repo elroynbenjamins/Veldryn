@@ -10,7 +10,7 @@ import {faithLevel} from './faith';
 import {progressWithinLevel} from './progression';
 import type {GameState,SkillId} from './types';
 import type {WorkingTowardDestination} from './working-toward';
-import {ENCHANTING_EXTRACTION_THRESHOLDS_V1,GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1,GEM_RESEARCH_V1} from './gem-progression-v1';
+import {GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1,GEM_RESEARCH_V1} from './gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,type MobileGemGradeV1} from '../content/gems-v1';
 
 export type SkillMilestoneKind='gathering_node'|'tool'|'recipe'|'method'|'service'|'faith_practice'|'faith_blessing'|'cross_skill';
@@ -105,7 +105,6 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
  }
  if(skillId==='enchanting'){
   rows.push({id:'enchant-research',kind:'service',level:GEM_RESEARCH_V1.level,title:'Effect Gem Research',category:'RESEARCH',detail:`Study a found unrefined Effect Gem family for ${GEM_RESEARCH_V1.dust} Gem Dust + ${GEM_RESEARCH_V1.gold.toLocaleString()} Gold to permanently discover its combine recipe.`,destination:milestoneDestination('enchanting')});
-  for(const tier of ENCHANTING_EXTRACTION_THRESHOLDS_V1)rows.push({id:'enchant-extraction:'+tier.level,kind:'service',level:tier.level,title:tier.label.split(' · ')[0],category:'EXTRACTION',detail:tier.label,destination:milestoneDestination('enchanting')});
   for(const grade of [1,2,3,4,5] as MobileGemGradeV1[]){
    const cost=GEM_REFINE_COSTS_V1[grade];
    rows.push({id:'enchant-refine:g'+grade,kind:'recipe',level:cost.level,title:'Refine Grade '+grade+' gems',category:'REFINEMENT',

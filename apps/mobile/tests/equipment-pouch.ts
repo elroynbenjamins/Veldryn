@@ -100,20 +100,20 @@ const reBanked=moveCraftedGearInstance(incompatibleReceiver,record.id,'bank');
 ok(reBanked.bank.stacks.some(row=>row.instanceId===record.id),'Incompatible-class gear must remain transferable to Bank');
 const mixedCarried:GameState={...verifiedInInventory,inventory:{...verifiedInInventory.inventory,
  stacks:[{itemId:output,quantity:1,instanceId:record.id},{itemId:output,quantity:1}]}};
-const mixedIds=[`copy:${record.id}`,output];
-ok(bulkSelectionSummary(mixedCarried,mixedIds,'inventory').transferableStackCount===2,
+const mixedTransferIds=[`copy:${record.id}`,output];
+ok(bulkSelectionSummary(mixedCarried,mixedTransferIds,'inventory').transferableStackCount===2,
  'Bulk transfer must select an exact Forge copy separately from ordinary copies with the same item ID');
-const mixedBank=bulkTransferSelected(mixedCarried,mixedIds,'inventory');
+const mixedBank=bulkTransferSelected(mixedCarried,mixedTransferIds,'inventory');
 ok(mixedBank.inventory.stacks.length===0&&mixedBank.bank.stacks.some(row=>row.instanceId===record.id)
  &&mixedBank.bank.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
  'Bulk Bank transfer must preserve exact receipts and ordinary stacks without losing either copy');
-const mixedBack=bulkTransferSelected(mixedBank,mixedIds,'bank');
+const mixedBack=bulkTransferSelected(mixedBank,mixedTransferIds,'bank');
 ok(mixedBack.bank.stacks.length===0&&mixedBack.inventory.stacks.some(row=>row.instanceId===record.id)
  &&mixedBack.inventory.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
  'Bulk Bank withdrawal must return exact and ordinary copies without losing identity');
 const oneSlotBank:GameState={...mixedCarried,bank:{...mixedCarried.bank,capacity:1,stacks:[]}};
 let fullBatchRejected=false;
-try{bulkTransferSelected(oneSlotBank,mixedIds,'inventory')}catch{fullBatchRejected=true}
+try{bulkTransferSelected(oneSlotBank,mixedTransferIds,'inventory')}catch{fullBatchRejected=true}
 ok(fullBatchRejected&&oneSlotBank.inventory.stacks.length===2&&oneSlotBank.bank.stacks.length===0,
  'If Bank fills midway through a mixed transfer, the original state must stay unchanged');
 const inactive={...base.character!,id:'SECOND_CHAR',name:'Second Character',equipmentPouch:{capacity:30,stacks:[]}};

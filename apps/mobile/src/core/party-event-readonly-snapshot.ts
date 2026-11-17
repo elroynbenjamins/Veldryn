@@ -58,7 +58,9 @@ export function decodePartyEventReadOnlySnapshot(raw:unknown):PartyEventScreenSn
   ||!Array.isArray(raw.orders)||raw.orders.length>120
   ||!isRecord(raw.votes))return null;
  if(raw.completedActions.some((v:unknown)=>!actions.includes(v as string))
-  ||new Set(raw.completedActions).size!==raw.completedActions.length)return null;
+  ||new Set(raw.completedActions).size!==raw.completedActions.length
+  ||(raw.stage===1&&raw.completedActions.some((v:unknown)=>v!=='scout_route'))
+  ||(raw.stage===2&&raw.completedActions.includes('prepare_finale')))return null;
  const keys=new Set<string>();
  for(const row of raw.orders){
   if(!isRecord(row)||!integer(row.stage,1,3)
@@ -75,8 +77,9 @@ export function decodePartyEventReadOnlySnapshot(raw:unknown):PartyEventScreenSn
  if((v.stage2!==null&&!boundedString(v.stage2,1,80))
   ||(v.stage3!==null&&!boundedString(v.stage3,1,80))
   ||typeof v.myStage2Ballot!=='boolean'||typeof v.myStage3Ballot!=='boolean'
-  ||(raw.stage===1&&(v.stage2!==null||v.stage3!==null))
-  ||(raw.stage===2&&v.stage3!==null))return null;
+  ||(raw.stage===1&&(v.stage2!==null||v.stage3!==null||v.myStage2Ballot||v.myStage3Ballot))
+  ||(raw.stage===2&&(v.stage3!==null||v.myStage3Ballot))
+  ||(raw.stage===3&&v.stage2===null))return null;
  return {
   family:stories[raw.family],variation:raw.variation,
   difficulty:raw.difficulty as PartyEventScreenSnapshot['difficulty'],

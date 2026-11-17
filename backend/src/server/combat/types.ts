@@ -1,7 +1,7 @@
 export type CombatTeam = 'players' | 'enemies';
 export type CombatRole = 'tank' | 'damage' | 'support' | 'enemy';
 export type DamageType = 'physical' | 'fire' | 'ice' | 'shadow' | 'arcane' | 'nature' | 'true';
-export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
+export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'lowest_hp_ally_with_dot' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
 export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interrupt' | 'taunt' | 'buff' | 'debuff' | 'cleanse';
 
 export interface CombatStats {
@@ -19,6 +19,8 @@ export interface CombatStats {
 export interface AbilityEffect {
   executeBelowHpPct?:number;
   executeBonus?:number;
+  /** Optional bounded bonus to direct hits against targets already carrying a debuff. */
+  bonusVsDebuffed?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
   coeff?: number;

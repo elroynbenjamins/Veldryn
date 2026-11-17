@@ -26,6 +26,21 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];
 const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
+
+// Existing Asterfall companions have gameplay identities, not only generic role actives.
+// Keep these modest: rarity and investment remain the source of total power.
+ UNIT_001:{activeName:'Hamstring Pounce',activeDamageMultiplier:1.04,activeExecuteBonus:.05,activeCooldownMultiplier:.97,bond:{activeExecuteBonus:.04,activeCooldownMultiplier:.96}},
+ UNIT_002:{activeName:'Rune Brace',activeShieldMultiplier:1.05,activeReflectPct:.015,bond:{activeShieldMultiplier:1.04,activeReflectPct:.02}},
+ UNIT_003:{activeName:'Silver Current',activeHealMultiplier:1.07,activeCooldownMultiplier:.94,bond:{activeHealMultiplier:1.05}},
+ UNIT_004:{activeName:'Briar Charge',activeDamageMultiplier:1.06,bond:{activeDamageMultiplier:1.04}},
+ UNIT_005:{activeName:'Lantern Snuff',activeCooldownMultiplier:.92,hasteBonus:.015,bond:{activeCooldownMultiplier:.94}},
+ UNIT_006:{activeName:"Page's Vow",activeShieldMultiplier:1.09,bond:{activeShieldMultiplier:1.05}},
+ UNIT_007:{activeName:'Gloamstep',activeDamageMultiplier:1.03,activeExecuteBonus:.10,bond:{activeExecuteBonus:.05}},
+ UNIT_008:{activeName:'Dawn Pinion',activeShieldMultiplier:1.08,activeCooldownMultiplier:.97,bond:{activeShieldMultiplier:1.06}},
+ UNIT_009:{activeName:'Echo Rend',activeDamageMultiplier:1.07,bond:{activeDamageMultiplier:1.035}},
+ UNIT_010:{activeName:'Siege Bolt',activeDamageMultiplier:1.08,activeCooldownMultiplier:1.04,bond:{activeDamageMultiplier:1.05}},
+ UNIT_011:{activeName:'Memory Command',activeDamageMultiplier:1.04,bond:{activeCooldownMultiplier:.96}},
+ UNIT_012:{activeName:'Oathglass Reflection',utilityMultiplier:1.10,activeCooldownMultiplier:.96,bond:{utilityMultiplier:1.04}},
  UNIT_013:{activeName:'Venom Pounce',basicDamageMultiplier:1.02,activeDamageMultiplier:1.04,activeExecuteBonus:.05,hasteBonus:.015,bond:{activeExecuteBonus:.03,hasteBonus:.01}},
  UNIT_014:{activeName:'Mirage Spring',activeHealMultiplier:1.12,activeCooldownMultiplier:.95,hasteBonus:.02,bond:{activeHealMultiplier:1.08,hasteBonus:.02}},
  UNIT_015:{activeName:'Solar Carapace',activeShieldMultiplier:1.15,activeReflectPct:.08,defenseMultiplier:1.02,bond:{activeReflectPct:.04,defenseMultiplier:1.02}},
@@ -54,11 +69,11 @@ const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  EVT_UNIT_010:{activeName:'Caravan Formation',utilityMultiplier:1.05,activeHealMultiplier:1.05,defenseMultiplier:1.02,hasteBonus:.02,bond:{activeCooldownMultiplier:.96}},
 };
 const cooldown=(rarity:CompanionRarity,role:CompanionRole)=>1000*(role==='damage'?(rarity==='prestige'?18:20):rarity==='prestige'?22:24);
-const target=(role:CompanionRole)=>role==='damage'?{assistTarget:'current_target' as const,standaloneTarget:'current_target' as const}:role==='tank'?{assistTarget:'owner' as const,standaloneTarget:'self' as const}:{assistTarget:'owner' as const,standaloneTarget:'lowest_hp_ally' as const};
+const target=(role:CompanionRole,kind:string)=>kind==='damage'?{assistTarget:'current_target' as const,standaloneTarget:'current_target' as const}:kind==='interrupt'?{assistTarget:'interruptible_casting_enemy' as const,standaloneTarget:'interruptible_casting_enemy' as const}:role==='tank'?{assistTarget:'owner' as const,standaloneTarget:'self' as const}:{assistTarget:'owner' as const,standaloneTarget:'lowest_hp_ally' as const};
 const effect=(kind:string):CompanionServerDefinition['active']['effectKind']=>kind==='damage'?'damage':kind==='shield'?'shield':kind==='interrupt'?'interrupt':kind==='heal'?'heal':kind==='mitigation'?'mitigation':'utility';
 export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([id,name,role,rarity,originId,hp,power,defense,attackSpeed,kind,coeff])=>({
  id,name,role,rarity,affinity:companionAffinityById(id),originId,baseStats:{hp,power,defense,attackSpeed},tags:[role,rarity,originId,companionAffinityById(id),`affinity:${companionAffinityById(id)}`],
- active:{id:`${id}_ACTIVE`,name:COMPANION_IDENTITY_PROFILES[id]?.activeName??`${name} Signature`,cooldownMs:cooldown(rarity,role),baseCoeff:coeff,perLevelCoeff:kind==='damage'?.004:.0006,effectKind:effect(kind),targeting:target(role)},
+ active:{id:`${id}_ACTIVE`,name:COMPANION_IDENTITY_PROFILES[id]?.activeName??`${name} Signature`,cooldownMs:cooldown(rarity,role),baseCoeff:coeff,perLevelCoeff:kind==='damage'?.004:.0006,effectKind:effect(kind),targeting:target(role,kind)},
  identity:COMPANION_IDENTITY_PROFILES[id],
  visual:rarity==='prestige'?{rarityFrame:'prestige',summonEffect:'prestige_summon',idleEffect:'prestige_idle',profileFrame:'prestige_profile',masteryMarker:'prestige_mastery',nameplateTreatment:'prestige_nameplate',animationRef:`${id}_prestige_entry`,rarityIcon:'★',rarityLabel:'Prestige',accessibilityLabel:'Prestige combat companion. Star rarity icon and ornate structured frame.',reducedMotionFallback:'prestige_static_entry'}:rarity==='elite'?{rarityFrame:'elite',summonEffect:'elite_summon',masteryMarker:'elite_mastery',rarityIcon:'◆◆◆',rarityLabel:'Elite',accessibilityLabel:'Elite combat companion. Triple-diamond rarity icon and distinct structured frame.',reducedMotionFallback:'elite_static_entry'}:rarity==='rare'?{rarityFrame:'rare',rarityIcon:'◆◆',rarityLabel:'Rare',accessibilityLabel:'Rare combat companion. Double-diamond rarity icon and enhanced frame.'}:{rarityFrame:'standard',rarityIcon:'◆',rarityLabel:'Standard',accessibilityLabel:'Standard combat companion. Single-diamond rarity icon and simple frame.'},
 }));
@@ -68,6 +83,56 @@ export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'any' 
 
 type TechniqueSeed={suffix:string;name:string;description:string;effects:CompanionTechniqueDefinition['effects']};
 const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
+ // Preserve legacy technique IDs so no player loses a selected path.
+ // Each option deliberately changes an effect that its companion actually uses.
+ UNIT_001:[
+  {suffix:'EXECUTIONER',name:'Relentless Hunter',description:'Hamstring Pounce gains +11% execute pressure below 30% HP.',effects:[{kind:'execute',value:.11}]},
+  {suffix:'RELENTLESS',name:'Swift Pursuit',description:'Exchange burst for a quicker Pounce cycle.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.10}]},
+ ],
+ UNIT_002:[
+  {suffix:'FORTIFIED',name:'Deeper Runes',description:'Fortify Rune Brace with +16% shield strength.',effects:[{kind:'shield_strength',value:.16}]},
+  {suffix:'REFLECTIVE',name:'Mirror Runes',description:'Give up a little shield strength to reflect more damage.',effects:[{kind:'shield_strength',value:-.04},{kind:'reflect',value:.12}]},
+ ],
+ UNIT_003:[
+  {suffix:'DEEP_RESTORATION',name:'Deep Current',description:'Silver Current restores +15% more HP, including its restorative pulse.',effects:[{kind:'heal_strength',value:.15}]},
+  {suffix:'RAPID_AID',name:'Running Brook',description:'A shorter cooldown with a smaller increase to initial healing.',effects:[{kind:'heal_strength',value:.04},{kind:'cooldown',value:-.11}]},
+ ],
+ UNIT_004:[
+  {suffix:'EXECUTIONER',name:'Briar Breaker',description:'A stronger Briar Charge against enemies close to defeat.',effects:[{kind:'execute',value:.10},{kind:'damage',value:.02}]},
+  {suffix:'RELENTLESS',name:'Rushing Thorns',description:'Faster charges for repeated short vulnerability windows.',effects:[{kind:'cooldown',value:-.11},{kind:'damage',value:.02}]},
+ ],
+ UNIT_005:[
+  {suffix:'DEEP_RESTORATION',name:'Flicker Sense',description:'Improve Haste and readiness while preserving an interrupt.',effects:[{kind:'haste',value:.045},{kind:'cooldown',value:-.04}]},
+  {suffix:'RAPID_AID',name:'Quick Snuff',description:'A substantially shorter interrupt cooldown with modest Haste.',effects:[{kind:'haste',value:.012},{kind:'cooldown',value:-.16}]},
+ ],
+ UNIT_006:[
+  {suffix:'FORTIFIED',name:'Oathkeeper',description:'Page\'s Vow grants a stronger shield on demanding encounters.',effects:[{kind:'shield_strength',value:.16}]},
+  {suffix:'REFLECTIVE',name:'Reprisal Vow',description:'A thinner ward reflects a portion of absorbed blows.',effects:[{kind:'shield_strength',value:-.04},{kind:'reflect',value:.10}]},
+ ],
+ UNIT_007:[
+  {suffix:'EXECUTIONER',name:'Final Shadow',description:'Gloamstep hits wounded enemies much harder.',effects:[{kind:'execute',value:.13}]},
+  {suffix:'RELENTLESS',name:'Veiled Assault',description:'A more frequent strike with smaller damage increases.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.11}]},
+ ],
+ UNIT_008:[
+  {suffix:'DEEP_RESTORATION',name:'Bright Ward',description:'Strengthen Dawn Pinion shielding by 16% while retaining its cleanse.',effects:[{kind:'shield_strength',value:.16}]},
+  {suffix:'RAPID_AID',name:'Quick Pinion',description:'A shorter emergency shield and cleanse cycle.',effects:[{kind:'shield_strength',value:-.03},{kind:'cooldown',value:-.15}]},
+ ],
+ UNIT_009:[
+  {suffix:'EXECUTIONER',name:'Resonant Rend',description:'Sharper finishing attacks during Echo Rend vulnerability windows.',effects:[{kind:'execute',value:.08},{kind:'damage',value:.02}]},
+  {suffix:'RELENTLESS',name:'Echo Pursuit',description:'Maintain pressure with faster Rends.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.10}]},
+ ],
+ UNIT_010:[
+  {suffix:'EXECUTIONER',name:'High-Caliber Bolt',description:'Concentrate artillery power into one heavier Siege Bolt.',effects:[{kind:'damage',value:.075}]},
+  {suffix:'RELENTLESS',name:'Rapid Calibration',description:'Use quicker bolts with a lower peak damage increase.',effects:[{kind:'damage',value:.025},{kind:'cooldown',value:-.10}]},
+ ],
+ UNIT_011:[
+  {suffix:'DEEP_RESTORATION',name:'Precise Command',description:'Improve Memory Command damage instead of unused restoration.',effects:[{kind:'damage',value:.075}]},
+  {suffix:'RAPID_AID',name:'Swift Orders',description:'Use quicker tactical commands for repeated openings.',effects:[{kind:'damage',value:.02},{kind:'cooldown',value:-.13}]},
+ ],
+ UNIT_012:[
+  {suffix:'DEEP_RESTORATION',name:'Clear Reflection',description:'Strengthen the damage boost from Oathglass Reflection.',effects:[{kind:'damage',value:.11}]},
+  {suffix:'RAPID_AID',name:'Shifting Reflection',description:'Recover Reflection sooner to support frequent attack windows.',effects:[{kind:'cooldown',value:-.14}]},
+ ],
   UNIT_013:[
     {suffix:'VENOM_AMBUSH',name:'Venom Ambush',description:'Lean into poisoned prey with stronger finishing pressure.',effects:[{kind:'damage',value:.04},{kind:'execute',value:.08}]},
     {suffix:'SANDSTEP',name:'Sandstep',description:'Trade burst for faster repositioning and active cycles.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.06}]},

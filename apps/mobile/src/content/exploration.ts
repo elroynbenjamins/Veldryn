@@ -1,4 +1,5 @@
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
+import {regionalArea} from './regional-areas';
 
 /** Each survey remains a repeatable Exploration training activity.
  * Completed IDs persist, so the original SCOUT_SUNSCAR also counts as Saffron Gate. */
@@ -19,7 +20,14 @@ export const EXPLORATION_ROUTES:ExplorationRoute[]=[
  {id:'SCOUT_SUNSCAR_CROWN',zoneId:'SUNSCAR',areaId:'ZONE_010',name:"Chart Tyrant's Crown",seconds:204,xp:390,prerequisiteRouteId:'SCOUT_SUNSCAR_MIRAGE',requiredLevel:41,requiredExplorationLevel:11},
  {id:'SCOUT_FROSTMARCH',zoneId:'FROSTMARCH',name:'Follow the Frostmarch bells',seconds:240,xp:480,unlockMonsterId:'FROSTWOLF',unlockZoneId:'ASHLANDS',requiredLevel:46,requiredExplorationLevel:12},
  {id:'SCOUT_ASHLANDS',zoneId:'ASHLANDS',name:'Read the Ashlands smoke',seconds:288,xp:720,unlockMonsterId:'BLACKGLASS_MIRELING',requiredLevel:71,requiredExplorationLevel:16},
-].map(route=>({...route,requiredLevel:rebaseLevel(route.requiredLevel)}));
+].map(route=>({
+ ...route,
+ // New chapters use already-rebased character levels. Never run them through
+ // the legacy 1–50 conversion, or a survey can unlock before its own area.
+ requiredLevel:route.zoneId==='SUNSCAR'&&route.areaId
+  ?(regionalArea('SUNSCAR',route.areaId)?.minLevel??route.requiredLevel)
+  :route.id==='SCOUT_FROSTMARCH'?51:rebaseLevel(route.requiredLevel),
+}));
 
 export const explorationRoute=(id:string)=>EXPLORATION_ROUTES.find(route=>route.id===id);
 export function unmetScoutingPrerequisite(route:ExplorationRoute,completed:readonly string[]=[]){

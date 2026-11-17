@@ -1,0 +1,36 @@
+name: Companion identity validation
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/companions/**'
+      - 'backend/src/server/coop/dungeon-companion-counters.ts'
+      - 'backend/src/server/coop/__tests__/dungeon-companion-preview.ts'
+      - 'backend/src/server/combat/**'
+      - 'apps/mobile/src/content/combat-companions.ts'
+      - 'apps/mobile/src/components/CombatCompanionPanel.tsx'
+      - 'apps/mobile/src/components/coop/CoopDungeonCompanionSelector.tsx'
+      - '.github/workflows/companion-identity-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  companions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies for shared companion and theme types
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Typecheck companion game rules and combat
+        run: pnpm --dir backend typecheck:companions
+      - name: Execute all companion contracts and battle tests
+        run: pnpm --dir backend test:companions

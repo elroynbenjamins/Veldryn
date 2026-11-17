@@ -21,7 +21,7 @@ export function validateRegionalAreaContent():string[]{
     const monsterIds=new Set<string>(),nodeIds=new Set<string>();
     for(const area of areas){
       const {enemies,gathering}=regionalAreaActivityCounts(regionId,area.id);
-      if(enemies!==2)errors.push(area.id+':enemy_count_'+enemies);
+      if(enemies!==3)errors.push(area.id+':enemy_count_'+enemies);
       if(gathering===0)errors.push(area.id+':gathering_empty');
       for(const monster of MONSTERS.filter(row=>row.areaId===area.id)){
         if(monsterIds.has(monster.id))errors.push(monster.id+':duplicate');monsterIds.add(monster.id);
@@ -31,7 +31,7 @@ export function validateRegionalAreaContent():string[]{
         if(nodeIds.has(node.id))errors.push(node.id+':duplicate');nodeIds.add(node.id);
       }
     }
-    if(monsterIds.size!==8)errors.push(regionId+':enemies_'+monsterIds.size);
+    if(monsterIds.size!==12)errors.push(regionId+':enemies_'+monsterIds.size);
     if(nodeIds.size!==10)errors.push(regionId+':gathering_'+nodeIds.size);
   }
   return errors;

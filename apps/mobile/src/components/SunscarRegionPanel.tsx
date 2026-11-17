@@ -16,7 +16,7 @@ export function SunscarRegionPanel({zones,onZone,onGather}:{zones:readonly Sunsc
   const available=zones.filter(zone=>!zone.locked).length;
   return <View style={s.wrap}>
     <View style={s.header}>
-      <View style={s.flex}><Text style={s.eyebrow}>{t('REGION II · LEVEL 26–45')}</Text><Text style={s.title}>{t('Sunscar Areas')}</Text></View>
+      <View style={s.flex}><Text style={s.eyebrow}>{p('REGION II · LEVEL 26–50')}</Text><Text style={s.title}>{t('Sunscar Areas')}</Text></View>
       <Text style={s.headerCount}>{available}/{zones.length}</Text>
     </View>
     {zones.map(zone=>{

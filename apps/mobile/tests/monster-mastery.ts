@@ -44,7 +44,7 @@ ok(completeGuidance.currentRankTarget>0&&completeGuidance.currentRankProgress===
 // Every ordinary enemy belongs to exactly one family. Bosses cannot grant family progress.
 const ordinary=MONSTERS.filter(m=>!m.boss);
 const assigned=ENEMY_FAMILIES.flatMap(f=>f.monsterIds);
-ok(ordinary.length===41&&assigned.length===ordinary.length&&new Set(assigned).size===assigned.length,'all 41 ordinary monsters have one unique enemy type');
+ok(ordinary.length===49&&assigned.length===ordinary.length&&new Set(assigned).size===assigned.length,'all 49 ordinary monsters have exactly one unique enemy type');
 ok(ordinary.every(m=>!!enemyFamilyForMonster(m.id))&&assigned.every(id=>ordinary.some(m=>m.id===id)),'type taxonomy fully covers catalogue without unknown IDs');
 ok(enemyFamilyForMonster('FALLEN_KNIGHT')===undefined,'story bosses do not award normal family mastery');
 ok(ENEMY_FAMILIES.find(f=>f.id==='ORC')?.monsterIds.length===0,'future Orc family exists but has no fabricated enemies');

@@ -10,6 +10,7 @@ export const ENEMY_FAMILIES=[
     "name": "Undead",
     "description": "Revenants, wraiths, spirits bound to death and the oathfallen.",
     "monsterIds": [
+      "CHOIR_DEFILER",
       "LANTERN_WRETCH",
       "DROWNED_PILGRIM",
       "OATHBOUND_SQUIRE",
@@ -26,6 +27,10 @@ export const ENEMY_FAMILIES=[
     "name": "Humans",
     "description": "Living mortal raiders, scouts, soldiers and spellcasters.",
     "monsterIds": [
+      "DUSTVEIL_RUNNER",
+      "PRISM_HEXER",
+      "CROWN_EXECUTIONER",
+      "RIME_BERSERKER",
       "RUNEBOUND_MINER",
       "DUNE_ORACLE",
       "SAFFRON_MARAUDER",
@@ -62,6 +67,7 @@ export const ENEMY_FAMILIES=[
     "name": "Vermin",
     "description": "Arachnids, insects and smaller venomous swarms.",
     "monsterIds": [
+      "FROSTNEEDLE_BROOD",
       "VENOM_WEAVER",
       "CAVE_SKITTER",
       "GLOAM_MITE",
@@ -85,6 +91,7 @@ export const ENEMY_FAMILIES=[
     "name": "Constructs",
     "description": "Animated guardians, sentinels and artificial protectors.",
     "monsterIds": [
+      "SANDPLATE_JUGGERNAUT",
       "GLASSBOUND_SENTINEL",
       "OBSERVATORY_KEEPER",
       "WYRMSPINE_GUARDIAN"
@@ -95,6 +102,7 @@ export const ENEMY_FAMILIES=[
     "name": "Elementals",
     "description": "Living elemental forces, embers and magical wisps.",
     "monsterIds": [
+      "STORMGLASS_COLOSSUS",
       "FIELD_WISP",
       "CINDER_TITAN"
     ]

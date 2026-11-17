@@ -1,5 +1,19 @@
 /** Release-readiness Russian UI strings added without changing canonical IDs or placeholders. */
 export const RUSSIAN_RELEASE_POLISH_ROWS = {
+  // Newly authored Game Guide topics: preserve exact source strings and Russian coverage.
+  "Equipment & Inventory": "Снаряжение и инвентарь",
+  "Equip stronger gear, compare stats and keep your materials organized.": "Надевайте более мощное снаряжение, сравнивайте характеристики и упорядочивайте материалы.",
+  "Gems & Gear Upgrades": "Самоцветы и улучшение снаряжения",
+  "Use Stat and Effect Gem sockets and combine gems to improve your equipment.": "Вставляйте самоцветы характеристик и эффектов в гнёзда и объединяйте их для улучшения снаряжения.",
+  "Monster & Type Mastery": "Мастерство по монстрам и типам врагов",
+  "Every eligible kill helps develop mastery for that monster and its enemy type.": "Каждое подходящее убийство развивает мастерство против этого монстра и его типа врагов.",
+  "Enter with NPC or Echo allies, or team up live to tackle three dungeon tiers.": "Отправляйтесь в подземелье с союзниками-NPC или Эхо либо соберите команду игроков для прохождения трёх уровней сложности.",
+  "Reach Level 10 to explore Solo/NPC dungeons; Combat Power requirements still apply.": "Достигните 10-го уровня, чтобы открыть одиночные подземелья и забеги с NPC. Требования к боевой мощи сохраняются.",
+  "Dungeon Rewards & Shop": "Награды и магазин подземелий",
+  "Earn Expedition Marks from dungeon runs and trade them for useful rewards.": "Получайте метки экспедиции за прохождение подземелий и обменивайте их на полезные награды.",
+  "Reach Level 10 to start preparing for Asterfall solo dungeons.": "Достигните 10-го уровня, чтобы начать подготовку к одиночным подземельям Астерфолла.",
+  "Recruit up to three characters: one Tank, one Damage and one Support.": "Создайте до трёх персонажей: одного танка, одного бойца и одного персонажа поддержки.",
+  "Unlock your second character slot with account skill levels.": "Откройте второй слот персонажа, повышая уровни навыков аккаунта.",
   "Guild Project reward ready": "Награда проекта гильдии готова",
   "Guild Project rewards ready": "Награды проектов гильдии готовы",
   "Open Guild Projects to claim": "Откройте проекты гильдии, чтобы забрать награду",

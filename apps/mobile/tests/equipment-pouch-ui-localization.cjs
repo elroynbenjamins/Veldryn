@@ -57,8 +57,8 @@ for(const marker of [
  "p('Protected')",
  "p('Protected copies are excluded from the sale.')",
  "p('Selling this copy adds Gold to this character.')",
- "sellReason={saleCandidate?.reason}",
- "salvageReason={salvageCandidate?.reason}",
+ "sellReason={specificGearProtectionReason(record,saleCandidate?.reason)}",
+ "salvageReason={specificGearProtectionReason(record,salvageCandidate?.reason)}",
  "p(record?.enhancement.statGemId||record?.enhancement.effectGemId||record?.enhancement.gemIds.length?'Compare & Equip to Extract':'Compare & Equip')"
  ])assert.ok(screen.includes(marker),'Equipment Pouch UI missing localized path '+marker);
 for(const marker of [

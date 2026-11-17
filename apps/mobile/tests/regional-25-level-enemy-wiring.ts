@@ -147,6 +147,8 @@ check(MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')?.level===25,'Asterfall story boss
 for(const key of ['REGION II · LEVEL 26–50','REGION III · LEVEL 51–75','enemies','gathering','Gathering','Gather']){
  for(const language of ['de','es','nl','it','fr','ru','tr'] as const){
   check(progressionText(language,key)!==key,`Missing ${language} region UI translation: ${key}`);
+  if(key.includes('LEVEL 26–50'))check(progressionText(language,key).includes('26–50'),`${language} Sunscar translated range is stale`);
+  if(key.includes('LEVEL 51–75'))check(progressionText(language,key).includes('51–75'),`${language} Frostmarch translated range is stale`);
  }
 }
 check(fs.readFileSync('src/components/SunscarRegionPanel.tsx','utf8').includes("p('REGION II · LEVEL 26–50')"),'Sunscar chapter header must match the live 26–50 band');

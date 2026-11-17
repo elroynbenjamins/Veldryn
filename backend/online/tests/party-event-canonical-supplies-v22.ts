@@ -1,11 +1,13 @@
 import {
+ PARTY_EVENT_CLAIM_SQL_V25_RELEASED,
  PARTY_EVENT_CLAIM_QUOTE_SQL_V25,
  PARTY_EVENT_PREPARE_INTENT_SQL_V25,
  PARTY_EVENT_CLAIM_INBOX_SQL_V25,
  createPrivatePartyClaimRepositoryV25,
 } from '../party-event-claim-intents-v25';
 import {
-  PARTY_EVENT_CLAIM_SQL_V25_RELEASED,PARTY_EVENT_PREFLIGHT_SQL_V25,
+  PARTY_EVENT_CLAIM_SQL_V25_RELEASED as PARTY_EVENT_PREFLIGHT_V25_RELEASED,
+  PARTY_EVENT_PREFLIGHT_SQL_V25,
   createTrustedPartyClaimPreflightRepositoryV25,
 } from '../party-event-claim-preflight-v25';
 import {partyEventRewardBundle} from '../../src/server/party/weekly-party-rewards-v2';
@@ -241,7 +243,7 @@ async function runRepositoryChecks(){
   catch(e){missingV24=String(e).includes('party_event_v24_missing_private_sql_result');}
   assert(missingV24,'v24 missing service SQL response must fail closed');
 
-  assert(PARTY_EVENT_CLAIM_SQL_V25_RELEASED===false,
+  assert(PARTY_EVENT_PREFLIGHT_V25_RELEASED===false,
     'v25 private claim preflight is hidden and nonpaying');
   let claimPreflightQueries=0;
   const preflight=createTrustedPartyClaimPreflightRepositoryV25({

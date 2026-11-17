@@ -74,6 +74,27 @@ for(let cycle=0;cycle<4;cycle++){
 assert(projections===12,'cover all four stories and stages');
 
 const week=makeWeek(0),stageOne=makeContext(week,1);
+// V32: no fixed 1T/2D/1S quota. All player classes must still resolve from
+// the server-trusted class catalog with matching role and frozen checksum.
+const allDamageWeek={...week,roster:week.roster.map(member=>{
+ const actor={...launchPlayer('Wayfinder',25),
+  id:member.characterId,classId:'WAYFINDER'};
+ const payload={...member.loadout,classId:'WAYFINDER',actor};
+ const {snapshotHash:unused,...raw}=payload;
+ void unused;
+ return {...member,loadout:{...raw,
+  snapshotHash:partyEventStageChecksumV10(raw)}};
+})};
+const fourDamage=projectLockedPartyEventStageV10(
+ {...stageOne,week:allDamageWeek});
+assert(fourDamage.story.combat===null&&
+ fourDamage.story.verifiedRequiredStages===0,
+ 'four Damage participants may enroll without changing stage evidence');
+const spoofedRole={...allDamageWeek,roster:allDamageWeek.roster.map((member,index)=>
+ index===0?{...member,loadout:{...member.loadout,
+  actor:{...member.loadout.actor,role:'tank' as const}}}:member)};
+rejects(()=>projectLockedPartyEventStageV10(
+ {...stageOne,week:spoofedRole}),'invalid_frozen_loadout');
 const member=week.roster[0]!;
 const evidence={sourceEventId:'source-event-0001',partyId:week.partyId,
  accountId:member.accountId,kind:'verified_noncombat' as const,

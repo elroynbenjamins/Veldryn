@@ -112,6 +112,8 @@ export interface CraftedGearInstance{
   statRoll?:number;
   /** T3+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
   weaponBonuses?:import('./weapon-bonus-rolls').WeaponBonusRoll[];
+  /** Roll table version recorded at mint, so later balance revisions cannot invalidate earned copies. */
+  weaponBonusRollVersion?:import('./weapon-bonus-rolls').WeaponBonusRollVersion;
 }
 export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

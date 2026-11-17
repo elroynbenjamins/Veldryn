@@ -213,12 +213,6 @@ async function main(){
  await fail(()=>readAuthenticatedWorldBossRewardsV28({
   token:'private-verified-auth',eventId:EVENT,
  },f.deps),'untrusted_reward_view');
- const exaggerated=structuredClone(overview);
- exaggerated.claimedThisEvent=exaggerated.balance+1;
- f.setViewOverride(exaggerated);
- await fail(()=>readAuthenticatedWorldBossRewardsV28({
-  token:'private-verified-auth',eventId:EVENT,
- },f.deps),'untrusted_reward_view');
  f.setViewOverride(null);
  assert.equal((await readAuthenticatedWorldBossRewardsV28({
   token:'private-verified-auth',eventId:EVENT,

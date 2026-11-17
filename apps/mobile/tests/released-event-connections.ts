@@ -8,8 +8,11 @@ import {activeLiveEvent,setLocalEventEnabled} from '../src/core/live-events';
 import {profileIconCollection,canUseProfileIcon} from '../src/core/profile-icons';
 import {canUseProfileCosmetic} from '../src/core/profile-cosmetics';
 import {executeGameCommand} from '../src/core/game-commands';
-import {FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
+import {DUNGEON_MARKS_SHOP_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 
+// Prelaunch invariants: staged rewards and the Dungeon Marks Shop are not public until rollout approval.
+assert.equal(FROSTFALL_REWARDS_RELEASED,false,'Frostfall collectibles must remain gated ahead of event launch');
+assert.equal(DUNGEON_MARKS_SHOP_RELEASED,false,'Dungeon Marks Shop must remain gated until server and cosmetics are released');
 const now=Date.UTC(2026,9,13);
 const enabled=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','Event Review'),true,now);
 assert.equal(activeLiveEvent(enabled,now)?.definition.id,LIVE_EVENT_CATALOG[0].id,'local review must enable the released event');

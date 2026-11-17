@@ -103,7 +103,7 @@ function Action({label,onPress,s,disabled=false,secondary=false}:{label:string;o
  </Pressable>;
 }
 function Stat({s,label,value,hint}:{s:Shared['s'];label:string;value:string;hint?:string}){return <View style={s.stat}><Text style={s.statLabel}>{label}</Text><Text style={s.statValue}>{value}</Text>{hint?<Text style={s.statHint}>{hint}</Text>:null}</View>;}
-function Progress({s,value,accent}:{s:Shared['s'];value:number;accent:string}){return <View style={s.track}><View style={[s.progress,{width:(Math.max(0,Math.min(100,value)))+'%',backgroundColor:accent}]}/></View>;}
+function Progress({s,value,accent}:{s:Shared['s'];value:number;accent:string}){return <View style={s.track}><View style={[s.progress,{width:((Math.max(0,Math.min(100,value)))+'%') as import('react-native').DimensionValue,backgroundColor:accent}]}/></View>;}
 function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){return <View style={[s.tag,accent&&{borderColor:accent}]}><Text style={[s.tagText,accent&&{color:accent}]}>{label}</Text></View>;}
 
 const bosses=[

@@ -62,8 +62,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
- const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus))??[];
- const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>weaponBonusLine(instance.itemId,instance.rarity,bonus))??[];
+ const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion))??[];
+ const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>weaponBonusLine(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion))??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);

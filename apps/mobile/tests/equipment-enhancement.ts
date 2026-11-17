@@ -1,13 +1,13 @@
 import {createCharacter,effectiveStats,equipItem,newGame,previewActivityReward,salvageItem,sellItem,sellBankItem,startCombat} from '../src/core/game';
 import {equipmentSalvageReward} from '../src/core/equipment-salvage';
-import {attemptEquipmentUpgrade,equippedEffectGemBonuses,enhancedGearStats,enhancedGearStatsAtRank,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote,upgradeGoldCost,UPGRADE_TIER_GOLD_MULTIPLIER,FIRST_ENCHANT_GOLD_SURCHARGE} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,equippedEffectGemBonuses,enhancedGearStats,enhancedGearStatsAtRank,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,replaceGem,unsocketGem,upgradeQuote,upgradeGoldCost,UPGRADE_TIER_GOLD_MULTIPLIER,FIRST_ENCHANT_GOLD_SURCHARGE} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {craftedGearQualityMultiplier} from '../src/core/crafted-gear-instances';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected} from '../src/core/inventory-bulk';
-import {gemPouch,gemStorageQuantity} from '../src/core/gem-pouch';
+import {gemStorageQuantity} from '../src/core/gem-pouch';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 const ringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!;
@@ -39,7 +39,7 @@ ok(upgradeGoldCost(ringId,0,'common')===0&&upgradeGoldCost(ringId,5,'common')===
 ok(allTiers.every((tier,i)=>i===0||UPGRADE_TIER_GOLD_MULTIPLIER[tier]>=UPGRADE_TIER_GOLD_MULTIPLIER[allTiers[i-1]]),'Tier multipliers do not regress');
 
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
-state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...ringRecipe.inputs.map(input=>({itemId:input.itemId,quantity:999})),{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'ASTERFALL_MINERAL_ESSENCE',quantity:999},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}};
+state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...ringRecipe.inputs.map(input=>({itemId:input.itemId,quantity:999})),{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'ASTERFALL_MINERAL_ESSENCE',quantity:999},{itemId:'WARD_SHARD',quantity:2},{itemId:'EMBER_SHARD',quantity:1},{itemId:'SWIFT_SIGIL',quantity:1}]}};
 ok(gemSocketCapacity(ringId)===2,'Every equipment piece should expose one Stat and one Effect socket');
 ok(Math.abs(upgradeQuote(state,ringId).successChance-.95)<.000001,'The first regional improvement should have its authored 95% chance');
 ok(upgradeQuote(state,ringId).materials.length===ringRecipe.inputs.length,'Regional improvement must retain regional material cost slots');
@@ -89,18 +89,22 @@ const fullySocketed=socketGem(statSocketed,ringId,'SWIFT_SIGIL',.5);
 ok(gearEnhancement(fullySocketed,ringId).effectGemId==='SWIFT_SIGIL','Effect Gem should occupy the Effect socket');
 ok(Math.abs(equippedEffectGemBonuses(fullySocketed).combat_speed-.02)<.000001,'Swift Sigil should provide its behavioral combat-speed bonus');
 
-const goldBeforeEffectExtract=fullySocketed.character!.gold;
-const effectExtracted=unsocketGem(fullySocketed,ringId,1);
-ok(!gearEnhancement(effectExtracted,ringId).effectGemId,'Effect extraction should clear only the Effect socket');
-ok(gearEnhancement(effectExtracted,ringId).statGemId==='WARD_SHARD','Effect extraction must preserve the Stat Gem');
-ok(effectExtracted.character!.gold===goldBeforeEffectExtract-500,'Effect extraction should consume the Tier 1 extraction fee');
+// Installed gems cannot be extracted, even through a legacy command.
+let extractionBlocked=false;
+try{unsocketGem(fullySocketed,ringId,1)}catch(error){
+ extractionBlocked=error instanceof Error&&/cannot be extracted/.test(error.message);
+}
+ok(extractionBlocked,'The reducer must reject extraction from a filled socket');
 
-const goldBeforeStatExtract=effectExtracted.character!.gold;
-const extracted=unsocketGem(effectExtracted,ringId,0);
-ok(!gearEnhancement(extracted,ringId).statGemId,'Stat extraction should clear the Stat socket');
-ok(extracted.character!.gold===goldBeforeStatExtract-500,'Stat extraction should consume gold');
-ok(gemStorageQuantity(extracted,'WARD_SHARD')===2&&(gemPouch(extracted).stacks.find(stack=>stack.itemId==='WARD_SHARD')?.quantity??0)===1,'Extraction should safely return the Stat Gem to the account Gem Pouch without losing legacy Inventory copies');
-
+const originalWardCount=gemStorageQuantity(fullySocketed,'WARD_SHARD');
+const originalEmberCount=gemStorageQuantity(fullySocketed,'EMBER_SHARD');
+const originalGold=fullySocketed.character!.gold;
+const replaced=replaceGem(fullySocketed,ringId,'EMBER_SHARD',.5);
+ok(gearEnhancement(replaced,ringId).statGemId==='EMBER_SHARD','A new Stat Gem replaces the installed Stat Gem');
+ok(gearEnhancement(replaced,ringId).effectGemId==='SWIFT_SIGIL','Replacing a Stat Gem must preserve the Effect Gem');
+ok(gemStorageQuantity(replaced,'WARD_SHARD')===originalWardCount,'Replacing does not refund the removed gem');
+ok(gemStorageQuantity(replaced,'EMBER_SHARD')===originalEmberCount-1,'Replacement spends exactly one new gem');
+ok(replaced.character!.gold===originalGold,'Replacing gems no longer charges extraction Gold');
 const legacy=normalizeEnhancementGemSlots({rank:0,failures:0,gemIds:['WARD_SHARD','EMBER_SHARD','SWIFT_SIGIL']});
 ok(legacy.statGemId==='WARD_SHARD'&&legacy.effectGemId==='SWIFT_SIGIL','Legacy arrays should normalize into the first valid Stat and Effect Gem');
 

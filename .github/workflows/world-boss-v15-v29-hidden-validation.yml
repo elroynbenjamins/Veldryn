@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V38 validation
+name: Hidden World Boss V10–V39 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -84,7 +84,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v38 World Boss tests
+      - name: Run v7-v39 World Boss tests
         run: |
           set -e
           for suite in \

@@ -68,7 +68,8 @@ jobs:
             party-event-save-projection-v28 \
             party-event-atomic-packet-v29 \
             party-event-locked-snapshot-v30 \
-            party-event-receipt-recovery-v31
+            party-event-receipt-recovery-v31 \
+            party-event-readonly-status-v33
           do
             node "dist/online/backend/online/tests/${suite}.js"
           done

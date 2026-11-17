@@ -26,7 +26,8 @@
     "tests/world-boss-war-camp-transactions-v27.ts",
     "tests/world-boss-reward-ledger-v28.ts",
     "tests/world-boss-impact-audit-v29.ts",
-    "tests/world-boss-roster-compatibility-v30.ts"
+    "tests/world-boss-roster-compatibility-v30.ts",
+    "tests/world-boss-account-state-v33.ts"
   ],
   "exclude": []
 }

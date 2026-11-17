@@ -59,10 +59,11 @@ export function normalizeWeaponBonuses(itemId:string,rarity:ItemRarity,raw:unkno
     if(!entry||typeof entry!=='object')return undefined;
     const {stat,basisPoints}=entry as Partial<WeaponBonusRoll>;
     if(typeof stat!=='string'||!cfg.pool.includes(stat as WeaponBonusStat)||seen.has(stat as WeaponBonusStat)
-      ||!Number.isInteger(basisPoints)||basisPoints!<cfg.range[0]||basisPoints!>cfg.range[1]
-      ||(basisPoints!-cfg.range[0])%STEP_BPS!==0)return undefined;
+      ||typeof basisPoints!=='number'||!Number.isInteger(basisPoints)
+      ||basisPoints<cfg.range[0]||basisPoints>cfg.range[1]
+      ||(basisPoints-cfg.range[0])%STEP_BPS!==0)return undefined;
     seen.add(stat as WeaponBonusStat);
-    out.push({stat:stat as WeaponBonusStat,basisPoints:basisPoints!});
+    out.push({stat:stat as WeaponBonusStat,basisPoints});
   }
   return out;
 }

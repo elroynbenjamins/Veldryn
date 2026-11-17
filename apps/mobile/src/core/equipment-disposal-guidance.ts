@@ -15,7 +15,8 @@ export function equipmentCopyDisposalDecision(
 ):EquipmentDisposalDecision{
  const record=craftedGearInstances(state).find(row=>row.id===instanceId);
  if(!record)return {allowed:false,reason:'Equipment copy could not be found. Refresh your inventory.'};
- const item=itemDef(record.itemId);
+ let item:ReturnType<typeof itemDef>;
+ try{item=itemDef(record.itemId);}catch{return {allowed:false,reason:'Equipment definition needs review before disposal'};}
  if(state.settings.lockedItemIds?.includes(item.id))
    return {allowed:false,reason:'This equipment type is locked'};
  if(state.settings.favoriteItemIds?.includes(item.id))

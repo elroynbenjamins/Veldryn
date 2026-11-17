@@ -3,6 +3,15 @@
 -- The event time below is an artificial five-day-preparation fixture window;
 -- this does not replace V22's real Monday/UTC scheduler validation.
 BEGIN;
+-- Earlier War Camp smoke uses ROLLBACK, so reconstruct the exact staging
+-- account-scoped shape inside this independent transaction.
+CREATE TABLE IF NOT EXISTS public.online_game_states(
+ account_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+ character_id uuid UNIQUE REFERENCES public.characters(id),
+ revision bigint NOT NULL DEFAULT 1 CHECK(revision>=0),
+ state jsonb NOT NULL,
+ updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
 INSERT INTO auth.users(id) VALUES('10000000-0000-4000-8000-000000000037');
 INSERT INTO public.characters(id,account_id) VALUES
  ('20000000-0000-4000-8000-000000000037',

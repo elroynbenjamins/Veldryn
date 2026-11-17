@@ -32,6 +32,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
  const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
+ const [transferError,setTransferError]=useState('');
  const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]);
  const [pendingSale,setPendingSale]=useState<PendingPouchDisposal|null>(null),[pendingSalvage,setPendingSalvage]=useState<PendingPouchDisposal|null>(null),saleInFlight=useRef(false);
  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
@@ -136,18 +137,24 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const choose=(stack:ItemStack|undefined,index:number)=>{
   if(!stack)return;
   if(selectMode){const candidate=byIndex.get(start+index);if(candidate)toggleSelected(candidate);return;}
-  setSelectedIndex(start+index);
+  setTransferError('');setSelectedIndex(start+index);
  };
- const move=(to:'inventory'|'bank')=>{if(!selected)return;
-  return send(selected.instanceId?{type:'gear_move',args:{instanceId:selected.instanceId,to}}
-    :{type:'equipment_pouch_move',args:{itemId:selected.itemId,quantity:1,from:'equipment_pouch',to}});
+ const move=async(to:'inventory'|'bank')=>{
+  if(!selected||!onAction||busy)return;
+  setTransferError('');
+  try{
+    const result=await onAction(selected.instanceId?{type:'gear_move',args:{instanceId:selected.instanceId,to}}
+      :{type:'equipment_pouch_move',args:{itemId:selected.itemId,quantity:1,from:'equipment_pouch',to}});
+    if(result===false)throw new Error('Equipment transfer failed. Check Bank space and try again.');
+    setSelectedIndex(null);
+  }catch(cause){setTransferError(cause instanceof Error?cause.message:'Equipment transfer failed.');}
  };
  return <View style={s.root}>
   <View style={s.heading}>
    <View style={s.flex}><Text accessibilityRole="header" style={s.title}>{p('Equipment Pouch')}</Text>
     <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
-  <Text style={s.hint}>{p('New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.')}</Text>
+  <Text style={s.hint}>{p('Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
   <View style={s.sellToolbar}>
    {selectMode?<>
     <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
@@ -218,6 +225,13 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    </View>
   </GameModalSurface>
   <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)}
+   onMoveToBank={previewStack&&onAction?async()=>{
+     if(!previewStack||!onAction)throw new Error('Equipment transfer is unavailable.');
+     const result=await onAction(previewStack.instanceId?{type:'gear_move',args:{instanceId:previewStack.instanceId,to:'bank'}}
+       :{type:'equipment_pouch_move',args:{itemId:previewStack.itemId,quantity:1,from:'equipment_pouch',to:'bank'}});
+     if(result===false)throw new Error('Equipment transfer failed. Check Bank space and try again.');
+     setPreviewStack(null);
+   }:undefined}
    canSell={!!previewSale?.eligible&&!busy} canSalvage={!!previewSalvage?.eligible&&!busy}
    sellBlockReason={specificGearProtectionReason(previewRecord,previewSale?.reason)} salvageBlockReason={specificGearProtectionReason(previewRecord,previewSalvage?.reason)}
    onSell={previewSale?()=>{setPreviewStack(null);startSale([previewSale.id])}:undefined}
@@ -238,10 +252,11 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     </View>
     <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
       sellReason={specificGearProtectionReason(record,saleCandidate?.reason)} salvageReason={specificGearProtectionReason(record,salvageCandidate?.reason)}/>
+    {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <View style={s.actions}>
      <GameButton compact title={p(record?.enhancement.statGemId||record?.enhancement.effectGemId||record?.enhancement.gemIds.length?'Compare & Equip to Extract':'Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
-     <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>move('inventory')}/>
-     <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>move('bank')}/>
+     <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>void move('inventory')}/>
+     <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>void move('bank')}/>
      {record?<GameButton compact tone="secondary" title={p(record.locked?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={p(state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
      <GameButton compact tone="secondary" title={p(state.settings.favoriteItemIds?.includes(item.id)?'Remove favorite':'Favorite')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(item.id)}})}/>
      <GameButton compact tone="danger" title={saleCandidate?.eligible?p('Sell · {gold}g',{gold:saleCandidate.gold.toLocaleString(language)}):record?.locked||state.settings.lockedItemIds?.includes(item.id)?p('Unlock to sell'):p('Protected')} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>

@@ -45,14 +45,14 @@ export const equipmentPouchUiRows={
     "Персонаж",
     "Karakter"
   ],
-  "New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.": [
-    "Neue Ausrüstung landet zuerst hier. Vergleiche, lege sie an, verschiebe oder verkaufe Stücke direkt. Die Bank bleibt gemeinsam.",
-    "El equipo nuevo llega aquí primero. Compara, equipa, traslada o vende piezas directamente. El Banco sigue siendo compartido.",
-    "Nieuwe uitrusting komt hier eerst terecht. Vergelijk, rust uit, verplaats of verkoop exemplaren direct. De bank blijft gedeeld.",
-    "I nuovi equipaggiamenti arrivano prima qui. Confronta, equipaggia, trasferisci o vendi direttamente le copie. La Banca resta condivisa.",
-    "Le nouvel équipement arrive d'abord ici. Comparez, équipez, transférez ou vendez les exemplaires directement. La banque reste partagée.",
-    "Новое снаряжение сначала поступает сюда. Сравнивайте, надевайте, перемещайте или продавайте экземпляры. Банк остаётся общим.",
-    "Yeni ekipman önce buraya gelir. Kopyaları karşılaştır, kuşan, taşı veya doğrudan sat. Banka ortak kalır."
+  "Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.": [
+    "Hergestellte Ausrüstung landet zuerst hier. Um sie einem anderen Charakter zu geben, wähle ein Stück und tippe auf „Zur Bank“.",
+    "El equipo fabricado llega aquí primero. Para compartirlo con otro personaje, selecciona una pieza y toca «Al Banco».",
+    "Gemaakte uitrusting komt eerst hier terecht. Kies een stuk en tik op ‘Naar bank’ om het met een ander personage te delen.",
+    "L’equipaggiamento creato arriva prima qui. Per condividerlo con un altro personaggio, seleziona un pezzo e tocca «Alla Banca».",
+    "L’équipement fabriqué arrive d’abord ici. Pour le partager avec un autre personnage, choisissez une pièce puis « Vers la banque ».",
+    "Созданное снаряжение сначала попадает сюда. Чтобы передать его другому персонажу, выберите предмет и нажмите «В банк».",
+    "Üretilen ekipman önce buraya gelir. Başka bir karakterle paylaşmak için bir parça seçip Bankaya gönder’e dokun."
   ],
   "Select safe": [
     "Sichere auswählen",

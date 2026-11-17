@@ -406,6 +406,16 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   canSalvage={previewDisposal.salvage&&inventoryBusyLabel===null}
   sellBlockReason={previewDisposal.sellReason} salvageBlockReason={previewDisposal.salvageReason}
   canStoreInGear={freeGearSlots>0}
+  onMoveToBank={previewId&&onCommand?async()=>{
+    const id=previewId,instanceId=previewInstanceId;
+    const success=await beginInventorySubmission('Transferring equipment to shared Bank…',async()=>{
+      const result=await onCommand(instanceId?{type:'gear_move',args:{instanceId,to:'bank'}}
+        :{type:'equipment_pouch_move',args:{itemId:id,quantity:1,from:'inventory',to:'bank'}});
+      if(result===false)throw new Error('Equipment transfer was not confirmed.');
+    });
+    if(!success)throw new Error('Unable to transfer this equipment to Bank.');
+    setPreviewId(null);setPreviewInstanceId(null);
+  }:undefined}
   onStoreInGear={previewId&&onCommand?async()=>{
     const id=previewId,instanceId=previewInstanceId;
     const success=await beginInventorySubmission('Moving equipment to Gear…',async()=>{

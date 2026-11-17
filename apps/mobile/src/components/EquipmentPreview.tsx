@@ -24,6 +24,7 @@ type Props={
  state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'equipment_pouch';
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
  onStoreInGear?:()=>unknown|Promise<unknown>;canStoreInGear?:boolean;
+ onMoveToBank?:()=>unknown|Promise<unknown>;
  onSell?:()=>void;onSalvage?:()=>void;canSell?:boolean;canSalvage?:boolean;
  sellBlockReason?:string;salvageBlockReason?:string;
  favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>;
@@ -35,7 +36,7 @@ function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.b
 
 /** Inventory's single, authoritative compare-before-equipping surface.
  * The footer deliberately stays outside the scroll area on small devices. */
-export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false}:Props){
+export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false,onMoveToBank}:Props){
  const {gt,gl}=useGameplayText();
  const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
@@ -44,11 +45,23 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const detailsScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
+ async function moveToBank(){
+  if(!onMoveToBank||busy)return;
+  setBusy(true);setError('');
+  try{await onMoveToBank()}catch(cause){
+   setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
+  }finally{setBusy(false)}
+ }
  let projected:GameState;
  try{projected=previewEquipment(state,itemId,instanceId,source)}catch(cause){
   return <GameModalSurface visible reduceMotion={state.settings.reduceMotion} onClose={onClose}>
    <GameModalHeader title={gl('Compare equipment')} onClose={onClose}/>
-   <View style={s.errorBox}><Text style={s.note}>{gl(cause instanceof Error?cause.message:'Equipment unavailable')}</Text><GameButton title={gl('Back to Inventory')} onPress={onClose}/></View>
+   <View style={s.errorBox}>
+    <Text style={s.note}>{gl(cause instanceof Error?cause.message:'Equipment unavailable')}</Text>
+    {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
+    {onMoveToBank?<GameButton title={gearText('To Bank')} tone="secondary" loading={busy} disabled={busy} onPress={()=>void moveToBank()}/>:null}
+    <GameButton title={gl('Back to Inventory')} disabled={busy} onPress={onClose}/>
+   </View>
   </GameModalSurface>;
  }
  const item=itemDef(itemId),slot=item.slot!;
@@ -172,6 +185,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
         loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/></View>:null}
     </View>
     {onStoreInGear?<GameButton title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy} onPress={()=>void storeInGear()}/>:null}
+    {onMoveToBank?<GameButton title={gearText('To Bank')} tone="secondary" disabled={busy} loading={busy} onPress={()=>void moveToBank()}/>:null}
   </View>
  </GameModalSurface>;
 }

@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {PGlite} from '@electric-sql/pglite';
 const filepath=fileURLToPath(new URL(
- '../supabase/migrations/20261115190000_party_event_locked_claim_snapshot_v30.sql',
+ '../../docs/roadmap/party-events/hidden-migrations/20261115190000_party_event_locked_claim_snapshot_v30.sql',
  import.meta.url));
 const migration=readFileSync(filepath,'utf8');
 // Regression for EVERY draft writer touching an event-claim account.
@@ -31,7 +31,7 @@ const v25Files=[
 ];
 for(const [name,file,steps] of v25Files){
  const source=readFileSync(fileURLToPath(new URL(
-  '../supabase/migrations/'+file,import.meta.url)),'utf8');
+  '../../docs/roadmap/party-events/hidden-migrations/'+file,import.meta.url)),'utf8');
  const start=source.indexOf('create or replace function private.'+name+'(');
  const end=source.indexOf('end;$;',start);
  if(start<0||end<start)throw Error('v30_missing_v25_writer_'+name);

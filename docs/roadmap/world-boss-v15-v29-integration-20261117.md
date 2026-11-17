@@ -1,4 +1,4 @@
-# World Boss V15–V34 hidden integration (17 November 2026)
+# World Boss V15–V35 hidden integration (17 November 2026)
 
 **Status:** DRAFT / hidden engineering consolidation only. Not approved for deployment or public activation.
 
@@ -52,4 +52,11 @@
 - **Unresolved account-erasure policy:** other draft World Boss tables still retain restrictive `auth.users` links. Decide the privacy retention and account deletion procedure before stage/live migration; do not remove account FKs without a reviewed ledger/reward retention strategy.
 - No SQL was applied to Veldryn staging or production, and the flags and service routes remain off.
 
-**Next stage:** complete V34 exact-head CI, resolve the independent Expo dependency failure, review account-erasure and retention semantics, then verify private schema/ownership/reward transactions on staging with approved migrations. Calibrate nine classes across real power brackets and obtain security/economy release approval before promotion from draft.
+## V35 retired-Echo data lifecycle
+- V34 exact-head GitHub CI passed both dedicated World Boss jobs, including V34 character-deletion PostgreSQL smoke, V33 account-save compatibility and the V32 private permission audit. The unrelated Mobile Core Expo check remains red (#1345).
+- Retired borrowing-Echo V20/V21 tables previously contained restrictive character FKs despite the approved V22 account-only design. In the draft schema they now `ON DELETE CASCADE` when the opted-in character **or its Auth account** is deleted; the obsolete consent / command records are not game rewards and do not warrant immutable retention.
+- The disposable V17 fixture's `public.characters.account_id` now uses `ON DELETE CASCADE`, matching the actual staging DB constraint. Added V35 PostgreSQL regression for character deletion, retired consent removal and direct account deletion **without manual character cleanup**, using synthetic fixture IDs only.
+- **Unresolved active-account erasure issue:** V17/V27/V28 rewards and attempts still contain account-related restrictive FKs, so do not claim general Auth-account deletion is fixed. [Issue #1348](https://github.com/elroynbenjamins/Veldryn/issues/1348) requires policy, an idempotent erasure transaction, external replay retention, worker/claim fencing and staging tests before any migration.
+- Latest V35 exact-head CI is pending. None of these changes is staged, merged into `main`, or activated.
+
+**Next stage:** verify exact-head V35 CI, resolve the independent Expo dependency issue (#1345), complete account-erasure and replay-retention design (#1348), then validate private schema/ownership/rewards in staging after reviewed migrations. Calibrate nine classes across real power brackets and obtain security/economy release approval before promotion from draft.

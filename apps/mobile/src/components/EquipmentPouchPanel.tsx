@@ -154,7 +154,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    <View style={s.flex}><Text accessibilityRole="header" style={s.title}>{p('Equipment Pouch')}</Text>
     <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
-  <Text style={s.hint}>{p('New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.')}</Text>
+  <Text style={s.hint}>{p('Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
   <View style={s.sellToolbar}>
    {selectMode?<>
     <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
@@ -226,6 +226,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   </GameModalSurface>
   <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)}
    onMoveToBank={previewStack&&onAction?async()=>{
+     if(!previewStack||!onAction)throw new Error('Equipment transfer is unavailable.');
      const result=await onAction(previewStack.instanceId?{type:'gear_move',args:{instanceId:previewStack.instanceId,to:'bank'}}
        :{type:'equipment_pouch_move',args:{itemId:previewStack.itemId,quantity:1,from:'equipment_pouch',to:'bank'}});
      if(result===false)throw new Error('Equipment transfer failed. Check Bank space and try again.');

@@ -25,6 +25,8 @@ export const socialEarlyRows={
   "Try another search or filter.": ["Попробуйте другой поиск или фильтр.","Başka bir arama veya filtre deneyin."],
   "Players appear here when they are active in Veldryn.": ["Здесь появятся активные игроки Veldryn.","Veldryn'de aktif oyuncular burada görünür."],
   "Showing the first {count} players.": ["Показаны первые {count} игроков.","İlk {count} oyuncu gösteriliyor."],
+  // Hidden Rankings guided help.
+  "Rankings guide": ["Справка по рейтингу","Sıralama rehberi"],
   // Read-only Rankings pagination.
   "No further ranked entries": ["Больше записей в рейтинге нет","Başka sıralama kaydı yok"],
   "Return to the previous page to view ranked entries.": ["Вернитесь на предыдущую страницу, чтобы увидеть рейтинг.","Sıralamayı görmek için önceki sayfaya dön."],

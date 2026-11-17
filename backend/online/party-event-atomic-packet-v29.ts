@@ -12,7 +12,7 @@ import type {PartyEventRewardBundle}
   from '../src/server/party/weekly-party-rewards-v2';
 import type {VerifiedPartyEventEvidenceV27}
   from '../src/server/party/weekly-party-settlement-evidence-v27';
-import {projectPartyEventSaveV28}
+import {projectPartyEventSaveV28,type PartyEventDraftGameStateV28}
   from './party-event-save-projection-v28';
 
 export const PARTY_EVENT_ATOMIC_PACKET_V29_RELEASED=false;
@@ -74,7 +74,7 @@ export interface FutureInboxDraftV29 {
  readonly rewardHash:string;
 }
 export interface PrivatePartyEventAtomicPacketV29 {
- readonly proposedState:GameState;
+ readonly proposedState:PartyEventDraftGameStateV28;
  readonly futureReceipt:FuturePaidReceiptDraftV29;
  readonly futureInbox:FutureInboxDraftV29;
  readonly previewOnly:true;

@@ -128,6 +128,18 @@ BEGIN
   refused:=SQLERRM LIKE '%WB36_UNREVIEWED_ACCOUNT_DATA%';
  END;
  IF NOT refused THEN RAISE EXCEPTION 'WB36_SCHEMA_DRIFT_WAS_IGNORED'; END IF;
+ -- A newly added identity column in an already known table is also
+ -- schema drift: checking only the table names would miss it.
+ DROP TABLE private.world_boss_v36_unreviewed_account_data;
+ ALTER TABLE private.world_boss_wallet_v28 ADD COLUMN owner_account_id uuid;
+ refused:=false;
+ BEGIN
+  PERFORM private.world_boss_v36_erasure_preflight(
+   '10000000-0000-4000-8000-000000000036');
+ EXCEPTION WHEN raise_exception THEN
+  refused:=SQLERRM LIKE '%WB36_UNREVIEWED_ACCOUNT_DATA%';
+ END;
+ IF NOT refused THEN RAISE EXCEPTION 'WB36_COLUMN_DRIFT_WAS_IGNORED'; END IF;
  RAISE NOTICE 'WORLD_BOSS_V36_ACCOUNT_ERASURE_PREFLIGHT=PASS';
 END $check$;
 ROLLBACK;

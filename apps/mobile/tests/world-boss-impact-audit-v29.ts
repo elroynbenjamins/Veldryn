@@ -63,6 +63,17 @@ fakeSymmetric.find(x=>x.classId==='KNIFE_DANCER')!.role='support';
 fail(()=>auditProvenWorldBossImpactV29({
  eventId:EVENT,expectedClasses:fakeSymmetric,attempts:base,
 }),'invalid_class_role_distribution');
+const swappedRoles=catalog.map(x=>({...x}));
+swappedRoles.find(x=>x.classId==='BASTION')!.role='damage';
+swappedRoles.find(x=>x.classId==='WAYFINDER')!.role='tank';
+fail(()=>auditProvenWorldBossImpactV29({
+ eventId:EVENT,expectedClasses:swappedRoles,attempts:base,
+}),'class_catalog_role_mismatch');
+const unknownCatalog=catalog.map(x=>({...x}));
+unknownCatalog.find(x=>x.classId==='IRONWARDEN')!.classId='FAKE_TANK';
+fail(()=>auditProvenWorldBossImpactV29({
+ eventId:EVENT,expectedClasses:unknownCatalog,attempts:base,
+}),'class_catalog_role_mismatch');
 const clean=audit(base);
 assert.equal(clean.status,'review_only_impact_locked');
 assert.equal(clean.referenceCells.length,135);

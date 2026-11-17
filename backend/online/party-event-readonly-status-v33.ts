@@ -107,7 +107,7 @@ export interface TrustedPrivatePartyStatusSqlV33 {
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const record=(x:unknown):x is Record<string,unknown>=>x!==null
  &&typeof x==='object'&&!Array.isArray(x);
-const positiveInt=(x:unknown)=>Number.isSafeInteger(x)&&(x as number)>=0;
+const positiveInt=(x:unknown)=>typeof x==='number'&&Number.isSafeInteger(x)&&x>=0;
 const time=(x:unknown)=>typeof x==='string'&&Number.isFinite(Date.parse(x));
 const oneOf=<T extends string>(x:unknown,values:readonly T[]):x is T=>
  typeof x==='string'&&values.includes(x as T);
@@ -120,8 +120,8 @@ export function parsePartyEventReadOnlyStatusV33(raw:unknown):PartyEventReadOnly
    ||!oneOf(raw.family,['broken_caravan','nightfall_hunt','broken_wards','lost_reliquary'])
    ||!oneOf(raw.difficulty,['standard','veteran','heroic'])
    ||!oneOf(raw.status,['active','closed','settled'])
-   ||!oneOf(raw.stage,[1,2,3] as unknown as readonly string[])
-   ||!Number.isInteger(raw.rosterSize)||(raw.rosterSize as number)<2||(raw.rosterSize as number)>4
+   ||typeof raw.stage!=='number'||![1,2,3].includes(raw.stage)
+   ||typeof raw.rosterSize!=='number'||!Number.isInteger(raw.rosterSize)||raw.rosterSize<2||raw.rosterSize>4
    ||typeof raw.variation!=='string'||raw.variation.length<3||raw.variation.length>80
    ||raw.canClaim!==false||raw.canContribute!==false||raw.canFight!==false
    ||!Array.isArray(raw.completedActions)||raw.completedActions.length>4

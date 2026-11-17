@@ -11,6 +11,7 @@ import {combatSustainProjection,startCombat} from '../src/core/game';
 import {regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 import type {GameState} from '../src/core/types';
 import {validateRegionalAreaContent} from '../src/core/region-area-activities';
+import {progressionText} from '../src/i18n/progression';
 
 const fs=require('fs') as {
  readFileSync(path:string,encoding:string):string;
@@ -142,4 +143,15 @@ for(const [regionId,entryLevel,oldId,food,tier] of [
 }
 check(REGIONAL_AREAS.length===8,'Do not introduce additional subzones');
 check(MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')?.level===25,'Asterfall story boss unchanged');
+// Every released regional label must render in each supported non-English locale.
+for(const key of ['REGION II · LEVEL 26–50','REGION III · LEVEL 51–75','enemies','gathering','Gathering','Gather']){
+ for(const language of ['de','es','nl','it','fr','ru','tr'] as const){
+  check(progressionText(language,key)!==key,`Missing ${language} region UI translation: ${key}`);
+  if(key.includes('LEVEL 26–50'))check(progressionText(language,key).includes('26–50'),`${language} Sunscar translated range is stale`);
+  if(key.includes('LEVEL 51–75'))check(progressionText(language,key).includes('51–75'),`${language} Frostmarch translated range is stale`);
+ }
+}
+check(fs.readFileSync('src/components/SunscarRegionPanel.tsx','utf8').includes("p('REGION II · LEVEL 26–50')"),'Sunscar chapter header must match the live 26–50 band');
+check(fs.readFileSync('src/components/FrostmarchRegionPanel.tsx','utf8').includes('p("REGION III · LEVEL 51–75")'),'Frostmarch chapter header must match the live 51–75 band');
+
 console.log('PASS regional enemy wiring: 8 new portraits, 24 normal hunts, overlapping 26–75 chapter bands');

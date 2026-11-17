@@ -4,6 +4,11 @@
  * Unknown text still falls back to English, never an invented translation.
  */
 export const TURKISH_COVERAGE = {
+  // Region display headings follow the released level bands, not historic preview ranges.
+  "REGION II · LEVEL 26–50": "II. BÖLGE · SEVİYE 26–50",
+  "REGION III · LEVEL 51–75": "III. BÖLGE · SEVİYE 51–75",
+  "enemies": "düşman",
+  "gathering": "toplama noktası",
   "Codex": "Rehber",
   "+{defense} DEF and +{hp} HP while the full set is equipped.": "Tam set kuşanıldığında +{defense} SAV ve +{hp} CAN.",
   "+{attack} ATK and +{hp} HP while the full set is equipped.": "Tam set kuşanıldığında +{attack} SAL ve +{hp} CAN.",

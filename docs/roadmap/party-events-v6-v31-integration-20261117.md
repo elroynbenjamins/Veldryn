@@ -13,12 +13,12 @@
 - Four distinct events: Broken Caravan, Nightfall Hunt, Broken Wards and Lost Reliquary, with three authored story stages, family-specific preparation, routes and combat.
 - 21-day cycle; 7 days of preparation/gameplay and Day 8 settlement, then downtime; stage ballots and canonical server-verifiable actions.
 - Account-level, replay/idempotency-protected contribution and claim ledgers. **No predicted, duplicated, failed or client-asserted reward may enter the economy.**
-- Current Veldryn party policies must not be overwritten. The legacy prototype's strict 1 Tank / 2 Damage / 1 Support composition needs explicit reconciliation with the subsequently approved **flexible** Party Event composition before release.
+- **V32 conflict fix:** the older strict 1 Tank / 2 Damage / 1 Support role cap is now removed from V8 finale previews, V9 story stages, V10 verified stage projection and the **unpromoted** V11 SQL roster/receipt guards. Any legitimate 2–4 member role mix is allowed (including four Damage or four Support); unique character/account identities, canonical class/role matching, saved loadout checksums and event state validation remain required. New tests exercise flexible rosters and reject role spoofing and duplicate IDs.
 - Player saves, account wallets, dungeon systems and translations on current `main` are authoritative. The old UI, mobile packages, gameplay endpoints and generated files were deliberately excluded.
 
 ## Remaining gates before merge/activation
-1. Confirm exact-head hidden PR tests plus unchanged core, mobile, Edge and economy checks; investigate failures rather than skipping them.
-2. Audit Party Event party-size/role composition against current flexible party rules; add real 1–4-person and mixed-role fixtures where supported.
+1. Confirm exact-head hidden PR tests plus unchanged core, mobile, Edge and economy checks; investigate failures rather than skipping them. The first integration CI found nine TS2367 literal-narrowing errors in legacy test counters; these were fixed with explicit numeric runtime comparisons while preserving each assertion (exact-head recheck pending).
+2. Verify the V32 2–4-player flexible composition checks pass exact-head CI and the **unpromoted** V11 SQL regression. Note: Party Events start at two members; a solo preview is not approved, and no production SQL has been updated.
 3. Adapt the hidden SQL to current staging's actual tables, locks, source receipts, game-state shape, shop economy and the existing claim/outbox integration. Run migration/test in transaction/ROLLBACK only with explicit review.
 4. Validate server-trusted 7-day activity receipts, consumptive preparation, frozen ballots, canonical combat replay and exactly-once Day 8 claim, including concurrent workers, crash recovery, and duplicate requests.
 5. Verify current v1.0.10 feature flags, mobile UI, art, translations and 9-class fairness; keep no public RPC/wallet until separate approved release.

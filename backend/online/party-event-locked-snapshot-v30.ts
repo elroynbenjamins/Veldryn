@@ -133,7 +133,7 @@ export function validatePrivatePartyEventLockedSnapshotV30(input:{
   eventStartsAt:s.eventStartsAt as string,
   frozenCharacterId:s.characterId as string,
   difficulty:s.difficulty as WeeklyPartyDifficulty,
-  reward,quoteHash:s.rewardHash as string,state:s.state as GameState,
+  reward,quoteHash:s.rewardHash as string,state:s.state as unknown as GameState,
   onlineRevision:revision as number,walletGold:g as number,
   characterGold:c as number,previewOnly:true,committed:false,paid:false,
   inboxDelivered:false,locksHeld:false,

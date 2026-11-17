@@ -25,15 +25,24 @@ export function projectRankingPage(
 }
 
 /**
- * The podium is a visual highlight, not a separate ranking. Three equal #1
- * scores are shown together; additional tied players remain in the normal list.
- * On later pages every row stays in the normal list, preserving absolute ranks.
+ * Only actual official top-three positions can receive podium treatment.
+ * Privacy or block filtering can hide #1–#3 without promoting the next visible
+ * player. Show at most three visible top-three entries; extra tied entries
+ * remain in the ordinary list with their original server-assigned rank.
  */
 export function splitRankingDisplay(
   entries:readonly RankingEntry[],page:number,
 ):{podium:RankingEntry[];remaining:RankingEntry[]}{
   rankingPageOffset(page);
-  return page===0
-    ?{podium:entries.slice(0,3),remaining:entries.slice(3)}
-    :{podium:[],remaining:entries.slice()};
+  if(page!==0)return {podium:[],remaining:entries.slice()};
+  const podium:RankingEntry[]=[];
+  const remaining:RankingEntry[]=[];
+  for(const entry of entries){
+    if(podium.length<3&&Number.isSafeInteger(entry.rank)&&entry.rank>=1&&entry.rank<=3){
+      podium.push(entry);
+    }else{
+      remaining.push(entry);
+    }
+  }
+  return {podium,remaining};
 }

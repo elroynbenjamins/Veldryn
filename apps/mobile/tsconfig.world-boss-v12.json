@@ -12,7 +12,20 @@
   },
   "include": [
     "tests/world-boss-real-loadout-v12.ts",
-    "tests/world-boss-guard-role-v13.ts"
+    "tests/world-boss-guard-role-v13.ts",
+    "tests/world-boss-bracket-audit-v14.ts",
+    "tests/world-boss-owned-cohort-v15.ts",
+    "tests/world-boss-server-service-v19.ts",
+    "tests/world-boss-consented-echoes-v20.ts",
+    "tests/world-boss-consent-command-v21.ts",
+    "tests/world-boss-weekend-account-raid-v22.ts",
+    "tests/world-boss-account-service-v23.ts",
+    "tests/world-boss-account-balance-v24.ts",
+    "tests/world-boss-authored-account-encounters-v25.ts",
+    "tests/world-boss-authored-settlement-v26.ts",
+    "tests/world-boss-war-camp-transactions-v27.ts",
+    "tests/world-boss-reward-ledger-v28.ts",
+    "tests/world-boss-impact-audit-v29.ts"
   ],
   "exclude": []
 }

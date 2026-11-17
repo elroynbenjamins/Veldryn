@@ -33,6 +33,9 @@ for(const [name,file,steps] of v25Files){
  const source=readFileSync(fileURLToPath(new URL(
   '../../docs/roadmap/party-events/hidden-migrations/'+file,import.meta.url)),'utf8');
  const start=source.indexOf('create or replace function private.'+name+'(');
+ // PL/pgSQL function bodies end with `end;$;` (two dollar signs).
+ // Keep this delimited to the named writer so the lock-order checks cannot
+ // accidentally scan a later function or bypass a missing writer.
  const end=source.indexOf('end;$;',start);
  if(start<0||end<start)throw Error('v30_missing_v25_writer_'+name);
  const body=source.slice(start,end);

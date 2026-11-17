@@ -81,7 +81,7 @@ test('Market example item selection, price history and fee explanation stay stri
 });
 
 test('compact UI and market sorting are keyboard and scroll safe',()=>{
- const views=[...screen.matchAll(/<ScrollView\b[^>]*>/g)].map(match=>match[0]);
+ const views=[...screen.matchAll(/<ScrollView\s[^>]*>/g)].map(match=>match[0]);
  assert.ok(views.length>=4,'tab rail, main page, market filters and guide scroll exist');
  for(const view of views){
   assert.match(view,/showsVerticalScrollIndicator=\{false\}/,'every scroll surface hides vertical indicators');

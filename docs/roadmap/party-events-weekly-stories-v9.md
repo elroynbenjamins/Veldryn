@@ -1,6 +1,13 @@
 # Party Events v9 — unique stories throughout the preparation week
 
-**12 November 2026 — hidden implementation / not live.** Source:
+**12 November 2026 — hidden implementation / not live.**
+
+**17 November integration clarification:** V32 supersedes the original restricted-role
+prototype in this historical v9/v10 document. Any 2–4 genuinely enrolled
+characters may join regardless of Tank/Damage/Support composition. Ownership,
+unique actor IDs, canonical class-derived roles and all release gates remain
+mandatory. No event or reward service is live.
+ Source:
 `backend/src/server/party/weekly-party-family-stages-v9.ts`.
 The existing v2 event 7 days active + 14 days rest, 3 resource/progress stages, two 6-hour votes and Day 8 boss remain unchanged. This is a deterministic UI/encounter preview, **not** a live stage action emitter, source of EP, reward calculator or online endpoint.
 
@@ -29,7 +36,7 @@ Each member can participate without being required to own a specific class or co
 
 ## Real combat and fully donated preparation bonuses
 
-Stage 1 remains explicitly **noncombat**. Stages 2 and 3 use the existing deterministic engine with their own v8-family abilities, periodic effects, boss shields/exposure phases and real combat event logs. Stage 2 uses only its voted tactic; Stage 3 also applies the previous stage's chosen route. Difficulty follows the established **Standard 1.0 / Veteran 1.2 / Heroic 1.4** prototype pressure. Stage previews enforce max 1 Tank / 2 Damage / 1 Support, matching [Party composition PR #1046](https://github.com/elroynbenjamins/Veldryn/pull/1046).
+Stage 1 remains explicitly **noncombat**. Stages 2 and 3 use the existing deterministic engine with their own v8-family abilities, periodic effects, boss shields/exposure phases and real combat event logs. Stage 2 uses only its voted tactic; Stage 3 also applies the previous stage's chosen route. Difficulty follows the established **Standard 1.0 / Veteran 1.2 / Heroic 1.4** prototype pressure. **V32 integration update:** stage previews now accept any verified 2–4-character Party role mix; no Tank/Damage/Support slot cap is imposed. (The original v9-only draft followed the earlier limits in [Party composition PR #1046])(https://github.com/elroynbenjamins/Veldryn/pull/1046).
 
 The pre-existing required Stage 1/2/3 supply bonuses and optional Reinforced / Provisions / Specialist buffs still apply *unchanged*. To differentiate stories, **additional very modest, v9-preview-only family multipliers** are layered onto verified actors only after all relevant optional supply orders have been fully donated:
 
@@ -67,7 +74,7 @@ These deliberately small proposed values **need balancing against actual gear ti
 **Still hidden; not live or release-approved.** A new read-only contract in
 `backend/src/server/party/weekly-party-stage-ledger-v10.ts` validates a single
 server-loaded week, deterministic family/variation, immutable roster identity,
-canonical class roles (maximum 1 Tank, 2 Damage, 1 Support), loadout checksums,
+server-owned canonical class-role identities (V32: flexible 2–4-member composition; no fixed role cap), loadout checksums,
 ordered Stage 2/3 locked choices, and valid supply snapshots before calling the
 existing v9 preview. The Stage 1 preview never sees later ballots.
 

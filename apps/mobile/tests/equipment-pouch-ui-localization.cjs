@@ -55,8 +55,11 @@ for(const marker of [
  "p('Sell · {gold}g'",
  "p('quality {quality}'",
  "p('Protected')",
- "p('Enhanced, socketed and loadout gear cannot be sold.')",
- "p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')"
+ "p('Protected copies are excluded from the sale.')",
+ "p('Selling this copy adds Gold to this character.')",
+ "sellReason={specificGearProtectionReason(record,saleCandidate?.reason)}",
+ "salvageReason={specificGearProtectionReason(record,salvageCandidate?.reason)}",
+ "p(record?.enhancement.statGemId||record?.enhancement.effectGemId||record?.enhancement.gemIds.length?'Compare & Equip to Extract':'Compare & Equip')"
  ])assert.ok(screen.includes(marker),'Equipment Pouch UI missing localized path '+marker);
 for(const marker of [
  "equipmentPouchSaleCandidates(state)","equipmentPouchQuickSellIds(saleCandidates)",

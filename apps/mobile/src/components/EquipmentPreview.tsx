@@ -17,6 +17,7 @@ import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {EquipmentArtwork} from './EquipmentArtwork';
 import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
+import {EquipmentDisposalStatus} from './EquipmentDisposalStatus';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 type Props={
@@ -24,6 +25,7 @@ type Props={
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
  onStoreInGear?:()=>unknown|Promise<unknown>;canStoreInGear?:boolean;
  onSell?:()=>void;onSalvage?:()=>void;canSell?:boolean;canSalvage?:boolean;
+ sellBlockReason?:string;salvageBlockReason?:string;
  favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>;
 };
 
@@ -33,7 +35,7 @@ function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.b
 
 /** Inventory's single, authoritative compare-before-equipping surface.
  * The footer deliberately stays outside the scroll area on small devices. */
-export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,onStoreInGear,canStoreInGear=false}:Props){
+export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false}:Props){
  const {gt,gl}=useGameplayText();
  const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
@@ -130,9 +132,12 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
     {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
    </View>:null}
-   {(onSell||onSalvage)?<View style={s.disposalActions}>
-    <View style={s.disposalAction}><GameButton compact tone="secondary" title={gl('Sell')} disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>
-    <View style={s.disposalAction}><GameButton compact tone="danger" title={gl('Salvage')} disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>
+   {(onSell||onSalvage)?<View style={s.disposalSection}>
+    <EquipmentDisposalStatus sellAllowed={canSell} salvageAllowed={canSalvage} sellReason={sellBlockReason} salvageReason={salvageBlockReason}/>
+    <View style={s.disposalActions}>
+     <View style={s.disposalAction}><GameButton compact tone="secondary" title={gl('Sell copy')} disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>
+     <View style={s.disposalAction}><GameButton compact tone="danger" title={gl('Salvage copy')} disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>
+    </View>
    </View>:null}
    <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
     onPress={()=>setMore(v=>!v)} style={s.disclosure}>
@@ -211,6 +216,7 @@ function makeStyles(C:ThemeColors){
   statDelta:{...typography.bodyStrong,minWidth:48,textAlign:'right',fontWeight:'900'},
   setAlert:{padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,gap:6},
   setLine:{...typography.caption,fontWeight:'700'},
+  disposalSection:{gap:8},
   disposalActions:{flexDirection:'row',gap:8},
   disposalAction:{flex:1,minWidth:0},
   disclosure:{minHeight:44,paddingHorizontal:10,flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},

@@ -68,3 +68,27 @@ Separate historical detail views. Present completed event/guild contest title, e
 - Performance proof beyond synthetic EXPLAIN tests, with real paging concurrency and backpressure.
 - Finish authoritative Party Event/Guild PvE finalizers and provenance receipts before exposing these histories.
 - Explicit release review; no database migrations or mobile navigation exposure in this draft.
+
+## Implemented: Hall of Renown design, 17 November
+
+Replaces the earlier ordinary heading with a compact thematic Hall of Renown hero:
+- Distinctive crown rune, translated title, 44px Refresh and Help buttons; refresh announces loading and has a disabled busy state.
+- Horizontal category rail labels **Account / Skills / Arena / Dungeons / Guilds** for user clarity, while preserving the original `Professions` and `Competitive` canonical backend groups/board IDs.
+- Icon-led board selector, contextual board explanation, verified server-generated update time if supplied.
+- Clearly differentiated personal standing with official global rank and verified score; no sample scores in game UI.
+- Authentic official ranks with special first-place card, top-three badge glyphs and dense list rows; no promotion of private/blocked profiles or changed tied ranks.
+- Bottom of the screen displays server/privacy trust copy and pagination. All seven languages (DE, ES, NL, IT, FR, RU, TR) include new copy.
+
+### Polish pass 1 — presentation and responsive behavior
+- Compact hierarchy, restrained theme-derived colors and consistent rank panels.
+- Breaks header actions onto a second row at narrow widths/high font scales; right-aligned tabular figures; compact 44px category hit areas.
+- 50-entry server pagination, stale request protections and readable player identity preserved.
+
+### Polish pass 2 — UX and safety
+- Busy/accessible refresh, last server-generated update time, clear retry action on an unsuccessful first load.
+- Reject malformed, nonfinite or negative server score and invalid official rank rows; keep last good snapshot on refresh failures.
+- Added a guide section explaining tied official ranks and why privacy-filtered gaps must not promote others.
+- Extended UI and translation tests, including explicit confirmation the Rankings release flag remains false.
+
+### Limitations
+This is a source-level implementation. **No unverified claims of passing CI, Android QA, production rollout, migration or activated feature gates.**

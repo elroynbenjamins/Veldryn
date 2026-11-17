@@ -54,6 +54,39 @@ async function commandBusy(){
  assert.equal(latest.error,'','Successful recovery clears the previous network error');
  await act(async()=>renderer.unmount());
 }
+async function combatSwapOptimism(){
+ let latest,pending=deferred();
+ const authoritative={accountId:'a',version:1,state:{weapon:'OLD_WEAPON'}};
+ const repo={accountId:'a',snapshot:authoritative,refresh:async()=>repo.snapshot,hasPending:async()=>false,execute:()=>pending.promise};
+ const {useOnlineGame}=load('src/online/useOnlineGame.ts',{
+  'react-native':native,
+  './AuthSessionProvider':{useAuthSession:()=>({session:{user:{id:'a'}}})},
+  './gameplay':{serverGameplayEnabled:true,createOnlineGameRepository:()=>repo},
+  './supabase':{supabase:null},
+  '../core/online-snapshot-cache':{rememberOnlineSnapshot:()=>{}},
+  '../core/combat-equipment-optimistic':{previewCombatEquipmentCommand:(state,command)=>
+   command.type==='gear_equip'?{...state,weapon:command.args.instanceId}:null},
+ });
+ function Harness(){latest=useOnlineGame();return null;}
+ let renderer;
+ await act(async()=>{renderer=create(React.createElement(Harness))});
+ let waiting;
+ await act(async()=>{waiting=latest.execute({type:'gear_equip',args:{instanceId:'NEW_WEAPON'}});await Promise.resolve()});
+ assert.equal(latest.snapshot.state.weapon,'NEW_WEAPON','Weapon should visibly change before server acknowledgement');
+ assert.equal(repo.snapshot.state.weapon,'OLD_WEAPON','Optimistic equipment must never mutate authoritative state');
+ await act(async()=>{pending.reject(Error('connection_lost'));await waiting.catch(()=>{})});
+ assert.equal(latest.snapshot.state.weapon,'OLD_WEAPON','Server failure must restore the original equipped weapon');
+ assert.equal(latest.busy,false,'Failed swap must release the command lock');
+
+ pending=deferred();
+ await act(async()=>{waiting=latest.execute({type:'gear_equip',args:{instanceId:'NEW_WEAPON'}});await Promise.resolve()});
+ const confirmed={...authoritative,version:2,state:{weapon:'NEW_WEAPON',hp:77}};
+ await act(async()=>{pending.resolve(confirmed);await waiting});
+ assert.equal(latest.snapshot.state.hp,77,'Server-confirmed state must replace the temporary preview');
+ assert.equal(latest.busy,false,'Confirmed swap must release the command lock');
+ await act(async()=>renderer.unmount());
+}
+
 function wiring(){
  const files=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(file.endsWith('.tsx'))files.push(file);}}
  walk(path.join(__dirname,'../src'));files.push(path.join(__dirname,'../App.tsx'));
@@ -71,4 +104,4 @@ function wiring(){
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
 }
-(async()=>{await buttons();await commandBusy();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await buttons();await commandBusy();await combatSwapOptimism();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

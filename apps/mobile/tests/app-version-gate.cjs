@@ -42,6 +42,8 @@ async function main(){
   '@react-native-async-storage/async-storage':mocks['@react-native-async-storage/async-storage'],
   '../core/online-snapshot-cache':{peekOnlineSnapshot:()=>null},
   '../core/coop-dungeon-browse-cache':{noteCoopEntryMutation:()=>{}},
+  // The release-gate harness isolates unrelated dungeon reward parsing.
+  '../core/dungeon-reward-display':{parseDungeonCombatMarks:()=>undefined},
   '../core/session-pending-store':{SessionPendingStore:class{constructor(storage){this.storage=storage;}read(){return this.storage.read();}write(value){return this.storage.write(value);}}},
  };
  const gameplay=load('src/online/gameplay.ts',{...services,'../core/online-game-repository':{OnlineCommandError:CommandError,OnlineGameRepository:class{constructor(account,transport){this.transport=transport;}}}});

@@ -70,6 +70,8 @@ jobs:
           do
             node "dist/online/backend/online/tests/${suite}.js"
           done
+      - name: Verify flexible Party Event V32 roster and receipt SQL in disposable PGlite
+        run: node tests/party-event-flexible-sql-v32.mjs
       - name: Verify hidden SQL paid-receipt and locked claim contracts in disposable PGlite
         run: |
           node tests/party-event-paid-schema-v29.mjs

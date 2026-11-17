@@ -105,7 +105,7 @@ async function test(){
     gateEnabled:true,reservationId,repository:repo,
   });
   assert(!first.replayed&&repeat.replayed
-    &&preparationCalls===2&&first.rewardsGranted===false
+    &&Number(preparationCalls)===2&&first.rewardsGranted===false
     &&first.entitlementsCreated===false,
     'preparation retries must preserve no-loot outcome');
   const initial=await readPrivatePartyRewardInboxV24({

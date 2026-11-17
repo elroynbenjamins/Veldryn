@@ -1,4 +1,4 @@
-# World Boss V15–V37 hidden integration (17 November 2026)
+# World Boss V15–V38 hidden integration (17 November 2026)
 
 **Status:** DRAFT / hidden engineering consolidation only. Not approved for deployment or public activation.
 
@@ -74,4 +74,11 @@
 - Added independent V37 PostgreSQL smoke: rejects donating with an inactive but relationally owned character; rejects a mismatched active JSON identity; verifies successful active donation, a switch to another owned character, a second donation from that character, replay idempotency after switching and the hard **two donations per account** cap. All data is synthetic and rolled back.
 - **V37 exact-head CI pending.** This is a hidden schema/test change, not a live migration, server route or gameplay release.
 
-**Next stage:** verify V37 disposable PostgreSQL and TypeScript CI; resolve independent Expo dependency check (#1345); approve account erasure and external replay retention (#1348); then review staging migrations and real concurrent settlement without live activation.
+## V38 strict event schedule and safe preparations
+- The V37 exact-head dedicated TypeScript and disposable PostgreSQL tests passed, including the corrected account-scoped save model and active-character War Camp debits. The Mobile Core baseline Expo patch check is still independently red (#1345).
+- Identified a consistency gap: V22's raid reservation verifies Monday 00:00 UTC + 5 prep days + Sat/Sun window, but V27's donation SQL previously accepted any active seven-day event, including Tuesday starts or mid-day Monday starts. A misconfigured event could therefore consume a player's materials without ever allowing its weekend raid.
+- V38 makes the War Camp transaction reject any event that cannot satisfy V22's exact calendar anchor, **before** consuming stacks, changing the save revision or writing a receipt. Failure reason: `WB27_INVALID_EVENT_SCHEDULE`.
+- V37's positive fixture now starts exactly Monday 00:00 UTC and, on a Saturday/Sunday runner, checks that donations fail closed rather than falsely expecting weekday deposits. A separate V38 PostgreSQL fixture tries Tuesday 00:00 and Monday 07:00 event starts and checks no inventory, save revision, War Camp counter or receipt changes.
+- These changes remain draft SQL and disposable CI fixtures. **V38 exact-head validation pending**; no real event schedule, database, inventory, server route or feature flag was changed.
+
+**Next stage:** verify V38 dedicated PostgreSQL validation; resolve the independent Expo issue (#1345); finalize retention and account-erasure policy (#1348); then prepare reviewed staging migrations, live-schema concurrency/worker tests and economy balancing before activation.

@@ -132,7 +132,9 @@ END
 $freeze$;
 
 -- Authenticated principal injected by the PRIVATE service. Only the
--- selected OWNED character's unslotted material stacks can be debited.
+-- selected ACTIVE owned character's unslotted material stacks can be debited.
+-- The account has one save row (active + inactive). Players must switch to
+-- the donating character first; never debit a parked character or the bank.
 -- Lock event -> war camp -> online save; no partial item debits on failure.
 CREATE FUNCTION private.world_boss_v27_donate(
  p_event uuid,p_account uuid,p_character uuid,p_request text,p_recipe text
@@ -210,7 +212,8 @@ BEGIN
  SELECT s.account_id,s.character_id,s.revision,s.state INTO saved
  FROM public.online_game_states s
  WHERE s.account_id=p_account AND s.character_id=p_character FOR UPDATE;
- IF NOT FOUND OR jsonb_typeof(saved.state#>'{inventory,stacks}')<>'array'
+ IF NOT FOUND OR saved.state#>>'{character,id}' IS DISTINCT FROM p_character::text
+    OR jsonb_typeof(saved.state#>'{inventory,stacks}')<>'array'
  THEN RAISE EXCEPTION 'WB27_MISSING_AUTHORITY_INVENTORY'; END IF;
  stacks:=saved.state#>'{inventory,stacks}';
  FOR mat IN SELECT value FROM jsonb_array_elements(recipe.materials) LOOP

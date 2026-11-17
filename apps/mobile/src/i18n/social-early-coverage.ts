@@ -26,6 +26,13 @@ export const socialEarlyRows={
   "Players appear here when they are active in Veldryn.": ["Здесь появятся активные игроки Veldryn.","Veldryn'de aktif oyuncular burada görünür."],
   "Showing the first {count} players.": ["Показаны первые {count} игроков.","İlk {count} oyuncu gösteriliyor."],
   // Hidden Rankings guided help.
+  "HALL OF RENOWN": ["ЗАЛ СЛАВЫ","ŞÖHRET SALONU"],
+  "LEADER": ["ЛИДЕР","LİDER"],
+  "GLOBAL": ["ОБЩИЙ","GENEL"],
+  "Current rank": ["Текущее место","Güncel sıra"],
+  "Verified score": ["Проверенный результат","Doğrulanmış puan"],
+  "RANKED PLAYERS": ["ИГРОКИ В РЕЙТИНГЕ","SIRALAMADAKİ OYUNCULAR"],
+  "Server-ranked · Privacy protected": ["Рейтинг сервера · Приватность защищена","Sunucu sıralaması · Gizlilik korumalı"],
   "Rankings guide": ["Справка по рейтингу","Sıralama rehberi"],
   // Read-only Rankings pagination.
   "No further ranked entries": ["Больше записей в рейтинге нет","Başka sıralama kaydı yok"],

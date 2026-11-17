@@ -6,7 +6,7 @@ import type {GameState} from '../src/core/types';
 
 const assert=require('node:assert/strict') as {equal:(a:unknown,b:unknown,message?:string)=>void;match:(a:string,b:RegExp,message?:string)=>void;deepEqual:(a:unknown,b:unknown,message?:string)=>void};
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T1P_001')!;
-const initial=createCharacter(newGame(0),recipe.classId,'Disposal Guide Tester');
+const initial=createCharacter(newGame(0),recipe.classId,'Disposal Tester');
 const copy=draftCraftedGearInstance({itemId:recipe.output.itemId,ownerCharacterId:initial.character!.id,jobId:'disposal-guide',createdAtMs:100,roll:.1});
 const stack={itemId:copy.itemId,quantity:1,instanceId:copy.id};
 const state:GameState={...initial,

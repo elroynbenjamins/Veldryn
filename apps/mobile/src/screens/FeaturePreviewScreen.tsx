@@ -202,11 +202,32 @@ const stories=[
  {id:'wards',name:'Broken Wards',scene:'SILVERBROOK',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards'],stages:['Trace rune fractures and broken magic circuits.','Stabilize the crackling spires before they rupture.','Align the runestones and rehearse the final defense.'],supplies:['Timber to support unstable spires','Ore to anchor wardstones','Herbs to stabilize the ward circle'],finaleThreat:'Arcane surges strain the ward barrier; keep the circle stable.'},
  {id:'reliquary',name:'Lost Reliquary',scene:'OLD_MINES',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals'],stages:['Translate mirrored glyphs in the forgotten archive.','Cross the mirror hall as the vault awakens.','Restore the final seal and prepare the choice ahead.'],supplies:['Timber to reinforce the passage','Ore for mirror-shield fittings','Herbs for the corrupted vault air'],finaleThreat:'Reflections and pressure on the final seal shape the encounter.'},
 ] as const;
+/** Authored from hidden Party Events v9. Informational only: server owns objectives. */
+const partyStoryGuides={
+ caravan:{
+  actions:['Map the Wagon Route','Break the Ambush','Repair the Supply Train','Secure the Final Convoy'],
+  preparations:[['Reinforced','Reinforced Wagon Frames','Defense +3%'],['Provisions','Repair Supplies','Max HP +3%'],['Specialist','Ambush Intelligence','Attack +2.5%']],
+ },
+ hunt:{
+  actions:['Follow the Trail','Flush the Pack','Lay a Scent Decoy','Ready the Alpha Hunt'],
+  preparations:[['Reinforced','Howl Shelters','Defense +2.5%'],['Provisions','Scent Poultices','Haste +1.5%'],['Specialist','Tracking Insight','Accuracy +4%']],
+ },
+ wards:{
+  actions:['Read the Rune Fractures','Silence a Runestone','Ground a Failing Sigil','Ready the Ward Circle'],
+  preparations:[['Reinforced','Grounded Runestone Plates','Defense +4%'],['Provisions','Arcane Recovery Salves','Healing +3%'],['Specialist','Rune Timing Charts','Haste +1.8%']],
+ },
+ reliquary:{
+  actions:['Decipher the Vault Glyphs','Navigate the Mirror Hall','Stabilize the Inner Seal','Ready the Reliquary Entry'],
+  preparations:[['Reinforced','Seal Insulation','Defense +2.5%'],['Provisions','Anti-Corruption Remedies','Healing +6%'],['Specialist','Translated Guardian Glyphs','Attack +3%']],
+ },
+} as const;
+const partyActionStages=['Stage 1','Stage 2','Stage 2','Stage 3'] as const;
 function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
  const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);
  const [ballot,setBallot]=useState<'approach'|'finale'>('approach');
  const story=stories.find(e=>e.id===storyId)??stories[0];
+ const storyGuide=partyStoryGuides[story.id];
  if(tab==='adventure')return <>
   <Card s={s}><SectionHeading s={s} kicker="WEEK-LONG ADVENTURES" title="One journey, four possible stories" sub="Three evolving stages, team decisions and a finale. The event cycle is 21 days."/>
    <View style={s.statRow}><Stat s={s} label="PARTY SIZE" value="2–4"/><Stat s={s} label="STORY" value="7 days"/><Stat s={s} label="SETTLEMENT" value="Day 8"/></View>
@@ -238,11 +259,28 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
    ].map(([index,title,description])=><View key={index} style={s.storyStage}><Text style={[s.storyNumber,{color:story.accent}]}>{index}</Text><View style={s.flex}><Text style={s.choiceTitle}>{title}</Text><Text style={s.bodyText}>{description}</Text></View></View>)}
    <Action label="Inspect supply preparation" s={s} onPress={()=>onTab('supplies')}/>
   </Card>
+  <Card s={s}><SectionHeading s={s} kicker="PERSONAL ACTIONS · STORY PREVIEW" title="Four ways to help" sub="Every member can contribute through approved combat or noncombat evidence. These four objective slots do not require a specific class."/>
+   {storyGuide.actions.map((action,i)=><View key={action} style={s.detailRow}>
+    <Text style={[s.index,{color:accent}]}>{'0'+(i+1)}</Text>
+    <View style={s.flex}><Text style={s.choiceTitle}>{action}</Text><Text style={s.choiceSub}>{partyActionStages[i]} · Individually verified when released</Text></View>
+   </View>)}
+   <Text style={s.finePrint}>Objective completion and Event Points are unavailable in this preview. Only server-authenticated activity receipts will count.</Text>
+   <Action label="Inspect the two route votes" s={s} secondary onPress={()=>onTab('vote')}/>
+  </Card>
  </>;
- if(tab==='supplies')return <Card s={s}><SectionHeading s={s} kicker="SHARED PREPARATION" title="Contribute together" sub="Preparation consumes verified resources only when submitted to the real server. No preview contributions affect the economy."/>
-  {story.supplies.map((entry,i)=><View key={entry} style={s.detailRow}><Text style={[s.index,{color:accent}]}>{i+1}</Text><View style={s.flex}><Text style={s.choiceTitle}>{entry}</Text><Text style={s.choiceSub}>Authoritative inventory check required</Text></View><Tag s={s} label="Preview"/></View>)}
-  <Action label="Contribute · Not available" s={s} disabled/>
- </Card>;
+ if(tab==='supplies')return <>
+  <Card s={s}><SectionHeading s={s} kicker="SHARED PREPARATION" title="Contribute together" sub="Preparation consumes verified resources only when submitted to the real server. No preview contributions affect the economy."/>
+   {story.supplies.map((entry,i)=><View key={entry} style={s.detailRow}><Text style={[s.index,{color:accent}]}>{i+1}</Text><View style={s.flex}><Text style={s.choiceTitle}>{entry}</Text><Text style={s.choiceSub}>Authoritative inventory check required</Text></View><Tag s={s} label="Preview"/></View>)}
+   <Action label="Contribute · Not available" s={s} disabled/>
+  </Card>
+  <Card s={s}><SectionHeading s={s} kicker="OPTIONAL BUFFS · PROPOSED" title="Special preparations" sub="Fully completing a verified optional order may grant a small story-specific finale advantage. These values are design examples, not live bonuses."/>
+   {storyGuide.preparations.map(([type,name,effect])=><View key={type} style={s.detailRow}>
+    <View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>{type} preparation · verified completion required</Text></View>
+    <Tag s={s} label={effect} accent={accent}/>
+   </View>)}
+   <Text style={s.finePrint}>Partial supplies never activate a preparation bonus. No real orders, inventory quantities or completion status are loaded here.</Text>
+  </Card>
+ </>;
  if(tab==='vote')return <Card s={s}><SectionHeading s={s} kicker="TWO LOCKED PARTY BALLOTS" title="The party decides" sub="Every story has a Stage 2 route and a later Stage 3 finale plan. Try the local preview; no votes are sent."/>
   <View style={s.stepRow}><Action label="Stage 2 · Approach" s={s} secondary={ballot!=='approach'} onPress={()=>setBallot('approach')}/><Action label="Stage 3 · Finale" s={s} secondary={ballot!=='finale'} onPress={()=>setBallot('finale')}/></View>
   {([0,1] as const).map(index=>{const id=index===0?'secure':'swift';const selected=ballot==='approach'?choice:finalChoice;const title=(ballot==='approach'?story.approach:story.finale)[index];return <Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:selected===id}} onPress={()=>ballot==='approach'?setChoice(id):setFinalChoice(id)} style={[s.choice,selected===id&&{borderColor:accent,backgroundColor:C.panelRaised}]}>

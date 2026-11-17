@@ -96,13 +96,13 @@ export function RankingsScreen(){
  }
  return <>
  <ScrollView ref={scrollRef} contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-  <View style={s.hero}>
-    <View style={s.heroEmblem} accessible={false}><Text style={s.heroEmblemText}>♛</Text></View>
+  <View style={[s.hero,stackRows&&s.heroCompact]}>
+    <View style={[s.heroEmblem,stackRows&&s.heroEmblemCompact]} accessible={false}><Text style={s.heroEmblemText}>♛</Text></View>
     <View style={s.flex}>
       <Text style={s.kicker}>{st("HALL OF RENOWN")}</Text>
       <Text accessibilityRole="header" style={s.heading}>{st("VELDRYN Rankings")}</Text>
     </View>
-    <View style={s.heroActions}>
+    <View style={[s.heroActions,stackRows&&s.heroActionsCompact]}>
       <Pressable accessibilityRole="button" accessibilityLabel={st("Refresh")} accessibilityState={{disabled:loading,busy:loading}} disabled={loading} onPress={()=>{void load();}} style={({pressed})=>[s.iconButton,(pressed||loading)&&s.pressed]}>
         <Text accessible={false} style={s.refreshGlyph}>↻</Text>
       </Pressable>
@@ -111,11 +111,11 @@ export function RankingsScreen(){
       </Pressable>
     </View>
   </View>
-  <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.groupRail}>
+  <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.groupRail} accessibilityLabel={st("RANKINGS")}>
     {RANKING_GROUPS.map(value=><ChoiceChip key={value} label={socialLabel(language,value==='Professions'?'Skills':value==='Competitive'?'Arena':value)} selected={group===value} onPress={()=>selectGroup(value)}/>)}
   </ScrollView>
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:boardPickerOpen}} accessibilityLabel={st("BOARD")} onPress={()=>setBoardPickerOpen(true)} style={({pressed})=>[s.boardPicker,pressed&&s.pressed]}>
-    <View style={s.boardGlyph} accessible={false}><Text style={s.boardGlyphText}>{group==='Professions'?'⛏':group==='Competitive'?'⚔':group==='Dungeons'?'◆':group==='Guilds'?'⚑':'✦'}</Text></View>
+  <Pressable accessibilityRole="button" accessibilityState={{expanded:boardPickerOpen}} accessibilityLabel={st("BOARD")+' · '+socialLabel(language,definition.name)} onPress={()=>setBoardPickerOpen(true)} style={({pressed})=>[s.boardPicker,pressed&&s.pressed]}>
+    <View style={s.boardGlyph} accessible={false}><Text style={s.boardGlyphText}>{group==='Professions'?'✥':group==='Competitive'?'⚔':group==='Dungeons'?'◆':group==='Guilds'?'⚑':'✦'}</Text></View>
     <View style={s.flex}><Text style={s.filterLabel}>{st("BOARD")}</Text><Text numberOfLines={1} style={s.boardName}>{socialLabel(language,definition.name)}</Text></View><Text style={s.selectorArrow}>⌄</Text>
   </Pressable>
   <View style={s.boardIntro}>
@@ -175,6 +175,7 @@ function ChoiceChip({label,selected,onPress}:{label:string;selected:boolean;onPr
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  root:{padding:spacing.md,gap:10,paddingBottom:110},
  hero:{flexDirection:'row',alignItems:'center',gap:8,minHeight:72,padding:10,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.lg,backgroundColor:C.panelRaised},
+ heroCompact:{flexWrap:'wrap',rowGap:8},heroEmblemCompact:{width:34,height:36},heroActionsCompact:{width:'100%',justifyContent:'flex-end'},
  heroEmblem:{width:38,height:42,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,backgroundColor:C.warningSurface},
  heroEmblemText:{fontSize:22,fontWeight:'900',color:C.warning},
  heroActions:{flexDirection:'row',alignItems:'center',gap:5},
@@ -184,7 +185,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  heading:{fontSize:21,lineHeight:26,fontWeight:'900',color:C.text},
  copy:{...typography.caption,color:C.muted,lineHeight:18},
  filterLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8},
- groupRail:{gap:6,paddingBottom:3},
+ groupRail:{gap:6,paddingBottom:4,paddingRight:12},
  chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
  chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
  chipText:{fontSize:12,color:C.muted,fontWeight:'800'},chipTextSelected:{color:C.text},pressed:{opacity:.65},
@@ -199,13 +200,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  selfScope:{fontSize:9,color:C.muted,fontWeight:'800',letterSpacing:.7},
  selfStats:{flexDirection:'row',alignItems:'flex-end',gap:10},
  selfScore:{flex:1,minWidth:0,alignItems:'flex-end',justifyContent:'flex-end'},
- selfRank:{fontSize:25,lineHeight:30,fontWeight:'900',color:C.text},
+ selfRank:{fontSize:25,lineHeight:30,fontWeight:'900',color:C.text,fontVariant:['tabular-nums']},
  selfValue:{fontSize:17,lineHeight:22,color:C.text,fontWeight:'900',textAlign:'right'},
  selfCaption:{fontSize:10,lineHeight:14,color:C.muted},
  warning:{...typography.caption,color:C.warning},
  sectionGroup:{gap:8},
  podiumGrid:{flexDirection:'column',gap:7},podiumGridStack:{flexDirection:'column'},
- podiumCard:{width:'100%',minWidth:0,padding:10,borderRadius:radii.md,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panelRaised},
+ podiumCard:{width:'100%',minWidth:0,padding:10,minHeight:62,borderRadius:radii.md,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panelRaised},
  firstPlaceCard:{borderColor:C.warning,backgroundColor:C.warningSurface},podiumStack:{flexDirection:'column'},podiumRow:{flexDirection:'row',alignItems:'center'},
  podiumBadge:{width:44,minHeight:48},
  podiumValue:{fontSize:12,textAlign:'right',maxWidth:132},
@@ -219,7 +220,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  rank:{...typography.bodyStrong,color:C.accent},rankGoldText:{color:C.warning},
  rankMeta:{fontSize:10,color:C.muted,marginTop:3},detail:{...typography.caption,color:C.good,marginTop:3},
  scoreWrap:{maxWidth:138,minWidth:0,alignItems:'flex-end'},scoreWrapStack:{width:'100%',maxWidth:'100%',paddingLeft:53,alignItems:'flex-start'},
- scoreValue:{...typography.bodyStrong,color:C.text,textAlign:'right',maxWidth:136},scoreValueStack:{textAlign:'left'}, 
+ scoreValue:{...typography.bodyStrong,color:C.text,textAlign:'right',maxWidth:136,fontVariant:['tabular-nums']},scoreValueStack:{textAlign:'left'}, 
  pageControls:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,paddingTop:7,minHeight:44},
  pageMeta:{alignItems:'center',justifyContent:'center',minWidth:66,flexShrink:1,gap:2},
  pageCounter:{...typography.caption,color:C.text,fontWeight:'900',textAlign:'center'},pageRange:{...typography.caption,color:C.muted,fontSize:10,textAlign:'center'},

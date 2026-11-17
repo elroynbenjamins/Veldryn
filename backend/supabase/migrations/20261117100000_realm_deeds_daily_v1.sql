@@ -197,6 +197,12 @@ on conflict (activity_date) do update set
   contributing_receipts=excluded.contributing_receipts,
   updated_at=clock_timestamp();
 
+-- Repeatable deployment: the hosted migration may already have been applied
+-- manually under a different Supabase migration version.
+drop trigger if exists realm_deeds_online_receipt_insert_v1 on public.server_action_receipts;
+drop trigger if exists realm_deeds_coop_combat_insert_v1 on public.coop_node_results;
+drop trigger if exists realm_deeds_regional_combat_commit_v1 on public.regional_combat_receipts_v1;
+
 create trigger realm_deeds_online_receipt_insert_v1
   after insert on public.server_action_receipts for each row
   execute function private.realm_deeds_online_receipt_trigger_v1();

@@ -23,6 +23,7 @@ import {eventReadyClaimCount} from './live-events';
 import {equipmentCraftQueueModel} from './equipment-crafting-queue';
 import {companionAttentionSummary} from './companion-attention';
 import {earlyFeatureUnlocked} from './feature-unlocks';
+import {activeGatheringRuntimeProjection} from './balance-projection';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -93,6 +94,10 @@ export function activityCycleSeconds(state:GameState){
   // Timed crafting reserves its actual cycle duration at start. The generic
   // gathering fallback is not valid for processing (and can show ~1s/craft).
   if(state.activity?.kind==='processing'&&state.activity.processing)return state.activity.processing.cycleSeconds;
+  // Gathering uses mastery, class affinity and active tool speed. Keep the
+  // dashboard timer on the exact same runtime projection as the rate display.
+  const gatheringRuntime=activeGatheringRuntimeProjection(state);
+  if(gatheringRuntime)return gatheringRuntime.cycleSeconds;
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
   const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
@@ -117,6 +122,8 @@ export function activityCycleSeconds(state:GameState){
   return monster.secondsPerKill*COMBAT_TIME_SCALE*environmentMultiplier/(speed*companionCombatContribution(state).outputMultiplier*(1+monsterMastery(state,monster.id).damageBonus));
 }
 export function activityRate(state:GameState){
+  const gatheringRuntime=activeGatheringRuntimeProjection(state);
+  if(gatheringRuntime)return {actionsPerHour:gatheringRuntime.actionsPerHour,xpPerHour:gatheringRuntime.xpPerHour,goldPerHour:0};
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
   const route=state.activity?.kind==='exploration'?explorationRoute(target??''):undefined;

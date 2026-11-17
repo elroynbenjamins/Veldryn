@@ -27,6 +27,17 @@ const manyTies:Array<RankingEntry>=Array.from({length:8},(_,index)=>({
 const firstHighlight=splitRankingDisplay(manyTies,0);
 assert(firstHighlight.podium.length===3&&firstHighlight.remaining.length===5,'only three tied players appear in podium');
 assert(firstHighlight.remaining.every(entry=>entry.rank===1),'non-podium tied players retain their official rank');
+const obscuredLeaders:Array<RankingEntry>=[
+ {rank:4,entityType:'account',displayName:'Visible fourth',value:700,isSelf:false},
+ {rank:5,entityType:'account',displayName:'Visible fifth',value:600,isSelf:false},
+];
+const filtered=splitRankingDisplay(obscuredLeaders,0);
+assert(filtered.podium.length===0&&filtered.remaining.length===2,'privacy gaps must not promote later ranks into the podium');
+const partialPodium=splitRankingDisplay([
+ {rank:2,entityType:'account',displayName:'Visible second',value:900,isSelf:false},
+ {rank:4,entityType:'account',displayName:'Visible fourth',value:800,isSelf:false},
+],0);
+assert(partialPodium.podium.length===1&&partialPodium.podium[0].rank===2&&partialPodium.remaining[0].rank===4,'podium preserves missing official ranks');
 const laterHighlight=splitRankingDisplay(manyTies,1);
 assert(laterHighlight.podium.length===0&&laterHighlight.remaining.length===8,'later pages never show a second podium');
 assert(manyTies.length===8,'podium projection does not mutate score rows');

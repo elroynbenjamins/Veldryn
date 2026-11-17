@@ -4,7 +4,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
 import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
-import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND} from '../src/core/weapon-bonus-rolls';
+import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND,WEAPON_BONUS_ROLL_VERSION,weaponBonusCompactLine,weaponBonusRollGrade} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
 import type {CraftedGearInstance,GameState} from '../src/core/types';
 
@@ -41,7 +41,7 @@ for(const [id,rarity,count] of [
     const range=weaponBonusRange(tier,row.stat);
     return !!range&&row.basisPoints>=range[0]&&row.basisPoints<=range[1]&&(row.basisPoints-range[0])%10===0;
   }), 'Each rolled stat must use its own tier range in 0.1% steps');
-  ok(first!.every(row=>weaponBonusLine(id,rarity,row).includes('roll)')),'Tooltip should show the range and roll strength');
+  ok(first!.every(row=>weaponBonusLine(id,rarity,row).includes('/100 roll')),'Tooltip should show the range and roll strength');
   ok(JSON.stringify(normalizeWeaponBonuses(id,rarity,first))===JSON.stringify(first),'Valid rolls must survive normalization');
 }
 
@@ -52,9 +52,9 @@ ok(weaponBonusRange(5,'haste')?.join(',')==='120,250','T5 Haste is 1.2–2.5%');
 ok(weaponBonusRange(7,'potency')?.join(',')==='300,550','T7 Potency is 3.0–5.5%');
 ok(weaponBonusRange(9,'critRate')?.join(',')==='150,300','T9 Crit Rate is capped at 3.0%');
 ok(weaponBonusRange(9,'maxHp')?.join(',')==='500,800','T9 Max HP reaches 8.0%');
-ok(weaponBonusLine(t3,'common',{stat:'critRate',basisPoints:100}).includes('0.5–1.5%'),
+ok(weaponBonusLine(t3,'common',{stat:'critRate',basisPoints:100}).includes('Range 0.5–1.5%'),
   'Tooltip displays the Crit Rate-specific tier range');
-ok(weaponBonusLine(t5,'common',{stat:'haste',basisPoints:200}).includes('1.2–2.5%'),
+ok(weaponBonusLine(t5,'common',{stat:'haste',basisPoints:200}).includes('Range 1.2–2.5%'),
   'Tooltip displays the Haste-specific tier range');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:200}]),
   'The former T3 2.0% Crit Rate value must be rejected under the new cap');
@@ -77,6 +77,19 @@ for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){
   const bonuses=rollWeaponBonuses(id,'common','class-pool',.5)!;
   ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for its class role');
 }
+ok(WEAPON_BONUS_ROLL_VERSION===2,'Current weapon rolls must use the versioned stat-specific balance table');
+ok(weaponBonusRange(3,'critRate',1)?.join(',')==='100,300','Older v1 receipts keep their original T3 1–3% range');
+ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:250}],1),
+  'Already minted v1 high Crit Rate rolls must be preserved after rebalance');
+ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:250}],2),
+  'New version 2 rolls must respect the tightened Crit Rate cap');
+ok(weaponBonusLine(t3,'common',{stat:'critRate',basisPoints:250},1).includes('Range 1.0–3.0%'),
+  'Old weapon tooltips must retain their original mint-time range');
+ok(weaponBonusCompactLine({stat:'critRate',basisPoints:150})==='+1.5% Crit Rate',
+  'Compact labels must never confuse the raw bonus with roll strength');
+ok(weaponBonusRollGrade(100)==='Perfect'&&weaponBonusRollGrade(95)==='Excellent'
+  &&weaponBonusRollGrade(80)==='Strong'&&weaponBonusRollGrade(35)==='Standard',
+  'Roll quality labels must use distinct relative grades');
 ok(new Set([.1,.2,.3,.4,.5,.6,.7,.8].map(roll=>JSON.stringify(rollWeaponBonuses(t3,'common','stable-receipt',roll)))).size>1,
   'The trusted claim roll must influence weapon attributes');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:500}]),'Out of range values must never grant stats');
@@ -91,6 +104,17 @@ const copy=draftCraftedGearInstance({itemId:t5,ownerCharacterId:owner,jobId:'wea
 ok(copy.weaponBonuses?.length===2,'New T5 forged copy must receive two attributes');
 const normalized=normalizeCraftedGearInstances([copy])[0];
 ok(JSON.stringify(normalized.weaponBonuses)===JSON.stringify(copy.weaponBonuses),'Saved attributes must survive round-trip');
+ok(normalized.weaponBonusRollVersion===2,'New copies retain their stat-range balance version');
+const preRebalanceCopy={
+  ...copy,id:'v1-legacy-draft',weaponBonusRollVersion:1 as const,
+  weaponBonuses:[{stat:'critRate' as const,basisPoints:250},{stat:'haste' as const,basisPoints:290}],
+};
+const keptV1=normalizeCraftedGearInstances([preRebalanceCopy])[0];
+ok(keptV1.weaponBonusRollVersion===1&&keptV1.weaponBonuses?.[0].basisPoints===250,
+  'Stat-specific retuning must not silently remove earlier minted rolled weapons');
+const unversionedV1=normalizeCraftedGearInstances([{...preRebalanceCopy,weaponBonusRollVersion:undefined}])[0];
+ok(unversionedV1.weaponBonusRollVersion===1&&unversionedV1.weaponBonuses?.[0].basisPoints===250,
+  'Older draft weapon rolls without an explicit version must use the prior table');
 const unrolled:CraftedGearInstance={...copy,weaponBonuses:undefined};
 ok(!normalizeCraftedGearInstances([unrolled])[0].weaponBonuses,'Old weapon remains unchanged and receives no fabricated attributes');
 const withInstance=(record:CraftedGearInstance,selectedId=record.id):GameState=>({

@@ -70,8 +70,8 @@ const dustBefore=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').red
 state=dismantleGemV1(state,'gem:effect_bulwark:g1',1);
 const dustAfter=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 ok(dustAfter===dustBefore+1,'Dismantling a Cut gem should return exactly 1 Gem Dust');
-// With the last loose Bulwark copy destroyed, the list should hide unavailable combines.
-ok(!availableGemCombinesV1(state).some(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1),'Unavailable combines without loose gems stay hidden');
+// Dismantling must never bypass the recipe unlock, even when an entry is still visible.
+ok(!availableGemCombinesV1(state).some(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1&&row.ready),'Dismantling must not unlock Effect Gem combining');
 ok(MONSTERS.some(monster=>monster.level>=4&&monster.level<=25&&monster.drops.some(drop=>drop.itemId.startsWith('raw_gem:')&&drop.itemId.endsWith(':g1'))),'Asterfall combat should provide an early unrefined Grade I gem path');
 let researchState={...state,skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,level:25,xp:totalXpAtLevel(25)}:row)};
 const researchBeforeDust=researchState.inventory.stacks.find(row=>row.itemId==='GEM_DUST')?.quantity??0,researchBeforeGold=researchState.character!.gold,researchBeforeXp=researchState.skills.find(row=>row.skillId==='enchanting')!.xp;

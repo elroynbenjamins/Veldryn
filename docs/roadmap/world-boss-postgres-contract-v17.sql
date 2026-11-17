@@ -38,7 +38,11 @@ CREATE TABLE private.world_boss_attempts_v17 (
  account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
  request_id text NOT NULL CHECK (request_id ~ '^[A-Za-z0-9_-]{8,128}$'),
  ordinal smallint NOT NULL CHECK (ordinal BETWEEN 1 AND 3),
- character_id uuid NOT NULL REFERENCES public.characters(id) ON DELETE RESTRICT,
+ -- Keep the immutable character identity even if its owner later deletes
+ -- that character. Server-only V18/V22 reservation (or V27 donation) must
+ -- verify the owner against public.characters BEFORE writing this receipt.
+ -- An FK with ON DELETE RESTRICT would permanently block character deletion.
+ character_id uuid NOT NULL,
  status text NOT NULL DEFAULT 'reserved'
    CHECK (status IN ('reserved','committed','voided')),
  war_order text NOT NULL CHECK (war_order IN ('break_armor','hold_line','steady_assault')),

@@ -5,7 +5,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
 import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
-import {moveCraftedGearInstance,equipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {moveCraftedGearInstance,equipCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND,WEAPON_BONUS_ROLL_VERSION,weaponBonusCompactLine,weaponBonusRollGrade} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
@@ -188,6 +188,20 @@ ok(normalized.ownerCharacterId!==transferred.character!.id,
 for(const bonus of normalized.weaponBonuses!)
   close(inheritedRolls[bonus.stat]??0,bonus.basisPoints/10_000,
     'Shared-bank recipient must benefit from the exact equipped copy');
+// Unequipping removes the stat effect, but keeps the exact forged receipt and
+// its versioned rolls in equipment storage through an ordinary save round-trip.
+const unequipped=unequipCraftedGearInstance(afterEquip,normalized.id);
+ok(Object.keys(equippedWeaponBonusStats(unequipped)).length===0,
+  'Unequipping a rolled weapon immediately removes its combat modifiers');
+const reloaded=JSON.parse(JSON.stringify(unequipped)) as GameState;
+const persisted=reloaded.account.craftedGearInstances?.find(row=>row.id===normalized.id);
+ok(persisted?.weaponBonusRollVersion===WEAPON_BONUS_ROLL_VERSION
+  &&JSON.stringify(persisted?.weaponBonuses)===JSON.stringify(normalized.weaponBonuses),
+  'Saved state must preserve the exact weapon roll version and both attributes');
+const restored=equipCraftedGearInstance(reloaded,normalized.id);
+for(const bonus of normalized.weaponBonuses!)
+  close(equippedWeaponBonusStats(restored)[bonus.stat]??0,bonus.basisPoints/10_000,
+    'Re-equipping after a save must restore the original weapon bonuses');
 ok(Object.keys(equippedWeaponBonusStats(withInstance(normalized,'nonexistent-copy'))).length===0,
   'Wrong or missing equipped receipt must not grant another weapon bonus');
 ok(Object.keys(equippedWeaponBonusStats({...withBonus,character:{...withBonus.character!,equipmentInstanceIds:{}}})).length===0,

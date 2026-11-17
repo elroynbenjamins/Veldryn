@@ -102,3 +102,22 @@ test('polished preview honors reduced motion and announces important local chang
  assert.match(screen,/accessibilityRole="header"/);
  assert.match(screen,/accessibilityLabel=.*item\.name/,'market item exposes its sample price to screen readers');
 });
+
+test('stage-specific stories, settlement and verified trade history remain explicit',()=>{
+ for(const snippet of [
+  'Survey the crossing and inspect broken bridge supports.',
+  'Read tracks and study signs in the moonlit woods.',
+  'Trace rune fractures and broken magic circuits.',
+  'Translate mirrored glyphs in the forgotten archive.'
+ ]){
+  assert.ok(screen.includes(snippet),'missing distinct stage: '+snippet);
+ }
+ assert.match(screen,/id:'results',label:'Results'/);
+ assert.match(screen,/DAY 8 · SETTLEMENT/);
+ assert.match(screen,/Claim settlement · Not available/);
+ assert.match(screen,/id:'history',label:'History'/);
+ assert.match(screen,/TRADE AUDIT TRAIL/);
+ assert.match(screen,/No verified transactions/);
+ assert.match(screen,/import \{UiIcon\} from '\.\.\/components\/UiIcon'/);
+ assert.ok(!screen.includes("onPress={()=>purchaseMarketOffer("), 'prototype never buys from the economy');
+});

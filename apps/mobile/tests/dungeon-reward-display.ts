@@ -19,7 +19,8 @@ expect(dungeonRewardDisplayAmount(unclaimed,{phase:'completed',mode:'live'},budg
 expect(dungeonRewardDisplayAmount(unclaimed,{phase:'failed',mode:'qmode'},budget).amount,12,'Failure consolation is capped at twelve Marks');
 expect(dungeonRewardDisplayAmount(unclaimed,{phase:'failed',mode:'qmode'},{...budget,failureConsolationRemaining:0}).amount,0,'Exhausted consolation limit must show genuine zero');
 
-const claimed=dungeonRewardDisplayAmount({claimed_at:'2026-11-15T05:00:00Z',reward_json:{enhanced_marks:140,marks:28}},completed,budget);
+const claimedReceipt={claimed_at:'2026-11-15T05:00:00Z',reward_json:{enhanced_marks:140,marks:28}};
+const claimed=dungeonRewardDisplayAmount(claimedReceipt,completed,budget);
 expect(claimed.amount,28,'Claimed amount always overrides pre-claim maximum');
 expect(claimed.estimated,false,'Claimed amount is exact');
 expect(dungeonRewardDisplayAmount({claimed_at:null,reward_json:{marks:7}},completed,budget).amount,7,'Pre-stored fixed Echo assistance marks remain exact');
@@ -37,9 +38,9 @@ expect(parseDungeonCombatMarks({normal:1,elite:0,total:-3}),undefined,'Negative 
 expect(parseDungeonCombatMarks(null),undefined,'Missing ledger receipt must not become a fake zero');
 expect(dungeonRunMarksBreakdown([unclaimed],completed,combat,budget).total,151,'Unclaimed completion and already credited combat total are shown together');
 expect(dungeonRunMarksBreakdown([unclaimed],completed,combat,budget).estimated,true,'Pending total must be flagged as estimated');
-expect(dungeonRunMarksBreakdown([claimed],completed,combat,budget).total,39,'Claimed completion is added to combat exactly once');
-expect(dungeonRunMarksBreakdown([claimed],completed,combat,budget).estimated,false,'Claimed total is exact');
-expect(dungeonRunMarksBreakdown([claimed],completed,undefined,budget).total,undefined,'No total when actual combat receipt is missing');
+expect(dungeonRunMarksBreakdown([claimedReceipt],completed,combat,budget).total,39,'Claimed completion is added to combat exactly once');
+expect(dungeonRunMarksBreakdown([claimedReceipt],completed,combat,budget).estimated,false,'Claimed total is exact');
+expect(dungeonRunMarksBreakdown([claimedReceipt],completed,undefined,budget).total,undefined,'No total when actual combat receipt is missing');
 expect(dungeonRunMarksBreakdown([],completed,combat,budget).total,undefined,'No total without completion receipt');
 
 console.log('PASS dungeon reward preview displays pre-claim Marks, reduced reward, failure quota and live bonus');

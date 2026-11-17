@@ -57,8 +57,6 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  const selectedStory=stories.find(item=>item.id===storyId)??stories[0];
  const accent=feature==='boss'?selectedBoss.color:feature==='party'?selectedStory.accent:title.accent;
  const heroSceneId=feature==='boss'?selectedBoss.scene:feature==='party'?selectedStory.scene:null;
- const social=usePartySocial();
- const partyConnected=Boolean(social.party?.id);
  const guideTopics=feature==='boss'?[
   ['War Camp','Prepare during the five-day Monday–Friday window. Each account can donate at most twice.'],
   ['Battle','The boss is available for the full Saturday–Sunday battle window. Three attacks are shared across your account, not granted per character.'],
@@ -94,16 +92,11 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
     {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} onSelect={setBossId}/>:null}
-    {feature==='party'?<PartyContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} hasParty={partyConnected} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty}/>:null}
+    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
-   {feature==='party'?<Pressable accessibilityRole="button" accessibilityLabel={partyConnected?'Open Party Chat':'Open Party to find members'} onPress={partyConnected?onOpenPartyChat:onOpenParty} style={[s.partyDock,{borderTopColor:accent}]}>
-     <View style={[s.dockGlyph,{borderColor:accent}]}><UiIcon name="chat" size={23}/></View>
-     <View style={s.flex}><Text style={s.dockTitle}>Party Chat</Text><Text style={s.dockDescription}>{partyConnected?'Coordinate with your Party':'Join a Party to unlock chat'}</Text></View>
-     {partyUnread>0&&partyConnected?<View style={s.unread}><Text style={s.unreadText}>{partyUnread>99?'99+':partyUnread}</Text></View>:null}
-     <Text style={s.dockArrow}>›</Text>
-   </Pressable>:null}
+   {feature==='party'?<PartyPreviewDock s={s} accent={accent} partyUnread={partyUnread} onOpenParty={onOpenParty} onOpenPartyChat={onOpenPartyChat}/>:null}
    <Modal transparent animationType={reduceMotion?'none':'fade'} visible={guide} onRequestClose={()=>setGuide(false)}>
      <View style={s.modalShade} onAccessibilityEscape={()=>setGuide(false)}><Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close guide" onPress={()=>setGuide(false)}/><View style={s.modal}>
        <View style={s.modalHeading}><View style={s.flex}><Text style={[s.eyebrow,{color:accent}]}>FIELD GUIDE</Text><Text accessibilityRole="header" style={s.cardTitle}>{title.title}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close guide" onPress={()=>setGuide(false)} style={s.help}><Text style={s.helpText}>×</Text></Pressable></View>
@@ -222,6 +215,22 @@ const partyStoryGuides={
  },
 } as const;
 const partyActionStages=['Stage 1','Stage 2','Stage 2','Stage 3'] as const;
+/** Only Party Events subscribes to live Party state; market and boss QA never rerender for Party updates. */
+function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void}){
+ const social=usePartySocial();
+ return <PartyContents s={s} C={C} accent={accent} tab={tab} onTab={onTab} storyId={storyId} onStoryChange={onStoryChange}
+  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty}/>;
+}
+function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:Shared['s'];accent:string;partyUnread:number;onOpenParty:()=>void;onOpenPartyChat:()=>void}){
+ const social=usePartySocial();
+ const partyConnected=Boolean(social.party?.id);
+ return <Pressable accessibilityRole="button" accessibilityLabel={partyConnected?'Open Party Chat':'Open Party to find members'} onPress={partyConnected?onOpenPartyChat:onOpenParty} style={[s.partyDock,{borderTopColor:accent}]}>
+   <View style={[s.dockGlyph,{borderColor:accent}]}><UiIcon name="chat" size={23}/></View>
+   <View style={s.flex}><Text style={s.dockTitle}>Party Chat</Text><Text style={s.dockDescription}>{partyConnected?'Coordinate with your Party':'Join a Party to unlock chat'}</Text></View>
+   {partyUnread>0&&partyConnected?<View style={s.unread}><Text style={s.unreadText}>{partyUnread>99?'99+':partyUnread}</Text></View>:null}
+   <Text style={s.dockArrow}>›</Text>
+ </Pressable>;
+}
 function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
  const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);

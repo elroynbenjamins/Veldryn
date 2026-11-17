@@ -47,3 +47,35 @@ test('backend release and economy flags stay sealed; previews perform no game wr
  assert.match(screen,/Cast vote · Server unavailable/);
  assert.doesNotMatch(screen,/purchaseMarketOffer|claimWorldBossReward|submitPartyEventVote|supabase\.(rpc|from)/);
 });
+
+
+test('Party Event chat is isolated from global World, Guild, System and player-roster surfaces',()=>{
+ assert.match(app,/partyOnly=\{featureHubShell\.showLocalPartyChatDock\}/);
+ assert.match(chat,/if\(partyOnly&&next!=='party'\)return/);
+ assert.match(chat,/!partyOnly&&<ChatTab channel="world"/);
+ assert.match(chat,/!partyOnly&&<ChatTab channel="guild"/);
+ assert.match(chat,/!partyOnly&&<ChatTab channel="system"/);
+ assert.match(chat,/!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured/);
+ assert.match(chat,/!partyOnly&&<View style=\{\[s\.channelPanel,channel!=='world'/);
+});
+
+test('World Boss and Party art uses canonical regional scenes and each family has specific vote labels',()=>{
+ assert.match(screen,/import \{regionScenes\} from '\.\.\/theme\/upgraded-artwork'/);
+ for(const scene of ["scene:'IRONWOOD'","scene:'KINGS_ROAD'","scene:'SUNSCAR'","scene:'FROSTMARCH'","scene:'SILVERBROOK'","scene:'OLD_MINES'"]){
+  assert.ok(screen.includes(scene),scene+' scene missing');
+ }
+ for(const choice of ['Safe Pass','Brace Wagons','Shadow Trail','Hunt the Alpha','Charge Sigils','Overload Wards','Deep Passage','Preserve Seals']){
+  assert.ok(screen.includes(choice),choice+' choice missing');
+ }
+ assert.match(screen,/roster=\{social\.party\?\.members\.map/);
+});
+
+test('Market example item selection, price history and fee explanation stay strictly read-only',()=>{
+ assert.match(screen,/ILLUSTRATIVE PRICE TREND · NOT REAL SALES/);
+ assert.match(screen,/Example T2 Forged Armor/);
+ assert.match(screen,/requiredLevel:18/);
+ assert.match(screen,/const gross=qty\*per,fee=Math\.ceil\(gross\*\.05\)/);
+ assert.match(screen,/Purchase · Market unavailable/);
+ assert.match(screen,/No listing has been submitted/);
+ assert.match(screen,/No listings or ownership records are loaded/);
+});

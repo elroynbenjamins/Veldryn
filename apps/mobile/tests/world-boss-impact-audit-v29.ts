@@ -1,5 +1,6 @@
 /** World Boss V29: deterministic, offline-only anti-farming and fairness tests. */
 import {assert} from './test-assert';
+import {CLASSES} from '../src/content/classes';
 import {
  auditProvenWorldBossImpactV29,provisionalWorldBossRoleUtilityV29,
  WORLD_BOSS_V29_IMPACT_LIVE,WORLD_BOSS_V29_IMPACT_PAYOUTS_APPROVED,
@@ -10,10 +11,20 @@ import {
 const EVENT='30000000-0000-4000-8000-000000000029';
 const uuid=(n:number)=>'10000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const digest=(n:number)=>n.toString(16).padStart(64,'0');
-const catalog:WorldBossV29ClassRole[]=[];
-for(const role of ['tank','damage','support'] as const)
- for(let index=1;index<=3;index++)
-  catalog.push({classId:role+'_'+index,role});
+// Always calibrate the actual game catalog. Fake 3/3/3 class fixtures hid
+// the real four-Damage/two-Support role distribution.
+const catalog:WorldBossV29ClassRole[]=CLASSES.map(cls=>({
+ classId:cls.id,
+ role:cls.role.toLowerCase() as WorldBossV29ClassRole['role'],
+}));
+assert.equal(catalog.length,9);
+assert.deepEqual(
+ catalog.reduce((counts,c)=>{
+  counts[c.role]++;return counts;
+ },{tank:0,damage:0,support:0}),
+ {tank:3,damage:4,support:2},
+ 'audit class mix must equal current Veldryn roster',
+);
 function actor(classId:string,id:number):WorldBossV29ProvenCharacter{
  const role=catalog.find(x=>x.classId===classId)!.role;
  return {characterId:uuid(id),classId,role,combatPower:10000,
@@ -45,6 +56,13 @@ assert.equal(WORLD_BOSS_V29_MIN_ACCOUNTS_PER_CELL,20);
 assert.equal(base.length,2700);
 const audit=(attempts:readonly WorldBossV29ProvenAttempt[])=>
  auditProvenWorldBossImpactV29({eventId:EVENT,expectedClasses:catalog,attempts});
+// A structurally valid nine-class catalog with a fake 3/3/3 role split
+// is not representative of Veldryn and must fail closed.
+const fakeSymmetric=[...catalog.map(x=>({...x}))];
+fakeSymmetric.find(x=>x.classId==='KNIFE_DANCER')!.role='support';
+fail(()=>auditProvenWorldBossImpactV29({
+ eventId:EVENT,expectedClasses:fakeSymmetric,attempts:base,
+}),'invalid_class_role_distribution');
 const clean=audit(base);
 assert.equal(clean.status,'review_only_impact_locked');
 assert.equal(clean.referenceCells.length,135);
@@ -76,7 +94,7 @@ const sharedRequest:WorldBossV29ProvenAttempt[]=[
 assert.equal(audit(sharedRequest).uniqueAccounts,2700);
 const mixed:WorldBossV29ProvenAttempt[]=[{
  ...base[0],participants:[...base[0].participants,
-  actor('damage_1',60001),actor('support_1',60002)],
+  actor('WAYFINDER',60001),actor('DAWNKEEPER',60002)],
 },...base.slice(1)];
 const mixedResult=audit(mixed);
 const three=mixedResult.preview.find(x=>x.accountId===base[0].accountId)!;
@@ -85,7 +103,7 @@ assert.equal(mixedResult.uniqueAccounts,2700);
 assert.equal(three.rewardAuthorized,false);
 // No extra reference-vote per attempt or character of the same class.
 const doubleSameClass:WorldBossV29ProvenAttempt[]=[{
- ...base[0],participants:[...base[0].participants,actor('tank_1',60003)],
+ ...base[0],participants:[...base[0].participants,actor('IRONWARDEN',60003)],
 },...base.slice(1)];
 assert.equal(audit(doubleSameClass).referenceCells[0].uniqueAccounts,20);
 fail(()=>audit([base[0],base[0]]),'duplicate_attempt_or_replay');
@@ -107,7 +125,7 @@ fail(()=>audit([base[0],{...base[1],participants:[
  }]),'foreign_or_changed_character');
 fail(()=>audit([base[0],{...base[0],attempt:2,
   requestId:'V29_CHANGED_CLASS',replaySha256:digest(4000),
-  participants:[{...base[0].participants[0],classId:'tank_2'}],
+  participants:[{...base[0].participants[0],classId:'BASTION'}],
  }]),'foreign_or_changed_character');
 fail(()=>audit([{...base[0],participants:[{
  ...base[0].participants[0],effectiveHealing:-1,

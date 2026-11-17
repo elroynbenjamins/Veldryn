@@ -5,7 +5,7 @@
 -- For a verified account, report ONLY aggregate counts; do not expose IDs.
 BEGIN;
 CREATE FUNCTION private.world_boss_v36_erasure_preflight(p_account uuid)
-RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER
 SET search_path=''
 AS $preflight$
 DECLARE

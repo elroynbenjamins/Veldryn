@@ -216,6 +216,7 @@ export function activeActivityLevelPace(state:GameState,xpPerHour:number):LevelP
   if(activity.kind==='combat')return characterLevelPace(state,xpPerHour);
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
   if(gather)return skillLevelPace(state,gather.skillId as GatheringSkillId,xpPerHour);
+  if(activity.kind==='processing'&&activity.processing)return skillLevelPace(state,activity.processing.skillId,xpPerHour);
   if(activity.kind==='alchemy'||activity.kind==='exploration'||activity.kind==='faith')return skillLevelPace(state,activity.kind as SkillId,xpPerHour);
   return undefined;
 }

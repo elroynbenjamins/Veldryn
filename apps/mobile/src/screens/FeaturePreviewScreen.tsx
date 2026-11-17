@@ -308,7 +308,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
     <View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>{type} preparation · verified completion required</Text></View>
     <Tag s={s} label={effect} accent={accent}/>
    </View>)}
-   <Text style={s.finePrint}>Partial supplies never activate a preparation bonus. No real orders, inventory quantities or completion status are loaded here.</Text>
+   <Text style={s.finePrint}>Partial supplies never activate a preparation bonus. {storyStatus?'The quantities above are read-only; preparation bonuses are still proposed and never automatically activated.':'No real orders, inventory quantities or completion status are loaded here.'}</Text>
   </Card>
  </>;
  if(tab==='vote')return <Card s={s}><SectionHeading s={s} kicker="TWO LOCKED PARTY BALLOTS" title="The party decides" sub="Every story has a Stage 2 route and a later Stage 3 finale plan. Try the local preview; no votes are sent."/>

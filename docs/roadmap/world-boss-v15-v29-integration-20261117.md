@@ -81,4 +81,12 @@
 - V37's positive fixture now starts exactly Monday 00:00 UTC and, on a Saturday/Sunday runner, checks that donations fail closed rather than falsely expecting weekday deposits. A separate V38 PostgreSQL fixture tries Tuesday 00:00 and Monday 07:00 event starts and checks no inventory, save revision, War Camp counter or receipt changes.
 - These changes remain draft SQL and disposable CI fixtures. **V38 exact-head validation pending**; no real event schedule, database, inventory, server route or feature flag was changed.
 
-**Next stage:** verify V38 dedicated PostgreSQL validation; resolve the independent Expo issue (#1345); finalize retention and account-erasure policy (#1348); then prepare reviewed staging migrations, live-schema concurrency/worker tests and economy balancing before activation.
+## V39 War Camp read-projection reconciliation
+- V38 exact-head dedicated World Boss and disposable PostgreSQL jobs **passed** at commit `aea64bec`. The independent Mobile Core check still failed on the Expo SDK patch discrepancy at that head.
+- A real hidden read-side integrity gap remained: V27 validated each track counter and the snapshot's cryptographic digest, but could accept a self-consistent yet **misleading** frozen tier or a War Camp revision inconsistent with its contribution totals.
+- V39 checks that `revision = fortifications + fieldProvisions + siegecraft`. Every V27 accepted bundle increments exactly one counter and the revision in one private transaction. A mismatch fails closed before any progress reaches the caller.
+- Once frozen, the reported benefit level for each of the three War Camp tracks must agree with the thresholds and contribution totals. A properly re-hashed but inflated level is rejected. Unfrozen valid progress remains readable.
+- Added TypeScript fixture regressions for a fully re-hashed stale-count revision, exaggerated frozen benefit tier and an unfrozen valid projection. No changes to material prices, game balance, currencies, SQL migration paths, routes or feature flags.
+- This validator checks **internal consistency**, not the authority of the database or authenticity of server inputs; trusted reads and permission checks are still required. **Exact-head V39 CI remains to be confirmed.**
+
+**Next stage:** check V39 exact-head CI; resolve the independent Expo issue (#1345); finalize retention and account-erasure policy (#1348); then prepare reviewed staging migrations, live-schema concurrency/worker tests and economy balancing before activation.

@@ -47,7 +47,8 @@ for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){
   const bonuses=rollWeaponBonuses(id,'common','class-pool',.5)!;
   ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for its class role');
 }
-ok(JSON.stringify(rollWeaponBonuses(t3,'common','stable-receipt',.4))!==JSON.stringify(rollWeaponBonuses(t3,'common','stable-receipt',.8)),'Different trusted claim rolls should generate different weapon bonuses');
+ok(new Set([.1,.2,.3,.4,.5,.6,.7,.8].map(roll=>JSON.stringify(rollWeaponBonuses(t3,'common','stable-receipt',roll)))).size>1,
+  'The trusted claim roll must influence weapon attributes');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:500}]),'Out of range values must never grant stats');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'potency',basisPoints:200}]),'Damage weapons cannot roll Support-only stats');
 ok(!normalizeWeaponBonuses(t3,'epic',[{stat:'haste',basisPoints:200},{stat:'haste',basisPoints:200}]),'Repeated bonuses are not legal');

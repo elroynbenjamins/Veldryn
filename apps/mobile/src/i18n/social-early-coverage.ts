@@ -564,6 +564,15 @@ export const socialEarlyRows={
   "No threshold phases triggered.": ["Ни одна фаза по порогу здоровья не сработала.","Can eşiğine bağlı aşama tetiklenmedi."],
   "Boss casts seen": ["Применённые умения босса","Görülen boss büyüleri"],
   "No boss casts started before the fight ended.": ["До конца боя босс не начал применять умения.","Savaş bitmeden boss yeteneği başlamadı."],
+  // Dungeon Marks: distinguish already-credited combat from claimable completion.
+  "This run · Expedition Marks": ["Этот поход · Знаки экспедиции","Bu sefer · Sefer Nişanları"],
+  "Enemy encounters · already credited": ["Сражения с врагами · уже начислено","Düşman karşılaşmaları · zaten eklendi"],
+  "Normal: {normal} × 3 · Elite: {elite} × 5": ["Обычные: {normal} × 3 · Элитные: {elite} × 5","Normal: {normal} × 3 · Elit: {elite} × 5"],
+  "Combat Marks breakdown unavailable. Refresh to retry.": ["Сведения о боевых знаках недоступны. Обновите и повторите.","Savaş Nişanı dökümü kullanılamıyor. Tekrar denemek için yenile."],
+  "Completion reward · claim below": ["Награда за завершение · заберите ниже","Tamamlama ödülü · aşağıdan al"],
+  "Total Marks from this run": ["Всего знаков за этот поход","Bu seferin toplam Nişanı"],
+  "Combat Marks are already in your wallet. Completion Marks are added only when claimed.": ["Боевые знаки уже на вашем счёте. Знаки за завершение начисляются только после получения награды.","Savaş Nişanları bakiyene zaten eklendi. Tamamlama Nişanları yalnızca ödülü aldığında eklenir."],
+  "Total is estimated until the claim is complete.": ["Сумма приблизительная, пока награда не получена.","Ödül alınana kadar toplam tahminidir."],
 } as const satisfies Partial<Record<SocialMessageKey,readonly [string,string]>>;
 
 export function socialEarlyText(language:'ru'|'tr',key:string):string|undefined{

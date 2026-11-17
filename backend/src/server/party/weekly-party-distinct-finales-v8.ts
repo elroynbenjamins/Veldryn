@@ -379,7 +379,7 @@ export function deriveHiddenPartyFamilyObjectiveV8(input:{
   interrupts,bossDamage:round(bossDamage),healing:round(healing),shielding:round(shielding),
   companionContributions:general.companionContributions,cues};
 }
-/** Full preview: four-player team is exact 1 Tank / 2 Damage / 1 Support. */
+/** V32 compatibility: Party Events allow flexible 2–4-character role mixes. */
 export function previewHiddenPartyFamilyFinaleV8(input:{
  encounter:PartyEventFinaleV8;players:readonly CombatantDefinition[];seed:string;maxDurationMs?:number;
 }):{kind:'hidden_non_rewarding_family_replay';combat:CombatResult;objective:FamilyObjectiveTraceV8}{
@@ -388,10 +388,8 @@ export function previewHiddenPartyFamilyFinaleV8(input:{
  if(players.length<2||players.length>4||new Set(players.map(p=>p.id)).size!==players.length
    ||players.some(p=>p.team!=='players'||p.role==='enemy'||!(p.role in counts)))
   throw Error('party_finale_invalid_roster');
- for(const p of players)counts[p.role as keyof typeof counts]++;
- if(counts.tank>1||counts.damage>2||counts.support>1
-  ||players.length===4&&(counts.tank!==1||counts.damage!==2||counts.support!==1))
-  throw Error('party_finale_role_composition_invalid');
+ // No tank/healer/DPS quota. Stage combat can be harder for some teams,
+ // but the chosen legal Party composition is never forcibly rematched.
  if(!input.seed||input.seed.length>128)throw Error('party_finale_invalid_seed');
  if(input.maxDurationMs!==undefined&&(!Number.isSafeInteger(input.maxDurationMs)
   ||input.maxDurationMs<5000||input.maxDurationMs>180000))

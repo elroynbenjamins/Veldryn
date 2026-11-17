@@ -11,6 +11,7 @@ export interface ProfileBackgroundPreview{
 /** Profile preview assets. Dungeon rewards remain gated by account ownership and release settings. */
 export const PROFILE_BACKGROUND_PREVIEWS:readonly ProfileBackgroundPreview[]=[
   {id:'bg_veilbreak',name:'Veilbreak Gothic Moonruins',source:require('../../assets/profile-backgrounds/bg_veilbreak.webp'),status:'export_prepared',unlockBinding:null},
+  {id:'bg_frostfall',name:'Aurora Winter Sky',source:require('../../assets/profile-backgrounds/bg_frostfall.webp'),status:'export_prepared',unlockBinding:null},
   {id:'bg_harvestwake',name:'Harvestwake Autumn Market',source:require('../../assets/profile-backgrounds/bg_harvestwake.webp'),status:'export_prepared',unlockBinding:null},
   {id:'bg_grand_storehouse',name:'Grand Storehouse',source:require('../../assets/profile-backgrounds/bg_harvestwake.webp'),status:'export_prepared',unlockBinding:null},
   {id:'bg_kingdom_approach',name:'Kingdom Approach',source:require('../../assets/profile-backgrounds/bg_kingdom_approach.webp'),status:'export_prepared',unlockBinding:null},

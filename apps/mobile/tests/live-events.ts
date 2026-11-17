@@ -1,11 +1,13 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {liveEventDef} from '../src/content/live-events';
+import {EQUIPMENT_MAIN_RESOURCE_BUNDLES} from '../src/content/equipment-main-resource-shop';
+import {equipmentShopTierUnlocked} from '../src/core/equipment-shop-tier-unlock';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
 import {unlockCombatCompanion} from '../src/core/combat-companions';
 import {canUseProfileCosmetic,profileCosmeticReleased} from '../src/core/profile-cosmetics';
 import {profileRewardSource} from '../src/core/profile-customization';
 import {executeGameCommand} from '../src/core/game-commands';
-import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,eventOfferPurchaseCount,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 
@@ -133,5 +135,36 @@ const graceTime=eventEnd+60_000;
 ok(eventLifecycle(state,graceTime)?.phase==='claiming','Ended Veilbreak should enter its claim grace period');
 ok(!activeLiveEvent(state,graceTime),'Claim-period events must not generate activity drops');
 ok(eventLifecycle(state,eventEnd+8*86_400_000)===null,'Veilbreak should archive after its seven-day claim period');
+
+
+const frostTime=Date.UTC(2026,11,3,12),frostId='EVT_ANNUAL_012_2026';
+let frost=setLocalEventEnabled(createCharacter(newGame(frostTime),'IRONWARDEN','FrostShopTester'),true,frostTime,frostId);
+ok(liveEventDef(frostId)?.name==='Frostfall Festival','Frostfall is in the playable event catalogue');
+ok(liveEventDef('EVT_ANNUAL_012_2027')?.name==='Frostfall Festival','Frostfall can recur with isolated annual IDs');
+ok(EQUIPMENT_MAIN_RESOURCE_BUNDLES.length===7,'Both shops use seven reviewed equipment resource inputs');
+ok(eventShopOffers(frost,frostTime).filter(offer=>offer.reward.kind==='crafting_material').length===7,'Frostfall offers all seven selectable main materials');
+ok(eventShopOffers(frost,frostTime).length>=20,'Frostfall has a full holiday catalogue beyond the original five rewards');
+ok(!equipmentShopTierUnlocked(frost,4),'New characters cannot buy T4 equipment materials');
+const bundleId='frostfall_sunstone_ingot_100';
+let earlyMaterialBlocked=false;
+try{purchaseEventOffer({...frost,account:{...frost.account,eventCurrencyBalanceById:{[frostId]:50000}}},bundleId,frostTime)}catch{earlyMaterialBlocked=true;}
+ok(earlyMaterialBlocked,'Tier-locked Frostfall purchases are rejected before charging currency');
+frost={...frost,character:{...frost.character!,level:100},skills:frost.skills.map(skill=>({...skill,level:100})),account:{...frost.account,eventCurrencyBalanceById:{[frostId]:50000}}};
+ok(equipmentShopTierUnlocked(frost,4),'High-level Smithing or Tailoring unlocks T4 equipment bundles');
+const bankBefore=frost.bank.stacks.find(row=>row.itemId==='SUNSTONE_INGOT')?.quantity??0;
+frost=purchaseEventOffer(frost,bundleId,frostTime);
+ok((frost.bank.stacks.find(row=>row.itemId==='SUNSTONE_INGOT')?.quantity??0)===bankBefore+100,'Resource purchase deposits exactly 100 items in the shared Bank');
+ok(frost.account.eventCurrencyBalanceById?.[frostId]===50000-2800,'The server-authored Frostfall bundle price is deducted once');
+ok(eventOfferPurchaseCount(frost,frostId,bundleId,frostTime)===1,'One bundle purchased in the current UTC week');
+let weeklyLimitBlocked=false;try{purchaseEventOffer(frost,bundleId,frostTime+1000)}catch{weeklyLimitBlocked=true}
+ok(weeklyLimitBlocked,'A second bundle of the same type is blocked until the next UTC week');
+const nextWeek=frostTime+7*86400_000;
+ok(eventOfferPurchaseCount(frost,frostId,bundleId,nextWeek)===0,'Resource limit resets at the next UTC week');
+frost=purchaseEventOffer(frost,bundleId,nextWeek);
+ok((frost.bank.stacks.find(row=>row.itemId==='SUNSTONE_INGOT')?.quantity??0)===bankBefore+200,'Next-week purchase stacks another 100 items');
+const fullBank={...frost,bank:{...frost.bank,capacity:1,stacks:[{itemId:'SOME_OTHER_MATERIAL',quantity:1}]}};
+const currencyBefore=fullBank.account.eventCurrencyBalanceById?.[frostId];
+let bankFullBlocked=false;try{purchaseEventOffer(fullBank,'frostfall_moss_fiber_100',nextWeek)}catch{bankFullBlocked=true}
+ok(bankFullBlocked&&fullBank.account.eventCurrencyBalanceById?.[frostId]===currencyBefore,'A full Bank cannot consume currency or deliver a partial grant');
 
 console.log(JSON.stringify({status:'PASS',event:'Veilbreak',progress:eventProgress(state,eventId)},null,2));

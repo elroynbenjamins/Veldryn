@@ -6,9 +6,12 @@ export const eventPetSourceById=new Map<string,ImageSourcePropType>([
  // the Android image pipeline, including the profile-customization gallery.
  ['EVT_PET_013',require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.webp')],
  ['EVT_PET_014',require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic.webp')],
+ ['EVT_PET_015',require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png')],
+ ['EVT_PET_017',require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_017_Aurora_Fox.png')],
 ]);
 export const eventCompanionSourceById=new Map<string,ImageSourcePropType>([
  ['EVT_UNIT_007',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound_runtime.webp')],
  ['EVT_UNIT_008',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_008_Hollow_Knightling_runtime.webp')],
  ['EVT_UNIT_011',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_011_Lantern_Keeper_runtime.webp')],
+ ['EVT_UNIT_009',require('../../assets/event_collectibles/frostfall_festival/companions/EVT_UNIT_009_Frostbell_Herald.png')],
 ]);

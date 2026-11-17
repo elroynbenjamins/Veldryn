@@ -3,7 +3,7 @@ import {FROSTFALL_EVENT} from '../src/content/annual-events-v2';
 import {TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT} from '../src/content/annual-events-v3';
 import {SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT} from '../src/content/annual-events-v4';
 // Validate future authored metadata without promoting it into the runtime catalog.
-const AUTHORED_EVENT_CATALOG=[...LIVE_EVENT_CATALOG,FROSTFALL_EVENT,TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT];
+const AUTHORED_EVENT_CATALOG=[...LIVE_EVENT_CATALOG,TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT];
 import {eventUiCopy,validateLiveEventCatalog} from '../src/content/live-event-ui';
 import {seasonalEventExpeditionInfo} from '../src/core/coop-event-expeditions';
 import {isLiveEventVisualKey,LIVE_EVENT_VISUAL_KEYS} from '../src/content/live-event-visual-keys';
@@ -11,8 +11,9 @@ import {isLiveEventVisualKey,LIVE_EVENT_VISUAL_KEYS} from '../src/content/live-e
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
-equal(LIVE_EVENT_CATALOG.length,1,'Only the released event belongs in the runtime catalog');
+equal(LIVE_EVENT_CATALOG.length,2,'Only Veilbreak and server-scheduled Frostfall belong in the runtime definition catalog');
 equal(LIVE_EVENT_CATALOG[0].visualKey,'veilbreak','Veilbreak is the first release pack');
+equal(LIVE_EVENT_CATALOG[1].visualKey,'frostfall','Frostfall is defined for server-scheduled activation; client catalog membership never starts an event');
 const errors=validateLiveEventCatalog(AUTHORED_EVENT_CATALOG);
 equal(errors.length,0,`Live event catalog validation failed: ${errors.join(' | ')}`);
 

@@ -1,6 +1,7 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {createCharacter,newGame} from '../src/core/game';
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
+import {disposeCraftedGearInstance} from '../src/core/crafted-gear-ownership';
 import {equipmentCopyDisposalDecision,equipmentDisposalExplanation} from '../src/core/equipment-disposal-guidance';
 import type {GameState} from '../src/core/types';
 
@@ -25,6 +26,11 @@ assert.equal(equipmentCopyDisposalDecision(upgraded,copy.id,'sell').allowed,true
 assert.equal(equipmentCopyDisposalDecision(upgraded,copy.id,'salvage').allowed,true,'upgraded exact copies are salvageable when not manually protected');
 const locked:GameState={...state,account:{...state.account,craftedGearInstances:[{...copy,locked:true}]}};
 assert.match(equipmentCopyDisposalDecision(locked,copy.id,'sell').reason??'',/locked/i,'per-copy lock persists');
+const typeLocked:GameState={...state,settings:{...state.settings,lockedItemIds:[copy.itemId]}};
+assert.equal(equipmentCopyDisposalDecision(typeLocked,copy.id,'sell').allowed,false,'type-level lock blocks the preview');
+let directTypeLockBlocked=false;
+try{disposeCraftedGearInstance(typeLocked,copy.id,'sell')}catch(error){directTypeLockBlocked=/locked/i.test(String(error))}
+assert.equal(directTypeLockBlocked,true,'type-level lock cannot be bypassed with an exact-copy server command');
 const favorite:GameState={...state,settings:{...state.settings,favoriteItemIds:[copy.itemId]}};
 assert.match(equipmentCopyDisposalDecision(favorite,copy.id,'sell').reason??'',/favorite/i,'favorite remains protected');
 const unknown=equipmentCopyDisposalDecision(state,'not-a-receipt','sell');

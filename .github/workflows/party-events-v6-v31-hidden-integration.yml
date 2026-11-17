@@ -31,6 +31,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install referenced mobile TypeScript/react-native declarations
+        run: pnpm --dir ../apps/mobile install --frozen-lockfile
       - name: Baseline server TypeScript and existing weekly Party Events
         run: pnpm test:party-weekly-v2
       - name: Compile all new hidden server Party Event prototypes

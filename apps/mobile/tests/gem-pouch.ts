@@ -67,8 +67,10 @@ ok(gemStorageQuantity(pouchClaimed.state,rawId)===0&&gemPouch(pouchClaimed.state
 const equipped={...pouchClaimed.state,character:{...pouchClaimed.state.character!,equipment:{...pouchClaimed.state.character!.equipment,weapon:'basic_sword'}}};
 const socketed=socketGem(equipped,'basic_sword',gemId);
 ok(gemStorageQuantity(socketed,gemId)===0,'Socketing must consume gems directly from the pouch');
-const unsocketed=unsocketGem(socketed,'basic_sword',0);
-ok(gemStorageQuantity(unsocketed,gemId)===1,'Extraction must return the gem directly to the pouch');
+let extractionRejected=false;
+try{unsocketGem(socketed,'basic_sword',0)}catch(error){extractionRejected=String(error).includes('cannot be extracted')}
+ok(extractionRejected,'Installed gems must not be extracted from the shared pouch');
+ok(gemStorageQuantity(socketed,gemId)===0,'Rejected extraction must not refund a socketed gem');
 const filler=MOBILE_GEM_FAMILIES_V1.slice(0,30).map(family=>({itemId:'raw_gem:'+family.familyId+':g1',quantity:2}));
 ok(filler.length===30,'The regression must fill all 30 pouch slots');
 const fullPouch={...reserved.state,account:{...reserved.state.account,gemPouch:{capacity:30,stacks:filler}}};

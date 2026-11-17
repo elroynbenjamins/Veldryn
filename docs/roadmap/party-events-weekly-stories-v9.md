@@ -1,0 +1,1353 @@
+# Party Events v9 — unique stories throughout the preparation week
+
+**12 November 2026 — hidden implementation / not live.** Source:
+`backend/src/server/party/weekly-party-family-stages-v9.ts`.
+The existing v2 event 7 days active + 14 days rest, 3 resource/progress stages, two 6-hour votes and Day 8 boss remain unchanged. This is a deterministic UI/encounter preview, **not** a live stage action emitter, source of EP, reward calculator or online endpoint.
+
+## How each adventure feels different
+
+| Family | Stage 1: scouting, no combat | Stage 2: voted approach + skirmish | Stage 3: voted plan + defense rehearsal | Pixel-art scene and animation brief |
+| --- | --- | --- | --- | --- |
+| **Broken Caravan** | Survey the crossing, inspect damaged bridge supports and find raider footprints | Defend wagons against the v8 raider charge; **Safe Pass** or **Fast Pass** | Repair axles; **Brace Wagons** or **Disrupt Raiders** before the convoy | Dusty amber crossing, parallax wagon wheels and swaying rope, scouts raising flags, arrows striking wagons, convoy forming a defensive line |
+| **Nightfall Hunt** | Read tracks, identify prey and study plants/animal signs | Flush the pack and interrupt howls; **Clear Trail** or **Shadow Trail** | Mix scent decoys; **Hold Ground** or **Hunt the Alpha** | Indigo moonlight, sliding forest silhouettes and illuminated tracks, shaking foliage, alpha revealed through the moonbeams |
+| **Broken Wards** | Inspect rune fractures and trace broken magical circuits | Stabilize crackling spires; **Ground Spires** or **Charge Sigils** | Align runestones; **Protect Wards** or **Overload Wards** | Cyan arcane glow, flickering runes, spark showers, chain reactions and the final ward ring connecting |
+| **Lost Reliquary** | Translate mirrored glyphs and survey the ancient archive | Cross the mirror hall; **Quiet Passage** or **Deep Passage** | Restore the final seal; **Preserve Seals** or **Break Seals** | Violet reflective vault, drifting glyphs, water shimmer, rotating mirrors and hairline fracture animation |
+
+Three family-specific variation cues are authored for each event. Stage labels, motions, backdrops, foreground tokens, palettes, three timed flavor cues and supply-category mix are supplied to a future compact pixel UI. **Tokens are asset briefs, not claims that corresponding art has been generated or shipped.**
+
+## Four special action slots (same fairness, different story)
+
+The existing *proposed* 5 EP action slots keep their canonical identities:
+`scout_route` in Stage 1; `secure_approach` and `support_expedition` in Stage 2; `prepare_finale` in Stage 3. Each family now has bespoke names, motivations and alternative activities with real Veldryn skill labels. **These are descriptions only:** they do not mint EP or bypass server receipt validation. Example alternatives:
+
+- Caravan: map the safe road, construct a barricade, repair an axle, inspect convoy supplies.
+- Hunt: study tracks, identify safe escape routes, blend a scent decoy, verify a quiet camp.
+- Wards: copy the rune network, reconnect a conduit, ground a sigil, verify the ward circle.
+- Reliquary: translate glyphs, align the mirrors, restore a seal, verify the relic map.
+
+Each member can participate without being required to own a specific class or companion. Skill examples must be selectable alternatives, not new equipment/skill prerequisites.
+
+## Real combat and fully donated preparation bonuses
+
+Stage 1 remains explicitly **noncombat**. Stages 2 and 3 use the existing deterministic engine with their own v8-family abilities, periodic effects, boss shields/exposure phases and real combat event logs. Stage 2 uses only its voted tactic; Stage 3 also applies the previous stage's chosen route. Difficulty follows the established **Standard 1.0 / Veteran 1.2 / Heroic 1.4** prototype pressure. Stage previews enforce max 1 Tank / 2 Damage / 1 Support, matching [Party composition PR #1046](https://github.com/elroynbenjamins/Veldryn/pull/1046).
+
+The pre-existing required Stage 1/2/3 supply bonuses and optional Reinforced / Provisions / Specialist buffs still apply *unchanged*. To differentiate stories, **additional very modest, v9-preview-only family multipliers** are layered onto verified actors only after all relevant optional supply orders have been fully donated:
+
+| Family | Reinforced | Provisions | Specialist |
+| --- | --- | --- | --- |
+| Caravan | Defense ×1.03 | Max HP ×1.03 | Attack ×1.025 |
+| Hunt | Defense ×1.025 | Haste ×1.015 | Accuracy ×1.04 |
+| Wards | Defense ×1.04 | Healing power ×1.03 | Haste ×1.018 |
+| Reliquary | Defense ×1.025 | Healing power ×1.06 | Attack ×1.03 |
+
+These deliberately small proposed values **need balancing against actual gear tiers**. No extra material sink, stock refund, guaranteed rewards, companion favoritism or permanent stat upgrades have been added. Partial or invalid donations never qualify.
+
+## Technical guardrails
+
+- `PARTY_EVENT_STORY_STAGES_V9_RELEASED=false`, and every v2–v8 release gate stays false.
+- Stage 1 does not fabricate combat, scouting completion or EP.
+- Current stage and both vote IDs are checked; Stage 3 requires both locked routes, while Stage 2 cannot read a future Stage 3 vote. A forged route or unknown variation is rejected.
+- Party composition caps, actor identity uniqueness, positive levels, supply quantity limits and canonical campaign metadata are validated. True server-origin verification remains the future service/DB responsibility, **not** a security claim about a direct call to this preview function.
+- Recorded combat source events provide objective telemetry and timed warnings. No fabricated victories or write-enabled actions.
+- The v9 regression suite covers **252 story/choice/variation/size scenarios**, including **216 real engine fights**, plus **48 Veteran/Heroic scenarios** and **96 additional mixed-level legal-party battles covering all nine classes**; no-supply/partial-supply cases, deterministic replay and invalid ballot/role/receipt rejections.
+- A UI art pass, stage-action server receipts, a frozen stage-vote ledger, encounter tier balancing and atomic Day 8 payout integration remain **unimplemented**. Do not connect this prototype to a production claim service without those safeguards.
+
+## Next pass
+
+1. Verify CI and fix any compile/simulation failures in v8/v9.
+2. Establish a single server-frozen week, roster, ballots and loadout snapshot for all three stages and finale; stage and optional supply receipts must be idempotent.
+3. Calibrate stage encounter timings and boss tier 1–12 against actual T1–T4 combat loadouts, all 9 classes, role-legal 2–4 parties, companion variants and potions.
+4. Add lightweight pixel-art assets, distinct stage screens, action buttons with authoritative request IDs, and replay-based cues after the back end is safe.
+5. Verify economy sinks and rewards separately, then plan a staged rollout.
+
+**No merge, production deployment or release switch by this document.**
+
+## v10 continuation — locked stage context and idempotent action plan (13 November 2026)
+
+**Still hidden; not live or release-approved.** A new read-only contract in
+`backend/src/server/party/weekly-party-stage-ledger-v10.ts` validates a single
+server-loaded week, deterministic family/variation, immutable roster identity,
+canonical class roles (maximum 1 Tank, 2 Damage, 1 Support), loadout checksums,
+ordered Stage 2/3 locked choices, and valid supply snapshots before calling the
+existing v9 preview. The Stage 1 preview never sees later ballots.
+
+The v10 objective planner accepts a **server-verified source row**, account,
+party, action slot and request ID and produces an INSERT *plan*, not an INSERT:
+it rejects wrong-week/stage sources, duplicates across slots, replay by different
+request ID, early combat-as-scout evidence and post-close actions. Exact retry
+of the same action/request/source returns the existing receipt. **It grants
+zero EP and zero rewards.** Four canonical slots are still Scout, Secure
+Approach, Support Expedition and Prepare Finale.
+
+**Not yet authoritative:** a SHA-256 checksum protects against accidental
+snapshot drift but does not establish server provenance. The integration
+must fetch enrollment, loadouts, votes, gameplay evidence, supplies and stored
+receipts from locked private tables in one transaction, and enforce unique
+`(party_id,event_starts_at,account_id,action_id)`,
+`(party_id,event_starts_at,source_event_id)` and request IDs in the database.
+The v10 layer is NOT connected to any mobile screen, REST endpoint, Supabase
+function, point ledger, inventory sink, reward grant or Day 8 worker.
+
+The new test covers 12 family/stage combinations, locked-ballot isolation,
+tampered snapshots, roster/supply validation, source provenance boundary
+checks and replay safety; included in the existing hidden Party Events CI.
+**Validation must be confirmed by CI before considering this pass complete.**
+
+### Next required work
+
+1. Persist a server-owned enrollment/choice/loadout/action source ledger with
+   transaction-safe idempotency constraints and stage locks (before any EP).
+2. Wire verified source actions and supply consumption atomically; enforce
+   the no-duplicate-source property under concurrent requests.
+3. Benchmark actual T1–T4 classes, companions and run-only potions against
+   the four stage engines and Day 8 boss tiers.
+4. Build the four polished compact pixel-stage screens and genuine art assets.
+5. Build and test Day 8 single-claim settlement and staged rollout. Keep all
+   release gates OFF until every blocker clears.
+
+## v11 — private atomic objective receipt ledger (13 November 2026)
+
+The hidden implementation now has a **migration staged in git only**:
+`backend/supabase/migrations/20261113041500_party_event_receipt_ledger_v11.sql`.
+It defines five `private` tables: immutable event week/roster identities,
+monotone stage opens and one-time family-appropriate locked votes,
+server-authored gameplay evidence sources, and one receipt per account/week/action.
+The source ID and client request ID are globally unique; a separate account/week
+enrollment uniqueness constraint prevents switching parties to duplicate actions.
+
+`private.record_party_event_action_v11` is **service-role-only** and locks the
+week and verified evidence row, then the current stage, before admitting a
+receipt. Unique DB constraints enforce one slot, one source and one request
+even if two workers race. An identical retry replays the original receipt,
+including after event close; a different retry cannot remint it.
+Only noncombat evidence may satisfy scouting; Stage 2 and 3 sources must
+postdate their own locked votes. Invalid class roles, impossible full-party
+composition and out-of-window sources are rejected. All recorded
+`event_points_awarded` values are constrained to **0**.
+
+The event week is a durable snapshot and does not disappear if the live Party
+disbands. Auth account deletion can still cascade and erase that account's
+private rows. SQL grants are restricted to `service_role`, with RLS enabled
+and no client grants. The RPC has no mobile/API exposure.
+
+**Validation:** Executed both this migration and
+`backend/supabase/tests/party_event_receipt_ledger_v11.sql`
+inside **one transaction on Veldryn Staging 20260924**, ending in
+`ROLLBACK`. The SQL regression returned **PASS** after testing roles,
+unauthorized grants, vote locks, three stages, forged/reused receipts,
+exact retries, closing and disband safety. No changes were persisted to
+staging; production has not been touched. The migration is **not applied** in
+either environment, and normal GitHub Actions cannot execute the SQL suite
+without a configured temporary DB. The workflow watches the new files but
+does **not** claim database test execution.
+
+**Critical remaining integration:** Nobody yet inserts real source rows from
+the canonical gather/craft/combat transaction. Only a server-verified gameplay
+or outbox record may populate `party_event_sources_v11`; never trust a
+client-supplied source ID, time, count, actor, class or role. Verify source
+provenance in the **same transaction** as gameplay settlement, with a
+source-to-event origin check. Before live use, lock enrollment/ballots,
+supply consumption and final loadouts on authoritative rows, couple v2
+progression and event-point ledger to completed receipts exactly once,
+and implement Day 8 single-claim settlement.
+
+**No release activation:** All v2–v10 flags remain FALSE; v11 adds no new
+public endpoint, EP, inventory grant or live worker. Keep PR #1045 a draft
+until CI, transactional gameplay-source integration, actual T1–T4 balance,
+independent reward tests, mobile UI and reviewed staged promotion pass.
+
+## v12 — canonical gameplay receipt bridge (13 November 2026)
+
+**Still hidden, branch-only, no migration applied to either environment.**
+The companion migration
+`backend/supabase/migrations/20261113052000_party_event_canonical_sources_v12.sql`
+depends on v11 and adds a server-only atomic bridge
+`private.record_party_event_canonical_action_v12`. This bridges the
+v11 objective receipt ledger to **actual committed gameplay evidence**, not
+caller-supplied time, quantity, account, role or performance reports.
+
+- **Stage 2 — Secure Approach:** a successful recognized combat node from
+  `public.coop_node_results` with the event's frozen character enrolled,
+  real human participant ownership, current co-op access and at least two
+  real party humans in the same run. Echo members, unsuccessful or
+  noncombat nodes, outsiders and one-player runs cannot create evidence.
+  A shared node may credit **one receipt per participating member** but never
+  twice per member/source.
+- **Stage 2 — Support Expedition** and **Stage 3 — Prepare Finale:**
+  a canonical `public.craft_receipts` row for the same frozen member and
+  a recipe with positive existing `party_activity_weights_v16` crafting
+  weight. Craft receipts cannot impersonate Stage 1 scouting.
+- **Stage 1 — Scout Route** remains **unwired** until we have an immutable
+  server-verifiable scouting/gathering/exploration record. Do not substitute
+  random client action buttons or fabricated evidence.
+
+The v12 migration **revokes the service role's temporary direct INSERT**
+on `private.party_event_sources_v11`. It grants the service role only
+EXECUTE on the internal, private bridge; public/anon/authenticated have no
+EXECUTE privilege. The bridge first locks the event week, derives canonical
+source identity and real account from gameplay tables, verifies frozen
+enrollment, inserts the unique source, and calls the existing v11 objective
+receipt function within **one atomic SQL transaction**. A rejected call
+rolls back the source insert as well.
+
+An **exact retry** uses the already verified private receipt, so retries keep
+working after co-op access expires, a run ends, a source is pruned or the event
+closes. Changed source/action/request combinations are not accepted.
+No event points, progress grants, rewards, inventory or cosmetics can be
+created by this bridge: v11 still enforces `event_points_awarded = 0`.
+
+**Verification:** On the separate Veldryn Staging 20260924 project, we
+executed v11 migration + v12 migration + the dedicated v12 SQL regression
+in a single transaction followed by `ROLLBACK`. The regression returned
+**PASS**. It covers actual crafting and co-op source attribution, a shared
+node credited separately to two real party members, wrong-member requests,
+unsupported recipes, failed/merchant/solo encounters, unauthorized grants,
+duplicate requests and replay after the run and event close. The v11 SQL
+regression was also previously independently green in rollback-only staging.
+Neither migration was permanently applied to staging or production.
+
+**Remaining release blockers:** The application does **not yet call**
+this bridge from any verified Party Event stage service; there are no live
+Stage 1 source receipts, no atomic resource donations/EP ledger update,
+no Day 8 once-only boss payout, no released pixel-art stage screens, and
+no validated real T1–T4 class/companion/potion balance. The GitHub workflow
+watches v12 files, but does not itself run a Supabase database suite without
+configured database dependencies. Full CI must be checked separately.
+
+**Do not merge, deploy, grant EP or switch release flags** until the
+remaining verifiable gameplay and settlement integration is complete.
+
+## v13 — canonical Stage 1 gathering scout bridge (13 November 2026)
+
+V13 extends the hidden v11/v12 backend with Stage 1 `scout_route`.
+Its **private, service-only**
+`private.record_party_event_idle_scout_v13` function verifies a row
+in `public.idle_claim_receipts` using the immutable claim UUID,
+server-owned character, activity ID, elapsed time, output, and settlement
+time. It does not accept client-supplied quantities, actors, scores,
+timestamps or fabricated source identifiers.
+
+Scouting is valid only for an explicitly allowlisted mining, woodcutting
+or fishing node. Initially the list contains the nine existing canonical
+gathering node IDs; future node additions need separate canonical game
+content verification. A completed claim must contain at least **60 seconds**
+of activity, positive resources and nonnegative XP. The **entire claimed
+interval** must have started after both the event stage opened and the
+character enrolled, so players cannot bank pre-event AFK time and redeem it
+as party scouting. The event must still be in Stage 1 for new receipts.
+
+As with v12, v13 adds a unique evidence source and calls the v11 objective
+receipt function in **one transaction**. One verified claim can only mint
+one receipt, and one account gets one `scout_route` slot per event week.
+A previously recorded exact request can replay after closure. The bridge
+remains **0 EP and no reward grants**. Client roles cannot execute it;
+`service_role` has no direct INSERT grant on source evidence.
+
+**Validation:** V13 migration and its new SQL regressions passed on
+the isolated Veldryn staging project in a single transaction followed by
+`ROLLBACK`. Negative cases include 30-second attempts, zero output,
+alchemy/unsupported activity, outsiders, fabricated UUIDs, pre-enrollment
+banked time, duplicate claims and closed-week replays. A **combined test of
+all three migration/test pairs, v11+v12+v13**, also passed in a rolled-back
+staging transaction. No table or grant was permanently installed in staging
+or production.
+
+**Still to integrate before release:** The app/server currently does NOT
+invoke the v13 function as part of a live Party Event stage; the new
+allowlist must be checked against the active runtime's actual gathering
+activity IDs. Finalize frozen-loadout saving, authoritative event week
+activation, resource donation sinks, credited EP progression/caps,
+Day 8 boss settlement and mobile pixel-art journal screens before any
+feature flag, CI promotion or deployment. Keep PR draft.
+
+## v14 — verified recurring Event Points and read-only stage readiness (13 Nov 2026)
+
+This new hidden backend pass adds
+`backend/supabase/migrations/20261113080000_party_event_verified_progress_v14.sql`
+and `backend/supabase/tests/party_event_verified_progress_v14.sql`,
+depending on the private v11–v13 ledgers. They are **committed to the
+draft branch only**, with no migration applied to staging or production.
+
+**What v14 credits:** Unique, server-verified gathering idle claims from
+the nine audited Stage 1 nodes; actual weighted crafting receipts during
+Stage 2 or 3; and successful co-op combat nodes with two or more human
+party members during Stage 2. Membership, character, activity and event
+times derive from server-committed tables. No client-provided seconds,
+units, totals, account, party role or source ID are accepted. This
+recurring activity ledger is **separate** from one-time v11 stage
+objective receipts, so later valid activity can continue to earn EP
+without creating duplicate objective completions.
+
+**Point rules:** One EP per 900 verified seconds (15 minutes), with
+integer seconds carried between receipts; a **40-EP verified-activity
+cap per member per event week**, serialized by a row lock on the
+private event-week record. A completed gathering claim uses actual
+settled elapsed seconds (and only if its entire interval occurred
+after enrollment/stage opening). Co-op combat grants at most one
+15-minute-equivalent EP per successful eligible shared node to each
+participating member. Crafting uses server-configured existing Party
+activity weights and is conservatively capped to one hour/four EP
+per crafting receipt to avoid bulk-prebanking abuse; its precise
+time-equivalence remains a gameplay calibration item.
+
+A unique canonical source ID and a unique request ID guarantee
+exact-once credit; replay of the same verified credit is stable
+even after the event or dungeon closes. Different requests cannot
+re-credit it. Each credit records stage, actor, source, verified time,
+points and the resulting carry in private append-only receipts.
+`service_role` has read-only table grants and EXECUTE access to
+`private.credit_party_event_activity_v14` only; player clients have no
+direct access. There are **no coin, material, rank or chest grants**.
+
+**Readiness:** `private.party_event_stage_readiness_v14` derives
+member-count-adjusted progress targets directly from the v2 rules
+(2/3/4 members: 100/135/170 EP). Stage thresholds use cumulative
+25% / 75% / 100% targets, with the same half-up rounding as
+`weeklyPartyBudget`. It reports verified activity points, the
+remaining EP, stage, locked vote and blockers. It **never advances
+a stage** and deliberately reports `requiredSuppliesVerified=false`,
+`finaleVerified=false` and `stageReadyToAdvance=false`, even
+when activity reaches its threshold. This is necessary because
+transactional supply donations, special-action EP (existing
+`PARTY_EVENT_SPECIAL_ACTION_LIMIT=20` per member) and the Day 8
+boss completion proof are not implemented yet. In particular,
+a 2-member group can reach at most 80 of its 100 target through
+the 40/member verified-activity cap alone; no fabricated
+completion or auto-advance is permitted.
+
+**Verified on staging:** v14's SQL suite passed; an additional
+**combined v11+v12+v13+v14 migration and regression run passed**
+on Veldryn Staging 20260924. Everything was run under one
+`BEGIN; ... ROLLBACK;` transaction, so there are no persistent
+schema updates, test users, point receipts or grants in staging,
+and no production deployment. It verifies 900-second carry,
+exact replay, outsider/forged-source denial, pre-enrollment
+banked gathering rejection, per-account cap, capped bulk craft,
+shared co-op contribution, stage thresholds and no rewards.
+
+**Still blocked:** Before enabling, route actual game activity to
+this private RPC from the server (not mobile clients), implement
+the separate verified objective/special EP and resource donation
+ledgers, freeze supply orders and loadouts, evaluate/advance
+stages transactionally only with satisfied proofs, and settle
+the Day 8 boss exactly once with independently tested rewards.
+Review the latest code/CI and real crafting-time data. Keep
+Party Events feature flags OFF and PR #1045 draft.
+
+## v15–v16 — verified special EP and actual supply consumption (13 Nov 2026)
+
+These are **hidden draft-only** migrations and SQL regressions depending on
+v11–v14, committed to PR #1045 but **not deployed**:
+
+- `backend/supabase/migrations/20261113100500_party_event_objective_points_v15.sql`
+  and matching `backend/supabase/tests/party_event_objective_points_v15.sql`.
+- `backend/supabase/migrations/20261113114000_party_event_supply_donations_v16.sql`
+  and matching `backend/supabase/tests/party_event_supply_donations_v16.sql`.
+
+**Special objectives (v15):** A successful, immutable v11 receipt for
+`scout_route`, `secure_approach`, `support_expedition` or
+`prepare_finale` may be credited **exactly once**, granting a fixed
+**5 special EP** to the enrolled account. There are exactly four
+unique canonical slots per account per week, so the hard special
+allowance is **20 EP per player**. No caller can provide a points
+amount. Special EP credits are stored separately from the v11
+immutable zero-EP objective evidence and the v14 recurring
+activity ledger. Exact retries after week closure return the original
+credit without granting again; late/new credits are rejected.
+The v15 readiness projection combines recurring activity EP and
+special EP against 2/3/4-player 100/135/170-point targets, but
+cannot advance stages, complete a finale or mint a reward.
+
+**Supply plans and burning (v16):** A private, append-only server-authorized
+resource order fixes its item, category, required/optional status,
+stage and quantity. The full order schema is private with RLS;
+only the internal `freeze_party_event_supply_order_v16` function
+accepts **enabled, canonical** item IDs and refuses to rewrite an
+order's targets. Each material donation uses the private
+`donate_party_event_supply_v16` function and a globally unique
+request ID. It locks the event week, supply order and account's
+`public.online_game_states` inventory, validates a **frozen
+character enrollment**, consumes only unbound/unlocked inventory
+stacks, updates the `inventory.stacks` JSON and revision, increments
+the supply-order contribution and inserts an immutable donation
+receipt in **one SQL transaction**. Any failure rolls back the
+material burn, order progress and receipt together. It rejects
+overfill, insufficient inventory, stale stages, unauthorized actors,
+inconsistent retries, account-locked items and individually locked
+or bound stacks. Identical retries remain safe after event closure.
+It never awards Event Points for donated items (no double-counting),
+currency, equipment or chest grants.
+
+**Category integrity:** The current existing Guild supply catalogue
+verifies the canonical **wood** and **ore** items. A canonical
+`THORN_SAP` ingredient is present in Alchemy, but no audited
+gathering source and live level availability have yet been confirmed.
+The new private catalogue keeps that herb **disabled by default**.
+Stage readiness requires frozen, fully funded **wood, ore and herb**
+*required* categories before reporting
+`requiredSuppliesVerified=true`. A missing herb cannot silently be
+substituted by fish or ignored; optional preparation orders never
+block. The SQL regression temporarily enabled the herb **inside
+its rollback-only test transaction** to exercise a complete donation
+flow. **This does not enable it in any environment.**
+A stage can display `ready_for_manual_advance` when EP, supply
+and vote criteria would be met, but
+`stageReadyToAdvance` remains `false`: a reliable state-transition
+RPC, validated full-week supply plan and boss settlement are not yet
+shipped.
+
+**Verification:** The v15 and v16 focused suites each passed on
+Veldryn Staging 20260924. A **combined v11–v16 SQL suite** subsequently
+passed in a single `BEGIN; ... ROLLBACK;` transaction on that
+separate staging instance; it left no schema objects, user fixtures,
+donations, inventory changes, objective points or rewards behind.
+Regression cases cover objective 5-EP initial credit/zero-EP replay,
+four-objective 20-EP cap, immutable v11 source, canonical material
+availability, frozen targets, exact donation replay, request mutation,
+locked/bound inventory, insufficient materials, overflow rejection,
+private access, verified category coverage, threshold-only stage
+readiness and closed-week behavior.
+
+**Release blockers:** Match the 3-category resource catalogue to real,
+level-appropriate live gathering data and regenerate actual v2
+quantities for each family/difficulty/party size; connect gameplay
+server activity/objective/supply mutations to these internal functions;
+implement server-verified voting and safe stage transitions; finish
+Day 8 combat evidence and one-time reward settlement; reconcile
+staging/prod version compatibility, run GitHub CI and game balance
+simulations, and build/test the mobile interface. Keep release flags
+OFF, leave PR #1045 draft and do not run migrations on production.
+
+## v17 — sealed supply plans, verified voting and transactional stages (13 Nov 2026)
+
+The hidden draft-only v17 migration and rollback regression are
+`backend/supabase/migrations/20261113131000_party_event_stage_transitions_v17.sql`
+and `backend/supabase/tests/party_event_stage_transitions_v17.sql`.
+They depend on private v11–v16 receipts and supply orders, and are not
+connected to mobile, deployed to staging, or deployed to production.
+
+**Closes the advancement bypass:** v11 initially granted `service_role`
+direct UPDATE on the event-week record and stage record. V17 revokes
+both direct UPDATE privileges, adds a guard to prohibit initial weeks
+starting in Stage 2/3 or already closed, and replaces direct stage
+advances with a single private service-only
+`private.advance_party_event_stage_v17` transaction. That operation
+locks the event week, supports exact replay from immutable transition
+receipts, rejects conflicting requests and closed/incorrect stages,
+and changes **only Stage 1→2 or Stage 2→3**. It checks the current
+sealed plan, fully funded required supply orders, cumulative verified
+EP (v14+v15), server-locked ballot where appropriate, and at least
+one canonical verified `scout_route` (Stage 1) or both
+`secure_approach` and `support_expedition` (Stage 2) receipt.
+It updates the week, inserts the next stage opening and stores
+the immutable transition proof in **one database transaction**.
+Stage 3 is **never marked completed, settled or reward-eligible**.
+
+**Sealed supply plans:** `private.seal_party_event_supplies_v17`
+requires that all required **wood, ore and herb** resource categories
+are represented by currently enabled canonical item IDs. It records
+a stable SHA-256 hash of the stage's frozen order set. Once sealed,
+the database blocks insertion of further required **or optional**
+orders for that stage, while legitimate donations to existing orders
+continue. No quantity can be redefined after sealing. The
+`THORN_SAP` herb remains **disabled** by default: full-stage
+transitions in SQL tests enable the herb **only in rollback-only test
+fixtures**; a normal environment cannot finish a herb-gated stage
+until audited live resource content exists. The order quantities
+still require an authoritative server-side v2 budget/availability
+planner and a full-plan correctness test before release.
+
+**Majority/timeout ballots:** `private.cast_party_event_ballot_v17`
+accepts one immutable ballot from a member of the frozen roster for
+a valid family-specific Stage 2/3 option. A changed vote is rejected;
+an exact retry is safe. `private.resolve_party_event_ballot_v17`
+locks the canonical week/stage, counts ballots against that frozen
+roster and only locks a choice upon strict majority (>50%) or an
+actual six-hour timeout, with the designed family/stage default
+choice at timeout. Direct stage-row UPDATE is no longer granted to
+`service_role`, preventing the server from accidentally locking
+an unsupported result. The service integration must still derive
+voter identity from an authenticated game session; this private
+function is not a public mobile endpoint.
+
+**Readiness projection:** `private.party_event_stage_readiness_v17`
+read-only output now agrees with the checked advance operation:
+it includes `stageSupplyPlanSealed`,
+`missingRequiredObjectives`, `stageReadyToAdvance` and detailed
+blockers. It only reports `ready_to_advance` for Stage 1/2 when
+the verified checklist is complete; Stage 3 stays
+`awaiting_finale` even if EP and materials are sufficient.
+It never grants items, currency, reputation, chests or completion.
+
+**Verification:** The v17 regression passed on separate staging
+inside a `BEGIN; ... ROLLBACK;` transaction. It covered unsealed
+and incomplete category plans; unauthorized herb; frozen order
+mutations; EP, supply and objective blockers; two-person majority;
+outsider, invalid and changed ballots; six-hour timeout default;
+exact transition retries after closure; Stage 1→2→3 flow; and
+never settling Stage 3. All seven v11–v17 regression suites also
+passed with **one SAVEPOINT per suite**, using a shared rolled-back
+migration schema. The savepoints prevent v16's temporary test-only
+herb enablement from leaking into later suite fixtures.
+
+**Still blocked:** Production rollout needs genuinely available,
+level-appropriate herb and other resource IDs; authoritative full
+quantity freezing from the deterministic v2 planner; game-server
+integration of service-only receipts, authenticated vote identity
+and EP events; a real Day 8 boss combat proof and one-time reward
+payout; app screens; and full CI/build review. Do not merge PR
+#1045, enable its feature flag, or apply migrations to production.
+
+## v18 — authoritative loadout freezing and Day 8 reservation (13 Nov 2026)
+
+The draft-only hidden migration
+`backend/supabase/migrations/20261113144000_party_event_finale_reservation_v18.sql`
+and test
+`backend/supabase/tests/party_event_finale_reservation_v18.sql`
+extend v11–v17 without exposing a mobile route, granting any rewards,
+claiming any victory or applying a migration to production or staging.
+
+**Canonical member loadouts:** `private.save_party_event_boss_loadout_v18`
+copies each frozen-roster character's published, active,
+legal-equipment `public.coop_saved_loadouts` record. This source
+is published by the authoritative gameplay service; normal
+`authenticated` players cannot insert or update its underlying
+database table. The private RPC accepts only party/week, the
+enrolled account, existing loadout ID and expected revision;
+it rejects stale/missing revisions, outsiders, unverified or illegal
+gear, wrong character or class, mismatched source hashes and
+post-close writes. It stores the copied canonical `stat_snapshot`,
+`ability_snapshot`, capability tags, metadata, level and published
+SHA-256 hash for every participant. Members can reselect a valid
+source loadout before finale sealing, with exact-replay stability;
+the private sealed copy is never changed by later edits to a
+normal loadout. **The published snapshot hash is not yet the
+runtime `FrozenPartyBossLoadout.snapshotHash`: the future boss
+worker must independently adapt and verify its combat-engine
+actor before simulation.**
+
+**Preclose finale seal:** `private.seal_party_event_finale_v18`
+can run only in active Stage 3 before the seven-day event closes.
+It demands both v17 Stage 1/2 transition receipts, all three sealed
+and fully funded required supply plans, the locked Stage 3 vote,
+at least one verified `prepare_finale` objective receipt, cumulative
+EP at the full party-size budget target, and one legal copied
+loadout for every member of the frozen 2–4-person event roster.
+It creates one append-only finale seal including party/week,
+Stage 3 resource hash, vote, verified EP, roster count and a
+stable aggregate of the copied loadout identities and hashes.
+A replay returns the existing seal even after close; a later
+change of normal game equipment cannot rewrite it. Incomplete
+parties and partial-finalist reward policy are **not authorized**.
+
+**Day 8 reservation without rewards:** The separate
+`private.reserve_party_event_day_eight_v18` is the only
+server-only attempt-reservation function. It requires that
+the event has reached Stage 3, an immutable **preclose** finale
+seal exists, and the clock is at least
+`event_ends_at + 60 minutes`, matching the existing hidden
+TypeScript boss engine's minimum settlement grace.
+Exactly one attempt reservation per party/event is possible;
+the same request can safely replay after closure, and a different
+request conflicts. It does **not** accept a dungeon run,
+player-victory flag, forged combat metrics, payout parameters
+or a user-provided reward tier. There is **no boss win or
+settlement RPC in this version**. The returned
+`bossResultCommitted=false` and `rewardsGranted=false`
+are intentional, not placeholders for granted rewards.
+
+**Read-only Day 8 readiness** reports `preparing`,
+`incomplete_at_close`, `waiting_for_day_eight`,
+`ready_for_server_reservation` or
+`reserved_for_server_boss`, plus the open timestamp and
+permanently false reward-claim flags in this draft.
+No client permissions are granted on any new private table.
+
+**Verification:** The focused v18 SQL suite passed on Veldryn
+staging inside a rolled-back transaction; it covers real staged
+source-copy and change protection, illegal gear and outsiders,
+per-player freeze, complete Stage 1→2→3 requirements, mandatory
+resource burn, 2-person EP threshold, incomplete-roster rejection,
+freeze replay, pre-Day-8 rejection, Day 8 one-attempt reservation,
+post-close replay, and **no reward** invariants. All **eight**
+migrations and isolated regression suites v11–v18 then passed
+under one outer `BEGIN;` with a `SAVEPOINT` and rollback
+per suite, and a final `ROLLBACK;` for the entire run.
+Nothing persisted on staging; production was untouched.
+
+**Next blockers:** Validate actual herb availability and party-specific
+deterministic order quantities; connect the native game service to
+the private v14–v18 functions with authenticated account identity;
+convert canonical published loadouts to the verified combat-engine
+snapshot contract; run the real **12-tier Day 8 combat simulation**
+server-side and persist an immutable, independently validated
+victory/participation proof; implement one-time entitlements and
+chest redemption **only after** that proof and economic tests.
+Keep Party Events hidden and PR #1045 draft/unmerged.
+
+## v19 — Day 8 boss candidate and nonclaimable reward previews (13 Nov 2026)
+
+The hidden-only migration
+`backend/supabase/migrations/20261113160000_party_event_boss_candidates_v19.sql`
+and regression
+`backend/supabase/tests/party_event_boss_candidates_v19.sql`
+extend v11–v18 on the same draft PR #1045.
+
+**One immutable combat candidate:** A private service-only
+`private.record_party_event_boss_candidate_v19` accepts exactly
+one candidate per already-reserved Day 8 boss attempt and event
+week. It checks the reservation, its frozen preclose finale hash,
+Stage 3 status, the opening deadline, a bounded completion
+timestamp and the pinned `party-event-day8-combat-v4` ruleset.
+The candidate records the canonical SHA-256 digest of the
+result JSON, the tier count, clears and calculated reward band.
+A changed request, result, finale hash or engine version conflicts.
+An exact retry can return the immutable prior candidate after
+event closure. Direct service-role and client INSERT/UPDATE
+permissions are not granted on this table.
+
+**Structural verification, not victory verification:** Every
+reported boss tier must be contiguous from Tier 1 and contain
+valid boss HP, remaining HP, damage, a bounded fight duration,
+cleared status and reason. A first unsuccessful tier must
+terminate the sequence. A successful final tier can terminate
+only at **Tier 12**: a single invented Tier 1 victory cannot
+be mistaken for a full run. The backend recomputes damage
+totals, cleared tiers, reached tier and the shared 1–6 reward
+band, rejecting reported inconsistencies. The contributions
+array must exactly match the frozen 2–4-person account,
+character and role roster; duplicate/extra members, negative
+metrics or characters without a frozen v18 loadout are rejected.
+
+This SQL function **does not yet independently replay the
+combat simulation or cryptographically authenticate the worker
+which produced the result**. A syntactically consistent but
+fabricated *service-submitted* candidate is therefore **not**
+a verified win, and **cannot authorize a payout**. A future
+trusted server worker must reconstruct actors from canonical
+saved snapshots, validate the v18 hash commitments against
+the converted combat-engine actors, run the existing
+`resolvePartyEventDayEightBoss` 12-tier simulation, and
+replay/compare result digests before creating a settlement.
+
+**Nonclaimable personal forecasts:** Once a candidate is
+recorded, the same transaction derives a private, immutable
+`party_event_reward_previews_v19` row per frozen player from
+their real v14 activity EP and v15 objective EP. It follows
+the existing v2 reward policy: **0–4 EP = none, 5–14 =
+participation, 15–60 = full**. These previews store only
+personal points, eligibility and band. They contain no
+reward-bundle amounts, choice, inventory debit/credit or
+redeem operation; `granted=false` is enforced by a database
+CHECK constraint. A private read-only status explicitly reports
+`awaiting_independent_combat_replay`,
+`combatVerified=false`, `rewardEligible=false` and
+`rewardsGranted=false` even when a candidate exists.
+The v18 reservation and stage state remain unchanged.
+
+**Verification:** The focused v19 regression passed on
+isolated staging using `BEGIN; ... ROLLBACK;`. It covered
+unknown reservations, incorrect finale hashes, impossible
+damage totals, fabricated tier counts, prematurely terminated
+victories, unsupported engine versions, duplicated members,
+wrong reward bands, exact replay/changed-request conflicts,
+closed-week replay, immutable candidate rows, independent
+personal EP thresholds and zero granted rewards. The
+combined regression process also passed all nine v11–v19 SQL
+suites with a savepoint around every suite, then rolled back
+the outer migration/test transaction.
+
+**Still required for a release:** Independently rederive
+the authoritative combat actor snapshots and run the actual
+Day 8 simulator, reconcile v18 sealed preparation and optional
+buffs, implement protected/atomic final settlement and
+exactly-once inventory/Inbox payouts, approve the full
+reward economy and choice handling, wire the mobile event
+screens and game server, verify real herb resource sourcing,
+and validate CI. This v19 candidate mechanism by itself
+does not make rewards ready or the hidden game mode playable.
+Do not merge, deploy or enable any related release flags.
+
+## v20 — independent deterministic Day 8 replay gate (13 Nov 2026)
+
+**Draft-only code:** `backend/src/server/party/weekly-party-boss-replay-v20.ts`
+and its negative-path regression
+`backend/src/server/party/__tests__/weekly-party-boss-replay-v20.ts`.
+They are registered in `backend/package.json`'s
+`test:party-weekly-v2` runner and watched by the hidden
+Party Events GitHub workflow. No public routes, live jobs, SQL
+mutations or reward grants are added. The explicit
+`PARTY_EVENT_BOSS_REPLAY_V20_RELEASED=false` gate remains disabled.
+
+**Trusted snapshot contract:** The verifier must be called only by
+the server with one internally consistent snapshot of private
+Party Events weeks, roster, v18 copied canonical published loadouts,
+v16 supply orders, v17 stage seals and votes, both transition
+receipts, the v18 finale seal and Day 8 reservation, and the v19
+candidate. Event family/variation/seed, dates, 2–4-person frozen
+membership and roles, valid Stage 3 votes, both stage transitions,
+the party-size EP target and the pinned
+`party-event-day8-combat-v4` version are checked before replay.
+The loadout identity hash recomputes the same SHA-256 input as
+the SQL v18 aggregate; stage resource hashes recompute the v17
+SQL order digest.
+
+**Full deterministic planner check:** v16 SQL supply orders do not
+record their resource tier, gather rate or optional preparation
+label, so SQL alone cannot reconstruct the true supply effects.
+The v20 verifier instead calls the existing
+`buildWeeklyPartySupplyOrders` with the canonical, *server-audited*
+item IDs, unlock flags, gathering times and tiers. It checks the
+complete set of required and optional orders, item IDs,
+quantities and stage seals **exactly**. Missing, extra, duplicated,
+inaccessible or modified rows fail closed. Every required order
+must be fully funded; optional order progress is included exactly
+as donated. Optional combat benefits are derived from the planner's
+own `reinforced`, `provisions`, `specialist` labels; they are
+never guessed from missing SQL metadata. An unaudited herb
+catalogue remains an absolute release blocker.
+
+**Independent combat reproduction:** From each server-frozen v18
+published snapshot's stats/abilities, the verifier rebuilds an
+`AuthoritativeLoadoutRecord` in memory and calls the existing
+`freezePartyEventBossLoadout` adapter. This reconstitutes a
+legal class/role-specific combat actor with server-derived
+equipment/companion effects. It then invokes the actual
+`resolvePartyEventDayEightBoss` deterministic combat engine
+using the same canonical party ID, seed, frozen member order,
+donation-derived preparations and completion time. It
+compares the **complete** canonical simulated result JSON to
+the v19 candidate result, not just the cleared tiers or
+reward band. Any tampered stats, altered optional buffs,
+misreported HP/damage, wrong route vote or different boss
+outcome makes the replay fail.
+
+**Proof is not a payout:** A successful in-memory replay returns
+`kind='server_replayed_combat_not_reward_grant'` with the
+reservation ID, v19 candidate hash, independent replay hash,
+frozen loadout hash, tiers and band. It **always** returns
+`rewardGrantAllowed=false`. This module is not yet called by
+a deployed server worker and does not persist an authorized
+settlement record. Do not let a client supply the replay inputs
+or treat the v19 candidate alone as a win. Full backend
+integration still requires a single-snapshot trusted repository,
+a fixed combat-engine build/version and a separate auditable
+exactly-once settlement/claim transaction.
+
+**Verification status:** The TypeScript test covers successful
+deterministic replay, stable SHA-256 proof, post-freeze loadout
+changes, roster/vote/seed mismatches, missing resources,
+tampered supply quantities/seals, missing required
+donations, optional preparation effects, altered stat snapshots,
+changed winner/band, and false completion times. It has been
+added to the Party Events TypeScript CI command; the linked
+GitHub workflow's outcome is **not yet confirmed** in this
+session. Earlier v11–v19 rollback-only SQL suites had passed;
+v20 introduces no new SQL objects, so there was no staging
+schema deployment. Keep the PR **draft**, feature flag **off**,
+and all production migration jobs **untouched**.
+
+**Next release blockers:** Run and resolve TypeScript CI, verify
+the real resource catalogue including a gatherable herb and
+level-accessible quantities, connect trusted SQL snapshot
+reads to the replay module and defend concurrent updates,
+persist an immutable outcome only after replay, implement
+atomic/one-time personal entitlements and Inbox claiming,
+and complete balance and client presentation.
+
+## v21 — single-MVCC database snapshot for private Day 8 replay (13 Nov 2026)
+
+The hidden migration
+`backend/supabase/migrations/20261113173000_party_event_replay_snapshot_v21.sql`
+adds the service-only, read-only function
+`private.read_party_event_boss_replay_snapshot_v21(reservation_id)`.
+The new SQL regression is
+`backend/supabase/tests/party_event_replay_snapshot_v21.sql`.
+
+**One consistent source bundle:** The `STABLE SECURITY DEFINER`
+function makes every source-table read in the same PostgreSQL
+statement/MVCC snapshot. It retrieves the exact authoritative
+week, frozen 2–4-person role roster, copied v18 loadouts
+(with stat and ability snapshots), stage 1–3 supply orders and
+donated quantities, v17 immutable supply seals and Stage 2/3
+locked votes, both stage transitions, the preclose v18 finale
+commitment, its Day 8 reservation and the v19 candidate/result.
+Every nested source has a known party/week/reservation
+identity and ordering. The JSON includes a SHA-256
+`sourceDigest` over its snapshot `payload` as an
+**integrity diagnostic, not a cryptographic signature or proof
+of trusted combat**. It uses the database statement's
+`serverNowMs`; server and client clocks cannot override it.
+
+**Read-boundary safety:** The function is kept under
+`private` and `EXECUTE` is explicitly limited to
+`service_role`. Unknown reservations, unrecorded candidates,
+unsealed/incomplete rosters, missing stage seals/transitions,
+mismatched finale links, unsupported combat rules, premature
+Day 8 windows, unsealed-before-close errors and previously
+settled weeks fail closed. No database row is created or
+modified by this function. It always reports
+`auditedCatalogIncluded=false`,
+`combatReplayed=false` and `rewardGrantAllowed=false`;
+the SQL reader cannot confer victory, a chest, gold or renown.
+
+**TypeScript adapter:**
+`backend/src/server/party/weekly-party-boss-reader-v21.ts`
+takes only a reservation ID and a trusted server-side
+repository. It validates a single private SQL bundle and
+requires a separate server-audited, level-accessible resource
+catalogue before calling v20's actual deterministic combat
+replay. It cannot accept a client-submitted loadout/result
+and always returns `rewardsGranted=false`. The
+reader's contract and security checks are exercised from
+`backend/src/server/party/__tests__/weekly-party-boss-replay-v20.ts`.
+The v21 SQL migration/test files and v21 TS reader are
+included in the hidden Party Event CI path filters.
+
+**Verification performed:** The focused v21 SQL regression
+passed against staging with a full outer `ROLLBACK`. It
+tests service-only execution permissions, absent reservations,
+missing candidates, correctly joined ordered source arrays,
+stable repeated MVCC reads, no reward flags and fail-closed
+missing stage seals. Nine earlier+v21 isolated regression
+suites (v12–v19 and v21) also passed under all ten migrations
+v11–v19/v21, with independent savepoint rollbacks and no
+staging schema persisted. The v11 suite passed in the earlier
+v11–v19 full regression run.
+
+**Not yet release-ready:** The TypeScript worker and test
+are committed but **external CI execution remains unconfirmed**.
+The repository interface is a *contract*, not a deployed
+Supabase client implementation or scheduled job. Source
+catalogue auditing (especially gatherable herbs) and
+server-side access verification remain mandatory, followed
+by persisted replay-verified settlement and economy-safe
+once-per-account Inbox grants. The v19 candidate alone
+must never authorize a payout. Leave the PR draft,
+unmerged, game mode hidden, and production untouched.
+
+## v22 — verified Greenfields gathering catalogue and safe herb sink (13 Nov 2026)
+
+**Audited from live game content**, not an invented resource:
+`apps/mobile/src/content/skills.ts` exposes
+`GREENWOOD_TREE` in Greenfields, Level 1, Greenwood Log,
+**28 seconds per action** after its current ×2 gathering-time
+rule, and `GREENFIELDS_COPPER_OUTCROP`, Greenfields,
+Level 1, Copper Ore, **30 seconds per action**.
+`apps/mobile/src/content/herbalism.ts` exposes
+`DEWLEAF_PATCH`, Greenfields, Level 1, Dewleaf,
+**30 seconds per action**. All three sources guarantee
+at least one item and are registered as material items.
+`THORN_SAP` occurs in game crafting recipes, but **is not a
+direct `HERB_NODES` gathering output**. It stays disabled
+for the Party Events herb supply catalogue.
+
+**Real source adapter and deterministic plan:**
+`backend/online/party-event-canonical-supplies-v22.ts`
+reads the actual `GATHERING`, `HERB_NODES` and `itemDef`
+content and validates exact source/node IDs, category, skill,
+Greenfields zone, unlock Level 1, guaranteed yield, gather
+times and item rarity. It fails closed if any source changes
+or disappears. `canonicalPartyEventOrdersV22` sends those
+three trusted common-tier materials to the existing v2 weekly
+planner, creating **nine mandatory supply orders (wood + ore +
+herb in every stage) and three individually optional
+preparation orders (reinforced, provisions, specialist)**.
+For now, higher-tier resources are intentionally excluded
+from this *new* starter planner: that keeps a 2–4-person
+party with new characters from being assigned inaccessible
+zones or gathering requirements.
+
+**SQL catalogue release-safety:**
+`backend/supabase/migrations/20261113184500_party_event_audited_herb_v22.sql`
+adds **DEWLEAF** as the sole enabled Party Events *herb*
+in the private v16 supply sink. It disables THORN_SAP and
+other unaudited herbs. It **preserves the earlier v16 approved
+wood and ore allowlist**, including Ironwood Log, because
+older service-authored optional orders and SQL regressions
+rely on that whitelist. Only the new v22 server planner
+restricts its output to common Level 1 Greenwood Log,
+Copper Ore and Dewleaf. v20's complete-order comparison
+rejects an unplanned higher-tier/extra order before replay.
+The migration provides no service-role table UPDATE,
+public game endpoint, payout, flag enablement or production
+configuration.
+
+**Concrete SQL reader adapter:**
+`backend/online/party-event-replay-repository-v22.ts`
+provides `createCanonicalPartyReplayRepositoryV22`
+for the v21 service-only replay API. It performs
+**one parameterized private PostgreSQL call** to the v21
+single-MVCC-bundle reader using a reservation UUID,
+returns no fabricated substitute on a missing row,
+and loads the audited resource catalogue independently
+from actual gameplay content. It must only be injected
+with an internal database connection allowed to execute
+private SQL; it is **not** a public PostgREST route or
+deployed background worker.
+
+**Tests and validation:**
+`backend/online/tests/party-event-canonical-supplies-v22.ts`
+checks the real three starting nodes, their exact server
+gather times, nonmaterial/higher-level exclusion,
+frozen catalogue, private parameterized query and
+**108 deterministic family × difficulty × roster × seed
+plans**, including complete mandatory/optional categories.
+It is included in the hidden `test:party-weekly-v2`
+command (which now also compiles `tsconfig.online.json`)
+and workflow source filters; **GitHub TypeScript CI result
+still requires confirmation**.
+
+The v22 SQL regression confirms only the audited herb
+is enabled, DEWLEAF frozen orders are replay-idempotent,
+Thorn Sap cannot be ordered, and two Dewleaf items
+are atomically consumed from a real online-game-state
+stack with no unrelated inventory changes or rewards.
+All **11 SQL suites v11–v19, v21, v22 passed** against the
+complete v11–v22 migration chain on staging, split into
+two savepoint-isolated rollback-only batches. An initial
+blanket-disable approach for wood/ore failed an older
+optional-supply test; it was corrected by preserving
+the v16 approved wood/ore IDs before both regression
+batches passed.
+
+**Remaining release gates:** Confirm the TypeScript CI
+compilation/regressions, verify actual per-player gathering
+and migration data in release builds, secure worker
+credentials and consistency boundaries, persist a verified
+replay transaction, build **once-per-account atomic reward
+entitlements and Inbox delivery**, and finish mobile UI.
+Keep `PARTY_WEEKLY_EVENTS_RELEASED=false`, all drafts
+unmerged, and production untouched.
+
+## v23 — immutable trusted-worker Day 8 replay attestation (13 Nov 2026)
+
+**Nonpaying backend SQL ledger:**
+`backend/supabase/migrations/20261113200000_party_event_boss_replay_attestation_v23.sql`
+adds a private `party_event_boss_replay_attestations_v23` table,
+with immutable one-row-per-reservation and one-row-per-party-week
+keys. RLS is enabled; clients have no grants; `service_role`
+can SELECT but cannot directly INSERT, UPDATE or DELETE. The
+only writer is the private service-executable
+`private.attest_party_event_boss_replay_v23` function. Its
+status reader remains service-only.
+
+**Fresh source and event chain:** The writer locks the event week
+using the same transactional lock used by donation/stage code.
+It confirms the Day 8 reservation, v18 finale commitment,
+v19 candidate hash, pinned `party-event-day8-combat-v4`
+ruleset, frozen loadout hash, cleared tiers and reward band.
+It then calls the v21 single-MVCC snapshot reader and checks
+the **fresh source digest** against the exact snapshot
+passed to the worker. A stale or forged source digest fails
+closed. Changed requests, proofs or result metadata conflict,
+while an identical retry returns the original attestation,
+even after a later week closure.
+
+**Important security limitation:** PostgreSQL **does not execute
+the combat simulator** and **cannot establish that a service-role
+caller actually ran the engine**. The `replay_hash` is an
+assertion made by the privileged trusted worker, not an
+independently verified SQL fact. Do **not** allow any client
+route or untrusted service to call the writer, and do not
+interpret the table as automatic proof of victory. The
+`combatIndependentlyVerifiedBySql=false` response is explicit.
+
+**Worker-side proof pipeline:** The draft-only
+`backend/src/server/party/weekly-party-boss-attestation-v23.ts`
+accepts only a reserved UUID; it calls the v21 private replay
+adapter, which uses the v22 server-audited resource catalogue
+to rebuild every order and the v20 deterministic boss engine
+to reproduce the full outcome. Only after that succeeds does
+the worker call the v23 writer with its source digest,
+replayed-result hash, candidate/loadout commitments, tiers,
+band and the pinned
+`greenfields-verified-gathering-v22` audit version.
+The request ID is deterministic per reservation for safe
+retry. `backend/online/party-event-replay-attestation-v23.ts`
+supplies the concrete parameterized private PostgreSQL writer,
+reusing the v22 internal reader and content-derived catalogue.
+There is **no public route, scheduler or deployed worker**.
+`PARTY_EVENT_BOSS_ATTESTATION_V23_RELEASED=false`.
+
+**No economy effect whatsoever:** Both the SQL table and RPC
+enforce `rewards_granted=false` and
+`reward_entitlement_created=false`; worker return values
+explicitly report no payouts. The private status remains
+`worker_replay_attested_no_rewards`, never claimable.
+Existing v19 member reward previews are unchanged and
+remain nonclaimable. A future separate, independently reviewed
+settlement transaction will be required to credit anything.
+
+**Verification:** The focused v23 SQL test passed on isolated
+staging. It checks unknown attempts, invalid resource audit,
+wrong candidate and band, stale digest following a source
+change, immutable row mutation, changed request/replay hash,
+exact replay and no reward grants. **All twelve** SQL suites
+(v11–v19, v21–v23) passed against the complete v23 migration
+chain across two savepoint-isolated rollback-only batches;
+no migration or test data was persisted. TypeScript tests
+were expanded for the v23 worker and parameterized SQL writer,
+and are included in the existing backend Party Events test
+commands and CI path filters. **GitHub CI execution is
+not yet confirmed**, and v23 cannot be considered release ready.
+
+**Next release gates:** Confirm TypeScript CI, implement a truly
+private scheduled worker and least-privilege SQL connection,
+test concurrency/reservation locking under load, validate
+the actual replay content version after every combat change,
+and then separately design atomic **one-time** account rewards,
+Inbox claim, choices, rollback handling and economic limits.
+Never derive an entitlement directly from v19/v23 hashes
+without revalidating the trusted worker pipeline and event
+eligibility. Leave the PR draft, branch unmerged, public
+Party Events flags disabled, and production unchanged.
+
+## v24 — private non-spendable reward offers and locked choice (13 Nov 2026)
+
+**Purpose and economic boundary:** The v23 trusted-worker attestation
+is **not** a spendable reward. v24 introduces only an account-specific
+**offer**, an immutable personal cache choice, and a private Inbox
+**preview**. It does **not** create live account entitlements,
+gold, items, combat/skill XP, Companion Essence, Bondstones,
+Guild/Party Renown, a mail Inbox item, or any claim RPC.
+`rewards_granted=false`, `claimable=false` and
+`entitlementsCreated=false` remain enforced at every layer.
+No new public API, scheduled task, or feature gate is enabled.
+
+**Schema and one-time preparation:**
+`backend/supabase/migrations/20261113213000_party_event_reward_offers_v24.sql`
+adds three private/RLS tables:
+- `party_event_reward_batches_v24`: exactly one preparation
+  per reserved boss and party/week, tied by FK to the **v23
+  worker replay attestation**. It stores the v19 candidate hash,
+  replay hash, preview commitment, member/eligible counts,
+  and a server-only request ID. No rewards can be granted.
+- `party_event_reward_offers_v24`: **one** nonspendable offer
+  per eligible account/week (also unique per reservation/account),
+  FK-linked to the immutable **v19 EP preview**. The 5–14 EP
+  participation tier gets a fixed participation offer;
+  15–60 EP gets a full three-choice offer; 0–4 EP creates
+  **no offer**. The stored reward model is pinned to
+  `party-event-rewards-v2`; numeric economy amounts are not
+  persisted or promised at this stage.
+- `party_event_reward_choices_v24`: append-only, one per
+  full-offer ID, strictly one of **Warrior / Artisan / Companion**,
+  never available to participation-tier accounts.
+
+The `prepare_party_event_reward_offers_v24` service-only
+function locks the week, requires the corresponding v23
+attestation plus matching v19 candidate/tier/band, and
+independently recalculates every frozen roster member's
+personal EP from verified v14 progress and v15 special
+objective credits. Those totals must exactly match the
+immutable v19 previews. The entire batch is inserted in
+one SQL transaction, is idempotent for an **identical**
+request, and rejects changed/reused request IDs or
+stale/mismatched points. Crucially the function accepts
+**no client-provided personal EP, band, reward value or
+eligibility tier**.
+
+**Immutable reward selection:**
+`lock_party_event_reward_choice_v24` takes an offer ID,
+the verified owner account ID (resolved by the trusted
+server) and a choice. A full-offer owner can lock one
+selection. Exact retries return the same choice; every
+change of choice, replay request, or cross-account
+attempt fails closed. Participation offers cannot lock
+a choice. No money, experience, chest, or mail item
+is created by selecting.
+
+**Inbox preparation, not claiming:**
+`party_event_reward_inbox_preview_v24` is **private,
+service-role-only** and expects an account ID obtained
+from server authentication, never client JSON. It
+returns the account's offer status as
+`participation_preview`, `awaiting_choice_preview`
+or `choice_locked_preview`, always
+`claimEnabled=false`, `claimable=false` and
+`entitlement=false`. It never reads arbitrary player
+data through public roles and contains no claim mutation.
+
+**Server contracts and tests:**
+`backend/src/server/party/weekly-party-reward-offers-v24.ts`
+adds gated, typed prepare/selection/preview operations
+with deterministic server-generated request IDs and
+anti-claim return-value checks.
+`backend/online/party-event-reward-offers-v24.ts`
+provides parameterized private PostgreSQL service-role
+query adapters. The default release gate stays FALSE;
+none of these functions are connected to public mobile
+screens or a scheduled worker.
+
+`backend/supabase/tests/party_event_reward_offers_v24.sql`
+tests 5/15 EP tiers, no preparation without v23,
+source EP revalidation, duplicate event/batch prevention,
+cross-account theft, participation no-choice, invalid
+kind, immutable Warrior/Artisan/Companion selection,
+read-only Inbox preview, and zero payout; the separate
+`party_event_reward_none_v24.sql` checks that **0 EP**
+creates no offer/Inbox record.
+TypeScript regressions in
+`weekly-party-reward-offers-v24.ts` and the extended
+online `party-event-canonical-supplies-v22.ts` cover
+all 0/4/5/14/15/60 EP boundary values,
+idempotent server selection, private SQL parameter order,
+and malicious payout flags. Both were registered with the
+existing hidden backend Party Events test runner/CI filters.
+
+**Verification:** The focused v24 offer/choice SQL suite
+and zero-EP SQL suite passed on staging. All **14**
+isolated SQL regressions (v11–v19, v21–v24 and the
+extra 0-EP case) passed against the entire v24 migration
+chain in three savepoint-isolated transactions, all
+**ROLLED BACK**. TypeScript tests are committed but
+the GitHub CI result remains **unverified** (the
+repository cannot be fetched in this execution environment).
+
+**Next mandatory boundary:** Before making offers
+claimable, implement and review an atomic *single-account*
+economy/Inbox settlement that debits/credits existing
+server-owned state, validates available inventory
+capacity and quest/XP currency contracts, is exactly-once
+under concurrent/replayed requests, and records an
+immutable claim receipt with irreversible idempotency.
+Only attach it to a release-approved private worker with
+revalidated v23 replay evidence and an explicit product
+enablement decision. Until then **never call these
+offers actual granted entitlements**.
+
+Keep Party Events hidden, the PR draft/unmerged,
+all migrations undeployed, and production untouched.
+
+## v25 — replay-bound, nonpaying claim preflight and canonical reward amounts (13 Nov 2026)
+
+**Trust boundary:** The private offer created in v24 is a *nonspendable
+preview*. v25 adds an immutable *claim preflight record*, **NOT** a claim
+or economy entitlement. A matching v23 worker replay attestation,
+v24 offer batch, v19 personal-EP preview, correct account/week and
+the event's original character are required. Only the trusted
+server-side identity can request the preflight. Public/anon/authenticated
+roles cannot execute these functions or read/insert the new table.
+
+**New draft migration:**
+`backend/supabase/migrations/20261113224500_party_event_claim_preflight_v25.sql`
+adds `private.party_event_reward_values_v25`, an immutable SQL
+implementation of the exact **v2 reward bundle model**, using
+the archived difficulty, boss performance band, verified personal
+Event Points and v24 locked choice. It accepts **no amount** from
+the client, and pins `party-event-rewards-v2`. Participation
+offers (5–14 EP) receive only the scaled gold bundle. Full
+offers (15–60 EP) must have a locked Warrior / Artisan /
+Companion choice. This quote contains canonical gold,
+combat XP, skill XP, Companion Essence, Bondstones, Party
+Renown, and—where relevant—GEM_DUST. It is *not* credited
+to any wallet or inventory. SQL v25 rejects unrecognized
+difficulty/band/kind/EP combinations.
+
+`private.party_event_claim_preflights_v25` is an append-only
+service-only RLS table with one row per offer ID and a unique
+account/event-week key. It records the original claim target,
+dedupe request, model, difficulty, full bundle/hash, source
+candidate/replay commitments, the online inventory revision,
+inventory capacity and used slots, estimated slots needed,
+and routing blockers for combat/skill/companion XP.
+`authorized_for_payout=false`, `claimed=false`,
+`currency_credited=false`, and `inventory_credited=false`
+are all enforced by SQL CHECKs. UPDATEs trigger immutable
+record exceptions, and service_role has SELECT permission
+only, not direct table writes.
+
+**Preflight transaction:**
+`private.prepare_party_event_claim_preflight_v25` serializes
+week → offer → recipient character → online game state.
+It requires the actual joined character ID, server-verified
+owner, a locked choice for full rewards, the v24 replay-bound
+batch, still-unaltered v19 EP preview, and a present online
+inventory. It checks the live `public.characters.inventory_capacity`
+constraint (currently **30–100 slots**) and the
+`online_game_states.state.inventory.stacks` array at a
+locked inventory revision. For the T1 Warrior/Artisan
+GEM_DUST bundle, the quote conservatively requires **one
+free slot even if an existing stack might merge**; for
+participation/companion, no new material slot is needed.
+This is intentionally fail-closed. It does not reserve a
+slot or promise that the inventory will remain available:
+a future payout must recheck capacity and revision **in the
+same transaction as the actual transfer**.
+
+The preflight is strictly once-per-offer: an identical
+request returns its frozen receipt (even after the online
+state changes), while changed request IDs, another
+recipient/character, cross-account offer claims or
+reused dedupe keys fail. v25 explicitly defines
+`private.claim_party_event_reward_v25` to **always raise**
+`party_event_v25_claim_disabled_pending_economy_audit`.
+No player-facing claim route or Inbox delivery exists.
+
+**TypeScript parity and private SQL adapter:**
+`backend/src/server/party/weekly-party-claim-preflight-v25.ts`
+uses the existing v2 `partyEventRewardBundle` independently
+to validate every numeric field, key, material ID and quantity
+returned by SQL. It also checks quote identity, routing needs,
+conservative material capacity and all no-payout flags.
+`backend/online/party-event-claim-preflight-v25.ts`
+provides the strict, parameterized, **service-only** SQL
+reader/writer interface. Neither module is exposed to
+players; the feature gate stays **false**.
+
+The new TS regression
+`backend/src/server/party/__tests__/weekly-party-claim-preflight-v25.ts`
+includes **72 reward choices across three difficulties,
+six boss bands and four eligible reward kinds**, malicious
+gold/XP/material inflation, replay idempotency, invalid
+ownership/identity, mismatched router fields and fake
+payout flags. The existing online adapter integration test
+was extended and the server test was added to
+`test:party-weekly-v2` and hidden CI file filters.
+**TS tests are committed but GitHub CI execution is
+not confirmed**.
+
+**Staging verification:** The focused
+`backend/supabase/tests/party_event_claim_preflight_v25.sql`
+passed under a full `BEGIN…ROLLBACK`. It verifies
+reward formula samples, 5/15 EP tiers, own-character
+restriction, choice lock, no online-state fallback,
+actual full 30-slot inventory, capacity rejection,
+a one-slot-free case, retry after a changed online
+revision, request reuse attacks, immutable receipt,
+hard-disabled claim endpoint, and zero character-wallet
+or other grants. **All 15** SQL regression suites
+(v11–v19, v21–v25, plus the independent 0-EP v24
+case) passed against the complete v25 migration chain,
+each run in an isolated savepoint, all rolled back.
+No Party Event staging migration or reward was persisted.
+
+**Critical next work (v26+):** Review and implement the
+actual economy transfer with a **single atomic claim
+transaction and an immutable paid receipt**. Gold lives
+in `public.character_wallets`, but several XP and
+Companion rewards have different online state paths;
+the correct authoritative skill XP target, combat XP
+route, companion inventory, Boundstones/Renown stores,
+material stack limits, account switching and inventory
+revision synchronization all require independent
+verification. The preflight records these blockers and
+is **not** enough to turn on payouts. A concurrency,
+idempotency, migration-order, rollback, offline-user
+and Inbox-discovery test pass is still mandatory.
+Keep Party Events hidden, branch unmerged, PR draft,
+feature flags disabled and production untouched.
+
+## v25 — atomic-claim preflight and immutable account reward quote (13 Nov 2026)
+
+**Key implementation constraint:** Existing Veldryn payouts
+use different economic stores: `public.character_wallets.gold`
+is authoritative for character gold; the active character
+inventory is inside `public.online_game_states.state` with
+a revision counter. The Party Events v2 model also awards
+combat/skill XP, Companion Essence, Bondstones, Party Renown
+and `GEM_DUST`, whose **single atomic combined credit path
+has not yet been established or validated**. Sending only
+gold and marking an offer claimed would be a partial payout,
+and granting material stacks without capacity/locking
+review risks duplication or loss.
+
+**v25 deliberately implements the real claim PRECONDITIONS
+but cannot complete a live claim.** The draft migration
+`backend/supabase/migrations/20261113230000_party_event_reward_claim_quote_v25.sql`
+adds the RLS/private
+`party_event_reward_claim_quotes_v25` table with
+**one immutable quote per offer, per reservation/account,
+and per event-week/account**. It records the frozen member
+character, a server-generated deterministic request ID,
+reward model/version, locked selection, difficulty, frozen
+personal EP, boss reward band, full deterministic reward JSON,
+and a SHA-256 commitment over PostgreSQL's canonical JSONB
+representation. This is **not a spendable entitlement**,
+claim receipt or native Inbox item.
+
+`private.prepare_party_event_claim_quote_v25` is service-only,
+takes the server-authenticated account ID, v24 offer ID, frozen
+roster character and deterministic request ID, and **does not
+accept a caller-supplied reward amount**. It locks the week
+and immutable offer, checks v24's unique offer and v23's
+worker attestation and candidate hashes, validates the locked
+Warrior/Artisan/Companion choice or participation-only status,
+and **recomputes the complete v2 reward bundle** from
+server-owned difficulty/EP/performance band. All account-week
+IDs are unique and the exact same request replays identically;
+a different request, character or account fails closed.
+It verifies that the owned frozen character's gold wallet
+exists and has no numeric overflow, and locks the matching
+online game-state row and checks inventory/locked-items
+JSON structure. **No economic row is updated.**
+
+The SQL return explicitly reports
+`storageShapeVerified=true`,
+`inventoryCapacityVerified=false`,
+`claimEnabled=false`, `claimed=false`,
+`entitlementsCreated=false`, `economyApplied=false`,
+and `inboxDelivered=false`. Both the table and trigger
+prohibit any change in these flags.
+`private.party_event_claim_quote_inbox_v25` is a
+service-role-only **account-scoped quote preview** with
+status `blocked_economy_not_audited`, never a claim button.
+
+**TypeScript/online adapters:**
+`backend/src/server/party/weekly-party-reward-claim-v25.ts`
+exposes a release-gated, trusted-only prepare/read contract
+that checks the returned account/character ID, disabled
+grant flags and independently recomputes the full reward
+bundle using `partyEventRewardBundle` (including every
+material quantity), rejecting mismatched SQL/worker quotes.
+`backend/online/party-event-reward-claim-v25.ts`
+is a parameterized private PostgreSQL adapter, **not**
+a mobile route, scheduler or deployed worker.
+`PARTY_EVENT_REWARD_CLAIM_V25_RELEASED=false`.
+
+**Verification:**
+`backend/supabase/tests/party_event_reward_claim_quote_v25.sql`
+passed on staging. It tests forged cross-account/frozen
+character IDs, missing wallet/inventory state, standard
+1-band Artisan quote (1,700 gold, 2,250 skill XP,
+10 Party Renown and 4 GEM_DUST), participation quote
+(420 gold), unchanged pre/post wallet and inventory
+revision, exact idempotent retry, changed request conflicts,
+private account-only quote projection and immutable
+nonpaying status. New server regression
+`weekly-party-reward-claim-v25.ts` covers **144**
+reward model combinations across three difficulties,
+six performance bands, 5/14/15/60 EP cases and
+all appropriate choices, plus tampered bundle/identity/flags;
+`backend/online/tests/party-event-claim-quote-v25.ts`
+checks parameterized private reads/writes and fail-closed
+missing results. Both suites are **registered, but GitHub
+TypeScript CI has not yet executed/been confirmed**.
+
+The staging run executed **all 15** isolated SQL suites
+(v11–v19, v21–v25 and extra zero-EP) against the complete
+14-migration chain, in three savepoint-isolated
+`BEGIN ... ROLLBACK` transactions, all **PASS**.
+No migrations or fixture data were persisted.
+
+**Not an actual claim or a released reward:**
+Gold wallet limits are checked, but inventory capacity,
+stack merging, item locks, account-wide Companion Essence,
+Bondstones and Party Renown, combat/skill XP selection,
+actual Inbox delivery, crash/retry recovery and atomic
+exactly-once state mutation are **not yet proven**.
+No SQL routine to credit or claim exists in this migration.
+The next pass must implement one transactional economy
+settlement that either commits **every** reward field plus
+an immutable claim receipt and Inbox delivery or rolls
+back everything, under server-authenticated ownership.
+It must verify integer and stack capacity, stat/XP rules,
+game-state revision, item/XP account limits, duplicate
+requests and concurrently racing claim requests, and
+validate every reward-kind/difficulty/band against
+the canonical TypeScript model.
+
+Do not enable Party Events, activate grants,
+merge this draft PR, or write to production until the
+end-to-end credit path is audited and approved.

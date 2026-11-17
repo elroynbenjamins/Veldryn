@@ -126,9 +126,18 @@ function Progress({s,value,accent}:{s:Shared['s'];value:number;accent:string}){r
 function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){return <View style={[s.tag,accent&&{borderColor:accent}]}><Text style={[s.tagText,accent&&{color:accent}]}>{label}</Text></View>;}
 
 const bosses=[
- {id:'hollow',name:'Hollowroot',region:'Asterfall',scene:'IRONWOOD',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387'},
- {id:'sunscar',name:'Sunscar',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73'},
- {id:'frost',name:'Frostmarch',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9'},
+ {id:'hollow',name:'Hollowroot',region:'Asterfall',scene:'IRONWOOD',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387',
+  supplies:['Cut timber for root barricades','Gather iron for reinforced shields','Prepare recovery supplies for the line'],
+  mechanics:['Watch for the sweeping root warning','Protect allies through the heavy slam','Strike when the ancient exposes its heart'],
+  threat:'Roots control the battlefield; watch the warning before committing damage.'},
+ {id:'sunscar',name:'Sunscar',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73',
+  supplies:['Stockpile ore for heatproof armor','Bring timber for shaded war shelters','Prepare cooling supplies for the camp'],
+  mechanics:['Read the blazing ground markers','Guard against the titan’s heated strike','Exploit the cooling window between casts'],
+  threat:'Heat builds between strikes; timing your defenses matters.'},
+ {id:'frost',name:'Frostmarch',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9',
+  supplies:['Reinforce the camp against the blizzard','Gather timber for warming fires','Prepare frost recovery provisions'],
+  mechanics:['Identify the coming whiteout cast','Protect the squad through the freezing wave','Counterattack as the storm recedes'],
+  threat:'Visibility and freezing attacks test the whole account squad.'},
 ] as const;
 function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void}){
  const boss=bosses.find(item=>item.id===selected)??bosses[0];
@@ -150,7 +159,7 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
    <Text style={s.detailLabel}>EXAMPLE WAR SUPPLY METER</Text><Progress s={s} value={65} accent={boss.color}/><Text style={s.finePrint}>Illustrative progress only. No current donation total is available in this preview.</Text>
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="PREPARATION TASKS" title="Support the war effort"/>
-   {['Stockpile ore for reinforced armor','Gather timber for barricades','Prepare supplies for the front line'].map((name,i)=><View key={name} style={s.detailRow}><Text style={s.index}>{'0'+(i+1)}</Text><View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>Pending authenticated stock and cost check</Text></View><Tag s={s} label="Locked"/></View>)}
+   {boss.supplies.map((name,i)=><View key={name} style={s.detailRow}><Text style={s.index}>{'0'+(i+1)}</Text><View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>Pending authenticated stock and cost check</Text></View><Tag s={s} label="Locked"/></View>)}
    <Action label="Donate supplies · Awaiting server" s={s} disabled/>
   </Card>
  </>;
@@ -161,7 +170,8 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
    <Action label="Begin account raid · Not available" s={s} disabled/>
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER MECHANICS" title="Watch the boss, not a timer"/>
-   {['Warning cast and response','Guard, damage and support impact','Phase transition and recovery'].map((label,i)=><View key={label} style={s.timelineRow}><View style={[s.timelineDot,{borderColor:boss.color}]}><Text style={[s.timelineNumber,{color:boss.color}]}>{i+1}</Text></View><Text style={s.choiceTitle}>{label}</Text></View>)}
+   <Text style={s.bodyText}>{boss.threat} Encounter descriptions are illustrative; the battle engine remains disconnected.</Text>
+   {boss.mechanics.map((label,i)=><View key={label} style={s.timelineRow}><View style={[s.timelineDot,{borderColor:boss.color}]}><Text style={[s.timelineNumber,{color:boss.color}]}>{i+1}</Text></View><Text style={s.choiceTitle}>{label}</Text></View>)}
   </Card>
  </>;
  if(tab==='rewards')return <>
@@ -176,10 +186,10 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
 }
 
 const stories=[
- {id:'caravan',name:'Broken Caravan',scene:'KINGS_ROAD',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders'],stages:['Survey the crossing and inspect broken bridge supports.','Defend the wagons against the raider charge.','Repair axles and prepare the convoy defense.']},
- {id:'hunt',name:'Nightfall Hunt',scene:'IRONWOOD',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha'],stages:['Read tracks and study signs in the moonlit woods.','Flush the pack and interrupt its warning howls.','Mix scent decoys and prepare the alpha encounter.']},
- {id:'wards',name:'Broken Wards',scene:'SILVERBROOK',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards'],stages:['Trace rune fractures and broken magic circuits.','Stabilize the crackling spires before they rupture.','Align the runestones and rehearse the final defense.']},
- {id:'reliquary',name:'Lost Reliquary',scene:'OLD_MINES',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals'],stages:['Translate mirrored glyphs in the forgotten archive.','Cross the mirror hall as the vault awakens.','Restore the final seal and prepare the choice ahead.']},
+ {id:'caravan',name:'Broken Caravan',scene:'KINGS_ROAD',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders'],stages:['Survey the crossing and inspect broken bridge supports.','Defend the wagons against the raider charge.','Repair axles and prepare the convoy defense.'],supplies:['Timber to brace damaged wagons','Ore to repair broken axles','Herbs for the convoy medics'],finaleThreat:'A raider charge threatens the wagons and their escort integrity.'},
+ {id:'hunt',name:'Nightfall Hunt',scene:'IRONWOOD',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha'],stages:['Read tracks and study signs in the moonlit woods.','Flush the pack and interrupt its warning howls.','Mix scent decoys and prepare the alpha encounter.'],supplies:['Timber for concealment and traps','Ore for sturdy snares','Herbs to mask the party scent'],finaleThreat:'The alpha pack uses concealment and warning howls before its attack.'},
+ {id:'wards',name:'Broken Wards',scene:'SILVERBROOK',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards'],stages:['Trace rune fractures and broken magic circuits.','Stabilize the crackling spires before they rupture.','Align the runestones and rehearse the final defense.'],supplies:['Timber to support unstable spires','Ore to anchor wardstones','Herbs to stabilize the ward circle'],finaleThreat:'Arcane surges strain the ward barrier; keep the circle stable.'},
+ {id:'reliquary',name:'Lost Reliquary',scene:'OLD_MINES',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals'],stages:['Translate mirrored glyphs in the forgotten archive.','Cross the mirror hall as the vault awakens.','Restore the final seal and prepare the choice ahead.'],supplies:['Timber to reinforce the passage','Ore for mirror-shield fittings','Herbs for the corrupted vault air'],finaleThreat:'Reflections and pressure on the final seal shape the encounter.'},
 ] as const;
 function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
@@ -219,7 +229,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   </Card>
  </>;
  if(tab==='supplies')return <Card s={s}><SectionHeading s={s} kicker="SHARED PREPARATION" title="Contribute together" sub="Preparation consumes verified resources only when submitted to the real server. No preview contributions affect the economy."/>
-  {['Timber for defenses','Ore for reinforcement','Herbs for recovery'].map((entry,i)=><View key={entry} style={s.detailRow}><Text style={[s.index,{color:accent}]}>{i+1}</Text><View style={s.flex}><Text style={s.choiceTitle}>{entry}</Text><Text style={s.choiceSub}>Authoritative inventory check required</Text></View><Tag s={s} label="Preview"/></View>)}
+  {story.supplies.map((entry,i)=><View key={entry} style={s.detailRow}><Text style={[s.index,{color:accent}]}>{i+1}</Text><View style={s.flex}><Text style={s.choiceTitle}>{entry}</Text><Text style={s.choiceSub}>Authoritative inventory check required</Text></View><Tag s={s} label="Preview"/></View>)}
   <Action label="Contribute · Not available" s={s} disabled/>
  </Card>;
  if(tab==='vote')return <Card s={s}><SectionHeading s={s} kicker="TWO LOCKED PARTY BALLOTS" title="The party decides" sub="Every story has a Stage 2 route and a later Stage 3 finale plan. Try the local preview; no votes are sent."/>
@@ -232,6 +242,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
  </Card>;
  if(tab==='finale')return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>
   <View style={s.statRow}><Stat s={s} label="PARTY" value="2–4"/><Stat s={s} label="ROUTES" value="2 votes"/><Stat s={s} label="REWARD" value="Day 8"/></View>
+  <Text style={s.bodyText}>{story.finaleThreat} This is a story preview, not active combat.</Text>
   <View style={s.empty}><Text style={s.emptyGlyph}>⚔</Text><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
   <Action label="Enter finale · Not available" s={s} disabled/>
  </Card>;
@@ -242,21 +253,24 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
  </Card>;
 }
 
-type MarketSample={id:string;name:string;type:'Resources'|'Materials'|'Gems'|'Equipment';amount:number;unit:number;requiredLevel?:number;rarity?:string};
+type MarketSample={id:string;name:string;type:'Resources'|'Materials'|'Gems'|'Equipment';amount:number;unit:number;requiredLevel?:number;rarity?:string;tier?:number;slot?:string;bonusPreview?:string};
 const samples:readonly MarketSample[]=[
  {id:'ore',name:'Iron Ore',type:'Resources',amount:40,unit:18},
  {id:'timber',name:'Oak Logs',type:'Resources',amount:25,unit:12},
  {id:'fang',name:'Wolf Fang',type:'Materials',amount:6,unit:86},
  {id:'gem',name:'Effect Gem',type:'Gems',amount:1,unit:740},
- {id:'gear',name:'Example T2 Forged Armor',type:'Equipment',amount:1,unit:2500,requiredLevel:18,rarity:'Rare'},
+ {id:'gear',name:'Example T2 Forged Armor',type:'Equipment',amount:1,unit:2500,requiredLevel:18,rarity:'Rare',tier:2,slot:'Armor'},
+ {id:'blade',name:'Example T3 Forged Blade',type:'Equipment',amount:1,unit:4300,requiredLevel:30,rarity:'Epic',tier:3,slot:'Weapon',bonusPreview:'Example bonus roll · not a verified affix'},
 ];
 // Static examples are deliberately not fetched from the real Market or displayed as verified sales.
 const illustrativeSaleHistory=[12,18,15,21,19,26,24];
 function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
  const [category,setCategory]=useState('All'),[query,setQuery]=useState(''),[selected,setSelected]=useState<string|null>(null);
- const [sort,setSort]=useState<'unit'|'lot'>('unit');
+ const [sort,setSort]=useState<'unit'|'lot'|'name'>('unit');
  const [quantity,setQuantity]=useState('10'),[price,setPrice]=useState('20'),[review,setReview]=useState(false);
- const filtered=samples.filter(item=>(category==='All'||item.type===category)&&item.name.toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>sort==='unit'?a.unit-b.unit:a.unit*a.amount-b.unit*b.amount);
+ const searchTerm=query.trim().toLowerCase();
+ const filtered=samples.filter(item=>(category==='All'||item.type===category)&&[item.name,item.type,item.rarity??'',item.slot??''].some(value=>value.toLowerCase().includes(searchTerm)))
+  .sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='unit'?a.unit-b.unit:a.unit*a.amount-b.unit*b.amount);
  const selectedItem=samples.find(item=>item.id===selected);
  const {gross,fee,net,valid:quoteValid,issue:quoteIssue}=estimateMarketPreviewQuote(quantity,price);
  if(tab==='browse')return <>
@@ -266,9 +280,9 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
    <View style={s.resultCount}><Text style={s.finePrint}>{filtered.length} example results</Text><Tag s={s} label="Sample data" accent={accent}/></View>
    <View style={s.sortRow} accessibilityRole="radiogroup">
     <Text style={s.detailLabel}>SORT BY</Text>
-    {([{id:'unit',label:'Unit price'},{id:'lot',label:'Total lot'}] as const).map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:sort===option.id}} onPress={()=>setSort(option.id)} style={[s.sortChip,sort===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,sort===option.id&&{color:C.text}]}>{option.label}</Text></Pressable>)}
+    {([{id:'unit',label:'Unit price'},{id:'lot',label:'Total lot'},{id:'name',label:'Name'}] as const).map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:sort===option.id}} onPress={()=>setSort(option.id)} style={[s.sortChip,sort===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,sort===option.id&&{color:C.text}]}>{option.label}</Text></Pressable>)}
    </View>
-   {filtered.length===0?<View style={s.empty}><Text style={s.bodyText}>No example items match this search.</Text></View>:filtered.map(item=><View key={item.id} style={s.resultGroup}><Pressable accessibilityRole="button" accessibilityState={{expanded:selected===item.id}} accessibilityLabel={`${item.name}, ${item.amount} items, ${item.unit*item.amount} gold example lot, ${selected===item.id?'details open':'inspect details'}`} onPress={()=>setSelected(selected===item.id?null:item.id)} style={[s.marketRow,selected===item.id&&{borderColor:accent}]}>
+   {filtered.length===0?<View style={s.empty}><Text style={s.bodyText}>No example items match this search or category.</Text><Action label="Clear search and filters" s={s} secondary onPress={()=>{setQuery('');setCategory('All');setSelected(null)}}/></View>:filtered.map(item=><View key={item.id} style={s.resultGroup}><Pressable accessibilityRole="button" accessibilityState={{expanded:selected===item.id}} accessibilityLabel={`${item.name}, ${item.amount} items, ${item.unit*item.amount} gold example lot, ${selected===item.id?'details open':'inspect details'}`} onPress={()=>setSelected(selected===item.id?null:item.id)} style={[s.marketRow,selected===item.id&&{borderColor:accent}]}>
     <View style={s.marketSymbol}><UiIcon name={item.type==='Equipment'?'inventory':item.type==='Gems'?'rewards':item.type==='Resources'?'world':'dungeon'} size={25}/></View>
     <View style={s.flex}><Text style={s.choiceTitle}>{item.name}</Text><Text style={s.choiceSub}>{item.type} · Example lot of {item.amount}{item.requiredLevel?' · Min. Lv '+item.requiredLevel:''}</Text></View>
     <View style={s.priceBlock}><Text style={s.goldPrice}>{(item.unit*item.amount).toLocaleString('en-US')} G</Text><Text style={s.choiceSub}>{item.unit} each</Text></View>
@@ -276,7 +290,13 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
    {selectedItem?.id===item.id?<View style={s.detailPanel}>
     <View style={s.resultCount}><Text style={s.guideHeading}>{selectedItem.name}</Text><Tag s={s} label="Demo listing" accent={accent}/></View>
     <View style={s.detailRow}><Text style={s.bodyText}>Example lot price</Text><Text style={s.goldPrice}>{(selectedItem.unit*selectedItem.amount).toLocaleString('en-US')} Gold</Text></View>
-    {selectedItem.requiredLevel?<View style={s.warning}><Text style={s.warningTitle}>Equipment eligibility</Text><Text style={s.bodyText}>Example requirement: Level {selectedItem.requiredLevel}{selectedItem.rarity?' · '+selectedItem.rarity:''}. The real server will verify class, level, exact Forge instance and restrictions before any purchase.</Text></View>:null}
+    {selectedItem.requiredLevel?<View style={s.warning}><Text style={s.warningTitle}>Equipment eligibility</Text><Text style={s.bodyText}>Example requirement: Level {selectedItem.requiredLevel}{selectedItem.rarity?' · '+selectedItem.rarity:''}. The real server will verify class, level, exact item instance and restrictions before any purchase.</Text></View>:null}
+    {selectedItem.type==='Equipment'?<View style={s.invoice}>
+      <View style={s.resultCount}><Text style={s.choiceTitle}>Example equipment details</Text><Tag s={s} label={selectedItem.rarity??'Unverified'}/></View>
+      <View style={s.detailRow}><Text style={s.bodyText}>Tier / slot</Text><Text style={s.choiceTitle}>T{selectedItem.tier??'?'} · {selectedItem.slot??'Unknown'}</Text></View>
+      <View style={s.detailRow}><Text style={s.bodyText}>Bonus stats</Text><Text style={s.choiceSub}>{selectedItem.bonusPreview??'None shown in example'}</Text></View>
+      <Text style={s.finePrint}>Gem policy preview: socketed gems can be replaced, not removed or extracted. Actual item sockets, lock state, ownership and tradability must come from the server.</Text>
+    </View>:null}
     <Text style={s.detailLabel}>ILLUSTRATIVE PRICE TREND · NOT REAL SALES</Text>
     <View style={s.historyChart} accessibilityLabel="Sample seven point price chart, not real sales">
       {illustrativeSaleHistory.map((value,index)=><View key={index} style={s.historySlot}><View style={[s.historyBar,{height:(Math.round(value/26*66)+8),backgroundColor:index===illustrativeSaleHistory.length-1?accent:C.lineStrong}]}/><Text style={s.historyLabel}>{index+1}</Text></View>)}
@@ -295,6 +315,9 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
     <View style={s.detailRow}><Text style={s.choiceTitle}>Estimated seller payout</Text><Text style={[s.goldPrice,{fontSize:18}]}>{net.toLocaleString('en-US')} Gold</Text></View>
    </View>
    <Text style={s.finePrint}>Example only · 5% seller fee rounded up to the next whole Gold. Final listing limits and fees are confirmed by the server.</Text>
+   <View style={s.detailPanel}><Text style={s.guideHeading}>Before listing equipment</Text>
+     <Text style={s.bodyText}>The live market must verify your exact item, allowed class and level, lock and favorite protections, and eligibility for trade. Socketed gems are replace-only, not extractable. This preview does not check your bag or bank.</Text>
+   </View>
    <Action label="Review example calculation" s={s} onPress={()=>setReview(true)} disabled={!quoteValid}/>
    {review?<View style={s.warning}><Text style={s.warningTitle}>Example review complete</Text><Text style={s.bodyText}>No listing has been submitted. Live selling will additionally enforce item ownership, minimum lot sizes, price corridors and safe escrow.</Text></View>:null}
    <Action label="Publish listing · Not available" s={s} disabled/>

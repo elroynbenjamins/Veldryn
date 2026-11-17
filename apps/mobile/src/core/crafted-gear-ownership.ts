@@ -232,9 +232,8 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
   const enhancement=record.enhancement;
   if(record.locked===true)throw new Error('This equipment copy is locked');
   if(state.settings.favoriteItemIds?.includes(record.itemId))throw new Error('Favorite equipment cannot be sold or salvaged');
-  if(enhancement.rank>0)throw new Error('Enhanced (upgraded) equipment cannot be sold or salvaged');
-  if(enhancement.statGemId||enhancement.effectGemId||enhancement.gemIds.length>0)
-    throw new Error('Socketed gems must be extracted before selling or salvaging');
+  if(enhancement.rank>0||enhancement.statGemId||enhancement.effectGemId||enhancement.gemIds.length>0)
+    throw new Error('Enhanced or socketed equipment cannot be sold or salvaged');
   const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
   if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))
     throw new Error('A saved loadout protects this equipment copy');

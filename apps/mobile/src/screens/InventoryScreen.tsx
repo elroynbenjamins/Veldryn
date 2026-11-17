@@ -30,6 +30,8 @@ import {Panel} from '../components/Panel';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentPreview} from '../components/EquipmentPreview';
+import {EquipmentDisposalStatus} from '../components/EquipmentDisposalStatus';
+import {equipmentCopyDisposalDecision} from '../core/equipment-disposal-guidance';
 import {ItemQuickInspect} from '../components/ItemQuickInspect';
 import {formatGameNumber} from '../core/number-format';
 import {displayStat} from '../core/stat-display';
@@ -150,28 +152,36 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // Preview actions always target the NEW Inventory copy, never the equipped slot.
   // Dry-run the existing disposal reducers so protected and stale copies stay disabled.
   const previewDisposal=useMemo(()=>{
-    const unavailable={sell:false,salvage:false};
-    if(!previewId||!state.character)return unavailable;
+    const unavailable=(reason:string)=>({sell:false,salvage:false,sellReason:reason,salvageReason:reason});
+    if(!previewId||!state.character)return unavailable('Select an equipment copy first');
     const stack=state.inventory.stacks.find(row=>row.itemId===previewId&&row.instanceId===(previewInstanceId??undefined)&&row.quantity>0);
-    if(!stack||goalProtection.has(previewId)||favoriteSet.has(previewId)||lockedSet.has(previewId))return unavailable;
+    if(!stack)return unavailable('This equipment copy is no longer in Inventory. Refresh your selection.');
+    if(goalProtection.has(previewId))return unavailable('Equipment needed for a Working Toward goal is protected');
+    if(favoriteSet.has(previewId))return unavailable('Favorite equipment cannot be sold or salvaged');
+    if(lockedSet.has(previewId))return unavailable('This equipment type is locked');
     const item=itemDef(previewId);
-    if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId)return unavailable;
+    if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId)return unavailable('This equipment is not available for disposal');
     const eligible=(method:'sell'|'salvage')=>{
-      if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))return false;
-      if(method==='salvage'&&!equipmentSalvageReward(previewId))return false;
+      if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))
+        return {allowed:false,reason:'This equipment has no vendor value'};
+      if(method==='salvage'&&!equipmentSalvageReward(previewId))
+        return {allowed:false,reason:'This equipment has no salvage recipe'};
+      if(previewInstanceId){
+        if(!onCommand)return {allowed:false,reason:'Equipment actions are unavailable while offline'};
+        return equipmentCopyDisposalDecision(state,previewInstanceId,method);
+      }
       try{
-        if(previewInstanceId){
-          if(!onCommand)return false;
-          disposeCraftedGearInstance(state,previewInstanceId,method);
-        }else{
-          if(!canDisposeLegacyEquipment(state,previewId,'inventory',1))return false;
-          if(method==='sell')sellItem(state,previewId,1);
-          else salvageItem(state,previewId);
-        }
-        return true;
-      }catch{return false;}
+        if(!canDisposeLegacyEquipment(state,previewId,'inventory',1))
+          return {allowed:false,reason:'Keep the last copy reserved for legacy enhancements'};
+        if(method==='sell')sellItem(state,previewId,1);
+        else salvageItem(state,previewId);
+        return {allowed:true};
+      }catch(error){
+        return {allowed:false,reason:error instanceof Error?error.message:'Equipment cannot be disposed'};
+      }
     };
-    return {sell:eligible('sell'),salvage:eligible('salvage')};
+    const sell=eligible('sell'),salvage=eligible('salvage');
+    return {sell:sell.allowed,salvage:salvage.allowed,sellReason:sell.reason,salvageReason:salvage.reason};
   },[state,previewId,previewInstanceId,goalProtection,favoriteSet,lockedSet,onCommand]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
    const hasUnselectedShown=gridEntries.some(stack=>stack!==null&&!selectedSet.has(inventoryBulkSelectionId(stack)));
@@ -222,10 +232,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const goalWarningText=goalWarning?gt('Working Toward is using this item for {goal}. Additional goals: {count}.',{goal:goalWarning.goalTitles[0],count:goalWarning.goalTitles.length-1}):'';
   const message=[(pending?.kind==='sell'||pending?.kind==='bank_sell')?gt('Sell {count} for {gold} gold. This cannot be undone.',{count:pending.quantity,gold:formatGameNumber(itemVendorSellGold(pending.item)*pending.quantity,state.settings.numberMode,state.settings.language)}):pending?.kind==='deposit'?gt('Move {count}× {name} to {destination}?',{count:pending.quantity,name:localizedItemName(language,pending.item.id),destination:gemDepositDestination(state,pending.item.id)==='gem_pouch'?'Gem Pouch':'Bank'}):pending?.item&&equipmentSalvageReward(pending.item.id)?gt('Destroy 1 item for {count}× {name}.',{count:equipmentSalvageReward(pending.item.id)!.quantity,name:localizedItemName(language,equipmentSalvageReward(pending.item.id)!.itemId)}):'',pending?.kind==='deposit'||pending?.kind==='sell'||pending?.kind==='bank_sell'?foodWarning:'',goalWarningText].filter(Boolean).join(' ');
   const copyDisposalRecord=copyPending?exactRecordsById.get(copyPending.instanceId):undefined;
-  const copyDisposalValid=useMemo(()=>{
-    if(!copyPending||!onCommand)return false;
-    try{disposeCraftedGearInstance(state,copyPending.instanceId,copyPending.method);return true;}catch{return false;}
-  },[state,copyPending,onCommand]);
+  const copyDisposalDecision=useMemo(()=>copyPending&&onCommand
+    ?equipmentCopyDisposalDecision(state,copyPending.instanceId,copyPending.method)
+    :{allowed:false,reason:'Equipment actions are unavailable'},[state,copyPending,onCommand]);
+  const copyDisposalValid=copyDisposalDecision.allowed;
   // The modal owns an immutable set of IDs. Recheck those IDs against the latest
   // snapshot instead of relying on the selection behind the modal.
   const disposalSummary=useMemo(()=>bulkPending&&bulkPending.kind!=='transfer'
@@ -268,6 +278,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
+  const inspectedCopySell=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'sell'):null;
+  const inspectedCopySalvage=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'salvage'):null;
   const hasLegacyStack=inspected?state[location].stacks.some(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):false;
   const legacyStackIndex=inspected?state[location].stacks.findIndex(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):-1;
   const linkAudit=inspected?.type==='gear'?auditCraftedGearOwnership(state):undefined;
@@ -351,9 +363,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
           <GameButton compact title={gl(carried?'To Bank':'Withdraw')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Transferring equipment…',async()=>{await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:carried?'bank':'inventory'}});closeInspect()})}/>
         <GameButton compact title={freeGearSlots===0?gearLabel('Gear storage full'):gearLabel('Store in Gear')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||freeGearSlots===0} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');closeInspect()})}/>
         </View>
+        <EquipmentDisposalStatus compact sellAllowed={!!inspectedCopySell?.allowed} salvageAllowed={!!inspectedCopySalvage?.allowed} sellReason={inspectedCopySell?.reason} salvageReason={inspectedCopySalvage?.reason}/>
         <View style={s.row}>
-          <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={!onCommand||selectedCopy.locked||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'sell',name:inspected.name});closeInspect()}}/>
-          {equipmentSalvageReward(inspected.id)?<GameButton compact title={gl('Salvage copy')} tone="danger" disabled={!onCommand||selectedCopy.locked||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'salvage',name:inspected.name});closeInspect()}}/>:null}
+          <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={!onCommand||!inspectedCopySell?.allowed||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'sell',name:inspected.name});closeInspect()}}/>
+          {equipmentSalvageReward(inspected.id)?<GameButton compact title={gl('Salvage copy')} tone="danger" disabled={!onCommand||!inspectedCopySalvage?.allowed||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'salvage',name:inspected.name});closeInspect()}}/>:null}
         </View>
       </View>:null}
     </View>:null}
@@ -374,11 +387,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {inventoryBusyLabel?<View accessibilityLiveRegion="polite" style={s.pouchStatus}><ActivityIndicator size="small" color={C.accent}/><Text style={s.sub}>{inventoryBusyLabel}</Text></View>:null}
     <GemPouchPanel standalone state={state} busy={inventoryBusyLabel!==null} onUpgrade={onCommand?()=>beginInventorySubmission('Upgrading Gem Pouch…',()=>onCommand({type:'gem_pouch_upgrade'})):undefined} onAction={onCommand?command=>beginInventorySubmission('Updating Gem Pouch…',()=>onCommand(command)):undefined} onFavorite={onToggleFavorite} onLock={onToggleLock}/>
   </ScrollView>;
-  return <><ConfirmModal visible={copyPending!==null} title={copyPending?.method==='sell'?gt('Sell this copy?'):gt('Salvage this copy?')} confirmDisabled={!copyDisposalValid||inventoryBusyLabel!==null} confirmLabel={copyPending?.method==='sell'?'Sell this copy':'Salvage this copy'} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const copy=copyPending;setCopyPending(null);if(copy&&onCommand)void beginInventorySubmission('Processing selected equipment…',()=>onCommand({type:copy.method==='sell'?'gear_sell':'gear_salvage',args:{instanceId:copy.instanceId}}))}} onCancel={()=>setCopyPending(null)}>{copyPending&&copyDisposalRecord?<DisposalPreview mode={copyPending.method} items={[{itemId:copyDisposalRecord.itemId,quantity:1,rarity:copyDisposalRecord.rarity,quality:craftedGearDisplayQuality(copyDisposalRecord)}]} gold={itemVendorSellGold(itemDef(copyDisposalRecord.itemId))} rewards={copyPending.method==='salvage'?equipmentSalvageRewards(copyDisposalRecord.itemId,copyDisposalRecord):[]} note={copyDisposalValid?gt('Only this exact equipment copy is affected.'):gt('Selection has changed. Close and review the equipment.')}/>:null}</ConfirmModal><EquipmentPreview state={state} itemId={previewId} instanceId={previewInstanceId} favorite={previewFavorite} locked={previewLocked}
+  return <><ConfirmModal visible={copyPending!==null} title={copyPending?.method==='sell'?gt('Sell this copy?'):gt('Salvage this copy?')} confirmDisabled={!copyDisposalValid||inventoryBusyLabel!==null} confirmLabel={copyPending?.method==='sell'?'Sell this copy':'Salvage this copy'} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const copy=copyPending;setCopyPending(null);if(copy&&onCommand)void beginInventorySubmission('Processing selected equipment…',()=>onCommand({type:copy.method==='sell'?'gear_sell':'gear_salvage',args:{instanceId:copy.instanceId}}))}} onCancel={()=>setCopyPending(null)}>{copyPending&&copyDisposalRecord?<DisposalPreview mode={copyPending.method} items={[{itemId:copyDisposalRecord.itemId,quantity:1,rarity:copyDisposalRecord.rarity,quality:craftedGearDisplayQuality(copyDisposalRecord)}]} gold={itemVendorSellGold(itemDef(copyDisposalRecord.itemId))} rewards={copyPending.method==='salvage'?equipmentSalvageRewards(copyDisposalRecord.itemId,copyDisposalRecord):[]} note={copyDisposalValid?gt('Only this exact equipment copy is affected.'):gl(copyDisposalDecision.reason??'Selection has changed. Close and review the equipment.')}/>:null}</ConfirmModal><EquipmentPreview state={state} itemId={previewId} instanceId={previewInstanceId} favorite={previewFavorite} locked={previewLocked}
   onToggleFavorite={previewId?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(previewId)):undefined}
   onToggleLock={previewId?changePreviewLock:undefined}
   canSell={previewDisposal.sell&&inventoryBusyLabel===null}
   canSalvage={previewDisposal.salvage&&inventoryBusyLabel===null}
+  sellBlockReason={previewDisposal.sellReason} salvageBlockReason={previewDisposal.salvageReason}
   canStoreInGear={freeGearSlots>0}
   onStoreInGear={previewId&&onCommand?async()=>{
     const id=previewId,instanceId=previewInstanceId;
@@ -430,6 +444,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>}
     </View>}
     {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} full · Free a slot or upgrade below.':'{location} · {free} slots left.',{location:gt(location==='inventory'?'Inventory':'Bank'),free:activeCapacity.free})}</Text>}
+    {location==='inventory'&&activeCapacity.level==='full'?<Text style={s.sub}>{gl('Salvage may need a free slot for returned materials. Selling a safe copy frees space; socketed and upgraded gear remains protected.')}</Text>:null}
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
 
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}

@@ -107,7 +107,7 @@ async function main(){
    gateEnabled:true,offerId,trustedAccountId:accountId,
    trustedCharacterId:characterId,repository:repo,
  });
- assert(calls===2&&!first.replayed&&repeat.replayed
+ assert(Number(calls)===2&&!first.replayed&&repeat.replayed
    &&first.reward.kind==='artisan'&&first.reward.gold===1700
    &&first.reward.skillXp===2250&&first.needsSkillTarget
    &&first.payoutAuthorized===false&&first.rewardsGranted===false

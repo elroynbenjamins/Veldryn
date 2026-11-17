@@ -109,9 +109,18 @@ export function weaponBonusStrength(itemId:string,rarity:ItemRarity,bonus:Weapon
   if(!range)return 0;
   return Math.max(0,Math.min(100,Math.round(100*(bonus.basisPoints-range[0])/(range[1]-range[0]))));
 }
+/** Quick, glanceable equipment label; explanatory range lives in the detailed tooltip. */
+export function weaponBonusCompactLine(bonus:WeaponBonusRoll){
+  return `+${(bonus.basisPoints/100).toFixed(1)}% ${WEAPON_BONUS_LABELS[bonus.stat]}`;
+}
+export type WeaponBonusRollGrade='Perfect'|'Excellent'|'Strong'|'Standard';
+export function weaponBonusRollGrade(strength:number):WeaponBonusRollGrade{
+  return strength===100?'Perfect':strength>=90?'Excellent':strength>=70?'Strong':'Standard';
+}
+
 export function weaponBonusLine(itemId:string,rarity:ItemRarity,bonus:WeaponBonusRoll,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION){
   const cfg=weaponBonusConfig(itemId,rarity);
   const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat,version):undefined;
   if(!range)return '';
-  return `+${(bonus.basisPoints/100).toFixed(1)}% ${WEAPON_BONUS_LABELS[bonus.stat]} (${(range[0]/100).toFixed(1)}–${(range[1]/100).toFixed(1)}%, ${weaponBonusStrength(itemId,rarity,bonus,version)}/100 roll)`;
+  return `${weaponBonusCompactLine(bonus)} · Range ${(range[0]/100).toFixed(1)}–${(range[1]/100).toFixed(1)}% · ${weaponBonusStrength(itemId,rarity,bonus,version)}/100 roll`;
 }

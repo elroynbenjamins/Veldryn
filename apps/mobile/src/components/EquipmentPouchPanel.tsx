@@ -170,6 +170,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     {unlockableSales.length>0?<GameButton compact title={p('Unlock selected · {count}',{count:unlockableSales.length})} tone="secondary" disabled={!onAction||busy} onPress={()=>{void unlockSelected()}}/>:null}
    </View>
    {excludedSelected>0?<Text style={s.meta}>{p('Protected copies are excluded from the sale.')+' '+selectedSales.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(row.reason??'Protected equipment')).join(' · ')}</Text>:null}
+   {selectedSalvages.length>salvageCount?<Text style={s.meta}>{p('Salvage protection:')+' '+selectedSalvages.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(row.reason??'Protected equipment')).join(' · ')}</Text>:null}
   </View>:<Text style={s.hint}>{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
   <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>
    {entries.map((stack,index)=>{

@@ -12,7 +12,8 @@ assert.match(screen,/equipmentCopyDisposalDecision\(state,selectedCopy\.id,'salv
 assert.match(screen,/Salvage may need a free slot/,'full Inventory explains salvage limits');
 assert.match(preview,/<EquipmentDisposalStatus/,'comparison shows the action status panel');
 assert.match(pouch,/<EquipmentDisposalStatus/,'Gear pouch uses the same action status panel');
-assert.match(pouch,/Compare & Equip to Extract/,'Gear pouch directs socketed copies to extraction path');
+assert.doesNotMatch(pouch,/Compare & Equip to Extract/,'Gear pouch must not offer extraction');
+assert.match(pouch,/Installed gems and upgrades are destroyed/,'Gear pouch warns that installed gems and upgrades are lost');
 assert.match(status,/ITEM ACTIONS/,'status is labelled in compact gear UI');
 assert.match(status,/reasonNext/,'protected actions show a concrete next step');
 console.log('PASS: Inventory and Gear disposal UI contract');

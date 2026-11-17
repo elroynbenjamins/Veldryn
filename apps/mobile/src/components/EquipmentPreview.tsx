@@ -8,6 +8,7 @@ import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
+import {weaponBonusLine} from '../core/weapon-bonus-rolls';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -61,6 +62,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
+ const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus))??[];
+ const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>weaponBonusLine(instance.itemId,instance.rarity,bonus))??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -114,6 +117,11 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
+   {(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.setAlert}>
+    <Text style={s.sectionTitle}>{gl('WEAPON BONUS ROLLS')}</Text>
+    <Text style={s.note}>{gl('Equipped')}: {currentWeaponRolls.length?currentWeaponRolls.join(' · '):gl('None')}</Text>
+    <Text style={[s.setLine,{color:C.good}]}>{gl('New')}: {newWeaponRolls.length?newWeaponRolls.join(' · '):gl('None')}</Text>
+   </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
      <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>

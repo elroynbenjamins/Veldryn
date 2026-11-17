@@ -34,8 +34,9 @@ export function previewEquipment(state:GameState,id:string,instanceId?:string|nu
 
   if(instanceId){
     const instance=craftedGearInstances(state).find(row=>row.id===instanceId&&row.itemId===id);
-    if(!instance||instance.ownerCharacterId!==state.character.id||
-       !stacks.some(row=>row.itemId===id&&row.instanceId===instanceId&&row.quantity===1))
+    // ownerCharacterId is the original crafter, not the current holder.
+    // The exact-copy equip reducer verifies active-character storage ownership.
+    if(!instance||!stacks.some(row=>row.itemId===id&&row.instanceId===instanceId&&row.quantity===1))
       throw new Error('This exact equipment copy is no longer in character storage');
     return equipCraftedGearInstance(state,instanceId);
   }

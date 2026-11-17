@@ -79,3 +79,26 @@ test('Market example item selection, price history and fee explanation stay stri
  assert.match(screen,/No listing has been submitted/);
  assert.match(screen,/No listings or ownership records are loaded/);
 });
+
+test('compact UI and market sorting are keyboard and scroll safe',()=>{
+ const views=[...screen.matchAll(/<ScrollView\b[^>]*>/g)].map(match=>match[0]);
+ assert.ok(views.length>=4,'tab rail, main page, market filters and guide scroll exist');
+ for(const view of views){
+  assert.match(view,/showsVerticalScrollIndicator=\{false\}/,'every scroll surface hides vertical indicators');
+  assert.match(view,/showsHorizontalScrollIndicator=\{false\}/,'every scroll surface hides horizontal indicators');
+ }
+ assert.match(screen,/width<360\|\|fontScale>=1\.25/);
+ assert.match(screen,/scrollRef\.current\?\.scrollTo\(\{y:0,animated:false\}\)/);
+ assert.match(screen,/keyboardDismissMode="on-drag"/);
+ assert.match(screen,/selectedItem\?\.id===item\.id/,'selected listing details should render inline');
+ assert.match(screen,/sort==='unit'\?a\.unit-b\.unit/,'sort should use normalized unit price');
+ assert.match(screen,/label:'Total lot'/,'total lot sorting remains available');
+});
+
+test('polished preview honors reduced motion and announces important local changes',()=>{
+ assert.match(app,/reduceMotion=\{state\.settings\.reduceMotion\}/);
+ assert.match(screen,/animationType=\{reduceMotion\?'none':'fade'\}/);
+ assert.match(screen,/accessibilityLiveRegion="polite"/);
+ assert.match(screen,/accessibilityRole="header"/);
+ assert.match(screen,/accessibilityLabel=.*item\.name/,'market item exposes its sample price to screen readers');
+});

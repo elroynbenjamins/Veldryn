@@ -46,8 +46,8 @@ VALUES('30000000-0000-4000-8000-000000000037',
 
 DO $test$
 DECLARE
- event_id uuid:='30000000-0000-4000-8000-000000000037';
- account_id uuid:='10000000-0000-4000-8000-000000000037';
+ ev uuid:='30000000-0000-4000-8000-000000000037';
+ acct uuid:='10000000-0000-4000-8000-000000000037';
  active_id uuid:='20000000-0000-4000-8000-000000000037';
  parked_id uuid:='20000000-0000-4000-8000-000000000038';
  original jsonb;
@@ -58,22 +58,22 @@ DECLARE
  msg text;
 BEGIN
  SELECT state,revision INTO original,oldrev
- FROM public.online_game_states WHERE account_id=account_id;
+ FROM public.online_game_states WHERE account_id=acct;
  -- Distinct relational ownership is not enough: parked character must first
  -- become the active character in the authoritative account save.
  msg:='';
  BEGIN
   PERFORM private.world_boss_v27_donate(
-   event_id,account_id,parked_id,
+   ev,acct,parked_id,
    'WB37_PARKED_DENIED','WB37_TEST_SUPPLIES');
  EXCEPTION WHEN raise_exception THEN msg:=SQLERRM; END;
  IF msg NOT LIKE '%WB27_MISSING_AUTHORITY_INVENTORY%'
  THEN RAISE EXCEPTION 'WB37_PARKED_CHARACTER_DEBIT_ALLOWED: %',msg; END IF;
  IF EXISTS(SELECT 1 FROM private.world_boss_war_donations_v27
-  WHERE event_id=event_id AND account_id=account_id)
+  WHERE event_id=ev AND account_id=acct)
  THEN RAISE EXCEPTION 'WB37_DENIED_ACTION_CREATED_RECEIPT'; END IF;
  SELECT state,revision INTO changed,oldrev
- FROM public.online_game_states WHERE account_id=account_id;
+ FROM public.online_game_states WHERE account_id=acct;
  IF changed IS DISTINCT FROM original OR oldrev<>1
  THEN RAISE EXCEPTION 'WB37_PARKED_REQUEST_MUTATED_STATE'; END IF;
 
@@ -81,22 +81,22 @@ BEGIN
  -- identity must fail closed rather than spending the wrong inventory.
  UPDATE public.online_game_states
  SET state=jsonb_set(state,'{character,id}',to_jsonb(parked_id::text))
- WHERE account_id=account_id;
+ WHERE account_id=acct;
  msg:='';
  BEGIN
   PERFORM private.world_boss_v27_donate(
-   event_id,account_id,active_id,
+   ev,acct,active_id,
    'WB37_BAD_ACTIVE_JSON','WB37_TEST_SUPPLIES');
  EXCEPTION WHEN raise_exception THEN msg:=SQLERRM; END;
  IF msg NOT LIKE '%WB27_MISSING_AUTHORITY_INVENTORY%'
  THEN RAISE EXCEPTION 'WB37_SAVED_CHARACTER_MISMATCH_ALLOWED: %',msg; END IF;
- UPDATE public.online_game_states SET state=original WHERE account_id=account_id;
+ UPDATE public.online_game_states SET state=original WHERE account_id=acct;
 
- SELECT private.world_boss_v27_donate(event_id,account_id,active_id,
+ SELECT private.world_boss_v27_donate(ev,acct,active_id,
   'WB37_ACTIVE_DEBIT_1','WB37_TEST_SUPPLIES') INTO rec;
  IF rec->>'ordinal'<>'1' OR rec->>'repeated'<>'false'
  THEN RAISE EXCEPTION 'WB37_ACTIVE_FIRST_RECEIPT_BAD'; END IF;
- SELECT state INTO changed FROM public.online_game_states WHERE account_id=account_id;
+ SELECT state INTO changed FROM public.online_game_states WHERE account_id=acct;
  IF (SELECT (s->>'quantity')::int FROM
       jsonb_array_elements(changed#>'{inventory,stacks}') s
       WHERE s->>'itemId'='GREENWOOD_LOG')<>80
@@ -121,13 +121,13 @@ BEGIN
   '{character,id}',to_jsonb(parked_id::text),false);
  UPDATE public.online_game_states SET character_id=parked_id,
    state=switched,revision=revision+1
- WHERE account_id=account_id;
+ WHERE account_id=acct;
 
- SELECT private.world_boss_v27_donate(event_id,account_id,parked_id,
+ SELECT private.world_boss_v27_donate(ev,acct,parked_id,
   'WB37_PARKED_NOW_ACTIVE_2','WB37_TEST_SUPPLIES') INTO rec;
  IF rec->>'ordinal'<>'2' OR rec->>'repeated'<>'false'
  THEN RAISE EXCEPTION 'WB37_SECOND_CHARACTER_RECEIPT_BAD'; END IF;
- SELECT state INTO changed FROM public.online_game_states WHERE account_id=account_id;
+ SELECT state INTO changed FROM public.online_game_states WHERE account_id=acct;
  IF (SELECT (s->>'quantity')::int FROM
       jsonb_array_elements(changed#>'{inventory,stacks}') s
       WHERE s->>'itemId'='GREENWOOD_LOG')<>70
@@ -138,19 +138,19 @@ BEGIN
 
  -- Replaying the first character's completed donation after switching must
  -- return the original receipt without debiting anything a second time.
- SELECT private.world_boss_v27_donate(event_id,account_id,active_id,
+ SELECT private.world_boss_v27_donate(ev,acct,active_id,
   'WB37_ACTIVE_DEBIT_1','WB37_TEST_SUPPLIES') INTO rec;
  IF rec->>'repeated'<>'true' OR rec->>'ordinal'<>'1'
  THEN RAISE EXCEPTION 'WB37_SWITCH_INVALIDATED_IDEMPOTENT_REPLAY'; END IF;
  msg:='';
  BEGIN
-  PERFORM private.world_boss_v27_donate(event_id,account_id,parked_id,
+  PERFORM private.world_boss_v27_donate(ev,acct,parked_id,
    'WB37_THIRD_BUNDLE','WB37_TEST_SUPPLIES');
  EXCEPTION WHEN raise_exception THEN msg:=SQLERRM; END;
  IF msg NOT LIKE '%WB27_ACCOUNT_BUNDLE_LIMIT%'
  THEN RAISE EXCEPTION 'WB37_CHARACTER_SWITCH_RESET_BUNDLE_LIMIT: %',msg; END IF;
  IF (SELECT count(*) FROM private.world_boss_war_donations_v27
-     WHERE event_id=event_id AND account_id=account_id)<>2
+     WHERE event_id=ev AND account_id=acct)<>2
  THEN RAISE EXCEPTION 'WB37_ACCOUNT_WIDE_DONATION_COUNT_BAD'; END IF;
  RAISE NOTICE 'WORLD_BOSS_V37_REAL_ACCOUNT_SAVE_DONATIONS=PASS';
 END

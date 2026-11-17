@@ -23,13 +23,13 @@ export function petArtSource(id:string):ImageSourcePropType|undefined{
 
 /**
  * Portrait-grade sources for expanded Collections detail.
- * Compact surfaces use optimized runtime exports. Guild pets use the same
- * packaged assets for detail views because source-only review artwork is not
- * shipped with the mobile application.
+ * Compact surfaces use optimized runtime exports. Guild pets have separate
+ * portrait-grade PNGs copied from their original source artwork. Never stretch
+ * their 96px WebP thumbnails across the expanded collection sheet.
  */
 const guildPetPortraitSourceById=new Map<string,ImageSourcePropType>([
- ['GUILD_PET_001',require('../../assets/guild-token-shop/pets/GUILD_PET_001_Stormwatch_Fox.webp')],
- ['GUILD_PET_002',require('../../assets/guild-token-shop/pets/GUILD_PET_002_Oathwood_Wyrmling.webp')],
+ ['GUILD_PET_001',require('../../assets/guild-token-shop/pets/portraits/GUILD_PET_001_Stormwatch_Fox.png')],
+ ['GUILD_PET_002',require('../../assets/guild-token-shop/pets/portraits/GUILD_PET_002_Oathwood_Wyrmling.png')],
 ]);
 
 const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
@@ -77,6 +77,13 @@ const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
  ['PET_042',require('../../assets/master_roster/pets/portraits_512/PET_042_Heartfire_Salamander.png')],
 ]);
 
+// Only the Veilbreak event pets currently have portrait-grade artwork.
+// Frostfall and Dungeon Shop pets retain compact source images; the Collections
+// screen displays those in a 96px inset rather than enlarging them as portraits.
+const EVENT_PET_PORTRAIT_IDS=new Set(['EVT_PET_013','EVT_PET_014']);
+
 export function petDetailArtSource(id:string):ImageSourcePropType|undefined{
- return masterPetPortraitSourceById.get(id)??eventPetSourceById.get(id)??guildPetPortraitSourceById.get(id)??dungeonShopPetArtSource(id);
+ return masterPetPortraitSourceById.get(id)
+   ??(EVENT_PET_PORTRAIT_IDS.has(id)?eventPetSourceById.get(id):undefined)
+   ??guildPetPortraitSourceById.get(id);
 }

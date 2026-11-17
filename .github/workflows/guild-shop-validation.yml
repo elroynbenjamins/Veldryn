@@ -82,3 +82,5 @@ jobs:
           pnpm --dir backend install --frozen-lockfile
       - name: Typecheck mobile
         run: pnpm --dir apps/mobile exec tsc --noEmit -p tsconfig.json
+      - name: Validate shipped Guild Shop pet art and portrait assets
+        run: node tools/validate-guild-token-shop-assets.mjs

@@ -90,6 +90,9 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
 }
 
 export function activityCycleSeconds(state:GameState){
+  // Timed crafting reserves its actual cycle duration at start. The generic
+  // gathering fallback is not valid for processing (and can show ~1s/craft).
+  if(state.activity?.kind==='processing'&&state.activity.processing)return state.activity.processing.cycleSeconds;
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
   const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
@@ -122,6 +125,9 @@ export function activityRate(state:GameState){
   const activeHunt=monster&&!monster.boss&&usesDamageDrivenHunts(monster.zone)?activeCombatRuntimeProjection(state):undefined;
   const seconds=activeHunt?.killCycleSeconds??activityCycleSeconds(state),actions=Math.floor(3600/Math.max(.1,seconds));
   if(state.activity?.kind==='alchemy'&&state.activity.brew)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*state.activity.brew.xpPerBatch),goldPerHour:0};
+  // Use the paid reservation's XP snapshot, not the generic gathering XP (zero
+  // for processing recipes). This is display-only; settlement is unchanged.
+  if(state.activity?.kind==='processing'&&state.activity.processing)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*state.activity.processing.xpPerBatch),goldPerHour:0};
   if(route)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*route.xp*multipliers.skillXpMultiplier),goldPerHour:0};
   if(faith)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*faith.xp),goldPerHour:0};
   const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;

@@ -123,3 +123,13 @@ test('stage-specific stories, settlement and verified trade history remain expli
  assert.match(screen,/import \{UiIcon\} from '\.\.\/components\/UiIcon'/);
  assert.ok(!screen.includes("onPress={()=>purchaseMarketOffer("), 'prototype never buys from the economy');
 });
+
+test('guided help remains step-by-step and keyboard dismissible',()=>{
+ assert.match(screen,/Step \{guideIndex\+1\} of \{guideTopics\.length\}/);
+ assert.match(screen,/setGuideIndex\(0\);setGuide\(true\)/);
+ assert.match(screen,/guideIndex===0/);
+ assert.match(screen,/setGuideIndex\(i=>Math\.max\(0,i-1\)\)/);
+ assert.match(screen,/if\(guideIndex>=guideTopics\.length-1\)setGuide\(false\)/);
+ assert.match(screen,/onRequestClose=\{\(\)=>setGuide\(false\)\}/);
+ assert.match(screen,/onAccessibilityEscape=\{\(\)=>setGuide\(false\)\}/);
+});

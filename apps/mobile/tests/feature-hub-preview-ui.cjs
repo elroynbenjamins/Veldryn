@@ -7,6 +7,7 @@ const read=file=>fs.readFileSync(path.join(mobile,file),'utf8');
 const app=read('App.tsx');
 const route=read('src/core/feature-hub-routes.ts');
 const screen=read('src/screens/FeaturePreviewScreen.tsx');
+const marketFilter=read('src/core/market-preview-filter.ts');
 const more=read('src/screens/MoreScreen.tsx');
 const chat=read('src/components/ChatOverlay.tsx');
 const flags=read('src/core/release-flags.ts');
@@ -93,7 +94,9 @@ test('compact UI and market sorting are keyboard and scroll safe',()=>{
  assert.match(screen,/scrollRef\.current\?\.scrollTo\(\{y:0,animated:false\}\)/);
  assert.match(screen,/keyboardDismissMode="on-drag"/);
  assert.match(screen,/selectedItem\?\.id===item\.id/,'selected listing details should render inline');
- assert.match(screen,/sort==='unit'\?a\.unit-b\.unit/,'sort should use normalized unit price');
+ assert.match(screen,/filterMarketPreviewItems\(samples,category/,'browse delegates deterministic sort/filter logic');
+ assert.match(marketFilter,/sort==='unit-desc'\?b\.unit-a\.unit:a\.unit-b\.unit/,'sorting supports ascending and descending unit price');
+ assert.match(marketFilter,/sort==='lot'/,'sorting supports total lot price');
  assert.match(screen,/label:'Total lot'/,'total lot sorting remains available');
 });
 
@@ -153,7 +156,8 @@ test('market browsing offers safe item inspection, reset and equipment gem trade
  assert.match(screen,/Example T3 Forged Blade/);
  assert.match(screen,/requiredLevel:30/);
  assert.match(screen,/label:'Name'/);
- assert.match(screen,/sort==='name'\?a\.name\.localeCompare\(b\.name\)/);
+ assert.match(marketFilter,/sort==='name'\?a\.name\.localeCompare\(b\.name\)/);
+ assert.match(screen,/label:'Highest \/ unit'/);
  assert.match(screen,/Clear search and filters/);
  assert.match(screen,/setCategory\('All'\);setSelected\(null\)/);
  assert.match(screen,/selectedItem\.type==='Equipment'/);
@@ -162,4 +166,27 @@ test('market browsing offers safe item inspection, reset and equipment gem trade
  assert.match(screen,/Actual item sockets, lock state, ownership and tradability must come from the server/);
  assert.match(screen,/Purchase · Market unavailable/);
  assert.match(screen,/Publish listing · Not available/);
+});
+
+test('route changes cannot reuse a stale tab or open guide from another feature',()=>{
+ assert.match(screen,/const defaultTab=tabs\[0\]\.id/);
+ assert.match(screen,/const activeTab=tabs\.some\(item=>item\.id===tab\)\?tab:defaultTab/);
+ assert.match(screen,/useEffect\(\(\)=>\{\s*setTab\(defaultTab\);\s*setGuide\(false\);\s*setGuideIndex\(0\);/);
+ assert.match(screen,/\},\[route,defaultTab\]\)/);
+ assert.match(screen,/if\(!tabs\.some\(item=>item\.id===next\)\)return/);
+ for(const expression of ['tab={activeTab}','selected:activeTab===item.id']){
+  assert.ok(screen.includes(expression),'tab guard missing: '+expression);
+ }
+});
+
+test('mobile Market search has an accessible clear action and all preview calculations are memoized',()=>{
+ assert.match(screen,/autoCorrect=\{false\} autoCapitalize="none" returnKeyType="search"/);
+ assert.match(screen,/query\.length>0\?<Action label="Clear"/);
+ assert.match(screen,/useMemo\(\(\)=>filterMarketPreviewItems\(samples/);
+ assert.match(screen,/useMemo\(\(\)=>estimateMarketPreviewQuote\(quantity,price\)/);
+ assert.match(screen,/help:\{width:44,height:44/);
+ assert.match(screen,/sortChip:\{minHeight:44/);
+ assert.match(screen,/filter:\{paddingHorizontal:12,minHeight:44/);
+ assert.match(marketFilter,/items:readonly MarketPreviewItem\[\]/);
+ assert.match(marketFilter,/return items\.filter\(item=>/);
 });

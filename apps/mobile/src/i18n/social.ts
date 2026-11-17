@@ -30,6 +30,8 @@ export const socialTranslationRows = {
   "Try another search or filter.": ["Andere Suche oder Filter versuchen.","Prueba otra búsqueda o filtro.","Probeer een andere zoekterm of filter.","Prova un'altra ricerca o filtro.","Essayez une autre recherche ou un filtre."],
   "Players appear here when they are active in Veldryn.": ["Aktive Veldryn-Spieler erscheinen hier.","Los jugadores activos en Veldryn aparecerán aquí.","Actieve Veldryn-spelers verschijnen hier.","Qui compaiono i giocatori attivi in Veldryn.","Les joueurs actifs de Veldryn apparaissent ici."],
   "Showing the first {count} players.": ["Die ersten {count} Spieler werden angezeigt.","Mostrando los primeros {count} jugadores.","De eerste {count} spelers worden getoond.","Visualizzati i primi {count} giocatori.","Affichage des {count} premiers joueurs."],
+  // Hidden Rankings guided help.
+  "Rankings guide": ["Ranglistenhilfe","Guía de clasificaciones","Ranglijstgids","Guida alle classifiche","Guide des classements"],
   // Read-only Rankings pagination.
   "No further ranked entries": ["Keine weiteren Ranglisteneinträge","No hay más entradas en la clasificación","Geen verdere ranglijstvermeldingen","Nessun'altra voce in classifica","Aucune autre entrée au classement"],
   "Return to the previous page to view ranked entries.": ["Kehre zur vorherigen Seite zurück, um Ranglisteneinträge anzusehen.","Vuelve a la página anterior para consultar la clasificación.","Ga terug naar de vorige pagina om de ranglijst te bekijken.","Torna alla pagina precedente per vedere la classifica.","Revenez à la page précédente pour consulter le classement."],

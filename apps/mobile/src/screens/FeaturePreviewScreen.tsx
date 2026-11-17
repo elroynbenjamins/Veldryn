@@ -17,10 +17,10 @@ const bossTabs:TabItem[]=[
 ];
 const partyTabs:TabItem[]=[
  {id:'adventure',label:'Adventure'},{id:'stages',label:'Stages'},{id:'supplies',label:'Supplies'},
- {id:'vote',label:'Voting'},{id:'finale',label:'Finale'},
+ {id:'vote',label:'Voting'},{id:'finale',label:'Finale'},{id:'results',label:'Results'},
 ];
 const marketTabs:TabItem[]=[
- {id:'browse',label:'Browse'},{id:'sell',label:'Sell'},{id:'listings',label:'My Listings'},{id:'inbox',label:'Inbox'},
+ {id:'browse',label:'Browse'},{id:'sell',label:'Sell'},{id:'listings',label:'My Listings'},{id:'inbox',label:'Inbox'},{id:'history',label:'History'},
 ];
 const marketArtwork=require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp');
 const meta={
@@ -219,10 +219,15 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   <Text accessibilityLiveRegion="polite" style={s.finePrint}>Local example: Stage 2 · {choice?story.approach[choice==='secure'?0:1]:'no choice'}; Stage 3 · {finalChoice?story.finale[finalChoice==='secure'?0:1]:'no choice'}. Nothing submitted.</Text>
   <Action label="Cast vote · Server unavailable" s={s} disabled/>
  </Card>;
- return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>
+ if(tab==='finale')return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>
   <View style={s.statRow}><Stat s={s} label="PARTY" value="2–4"/><Stat s={s} label="ROUTES" value="2 votes"/><Stat s={s} label="REWARD" value="Day 8"/></View>
   <View style={s.empty}><Text style={s.emptyGlyph}>⚔</Text><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
   <Action label="Enter finale · Not available" s={s} disabled/>
+ </Card>;
+ return <Card s={s}><SectionHeading s={s} kicker="DAY 8 · SETTLEMENT" title="Adventure results" sub="Final rewards will be calculated once per verified event cycle. This screen cannot issue Event Points, refund items, or claim rewards."/>
+  <View style={s.statRow}><Stat s={s} label="RESULT" value="Not live"/><Stat s={s} label="CONTRIBUTION" value="No record"/><Stat s={s} label="CLAIM" value="Unavailable"/></View>
+  <View style={s.empty}><UiIcon name="rewards" size={34}/><Text style={s.choiceTitle}>Awaiting a verified settlement</Text><Text style={s.bodyText}>Your Party's final outcome, stage choices and personal rewards will appear here only after the server closes and validates the adventure.</Text></View>
+  <Action label="Claim settlement · Not available" s={s} disabled/>
  </Card>;
 }
 
@@ -283,7 +288,8 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
    <Action label="Publish listing · Not available" s={s} disabled/>
   </Card>;
  if(tab==='listings')return <Card s={s}><SectionHeading s={s} kicker="YOUR MARKET ACTIVITY" title="My Listings" sub="Only real server-owned offers can appear here. Cancelling, expiry and escrow return must preserve exact items."/><View style={s.empty}><Text style={s.emptyGlyph}>▦</Text><Text style={s.choiceTitle}>Trading is not released</Text><Text style={s.bodyText}>No listings or ownership records are loaded into this design preview.</Text></View></Card>;
- return <Card s={s}><SectionHeading s={s} kicker="SECURE DELIVERIES" title="Market Inbox" sub="The existing Rewards Inbox contains the gated Market claim tab. This preview does not create a second reward wallet."/><View style={s.empty}><Text style={s.emptyGlyph}>✉</Text><Text style={s.choiceTitle}>No connected deliveries</Text><Text style={s.bodyText}>Bought, sold, expired and returned records will be shown only when verified by the service.</Text></View></Card>;
+ if(tab==='inbox')return <Card s={s}><SectionHeading s={s} kicker="SECURE DELIVERIES" title="Market Inbox" sub="The existing Rewards Inbox contains the gated Market claim tab. This preview does not create a second reward wallet."/><View style={s.empty}><Text style={s.emptyGlyph}>✉</Text><Text style={s.choiceTitle}>No connected deliveries</Text><Text style={s.bodyText}>Bought, sold, expired and returned records will be shown only when verified by the service.</Text></View></Card>;
+ return <Card s={s}><SectionHeading s={s} kicker="TRADE AUDIT TRAIL" title="Transaction History" sub="Finalized sales and purchases will appear here once the Market's authenticated ledger is released. Example listings are never recorded as actual transactions."/><View style={s.empty}><UiIcon name="inventory" size={34}/><Text style={s.choiceTitle}>No verified transactions</Text><Text style={s.bodyText}>Completed purchases, seller payouts, fees and return events will come from immutable server history.</Text></View></Card>;
 }
 
 function makeStyles(C:ThemeColors,compact=false){

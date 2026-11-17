@@ -1,4 +1,4 @@
-# World Boss V15–V36 hidden integration (17 November 2026)
+# World Boss V15–V37 hidden integration (17 November 2026)
 
 **Status:** DRAFT / hidden engineering consolidation only. Not approved for deployment or public activation.
 
@@ -67,4 +67,11 @@
 - This function is deliberately **not connected** to any account deletion flow; it does not choose a privacy retention policy, purge external replays, transfer currencies or mutate the database. [Issue #1348](https://github.com/elroynbenjamins/Veldryn/issues/1348) remains the launch gate.
 - Dedicated exact-head V36 CI is pending. No World Boss schema has been migrated to staging or production.
 
-**Next stage:** verify exact-head V36 and V35 PostgreSQL CI; fix independent Expo baseline (#1345); get approved account erasure and external replay retention design (#1348); then plan staged migrations, real concurrent worker tests and economy approval.
+## V37 account-scoped War Camp source-of-truth
+- Confirmed V36 exact-head dedicated World Boss validation completed successfully: TypeScript and private disposable PostgreSQL fixture/regression jobs both passed. Separate Mobile Core remains blocked at the Expo package compatibility step (#1345).
+- V27's disposable War Camp fixture previously invented a composite `(account_id,character_id)` primary key for `online_game_states`. The real staging table is keyed by **account_id alone**, with one active `character_id` and all inactive fighters held in `state.otherCharacters`. V37 updates the fixture to mirror this.
+- Hardened `private.world_boss_v27_donate`: the selected owned character must match **both** the relational active character and the authoritative `state.character.id` before any inventory stack is removed. Only active character inventory is spendable. The player can switch to a different owned character first; parked/inactive inventories, bank and overflow must never be debited.
+- Added independent V37 PostgreSQL smoke: rejects donating with an inactive but relationally owned character; rejects a mismatched active JSON identity; verifies successful active donation, a switch to another owned character, a second donation from that character, replay idempotency after switching and the hard **two donations per account** cap. All data is synthetic and rolled back.
+- **V37 exact-head CI pending.** This is a hidden schema/test change, not a live migration, server route or gameplay release.
+
+**Next stage:** verify V37 disposable PostgreSQL and TypeScript CI; resolve independent Expo dependency check (#1345); approve account erasure and external replay retention (#1348); then review staging migrations and real concurrent settlement without live activation.

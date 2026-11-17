@@ -12,7 +12,10 @@ CREATE TABLE private.world_boss_consent_commands_v21 (
  event_id uuid NOT NULL REFERENCES private.world_boss_events_v17(id) ON DELETE RESTRICT,
  owner_account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
  request_id text NOT NULL CHECK (request_id ~ '^[A-Za-z0-9_-]{8,128}$'),
- character_id uuid NOT NULL REFERENCES public.characters(id) ON DELETE RESTRICT,
+ -- Historical Echo consent is entirely retired. If the selected character
+ -- is deleted, discard this consent/command row rather than blocking deletion.
+ -- V22+ owned-account raids do not borrow Echoes.
+ character_id uuid NOT NULL REFERENCES public.characters(id) ON DELETE CASCADE,
  enabled boolean NOT NULL,
  expected_revision bigint NOT NULL CHECK (expected_revision>=0),
  resulting_revision bigint NOT NULL CHECK (resulting_revision>=1),

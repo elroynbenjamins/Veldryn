@@ -213,6 +213,46 @@ async function main(){
  await fail(()=>readAuthenticatedWorldBossRewardsV28({
   token:'private-verified-auth',eventId:EVENT,
  },f.deps),'untrusted_reward_view');
+ // V40: these are individually finite/nonnegative rows, but they must
+ // still be coherent with the private replay's attributed fighter totals.
+ const fakeGuard=structuredClone(overview);
+ fakeGuard.roleContributions[0].localGuardDamage=82;
+ f.setViewOverride(fakeGuard);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ const exaggeratedHp=structuredClone(overview);
+ exaggeratedHp.roleContributions[0].worldHpContribution=301;
+ f.setViewOverride(exaggeratedHp);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ // A legitimate global HP cap or weighted contribution can be less than
+ // the raw replay damage and must not be rejected.
+ const capped=structuredClone(overview);
+ capped.roleContributions[0].worldHpContribution=125;
+ f.setViewOverride(capped);
+ assert.equal((await readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps)).roleContributions[0].worldHpContribution,125);
+ const invalidCharacter=structuredClone(overview);
+ invalidCharacter.roleContributions[0].characterLedger[0].characterId='forged';
+ f.setViewOverride(invalidCharacter);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ const missingSurvival=structuredClone(overview);
+ (missingSurvival.roleContributions[0].characterLedger[0] as unknown as {survived?:boolean}).survived=undefined;
+ f.setViewOverride(missingSurvival);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
+ const overflow=structuredClone(overview);
+ overflow.roleContributions[0].characterLedger[0].bossHpDamage=Number.MAX_SAFE_INTEGER+1;
+ f.setViewOverride(overflow);
+ await fail(()=>readAuthenticatedWorldBossRewardsV28({
+  token:'private-verified-auth',eventId:EVENT,
+ },f.deps),'untrusted_reward_view');
  f.setViewOverride(null);
  assert.equal((await readAuthenticatedWorldBossRewardsV28({
   token:'private-verified-auth',eventId:EVENT,
@@ -254,7 +294,7 @@ async function main(){
  await fail(()=>db.claim(EVENT,ACCOUNT,'invalid'),'private_pg_identity_invalid');
  assert.equal(queries.length,4);
  console.log('WORLD_BOSS_V28_REWARD_SERVICE='+JSON.stringify({
-  exactReplayOnly:true,replayedReceipt:true,
+  exactReplayOnly:true,replayedReceipt:true,raidLedgerParityV40:true,
   donationOnly:donationOnly.creditedSigils,
   verifiedEarnedLater:firstAfter.creditedSigils,
   totalClaimed:overview.claimedThisEvent,

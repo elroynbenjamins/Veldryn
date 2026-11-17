@@ -85,8 +85,13 @@ function projectDust(state:GameState,added:number):ItemStack[]{
  return next;
 }
 
+/** Unreleased projection-only field. Not present in current Veldryn saves;
+ * payout remains blocked until a canonical persisted destination exists. */
+export type PartyEventDraftGameStateV28=GameState & {
+ account:GameState['account'] & {partyRenown?:number};
+};
 export interface PartyEventSaveProjectionV28{
- readonly state:GameState;
+ readonly state:PartyEventDraftGameStateV28;
  readonly goldAfter:number;
  readonly companionEssenceAfter:number;
  readonly bondstonesAfter:number;
@@ -168,7 +173,8 @@ export function projectPartyEventSaveV28(input:{
    r.companionEssence,'companion_essence');
  const bondstones=plus(state.account.bondstones??0,
    r.bondstones,'bondstones');
- const renown=plus(state.account.partyRenown??0,
+ const draftAccount=state.account as GameState['account'] & {partyRenown?:number};
+ const renown=plus(draftAccount.partyRenown??0,
    r.partyRenown,'party_renown');
  const inv=projectDust(state,r.materials.GEM_DUST??0);
 
@@ -222,7 +228,7 @@ export function projectPartyEventSaveV28(input:{
      'unexpected_profession_target');
  }
 
- const projected:GameState={
+ const projected:PartyEventDraftGameStateV28={
    ...state,
    character,
    account:{...state.account,companionEssence:essence,

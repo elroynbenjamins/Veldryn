@@ -470,6 +470,10 @@ export const socialEarlyRows={
     "Противник подземелья",
     "Zindan düşmanı"
   ],
+    "NEW EFFECT RECIPE UNLOCKED": ["ОТКРЫТ НОВЫЙ РЕЦЕПТ ЭФФЕКТА","YENİ ETKİ TARİFİ AÇILDI"],
+  "Effect Gem Recipe": ["Рецепт самоцвета эффекта","Etki Mücevheri Tarifi"],
+  "Permanently learned. Combine this Effect Gem family in Enchanting; this unlock is not a gem item.": ["Рецепт изучен навсегда. Объединяйте самоцветы этого семейства в Зачаровании. Открытие рецепта не выдаёт самоцвет.","Kalıcı olarak öğrenildi. Bu Etki Mücevheri ailesini Büyüleme'de birleştir. Tarifin açılması sana bir mücevher eşyası vermez."],
+  "Any additional gems or catalysts are delivered directly to your account on claim. Check your Gem Pouch and Enchanting.": ["Дополнительные самоцветы и катализаторы после получения награды поступают прямо на аккаунт. Проверьте сумку самоцветов и Зачарование.","Ek mücevherler veya katalizörler ödülü aldığında doğrudan hesabına eklenir. Mücevher Keseni ve Büyüleme'yi kontrol et."],
   "Your expedition rewards are secured. Return when you are ready.": [
     "Награды за экспедицию сохранены. Возвращайтесь, когда будете готовы.",
     "Sefer ödüllerin güvence altında. Hazır olduğunda geri dön."

@@ -101,7 +101,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   const initialEventHandled=useRef(false);
   const [rewards,setRewards]=useState<CoopRewardDisplay[]>([]);
   const [recipeUnlocks,setRecipeUnlocks]=useState<DungeonEffectRecipeUnlock[]>([]);
-  const pendingRecipeClaim=useRef<{runId:string;baselineState:GameState;knownIds:readonly string[]}>();
+  const pendingRecipeClaim=useRef<{runId:string;baselineState:GameState;knownIds:readonly string[]}|undefined>(undefined);
   useEffect(()=>{setRecipeUnlocks([]);pendingRecipeClaim.current=undefined;},[run?.runId]);
   // The claim RPC awards recipe knowledge inside the server-side settlement
   // trigger, not as an inventory item or an entitlement JSON field. Only show
@@ -113,9 +113,10 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     pendingRecipeClaim.current=undefined;
     const known=new Set(pending.knownIds);
     const discovered=(state.account.unlockedKnowledgeIds??[]).filter(id=>id.startsWith('recipe_gem_')&&!known.has(id))
-      .map(id=>mobileGemFamilyV1('effect_'+id.slice('recipe_gem_'.length)))
-      .filter((family):family is NonNullable<typeof family>=>Boolean(family&&family.kind==='effect'))
-      .map(family=>({familyId:family.familyId,name:family.name}));
+      .flatMap(id=>{
+        const family=mobileGemFamilyV1('effect_'+id.slice('recipe_gem_'.length));
+        return family?.kind==='effect'?[{familyId:family.familyId,name:family.name}]:[];
+      });
     if(discovered.length)setRecipeUnlocks(previous=>[...new Map([...previous,...discovered].map(item=>[item.familyId,item])).values()]);
   },[state,run?.runId]);
   const [rematchOpen,setRematchOpen]=useState(false);

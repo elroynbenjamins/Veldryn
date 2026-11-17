@@ -110,6 +110,8 @@ export interface CraftedGearInstance{
   enhancement:GearEnhancementState;
   /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
   statRoll?:number;
+  /** T3+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
+  weaponBonuses?:import('./weapon-bonus-rolls').WeaponBonusRoll[];
 }
 export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

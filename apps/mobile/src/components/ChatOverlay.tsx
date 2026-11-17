@@ -24,7 +24,7 @@ import {ONLINE_PLAYER_ROSTER_RELEASED} from '../core/release-flags';
 import {ChatOnlinePlayersPanel} from './ChatOnlinePlayersPanel';
 
 type Channel='world'|'guild'|'party'|'system';
-type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild';visible:boolean;hideDock?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
+type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild'|'party';visible:boolean;hideDock?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
 
 export function ChatOverlay(props:ChatOverlayProps){
  const {session}=useAuthSession();
@@ -98,12 +98,12 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);
  useEffect(()=>{
   if(visible&&!wasVisible.current){
-   selectChannel(initialChannel==='guild'&&guildAvailable?'guild':'world');
+   selectChannel(initialChannel==='party'&&party?'party':initialChannel==='guild'&&guildAvailable?'guild':'world');
    pendingGuildChannel.current=initialChannel==='guild'&&!guildAvailable;
    setWorldChannel(defaultVisibleWorldChatIndex(state.settings.defaultWorldChat));
   }
   wasVisible.current=visible;
- },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable]);
+ },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable,party?.id]);
  useEffect(()=>{if(visible&&guildAvailable&&pendingGuildChannel.current)selectChannel('guild');},[visible,guildAvailable]);
  useEffect(()=>{
   if(!visible){keyboardTopRef.current=null;setKeyboardVisible(false);setKeyboardOverlap(0);return;}

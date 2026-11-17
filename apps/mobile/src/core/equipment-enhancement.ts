@@ -184,7 +184,7 @@ export function replaceGem(state:GameState,itemId:string,gemId:string,randomRoll
   if(combinedQuantity(state,gemId)<1)throw new Error('You do not own this gem');
   // Replacement permanently consumes the previous gem. No extraction fee and no gem refund.
   const rollPercent=gemRollPercentFromUnitV1(randomRoll);
-  const next=consumeAcross(state,gemId,1);
+  let next=consumeAcross(state,gemId,1);
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,
     statGemRollPercent:kind==='stat'?rollPercent:enhancement.statGemRollPercent,effectGemRollPercent:kind==='effect'?rollPercent:enhancement.effectGemRollPercent,gemIds:[]});
   return next;

@@ -25,7 +25,7 @@ const CHAR='20000000-0000-4000-8000-000000000027';
 const requestId='WB27_DONATION_REQUEST_001';
 const recipeId='T2_FORTIFICATIONS';
 const camp=makeWorldBossWarCampSnapshotV11({
- eventId:EVENT,revision:3,
+ eventId:EVENT,revision:4,
  levels:{fortifications:1,fieldProvisions:1,siegecraft:0},
 });
 const goals={
@@ -34,7 +34,7 @@ const goals={
  siegecraft:{tier1At:2,tier2At:4},
 };
 const projection:WorldBossWarCampProgressV27={
- eventId:EVENT,revision:3,contributions:{
+ eventId:EVENT,revision:4,contributions:{
   fortifications:2,fieldProvisions:2,siegecraft:0,
  },goals,frozen:true,snapshot:camp,
 };
@@ -90,6 +90,7 @@ async function main(){
   donation:0,freeze:0,progress:0,
  };
  let broken=false;
+ let progressResult:WorldBossWarCampProgressV27=projection;
  const privateDb=createWorldBossWarCampPgV27({
   async query<T extends object>(sql:string,args:readonly unknown[]){
    queries.push({sql,args});
@@ -101,14 +102,14 @@ async function main(){
     assert.deepEqual(args,[EVENT,ACCOUNT,CHAR,requestId,recipeId]);
     return {rows:[{receipt:{
      eventId:EVENT,accountId:ACCOUNT,requestId,recipeId,
-     track:'fortifications',ordinal:1,revision:3,
+     track:'fortifications',ordinal:1,revision:4,
      paidMaterials:broken?[{itemId:'FAKE',quantity:1}]:paid,
      repeated:false,
     }} as unknown as T]};
    }
    if(sql.includes('_progress(')){
     calls.progress++;
-    return {rows:[{progress:projection} as unknown as T]};
+    return {rows:[{progress:progressResult} as unknown as T]};
    }
    if(sql.includes('_freeze(')){
     calls.freeze++;
@@ -158,6 +159,27 @@ async function main(){
   token:'invalid-auth-token',eventId:EVENT,
  },deps),'progress_auth_required');
  assert.equal(calls.progress,1);
+ // V39: refuse ledger mismatches, including a properly re-hashed snapshot.
+ progressResult={...projection,revision:5,snapshot:makeWorldBossWarCampSnapshotV11({
+  eventId:EVENT,revision:5,
+  levels:{fortifications:1,fieldProvisions:1,siegecraft:0},
+ })};
+ await fail(()=>readAuthenticatedWorldBossWarCampV27({
+  token:'verified-auth-token',eventId:EVENT,
+ },deps),'inconsistent_community_ledger');
+ progressResult={...projection,snapshot:makeWorldBossWarCampSnapshotV11({
+  eventId:EVENT,revision:4,
+  levels:{fortifications:2,fieldProvisions:1,siegecraft:0},
+ })};
+ await fail(()=>readAuthenticatedWorldBossWarCampV27({
+  token:'verified-auth-token',eventId:EVENT,
+ },deps),'inconsistent_frozen_tiers');
+ // An unfrozen, correctly accounted preparation projection still loads.
+ progressResult={...projection,frozen:false,snapshot:null};
+ assert.equal((await readAuthenticatedWorldBossWarCampV27({
+  token:'verified-auth-token',eventId:EVENT,
+ },deps)).frozen,false);
+ progressResult=projection;
  const loaded=await privateDb.freeze(EVENT);
  assert.deepEqual(loaded,camp);
  broken=true;
@@ -177,7 +199,8 @@ async function main(){
   realItemRecipes:12,tiers:4,tracks:3,adminPolicyPreinitialized:true,inventorySource:'owned-character-inventory',
   accountBundleCap:2,weekdayDonationCutoff:'Saturday 00:00 UTC',
   authRequired:true,sqlParameterized:true,privateDigestValidated:true,
-  receiptsValidated:true,noWalletCredits:true,noLiveRoutes:true,
+  receiptsValidated:true,warCampLedgerValidated:true,
+  frozenTiersValidated:true,noWalletCredits:true,noLiveRoutes:true,
  }));
 }
 void main().catch(e=>{console.error(e);throw e;});

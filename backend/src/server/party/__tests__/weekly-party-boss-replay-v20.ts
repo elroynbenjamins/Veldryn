@@ -218,7 +218,7 @@ async function verifyPrivateReaderV21():Promise<void> {
   assert(result.proof.combatReplayed&&result.proof.rewardGrantAllowed===false
     &&result.rewardsGranted===false&&result.sourceDigest===bundle.sourceDigest,
     'v21 read bridge must never award loot');
-  assert(bundleReads===1&&catalogReads===1,
+  assert(Number(bundleReads)===1&&Number(catalogReads)===1,
     'v21 exactly one snapshot read plus trusted resource catalogue read');
 
   const falseClaim={...bundle,rewardGrantAllowed:true} as unknown as PrivatePartyReplayBundleV21;
@@ -300,7 +300,7 @@ async function verifyPrivateReaderV21():Promise<void> {
     gateEnabled:true,reservationId:input.reservation.id,
     repository:attestationRepo,
   });
-  assert(repeatedAttestation.replayed===true&&attestationCalls===2
+  assert(repeatedAttestation.replayed===true&&Number(attestationCalls)===2
     &&repeatedAttestation.replayHash===firstAttestation.replayHash,
     'v23 retry must preserve original immutable result');
   await rejectAsync(()=>attestPrivatePartyBossReplayV23({

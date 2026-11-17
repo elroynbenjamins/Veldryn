@@ -88,7 +88,9 @@ function rewardReceipt(
   !Number.isSafeInteger(r.creditedSigils)||
   r.creditedSigils<0||r.creditedSigils>WORLD_BOSS_V28_EVENT_CAP||
   !Number.isSafeInteger(r.balanceAfter)||r.balanceAfter<0||
-  !Number.isSafeInteger(r.walletRevision)||r.walletRevision<0)
+  !Number.isSafeInteger(r.walletRevision)||r.walletRevision<0||
+  r.balanceAfter<r.creditedSigils||
+  (r.creditedSigils>0&&r.walletRevision===0))
   throw Error('world_boss_v28_untrusted_claim_receipt');
  return r;
 }
@@ -98,6 +100,7 @@ function viewValid(r:WorldBossRewardViewV28,accountId:string,eventId:string){
   !Number.isSafeInteger(r.walletRevision)||r.walletRevision<0||
   !Number.isSafeInteger(r.claimedThisEvent)||r.claimedThisEvent<0||
   r.claimedThisEvent>WORLD_BOSS_V28_EVENT_CAP||
+  r.claimedThisEvent>r.balance||
   r.eventCap!==WORLD_BOSS_V28_EVENT_CAP||
   r.impactStatus!=='pending_balance_approval'||
   r.impactMilestonesCredited!==false||
@@ -110,6 +113,11 @@ function viewValid(r:WorldBossRewardViewV28,accountId:string,eventId:string){
    x.characterLedger.length>5||
    x.impactStatus!=='pending_balance_approval'))
   throw Error('world_boss_v28_untrusted_reward_view');
+ // Check nested provenance-facing role rows before returning any overview.
+ // This catches repeated ordinal rows, forged role labels and negative
+ // effective combat stats even if the caller only displays the raw view.
+ try{summarizeWorldBossRoleEvidenceV28(r);}
+ catch{throw Error('world_boss_v28_untrusted_reward_view');}
  return r;
 }
 /**

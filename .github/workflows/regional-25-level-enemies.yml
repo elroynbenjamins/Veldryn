@@ -18,6 +18,8 @@ on:
       - 'apps/mobile/tests/region-content-v21.ts'
       - 'apps/mobile/tests/gathering-availability.ts'
       - 'apps/mobile/tests/regional-four-areas.ts'
+      - 'apps/mobile/tests/save-transfer.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
   pull_request:
     paths:
       - '.github/workflows/regional-25-level-enemies.yml'
@@ -34,6 +36,8 @@ on:
       - 'apps/mobile/tests/region-content-v21.ts'
       - 'apps/mobile/tests/gathering-availability.ts'
       - 'apps/mobile/tests/regional-four-areas.ts'
+      - 'apps/mobile/tests/save-transfer.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
   workflow_dispatch:
 
 permissions:
@@ -67,3 +71,5 @@ jobs:
           node .core-build/apps/mobile/tests/regional-four-areas.js
           node .core-build/apps/mobile/tests/region-content-v21.js
           node .core-build/apps/mobile/tests/gathering-availability.js
+          node .core-build/apps/mobile/tests/save-transfer.js
+          node .core-build/apps/mobile/tests/exploration-balance.js

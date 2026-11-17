@@ -19,8 +19,8 @@ function weapon(tier:string,classId:'WAYFINDER'|'DREADGUARD'|'DAWNKEEPER'){
 
 const t1=weapon('T1','WAYFINDER'),t2=weapon('T2','WAYFINDER');
 const t3=weapon('T3','WAYFINDER'),t4=weapon('T4','WAYFINDER'),t5=weapon('T5','WAYFINDER'),t9=weapon('T9','WAYFINDER');
-ok(!rollWeaponBonuses(t1,'mythic','t1-epic'),'T1 never rolls, even Mythic');
-ok(!rollWeaponBonuses(t2,'epic','t2-epic'),'T2 never rolls, even Epic');
+ok(!rollWeaponBonuses(t1,'mythic','t1-epic',.25),'T1 never rolls, even Mythic');
+ok(!rollWeaponBonuses(t2,'epic','t2-epic',.25),'T2 never rolls, even Epic');
 ok(weaponBonusConfig(t3,'common')?.count===1,'T3 Common gets one stat');
 ok(weaponBonusConfig(t3,'epic')?.count===2,'T3 Epic gets two stats');
 ok(weaponBonusConfig(t4,'legendary')?.count===2,'T4 Legendary gets two stats');
@@ -31,8 +31,8 @@ for(const [id,rarity,count,min,max] of [
   [t3,'common',1,100,300],[t3,'epic',2,100,300],
   [t4,'mythic',2,100,300],[t5,'common',2,200,400],[t9,'rare',2,400,600],
 ] as const){
-  const first=rollWeaponBonuses(id,rarity,'stable-receipt');
-  const again=rollWeaponBonuses(id,rarity,'stable-receipt');
+  const first=rollWeaponBonuses(id,rarity,'stable-receipt',.4);
+  const again=rollWeaponBonuses(id,rarity,'stable-receipt',.4);
   ok(first?.length===count,'Wrong weapon roll count');
   ok(JSON.stringify(first)===JSON.stringify(again),'The same receipt must never reroll');
   ok(new Set(first!.map(row=>row.stat)).size===count,'Weapon stats must be distinct');
@@ -44,9 +44,10 @@ for(const [id,rarity,count,min,max] of [
 
 for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){
   const id=weapon('T5',classId),cfg=weaponBonusConfig(id,'common')!;
-  const bonuses=rollWeaponBonuses(id,'common','class-pool')!;
+  const bonuses=rollWeaponBonuses(id,'common','class-pool',.5)!;
   ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for its class role');
 }
+ok(JSON.stringify(rollWeaponBonuses(t3,'common','stable-receipt',.4))!==JSON.stringify(rollWeaponBonuses(t3,'common','stable-receipt',.8)),'Different trusted claim rolls should generate different weapon bonuses');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:500}]),'Out of range values must never grant stats');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'potency',basisPoints:200}]),'Damage weapons cannot roll Support-only stats');
 ok(!normalizeWeaponBonuses(t3,'epic',[{stat:'haste',basisPoints:200},{stat:'haste',basisPoints:200}]),'Repeated bonuses are not legal');

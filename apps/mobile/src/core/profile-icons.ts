@@ -10,6 +10,7 @@ type ProfileIconCatalogRow={id:string;name:string;group:string;source:string;mon
 export const EVENT_PROFILE_ICON_ARTWORK_IDS=new Set([
  'event:veilbreak-2026-lantern-warden',
  'event:veilbreak-2026-pumpkin-moon',
+ 'event:frostfall-2026-snowbell',
 ]);
 
 export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [

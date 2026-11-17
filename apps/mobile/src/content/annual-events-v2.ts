@@ -1,4 +1,5 @@
 import type {LiveEventDef} from './live-events';
+import {EQUIPMENT_MAIN_RESOURCE_BUNDLES} from './equipment-main-resource-shop';
 
 const gifts:LiveEventDef['dailyGifts']=[
   {day:1,rewardCurrency:100,rewardPrestige:0},
@@ -136,11 +137,27 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {id:'weekly_gifts',name:'Master Giftmaker',description:'Complete 50 crafting recipes this week.',source:'crafting',required:50,rewardCurrency:1150,rewardPrestige:2},
   ],
   shop:[
+    // Existing IDs and permanent rewards are preserved.
     {id:'frostfall_wave',reward:{kind:'emote',id:'emote_frostfall_wave',name:'Frostfall Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'hearth_guest_title',reward:{kind:'title',id:'title_hearth_guest',name:'Hearth Guest',rarity:'rare'},currency:'common',cost:1200,limit:1},
     {id:'bellringer_title',reward:{kind:'title',id:'title_bellringer',name:'Bellringer',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'aurora_walker_title',reward:{kind:'title',id:'title_aurora_walker',name:'Aurora Walker',rarity:'epic'},currency:'prestige',cost:4,limit:1},
-    {id:'frostfall_aurora_fox',reward:{kind:'pet',id:'EVT_PET_017',name:'Aurora Fox',rarity:'mythic'},currency:'prestige',cost:12,limit:1},
+    {id:'frostfall_aurora_fox',reward:{kind:'pet',id:'EVT_PET_017',name:'Aurora Fox',rarity:'mythic'},currency:'prestige',cost:10,limit:1},
+    {id:'frostfall_background',reward:{kind:'background',id:'bg_frostfall',name:'Aurora Winter Sky',rarity:'epic'},currency:'common',cost:2200,limit:1},
+    {id:'frostfall_snowbell_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-snowbell',name:'2026 Snowbell Crest',rarity:'epic'},currency:'common',cost:1400,limit:1},
+    {id:'frostmint_skill',reward:{kind:'candy',id:'EVT_ANNUAL_012_2026:candy:skill',name:'Frostmint',rarity:'common',quantity:1},currency:'common',cost:250,limit:5},
+    {id:'frostmint_battle',reward:{kind:'candy',id:'EVT_ANNUAL_012_2026:candy:combat',name:'Frostmint · Battle',rarity:'common',quantity:1},currency:'common',cost:300,limit:5},
+    {id:'frostmint_bond',reward:{kind:'candy',id:'EVT_ANNUAL_012_2026:candy:companion',name:'Frostmint · Bond',rarity:'common',quantity:1},currency:'common',cost:350,limit:5},
+    {id:'frostfall_companion_essence',reward:{kind:'companion_essence',id:'frostfall_essence_100',name:'Companion Essence · 100',rarity:'uncommon',quantity:100},currency:'common',cost:750,limit:3},
+    {id:'frostfall_gold_pouch',reward:{kind:'gold',id:'frostfall_gold_2500',name:'Winter Coin Purse',rarity:'common',quantity:2500},currency:'common',cost:450,limit:5},
+    {id:'frostfall_gold_chest',reward:{kind:'gold',id:'frostfall_gold_10000',name:'Festival Treasury',rarity:'uncommon',quantity:10000},currency:'common',cost:1600,limit:2},
+    // Select any main resource, 100 at a time; same item/tier gating as Dungeon Marks.
+    // Each material has its own once-per-UTC-week cap, resetting Monday.
+    ...EQUIPMENT_MAIN_RESOURCE_BUNDLES.map(bundle=>({
+      id:'frostfall_'+bundle.itemId.toLowerCase()+'_100',
+      reward:{kind:'crafting_material' as const,id:bundle.itemId,name:bundle.name+' ×100',rarity:'uncommon' as const,quantity:100,tier:bundle.tier},
+      currency:'common' as const,cost:bundle.frostfallTokens,limit:1,perUtcWeek:1,
+    })),
   ],
   choices:[
     {id:'snow_patrols',name:'Snow Patrols',description:'Keep roads clear and defend travelers during the festival.',bonusLabel:'+20% Frostbell Tokens from combat',dropMultipliers:{combat:1.2}},

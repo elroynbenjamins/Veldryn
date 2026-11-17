@@ -32,4 +32,16 @@
 
 **Validation progress:** On the first exact-head run, both dedicated World Boss jobs passed (V7–V29 TypeScript and private PostgreSQL transaction smoke/concurrency tests); Mobile Core failed before gameplay tests because current `main` uses `expo@58.0.25`, while Expo's compatibility check now expects `~58.0.26`. This is tracked in [issue #1345](https://github.com/elroynbenjamins/Veldryn/issues/1345) and is unrelated to World Boss file changes. Newly added V30 roster and catalog tests require their own exact-head green run. **Do not suppress the Expo failure or merge until the baseline/mobile gate and World Boss V30 gates pass.**
 
+## Staging read-only inventory — 17 November 2026
+- Inspected only **schema metadata and aggregate counts** in the active `Veldryn Staging 20260924` project; did not query or expose account/character IDs, player saves or profiles.
+- Staging currently has `public.characters` and `public.online_game_states`. There are 9 character rows and 9 online game-state rows; all 9 state rows match a character owned by the same account, and none has a null `character_id`. This only establishes storage shape/fixture coverage; it is **not evidence** that any World Boss reservation/replay works against live staging.
+- The private `world_boss_*` tables and functions are **absent** in staging, although the `private` schema exists. Therefore V17–V28 PostgreSQL proofs are still **disposable CI database** tests, not real staging deployment tests.
+- **No SQL was applied**, no World Boss data or wallets were created, and no staging/production edge routes or feature flags were changed.
+- Release gate: review private migrations, service-role-only permissions, rollback and multi-worker fixtures; apply only to staging through the approved migration process after code/security review, then validate trusted authenticated account reads and exactly-once settlement without granting access to clients.
+
+## V31 read-side reward hardening
+- The internal V28 reward view now rejects duplicate battle ordinals, invalid nested role evidence, and negative/unbounded role metrics before returning them as account-visible data; tests exercise both malicious and valid cases.
+- Receipt validation rejects a positive award without a wallet revision and an award larger than the resulting spendable balance. Crucially, **cumulative earned Sigils are not required to be ≤ current wallet balance** because a future shop may legitimately spend currency.
+- These are defensive checks on an unmounted private prototype; exact-head CI is required, and they do not activate any payout.
+
 **Next stage:** finish V30 CI, verify real staging ownership and transactions, calibrate the nine-class roster using authenticated player data in privacy-safe aggregates, and obtain release approval before promotion from draft.

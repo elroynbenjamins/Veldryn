@@ -140,9 +140,23 @@ rejects(()=>simulatePartyEventStoryStageV9({...base,stage2Choice:'forged'}),
  'party_story_unresolved_vote');
 rejects(()=>simulatePartyEventStoryStageV9({...base,variation:'forged'}),
  'party_story_invalid_family_variation');
-rejects(()=>simulatePartyEventStoryStageV9({...base,verifiedActors:[
- ...roster.slice(0,2),{...launchPlayer('Ironwarden',25),id:'duplicate-tank'},
-]}),'party_story_invalid_role_composition');
+const duplicateTank={...launchPlayer('Ironwarden',25),id:'additional-tank'};
+const flexibleTwoTanks=simulatePartyEventStoryStageV9({...base,
+ verifiedActors:[...roster.slice(0,2),duplicateTank],
+});
+assert(flexibleTwoTanks.combat!==null
+ &&flexibleTwoTanks.combat.familyObjective.value>=0,
+ 'second Tank no longer blocks an otherwise valid Party Event');
+const allDamage=Array.from({length:4},(_,i)=>({
+ ...launchPlayer('Wayfinder',25),id:'flexible-damage-'+i,
+}));
+const flexibleDamage=simulatePartyEventStoryStageV9({...base,
+ verifiedActors:allDamage,
+});
+assert(flexibleDamage.combat!==null,'all-Damage Party is legal');
+rejects(()=>simulatePartyEventStoryStageV9({...base,
+ verifiedActors:[roster[0]!,roster[0]!],
+}),'party_story_invalid_verified_roster');
 rejects(()=>simulatePartyEventStoryStageV9({...base,verifiedOrders:[{
  ...fullOrders[0]!,donatedQuantity:fullOrders[0]!.quantity+1,
 }]}),'party_boss_invalid_supply_receipt');
@@ -167,8 +181,8 @@ for(const diff of ['veteran','heroic'] as WeeklyPartyDifficulty[]){
  }
 }
 assert(higherDifficulty===48,'48 Veteran/Heroic route previews');
-// Cover all nine playable classes with legal 1 Tank / 2 Damage / 1 Support
-// parties and mixed character levels. These are diagnostic simulations, not
+// Cover all nine playable classes with mixed-role, mixed-level parties.
+// These are diagnostic simulations, not
 // empirical gear-curve balancing or release authorization.
 const mixedTeams=[
  ['Ironwarden','Wayfinder','Ravager','Dawnkeeper'],

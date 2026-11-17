@@ -6,7 +6,6 @@ import {regionAreas} from '../src/content/regional-areas';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {queuedActivityReadiness} from '../src/core/activity-queue';
 import {skillMilestones} from '../src/core/skill-milestones';
-import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
@@ -103,7 +102,7 @@ ok(explorationScoutingSpeedMultiplier(10)===1.02&&explorationScoutingSpeedMultip
 const noviceGathering=characterPermanentMultipliers(base).gatheringSpeedMultiplier;
 const veteran={...base,skills:base.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:50,xp:totalXpAtLevel(50)}:skill)};
 ok(Math.abs(characterPermanentMultipliers(veteran).gatheringSpeedMultiplier/noviceGathering-1.05)<1e-7,'Exploration 50 adds 5% to baseline gathering speed');
-const highScout=startExploration({...veteran,character:{...veteran.character!,level:rebaseLevel(26)},currentRegionId:'SUNSCAR',exploredRouteIds:['SCOUT_KINGS_ROAD'],defeatedBossIds:[...(veteran.defeatedBossIds??[]),'FALLEN_KNIGHT']},'SCOUT_SUNSCAR',1000);
+const highScout=startExploration({...veteran,character:{...veteran.character!,level:regionAreas('SUNSCAR')[0].minLevel},currentRegionId:'SUNSCAR',exploredRouteIds:['SCOUT_KINGS_ROAD'],defeatedBossIds:[...(veteran.defeatedBossIds??[]),'FALLEN_KNIGHT']},'SCOUT_SUNSCAR',1000);
 const fasterSeconds=Math.ceil(168/explorationScoutingSpeedMultiplier(50));
 ok(previewActivityReward(highScout,1000+(fasterSeconds+1)*1000).kills>=1,'Exploration 50 actually completes scouting faster');
 const explorationMilestones=skillMilestones(veteran,'exploration');

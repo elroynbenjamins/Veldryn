@@ -1,4 +1,4 @@
-# World Boss V15–V35 hidden integration (17 November 2026)
+# World Boss V15–V36 hidden integration (17 November 2026)
 
 **Status:** DRAFT / hidden engineering consolidation only. Not approved for deployment or public activation.
 
@@ -59,4 +59,12 @@
 - **Unresolved active-account erasure issue:** V17/V27/V28 rewards and attempts still contain account-related restrictive FKs, so do not claim general Auth-account deletion is fixed. [Issue #1348](https://github.com/elroynbenjamins/Veldryn/issues/1348) requires policy, an idempotent erasure transaction, external replay retention, worker/claim fencing and staging tests before any migration.
 - Latest V35 exact-head CI is pending. None of these changes is staged, merged into `main`, or activated.
 
-**Next stage:** verify exact-head V35 CI, resolve the independent Expo dependency issue (#1345), complete account-erasure and replay-retention design (#1348), then validate private schema/ownership/rewards in staging after reviewed migrations. Calibrate nine classes across real power brackets and obtain security/economy release approval before promotion from draft.
+## V36 read-only account-erasure preflight
+- A new service-role-only **read-only** private function (`world_boss_v36_erasure_preflight(uuid)`) reports aggregate counts for nine reviewed account-linked World Boss tables: battle attempts, milestone attribution, old Echo consents/commands, War Camp donations, replay proofs, Sigil wallet, reward ledger and claim receipts. It emits no player IDs or raw replay/loadout data.
+- If any account-linked World Boss record remains, the status is `blocked_pending_reconciliation`. If no World Boss records exist, the status is only `no_world_boss_rows`: **not permission to delete the account**, which may have obligations outside World Boss.
+- It **fails closed** when the catalog contains a new or missing account-identity column in any private `world_boss_*` table, instead of silently neglecting the new data. No public/anonymous/authenticated function grants.
+- Disposable PostgreSQL tests cover empty state, populated immutable battle/donation/replay/reward evidence, absence of account IDs in result, client-role access denial, a new account table and a new identity column on an existing table.
+- This function is deliberately **not connected** to any account deletion flow; it does not choose a privacy retention policy, purge external replays, transfer currencies or mutate the database. [Issue #1348](https://github.com/elroynbenjamins/Veldryn/issues/1348) remains the launch gate.
+- Dedicated exact-head V36 CI is pending. No World Boss schema has been migrated to staging or production.
+
+**Next stage:** verify exact-head V36 and V35 PostgreSQL CI; fix independent Expo baseline (#1345); get approved account erasure and external replay retention design (#1348); then plan staged migrations, real concurrent worker tests and economy approval.

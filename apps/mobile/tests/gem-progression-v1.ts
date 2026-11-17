@@ -40,7 +40,7 @@ const oldBulwarkCount=gemStorageQuantity(state,'gem:effect_bulwark:g1');
 state=replaceGem(state,'basic_sword','gem:effect_retaliation:g1');
 ok(gearEnhancement(state,'basic_sword').effectGemId==='gem:effect_retaliation:g1','Replace should atomically swap the Effect Gem');
 const returnedBulwark=gemStorageQuantity(state,'gem:effect_bulwark:g1');
-ok(returnedBulwark===oldBulwarkCount+1,'Replace should return the removed gem to storage');
+ok(returnedBulwark===oldBulwarkCount,'Replacing a gem destroys the previous gem without returning it to storage');
 ok(resonanceForFamilyV1(state,'effect_bulwark').resonance===2,'Replacing one copy should reduce Resonance');
 
 const recs=recommendedEffectFamiliesV1(state,'IRONWARDEN');

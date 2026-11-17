@@ -33,7 +33,7 @@ const meta={
 export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
- const [tab,setTab]=useState(tabs[0].id),[guide,setGuide]=useState(false);
+ const [tab,setTab]=useState(tabs[0].id),[guide,setGuide]=useState(false),[guideIndex,setGuideIndex]=useState(0);
  const scrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  const changeTab=(next:string)=>{setTab(next);scrollRef.current?.scrollTo({y:0,animated:false});};
  const [bossId,setBossId]=useState<(typeof bosses)[number]['id']>('hollow');
@@ -68,7 +68,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
    <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.header}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back to Account" onPress={onClose} style={s.smallButton}><UiIcon name="back" size={17}/><Text style={s.smallButtonText}>Back</Text></Pressable>
-      <View style={s.headerRight}><Text style={s.privateLabel}>DESIGN QA</Text><Pressable accessibilityRole="button" accessibilityLabel={title.title+' guide'} onPress={()=>setGuide(true)} style={s.help}><Text style={s.helpText}>?</Text></Pressable></View>
+      <View style={s.headerRight}><Text style={s.privateLabel}>DESIGN QA</Text><Pressable accessibilityRole="button" accessibilityLabel={title.title+' guide'} onPress={()=>{setGuideIndex(0);setGuide(true)}} style={s.help}><Text style={s.helpText}>?</Text></Pressable></View>
     </View>
     <ImageBackground source={heroSceneId?regionScenes[heroSceneId]:marketArtwork} resizeMode="cover" imageStyle={s.heroImage} style={[s.hero,{borderColor:accent}]}>
       <View style={s.heroShade}/>
@@ -96,8 +96,18 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
    <Modal transparent animationType={reduceMotion?'none':'fade'} visible={guide} onRequestClose={()=>setGuide(false)}>
      <View style={s.modalShade} onAccessibilityEscape={()=>setGuide(false)}><Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close guide" onPress={()=>setGuide(false)}/><View style={s.modal}>
        <View style={s.modalHeading}><View style={s.flex}><Text style={[s.eyebrow,{color:accent}]}>FIELD GUIDE</Text><Text accessibilityRole="header" style={s.cardTitle}>{title.title}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close guide" onPress={()=>setGuide(false)} style={s.help}><Text style={s.helpText}>×</Text></Pressable></View>
-       <ScrollView style={s.guideScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{guideTopics.map(([heading,body])=><View key={heading} style={s.guideTopic}><Text style={s.guideHeading}>{heading}</Text><Text style={s.bodyText}>{body}</Text></View>)}</ScrollView>
-       <Action label="Got it" onPress={()=>setGuide(false)} s={s}/>
+       <View style={s.resultCount}><Text accessibilityLiveRegion="polite" style={s.finePrint}>Step {guideIndex+1} of {guideTopics.length}</Text><Text style={s.finePrint}>Tap Next to learn more</Text></View>
+       <Progress s={s} value={(guideIndex+1)/guideTopics.length*100} accent={accent}/>
+       <ScrollView style={s.guideScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+         <View style={s.guideTopic}>
+           <Text accessibilityRole="header" style={s.guideHeading}>{guideTopics[guideIndex]?.[0]??'Guide'}</Text>
+           <Text style={s.bodyText}>{guideTopics[guideIndex]?.[1]??''}</Text>
+         </View>
+       </ScrollView>
+       <View style={s.modalActions}>
+        <View style={s.modalActionSlot}><Action label="Previous" secondary disabled={guideIndex===0} onPress={()=>setGuideIndex(i=>Math.max(0,i-1))} s={s}/></View>
+        <View style={s.modalActionSlot}><Action label={guideIndex===guideTopics.length-1?'Got it':'Next'} onPress={()=>{if(guideIndex>=guideTopics.length-1)setGuide(false);else setGuideIndex(i=>i+1)}} s={s}/></View>
+       </View>
      </View></View>
    </Modal>
  </View>;
@@ -311,6 +321,6 @@ function makeStyles(C:ThemeColors,compact=false){
   empty:{minHeight:140,alignItems:'center',justifyContent:'center',padding:14,gap:8,backgroundColor:C.panel2,borderRadius:radii.sm},emptyGlyph:{fontSize:34,color:C.muted},rosterList:{gap:7,marginTop:3},rosterMember:{flexDirection:'row',alignItems:'center',gap:9,minHeight:45},rosterAvatar:{width:36,height:36,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,backgroundColor:C.panel2},rosterInitial:{fontWeight:'900',fontSize:15},storyStage:{flexDirection:'row',gap:15,alignItems:'flex-start',paddingVertical:12,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},storyNumber:{fontSize:21,fontWeight:'900'},radio:{width:22,height:22,borderWidth:2,borderRadius:11,borderColor:C.muted,alignItems:'center',justifyContent:'center'},radioInner:{width:10,height:10,borderRadius:5},
   input:{color:C.text,backgroundColor:C.inputBg,borderColor:C.lineStrong,borderWidth:1,minHeight:46,borderRadius:radii.sm,paddingHorizontal:12,fontSize:13},filters:{gap:7},filter:{paddingHorizontal:12,minHeight:40,justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line},filterText:{fontSize:11,fontWeight:'800',color:C.muted},resultCount:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},resultGroup:{gap:6},sortRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap'},sortChip:{minHeight:38,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,justifyContent:'center'},marketRow:{flexDirection:'row',alignItems:'center',gap:9,padding:10,borderWidth:1,borderRadius:radii.sm,borderColor:C.line,backgroundColor:C.panel2,minHeight:65},marketSymbol:{height:40,width:40,borderRadius:radii.sm,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.lineStrong},marketSymbolText:{fontSize:23,color:C.accent},priceBlock:{alignItems:'flex-end'},goldPrice:{fontSize:13,fontWeight:'900',color:C.warning},detailPanel:{gap:8,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm},historyChart:{height:104,flexDirection:'row',alignItems:'flex-end',justifyContent:'space-around',gap:6,paddingTop:7,paddingBottom:5,backgroundColor:C.panel2,borderRadius:radii.sm},historySlot:{flex:1,alignItems:'center',justifyContent:'flex-end',gap:5},historyBar:{width:'62%',maxWidth:28,borderTopLeftRadius:3,borderTopRightRadius:3},historyLabel:{fontSize:9,color:C.muted,fontWeight:'800'},invoice:{padding:10,backgroundColor:C.panel2,borderRadius:radii.sm,gap:3},footer:{paddingTop:8,alignItems:'center'},footerText:{fontSize:9,fontWeight:'900',color:C.disabled,letterSpacing:1},
   partyDock:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:14,borderTopWidth:2,backgroundColor:C.panelRaised},dockGlyph:{width:32,height:32,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1},dockGlyphText:{fontSize:18,fontWeight:'900'},dockTitle:{color:C.text,fontSize:12,fontWeight:'900'},dockDescription:{color:C.muted,fontSize:11},dockArrow:{fontSize:25,fontWeight:'700',color:C.text},unread:{minWidth:22,height:22,paddingHorizontal:4,alignItems:'center',justifyContent:'center',backgroundColor:C.notification,borderRadius:11},unreadText:{fontSize:10,fontWeight:'900',color:C.notificationText},
-  modalShade:{flex:1,justifyContent:'center',padding:18,backgroundColor:C.overlay},modal:{gap:13,maxHeight:'80%',padding:16,borderRadius:radii.lg,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},modalHeading:{flexDirection:'row',alignItems:'center'},guideScroll:{flexGrow:0},guideTopic:{gap:4,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},guideHeading:{color:C.text,fontSize:13,fontWeight:'900'},
+  modalShade:{flex:1,justifyContent:'center',padding:18,backgroundColor:C.overlay},modal:{gap:13,maxHeight:'80%',padding:16,borderRadius:radii.lg,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},modalHeading:{flexDirection:'row',alignItems:'center'},modalActions:{flexDirection:'row',gap:8},modalActionSlot:{flex:1},guideScroll:{flexGrow:0},guideTopic:{gap:4,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},guideHeading:{color:C.text,fontSize:13,fontWeight:'900'},
  });
 }

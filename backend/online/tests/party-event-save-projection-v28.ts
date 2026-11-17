@@ -96,8 +96,8 @@ must(artisanResult.state.inventory.stacks[0]?.quantity===94
  &&artisanResult.changedInventorySlots===0,'stack merges without slot');
 must(before.account.partyRenown===11&&before.character?.gold===1000
  &&JSON.stringify(before)===beforeJson,'pure preview leaves source unchanged');
-must(normalizeSave(artisanResult.state).account.partyRenown===21,
- 'new renown preserved by canonical save normalization');
+must(!('partyRenown' in normalizeSave(artisanResult.state).account),
+ 'Renown is not a canonical saved field: live payout must remain disabled');
 
 const warriorResult=plan(source(),warrior);
 const classSkills=warriorResult.state.character!.classSkills!;

@@ -4,6 +4,11 @@ import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
 import {DungeonHero,DungeonBossPreview,DungeonDisclosure,DungeonPartyRoles,DungeonReward} from './DungeonPreparation';
 import {coopUiAssets} from '../../theme/coop-ui-assets';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
+import {GemArtwork} from '../GemArtwork';
+import {ItemArtwork} from '../ItemArtwork';
+import {mobileGemFamilyV1} from '../../content/gems-v1';
+import {rawGemSpriteSourceV1} from '../../theme/gem-assets';
+import {skillIcons} from '../../theme/skill-assets';
 import {SectionGuide} from '../SectionGuide';
 import {DUNGEON_HOME_GUIDE,dungeonGuideText} from '../../i18n/dungeon-home-guide';
 import {liveEventDef} from '../../content/live-events';
@@ -168,6 +173,19 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
   </ExpeditionScreenShell>;
 }
 
+/** All three odds come from the published server boss reward catalogue.
+ * Icons are existing pixel-art assets, not invented drops. */
+function DungeonDropPreviewRow({kind,title,detail,rate}:{kind:'gem'|'recipe'|'catalyst';title:string;detail:string;rate:number}){
+ const {styles:s}=useCoopStyles(makeStyles);
+ return <View style={s.lootPreview}>
+  <View style={s.lootIconFrame}>
+   {kind==='gem'?<Image source={rawGemSpriteSourceV1} resizeMode="contain" style={s.lootArt}/>:kind==='recipe'?<Image source={skillIcons.enchanting} resizeMode="contain" style={s.lootArt}/>:<GemArtwork itemId="REGIONAL_CATALYST" size={38} framed={false}/>}
+  </View>
+  <View style={s.flex}><Text style={s.lootTitle}>{title}</Text><Text style={s.lootDetail}>{detail}</Text></View>
+  <Text style={s.lootRate}>{rate}%</Text>
+ </View>;
+}
+
 type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopMode)=>void;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
 export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,busy=false,liveFellowshipRemaining=3,rewardBudget,notice,onBack,onTier,onContinue}:DetailsProps){
  const st=useSocialText();
@@ -200,12 +218,19 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
    <Text style={s.copy}>{dungeonRewardPreviewText(language,'Rewards must be claimed. After enhanced charges or the weekly cap, Marks are reduced to 20%.')}</Text>
    <View style={s.rewardDropSection}>
     <Text style={s.levels}>{dungeonRewardPreviewText(language,'Potential item drops')}</Text>
-    {dungeon.bossVariants.length?<Text style={s.copy}>{a('Successful clear:')} {dungeon.bossVariants[0].rawGemPercent}% {a('chance of one unrefined Grade III gem (guaranteed after')} {dungeon.bossVariants[0].gemPityClears} {a('eligible clears without one). Effect recipe:')} {dungeon.bossVariants[0].recipePercent}% · {a('Regional Catalyst:')} {dungeon.bossVariants[0].catalystPercent}%.</Text>:null}
-    {dungeon.bossVariants.map(boss=><View key={boss.bossId} style={s.rewardDropSection}>
-     <Text style={s.levels}>{boss.name} · {boss.chancePercent}%</Text>
-     <Text style={s.copy}>{a('Possible gem families:')} {boss.gemFamilies.map(family=>family.replace(/^(effect_|stat_)/,'').replace(/_/g,' ')).join(', ')}</Text>
+    {dungeon.bossVariants.length?<View style={s.dropCards}>
+     <DungeonDropPreviewRow kind="gem" title={a('Unrefined Grade III Gem')} detail={a('Random boss gem. Guaranteed after {clears} eligible clears without a drop.').replace('{clears}',String(dungeon.bossVariants[0].gemPityClears))} rate={dungeon.bossVariants[0].rawGemPercent}/>
+     <DungeonDropPreviewRow kind="recipe" title={a('Effect Gem Recipe')} detail={a('Permanent Enchanting combine unlock; no gem included. Duplicates grant 25 Gem Dust.')} rate={dungeon.bossVariants[0].recipePercent}/>
+     <DungeonDropPreviewRow kind="catalyst" title={a('Regional Catalyst')} detail={a('Advanced gem upgrades and crafting.')} rate={dungeon.bossVariants[0].catalystPercent}/>
+    </View>:null}
+    {dungeon.bossVariants.length?<Text style={s.copy}>{a('Each eligible successful boss clear rolls these rewards separately. The recipe unlocks automatically when claimed.')}</Text>:null}
+    {dungeon.bossVariants.map(boss=><View key={boss.bossId} style={s.bossPool}>
+     <View style={s.modeHead}><Text style={[s.levels,s.flex]}>{boss.name}</Text><StateChip label={boss.chancePercent+'% '+a('boss chance')}/></View>
+     <Text style={s.lootDetail}>{a('Possible Grade III gem families')}</Text>
+     <View style={s.gemFamilyGrid}>{boss.gemFamilies.map(family=><View key={family} style={s.gemFamilyChip}><GemArtwork itemId={`gem:${family}:g3`} size={28} framed={false}/><Text style={s.gemFamilyLabel}>{mobileGemFamilyV1(family)?.name??family.replace(/^(effect_|stat_)/,'').replace(/_/g,' ')}</Text></View>)}</View>
     </View>)}
     {dungeon.itemDropRates.length?dungeon.itemDropRates.map(item=><View key={item.itemId} style={s.dropRow}>
+     <View style={s.lootIconFrame}><ItemArtwork itemId={item.itemId} size={36}/></View>
      <Text style={[s.copy,s.flex]}>{item.name} · {item.minQuantity===item.maxQuantity?item.minQuantity:`${item.minQuantity}–${item.maxQuantity}`}</Text>
      <StateChip label={`${dungeonRewardPreviewText(language,'Drop chance')}: ${item.chancePercent.toLocaleString(language,{maximumFractionDigits:2})}%`} tone="neutral"/>
     </View>):<Text style={s.copy}>{dungeon.bossVariants.length?a('Other permanent item drops are not yet published.'):dungeonRewardPreviewText(language,'No permanent item drop rates are published for regular dungeons yet.')}</Text>}
@@ -300,6 +325,13 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   skeletonLineShort:{width:'48%'},
   skeletonLineMid:{width:'72%'},
   rewardDropSection:{gap:8,borderTopWidth:1,borderTopColor:coopColors.goldDim,paddingTop:10,marginTop:3},dropRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:8},
+  dropCards:{gap:8},lootPreview:{flexDirection:'row',alignItems:'center',gap:10,padding:9,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:10,backgroundColor:coopColors.surfaceRaised},
+  lootIconFrame:{width:46,height:46,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:9,backgroundColor:coopColors.surface,alignItems:'center',justifyContent:'center'},
+  lootArt:{width:38,height:38},lootTitle:{fontSize:13,lineHeight:18,fontWeight:'800',color:coopColors.text},lootDetail:{fontSize:11,lineHeight:16,color:coopColors.textMuted},
+  lootRate:{minWidth:43,textAlign:'right',fontSize:18,lineHeight:23,fontWeight:'900',color:coopColors.gold},
+  bossPool:{gap:7,padding:9,borderWidth:1,borderColor:coopColors.line,borderRadius:9,backgroundColor:coopColors.surface},
+  gemFamilyGrid:{flexDirection:'row',flexWrap:'wrap',gap:6},gemFamilyChip:{flexDirection:'row',alignItems:'center',gap:3,borderRadius:7,padding:3,paddingRight:7,backgroundColor:coopColors.surfaceRaised},
+  gemFamilyLabel:{fontSize:10,lineHeight:13,color:coopColors.textSecondary,fontWeight:'600'},
   cardChevron:{fontSize:27,lineHeight:30,color:coopColors.gold,alignSelf:'center'},modeHint:{...coopTypography.meta,color:coopColors.textMuted,marginTop:-6},quickFacts:{flexDirection:'row',flexWrap:'wrap',gap:8},routeStage:{flexDirection:'row',gap:12,alignItems:'center'},routeNumber:{width:36,height:36,borderRadius:18,borderWidth:1,borderColor:coopColors.line,alignItems:'center',justifyContent:'center'},filters:{flexDirection:'row',gap:coopSpacing.sm},quickMatch:{gap:coopSpacing.sm},liveToggle:{minHeight:48,flexDirection:'row',alignItems:'center',gap:coopSpacing.sm,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:10,backgroundColor:coopColors.surfaceRaised},liveTitle:{fontSize:15,lineHeight:21,fontWeight:'700',color:coopColors.text},liveMark:{fontSize:23,lineHeight:26,color:coopColors.cyan,fontWeight:'600'},flex:{flex:1,minWidth:0},loading:{minHeight:80,alignItems:'center',justifyContent:'center',gap:coopSpacing.sm},error:{...coopTypography.body,color:coopColors.danger},copy:{...coopTypography.body,color:coopColors.textSecondary},regionGroup:{gap:coopSpacing.sm,marginTop:coopSpacing.sm},regionHeading:{flexDirection:'row',alignItems:'baseline',gap:coopSpacing.sm,marginTop:coopSpacing.xs},regionProgress:{...coopTypography.meta,color:coopColors.textMuted,marginLeft:'auto'},
   regionBand:{paddingVertical:coopSpacing.sm,paddingHorizontal:coopSpacing.md,gap:2,borderLeftWidth:3,borderLeftColor:coopColors.goldDim,borderRadius:8,backgroundColor:coopColors.surface},
   regionBand_gold:{borderLeftColor:coopColors.gold},regionBand_cyan:{borderLeftColor:coopColors.cyan},regionBand_violet:{borderLeftColor:coopColors.violet},regionBand_danger:{borderLeftColor:coopColors.danger},

@@ -166,7 +166,7 @@ export const RUSSIAN_RELEASE_POLISH_ROWS = {
   "+{marks} Expedition Marks earned": "Получено меток экспедиции: +{marks}",
   "Reward amount is being prepared.": "Количество наград рассчитывается.",
   "Estimated · final Marks confirmed when claimed.": "Предварительно · точное число меток подтвердится при получении.",
-  "Refresh battle status": "Обновить состояние боя"
+  "Refresh battle status": "Обновить состояние боя",
   // Authored Dungeon combat/claim breakdown copy, shared by focus coverage and Social.
   "This run · Expedition Marks": "Этот поход · Знаки экспедиции",
   "Enemy encounters · already credited": "Сражения с врагами · уже начислено",

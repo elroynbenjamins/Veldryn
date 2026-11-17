@@ -72,3 +72,13 @@ All market items, numbers, progress bars, dates and sale history are **examples*
 - The tab scroll reset uses React Native 0.88's inferred `ComponentRef<typeof ScrollView>` ref type; this fixes the feature code's TypeScript error on the prior CI run.
 - New automated unit tests exercise Market fee rounding and malformed/extreme inputs; feature-hub source-contract tests cover guided help and safety.
 - Separate CI cleanup: Dungeon tonic typed translation fix PR #1351 and Equipment Pouch async button loading fix PR #1354 are independent drafts. They do not authorize World Boss, Party Events or Market release.
+
+## 17 November continued UI refinement — safer, more distinct previews
+
+- Each of the three World Boss regions now displays unique **illustrative** War Camp supply prompts, combat warning/counterplay cues, and a threat briefing. These descriptions are not a combat simulation, server schedule, donation record or claim.
+- Party Events' four story families now show different preparation supply descriptions and a unique finale threat description, while preserving the local-only ballots, the actual read-only Party roster and the authenticated Party-only chat dock.
+- Player Market Browse adds a second example equipment item (T3 weapon, explicitly not verified), sortable name ordering alongside unit/lot price, query matches on category/rarity/slot, and a one-tap search/filter reset after an empty result.
+- Equipment inspections reveal example tier, slot, rarity and bonus-stat status, plus the **design policy** that socketed gems may be replaced but not removed/extracted. Server-owned item, protections, exact stats, price corridors, and tradability remain unknown until authenticated inventory/market integration.
+- Sell explains lock/favorite and bank/bag ownership checks as prerequisites; the only live element remains a read-only calculator, not a listing or escrow transaction.
+- Added source-contract regression coverage for distinct encounter/story cues, browse sorting/reset, example level limits and replace-only gem presentation.
+- Still hidden in `__DEV__`; do not make any Market/World Boss/Party Event feature public on the strength of this UI refinement.

@@ -64,3 +64,11 @@ All market items, numbers, progress bars, dates and sale history are **examples*
 - **No duplicate chat or activity bars.** The Party Event dock is the only chat entry on its route; World Boss and Market do not render chat. Dungeon behavior remains independently tested.
 - **No live activation.** World Boss #1346, Party Events #1347 and Player Market #1055 still need their own integration/security approval, migrations, auth/stock verification and settlement QA.
 - **Known CI dependency.** Newly introduced Dungeon tonic text has a typed-catalog fix in draft #1351. The UI PR predates that fix on its base branch, so top-level typecheck can fail without a UI code error. Treat Android/Expo compatibility as a separate pre-existing problem; do not mislabel it a successful release build.
+
+## QA refinement — developer preview interactivity
+
+- Market sample seller quote uses a pure display-only validator: positive integer quantity and unit price, capped demo bounds, exact integer 5% fee rounding, and user-facing invalid-input messaging. The review action cannot proceed on invalid input. No server economic API is called.
+- Mobile feature guides use four short interactive steps (Previous/Next, progress bar, hardware Back/Escape and reduced-motion support) rather than an overlong scroll list.
+- The tab scroll reset uses React Native 0.88's inferred `ComponentRef<typeof ScrollView>` ref type; this fixes the feature code's TypeScript error on the prior CI run.
+- New automated unit tests exercise Market fee rounding and malformed/extreme inputs; feature-hub source-contract tests cover guided help and safety.
+- Separate CI cleanup: Dungeon tonic typed translation fix PR #1351 and Equipment Pouch async button loading fix PR #1354 are independent drafts. They do not authorize World Boss, Party Events or Market release.

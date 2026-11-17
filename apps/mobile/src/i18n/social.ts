@@ -31,6 +31,13 @@ export const socialTranslationRows = {
   "Players appear here when they are active in Veldryn.": ["Aktive Veldryn-Spieler erscheinen hier.","Los jugadores activos en Veldryn aparecerán aquí.","Actieve Veldryn-spelers verschijnen hier.","Qui compaiono i giocatori attivi in Veldryn.","Les joueurs actifs de Veldryn apparaissent ici."],
   "Showing the first {count} players.": ["Die ersten {count} Spieler werden angezeigt.","Mostrando los primeros {count} jugadores.","De eerste {count} spelers worden getoond.","Visualizzati i primi {count} giocatori.","Affichage des {count} premiers joueurs."],
   // Hidden Rankings guided help.
+  "HALL OF RENOWN": ["HALLE DES RUHMS","SALÓN DE LA GLORIA","HAL DER ROEM","SALA DELLA GLORIA","PANThÉON"],
+  "LEADER": ["SPITZENREITER","LÍDER","KOPLOPER","PRIMO","EN TÊTE"],
+  "GLOBAL": ["GLOBAL","GLOBAL","WERELDWIJD","GLOBALE","MONDIAL"],
+  "Current rank": ["Aktueller Rang","Puesto actual","Huidige positie","Posizione attuale","Rang actuel"],
+  "Verified score": ["Bestätigter Wert","Puntuación verificada","Geverifieerde score","Punteggio verificato","Score vérifié"],
+  "RANKED PLAYERS": ["PLATZIERTE SPIELER","JUGADORES CLASIFICADOS","GERANGSCHIKTE SPELERS","GIOCATORI IN CLASSIFICA","JOUEURS CLASSÉS"],
+  "Server-ranked · Privacy protected": ["Serverrangliste · Datenschutz","Clasificación del servidor · Privacidad protegida","Serverranglijst · Privacy beschermd","Classifica del server · Privacy protetta","Classement serveur · Vie privée protégée"],
   "Rankings guide": ["Ranglistenhilfe","Guía de clasificaciones","Ranglijstgids","Guida alle classifiche","Guide des classements"],
   // Read-only Rankings pagination.
   "No further ranked entries": ["Keine weiteren Ranglisteneinträge","No hay más entradas en la clasificación","Geen verdere ranglijstvermeldingen","Nessun'altra voce in classifica","Aucune autre entrée au classement"],

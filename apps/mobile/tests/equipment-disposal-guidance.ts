@@ -18,13 +18,11 @@ const socketed:GameState={...state,account:{...state.account,craftedGearInstance
  enhancement:{...copy.enhancement,gemIds:['EMBER_SHARD'],statGemId:'EMBER_SHARD'}}]}};
 for(const action of ['sell','salvage'] as const){
  const result=equipmentCopyDisposalDecision(socketed,copy.id,action);
- assert.equal(result.allowed,false,'socketed copy stays protected');
- assert.match(result.reason??'',/socketed gem/i,'specific gem protection is shown');
- assert.equal(equipmentDisposalExplanation(result.reason??'').canExtractGem,true,'player receives extraction route');
+ assert.equal(result.allowed,true,'socketed exact equipment copy can be disposed manually');
 }
 const upgraded:GameState={...state,account:{...state.account,craftedGearInstances:[{...copy,enhancement:{...copy.enhancement,rank:1}}]}};
-assert.match(equipmentCopyDisposalDecision(upgraded,copy.id,'sell').reason??'',/enhanced/i,'upgrade protection is distinct from gem protection');
-assert.equal(equipmentDisposalExplanation('Enhanced (upgraded) equipment cannot be sold or salvaged').canExtractGem,false,'upgrade is not promised to become disposable after gem extraction');
+assert.equal(equipmentCopyDisposalDecision(upgraded,copy.id,'sell').allowed,true,'upgraded exact copies are sellable when not manually protected');
+assert.equal(equipmentCopyDisposalDecision(upgraded,copy.id,'salvage').allowed,true,'upgraded exact copies are salvageable when not manually protected');
 const locked:GameState={...state,account:{...state.account,craftedGearInstances:[{...copy,locked:true}]}};
 assert.match(equipmentCopyDisposalDecision(locked,copy.id,'sell').reason??'',/locked/i,'per-copy lock persists');
 const favorite:GameState={...state,settings:{...state.settings,favoriteItemIds:[copy.itemId]}};
@@ -40,4 +38,4 @@ assert.match(blocked.reason??'',/full/i,'capacity problem remains visible');
 assert.match(equipmentDisposalExplanation(blocked.reason??'').nextStep,/Free an Inventory slot/,'capacity advice is actionable');
 assert.deepEqual(full.account.craftedGearInstances,state.account.craftedGearInstances,'previews never remove original Forge receipts');
 assert.deepEqual(full.character!.equipmentPouch!.stacks,[stack],'previews never destroy physical gear');
-console.log('PASS: exact-copy disposal explanations, extracted-gem guidance, upgrades, locked/favorite protection and capacity');
+console.log('PASS: exact-copy disposal explanations, socketed/upgraded disposal, locked/favorite protection and capacity');

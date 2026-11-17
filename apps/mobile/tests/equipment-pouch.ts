@@ -9,6 +9,8 @@ import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSel
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {itemRarity} from '../src/core/item-rarity';
 import {auditCraftedGearOwnership,equipCraftedGearInstance,moveCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {previewEquipment} from '../src/core/equipment-preview';
+import {bulkSelectionSummary,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {characterDeleteBlockReason,deleteAccountCharacter} from '../src/core/account-actions';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import type {GameState} from '../src/core/types';
@@ -73,6 +75,42 @@ ok(deletion.bank.stacks.some(row=>row.instanceId===record.id)&&auditCraftedGearO
 const inBank=moveCraftedGearInstance(unequipped,record.id,'bank');
 ok(auditCraftedGearOwnership(inBank).consistent&&inBank.bank.stacks.some(row=>row.instanceId===record.id),'Bank transfer must retain exact receipt and free pouch slot');
 ok(!characterDeleteBlockReason(inBank,base.character!.id),'Character can be deleted after moving exact owned copies to Bank');
+// A Forge receipt retains the original crafter for provenance, but the shared Bank
+// must let another character receive and equip the same physical item.
+const receiver:GameState={...inBank,
+ character:{...inBank.character!,id:'SECOND_CHAR',name:'Receiver',level:100,equipmentPouch:{capacity:30,stacks:[]}},
+ inventory:{stacks:[],capacity:30},
+ otherCharacters:[{character:inBank.character!,inventory:inBank.inventory,overflow:inBank.overflow,
+  activity:inBank.activity,skills:inBank.skills,quests:inBank.quests,currentRegionId:inBank.currentRegionId}],
+};
+const receiverGear=moveCraftedGearInstance(receiver,record.id,'equipment_pouch');
+ok(receiverGear.character!.equipmentPouch?.stacks.some(row=>row.instanceId===record.id)
+ &&auditCraftedGearOwnership(receiverGear).consistent
+ &&receiverGear.account.craftedGearInstances?.some(row=>row.id===record.id&&row.ownerCharacterId===base.character!.id),
+ 'The receiving character can claim a Bank copy without rewriting its original Forge provenance');
+const receiverPreview=previewEquipment(receiverGear,output,record.id,'equipment_pouch');
+ok(receiverPreview.character!.equipmentInstanceIds?.[itemDef(output).slot!]===record.id,
+ 'A Bank-transferred exact copy previews and equips for a compatible different character');
+const foreignClass=V33_EQUIPMENT_RECIPES.find(row=>row.classId!==recipe.classId)!;
+const incompatibleReceiver:GameState={...receiverGear,character:{...receiverGear.character!,classId:foreignClass.classId}};
+let otherClassDenied=false;
+try{previewEquipment(incompatibleReceiver,output,record.id,'equipment_pouch')}catch{otherClassDenied=true}
+ok(otherClassDenied,'Receiving another class gear must not bypass its equip restrictions');
+const reBanked=moveCraftedGearInstance(incompatibleReceiver,record.id,'bank');
+ok(reBanked.bank.stacks.some(row=>row.instanceId===record.id),'Incompatible-class gear must remain transferable to Bank');
+const mixedCarried:GameState={...verifiedInInventory,inventory:{...verifiedInInventory.inventory,
+ stacks:[{itemId:output,quantity:1,instanceId:record.id},{itemId:output,quantity:1}]}};
+const mixedIds=[`copy:${record.id}`,output];
+ok(bulkSelectionSummary(mixedCarried,mixedIds,'inventory').transferableStackCount===2,
+ 'Bulk transfer must select an exact Forge copy separately from ordinary copies with the same item ID');
+const mixedBank=bulkTransferSelected(mixedCarried,mixedIds,'inventory');
+ok(mixedBank.inventory.stacks.length===0&&mixedBank.bank.stacks.some(row=>row.instanceId===record.id)
+ &&mixedBank.bank.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
+ 'Bulk Bank transfer must preserve exact receipts and ordinary stacks without losing either copy');
+const mixedBack=bulkTransferSelected(mixedBank,mixedIds,'bank');
+ok(mixedBack.bank.stacks.length===0&&mixedBack.inventory.stacks.some(row=>row.instanceId===record.id)
+ &&mixedBack.inventory.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
+ 'Bulk Bank withdrawal must return exact and ordinary copies without losing identity');
 const inactive={...base.character!,id:'SECOND_CHAR',name:'Second Character',equipmentPouch:{capacity:30,stacks:[]}};
 const multi:GameState={...base,otherCharacters:[{character:inactive,inventory:{stacks:[],capacity:30},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:base.skills,quests:base.quests,currentRegionId:base.currentRegionId}]};
 const placed=tryStoreEquipmentInPouch(multi,{itemId:output,quantity:1},inactive.id)!;

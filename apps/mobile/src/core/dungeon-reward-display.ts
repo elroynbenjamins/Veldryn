@@ -49,3 +49,34 @@ export function dungeonRewardDisplayAmount(
   // The budget can change between this read and claim, especially after recharge.
   return {amount,estimated:true};
 }
+
+
+/** Ledger-backed, account-scoped combat Marks already credited during this run. */
+export interface DungeonCombatMarks {
+  total:number;
+  normal:number;
+  elite:number;
+}
+
+/** Ignore partial/invalid receipts rather than showing an invented total. */
+export function parseDungeonCombatMarks(value:unknown):DungeonCombatMarks|undefined{
+  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
+  const row=value as Record<string,unknown>;
+  const total=safeMarks(row.total),normal=safeMarks(row.normal),elite=safeMarks(row.elite);
+  if(total===undefined||normal===undefined||elite===undefined||total!==normal*3+elite*5)return undefined;
+  return {total,normal,elite};
+}
+
+export function dungeonRunMarksBreakdown(
+  rewards:readonly DungeonRewardReceipt[],
+  run:DungeonRewardPreviewRun,
+  combat?:DungeonCombatMarks,
+  budget?:DungeonRewardPreviewBudget,
+  liveFellowshipRemaining?:number,
+):{completion:number|undefined;total:number|undefined;estimated:boolean}{
+  const amounts=rewards.map(reward=>dungeonRewardDisplayAmount(reward,run,budget,liveFellowshipRemaining));
+  const completion=rewards.length>0&&amounts.every(reward=>reward.amount!==undefined)
+    ? amounts.reduce((sum,reward)=>sum+(reward.amount??0),0)
+    : undefined;
+  return {completion,total:combat&&completion!==undefined?combat.total+completion:undefined,estimated:amounts.some(reward=>reward.estimated)};
+}

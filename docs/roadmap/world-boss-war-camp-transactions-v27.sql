@@ -36,7 +36,11 @@ CREATE TABLE private.world_boss_war_donations_v27 (
  event_id uuid NOT NULL REFERENCES private.world_boss_war_camps_v27(event_id) ON DELETE RESTRICT,
  account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
  request_id text NOT NULL CHECK(request_id ~ '^[A-Za-z0-9_-]{8,128}$'),
- character_id uuid NOT NULL REFERENCES public.characters(id) ON DELETE RESTRICT,
+ -- Keep the immutable character identity even if its owner later deletes
+ -- that character. Server-only V18/V22 reservation (or V27 donation) must
+ -- verify the owner against public.characters BEFORE writing this receipt.
+ -- An FK with ON DELETE RESTRICT would permanently block character deletion.
+ character_id uuid NOT NULL,
  recipe_id text NOT NULL,
  track text NOT NULL CHECK(track IN('fortifications','fieldProvisions','siegecraft')),
  ordinal smallint NOT NULL CHECK(ordinal IN(1,2)),

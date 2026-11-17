@@ -89,4 +89,11 @@
 - Added TypeScript fixture regressions for a fully re-hashed stale-count revision, exaggerated frozen benefit tier and an unfrozen valid projection. No changes to material prices, game balance, currencies, SQL migration paths, routes or feature flags.
 - This validator checks **internal consistency**, not the authority of the database or authenticity of server inputs; trusted reads and permission checks are still required. **Exact-head V39 CI remains to be confirmed.**
 
-**Next stage:** check V39 exact-head CI; resolve the independent Expo issue (#1345); finalize retention and account-erasure policy (#1348); then prepare reviewed staging migrations, live-schema concurrency/worker tests and economy balancing before activation.
+## V40 reward overview combat-ledger consistency (hidden)
+- The private V28 claim path and payout design are **unchanged**. This pass affects only the read-side validation of its not-yet-mounted role-contribution overview.
+- Before displaying role metrics, the overview now verifies that the per-attempt local guard total matches the sum of the 1–5 fighter ledger rows (within the existing ±0.05 rounding tolerance). Credited/proposed world HP must be **no greater than** the raw fighter damage total; lower credited damage remains legal when the score is weighted or the remaining global boss HP is exhausted.
+- Rejects non-UUID fighter identity, missing fighter survival status, out-of-safe-range metrics, and overflowing totals. Existing duplicate-attempt and negative-stat protections are retained.
+- Added negative fixtures for inflated guard and world HP, invalid fighter ID, missing survival, and oversized combat values, plus a legitimate capped-credit case. Tests are read-only; no new Sigil grants, database migrations, routes, feature flags, events or live UI bindings.
+- V40 consistency checks are **defense in depth**, not proof that source replay content is authentic. The replay/owner SQL join must still be trusted. Exact-head V40 dedicated CI and disposable PostgreSQL validation must pass before further promotion.
+
+**Next stage:** check V40 exact-head CI; resolve the independent Expo issue (#1345); finalize retention and account-erasure policy (#1348); then prepare reviewed staging migrations, live-schema concurrency/worker tests and economy balancing before activation.

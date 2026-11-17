@@ -151,4 +151,13 @@ export const RUSSIAN_RELEASE_POLISH_ROWS = {
   "Reward amount is being prepared.": "Количество наград рассчитывается.",
   "Estimated · final Marks confirmed when claimed.": "Предварительно · точное число меток подтвердится при получении.",
   "Refresh battle status": "Обновить состояние боя"
+  // Authored Dungeon combat/claim breakdown copy, shared by focus coverage and Social.
+  "This run · Expedition Marks": "Этот поход · Знаки экспедиции",
+  "Enemy encounters · already credited": "Сражения с врагами · уже начислено",
+  "Normal: {normal} × 3 · Elite: {elite} × 5": "Обычные: {normal} × 3 · Элитные: {elite} × 5",
+  "Combat Marks breakdown unavailable. Refresh to retry.": "Сведения о боевых знаках недоступны. Обновите и повторите.",
+  "Completion reward · claim below": "Награда за завершение · заберите ниже",
+  "Total Marks from this run": "Всего знаков за этот поход",
+  "Combat Marks are already in your wallet. Completion Marks are added only when claimed.": "Боевые знаки уже на вашем счёте. Знаки за завершение начисляются только после получения награды.",
+  "Total is estimated until the claim is complete.": "Сумма приблизительная, пока награда не получена.",
 } as const satisfies Record<string,string>;

@@ -184,6 +184,12 @@ BEGIN
    'track',old.track,'revision',old.revision,'paidMaterials',old.paid_materials,
    'repeated',true);
  END IF;
+ -- The 5+2 calendar is anchored at Monday 00:00 UTC. If a misconfigured
+ -- event starts on any other day/hour, NEVER consume materials: a V22
+ -- weekend reservation could not subsequently open for that event.
+ IF private.world_boss_v22_window_at(
+   e.starts_at,e.starts_at+interval '5 days') IS DISTINCT FROM 0
+ THEN RAISE EXCEPTION 'WB27_INVALID_EVENT_SCHEDULE'; END IF;
  IF e.status<>'active' OR e.ends_at<>e.starts_at+interval '7 days' OR
     now_at<e.starts_at OR now_at>=e.starts_at+interval '5 days'
  THEN RAISE EXCEPTION 'WB27_PREPARATION_CLOSED'; END IF;

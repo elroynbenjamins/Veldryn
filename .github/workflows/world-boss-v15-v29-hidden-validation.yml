@@ -1,4 +1,4 @@
-name: Hidden World Boss V10–V33 validation
+name: Hidden World Boss V10–V34 validation
 
 # Test-only: no Supabase connection, deployment, wallet or production feature.
 on:
@@ -24,6 +24,7 @@ on:
       - 'backend/online/world-boss-reward-runtime-v28.ts'
       - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
       - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
+      - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
       - 'docs/roadmap/world-boss-v28-concurrent-claims-ci.sh'
       - 'docs/roadmap/world-boss-war-camp-transactions-v27*.sql'
       - 'docs/roadmap/world-boss-war-camp-policy-init-v27.sql'
@@ -77,7 +78,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
       - name: Compile Node-backed real-loadout integration suite
         run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
-      - name: Run v7-v33 World Boss tests
+      - name: Run v7-v34 World Boss tests
         run: |
           set -e
           for suite in \
@@ -162,4 +163,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-reward-ledger-v28.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-reward-ledger-v28-smoke.sql
           bash docs/roadmap/world-boss-v28-concurrent-claims-ci.sh
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-private-access-audit-v32.sql

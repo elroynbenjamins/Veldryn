@@ -43,7 +43,7 @@ export function equipmentDisposalExplanation(reason:string):EquipmentDisposalExp
    return {title:'Inventory space needed',nextStep:'Free an Inventory slot before salvaging. Recovered materials must fit in Inventory.',canExtractGem:false};
  if(/saved loadout|loadout/.test(value))
    return {title:'Saved loadout',nextStep:'Remove or replace this copy in the saved loadout before disposing of it.',canExtractGem:false};
- if(/legacy equipment enhancement|legacy enhancement|last copy reserved/.test(value))
+ if(/legacy equipment enhancement|legacy enhancement|last copy reserved|reserved enhanced copy/.test(value))
    return {title:'Older enhancement',nextStep:'An older enhancement still protects this gear. Keep the copy until its enhancement is reviewed.',canExtractGem:false};
  if(/locked|favorite/.test(value))
    return {title:'Manually protected',nextStep:'Unlock this copy or remove its Favorite marker to enable disposal.',canExtractGem:false};

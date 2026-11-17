@@ -43633,18 +43633,18 @@ var SUNSCAR = origin("REG_SUNSCAR", "Sunscar");
 var FROST = origin("REG_FROSTMARCH", "Frostmarch");
 var ASH = origin("REG_ASHLANDS", "Ashlands");
 var ASTERFALL_COMPANIONS = [
-  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("quest", "Complete Ironwood introduction", "QST_005", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
-  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 100 Old Mines enemies", "OLD_MINES_KILLS", 100)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
-  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 8", "fishing", 8), req("collection", "Fish at both early Silverbrook pools", "SILVERBROOK_NODES", 2)], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
-  { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Damage + -5% Defence", 16, "Highest-Defence enemy", "damage", 1.2, 6e-3, { secondaryValue: 0.05, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.03, "Barkbreaker: attacks have a 12% chance to apply -3% Defence for 5s; non-stacking.", "12_percent_proc"), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.06, "Deals 6% more companion damage to targets currently affected by defense reduction.", "target_defense_reduced"), ascensionMaterialId: "THORN_SAP" },
-  { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Damage + interrupt", 22, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("accuracy", 0.08, "Flicker Sense: +8% unit accuracy against enemies currently casting.", "enemy_casting"), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.1, "A successful interrupt shortens the next Lantern Snuff cooldown by 10%.", "successful_interrupt"), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
-  { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Shield for 5% owner max HP", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.08, "Oathkeeper: once per encounter, intercepts 8% of one hit dealt to owner.", "once_per_encounter"), bondTrait: trait("BOND_006", "Renewed Vow", "damage_reduction", 0.025, "After the shield breaks, the owner gains brief mitigation.", "shield_broken"), ascensionMaterialId: "OATHGLASS_SHARD" },
-  { id: "UNIT_007", name: "Gloamknife Shade", description: "Fast rare-target cleanup and execute pressure.", archetype: "Assassin", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("achievement", "Reach Knife Dancer class skill total 80", "KNIFE_DANCER_SKILL_TOTAL", 80)], baseStats: { hp: 155, power: 29, defense: 10, attackSpeed: 1.7 }, activeAbility: ability("UABL_007", "Gloamstep", "Damage; +20% coefficient under 25% HP", 18, "Lowest-HP enemy", "damage", 1.45, 5e-3, { secondaryValue: 0.2 }), passiveAbility: passive("execute", 0.1, "Veiled Edge: first unit hit against a new target has +10% crit chance.", "new_target"), bondTrait: trait("BOND_007", "Final Shadow", "execute", 0.08, "Gloamstep gains an additional execute bonus against critically wounded targets.", "target_hp_below_25"), ascensionMaterialId: "GLOAM_DUST" },
-  { id: "UNIT_008", name: "Dawnwing", description: "Long-form group sustain.", archetype: "Support", role: "support", rarity: "elite", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Faith 30", "faith", 30)], baseStats: { hp: 180, power: 14, defense: 14, attackSpeed: 2.3 }, activeAbility: ability("UABL_008", "Dawn Pinion", "4% max-HP shield + cleanse minor debuff", 24, "Lowest-HP ally", "shield", 0.04, 1e-3, { secondaryValue: 1, durationSeconds: 5 }), passiveAbility: passive("shield", 0.02, "Warm Light: every 15s the lowest-HP party member gains a 2% max-HP shield.", "every_15_seconds"), bondTrait: trait("BOND_008", "Second Dawn", "cleanse", 1, "Dawn Pinion may remove one additional minor debuff when used below 35% HP.", "target_hp_below_35"), ascensionMaterialId: "OATHGLASS_FRAGMENT" },
-  { id: "UNIT_009", name: "Echo Stalker", description: "Coordinated damage companion that rewards debuffs.", archetype: "Hunter", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Echo Bat Mastery 20", "ECHO_BAT", 20)], baseStats: { hp: 175, power: 27, defense: 13, attackSpeed: 1.9 }, activeAbility: ability("UABL_009", "Echo Rend", "Damage; +10% coefficient if 2+ debuffs", 17, "Debuffed enemy", "damage", 1.25, 6e-3, { secondaryValue: 0.1 }), passiveAbility: passive("damage", 0.05, "Echo Hunter: +5% damage against enemies with any player-applied debuff.", "target_debuffed"), bondTrait: trait("BOND_009", "Resonant Hunt", "cooldown_reduction", 0.08, "Echo Rend recharges faster while the priority target has multiple debuffs.", "target_has_2_debuffs"), ascensionMaterialId: "ECHO_QUARTZ" },
-  { id: "UNIT_010", name: "Forge Automaton", description: "Slow armor-pressure artillery companion.", archetype: "Artillery", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("achievement", "Craft 500 equipment pieces", "EQUIPMENT_CRAFTS", 500), req("skill_level", "Reach Smithing 30", "smithing", 30)], baseStats: { hp: 205, power: 26, defense: 20, attackSpeed: 2.9 }, activeAbility: ability("UABL_010", "Siege Bolt", "Damage + ignores 8% Defence", 20, "Highest-HP enemy", "damage", 1.35, 5e-3, { secondaryValue: 0.08 }), passiveAbility: passive("armor_pierce", 0.05, "Calibrated Shot: every 4th attack ignores 5% of target Defence.", "every_4th_attack"), bondTrait: trait("BOND_010", "Perfect Calibration", "armor_pierce", 0.03, "Siege Bolt ignores an additional 3% Defence against high-HP targets.", "target_hp_above_60"), ascensionMaterialId: "FALLEN_RIVET" },
-  { id: "UNIT_011", name: "Veyren's Memory", description: "Tactical utility that rewards active targeting.", archetype: "Tactician", role: "support", rarity: "elite", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat the Fallen Knight 3 times", "FALLEN_KNIGHT", 3)], baseStats: { hp: 190, power: 21, defense: 16, attackSpeed: 2.4 }, activeAbility: ability("UABL_011", "Memory Command", "Damage + owner +2% Accuracy vs target", 22, "Priority target", "damage", 0.85, 4e-3, { secondaryValue: 0.02, durationSeconds: 6 }), passiveAbility: passive("haste", 0.12, "Remembered Route: first manual target swap each encounter gives unit +12% Haste for 4s.", "first_manual_target_swap"), bondTrait: trait("BOND_011", "Perfect Recall", "accuracy", 0.03, "Memory Command grants a slightly stronger accuracy window after a manual target swap.", "manual_target_swap"), ascensionMaterialId: "TORN_OATHCLOTH" },
-  { id: "UNIT_012", name: "Oathglass Knightling", description: "Prestige tactical companion with balanced utility.", archetype: "Champion", role: "support", rarity: "prestige", origin: ASTER, unlockRequirements: [req("event_challenge", "Complete the Oathglass Reflection Trial", "CHALLENGE_OATHGLASS_KNIGHTLING", 1)], baseStats: { hp: 220, power: 23, defense: 21, attackSpeed: 2.2 }, activeAbility: ability("UABL_012", "Oathglass Reflection", "Damage + copy one eligible self-buff duration at 25%", 26, "Priority target", "utility", 0.25, 2e-3, { secondaryValue: 0.95, durationSeconds: 4 }), passiveAbility: passive("utility", 0.25, "Reflected Oath: copies 25% of owner's current non-ultimate self-buff duration onto itself.", "eligible_owner_buff"), bondTrait: trait("BOND_012", "True Reflection", "cooldown_reduction", 0.1, "A successful copied buff shortens the next Reflection cooldown without copying stat magnitude.", "eligible_buff_copied"), ascensionMaterialId: "OATHGLASS_FRAGMENT" }
+  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("quest", "Complete Ironwood introduction", "QST_005", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "A finishing strike that also reduces enemy damage briefly.", 20, "Priority target", "damage", 1, 6e-3, { secondaryValue: 0.025, durationSeconds: 4 }), passiveAbility: passive("execute", 0.05, "Pack Instinct: Hamstring Pounce deals more damage below 30% target HP.", "target_hp_below_30"), bondTrait: trait("BOND_001", "Relentless Chase", "execute", 0.04, "Bond 10 increases finishing damage and shortens the Pounce cooldown."), ascensionMaterialId: "IRONWOOD_FANG" },
+  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 100 Old Mines enemies", "OLD_MINES_KILLS", 100)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "Shields the owner and briefly reduces damage taken; part of the shield reflects hits.", 24, "Owner", "shield", 0.06, 1e-3), passiveAbility: passive("damage_reduction", 0.02, "Runic Guard: Rune Brace adds short-duration damage protection."), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.04, "Bond 10 strengthens Rune Brace and its shield reflection."), ascensionMaterialId: "RUNEBOUND_CORE" },
+  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 8", "fishing", 8), req("collection", "Fish at both early Silverbrook pools", "SILVERBROOK_NODES", 2)], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restores the weakest ally and adds a short regeneration effect.", 24, "Lowest-HP ally", "heal", 0.04, 1e-3), passiveAbility: passive("heal", 5e-3, "Flowing Current: healing continues briefly after the initial pulse."), bondTrait: trait("BOND_003", "Deep Current", "heal", 0.05, "Bond 10 strengthens Silver Current healing."), ascensionMaterialId: "WISP_DUST" },
+  { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Strikes and briefly exposes the enemy to additional incoming damage.", 20, "Priority target", "damage", 1.2, 6e-3, { secondaryValue: 0.035, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.035, "Barkbreaker: Briar Charge makes a struck enemy more vulnerable for 5 seconds."), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.04, "Bond 10 further increases Briar Charge damage."), ascensionMaterialId: "THORN_SAP" },
+  { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Interrupts an interruptible enemy cast; deals damage in companion-only combat.", 24, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("haste", 0.015, "Flicker Sense: a small owner Haste bonus remains useful even when enemies cannot be interrupted."), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.06, "Bond 10 shortens the Lantern Snuff cooldown."), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
+  { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Creates a protective barrier and briefly reduces incoming damage.", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.03, "Oathkeeper: the active vow briefly reinforces the owner after shielding."), bondTrait: trait("BOND_006", "Renewed Vow", "shield", 0.05, "Bond 10 improves the strength of every Vow shield."), ascensionMaterialId: "OATHGLASS_SHARD" },
+  { id: "UNIT_007", name: "Gloamknife Shade", description: "Fast rare-target cleanup and execute pressure.", archetype: "Assassin", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("achievement", "Reach Knife Dancer class skill total 80", "KNIFE_DANCER_SKILL_TOTAL", 80)], baseStats: { hp: 155, power: 29, defense: 10, attackSpeed: 1.7 }, activeAbility: ability("UABL_007", "Gloamstep", "A decisive strike with bonus damage below 30% enemy HP.", 20, "Priority target", "damage", 1.45, 5e-3, { secondaryValue: 0.1 }), passiveAbility: passive("execute", 0.1, "Veiled Edge: Gloamstep is particularly effective against wounded targets.", "target_hp_below_30"), bondTrait: trait("BOND_007", "Final Shadow", "execute", 0.05, "Bond 10 adds another finishing bonus to Gloamstep."), ascensionMaterialId: "GLOAM_DUST" },
+  { id: "UNIT_008", name: "Dawnwing", description: "Long-form group sustain.", archetype: "Support", role: "support", rarity: "elite", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Faith 30", "faith", 30)], baseStats: { hp: 180, power: 14, defense: 14, attackSpeed: 2.3 }, activeAbility: ability("UABL_008", "Dawn Pinion", "Protects a low-HP ally and removes damaging periodic effects.", 24, "Lowest-HP ally", "shield", 0.04, 1e-3), passiveAbility: passive("cleanse", 1, "Warm Light: Dawn Pinion can remove damage-over-time effects from its protected ally."), bondTrait: trait("BOND_008", "Second Dawn", "shield", 0.06, "Bond 10 strengthens Dawn Pinion shielding."), ascensionMaterialId: "OATHGLASS_FRAGMENT" },
+  { id: "UNIT_009", name: "Echo Stalker", description: "Coordinated damage companion that rewards debuffs.", archetype: "Hunter", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Echo Bat Mastery 20", "ECHO_BAT", 20)], baseStats: { hp: 175, power: 27, defense: 13, attackSpeed: 1.9 }, activeAbility: ability("UABL_009", "Echo Rend", "Hits a priority enemy and deals extra damage if it is already debuffed; briefly exposes the target.", 20, "Priority target", "damage", 1.25, 6e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("damage", 0.03, "Echo Hunter: Echo Rend exposes its target to a short burst window."), bondTrait: trait("BOND_009", "Resonant Hunt", "damage", 0.035, "Bond 10 further strengthens Echo Rend."), ascensionMaterialId: "ECHO_QUARTZ" },
+  { id: "UNIT_010", name: "Forge Automaton", description: "Slow armor-pressure artillery companion.", archetype: "Artillery", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("achievement", "Craft 500 equipment pieces", "EQUIPMENT_CRAFTS", 500), req("skill_level", "Reach Smithing 30", "smithing", 30)], baseStats: { hp: 205, power: 26, defense: 20, attackSpeed: 2.9 }, activeAbility: ability("UABL_010", "Siege Bolt", "A powerful, deliberate hit that exposes its target for 7 seconds.", 20, "Priority target", "damage", 1.35, 5e-3, { secondaryValue: 0.035, durationSeconds: 7 }), passiveAbility: passive("damage", 0.035, "Calibrated Shot: Siege Bolt creates a longer enemy vulnerability window."), bondTrait: trait("BOND_010", "Perfect Calibration", "damage", 0.05, "Bond 10 increases Siege Bolt damage."), ascensionMaterialId: "FALLEN_RIVET" },
+  { id: "UNIT_011", name: "Veyren's Memory", description: "Tactical utility that rewards active targeting.", archetype: "Tactician", role: "support", rarity: "elite", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat the Fallen Knight 3 times", "FALLEN_KNIGHT", 3)], baseStats: { hp: 190, power: 21, defense: 16, attackSpeed: 2.4 }, activeAbility: ability("UABL_011", "Memory Command", "A tactical strike that marks one enemy for 6 seconds, improving critical-hit chances for allied attacks.", 24, "Priority target", "damage", 0.85, 4e-3, { secondaryValue: 0.025, durationSeconds: 6 }), passiveAbility: passive("damage", 0.025, "Remembered Route: the mark makes critical hits against its target more likely."), bondTrait: trait("BOND_011", "Perfect Recall", "cooldown_reduction", 0.04, "Bond 10 shortens the Memory Command cooldown."), ascensionMaterialId: "TORN_OATHCLOTH" },
+  { id: "UNIT_012", name: "Oathglass Knightling", description: "Prestige tactical companion with balanced utility.", archetype: "Champion", role: "support", rarity: "prestige", origin: ASTER, unlockRequirements: [req("event_challenge", "Complete the Oathglass Reflection Trial", "CHALLENGE_OATHGLASS_KNIGHTLING", 1)], baseStats: { hp: 220, power: 23, defense: 21, attackSpeed: 2.2 }, activeAbility: ability("UABL_012", "Oathglass Reflection", "Temporarily boosts the damage of the assisted character or ally.", 22, "Owner or ally", "utility", 0.05, 2e-3, { durationSeconds: 6 }), passiveAbility: passive("utility", 0.05, "Reflected Oath: Oathglass Reflection supplies an offensive support window."), bondTrait: trait("BOND_012", "True Reflection", "utility", 0.04, "Bond 10 strengthens the Reflection damage boost."), ascensionMaterialId: "OATHGLASS_FRAGMENT" }
 ];
 var REGIONAL_ASCENSION_MATERIALS = {
   UNIT_013: [{ tier: 1, itemId: "AMBERGLASS", quantity: 4 }, { tier: 2, itemId: "SUNSTONE_ORE", quantity: 9 }],
@@ -44290,6 +44290,14 @@ var MONSTERS_RAW = [
   { id: "BLACKGLASS_MIRELING", name: "Blackglass Mireling", level: 72, hp: 2480, attack: 154, defense: 96, xp: 1450, gold: 86, secondsPerKill: 63, unlockLevel: 71, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.42, min: 1, max: 2 }, { itemId: "BLACKGLASS_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.12, min: 1, max: 1 }] },
   { id: "CINDER_TITAN", name: "Cinder Titan", level: 80, hp: 3200, attack: 185, defense: 118, xp: 1840, gold: 108, secondsPerKill: 72, unlockLevel: 78, zone: "Ashlands", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.34, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.08, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.2, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "BOSSBANE_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
+  { id: "DUSTVEIL_RUNNER", name: "Dustveil Runner", level: 32, hp: 750, attack: 67, defense: 33, xp: 450, gold: 28, secondsPerKill: 34, unlockLevel: 31, zone: "Sunscar", areaId: "ZONE_006", regionalAreaAutoUnlock: true, drops: [{ itemId: "DUNEWOOD", chance: 0.38, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.32, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.04, min: 1, max: 1 }] },
+  { id: "SANDPLATE_JUGGERNAUT", name: "Sandplate Juggernaut", level: 39, hp: 1060, attack: 77, defense: 63, xp: 630, gold: 39, secondsPerKill: 42, unlockLevel: 38, zone: "Sunscar", areaId: "ZONE_007", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.48, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.23, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.12, min: 1, max: 1 }] },
+  { id: "PRISM_HEXER", name: "Prism Hexer", level: 45, hp: 1190, attack: 99, defense: 51, xp: 780, gold: 46, secondsPerKill: 44, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.16, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.2, min: 1, max: 1 }] },
+  { id: "CROWN_EXECUTIONER", name: "Crown Executioner", level: 50, hp: 1590, attack: 114, defense: 77, xp: 1010, gold: 59, secondsPerKill: 51, unlockLevel: 49, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "GLASSBOUND_CORE", chance: 0.32, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.2, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 1 }] },
+  { id: "RIME_BERSERKER", name: "Rime Berserker", level: 57, hp: 1700, attack: 120, defense: 66, xp: 1160, gold: 63, secondsPerKill: 49, unlockLevel: 56, zone: "Frostmarch", areaId: "ZONE_011", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.48, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.18, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.1, min: 1, max: 1 }] },
+  { id: "FROSTNEEDLE_BROOD", name: "Frostneedle Brood", level: 64, hp: 2080, attack: 135, defense: 81, xp: 1510, gold: 80, secondsPerKill: 52, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.35, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.3, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }] },
+  { id: "CHOIR_DEFILER", name: "Choir Defiler", level: 70, hp: 2530, attack: 160, defense: 96, xp: 1910, gold: 99, secondsPerKill: 60, unlockLevel: 69, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.35, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.19, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.13, min: 1, max: 1 }] },
+  { id: "STORMGLASS_COLOSSUS", name: "Stormglass Colossus", level: 75, hp: 3230, attack: 175, defense: 127, xp: 2400, gold: 124, secondsPerKill: 66, unlockLevel: 74, zone: "Frostmarch", areaId: "ZONE_015", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.51, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.38, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.22, min: 1, max: 1 }] },
   { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
 ];
 var toolBlueprintItemIds = new Set(TOOL_BLUEPRINT_ITEMS.map((blueprint2) => blueprint2.id));
@@ -44310,12 +44318,43 @@ var enhancementDrops = (monster) => {
   if (monster.level >= 10) return [{ itemId: "TEMPERING_DUST", chance: 0.1, min: 1, max: 1 }, ...gem2];
   return monster.level >= 4 ? [{ itemId: "TEMPERING_DUST", chance: 0.05, min: 1, max: 1 }, ...gem2] : gem2;
 };
-var MONSTERS = MONSTERS_RAW.map((monster) => {
+var REGIONAL_25_LEVEL_REBALANCE = {
+  SUNSCAR_SCORPION: { level: 26, hp: 625, attack: 51, defense: 32, xp: 360, gold: 22, secondsPerKill: 32, unlockLevel: 26 },
+  SAFFRON_MARAUDER: { level: 31, hp: 720, attack: 60, defense: 37, xp: 425, gold: 26, secondsPerKill: 33, unlockLevel: 30 },
+  DUNE_ORACLE: { level: 34, hp: 815, attack: 65, defense: 40, xp: 480, gold: 29, secondsPerKill: 35, unlockLevel: 32 },
+  GLASS_DUNE_STRIDER: { level: 37, hp: 900, attack: 71, defense: 43, xp: 545, gold: 33, secondsPerKill: 37, unlockLevel: 35 },
+  MIRAGE_SHADE: { level: 39, hp: 950, attack: 76, defense: 45, xp: 580, gold: 35, secondsPerKill: 39, unlockLevel: 38 },
+  GLASSBOUND_SENTINEL: { level: 43, hp: 1130, attack: 84, defense: 53, xp: 690, gold: 42, secondsPerKill: 42, unlockLevel: 41 },
+  OBSERVATORY_KEEPER: { level: 46, hp: 1300, attack: 94, defense: 59, xp: 825, gold: 49, secondsPerKill: 45, unlockLevel: 44 },
+  ROYAL_SANDGUARD: { level: 48, hp: 1420, attack: 101, defense: 67, xp: 915, gold: 55, secondsPerKill: 48, unlockLevel: 47 },
+  FROSTWOLF: { level: 51, hp: 1390, attack: 97, defense: 63, xp: 940, gold: 53, secondsPerKill: 45, unlockLevel: 51 },
+  ICEBOUND_RAIDER: { level: 54, hp: 1510, attack: 106, defense: 68, xp: 1060, gold: 59, secondsPerKill: 47, unlockLevel: 53 },
+  SNOW_TREANT: { level: 58, hp: 1780, attack: 117, defense: 80, xp: 1250, gold: 66, secondsPerKill: 49, unlockLevel: 57 },
+  BELLWRAITH: { level: 61, hp: 1930, attack: 125, defense: 82, xp: 1370, gold: 73, secondsPerKill: 51, unlockLevel: 60 },
+  RIME_STALKER: { level: 65, hp: 2110, attack: 136, defense: 88, xp: 1580, gold: 84, secondsPerKill: 54, unlockLevel: 64 },
+  LAKEBOUND_SPECTER: { level: 68, hp: 2280, attack: 145, defense: 94, xp: 1750, gold: 90, secondsPerKill: 56, unlockLevel: 67 },
+  CHOIR_HUNTER: { level: 70, hp: 2540, attack: 153, defense: 99, xp: 1880, gold: 98, secondsPerKill: 59, unlockLevel: 69 },
+  WYRMSPINE_GUARDIAN: { level: 73, hp: 2890, attack: 165, defense: 115, xp: 2180, gold: 114, secondsPerKill: 63, unlockLevel: 72 }
+};
+var REGIONAL_CHAPTER_NEW_MONSTER_IDS = /* @__PURE__ */ new Set([
+  "DUSTVEIL_RUNNER",
+  "SANDPLATE_JUGGERNAUT",
+  "PRISM_HEXER",
+  "CROWN_EXECUTIONER",
+  "RIME_BERSERKER",
+  "FROSTNEEDLE_BROOD",
+  "CHOIR_DEFILER",
+  "STORMGLASS_COLOSSUS"
+]);
+var PREPARED_MONSTERS = MONSTERS_RAW.map((monster) => ({ ...monster, ...REGIONAL_25_LEVEL_REBALANCE[monster.id] ?? {} }));
+var MONSTERS = PREPARED_MONSTERS.map((monster) => {
   const holyWater = HOLY_WATER_SOURCES.find((source) => source.monsterId === monster.id);
   const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
-    unlockLevel: rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
+    // Regional chapter levels are now authored in the XP-rebased character scale.
+    // Preserve legacy Asterfall/Ashlands rebase behavior to avoid unrelated changes.
+    unlockLevel: monster.zone === "Sunscar" || monster.zone === "Frostmarch" ? monster.unlockLevel : rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
     // Reduce other chance-based combat drops by 5% relative to their existing
     // chance. Holy Water's dedicated Faith catalog already contains the final
     // whole-percent rates after this 5% cut and a further 15% reduction.
@@ -44345,6 +44384,7 @@ var ENEMY_FAMILIES = [
     "name": "Undead",
     "description": "Revenants, wraiths, spirits bound to death and the oathfallen.",
     "monsterIds": [
+      "CHOIR_DEFILER",
       "LANTERN_WRETCH",
       "DROWNED_PILGRIM",
       "OATHBOUND_SQUIRE",
@@ -44361,6 +44401,10 @@ var ENEMY_FAMILIES = [
     "name": "Humans",
     "description": "Living mortal raiders, scouts, soldiers and spellcasters.",
     "monsterIds": [
+      "DUSTVEIL_RUNNER",
+      "PRISM_HEXER",
+      "CROWN_EXECUTIONER",
+      "RIME_BERSERKER",
       "RUNEBOUND_MINER",
       "DUNE_ORACLE",
       "SAFFRON_MARAUDER",
@@ -44397,6 +44441,7 @@ var ENEMY_FAMILIES = [
     "name": "Vermin",
     "description": "Arachnids, insects and smaller venomous swarms.",
     "monsterIds": [
+      "FROSTNEEDLE_BROOD",
       "VENOM_WEAVER",
       "CAVE_SKITTER",
       "GLOAM_MITE",
@@ -44420,6 +44465,7 @@ var ENEMY_FAMILIES = [
     "name": "Constructs",
     "description": "Animated guardians, sentinels and artificial protectors.",
     "monsterIds": [
+      "SANDPLATE_JUGGERNAUT",
       "GLASSBOUND_SENTINEL",
       "OBSERVATORY_KEEPER",
       "WYRMSPINE_GUARDIAN"
@@ -44430,6 +44476,7 @@ var ENEMY_FAMILIES = [
     "name": "Elementals",
     "description": "Living elemental forces, embers and magical wisps.",
     "monsterIds": [
+      "STORMGLASS_COLOSSUS",
       "FIELD_WISP",
       "CINDER_TITAN"
     ]
@@ -45111,7 +45158,13 @@ var WORLD_ZONES = [
   { availability: "released", id: "FROSTMARCH", name: "Frostmarch", subtitle: "Frozen passes where every bell carries through the ice", minLevel: 45, maxLevel: 70, x: 0.42, y: 0.1, accent: "#91c7dc", symbol: "\u2744" },
   { availability: "inDevelopment", id: "ASHLANDS", name: "Ashlands", subtitle: "Blackglass marshes and the crucible at the edge of the known road", minLevel: 71, maxLevel: 90, x: 0.12, y: 0.22, accent: "#a77972", symbol: "\u25C7", developmentNote: "Ashlands is in development. The region is visible as a preview, but travel, enemies, gathering routes and rewards are not yet available.", plannedActivities: ["Blackglass marshes", "Cinderwood gathering", "Crucible expeditions", "High-tier equipment"] },
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
-].map((zone) => ({ ...zone, minLevel: rebasedCombatLevelFromLegacyLevel(zone.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(zone.maxLevel) }));
+].map((zone) => ({
+  ...zone,
+  // Active Sunscar/Frostmarch now use XP-rebased level bands; older chapters
+  // and unreleased regions continue to use their existing legacy mapping.
+  minLevel: zone.id === "SUNSCAR" ? 26 : zone.id === "FROSTMARCH" ? 51 : rebasedCombatLevelFromLegacyLevel(zone.minLevel),
+  maxLevel: zone.id === "SUNSCAR" ? 50 : zone.id === "FROSTMARCH" ? 75 : rebasedCombatLevelFromLegacyLevel(zone.maxLevel)
+}));
 
 // src/server/expeditions/constants.ts
 var EXPEDITION = {
@@ -45944,6 +45997,10 @@ function targetsFor(rule, actor, allies, enemies, rng, label) {
       const live = living(allies);
       return live.length ? [live.reduce((a, b) => hpPct(b) < hpPct(a) ? b : a)] : [];
     }
+    case "lowest_hp_ally_with_dot": {
+      const live = living(allies), poisoned = live.filter((x) => x.periodic.some((p) => p.kind === "dot")), candidates = poisoned.length ? poisoned : live;
+      return candidates.length ? [candidates.reduce((a, b) => hpPct(b) < hpPct(a) ? b : a)] : [];
+    }
     case "all_allies":
       return living(allies);
     case "all_enemies":
@@ -46035,7 +46092,7 @@ function simulateCombat(input) {
       return;
     }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
-    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp4(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
+    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp4(source.definition.stats.critChance + modifier(source, "crit", now) + modifier(target2, "crit_taken", now), 0, 0.75);
     const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
     const varianceRoll = rng.next(`${now}:${abilityId}:var`);
     const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
@@ -46050,6 +46107,7 @@ function simulateCombat(input) {
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
     raw2 *= gemIncomingDamageMultiplierV1(target2, now);
     if (hpPct(target2) < clamp4(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp4(effect2.executeBonus ?? 0, 0, 1);
+    if (effect2.bonusVsDebuffed && target2.modifiers.some((m) => m.kind === "debuff" && m.expiresAt > now)) raw2 *= 1 + clamp4(effect2.bonusVsDebuffed, 0, 0.2);
     const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
     const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
@@ -46248,7 +46306,9 @@ function simulateCombat(input) {
             gemOnAbilityUsedV1(now, actor, ab);
             emitGemState(now);
             for (const fx of ab.effects) {
-              for (const x of targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:instant`)) applyEffect(now, actor, x, fx, ab.id);
+              for (const x of ts) {
+                if (x.alive) applyEffect(now, actor, x, fx, ab.id);
+              }
             }
           }
           continue;
@@ -46354,6 +46414,20 @@ var raw = [
   ["EVT_UNIT_010", "Caravan Sentinel", "support", "elite", "EVENT_MERCHANT_GUILD_FESTIVAL", 205, 18, 15, 2.2, "utility", 0.05]
 ];
 var COMPANION_IDENTITY_PROFILES = {
+  // Existing Asterfall companions have gameplay identities, not only generic role actives.
+  // Keep these modest: rarity and investment remain the source of total power.
+  UNIT_001: { activeName: "Hamstring Pounce", activeDamageMultiplier: 1.04, activeExecuteBonus: 0.05, activeCooldownMultiplier: 0.97, bond: { activeExecuteBonus: 0.04, activeCooldownMultiplier: 0.96 } },
+  UNIT_002: { activeName: "Rune Brace", activeShieldMultiplier: 1.05, activeReflectPct: 0.015, bond: { activeShieldMultiplier: 1.04, activeReflectPct: 0.02 } },
+  UNIT_003: { activeName: "Silver Current", activeHealMultiplier: 1.07, activeCooldownMultiplier: 0.94, bond: { activeHealMultiplier: 1.05 } },
+  UNIT_004: { activeName: "Briar Charge", activeDamageMultiplier: 1.06, bond: { activeDamageMultiplier: 1.04 } },
+  UNIT_005: { activeName: "Lantern Snuff", activeCooldownMultiplier: 0.92, hasteBonus: 0.015, bond: { activeCooldownMultiplier: 0.94 } },
+  UNIT_006: { activeName: "Page's Vow", activeShieldMultiplier: 1.09, bond: { activeShieldMultiplier: 1.05 } },
+  UNIT_007: { activeName: "Gloamstep", activeDamageMultiplier: 1.03, activeExecuteBonus: 0.1, bond: { activeExecuteBonus: 0.05 } },
+  UNIT_008: { activeName: "Dawn Pinion", activeShieldMultiplier: 1.08, activeCooldownMultiplier: 0.97, bond: { activeShieldMultiplier: 1.06 } },
+  UNIT_009: { activeName: "Echo Rend", activeDamageMultiplier: 1.07, bond: { activeDamageMultiplier: 1.035 } },
+  UNIT_010: { activeName: "Siege Bolt", activeDamageMultiplier: 1.08, activeCooldownMultiplier: 1.04, bond: { activeDamageMultiplier: 1.05 } },
+  UNIT_011: { activeName: "Memory Command", activeDamageMultiplier: 1.04, bond: { activeCooldownMultiplier: 0.96 } },
+  UNIT_012: { activeName: "Oathglass Reflection", utilityMultiplier: 1.1, activeCooldownMultiplier: 0.96, bond: { utilityMultiplier: 1.04 } },
   UNIT_013: { activeName: "Venom Pounce", basicDamageMultiplier: 1.02, activeDamageMultiplier: 1.04, activeExecuteBonus: 0.05, hasteBonus: 0.015, bond: { activeExecuteBonus: 0.03, hasteBonus: 0.01 } },
   UNIT_014: { activeName: "Mirage Spring", activeHealMultiplier: 1.12, activeCooldownMultiplier: 0.95, hasteBonus: 0.02, bond: { activeHealMultiplier: 1.08, hasteBonus: 0.02 } },
   UNIT_015: { activeName: "Solar Carapace", activeShieldMultiplier: 1.15, activeReflectPct: 0.08, defenseMultiplier: 1.02, bond: { activeReflectPct: 0.04, defenseMultiplier: 1.02 } },
@@ -46382,7 +46456,7 @@ var COMPANION_IDENTITY_PROFILES = {
   EVT_UNIT_010: { activeName: "Caravan Formation", utilityMultiplier: 1.05, activeHealMultiplier: 1.05, defenseMultiplier: 1.02, hasteBonus: 0.02, bond: { activeCooldownMultiplier: 0.96 } }
 };
 var cooldown = (rarity, role) => 1e3 * (role === "damage" ? rarity === "prestige" ? 18 : 20 : rarity === "prestige" ? 22 : 24);
-var target = (role) => role === "damage" ? { assistTarget: "current_target", standaloneTarget: "current_target" } : role === "tank" ? { assistTarget: "owner", standaloneTarget: "self" } : { assistTarget: "owner", standaloneTarget: "lowest_hp_ally" };
+var target = (role, kind) => kind === "damage" ? { assistTarget: "current_target", standaloneTarget: "current_target" } : kind === "interrupt" ? { assistTarget: "interruptible_casting_enemy", standaloneTarget: "interruptible_casting_enemy" } : role === "tank" ? { assistTarget: "owner", standaloneTarget: "self" } : { assistTarget: "owner", standaloneTarget: "lowest_hp_ally" };
 var effect = (kind) => kind === "damage" ? "damage" : kind === "shield" ? "shield" : kind === "interrupt" ? "interrupt" : kind === "heal" ? "heal" : kind === "mitigation" ? "mitigation" : "utility";
 var COMPANION_SERVER_DEFINITIONS = raw.map(([id, name, role, rarity, originId, hp, power, defense, attackSpeed, kind, coeff]) => ({
   id,
@@ -46393,13 +46467,63 @@ var COMPANION_SERVER_DEFINITIONS = raw.map(([id, name, role, rarity, originId, h
   originId,
   baseStats: { hp, power, defense, attackSpeed },
   tags: [role, rarity, originId, companionAffinityById(id), `affinity:${companionAffinityById(id)}`],
-  active: { id: `${id}_ACTIVE`, name: COMPANION_IDENTITY_PROFILES[id]?.activeName ?? `${name} Signature`, cooldownMs: cooldown(rarity, role), baseCoeff: coeff, perLevelCoeff: kind === "damage" ? 4e-3 : 6e-4, effectKind: effect(kind), targeting: target(role) },
+  active: { id: `${id}_ACTIVE`, name: COMPANION_IDENTITY_PROFILES[id]?.activeName ?? `${name} Signature`, cooldownMs: cooldown(rarity, role), baseCoeff: coeff, perLevelCoeff: kind === "damage" ? 4e-3 : 6e-4, effectKind: effect(kind), targeting: target(role, kind) },
   identity: COMPANION_IDENTITY_PROFILES[id],
   visual: rarity === "prestige" ? { rarityFrame: "prestige", summonEffect: "prestige_summon", idleEffect: "prestige_idle", profileFrame: "prestige_profile", masteryMarker: "prestige_mastery", nameplateTreatment: "prestige_nameplate", animationRef: `${id}_prestige_entry`, rarityIcon: "\u2605", rarityLabel: "Prestige", accessibilityLabel: "Prestige combat companion. Star rarity icon and ornate structured frame.", reducedMotionFallback: "prestige_static_entry" } : rarity === "elite" ? { rarityFrame: "elite", summonEffect: "elite_summon", masteryMarker: "elite_mastery", rarityIcon: "\u25C6\u25C6\u25C6", rarityLabel: "Elite", accessibilityLabel: "Elite combat companion. Triple-diamond rarity icon and distinct structured frame.", reducedMotionFallback: "elite_static_entry" } : rarity === "rare" ? { rarityFrame: "rare", rarityIcon: "\u25C6\u25C6", rarityLabel: "Rare", accessibilityLabel: "Rare combat companion. Double-diamond rarity icon and enhanced frame." } : { rarityFrame: "standard", rarityIcon: "\u25C6", rarityLabel: "Standard", accessibilityLabel: "Standard combat companion. Single-diamond rarity icon and simple frame." }
 }));
 var companionServerDefinition = (id) => COMPANION_SERVER_DEFINITIONS.find((x) => x.id === id);
 var COMPANION_TECHNIQUE_UNLOCK = { ascensionTier: 2, bondLevel: 7, mode: "any" };
 var CUSTOM_TECHNIQUE_SEEDS = {
+  // Preserve legacy technique IDs so no player loses a selected path.
+  // Each option deliberately changes an effect that its companion actually uses.
+  UNIT_001: [
+    { suffix: "EXECUTIONER", name: "Relentless Hunter", description: "Hamstring Pounce gains +11% execute pressure below 30% HP.", effects: [{ kind: "execute", value: 0.11 }] },
+    { suffix: "RELENTLESS", name: "Swift Pursuit", description: "Exchange burst for a quicker Pounce cycle.", effects: [{ kind: "damage", value: 0.025 }, { kind: "cooldown", value: -0.1 }] }
+  ],
+  UNIT_002: [
+    { suffix: "FORTIFIED", name: "Deeper Runes", description: "Fortify Rune Brace with +16% shield strength.", effects: [{ kind: "shield_strength", value: 0.16 }] },
+    { suffix: "REFLECTIVE", name: "Mirror Runes", description: "Give up a little shield strength to reflect more damage.", effects: [{ kind: "shield_strength", value: -0.04 }, { kind: "reflect", value: 0.12 }] }
+  ],
+  UNIT_003: [
+    { suffix: "DEEP_RESTORATION", name: "Deep Current", description: "Silver Current restores +15% more HP, including its restorative pulse.", effects: [{ kind: "heal_strength", value: 0.15 }] },
+    { suffix: "RAPID_AID", name: "Running Brook", description: "A shorter cooldown with a smaller increase to initial healing.", effects: [{ kind: "heal_strength", value: 0.04 }, { kind: "cooldown", value: -0.11 }] }
+  ],
+  UNIT_004: [
+    { suffix: "EXECUTIONER", name: "Briar Breaker", description: "A stronger Briar Charge against enemies close to defeat.", effects: [{ kind: "execute", value: 0.1 }, { kind: "damage", value: 0.02 }] },
+    { suffix: "RELENTLESS", name: "Rushing Thorns", description: "Faster charges for repeated short vulnerability windows.", effects: [{ kind: "cooldown", value: -0.11 }, { kind: "damage", value: 0.02 }] }
+  ],
+  UNIT_005: [
+    { suffix: "DEEP_RESTORATION", name: "Flicker Sense", description: "Improve Haste and readiness while preserving an interrupt.", effects: [{ kind: "haste", value: 0.045 }, { kind: "cooldown", value: -0.04 }] },
+    { suffix: "RAPID_AID", name: "Quick Snuff", description: "A substantially shorter interrupt cooldown with modest Haste.", effects: [{ kind: "haste", value: 0.012 }, { kind: "cooldown", value: -0.16 }] }
+  ],
+  UNIT_006: [
+    { suffix: "FORTIFIED", name: "Oathkeeper", description: "Page's Vow grants a stronger shield on demanding encounters.", effects: [{ kind: "shield_strength", value: 0.16 }] },
+    { suffix: "REFLECTIVE", name: "Reprisal Vow", description: "A thinner ward reflects a portion of absorbed blows.", effects: [{ kind: "shield_strength", value: -0.04 }, { kind: "reflect", value: 0.1 }] }
+  ],
+  UNIT_007: [
+    { suffix: "EXECUTIONER", name: "Final Shadow", description: "Gloamstep hits wounded enemies much harder.", effects: [{ kind: "execute", value: 0.13 }] },
+    { suffix: "RELENTLESS", name: "Veiled Assault", description: "A more frequent strike with smaller damage increases.", effects: [{ kind: "damage", value: 0.025 }, { kind: "cooldown", value: -0.11 }] }
+  ],
+  UNIT_008: [
+    { suffix: "DEEP_RESTORATION", name: "Bright Ward", description: "Strengthen Dawn Pinion shielding by 16% while retaining its cleanse.", effects: [{ kind: "shield_strength", value: 0.16 }] },
+    { suffix: "RAPID_AID", name: "Quick Pinion", description: "A shorter emergency shield and cleanse cycle.", effects: [{ kind: "shield_strength", value: -0.03 }, { kind: "cooldown", value: -0.15 }] }
+  ],
+  UNIT_009: [
+    { suffix: "EXECUTIONER", name: "Resonant Rend", description: "Sharper finishing attacks during Echo Rend vulnerability windows.", effects: [{ kind: "execute", value: 0.08 }, { kind: "damage", value: 0.02 }] },
+    { suffix: "RELENTLESS", name: "Echo Pursuit", description: "Maintain pressure with faster Rends.", effects: [{ kind: "damage", value: 0.025 }, { kind: "cooldown", value: -0.1 }] }
+  ],
+  UNIT_010: [
+    { suffix: "EXECUTIONER", name: "High-Caliber Bolt", description: "Concentrate artillery power into one heavier Siege Bolt.", effects: [{ kind: "damage", value: 0.075 }] },
+    { suffix: "RELENTLESS", name: "Rapid Calibration", description: "Use quicker bolts with a lower peak damage increase.", effects: [{ kind: "damage", value: 0.025 }, { kind: "cooldown", value: -0.1 }] }
+  ],
+  UNIT_011: [
+    { suffix: "DEEP_RESTORATION", name: "Precise Command", description: "Improve Memory Command damage instead of unused restoration.", effects: [{ kind: "damage", value: 0.075 }] },
+    { suffix: "RAPID_AID", name: "Swift Orders", description: "Use quicker tactical commands for repeated openings.", effects: [{ kind: "damage", value: 0.02 }, { kind: "cooldown", value: -0.13 }] }
+  ],
+  UNIT_012: [
+    { suffix: "DEEP_RESTORATION", name: "Clear Reflection", description: "Strengthen the damage boost from Oathglass Reflection.", effects: [{ kind: "damage", value: 0.11 }] },
+    { suffix: "RAPID_AID", name: "Shifting Reflection", description: "Recover Reflection sooner to support frequent attack windows.", effects: [{ kind: "cooldown", value: -0.14 }] }
+  ],
   UNIT_013: [
     { suffix: "VENOM_AMBUSH", name: "Venom Ambush", description: "Lean into poisoned prey with stronger finishing pressure.", effects: [{ kind: "damage", value: 0.04 }, { kind: "execute", value: 0.08 }] },
     { suffix: "SANDSTEP", name: "Sandstep", description: "Trade burst for faster repositioning and active cycles.", effects: [{ kind: "haste", value: 0.08 }, { kind: "cooldown", value: -0.06 }] }
@@ -46748,23 +46872,49 @@ function balancedActiveCoeff(def, progress) {
   const raw2 = def.active.baseCoeff + def.active.perLevelCoeff * Math.max(0, progress.level - 1);
   return def.active.effectKind === "damage" ? 1 + (raw2 - 1) * 0.25 : raw2;
 }
+function asterfallSignatureEffects(id) {
+  switch (id) {
+    case "UNIT_001":
+      return [{ kind: "debuff", value: -0.035, durationMs: 5e3, tag: "damage_done" }];
+    case "UNIT_002":
+      return [{ kind: "buff", value: -0.02, durationMs: 4e3, tag: "damage_taken" }];
+    case "UNIT_003":
+      return [{ kind: "hot", coeff: 5e-3, tickMs: 2e3, durationMs: 4e3, tag: "silver_current" }];
+    case "UNIT_004":
+      return [{ kind: "debuff", value: 0.035, durationMs: 5e3, tag: "damage_taken" }];
+    case "UNIT_006":
+      return [{ kind: "buff", value: -0.025, durationMs: 5e3, tag: "damage_taken" }];
+    case "UNIT_008":
+      return [{ kind: "cleanse", tag: "dawn_pinion" }];
+    case "UNIT_009":
+      return [{ kind: "debuff", value: 0.03, durationMs: 5e3, tag: "damage_taken" }];
+    case "UNIT_010":
+      return [{ kind: "debuff", value: 0.035, durationMs: 7e3, tag: "damage_taken" }];
+    case "UNIT_011":
+      return [{ kind: "debuff", value: 0.03, durationMs: 6e3, tag: "crit_taken" }];
+    default:
+      return [];
+  }
+}
 function engineEffects(def, progress, context) {
   const identity = identityModifiers(def, progress), levelCoeff = balancedActiveCoeff(def, progress), tDamage = effectValue(progress, "damage"), tHeal = effectValue(progress, "heal_strength"), tShield = effectValue(progress, "shield_strength");
+  const signature = asterfallSignatureEffects(def.id);
   switch (def.active.effectKind) {
     case "damage":
-      return [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * (1 + tDamage) * identity.activeDamageMultiplier), executeBelowHpPct: 0.3, executeBonus: Math.min(0.3, effectValue(progress, "execute") + identity.activeExecuteBonus), tag: "companion_active" }];
+      return [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * (1 + tDamage) * identity.activeDamageMultiplier), executeBelowHpPct: 0.3, executeBonus: Math.min(0.3, effectValue(progress, "execute") + identity.activeExecuteBonus), ...def.id === "UNIT_009" ? { bonusVsDebuffed: 0.12 } : {}, tag: "companion_active" }, ...signature];
     case "shield":
-      return [{ kind: "shield", coeff: Math.max(0.01, levelCoeff * (1 + tShield) * identity.activeShieldMultiplier), shieldReflectPct: Math.min(0.3, effectValue(progress, "reflect") + identity.activeReflectPct), tag: "companion_active" }, ...def.id === "UNIT_008" && context.mode === "companion_trial" ? [{ kind: "cleanse", tag: "poison_cleanse" }] : []];
+      return [{ kind: "shield", coeff: Math.max(0.01, levelCoeff * (1 + tShield) * identity.activeShieldMultiplier), shieldReflectPct: Math.min(0.3, effectValue(progress, "reflect") + identity.activeReflectPct), tag: "companion_active" }, ...signature];
     case "heal":
-      return [{ kind: "heal", coeff: Math.max(0.02, levelCoeff * (1 + tHeal) * identity.activeHealMultiplier), tag: "companion_active" }];
+      return [{ kind: "heal", coeff: Math.max(0.02, levelCoeff * (1 + tHeal) * identity.activeHealMultiplier), tag: "companion_active" }, ...signature];
     case "interrupt":
-      return context.mode === "character_assist" ? [{ kind: "interrupt", coeff: Math.max(0.05, levelCoeff), tag: "companion_active" }] : [{ kind: "damage", coeff: Math.max(0.5, levelCoeff * 0.9), tag: "companion_active" }, { kind: "interrupt", coeff: 1, tag: "companion_interrupt" }];
+      return [{ kind: "damage", coeff: Math.max(0.5, levelCoeff * 0.9), tag: "companion_active" }, { kind: "interrupt", coeff: 1, tag: "companion_interrupt" }];
     case "mitigation":
       return [{ kind: "buff", value: -Math.max(0.01, levelCoeff * identity.mitigationMultiplier), durationMs: 5e3, tag: "damage_taken" }];
     case "utility":
     default:
+      if (def.id === "UNIT_012") return [{ kind: "buff", value: clamp5(0.05 * identity.utilityMultiplier * (1 + tDamage), 0.03, 0.07), durationMs: 6e3, tag: "damage_done" }];
       if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp5(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
-      return def.role === "support" ? [{ kind: "buff", value: Math.max(0.01, levelCoeff * identity.utilityMultiplier), durationMs: 5e3, tag: "companion_utility" }] : [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * identity.activeDamageMultiplier), tag: "companion_active" }];
+      return def.role === "support" ? [{ kind: "buff", value: clamp5(levelCoeff * identity.utilityMultiplier, 0.03, 0.07), durationMs: 5e3, tag: "damage_done" }] : [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * identity.activeDamageMultiplier), tag: "companion_active" }];
   }
 }
 function buildCompanionCombatant(def, progress, context) {
@@ -46774,8 +46924,8 @@ function buildCompanionCombatant(def, progress, context) {
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
   const healingPower = standalone ? def.role === "support" ? maxHp * 2.5 : def.role === "tank" ? maxHp * 2 : attackPower * 0.35 : base.power * (def.role === "support" ? 0.9 : 0.35) * derived;
-  const ability2 = { id: def.active.id, name: def.active.name, cooldownMs: Math.max(3e3, Math.round(def.active.cooldownMs * identity.activeCooldownMultiplier * (1 + cooldownChange))), castTimeMs: 0, target: def.active.effectKind === "interrupt" && context.mode === "companion_trial" ? "interruptible_casting_enemy" : target2.target, exactTargetId: target2.exactTargetId, effects: engineEffects(def, progress, context), priority: def.role === "support" ? 85 : def.role === "tank" ? 80 : 70, aiCondition: context.mode === "companion_trial" && def.active.effectKind === "interrupt" ? "target_casting" : context.mode === "companion_trial" && def.id === "UNIT_008" ? "ally_below_50_or_dot" : def.role === "support" ? "ally_below_50" : "always", tags: ["combat_companion", def.role, context.mode, ...techniqueEffects(progress).map((x) => `technique:${x.kind}:${x.value}`)] };
-  return { id: def.id, name: def.name, team: "players", role: def.role, level: progress.level, stats: { maxHp, attackPower, healingPower: Number(healingPower.toFixed(2)), defense: Number((base.defense * derived * identity.defenseMultiplier).toFixed(2)), accuracy: Math.min(0.98, 0.84 + progress.level * 2e-3), evasion: Math.min(0.22, 0.04 + (def.role === "damage" ? 0.03 : 0)), critChance: def.role === "damage" ? 0.1 : 0.05, critMultiplier: 1.5, haste: Math.min(0.45, 0.04 + hasteBonus + identity.hasteBonus + Math.max(0, 2.5 - base.attackSpeed) * 0.03) }, basicAttackMs: Math.max(850, Math.round(base.attackSpeed * 1e3)), basicAttackCoeff: (def.role === "damage" ? 0.72 : def.role === "tank" ? 0.46 : 0.4) * identity.basicDamageMultiplier, abilities: [ability2], tags: ["combat_companion", def.rarity, def.originId, context.mode] };
+  const ability2 = { id: def.active.id, name: def.active.name, cooldownMs: Math.max(3e3, Math.round(def.active.cooldownMs * identity.activeCooldownMultiplier * (1 + cooldownChange))), castTimeMs: 0, target: def.active.effectKind === "interrupt" ? "interruptible_casting_enemy" : def.id === "UNIT_008" ? "lowest_hp_ally_with_dot" : target2.target, exactTargetId: target2.exactTargetId, effects: engineEffects(def, progress, context), priority: def.role === "support" ? 85 : def.role === "tank" ? 80 : 70, aiCondition: def.active.effectKind === "interrupt" ? "target_casting" : def.id === "UNIT_008" ? "ally_below_50_or_dot" : def.active.effectKind === "heal" ? "ally_below_80" : "always", tags: ["combat_companion", def.role, context.mode, ...techniqueEffects(progress).map((x) => `technique:${x.kind}:${x.value}`)] };
+  return { id: def.id, name: def.name, team: "players", role: def.role, level: progress.level, stats: { maxHp, attackPower, healingPower: Number(healingPower.toFixed(2)), defense: Number((base.defense * derived * identity.defenseMultiplier * (1 + clamp5(effectValue(progress, "defense"), -0.15, 0.15))).toFixed(2)), accuracy: Math.min(0.98, 0.84 + progress.level * 2e-3), evasion: Math.min(0.22, 0.04 + (def.role === "damage" ? 0.03 : 0)), critChance: def.role === "damage" ? 0.1 : 0.05, critMultiplier: 1.5, haste: Math.min(0.45, 0.04 + hasteBonus + identity.hasteBonus + Math.max(0, 2.5 - base.attackSpeed) * 0.03 + clamp5(effectValue(progress, "haste"), -0.15, 0.15)) }, basicAttackMs: Math.max(850, Math.round(base.attackSpeed * 1e3)), basicAttackCoeff: (def.role === "damage" ? 0.72 : def.role === "tank" ? 0.46 : 0.4) * identity.basicDamageMultiplier, abilities: [ability2], tags: ["combat_companion", def.rarity, def.originId, context.mode] };
 }
 function buildOwnedCompanionCombatant(progress, context) {
   const def = companionServerDefinition(progress.companionId);
@@ -48977,6 +49127,103 @@ function guildSkillProfessionMultipliers(effects) {
 
 // ../apps/mobile/src/content/exploration.ts
 init_progression();
+
+// ../apps/mobile/src/content/regional-areas.ts
+var REGIONAL_AREAS = [
+  {
+    id: "ZONE_006",
+    regionId: "SUNSCAR",
+    name: "Saffron Gate",
+    minLevel: 26,
+    maxLevel: 33,
+    identity: "Caravan roads and the first settlements beyond Asterfall.",
+    activities: ["Sunstone", "Dunewood", "Oasis fishing"],
+    hazards: ["desert wind"]
+  },
+  {
+    id: "ZONE_007",
+    regionId: "SUNSCAR",
+    name: "Scorchwind Flats",
+    minLevel: 32,
+    maxLevel: 39,
+    identity: "Open glass-sand plains and fierce exposure.",
+    activities: ["Glass-sand mining", "Heat-scarred timber"],
+    hazards: ["exposure", "heat"]
+  },
+  {
+    id: "ZONE_008",
+    regionId: "SUNSCAR",
+    name: "Mirage Basin",
+    minLevel: 38,
+    maxLevel: 45,
+    identity: "Mirage pools and reflections that mislead travelers.",
+    activities: ["Glassfin", "Mirage botanicals"],
+    hazards: ["false trails"]
+  },
+  {
+    id: "ZONE_010",
+    regionId: "SUNSCAR",
+    name: "Tyrant's Crown",
+    minLevel: 44,
+    maxLevel: 50,
+    identity: "Royal ruins, the buried observatory and the Sand Tyrant.",
+    activities: ["Astral minerals", "Ancient herbs"],
+    hazards: ["glass storms", "sand pillars"]
+  },
+  {
+    id: "ZONE_011",
+    regionId: "FROSTMARCH",
+    name: "Thawgate",
+    minLevel: 51,
+    maxLevel: 58,
+    identity: "Fortified northern gate and the last dependable shelter.",
+    activities: ["Frostiron", "Whitepine", "Icefin"],
+    hazards: ["black ice"]
+  },
+  {
+    id: "ZONE_012",
+    regionId: "FROSTMARCH",
+    name: "Whitepine Reach",
+    minLevel: 57,
+    maxLevel: 64,
+    identity: "Snow forest with false trails and ancient frozen treants.",
+    activities: ["Snowbound timber", "Rime herbs"],
+    hazards: ["whiteout trails"]
+  },
+  {
+    id: "ZONE_013",
+    regionId: "FROSTMARCH",
+    name: "Shiverlake",
+    minLevel: 63,
+    maxLevel: 70,
+    identity: "Frozen lake and the resonant ruins beneath its ice.",
+    activities: ["Under-ice fishing", "Frostiron"],
+    hazards: ["thin ice"]
+  },
+  {
+    id: "ZONE_015",
+    regionId: "FROSTMARCH",
+    name: "Wyrmspine",
+    minLevel: 69,
+    maxLevel: 75,
+    identity: "High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.",
+    activities: ["Wyrmspine ore", "Highland herbs"],
+    hazards: ["ice prison", "breath lines"]
+  }
+];
+var LEGACY_AREA_ALIASES = {
+  ZONE_009: "ZONE_010",
+  // Buried Observatory remains a location in Tyrant's Crown
+  ZONE_014: "ZONE_015"
+  // Choir Caverns stays a co-op dungeon
+};
+function regionalArea(regionId, areaId) {
+  if (!areaId) return void 0;
+  const normalized = LEGACY_AREA_ALIASES[areaId] ?? areaId;
+  return REGIONAL_AREAS.find((area) => area.regionId === regionId && area.id === normalized);
+}
+
+// ../apps/mobile/src/content/exploration.ts
 var EXPLORATION_ROUTES = [
   { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
   { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
@@ -48989,7 +49236,12 @@ var EXPLORATION_ROUTES = [
   { id: "SCOUT_SUNSCAR_CROWN", zoneId: "SUNSCAR", areaId: "ZONE_010", name: "Chart Tyrant's Crown", seconds: 204, xp: 390, prerequisiteRouteId: "SCOUT_SUNSCAR_MIRAGE", requiredLevel: 41, requiredExplorationLevel: 11 },
   { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 480, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 12 },
   { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 16 }
-].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
+].map((route) => ({
+  ...route,
+  // New chapters use already-rebased character levels. Never run them through
+  // the legacy 1–50 conversion, or a survey can unlock before its own area.
+  requiredLevel: route.zoneId === "SUNSCAR" && route.areaId ? regionalArea("SUNSCAR", route.areaId)?.minLevel ?? route.requiredLevel : route.id === "SCOUT_FROSTMARCH" ? 51 : rebasedCombatLevelFromLegacyLevel(route.requiredLevel)
+}));
 var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 function unmetScoutingPrerequisite(route, completed = []) {
   return route.prerequisiteRouteId && !completed.includes(route.prerequisiteRouteId) ? explorationRoute(route.prerequisiteRouteId) : void 0;
@@ -49289,90 +49541,31 @@ function professionActionPace(state, recipe2, mode) {
   return { cycleSeconds, xpPerAction, affinity, mastery, speed };
 }
 
-// ../apps/mobile/src/content/regional-areas.ts
-init_progression();
-var REGIONAL_AREAS = [
-  {
-    id: "ZONE_006",
-    regionId: "SUNSCAR",
-    name: "Saffron Gate",
-    minLevel: 26,
-    maxLevel: 30,
-    identity: "Caravan roads and the first settlements beyond Asterfall.",
-    activities: ["Sunstone", "Dunewood", "Oasis fishing"],
-    hazards: ["desert wind"]
-  },
-  {
-    id: "ZONE_007",
-    regionId: "SUNSCAR",
-    name: "Scorchwind Flats",
-    minLevel: 31,
-    maxLevel: 35,
-    identity: "Open glass-sand plains and fierce exposure.",
-    activities: ["Glass-sand mining", "Heat-scarred timber"],
-    hazards: ["exposure", "heat"]
-  },
-  {
-    id: "ZONE_008",
-    regionId: "SUNSCAR",
-    name: "Mirage Basin",
-    minLevel: 36,
-    maxLevel: 40,
-    identity: "Mirage pools and reflections that mislead travelers.",
-    activities: ["Glassfin", "Mirage botanicals"],
-    hazards: ["false trails"]
-  },
-  {
-    id: "ZONE_010",
-    regionId: "SUNSCAR",
-    name: "Tyrant's Crown",
-    minLevel: 41,
-    maxLevel: 45,
-    identity: "Royal ruins, the buried observatory and the Sand Tyrant.",
-    activities: ["Astral minerals", "Ancient herbs"],
-    hazards: ["glass storms", "sand pillars"]
-  },
-  {
-    id: "ZONE_011",
-    regionId: "FROSTMARCH",
-    name: "Thawgate",
-    minLevel: 45,
-    maxLevel: 50,
-    identity: "Fortified northern gate and the last dependable shelter.",
-    activities: ["Frostiron", "Whitepine", "Icefin"],
-    hazards: ["black ice"]
-  },
-  {
-    id: "ZONE_012",
-    regionId: "FROSTMARCH",
-    name: "Whitepine Reach",
-    minLevel: 51,
-    maxLevel: 56,
-    identity: "Snow forest with false trails and ancient frozen treants.",
-    activities: ["Snowbound timber", "Rime herbs"],
-    hazards: ["whiteout trails"]
-  },
-  {
-    id: "ZONE_013",
-    regionId: "FROSTMARCH",
-    name: "Shiverlake",
-    minLevel: 57,
-    maxLevel: 63,
-    identity: "Frozen lake and the resonant ruins beneath its ice.",
-    activities: ["Under-ice fishing", "Frostiron"],
-    hazards: ["thin ice"]
-  },
-  {
-    id: "ZONE_015",
-    regionId: "FROSTMARCH",
-    name: "Wyrmspine",
-    minLevel: 64,
-    maxLevel: 70,
-    identity: "High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.",
-    activities: ["Wyrmspine ore", "Highland herbs"],
-    hazards: ["ice prison", "breath lines"]
-  }
-].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
+// ../apps/mobile/src/core/regional-class-counter.ts
+var MATCHUPS = {
+  DUSTVEIL_RUNNER: [{ classId: "WAYFINDER", outputMultiplier: 1.06 }],
+  SANDPLATE_JUGGERNAUT: [{ classId: "RAVAGER", outputMultiplier: 1.07 }, { classId: "IRONWARDEN", incomingMultiplier: 0.94 }],
+  PRISM_HEXER: [{ classId: "HEXWEAVER", outputMultiplier: 1.06 }],
+  CROWN_EXECUTIONER: [{ classId: "KNIFE_DANCER", outputMultiplier: 1.05 }],
+  RIME_BERSERKER: [{ classId: "DREADGUARD", incomingMultiplier: 0.93 }],
+  FROSTNEEDLE_BROOD: [{ classId: "BASTION", incomingMultiplier: 0.93 }],
+  CHOIR_DEFILER: [{ classId: "DAWNKEEPER", outputMultiplier: 1.06, incomingMultiplier: 0.95 }],
+  STORMGLASS_COLOSSUS: [{ classId: "STONECALLER", outputMultiplier: 1.07, incomingMultiplier: 0.95 }]
+};
+function regionalClassCounter(monsterId, classId) {
+  const value = MATCHUPS[monsterId]?.find((row) => row.classId === classId);
+  return {
+    outputMultiplier: value?.outputMultiplier ?? 1,
+    incomingMultiplier: value?.incomingMultiplier ?? 1
+  };
+}
+
+// ../apps/mobile/src/content/equipment-release.ts
+var MAX_RELEASED_EQUIPMENT_TIER = 5;
+function isReleasedEquipmentItemId(itemId) {
+  const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
+  return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
+}
 
 // ../apps/mobile/src/core/item-rarity.ts
 var GEAR_RARITIES = [
@@ -49652,13 +49845,18 @@ var REGION_SCOUT_REQUIREMENTS = {
   FROSTMARCH: "SCOUT_SUNSCAR",
   ASHLANDS: "SCOUT_FROSTMARCH"
 };
+function retainedRegionalVisit(state, zone) {
+  if (zone.id !== "SUNSCAR" && zone.id !== "FROSTMARCH") return false;
+  return state.currentRegionId === zone.id || zone.id === "FROSTMARCH" && state.currentRegionId === "ASHLANDS" || MONSTERS.some((monster) => monster.zone === zone.name && (state.character?.monsterMasteryPoints?.[monster.id] ?? 0) > 0);
+}
 function regionTravelLockReason(state, zone) {
   if (worldZoneInDevelopment(zone)) return zone.name + " is still in development";
   const level = state.character?.level ?? 1;
-  if (level < zone.minLevel) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
-  if (POST_CHAPTER_ONE_REGIONS.has(zone.id) && !(state.defeatedBossIds ?? []).includes(FIRST_CHAPTER_BOSS_ID)) return `Defeat the Fallen Knight to unlock ${zone.name}`;
+  const retainedVisit = retainedRegionalVisit(state, zone);
+  if (level < zone.minLevel && !retainedVisit) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if (POST_CHAPTER_ONE_REGIONS.has(zone.id) && !(state.defeatedBossIds ?? []).includes(FIRST_CHAPTER_BOSS_ID) && !retainedVisit) return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId = REGION_SCOUT_REQUIREMENTS[zone.id];
-  if (routeId && !(state.exploredRouteIds ?? []).includes(routeId)) {
+  if (routeId && !(state.exploredRouteIds ?? []).includes(routeId) && !retainedVisit) {
     const source = routeId.replace(/^SCOUT_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
     return `Complete ${source} scouting to discover the route to ${zone.name}`;
   }
@@ -49699,13 +49897,40 @@ function cumulativeMonsterUnlockIds(state) {
   if (!furthest) return original;
   const released = WORLD_ZONES.filter((zone) => !worldZoneInDevelopment(zone));
   const maxIndex = released.findIndex((zone) => zone.id === furthest.id);
-  const eligible = MONSTERS.filter((monster) => !monster.boss && released.some((zone, index) => index <= maxIndex && zone.name === monster.zone)).map((monster) => monster.id);
+  const level = state.character?.level ?? 0;
+  const eligible = MONSTERS.filter((monster) => !monster.boss && (!REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monster.id) || level >= monster.unlockLevel) && released.some((zone, index) => index <= maxIndex && zone.name === monster.zone)).map((monster) => monster.id);
   return [.../* @__PURE__ */ new Set([...original, ...eligible])];
 }
 function restoreCumulativeMonsterUnlocks(state) {
   const ids2 = cumulativeMonsterUnlockIds(state);
   const old = state.unlockedMonsterIds ?? [];
   return ids2.length === old.length && ids2.every((id, index) => id === old[index]) ? state : { ...state, unlockedMonsterIds: ids2 };
+}
+function encounterLockRequirement(state, monster) {
+  const region = WORLD_ZONES.find((zone) => zone.name === monster.zone), level = state.character?.level ?? 0;
+  if (region && worldZoneInDevelopment(region)) return { kind: "regionProgression" };
+  if (REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monster.id)) {
+    const area = region ? regionalArea(region.id, monster.areaId) : void 0;
+    const required = Math.max(monster.unlockLevel, area?.minLevel ?? 1, region?.minLevel ?? 1);
+    if (level < required) return { kind: "level", level: required };
+  }
+  if (!monster.boss && cumulativeMonsterUnlockIds(state).includes(monster.id)) return void 0;
+  if (level < (region?.minLevel ?? 1)) return { kind: "level", level: region?.minLevel ?? 1 };
+  if (monster.boss) {
+    if (level < monster.unlockLevel) return { kind: "level", level: monster.unlockLevel };
+    return state.quests.find((q2) => q2.questId === "QST_014")?.status === "locked" ? { kind: "story" } : void 0;
+  }
+  if (monster.regionalAreaAutoUnlock) {
+    const area = region ? regionalArea(region.id, monster.areaId) : void 0;
+    const requiredLevel = Math.max(monster.unlockLevel, area?.minLevel ?? 1);
+    if (level < requiredLevel) return { kind: "level", level: requiredLevel };
+    return region && regionTravelAvailability(state, region) !== "available" ? { kind: "regionProgression" } : void 0;
+  }
+  if (state.unlockedMonsterIds.includes(monster.id)) return void 0;
+  if (level < monster.unlockLevel) return { kind: "level", level: monster.unlockLevel };
+  const route = EXPLORATION_ROUTES.find((row) => row.unlockMonsterId === monster.id);
+  if (route && !(state.exploredRouteIds ?? []).includes(route.id)) return { kind: "exploration", routeId: route.id, routeName: route.name };
+  return { kind: "regionProgression" };
 }
 
 // ../apps/mobile/src/core/processing.ts
@@ -50754,15 +50979,14 @@ function gatheringPacing(state, activity) {
 
 // ../apps/mobile/src/core/combat-region.ts
 function currentRegionId(state) {
-  const level = state.character?.level ?? 1;
-  const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && !worldZoneInDevelopment(zone) && level >= zone.minLevel && regionTravelAvailability(state, zone) === "available")?.id;
+  const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && !worldZoneInDevelopment(zone) && regionTravelAvailability(state, zone) === "available")?.id;
   const saved = usable(state.currentRegionId);
   if (saved) return saved;
   const activityZone = usable(state.activity?.environment?.zoneId);
   if (activityZone) return activityZone;
-  const savedZone = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId);
-  if (savedZone) {
-    const previous = [...WORLD_ZONES].reverse().find((zone) => zone.minLevel < savedZone.minLevel && usable(zone.id));
+  const savedIndex = WORLD_ZONES.findIndex((zone) => zone.id === state.currentRegionId);
+  if (savedIndex > 0) {
+    const previous = [...WORLD_ZONES.slice(0, savedIndex)].reverse().find((zone) => usable(zone.id));
     if (previous) return previous.id;
   }
   return WORLD_ZONES[0].id;
@@ -52994,6 +53218,14 @@ var PROFILE_BY_MONSTER = {
   BLACKGLASS_MIRELING: "VENOM_AMBUSH",
   CINDER_TITAN: "BRUTE",
   ASHEN_REVENANT: "REVENANT",
+  DUSTVEIL_RUNNER: "STALKER",
+  SANDPLATE_JUGGERNAUT: "BULWARK",
+  PRISM_HEXER: "RUNECASTER",
+  CROWN_EXECUTIONER: "BRUTE",
+  RIME_BERSERKER: "CHARGER",
+  FROSTNEEDLE_BROOD: "SWARM",
+  CHOIR_DEFILER: "REVENANT",
+  STORMGLASS_COLOSSUS: "BULWARK",
   FALLEN_KNIGHT: "FALLEN_KNIGHT"
 };
 function fallback(monster) {
@@ -53493,6 +53725,8 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (!state.character) throw new Error("Create a character first");
   const m = MONSTERS.find((x) => x.id === monsterId);
   if (!m) throw new Error("Unknown monster");
+  if (REGIONAL_CHAPTER_NEW_MONSTER_IDS.has(monsterId) && encounterLockRequirement(state, m))
+    throw new Error("Monster is locked by regional progression");
   if (state.character.currentHp <= 1) throw new Error("Too injured to fight. Eat food or recover health before starting combat.");
   const areaUnlockLevel = m.regionalAreaAutoUnlock ? Math.max(m.unlockLevel, REGIONAL_AREAS.find((area) => area.id === m.areaId)?.minLevel ?? 1) : 0;
   if (!cumulativeMonsterUnlockIds(state).includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
@@ -53714,15 +53948,16 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === c.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
   const secondary = regionalSecondaryExchange(stats4, m, baseCritChance);
+  const classCounter = regionalClassCounter(m.id, c.classId);
   const boostedDefense = Math.max(1, Math.round(stats4.defense));
   const bossPowerMultiplier = m.boss ? 1 + effectGems.boss_power : 1;
   const boostedPower = Math.max(1, Math.round(stats4.power * bossPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const skillEffects = characterClassEffects(c);
-  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier * (1 + skillEffects.potency) * (usesDamageDrivenHunts(m.zone) ? 1 : 1 + skillEffects.penetration);
+  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier * classCounter.outputMultiplier * (1 + skillEffects.potency) * (usesDamageDrivenHunts(m.zone) ? 1 : 1 + skillEffects.penetration);
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
-  const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
-  const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
+  const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 42 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 67 ? 6 : 5 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
+  const expectedTier = regionalGearTier === void 0 ? regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0 : m.zone === "Frostmarch" ? Math.min(MAX_RELEASED_EQUIPMENT_TIER, regionalGearTier) : regionalGearTier;
   const tierGap = regionalEquippedTierGap(state, expectedTier);
   const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.5, 1 - tierGap * 0.24);
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.2;
@@ -53736,7 +53971,7 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
       Math.round(stats4.attack),
       m.defense,
       setCombat.penetrationMultiplier * masteryBonuses.damageMultiplier * progressionSpeedPenalty * outgoingPreparation
-    ) * style.soloHuntDamageMultiplier,
+    ) * style.soloHuntDamageMultiplier * classCounter.outputMultiplier,
     hitChance: secondary.playerHitChance,
     critChance: stats4.critChance,
     critMultiplier: stats4.critMultiplier,
@@ -53749,13 +53984,13 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   } : void 0;
   const legacyKillCycleSeconds = m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
   const killCycleSeconds = huntOptions ? regionalHuntPlan(huntOptions).cycleSeconds : legacyKillCycleSeconds;
-  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, legacyKillCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier, huntOptions };
+  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, classCounter, boostedDefense, killCycleSeconds, legacyKillCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier, huntOptions };
 }
 function combatEncounterDamage(runtime, champion = false, enemyAttackCount, fightSeconds) {
-  const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds } = runtime;
+  const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, classCounter, boostedDefense, killCycleSeconds } = runtime;
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
-  const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - stats4.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
+  const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * classCounter.incomingMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - stats4.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const fatigue = runtime.huntOptions ? Math.max(floor, Math.min(stats4.hp * 6e-4, m.hp * 0.02) * runtime.gearAttritionMultiplier) : 0;
   const huntPlan = runtime.huntOptions && (enemyAttackCount === void 0 || fightSeconds === void 0) ? regionalHuntPlan(runtime.huntOptions) : void 0;
@@ -55996,13 +56231,6 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   if (replacement) return { ...state, ...restoreCharacterWorldProgress(replacement), character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account: personalSeasonalAccountView(account, replacement.character) };
   const fresh = newGame(now);
   return { ...state, ...snapshotCharacterWorldProgress(fresh), character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account: personalSeasonalAccountView(account, null) };
-}
-
-// ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 5;
-function isReleasedEquipmentItemId(itemId) {
-  const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
-  return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
 }
 
 // ../apps/mobile/src/core/loadout-storage.ts
@@ -59254,6 +59482,31 @@ init_progression();
 import { createHash } from "node:crypto";
 
 // src/server/companions/character-assist.ts
+var clamp9 = (n, min, max) => Math.max(min, Math.min(max, n));
+function signatureAssistEffects(id, maxHp) {
+  switch (id) {
+    case "UNIT_001":
+      return [{ kind: "debuff", value: -0.025, durationMs: 4e3, tag: "damage_done" }];
+    case "UNIT_002":
+      return [{ kind: "buff", value: -0.025, durationMs: 4e3, tag: "damage_taken" }];
+    case "UNIT_003":
+      return [{ kind: "hot", flat: maxHp * 3e-3, tickMs: 2e3, durationMs: 4e3, tag: "silver_current" }];
+    case "UNIT_004":
+      return [{ kind: "debuff", value: 0.035, durationMs: 5e3, tag: "damage_taken" }];
+    case "UNIT_006":
+      return [{ kind: "buff", value: -0.03, durationMs: 5e3, tag: "damage_taken" }];
+    case "UNIT_008":
+      return [{ kind: "cleanse", tag: "dawn_pinion" }];
+    case "UNIT_009":
+      return [{ kind: "debuff", value: 0.03, durationMs: 5e3, tag: "damage_taken" }];
+    case "UNIT_010":
+      return [{ kind: "debuff", value: 0.03, durationMs: 7e3, tag: "damage_taken" }];
+    case "UNIT_011":
+      return [{ kind: "debuff", value: 0.03, durationMs: 6e3, tag: "crit_taken" }];
+    default:
+      return [];
+  }
+}
 function applyCharacterCompanionAssist(owner, progress) {
   if (!progress) return owner;
   const policy = validateCompanionLoadout({ classId: owner.classId, companionId: progress.companionId, ownedCompanionIds: [progress.companionId] });
@@ -59263,11 +59516,40 @@ function applyCharacterCompanionAssist(owner, progress) {
   const def = companionServerDefinition(progress.companionId);
   const unit = buildOwnedCompanionCombatant(progress, { mode: "character_assist", ownerId: owner.id }), active2 = unit.abilities[0];
   const technique = progress.selectedTechniqueId ? companionTechnique(progress.selectedTechniqueId) : void 0;
-  const value = (kind) => technique?.companionId === def.id ? technique.effects.filter((e) => e.kind === kind).reduce((sum, e) => sum + e.value, 0) : 0;
-  const budget = Math.min(0.12, 0.07 * COMPANION_RARITY_TARGET[def.rarity] * (0.55 + 0.35 * progress.level / COMPANION_RARITY_MAX_LEVEL[def.rarity] + 0.1 * progress.bondLevel / 10) * (1 + value("damage")) * def.active.cooldownMs / active2.cooldownMs);
-  const damageCoeff = budget * owner.basicAttackCoeff * active2.cooldownMs / owner.basicAttackMs;
-  const ability2 = { ...active2, id: `${owner.id}:${def.id}:assist`, name: `${def.name}: ${active2.name}`, target: def.role === "damage" ? "current_target" : "self", aiCondition: def.role === "damage" ? "always" : "self_below_50", effects: def.role === "damage" ? [{ kind: "damage", coeff: damageCoeff, executeBelowHpPct: 0.3, executeBonus: value("execute"), tag: "companion_assist" }] : def.role === "tank" ? [{ kind: "shield", flat: owner.stats.maxHp * budget * 0.5 * (1 + value("shield_strength")), shieldReflectPct: value("reflect"), tag: "companion_assist" }] : [{ kind: "heal", flat: owner.stats.maxHp * budget * 0.35 * (1 + value("heal_strength")), tag: "companion_assist" }], tags: ["combat_companion", def.id, def.role] };
-  return { ...owner, abilities: [...owner.abilities, ability2], tags: [...owner.tags ?? [], `companion:${def.id}`] };
+  const value = (kind2) => technique?.companionId === def.id ? technique.effects.filter((e) => e.kind === kind2).reduce((sum, e) => sum + e.value, 0) : 0;
+  const identity = def.identity ?? {}, bond = progress.bondTraitUnlocked ? identity.bond ?? {} : {};
+  const multiplier = (key) => (identity[key] ?? 1) * (bond[key] ?? 1);
+  const budget = clamp9(0.07 * COMPANION_RARITY_TARGET[def.rarity] * (0.55 + 0.35 * progress.level / COMPANION_RARITY_MAX_LEVEL[def.rarity] + 0.1 * progress.bondLevel / 10) * (1 + value("damage")) * def.active.cooldownMs / active2.cooldownMs, 0.015, 0.12);
+  const kind = def.active.effectKind, ownerHp = owner.stats.maxHp;
+  const baseDamageCoeff = budget * owner.basicAttackCoeff * active2.cooldownMs / Math.max(850, owner.basicAttackMs);
+  const effectActive = active2.effects[0];
+  let target2 = "self", condition = "always";
+  let effects;
+  if (kind === "damage") {
+    target2 = "current_target";
+    effects = [{ kind: "damage", coeff: baseDamageCoeff * multiplier("activeDamageMultiplier"), executeBelowHpPct: 0.3, executeBonus: clamp9(effectActive?.executeBonus ?? 0, 0, 0.3), ...def.id === "UNIT_009" ? { bonusVsDebuffed: 0.12 } : {}, tag: "companion_assist" }, ...signatureAssistEffects(def.id, ownerHp)];
+  } else if (kind === "interrupt") {
+    target2 = "interruptible_casting_enemy";
+    condition = "target_casting";
+    effects = [{ kind: "interrupt", tag: "companion_spellbreak" }];
+  } else if (kind === "shield") {
+    target2 = def.id === "UNIT_008" ? "lowest_hp_ally_with_dot" : "self";
+    condition = def.id === "UNIT_008" ? "ally_below_50_or_dot" : "always";
+    effects = [{ kind: "shield", flat: ownerHp * budget * 0.67 * (1 + value("shield_strength")) * multiplier("activeShieldMultiplier"), shieldReflectPct: clamp9(effectActive?.shieldReflectPct ?? 0, 0, 0.3), tag: "companion_assist" }, ...signatureAssistEffects(def.id, ownerHp)];
+  } else if (kind === "heal") {
+    target2 = "lowest_hp_ally";
+    condition = "ally_below_80";
+    effects = [{ kind: "heal", flat: ownerHp * budget * 0.6 * (1 + value("heal_strength")) * multiplier("activeHealMultiplier"), tag: "companion_assist" }, ...signatureAssistEffects(def.id, ownerHp)];
+  } else if (kind === "mitigation") {
+    effects = [{ kind: "buff", value: -clamp9(def.active.baseCoeff * multiplier("mitigationMultiplier") * (1 + value("shield_strength") * 0.5), 0.035, 0.1), durationMs: 6e3, tag: "damage_taken" }];
+  } else {
+    effects = [{ kind: "buff", value: clamp9((def.id === "UNIT_012" ? 0.05 : def.active.baseCoeff) * multiplier("utilityMultiplier") * (1 + value("damage")), 0.035, 0.075), durationMs: 6e3, tag: "damage_done" }, ...def.id === "UNIT_012" ? [] : [{ kind: "heal", flat: ownerHp * budget * 0.2 * (1 + value("heal_strength")), tag: "companion_utility_heal" }]];
+  }
+  const ability2 = { ...active2, id: `${owner.id}:${def.id}:assist`, name: `${def.name}: ${active2.name}`, target: target2, aiCondition: condition, effects, tags: ["combat_companion", def.id, def.role, `companion_signature:${def.id}`] };
+  const extraHaste = clamp9(value("haste") + (def.id === "UNIT_005" ? 0.015 : 0), -0.15, 0.15);
+  const extraDefense = clamp9(value("defense"), -0.15, 0.15);
+  const stats4 = extraHaste || extraDefense ? { ...owner.stats, haste: clamp9(owner.stats.haste + extraHaste, 0, 0.75), defense: owner.stats.defense * (1 + extraDefense) } : owner.stats;
+  return { ...owner, stats: stats4, abilities: [...owner.abilities, ability2], tags: [...owner.tags ?? [], `companion:${def.id}`] };
 }
 
 // src/server/combat/snapshot-adapter.ts

@@ -158,9 +158,13 @@ export function normalizeSave(input:any):GameState{
   const savedRegionId=typeof input.currentRegionId==='string'?input.currentRegionId:environment?.zoneId;
   const savedZone=WORLD_ZONES.find(zone=>zone.id===savedRegionId);
   const combatLevel=rebasedCharacter?.level??1;
+  // A historical Ashlands visit after completing Frostmarch scouting proves prior
+  // access even when old combat levels were rebased below Frostmarch's new Level 51 gate.
+  // Do not promote an arbitrary/unproven unreleased-region save.
+  const legacyAshlandsReturn=savedZone?.id==='ASHLANDS'&&Array.isArray(input.exploredRouteIds)&&input.exploredRouteIds.includes('SCOUT_FROSTMARCH');
   // Restore a veteran from a newly unreleased region to the nearest
   // preceding released one. Existing quests, items and exploration remain.
-  const currentRegionId=savedZone&&!worldZoneInDevelopment(savedZone)&&combatLevel>=savedZone.minLevel
+  const currentRegionId=legacyAshlandsReturn?'FROSTMARCH':savedZone&&!worldZoneInDevelopment(savedZone)&&combatLevel>=savedZone.minLevel
     ?savedZone.id
     :savedZone&&worldZoneInDevelopment(savedZone)
       ?[...WORLD_ZONES].reverse().find(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel<savedZone.minLevel&&combatLevel>=zone.minLevel)?.id??'GREENFIELDS'

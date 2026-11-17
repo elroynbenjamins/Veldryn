@@ -13,6 +13,9 @@ const restored=parseSaveBackup(backup);
 ok(restored.character?.name==='Backup Tester','A versioned backup must restore the character');
 ok(restored.currentRegionId==='FROSTMARCH'&&restored.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'A backup from unreleased Ashlands must return to Frostmarch without losing discovered content');
 ok(currentRegionId(restored)==='FROSTMARCH','An Ashlands veteran must land in the actual accessible Frostmarch region');
+const unprovenAshlands={...state,exploredRouteIds:[]};
+const unprovenRestored=parseSaveBackup(createSaveBackup(unprovenAshlands));
+ok(unprovenRestored.currentRegionId!=='FROSTMARCH','An unproven unreleased-region save cannot bypass the new Frostmarch level gate');
 ok(parseSaveBackup(JSON.stringify(state)).version===6,'A raw legacy-style save export must remain importable');
 let invalidRejected=false;
 try{parseSaveBackup('{broken')}catch(error){invalidRejected=error instanceof Error&&error.message.includes('valid JSON')}

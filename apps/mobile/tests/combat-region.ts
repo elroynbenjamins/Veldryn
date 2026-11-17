@@ -46,7 +46,8 @@ const later={...beginner,defeatedBossIds:['FALLEN_KNIGHT'],character:{...beginne
 const beforeBoss={...later,defeatedBossIds:[]};
 rejected=false;try{travelToRegion(beforeBoss,'SUNSCAR',7)}catch(error){rejected=String(error).includes('Fallen Knight')}
 ok(rejected,'Sunscar must remain locked until the opening Fallen Knight boss has been defeated');
-ok(currentRegionId({...beforeBoss,currentRegionId:'SUNSCAR'})==='KINGS_ROAD','Existing saves in Sunscar before the story clear must resolve to the last accessible region');
+ok(currentRegionId({...beforeBoss,currentRegionId:'SUNSCAR'})==='SUNSCAR','A genuinely persisted Sunscar visit must survive story/progression rescaling');
+ok(currentRegionId({...beforeBoss,currentRegionId:'KINGS_ROAD'})==='KINGS_ROAD','A new unvisited character cannot bypass the opening story boss');
 const sunscar=travelToRegion(later,'SUNSCAR',7).state;
 ok(currentRegionId(sunscar)==='SUNSCAR','Later-region travel must persist Sunscar');
 const interruptedScout=startExploration(startCombat({...sunscar,unlockedMonsterIds:[...sunscar.unlockedMonsterIds,'SUNSCAR_SCORPION']},'SUNSCAR_SCORPION',8),'SCOUT_SUNSCAR',9);
@@ -58,7 +59,7 @@ const sunscarCombat=startCombat(sunscarMapped,'SUNSCAR_SCORPION',218009);
 ok(sunscarCombat.activity?.targetId==='SUNSCAR_SCORPION','Sunscar encounters must use the normal combat activity lane');
 ok(!claimActivity(sunscarCombat,338009).state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat must not bypass Ashlands scouting');
 
-const frost={...beginner,defeatedBossIds:['FALLEN_KNIGHT'],character:{...beginner.character!,level:50},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:28}:skill)};
+const frost={...beginner,defeatedBossIds:['FALLEN_KNIGHT'],character:{...beginner.character!,level:51},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:28}:skill)};
 const frostmarch=travelToRegion(frost,'FROSTMARCH',9).state;
 const frostScout=startExploration(frostmarch,'SCOUT_FROSTMARCH',10);
 const frostMapped=claimActivity(frostScout,310010).state;

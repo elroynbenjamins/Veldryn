@@ -35,7 +35,10 @@ assert.match(picker,/Number\(b.selected\)-Number\(a.selected\)/,'The equipped co
 assert.match(picker,/if\(id&&\(!item\|\|item.busy\|\|item.forbidden\)\)return;/,'Unavailable choices are also guarded in the handler');
 assert.match(picker,/onRequestClose=\{dismiss\}/,'Android back cannot dismiss a pending change');
 assert.match(picker,/if\(!pending&&!busy\)onClose\(\)/,'Companion picker remains open while saving');
-assert.match(picker,/Damage assist.*Shield assist.*Healing assist/,'Assist role guidance is shown for each companion');
+for (const guidance of ['Damage assist','Shield assist','Healing assist','Cast interrupt','Damage mitigation','Tactical boost']) {
+ assert.ok(picker.includes(guidance),'Companion picker retains localized ability guidance: '+guidance);
+}
+assert.match(picker,/companionServerDefinition\(item\.id\)\?\.active/,'The selector uses the actual server ability rather than generic class role');
 assert.match(setup,/disabled=\{Boolean\(onChooseCompanion&&companionDisabled\)\}/,'The preparation selector is disabled while refreshing');
 assert.match(loadout,/companionDisabled=\{refreshing\}/,'The loadout drives the preparation loading state');
 assert.match(browse,/companionCounterIds\?:readonly DungeonCompanionCounterId\[\]/);

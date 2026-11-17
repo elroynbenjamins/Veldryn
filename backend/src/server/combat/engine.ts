@@ -50,6 +50,7 @@ function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantSt
   switch(rule) {
     case 'self': return [actor];
     case 'lowest_hp_ally': { const live=living(allies); return live.length ? [live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)] : []; }
+    case 'lowest_hp_ally_with_dot': { const live=living(allies),poisoned=live.filter(x=>x.periodic.some(p=>p.kind==='dot')),candidates=poisoned.length?poisoned:live;return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[]; }
     case 'all_allies': return living(allies);
     case 'all_enemies': return living(enemies);
     case 'random_enemy': { const live=living(enemies); return live.length ? [rng.pick(live,label)] : []; }
@@ -110,9 +111,10 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const addThreat=(target:CombatantState, source:CombatantState, amount:number)=>{ if(target.definition.team==='enemies') target.threat[source.definition.id]=(target.threat[source.definition.id]||0)+amount; };
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{
     if(!target.alive)return;
+    // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
     const hc=hitChance(source.definition.stats.accuracy,target.definition.stats.evasion,accuracyScale); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage')events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});return;}
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now),mitigationConstant);
-    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now),0,.75);
+    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
     // New Q-Mode has a wider hit spread around the legacy average and a rare heavy blow
@@ -129,6 +131,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
     raw*=source.definition.alchemyModifiers?.outgoing??1; raw*=target.definition.alchemyModifiers?.incoming??1;
     raw*=gemOutgoingDamageMultiplierV1(source,target,now,abilityId,eventType==='dot_tick'); raw*=Math.max(.1,1+modifier(source,'damage_done',now)); raw*=Math.max(.1,1+modifier(target,'damage_taken',now)); raw*=gemIncomingDamageMultiplierV1(target,now);
     if(hpPct(target)<clamp(effect.executeBelowHpPct??0,0,1))raw*=1+clamp(effect.executeBonus??0,0,1);
+    if(effect.bonusVsDebuffed&&target.modifiers.some(m=>m.kind==='debuff'&&m.expiresAt>now))raw*=1+clamp(effect.bonusVsDebuffed,0,.20);
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
@@ -193,7 +196,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
       if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; if(ab&&target?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:target.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); for(const fx of ab.effects){ for(const t of targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
       const ab=abilitiesByActor.get(actor)?.find(a=>(actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes));
-      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);for(const fx of ab.effects){for(const x of targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:instant`))applyEffect(now,actor,x,fx,ab.id);}} continue; } }
+      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);for(const fx of ab.effects){for(const x of ts){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)));} }
     }
   }

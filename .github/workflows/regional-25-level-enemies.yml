@@ -1,0 +1,75 @@
+name: Regional enemies and 25-level chapter validation
+
+on:
+  push:
+    paths:
+      - '.github/workflows/regional-25-level-enemies.yml'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/regional-areas.ts'
+      - 'apps/mobile/src/content/world-map.ts'
+      - 'apps/mobile/src/core/regional-class-counter.ts'
+      - 'apps/mobile/src/core/world-navigation.ts'
+      - 'apps/mobile/src/components/RegionEncounterList.tsx'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/theme/monster-assets.ts'
+      - 'apps/mobile/src/components/MonsterPortraitFrame.tsx'
+      - 'apps/mobile/assets/monsters/regional-monsters-v2.png'
+      - 'apps/mobile/tests/regional-25-level-enemy-wiring.ts'
+      - 'apps/mobile/tests/region-content-v21.ts'
+      - 'apps/mobile/tests/gathering-availability.ts'
+      - 'apps/mobile/tests/regional-four-areas.ts'
+      - 'apps/mobile/tests/save-transfer.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
+  pull_request:
+    paths:
+      - '.github/workflows/regional-25-level-enemies.yml'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/regional-areas.ts'
+      - 'apps/mobile/src/content/world-map.ts'
+      - 'apps/mobile/src/core/regional-class-counter.ts'
+      - 'apps/mobile/src/core/world-navigation.ts'
+      - 'apps/mobile/src/components/RegionEncounterList.tsx'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/theme/monster-assets.ts'
+      - 'apps/mobile/src/components/MonsterPortraitFrame.tsx'
+      - 'apps/mobile/tests/regional-25-level-enemy-wiring.ts'
+      - 'apps/mobile/tests/region-content-v21.ts'
+      - 'apps/mobile/tests/gathering-availability.ts'
+      - 'apps/mobile/tests/regional-four-areas.ts'
+      - 'apps/mobile/tests/save-transfer.ts'
+      - 'apps/mobile/tests/exploration-balance.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regional-content:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies for shared game imports
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile mobile core
+        working-directory: apps/mobile
+        run: node node_modules/typescript/lib/tsc.js -p tsconfig.core.json --outDir .core-build
+      - name: Check new enemy art, levels, class counters and regional content
+        working-directory: apps/mobile
+        run: |
+          node .core-build/apps/mobile/tests/regional-25-level-enemy-wiring.js
+          node .core-build/apps/mobile/tests/regional-four-areas.js
+          node .core-build/apps/mobile/tests/region-content-v21.js
+          node .core-build/apps/mobile/tests/gathering-availability.js
+          node .core-build/apps/mobile/tests/save-transfer.js
+          node .core-build/apps/mobile/tests/exploration-balance.js

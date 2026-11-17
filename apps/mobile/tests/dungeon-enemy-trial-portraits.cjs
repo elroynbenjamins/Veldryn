@@ -47,7 +47,10 @@ const mapped=new Map([...reused.matchAll(/'([^']+)':'([^']+)'/g)].map(match=>[ma
 const direct=new Set([...monsters.matchAll(/([A-Z_]+):require\('\.\.\/\.\.\/assets\/monsters\/([^']+)\.webp'\)/g)].map(match=>match[1]));
 const atlas=new Set([...monsters.matchAll(/([A-Z_]+):\{column:\d+,row:\d+\}/g)].map(match=>match[1]));
 assert(direct.size>=23,'Existing overworld monster portraits must be referenced, not copied');
-assert.equal(atlas.size,9,'The shared 3x3 regional atlas already supplies nine independent sprites');
+assert.equal(atlas.size,17,'Nine legacy atlas sprites plus eight new regional portraits must remain individually addressable');
+for(const id of ['DUSTVEIL_RUNNER','SANDPLATE_JUGGERNAUT','PRISM_HEXER','CROWN_EXECUTIONER','RIME_BERSERKER','FROSTNEEDLE_BROOD','CHOIR_DEFILER','STORMGLASS_COLOSSUS']){
+ assert.ok(atlas.has(id),'Missing dedicated new regional monster portrait: '+id);
+}
 for(const [name,id] of mapped){
  assert(direct.has(id)||atlas.has(id),name+' must point to an existing monster or existing atlas cell');
  assert(name===name.toLowerCase(),name+' must use a normalized lookup key');

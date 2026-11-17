@@ -129,7 +129,9 @@ export function parsePartyEventReadOnlyStatusV33(raw:unknown):PartyEventReadOnly
   throw Error('party_event_v33_invalid_status');
  const actions=['scout_route','secure_approach','support_expedition','prepare_finale'] as const;
  if(raw.completedActions.some((a:unknown)=>!oneOf(a,actions))
-   ||new Set(raw.completedActions).size!==raw.completedActions.length)
+   ||new Set(raw.completedActions).size!==raw.completedActions.length
+   ||(raw.stage===1&&raw.completedActions.some((a:unknown)=>a!=='scout_route'))
+   ||(raw.stage===2&&raw.completedActions.includes('prepare_finale')))
   throw Error('party_event_v33_invalid_actions');
  const orders:PartyEventSupplyStatusV33[]=[];
  const keys=new Set<string>();
@@ -151,8 +153,10 @@ export function parsePartyEventReadOnlyStatusV33(raw:unknown):PartyEventReadOnly
  if((v.stage2!==null&&!(typeof v.stage2==='string'&&v.stage2.length<=80&&v.stage2.length>0))
    ||(v.stage3!==null&&!(typeof v.stage3==='string'&&v.stage3.length<=80&&v.stage3.length>0))
    ||typeof v.myStage2Ballot!=='boolean'||typeof v.myStage3Ballot!=='boolean'
-   ||(raw.stage===1&&(v.stage2!==null||v.stage3!==null))
-   ||(raw.stage===2&&v.stage3!==null))
+   ||(raw.stage===1&&(v.stage2!==null||v.stage3!==null
+     ||v.myStage2Ballot||v.myStage3Ballot))
+   ||(raw.stage===2&&(v.stage3!==null||v.myStage3Ballot))
+   ||(raw.stage===3&&v.stage2===null))
   throw Error('party_event_v33_invalid_vote');
  return raw as unknown as PartyEventReadOnlyStatusV33;
 }

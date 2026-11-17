@@ -1,4 +1,4 @@
-import {useMemo,useRef,useState,type ReactNode} from 'react';
+import {useMemo,useRef,useState,type ComponentRef,type ReactNode} from 'react';
 import {ImageBackground,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -33,7 +33,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const [tab,setTab]=useState(tabs[0].id),[guide,setGuide]=useState(false);
- const scrollRef=useRef<ScrollView>(null);
+ const scrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  const changeTab=(next:string)=>{setTab(next);scrollRef.current?.scrollTo({y:0,animated:false});};
  const [bossId,setBossId]=useState<(typeof bosses)[number]['id']>('hollow');
  const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');

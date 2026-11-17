@@ -3,6 +3,8 @@ import {transitionActivity} from '../src/core/playability';
 import {claimActivity,createCharacter,newGame,offlineCapSeconds,previewActivityReward,startClassTraining,startCombat,stopActivity} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {processingAvailability,processingRecipeDef,processingRunCapacity} from '../src/core/processing';
+import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
+import {activeActivityLevelPace} from '../src/core/balance-projection';
 import {recipeTrainingReady} from '../src/core/skill-progression-navigation';
 import {RECIPES} from '../src/content/skills';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
@@ -96,6 +98,16 @@ const beforeGold=state.character!.gold;
 state=legacyCraftingReservation(state,'processing','SMELT_COPPER_INGOT',5,now);
 equal(state.activity?.kind,'processing','processing command creates a timed activity');
 equal(state.activity?.processing?.remainingBatches,5,'all selected batches are reserved');
+// Home must use the same saved processing cycle and XP snapshot as settlement
+// and the top activity bar, even for recipes absent from gathering definitions.
+const savedCycle=state.activity!.processing!.cycleSeconds;
+const savedXpPerCraft=state.activity!.processing!.xpPerBatch;
+equal(activityCycleSeconds(state),savedCycle,'Home next-craft timer uses the reserved processing cycle');
+const hourly=activityRate(state);
+equal(hourly.actionsPerHour,Math.floor(3600/savedCycle),'Home crafts/hour respects the reserved processing cycle');
+equal(hourly.xpPerHour,Math.floor(hourly.actionsPerHour*savedXpPerCraft),'Home XP/hour uses the reserved processing XP');
+ok(hourly.xpPerHour>0,'Smithing displays a positive hourly XP rate before the skill cap');
+equal(activeActivityLevelPace(state,hourly.xpPerHour)?.label,'Smithing','Home skill XP progress is shown for processing');
 equal(qty(state,'COPPER_ORE'),50,'inputs are reserved up front');
 equal(qty(state,'GREENWOOD_LOG'),10,'ten Greenwood logs are reserved for five copper batches');
 equal(state.character!.gold,beforeGold-180,'Gold is reserved up front');

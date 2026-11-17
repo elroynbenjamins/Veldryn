@@ -181,7 +181,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
       effectLines.push(`T5 forged affix · +${Math.round(t5Affix.percent*100)}% ${label} · ${t5Affix.rarity} Q${t5Affix.quality}`);
     }
     if(selectedCopy?.weaponBonuses?.length){
-      for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus)}`);
+      for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);
     }
     if(item.passive)effectLines.push(item.passive);
   }else if(item.type==='food'){

@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {equippedCanonicalStatGemBonusesV1,equippedGemBonuses,equippedEffectGemBonuses,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel,normalizeEquipmentCraftingQueue} from '../src/core/equipment-crafting-queue';
-import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemCombineSuccessPercentV1,gemCombineSucceededV1,gemRefineRecipeIdV1,gemUnsocketCostV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemCombineSuccessPercentV1,gemCombineSucceededV1,gemRefineRecipeIdV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {gemRollPercentFromUnitV1,gemRolledValueV1,gemValueRangeV1} from '../src/content/gems-v1';
@@ -82,9 +82,6 @@ ok(researchState.skills.find(row=>row.skillId==='enchanting')!.xp===researchBefo
 ok(formatGemValueV1('stat_vitality',4).includes('1.25%'),'Flawless Vitality must display the exact 1.25% value, not rounded 1.3%');
 ok(formatGemValueV1('stat_might',1).includes('0.4%'),'Cut Might must retain its precise 0.4% value');
 ok(formatGemValueV1('stat_precision',2).includes('0.4 pp'),'Precision uses percentage points, not percentage multipliers');
-ok(gemUnsocketCostV1('gem:stat_might:g5',1).gold===5000&&gemUnsocketCostV1('gem:stat_might:g5',1).dust===3,'Base Grade V extraction keeps its authored cost');
-ok(gemUnsocketCostV1('gem:stat_might:g5',45).gold===3000&&gemUnsocketCostV1('gem:stat_might:g5',45).dust===2,'Adept Enchanting should reduce Grade V extraction Gold and Dust');
-ok(gemUnsocketCostV1('gem:stat_might:g5',80).gold===1250&&gemUnsocketCostV1('gem:stat_might:g5',80).dust===0,'Perfect Extraction should remove Dust cost and reduce Gold by 75%');
 const regionalCatalystRecipe=RECIPES.find(row=>row.id==='ENCHANT_REGIONAL_CATALYST'),radiantCatalystRecipe=RECIPES.find(row=>row.id==='ENCHANT_RADIANT_CATALYST');
 ok(regionalCatalystRecipe?.level===70&&regionalCatalystRecipe.inputs.some(row=>row.itemId==='FROSTMARCH_BOTANICAL_ESSENCE'),'Enchanting 70 should synthesize Regional Catalysts from Frostmarch botanical essence');
 ok(radiantCatalystRecipe?.level===90&&radiantCatalystRecipe.inputs.some(row=>row.itemId==='ASHLANDS_BOTANICAL_ESSENCE'),'Enchanting 90 should synthesize Radiant Catalysts from Ashlands botanical essence');
@@ -156,9 +153,10 @@ ok(gearEnhancement(perfected,'basic_sword').statGemRollPercent===120,'A final re
 const countAtMax=gemStorageQuantity(perfected,might);
 let maxBlocked=false;try{replaceGem(perfected,'basic_sword',might,0)}catch(error){maxBlocked=String(error).includes('maximum roll')}
 ok(maxBlocked&&gemStorageQuantity(perfected,might)===countAtMax,'A perfected socket cannot waste another gem on a pointless reroll');
-const removed=unsocketGem(perfected,'basic_sword',0);
-ok(gearEnhancement(removed,'basic_sword').statGemRollPercent===undefined,'Extraction removes the socket roll along with its gem');
-ok(gemStorageQuantity(removed,might)===countAtMax+1,'Extracted gem returns as an unrolled stackable copy');
+let blockedExtraction=false;
+try{unsocketGem(perfected,'basic_sword',0)}catch(error){blockedExtraction=String(error).includes('cannot be extracted')}
+ok(blockedExtraction,'Installed gems can never be extracted');
+ok(gemStorageQuantity(perfected,might)===countAtMax&&gearEnhancement(perfected,'basic_sword').statGemRollPercent===120,'Rejected extraction preserves the installed gem and its roll');
 const incompatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,gemIds:[might],statGemRollPercent:120});
 ok(incompatibleLegacy.statGemId===might&&incompatibleLegacy.statGemRollPercent===undefined,'A legacy gemIds fallback must not inherit a roll from an unrelated former socket');
 const compatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,statGemId:might,statGemRollPercent:110,gemIds:[]});
@@ -194,4 +192,4 @@ ok(gearEnhancement(serverSocket,'basic_sword').statGemRollPercent===80,'Trusted 
 const serverImprove=executeGameCommand(serverSocket,{type:'replace_socket',args:{id:'basic_sword',gemId:might}},1000,{randomRoll:.999999}).state;
 ok(gearEnhancement(serverImprove,'basic_sword').statGemRollPercent===120,'Authoritative duplicate-gem command honors best-of improvement');
 
-console.log('PASS: Enchanting refinement, research, extraction expertise, catalyst synthesis, Resonance Cache and shared forge queue');
+console.log('PASS: Enchanting refinement, research, permanent sockets, catalyst synthesis, Resonance Cache and shared forge queue');

@@ -27,6 +27,10 @@ const keys=[
   'Previous','Next','Page',
   'Entries {first}–{last}',
   'Live rankings can change while players progress.',
+  'Rankings guide','HALL OF RENOWN','LEADER','GLOBAL','Current rank',
+  'Verified score','RANKED PLAYERS','Server-ranked · Privacy protected',
+  'Updated {time}','Privacy and tied ranks',
+  'Equal scores may share a rank. Hidden or blocked players never promote other players into a higher official rank.',
 ];
 for(const key of keys){
   assert.ok(Object.hasOwn(socialTranslationRows,key),'Missing DE/ES/NL/IT/FR ranking copy: '+key);
@@ -38,7 +42,7 @@ for(const key of keys){
     assert.deepEqual(placeholders(translation),placeholders(key),'Translation placeholder mismatch: '+key);
   }
   for(const language of SUPPORTED_LANGUAGES){
-    const output=socialText(language,key,key.startsWith('Entries ')?{first:'1',last:'50'}:undefined);
+    const output=socialText(language,key,key.startsWith('Entries ')?{first:'1',last:'50'}:key==='Updated {time}'?{time:'12:00'}:undefined);
     assert.ok(output.trim(),'Empty rendered Rankings copy: '+language+' / '+key);
     if(key.startsWith('Entries '))assert.ok(output.includes('1')&&output.includes('50'),'Ranking range not interpolated: '+language);
   }

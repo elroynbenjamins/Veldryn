@@ -2,7 +2,7 @@ import {EQUIPMENT_SETS,equipmentSetDef,equippedSetPieceCount,type EquipmentSetDe
 import {itemDef} from '../content/items';
 import {equippedCanonicalStatGemBonusesV1} from './equipment-enhancement';
 import {equippedT5EquipmentAffixStats} from './t5-equipment-affixes';
-import {craftedGearInstances} from './crafted-gear-instances';
+import {normalizeCraftedGearInstances} from './crafted-gear-instances';
 import type {GameState} from './types';
 
 export type EquipmentSetStatKey=
@@ -32,7 +32,10 @@ export function equippedWeaponBonusStats(state:GameState):Partial<EquipmentSetSt
   // ownerCharacterId identifies the original crafter, not the present holder.
   // A verified account-owned copy may move via the shared Bank to another character.
   // Match the current equipped instance marker and item definition, never the crafter ID.
-  const copy=craftedGearInstances(state).find(row=>row.id===instanceId&&row.itemId===itemId);
+  const raw=state.account.craftedGearInstances?.find(row=>row?.id===instanceId&&row?.itemId===itemId);
+  // Normalize only the selected receipt, not up to 500 other crafted copies
+  // on every combat stat read. Invalid bonus payloads still grant nothing.
+  const copy=raw?normalizeCraftedGearInstances([raw])[0]:undefined;
   if(!copy?.weaponBonuses?.length)return {};
   const stats:Partial<EquipmentSetStats>={};
   for(const bonus of copy.weaponBonuses)stats[bonus.stat]=(stats[bonus.stat]??0)+bonus.basisPoints/10_000;

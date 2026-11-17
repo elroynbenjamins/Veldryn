@@ -16,7 +16,11 @@ const KEY=/^[A-Za-z0-9_-]{8,128}$/;
 const DIGEST=/^[a-f0-9]{64}$/;
 const uuid=(x:unknown):x is string=>typeof x==='string'&&UUID.test(x);
 const hash=(x:string)=>createHash('sha256').update(x).digest('hex');
-const safeNumber=(x:unknown)=>typeof x==='number'&&Number.isFinite(x)&&x>=0;
+// Physical combat quantities must be bounded before aggregation: accepting
+// finite but astronomical values can overflow the read-side totals to Infinity.
+const safeNumber=(x:unknown)=>typeof x==='number'&&Number.isFinite(x)&&
+ x>=0&&x<=Number.MAX_SAFE_INTEGER;
+const near=(a:number,b:number)=>Math.abs(a-b)<=.05;
 export interface WorldBossReplayProofSourceV28 {
  eventId:string;accountId:string;requestId:string;status:'committed';
  engineVersion:string;replayDigest:string;replayKey:string;
@@ -143,16 +147,25 @@ export function summarizeWorldBossRoleEvidenceV28(view:WorldBossRewardViewV28){
    result.characterLedger.length<1||result.characterLedger.length>5)
    throw Error('world_boss_v28_invalid_impact_source');
   seenOrdinals.add(result.attempt);
+  if(!safeNumber(result.worldHpContribution)||
+   !safeNumber(result.localGuardDamage)||typeof result.survived!=='boolean')
+   throw Error('world_boss_v40_invalid_raid_totals');
   const ids=new Set<string>();
+  let rawDamageTotal=0,guardDamageTotal=0;
   for(const p of result.characterLedger){
-   if(!p||!Object.hasOwn(roles,p.role)||typeof p.characterId!=='string'||
-    ids.has(p.characterId)||
+   if(!p||!Object.hasOwn(roles,p.role)||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(p.characterId)||
+    ids.has(p.characterId)||typeof p.survived!=='boolean'||
     !safeNumber(p.bossHpDamage)||!safeNumber(p.localGuardDamage)||
     !safeNumber(p.effectiveHealing)||!safeNumber(p.shieldConsumed)||
     !safeNumber(p.tankProtection)||!safeNumber(p.cleansePrevented)||
     !Number.isSafeInteger(p.interrupts)||p.interrupts<0)
     throw Error('world_boss_v28_unverified_role_ledger');
    ids.add(p.characterId);
+   rawDamageTotal+=p.bossHpDamage;
+   guardDamageTotal+=p.localGuardDamage;
+   if(!safeNumber(rawDamageTotal)||!safeNumber(guardDamageTotal))
+    throw Error('world_boss_v40_raid_total_overflow');
    const role=roles[p.role as keyof typeof roles];
    role.damage+=p.bossHpDamage;
    role.guard+=p.localGuardDamage;
@@ -162,7 +175,18 @@ export function summarizeWorldBossRoleEvidenceV28(view:WorldBossRewardViewV28){
    role.cleanses+=p.cleansePrevented;
    role.interrupts+=p.interrupts;
    role.participants++;
+   if(!safeNumber(role.damage)||!safeNumber(role.guard)||
+    !safeNumber(role.healing)||!safeNumber(role.shields)||
+    !safeNumber(role.protection)||!safeNumber(role.cleanses)||
+    !Number.isSafeInteger(role.interrupts))
+    throw Error('world_boss_v40_role_total_overflow');
   }
+  // Credited world HP can be LOWER than the raw combat total (weighting,
+  // global-HP exhaustion). It cannot exceed the raw total. Guard is local
+  // combat damage and must match the sum of fighter contributions.
+  if(result.worldHpContribution>rawDamageTotal+.05||
+   !near(result.localGuardDamage,guardDamageTotal))
+   throw Error('world_boss_v40_raid_ledger_mismatch');
  }
  return {status:'impact_pending_approval' as const,roles,
   payoutsAuthorized:false as const};

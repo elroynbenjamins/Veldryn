@@ -6,6 +6,7 @@ import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/eq
 import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
 import {moveCraftedGearInstance,equipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {previewEquipment} from '../src/core/equipment-preview';
 import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND,WEAPON_BONUS_ROLL_VERSION,weaponBonusCompactLine,weaponBonusRollGrade} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
 import type {CraftedGearInstance,GameState} from '../src/core/types';
@@ -164,7 +165,18 @@ const banking:GameState={
   bank:{...transferred.bank,stacks:[{itemId:t5,quantity:1,instanceId:normalized.id}]},
 };
 const fromBank=moveCraftedGearInstance(banking,normalized.id,'equipment_pouch');
+// Compare & Swap must project the same exact receipt successfully for the recipient.
+const preview=previewEquipment(fromBank,t5,normalized.id,'equipment_pouch');
+ok(preview.character?.equipmentInstanceIds?.weapon===normalized.id,
+  'Shared-bank recipient must be able to preview the weapon by exact instance ID');
 const afterEquip=equipCraftedGearInstance(fromBank,normalized.id);
+ok(JSON.stringify(preview.character?.equipmentInstanceIds)===JSON.stringify(afterEquip.character?.equipmentInstanceIds),
+  'Comparison and actual equip must agree on the selected weapon');
+const staleStorage:GameState={...fromBank,
+  character:{...fromBank.character!,equipmentPouch:{...fromBank.character!.equipmentPouch!,stacks:[]}}};
+let rejectedStale=false;
+try{previewEquipment(staleStorage,t5,normalized.id,'equipment_pouch');}catch{rejectedStale=true;}
+ok(rejectedStale,'The inspector must reject a forged or stale storage marker');
 const deposited=afterEquip.account.craftedGearInstances?.find(row=>row.id===normalized.id);
 ok(deposited?.ownerCharacterId===owner,
   'Moving and equipping an exact copy must preserve the original creator');

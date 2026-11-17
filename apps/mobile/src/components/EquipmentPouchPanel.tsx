@@ -15,6 +15,7 @@ import {ItemArtwork} from './ItemArtwork';
 import {DisposalPreview} from './DisposalPreview';
 import {GameButton} from './GameButton';
 import {EquipmentPreview} from './EquipmentPreview';
+import {EquipmentDisposalStatus} from './EquipmentDisposalStatus';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
@@ -69,6 +70,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   return {itemId:row.itemId,quantity:1,rarity:copy?.rarity??itemRarity(itemDef(row.itemId)),quality:copy?craftedGearDisplayQuality(copy):undefined};
  });
  const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
+ const previewSale=previewStack?.instanceId?saleCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
+ const previewSalvage=previewStack?.instanceId?salvageCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const toggleSelected=(candidate:EquipmentPouchSaleCandidate)=>{
   if(busy)return;
   setSelectedIds(previous=>previous.includes(candidate.id)?previous.filter(id=>id!==candidate.id):previous.length<100?[...previous,candidate.id]:previous);
@@ -166,7 +169,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
      disabled={!onAction||busy||!salvageSelectionValid} onPress={()=>startSalvage(eligibleSalvages.map(row=>row.id),selectedSalvages.length-salvageCount)}/>
     {unlockableSales.length>0?<GameButton compact title={p('Unlock selected · {count}',{count:unlockableSales.length})} tone="secondary" disabled={!onAction||busy} onPress={()=>{void unlockSelected()}}/>:null}
    </View>
-   {excludedSelected>0?<Text style={s.meta}>{p('Protected copies are excluded from the sale. Unlock locked gear or open a copy to review other protections.')}</Text>:null}
+   {excludedSelected>0?<Text style={s.meta}>{p('Protected copies are excluded from the sale.')+' '+selectedSales.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(row.reason??'Protected equipment')).join(' · ')}</Text>:null}
   </View>:<Text style={s.hint}>{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
   <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>
    {entries.map((stack,index)=>{
@@ -207,7 +210,12 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     </View>
    </View>
   </GameModalSurface>
-  <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)} onEquip={async()=>{
+  <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)}
+   canSell={!!previewSale?.eligible&&!busy} canSalvage={!!previewSalvage?.eligible&&!busy}
+   sellBlockReason={previewSale?.reason} salvageBlockReason={previewSalvage?.reason}
+   onSell={previewSale?()=>{setPreviewStack(null);startSale([previewSale.id])}:undefined}
+   onSalvage={previewSalvage?()=>{setPreviewStack(null);startSalvage([previewSalvage.id])}:undefined}
+   onEquip={async()=>{
     if(!previewStack||!onAction)throw new Error(p('Equipment Pouch equip is unavailable'));
     const result=await onAction(previewStack.instanceId?{type:'gear_equip',args:{instanceId:previewStack.instanceId}}:{type:'equipment_pouch_equip',args:{itemId:previewStack.itemId}});
     if(result===false)throw new Error(p('Equipment was not equipped. Please try again.'));
@@ -221,8 +229,10 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       <Text style={s.meta}>{p('Stored on {character} · {slot}',{character:state.character?.name??p('this character'),slot:p(item.slot??'Gear')})}</Text>
       {record?<Text style={s.meta}>{record.locked?p('Locked · '):''}{record.enhancement.rank>0?'+'+record.enhancement.rank+p(' enhanced · '):''}{p('Unique forged copy')}</Text>:<Text style={s.meta}>{p('Standard equipment')}</Text>}</View>
     </View>
+    <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
+      sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
     <View style={s.actions}>
-     <GameButton compact title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
+     <GameButton compact title={p(record?.enhancement.statGemId||record?.enhancement.effectGemId||record?.enhancement.gemIds.length?'Compare & Equip to Extract':'Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
      <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>move('inventory')}/>
      <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>move('bank')}/>
      {record?<GameButton compact tone="secondary" title={p(record.locked?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={p(state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
@@ -230,9 +240,9 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
      <GameButton compact tone="danger" title={saleCandidate?.eligible?p('Sell · {gold}g',{gold:saleCandidate.gold.toLocaleString(language)}):record?.locked||state.settings.lockedItemIds?.includes(item.id)?p('Unlock to sell'):p('Protected')} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>
      {salvageRecipe?<GameButton compact tone="secondary" title={salvageCandidate?.eligible?p('Salvage · {count}× {name}',{count:salvageRecipe.quantity,name:localizedItemName(language,salvageRecipe.itemId)}):p('Protected')} disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/>:null}
     </View>
-    <Text style={s.meta}>{p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')} {p('Enhanced, socketed and loadout gear cannot be sold.')}</Text>
+    {saleCandidate?.eligible?<Text style={s.meta}>{p('Selling this copy adds Gold to this character.')}</Text>:null}
     {salvageCandidate?.eligible&&salvageCandidate.rewards&&salvageCandidate.rewards.length>1?<Text style={s.meta}>{salvageMaterials([salvageCandidate])}</Text>:null}
-     {salvageRecipe&&!salvageCandidate?.eligible?<Text style={s.saleWarning}>{p(salvageCandidate?.reason??'This equipment is protected.')}</Text>:null}
+
    </ScrollView>:null}
   </GameModalSurface>
  </View>;

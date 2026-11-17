@@ -41,7 +41,8 @@ INSERT INTO private.world_boss_events_v17(
  id,boss_id,status,starts_at,ends_at,rules_version,max_hp,remaining_hp)
 SELECT '30000000-0000-4000-8000-000000000037',
  'hollowroot','active',t,t+interval '7 days','wb37-fixture',1000000,1000000
-FROM (SELECT clock_timestamp()-interval '1 hour' t) as x;
+FROM (SELECT date_trunc('week',clock_timestamp() AT TIME ZONE 'UTC')
+ AT TIME ZONE 'UTC' t) as x;
 INSERT INTO private.world_boss_war_camps_v27(
  event_id,fort_tier1,fort_tier2,field_tier1,field_tier2,
  siege_tier1,siege_tier2)
@@ -66,6 +67,23 @@ DECLARE
  rec jsonb;
  msg text;
 BEGIN
+ -- Since the production transaction consumes resources only Monday-Friday,
+ -- do not make the disposable CI fixture depend on GitHub runner weekday.
+ -- On weekends, assert the gate closes and exercise positive debits again
+ -- on the next weekday run.
+ IF clock_timestamp()>=(
+   SELECT starts_at+interval '5 days'
+   FROM private.world_boss_events_v17 WHERE id=ev) THEN
+  msg:='';
+  BEGIN
+   PERFORM private.world_boss_v27_donate(
+    ev,acct,active_id,'WB37_WEEKEND_DENIED','WB37_TEST_SUPPLIES');
+  EXCEPTION WHEN raise_exception THEN msg:=SQLERRM; END;
+  IF msg NOT LIKE '%WB27_PREPARATION_CLOSED%'
+  THEN RAISE EXCEPTION 'WB37_WEEKEND_DONATION_ALLOWED: %',msg; END IF;
+  RAISE NOTICE 'WORLD_BOSS_V37_WEEKEND_CLOSED_TEST=PASS';
+  RETURN;
+ END IF;
  SELECT state,revision INTO original,oldrev
  FROM public.online_game_states WHERE account_id=acct;
  -- Distinct relational ownership is not enough: parked character must first

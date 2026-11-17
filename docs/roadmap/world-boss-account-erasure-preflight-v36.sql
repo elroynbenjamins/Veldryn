@@ -9,14 +9,18 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
 SET search_path=''
 AS $preflight$
 DECLARE
- expected_tables text[]:=ARRAY[
-  'world_boss_attempts_v17','world_boss_milestones_v17',
-  'world_boss_echo_consents_v20','world_boss_consent_commands_v21',
-  'world_boss_war_donations_v27','world_boss_replay_proofs_v28',
-  'world_boss_wallet_v28','world_boss_reward_ledger_v28',
-  'world_boss_claim_receipts_v28'
+ expected_account_columns text[]:=ARRAY[
+  'world_boss_attempts_v17.account_id',
+  'world_boss_milestones_v17.crossed_by_account',
+  'world_boss_echo_consents_v20.owner_account_id',
+  'world_boss_consent_commands_v21.owner_account_id',
+  'world_boss_war_donations_v27.account_id',
+  'world_boss_replay_proofs_v28.account_id',
+  'world_boss_wallet_v28.account_id',
+  'world_boss_reward_ledger_v28.account_id',
+  'world_boss_claim_receipts_v28.account_id'
  ];
- actual_tables text[];
+ actual_account_columns text[];
  attempts bigint;
  milestones bigint;
  consents bigint;
@@ -33,8 +37,9 @@ BEGIN
  -- Every player-linked private World Boss table must be explicitly
  -- reviewed. Addition, deletion, renaming, or silent new account columns
  -- makes the preflight fail closed, rather than approving an incomplete wipe.
- SELECT coalesce(array_agg(DISTINCT c.relname ORDER BY c.relname),
-                 ARRAY[]::text[]) INTO actual_tables
+ SELECT coalesce(array_agg(DISTINCT (c.relname||'.'||a.attname)
+            ORDER BY (c.relname||'.'||a.attname)),
+                 ARRAY[]::text[]) INTO actual_account_columns
  FROM pg_class c
  JOIN pg_namespace n ON n.oid=c.relnamespace
  JOIN pg_attribute a ON a.attrelid=c.oid
@@ -42,8 +47,8 @@ BEGIN
  AND c.relkind IN ('r','p')
  AND NOT a.attisdropped
  AND a.attname IN ('account_id','owner_account_id','crossed_by_account');
- IF actual_tables<>(
-   SELECT array_agg(x ORDER BY x) FROM unnest(expected_tables) x)
+ IF actual_account_columns<>(
+   SELECT array_agg(x ORDER BY x) FROM unnest(expected_account_columns) x)
  THEN RAISE EXCEPTION 'WB36_UNREVIEWED_ACCOUNT_DATA'; END IF;
 
  SELECT count(*) INTO attempts FROM private.world_boss_attempts_v17

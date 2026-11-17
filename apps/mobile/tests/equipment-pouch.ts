@@ -111,6 +111,11 @@ const mixedBack=bulkTransferSelected(mixedBank,mixedIds,'bank');
 ok(mixedBack.bank.stacks.length===0&&mixedBack.inventory.stacks.some(row=>row.instanceId===record.id)
  &&mixedBack.inventory.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
  'Bulk Bank withdrawal must return exact and ordinary copies without losing identity');
+const oneSlotBank:GameState={...mixedCarried,bank:{...mixedCarried.bank,capacity:1,stacks:[]}};
+let fullBatchRejected=false;
+try{bulkTransferSelected(oneSlotBank,mixedIds,'inventory')}catch{fullBatchRejected=true}
+ok(fullBatchRejected&&oneSlotBank.inventory.stacks.length===2&&oneSlotBank.bank.stacks.length===0,
+ 'If Bank fills midway through a mixed transfer, the original state must stay unchanged');
 const inactive={...base.character!,id:'SECOND_CHAR',name:'Second Character',equipmentPouch:{capacity:30,stacks:[]}};
 const multi:GameState={...base,otherCharacters:[{character:inactive,inventory:{stacks:[],capacity:30},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:base.skills,quests:base.quests,currentRegionId:base.currentRegionId}]};
 const placed=tryStoreEquipmentInPouch(multi,{itemId:output,quantity:1},inactive.id)!;

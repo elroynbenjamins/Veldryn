@@ -14,7 +14,7 @@ const {
  inspectPrivatePartyEventReceiptV31,
 }=require('../dist/online/backend/online/party-event-receipt-recovery-v31.js');
 
-const SQL=fileURLToPath(new URL('../supabase/migrations/20261115173500_party_event_paid_receipt_inbox_v29.sql',import.meta.url));
+const SQL=fileURLToPath(new URL('../../docs/roadmap/party-events/hidden-migrations/20261115173500_party_event_paid_receipt_inbox_v29.sql',import.meta.url));
 const migration=readFileSync(SQL,'utf8');
 const db=await PGlite.create();
 

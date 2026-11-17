@@ -1,5 +1,6 @@
 import {newGame,createCharacter} from '../../../apps/mobile/src/core/game';
 import type {GameState,SkillId} from '../../../apps/mobile/src/core/types';
+import type {PartyEventDraftGameStateV28} from '../party-event-save-projection-v28';
 import {partyEventRewardBundle}
  from '../../src/server/party/weekly-party-rewards-v2';
 import type {VerifiedPartyEventEvidenceV27}
@@ -28,7 +29,7 @@ async function denied(fn:()=>Promise<unknown>,message:string){
  catch(e){assert(String(e).includes(message),
   'expected '+message+', received '+String(e));}
 }
-const fresh=():GameState=>{
+const fresh=():PartyEventDraftGameStateV28=>{
  const game=createCharacter(newGame(1700000000000),
   'IRONWARDEN','Test Character');
  return {...game,character:{...game.character!,id:character,gold:1000},

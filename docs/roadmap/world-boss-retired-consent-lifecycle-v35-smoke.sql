@@ -55,6 +55,40 @@ BEGIN
  DELETE FROM auth.users WHERE id=acct;
  IF EXISTS(SELECT 1 FROM auth.users WHERE id=acct)
  THEN RAISE EXCEPTION 'WB35_ECHO_ONLY_ACCOUNT_NOT_ERASED'; END IF;
+ -- Direct account deletion must also cascade the obsolete consent and
+ -- relational character projections; users must not have to pre-delete
+ -- individual characters just because they once opted into an Echo.
+ INSERT INTO auth.users(id)
+ VALUES('10000000-0000-4000-8000-000000000036');
+ INSERT INTO public.characters(id,account_id)
+ VALUES('20000000-0000-4000-8000-000000000036',
+        '10000000-0000-4000-8000-000000000036');
+ INSERT INTO private.world_boss_echo_consents_v20(
+  event_id,owner_account_id,character_id,consent_revision,enabled,
+  granted_at,expires_at)
+ VALUES(
+  '30000000-0000-4000-8000-000000000035',
+  '10000000-0000-4000-8000-000000000036',
+  '20000000-0000-4000-8000-000000000036',
+  1,false,clock_timestamp(),clock_timestamp()+interval '1 day');
+ INSERT INTO private.world_boss_consent_commands_v21(
+  event_id,owner_account_id,request_id,character_id,enabled,
+  expected_revision,resulting_revision,receipt)
+ VALUES(
+  '30000000-0000-4000-8000-000000000035',
+  '10000000-0000-4000-8000-000000000036',
+  'WB35_DIRECT_ERASE_REQ',
+  '20000000-0000-4000-8000-000000000036',
+  false,0,1,'{"repeated":false}'::jsonb);
+ DELETE FROM auth.users
+ WHERE id='10000000-0000-4000-8000-000000000036'::uuid;
+ IF EXISTS(SELECT 1 FROM public.characters
+  WHERE account_id='10000000-0000-4000-8000-000000000036'::uuid)
+ OR EXISTS(SELECT 1 FROM private.world_boss_echo_consents_v20
+  WHERE owner_account_id='10000000-0000-4000-8000-000000000036'::uuid)
+ OR EXISTS(SELECT 1 FROM private.world_boss_consent_commands_v21
+  WHERE owner_account_id='10000000-0000-4000-8000-000000000036'::uuid)
+ THEN RAISE EXCEPTION 'WB35_DIRECT_ACCOUNT_ERASURE_BLOCKED'; END IF;
  RAISE NOTICE 'WORLD_BOSS_V35_RETIRED_ECHO_LIFECYCLE=PASS';
 END
 $check$;

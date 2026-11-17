@@ -8,6 +8,9 @@ DECLARE
  owner uuid:='10000000-0000-4000-8000-000000000036';
  refused boolean;
 BEGIN
+ IF (SELECT provolatile FROM pg_proc
+     WHERE oid='private.world_boss_v36_erasure_preflight(uuid)'::regprocedure)<>'s'
+ THEN RAISE EXCEPTION 'WB36_PREFLIGHT_NOT_STABLE_READ_ONLY'; END IF;
  IF has_function_privilege('anon',
     'private.world_boss_v36_erasure_preflight(uuid)','EXECUTE')
  OR has_function_privilege('authenticated',

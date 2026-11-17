@@ -255,8 +255,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <View style={s.actions}>
      <GameButton compact title={p(record?.enhancement.statGemId||record?.enhancement.effectGemId||record?.enhancement.gemIds.length?'Compare & Equip to Extract':'Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
-     <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>void move('inventory')}/>
-     <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>void move('bank')}/>
+     <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>move('inventory')}/>
+     <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>move('bank')}/>
      {record?<GameButton compact tone="secondary" title={p(record.locked?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={p(state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
      <GameButton compact tone="secondary" title={p(state.settings.favoriteItemIds?.includes(item.id)?'Remove favorite':'Favorite')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(item.id)}})}/>
      <GameButton compact tone="danger" title={saleCandidate?.eligible?p('Sell · {gold}g',{gold:saleCandidate.gold.toLocaleString(language)}):record?.locked||state.settings.lockedItemIds?.includes(item.id)?p('Unlock to sell'):p('Protected')} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>

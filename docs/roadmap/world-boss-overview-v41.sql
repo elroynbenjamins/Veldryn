@@ -19,8 +19,9 @@ DECLARE
  wallet_revision bigint;
  event_earned bigint;
 BEGIN
- IF p_event IS NULL OR p_account IS NULL OR
-    NOT EXISTS(SELECT 1 FROM auth.users WHERE id=p_account)
+ -- This internal function receives the account UUID ONLY from server Auth.
+ -- Avoid an unnecessary auth.users SELECT privilege and enumeration path.
+ IF p_event IS NULL OR p_account IS NULL
  THEN RAISE EXCEPTION 'WB41_INVALID_PRIVATE_IDENTITY'; END IF;
  SELECT * INTO e FROM private.world_boss_events_v17 WHERE id=p_event;
  IF NOT FOUND THEN RAISE EXCEPTION 'WB41_EVENT_MISSING'; END IF;

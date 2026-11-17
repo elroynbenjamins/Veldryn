@@ -104,6 +104,19 @@ for(const roll of normalized.weaponBonuses!){
   close(newStats[roll.stat]-oldStats[roll.stat],roll.basisPoints/10000,
     'Only the equipped exact copy contributes its weapon bonus');
 }
+// A shared-bank transfer changes the holding character, not the original Forge receipt.
+const transferred:GameState={
+  ...withBonus,
+  character:{...withBonus.character!,id:'SECOND_CHARACTER_ON_SAME_ACCOUNT',
+    equipment:{...withBonus.character!.equipment,weapon:t5},
+    equipmentInstanceIds:{...withBonus.character!.equipmentInstanceIds,weapon:normalized.id}},
+};
+const inheritedRolls=equippedWeaponBonusStats(transferred);
+ok(normalized.ownerCharacterId!==transferred.character!.id,
+  'Cross-character fixture retains original crafter identity');
+for(const bonus of normalized.weaponBonuses!)
+  close(inheritedRolls[bonus.stat]??0,bonus.basisPoints/10_000,
+    'Shared-bank recipient must benefit from the exact equipped copy');
 ok(Object.keys(equippedWeaponBonusStats(withInstance(normalized,'nonexistent-copy'))).length===0,
   'Wrong or missing equipped receipt must not grant another weapon bonus');
 ok(Object.keys(equippedWeaponBonusStats({...withBonus,character:{...withBonus.character!,equipmentInstanceIds:{}}})).length===0,

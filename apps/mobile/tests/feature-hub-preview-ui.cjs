@@ -74,7 +74,9 @@ test('Market example item selection, price history and fee explanation stay stri
  assert.match(screen,/ILLUSTRATIVE PRICE TREND · NOT REAL SALES/);
  assert.match(screen,/Example T2 Forged Armor/);
  assert.match(screen,/requiredLevel:18/);
- assert.match(screen,/const gross=qty\*per,fee=Math\.ceil\(gross\*\.05\)/);
+ assert.match(screen,/estimateMarketPreviewQuote\(quantity,price\)/);
+ assert.match(screen,/disabled=\{!quoteValid\}/);
+ assert.match(screen,/quoteIssue\?<Text/);
  assert.match(screen,/Purchase · Market unavailable/);
  assert.match(screen,/No listing has been submitted/);
  assert.match(screen,/No listings or ownership records are loaded/);

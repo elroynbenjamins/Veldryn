@@ -28,6 +28,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies for shared companion and theme types
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Typecheck companion game rules and combat
         run: pnpm --dir backend typecheck:companions
       - name: Execute all companion contracts and battle tests

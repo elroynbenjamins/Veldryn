@@ -8,7 +8,7 @@ import {regionScenes} from '../theme/upgraded-artwork';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -28,7 +28,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const [tab,setTab]=useState(tabs[0].id),[guide,setGuide]=useState(false);
@@ -72,7 +72,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       <View style={s.heroShade}/>
       <View style={s.heroCopy}>
         <Text style={[s.eyebrow,{color:accent}]}>{title.eyebrow}</Text>
-        <Text style={s.heroTitle}>{title.title}</Text>
+        <Text accessibilityRole="header" style={s.heroTitle}>{title.title}</Text>
         <Text style={s.heroSub}>{title.subtitle}</Text>
       </View>
     </ImageBackground>
@@ -91,8 +91,8 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
      {partyUnread>0&&partyConnected?<View style={s.unread}><Text style={s.unreadText}>{partyUnread>99?'99+':partyUnread}</Text></View>:null}
      <Text style={s.dockArrow}>›</Text>
    </Pressable>:null}
-   <Modal transparent animationType="fade" visible={guide} onRequestClose={()=>setGuide(false)}>
-     <View style={s.modalShade}><Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close guide" onPress={()=>setGuide(false)}/><View style={s.modal}>
+   <Modal transparent animationType={reduceMotion?'none':'fade'} visible={guide} onRequestClose={()=>setGuide(false)}>
+     <View style={s.modalShade} onAccessibilityEscape={()=>setGuide(false)}><Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close guide" onPress={()=>setGuide(false)}/><View style={s.modal}>
        <View style={s.modalHeading}><View style={s.flex}><Text style={[s.eyebrow,{color:accent}]}>FIELD GUIDE</Text><Text accessibilityRole="header" style={s.cardTitle}>{title.title}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close guide" onPress={()=>setGuide(false)} style={s.help}><Text style={s.helpText}>×</Text></Pressable></View>
        <ScrollView style={s.guideScroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{guideTopics.map(([heading,body])=><View key={heading} style={s.guideTopic}><Text style={s.guideHeading}>{heading}</Text><Text style={s.bodyText}>{body}</Text></View>)}</ScrollView>
        <Action label="Got it" onPress={()=>setGuide(false)} s={s}/>
@@ -103,7 +103,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
 
 type Shared={s:ReturnType<typeof makeStyles>;C:ThemeColors;accent:string};
 function Card({s,children}:{s:Shared['s'];children:ReactNode}){return <View style={s.card}>{children}</View>;}
-function SectionHeading({s,kicker,title,sub}:{s:Shared['s'];kicker:string;title:string;sub?:string}){return <View style={s.sectionHead}><Text style={s.kicker}>{kicker}</Text><Text style={s.cardTitle}>{title}</Text>{sub?<Text style={s.bodyText}>{sub}</Text>:null}</View>;}
+function SectionHeading({s,kicker,title,sub}:{s:Shared['s'];kicker:string;title:string;sub?:string}){return <View style={s.sectionHead}><Text style={s.kicker}>{kicker}</Text><Text accessibilityRole="header" style={s.cardTitle}>{title}</Text>{sub?<Text style={s.bodyText}>{sub}</Text>:null}</View>;}
 function Action({label,onPress,s,disabled=false,secondary=false}:{label:string;onPress?:()=>void;s:Shared['s'];disabled?:boolean;secondary?:boolean}){
  return <Pressable accessibilityRole="button" accessibilityState={{disabled:disabled||!onPress}} disabled={disabled||!onPress} onPress={onPress} style={[s.action,secondary&&s.secondaryAction,(disabled||!onPress)&&s.disabledAction]}>
   <Text style={[s.actionText,secondary&&s.secondaryActionText,(disabled||!onPress)&&s.disabledText]}>{label}</Text>
@@ -215,7 +215,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   {([0,1] as const).map(index=>{const id=index===0?'secure':'swift';const selected=ballot==='approach'?choice:finalChoice;const title=(ballot==='approach'?story.approach:story.finale)[index];return <Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:selected===id}} onPress={()=>ballot==='approach'?setChoice(id):setFinalChoice(id)} style={[s.choice,selected===id&&{borderColor:accent,backgroundColor:C.panelRaised}]}>
    <View style={[s.radio,selected===id&&{borderColor:accent}]}>{selected===id?<View style={[s.radioInner,{backgroundColor:accent}]}/>:null}</View><View style={s.flex}><Text style={s.choiceTitle}>{title}</Text><Text style={s.choiceSub}>{ballot==='approach'?'Stage 2 · Approach choice':'Stage 3 · Finale preparation'}</Text></View>
   </Pressable>;})}
-  <Text style={s.finePrint}>Local example: Stage 2 · {choice?story.approach[choice==='secure'?0:1]:'no choice'}; Stage 3 · {finalChoice?story.finale[finalChoice==='secure'?0:1]:'no choice'}. Nothing submitted.</Text>
+  <Text accessibilityLiveRegion="polite" style={s.finePrint}>Local example: Stage 2 · {choice?story.approach[choice==='secure'?0:1]:'no choice'}; Stage 3 · {finalChoice?story.finale[finalChoice==='secure'?0:1]:'no choice'}. Nothing submitted.</Text>
   <Action label="Cast vote · Server unavailable" s={s} disabled/>
  </Card>;
  return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>
@@ -252,7 +252,7 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
     <Text style={s.detailLabel}>SORT BY</Text>
     {([{id:'unit',label:'Unit price'},{id:'lot',label:'Total lot'}] as const).map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:sort===option.id}} onPress={()=>setSort(option.id)} style={[s.sortChip,sort===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,sort===option.id&&{color:C.text}]}>{option.label}</Text></Pressable>)}
    </View>
-   {filtered.length===0?<View style={s.empty}><Text style={s.bodyText}>No example items match this search.</Text></View>:filtered.map(item=><View key={item.id} style={s.resultGroup}><Pressable accessibilityRole="button" accessibilityState={{expanded:selected===item.id}} onPress={()=>setSelected(selected===item.id?null:item.id)} style={[s.marketRow,selected===item.id&&{borderColor:accent}]}>
+   {filtered.length===0?<View style={s.empty}><Text style={s.bodyText}>No example items match this search.</Text></View>:filtered.map(item=><View key={item.id} style={s.resultGroup}><Pressable accessibilityRole="button" accessibilityState={{expanded:selected===item.id}} accessibilityLabel={`${item.name}, ${item.amount} items, ${item.unit*item.amount} gold example lot, ${selected===item.id?'details open':'inspect details'}`} onPress={()=>setSelected(selected===item.id?null:item.id)} style={[s.marketRow,selected===item.id&&{borderColor:accent}]}>
     <View style={s.marketSymbol}><Text style={s.marketSymbolText}>{item.type==='Resources'?'▤':item.type==='Gems'?'◇':'✥'}</Text></View>
     <View style={s.flex}><Text style={s.choiceTitle}>{item.name}</Text><Text style={s.choiceSub}>{item.type} · Example lot of {item.amount}{item.requiredLevel?' · Min. Lv '+item.requiredLevel:''}</Text></View>
     <View style={s.priceBlock}><Text style={s.goldPrice}>{(item.unit*item.amount).toLocaleString('en-US')} G</Text><Text style={s.choiceSub}>{item.unit} each</Text></View>
@@ -273,7 +273,7 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
  if(tab==='sell')return <Card s={s}><SectionHeading s={s} kicker="CREATE A LISTING · CALCULATOR" title="Know the payout first" sub="Try a sample listing price. This calculator does not inspect inventory, reserve items or post an offer."/>
    <Text style={s.detailLabel}>EXAMPLE QUANTITY</Text><TextInput value={quantity} onChangeText={value=>{setQuantity(value);setReview(false)}} keyboardType="numeric" accessibilityLabel="Example quantity" style={s.input}/>
    <Text style={s.detailLabel}>EXAMPLE PRICE PER UNIT · GOLD</Text><TextInput value={price} onChangeText={value=>{setPrice(value);setReview(false)}} keyboardType="numeric" accessibilityLabel="Example unit price" style={s.input}/>
-   <View style={s.invoice}><View style={s.detailRow}><Text style={s.bodyText}>Gross sale</Text><Text style={s.choiceTitle}>{gross.toLocaleString('en-US')} Gold</Text></View>
+   <View style={s.invoice} accessibilityLiveRegion="polite"><View style={s.detailRow}><Text style={s.bodyText}>Gross sale</Text><Text style={s.choiceTitle}>{gross.toLocaleString('en-US')} Gold</Text></View>
     <View style={s.detailRow}><Text style={s.bodyText}>Seller fee · 5%</Text><Text style={s.choiceTitle}>−{fee.toLocaleString('en-US')} Gold</Text></View>
     <View style={s.detailRow}><Text style={s.choiceTitle}>Estimated seller payout</Text><Text style={[s.goldPrice,{fontSize:18}]}>{net.toLocaleString('en-US')} Gold</Text></View>
    </View>

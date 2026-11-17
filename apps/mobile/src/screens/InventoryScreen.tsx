@@ -466,7 +466,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>}
     </View>}
     {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} full · Free a slot or upgrade below.':'{location} · {free} slots left.',{location:gt(location==='inventory'?'Inventory':'Bank'),free:activeCapacity.free})}</Text>}
-    {location==='inventory'&&activeCapacity.level==='full'?<Text style={s.sub}>{gl('Salvage may need a free slot for returned materials. Selling a safe copy frees space; socketed and upgraded gear remains protected.')}</Text>:null}
+    {location==='inventory'&&activeCapacity.level==='full'?<Text style={s.sub}>{gl('Salvage may need a free slot for returned materials. Selling or salvaging gear destroys its installed gems and upgrades.')}</Text>:null}
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
 
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}

@@ -13,7 +13,10 @@ includes('if(value===group)return;','reselecting a category must preserve the cu
 includes('if(next.board!==board||!Array.isArray(next.entries))','reject mismatched server responses');
 includes('setError(st("Could not load Rankings."))','request errors must be localized and avoid raw backend details');
 includes('splitRankingDisplay(activeSnapshot?.entries??[],page)','podium and regular rows must use the tie-safe shared projector');
-assert.ok(pager.includes('entries.slice(0,3)')&&pager.includes('entries.slice(3)')&&pager.includes('page===0'),'podium must highlight only three entries without dropping ties');
+assert.ok(pager.includes('entry.rank>=1&&entry.rank<=3')&&pager.includes('podium.length<3')&&pager.includes('remaining.push(entry)'),'podium must only highlight actual official top-three ranks without promoting privacy-filtered entries or dropping ties');
+includes('accessibilityLabel={st("Rankings guide")}','rankings guide must be accessible by screen reader');
+includes('setGuideOpen(true)','rankings guide must be reachable from the header');
+includes('firstPlaceCard','official first place needs a distinct visual treatment');
 includes('setLoadedPage(page)','a response must be bound to its source page');
 includes('scrollRef.current?.scrollTo({y:0,animated:false})','page/board navigation resets scroll');
 includes('accessibilityLiveRegion="polite"','pagination announces page changes accessibly');

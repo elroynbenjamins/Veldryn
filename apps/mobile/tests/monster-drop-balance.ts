@@ -26,16 +26,17 @@ for(const source of HOLY_WATER_SOURCES){
 closeTo(dropChance('MOSS_RAT','MOSS_FIBER'),.55*.5*.95,'Ordinary material keeps the 50% adjustment followed by the 5% reduction');
 closeTo(dropChance('ANCIENT_TREANT','IRONWOOD_LOG'),.52*.5*.95,'Original Ironwood Forest source remains at reduced probability');
 closeTo(dropChance('IRONBACK_MOLE','COPPER_ORE'),.30*.5*.95,'Alternative Copper Ore source stays available');
-closeTo(dropChance('CAVE_SKITTER','BP_ASTER_IRON_PICKAXE'),.035,'Tier-2 tool blueprint chance rounds 3.5625% down to 3.5%');
+closeTo(dropChance('CAVE_SKITTER','BP_ASTER_IRON_PICKAXE'),.012,'Tier-2 pickaxe blueprint must drop at 1.2%');
 for(const tool of GATHERING_TOOLS){
  if(!tool.blueprint)continue;
  const source=tool.blueprint.sourceMonsterId;
  const drop=dropChance(source,tool.blueprint.itemId);
  const expected=roundDownToolBlueprintDropChance(tool.blueprint.dropChance*.95);
-  closeTo(drop,expected,source+' blueprint gets 25% rarity adjustment and is floored to nearest 0.10 percentage point');
+ check(expected>=.005&&expected<=.012,source+' final drop chance must be within 0.5%-1.2%');
+ closeTo(drop,expected,source+' blueprint gets 25% rarity adjustment and is floored to nearest 0.10 percentage point');
 }
-closeTo(dropChance('RUNEBOUND_MINER','BP_OATHSTONE_PICKAXE'),.014,'Tier-3 tool blueprint chance rounds 1.425% down to 1.4%');
-closeTo(dropChance('FROSTWOLF','BP_FROSTIRON_HATCHET'),.007,'Tier-4 tool blueprint chance rounds 0.7125% down to 0.7%');
+closeTo(dropChance('RUNEBOUND_MINER','BP_OATHSTONE_PICKAXE'),.009,'Tier-3 pickaxe blueprint must drop at 0.9%');
+closeTo(dropChance('FROSTWOLF','BP_FROSTIRON_HATCHET'),.005,'Tier-4 hatchet blueprint must drop at 0.5%');
 closeTo(dropChance('ANCIENT_TREANT','THORN_SAP'),.30*.5*.95,'Non-blueprint Thorn Sap keeps its original independent adjustment');
 
 for(const [enemy,forbidden] of [

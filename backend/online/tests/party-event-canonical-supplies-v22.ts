@@ -1,5 +1,4 @@
 import {
- PARTY_EVENT_CLAIM_SQL_V25_RELEASED,
  PARTY_EVENT_CLAIM_QUOTE_SQL_V25,
  PARTY_EVENT_PREPARE_INTENT_SQL_V25,
  PARTY_EVENT_CLAIM_INBOX_SQL_V25,
@@ -130,7 +129,7 @@ async function runRepositoryChecks(){
   catch(e){refused=String(e).includes('party_event_v22_invalid_reservation');}
   assert(refused&&calls===0,'invalid UUID cannot trigger database access');
   const bundle=await repo.readReplayBundle(id);
-  assert(calls===1&&bundle.version==='private-party-event-replay-snapshot-v21',
+  assert(Number(calls)===1&&bundle.version==='private-party-event-replay-snapshot-v21',
     'repository returns exactly one private SQL bundle');
   const verified=await repo.loadCanonicalResourceCatalog(bundle);
   assert(JSON.stringify(verified)===JSON.stringify(catalog),

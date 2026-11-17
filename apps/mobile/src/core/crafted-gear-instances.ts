@@ -151,7 +151,7 @@ export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:st
   return {
     id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
     rarity,quality:craftedGearQualityRoll(args.roll,args.jobId),
-    weaponBonuses:rollWeaponBonuses(args.itemId,rarity,args.jobId),
+    weaponBonuses:rollWeaponBonuses(args.itemId,rarity,args.jobId,args.roll),
     locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
 }

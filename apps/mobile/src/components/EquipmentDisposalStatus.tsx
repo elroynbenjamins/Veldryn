@@ -27,7 +27,7 @@ export function EquipmentDisposalStatus({sellAllowed,salvageAllowed,sellReason,s
     <Text style={s.reasonNext}>{gl(info.nextStep)}</Text>
    </View>;
   })}
-  {!reasons.length?<Text style={s.readyNote}>{gl('This copy is eligible for both actions. Confirm carefully; disposal cannot be undone.')}</Text>:null}
+  {!reasons.length?<Text style={s.readyNote}>{gl('This copy can be sold or salvaged. Installed gems and upgrades will be permanently lost.')}</Text>:null}
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

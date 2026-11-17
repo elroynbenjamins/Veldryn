@@ -81,7 +81,7 @@ export function decodePartyEventReadOnlySnapshot(raw:unknown):PartyEventScreenSn
   ||(raw.stage===2&&(v.stage3!==null||v.myStage3Ballot))
   ||(raw.stage===3&&v.stage2===null))return null;
  return {
-  family:stories[raw.family],variation:raw.variation,
+  family:stories[raw.family]!,variation:raw.variation,
   difficulty:raw.difficulty as PartyEventScreenSnapshot['difficulty'],
   status:raw.status as PartyEventScreenSnapshot['status'],
   stage:raw.stage as Stage,rosterSize:raw.rosterSize as 2|3|4,

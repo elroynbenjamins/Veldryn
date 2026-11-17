@@ -18,7 +18,7 @@ const offhandId=gearFor('offhand'),ringId=gearFor('ring'),chestId=gearFor('chest
 let state=createCharacter(newGame(1),'IRONWARDEN','Gem Tester','male');
 state={...state,character:{...state.character!,gold:250000,equipment:{...state.character!.equipment,weapon:'basic_sword',offhand:offhandId,ring:ringId,chest:chestId},gearEnhancements:{}},inventory:{...state.inventory,capacity:80,stacks:[
  ...state.inventory.stacks,
- {itemId:'gem:effect_bulwark:g1',quantity:4},
+ {itemId:'gem:effect_bulwark:g1',quantity:5},
  {itemId:'gem:effect_retaliation:g1',quantity:1},
  {itemId:'gem:stat_might:g1',quantity:3},
  {itemId:'raw_gem:stat_vitality:g1',quantity:1},

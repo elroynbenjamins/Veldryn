@@ -117,7 +117,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
         const family=mobileGemFamilyV1('effect_'+id.slice('recipe_gem_'.length));
         return family?.kind==='effect'?[{familyId:family.familyId,name:family.name}]:[];
       });
-    if(discovered.length)setRecipeUnlocks(previous=>[...new Map([...previous,...discovered].map(item=>[item.familyId,item])).values()]);
+    if(discovered.length)setRecipeUnlocks(previous=>{const knownFamilies=new Set(previous.map(item=>item.familyId));return [...previous,...discovered.filter(item=>!knownFamilies.has(item.familyId))];});
   },[state,run?.runId]);
   const [rematchOpen,setRematchOpen]=useState(false);
   const [showShop,setShowShop]=useState(false);

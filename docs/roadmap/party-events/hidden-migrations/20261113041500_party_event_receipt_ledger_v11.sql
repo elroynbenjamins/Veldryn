@@ -35,7 +35,7 @@ create table private.party_event_roster_v11 (
   references private.party_event_weeks_v11(party_id,event_starts_at) on delete cascade
 );
 comment on table private.party_event_roster_v11 is
- 'Hidden: immutable event enrollment; max Tank 1, Damage 2, Support 1. Account can enroll in only one party per event week.';
+ 'Hidden: immutable event enrollment; flexible 2–4-person teams with canonical class-role verification. Account can enroll in only one party per event week.';
 
 create table private.party_event_stages_v11 (
  party_id uuid not null,
@@ -121,7 +121,7 @@ returns trigger language plpgsql security definer set search_path='' as $$
 declare
  v_week private.party_event_weeks_v11%rowtype;
  v_class text;v_owner uuid;v_role text;
- v_tank integer;v_damage integer;v_support integer;v_total integer;
+ v_total integer;
 begin
  if tg_op<>'INSERT' then raise exception 'party_event_roster_immutable';end if;
  select * into v_week from private.party_event_weeks_v11
@@ -143,17 +143,12 @@ begin
   else null end;
  if v_role is null or v_role<>new.role
  then raise exception 'party_event_role_mismatch';end if;
- select count(*)::integer,
-  count(*) filter(where role='tank')::integer,
-  count(*) filter(where role='damage')::integer,
-  count(*) filter(where role='support')::integer
- into v_total,v_tank,v_damage,v_support
+ select count(*)::integer into v_total
  from private.party_event_roster_v11
  where party_id=new.party_id and event_starts_at=new.event_starts_at;
- if v_total>=4 or (v_role='tank' and v_tank>=1)
-   or (v_role='damage' and v_damage>=2)
-   or (v_role='support' and v_support>=1)
- then raise exception 'party_event_role_capacity';end if;
+ -- Current Party Event policy allows any legitimate class-role mix.
+ -- Hard-cap the verified event roster at four distinct accounts.
+ if v_total>=4 then raise exception 'party_event_role_capacity';end if;
  return new;
 end;$$;
 
@@ -270,7 +265,7 @@ declare
  v_existing private.party_event_receipts_v11%rowtype;
  v_new private.party_event_receipts_v11%rowtype;
  v_now timestamptz:=clock_timestamp();
- v_count integer;v_tanks integer;v_damage integer;v_support integer;
+ v_count integer;
  v_expected_stage smallint;
 begin
  if p_party_id is null or p_event_starts_at is null or
@@ -337,14 +332,10 @@ begin
     and account_id=v_source.account_id and joined_at<=v_source.occurred_at)
  then raise exception 'party_event_invalid_evidence';end if;
 
- select count(*)::integer,count(*) filter(where role='tank')::integer,
-  count(*) filter(where role='damage')::integer,
-  count(*) filter(where role='support')::integer
- into v_count,v_tanks,v_damage,v_support
+ select count(*)::integer into v_count
  from private.party_event_roster_v11
  where party_id=p_party_id and event_starts_at=p_event_starts_at;
- if v_count<2 or v_count>4 or v_tanks>1 or v_damage>2 or v_support>1
-  or (v_count=4 and (v_tanks<>1 or v_damage<>2 or v_support<>1))
+ if v_count<2 or v_count>4
  then raise exception 'party_event_illegal_party_composition';end if;
 
  if exists(select 1 from private.party_event_receipts_v11

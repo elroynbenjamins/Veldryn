@@ -222,3 +222,23 @@ test('unrelated boss and market hubs do not subscribe to the Party context',()=>
  assert.match(screen,/hasParty=\{Boolean\(social\.party\?\.id\)\}/);
  assert.match(screen,/partyUnread>0&&partyConnected/);
 });
+
+test('Party Event private v33 snapshot stays disabled and cannot be confused with the live Party roster',()=>{
+ const adapter=read('src/core/party-event-readonly-snapshot.ts');
+ assert.match(adapter,/PARTY_EVENT_STATUS_MOBILE_RELEASED=false/);
+ assert.match(adapter,/raw\.canClaim!==false\|\|raw\.canContribute!==false\|\|raw\.canFight!==false/);
+ assert.match(adapter,/new Set\(raw\.completedActions\)\.size/);
+ assert.match(adapter,/integer\(row\.donated,0,row\.target\)/);
+ assert.match(screen,/partyEventStatus=null/);
+ assert.match(screen,/decodePartyEventReadOnlySnapshot\(partyEventStatus\)/);
+ assert.match(screen,/partyEventStatus=\{partyEventStatus\}/);
+ assert.match(screen,/No verified event loaded/);
+ assert.match(screen,/Event service not connected/);
+ assert.match(screen,/status\.rosterSize\+' players'/);
+ assert.match(screen,/storyStatus\?\.completedActions\.includes/);
+ assert.match(screen,/partyEventSupplyProgress\(storyStatus,storyStatus\.stage,'required'\)/);
+ assert.match(screen,/Read-only ballot status/);
+ assert.match(screen,/does not authorize a boss attempt/);
+ assert.doesNotMatch(app,/partyEventStatus=\{/,'unapproved live event fetch must not be wired by App');
+ assert.doesNotMatch(screen,/supabase\.(rpc|from)|claimPartyEventReward|submitPartyEventVote/);
+});

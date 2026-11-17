@@ -5,6 +5,7 @@ import {entitlementStorageCapacity} from './account-entitlements';
 import {itemDef} from '../content/items';
 import {equipmentSalvageReward,equipmentSalvageRewards,inventoryWithSalvageRewards} from './equipment-salvage';
 import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
+import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
 export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
 export interface VerifiedGearLocation{
@@ -230,6 +231,9 @@ export function unequipCraftedGearInstance(state:GameState,instanceId:string):Ga
 
 function protectedGear(state:GameState,record:CraftedGearInstance){
   if(record.locked===true)throw new Error('This equipment copy is locked');
+  if(state.settings.lockedItemIds?.includes(record.itemId))throw new Error('This equipment type is locked');
+  if(workingTowardInventoryProtectionMap(state).has(record.itemId))
+    throw new Error('Equipment needed for a Working Toward goal is protected');
   if(state.settings.favoriteItemIds?.includes(record.itemId))throw new Error('Favorite equipment cannot be sold or salvaged');
   const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
   if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))

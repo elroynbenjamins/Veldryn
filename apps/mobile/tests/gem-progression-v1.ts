@@ -62,13 +62,16 @@ state=refineClaimed.state;
 ok(gemPouch(state).stacks.some(row=>row.itemId==='gem:stat_vitality:g1'),'Refinement should create the socketable gem of the same family and grade');
 ok(!state.inventory.stacks.some(row=>row.itemId==='raw_gem:stat_vitality:g1'),'Refinement should consume the unrefined gem');
 ok(state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeRefine+110,'Gem refinement should award 20 extra Enchanting XP on completion');
+// Check the recipe gate while a loose Grade I Effect Gem still exists.
+const lockedEffect=availableGemCombinesV1(state).find(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1);
+ok(Boolean(lockedEffect&&!lockedEffect.recipeReady),'Effect Gem combining must remain locked until its recipe is discovered');
+
 const dustBefore=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 state=dismantleGemV1(state,'gem:effect_bulwark:g1',1);
 const dustAfter=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 ok(dustAfter===dustBefore+1,'Dismantling a Cut gem should return exactly 1 Gem Dust');
-
-const lockedEffect=availableGemCombinesV1(state).find(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1);
-ok(Boolean(lockedEffect&&!lockedEffect.recipeReady),'Effect Gem combining must remain locked until its recipe is discovered');
+// With the last loose Bulwark copy destroyed, the list should hide unavailable combines.
+ok(!availableGemCombinesV1(state).some(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1),'Unavailable combines without loose gems stay hidden');
 ok(MONSTERS.some(monster=>monster.level>=4&&monster.level<=25&&monster.drops.some(drop=>drop.itemId.startsWith('raw_gem:')&&drop.itemId.endsWith(':g1'))),'Asterfall combat should provide an early unrefined Grade I gem path');
 let researchState={...state,skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,level:25,xp:totalXpAtLevel(25)}:row)};
 const researchBeforeDust=researchState.inventory.stacks.find(row=>row.itemId==='GEM_DUST')?.quantity??0,researchBeforeGold=researchState.character!.gold,researchBeforeXp=researchState.skills.find(row=>row.skillId==='enchanting')!.xp;

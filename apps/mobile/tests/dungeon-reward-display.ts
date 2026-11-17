@@ -1,4 +1,4 @@
-import {dungeonRewardDisplayAmount} from '../src/core/dungeon-reward-display';
+import {dungeonRewardDisplayAmount,dungeonRunMarksBreakdown,parseDungeonCombatMarks} from '../src/core/dungeon-reward-display';
 
 function expect(actual:unknown,expected:unknown,description:string){
  if(actual!==expected)throw new Error(`${description}: expected ${String(expected)}, got ${String(actual)}`);
@@ -27,5 +27,19 @@ expect(dungeonRewardDisplayAmount({claimed_at:null,reward_json:{}},completed,bud
 expect(dungeonRewardDisplayAmount({claimed_at:null,reward_json:{enhanced_marks:0}},completed,budget).amount,0,'True zero entitlement remains visible');
 expect(dungeonRewardDisplayAmount({claimed_at:null,reward_json:{enhanced_marks:-12}},completed,budget).amount,undefined,'Invalid negative data does not render as a reward');
 expect(dungeonRewardDisplayAmount(unclaimed,completed).amount,140,'Without budget use server entitled full amount as labeled estimate');
+
+
+const combat=parseDungeonCombatMarks({normal:2,elite:1,total:11});
+if(!combat)throw new Error('Expected valid credited combat Mark receipt');
+expect(combat.total,11,'Combat credits come from the ledger');
+expect(parseDungeonCombatMarks({normal:2,elite:1,total:14}),undefined,'Mismatched totals must not be shown');
+expect(parseDungeonCombatMarks({normal:1,elite:0,total:-3}),undefined,'Negative totals must be rejected');
+expect(parseDungeonCombatMarks(null),undefined,'Missing ledger receipt must not become a fake zero');
+expect(dungeonRunMarksBreakdown([unclaimed],completed,combat,budget).total,151,'Unclaimed completion and already credited combat total are shown together');
+expect(dungeonRunMarksBreakdown([unclaimed],completed,combat,budget).estimated,true,'Pending total must be flagged as estimated');
+expect(dungeonRunMarksBreakdown([claimed],completed,combat,budget).total,39,'Claimed completion is added to combat exactly once');
+expect(dungeonRunMarksBreakdown([claimed],completed,combat,budget).estimated,false,'Claimed total is exact');
+expect(dungeonRunMarksBreakdown([claimed],completed,undefined,budget).total,undefined,'No total when actual combat receipt is missing');
+expect(dungeonRunMarksBreakdown([],completed,combat,budget).total,undefined,'No total without completion receipt');
 
 console.log('PASS dungeon reward preview displays pre-claim Marks, reduced reward, failure quota and live bonus');

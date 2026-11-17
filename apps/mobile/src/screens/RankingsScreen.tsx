@@ -56,7 +56,10 @@ export function RankingsScreen(){
    try{
      const next=await rankingsClient.board(board,RANKING_PAGE_SIZE+1,rankingPageOffset(page));
      if(version===request.current){
-       if(next.board!==board||!Array.isArray(next.entries))throw new Error('invalid_rankings_response');
+       if(next.board!==board||!Array.isArray(next.entries)||next.entries.some(entry=>
+         !Number.isSafeInteger(entry.rank)||entry.rank<1
+         ||!Number.isFinite(entry.value)||entry.value<0
+         ||typeof entry.displayName!=='string'))throw new Error('invalid_rankings_response');
        const display=projectRankingPage(next.entries,page);
        setSnapshot({...next,entries:display.entries});
        setLoadedPage(page);setHasNext(display.hasNext);
@@ -103,8 +106,8 @@ export function RankingsScreen(){
       <Text accessibilityRole="header" style={s.heading}>{st("VELDRYN Rankings")}</Text>
     </View>
     <View style={[s.heroActions,stackRows&&s.heroActionsCompact]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={st("Refresh")} accessibilityState={{disabled:loading,busy:loading}} disabled={loading} onPress={()=>{void load();}} style={({pressed})=>[s.iconButton,(pressed||loading)&&s.pressed]}>
-        <Text accessible={false} style={s.refreshGlyph}>↻</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={loading?st("Loading rankings"):st("Refresh")} accessibilityState={{disabled:loading,busy:loading}} disabled={loading} onPress={()=>{void load();}} style={({pressed})=>[s.iconButton,(pressed||loading)&&s.pressed]}>
+        <Text accessible={false} style={s.refreshGlyph}>{loading?'…':'↻'}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={st("Rankings guide")} onPress={()=>setGuideOpen(true)} style={({pressed})=>[s.iconButton,pressed&&s.pressed]}>
         <Text accessible={false} style={s.helpGlyph}>?</Text>
@@ -120,6 +123,9 @@ export function RankingsScreen(){
   </Pressable>
   <View style={s.boardIntro}>
     <Text style={s.copy}>{definition.group==='Professions'?st('Highest {profession} level on one account character.',{profession:socialLabel(language,definition.name)}):socialLabel(language,definition.description)}</Text>
+    {activeSnapshot&&Number.isFinite(activeSnapshot.generatedAtMs)&&activeSnapshot.generatedAtMs>0
+      ?<Text style={s.lastUpdated}>{st("Updated {time}",{time:new Date(activeSnapshot.generatedAtMs).toLocaleTimeString()})}</Text>
+      :null}
   </View>
   {activeSnapshot?.self?<View style={s.selfCard}>
     <View style={s.selfHead}><Text style={s.selfKicker}>{st("YOUR STANDING")}</Text><Text style={s.selfScope}>{st("GLOBAL")}</Text></View>
@@ -130,7 +136,10 @@ export function RankingsScreen(){
     {activeSnapshot.self.reason?<Text style={s.warning}>{activeSnapshot.self.reason}</Text>:null}
   </View>:null}
   {loading&&!activeSnapshot?<LoadingState compact label={st("Loading rankings")} detail={st("Fetching the latest server-calculated board.")}/>:null}
-  {error?<ActionFeedback message={error} tone="error" reduceMotion/>:null}
+  {error?<View style={s.errorPanel}>
+    <ActionFeedback message={error} tone="error" reduceMotion/>
+    {!activeSnapshot&&rankingsOnlineConfigured?<GameButton compact title={st("Refresh")} tone="secondary" onPress={()=>{void load();}}/>:null}
+  </View>:null}
   {podium.length?<View style={s.sectionGroup}><Text style={s.filterLabel}>{st("TOP THREE")}</Text>
     <View style={[s.podiumGrid,stackRows&&s.podiumGridStack]}>{podium.map((entry,index)=>rankRow(entry,true,index))}</View>
   </View>:null}
@@ -158,6 +167,8 @@ export function RankingsScreen(){
      <Text style={s.guideCopy}>{definition.group==='Professions'?st('Highest {profession} level on one account character.',{profession:socialLabel(language,definition.name)}):socialLabel(language,definition.description)}</Text>
      <View style={s.guideRule}/>
      <Text style={s.guideCopy}>{st('Rankings are read-only, server-calculated, and provide no exclusive combat power. Account boards respect Public Profile visibility and block relationships.')}</Text>
+     <Text style={s.guideSection}>{st("Privacy and tied ranks")}</Text>
+     <Text style={s.guideCopy}>{st("Equal scores may share a rank. Hidden or blocked players never promote other players into a higher official rank.")}</Text>
      <Text style={s.guideCopy}>{st("Live rankings can change while players progress.")}</Text>
    </ScrollView>
  </GameModalSurface>
@@ -192,7 +203,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  boardPicker:{minHeight:64,padding:10,borderRadius:radii.md,backgroundColor:C.panel,borderWidth:1,borderColor:C.lineStrong,flexDirection:'row',alignItems:'center',gap:10},
  boardGlyph:{width:38,height:38,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2},
  boardGlyphText:{fontSize:20,color:C.accent},boardName:{...typography.bodyStrong,color:C.text,marginTop:3},selectorArrow:{fontSize:22,color:C.accent},
- boardIntro:{paddingHorizontal:3,minHeight:18},
+ boardIntro:{paddingHorizontal:3,minHeight:18,gap:4},lastUpdated:{fontSize:10,lineHeight:14,color:C.muted},errorPanel:{gap:6},
  flex:{flex:1,minWidth:0},
  selfCard:{padding:12,borderRadius:radii.lg,backgroundColor:C.accentSurface,borderWidth:1,borderColor:C.selectionLine,gap:7},
  selfHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},

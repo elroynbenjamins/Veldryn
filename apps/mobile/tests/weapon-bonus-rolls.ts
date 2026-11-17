@@ -5,6 +5,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
 import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
+import {moveCraftedGearInstance,equipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
 import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND,WEAPON_BONUS_ROLL_VERSION,weaponBonusCompactLine,weaponBonusRollGrade} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
 import type {CraftedGearInstance,GameState} from '../src/core/types';
@@ -154,7 +155,22 @@ const transferred:GameState={
     equipment:{...withBonus.character!.equipment,weapon:t5},
     equipmentInstanceIds:{...withBonus.character!.equipmentInstanceIds,weapon:normalized.id}},
 };
-const inheritedRolls=equippedWeaponBonusStats(transferred);
+// Exercise the actual exact-copy bank -> pouch -> equip reducers, not just a
+// synthetic equipped marker. The original crafter remains unchanged.
+const banking:GameState={
+  ...transferred,character:{...transferred.character!,level:999,
+    equipment:{...state.character!.equipment},
+    equipmentInstanceIds:{}},
+  bank:{...transferred.bank,stacks:[{itemId:t5,quantity:1,instanceId:normalized.id}]},
+};
+const fromBank=moveCraftedGearInstance(banking,normalized.id,'equipment_pouch');
+const afterEquip=equipCraftedGearInstance(fromBank,normalized.id);
+const deposited=afterEquip.account.craftedGearInstances?.find(row=>row.id===normalized.id);
+ok(deposited?.ownerCharacterId===owner,
+  'Moving and equipping an exact copy must preserve the original creator');
+ok(afterEquip.character?.equipmentInstanceIds?.weapon===normalized.id,
+  'The banked copy must equip by its original stable receipt');
+const inheritedRolls=equippedWeaponBonusStats(afterEquip);
 ok(normalized.ownerCharacterId!==transferred.character!.id,
   'Cross-character fixture retains original crafter identity');
 for(const bonus of normalized.weaponBonuses!)

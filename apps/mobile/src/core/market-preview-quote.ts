@@ -32,6 +32,7 @@ export function estimateMarketPreviewQuote(quantityText:string,unitPriceText:str
    issue:`Enter whole positive values: quantity 1–${MARKET_PREVIEW_MAX_QUANTITY.toLocaleString('en-US')}, unit price 1–${MARKET_PREVIEW_MAX_UNIT_PRICE.toLocaleString('en-US')} Gold.`};
  }
  const gross=quantity*pricePerUnit;
- const fee=Math.ceil(gross*MARKET_PREVIEW_SELLER_FEE_RATE);
+ // 5% is one Gold per twenty gross Gold; integer remainder avoids float roundoff.
+ const fee=Math.floor(gross/20)+(gross%20===0?0:1);
  return {quantity,pricePerUnit,gross,fee,net:gross-fee,valid:true,issue:null};
 }

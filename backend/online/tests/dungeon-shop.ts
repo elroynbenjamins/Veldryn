@@ -13,7 +13,7 @@ async function run(){
    rpcCalls++;
    assert.equal(args.p_account_id,account,'authenticated account always anchors SQL');
    if(name==='dungeon_shop_snapshot_server_v1')return {
-    marks:1000,clearedRegions:['Sunscar'],ownedRewardIds:[],purchasesThisUtcWeek:{},
+    marks:1000,clearedRegions:['Sunscar'],ownedRewardIds:[],unlockedCraftingTiers:[1,2],purchasesThisUtcWeek:{},
     releasedPrices:{dshop_companion_essence:400,dshop_bondstone:750},
     shopEnabled,
    } as T;

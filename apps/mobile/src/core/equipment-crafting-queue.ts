@@ -430,7 +430,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
       const reason=error instanceof Error?error.message:'';
       // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
       // or after an obsolete recipe is repaired; never silently delete their rewards.
-      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Equipment Pouch, Inventory and Bank are full'||reason.startsWith('Equipment Pouch and Bank are full')||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')){
+      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Equipment Pouch, Inventory and Bank are full'||reason.startsWith('Equipment Pouch and Bank are full')||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')||reason.startsWith('Weapon bonus rolls need your choice')){
         blocked.push({jobId:job.id,reason});
         continue;
       }

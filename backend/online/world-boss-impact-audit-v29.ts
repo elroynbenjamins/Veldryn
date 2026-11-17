@@ -10,12 +10,15 @@ export const WORLD_BOSS_V29_IMPACT_LIVE=false as const;
 export const WORLD_BOSS_V29_IMPACT_PAYOUTS_APPROVED=false as const;
 export const WORLD_BOSS_V29_MIN_ACCOUNTS_PER_CELL=20 as const;
 export const WORLD_BOSS_V29_EXPECTED_CLASSES=9 as const;
-const ID=/^[a-z][a-z0-9_-]{1,63}$/;
+const ID=/^[A-Za-z][A-Za-z0-9_-]{1,63}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DIGEST=/^[a-f0-9]{64}$/;
 const REQUEST=/^[A-Za-z0-9_-]{8,128}$/;
 const BOSSES=['hollowroot','sunscar','frostmarch'] as const;
 const ROLES=['tank','damage','support'] as const;
+// Canonical Veldryn class catalog: 3 Tanks, 4 Damage, 2 Support (9 total).
+// Do not assume a symmetric three-class-per-role distribution.
+const EXPECTED_ROLE_COUNTS={tank:3,damage:4,support:2} as const;
 const SECONDARY=[1,.12,.07,.05,.04] as const;
 type Boss=typeof BOSSES[number];
 type Role=typeof ROLES[number];
@@ -112,8 +115,8 @@ export function auditProvenWorldBossImpactV29(input:{
    !ROLES.includes(x.role))throw Error('world_boss_v29_invalid_class_catalog');
   classes.set(x.classId,x.role);roleCounts[x.role]++;
  }
- if(ROLES.some(r=>roleCounts[r]!==3))
-  throw Error('world_boss_v29_unbalanced_class_catalog');
+ if(ROLES.some(r=>roleCounts[r]!==EXPECTED_ROLE_COUNTS[r]))
+  throw Error('world_boss_v29_invalid_class_role_distribution');
 
  // These replay/account keys must be unique across this ONE event. Client
  // supplied class, bracket, role, CP, and proof status are untrusted inputs.

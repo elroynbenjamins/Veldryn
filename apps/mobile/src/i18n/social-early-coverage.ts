@@ -26,6 +26,9 @@ export const socialEarlyRows={
   "Players appear here when they are active in Veldryn.": ["Здесь появятся активные игроки Veldryn.","Veldryn'de aktif oyuncular burada görünür."],
   "Showing the first {count} players.": ["Показаны первые {count} игроков.","İlk {count} oyuncu gösteriliyor."],
   // Hidden Rankings guided help.
+  "Updated {time}": ["Обновлено {time}","Güncellendi {time}"],
+  "Privacy and tied ranks": ["Приватность и равные места","Gizlilik ve eşit sıralar"],
+  "Equal scores may share a rank. Hidden or blocked players never promote other players into a higher official rank.": ["При равных результатах место может совпадать. Скрытые и заблокированные игроки не повышают официальные места других.","Eşit puanlar aynı sırayı paylaşabilir. Gizli veya engellenen oyuncular başkalarının resmi sırasını yükseltmez."],
   "HALL OF RENOWN": ["ЗАЛ СЛАВЫ","ŞÖHRET SALONU"],
   "LEADER": ["ЛИДЕР","LİDER"],
   "GLOBAL": ["ОБЩИЙ","GENEL"],

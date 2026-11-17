@@ -82,3 +82,14 @@ All market items, numbers, progress bars, dates and sale history are **examples*
 - Sell explains lock/favorite and bank/bag ownership checks as prerequisites; the only live element remains a read-only calculator, not a listing or escrow transaction.
 - Added source-contract regression coverage for distinct encounter/story cues, browse sorting/reset, example level limits and replace-only gem presentation.
 - Still hidden in `__DEV__`; do not make any Market/World Boss/Party Event feature public on the strength of this UI refinement.
+
+## 17 November follow-up — navigation, performance and accessibility
+
+- Fixed a QA navigation bug: when the host reuses the preview shell to show a different hub, an invalid tab from the previous feature can no longer render a wrong default screen. A route change resets the active tab, guide step and scroll position; tab changes reject unknown IDs.
+- Moved the Party social context subscription out of the shared preview shell. Only **Party Events** mounts Party-specific roster and dock consumers. World Boss and Market do not rerender when Party membership changes.
+- Extracted pure, non-mutating Market sample filtering/sorting to `apps/mobile/src/core/market-preview-filter.ts`. Local browsing now supports normalized category/rarity/slot/tier searches; unit price ascending or descending, total lot price and name, with deterministic tie-breaking.
+- Memoized Market sample search and the read-only quote, preventing unnecessary recomputation when unrelated visual state changes.
+- Added inline search clearing, search-friendly keyboard behavior, accurate result singular/plural, and 44 dp tap targets for guide, category and sort controls.
+- Replaced remaining World Boss / Party finale / Market empty-state Unicode symbols with existing Veldryn `UiIcon` assets.
+- Added isolated filter unit tests and strengthened preview source-contract checks for route state, performance boundaries, and interactive control hit targets. These are source/unit-level validations, **not** an Android visual QA pass.
+- **Release remains blocked** by the separate Expo SDK dependency compatibility failure in Mobile Core / Android native validation and by the outstanding authoritative World Boss, Party Events and Market backend gates. No server read/write integration or transaction logic was enabled.

@@ -11,7 +11,7 @@
     "test:event-currency-promotion": "node ../../tools/run-mobile-tests.mjs event-currency-promotion",
     "test:frostfall-preview": "node ../../tools/run-mobile-tests.mjs frostfall-preview frostfall-preview-localization && node tests/frostfall-preview-ui.cjs && node ../../tools/validate-event-release-graph.mjs",
     "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-availability gathering-drop-ui-contract",
-    "eas-build-post-install": "node scripts/write-build-source.mjs",
+    "eas-build-post-install": "node scripts/repair-frostfall-currency-images.cjs && node scripts/repair-frostfall-currency-images.cjs --verify && node scripts/write-build-source.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",

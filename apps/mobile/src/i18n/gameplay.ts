@@ -9,6 +9,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Dungeon-only tonic selection, authored in all base UI locales.
+ "DUNGEON TONICS":["DUNGEON TONICS","DUNGEON-TONIKA","TÓNICOS DE MAZMORRA","KERKERTONICS","TONICI DA DUNGEON","TONIQUES DE DONJON"],
+ "Choose one buff tonic for your next dungeon. Selection is free; it is consumed before the first room, lasts the run, and is not refunded on failure. Tonics do not affect hunts or bosses.":["Choose one buff tonic for your next dungeon. Selection is free; it is consumed before the first room, lasts the run, and is not refunded on failure. Tonics do not affect hunts or bosses.","Wähle ein Stärkungstonikum für deinen nächsten Dungeon. Die Auswahl ist kostenlos; es wird vor dem ersten Raum verbraucht, wirkt bis zum Ende des Runs und wird bei Niederlage nicht erstattet. Tonika wirken nicht bei Jagden oder Bossen.","Elige un tónico de mejora para tu próxima mazmorra. Elegirlo es gratis; se consume antes de la primera sala, dura toda la expedición y no se devuelve si fallas. Los tónicos no afectan a cacerías ni a jefes.","Kies één versterkende tonic voor je volgende kerker. Kiezen is gratis; de tonic wordt vóór de eerste ruimte verbruikt, werkt de hele run en wordt bij mislukking niet teruggegeven. Tonics werken niet tijdens jachten of baasgevechten.","Scegli un tonico potenziante per il prossimo dungeon. La selezione è gratuita; si consuma prima della prima stanza, dura per tutta la spedizione e non viene restituito in caso di sconfitta. I tonici non influenzano cacce o boss.","Choisissez un tonique de renforcement pour votre prochain donjon. La sélection est gratuite ; il est consommé avant la première salle, dure toute l'expédition et n'est pas remboursé en cas d'échec. Les toniques n'affectent ni les chasses ni les boss."],
+ "Out of stock · brew or withdraw from Bank":["Out of stock · brew or withdraw from Bank","Nicht vorrätig · braue einen oder hole ihn aus der Bank","Sin existencias · elabora uno o retíralo del banco","Niet op voorraad · brouw er een of haal uit de bank","Esaurito · preparane uno o ritiralo dalla Banca","Rupture de stock · préparez-en ou retirez-en de la Banque"],
+ "Clear dungeon tonic choice":["Clear dungeon tonic choice","Dungeon-Tonikum abwählen","Quitar el tónico de mazmorra seleccionado","Gekozen kerker-tonic wissen","Annulla il tonico scelto per il dungeon","Effacer le tonique choisi pour le donjon"],
+ "Select for dungeon":["Select for dungeon","Für Dungeon auswählen","Seleccionar para la mazmorra","Selecteer voor kerker","Seleziona per il dungeon","Sélectionner pour le donjon"],
+ "No buff tonics carried. Brew one in Alchemy or withdraw from Bank.":["No buff tonics carried. Brew one in Alchemy or withdraw from Bank.","Keine Stärkungstonika dabei. Stelle eines in Alchemie her oder hole es aus der Bank.","No llevas tónicos de mejora. Elabora uno con Alquimia o retíralo del banco.","Je draagt geen versterkende tonics. Brouw er een met Alchemie of haal er een uit de bank.","Non hai tonici potenzianti con te. Preparane uno con Alchimia o ritiralo dalla Banca.","Aucun tonique de renforcement sur vous. Préparez-en un en alchimie ou retirez-en de la Banque."],
  "Equipment for all classes":["Equipment for all classes","Ausrüstung für alle Klassen","Equipo para todas las clases","Uitrusting voor alle klassen","Equipaggiamento per tutte le classi","Équipement pour toutes les classes"],
  "All classes":["All classes","Alle Klassen","Todas las clases","Alle klassen","Tutte le classi","Toutes les classes"],
  "My class":["My class","Meine Klasse","Mi clase","Mijn klasse","La mia classe","Ma classe"],
@@ -1406,6 +1413,19 @@ const storyBossRewardCopy={
 const rows={...common,...storyBossRewardCopy,...combat,...queue,...skills,...inventory,...rewards,...crafting,...details,...enhancement};
 export type GameplayKey=keyof typeof rows;
 export const gameplayCatalogs=catalogsFor(rows);
+// Russian and Turkish authored coverage for the new dungeon tonic selection UI.
+const dungeonTonicEarlyLocales={
+ "DUNGEON TONICS":["ТОНИКИ ДЛЯ ПОДЗЕМЕЛИЙ","ZİNDAN TONİKLERİ"],
+ "Choose one buff tonic for your next dungeon. Selection is free; it is consumed before the first room, lasts the run, and is not refunded on failure. Tonics do not affect hunts or bosses.":["Выберите один усиливающий тоник для следующего подземелья. Выбор бесплатный: тоник расходуется до первой комнаты, действует весь забег и не возвращается при поражении. Тоники не влияют на охоту или боссов.","Bir sonraki zindanın için bir güçlendirme toniği seç. Seçim ücretsizdir; ilk odadan önce tüketilir, tüm koşu boyunca sürer ve başarısızlıkta iade edilmez. Tonikler avları veya bossları etkilemez."],
+ "Out of stock · brew or withdraw from Bank":["Нет в наличии · приготовьте или заберите из банка","Stokta yok · üret veya Bankadan çek"],
+ "Clear dungeon tonic choice":["Сбросить выбор тоника для подземелья","Zindan toniği seçimini temizle"],
+ "Select for dungeon":["Выбрать для подземелья","Zindan için seç"],
+ "No buff tonics carried. Brew one in Alchemy or withdraw from Bank.":["У вас нет усиливающих тоников. Приготовьте один в алхимии или заберите из банка.","Üzerinde güçlendirme toniği yok. Simya ile üret veya Bankadan çek."],
+} as const;
+for(const [english,pair] of Object.entries(dungeonTonicEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 const storyBossRewardEarlyLocales={
   "GOLD":["ЗОЛОТО","ALTIN"],
   "XP":["ОПЫТ","TP"],

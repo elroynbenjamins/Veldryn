@@ -5,6 +5,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {usePartySocial} from '../online/PartySocialProvider';
 import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
+import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
 import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
@@ -247,8 +248,7 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
  const [quantity,setQuantity]=useState('10'),[price,setPrice]=useState('20'),[review,setReview]=useState(false);
  const filtered=samples.filter(item=>(category==='All'||item.type===category)&&item.name.toLowerCase().includes(query.trim().toLowerCase())).sort((a,b)=>sort==='unit'?a.unit-b.unit:a.unit*a.amount-b.unit*b.amount);
  const selectedItem=samples.find(item=>item.id===selected);
- const qty=Math.min(99999,Math.max(0,Math.floor(Number(quantity)||0))),per=Math.min(99999999,Math.max(0,Math.floor(Number(price)||0)));
- const gross=qty*per,fee=Math.ceil(gross*.05),net=gross-fee;
+ const {gross,fee,net,valid:quoteValid,issue:quoteIssue}=estimateMarketPreviewQuote(quantity,price);
  if(tab==='browse')return <>
   <Card s={s}><SectionHeading s={s} kicker="SEARCH & DISCOVER" title="Find your next upgrade" sub="Illustrative listings. Final quotes, availability and equipment eligibility must be read from the authenticated Market service."/>
    <TextInput accessibilityLabel="Search example market items" value={query} onChangeText={value=>{setQuery(value);setSelected(null)}} placeholder="Search resources, gems, equipment…" placeholderTextColor={C.muted} style={s.input}/>
@@ -279,11 +279,13 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
  if(tab==='sell')return <Card s={s}><SectionHeading s={s} kicker="CREATE A LISTING · CALCULATOR" title="Know the payout first" sub="Try a sample listing price. This calculator does not inspect inventory, reserve items or post an offer."/>
    <Text style={s.detailLabel}>EXAMPLE QUANTITY</Text><TextInput value={quantity} onChangeText={value=>{setQuantity(value);setReview(false)}} keyboardType="numeric" accessibilityLabel="Example quantity" style={s.input}/>
    <Text style={s.detailLabel}>EXAMPLE PRICE PER UNIT · GOLD</Text><TextInput value={price} onChangeText={value=>{setPrice(value);setReview(false)}} keyboardType="numeric" accessibilityLabel="Example unit price" style={s.input}/>
+   {quoteIssue?<Text accessibilityLiveRegion="polite" style={s.warningTitle}>{quoteIssue}</Text>:null}
    <View style={s.invoice} accessibilityLiveRegion="polite"><View style={s.detailRow}><Text style={s.bodyText}>Gross sale</Text><Text style={s.choiceTitle}>{gross.toLocaleString('en-US')} Gold</Text></View>
     <View style={s.detailRow}><Text style={s.bodyText}>Seller fee · 5%</Text><Text style={s.choiceTitle}>−{fee.toLocaleString('en-US')} Gold</Text></View>
     <View style={s.detailRow}><Text style={s.choiceTitle}>Estimated seller payout</Text><Text style={[s.goldPrice,{fontSize:18}]}>{net.toLocaleString('en-US')} Gold</Text></View>
    </View>
-   <Action label="Review example calculation" s={s} onPress={()=>setReview(true)} disabled={gross<=0}/>
+   <Text style={s.finePrint}>Example only · 5% seller fee rounded up to the next whole Gold. Final listing limits and fees are confirmed by the server.</Text>
+   <Action label="Review example calculation" s={s} onPress={()=>setReview(true)} disabled={!quoteValid}/>
    {review?<View style={s.warning}><Text style={s.warningTitle}>Example review complete</Text><Text style={s.bodyText}>No listing has been submitted. Live selling will additionally enforce item ownership, minimum lot sizes, price corridors and safe escrow.</Text></View>:null}
    <Action label="Publish listing · Not available" s={s} disabled/>
   </Card>;

@@ -57290,7 +57290,7 @@ function bulkSelectionSummary(state, itemIds2, location) {
   };
   const autoEatId = state.character?.equippedFoodId, goalProtection = workingTowardInventoryProtectionMap(state), goalProtectedIds = new Set(goalProtection.keys());
   const goalProtected = stacks.filter((stack) => goalProtectedIds.has(stack.itemId));
-  const transferable = stacks.filter((stack) => !stack.instanceId && (location === "bank" || stack.itemId !== autoEatId));
+  const transferable = stacks.filter((stack) => location === "bank" || stack.itemId !== autoEatId);
   const sellable = stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
     if (stack.itemId === autoEatId || stack.itemId === HOLY_WATER_ID || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId || goalProtectedIds.has(stack.itemId)) return false;
@@ -57342,11 +57342,15 @@ function bulkTransferSelected(state, itemIds2, from) {
   const summary = bulkSelectionSummary(state, itemIds2, from);
   if (!summary.transferableIds.length) throw new Error(from === "inventory" && summary.transferProtectedCount ? "Selected auto-eat food stays in Inventory." : "No selected items can be moved.");
   let next = state;
-  for (const itemId of summary.transferableIds) {
+  for (const id of summary.transferableIds) {
+    if (id.startsWith("copy:")) {
+      next = moveCraftedGearInstance(next, id.slice(5), from === "inventory" ? "bank" : "inventory");
+      continue;
+    }
     const source = from === "inventory" ? next.inventory : next.bank;
-    const quantity2 = source.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    const quantity2 = source.stacks.filter((stack) => stack.itemId === id && stack.instanceId === void 0).reduce((sum, stack) => sum + stack.quantity, 0);
     if (quantity2 <= 0) continue;
-    next = from === "inventory" ? depositToBank(next, itemId, quantity2) : withdrawFromBank(next, itemId, quantity2);
+    next = from === "inventory" ? depositToBank(next, id, quantity2) : withdrawFromBank(next, id, quantity2);
   }
   return next;
 }
@@ -59266,8 +59270,9 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "deposit_materials":
       state = depositAllMaterials(state);
       break;
+    // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
     case "bulk_transfer":
-      state = bulkTransferSelected(state, stringArray(a, "ids"), oneOf(a.location, ["inventory", "bank"]));
+      state = bulkTransferSelected(state, stringArray(a, "ids", 100, 185), oneOf(a.location, ["inventory", "bank"]));
       break;
     case "bulk_sell":
       state = bulkSellSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));

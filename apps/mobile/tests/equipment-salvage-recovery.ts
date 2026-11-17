@@ -71,8 +71,11 @@ const legacyDone=salvageEquipmentPouchSelected(legacy,[equipmentPouchSalvageCand
 assert.deepEqual(legacyDone.inventory.stacks.filter(row=>row.itemId==='TEMPERING_DUST'),[dust],'legacy payout remains unchanged');
 const locked=pouchState({...common,locked:true});
 assert.throws(()=>disposeCraftedGearInstance(locked,common.id,'salvage'),/locked/i,'locked gear remains protected');
-const equipped=pouchState({...common,enhancement:{...common.enhancement,rank:1}});
-assert.throws(()=>disposeCraftedGearInstance(equipped,common.id,'salvage'),/Enhanced/i,'enhanced gear remains protected');
+const socketedEnhanced=pouchState({...common,enhancement:{...common.enhancement,rank:1,statGemId:'WARD_SHARD',gemIds:['WARD_SHARD']}});
+const disposedEnhanced=disposeCraftedGearInstance(socketedEnhanced,common.id,'salvage');
+assert.ok(!disposedEnhanced.account.craftedGearInstances?.some(row=>row.id===common.id),'manual salvage destroys the exact enhanced copy');
+assert.ok(!disposedEnhanced.inventory.stacks.some(row=>row.itemId==='WARD_SHARD'),'socketed gem must not be refunded by salvage');
+assert.ok(!disposedEnhanced.account.gemPouch?.stacks.some(row=>row.itemId==='WARD_SHARD'),'socketed gem must not return to Gem Pouch');
 const full={...owned,inventory:{...owned.inventory,capacity:1,stacks:[{itemId:'BOAR_HIDE',quantity:1}]}};
 assert.throws(()=>salvageEquipmentPouchSelected(full,[candidate.id]),/full/i,'insufficient Inventory slots reject the whole salvage');
 assert.ok(full.account.craftedGearInstances?.some(record=>record.id===common.id)&&full.character!.equipmentPouch?.stacks.length===1,'failed salvage does not destroy equipment');

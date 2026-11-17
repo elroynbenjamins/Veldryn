@@ -5,6 +5,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {usePartySocial} from '../online/PartySocialProvider';
 import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
+import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
@@ -65,7 +66,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  return <View style={s.root}>
    <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back to Account" onPress={onClose} style={s.smallButton}><Text style={s.smallButtonText}>‹ Back</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Back to Account" onPress={onClose} style={s.smallButton}><UiIcon name="back" size={17}/><Text style={s.smallButtonText}>Back</Text></Pressable>
       <View style={s.headerRight}><Text style={s.privateLabel}>DESIGN QA</Text><Pressable accessibilityRole="button" accessibilityLabel={title.title+' guide'} onPress={()=>setGuide(true)} style={s.help}><Text style={s.helpText}>?</Text></Pressable></View>
     </View>
     <ImageBackground source={heroSceneId?regionScenes[heroSceneId]:marketArtwork} resizeMode="cover" imageStyle={s.heroImage} style={[s.hero,{borderColor:accent}]}>
@@ -86,7 +87,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
    {feature==='party'?<Pressable accessibilityRole="button" accessibilityLabel={partyConnected?'Open Party Chat':'Open Party to find members'} onPress={partyConnected?onOpenPartyChat:onOpenParty} style={[s.partyDock,{borderTopColor:accent}]}>
-     <View style={[s.dockGlyph,{borderColor:accent}]}><Text style={[s.dockGlyphText,{color:accent}]}>✦</Text></View>
+     <View style={[s.dockGlyph,{borderColor:accent}]}><UiIcon name="chat" size={23}/></View>
      <View style={s.flex}><Text style={s.dockTitle}>Party Chat</Text><Text style={s.dockDescription}>{partyConnected?'Coordinate with your Party':'Join a Party to unlock chat'}</Text></View>
      {partyUnread>0&&partyConnected?<View style={s.unread}><Text style={s.unreadText}>{partyUnread>99?'99+':partyUnread}</Text></View>:null}
      <Text style={s.dockArrow}>›</Text>
@@ -127,7 +128,7 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER CODEX" title="Choose a boss to inspect" sub="Choose a region to preview its encounter. No boss availability is implied."/>
    {bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityState={{selected:selected===entry.id}} onPress={()=>onSelect(entry.id)} style={[s.choice,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
-     <View style={[s.motif,{backgroundColor:C.panel2,borderColor:entry.color}]}><Text style={[s.motifGlyph,{color:entry.color}]}>✥</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{entry.name}</Text><Text style={s.choiceSub}>{entry.region} · {entry.motif}</Text></View><Text style={[s.choiceArrow,{color:entry.color}]}>{selected===entry.id?'✓':'›'}</Text>
+     <View style={[s.motif,{backgroundColor:C.panel2,borderColor:entry.color}]}><UiIcon name="world" size={28}/></View><View style={s.flex}><Text style={s.choiceTitle}>{entry.name}</Text><Text style={s.choiceSub}>{entry.region} · {entry.motif}</Text></View><Text style={[s.choiceArrow,{color:entry.color}]}>{selected===entry.id?'✓':'›'}</Text>
    </Pressable>)}
    <Action label={'Inspect '+boss.name+' War Camp'} s={s} onPress={()=>onTab('camp')}/>
   </Card>
@@ -191,7 +192,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="STORY SELECTION · PREVIEW" title="Explore the event families" sub="Every story has its own scouting, encounter and final preparation."/>
    {stories.map(storyOption=><Pressable key={storyOption.id} accessibilityRole="button" accessibilityState={{selected:story.id===storyOption.id}} onPress={()=>{onStoryChange(storyOption.id);setChoice(null);setFinalChoice(null);setBallot('approach')}} style={[s.choice,story.id===storyOption.id&&{borderColor:storyOption.accent,backgroundColor:C.panelRaised}]}>
-    <View style={[s.motif,{borderColor:storyOption.accent}]}><Text style={[s.motifGlyph,{color:storyOption.accent}]}>✦</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{storyOption.name}</Text><Text style={s.choiceSub}>{storyOption.summary}</Text></View>
+    <View style={[s.motif,{borderColor:storyOption.accent}]}><UiIcon name="events" size={28}/></View><View style={s.flex}><Text style={s.choiceTitle}>{storyOption.name}</Text><Text style={s.choiceSub}>{storyOption.summary}</Text></View>
    </Pressable>)}
    <Action label="Inspect the story stages" s={s} onPress={()=>onTab('stages')}/>
   </Card>
@@ -253,7 +254,7 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
     {([{id:'unit',label:'Unit price'},{id:'lot',label:'Total lot'}] as const).map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:sort===option.id}} onPress={()=>setSort(option.id)} style={[s.sortChip,sort===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,sort===option.id&&{color:C.text}]}>{option.label}</Text></Pressable>)}
    </View>
    {filtered.length===0?<View style={s.empty}><Text style={s.bodyText}>No example items match this search.</Text></View>:filtered.map(item=><View key={item.id} style={s.resultGroup}><Pressable accessibilityRole="button" accessibilityState={{expanded:selected===item.id}} accessibilityLabel={`${item.name}, ${item.amount} items, ${item.unit*item.amount} gold example lot, ${selected===item.id?'details open':'inspect details'}`} onPress={()=>setSelected(selected===item.id?null:item.id)} style={[s.marketRow,selected===item.id&&{borderColor:accent}]}>
-    <View style={s.marketSymbol}><Text style={s.marketSymbolText}>{item.type==='Resources'?'▤':item.type==='Gems'?'◇':'✥'}</Text></View>
+    <View style={s.marketSymbol}><UiIcon name={item.type==='Equipment'?'inventory':item.type==='Gems'?'rewards':item.type==='Resources'?'world':'dungeon'} size={25}/></View>
     <View style={s.flex}><Text style={s.choiceTitle}>{item.name}</Text><Text style={s.choiceSub}>{item.type} · Example lot of {item.amount}{item.requiredLevel?' · Min. Lv '+item.requiredLevel:''}</Text></View>
     <View style={s.priceBlock}><Text style={s.goldPrice}>{(item.unit*item.amount).toLocaleString('en-US')} G</Text><Text style={s.choiceSub}>{item.unit} each</Text></View>
    </Pressable>
@@ -289,7 +290,7 @@ function makeStyles(C:ThemeColors,compact=false){
  return StyleSheet.create({
   root:{flex:1,backgroundColor:C.bg},page:{padding:spacing.md,paddingBottom:34,gap:spacing.md},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',minHeight:40},
-  headerRight:{flexDirection:'row',alignItems:'center',gap:10},smallButton:{paddingHorizontal:12,minHeight:40,justifyContent:'center',borderRadius:radii.sm,borderColor:C.lineStrong,borderWidth:1},smallButtonText:{color:C.text,fontWeight:'800',fontSize:12},
+  headerRight:{flexDirection:'row',alignItems:'center',gap:10},smallButton:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:12,minHeight:44,justifyContent:'center',borderRadius:radii.sm,borderColor:C.lineStrong,borderWidth:1},smallButtonText:{color:C.text,fontWeight:'800',fontSize:12},
   privateLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:C.muted},help:{width:40,height:40,borderRadius:20,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},helpText:{color:C.text,fontSize:20,fontWeight:'800'},
   hero:{height:compact?142:166,borderWidth:1,borderRadius:radii.md,overflow:'hidden',justifyContent:'flex-end',backgroundColor:C.panel},heroImage:{opacity:.8},heroShade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(2,7,12,.54)'},heroCopy:{padding:spacing.lg,gap:5},eyebrow:{fontWeight:'900',letterSpacing:1.7,fontSize:10},heroTitle:{color:'#FFFFFF',fontSize:compact?24:27,lineHeight:35,fontWeight:'900'},heroSub:{color:'#F4F1E9',fontSize:13,lineHeight:18,fontWeight:'700'},
   qaNote:{flexDirection:'row',alignItems:'flex-start',gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},qaSymbol:{fontSize:20,fontWeight:'900'},qaText:{color:C.muted,fontSize:11,lineHeight:17,flex:1},

@@ -53,6 +53,7 @@ VALUES(
 DO $test$
 DECLARE
  v_char uuid:='20000000-0000-4000-8000-000000000034';
+ refused boolean;
 BEGIN
  IF EXISTS (
   SELECT 1 FROM pg_constraint
@@ -76,6 +77,41 @@ BEGIN
     AND account_id='10000000-0000-4000-8000-000000000034'::uuid
     AND character_id=v_char)
  THEN RAISE EXCEPTION 'WB34_DONATION_HISTORY_LOST'; END IF;
+ -- A deleted character can no longer obtain a NEW attempt or donation.
+ -- The DB (not only application code) must check ownership at INSERT.
+ refused:=false;
+ BEGIN
+  INSERT INTO private.world_boss_attempts_v17(
+   event_id,account_id,request_id,ordinal,character_id,war_order,phase,
+   rules_version,engine_version,server_seed,squad_digest,frozen_squad,
+   lease_owner,lease_expires_at,hard_expires_at)
+  VALUES(
+   '30000000-0000-4000-8000-000000000034',
+   '10000000-0000-4000-8000-000000000034',
+   'WB34_FORGED_BATTLE_2',2,v_char,'hold_line','armored',
+   'wb34-fixture','wb34-prototype',repeat('R',32),repeat('b',64),
+   jsonb_build_object('trustedFrozenRoster',repeat('Y',160)),
+   'WB34_TEST_WORKER',clock_timestamp()+interval '2 minutes',
+   clock_timestamp()+interval '15 minutes');
+ EXCEPTION WHEN raise_exception THEN
+  refused:=SQLERRM LIKE '%WB34_CHARACTER_NOT_OWNED%';
+ END;
+ IF NOT refused THEN RAISE EXCEPTION 'WB34_DELETED_CHARACTER_COULD_RESERVE'; END IF;
+ refused:=false;
+ BEGIN
+  INSERT INTO private.world_boss_war_donations_v27(
+   event_id,account_id,request_id,character_id,recipe_id,track,
+   ordinal,paid_materials,revision)
+  VALUES(
+   '30000000-0000-4000-8000-000000000034',
+   '10000000-0000-4000-8000-000000000034',
+   'WB34_FORGED_DONATION_2',v_char,'WB34_TEST_RECIPE',
+   'fortifications',2,
+   '[{"itemId":"GREENWOOD_LOG","quantity":1}]'::jsonb,2);
+ EXCEPTION WHEN raise_exception THEN
+  refused:=SQLERRM LIKE '%WB34_CHARACTER_NOT_OWNED%';
+ END;
+ IF NOT refused THEN RAISE EXCEPTION 'WB34_DELETED_CHARACTER_COULD_DONATE'; END IF;
  RAISE NOTICE 'WORLD_BOSS_V34_CHARACTER_DELETE_COMPATIBILITY=PASS';
 END
 $test$;

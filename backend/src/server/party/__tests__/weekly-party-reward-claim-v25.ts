@@ -99,12 +99,12 @@ async function test(){
   });
   assert(first.replayed===false&&retry.replayed===true
     &&first.claimEnabled===false&&first.economyApplied===false
-    &&first.inboxDelivered===false&&writes===2,
+    &&first.inboxDelivered===false&&Number(writes)===2,
     'v25 quote retries are safe and never pay');
   const preview=await readPrivatePartyClaimQuoteInboxV25({
     gateEnabled:true,trustedAccountId:account,repository:repo,
   });
-  assert(reads===1&&preview.quoteCount===1
+  assert(Number(reads)===1&&preview.quoteCount===1
     &&preview.quotes[0]!.claimable===false,
     'quote Inbox remains nonclaimable');
   const flagChanged:TrustedPartyRewardClaimQuoteRepositoryV25={

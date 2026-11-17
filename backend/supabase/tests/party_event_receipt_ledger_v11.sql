@@ -33,8 +33,8 @@ begin
   insert into auth.users(id,email) values(a[i],'party-v11-'||a[i]||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id)
   values(c[i],a[i],'Adventure Test '||chr(64+i),
-   case i when 1 then 'IRONWARDEN' when 2 then 'WAYFINDER'
-    when 3 then 'RAVAGER' when 4 then 'DAWNKEEPER' else 'BASTION' end);
+   case i when 1 then 'WAYFINDER' when 2 then 'WAYFINDER'
+    when 3 then 'RAVAGER' when 4 then 'HEXWEAVER' else 'BASTION' end);
  end loop;
  insert into public.parties(id,leader_account_id,leader_character_id)
  values(p,a[1],c[1]);
@@ -43,10 +43,12 @@ begin
  values(p,start_at,start_at+interval '7 days','broken_caravan','bandits_crossing',0,'standard');
  insert into private.party_event_roster_v11
   (party_id,event_starts_at,account_id,character_id,role,joined_at)
- values(p,start_at,a[1],c[1],'tank',start_at),
+ -- Four Damage classes are valid; every role is still checked
+ -- against public.characters.class_id and the enrollment is capped at four.
+ values(p,start_at,a[1],c[1],'damage',start_at),
        (p,start_at,a[2],c[2],'damage',start_at),
        (p,start_at,a[3],c[3],'damage',start_at),
-       (p,start_at,a[4],c[4],'support',start_at);
+       (p,start_at,a[4],c[4],'damage',start_at);
 
  begin
   insert into private.party_event_roster_v11

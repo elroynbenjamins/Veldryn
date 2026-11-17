@@ -1,5 +1,10 @@
 /** Release-readiness Russian UI strings added without changing canonical IDs or placeholders. */
 export const RUSSIAN_RELEASE_POLISH_ROWS = {
+  // Live regional headers and count captions match the rebased chapter ranges.
+  "REGION II · LEVEL 26–50": "РЕГИОН II · УРОВНИ 26–50",
+  "REGION III · LEVEL 51–75": "РЕГИОН III · УРОВНИ 51–75",
+  "enemies": "врагов",
+  "gathering": "мест сбора",
   // Newly authored Game Guide topics: preserve exact source strings and Russian coverage.
   "Equipment & Inventory": "Снаряжение и инвентарь",
   "Equip stronger gear, compare stats and keep your materials organized.": "Надевайте более мощное снаряжение, сравнивайте характеристики и упорядочивайте материалы.",

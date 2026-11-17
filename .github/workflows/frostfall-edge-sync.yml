@@ -8,6 +8,7 @@ on:
       - 'apps/mobile/src/core/release-flags.ts'
       - 'apps/mobile/src/content/live-events.ts'
       - 'backend/online/dungeon-shop.ts'
+      - 'backend/online/guild-shop-read.ts'
       - 'backend/src/server/expeditions/**'
 permissions:
   contents: write

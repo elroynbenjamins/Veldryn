@@ -31,7 +31,7 @@ import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentPreview} from '../components/EquipmentPreview';
 import {EquipmentDisposalStatus} from '../components/EquipmentDisposalStatus';
-import {equipmentCopyDisposalDecision} from '../core/equipment-disposal-guidance';
+import {equipmentCopyDisposalDecision,type EquipmentDisposalDecision} from '../core/equipment-disposal-guidance';
 import {ItemQuickInspect} from '../components/ItemQuickInspect';
 import {formatGameNumber} from '../core/number-format';
 import {displayStat} from '../core/stat-display';
@@ -161,7 +161,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     if(lockedSet.has(previewId))return unavailable('This equipment type is locked');
     const item=itemDef(previewId);
     if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId)return unavailable('This equipment is not available for disposal');
-    const eligible=(method:'sell'|'salvage')=>{
+    const eligible=(method:'sell'|'salvage'):EquipmentDisposalDecision=>{
       if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))
         return {allowed:false,reason:'This equipment has no vendor value'};
       if(method==='salvage'&&!equipmentSalvageReward(previewId))

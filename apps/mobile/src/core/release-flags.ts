@@ -1,5 +1,7 @@
 /** Enable the event client; the authoritative server window controls access and rewards. */
 export const EVENTS_RELEASED=true;
+/** Prepared Frostfall rewards stay out of all player catalogs until the seasonal launch is explicitly approved. */
+export const FROSTFALL_REWARDS_RELEASED=false;
 /** Pause shared event-wide contribution goals until the active population can support them.
  * Preserve authored rewards and earned records for a future opt-in release. */
 export const EVENT_COMMUNITY_ENABLED=false;

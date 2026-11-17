@@ -47,9 +47,11 @@ assert.equal(bundles.length,7);
 assert.deepEqual(bundles.map(row=>row.marks),[150,150,300,300,600,600,1000]);
 assert.deepEqual(bundles.map(row=>row.grant.kind==='crafting_bundle'?row.grant.tier:null),[1,1,2,2,3,3,4]);
 const initial:DungeonShopAccountViewV1={
-  marks:4000,clearedRegions:['Sunscar'],ownedRewardIds:[],purchasesThisUtcWeek:{},
+  marks:4000,clearedRegions:['Sunscar'],ownedRewardIds:[],unlockedCraftingTiers:[1,2],purchasesThisUtcWeek:{},
 };
 assert.equal(dungeonShopQuoteV1('dshop_sunscar_pet',initial).status,'eligible');
+assert.equal(dungeonShopQuoteV1('dshop_dunewood_100',initial).status,'crafting_tier_locked');
+assert.equal(dungeonShopQuoteV1('dshop_dunewood_100',{...initial,unlockedCraftingTiers:[1,2,3]}).status,'eligible');
 assert.equal(dungeonShopQuoteV1('dshop_asterfall_icon',initial).status,'region_locked');
 assert.equal(dungeonShopQuoteV1('dshop_asterfall_pet',{...initial,clearedRegions:['Asterfall'],marks:3000}).status,'eligible');
 assert.equal(dungeonShopOfferV1('dshop_asterfall_pet')?.grant.kind,'profile_collectible');

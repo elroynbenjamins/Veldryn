@@ -14,7 +14,10 @@ assert.match(calendar, /frostfallPreviewPhase\(item\.startsAtMs,previewNow\)/, '
 assert.match(preview, /frostfallPreviewPhase\(startsAtMs, nowMs\)/, 'standalone preview must also enforce gating');
 assert.match(preview, /t\('previewOnly'\)/, 'teaser must clearly identify itself as read-only in all languages');
 assert.doesNotMatch(preview, /event_(reward|daily|purchase|cache|weekly)|claimEvent|purchaseEventOffer|onCommand/, 'teaser cannot perform live-event commands');
-assert.doesNotMatch(released, /annual-events-v2/, 'future Frostfall gameplay must remain out of released live catalog');
+assert.match(released, /import \{FROSTFALL_EVENT\} from '\.\/annual-events-v2'/, 'Frostfall gameplay must be registered before its server-controlled launch');
+assert.match(released, /LIVE_EVENT_CATALOG:LiveEventDef\[\]=\[VEILBREAK_EVENT,FROSTFALL_EVENT\]/, 'only scheduled Frostfall joins Veilbreak in the released definition catalog');
+const runtime = fs.readFileSync(path.join(mobile, 'src/online/live-events.ts'), 'utf8');
+assert.match(runtime, /supabase\.rpc\('visible_live_events'\)/, 'the server must still exclusively decide which event is active');
 assert.match(preview, /disabled=\{!tile\.unlocked\}/, 'unrevealed teaser cards must not be interactive');
 assert.match(preview, /frostfallSecondRevealCountdown\(startsAtMs, nowMs\)/, 'use a changing second-reveal countdown');
 assert.match(preview, /GameThemeScope colors=\{winterColors\}/, 'Frostfall preview has a winter-scoped theme');

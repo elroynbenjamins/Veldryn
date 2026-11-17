@@ -86,7 +86,7 @@ async function test(){
  const retry=await preparePrivatePartyClaimIntentV25({
   gateEnabled:true,offerId:id,trustedAccountId:account,repository:repo,
  });
- must(!first.replayed&&retry.replayed&&reserves===2
+ must(!first.replayed&&retry.replayed&&Number(reserves)===2
   &&!first.claimReady&&!first.claimed&&!first.claimable,
   'one-time claim intent and safe duplicate retry');
  const inbox=await readPrivatePartyClaimInboxV25({

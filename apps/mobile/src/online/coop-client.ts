@@ -8,6 +8,7 @@ import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
+import {parseDungeonCombatMarks,type DungeonCombatMarks} from '../core/dungeon-reward-display';
 import type {CoopEventExpeditionPreview,CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {LiveQueueView,LiveReadyView} from '../core/coop-live-lobby';
 import type {CoopLiveRecruitmentPost} from '../core/coop-live-recruitment';
@@ -124,5 +125,6 @@ export const coopClient={
  retryPending:async()=>{noteCoopEntryMutation();return (await journal()).execute();},
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},
+ combatMarks:async(runId:string):Promise<DungeonCombatMarks>=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.rpc('coop_run_combat_marks_self_v1',{p_run_id:runId});if(error)throw error;const receipt=parseDungeonCombatMarks(data);if(!receipt)throw new Error('Invalid dungeon combat Marks receipt.');return receipt;},
  claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');noteCoopEntryMutation();const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number;live_fellowship_bonus?:number;live_fellowship_applied?:boolean};},
 };

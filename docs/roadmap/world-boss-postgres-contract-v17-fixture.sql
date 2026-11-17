@@ -12,5 +12,5 @@ $roles$;
 CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS public.characters (
  id uuid PRIMARY KEY,
- account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT
+ account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );

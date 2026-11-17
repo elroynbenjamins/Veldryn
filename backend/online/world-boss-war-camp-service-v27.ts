@@ -101,10 +101,22 @@ export function validateWorldBossWarCampProgressV27(
    c>g.tier2At)
    throw Error('world_boss_v27_invalid_community_progress');
  }
+ // Every accepted bundle increments exactly one community track and the
+ // War Camp revision in the same private transaction. Reject a partial or
+ // tampered projection, even if its standalone snapshot digest is valid.
+ const counted=tracks.reduce((sum,track)=>sum+row.contributions[track],0);
+ if(row.revision!==counted)
+  throw Error('world_boss_v39_inconsistent_community_ledger');
  if(row.snapshot){
   if(row.snapshot.eventId!==eventId||row.snapshot.revision!==row.revision)
    throw Error('world_boss_v27_mismatched_frozen_progress');
   deriveWorldBossWarCampEffectsV11(row.snapshot);
+  for(const track of tracks){
+   const count=row.contributions[track],goal=row.goals[track];
+   const expectedTier=count>=goal.tier2At?2:count>=goal.tier1At?1:0;
+   if(row.snapshot.levels[track]!==expectedTier)
+    throw Error('world_boss_v39_inconsistent_frozen_tiers');
+  }
  }
  return row;
 }

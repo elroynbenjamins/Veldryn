@@ -6,7 +6,8 @@ import type {ItemRarity} from './item-rarity';
 /** Basis points: 100 = +1.0 percentage point. One decimal place is displayed. */
 export type WeaponBonusStat='maxHp'|'armor'|'ward'|'tenacity'|'critRate'|'haste'|'penetration'|'accuracy'|'potency';
 export interface WeaponBonusRoll{stat:WeaponBonusStat;basisPoints:number;}
-export const WEAPON_BONUS_ROLL_VERSION=1;
+export const WEAPON_BONUS_ROLL_VERSION=2;
+export type WeaponBonusRollVersion=1|2;
 export const WEAPON_BONUS_LABELS:Readonly<Record<WeaponBonusStat,string>>={
   maxHp:'Max HP',armor:'Armor',ward:'Ward',tenacity:'Tenacity',
   critRate:'Crit Rate',haste:'Haste',penetration:'Penetration',
@@ -38,10 +39,18 @@ export const WEAPON_BONUS_BPS_BY_BAND:Readonly<Record<WeaponTierBand,Readonly<Re
     critRate:[150,300],haste:[200,350],penetration:[250,400],accuracy:[150,300],potency:[400,650],
   },
 };
+/** Version 1 is retained for any older test/staging receipts. Never reinterpret a
+ * previously minted percentage under a newly tuned range. */
+const V1_RANGE_BY_BAND:Readonly<Record<WeaponTierBand,readonly [number,number]>>={
+  3:[100,300],5:[200,400],7:[300,500],9:[400,600],
+};
 /** The maximum of a stat is independent of the other stat on a dual-roll weapon. */
-export function weaponBonusRange(tier:number,stat:WeaponBonusStat):readonly [number,number]|undefined{
-  const band:WeaponTierBand|undefined=tier>=9&&tier<=9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:undefined;
-  return band===undefined?undefined:WEAPON_BONUS_BPS_BY_BAND[band][stat];
+export function weaponBonusRange(
+  tier:number,stat:WeaponBonusStat,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION,
+):readonly [number,number]|undefined{
+  const band:WeaponTierBand|undefined=tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:undefined;
+  if(band===undefined)return undefined;
+  return version===1?V1_RANGE_BY_BAND[band]:version===2?WEAPON_BONUS_BPS_BY_BAND[band][stat]:undefined;
 }
 const HIGH_RARITIES:readonly ItemRarity[]=['epic','legendary','mythic'];
 const STEP_BPS=10;
@@ -63,10 +72,10 @@ export function rollWeaponBonuses(itemId:string,rarity:ItemRarity,receiptKey:str
   const pool=[...cfg.pool],out:WeaponBonusRoll[]=[];
   const seed=`${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for(let index=0;index<cfg.count;index++){
-    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v1:stat:${seed}:${index}`);
+    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v2:stat:${seed}:${index}`);
     const position=Math.min(pool.length-1,Math.floor(statUnit*pool.length));
     const [stat]=pool.splice(position,1); // Two bonuses must have different stat types.
-    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v1:value:${seed}:${index}`);
+    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v2:value:${seed}:${index}`);
     const range=weaponBonusRange(cfg.tier,stat)!;
     const steps=(range[1]-range[0])/STEP_BPS;
     out.push({stat,basisPoints:range[0]+STEP_BPS*Math.min(steps,Math.floor(valueUnit*(steps+1)))});
@@ -75,7 +84,7 @@ export function rollWeaponBonuses(itemId:string,rarity:ItemRarity,receiptKey:str
 }
 
 /** Missing bonuses remain missing on legacy copies; malformed values never grant stats. */
-export function normalizeWeaponBonuses(itemId:string,rarity:ItemRarity,raw:unknown):WeaponBonusRoll[]|undefined{
+export function normalizeWeaponBonuses(itemId:string,rarity:ItemRarity,raw:unknown,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION):WeaponBonusRoll[]|undefined{
   const cfg=weaponBonusConfig(itemId,rarity);
   if(!cfg||!Array.isArray(raw)||raw.length!==cfg.count)return undefined;
   const seen=new Set<WeaponBonusStat>(),out:WeaponBonusRoll[]=[];
@@ -83,7 +92,7 @@ export function normalizeWeaponBonuses(itemId:string,rarity:ItemRarity,raw:unkno
     if(!entry||typeof entry!=='object')return undefined;
     const {stat,basisPoints}=entry as Partial<WeaponBonusRoll>;
     const range=typeof stat==='string'&&cfg.pool.includes(stat as WeaponBonusStat)
-      ?weaponBonusRange(cfg.tier,stat as WeaponBonusStat):undefined;
+      ?weaponBonusRange(cfg.tier,stat as WeaponBonusStat,version):undefined;
     if(!range||seen.has(stat as WeaponBonusStat)
       ||typeof basisPoints!=='number'||!Number.isInteger(basisPoints)
       ||basisPoints<range[0]||basisPoints>range[1]
@@ -94,15 +103,15 @@ export function normalizeWeaponBonuses(itemId:string,rarity:ItemRarity,raw:unkno
   return out;
 }
 
-export function weaponBonusStrength(itemId:string,rarity:ItemRarity,bonus:WeaponBonusRoll){
+export function weaponBonusStrength(itemId:string,rarity:ItemRarity,bonus:WeaponBonusRoll,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION){
   const cfg=weaponBonusConfig(itemId,rarity);
-  const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat):undefined;
+  const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat,version):undefined;
   if(!range)return 0;
   return Math.max(0,Math.min(100,Math.round(100*(bonus.basisPoints-range[0])/(range[1]-range[0]))));
 }
-export function weaponBonusLine(itemId:string,rarity:ItemRarity,bonus:WeaponBonusRoll){
+export function weaponBonusLine(itemId:string,rarity:ItemRarity,bonus:WeaponBonusRoll,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION){
   const cfg=weaponBonusConfig(itemId,rarity);
-  const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat):undefined;
+  const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat,version):undefined;
   if(!range)return '';
-  return `+${(bonus.basisPoints/100).toFixed(1)}% ${WEAPON_BONUS_LABELS[bonus.stat]} (${(range[0]/100).toFixed(1)}–${(range[1]/100).toFixed(1)}%, ${weaponBonusStrength(itemId,rarity,bonus)}% roll)`;
+  return `+${(bonus.basisPoints/100).toFixed(1)}% ${WEAPON_BONUS_LABELS[bonus.stat]} (${(range[0]/100).toFixed(1)}–${(range[1]/100).toFixed(1)}%, ${weaponBonusStrength(itemId,rarity,bonus,version)}/100 roll)`;
 }

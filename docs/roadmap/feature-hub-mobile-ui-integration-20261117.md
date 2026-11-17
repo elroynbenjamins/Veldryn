@@ -93,3 +93,30 @@ All market items, numbers, progress bars, dates and sale history are **examples*
 - Replaced remaining World Boss / Party finale / Market empty-state Unicode symbols with existing Veldryn `UiIcon` assets.
 - Added isolated filter unit tests and strengthened preview source-contract checks for route state, performance boundaries, and interactive control hit targets. These are source/unit-level validations, **not** an Android visual QA pass.
 - **Release remains blocked** by the separate Expo SDK dependency compatibility failure in Mobile Core / Android native validation and by the outstanding authoritative World Boss, Party Events and Market backend gates. No server read/write integration or transaction logic was enabled.
+
+## 17 November Party Events V33 — three-pass hidden continuation
+
+1. **Private status contract (backend sibling PR #1347):** typed,
+   owner-scoped one-statement event status projection for frozen roster size,
+   current stage, personal objectives, aggregate supply orders and locked
+   votes. No route, schema deployment or reward permissions.
+2. **Mobile integration:** a separate, Party-only decode/visualization path
+   using `party-event-readonly-snapshot.ts`. It distinguishes the current
+   live Party Social roster from the frozen event roster. Stage actions,
+   required supply meters, own ballot acknowledgements and context are shown
+   only when a recognized authenticated private payload is supplied. The
+   `App.tsx` entry deliberately supplies **no event status** because the
+   authenticated backend read service is not approved/deployed.
+3. **Safety and polish:** malformed stage/vote/action/order shapes and any
+   apparent claim/contribution/fight permissions are rejected; missing data
+   remains explicitly unavailable. The source contract and direct decoder
+   tests run within the feature-hub validation command. Proposed family buffs
+   never display as activated; local sample ballots are never persisted.
+
+The backend PGlite isolation fixture checks that two separate parties cannot
+read each other's supply counts or personal ballots. Full Android review,
+localization, authenticated refresh lifecycle, private migration promotion,
+source/receipt idempotency and Day 8 settlement are still blockers.
+
+**Keep this UI PR draft, developer-only and unmerged.** No online Party Event
+RPC or paid claim exists here.

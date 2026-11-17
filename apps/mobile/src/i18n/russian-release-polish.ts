@@ -1,5 +1,21 @@
 /** Release-readiness Russian UI strings added without changing canonical IDs or placeholders. */
 export const RUSSIAN_RELEASE_POLISH_ROWS = {
+  // Dungeon reward and return-flow copy: precise owner-scoped Mark accounting.
+  "NEW EFFECT RECIPE UNLOCKED": "ОТКРЫТ НОВЫЙ РЕЦЕПТ ЭФФЕКТА",
+  "Effect Gem Recipe": "Рецепт самоцвета эффекта",
+  "Permanently learned. Combine this Effect Gem family in Enchanting; this unlock is not a gem item.": "Изучено навсегда. Объединяйте эту группу самоцветов эффекта в зачаровании; открытие рецепта не даёт готовый самоцвет.",
+  "Any additional gems or catalysts are delivered directly to your account on claim. Check your Gem Pouch and Enchanting.": "Дополнительные самоцветы и катализаторы поступают на аккаунт при получении награды. Проверьте сумку самоцветов и зачарование.",
+  "Dungeon Finder": "Поиск подземелья",
+  "This dungeon run cannot be restarted.": "Это прохождение подземелья нельзя перезапустить.",
+  "This dungeon or difficulty is no longer available.": "Это подземелье или уровень сложности больше недоступны.",
+  "Your dungeon loadout changed. Refresh your equipment before running again.": "Ваш набор снаряжения для подземелья изменился. Обновите его перед повторным прохождением.",
+  "Could not create a fresh dungeon run.": "Не удалось начать новое прохождение подземелья.",
+  "Choose healing potion": "Выбрать лечебное зелье",
+  "No healing potion": "Без лечебного зелья",
+  "No tonic for this run": "Без тоника в этом прохождении",
+  "Active for full run": "Действует всё прохождение",
+  "Choose one tonic before the first room. It is consumed even if your run fails.": "Выберите один тоник до первой комнаты. Он расходуется, даже если прохождение окажется неудачным.",
+  "Choose the healing potion type to use in this dungeon.": "Выберите тип лечебного зелья для этого подземелья.",
   // Live regional headers and count captions match the rebased chapter ranges.
   "REGION II · LEVEL 26–50": "РЕГИОН II · УРОВНИ 26–50",
   "REGION III · LEVEL 51–75": "РЕГИОН III · УРОВНИ 51–75",

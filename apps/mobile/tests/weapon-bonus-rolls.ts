@@ -1,4 +1,5 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {CLASSES} from '../src/content/classes';
 import {itemDef} from '../src/content/items';
 import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
@@ -15,6 +16,24 @@ function weapon(tier:string,classId:'WAYFINDER'|'DREADGUARD'|'DAWNKEEPER'){
     &&row.classId===classId&&itemDef(row.output.itemId).slot==='weapon');
   if(!recipe)throw new Error(`Missing ${tier} weapon for ${classId}`);
   return recipe.output.itemId;
+}
+
+// Every class and every eligible tier must have a valid roll pool and two-roll rule.
+for(const tier of ['T3','T4','T5','T6','T7','T8','T9'] as const){
+  for(const cls of CLASSES){
+    const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===tier
+      &&row.classId===cls.id&&itemDef(row.output.itemId).slot==='weapon');
+    ok(recipe,`Missing ${tier} ${cls.name} weapon recipe`);
+    for(const rarity of ['common','epic'] as const){
+      const itemId=recipe!.output.itemId,cfg=weaponBonusConfig(itemId,rarity)!;
+      const rolls=rollWeaponBonuses(itemId,rarity,`all-classes-${tier}-${cls.id}-${rarity}`,.54321)!;
+      const expectedCount=tier>='T5'||rarity==='epic'?2:1;
+      ok(rolls.length===expectedCount,`${cls.name} ${tier} ${rarity}: expected ${expectedCount} rolls`);
+      ok(rolls.every(row=>cfg.pool.includes(row.stat)),`${cls.name} ${tier} must use role-relevant stats`);
+      ok(JSON.stringify(normalizeWeaponBonuses(itemId,rarity,rolls))===JSON.stringify(rolls),
+        `${cls.name} ${tier} ${rarity} rolls must survive normalization`);
+    }
+  }
 }
 
 const t1=weapon('T1','WAYFINDER'),t2=weapon('T2','WAYFINDER');

@@ -190,3 +190,21 @@ test('mobile Market search has an accessible clear action and all preview calcul
  assert.match(marketFilter,/items:readonly MarketPreviewItem\[\]/);
  assert.match(marketFilter,/return items\.filter\(item=>/);
 });
+
+test('Party Event stage actions and proposed preparation perks stay story-specific and safely read-only',()=>{
+ for(const action of ['Map the Wagon Route','Lay a Scent Decoy','Ground a Failing Sigil','Stabilize the Inner Seal']){
+  assert.ok(screen.includes(action),'missing family action: '+action);
+ }
+ for(const perk of ['Reinforced Wagon Frames','Scent Poultices','Arcane Recovery Salves','Anti-Corruption Remedies']){
+  assert.ok(screen.includes(perk),'missing optional perk: '+perk);
+ }
+ assert.match(screen,/const partyActionStages=\['Stage 1','Stage 2','Stage 2','Stage 3'\]/);
+ assert.match(screen,/storyGuide\.actions\.map/);
+ assert.match(screen,/storyGuide\.preparations\.map/);
+ assert.match(screen,/Partial supplies never activate a preparation bonus/);
+ assert.match(screen,/No real orders, inventory quantities or completion status are loaded here/);
+ assert.match(screen,/Objective completion and Event Points are unavailable in this preview/);
+ assert.match(screen,/Contribute · Not available/);
+ assert.match(screen,/Only server-authenticated activity receipts will count/);
+ assert.doesNotMatch(screen,/submitPartyEventAction|submitPartyEventSupply|recordPartyEventReceipt/);
+});

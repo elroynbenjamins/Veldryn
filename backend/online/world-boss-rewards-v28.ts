@@ -100,7 +100,6 @@ function viewValid(r:WorldBossRewardViewV28,accountId:string,eventId:string){
   !Number.isSafeInteger(r.walletRevision)||r.walletRevision<0||
   !Number.isSafeInteger(r.claimedThisEvent)||r.claimedThisEvent<0||
   r.claimedThisEvent>WORLD_BOSS_V28_EVENT_CAP||
-  r.claimedThisEvent>r.balance||
   r.eventCap!==WORLD_BOSS_V28_EVENT_CAP||
   r.impactStatus!=='pending_balance_approval'||
   r.impactMilestonesCredited!==false||

@@ -1378,7 +1378,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(d.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   if(d.type==='gear'&&state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity))
-    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+    throw new Error('This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.');
   const proceeds=itemVendorSellGold(d)*quantity,gold=state.character.gold+proceeds;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger(gold))throw new Error('Gold amount exceeds supported limit.');
   return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character,gold}};
@@ -1388,7 +1388,7 @@ export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId),reward=equipmentSalvageReward(itemId);if(d.type!=='gear'||!reward)throw new Error('Cannot salvage');
   if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1))
-    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+    throw new Error('This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.');
   const remaining=consume(state.inventory.stacks,itemId,1);
   const existing=remaining.find(row=>row.itemId===reward.itemId&&row.instanceId===undefined);
   if(!existing&&remaining.length>=entitlementStorageCapacity(state,'inventory'))throw new Error('Inventory is full; make space for salvage');
@@ -1419,7 +1419,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   const def=itemDef(itemId);
   if(def.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
-  if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.');
   const stacks=consume(state.bank.stacks,itemId,quantity);
   const proceeds=itemVendorSellGold(def)*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
@@ -1436,7 +1436,7 @@ export function salvageBankItem(state:GameState,itemId:string):GameState{
   if(!state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0))
     throw new Error('Choose an individual equipment copy for salvage');
   if(!canDisposeLegacyEquipment(state,itemId,'bank',1))
-    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+    throw new Error('This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.');
   const bankStacks=consume(state.bank.stacks,itemId,1);
   const inventory=inventoryWithSalvageRewards(state.inventory,[reward],entitlementStorageCapacity(state,'inventory'));
   return {...state,bank:{...state.bank,stacks:bankStacks},inventory};

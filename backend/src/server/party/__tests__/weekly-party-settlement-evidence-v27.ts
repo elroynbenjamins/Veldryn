@@ -145,7 +145,7 @@ async function test(){
  const v=await readVerifiedPrivatePartyEvidenceV27({
    gateEnabled:true,offerId:offer,trustedAccountId:account,reader,
  });
- must(called===1&&v.offerId===offer&&!v.payoutEnabled,
+ must(Number(called)===1&&v.offerId===offer&&!v.payoutEnabled,
    'private evidence verified but payout remains disabled');
  await deniesAsync(()=>claimPrivatePartyEventRewardV27(),
    'atomic_payout_unreleased');

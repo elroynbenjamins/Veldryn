@@ -11,8 +11,8 @@ INSERT INTO private.world_boss_events_v17(
  id,boss_id,status,starts_at,ends_at,rules_version,max_hp,remaining_hp)
 VALUES(
  '30000000-0000-4000-8000-000000000035',
- 'hollowroot','draft',clock_timestamp(),
- clock_timestamp()+interval '7 days','wb35-fixture',1000,1000);
+ 'hollowroot','draft',now(),
+ now()+interval '7 days','wb35-fixture',1000,1000);
 INSERT INTO private.world_boss_echo_consents_v20(
  event_id,owner_account_id,character_id,consent_revision,enabled,
  granted_at,expires_at)

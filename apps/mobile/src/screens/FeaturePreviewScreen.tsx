@@ -1,4 +1,4 @@
-import {useMemo,useRef,useState,type ComponentRef,type ReactNode} from 'react';
+import {useEffect,useMemo,useRef,useState,type ComponentRef,type ReactNode} from 'react';
 import {ImageBackground,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -6,6 +6,7 @@ import {usePartySocial} from '../online/PartySocialProvider';
 import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
+import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
 import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
@@ -33,9 +34,19 @@ const meta={
 export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
- const [tab,setTab]=useState(tabs[0].id),[guide,setGuide]=useState(false),[guideIndex,setGuideIndex]=useState(0);
+ const defaultTab=tabs[0].id;
+ const [tab,setTab]=useState(defaultTab),[guide,setGuide]=useState(false),[guideIndex,setGuideIndex]=useState(0);
  const scrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
- const changeTab=(next:string)=>{setTab(next);scrollRef.current?.scrollTo({y:0,animated:false});};
+ // The host may reuse this component when switching between QA routes.
+ // Never render a previous feature's tab inside another feature's screen.
+ const activeTab=tabs.some(item=>item.id===tab)?tab:defaultTab;
+ useEffect(()=>{
+  setTab(defaultTab);
+  setGuide(false);
+  setGuideIndex(0);
+  scrollRef.current?.scrollTo({y:0,animated:false});
+ },[route,defaultTab]);
+ const changeTab=(next:string)=>{if(!tabs.some(item=>item.id===next))return;setTab(next);scrollRef.current?.scrollTo({y:0,animated:false});};
  const [bossId,setBossId]=useState<(typeof bosses)[number]['id']>('hollow');
  const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
  const C=useGameTheme(),{width,fontScale}=useWindowDimensions();
@@ -80,11 +91,11 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     </ImageBackground>
     <View style={s.qaNote}><Text style={[s.qaSymbol,{color:accent}]}>◇</Text><Text style={s.qaText}>Developer-only UI preview. All example data is illustrative. No game resources, attempts, votes, listings or rewards are changed.</Text></View>
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
-      {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:tab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,tab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,tab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
+      {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={tab} onTab={changeTab} selected={bossId} onSelect={setBossId}/>:null}
-    {feature==='party'?<PartyContents s={s} C={C} accent={accent} tab={tab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} hasParty={partyConnected} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty}/>:null}
-    {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={tab}/>:null}
+    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} onSelect={setBossId}/>:null}
+    {feature==='party'?<PartyContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} hasParty={partyConnected} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty}/>:null}
+    {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
    {feature==='party'?<Pressable accessibilityRole="button" accessibilityLabel={partyConnected?'Open Party Chat':'Open Party to find members'} onPress={partyConnected?onOpenPartyChat:onOpenParty} style={[s.partyDock,{borderTopColor:accent}]}>
@@ -182,7 +193,7 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
    <Action label="Claim rewards · Not available" s={s} disabled/>
   </Card>
  </>;
- return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Real ranks must come from immutable server-verified contribution ledgers, not client-reported damage."/><View style={s.empty}><Text style={s.emptyGlyph}>▥</Text><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution and fair power-bracket views will appear here after verification.</Text></View></Card>;
+ return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Real ranks must come from immutable server-verified contribution ledgers, not client-reported damage."/><View style={s.empty}><UiIcon name="world" size={34}/><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution and fair power-bracket views will appear here after verification.</Text></View></Card>;
 }
 
 const stories=[
@@ -243,7 +254,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
  if(tab==='finale')return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>
   <View style={s.statRow}><Stat s={s} label="PARTY" value="2–4"/><Stat s={s} label="ROUTES" value="2 votes"/><Stat s={s} label="REWARD" value="Day 8"/></View>
   <Text style={s.bodyText}>{story.finaleThreat} This is a story preview, not active combat.</Text>
-  <View style={s.empty}><Text style={s.emptyGlyph}>⚔</Text><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
+  <View style={s.empty}><UiIcon name="dungeon" size={34}/><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
   <Action label="Enter finale · Not available" s={s} disabled/>
  </Card>;
  return <Card s={s}><SectionHeading s={s} kicker="DAY 8 · SETTLEMENT" title="Adventure results" sub="Final rewards will be calculated once per verified event cycle. This screen cannot issue Event Points, refund items, or claim rewards."/>
@@ -253,8 +264,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
  </Card>;
 }
 
-type MarketSample={id:string;name:string;type:'Resources'|'Materials'|'Gems'|'Equipment';amount:number;unit:number;requiredLevel?:number;rarity?:string;tier?:number;slot?:string;bonusPreview?:string};
-const samples:readonly MarketSample[]=[
+const samples:readonly MarketPreviewItem[]=[
  {id:'ore',name:'Iron Ore',type:'Resources',amount:40,unit:18},
  {id:'timber',name:'Oak Logs',type:'Resources',amount:25,unit:12},
  {id:'fang',name:'Wolf Fang',type:'Materials',amount:6,unit:86},
@@ -266,21 +276,22 @@ const samples:readonly MarketSample[]=[
 const illustrativeSaleHistory=[12,18,15,21,19,26,24];
 function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
  const [category,setCategory]=useState('All'),[query,setQuery]=useState(''),[selected,setSelected]=useState<string|null>(null);
- const [sort,setSort]=useState<'unit'|'lot'|'name'>('unit');
+ const [sort,setSort]=useState<MarketPreviewSort>('unit');
  const [quantity,setQuantity]=useState('10'),[price,setPrice]=useState('20'),[review,setReview]=useState(false);
- const searchTerm=query.trim().toLowerCase();
- const filtered=samples.filter(item=>(category==='All'||item.type===category)&&[item.name,item.type,item.rarity??'',item.slot??''].some(value=>value.toLowerCase().includes(searchTerm)))
-  .sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='unit'?a.unit-b.unit:a.unit*a.amount-b.unit*b.amount);
+ const filtered=useMemo(()=>filterMarketPreviewItems(samples,category as MarketPreviewItem['type']|'All',query,sort),[category,query,sort]);
  const selectedItem=samples.find(item=>item.id===selected);
- const {gross,fee,net,valid:quoteValid,issue:quoteIssue}=estimateMarketPreviewQuote(quantity,price);
+ const {gross,fee,net,valid:quoteValid,issue:quoteIssue}=useMemo(()=>estimateMarketPreviewQuote(quantity,price),[quantity,price]);
  if(tab==='browse')return <>
   <Card s={s}><SectionHeading s={s} kicker="SEARCH & DISCOVER" title="Find your next upgrade" sub="Illustrative listings. Final quotes, availability and equipment eligibility must be read from the authenticated Market service."/>
-   <TextInput accessibilityLabel="Search example market items" value={query} onChangeText={value=>{setQuery(value);setSelected(null)}} placeholder="Search resources, gems, equipment…" placeholderTextColor={C.muted} style={s.input}/>
+   <View style={s.searchRow}>
+     <TextInput accessibilityLabel="Search example market items" value={query} onChangeText={value=>{setQuery(value);setSelected(null)}} placeholder="Search resources, gems, equipment…" placeholderTextColor={C.muted} autoCorrect={false} autoCapitalize="none" returnKeyType="search" style={[s.input,s.searchInput]}/>
+     {query.length>0?<Action label="Clear" s={s} secondary onPress={()=>{setQuery('');setSelected(null)}}/>:null}
+   </View>
    <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>{['All','Resources','Materials','Gems','Equipment'].map(entry=><Pressable key={entry} accessibilityRole="button" accessibilityState={{selected:category===entry}} onPress={()=>{setCategory(entry);setSelected(null)}} style={[s.filter,category===entry&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,category===entry&&{color:C.text}]}>{entry}</Text></Pressable>)}</ScrollView>
-   <View style={s.resultCount}><Text style={s.finePrint}>{filtered.length} example results</Text><Tag s={s} label="Sample data" accent={accent}/></View>
+   <View style={s.resultCount}><Text style={s.finePrint}>{filtered.length} example {filtered.length===1?'result':'results'}</Text><Tag s={s} label="Sample data" accent={accent}/></View>
    <View style={s.sortRow} accessibilityRole="radiogroup">
     <Text style={s.detailLabel}>SORT BY</Text>
-    {([{id:'unit',label:'Unit price'},{id:'lot',label:'Total lot'},{id:'name',label:'Name'}] as const).map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:sort===option.id}} onPress={()=>setSort(option.id)} style={[s.sortChip,sort===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,sort===option.id&&{color:C.text}]}>{option.label}</Text></Pressable>)}
+    {([{id:'unit',label:'Unit price'},{id:'unit-desc',label:'Highest / unit'},{id:'lot',label:'Total lot'},{id:'name',label:'Name'}] as const).map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:sort===option.id}} onPress={()=>setSort(option.id)} style={[s.sortChip,sort===option.id&&{borderColor:accent,backgroundColor:C.panelRaised}]}><Text style={[s.filterText,sort===option.id&&{color:C.text}]}>{option.label}</Text></Pressable>)}
    </View>
    {filtered.length===0?<View style={s.empty}><Text style={s.bodyText}>No example items match this search or category.</Text><Action label="Clear search and filters" s={s} secondary onPress={()=>{setQuery('');setCategory('All');setSelected(null)}}/></View>:filtered.map(item=><View key={item.id} style={s.resultGroup}><Pressable accessibilityRole="button" accessibilityState={{expanded:selected===item.id}} accessibilityLabel={`${item.name}, ${item.amount} items, ${item.unit*item.amount} gold example lot, ${selected===item.id?'details open':'inspect details'}`} onPress={()=>setSelected(selected===item.id?null:item.id)} style={[s.marketRow,selected===item.id&&{borderColor:accent}]}>
     <View style={s.marketSymbol}><UiIcon name={item.type==='Equipment'?'inventory':item.type==='Gems'?'rewards':item.type==='Resources'?'world':'dungeon'} size={25}/></View>
@@ -322,8 +333,8 @@ function MarketContents({s,C,accent,tab}:Shared&{tab:string}){
    {review?<View style={s.warning}><Text style={s.warningTitle}>Example review complete</Text><Text style={s.bodyText}>No listing has been submitted. Live selling will additionally enforce item ownership, minimum lot sizes, price corridors and safe escrow.</Text></View>:null}
    <Action label="Publish listing · Not available" s={s} disabled/>
   </Card>;
- if(tab==='listings')return <Card s={s}><SectionHeading s={s} kicker="YOUR MARKET ACTIVITY" title="My Listings" sub="Only real server-owned offers can appear here. Cancelling, expiry and escrow return must preserve exact items."/><View style={s.empty}><Text style={s.emptyGlyph}>▦</Text><Text style={s.choiceTitle}>Trading is not released</Text><Text style={s.bodyText}>No listings or ownership records are loaded into this design preview.</Text></View></Card>;
- if(tab==='inbox')return <Card s={s}><SectionHeading s={s} kicker="SECURE DELIVERIES" title="Market Inbox" sub="The existing Rewards Inbox contains the gated Market claim tab. This preview does not create a second reward wallet."/><View style={s.empty}><Text style={s.emptyGlyph}>✉</Text><Text style={s.choiceTitle}>No connected deliveries</Text><Text style={s.bodyText}>Bought, sold, expired and returned records will be shown only when verified by the service.</Text></View></Card>;
+ if(tab==='listings')return <Card s={s}><SectionHeading s={s} kicker="YOUR MARKET ACTIVITY" title="My Listings" sub="Only real server-owned offers can appear here. Cancelling, expiry and escrow return must preserve exact items."/><View style={s.empty}><UiIcon name="inventory" size={34}/><Text style={s.choiceTitle}>Trading is not released</Text><Text style={s.bodyText}>No listings or ownership records are loaded into this design preview.</Text></View></Card>;
+ if(tab==='inbox')return <Card s={s}><SectionHeading s={s} kicker="SECURE DELIVERIES" title="Market Inbox" sub="The existing Rewards Inbox contains the gated Market claim tab. This preview does not create a second reward wallet."/><View style={s.empty}><UiIcon name="rewards" size={34}/><Text style={s.choiceTitle}>No connected deliveries</Text><Text style={s.bodyText}>Bought, sold, expired and returned records will be shown only when verified by the service.</Text></View></Card>;
  return <Card s={s}><SectionHeading s={s} kicker="TRADE AUDIT TRAIL" title="Transaction History" sub="Finalized sales and purchases will appear here once the Market's authenticated ledger is released. Example listings are never recorded as actual transactions."/><View style={s.empty}><UiIcon name="inventory" size={34}/><Text style={s.choiceTitle}>No verified transactions</Text><Text style={s.bodyText}>Completed purchases, seller payouts, fees and return events will come from immutable server history.</Text></View></Card>;
 }
 
@@ -332,7 +343,7 @@ function makeStyles(C:ThemeColors,compact=false){
   root:{flex:1,backgroundColor:C.bg},page:{padding:spacing.md,paddingBottom:34,gap:spacing.md},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',minHeight:40},
   headerRight:{flexDirection:'row',alignItems:'center',gap:10},smallButton:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:12,minHeight:44,justifyContent:'center',borderRadius:radii.sm,borderColor:C.lineStrong,borderWidth:1},smallButtonText:{color:C.text,fontWeight:'800',fontSize:12},
-  privateLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:C.muted},help:{width:40,height:40,borderRadius:20,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},helpText:{color:C.text,fontSize:20,fontWeight:'800'},
+  privateLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:C.muted},help:{width:44,height:44,borderRadius:22,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},helpText:{color:C.text,fontSize:20,fontWeight:'800'},
   hero:{height:compact?142:166,borderWidth:1,borderRadius:radii.md,overflow:'hidden',justifyContent:'flex-end',backgroundColor:C.panel},heroImage:{opacity:.8},heroShade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(2,7,12,.54)'},heroCopy:{padding:spacing.lg,gap:5},eyebrow:{fontWeight:'900',letterSpacing:1.7,fontSize:10},heroTitle:{color:'#FFFFFF',fontSize:compact?24:27,lineHeight:35,fontWeight:'900'},heroSub:{color:'#F4F1E9',fontSize:13,lineHeight:18,fontWeight:'700'},
   qaNote:{flexDirection:'row',alignItems:'flex-start',gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},qaSymbol:{fontSize:20,fontWeight:'900'},qaText:{color:C.muted,fontSize:11,lineHeight:17,flex:1},
   tabs:{gap:7,paddingVertical:2},tab:{minHeight:44,justifyContent:'center',paddingHorizontal:13,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},tabText:{color:C.muted,fontSize:12,fontWeight:'800'},
@@ -342,7 +353,7 @@ function makeStyles(C:ThemeColors,compact=false){
   detailLabel:{color:C.muted,fontSize:10,fontWeight:'900',letterSpacing:.8},detailRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},index:{color:C.muted,fontSize:15,fontWeight:'900',width:28},track:{height:9,borderRadius:radii.sm,backgroundColor:C.line,overflow:'hidden'},progress:{height:'100%',borderRadius:radii.sm},warning:{gap:4,padding:11,borderRadius:radii.sm,borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface},warningTitle:{color:C.warning,fontSize:12,fontWeight:'900'},
   rewardPanel:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:radii.sm,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.line},rewardGlyph:{fontSize:30},timelineRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:5},timelineDot:{width:30,height:30,alignItems:'center',justifyContent:'center',borderRadius:15,borderWidth:1},timelineNumber:{fontSize:12,fontWeight:'900'},
   empty:{minHeight:140,alignItems:'center',justifyContent:'center',padding:14,gap:8,backgroundColor:C.panel2,borderRadius:radii.sm},emptyGlyph:{fontSize:34,color:C.muted},rosterList:{gap:7,marginTop:3},rosterMember:{flexDirection:'row',alignItems:'center',gap:9,minHeight:45},rosterAvatar:{width:36,height:36,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,backgroundColor:C.panel2},rosterInitial:{fontWeight:'900',fontSize:15},storyStage:{flexDirection:'row',gap:15,alignItems:'flex-start',paddingVertical:12,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},storyNumber:{fontSize:21,fontWeight:'900'},radio:{width:22,height:22,borderWidth:2,borderRadius:11,borderColor:C.muted,alignItems:'center',justifyContent:'center'},radioInner:{width:10,height:10,borderRadius:5},
-  input:{color:C.text,backgroundColor:C.inputBg,borderColor:C.lineStrong,borderWidth:1,minHeight:46,borderRadius:radii.sm,paddingHorizontal:12,fontSize:13},filters:{gap:7},filter:{paddingHorizontal:12,minHeight:40,justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line},filterText:{fontSize:11,fontWeight:'800',color:C.muted},resultCount:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},resultGroup:{gap:6},sortRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap'},sortChip:{minHeight:38,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,justifyContent:'center'},marketRow:{flexDirection:'row',alignItems:'center',gap:9,padding:10,borderWidth:1,borderRadius:radii.sm,borderColor:C.line,backgroundColor:C.panel2,minHeight:65},marketSymbol:{height:40,width:40,borderRadius:radii.sm,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.lineStrong},marketSymbolText:{fontSize:23,color:C.accent},priceBlock:{alignItems:'flex-end'},goldPrice:{fontSize:13,fontWeight:'900',color:C.warning},detailPanel:{gap:8,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm},historyChart:{height:104,flexDirection:'row',alignItems:'flex-end',justifyContent:'space-around',gap:6,paddingTop:7,paddingBottom:5,backgroundColor:C.panel2,borderRadius:radii.sm},historySlot:{flex:1,alignItems:'center',justifyContent:'flex-end',gap:5},historyBar:{width:'62%',maxWidth:28,borderTopLeftRadius:3,borderTopRightRadius:3},historyLabel:{fontSize:9,color:C.muted,fontWeight:'800'},invoice:{padding:10,backgroundColor:C.panel2,borderRadius:radii.sm,gap:3},footer:{paddingTop:8,alignItems:'center'},footerText:{fontSize:9,fontWeight:'900',color:C.disabled,letterSpacing:1},
+  input:{color:C.text,backgroundColor:C.inputBg,borderColor:C.lineStrong,borderWidth:1,minHeight:46,borderRadius:radii.sm,paddingHorizontal:12,fontSize:13},searchRow:{flexDirection:'row',alignItems:'center',gap:7},searchInput:{flex:1,minWidth:0},filters:{gap:7},filter:{paddingHorizontal:12,minHeight:44,justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line},filterText:{fontSize:11,fontWeight:'800',color:C.muted},resultCount:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},resultGroup:{gap:6},sortRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap'},sortChip:{minHeight:44,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,justifyContent:'center'},marketRow:{flexDirection:'row',alignItems:'center',gap:9,padding:10,borderWidth:1,borderRadius:radii.sm,borderColor:C.line,backgroundColor:C.panel2,minHeight:65},marketSymbol:{height:40,width:40,borderRadius:radii.sm,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.lineStrong},marketSymbolText:{fontSize:23,color:C.accent},priceBlock:{alignItems:'flex-end'},goldPrice:{fontSize:13,fontWeight:'900',color:C.warning},detailPanel:{gap:8,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm},historyChart:{height:104,flexDirection:'row',alignItems:'flex-end',justifyContent:'space-around',gap:6,paddingTop:7,paddingBottom:5,backgroundColor:C.panel2,borderRadius:radii.sm},historySlot:{flex:1,alignItems:'center',justifyContent:'flex-end',gap:5},historyBar:{width:'62%',maxWidth:28,borderTopLeftRadius:3,borderTopRightRadius:3},historyLabel:{fontSize:9,color:C.muted,fontWeight:'800'},invoice:{padding:10,backgroundColor:C.panel2,borderRadius:radii.sm,gap:3},footer:{paddingTop:8,alignItems:'center'},footerText:{fontSize:9,fontWeight:'900',color:C.disabled,letterSpacing:1},
   partyDock:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:14,borderTopWidth:2,backgroundColor:C.panelRaised},dockGlyph:{width:32,height:32,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1},dockGlyphText:{fontSize:18,fontWeight:'900'},dockTitle:{color:C.text,fontSize:12,fontWeight:'900'},dockDescription:{color:C.muted,fontSize:11},dockArrow:{fontSize:25,fontWeight:'700',color:C.text},unread:{minWidth:22,height:22,paddingHorizontal:4,alignItems:'center',justifyContent:'center',backgroundColor:C.notification,borderRadius:11},unreadText:{fontSize:10,fontWeight:'900',color:C.notificationText},
   modalShade:{flex:1,justifyContent:'center',padding:18,backgroundColor:C.overlay},modal:{gap:13,maxHeight:'80%',padding:16,borderRadius:radii.lg,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},modalHeading:{flexDirection:'row',alignItems:'center'},modalActions:{flexDirection:'row',gap:8},modalActionSlot:{flex:1},guideScroll:{flexGrow:0},guideTopic:{gap:4,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},guideHeading:{color:C.text,fontSize:13,fontWeight:'900'},
  });

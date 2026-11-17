@@ -6,12 +6,13 @@ import {usePartySocial} from '../online/PartySocialProvider';
 import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
+import {decodePartyEventReadOnlySnapshot,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
 import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -31,7 +32,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const defaultTab=tabs[0].id;
@@ -92,7 +93,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
     {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} onSelect={setBossId}/>:null}
-    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty}/>:null}
+    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={partyEventStatus}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
@@ -216,10 +217,13 @@ const partyStoryGuides={
 } as const;
 const partyActionStages=['Stage 1','Stage 2','Stage 2','Stage 3'] as const;
 /** Only Party Events subscribes to live Party state; market and boss QA never rerender for Party updates. */
-function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void}){
+function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown}){
  const social=usePartySocial();
+ // App deliberately does not supply a live payload while the private service
+ // and event migrations are unreleased. Malformed payloads fail closed.
+ const status=useMemo(()=>decodePartyEventReadOnlySnapshot(partyEventStatus),[partyEventStatus]);
  return <PartyContents s={s} C={C} accent={accent} tab={tab} onTab={onTab} storyId={storyId} onStoryChange={onStoryChange}
-  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty}/>;
+  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty} status={status}/>;
 }
 function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:Shared['s'];accent:string;partyUnread:number;onOpenParty:()=>void;onOpenPartyChat:()=>void}){
  const social=usePartySocial();
@@ -231,12 +235,14 @@ function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:
    <Text style={s.dockArrow}>›</Text>
  </Pressable>;
 }
-function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void}){
+function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty,status}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void;status:PartyEventScreenSnapshot|null}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
  const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);
  const [ballot,setBallot]=useState<'approach'|'finale'>('approach');
  const story=stories.find(e=>e.id===storyId)??stories[0];
  const storyGuide=partyStoryGuides[story.id];
+ const storyStatus=status?.family===story.id?status:null;
+ const required=storyStatus?partyEventSupplyProgress(storyStatus,storyStatus.stage,'required'):null;
  if(tab==='adventure')return <>
   <Card s={s}><SectionHeading s={s} kicker="WEEK-LONG ADVENTURES" title="One journey, four possible stories" sub="Three evolving stages, team decisions and a finale. The event cycle is 21 days."/>
    <View style={s.statRow}><Stat s={s} label="PARTY SIZE" value="2–4"/><Stat s={s} label="STORY" value="7 days"/><Stat s={s} label="SETTLEMENT" value="Day 8"/></View>

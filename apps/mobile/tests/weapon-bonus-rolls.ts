@@ -194,6 +194,15 @@ ok(Object.keys(equippedWeaponBonusStats({...withBonus,character:{...withBonus.ch
   'An untagged legacy equipped weapon must not inherit a newer copy roll');
 ok(normalizeCraftedGearInstances([{...copy,weaponBonuses:[{stat:'potency',basisPoints:9999}]}])[0].weaponBonuses===undefined,
   'Invalid persisted bonus values fail closed');
+const tampered:CraftedGearInstance={...normalized,weaponBonuses:[{stat:'critRate',basisPoints:9999}]};
+const noBonus=equippedWeaponBonusStats(withInstance(tampered));
+ok(Object.keys(noBonus).length===0,'Invalid persisted values cannot grant a combat bonus');
+const manyUnrelated=Array.from({length:350},(_,index)=>({
+  ...unrolled,id:`unrelated-${index}`,sourceReceiptKey:`unrelated-receipt-${index}`,
+}));
+const crowded:GameState={...withBonus,account:{...withBonus.account,craftedGearInstances:[...manyUnrelated,normalized]}};
+ok(JSON.stringify(equippedWeaponBonusStats(crowded))===JSON.stringify(equippedWeaponBonusStats(withBonus)),
+  'Exact-copy bonus calculation must ignore unrelated crafted equipment');
 
 const atCopyCap=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,index)=>({
   instance:{...unrolled,id:`old-copy-${index}`,sourceReceiptKey:`old-receipt-${index}`},

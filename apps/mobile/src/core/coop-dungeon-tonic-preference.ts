@@ -13,10 +13,17 @@ export const DEFAULT_DUNGEON_TONIC_PREFERENCE:Readonly<DungeonTonicPreference>={
 const KEY='veldryn.coop.dungeon-tonic.v1.';
 const preparationIds=new Set(POTIONS.filter(p=>p.effect.kind==='preparation').map(p=>p.id));
 let lastWrite:Promise<void>=Promise.resolve();
+type TonicPreferenceListener=(characterId:string,preference:DungeonTonicPreference)=>void;
+const listeners=new Set<TonicPreferenceListener>();
+export function subscribeDungeonTonicPreference(listener:TonicPreferenceListener):()=>void{
+ listeners.add(listener);
+ return ()=>{listeners.delete(listener);};
+}
 
 export async function rememberedDungeonTonic(characterId:string|undefined):Promise<DungeonTonicPreference>{
  if(!characterId)return {...DEFAULT_DUNGEON_TONIC_PREFERENCE};
  try{
+  await lastWrite;
   const raw=await AsyncStorage.getItem(KEY+characterId);
   const value=raw?JSON.parse(raw) as Partial<DungeonTonicPreference>:null;
   const potionId=typeof value?.potionId==='string'&&preparationIds.has(value.potionId)?value.potionId:null;
@@ -28,6 +35,8 @@ export function rememberDungeonTonic(characterId:string|undefined,preference:Dun
  if(!characterId)return Promise.resolve();
  const potionId=preference.potionId&&preparationIds.has(preference.potionId)?preference.potionId:null;
  const next={potionId,autoUse:Boolean(potionId)};
+ // Keep an already-mounted dungeon setup in sync with selections from the HP menu.
+ for(const listener of listeners){try{listener(characterId,next);}catch{}}
  const write=()=>AsyncStorage.setItem(KEY+characterId,JSON.stringify(next)).then(()=>{},()=>{});
  // Sequential writes prevent a quick toggle/select from persisting out of order.
  lastWrite=lastWrite.then(write,write);

@@ -1,4 +1,4 @@
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {ActiveActivity,GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
@@ -8,7 +8,8 @@ import {foodHealingAmount,recoveryAmount} from '../core/inventory-view';
 import {MAX_FOOD_BACKUPS} from '../core/food-queue';
 import {huntGoalIdFromSnapshot} from '../core/hunt-goals';
 import {itemDef} from '../content/items';
-import {potionDef} from '../content/alchemy';
+import {POTIONS,potionDef} from '../content/alchemy';
+import {DEFAULT_DUNGEON_TONIC_PREFERENCE,rememberedDungeonTonic,rememberDungeonTonic,type DungeonTonicPreference} from '../core/coop-dungeon-tonic-preference';
 import {useGameplayText} from '../i18n/gameplay';
 import {accountText} from '../i18n/account';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -19,9 +20,19 @@ import {ItemArtwork} from './ItemArtwork';
 const displayHealHp=(value:number)=>displayStat(Math.max(0,Math.round(value)));
 
 export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory}:{state:GameState;hunt:ActiveActivity|null;stopped:boolean;onCommand:(command:GameCommand)=>Promise<void>;onClose:()=>void;onInventory:()=>void}){
- const {gt,gl,language}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[section,setSection]=useState<'food'|'potions'>('food'),[expandedFoodId,setExpandedFoodId]=useState<string|null>(null),[showQueueHelp,setShowQueueHelp]=useState(false),[showAutoHelp,setShowAutoHelp]=useState(false),inFlight=useRef(false);
+ const {gt,gl,language}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[section,setSection]=useState<'food'|'potions'>('food'),[expandedFoodId,setExpandedFoodId]=useState<string|null>(null),[showQueueHelp,setShowQueueHelp]=useState(false),[showAutoHelp,setShowAutoHelp]=useState(false),[tonicPreference,setTonicPreference]=useState<DungeonTonicPreference>({...DEFAULT_DUNGEON_TONIC_PREFERENCE}),[tonicLoaded,setTonicLoaded]=useState(false),inFlight=useRef(false);
  const foods=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&itemDef(stack.itemId).type==='food'),[state.inventory.stacks]);
  const healingPotions=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&potionDef(stack.itemId)?.effect.kind==='healing'),[state.inventory.stacks]);
+ const tonics=useMemo(()=>POTIONS.filter(potion=>potion.effect.kind==='preparation'),[]);
+ const tonicCount=(id:string)=>state.inventory.stacks.reduce((total,stack)=>total+(stack.itemId===id&&Number.isFinite(stack.quantity)?Math.max(0,Math.floor(stack.quantity)):0),0);
+ const selectedTonic=tonicPreference.potionId?potionDef(tonicPreference.potionId):undefined;
+ useEffect(()=>{
+  let active=true;
+  setTonicPreference({...DEFAULT_DUNGEON_TONIC_PREFERENCE});
+  setTonicLoaded(false);
+  void rememberedDungeonTonic(state.character?.id).then(preference=>{if(active){setTonicPreference(preference);setTonicLoaded(true);}},()=>{if(active)setTonicLoaded(true);});
+  return ()=>{active=false;};
+ },[state.character?.id]);
  const selectedPotionId=state.character?.equippedHealingPotionId,selectedPotion=selectedPotionId?potionDef(selectedPotionId):undefined;
  const queuedFoodIds=state.character?.foodQueueIds??[];
  const maxHp=useMemo(()=>effectiveStats(state).hp,[state]);
@@ -32,6 +43,12 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
  async function run(command:GameCommand,close=false){if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');try{await onCommand(command);if(close)onClose();}catch(e){setError(e instanceof Error?e.message:gt('Action failed. Please try again.'));}finally{inFlight.current=false;setBusy(false);}}
  const updateSettings=(patch:Partial<GameState["settings"]>)=>void run({type:'settings',args:{settings:{...state.settings,...patch}}});
  const updateQueue=(ids:string[])=>void run({type:'food_queue',args:{ids}});
+ function chooseTonic(id:string|null){
+  if(!tonicLoaded||busy||!state.character?.id||(id&&tonicCount(id)<1))return;
+  const next:DungeonTonicPreference={potionId:id,autoUse:Boolean(id)};
+  setTonicPreference(next);
+  void rememberDungeonTonic(state.character.id,next);
+ }
  return <GameModalSurface visible onClose={()=>{if(!busy)onClose();}} reduceMotion={state.settings.reduceMotion} surfaceStyle={s.surface}>
   <GameModalHeader title={gt('Food & potions')} onClose={onClose} closeDisabled={busy}/>
   <View style={s.healthCard}>
@@ -126,6 +143,24 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
       </View>;
      })}
      {!healingPotions.length?<Text style={s.empty}>{gt('No healing potions carried. Brew them in Alchemy or withdraw from Bank.')}</Text>:null}
+    </View>
+    <View style={s.queueCard}>
+     <Text style={s.queueTitle}>{gt('DUNGEON TONICS')}</Text>
+     <Text style={s.queueHint}>{gt('Choose one buff tonic for your next dungeon. Selection is free; it is consumed before the first room, lasts the run, and is not refunded on failure. Tonics do not affect hunts or bosses.')}</Text>
+     {selectedTonic&&tonicCount(selectedTonic.id)===0?<View style={[s.rotationRow,s.primaryRow]}>
+      <ItemArtwork itemId={selectedTonic.id} size={34}/>
+      <View style={s.foodCopy}><Text style={s.queueEyebrow}>{gt('SELECTED')}</Text><Text style={s.foodName} numberOfLines={1}>{selectedTonic.name}</Text><Text style={s.foodHeal}>{gt('Out of stock · brew or withdraw from Bank')}</Text></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={gt('Clear dungeon tonic choice')} accessibilityState={{disabled:!tonicLoaded||busy}} disabled={!tonicLoaded||busy} onPress={()=>chooseTonic(null)} style={[s.iconAction,(!tonicLoaded||busy)&&s.iconDisabled]}><Text style={[s.iconActionText,{color:C.bad}]}>×</Text></Pressable>
+     </View>:null}
+     {tonics.filter(tonic=>tonicCount(tonic.id)>0).map(tonic=>{
+      const quantity=tonicCount(tonic.id),selected=tonic.id===tonicPreference.potionId;
+      return <View key={tonic.id} style={[s.rotationRow,selected&&s.primaryRow]}>
+       <ItemArtwork itemId={tonic.id} size={34}/>
+       <View style={s.foodCopy}>{selected?<Text style={s.queueEyebrow}>{gt('SELECTED')}</Text>:null}<Text style={s.foodName} numberOfLines={1}>{tonic.name} · T{tonic.tier}</Text><Text style={s.foodHeal} numberOfLines={2}>×{quantity} · {tonic.description}</Text></View>
+       {selected?<Pressable accessibilityRole="button" accessibilityLabel={gt('Clear dungeon tonic choice')} accessibilityState={{disabled:!tonicLoaded||busy}} disabled={!tonicLoaded||busy} onPress={()=>chooseTonic(null)} style={[s.iconAction,(!tonicLoaded||busy)&&s.iconDisabled]}><Text style={[s.iconActionText,{color:C.bad}]}>×</Text></Pressable>:<GameButton compact title={gt('Select for dungeon')} disabled={!tonicLoaded||busy} onPress={()=>chooseTonic(tonic.id)} style={s.potionSelect}/>}
+      </View>;
+     })}
+     {!tonics.some(tonic=>tonicCount(tonic.id)>0)?<Text style={s.empty}>{gt('No buff tonics carried. Brew one in Alchemy or withdraw from Bank.')}</Text>:null}
     </View>
    </>}
   </ScrollView>

@@ -1,7 +1,7 @@
 import {profileIconSource} from '../components/ProfileIcon';
 import {dungeonHealingPotionView} from '../core/coop-potion-view';
 import {dungeonTonicView} from '../core/coop-tonic-view';
-import {rememberedDungeonTonic,rememberDungeonTonic,autoDungeonTonicForRun,type DungeonTonicPreference} from '../core/coop-dungeon-tonic-preference';
+import {rememberedDungeonTonic,rememberDungeonTonic,subscribeDungeonTonicPreference,autoDungeonTonicForRun,type DungeonTonicPreference} from '../core/coop-dungeon-tonic-preference';
 import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,BackHandler,Pressable,View,Text} from 'react-native';
@@ -52,6 +52,9 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
    void rememberedDungeonTonic(characterId).then(preference=>{if(!cancelled&&characterId)setSavedTonic({characterId,preference});});
    return()=>{cancelled=true;};
   },[characterId]);
+  useEffect(()=>subscribeDungeonTonicPreference((updatedCharacterId,preference)=>{
+   if(updatedCharacterId===characterId)setSavedTonic({characterId:updatedCharacterId,preference});
+  }),[characterId]);
   const updateTonicPreference=(preference:DungeonTonicPreference)=>{
    if(!characterId||!tonicPreference)return;
    setSavedTonic({characterId,preference});

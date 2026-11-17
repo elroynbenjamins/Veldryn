@@ -125,7 +125,7 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
    <View style={s.statRow}><Stat s={s} label="PREPARATION" value="5 days"/><Stat s={s} label="BATTLE" value="48 hours"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
    <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={accent}/><Tag s={s} label="02 Battle"/><Tag s={s} label="03 Results"/></View>
   </Card>
-  <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER CODEX" title="Choose a boss to inspect" sub="The following are design previews, not live boss availability."/>
+  <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER CODEX" title="Choose a boss to inspect" sub="Choose a region to preview its encounter. No boss availability is implied."/>
    {bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityState={{selected:selected===entry.id}} onPress={()=>onSelect(entry.id)} style={[s.choice,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
      <View style={[s.motif,{backgroundColor:C.panel2,borderColor:entry.color}]}><Text style={[s.motifGlyph,{color:entry.color}]}>✥</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{entry.name}</Text><Text style={s.choiceSub}>{entry.region} · {entry.motif}</Text></View><Text style={[s.choiceArrow,{color:entry.color}]}>{selected===entry.id?'✓':'›'}</Text>
    </Pressable>)}
@@ -164,10 +164,10 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
 }
 
 const stories=[
- {id:'caravan',name:'Broken Caravan',scene:'KINGS_ROAD',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders']},
- {id:'hunt',name:'Nightfall Hunt',scene:'IRONWOOD',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha']},
- {id:'wards',name:'Broken Wards',scene:'SILVERBROOK',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards']},
- {id:'reliquary',name:'Lost Reliquary',scene:'OLD_MINES',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals']},
+ {id:'caravan',name:'Broken Caravan',scene:'KINGS_ROAD',accent:'#D8B17C',summary:'Survey the crossing, defend the wagons and rebuild the convoy.',approach:['Safe Pass','Fast Pass'],finale:['Brace Wagons','Disrupt Raiders'],stages:['Survey the crossing and inspect broken bridge supports.','Defend the wagons against the raider charge.','Repair axles and prepare the convoy defense.']},
+ {id:'hunt',name:'Nightfall Hunt',scene:'IRONWOOD',accent:'#A7B3DF',summary:'Follow the tracks, flush out the pack and prepare the final trap.',approach:['Clear Trail','Shadow Trail'],finale:['Hold Ground','Hunt the Alpha'],stages:['Read tracks and study signs in the moonlit woods.','Flush the pack and interrupt its warning howls.','Mix scent decoys and prepare the alpha encounter.']},
+ {id:'wards',name:'Broken Wards',scene:'SILVERBROOK',accent:'#B6A6E0',summary:'Trace unstable runes and restore the circle before it collapses.',approach:['Ground Spires','Charge Sigils'],finale:['Protect Wards','Overload Wards'],stages:['Trace rune fractures and broken magic circuits.','Stabilize the crackling spires before they rupture.','Align the runestones and rehearse the final defense.']},
+ {id:'reliquary',name:'Lost Reliquary',scene:'OLD_MINES',accent:'#9FD4CC',summary:'Read the mirrored glyphs and choose what happens to the seal.',approach:['Quiet Passage','Deep Passage'],finale:['Preserve Seals','Break Seals'],stages:['Translate mirrored glyphs in the forgotten archive.','Cross the mirror hall as the vault awakens.','Restore the final seal and prepare the choice ahead.']},
 ] as const;
 function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
@@ -189,7 +189,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
     </View>:null}
    {!hasParty?<Action label="Open Party" s={s} onPress={onOpenParty}/>:null}
   </Card>
-  <Card s={s}><SectionHeading s={s} kicker="STORY SELECTION · PREVIEW" title="Explore the event families"/>
+  <Card s={s}><SectionHeading s={s} kicker="STORY SELECTION · PREVIEW" title="Explore the event families" sub="Every story has its own scouting, encounter and final preparation."/>
    {stories.map(storyOption=><Pressable key={storyOption.id} accessibilityRole="button" accessibilityState={{selected:story.id===storyOption.id}} onPress={()=>{onStoryChange(storyOption.id);setChoice(null);setFinalChoice(null);setBallot('approach')}} style={[s.choice,story.id===storyOption.id&&{borderColor:storyOption.accent,backgroundColor:C.panelRaised}]}>
     <View style={[s.motif,{borderColor:storyOption.accent}]}><Text style={[s.motifGlyph,{color:storyOption.accent}]}>✦</Text></View><View style={s.flex}><Text style={s.choiceTitle}>{storyOption.name}</Text><Text style={s.choiceSub}>{storyOption.summary}</Text></View>
    </Pressable>)}
@@ -199,9 +199,9 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
  if(tab==='stages')return <>
   <Card s={s}><SectionHeading s={s} kicker={'STORY · '+story.name.toUpperCase()} title="Three stages, one finale" sub={story.summary}/>
    {[
-    ['01','Scout','Discover routes and gather clues. Noncombat choices are available.'],
-    ['02','Confront','Fight stage-specific foes and commit a verified choice.'],
-    ['03','Prepare','Commit supplies and lock the path to the final boss.'],
+    ['01','Scout',story.stages[0]],
+    ['02','Confront',story.stages[1]],
+    ['03','Prepare',story.stages[2]],
    ].map(([index,title,description])=><View key={index} style={s.storyStage}><Text style={[s.storyNumber,{color:story.accent}]}>{index}</Text><View style={s.flex}><Text style={s.choiceTitle}>{title}</Text><Text style={s.bodyText}>{description}</Text></View></View>)}
    <Action label="Inspect supply preparation" s={s} onPress={()=>onTab('supplies')}/>
   </Card>

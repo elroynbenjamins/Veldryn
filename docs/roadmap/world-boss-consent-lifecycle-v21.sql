@@ -10,7 +10,7 @@ BEGIN;
 -- if the event closes or the owner revokes/changes consent afterward.
 CREATE TABLE private.world_boss_consent_commands_v21 (
  event_id uuid NOT NULL REFERENCES private.world_boss_events_v17(id) ON DELETE RESTRICT,
- owner_account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+ owner_account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
  request_id text NOT NULL CHECK (request_id ~ '^[A-Za-z0-9_-]{8,128}$'),
  -- Historical Echo consent is entirely retired. If the selected character
  -- is deleted, discard this consent/command row rather than blocking deletion.

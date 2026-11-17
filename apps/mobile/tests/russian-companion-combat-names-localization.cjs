@@ -50,7 +50,7 @@ for(const [id,name] of Object.entries(germanCompanionLegacySignatures)){
 }
 assert.equal(Object.keys(germanCompanionLegacySignatures).length,12);
 
-assert.equal(Object.keys(russianCompanionTechniqueNames).length,58);
+assert.equal(Object.keys(russianCompanionTechniqueNames).length,82);
 assert.deepEqual(Object.keys(russianCompanionTechniqueNames).sort(),Object.keys(germanCompanionTechniqueNames).sort());
 for(const [english,russian] of Object.entries(russianCompanionTechniqueNames)){
  assert.ok(russian!==english&&/[А-Яа-яЁё]/u.test(russian),'Missing Russian technique: '+english);
@@ -92,4 +92,4 @@ const panels=[
 for(const marker of ['companionCombatAbilityName(language','companionCombatBondName(language',
  'companionTechniqueName(language','companionTrialAbilityName(language'])
  assert.ok(panels.includes(marker),'Companion display wiring missing '+marker);
-console.log('PASS: 38 Russian companion ability/Bond pairs, 58 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');
+console.log('PASS: 38 Russian companion ability/Bond pairs, 82 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');

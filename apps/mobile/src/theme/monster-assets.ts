@@ -9,6 +9,22 @@ export const monsterPortraits:Record<MonsterDef['id'],ImageSourcePropType>={
  SUNSCAR_SCORPION:require('../../assets/monsters/sunscar_scorpion.png'),DUNE_ORACLE:require('../../assets/monsters/dune_oracle.png'),GLASSBOUND_SENTINEL:require('../../assets/monsters/glassbound_sentinel.png'),
 };
 
+/** Eight approved regional icons share one native 48px transparent atlas. */
+export const NEW_REGIONAL_MONSTER_CELL=48;
+export const NEW_REGIONAL_MONSTER_SHEET_SIZE=144;
+export const newRegionalMonsterPortraitAtlas:ImageSourcePropType=require('../../assets/monsters/regional-monsters-v2.png');
+export const newRegionalMonsterPortraitCells:Readonly<Record<string,{column:number;row:number}>>={
+ DUSTVEIL_RUNNER:{column:0,row:0},
+ SANDPLATE_JUGGERNAUT:{column:1,row:0},
+ PRISM_HEXER:{column:2,row:0},
+ CROWN_EXECUTIONER:{column:0,row:1},
+ RIME_BERSERKER:{column:1,row:1},
+ FROSTNEEDLE_BROOD:{column:2,row:1},
+ CHOIR_DEFILER:{column:0,row:2},
+ STORMGLASS_COLOSSUS:{column:1,row:2},
+};
+export function newRegionalMonsterPortraitCell(monsterId:string){return newRegionalMonsterPortraitCells[monsterId];}
+
 export const REGIONAL_MONSTER_CELL=48;
 export const REGIONAL_MONSTER_SHEET_SIZE=144;
 export const regionalMonsterPortraitAtlas:ImageSourcePropType=require('../../assets/monsters/regional-monsters-v1.webp');
@@ -33,4 +49,4 @@ const REGIONAL_AREA_ART_ALIASES:Readonly<Record<string,string>>={
 };
 export function regionalMonsterPortraitCell(monsterId:string){return regionalMonsterPortraitCells[REGIONAL_AREA_ART_ALIASES[monsterId]??monsterId];}
 export function monsterPortraitSource(monsterId:string){return monsterPortraits[REGIONAL_AREA_ART_ALIASES[monsterId]??monsterId];}
-export function hasMonsterPortrait(monsterId:string){return !!monsterPortraitSource(monsterId)||!!regionalMonsterPortraitCell(monsterId);}
+export function hasMonsterPortrait(monsterId:string){return !!monsterPortraitSource(monsterId)||!!regionalMonsterPortraitCell(monsterId)||!!newRegionalMonsterPortraitCell(monsterId);}

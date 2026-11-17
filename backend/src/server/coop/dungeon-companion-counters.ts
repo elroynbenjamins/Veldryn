@@ -11,12 +11,12 @@ export interface DungeonCompanionCounter{
 }
 type CounterProfile={id:DungeonCompanionCounterId;companionIds:readonly string[];description:string;applies:(traits:ReadonlySet<string>)=>boolean};
 const counters:readonly CounterProfile[]=[
- {id:'spellbreak',companionIds:['UNIT_005'],description:'Lantern Wisp interrupts dangerous casts instead of casting its usual healing assist.',applies:t=>t.has('interruptible_cast')},
- {id:'armor_break',companionIds:['UNIT_010','UNIT_021','GUILD_UNIT_002'],description:'Armor breaker: +3.5% owner Attack and +6% companion strike against guardians or barriers.',applies:t=>t.has('guardian')||t.has('barrier')},
- {id:'swarm_hunt',companionIds:['UNIT_017','UNIT_023'],description:'Swarm hunter: +2.5 percentage points owner Haste and +6% companion strike against swarms.',applies:t=>t.has('swarm')},
- {id:'bulwark',companionIds:['UNIT_002','UNIT_015','UNIT_019','UNIT_022'],description:'Bulwark: +4% owner Defense and +6% companion shielding against heavy pressure.',applies:t=>t.has('heavy_hit')||t.has('focus')||t.has('execute')},
- {id:'recovery',companionIds:['UNIT_003','UNIT_014','UNIT_018','UNIT_024'],description:'Recovery: +4% owner Healing Power and +6% companion heals against sustained pressure.',applies:t=>t.has('dot')||t.has('healing_reduction')},
- {id:'finisher',companionIds:['UNIT_007','UNIT_013','UNIT_020'],description:'Finisher: +3% owner Attack and +6% companion strike against self-healing enemies.',applies:t=>t.has('sustain')},
+ {id:'spellbreak',companionIds:['UNIT_005'],description:'Lantern Wisp preserves its interrupt for dangerous enemy casts.',applies:t=>t.has('interruptible_cast')},
+ {id:'armor_break',companionIds:['UNIT_004','UNIT_010','UNIT_011','UNIT_021','GUILD_UNIT_002'],description:'Armor breaker: +3.5% owner Attack and +6% companion strike against guardians or barriers.',applies:t=>t.has('guardian')||t.has('barrier')},
+ {id:'swarm_hunt',companionIds:['UNIT_009','UNIT_017','UNIT_023'],description:'Swarm hunter: +2.5 percentage points owner Haste and +6% companion strike against swarms.',applies:t=>t.has('swarm')},
+ {id:'bulwark',companionIds:['UNIT_002','UNIT_006','UNIT_015','UNIT_019','UNIT_022'],description:'Bulwark: +4% owner Defense and +6% companion shielding against heavy pressure.',applies:t=>t.has('heavy_hit')||t.has('focus')||t.has('execute')},
+ {id:'recovery',companionIds:['UNIT_003','UNIT_008','UNIT_014','UNIT_018','UNIT_024'],description:'Recovery: +4% owner Healing Power and +6% companion heals against sustained pressure.',applies:t=>t.has('dot')||t.has('healing_reduction')},
+ {id:'finisher',companionIds:['UNIT_001','UNIT_007','UNIT_013','UNIT_020'],description:'Finisher: +3% owner Attack and +6% companion strike against self-healing enemies.',applies:t=>t.has('sustain')},
 ];
 
 /** Server-authored, advisory only: a route may draw any of these encounters.
@@ -87,7 +87,7 @@ export function applyDungeonCompanionCounters(
    case 'bulwark':
     stats={...stats,defense:stats.defense*1.04};ability=scaleAssist(ability,'shield');break;
    case 'recovery':
-    stats={...stats,healingPower:stats.healingPower*1.04};ability=scaleAssist(ability,'heal');break;
+    stats={...stats,healingPower:stats.healingPower*1.04};ability=scaleAssist(scaleAssist(ability,'heal'),'shield');break;
    case 'finisher':
     stats={...stats,attackPower:stats.attackPower*1.03};ability=scaleAssist(ability,'damage');break;
   }

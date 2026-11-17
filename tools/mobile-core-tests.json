@@ -290,6 +290,7 @@
   ".core-build/apps/mobile/tests/progression-level-gates.js",
   ".core-build/apps/mobile/tests/regional-skill-loops.js",
   ".core-build/apps/mobile/tests/regional-four-areas.js",
+  ".core-build/apps/mobile/tests/regional-25-level-enemy-wiring.js",
   ".core-build/apps/mobile/tests/world-chapter-grouping.js",
   ".core-build/apps/mobile/tests/skill-late-game-coverage.js",
   ".core-build/apps/mobile/tests/skill-unlock-density.js",

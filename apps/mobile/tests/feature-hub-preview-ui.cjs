@@ -29,7 +29,9 @@ test('immersive feature hubs never show the activity bar or global chat dock',()
  assert.match(route,/showLocalPartyChatDock:route==='PartyEventPreview'/);
  assert.match(app,/!featureHubShell\.hideActivityBar/);
  assert.match(app,/featureHubShell\.hideGlobalChatDock/);
- assert.match(screen,/feature==='party'\?<Pressable accessibilityRole="button" accessibilityLabel=\{partyConnected\?'Open Party Chat'/);
+ assert.match(screen,/feature==='party'\?<PartyPreviewDock/);
+ assert.match(screen,/function PartyPreviewDock/);
+ assert.match(screen,/accessibilityLabel=\{partyConnected\?'Open Party Chat'/);
 });
 
 test('the Party Event dock opens the real Party channel, never a fake conversation',()=>{
@@ -207,4 +209,16 @@ test('Party Event stage actions and proposed preparation perks stay story-specif
  assert.match(screen,/Contribute · Not available/);
  assert.match(screen,/Only server-authenticated activity receipts will count/);
  assert.doesNotMatch(screen,/submitPartyEventAction|submitPartyEventSupply|recordPartyEventReceipt/);
+});
+
+test('unrelated boss and market hubs do not subscribe to the Party context',()=>{
+ const root=screen.split('export function FeaturePreviewScreen')[1].split('type Shared=')[0];
+ assert.doesNotMatch(root,/usePartySocial\(\)/,'root preview shell must not rerender for Party roster updates');
+ assert.match(screen,/function PartyPreviewPanel/);
+ assert.match(screen,/function PartyPreviewDock/);
+ assert.equal((screen.match(/usePartySocial\(\)/g)||[]).length,2,'both Party-only descendants own their subscription');
+ assert.match(screen,/feature==='party'\?<PartyPreviewPanel/);
+ assert.match(screen,/feature==='party'\?<PartyPreviewDock/);
+ assert.match(screen,/hasParty=\{Boolean\(social\.party\?\.id\)\}/);
+ assert.match(screen,/partyUnread>0&&partyConnected/);
 });

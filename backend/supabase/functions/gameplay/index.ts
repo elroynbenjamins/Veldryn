@@ -306,6 +306,7 @@ var init_faith2 = __esm({
 
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
+var FROSTFALL_REWARDS_RELEASED = false;
 var EVENT_COMMUNITY_ENABLED = false;
 var DUNGEON_MARKS_SHOP_RELEASED = false;
 var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
@@ -43769,8 +43770,8 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 });
 
 // ../apps/mobile/src/content/event-companions-active.ts
-var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011", "EVT_UNIT_009"]);
-var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id));
+var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
+var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id) || FROSTFALL_REWARDS_RELEASED && companion.id === "EVT_UNIT_009");
 
 // ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
@@ -48823,11 +48824,14 @@ function claimEventCommunityMilestone(state, percent, nowMs = Date.now()) {
 }
 
 // ../apps/mobile/src/content/event-collectible-content-active.ts
+var FROSTFALL_PETS = [
+  { id: "EVT_PET_015", kind: "pet", name: "Snowbell Pup", bonusFamilyId: "EVT_PET_015", target: "fishingSpeed", ownedBps: 50, activeBps: 200, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Common", buff: "+2% Fishing Speed", description: "A fluffy winter pup with a bell collar and scarf." },
+  { id: "EVT_PET_017", kind: "pet", name: "Aurora Fox", bonusFamilyId: "EVT_PET_017", target: "skillXp", ownedBps: 50, activeBps: 500, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Mythic", buff: "+5% Offline Skill XP", description: "A luminous frost fox wrapped in aurora ribbons and ice crystal ornaments." }
+];
 var EVENT_PET_COLLECTIBLES = [
   { id: "EVT_PET_013", kind: "pet", name: "Gloomkin", bonusFamilyId: "EVT_PET_013", target: "dropChance", ownedBps: 50, activeBps: 300, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Rare", buff: "+3% relative Combat Drop Chance", description: "A playful void kitten carrying a small spectral lantern." },
   { id: "EVT_PET_014", kind: "pet", name: "Lantern Mimic", bonusFamilyId: "EVT_PET_014", target: "dungeonReward", ownedBps: 50, activeBps: 400, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Epic", buff: "+4% Dungeon Reward Quantity Chance", description: "A compact mimic filled with ghost-fire and lantern light." },
-  { id: "EVT_PET_015", kind: "pet", name: "Snowbell Pup", bonusFamilyId: "EVT_PET_015", target: "fishingSpeed", ownedBps: 50, activeBps: 200, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Common", buff: "+2% Fishing Speed", description: "A fluffy winter pup with a bell collar and scarf." },
-  { id: "EVT_PET_017", kind: "pet", name: "Aurora Fox", bonusFamilyId: "EVT_PET_017", target: "skillXp", ownedBps: 50, activeBps: 500, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Mythic", buff: "+5% Offline Skill XP", description: "A luminous frost fox wrapped in aurora ribbons and ice crystal ornaments." }
+  ...FROSTFALL_REWARDS_RELEASED ? FROSTFALL_PETS : []
 ];
 
 // ../apps/mobile/src/content/core-pets.ts

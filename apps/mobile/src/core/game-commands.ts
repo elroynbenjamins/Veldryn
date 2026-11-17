@@ -401,7 +401,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
-  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
+  // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
+  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids',100,185),oneOf(a.location,['inventory','bank']));break;
   case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
   case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;

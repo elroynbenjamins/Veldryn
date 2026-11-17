@@ -244,6 +244,16 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
  const storyStatus=status?.family===story.id?status:null;
  const required=storyStatus?partyEventSupplyProgress(storyStatus,storyStatus.stage,'required'):null;
  if(tab==='adventure')return <>
+  <Card s={s}><SectionHeading s={s} kicker="PRIVATE EVENT SNAPSHOT" title={status?'Enrolled adventure':'No verified event loaded'} sub={status?'Read-only event enrollment, separate from your current live Party. No combat or rewards are active.':'The Party roster below is real, but stages, votes and supplies require a separately authenticated event service.'}/>
+   {status?<><View style={s.statRow}>
+      <Stat s={s} label="FROZEN PARTY" value={status.rosterSize+' players'}/>
+      <Stat s={s} label="EVENT STAGE" value={status.stage+' / 3'}/>
+      <Stat s={s} label="STATUS" value={status.status.toUpperCase()}/>
+    </View>
+    <View style={s.detailRow}><View style={s.flex}><Text style={s.choiceTitle}>{stories.find(item=>item.id===status.family)?.name??'Party Event'}</Text><Text style={s.choiceSub}>{status.difficulty} · {status.completedActions.length} of 4 personal actions recorded</Text></View><Tag s={s} label="Read only" accent={accent}/></View>
+    <Text style={s.finePrint}>This record does not authorize boss combat, supply donations, stage advances or claims.</Text>
+   </>:<View style={s.empty}><UiIcon name="events" size={30}/><Text style={s.choiceTitle}>Event service not connected</Text><Text style={s.bodyText}>No real event points, stage deadlines, supply balances or locked ballots are displayed. The story content below is a design preview.</Text></View>}
+  </Card>
   <Card s={s}><SectionHeading s={s} kicker="WEEK-LONG ADVENTURES" title="One journey, four possible stories" sub="Three evolving stages, team decisions and a finale. The event cycle is 21 days."/>
    <View style={s.statRow}><Stat s={s} label="PARTY SIZE" value="2–4"/><Stat s={s} label="STORY" value="7 days"/><Stat s={s} label="SETTLEMENT" value="Day 8"/></View>
    <View style={s.warning}><Text style={s.warningTitle}>{hasParty?'Your Party is connected':'No active Party'}</Text><Text style={s.bodyText}>{hasParty?roster.length+' current members. The weekly adventure prototype is not yet live.':'Create or join a Party to prepare for future events. Any valid Tank, Damage and Support role mix is allowed.'}</Text></View>
@@ -277,7 +287,8 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   <Card s={s}><SectionHeading s={s} kicker="PERSONAL ACTIONS · STORY PREVIEW" title="Four ways to help" sub="Every member can contribute through approved combat or noncombat evidence. These four objective slots do not require a specific class."/>
    {storyGuide.actions.map((action,i)=><View key={action} style={s.detailRow}>
     <Text style={[s.index,{color:accent}]}>{'0'+(i+1)}</Text>
-    <View style={s.flex}><Text style={s.choiceTitle}>{action}</Text><Text style={s.choiceSub}>{partyActionStages[i]} · Individually verified when released</Text></View>
+    <View style={s.flex}><Text style={s.choiceTitle}>{action}</Text><Text style={s.choiceSub}>{partyActionStages[i]} · {storyStatus?.completedActions.includes((['scout_route','secure_approach','support_expedition','prepare_finale'] as const)[i]!)?'Recorded in private snapshot':'Not confirmed in this preview'}</Text></View>
+    <Tag s={s} label={storyStatus?.completedActions.includes((['scout_route','secure_approach','support_expedition','prepare_finale'] as const)[i]!)?'Recorded':'Preview'}/>
    </View>)}
    <Text style={s.finePrint}>Objective completion and Event Points are unavailable in this preview. Only server-authenticated activity receipts will count.</Text>
    <Action label="Inspect the two route votes" s={s} secondary onPress={()=>onTab('vote')}/>
@@ -288,6 +299,10 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
    {story.supplies.map((entry,i)=><View key={entry} style={s.detailRow}><Text style={[s.index,{color:accent}]}>{i+1}</Text><View style={s.flex}><Text style={s.choiceTitle}>{entry}</Text><Text style={s.choiceSub}>Authoritative inventory check required</Text></View><Tag s={s} label="Preview"/></View>)}
    <Action label="Contribute · Not available" s={s} disabled/>
   </Card>
+  {storyStatus&&required?<Card s={s}><SectionHeading s={s} kicker="FROZEN SUPPLY ORDERS · READ ONLY" title={'Stage '+storyStatus.stage+' supplies'} sub="Quantities come from private event receipts, not a donation quote or a promise of progression."/>
+   {required.orders>0?<><Progress s={s} value={required.percent} accent={accent}/><Text style={s.bodyText}>{required.donated} / {required.target} required units recorded ({required.percent}%).</Text></>:<Text style={s.bodyText}>No server-authored required orders available for the current stage.</Text>}
+   <Text style={s.finePrint}>The server separately verifies completion, action receipts and stage readiness.</Text>
+  </Card>:null}
   <Card s={s}><SectionHeading s={s} kicker="OPTIONAL BUFFS · PROPOSED" title="Special preparations" sub="Fully completing a verified optional order may grant a small story-specific finale advantage. These values are design examples, not live bonuses."/>
    {storyGuide.preparations.map(([type,name,effect])=><View key={type} style={s.detailRow}>
     <View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>{type} preparation · verified completion required</Text></View>
@@ -301,11 +316,18 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   {([0,1] as const).map(index=>{const id=index===0?'secure':'swift';const selected=ballot==='approach'?choice:finalChoice;const title=(ballot==='approach'?story.approach:story.finale)[index];return <Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:selected===id}} onPress={()=>ballot==='approach'?setChoice(id):setFinalChoice(id)} style={[s.choice,selected===id&&{borderColor:accent,backgroundColor:C.panelRaised}]}>
    <View style={[s.radio,selected===id&&{borderColor:accent}]}>{selected===id?<View style={[s.radioInner,{backgroundColor:accent}]}/>:null}</View><View style={s.flex}><Text style={s.choiceTitle}>{title}</Text><Text style={s.choiceSub}>{ballot==='approach'?'Stage 2 · Approach choice':'Stage 3 · Finale preparation'}</Text></View>
   </Pressable>;})}
+  {storyStatus?<View style={s.warning}>
+   <Text style={s.warningTitle}>Read-only ballot status</Text>
+   <Text style={s.bodyText}>Stage 2: {storyStatus.votes.stage2?'Locked':'Not locked'} · Your ballot: {storyStatus.votes.myStage2Ballot?'Recorded':'Not recorded'}</Text>
+   <Text style={s.bodyText}>Stage 3: {storyStatus.votes.stage3?'Locked':'Not locked'} · Your ballot: {storyStatus.votes.myStage3Ballot?'Recorded':'Not recorded'}</Text>
+   <Text style={s.finePrint}>The local choices below cannot change an authenticated vote.</Text>
+  </View>:null}
   <Text accessibilityLiveRegion="polite" style={s.finePrint}>Local example: Stage 2 · {choice?story.approach[choice==='secure'?0:1]:'no choice'}; Stage 3 · {finalChoice?story.finale[finalChoice==='secure'?0:1]:'no choice'}. Nothing submitted.</Text>
   <Action label="Cast vote · Server unavailable" s={s} disabled/>
  </Card>;
  if(tab==='finale')return <Card s={s}><SectionHeading s={s} kicker={'FINALE · '+story.name.toUpperCase()} title="A decisive encounter" sub="Real class skills, companions, stage choices and server-verified preparation will determine the finale."/>
   <View style={s.statRow}><Stat s={s} label="PARTY" value="2–4"/><Stat s={s} label="ROUTES" value="2 votes"/><Stat s={s} label="REWARD" value="Day 8"/></View>
+  {storyStatus?<Text style={s.finePrint}>Your private event record is at Stage {storyStatus.stage}/3 ({storyStatus.status}). It does not authorize a boss attempt.</Text>:null}
   <Text style={s.bodyText}>{story.finaleThreat} This is a story preview, not active combat.</Text>
   <View style={s.empty}><UiIcon name="dungeon" size={34}/><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
   <Action label="Enter finale · Not available" s={s} disabled/>

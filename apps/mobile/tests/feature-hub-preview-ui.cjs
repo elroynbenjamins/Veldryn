@@ -18,6 +18,7 @@ test('all three screens mount only from development-only QA routes',()=>{
   assert.ok(more.includes("'"+name+"'"),name+' QA entry absent');
  }
  assert.match(app,/FEATURE_HUB_QA_ENABLED&&isFeatureHubPreviewRoute\(tab\)/);
+ assert.match(app,/isFeatureHubPreviewRoute\(destination\)&&!FEATURE_HUB_QA_ENABLED/);
  assert.match(more,/FEATURE_HUB_QA_ENABLED&&onOpenFeaturePreview/);
 });
 

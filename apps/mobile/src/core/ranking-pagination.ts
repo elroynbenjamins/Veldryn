@@ -1,5 +1,19 @@
 import type {RankingEntry} from './rankings';
 
+/** Same-board polling and manual refresh share a single active request.
+ * Switching boards/pages is never blocked by the previous read. A timed-out or
+ * clock-skewed read can be replaced; the screen's request version still guards
+ * against an outdated response overwriting a newer board.
+ */
+export interface PendingRankingRead{scope:string;version:number;startedAt:number;}
+export function rankingCanStartRead(
+ active:PendingRankingRead|null,scope:string,nowMs:number,staleAfterMs=30000,
+):boolean{
+ if(!active||active.scope!==scope)return true;
+ const elapsed=nowMs-active.startedAt;
+ return !Number.isFinite(elapsed)||elapsed<0||elapsed>=staleAfterMs;
+}
+
 /** Request one extra server row so a full last page cannot display a false Next button. */
 export const RANKING_PAGE_SIZE=50;
 export const RANKING_MAX_OFFSET=10000;

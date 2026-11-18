@@ -19,23 +19,16 @@ const isV2=(itemId:string)=>itemId.startsWith('EQ2_');
 export function equipmentV2LegacyPreservationAudit(state:GameState):EquipmentV2LegacyAudit{
  const records=state.account.craftedGearInstances??[];
  const idSet=new Set(records.map(row=>row.id));
- const characters:[
-  {character:CharacterState;inventory:GameState['inventory'];overflow:GameState['overflow']},
-  ...Array<{character:CharacterState;inventory:GameState['inventory'];overflow:GameState['overflow']}>
- ]=state.character?[{character:state.character,inventory:state.inventory,overflow:state.overflow},
-  ...(state.otherCharacters??[])]:[...(state.otherCharacters??[])];
- const allPhysical:ItemStack[]=[
-  ...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks,
+ const characters:Array<{character:CharacterState;inventory:GameState['inventory'];overflow:GameState['overflow']}>=
+  state.character?[{character:state.character,inventory:state.inventory,overflow:state.overflow},
+   ...(state.otherCharacters??[])]:[...(state.otherCharacters??[])];
+ const physicalWithBank:ItemStack[]=[
+  ...state.bank.stacks,
+  ...(!state.character?[...state.inventory.stacks,...state.overflow.stacks]:[]),
   ...characters.flatMap(({character,inventory,overflow})=>[
    ...inventory.stacks,...overflow.stacks,...(character.equipmentPouch?.stacks??[]),
   ]),
  ];
- /** Active Inventory and overflow were already added in characters; count them
-  * only once to avoid false multi-location warnings.
-  */
- const physical=state.character?allPhysical.filter((_,i)=>i>=state.inventory.stacks.length+state.bank.stacks.length+state.overflow.stacks.length)
-  :allPhysical;
- const physicalWithBank=[...physical,...state.bank.stacks];
  const countByInstance=new Map<string,number>();
  let missingRecordForInstanceStacks=0,legacyStacksWithoutInstanceIds=0;
  for(const row of physicalWithBank){

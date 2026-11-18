@@ -26,7 +26,7 @@ export interface V2PreparationResult{
   * Every unit of an already-owned input is counted only once across the full
   * dependency graph. Final craft is intentionally NOT executed.
   */
- extraProduced:Readonly<Record<string,number>>;
+ projectedRemainingStock:Readonly<Record<string,number>>;
 }
 export interface V2PreparationOptions{
  owned:Readonly<Record<string,number>>;
@@ -92,14 +92,14 @@ export function equipmentV2PreparationPlan(
   pool.set(itemId,stock-fromOwned);
   return required-fromOwned;
  };
- const producerFor=(id:string)=>{
+ const producerFor=(id:string,needed:number)=>{
   const all=byItem.get(id)??[];
   const permitted=all.filter(recipe=>
    (options.professionLevels[recipe.skillId]??0)>=recipe.level
    &&(recipe.characterLevel??0)<=options.characterLevel
    &&!recipe.requiredKnowledgeId);
-  const byUnit=(a:Recipe,b:Recipe)=>a.gold/a.output.quantity-b.gold/b.output.quantity
-    ||a.seconds/a.output.quantity-b.seconds/b.output.quantity
+  const byUnit=(a:Recipe,b:Recipe)=>Math.ceil(needed/a.output.quantity)*a.gold-Math.ceil(needed/b.output.quantity)*b.gold
+    ||Math.ceil(needed/a.output.quantity)*a.seconds-Math.ceil(needed/b.output.quantity)*b.seconds
     ||a.id.localeCompare(b.id);
   return {chosen:permitted.sort(byUnit)[0],locked:all.slice().sort(byUnit)[0]};
  };
@@ -108,7 +108,7 @@ export function equipmentV2PreparationPlan(
   if(++iterations>10000)throw new Error('V2 preparation graph too large');
   const deficit=withdraw(itemId,quantity);
   if(!deficit)return;
-  const {chosen,locked}=producerFor(itemId);
+  const {chosen,locked}=producerFor(itemId,deficit);
   if(visiting.has(itemId)){addShortage(itemId,deficit,'recipe_cycle',locked);return;}
   if(!chosen){addShortage(itemId,deficit,locked?'recipe_locked':'source_required',locked);return;}
   if(!safeNonnegative(chosen.gold)||!safeNonnegative(chosen.xp)
@@ -140,6 +140,6 @@ export function equipmentV2PreparationPlan(
   processingGold,processingSeconds,knownGoldSubtotal,
   xpBySkill,steps:[...steps.values()],shortages:[...shortages.values()],
   canPrepareWithOwned:shortages.size===0,requiresExternalSources:shortages.size>0,
-  extraProduced:Object.fromEntries([...pool].filter(([,qty])=>qty>0)),
+  projectedRemainingStock:Object.fromEntries([...pool].filter(([,qty])=>qty>0)),
  };
 }

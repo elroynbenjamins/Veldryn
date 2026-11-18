@@ -11,6 +11,7 @@
  */
 import {simulateCombat} from '../engine';
 import {RESOURCE_BY_CLASS_V2} from './resource-runtime';
+import {extraAbilityDefinitionV2,extraVariantRecipesV2} from './extra-active-skills';
 import type {AbilityDefinition,AbilityEffect,CombatInput,CombatResult,CombatantDefinition} from '../types';
 import {
   CLASS_ROLES_V2,validateBuildV2,buildMayAffectCombatV2,
@@ -240,11 +241,11 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
   const abilities:AbilityDefinition[]=selected.activeSkills.map(slot=>{
     const record=SKILL_IDENTITIES_V2.find(s=>s.id===slot.skillId&&s.classId===verified.classId);
     if(!record)throw Error('combat_v2_unknown_skill');
-    const recipes=variants[record.name];
+    const recipes=variants[record.name]??extraVariantRecipesV2(record.name,verified.classId);
     if(!recipes)throw Error('combat_v2_skill_effect_unimplemented:'+record.name);
     const index=record.variants.findIndex(v=>v.id===slot.variantId);
     if(index<0||index>=recipes.length)throw Error('combat_v2_variant_effect_unimplemented');
-    const base=actor.abilities.find(a=>a.name===record.name);
+    const base=actor.abilities.find(a=>a.name===record.name)??extraAbilityDefinitionV2(record.name,verified.classId);
     if(!base)throw Error('combat_v2_missing_authoritative_technique:'+record.name);
     const upgraded=applyRecipe(base,recipes[index],mods);
     const spenders:Record<string,number|'all'>={

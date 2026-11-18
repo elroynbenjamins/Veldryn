@@ -142,6 +142,12 @@ export class CharacterBuildServiceV2 {
       authenticatedCharacterId:characterId,verified,catalog,busyReason:busyReason??undefined,
     },request);
     if(!plan.ok)return {ok:false,revision:current.revision,state:current,issues:plan.issues};
+    // Re-check the authoritative activity service immediately before the
+    // atomic commit. A character may have entered combat after the first read.
+    // The production DB transaction still needs its own activity predicate.
+    const preCommitBusy=await this.deps.activityGuard(trustedAccountId,characterId);
+    if(preCommitBusy===undefined)return failure('activity_guard_unavailable','activity',current);
+    if(preCommitBusy)return failure('build_switch_blocked_'+preCommitBusy,'activity',current);
     try{
       const committed=await this.deps.storage.compareAndSwap(trustedAccountId,characterId,{
         next:plan.next,expectedBuildRevision:current.revision,

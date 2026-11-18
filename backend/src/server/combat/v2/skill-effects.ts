@@ -58,7 +58,7 @@ const passiveMods:Readonly<Record<string,Modifiers>>={
   'WAYFINDER:Eagle Eye':{accuracy:14},'WAYFINDER:Quick Nock':{haste:.01},
   'WAYFINDER:Lightfoot':{evasion:14},
   'RAVAGER:Scarred':{hp:.01},
-  'HEXWEAVER:Deep Ink':{dot:.02},'HEXWEAVER:Long Curse':{cooldown:0},
+  'HEXWEAVER:Deep Ink':{dot:.02},
   'HEXWEAVER:Spell Force':{direct:.015},'HEXWEAVER:Arcane Footing':{evasion:14},
   'KNIFE_DANCER:Quick Steel':{haste:.01},'KNIFE_DANCER:Fine Edge':{accuracy:14},
   'KNIFE_DANCER:Light Steps':{evasion:14},
@@ -67,7 +67,7 @@ const passiveMods:Readonly<Record<string,Modifiers>>={
   'STONECALLER:Stone Bond':{shield:.02},'STONECALLER:Earthskin':{defense:.01},
   'STONECALLER:Clear Tone':{heal:.015},
 };
-// Long Curse needs per-effect duration, not a generic mod; encoded as direct authored transformation below.
+// Passive procs requiring resources, conditional triggers or extra duration are deliberately gated.
 const supportedPassiveKeys=new Set(Object.keys(passiveMods));
 type VariantRecipe={
   damage?:number;heal?:number;shield?:number;dot?:number;hot?:number;
@@ -206,7 +206,7 @@ function applyRecipe(base:AbilityDefinition,recipe:VariantRecipe,mods:MutableMod
 }
 function modifiersFor(verified:VerifiedCharacterV2,selected:BuildSelectionV2):MutableMods {
   const out=zeroMods();
-  const spec=Object.entries(CLASS_NAMES_V2).length&&selected.specializationId;
+  const spec=selected.specializationId;
   if(spec){
     const name=Object.keys(specMods).find(label=>specializationIdV2(verified.classId,label)===spec);
     if(!name)throw Error('combat_v2_specialization_effect_unimplemented');

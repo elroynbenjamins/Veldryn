@@ -25,7 +25,7 @@ export type V2CustodyIntent=
  |{kind:'unequip';actorCharacterId:string;instanceId:string};
 export type V2CustodyDenial=
  |'ok'|'duplicate_instance'|'unknown_character'|'unknown_item'
- |'invalid_item_snapshot'|'wrong_owner'|'wrong_location'|'wrong_class'
+ |'invalid_item_snapshot'|'unverified_template'|'wrong_owner'|'wrong_location'|'wrong_class'
  |'level_locked'|'invalid_character_level'|'must_unequip_conflicts';
 export interface V2CustodyPlan{
  allowed:boolean;reason:V2CustodyDenial;

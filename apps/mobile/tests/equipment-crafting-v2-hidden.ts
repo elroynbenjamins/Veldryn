@@ -37,4 +37,8 @@ const result=equipmentV2HiddenRecipeScreen({name:'Sunscar Thornhide Vest',tier:3
  professionLevel:25,goldAvailable:10000,queueHasCapacity:true});
 check(!result.marketControlsEnabled&&result.action==='prepare_components'&&!result.canCraftNow,'Hidden UI refuses incomplete/market-dependent craft');
 check(result.rarityOutcomes.find(row=>row.rarity==='epic')?.affixes===2,'UI odds follow tier affix rule');
+const purchasePreview=equipmentV2HiddenRecipeScreen({name:'Sunscar Thornhide Vest',tier:3,slot:'chest',profile:'defense_health',setPiece:true,
+ ingredients:inputs,strategy:'market',marketReleased:true,characterLevel:30,professionLevel:25,goldAvailable:10000,queueHasCapacity:true});
+check(purchasePreview.action==='review_market_purchase'&&!purchasePreview.canCraftNow&&!purchasePreview.marketControlsEnabled,
+ 'A quoted market basket never counts as owned or unlocks purchases behind the V2 gate');
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

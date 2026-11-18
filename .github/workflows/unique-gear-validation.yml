@@ -47,6 +47,8 @@ jobs:
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-transaction.test.js
       - name: Test shadow store compare-and-swap and crash recovery
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-shadow.test.js
+      - name: Audit shadow SQL security and safe rollout boundary
+        run: node tests/equipment-crafting-v2-shadow-sql.cjs
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity

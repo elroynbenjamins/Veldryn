@@ -19,7 +19,7 @@ const runtime=backend('online/qmode-runtime.ts');
 const handler=backend('online/coop.ts');
 const sql=backend('supabase/migrations/20261104091107_online_qmode_merchant_purchase_v1.sql');
 assert(!source.includes('<DungeonMerchantPanel')&&!source.includes('onPurchaseMerchant'),'The active dungeon run must not render or offer a Merchant purchase');
-assert(source.includes("<DungeonRoomOutcomeBanner outcome={run.phase===\'awaiting_choice\'?run.lastRoomOutcome:undefined} onContinue={reviewingRoom?"),'Room outcomes remain server-authoritative and can be explicitly acknowledged');
+assert(source.includes("<DungeonRoomOutcomeBanner outcome={run.phase===\'awaiting_choice\'&&(run.mode===\'live\'||reviewingRoom)?run.lastRoomOutcome:undefined} onContinue={reviewingRoom?"),'Solo rewards stay visible only until acknowledged; Live results remain informative without blocking votes');
 assert(merchant.includes('shop.resources>=offer.cost')&&merchant.includes('offer.purchased'),'Retired Merchant component remains safe for historic run snapshots');
 assert(merchant.includes('onPurchase?.(offer.id)'),'Offer button transmits the server-defined offer id');
 assert(client.includes('purchaseMerchant:(runId:string,body:CoopMerchantPurchaseBody)=>mutate'),'Merchant commands use existing durable retries');

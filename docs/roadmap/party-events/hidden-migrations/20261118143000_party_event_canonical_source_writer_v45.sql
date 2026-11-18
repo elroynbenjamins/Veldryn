@@ -36,17 +36,17 @@ begin
  if p_account_id is null or p_deleted_character_id is not null
    or p_request_id !~ '^[a-zA-Z0-9_-]{8,128}$'
    or p_request_hash !~ '^[a-f0-9]{64}$'
-   or jsonb_typeof(p_contributions)<>'array'
+   or jsonb_typeof(p_contributions) is distinct from 'array'
    or jsonb_array_length(p_contributions)>4
-   or jsonb_typeof(p_packet)<>'object'
-   or p_packet->>'kind'<>'party-event-canonical-source-packet-v44'
+   or jsonb_typeof(p_packet) is distinct from 'object'
+   or p_packet->>'kind' is distinct from 'party-event-canonical-source-packet-v44'
    or p_packet->>'accountId' is distinct from p_account_id::text
    or p_packet->>'requestId' is distinct from p_request_id
-   or p_packet->>'writesAuthorized'<>'false'
-   or p_packet->>'rewardsGranted'<>'false'
-   or p_packet->>'eventPointsGranted'<>'0'
-   or jsonb_typeof(p_packet->'craft')<>'array'
-   or jsonb_typeof(p_packet->'idle')<>'array'
+   or p_packet->>'writesAuthorized' is distinct from 'false'
+   or p_packet->>'rewardsGranted' is distinct from 'false'
+   or p_packet->>'eventPointsGranted' is distinct from '0'
+   or jsonb_typeof(p_packet->'craft') is distinct from 'array'
+   or jsonb_typeof(p_packet->'idle') is distinct from 'array'
    or jsonb_array_length(p_packet->'craft')>4
    or jsonb_array_length(p_packet->'idle')>1
  then raise exception 'party_event_v45_invalid_trusted_packet';end if;
@@ -84,12 +84,16 @@ begin
    when 'GREENFIELDS_COPPER_OUTCROP' then 'COPPER_ORE'
    when 'DEWLEAF_PATCH' then 'DEWLEAF'
    else null end;
-  if v_primary_item is null or v_idle->>'kind'<>'idle'
+  if v_primary_item is null or v_idle->>'kind' is distinct from 'idle'
     or v_idle->>'idempotencyKey' is distinct from 'pe44:'||p_request_id||':idle:0'
+    or (v_idle->>'elapsedSec') is null
     or (v_idle->>'elapsedSec')::integer not between 60 and 86400
+    or (v_idle->>'resourceAmount') is null
     or (v_idle->>'resourceAmount')::bigint<=0
+    or (v_idle->>'xpAmount') is null
     or (v_idle->>'xpAmount')::bigint<0
     or (p_response#>>'{reward,xp}')::bigint is distinct from (v_idle->>'xpAmount')::bigint
+    or (p_response#>>'{reward,elapsedSeconds}') is null
     or (p_response#>>'{reward,elapsedSeconds}')::numeric < 60
   then raise exception 'party_event_v45_invalid_idle_evidence';end if;
   v_expected_elapsed:=floor((p_response#>>'{reward,elapsedSeconds}')::numeric)::integer;

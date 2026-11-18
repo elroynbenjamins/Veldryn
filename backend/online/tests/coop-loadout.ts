@@ -5,6 +5,7 @@ import {CLASSES} from '../../../apps/mobile/src/content/classes';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
+import {equipmentBonusRange} from '../../../apps/mobile/src/core/equipment-bonus-rolls';
 import {itemDef} from '../../../apps/mobile/src/content/items';
 import {EQUIPMENT_SETS} from '../../../apps/mobile/src/content/equipment-sets';
 import {combatantFromVerifiedSnapshot} from '../../src/server/combat/snapshot-adapter';
@@ -158,3 +159,61 @@ for(const definition of CLASSES){
    definition.id+' switching paths must invalidate the previous frozen snapshot');
 }
 console.log('PASS: both V33 equipment paths alter real server-owned dungeon loadouts and hashes');
+
+/** T2–T5 early-release Healing Power is real server-derived combat output.
+ * Both snapshots come from the same owned equipment ID. Only its exact
+ * immutable Forge receipt changes; there is no client-supplied combat stat.
+ * Ability Damage remains unmintable until the coordinated Combat 2.0 update.
+ */
+const healingGearState=createCharacter(newGame(0),'DAWNKEEPER','Dungeon Healing Roll');
+healingGearState.character!.level=25;
+healingGearState.character!.xp=legacyCharacterTotalXpAtLevel(25);
+healingGearState.character!.equipment=Object.fromEntries(
+ noviceSetFor('DAWNKEEPER').slots.map(slot=>[slot,noviceItemId('DAWNKEEPER',slot)]));
+const healingGlovesId=V33_EQUIPMENT_RECIPES.find(row=>
+ row.classId==='DAWNKEEPER'&&row.v33EquipmentTier==='T2'&&itemDef(row.output.itemId).slot==='gloves')!.output.itemId;
+const healingReceiptId='t2-support-healing-gloves';
+const cleanHealingGloves:CraftedGearInstance={
+ id:healingReceiptId,itemId:healingGlovesId,ownerCharacterId:healingGearState.character!.id,
+ rarity:'uncommon',quality:50,acquireSource:'craft',sourceReceiptKey:'support-healing-affix-parity',
+ createdAtMs:1,enhancement:{rank:0,failures:0,gemIds:[]},
+};
+healingGearState.character!.equipment.gloves=healingGlovesId;
+healingGearState.character!.equipmentInstanceIds={gloves:healingReceiptId};
+healingGearState.account.craftedGearInstances=[cleanHealingGloves];
+const unrolledHealingLoadout=deriveOnlineCoopLoadout('owner',healingGearState,20);
+const healingBps=equipmentBonusRange(2,'healingPower','gloves','uncommon',3)?.[0];
+assert.ok(Number.isInteger(healingBps)&&healingBps!>0,'T2 support equipment needs a valid release-safe Healing Power roll');
+const rolledHealingGloves:CraftedGearInstance={
+ ...cleanHealingGloves,equipmentBonusRollVersion:3,
+ equipmentBonuses:[{stat:'healingPower',basisPoints:healingBps!}],
+};
+healingGearState.account.craftedGearInstances=[rolledHealingGloves];
+const rolledHealingLoadout=deriveOnlineCoopLoadout('owner',healingGearState,20);
+assert.ok(Math.abs(rolledHealingLoadout.stats.healingPower/
+  unrolledHealingLoadout.stats.healingPower-(1+healingBps!/10000))<1e-9,
+ 'A real equipped T2 Healing Power roll must increase the trusted dungeon healing snapshot exactly once');
+assert.equal(rolledHealingLoadout.stats.attackPower,unrolledHealingLoadout.stats.attackPower,
+ 'Healing Power must not increase basic attacks or damage skills');
+assert.equal(rolledHealingLoadout.stats.maxHp,unrolledHealingLoadout.stats.maxHp,
+ 'Healing Power must not silently add health');
+assert.notEqual(onlineCoopLoadoutHash(rolledHealingLoadout),onlineCoopLoadoutHash(unrolledHealingLoadout),
+ 'Changing the verified healing receipt must invalidate the stale queued snapshot hash');
+const freezeHealing=(record:ReturnType<typeof deriveOnlineCoopLoadout>)=>resolveAndFreezeLoadout({
+ accountId:'owner',characterId:record.characterId,loadoutId:'current',expectedRevision:20,
+ minLevel:rebasedCombatLevelFromLegacyLevel(15),syncLevel:25,repository:{getOwnedLoadout:()=>record},
+});
+const frozenUnrolledHealing=freezeHealing(unrolledHealingLoadout);
+const frozenRolledHealing=freezeHealing(rolledHealingLoadout);
+assert.ok(frozenRolledHealing.normalized.snapshot.healingPower>frozenUnrolledHealing.normalized.snapshot.healingPower,
+ 'Dungeon normalization must retain a real T2 Healing Power affix');
+const healingCombatant=combatantFromVerifiedSnapshot(
+ frozenRolledHealing.normalized.snapshot,frozenRolledHealing.normalized.abilities);
+assert.equal(healingCombatant.stats.healingPower,frozenRolledHealing.normalized.snapshot.healingPower,
+ 'The verified healing affix must reach the real dungeon combat engine');
+healingGearState.character!.equipmentInstanceIds={gloves:'nonexistent-t2-copy'};
+const wrongReceipt=deriveOnlineCoopLoadout('owner',healingGearState,20);
+assert.equal(wrongReceipt.stats.healingPower,unrolledHealingLoadout.stats.healingPower,
+ 'A missing equipped receipt must not borrow a healing roll from another saved copy');
+console.log('PASS: server-owned T2 Healing Power affixes change frozen dungeon healing but not attack or unrelated copies');
+

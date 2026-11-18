@@ -110,7 +110,7 @@ check('two fractional gem XP claims total the full award',()=>{
  let s=funded('HEXWEAVER',refine.inputs);const before=s.skills.find(row=>row.skillId==='enchanting')!.xp;
  const a=startGemRefinement(s,refine.id,NOW),b=startGemRefinement(a.state,refine.id,NOW+1);s=b.state;
  s=claimForgeJob(s,a.job.id,a.job.completesAtMs+1,.9).state;s=claimForgeJob(s,b.job.id,b.job.completesAtMs+1,.9).state;
- assert.equal(s.skills.find(row=>row.skillId==='enchanting')!.xp-before,189);
+ assert.equal(s.skills.find(row=>row.skillId==='enchanting')!.xp-before,231); // 2 × 110 × 1.05 (G1 refine is 110 XP after the +20 increase)
  near(s.rewardRemainders![affinityXpRemainderKey(s.character!.id,'enchanting')],0);
  throws(()=>claimForgeJob(s,a.job.id,a.job.completesAtMs+2,.9));
 });
@@ -119,7 +119,7 @@ check('claiming another character’s forge job never changes owner or bonus',()
  const started=startGemRefinement(s,refine.id,NOW),ownerXp=s.skills.find(row=>row.skillId==='enchanting')!.xp;
  const switched=projectCharacter(started.state,other.character!.id),result=claimForgeJob(switched,started.job.id,started.job.completesAtMs+1,.9).state;
  assert.equal(result.character!.id,other.character!.id);assert.equal(result.skills.find(row=>row.skillId==='enchanting')!.xp,0);
- assert.equal(result.otherCharacters!.find(row=>row.character.id===s.character!.id)!.skills.find(row=>row.skillId==='enchanting')!.xp-ownerXp,94);
+ assert.equal(result.otherCharacters!.find(row=>row.character.id===s.character!.id)!.skills.find(row=>row.skillId==='enchanting')!.xp-ownerXp,115); // 110 × 1.05 = 115.5
  near(result.rewardRemainders![affinityXpRemainderKey(s.character!.id,'enchanting')],.5);
 });
 check('queued jobs preserve rates through reordering and save',()=>{
@@ -127,7 +127,7 @@ check('queued jobs preserve rates through reordering and save',()=>{
  for(let i=0;i<capacity+2;i++){const result=startGemRefinement(s,refine.id,NOW+i);s=result.state;jobs.push(result.job)}
  assert.ok(jobs[capacity].startedAtMs>NOW+capacity);s=moveWaitingEquipmentCraft(s,jobs[capacity+1].id,'up',NOW+capacity+3);
  const queue=normalizeEquipmentCraftingQueue(JSON.parse(JSON.stringify(s.account.equipmentCraftingQueue)));
- for(const job of queue){near(job.completesAtMs-job.startedAtMs,Math.ceil(refine.seconds/1.03)*1000);near(job.xpPerCraft!,94.5)}
+ for(const job of queue){near(job.completesAtMs-job.startedAtMs,Math.ceil(refine.seconds/1.03)*1000);near(job.xpPerCraft!,115.5)}
 });
 check('legacy forge jobs receive no retroactive affinity',()=>{
  const base=funded('HEXWEAVER',refine.inputs),started=startGemRefinement(base,refine.id,NOW);

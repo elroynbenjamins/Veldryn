@@ -5,7 +5,8 @@ import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../
 import {V2_SERVER_SLOT_BUDGET,v2ServerBaseStatProjection} from '../../../backend/src/server/equipment/equipment-crafting-v2-instances';
 import {V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
 import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
-import {itemDef} from '../src/content/items';
+import {itemDef,ITEMS} from '../src/content/items';
+import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
@@ -330,5 +331,37 @@ for(const item of V2_SERVER_PIECES){
   }
  }
 }
+
+
+const legacyFixture=createCharacter(newGame(2000000000000),'IRONWARDEN');
+const oldItem=ITEMS.find(item=>item.type==='gear'&&!item.id.startsWith('EQ2_'))!;
+check(Boolean(legacyFixture.character&&oldItem),'Legacy preservation fixture requires an existing equipment item');
+legacyFixture.account.craftedGearInstances=[{
+ id:'legacy-1',itemId:oldItem.id,ownerCharacterId:legacyFixture.character!.id,
+ rarity:'rare',quality:89,locked:true,acquireSource:'craft',
+ sourceReceiptKey:'original-forge-receipt-1',createdAtMs:2000000000000,
+ enhancement:{rank:2,failures:1,statGemId:'EXISTING_SOCKETED_GEM',gemIds:['EXISTING_SOCKETED_GEM']},
+}];
+legacyFixture.inventory.stacks.push({itemId:oldItem.id,quantity:1,instanceId:'legacy-1'});
+legacyFixture.inventory.stacks.push({itemId:'GREENWOOD_LOG',quantity:200});
+legacyFixture.character!.equipmentInstanceIds={helmet:'legacy-1'};
+const beforeAudit=JSON.stringify(legacyFixture);
+const audit=equipmentV2LegacyPreservationAudit(legacyFixture);
+check(JSON.stringify(legacyFixture)===beforeAudit,'V2 migration audit must never mutate the existing save');
+check(audit.legacyCraftedCopies===1&&audit.legacySocketedCopies===1
+ &&audit.legacyEnhancedCopies===1&&audit.reservedNamespaceCopies===0,
+ 'Legacy quality, lock, socket, enhancement and original receipt remain in the existing account model');
+check(audit.unresolvedEquippedReferences===0&&audit.duplicatePhysicalLocations===0
+ &&audit.legacyStacksWithoutInstanceIds===0,
+ 'Material stacks without instance IDs must not be misidentified as legacy gear');
+check(!audit.safeToAutoMigrate,'V2 must not silently auto-convert legacy equipment');
+const duplicateLegacy=structuredClone(legacyFixture);
+duplicateLegacy.bank.stacks.push({itemId:oldItem.id,quantity:1,instanceId:'legacy-1'});
+check(equipmentV2LegacyPreservationAudit(duplicateLegacy).duplicatePhysicalLocations===1,
+ 'Legacy audit must detect the same unique gear copy duplicated across Bank and Inventory');
+const reservedLegacy=structuredClone(legacyFixture);
+reservedLegacy.inventory.stacks.push({itemId:'EQ2_WEAPON_T3_RAVAGER',quantity:1});
+check(equipmentV2LegacyPreservationAudit(reservedLegacy).reservedNamespaceCopies===1,
+ 'EQ2 item IDs in pre-release inventory must be flagged, never automatically migrated');
 
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

@@ -20,10 +20,10 @@ export interface V2EquippedComparison{
  affixes?:readonly {stat:EquipmentV2Affix;percent:number}[];
 }
 const finite=(value:number)=>Number.isFinite(value)&&value>=0;
-function validateStats(stats:EquipmentV2BaseStats){
+function validateStats(stats:EquipmentV2BaseStats,isNewV2Item:boolean){
  if(!stats||!finite(stats.attack)||!finite(stats.defense)||!finite(stats.hp))throw new Error('Invalid V2 display stats');
  const positive=Object.values(stats).filter(v=>v>0).length;
- if(positive<1||positive>2)throw new Error('V2 gear must have one or two base attributes');
+ if(positive<1||(isNewV2Item&&positive>2))throw new Error('V2 gear must have one or two base attributes');
 }
 export function equipmentV2ResultPresentation(
  result:V2AuthoritativeResultViewInput,
@@ -35,7 +35,7 @@ export function equipmentV2ResultPresentation(
  if(!Number.isInteger(result.quality)||result.quality<0||result.quality>100)throw new Error('Invalid quality');
  const rarity=EQUIPMENT_V2_RARITIES.find(r=>r.rarity===result.rarity);
  if(!rarity)throw new Error('Unknown V2 result rarity');
- validateStats(result.baseStats);
+ validateStats(result.baseStats,true);
  if(result.affixes.length!==equipmentV2AffixCount(item.tier,result.rarity))
   throw new Error('Wrong V2 affix count for tier and rarity');
  const seen=new Set<EquipmentV2Affix>();
@@ -54,7 +54,7 @@ export function equipmentV2ResultPresentation(
    deltaVsEquipped:affix.percent-previous,
   };
  });
- if(equipped)validateStats(equipped.baseStats);
+ if(equipped)validateStats(equipped.baseStats,false);
  const lostAffixes=(equipped?.affixes??[]).filter(old=>!seen.has(old.stat));
  const compare=(stat:keyof EquipmentV2BaseStats)=>result.baseStats[stat]-(equipped?.baseStats[stat]??0);
  return {

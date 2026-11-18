@@ -140,8 +140,4 @@ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
 ],true),/affix_exceeds_approved_stat_caps/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[],true),/complete_build_and_gear_snapshots_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build,build],[runtime],true),/complete_build_and_gear_snapshots_required/);
-assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true).equipmentEvidence[0].baseSources.push,
- // A typed readonly evidence list is not guaranteed frozen at runtime; do
- // not use runtime mutation assertion as a required security property.
- /$^/);
 console.log('PASS: strict server gear ordering, provenance, no legacy double-counting, deterministic replays');

@@ -85,8 +85,8 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
 
  const selectCharacter=useCallback(async(characterId:string)=>{
   if(!value||busy)return false;
-  if(dirty){
-   setError('Save or revert your changes before opening another character showcase.');
+  if(showcaseDirty){
+   setError('Save or revert this hero’s showcase before opening another hero.');
    return false;
   }
   if(value.selectedCharacterId===characterId)return true;
@@ -105,7 +105,7 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   }finally{
    if(mounted.current&&version===requestVersion.current)setBusy(false);
   }
- },[value,busy,dirty]);
+ },[value,busy,showcaseDirty]);
 
  const saveIdentity=useCallback(async()=>{
   if(!value||busy||guest||!identityDirty)return;
@@ -142,8 +142,8 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
  const setFeatured=useCallback(async()=>{
   const characterId=value?.selectedCharacterId;
   if(!characterId||busy||guest||characterId===featuredCharacterId)return;
-  if(dirty){
-   setError('Save or revert your changes before changing the featured character.');
+  if(showcaseDirty){
+   setError('Save or revert this hero’s showcase before featuring it.');
    return;
   }
   setBusy(true);setError('');setNotice('');
@@ -155,7 +155,7 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   }catch{
    if(mounted.current)setError('Unable to change your featured character.');
   }finally{if(mounted.current)setBusy(false)}
- },[value,busy,guest,featuredCharacterId,dirty]);
+ },[value,busy,guest,featuredCharacterId,showcaseDirty]);
 
  return useMemo(()=>({
   online:onlineConfigured&&!!accountId,guest,ready:!!value,busy,error,notice,value,bio,

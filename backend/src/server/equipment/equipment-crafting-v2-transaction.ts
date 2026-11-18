@@ -26,7 +26,7 @@ export type V2DraftReceiptResponse=
  |{kind:'claimed';jobId:string;instanceId:string;outcome:V2DraftRollOutcome;xpAwarded:number;profession:V2ServerProfession;version:number};
 export interface V2DraftReceipt {requestId:string;commandFingerprint:string;response:V2DraftReceiptResponse}
 export interface V2DraftSnapshot {
- accountId:string;activeCharacterId:string;version:number;
+ accountId:string;activeCharacterId:string;ownedCharacterIds:readonly string[];version:number;
  characterLevel:number;professionLevels:Record<V2ServerProfession,number>;
  gold:number;inventory:Record<string,number>;bank:Record<string,number>;
  jobs:V2DraftJob[];equipment:V2DraftItem[];skillAwards:V2DraftSkillAward[];
@@ -62,7 +62,8 @@ function verifyCommand(command:V2DraftCommand){
  if(type==='claim'&&(!command.jobId||typeof command.jobId!=='string'))fail('invalid_job_id');
 }
 function verifyState(state:V2DraftSnapshot,ctx:V2DraftContext){
- if(!state||state.accountId!==ctx.accountId||state.activeCharacterId!==ctx.characterId)fail('invalid_owner');
+ if(!state||state.accountId!==ctx.accountId||state.activeCharacterId!==ctx.characterId
+   ||!state.ownedCharacterIds.includes(ctx.characterId))fail('invalid_owner');
  if(!safeCount(state.version)||!safeCount(state.gold)||!safeCount(state.characterLevel)
    ||!safeCount(state.professionLevels.smithing)||!safeCount(state.professionLevels.tailoring)
    ||!Number.isSafeInteger(ctx.nowMs)||ctx.nowMs<0)fail('invalid_trusted_snapshot');
@@ -132,7 +133,7 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
 }
 function applyClaim(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'claim'}>,ctx:V2DraftContext){
  const job=state.jobs.find(j=>j.id===command.jobId);
- if(!job||job.accountId!==ctx.accountId||job.ownerCharacterId!==ctx.characterId)fail('unknown_owned_job');
+ if(!job||job.accountId!==ctx.accountId||!state.ownedCharacterIds.includes(job.ownerCharacterId))fail('unknown_owned_job');
  if(job.status==='claimed')fail('already_claimed');
  if(ctx.nowMs<job.finishesAtMs)fail('job_not_finished');
  const matched=v2ServerRecipeAndPiece(job.recipeId);

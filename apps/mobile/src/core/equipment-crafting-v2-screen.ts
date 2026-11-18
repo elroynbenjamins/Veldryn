@@ -32,13 +32,14 @@ export function equipmentV2HiddenRecipeScreen(input:EquipmentV2RecipePreviewInpu
   :pendingMarketPurchase?'review_market_purchase'
   :cannotAfford?'obtain_gold'
   :!input.queueHasCapacity?'free_queue_slot':'craft';
- const canCraftNow=action==='craft'&&source.fullySupplied;
+ const canCraftNow=EQUIPMENT_CRAFTING_V2_RELEASED&&action==='craft'&&source.fullySupplied;
  return {
   name:input.name,tier:input.tier,slot:input.slot,
   baseStats:equipmentV2PreviewBaseStats(input.tier,input.slot,input.profile,input.quality??50,input.rarityMultiplier??1),
   draftXp:draft.xp,source,cost,
   requirements:{characterLevel:requiredCharacter,professionLevel:requiredProfession,locked},
-  action,canCraftNow,marketControlsEnabled:actualMarketEnabled,
+  action,canCraftNow,previewMaterialsReady:action==='craft'&&source.fullySupplied,
+  marketControlsEnabled:actualMarketEnabled,
   sections:['result','materials','potential_rolls','set','queue'] as const,
   rarityOutcomes:EQUIPMENT_V2_RARITIES.map(row=>({...row,affixes:equipmentV2AffixCount(input.tier,row.rarity)})),
  };

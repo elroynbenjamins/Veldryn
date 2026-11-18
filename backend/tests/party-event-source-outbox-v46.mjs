@@ -122,5 +122,63 @@ try{
   select receipt_id from public.craft_receipts
   union select claim_id from public.idle_claim_receipts)`);
  assert.equal(direct.rows[0].c,0,'queue cannot contain orphan source receipts');
+
+ // V47 is an independently unpromoted post-V46 migration. Prove that
+ // leased source ownership fences ACK, that expired leases can be reclaimed,
+ // and that failures back off rather than silently dropping committed work.
+ await db.exec(loadDraft('20261118183000_party_event_source_leases_v47.sql'));
+ const firstLease=await db.query(`select * from private.lease_party_event_sources_v47(10,90)`);
+ assert.equal(firstLease.rows.length,2,'the two committed receipts must be leaseable');
+ const [first,second]=firstLease.rows;
+ assert.notEqual(first.lease_token,second.lease_token,'each lease has a distinct DB token');
+ const oldToken='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ const forgedAck=await db.query(`select private.complete_party_event_source_v47(
+  $1::text,$2::uuid,$3::uuid) done`,
+ [first.source_type,first.source_ref,oldToken]);
+ assert.equal(forgedAck.rows[0].done,false,'arbitrary stale token cannot acknowledge work');
+ // Force lease expiry to simulate a process crash after V14 committed but
+ // before the queue ACK. Another worker must get a NEW fencing token.
+ await db.query(`update private.party_event_source_outbox_v46
+ set lease_expires_at=clock_timestamp()-interval '1 second'
+ where source_type=$1::text and source_ref=$2::uuid`,
+ [first.source_type,first.source_ref]);
+ const replacement=await db.query(`select * from private.lease_party_event_sources_v47(1,90)`);
+ assert.equal(replacement.rows.length,1,'expired lease is returned to a new worker');
+ assert.equal(replacement.rows[0].source_ref,first.source_ref);
+ assert.notEqual(replacement.rows[0].lease_token,first.lease_token);
+ const oldAck=await db.query(`select private.complete_party_event_source_v47(
+  $1::text,$2::uuid,$3::uuid) done`,
+ [first.source_type,first.source_ref,first.lease_token]);
+ assert.equal(oldAck.rows[0].done,false,'old crashed worker cannot ack replacement lease');
+ const newAck=await db.query(`select private.complete_party_event_source_v47(
+  $1::text,$2::uuid,$3::uuid) done`,
+ [first.source_type,first.source_ref,replacement.rows[0].lease_token]);
+ assert.equal(newAck.rows[0].done,true,'only current lease holder may acknowledge');
+ const badRetry=await db.query(`select private.retry_party_event_source_v47(
+  $1::text,$2::uuid,$3::uuid,$4::text) queued`,
+ [second.source_type,second.source_ref,oldToken,'private_credit_unavailable']);
+ assert.equal(badRetry.rows[0].queued,false,'wrong lease token cannot change retry state');
+ const retry=await db.query(`select private.retry_party_event_source_v47(
+  $1::text,$2::uuid,$3::uuid,$4::text) queued`,
+ [second.source_type,second.source_ref,second.lease_token,'private_credit_unavailable']);
+ assert.equal(retry.rows[0].queued,true,'current lease holder can retry failed credit');
+ const immediate=await db.query(`select * from private.lease_party_event_sources_v47(10,90)`);
+ assert.equal(immediate.rows.length,0,'retry backoff prevents a busy loop');
+ await db.query(`update private.party_event_source_outbox_v46
+ set next_attempt_at=clock_timestamp()-interval '1 second'
+ where source_type=$1::text and source_ref=$2::uuid`,
+ [second.source_type,second.source_ref]);
+ const next=await db.query(`select * from private.lease_party_event_sources_v47(10,90)`);
+ assert.equal(next.rows.length,1);
+ assert.equal(next.rows[0].attempt_count,2,'retry attempt is durably counted');
+ const finalAck=await db.query(`select private.complete_party_event_source_v47(
+  $1::text,$2::uuid,$3::uuid) done`,
+ [second.source_type,second.source_ref,next.rows[0].lease_token]);
+ assert.equal(finalAck.rows[0].done,true);
+ const final=await db.query(`select state,count(*)::int c
+ from private.party_event_source_outbox_v46 group by state`);
+ assert.deepEqual(final.rows,[{state:'complete',c:2}],
+  'every original committed receipt can eventually be acknowledged');
+ console.log('PARTY_EVENTS_V47_PGLITE_OK: leased sources, token fencing, crash reclamation, exponential retry, and final ACK');
  console.log('PARTY_EVENTS_V46_PGLITE_OK: atomic source queue, canonical ID mapping, exact replay and after-insert rollback');
 }finally{await db.close()}

@@ -6,6 +6,7 @@
  * migration, enables a route, claims a reward or activates events.
  */
 import type {PartyEventSchemaGateV35} from './party-event-schema-readiness-v35';
+import type {PartyEventSecuritySweepV41} from './party-event-security-sweep-v41';
 import {
  auditedGreenfieldsPartySuppliesV22,
  PARTY_EVENT_CANONICAL_SUPPLY_AUDIT_V22,
@@ -16,6 +17,7 @@ export interface PartyEventStagingAssessmentV37 {
  readonly sourceAudit:typeof PARTY_EVENT_CANONICAL_SUPPLY_AUDIT_V22;
  readonly sourcesVerified:boolean;
  readonly schemaVerified:boolean;
+ readonly securityVerified:boolean;
  readonly migrationContractVerified:boolean;
  readonly dryRunReady:boolean;
  readonly blockers:readonly string[];
@@ -25,6 +27,8 @@ export interface PartyEventStagingAssessmentV37 {
 }
 export function assessHiddenPartyEventStagingV37(input:{
  schema:PartyEventSchemaGateV35;
+ /** Complete 29-table/47-function grant and definer audit. Never optional for readiness. */
+ securityAudit:PartyEventSecuritySweepV41;
  /** CI-only file-level verification, not authorization to run SQL. */
  migrationContractVerified:boolean;
 }):PartyEventStagingAssessmentV37 {
@@ -35,6 +39,14 @@ export function assessHiddenPartyEventStagingV37(input:{
   &&schema.missingOrMismatched.length===0
   &&schema.unsafeGrants.length===0;
  if(!schemaVerified)blockers.push('private_schema_missing_or_insecure');
+ const securityVerified=input.securityAudit?.safe===true
+  &&input.securityAudit.relationCount===29
+  &&input.securityAudit.functionCount===47
+  &&input.securityAudit.problems.length===0
+  &&input.securityAudit.migrationAuthorized===false
+  &&input.securityAudit.playerAccessEnabled===false
+  &&input.securityAudit.payoutAuthorized===false;
+ if(!securityVerified)blockers.push('private_security_inventory_unverified');
  if(input.migrationContractVerified!==true)
   blockers.push('hidden_migration_contract_unverified');
  let sourcesVerified=false;
@@ -55,7 +67,7 @@ export function assessHiddenPartyEventStagingV37(input:{
  if(!sourcesVerified)blockers.push('canonical_level1_sources_not_verified');
  return {
   sourceAudit:PARTY_EVENT_CANONICAL_SUPPLY_AUDIT_V22,
-  sourcesVerified,schemaVerified,
+  sourcesVerified,schemaVerified,securityVerified,
   migrationContractVerified:input.migrationContractVerified===true,
   dryRunReady:blockers.length===0,
   blockers,

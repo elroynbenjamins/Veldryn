@@ -4,7 +4,8 @@
     "src/core/**/*.ts",
     "src/content/**/*.ts",
     "tests/equipment-crafted-instance-results.ts",
-    "tests/weapon-bonus-rolls.ts"
+    "tests/weapon-bonus-rolls.ts",
+    "tests/equipment-bonus-rolls.ts"
   ],
   "exclude": [
     "tests/starter-companion-choice.ts"

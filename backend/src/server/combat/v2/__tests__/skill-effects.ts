@@ -117,4 +117,59 @@ assert.throws(()=>simulateCombatWithSkillsV2(input,[{...sample,actor:{...sampleA
 const locked={...sample,selected:{...sample.selected,capstoneId:SPECIALIZATIONS_V2.find(s=>s.id===sample.selected.specializationId)!.capstoneId}};
 assert.throws(()=>compileServerSkillBuildV2(true,locked),/capstone_locked/);
 assert.equal(Object.keys(results).length,9);
+
+// Full catalog audit: every class's six skills and their three individually
+// authored variants must build correctly, never depending on untrusted values.
+for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
+  const actor=launchPlayer(CLASS_NAMES_V2[classId],50);
+  const classSkills=SKILL_IDENTITIES_V2.filter(x=>x.classId===classId);
+  assert.equal(classSkills.length,6);
+  const specializationId=SPECIALIZATIONS_V2.find(x=>x.classId===classId)!.id;
+  for(const skill of classSkills){
+    const configs=skill.variants.map(variant=>{
+      const loadout:VerifiedSkillBuildV2={
+        actor,verified:{classId,level:50,ownedInstanceIds:new Set()},
+        selected:{specializationId,equipment:{},
+          activeSkills:[{skillId:skill.id,variantId:variant.id}],
+          talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+        ownedItemsById:{},setsById:{},
+      };
+      const compiled=compileServerSkillBuildV2(true,loadout);
+      assert.equal(compiled.abilities.length,1);
+      assert.equal(compiled.abilities[0].name,skill.name);
+      assert.ok(compiled.abilities[0].cooldownMs>=1200);
+      assert.ok(compiled.abilities[0].effects.length>0);
+      assert.equal(compiled.combatV2?.resource,({
+        IRONWARDEN:'guard',BASTION:'barrier',DREADGUARD:'dread',
+        WAYFINDER:'focus',RAVAGER:'fury',HEXWEAVER:'threads',
+        KNIFE_DANCER:'rhythm',DAWNKEEPER:'radiance',STONECALLER:'resonance',
+      } as Record<ClassIdV2,string>)[classId]);
+      return JSON.stringify({
+        effects:compiled.abilities[0].effects,cd:compiled.abilities[0].cooldownMs,
+        target:compiled.abilities[0].target,
+      });
+    });
+    assert.equal(new Set(configs).size,3,skill.name+' must have 3 distinct executable variants');
+  }
+}
+
+// Source-event integration: Wayfinder earns Focus from actual successful hits
+// and spends held stacks through the server-authored Perfect Quarry.
+const focusActor=launchPlayer('Wayfinder',50);
+const focusSkills=SKILL_IDENTITIES_V2.filter(x=>x.classId==='WAYFINDER').slice(0,2);
+const focusBuild:VerifiedSkillBuildV2={
+  actor:focusActor,verified:{classId:'WAYFINDER',level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:SPECIALIZATIONS_V2.find(x=>x.classId==='WAYFINDER')!.id,
+    equipment:{},activeSkills:focusSkills.map(x=>({skillId:x.id,variantId:x.variants[0].id})),
+    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+  ownedItemsById:{},setsById:{},
+};
+const focusFight=simulateCombatWithSkillsV2({
+  seed:'combat-v2-focus-spend',players:[focusActor],enemies:[enemy],maxDurationMs:30000,
+},[focusBuild],true);
+assert.ok(focusFight.events.some(x=>x.type==='resource_gain'&&x.resource==='focus'),'hits award Focus');
+assert.ok(focusFight.events.some(x=>x.type==='resource_spend'&&x.resource==='focus'),'Perfect Quarry consumes Focus');
+assert.ok(focusFight.events.filter(x=>x.type.startsWith('resource_'))
+  .every(x=>x.resourceAfter!==undefined&&x.resourceAfter>=0&&x.resourceAfter<=3));
+
 console.log('PASS: all nine classes, 18 profiles, 54 variants of 18 existing techniques, deterministic runtime, trust and legacy parity');

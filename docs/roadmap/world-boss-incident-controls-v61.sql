@@ -157,6 +157,50 @@ CREATE TRIGGER world_boss_v61_claim_gate
 BEFORE INSERT ON private.world_boss_claim_receipts_v28
 FOR EACH ROW EXECUTE FUNCTION private.world_boss_v61_gate_insert();
 
+-- Operators need event-level counters during the first real live cycle,
+-- without reading any account IDs, replay contents or per-player payloads.
+-- LATERAL aggregation avoids multiplying results across attempts/donations.
+CREATE VIEW private.world_boss_ops_status_v61 AS
+SELECT e.id AS event_id,e.boss_id,e.status AS event_status,
+ e.starts_at,e.ends_at,e.max_hp,e.remaining_hp,
+ COALESCE(o.new_raids_open,false) AS new_raids_open,
+ COALESCE(o.new_donations_open,false) AS new_donations_open,
+ COALESCE(o.new_claims_open,false) AS new_claims_open,
+ o.revision AS controls_revision,o.changed_at AS controls_changed_at,
+ COALESCE(a.reserved_count,0) AS reserved_attempts,
+ COALESCE(a.committed_count,0) AS committed_attempts,
+ COALESCE(a.voided_count,0) AS voided_attempts,
+ COALESCE(a.unproved_count,0) AS committed_without_replay_proof,
+ COALESCE(d.donation_count,0) AS accepted_donations,
+ COALESCE(c.claim_count,0) AS accepted_claims,
+ COALESCE(l.ledger_count,0) AS reward_ledger_rows
+FROM private.world_boss_events_v17 e
+LEFT JOIN private.world_boss_ops_v61 o ON o.event_id=e.id
+LEFT JOIN LATERAL (
+ SELECT count(*) FILTER(WHERE a.status='reserved') AS reserved_count,
+  count(*) FILTER(WHERE a.status='committed') AS committed_count,
+  count(*) FILTER(WHERE a.status='voided') AS voided_count,
+  count(*) FILTER(WHERE a.status='committed'
+   AND NOT EXISTS(SELECT 1 FROM private.world_boss_replay_proofs_v28 p
+    WHERE p.event_id=a.event_id AND p.account_id=a.account_id
+     AND p.request_id=a.request_id)) AS unproved_count
+ FROM private.world_boss_attempts_v17 a WHERE a.event_id=e.id
+) a ON true
+LEFT JOIN LATERAL (
+ SELECT count(*) AS donation_count
+ FROM private.world_boss_war_donations_v27 d WHERE d.event_id=e.id
+) d ON true
+LEFT JOIN LATERAL (
+ SELECT count(*) AS claim_count
+ FROM private.world_boss_claim_receipts_v28 c WHERE c.event_id=e.id
+) c ON true
+LEFT JOIN LATERAL (
+ SELECT count(*) AS ledger_count
+ FROM private.world_boss_reward_ledger_v28 l WHERE l.event_id=e.id
+) l ON true;
+REVOKE ALL ON private.world_boss_ops_status_v61
+ FROM PUBLIC,anon,authenticated,service_role;
+
 -- No direct invocation by mobile, anon, authenticated or gameplay roles.
 REVOKE ALL ON FUNCTION private.world_boss_v61_assert_new_action(uuid,text)
  FROM PUBLIC,anon,authenticated,service_role;

@@ -72,7 +72,7 @@ export function weaponBonusRange(
 ):readonly [number,number]|undefined{
   const band:WeaponTierBand|undefined=tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:tier===2?2:undefined;
   if(band===undefined)return undefined;
-  const legacy=WEAPON_BONUS_BPS_BY_BAND[band][stat as LegacyWeaponBonusStat];
+  const legacy=(WEAPON_BONUS_BPS_BY_BAND[band] as Partial<Record<WeaponBonusStat,readonly [number,number]>>)[stat];
   if(version===1)return V1_RANGE_BY_BAND[band];
   if(version===2)return legacy;
   if(version!==3)return undefined;
@@ -88,7 +88,8 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity,version:Weapon
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
   if(item.type!=='gear'||item.slot!=='weapon'||tier<2||tier>9||!role)return undefined;
   const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
-  return {tier,role,count,pool:(version===3?ROLE_POOL:LEGACY_ROLE_POOL)[role]};
+  const pool:readonly WeaponBonusStat[]=version===3?ROLE_POOL[role]:LEGACY_ROLE_POOL[role];
+  return {tier,role,count,pool};
 }
 
 /** Trusted claim-roll + receipt seeded; independent of rarity/quality and stable across retries. */

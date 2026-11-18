@@ -6,9 +6,9 @@
  * MUST be supplied by the server; this module never trusts client values.
  *
  * Roll values and ranges are fractional: .025 = 2.5% or 2.5 percentage
- * points depending on the stat. Unimplemented effect types fail closed.
+ * points depending on the stat. Advanced effects require explicit server caps.
  */
-import type {CombatantDefinition,CombatStats} from '../types';
+import type {CombatantDefinition,CombatStats,CombatV2EquipmentEffects} from '../types';
 import type {GearSlotV2} from './build-contract';
 export type EquipmentAffixIdV2=
  'attack_pct'|'defense_pct'|'max_hp_pct'|'haste_pp'|
@@ -28,13 +28,13 @@ export const EQUIPMENT_AFFIXES_V2:Readonly<Record<EquipmentAffixIdV2,EquipmentAf
  haste_pp:{id:'haste_pp',unit:'percentage_points',slots:['gloves','boots','cape','ring','weapon'],runtime:'supported'},
  crit_rate_pp:{id:'crit_rate_pp',unit:'percentage_points',slots:['weapon','gloves','amulet','ring'],runtime:'supported'},
  crit_damage_pct:{id:'crit_damage_pct',unit:'relative_percent',slots:['weapon','amulet','ring'],runtime:'supported'},
- accuracy_pp:{id:'accuracy_pp',unit:'percentage_points',slots:['weapon','gloves','amulet','cape'],runtime:'pending_engine_extension'},
- evasion_pp:{id:'evasion_pp',unit:'percentage_points',slots:['helmet','gloves','boots','cape'],runtime:'pending_engine_extension'},
- penetration_pp:{id:'penetration_pp',unit:'percentage_points',slots:['weapon','gloves','amulet','ring'],runtime:'pending_engine_extension'},
- ward_pp:{id:'ward_pp',unit:'percentage_points',slots:['helmet','chest','cape','offhand'],runtime:'pending_engine_extension'},
- shield_strength_pct:{id:'shield_strength_pct',unit:'relative_percent',slots:['chest','gloves','cape','offhand'],runtime:'pending_engine_extension'},
+ accuracy_pp:{id:'accuracy_pp',unit:'percentage_points',slots:['weapon','gloves','amulet','cape'],runtime:'supported'},
+ evasion_pp:{id:'evasion_pp',unit:'percentage_points',slots:['helmet','gloves','boots','cape'],runtime:'supported'},
+ penetration_pp:{id:'penetration_pp',unit:'percentage_points',slots:['weapon','gloves','amulet','ring'],runtime:'supported'},
+ ward_pp:{id:'ward_pp',unit:'percentage_points',slots:['helmet','chest','cape','offhand'],runtime:'supported'},
+ shield_strength_pct:{id:'shield_strength_pct',unit:'relative_percent',slots:['chest','gloves','cape','offhand'],runtime:'supported'},
  class_healing_pct:{id:'class_healing_pct',unit:'relative_percent',slots:['weapon','chest','amulet','offhand'],runtime:'supported'},
- hex_potency_pct:{id:'hex_potency_pct',unit:'relative_percent',slots:['weapon','amulet','ring','cape'],runtime:'pending_engine_extension'},
+ hex_potency_pct:{id:'hex_potency_pct',unit:'relative_percent',slots:['weapon','amulet','ring','cape'],runtime:'supported'},
 };
 export interface AuthoredRollLimitV2{readonly min:number;readonly max:number}
 /** Must originate from finalized, server-owned Equipment 2.0 roll policy. */
@@ -45,6 +45,9 @@ export interface ServerAffixPolicyV2{
  readonly maxFinalHaste:number;
  readonly maxFinalCritChance:number;
  readonly maxFinalCritMultiplier:number;
+ /** Mandatory server-owned totals when any advanced affix is equipped.
+  * Do not substitute invented caps or silently truncate earned rolls. */
+ readonly maxAdvancedEffects?:Readonly<CombatV2EquipmentEffects>;
 }
 export interface TrustedPersistedAffixV2{
  readonly id:EquipmentAffixIdV2;
@@ -105,7 +108,7 @@ export interface CompiledEquipmentAffixesV2{
 /**
  * Apply after approved tier/quality/rarity BASE gear stats have already been
  * included in actor.stats. Cannot double-apply: needs a trusted explicit tag.
- * This is an internal partial bridge, NOT the final Equipment 2.0 formula.
+ * This is an opt-in advanced-effect bridge, not the final rarity/quality formula.
  */
 export function compileTrustedEquipmentAffixesV2(
  actor:CombatantDefinition,
@@ -148,13 +151,36 @@ export function compileTrustedEquipmentAffixesV2(
    critChance:percent(source.critChance+get('crit_rate_pp')),
    critMultiplier:percent(source.critMultiplier*(1+get('crit_damage_pct'))),
  };
+ const advanced:CombatV2EquipmentEffects={
+   accuracyPp:percent(get('accuracy_pp')),
+   evasionPp:percent(get('evasion_pp')),
+   penetrationPp:percent(get('penetration_pp')),
+   wardPp:percent(get('ward_pp')),
+   shieldStrengthPct:percent(get('shield_strength_pct')),
+   hexPotencyPct:percent(get('hex_potency_pct')),
+ };
+ const hasAdvanced=Object.values(advanced).some(value=>value>0);
+ if(hasAdvanced){
+   const caps=policy.maxAdvancedEffects;
+   if(!caps)throw Error('combat_v2_missing_approved_advanced_affix_caps');
+   for(const key of Object.keys(advanced) as (keyof CombatV2EquipmentEffects)[]){
+     const cap=caps[key];
+     if(!finite(cap)||cap<0||cap>1)
+       throw Error('combat_v2_invalid_approved_advanced_affix_cap:'+key);
+     if(advanced[key]>cap+1e-9)
+       throw Error('combat_v2_advanced_affix_exceeds_approved_cap:'+key);
+   }
+ }
  if(stats.haste>policy.maxFinalHaste||stats.critChance>policy.maxFinalCritChance||
    stats.critMultiplier>policy.maxFinalCritMultiplier)
    throw Error('combat_v2_affix_exceeds_approved_stat_caps');
  if(!Object.values(stats).every(finite)||stats.maxHp<=0||stats.attackPower<0||stats.defense<0)
    throw Error('combat_v2_affix_invalid_computed_stats');
  return {
-   actor:{...actor,tags:[...actor.tags,'combat-v2-affixes-applied'],stats},
+   actor:{...actor,tags:[...actor.tags,'combat-v2-affixes-applied'],stats,
+     combatV2:{...actor.combatV2,
+       equipmentEffects:advanced,
+     }},
    sources:all,
  };
 }

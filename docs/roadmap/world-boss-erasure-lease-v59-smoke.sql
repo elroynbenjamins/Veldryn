@@ -5,6 +5,31 @@ BEGIN;
 INSERT INTO auth.users(id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');
+-- Synthetic immutable battle receipt for the OTHER account. Its replay
+-- locator intentionally differs from the V59 manifest; the stage transition
+-- must detect it without changing the other account's durable state.
+INSERT INTO private.world_boss_events_v17
+ (id,boss_id,status,starts_at,ends_at,rules_version,max_hp,remaining_hp)
+VALUES('30000000-0000-4000-8000-000000000159','hollowroot','closed',
+ '2036-02-04 00:00:00+00','2036-02-11 00:00:00+00',
+ 'wb59-fixture',100000,80000);
+INSERT INTO private.world_boss_attempts_v17(
+ event_id,account_id,request_id,ordinal,character_id,war_order,phase,
+ rules_version,engine_version,server_seed,squad_digest,frozen_squad,
+ lease_owner,lease_expires_at,hard_expires_at,status,committed_at,
+ replay_digest,replay_object_key,raw_boss_damage,local_guard_damage,
+ hp_before,hp_after,credited_hp,residual_echo)
+VALUES
+ ('30000000-0000-4000-8000-000000000159',
+  '10000000-0000-4000-8000-000000000060',
+  'WB59_MISSING_REPLAY',1,'20000000-0000-4000-8000-000000000060',
+  'hold_line','armored','wb59-fixture','wb59-test-engine',
+  repeat('S',32),repeat('a',64),
+  jsonb_build_object('trustedFrozenRoster',repeat('X',160)),
+  'WB59_OTHER_WORKER',clock_timestamp()+interval '2 minutes',
+  clock_timestamp()+interval '15 minutes','committed',clock_timestamp(),
+  repeat('c',64),'synthetic/private/replays/missing060',
+  50,10,80000,79950,50,false);
 INSERT INTO private.world_boss_erasure_fences_v57(account_id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');
@@ -95,6 +120,27 @@ BEGIN
  EXCEPTION WHEN raise_exception THEN
   blocked:=SQLERRM LIKE '%WB59_PRIVACY_POLICY_UNAPPROVED%'; END;
  IF NOT blocked THEN RAISE EXCEPTION 'WB59_UNAPPROVED_ERASURE_ADVANCED'; END IF;
+
+ -- The second account has a committed V17 replay locator omitted from
+ -- its sealed manifest. A nested subtransaction rolls back this probe,
+ -- including temporary approval, lease and ACK, leaving it unchanged.
+ blocked:=false;
+ BEGIN
+  UPDATE private.world_boss_erasure_jobs_v59 SET
+   policy_review_approved=true,manifest_sealed=true
+  WHERE account_id=other_account;
+  receipt:=private.world_boss_v59_acquire(
+   other_account,repeat('b',64),'WB59_OTHER_TEST');
+  PERFORM private.world_boss_v59_mark_object_deleted(
+   other_account,'WB59_OTHER_TEST',(receipt->>'generation')::bigint,
+   'synthetic/private/replays/other060');
+  PERFORM private.world_boss_v59_advance(
+   other_account,'WB59_OTHER_TEST',(receipt->>'generation')::bigint,
+   'fenced','replays_purged');
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_REPLAY_MANIFEST_INCOMPLETE%';
+ END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_MISSING_EXTERNAL_REPLAY_UNDETECTED'; END IF;
 
  -- ONLY in this synthetic rolled-back fixture, simulate policy approval.
  UPDATE private.world_boss_erasure_jobs_v59

@@ -83,7 +83,7 @@ rejects(f=>f.enemies[0].traits=['warded'],'unimplemented_or_duplicate_trait');
 rejects(f=>f.enemies[0].traits=['stonehide','stonehide'],'unimplemented_or_duplicate_trait');
 rejects(f=>f.enemies[0].traits=['stonehide','fortified'],'multiple_major_trait_groups');
 rejects(f=>f.enemies[0].traits=[12],'unimplemented_or_duplicate_trait');
-assert.equal(denied,30);
+assert.equal(denied,31);
 const next=(tag,sourceId='e1',kind='dot',expiresAt=4500)=>({sourceId,kind,tag,expiresAt});
 const args=(existing,newEffect,nowMs=1000)=>({
  existing,next:newEffect,nowMs,targetTeam:'players',sourceTeam:'enemies',
@@ -104,7 +104,7 @@ assert.deepEqual(before.map(x=>x.expiresAt),[4500,5000,6000],
 s=status(args(s.entries,next('poison','e2')));
 assert.equal(s.activeStacks,1);
 assert.equal(s.entries.length,4,'Different enemy source retains independent stacks');
-s=status(args(s.entries,next('poison','e2'),8000));
+s=status(args(s.entries,next('poison','e2','dot',9000),8000));
 assert.equal(s.entries.length,1,'All expired entries are excluded from next projection');
 let hot=status(args([],next('regeneration','e1','hot')));
 hot=status(args(hot.entries,next('regeneration','e1','hot',6500)));

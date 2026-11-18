@@ -79,5 +79,14 @@ for(const [classId,role] of Object.entries(knownRoles)){
  }
  assert.equal(project(f).role,role,'canonical class role must survive the exact-copy bridge');
 }
+const mixedRoleArmor=fixture();
+mixedRoleArmor.equipped[1].template.role='damage';
+delete mixedRoleArmor.equipped[1].template.classRestriction;
+assert.equal(project(mixedRoleArmor).baseTotals.defense,5,
+ 'General armor build roles are recommendations and must not restrict compatible classes');
+const validOffhand=fixture();
+validOffhand.equipped.push(item('shield','offhand',{attack:0,defense:3,hp:0}));
+assert.equal(project(validOffhand).sources.length,3,
+ 'Offhands contain no weapon-hand metadata and coexist with one-handed weapons');
 assert.equal(denied,30);
 console.log('PASS: Equipment/Crafting V2 frozen copies, all 9 classes and 30 negative guards; combat remains off');

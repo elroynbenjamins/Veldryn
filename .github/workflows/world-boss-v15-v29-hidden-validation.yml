@@ -26,6 +26,7 @@ on:
       - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
       - 'docs/roadmap/world-boss-overview-v41*.sql'
       - 'backend/online/world-boss-overview-v41.ts'
+      - 'backend/online/world-boss-current-overview-v51.ts'
       - 'backend/online/world-boss-readiness-audit-v43.ts'
       - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
       - 'docs/roadmap/world-boss-character-lifecycle-v34.sql'
@@ -116,6 +117,7 @@ jobs:
             world-boss-roster-compatibility-v30 \
             world-boss-account-state-v33 \
             world-boss-overview-v41 \
+            world-boss-current-overview-v51 \
             world-boss-readiness-audit-v43
           do
             node ".core-build/apps/mobile/tests/${suite}.js"

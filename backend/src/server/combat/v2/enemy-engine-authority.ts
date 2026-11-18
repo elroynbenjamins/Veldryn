@@ -5,6 +5,7 @@
  * The issued object is not a serializable JSON switch, and its scope is held
  * inside a private WeakMap. Never expose this factory on an HTTP/Edge route.
  */
+import {createHash} from 'node:crypto';
 import type {CombatInput} from '../types';
 
 const brand:unique symbol=Symbol('combat-v2-enemy-snapshot');
@@ -28,16 +29,31 @@ interface ImmutableScope{
  readonly seed:string;
  readonly playerIds:readonly string[];
  readonly enemyIds:readonly string[];
+ readonly inputDigest:string;
 }
 const issued=new WeakMap<object,ImmutableScope>();
 const validId=(x:unknown):x is string=>
  typeof x==='string'&&x.length>0&&x.length<=128&&/^[A-Za-z0-9:_-]+$/.test(x);
 const unique=(xs:readonly string[])=>new Set(xs).size===xs.length;
 const invalid=(suffix:string):never=>{throw Error('combat_v2_enemy_authority_'+suffix);};
+/** Hash the full post-compilation encounter input, not just actor IDs. A
+ * persisted verifier must match this against the original sealed snapshot. */
+const fingerprint=(input:CombatInput):string=>{
+ try{
+  const value=JSON.stringify(input,(_key,field)=>{
+    if(typeof field==='number'&&!Number.isFinite(field))invalid('nonfinite_combat_input');
+    if(typeof field==='function'||typeof field==='bigint')invalid('invalid_combat_input');
+    return field;
+  });
+  if(!value)invalid('invalid_combat_input');
+  return createHash('sha256').update(value).digest('hex');
+ }catch{invalid('invalid_combat_input');}
+};
 
 export function issueEnemyV2EngineAuthority(
  snapshot:ServerEnemyV2Snapshot,
- verifyPersisted:(value:ServerEnemyV2Snapshot)=>boolean,
+ input:CombatInput,
+ verifyPersisted:(value:ServerEnemyV2Snapshot,inputDigest:string)=>boolean,
 ):EnemyV2EngineAuthority{
  if(typeof verifyPersisted!=='function')invalid('trusted_verifier_required');
  if(!snapshot||snapshot.source!=='server-persisted-v2'||snapshot.version!==2||
@@ -49,14 +65,21 @@ export function issueEnemyV2EngineAuthority(
    [...snapshot.playerIds,...snapshot.enemyIds].some(id=>!validId(id))||
    !unique([...snapshot.playerIds,...snapshot.enemyIds]))
   invalid('invalid_persisted_scope');
+ if(!input||input.seed!==snapshot.seed||
+    input.players.length!==snapshot.playerIds.length||
+    input.enemies.length!==snapshot.enemyIds.length||
+    input.players.some((actor,i)=>actor.id!==snapshot.playerIds[i])||
+    input.enemies.some((actor,i)=>actor.id!==snapshot.enemyIds[i]))
+  invalid('scope_does_not_match_combat_input');
+ const inputDigest=fingerprint(input);
  let accepted=false;
- try{accepted=verifyPersisted(snapshot)===true;}catch{accepted=false;}
+ try{accepted=verifyPersisted(snapshot,inputDigest)===true;}catch{accepted=false;}
  if(!accepted)invalid('unverified_persisted_scope');
  const token=Object.freeze({[brand]:true}) as EnemyV2EngineAuthority;
  issued.set(token,Object.freeze({
   encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
   playerIds:Object.freeze([...snapshot.playerIds]),
-  enemyIds:Object.freeze([...snapshot.enemyIds]),
+  enemyIds:Object.freeze([...snapshot.enemyIds]),inputDigest,
  }));
  return token;
 }
@@ -75,7 +98,8 @@ export function authorizeEnemyV2EngineExecution(
     input.players.length!==saved.playerIds.length||
     input.enemies.length!==saved.enemyIds.length||
     input.players.some((p,i)=>p.id!==saved.playerIds[i])||
-    input.enemies.some((e,i)=>e.id!==saved.enemyIds[i]))
+    input.enemies.some((e,i)=>e.id!==saved.enemyIds[i])||
+    fingerprint(input)!==saved.inputDigest)
   invalid('scope_does_not_match_combat_input');
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0||
     input.enemyDamageProfile!==undefined||

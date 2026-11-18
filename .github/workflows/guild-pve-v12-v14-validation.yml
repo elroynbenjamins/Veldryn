@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/online/guild-pve-verified-loader-v12.ts'
       - 'backend/src/server/combat/guild-pve-cues-v13.ts'
+      - 'docs/roadmap/spreadsheets/guild-pve-broken-forge-encounter-cues-v5.csv'
       - 'backend/src/server/combat/guild-pve-reward-proof-v14.ts'
       - 'apps/mobile/tests/guild-pve-v12-v14.ts'
       - 'apps/mobile/tsconfig.guild-pve-v12-v14.json'

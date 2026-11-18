@@ -151,8 +151,8 @@ export function ChatPlayerSheet({
   <GameModalHeader eyebrow={st("PLAYER PROFILE")} title={profile?.displayName??target.sender_name} onClose={onClose}/>
   <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
     {loading?<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={st("LOADING PROFILE")}/><ActivityIndicator color={C.accent}/></View>:profile?.accountId===message.account_id?<><PublicProfileScene profile={{...profile,combatPower:profile.character.id===featuredCharacterId?combatPower:undefined}}/>
-    <ProfileCharacterSelector choices={profile.characterChoices} selectedId={profile.character.id}
-     onSelect={id=>void chooseCharacter(id)} disabled={heroLoading||busy}/>
+    {ACCOUNT_SOCIAL_IDENTITY_RELEASED?<ProfileCharacterSelector choices={profile.characterChoices} selectedId={profile.character.id}
+     onSelect={id=>void chooseCharacter(id)} disabled={heroLoading||busy}/>:null}
     {heroLoading?<ActivityIndicator color={C.accent}/>:null}
     {heroError?<Text accessibilityRole="alert" style={s.inviteError}>{heroError}</Text>:null}
     {socialActions}

@@ -104,4 +104,14 @@ assert.throws(()=>auditApprovedClassBaselinesV2(approved,[1,1]),
  /invalid_levels/);
 assert.throws(()=>auditApprovedClassBaselinesV2(approved,[]),
  /invalid_levels/);
+let sourceSequence=0;
+const unstable:ApprovedClassBaselinePolicyV2={...approved,profiles:{
+ ...allProfiles,HEXWEAVER:{...allProfiles.HEXWEAVER!,
+  statsAtLevel:(level:number)=>({...syntheticStats,maxHp:1200+level*10+(sourceSequence++%2)})},
+}};
+const unstableAudit=auditApprovedClassBaselinesV2(unstable,required);
+assert.ok(unstableAudit.issues.some(x=>x.classId==='HEXWEAVER'&&
+ x.code==='non_deterministic_class_curve'),
+ 'Unstable server balance policies must never ship');
+
 console.log('PASS: nine class-only baseline profiles and complete 9-class/54-point audit discard legacy stats, gems, alchemy and forged tags');

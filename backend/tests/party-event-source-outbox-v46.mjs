@@ -76,8 +76,19 @@ try{
  `);
  await db.exec(loadDraft('20261118143000_party_event_canonical_source_writer_v45.sql'));
  await db.exec(loadDraft('20261118173000_party_event_source_outbox_v46.sql'));
+ await db.exec(loadDraft('20261118194500_party_event_server_gateway_v48.sql'));
+ const role=await db.query(`select
+ has_function_privilege('authenticated',
+  'public.commit_online_game_party_sources_server_v48(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid)','EXECUTE') as player,
+ has_function_privilege('anon',
+  'public.commit_online_game_party_sources_server_v48(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid)','EXECUTE') as guest,
+ has_function_privilege('service_role',
+  'public.commit_online_game_party_sources_server_v48(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid)','EXECUTE') as server`);
+ assert.deepEqual(role.rows[0],{player:false,guest:false,server:true},
+  'RPC must be service-role-only even though public schema is exposed');
+ await db.query(`select set_config('request.jwt.claim.role','service_role',false)`);
  const invoke=(id=request,amount=5)=>db.query(`
- select private.commit_online_game_party_sources_v45(
+ select public.commit_online_game_party_sources_server_v48(
   $1::uuid,0::bigint,0::bigint,$2::text,$3::text,$4::jsonb,$5::jsonb,$6::jsonb,
   null::uuid) as response`,
   [account,id,hash,JSON.stringify(response(amount)),
@@ -89,6 +100,13 @@ try{
    (select count(*)::int from public.idle_claim_receipts) idle,
    (select count(*)::int from private.party_event_source_outbox_v46) queued`)
  ).rows[0];
+
+ // A public PostgREST RPC cannot be usable with a normal player JWT.
+ await db.query(`select set_config('request.jwt.claim.role','authenticated',false)`);
+ let roleDenied=false;
+ try{await invoke();}catch{roleDenied=true;}
+ assert.equal(roleDenied,true,'user JWT cannot invoke hidden V48 gateway');
+ await db.query(`select set_config('request.jwt.claim.role','service_role',false)`);
  const initial=await invoke();
  assert.equal(initial.rows.length,1);
  assert.deepEqual(await count(),{actions:1,crafts:1,idle:1,queued:2},
@@ -180,5 +198,5 @@ try{
  assert.deepEqual(final.rows,[{state:'complete',c:2}],
   'every original committed receipt can eventually be acknowledged');
  console.log('PARTY_EVENTS_V47_PGLITE_OK: leased sources, token fencing, crash reclamation, exponential retry, and final ACK');
- console.log('PARTY_EVENTS_V46_PGLITE_OK: atomic source queue, canonical ID mapping, exact replay and after-insert rollback');
+ console.log('PARTY_EVENTS_V46_V48_PGLITE_OK: role-gated real RPC wrapper, atomic source queue, canonical mapping, replay and after-insert rollback');
 }finally{await db.close()}

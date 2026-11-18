@@ -39,6 +39,34 @@ export async function updateProfileExtensionV43(input:{
   p_achievement_showcase_ids:input.achievementShowcaseIds,p_collection_showcase:input.collectionShowcase,p_record_showcase_ids:input.recordShowcaseIds,p_mastery_showcase_action_ids:input.masteryShowcaseActionIds,
  });if(error)throw error;return data as ProfileExtensionSelfV43;
 }
+/** Account bio and visibility, without ever changing the active or featured character. */
+export async function updateProfileIdentityV2(input:{visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;bio:string}){
+ const {data,error}=await client().rpc('profile_identity_update_v2',{
+  p_visibility:input.visibility,p_world_feed_opt_out:input.worldFeedOptOut,p_bio:input.bio,
+ });if(error)throw error;
+ return data as ProfileExtensionSelfV43;
+}
+
+/** Save only the chosen hero's showcase; changes never switch gameplay characters. */
+export async function updateCharacterShowcaseV2(characterId:string,input:CharacterShowcaseFieldsV1){
+ const {data,error}=await client().rpc('profile_character_showcase_update_v2',{
+  p_character_id:characterId,p_favorite_skill_id:input.favoriteSkillId??null,
+  p_favorite_companion_id:input.favoriteCompanionId??null,
+  p_achievement_showcase_ids:input.achievementShowcaseIds,
+  p_collection_showcase:input.collectionShowcase,
+  p_record_showcase_ids:input.recordShowcaseIds,
+  p_mastery_showcase_action_ids:input.masteryShowcaseActionIds,
+ });if(error)throw error;
+ return data as CharacterShowcaseFieldsV1;
+}
+
+/** Explicitly choose the public landing hero; this is not a gameplay roster switch. */
+export async function setFeaturedProfileCharacterV2(characterId:string){
+ const {data,error}=await client().rpc('profile_featured_character_update_v2',{p_character_id:characterId});
+ if(error)throw error;
+ return data as ProfileExtensionSelfV43;
+}
+
 /** Values persisted for one specific character, independent of the account bio/privacy. */
 export type CharacterShowcaseFieldsV1=Pick<ProfileExtensionSelfV43,
  'favoriteSkillId'|'favoriteCompanionId'|'achievementShowcaseIds'|

@@ -129,3 +129,17 @@ RPC or paid claim exists here.
 - Donate, battle, claim and market actions **remain disabled** regardless of the snapshot's phase or counts. The decoder is for UI integrity, **not** identity proof: the future authenticated backend must derive account ID from Auth and verify replay ownership.
 - New runtime/source regression `apps/mobile/tests/world-boss-readonly-snapshot.cjs` is included in `pnpm test:feature-hubs`, and the separate hidden backend V41 contract has been version-tagged to match. No feature flag, database table, real currency or production screen was enabled.
 - Launch still blocked by #1348 (retention/account erasure), prior baseline Expo/core/bundle drifts, staging migrations, real 3–5 character raid fixtures and reviewed authenticated endpoints.
+
+## V47 World Boss screen completion pass (18 November 2026) — hidden UI only
+
+- Continued the existing World Boss developer-preview route rather than creating a competing screen. Kept native region panoramas, five content tabs, compact header/guide and the global-activity/chat suppression.
+- Promoted Hollowroot, Sunscar and Frostmarch selection to a compact **persistent codex selector**, available from every tab. Region switching never selects a live event; only a private snapshot whose boss ID matches the inspected region may show account information.
+- Reworked Overview into **event cadence + validated-format account status + boss briefing**. The short-lived V41 decoder now retains already-validated UTC event start/end times for phase-aware next-boundary labels. This is not a clock prediction: it only appears with the expected owner-scoped payload and recalculates from its frozen dates.
+- A QA-only 15-second lease check drops a snapshot when its two-minute read validity expires even if the user leaves the page open. It makes no status fetch and never refreshes the underlying event.
+- Replaced the fictitious **65% War Camp progress** with an explicit no-data panel. Real private snapshots may show all three tracks with Tier 1/Tier 2 goal labels, projected levels during preparation, frozen tiers after Saturday, and screen-reader progress-bar percentages.
+- Added a distinct **account-raid roster unavailable** state. The screen does not infer fighter count, equipment, readiness or power from account ownership, demo characters or the selected region.
+- Corrected World Sigil accounting: V41 `claimedThisEvent` is **already claimed this event**, not *earned but available*. Event claimed total and current spendable wallet are separately labelled; pending/unclaimed eligibility is not available in the projection.
+- Preserved **disabled** Donate, Begin Account Raid and Claim buttons, plus the unreleased Rankings empty state. No Supabase client, network, real balance mutation, event status provider or production flag was added.
+- Expanded the snapshot decoder and feature-hub source regressions for UTC calendar presentation, lease expiry, phase-aware UI, region selection, tier thresholds, accessibility and no fabricated War Camp percentage.
+
+**Review gates remain:** latest-head CI, TalkBack and Android small-screen inspection, updated mainline reconciliation, approved private staging schema and Auth status route, 3–5-character staging fixtures, economic/retention review (issue #1348), and a separate explicit feature launch decision. This draft is **not** a release authorization.

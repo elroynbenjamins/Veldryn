@@ -1,3 +1,4 @@
+import {equipmentV2ResultPresentation} from '../src/core/equipment-crafting-v2-result';
 import {equipmentV2PreparationPlan} from '../src/core/equipment-crafting-v2-preparation';
 import type {Recipe} from '../src/content/skills';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
@@ -264,5 +265,39 @@ const dependencyCycle=equipmentV2PreparationPlan({
 });
 check(dependencyCycle.shortages.some(row=>row.reason==='recipe_cycle')
  &&!dependencyCycle.canPrepareWithOwned,'Cyclic prerequisite chains must be flagged, never looped');
+
+
+const verifiedResult={
+ receiptOrigin:'server' as const,instanceId:'verified-epic-001',
+ pieceId:'EQ2_SUNSCAR_THORNHIDE_CHEST',rarity:'epic' as const,quality:87,
+ baseStats:{attack:0,defense:27,hp:135},
+ affixes:[
+  {stat:'armor' as const,percent:2.6,grade:73},
+  {stat:'maxHp' as const,percent:3.4,grade:70},
+ ],
+};
+const completion=equipmentV2ResultPresentation(verifiedResult,{
+ baseStats:{attack:0,defense:24,hp:140},affixes:[{stat:'haste',percent:1.2}],
+});
+check(completion.tier===3&&completion.setName==='Sunscar Thornhide'
+ &&completion.qualityVsQ50Percent>18&&completion.qualityVsQ50Percent<19,
+ 'The completion view distinguishes verified rarity from Q87 quality');
+check(completion.statDifference?.defense===3&&completion.statDifference.hp===-5
+ &&completion.lostAffixes.length===1&&completion.lostAffixes[0].stat==='haste',
+ 'The comparison must expose both added base stats and lost equipped attributes');
+check(completion.affixes.every(affix=>affix.minimum<=affix.percent&&affix.percent<=affix.maximum),
+ 'Displayed affixes must respect full tier and rarity roll bands');
+let badResultCount=0;
+for(const invalid of [
+ {...verifiedResult,quality:101},
+ {...verifiedResult,affixes:[verifiedResult.affixes[0]]},
+ {...verifiedResult,affixes:[verifiedResult.affixes[0],verifiedResult.affixes[0]]},
+ {...verifiedResult,affixes:[{stat:'armor' as const,percent:30,grade:70},verifiedResult.affixes[1]]},
+ {...verifiedResult,pieceId:'LEGACY_GEAR_V33'},
+ {...verifiedResult,receiptOrigin:'client' as const},
+]){
+ try{equipmentV2ResultPresentation(invalid as never)}catch{badResultCount++}
+}
+check(badResultCount===6,'The result view rejects malformed rarity, quality, rolls, duplicate stats, IDs and client-authored origin');
 
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

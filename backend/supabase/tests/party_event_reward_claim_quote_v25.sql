@@ -328,9 +328,10 @@ begin
  begin
   perform private.prepare_party_event_claim_quote_v25(
     v_full_offer,a[1],c[1],'v25-artisan-quote');
-  raise exception 'V25 accepted a quote without verified wallet';
+  raise exception 'V25 accepted a quote without online inventory';
  exception when others then
-  if sqlerrm<>'party_event_v25_wallet_unavailable' then raise;end if;
+  -- Live lock order is online save before wallet (V30 hardening).
+  if sqlerrm<>'party_event_v25_online_inventory_unavailable' then raise;end if;
  end;
  insert into public.character_wallets(character_id,gold)
  values(c[1],1000),(c[2],1200);
@@ -346,6 +347,18 @@ begin
  values
  (a[1],c[1],'{"inventory":{"stacks":[{"itemId":"GEM_DUST","quantity":3}]},"settings":{"lockedItemIds":[]}}'::jsonb,0),
  (a[2],c[2],'{"inventory":{"stacks":[]},"settings":{"lockedItemIds":[]}}'::jsonb,0);
+
+ -- Wallet absence must still be independently rejected after the online
+ -- inventory has been verified, not skipped by the new lock ordering.
+ delete from public.character_wallets where character_id=c[1];
+ begin
+  perform private.prepare_party_event_claim_quote_v25(
+    v_full_offer,a[1],c[1],'v25-artisan-quote');
+  raise exception 'V25 accepted a quote without verified wallet';
+ exception when others then
+  if sqlerrm<>'party_event_v25_wallet_unavailable' then raise;end if;
+ end;
+ insert into public.character_wallets(character_id,gold) values(c[1],1000);
 
  response:=private.prepare_party_event_claim_quote_v25(
   v_full_offer,a[1],c[1],'v25-artisan-quote');

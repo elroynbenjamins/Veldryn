@@ -63,7 +63,7 @@ ok(appearance.includes("const borderName=(id:string)=>profileRewardSource(state,
 ok(appearance.includes('style={s.petImage}')&&appearance.includes('petImage:{width:\'100%\',height:\'100%\'}'),'Pet cards must size visible art explicitly inside the gallery');
 
 // Identity and Showcase are two tabs over one stored row.
-ok(draft.includes('export function useProfileExtensionDraft')&&draft.includes('editableSnapshot'),'Identity and Showcase must share one profile-extension draft');
+ok(draft.includes('export function useProfileExtensionDraft')&&screen.includes('const draft=useProfileExtensionDraft(')&&draft.includes('identitySnapshot(')&&draft.includes('showcaseSnapshot(')&&draft.includes('const dirty=identityDirty||showcaseDirty'),'Identity and Showcase must share one draft with independently tracked account and character changes');
 ok(draft.includes('masteryShowcaseActionIds:value.masteryShowcaseActionIds'),'Mastery showcase selections must participate in dirty/save state');
 ok(identity.includes('accessibilityRole="radiogroup"')&&identity.includes("{id:'guild'")&&identity.includes("{id:'public'"),'Identity must expose the three profile audiences as a single-choice control');
 ok(identity.includes('<PlayerNameStyleEditor'),'Identity must host the player name-style editor');

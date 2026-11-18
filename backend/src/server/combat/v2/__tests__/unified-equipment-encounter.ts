@@ -182,6 +182,22 @@ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
  {...runtime,affixPolicy:{...affixPolicy,maxFinalCritChance:0}},
 ],true),/affix_exceeds_approved_stat_caps/);
+const unconvertedAlchemy={...classActor,
+ alchemyModifiers:{outgoing:1,incoming:1,healing:1,shielding:1}};
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ {...input,players:[unconvertedAlchemy]},[{...build,actor:unconvertedAlchemy}],
+ [runtime],true),/legacy_modifiers_require_migration/);
+const unconvertedGems={...classActor,
+ effectGems:[{id:'legacy-gem'}] as unknown as typeof classActor.effectGems};
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ {...input,players:[unconvertedGems]},[{...build,actor:unconvertedGems}],
+ [runtime],true),/legacy_modifiers_require_migration/);
+assert.throws(()=>simulateUnifiedEquipmentCombatV2({
+ ...input,initialPlayerState:{
+  [classActor.id]:{hp:1200,downed:false,
+    cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ },
+},[build],[runtime],true),/persistent_state_adapter_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[],true),/complete_build_and_gear_snapshots_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build,build],[runtime],true),/complete_build_and_gear_snapshots_required/);
 console.log('PASS: strict server gear ordering, provenance, no legacy double-counting, deterministic replays');

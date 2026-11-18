@@ -60,7 +60,7 @@ Balance and source cap rules: gathering speed from rolled pieces must combine **
 
 - `backend/online/world-boss-gathering-loot-v64.ts`: thematic sets; per-attack material, Essence and Gold plan (**no chest**); private-proof milestone eligibility; uniform random piece, six-rarity + Q0–Q100 quality + gathering-only affix roll preview; read-model validation; exact set thresholds and rolled stat inspection.
 - `apps/mobile/tests/world-boss-gathering-loot-v64.ts`: each of 3 sets has exactly 10 unique item slots, exact 3 milestone receipt sources, partial/complete goal edges, no extra chest from a fourth character or repeated claim, rarity boundaries, quality extremes, unique gathering affixes, zero combat bonus, invalid/forged payload rejection, cross-skill isolation. Typechecked and executed from hidden World Boss CI (actual run success to be verified).
-- The existing draft `WORLD_BOSS_GATHERING_TARGETED_PIECE_PRICE_SIGILS=90` remains **an unapproved, disabled shop-only concept**. It must not bypass a 3-chest rule by appearing as a live claim source. With three milestone chests per boss, reconsider any targeted shop purchase only after balance testing. Duplicates remain possible; they have meaningful differing rarity/quality/affix rolls.
+- No direct-piece World Sigil shop purchase is included. The three chest opportunities remain the only proposed gathering gear sources in this pass. Duplicates remain possible and meaningful because rarity, quality and affixes differ per copy.
 
 ## Remaining before real release
 

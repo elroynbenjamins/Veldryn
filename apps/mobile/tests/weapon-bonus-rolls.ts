@@ -21,7 +21,7 @@ function weapon(tier:string,classId:'WAYFINDER'|'DREADGUARD'|'DAWNKEEPER'){
 }
 
 // Every class and every eligible tier must have a valid roll pool and two-roll rule.
-for(const tier of ['T3','T4','T5','T6','T7','T8','T9'] as const){
+for(const tier of ['T2','T3','T4','T5','T6','T7','T8','T9'] as const){
   for(const cls of CLASSES){
     const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===tier
       &&row.classId===cls.id&&itemDef(row.output.itemId).slot==='weapon');
@@ -29,7 +29,7 @@ for(const tier of ['T3','T4','T5','T6','T7','T8','T9'] as const){
     for(const rarity of ['common','epic'] as const){
       const itemId=recipe!.output.itemId,cfg=weaponBonusConfig(itemId,rarity)!;
       const rolls=rollWeaponBonuses(itemId,rarity,`all-classes-${tier}-${cls.id}-${rarity}`,.54321)!;
-      const expectedCount=tier>='T5'||rarity==='epic'?2:1;
+      const expectedCount=tier>='T5'||(tier>='T3'&&rarity==='epic')?2:1;
       ok(rolls.length===expectedCount,`${cls.name} ${tier} ${rarity}: expected ${expectedCount} rolls`);
       ok(rolls.every(row=>cfg.pool.includes(row.stat)),`${cls.name} ${tier} must use role-relevant stats`);
       ok(JSON.stringify(normalizeWeaponBonuses(itemId,rarity,rolls))===JSON.stringify(rolls),
@@ -41,7 +41,8 @@ for(const tier of ['T3','T4','T5','T6','T7','T8','T9'] as const){
 const t1=weapon('T1','WAYFINDER'),t2=weapon('T2','WAYFINDER');
 const t3=weapon('T3','WAYFINDER'),t4=weapon('T4','WAYFINDER'),t5=weapon('T5','WAYFINDER'),t9=weapon('T9','WAYFINDER');
 ok(!rollWeaponBonuses(t1,'mythic','t1-epic',.25),'T1 never rolls, even Mythic');
-ok(!rollWeaponBonuses(t2,'epic','t2-epic',.25),'T2 never rolls, even Epic');
+ok(rollWeaponBonuses(t2,'epic','t2-epic',.25)?.length===1,'T2 now grants exactly one low-power roll, even Epic');
+ok(weaponBonusConfig(t2,'mythic')?.count===1,'T2 rarity cannot bypass the one-roll limit');
 ok(weaponBonusConfig(t3,'common')?.count===1,'T3 Common gets one stat');
 ok(weaponBonusConfig(t3,'epic')?.count===2,'T3 Epic gets two stats');
 ok(weaponBonusConfig(t4,'legendary')?.count===2,'T4 Legendary gets two stats');
@@ -49,7 +50,7 @@ ok(weaponBonusConfig(t5,'common')?.count===2,'T5 Common gets two stats');
 ok(weaponBonusConfig(t9,'common')?.count===2,'T9 Common gets two stats');
 
 for(const [id,rarity,count] of [
-  [t3,'common',1],[t3,'epic',2],
+  [t2,'common',1],[t2,'epic',1],[t3,'common',1],[t3,'epic',2],
   [t4,'mythic',2],[t5,'common',2],[t9,'rare',2],
 ] as const){
   const first=rollWeaponBonuses(id,rarity,'stable-receipt',.4);
@@ -67,6 +68,7 @@ for(const [id,rarity,count] of [
 }
 
 // Stat-specific balancing: high-value Crit Rate and Ward cap below broad HP / Tenacity.
+ok(weaponBonusRange(2,'critRate')?.join(',')==='30,80','T2 Crit Rate must have an especially low roll cap');
 ok(weaponBonusRange(3,'critRate')?.join(',')==='50,150','T3 Crit Rate is 0.5–1.5%, not the old global range');
 ok(weaponBonusRange(3,'maxHp')?.join(',')==='200,400','T3 Max HP is 2.0–4.0%');
 ok(weaponBonusRange(5,'haste')?.join(',')==='120,250','T5 Haste is 1.2–2.5%');

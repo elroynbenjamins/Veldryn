@@ -77,6 +77,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  const heroTitle=feature==='boss'&&bossStatus?cycleBoss.name:title.title;
  const heroSubtitle=feature==='boss'&&bossStatus?cycleBoss.region+' · One realm-wide encounter':title.subtitle;
  const guideTopics=feature==='boss'?[
+  ['Rotation','One global World Boss every 14 days. '+bosses.map(entry=>entry.name).join(' → ')+'. The game selects the boss for everyone; no manual switching.'],
   ['War Camp','Prepare during the five-day Monday–Friday window. Each account can donate at most twice.'],
   ['Battle','The boss is available for the full Saturday–Sunday battle window. Three attacks are shared across your account, not granted per character.'],
   ['Squad','Your eligible owned characters fight together in one account attempt. Extra characters do not grant extra attacks or payouts.'],
@@ -183,11 +184,20 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
  const phaseEnd=active?(active.phase==='upcoming'?active.startsAtUtcMs:active.phase==='preparation'?active.startsAtUtcMs+5*86400000:active.phase==='raid'?active.endsAtUtcMs:active.phase==='cooldown'?active.startsAtUtcMs+14*86400000:null):null;
  const phaseNext=active?(active.phase==='upcoming'?'Preparation opens':active.phase==='preparation'?'Weekend battle opens':active.phase==='raid'?'Battle closes':active.phase==='cooldown'?'Cycle completes':'Event ended'):null;
  const phaseDate=phaseEnd==null?null:new Date(phaseEnd).toISOString().slice(0,16).replace('T',' ')+' UTC';
+ const phaseBrief=active?.phase==='upcoming'?
+  {title:'The next War Camp is approaching',text:'The event has not begun. Preparation starts at the verified event opening.',target:'camp',action:'Preview preparation'}:
+  active?.phase==='preparation'?
+  {title:'War Camp is the current event phase',text:'The realm can prepare for this boss. Actual resource donations require the authenticated game service.',target:'camp',action:'Review War Camp'}:
+  active?.phase==='raid'?
+  {title:'Weekend battle phase',text:'The shared 48-hour battle window is underway in this private event snapshot. Attempts and damage remain disabled in QA.',target:'battle',action:'Review battle mechanics'}:
+  active?.phase==='cooldown'?
+  {title:'Recovery and results',text:'The battle window has ended. Reward claims and official placements need authenticated settlement.',target:'rewards',action:'Review rewards'}:
+  {title:'Awaiting the next realm event',text:'A future cycle must be announced by the server before a new World Boss can be shown.',target:'overview',action:'View cycle rules'};
  if(tab==='overview')return <>
   <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="Prepare together. Fight on the weekend." sub="Five days of War Camp preparation, one continuous 48-hour battle, then seven days of recovery."/>
    <View style={s.statRow}><Stat s={s} label="PREPARATION" value="Mon–Fri"/><Stat s={s} label="BATTLE" value="Sat–Sun"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
    <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={active?.phase==='preparation'?accent:undefined}/><Tag s={s} label="02 Battle" accent={active?.phase==='raid'?accent:undefined}/><Tag s={s} label="03 Recovery" accent={active?.phase==='cooldown'?accent:undefined}/></View>
-   <Text style={s.finePrint}>One boss for the whole realm per cycle. Rotation: Hollowroot → Solbrand → Rimewarden → repeat. Players cannot choose another boss.</Text>
+   <Text style={s.finePrint}>One boss for the whole realm per cycle. Rotation: {bosses.map(entry=>entry.name).join(' → ')} → repeat. Players cannot choose another boss.</Text>
   </Card>
   {active?<Card s={s}><SectionHeading s={s} kicker="PRIVATE READ-ONLY SNAPSHOT" title={boss.name+' · '+phaseTitles[active.phase]} sub="This validated-format snapshot is for QA only. It does not enable gameplay or verify that the event is released."/>
    <View style={s.detailRow}><Tag s={s} label={active.status.toUpperCase()+' · '+phaseTitles[active.phase]} accent={accent}/><Text style={s.finePrint}>Read {new Date(active.readAtUtcMs).toISOString().slice(0,16).replace('T',' ')} UTC</Text></View>
@@ -198,6 +208,10 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
   </Card>:<Card s={s}><SectionHeading s={s} kicker="ACCOUNT STATUS" title="No verified World Boss loaded" sub="The event service is not connected. No real boss HP, event date, donation count, attempts or rewards can be shown."/>
    <View style={s.empty}><UiIcon name="world" size={30}/><Text style={s.choiceTitle}>Encounter preview only</Text><Text style={s.bodyText}>The current boss and next event date are unknown until the server announces the global cycle. No boss can be manually selected.</Text></View>
   </Card>}
+  <Card s={s}><SectionHeading s={s} kicker="WHAT HAPPENS NEXT" title={phaseBrief.title} sub={phaseBrief.text}/>
+   {phaseBrief.target!=='overview'?<Action label={phaseBrief.action} s={s} secondary onPress={()=>onTab(phaseBrief.target)}/>:null}
+   <Text style={s.finePrint}>Guidance only · This developer preview cannot open an actual event, spend resources, reserve attacks or claim rewards.</Text>
+  </Card>
   <Card s={s}><SectionHeading s={s} kicker={'ENCOUNTER BRIEFING · '+boss.region.toUpperCase()} title={active?boss.name:'Boss details pending'} sub={boss.motif}/>
    <Text style={s.bodyText}>{boss.threat}</Text>
    <View style={s.twoActions}><View style={s.flex}><Action label="Inspect War Camp" s={s} onPress={()=>onTab('camp')} secondary/></View><View style={s.flex}><Action label="Battle briefing" s={s} onPress={()=>onTab('battle')}/></View></View>

@@ -1,4 +1,4 @@
-name: Hidden Party Events V6–V31 integration validation
+name: Hidden Party Events V6–V50 integration validation
 on:
   pull_request:
     paths:
@@ -47,7 +47,7 @@ jobs:
       - name: Ensure hidden migrations and disabled V48 gate are not promoted
         run: node tests/party-event-hidden-migrations-v37.mjs
   party-events-online-sources:
-    name: Party Events V43–V48 online source contracts
+    name: Party Events V43–V50 online source contracts
     runs-on: ubuntu-latest
     defaults:
       run:

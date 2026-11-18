@@ -45,24 +45,34 @@ const denied=(fn:()=>unknown,match:RegExp)=>{
   assert.throws(fn,match);
   checked++;
 };
-denied(()=>issueEnemyV2EngineAuthority(snapshot,()=>false),/unverified_persisted_scope/);
-denied(()=>issueEnemyV2EngineAuthority(snapshot,()=>{throw Error('private store offline');}),/unverified_persisted_scope/);
-denied(()=>issueEnemyV2EngineAuthority(snapshot,undefined as never),/trusted_verifier_required/);
-denied(()=>issueEnemyV2EngineAuthority({...snapshot,mode:'dungeon' as never},()=>true),/invalid_persisted_scope/);
-denied(()=>issueEnemyV2EngineAuthority({...snapshot,revision:0},()=>true),/invalid_persisted_scope/);
-denied(()=>issueEnemyV2EngineAuthority({...snapshot,enemyIds:['E','E']},()=>true),/invalid_persisted_scope/);
-const token=issueEnemyV2EngineAuthority(snapshot,()=>true);
+denied(()=>issueEnemyV2EngineAuthority(snapshot,combat('dot'),()=>false),/unverified_persisted_scope/);
+denied(()=>issueEnemyV2EngineAuthority(snapshot,combat('dot'),()=>{throw Error('private store offline');}),/unverified_persisted_scope/);
+denied(()=>issueEnemyV2EngineAuthority(snapshot,combat('dot'),undefined as never),/trusted_verifier_required/);
+denied(()=>issueEnemyV2EngineAuthority({...snapshot,mode:'dungeon' as never},combat('dot'),()=>true),/invalid_persisted_scope/);
+denied(()=>issueEnemyV2EngineAuthority({...snapshot,revision:0},combat('dot'),()=>true),/invalid_persisted_scope/);
+denied(()=>issueEnemyV2EngineAuthority({...snapshot,enemyIds:['E','E']},combat('dot'),()=>true),/invalid_persisted_scope/);
+const token=issueEnemyV2EngineAuthority(snapshot,combat('dot'),()=>true);
 assert.equal(authorizeEnemyV2EngineExecution(combat('dot')),false);
 assert.equal(authorizeEnemyV2EngineExecution(combat('dot'),token),true);
 assert.equal(JSON.stringify(token),'{}','Server-owned authority must not cross JSON boundary');
 denied(()=>simulateCombat(combat('dot'),{} as EnemyV2EngineAuthority),/token_not_server_issued/);
 denied(()=>simulateCombat({...combat('dot'),seed:'client-changed'},token),/scope_does_not_match_combat_input/);
 denied(()=>simulateCombat({...combat('dot'),enemies:[{...enemy('dot'),id:'OTHER'}]},token),/scope_does_not_match_combat_input/);
-denied(()=>simulateCombat({...combat('dot'),initialPlayerState:{P:{hp:250,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}}},token),/nonfresh_or_nonv2_encounter/);
-denied(()=>simulateCombat({...combat('dot'),enemyDamageProfile:'qmode-v1'},token),/nonfresh_or_nonv2_encounter/);
-denied(()=>simulateCombat({...combat('dot'),players:[{...hero(),combatV2:undefined}]},token),/nonfresh_or_nonv2_encounter/);
-denied(()=>simulateCombat({...combat('dot'),enemies:[{...enemy('dot'),boss:true}]},token),/nonfresh_or_nonv2_encounter/);
-assert.equal(checked,13);
+const staleState:CombatInput={...combat('dot'),initialPlayerState:{P:{hp:250,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}}};
+const qmode:CombatInput={...combat('dot'),enemyDamageProfile:'qmode-v1'};
+const noV2:CombatInput={...combat('dot'),players:[{...hero(),combatV2:undefined}]};
+const boss:CombatInput={...combat('dot'),enemies:[{...enemy('dot'),boss:true}]};
+for(const invalidInput of [staleState,qmode,noV2,boss]){
+ const suspect=issueEnemyV2EngineAuthority(snapshot,invalidInput,()=>true);
+ denied(()=>simulateCombat(invalidInput,suspect),/nonfresh_or_nonv2_encounter/);
+}
+const altered=combat('dot'),pinned=issueEnemyV2EngineAuthority(snapshot,altered,()=>true);
+altered.enemies[0].stats.attackPower=999;
+denied(()=>simulateCombat(altered,pinned),/scope_does_not_match_combat_input/);
+const changedSkill=combat('dot'),skillToken=issueEnemyV2EngineAuthority(snapshot,changedSkill,()=>true);
+changedSkill.enemies[0].abilities[0].effects[0].coeff=.5;
+denied(()=>simulateCombat(changedSkill,skillToken),/scope_does_not_match_combat_input/);
+assert.equal(checked,15);
 
 for(const effect of ['dot','buff','shield'] as const){
  const input=combat(effect);
@@ -71,8 +81,9 @@ for(const effect of ['dot','buff','shield'] as const){
  const baseline=simulateCombat(input);
  const noAuthority=simulateCombat(input,undefined);
  assert.deepEqual(noAuthority,baseline,'Omitted Enemy V2 authority must preserve event replay');
- const active=simulateCombat(input,token);
- const again=simulateCombat(input,token);
+ const purposeBoundToken=issueEnemyV2EngineAuthority(snapshot,input,()=>true);
+ const active=simulateCombat(input,purposeBoundToken);
+ const again=simulateCombat(input,purposeBoundToken);
  assert.deepEqual(active,again,'Server-seeded Enemy 2.0 runs must replay deterministically');
  assert.equal(JSON.stringify(input),original,'Engine must not mutate caller-owned combat definitions');
  if(effect==='dot'){
@@ -96,4 +107,4 @@ for(const effect of ['dot','buff','shield'] as const){
 // create a token; the engine never reads the field from a JSON CombatInput.
 const injected={...combat('shield'),experimentalRuleset:'enemy-v2-prototype-1'};
 assert.deepEqual(simulateCombat(injected),simulateCombat(combat('shield')));
-console.log('PASS: Class/Enemy engine conflict resolved; 13 untrusted-authority cases, deterministic shield/DoT/debuff and legacy replay isolation');
+console.log('PASS: Class/Enemy engine conflict resolved; 15 untrusted-authority cases, deterministic shield/DoT/debuff and legacy replay isolation');

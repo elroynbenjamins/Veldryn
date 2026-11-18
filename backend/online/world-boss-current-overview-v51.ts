@@ -101,9 +101,13 @@ export function createWorldBossCurrentEventPgV51(pg:WorldBossPgExecutorV19):
   const sql='SELECT id::text AS "eventId",boss_id AS "bossId",'+
    'floor(extract(epoch FROM starts_at)*1000)::double precision AS "startsAtUtcMs",'+
    'floor(extract(epoch FROM starts_at+interval \'14 days\')*1000)::double precision AS "cycleEndsAtUtcMs" '+
-   'FROM private.world_boss_events_v17 WHERE starts_at=$1::timestamptz LIMIT 2';
+   'FROM private.world_boss_events_v17 WHERE starts_at < $2::timestamptz '+
+   'AND starts_at+interval \'14 days\' > $1::timestamptz LIMIT 2';
+  // Catch any overlapping event (including a mistimed older/second row),
+  // then require the ONE returned row to match the canonical exact start.
   const result=await pg.query<Omit<EventSelection,'index'>>(
-   sql,[new Date(cycleStartUtcMs).toISOString()]);
+   sql,[new Date(cycleStartUtcMs).toISOString(),
+    new Date(cycleStartUtcMs+14*86400000).toISOString()]);
   if(result.rows.length>1)
    throw Error('world_boss_v51_duplicate_global_event');
   return result.rows[0]??null;

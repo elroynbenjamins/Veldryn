@@ -9,7 +9,7 @@ export type CapstoneTriggerV2='gain'|'spend'|'hit'|'heal'|'shield'|'interrupt'|'
 export type ProcTargetV2='self'|'target'|'enemy'|'lowest_hp_ally'|'tank'|'all_allies';
 export interface CapstoneActionV2 {target:ProcTargetV2;effect:AbilityEffect}
 export interface CapstoneResultV2 {event?:CombatEvent;actions:CapstoneActionV2[]}
-export interface CapstoneContextV2 {spent?:number;amount?:number;hitIsCrit?:boolean;healedAlly?:boolean}
+export interface CapstoneContextV2 {spent?:number;amount?:number;hitIsCrit?:boolean;healedAlly?:boolean;isPartyShield?:boolean}
 
 export function triggerCapstoneV2(
  actor:CombatantState,kind:CapstoneTriggerV2,now:number,ctx:CapstoneContextV2={},
@@ -49,8 +49,14 @@ export function triggerCapstoneV2(
     triggered=true;effects=[shield(actor.definition.stats.maxHp*.08)];
    }break;
   case 'sheltering_wall':
-   if(kind==='shield'&&(ctx.amount??0)>0&&can(20000)){
-    triggered=true;effects=[shield((ctx.amount??0)*.15,'target')];
+   if(kind==='shield'&&ctx.isPartyShield&&(ctx.amount??0)>0){
+    // Same party-wide cast may shield several recipients in the same tick.
+    // Grant each the 15% supplement, but only emit one proc/cooldown event.
+    if(v2.procCooldownAt[id]===now)
+      return {actions:[shield((ctx.amount??0)*.15,'target')]};
+    if(can(20000)){
+      triggered=true;effects=[shield((ctx.amount??0)*.15,'target')];
+    }
    }break;
   case 'blood_oath':
    if(kind==='spend'&&(ctx.spent??0)>=3&&can(15000)){

@@ -32,6 +32,7 @@
     "tests/world-boss-current-overview-v51.ts",
     "tests/world-boss-action-route-v62.ts",
     "tests/world-boss-action-runtime-v64.ts",
+    "tests/world-boss-action-request-v65.ts",
     "tests/world-boss-account-erasure-v56.ts",
     "tests/world-boss-readiness-audit-v43.ts"
   ],

@@ -1,5 +1,6 @@
 import {profileT,profileText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {socialIdentityT} from '../../i18n/social-identity';
 import {useMemo,useState,type ReactNode} from 'react';
 import {Image,Keyboard,Pressable,ScrollView,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import type {GameState} from '../../core/types';
@@ -102,7 +103,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
  const collectionSlots:Slot[]=value.collectionShowcase.map(ref=>({key:refKey(ref),label:profileCollectionLabel(ref),meta:profileText(language,ref.kind).toUpperCase(),art:refArt(ref),
   icon:ref.kind==='profile_icon'&&character?<ProfileIcon id={ref.id} classId={character.classId} size={34}/>:undefined}));
 
- const pickerTitle=picker==='character'?'Edit character showcase':picker==='skill'?'Favorite skill':picker==='companion'?'Favorite companion'
+ const pickerTitle=picker==='character'?socialIdentityT(language,'Edit character showcase'):picker==='skill'?'Favorite skill':picker==='companion'?'Favorite companion'
   :picker==='achievements'?'Achievement showcase':picker==='records'?'Personal Record showcase':picker==='collections'?'Collection showcase':picker==='mastery'?'Mastery showcase':'Profile settings';
  const multiPicker=picker==='achievements'||picker==='records'||picker==='collections'||picker==='mastery';
  const pickerCount=picker==='achievements'?value.achievementShowcaseIds.length:picker==='records'?value.recordShowcaseIds.length
@@ -115,7 +116,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   {guest?<View style={s.warning}><Text style={s.warningTitle}>{profileT(language,"Secure this guest account first")}</Text>
    <Text style={s.copy}>{profileT(language,"Guest progress can continue normally, but public social-profile publishing is held until the account is linked.")}</Text></View>:null}
 
-  <View style={s.head}><Text style={s.eyebrow}>{profileText(language,"CHARACTER SHOWCASE")}</Text><Text style={s.hint}>{profileText(language,"This hero’s own display")}</Text></View>
+  <View style={s.head}><Text style={s.eyebrow}>{socialIdentityT(language,'CHARACTER SHOWCASE')}</Text><Text style={s.hint}>{socialIdentityT(language,'This hero’s own display')}</Text></View>
   <View style={s.headlineWrap}>
   <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Showcase character: {name} ▾',{name:character?.name??profileT(language,'Current character')})}
     disabled={guest||busy||characters.length<2} onPress={()=>openPicker('character')} style={({pressed})=>[s.headline,pressed&&s.pressed]}>
@@ -129,7 +130,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
     </View>
     <Text numberOfLines={1} style={s.headlineMeta}>{character?profileT(language,'Lv. {level}',{level:character.level})+' · '+className:''}</Text>
     <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
-    {characters.length>1?<Text style={s.headlineAction}>{profileText(language,"Tap to edit another hero")} ›</Text>:null}
+    {characters.length>1?<Text style={s.headlineAction}>{socialIdentityT(language,'Tap to edit another hero')} ›</Text>:null}
    </View>
   </Pressable>
   {headlineFrame?<ProfileFrameOverlay source={headlineFrame}/>:null}
@@ -138,11 +139,11 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   <View style={s.featuredRow}>
    <View style={s.flex}>
     <Text style={s.featuredTitle}>{draft.featuredCharacterId===focusedId?
-      profileText(language,"Featured public hero"):profileText(language,"Editing another hero")}</Text>
-    <Text style={s.copy}>{profileText(language,"Changing this showcase does not switch your active character.")}</Text>
+      socialIdentityT(language,'Featured public hero'):socialIdentityT(language,'Editing another hero')}</Text>
+    <Text style={s.copy}>{socialIdentityT(language,'Editing a showcase never switches your active character.')}</Text>
    </View>
    {focusedId&&draft.featuredCharacterId!==focusedId?
-    <GameButton compact title={profileText(language,"Feature this hero")} tone="secondary"
+    <GameButton compact title={socialIdentityT(language,'Feature this hero')} tone="secondary"
      disabled={guest||busy||draft.dirty} onPress={()=>void draft.setFeatured()}/>:null}
   </View>
 
@@ -169,13 +170,13 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
 
  <GameModalSurface visible={picker!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>setPicker(null)} backdropLabel={profileT(language,"Close profile picker")} surfaceStyle={s.pickerSheet}>
   <GameModalHeader eyebrow={profileT(language,"SOCIAL PROFILE")} title={profileText(language,pickerTitle)} onClose={()=>setPicker(null)}/>
-  <Text style={s.copy}>{picker==='character'?profileText(language,'Choose a hero to edit. This will not switch gameplay characters.'):multiPicker?profileT(language,'{count}/3 selected · tap a selected item to remove it.',{count:pickerCount}):profileT(language,"Choose one option.")}</Text>
+  <Text style={s.copy}>{picker==='character'?socialIdentityT(language,'Choose a hero to edit. This does not switch gameplay characters.'):multiPicker?profileT(language,'{count}/3 selected · tap a selected item to remove it.',{count:pickerCount}):profileT(language,"Choose one option.")}</Text>
   <ScrollView style={s.pickerList} contentContainerStyle={s.pickerContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {pickerEmpty?<Text style={s.pickerEmpty}>{profileT(language,"No entries unlocked for this showcase yet.")}</Text>:null}
    {picker==='character'?characters.map(row=>{const selected=(value.selectedCharacterId??state.character?.id)===row.id;
     return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>{void draft.selectCharacter(row.id).then(switched=>{if(switched)setPicker(null)})}} style={[s.option,selected&&s.optionActive]}>
      <Text style={s.optionText}>{selected?'✓ ':''}{row.name}</Text>
-     <Text style={s.optionSub}>{row.classId.replace(/_/g,' ')} · {profileT(language,'Level {level}',{level:row.level})}{row.id===state.character?.id?' · '+profileT(language,'currently active'):''}{row.id===draft.featuredCharacterId?' · '+profileText(language,'featured'):''}</Text></Pressable>}):null}
+     <Text style={s.optionSub}>{row.classId.replace(/_/g,' ')} · {profileT(language,'Level {level}',{level:row.level})}{row.id===state.character?.id?' · '+profileT(language,'currently active'):''}{row.id===draft.featuredCharacterId?' · '+socialIdentityT(language,'featured'):''}</Text></Pressable>}):null}
    {picker==='skill'?<><Pressable accessibilityRole="button" accessibilityState={{selected:!value.favoriteSkillId}} onPress={()=>{patch({favoriteSkillId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteSkillId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>
     {skills.map(row=><Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected:value.favoriteSkillId===row.id}} onPress={()=>{patch({favoriteSkillId:row.id});setPicker(null)}} style={[s.option,value.favoriteSkillId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteSkillId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
    {picker==='companion'?<><Pressable accessibilityRole="button" accessibilityState={{selected:!value.favoriteCompanionId}} onPress={()=>{patch({favoriteCompanionId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteCompanionId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>

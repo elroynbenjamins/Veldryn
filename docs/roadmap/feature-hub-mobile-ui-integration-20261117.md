@@ -196,3 +196,13 @@ The sibling hidden backend V50 rotation contract on World Boss PR #1346 is a pur
 - Added source-level regression coverage in `world-boss-readonly-snapshot.cjs` and `feature-hub-preview-ui.cjs`. These verify source boundaries but are **not** a live device test.
 
 **Still required:** approved server-side Supabase Auth GET endpoint, real staging migrations and private permissions, proper launch epoch and globally unique event row, account erasure #1348, known 1–5 character fixture tests, CI and Android/TalkBack QA. Do not connect to production or claim real World Boss availability.
+
+## Party Events V39 optional authenticated read UX (18 November, hidden)
+
+- Added a developer-only `partyEventReadCurrent(): Promise<unknown>` host injection, supplied alongside a trusted host account identity. `App.tsx` deliberately does **not** supply either until a separately approved authenticated V39 GET service is mounted.
+- Only accepts the exact `party-event-status-http-v39` **response body** with all three write permissions false and a fully validated V33 snapshot. Invalid, malformed, stale (older than 120 seconds), far-future, wrong-phase or absent status never appears as live progress.
+- Refreshes every 60 seconds while the Party QA screen is open, offers manual retry, updates lease expiry every 15 seconds, and invalidates in-flight responses when the screen, provider or account changes. Errors clear the old status; cross-account party supply or ballots cannot flash on screen.
+- Clearly separates `Loading`, `No enrolled Party Event`, `Read failed`, and `Expired or rejected`, and preserves the existing real Party-only chat dock.
+- Extended focused decoder, transport and UI source regressions. These are not a substitute for a native Android/TalkBack check or an authenticated staging integration rehearsal.
+- No live endpoint, route flag, vote, contribution, combat, claim or reward was enabled. Backend counterpart: #1347 V39 unmounted adapter.
+

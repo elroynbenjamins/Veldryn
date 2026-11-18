@@ -64,20 +64,21 @@ select private.credit_party_event_activity_v14(
 export const PARTY_EVENT_COOP_CREDIT_SQL_V43=`
 with candidates as (
  select w.party_id,w.event_starts_at,count(*) over() as matching_weeks
- from public.coop_node_results source
- join public.expedition_run_members actor
-  on actor.run_id=source.run_id and actor.account_id=$3::uuid
-  and actor.active_participant_account_id=$3::uuid
-  and actor.member_kind='human' and actor.echo_profile_version is null
+ from private.party_event_coop_node_actors_v49 witness
+ join public.coop_node_results source
+  on source.run_id=witness.run_id and source.node_id=witness.node_id
+   and source.success=true and source.committed_at=witness.node_committed_at
+   and source.fencing_generation=witness.fencing_generation
+   and source.start_state_hash=witness.start_state_hash
  join private.party_event_roster_v11 member
-  on member.character_id=actor.character_id and member.account_id=actor.account_id
+  on member.character_id=witness.character_id and member.account_id=witness.account_id
  join private.party_event_weeks_v11 w
   on w.party_id=member.party_id and w.event_starts_at=member.event_starts_at
- where source.run_id=$1::uuid and source.node_id=$2::text
-  and source.success=true
-  and source.committed_at>=w.event_starts_at
-  and source.committed_at<w.event_ends_at
-  and member.joined_at<=source.committed_at
+ where witness.run_id=$1::uuid and witness.node_id=$2::text
+  and witness.account_id=$3::uuid
+  and witness.node_committed_at>=w.event_starts_at
+  and witness.node_committed_at<w.event_ends_at
+  and member.joined_at<=witness.node_committed_at
 )
 select private.credit_party_event_activity_v14(
  party_id,event_starts_at,'coop_node',$1::uuid,$2::text,$3::uuid,$4::text

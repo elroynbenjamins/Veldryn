@@ -42,7 +42,7 @@ export function EquipmentCraftingV2ResultPreview({receipt,equipped}:{
      {signed(view.qualityVsQ50Percent)}% base stats vs Q50
     </Text>
    </View>
-   <View style={styles.track}><View style={[styles.fill,{width:`${view.quality}%`,backgroundColor:colors.good}]}/></View>
+   <View style={styles.track}><View style={[styles.fill,{width:`${view.quality}%` as `${number}%`,backgroundColor:colors.good}]}/></View>
    <Text style={styles.note}>Quality affects base stats. Rarity and random affix rolls are separate.</Text>
   </View>
   <View style={styles.section}>
@@ -67,7 +67,7 @@ export function EquipmentCraftingV2ResultPreview({receipt,equipped}:{
      <Text style={styles.emphasis}>+{format(affix.percent)}% {names[affix.stat]??affix.stat}</Text>
      <Text style={styles.subtle}>Roll {affix.grade}/100</Text>
     </View>
-    <View style={styles.track}><View style={[styles.fill,{width:`${affix.grade}%`,backgroundColor:colors.good}]}/></View>
+    <View style={styles.track}><View style={[styles.fill,{width:`${affix.grade}%` as `${number}%`,backgroundColor:colors.good}]}/></View>
     <Text style={styles.note}>Full tier range {format(affix.fullMinimum)}–{format(affix.fullMaximum)}%;
      {' '}this rarity {format(affix.minimum)}–{format(affix.maximum)}%</Text>
    </View>)}

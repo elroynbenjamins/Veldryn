@@ -139,12 +139,18 @@ export function simulateCombat(input: CombatInput): CombatResult {
     if(!target.alive)return;
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
     const v2Evasion=target.definition.tags?.includes('combat-v2')?modifier(target,'evasion',now):0;
-    const hc=hitChance(source.definition.stats.accuracy,target.definition.stats.evasion+v2Evasion,accuracyScale); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
+    const sourceGear=v2Encounter?source.definition.combatV2?.equipmentEffects:undefined;
+    const targetGear=v2Encounter?target.definition.combatV2?.equipmentEffects:undefined;
+    const hc=clamp(hitChance(source.definition.stats.accuracy,
+      target.definition.stats.evasion+v2Evasion,accuracyScale)+
+      (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
+    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
     const v2Defense=v2Encounter?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
-    const authoredPenetration=v2Encounter&&source.definition.combatV2?clamp(effect.penetrationPct??0,0,.20):0;
+    const authoredPenetration=v2Encounter&&source.definition.combatV2?
+      clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
@@ -181,6 +187,12 @@ export function simulateCombat(input: CombatInput): CombatResult {
         raw*=incomingReactiveMultiplierV2(target,source,now);
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
       }
+    }
+    // A server-authored magical Ward applies to all non-physical,
+    // non-true damage, including DoT ticks. Physical and true bypass it.
+    if(v2Encounter&&targetGear&&effect.damageType&&
+       effect.damageType!=='physical'&&effect.damageType!=='true'){
+      raw*=1-clamp(targetGear.wardPp,0,1);
     }
     // V2 Rupture consumes one own applied DoT and converts a bounded portion of
     // its remaining strength to this direct hit. The consumed effect cannot
@@ -278,7 +290,8 @@ export function simulateCombat(input: CombatInput): CombatResult {
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
     if(effect.kind==='shield'){const amt=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
-      (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
+      (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
+      (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
       resource(source,'shield_granted',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE')){
         const ability=source.definition.abilities.find(a=>a.id===abilityId);
@@ -286,7 +299,16 @@ export function simulateCombat(input: CombatInput): CombatResult {
         runCapstone(source,'shield',now,target,{amount:amt,isPartyShield});
       }
     }return;}
-    if(effect.kind==='dot'||effect.kind==='hot'){const expiresAt=now+(effect.durationMs??3000);target.periodic.push({sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,coeff:effect.coeff??0,flat:effect.flat??0,damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000});events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
+    if(effect.kind==='dot'||effect.kind==='hot'){
+      const isHex=effect.kind==='dot'&&
+        (effect.damageType==='shadow'||effect.damageType==='arcane'||effect.damageType==='nature');
+      const hexBonus=isHex&&v2Encounter?
+        clamp(source.definition.combatV2?.equipmentEffects?.hexPotencyPct??0,0,1):0;
+      const expiresAt=now+(effect.durationMs??3000);
+      target.periodic.push({sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
+        coeff:(effect.coeff??0)*(1+hexBonus),flat:(effect.flat??0)*(1+hexBonus),
+        damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
+        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000});events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
       // Remove harmful periodic effects/debuffs only. Never wipe beneficial HoTs,
       // shield amounts, buffs or boss phase state. The replay identifies the cure.

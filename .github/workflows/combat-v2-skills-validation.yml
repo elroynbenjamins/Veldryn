@@ -44,6 +44,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/capstone-runtime.js
       - name: Validate additional 25 passive-to-ability rules
         run: node backend/dist/server/combat/v2/__tests__/passive-ability-rules.js
+      - name: Validate all 31 reactive passive triggers
+        run: node backend/dist/server/combat/v2/__tests__/reactive-passive-runtime.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
 

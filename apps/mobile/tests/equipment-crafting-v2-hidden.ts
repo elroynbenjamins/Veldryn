@@ -7,7 +7,7 @@ import {equipmentV2PreviewRoutesForItem,equipmentV2HiddenCatalogueSummary} from 
 import {draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,V2_SERVER_AFFIX_RANGES,V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
 import {EQUIPMENT_V2_AFFIX_RANGES} from '../src/core/equipment-crafting-v2-foundation';
 import {EQUIPMENT_V2_SETS,EQUIPMENT_V2_PIECES,EQUIPMENT_V2_STANDALONE,EQUIPMENT_V2_CLASS_WEAPONS,equipmentV2CatalogAudit,equipmentV2SetProgress} from '../src/content/equipment-v2-catalog';
-import {EQUIPMENT_V2_RECIPES,equipmentV2RecipesForItem} from '../src/content/equipment-v2-recipes';
+import {EQUIPMENT_V2_RECIPES,EQUIPMENT_V2_ALL_CRAFTABLE_PIECES,equipmentV2RecipesForItem} from '../src/content/equipment-v2-recipes';
 import {EQUIPMENT_V2_RELEASED,CRAFTING_V2_RELEASED,EQUIPMENT_CRAFTING_V2_RELEASED} from '../src/core/release-flags';
 import {equipmentV2PreviewBaseStats,equipmentV2StatBudget,equipmentV2Budget,
  EQUIPMENT_V2_PROFILES,EQUIPMENT_V2_RARITIES,equipmentV2AffixBounds,equipmentV2AffixCount,equipmentV2QualityMultiplier} from '../src/core/equipment-crafting-v2-foundation';
@@ -57,10 +57,11 @@ check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.
  'Approved V2 catalogue should retain 15 sets, 42 set pieces, 24 standalone and nine weapon archetypes');
 check(catalogAudit.uniqueIds&&!catalogAudit.invalidProfiles.length&&!catalogAudit.badSets.length,
  'V2 catalogue IDs, slots, allowed 1-2 stat profiles and set thresholds are valid');
-check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_RECIPES.length===132,'Each piece must have exactly two hidden crafting methods');
+check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===118&&EQUIPMENT_V2_RECIPES.length===236,
+ '66 core pieces plus 52 class weapons/offhands each require two hidden methods');
 check(EQUIPMENT_V2_PIECES.every(p=>p.id.startsWith('EQ2_')&&!p.id.startsWith('T1P_')),
  'V2 IDs must not alias legacy V33 item IDs');
-for(const piece of EQUIPMENT_V2_PIECES){
+for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
  const routes=equipmentV2RecipesForItem(piece.id);
  check(routes.length===2&&routes[0].route==='foundation'&&routes[1].route==='alternate',
   'Each piece must have exactly Foundation and Alternate');
@@ -76,6 +77,16 @@ for(const piece of EQUIPMENT_V2_PIECES){
    'Accessories must support cross-profession alternative routes');
  }
 }
+
+const oneHand=EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>'classRestriction' in piece);
+check(oneHand.length===52,'All 52 class armaments are present in the hidden craftable catalogue');
+for(const item of oneHand){
+ const recipes=equipmentV2RecipesForItem(item.id);
+ check(recipes.length===2&&recipes[0].gold===recipes[1].gold
+  &&recipes[0].xp===recipes[1].xp&&recipes[0].seconds===recipes[1].seconds,
+  'Crafting a weapon for another class must have no reroll or cost advantage');
+}
+
 const t4Set=EQUIPMENT_V2_SETS.find(s=>s.name==='Glassbound Shadowstep')!;
 const two=equipmentV2SetProgress(t4Set.id,[t4Set.pieces[0].id,t4Set.pieces[1].id,t4Set.pieces[1].id]);
 check(two.owned===2&&two.bonuses[0].active&&!two.bonuses[1].active,'Deduplicate equipped copies for set bonus counting');
@@ -83,7 +94,7 @@ check(EQUIPMENT_V2_CLASS_WEAPONS.some(w=>w.classId==='KNIFE_DANCER'&&w.hands==='
  'Weapon archetypes keep Knife Dancer identity separate from armor stat profiles');
 
 const model=equipmentV2HiddenCatalogueSummary();
-check(model.count===66&&model.t1===12&&model.t2===15&&model.t3===15&&model.t4===24,
+check(model.count===118&&model.t1===25&&model.t2===28&&model.t3===28&&model.t4===37,
  'Hidden catalogue tier counts include set pieces plus standalones');
 const hero=createCharacter(newGame(2000000000000),'IRONWARDEN');
 const t1Piece=EQUIPMENT_V2_PIECES.find(p=>p.tier===1)!;
@@ -145,14 +156,17 @@ for(const tier of [1,2,3,4] as const){
  }
 }
 
-check(V2_SERVER_PIECES.length===EQUIPMENT_V2_PIECES.length,'Client and canonical server piece counts diverge');
+check(V2_SERVER_PIECES.length===EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length,'Client and canonical server piece counts diverge');
 check(V2_SERVER_RECIPES.length===EQUIPMENT_V2_RECIPES.length,'Client and canonical server recipe counts diverge');
 check(V2_SERVER_MANIFEST_VERSION.startsWith('eq2-hidden-draft-'),'Manifest must remain clearly unreleased');
-for(const piece of EQUIPMENT_V2_PIECES){
+for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
  const backend=V2_SERVER_PIECES.find(p=>p.id===piece.id);
  check(backend&&backend.slot===piece.slot&&backend.tier===piece.tier
   &&backend.role===piece.role&&backend.profile===piece.profile&&backend.material===piece.material
-  &&backend.setId===piece.setId,'Client/server equipment manifest mismatch: '+piece.id);
+  &&backend.setId===piece.setId
+  &&backend.classRestriction===('classRestriction' in piece?piece.classRestriction:undefined)
+  &&backend.hands===('hands' in piece?piece.hands:undefined),
+  'Client/server equipment manifest mismatch: '+piece.id);
 }
 for(const recipe of EQUIPMENT_V2_RECIPES){
  const backend=V2_SERVER_RECIPES.find(r=>r.id===recipe.id);

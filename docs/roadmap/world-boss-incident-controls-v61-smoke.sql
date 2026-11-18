@@ -31,6 +31,16 @@ BEGIN
   END;
  END LOOP;
 
+ -- An operator must not accidentally open a boss on first insert:
+ -- enrollment must always start with all three controls CLOSED.
+ BEGIN
+  INSERT INTO private.world_boss_ops_v61(
+   event_id,new_raids_open,changed_by,change_reason)
+  VALUES(e,true,'ci-operator','unsafe initial enrollment should fail');
+  RAISE EXCEPTION 'WB61_INITIAL_OPEN_ACCEPTED';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'WB61_INITIAL_CONTROL_MUST_BE_CLOSED' THEN RAISE; END IF;
+ END;
  INSERT INTO private.world_boss_ops_v61(
   event_id,changed_by,change_reason)
  VALUES(e,'ci-operator','initial state: all new actions are paused');

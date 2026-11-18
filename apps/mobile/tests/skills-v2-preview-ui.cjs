@@ -4,6 +4,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const content=fs.readFileSync(path.join(root,'src/content/skills-v2-preview.ts'),'utf8');
 const screen=fs.readFileSync(path.join(root,'src/screens/SkillsV2PreviewScreen.tsx'),'utf8');
+const meter=fs.readFileSync(path.join(root,'src/components/ClassResourceMeterV2.tsx'),'utf8');
 const detail=fs.readFileSync(path.join(root,'src/content/skills-v2-preview-descriptions.ts'),'utf8');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
 assert.match(content,/SKILLS_V2_PUBLIC_ENABLED=false/,'Preview must default to private');
@@ -17,6 +18,10 @@ assert.match(content,/CLASS_STYLE_V2/,'18 specialization effects must be explain
 assert.match(content,/CLASS_META_V2/,'Each class must have a role and early resource spender');
 assert.match(screen,/Core skill change \(provisional\):/);
 assert.match(screen,/Early spender:/,'Resource loop cannot feel locked until endgame');
+assert.match(screen,/ClassResourceMeterV2/,'Use one reusable read-only combat resource component');
+assert.match(meter,/accessibilityRole="progressbar"/,'Resource meter must be accessible');
+assert.match(meter,/projectServerResourceV2/,'Resource meter must offer server-replay projection');
+assert.match(meter,/current<=value.max/,'Never render out-of-bounds resource meters');
 assert.match(screen,/Base .*cooldown/,'Cooldowns must not be presented as final variant values');
 assert.match(screen,/\[classId,characterLabel,level\]/,'Preview draft must reset for new level or character');
 

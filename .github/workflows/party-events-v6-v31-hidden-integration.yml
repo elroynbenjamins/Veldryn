@@ -76,6 +76,7 @@ jobs:
             party-event-security-sweep-v41 \
             party-event-activity-credit-worker-v43 \
             party-event-canonical-source-packet-v44 \
+            party-event-source-outbox-worker-v47 \
             party-event-schema-readiness-v35 \
             party-event-day8-audit-v36 \
             party-event-staging-assessment-v37
@@ -92,7 +93,7 @@ jobs:
         run: node tests/party-event-atomic-rollback-v38.mjs
       - name: Verify V45 atomic receipt writer and injected rollback in disposable PGlite
         run: node tests/party-event-canonical-source-writer-v45.mjs
-      - name: Verify V46 canonical source outbox, duplicate prevention and rollback in disposable PGlite
+      - name: Verify V46–V47 canonical outbox, lease fencing and rollback in disposable PGlite
         run: node tests/party-event-source-outbox-v46.mjs
       - name: Verify V44 starter gathering SQL and packet source alignment
         run: node tests/party-event-source-alignment-v44.mjs

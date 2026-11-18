@@ -13,7 +13,9 @@ export interface ProfileExtensionSelfV43{
  accountId:string;visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;selectedCharacterId?:string|null;bio:string;
  favoriteSkillId?:string|null;favoriteCompanionId?:string|null;achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];masteryShowcaseActionIds:string[];revision:number;updatedAt?:string;
 }
+export interface PublicProfileCharacterChoice{id:string;name:string;classId:string;level:number}
 export interface PublicPlayerProfileV43{
+ characterChoices?:PublicProfileCharacterChoice[];
  guild?:ProfileGuildIdentity|null;
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
  combatPower?:number;
@@ -56,7 +58,7 @@ export async function characterShowcaseSelfV1(characterId:string):Promise<Charac
 }
 
 const pendingPublicProfiles=new RequestSingleflight<PublicPlayerProfileV43|null>();
-export async function publicPlayerProfileV43(accountId:string):Promise<PublicPlayerProfileV43|null>{
+export async function publicPlayerProfileV43(accountId:string,characterId?:string):Promise<PublicPlayerProfileV43|null>{
  const db=client(),{data:{session},error:sessionError}=await db.auth.getSession();
  if(sessionError)throw sessionError;
  const viewer=session?.user.id;
@@ -64,8 +66,8 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
  // Sharing only an in-flight authorized read avoids duplicate public-profile,
  // guild-identity and guild-name lookups when multiple panels open together.
  // Do not cache the result: privacy, blocks and guild visibility can change.
- return pendingPublicProfiles.run(viewer+':'+accountId,async()=>{
-  const {data,error}=await db.rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;
+ return pendingPublicProfiles.run(viewer+':'+accountId+':'+(characterId??'featured'),async()=>{
+  const {data,error}=await db.rpc('profile_character_public_v1',{p_target_account_id:accountId,p_character_id:characterId??null});if(error)throw error;
   const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
   // The companion RPC uses the same visibility/block gate, returning only equipped item facts.
   // Older servers that have not deployed it still render the public profile normally.
@@ -73,7 +75,7 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
   // another full network round trip to opening a player's profile.
   // Optional gear failures must not block the existing identity/profile surface.
   const [gearResult,identities]=await Promise.all([
-   (async()=>{try{return await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});}catch{return null;}})(),
+   (async()=>{try{return await db.rpc('profile_character_gear_v1',{p_target_account_id:accountId,p_character_id:characterId??null});}catch{return null;}})(),
    guildIdentities([accountId]),
   ]);
   const gearRows=gearResult?.data;

@@ -16,7 +16,7 @@ export interface V2DraftCraftContract{
 }
 export interface V2DraftJob {
  id:string;accountId:string;ownerCharacterId:string;recipeId:string;pieceId:string;
- startedAtMs:number;finishesAtMs:number;slotIndex:0|1|2;
+ startedAtMs:number;finishesAtMs:number;slotIndex:number;
  goldReserved:number;materialsReserved:readonly {itemId:string;quantity:number;fromInventory:number;fromBank:number}[];
  status:'queued'|'claimed';resultId?:string;
  /** Unchangeable at claim: protects queued jobs against hot-reloaded prices/rules. */
@@ -41,6 +41,8 @@ export interface V2DraftCharacter {
 }
 export interface V2DraftSnapshot {
  accountId:string;activeCharacterId:string;version:number;
+ /** Trusted existing Forge capacity: 3 base, up to 7 with entitlements. */
+ forgeSlotCapacity:number;
  /** Only server-loaded owned characters may appear here; one wallet/pack each. */
  characters:Record<string,V2DraftCharacter>;
  /** Shared Bank and Forge queue; never confuse these with a character's pack. */
@@ -62,7 +64,9 @@ export class V2DraftCraftError extends Error {
 export interface V2DraftResolution {
  next:V2DraftSnapshot;response:V2DraftReceiptResponse;replayed:boolean;
 }
-const MAX_QUEUED_CRAFTS=8; // 3 active and 5 waiting; ready capacity enforced separately
+const MIN_EQUIPMENT_FORGE_SLOTS=3;
+const MAX_EQUIPMENT_FORGE_SLOTS=7;
+const MAX_WAITING_CRAFTS=5;
 const MAX_UNCLAIMED_READY=20;
 const MAX_CRAFTED_COPIES_PER_PIECE=25;
 const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
@@ -82,7 +86,10 @@ function verifyState(state:V2DraftSnapshot,ctx:V2DraftContext){
  if(!state||state.accountId!==ctx.accountId||state.activeCharacterId!==ctx.characterId
    ||!state.characters||!Object.prototype.hasOwnProperty.call(state.characters,ctx.characterId))fail('invalid_owner');
  const active=state.characters[ctx.characterId];
- if(!safeCount(state.version)||!safeCount(active.gold)||!safeCount(active.level)
+ if(!safeCount(state.version)||!safeCount(state.forgeSlotCapacity)
+   ||state.forgeSlotCapacity<MIN_EQUIPMENT_FORGE_SLOTS
+   ||state.forgeSlotCapacity>MAX_EQUIPMENT_FORGE_SLOTS
+   ||!safeCount(active.gold)||!safeCount(active.level)
    ||!safeCount(active.professionLevels.smithing)||!safeCount(active.professionLevels.tailoring)
    ||!Number.isSafeInteger(ctx.nowMs)||ctx.nowMs<0)fail('invalid_trusted_snapshot');
  if(state.jobs.some(j=>j.accountId!==ctx.accountId)||state.equipment.some(i=>i.accountId!==ctx.accountId))fail('foreign_account_records');
@@ -102,15 +109,16 @@ function consumption(state:V2DraftSnapshot,owner:V2DraftCharacter,inputs:readonl
  }
  return plan;
 }
-function nextSlot(jobs:readonly V2DraftJob[],nowMs:number){
- const remaining=[nowMs,nowMs,nowMs];
+function nextSlot(jobs:readonly V2DraftJob[],nowMs:number,capacity:number){
+ const remaining=Array.from({length:capacity},()=>nowMs);
  for(const job of jobs.filter(job=>job.status==='queued')){
   const index=job.slotIndex;
-  if(index!==0&&index!==1&&index!==2)fail('invalid_queue_slot');
-  remaining[index]=Math.max(remaining[index],job.finishesAtMs);
+  if(!safeCount(index)||index>=MAX_EQUIPMENT_FORGE_SLOTS)fail('invalid_queue_slot');
+  // Previously scheduled jobs still finish if temporary entitlements expire.
+  if(index<capacity)remaining[index]=Math.max(remaining[index],job.finishesAtMs);
  }
  const min=Math.min(...remaining);
- const slotIndex=remaining.indexOf(min) as 0|1|2;
+ const slotIndex=remaining.indexOf(min);
  return {slotIndex,startedAtMs:min};
 }
 function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'start'}>,ctx:V2DraftContext){
@@ -127,9 +135,9 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  const queue=unclaimed.filter(j=>j.finishesAtMs>ctx.nowMs);
  const ready=unclaimed.filter(j=>j.finishesAtMs<=ctx.nowMs);
  if(ready.length>=MAX_UNCLAIMED_READY)fail('ready_storage_full');
- if(queue.length>=MAX_QUEUED_CRAFTS)fail('queue_full');
+ if(queue.length>=state.forgeSlotCapacity+MAX_WAITING_CRAFTS)fail('queue_full');
  const material=consumption(state,owner,recipe.inputs);
- const start=nextSlot(queue,ctx.nowMs);
+ const start=nextSlot(queue,ctx.nowMs,state.forgeSlotCapacity);
  const jobId=(ctx.randomId??randomUUID)();
  if(!jobId||state.jobs.some(j=>j.id===jobId)||state.equipment.some(i=>i.id===jobId))fail('invalid_job_id_generated');
  const job:V2DraftJob={

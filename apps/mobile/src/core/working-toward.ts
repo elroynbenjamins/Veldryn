@@ -17,7 +17,7 @@ export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
  |{kind:'skills';skillId?:SkillId;mode?:'gathering'|'crafting'|'faith';actionId?:string;recipeId?:string;regionId?:string;button:string;detail:string}
  |{kind:'contracts';button:string;detail:string}
- |{kind:'inventory';button:string;detail:string}
+ |{kind:'inventory';section?:'gem_pouch';button:string;detail:string}
  |{kind:'world';regionId:string;button:string;detail:string}
  |{kind:'dungeon';dungeonId?:string;button:string;detail:string}
  |{kind:'info';button:string;detail:string};
@@ -114,7 +114,7 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
   const yields=Object.entries(GEM_DISMANTLE_DUST_V1)
    .map(([grade,dust])=>`G${grade}: ${dust}`).join(' · ');
   const destination:WorkingTowardDestination={
-   kind:'inventory',button:'Open Inventory',
+   kind:'inventory',section:'gem_pouch',button:'Open Gem Pouch',
    detail:`Dismantle spare refined gems in Inventory → Gem Pouch to obtain Gem Dust (${yields} Dust per gem). Socketed gems cannot be dismantled.`,
   };
   candidates.push({type:'dismantling',typeLabel:'Dismantling',title:'Gem Pouch · Dismantle Gems',

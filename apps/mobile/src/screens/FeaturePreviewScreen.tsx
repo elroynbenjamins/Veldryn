@@ -124,6 +124,14 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
   return ()=>clearInterval(leaseTimer);
  },[feature,worldBossAccountId,displayBossStatus]);
  const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
+ // With a valid owner-scoped event, open the enrolled story rather than
+ // defaulting to Caravan or mistaking a preview codex selection for progress.
+ useEffect(()=>{
+  if(feature!=='party'||!partyProviderReady)return;
+  const enrolled=decodePartyEventReadOnlySnapshot(displayPartyStatus,Date.now());
+  if(enrolled)setStoryId(enrolled.family);
+ },[feature,partyProviderReady,displayPartyStatus]);
+
  const C=useGameTheme(),{width,fontScale}=useWindowDimensions();
  const compact=width<360||fontScale>=1.25;
  const s=useMemo(()=>makeStyles(C,compact),[C,compact]);

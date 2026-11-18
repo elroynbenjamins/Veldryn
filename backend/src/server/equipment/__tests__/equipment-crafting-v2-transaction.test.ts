@@ -32,7 +32,7 @@ const makeContext=(nowMs:number):V2DraftContext=>({
  randomInt:()=>0,
 });
 const create=():V2DraftSnapshot=>({
- accountId:'account-test',activeCharacterId:'character-test',version:10,
+ accountId:'account-test',activeCharacterId:'character-test',version:10,forgeSlotCapacity:3,
  characters:{
   'character-test':{
    level:30,professionLevels:{smithing:45,tailoring:45},gold:10000,
@@ -169,4 +169,35 @@ readyState.jobs=Array.from({length:8},(_,i)=>({
 const readyStart=resolveEquipmentV2DraftCommand(readyState,startRequest,makeContext(1_000_000));
 assert.equal(readyStart.next.jobs.length,9,'Finished unclaimed jobs do not exhaust the in-flight queue');
 assert.equal(readyStart.next.jobs[8].startedAtMs,1_000_000);
+
+const earnedSlots=create();
+earnedSlots.forgeSlotCapacity=7;
+earnedSlots.jobs=Array.from({length:11},(_,i)=>({
+ ...structuredClone(start.next.jobs[0]),id:'earned-'+i,slotIndex:i%7,
+ startedAtMs:1_000_000,finishesAtMs:2_000_000+i,
+}));
+const another=resolveEquipmentV2DraftCommand(earnedSlots,startRequest,makeContext(1_000_000));
+assert.equal(another.next.jobs.length,12,
+ 'Seven earned Forge lanes plus five waiting crafts allow twelve scheduled jobs');
+assert.ok(another.next.jobs[11].slotIndex>=0&&another.next.jobs[11].slotIndex<7,
+ 'New jobs choose a currently earned Forge lane');
+const fullyScheduled=structuredClone(earnedSlots);
+fullyScheduled.jobs.push({...structuredClone(start.next.jobs[0]),id:'earned-11',slotIndex:4,
+ startedAtMs:1_000_000,finishesAtMs:3_000_000});
+assert.throws(()=>resolveEquipmentV2DraftCommand(fullyScheduled,startRequest,makeContext(1_000_000)),
+ /queue_full/,'Forge must honor the five-job waiting cap even at seven slots');
+const badForgeCapacity=create();
+badForgeCapacity.forgeSlotCapacity=8;
+assert.throws(()=>resolveEquipmentV2DraftCommand(badForgeCapacity,startRequest,makeContext(1_000_000)),
+ /invalid_trusted_snapshot/,'The client cannot mint extra Forge slots');
+const expiredCapacity=create();
+expiredCapacity.forgeSlotCapacity=3;
+expiredCapacity.jobs=[{
+ ...structuredClone(start.next.jobs[0]),id:'expired-slot',slotIndex:6,
+ startedAtMs:1_000_000,finishesAtMs:3_000_000,
+}];
+const continued=resolveEquipmentV2DraftCommand(expiredCapacity,startRequest,makeContext(1_000_000));
+assert.ok(continued.next.jobs[1].slotIndex<3,
+ 'New jobs use current capacity but old high-slot jobs must not be erased');
+
 console.log('PASS: hidden V2 craft canonical recipes, Gold/material reservations, capacity, idempotency, replay and exact one-time claims');

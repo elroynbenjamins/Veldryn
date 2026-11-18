@@ -59,6 +59,8 @@ begin
   if sqlerrm not like '%SOCIAL_NAME_TAKEN%' then raise;end if;
  end;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ -- Reset after the explicit roster-switch test: profile edits must leave this hero active.
+ update public.player_profiles set active_character_id=c1 where account_id=owner_id;
  perform public.profile_extension_update_v43('public',false,c1,'Shared account bio',null,null,
   '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
  perform public.profile_extension_update_v43('public',false,c2,'Shared account bio',null,null,

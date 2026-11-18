@@ -74,7 +74,7 @@ const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:1.5
  * disposable tutorial item.
  */
 export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:12,T3:26,T4:40,T5:55,T6:70,T7:82,T8:92,T9:100};
-export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:20,T4:34,T5:49,T6:64,T7:76,T8:89,T9:97};
+export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:22,T4:34,T5:49,T6:64,T7:76,T8:89,T9:97};
 export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring'>={
   IRONWARDEN:'smithing',BASTION:'smithing',DREADGUARD:'smithing',RAVAGER:'smithing',
   WAYFINDER:'tailoring',HEXWEAVER:'tailoring',KNIFE_DANCER:'tailoring',DAWNKEEPER:'tailoring',STONECALLER:'tailoring',
@@ -179,8 +179,9 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
   const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1);
-  // T3 is the early Sunscar bridge: use its intended profession floor (20),
-  // not the generic characterLevel-3 rule (23). Character equip gates stay intact.
+  // T3 balances the Sunscar entry gate against T2 crafting progression:
+  // profession Level 22 (instead of the generic characterLevel-3 gate of 23).
+  // Character/equipment-level requirements remain unchanged.
   const level=tier==='T3'?TIER_CRAFTING_LEVEL_FLOOR.T3:Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   const baseCraftXp=q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0);

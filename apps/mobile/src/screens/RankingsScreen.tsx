@@ -12,7 +12,7 @@ import {CompactPlayerIdentity} from '../components/CompactPlayerIdentity';
 import {GameModalSurface,GameModalHeader} from '../components/GameModalSurface';
 import {RANKING_BOARDS,RANKING_GROUPS,type RankingBoardId,type RankingBoardSnapshot,type RankingGroup,type RankingEntry} from '../core/rankings';
 import {rankingsClient,rankingsOnlineConfigured} from '../online/rankings-client';
-import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay} from '../core/ranking-pagination';
+import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay,rankingCanStartRead,type PendingRankingRead} from '../core/ranking-pagination';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {rankingPositionPresentation} from '../core/social-identity';
@@ -35,7 +35,7 @@ export function RankingsScreen(){
  // Polling, foreground and manual refresh must not launch duplicate reads.
  // A stalled request may be replaced after 30s; the version guard rejects
  // responses from the replaced request or a previous board/page.
- const inFlight=useRef<{scope:string;version:number;startedAt:number}|null>(null);
+ const inFlight=useRef<PendingRankingRead|null>(null);
  const scrollRef=useRef<ScrollViewInstance|null>(null);
  const [guideOpen,setGuideOpen]=useState(false);
  function selectGroup(value:RankingGroup){
@@ -62,7 +62,7 @@ export function RankingsScreen(){
  }
  async function load(){
    const scope=board+':'+page;
-   if(inFlight.current?.scope===scope&&Date.now()-inFlight.current.startedAt<30000)return;
+   if(!rankingCanStartRead(inFlight.current,scope,Date.now()))return;
    const version=++request.current;
    if(!rankingsOnlineConfigured){
      setLoading(false);setSnapshot(null);setHasNext(false);

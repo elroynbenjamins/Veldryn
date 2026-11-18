@@ -284,8 +284,8 @@ test('Party Event private v33 snapshot stays disabled and cannot be confused wit
  assert.match(adapter,/new Set\(raw\.completedActions\)\.size/);
  assert.match(adapter,/integer\(row\.donated,0,row\.target\)/);
  assert.match(screen,/partyEventStatus=null/);
- assert.match(screen,/decodePartyEventReadOnlySnapshot\(partyEventStatus\)/);
- assert.match(screen,/partyEventStatus=\{partyEventStatus\}/);
+ assert.match(screen,/decodePartyEventReadOnlySnapshot\(partyEventStatus,nowMs\)/);
+ assert.match(screen,/partyEventStatus=\{displayPartyStatus\}/);
  assert.match(screen,/No verified event loaded/);
  assert.match(screen,/Event service not connected/);
  assert.match(screen,/status\.rosterSize\+' players'/);
@@ -295,4 +295,23 @@ test('Party Event private v33 snapshot stays disabled and cannot be confused wit
  assert.match(screen,/does not authorize a boss attempt/);
  assert.doesNotMatch(app,/partyEventStatus=\{/,'unapproved live event fetch must not be wired by App');
  assert.doesNotMatch(screen,/supabase\.(rpc|from)|claimPartyEventReward|submitPartyEventVote/);
+});
+
+test('Party Event optional V39 read stays account-scoped, lease-bound, and QA only',()=>{
+ const adapter=read('src/core/party-event-readonly-snapshot.ts');
+ assert.match(screen,/partyEventReadCurrent\?:\(\)=>Promise<unknown>/);
+ assert.match(screen,/const partyProviderReady=feature==='party'/);
+ assert.match(screen,/loadedParty\?\.accountId===partyEventAccountId/);
+ assert.match(screen,/decodePartyEventReadTransportV39\(raw,Date\.now\(\)\)/);
+ assert.match(screen,/setLoadedParty\(null\);setPartyReadState\('error'\)/);
+ assert.match(screen,/setInterval\(\(\)=>setPartyRetry\(v=>v\+1\),60000\)/);
+ assert.match(screen,/clearInterval\(refreshTimer\)/);
+ assert.match(screen,/decodePartyEventReadOnlySnapshot\(partyEventStatus,nowMs\)/);
+ assert.match(screen,/Refresh read-only Party Event/);
+ assert.match(screen,/No enrolled Party Event/);
+ assert.match(screen,/Party Event status expired or rejected/);
+ assert.match(adapter,/nowMs-Date\.parse\(raw\.serverTime as string\)>120000/);
+ assert.match(adapter,/raw\.claimsEnabled!==false\|\|raw\.donationsEnabled!==false\|\|raw\.combatEnabled!==false/);
+ assert.doesNotMatch(app,/partyEventReadCurrent=\{/);
+ assert.doesNotMatch(screen,/submitPartyEventVote|claimPartyEventReward|supabase\.(rpc|from)/);
 });

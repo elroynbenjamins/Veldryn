@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R 'issueEnemyV2EngineAuthority' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -86,6 +86,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/advanced-affix-combat.js
       - name: Reject legacy stat contamination in nine class-only baselines
         run: node backend/dist/server/combat/v2/__tests__/class-baseline.js
+      - name: Validate deterministic Enemy/Boss 2.0 kit composition and six profiles
+        run: node backend/dist/server/combat/v2/__tests__/enemy-kit-composer.js
       - name: Validate full class, approved gear base, set and affix pipeline
         run: node backend/dist/server/combat/v2/__tests__/unified-equipment-encounter.js
       - name: Validate all nine class roles through the full gear pipeline

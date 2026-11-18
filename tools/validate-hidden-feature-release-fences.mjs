@@ -15,6 +15,8 @@ import {dirname,resolve} from 'node:path';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const paths={
   flags:'apps/mobile/src/core/release-flags.ts',
+  crafting2Gate:'backend/src/server/equipment/equipment-crafting-v2-gate.ts',
+  gameplay:'backend/online/gameplay.ts',
   routes:'apps/mobile/src/core/feature-hub-routes.ts',
   app:'apps/mobile/App.tsx',
   worldRead:'backend/online/world-boss-current-read-route-v52.ts',
@@ -38,8 +40,11 @@ function check(read,migrations){
     const re=new RegExp('(?:^|\\n)\\s*export\\s+const\\s+'+name+'\\s*=\\s*false(?:\\s+as\\s+const)?\\s*;','m');
     if(!re.test(source(key)))failures.push(name+' must be explicitly exported as false');
   };
-  for(const name of ['RANKINGS_RELEASED','PLAYER_MARKET_RELEASED','MARKET_AUTHENTICATED_SERVICE_READY'])
+  for(const name of ['RANKINGS_RELEASED','PLAYER_MARKET_RELEASED','MARKET_AUTHENTICATED_SERVICE_READY','EQUIPMENT_CRAFTING_V2_RELEASED'])
     requireExportFalse('flags',name);
+  requireExportFalse('crafting2Gate','EQUIPMENT_CRAFTING_V2_SERVER_RELEASED');
+  if(/(?:runEquipmentV2InGameState|simulateEquipmentV2InGameState|equipment_crafting_v2_gameplay)/.test(source('gameplay')))
+    failures.push('Hidden Equipment/Crafting V2 must not be mounted in online gameplay before coordinated release');
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
   requireExportFalse('worldErasure','WORLD_BOSS_V56_ERASURE_LIVE');
   requireExportFalse('partyRead','PARTY_EVENT_READ_ROUTE_V39_MOUNTED');
@@ -79,6 +84,8 @@ function selfTest(){
   assert.deepEqual(check(read,migrations),[],'Current main must pass baseline guard');
   const mutations=[
     ['rankings-release',paths.flags,'RANKINGS_RELEASED=false','RANKINGS_RELEASED=true'],
+    ['equipment2-client-release',paths.flags,'EQUIPMENT_CRAFTING_V2_RELEASED=false','EQUIPMENT_CRAFTING_V2_RELEASED=true'],
+    ['equipment2-server-release',paths.crafting2Gate,'EQUIPMENT_CRAFTING_V2_SERVER_RELEASED=false','EQUIPMENT_CRAFTING_V2_SERVER_RELEASED=true'],
     ['market-auth-release',paths.flags,'MARKET_AUTHENTICATED_SERVICE_READY=false','MARKET_AUTHENTICATED_SERVICE_READY=true'],
     ['preview-release',paths.routes,"typeof __DEV__!=='undefined'&&__DEV__===true",'true'],
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],
@@ -87,6 +94,7 @@ function selfTest(){
     ['provider-wiring',paths.app,'<FeaturePreviewScreen key={tab}','<FeaturePreviewScreen worldBossReadCurrent={readWorldBoss} key={tab}'],
     ['spread-wiring',paths.app,'<FeaturePreviewScreen key={tab}','<FeaturePreviewScreen {...provider} key={tab}'],
     ['preview-nav-bypass',paths.app,'if(isFeatureHubPreviewRoute(destination)&&!FEATURE_HUB_QA_ENABLED)return;','if(isFeatureHubPreviewRoute(destination))return;'],
+    ['craft-bridge-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {runEquipmentV2InGameState} from '../src/server/equipment/equipment-crafting-v2-game-state';\nimport {executeGameCommand,validateGameCommand}"],
   ];
   for(const [label,path,before,after] of mutations){
     const original=fixtures.get(path);
@@ -99,13 +107,13 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects eleven unsafe release regressions plus baseline');
+  console.log('PASS: hidden feature fence detects fourteen unsafe release regressions plus baseline');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){
   for(const problem of failures)console.error('HIDDEN RELEASE FENCE: '+problem);
   process.exitCode=1;
 }else{
-  console.log('PASS: World Boss, Party Events, Guild PvE, Rankings and Market remain release-disabled');
+  console.log('PASS: Equipment/Crafting 2.0, World Boss, Party Events, Guild PvE, Rankings and Market remain release-disabled');
   if(process.argv.includes('--self-test'))selfTest();
 }

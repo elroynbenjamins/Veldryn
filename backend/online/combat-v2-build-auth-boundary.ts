@@ -28,7 +28,7 @@ const id=(value:unknown):value is string=>typeof value==='string'&&UUID.test(val
 const numeric=(v:unknown,min=0,max=2**31-1):v is number=>
   typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max;
 const cleanId=(v:unknown):v is string=>typeof v==='string'&&v.length>=3&&v.length<=128&&/^[A-Za-z0-9:_-]+$/.test(v);
-const error=(code:string,status=400):never=>{throw new BuildRequestErrorV2(code,status);};
+function error(code:string,status=400):never{throw new BuildRequestErrorV2(code,status);}
 function keys(value:Record<string,unknown>,allowed:readonly string[],required=allowed){
  const actual=Object.keys(value);
  if(actual.some(k=>!allowed.includes(k))||required.some(k=>!Object.prototype.hasOwnProperty.call(value,k)))

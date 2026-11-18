@@ -36,7 +36,7 @@ const cloneAbility=(a:AbilityDefinition):AbilityDefinition=>({
  ...a,effects:a.effects.map(e=>({...e})),
  tags:a.tags?[...a.tags]:undefined,
 });
-const reject=(reason:string):never=>{throw Error('combat_v2_baseline_'+reason);};
+function reject(reason:string):never{throw Error('combat_v2_baseline_'+reason);}
 /**
  * Actor ID/name are the only reused fields from the combat participant.
  * All combat-effective fields are replaced by the trusted server profile.
@@ -93,7 +93,9 @@ export function issueClassOnlyActorV2(
   classId:CLASS_NAMES_V2[classId],
   team:'players',role:CLASS_ROLES_V2[classId],level:verified.level,
   // Explicit allowlist, no unknown additional profile payload fields.
-  stats:Object.fromEntries(statKeys.map(key=>[key,stats[key]])) as CombatStats,
+  stats:{maxHp:stats.maxHp,attackPower:stats.attackPower,healingPower:stats.healingPower,
+    defense:stats.defense,accuracy:stats.accuracy,evasion:stats.evasion,
+    critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste},
   basicAttackMs:profile.basicAttackMs,
   basicAttackCoeff:profile.basicAttackCoeff,
   abilities:profile.abilities.map(cloneAbility),

@@ -68,7 +68,8 @@ function readState(raw:unknown,characterId:string):CharacterBuildStateV2|null{
 }
 function readSnapshot(raw:unknown,accountId:string,characterId:string):TrustedBuildSnapshotV2{
   if(!isObj(raw)||raw.accountId!==accountId||raw.characterId!==characterId||
-     !Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,raw.characterClass)||
+     (typeof raw.characterClass!=='string'||
+      !Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,raw.characterClass))||
      !Number.isSafeInteger(raw.characterLevel)||(raw.characterLevel as number)<1||
      !nat(raw.gameRevision)||typeof raw.characterFingerprint!=='string'||
      !/^[0-9a-f]{32}$/i.test(raw.characterFingerprint)||

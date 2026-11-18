@@ -53,7 +53,7 @@ assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',v
 assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',value:.02},{id:'attack_pct',value:.03}]),policy),
  /duplicate_item_affix/);
 assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',value:.02}]),{
- limits:policy.limits,countsByTierRarity:{},
+ ...policy,countsByTierRarity:{},
 }),/missing_approved_roll_count/);
 assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,[
  item('x','weapon',[{id:'penetration_pp',value:.02}]),

@@ -7,7 +7,7 @@
  * Candidates MUST be persisted atomically and verified again before use.
  * Existing dungeon/Live/Q-mode and World Boss code never imports this module.
  */
-import type {CombatantDefinition} from '../types';
+import type {CombatantDefinition,AbilityDefinition,AbilityEffect,BossPhaseDefinition} from '../types';
 import {
  ENEMY_V2_RULESET,ENEMY_V2_TRAITS,prepareEnemyV2,
  type EnemyV2ServerOptions,type EnemyV2Region,type EnemyV2Tier,
@@ -82,7 +82,7 @@ const baseIsUncompiled=(enemy:CombatantDefinition)=>(
 const clone=(entry:CombatantDefinition):CombatantDefinition=>({
  ...entry,stats:{...entry.stats},tags:[...(entry.tags??[])],
  abilities:entry.abilities.map(a=>({...a,effects:a.effects.map(e=>({...e})),tags:a.tags?[...a.tags]:undefined})),
- phases:entry.phases?.map(p=>({...p,effects:p.effects.map(e=>({...e}))})),
+ phases:entry.phases?.map((p:BossPhaseDefinition)=>({...p,effects:p.effects.map((e:AbilityEffect)=>({...e}))})),
 });
 const sortedUnique=(ids:readonly string[])=>[...ids].sort();
 const clonePreview=(x:EnemyKitPreviewV2):EnemyKitPreviewV2=>({
@@ -117,7 +117,7 @@ export function prepareSoloEnemyKitsV2(
    'boss_requires_regional_profile');
  const names=new Set<string>();
  const preview:EnemyKitPreviewV2[]=[];
- const prepared=enemies.map(base=>{
+ const prepared=enemies.map((base:CombatantDefinition)=>{
   let transformed:CombatantDefinition;
   let traitIds:string[]=[];
   let kind:EnemyKitPreviewV2['kind'];
@@ -129,13 +129,13 @@ export function prepareSoloEnemyKitsV2(
      prepareRegionalBossV2(base,ENEMY_V2_RULESET);
    profile=options.region+'-boss-v1';
    assert(transformed!==base&&
-     (transformed.tags??[]).some(t=>t.startsWith('enemy-v2:boss-profile:')),
+     (transformed.tags??[]).some((t:string)=>t.startsWith('enemy-v2:boss-profile:')),
      'unrecognized_authored_boss');
    // Both boss prototypes replace phases; preserve pre-existing legacy phases
    // as part of a new-run-only compiled snapshot, never erase authored tells.
    transformed={...transformed,phases:[
-      ...(base.phases??[]).map(p=>({...p,effects:p.effects.map(e=>({...e}))})),
-      ...(transformed.phases??[]).map(p=>({...p,effects:p.effects.map(e=>({...e}))})),
+      ...(base.phases??[]).map((p:BossPhaseDefinition)=>({...p,effects:p.effects.map((e:AbilityEffect)=>({...e}))})),
+      ...(transformed.phases??[]).map((p:BossPhaseDefinition)=>({...p,effects:p.effects.map((e:AbilityEffect)=>({...e}))})),
    ]};
   }else{
    kind=eliteIds.includes(base.id)?'elite':'normal';
@@ -152,17 +152,17 @@ export function prepareSoloEnemyKitsV2(
      !duplicateAbility(next),'duplicate_or_mutated_enemy_kit');
   // Require every new ability and phase ID to differ from the original;
   // never allow two independent kit compilers to touch a single enemy.
-  const baselineIds=new Set(base.abilities.map(a=>a.id));
-  const baselinePhases=new Set((base.phases??[]).map(p=>p.id));
-  assert(next.abilities.filter(a=>!baselineIds.has(a.id)).every(a=>!names.has(base.id+':'+a.id))&&
-    (next.phases??[]).filter(p=>!baselinePhases.has(p.id)).every(p=>!names.has(base.id+':phase:'+p.id)),
+  const baselineIds=new Set(base.abilities.map((a:AbilityDefinition)=>a.id));
+  const baselinePhases=new Set((base.phases??[]).map((p:BossPhaseDefinition)=>p.id));
+  assert(next.abilities.filter((a:AbilityDefinition)=>!baselineIds.has(a.id)).every((a:AbilityDefinition)=>!names.has(base.id+':'+a.id))&&
+    (next.phases??[]).filter((p:BossPhaseDefinition)=>!baselinePhases.has(p.id)).every((p:BossPhaseDefinition)=>!names.has(base.id+':phase:'+p.id)),
     'duplicate_authored_id');
   for(const a of next.abilities)names.add(base.id+':'+a.id);
   for(const p of next.phases??[])names.add(base.id+':phase:'+p.id);
   preview.push({
     enemyId:base.id,kind,traitIds,profile,
-    abilityNames:next.abilities.filter(a=>!baselineIds.has(a.id)).map(a=>a.name),
-    phaseNames:(next.phases??[]).filter(p=>!baselinePhases.has(p.id)).map(p=>p.name??p.id),
+    abilityNames:next.abilities.filter((a:AbilityDefinition)=>!baselineIds.has(a.id)).map((a:AbilityDefinition)=>a.name),
+    phaseNames:(next.phases??[]).filter((p:BossPhaseDefinition)=>!baselinePhases.has(p.id)).map((p:BossPhaseDefinition)=>p.name??p.id),
   });
   return next;
  });
@@ -204,47 +204,47 @@ export function verifyPersistedEnemyKitsV2(
  assert(baseEnemies.every(baseIsUncompiled)&&distinct(snapshot.enemyIds)&&
     distinct(snapshot.bossIds)&&snapshot.bossIds.length<=1&&
     distinct(snapshot.eliteEnemyIds)&&
-    snapshot.eliteEnemyIds.every(id=>snapshot.enemyIds.includes(id)&&!snapshot.bossIds.includes(id)),
+    snapshot.eliteEnemyIds.every((id:string)=>snapshot.enemyIds.includes(id)&&!snapshot.bossIds.includes(id)),
    'invalid_stored_enemy_membership');
  assert(snapshot.baseEnemyDigest===enemyV2SnapshotDigest(baseEnemies)&&
    snapshot.preparedEnemyDigest===enemyV2SnapshotDigest(snapshot.preparedEnemies),
    'stored_kit_digest_mismatch');
- assert(snapshot.preview.every(p=>p&&typeof p==='object'&&validId(p.enemyId)&&
+ assert(snapshot.preview.every((p:EnemyKitPreviewV2)=>p&&typeof p==='object'&&validId(p.enemyId)&&
    ['normal','elite','boss'].includes(p.kind)&&
    typeof p.profile==='string'&&p.profile.length<=80&&
    Array.isArray(p.traitIds)&&p.traitIds.length<=2&&
-   p.traitIds.every(id=>typeof id==='string'&&id.length<=40)&&
+   p.traitIds.every((id:string)=>typeof id==='string'&&id.length<=40)&&
    Array.isArray(p.abilityNames)&&p.abilityNames.length<=32&&
    Array.isArray(p.phaseNames)&&p.phaseNames.length<=16&&
-   [...p.abilityNames,...p.phaseNames].every(name=>
+   [...p.abilityNames,...p.phaseNames].every((name:string)=>
      typeof name==='string'&&name.length>0&&name.length<=120)),
    'invalid_stored_preview');
  assert(snapshot.enemyIds.every((id,i)=>id===baseEnemies[i].id&&
    id===snapshot.preparedEnemies[i].id&&id===snapshot.preview[i].enemyId),
    'stored_kit_order_mismatch');
- const actualBossIds=snapshot.preparedEnemies.filter(e=>e.boss===true).map(e=>e.id);
+ const actualBossIds=snapshot.preparedEnemies.filter((e:CombatantDefinition)=>e.boss===true).map((e:CombatantDefinition)=>e.id);
  assert(JSON.stringify(actualBossIds)===JSON.stringify(snapshot.bossIds)&&
-   snapshot.bossIds.every(id=>permittedBossIds[snapshot.region].includes(id)),
+   snapshot.bossIds.every((id:string)=>permittedBossIds[snapshot.region].includes(id)),
    'invalid_stored_boss_profile');
  for(let i=0;i<baseEnemies.length;i++){
   const base=baseEnemies[i],next=snapshot.preparedEnemies[i],p=snapshot.preview[i];
   assert(next.team==='enemies'&&next.role===base.role&&next.name===base.name&&
    next.level===base.level&&next.boss===base.boss&&
-   (next.tags??[]).filter(t=>t===KIT_TAG).length===1&&
+   (next.tags??[]).filter((t:string)=>t===KIT_TAG).length===1&&
    !duplicateAbility(next),'invalid_stored_enemy_identity');
-  const baseAbilityIds=new Set(base.abilities.map(a=>a.id));
-  const preservedAbilities=next.abilities.filter(a=>baseAbilityIds.has(a.id));
-  const basePhaseIds=new Set((base.phases??[]).map(p=>p.id));
-  const preservedPhases=(next.phases??[]).filter(p=>basePhaseIds.has(p.id));
+  const baseAbilityIds=new Set(base.abilities.map((a:AbilityDefinition)=>a.id));
+  const preservedAbilities=next.abilities.filter((a:AbilityDefinition)=>baseAbilityIds.has(a.id));
+  const basePhaseIds=new Set((base.phases??[]).map((p:BossPhaseDefinition)=>p.id));
+  const preservedPhases=(next.phases??[]).filter((p:BossPhaseDefinition)=>basePhaseIds.has(p.id));
   assert(enemyV2SnapshotDigest(preservedAbilities)===enemyV2SnapshotDigest(base.abilities)&&
     enemyV2SnapshotDigest(preservedPhases)===enemyV2SnapshotDigest(base.phases??[])&&
-    (base.tags??[]).every(tag=>(next.tags??[]).includes(tag)),
+    (base.tags??[]).every((tag:string)=>(next.tags??[]).includes(tag)),
     'original_enemy_kit_mutated');
   if(base.boss)
    assert(enemyV2SnapshotDigest(next.stats)===enemyV2SnapshotDigest(base.stats),
      'boss_base_stats_mutated');
   assert((base.boss===true)===(p.kind==='boss')&&
-   (!base.boss||next.tags?.some(t=>t.startsWith('enemy-v2:boss-profile:'))),
+   (!base.boss||next.tags?.some((t:string)=>t.startsWith('enemy-v2:boss-profile:'))),
    'invalid_stored_enemy_profile');
   if(!base.boss){
    assert((p.kind==='normal'||p.kind==='elite')&&
@@ -254,10 +254,10 @@ export function verifyPersistedEnemyKitsV2(
   assert(p.traitIds.length<=(p.kind==='elite'&&snapshot.equipmentTier>=3?2:1)&&
     distinct(p.traitIds),'invalid_stored_trait_count');
   if(!base.boss){
-   const actual=(next.tags??[]).filter(t=>t.startsWith('enemy-v2:trait:'))
-     .map(t=>t.slice('enemy-v2:trait:'.length));
-   const archetypes=(next.tags??[]).filter(t=>t.startsWith('enemy-v2:archetype:'))
-     .map(t=>t.slice('enemy-v2:archetype:'.length));
+   const actual=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:trait:'))
+     .map((t:string)=>t.slice('enemy-v2:trait:'.length));
+   const archetypes=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:archetype:'))
+     .map((t:string)=>t.slice('enemy-v2:archetype:'.length));
    const old=(base.tags??[]).find(t=>t.startsWith('pve:archetype:'))?.slice('pve:archetype:'.length);
    const group=new Set<string>();
    for(const trait of actual){
@@ -275,7 +275,7 @@ export function verifyPersistedEnemyKitsV2(
   }else{
    assert(p.profile===snapshot.region+'-boss-v1'&&
     p.traitIds.length===0&&
-    (next.tags??[]).filter(t=>t.startsWith('enemy-v2:boss-profile:')).length===1,
+    (next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:boss-profile:')).length===1,
     'stored_boss_profile_mismatch');
   }
  }

@@ -145,22 +145,22 @@ async function run(){
  const forged=clone(prepared);
  forged.combatInput.players[0].stats.attackPower+=4;
  assert.throws(()=>validateStoredSoloEncounterV2(scope,forged),/persisted_snapshot_digest_mismatch/);
- const forgedDigest={...forged};
- forgedDigest.snapshotDigest=enemyV2SnapshotDigest(
-  Object.fromEntries(Object.entries(forgedDigest).filter(([k])=>k!=='snapshotDigest')));
+ const forgedDigest={...forged,snapshotDigest:enemyV2SnapshotDigest(
+  Object.fromEntries(Object.entries(forged).filter(([k])=>k!=='snapshotDigest')))};
  assert.throws(()=>validateStoredSoloEncounterV2(scope,forgedDigest),
   /invalid_equipment_source_evidence/);
  const enemyChanged=clone(prepared);
  enemyChanged.combatInput.enemies[0].stats.attackPower+=42;
- enemyChanged.snapshotDigest=enemyV2SnapshotDigest(
-  Object.fromEntries(Object.entries(enemyChanged).filter(([k])=>k!=='snapshotDigest')));
- assert.throws(()=>validateStoredSoloEncounterV2(scope,enemyChanged),
+ const enemyChangedUpdated={...enemyChanged,snapshotDigest:enemyV2SnapshotDigest(
+  Object.fromEntries(Object.entries(enemyChanged).filter(([k])=>k!=='snapshotDigest')))};
+ assert.throws(()=>validateStoredSoloEncounterV2(scope,enemyChangedUpdated),
   /persisted_enemy_replay_mismatch/);
  const kitChanged=clone(prepared);
- kitChanged.preparedKit.preparedEnemyDigest='f'.repeat(64);
- kitChanged.snapshotDigest=enemyV2SnapshotDigest(
-  Object.fromEntries(Object.entries(kitChanged).filter(([k])=>k!=='snapshotDigest')));
- assert.throws(()=>validateStoredSoloEncounterV2(scope,kitChanged),
+ const wrongKit={...kitChanged,preparedKit:{...kitChanged.preparedKit,
+  preparedEnemyDigest:'f'.repeat(64)}};
+ const kitChangedUpdated={...wrongKit,snapshotDigest:enemyV2SnapshotDigest(
+  Object.fromEntries(Object.entries(wrongKit).filter(([k])=>k!=='snapshotDigest')))};
+ assert.throws(()=>validateStoredSoloEncounterV2(scope,kitChangedUpdated),
   /stored_kit_digest_mismatch/);
  assert.ok(seenRpcs.includes(SOLO_SNAPSHOT_READ_RPC_V2));
  assert.ok(seenRpcs.includes(SOLO_SNAPSHOT_RESERVE_RPC_V2));

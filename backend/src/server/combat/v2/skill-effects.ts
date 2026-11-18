@@ -259,7 +259,13 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
     if(!base)throw Error('combat_v2_missing_authoritative_technique:'+record.name);
     const upgraded=applyPassiveAbilityRulesV2(verified.classId,record.name,
       applyRecipe(base,recipes[index],mods),selected.talentRanks);
-    const spenders:Record<string,number|'all'>={
+    // Every class has an L1 combat loop: one basic spender works even before
+    // specialization, variants or capstones unlock. Strong finishers stay at
+    // their original later level gates. All spends occur BEFORE cast effects.
+    const spenders:Readonly<Record<string,number|'all'>>={
+      'Rune Challenge':1,'Layered Fortress':1,'Grim Resolve':1,
+      'Windshot':1,'Crush Guard':1,'Black Thread':1,
+      'Scarlet Loop':1,'Dawn Mend':1,'Resonant Armor':1,
       'Perfect Quarry':3,'Runic Judgment':'all','Citadel Slam':'all',
       'Harbinger Strike':'all','Heartseeker':'all','Overpower':'all',
       'Hex Detonation':'all','Final Dance':'all','Solar Hymn':'all',

@@ -34,6 +34,9 @@ const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const record=(v)=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const string=(v)=>typeof v==='string'&&v.trim().length>0;
 const deny=(code)=>{throw new Error('combat_v2_enemy_class_'+code);};
+const validStatusRow=(value)=>record(value)&&Object.keys(value).length<=14&&
+ Object.values(value).every(x=>x===null||['string','number','boolean'].includes(typeof x))&&
+ Object.values(value).every(x=>typeof x!=='number'||Number.isFinite(x));
 const seal=(value)=>{
  if(Array.isArray(value)){for(const x of value)seal(x);return Object.freeze(value);}
  if(record(value)){for(const x of Object.values(value))seal(x);return Object.freeze(value);}
@@ -122,7 +125,7 @@ export function projectEnemyV2StatusV1(input){
     !['players','enemies'].includes(input.targetTeam)||input.sourceTeam!=='enemies')
    deny('invalid_status_context');
  const now=input.nowMs,next=input.next;
- if(!string(next.sourceId)||!string(next.tag)||
+ if(!validStatusRow(next)||!string(next.sourceId)||!string(next.tag)||
     !['dot','hot','buff','debuff'].includes(next.kind)||
     !Number.isSafeInteger(next.expiresAt)||next.expiresAt<=now)
    deny('invalid_status_payload');
@@ -131,7 +134,7 @@ export function projectEnemyV2StatusV1(input){
     (['buff','debuff'].includes(next.kind)&&
      ['damage_done','healing_received','damage_taken'].includes(next.tag));
  if(!allowed)deny('unsupported_status_effect');
- if(input.existing.some(x=>!record(x)||!string(x.sourceId)||!string(x.tag)||
+ if(input.existing.some(x=>!validStatusRow(x)||!string(x.sourceId)||!string(x.tag)||
    !['dot','hot','buff','debuff'].includes(x.kind)||
    !Number.isSafeInteger(x.expiresAt)))deny('invalid_existing_status');
  const entries=input.existing.filter(x=>x.expiresAt>now).map(x=>({...x}));

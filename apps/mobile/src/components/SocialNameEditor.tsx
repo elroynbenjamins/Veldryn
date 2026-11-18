@@ -21,7 +21,7 @@ export function SocialNameEditor(){
 
  useEffect(()=>{
   let active=true;
-  setData(null);setName('');setError('');setNotice('');
+  setData(null);setName('');setError('');setNotice('');setBusy(false);
   if(!accountId){setLoading(false);return()=>{active=false};}
   setLoading(true);
   void accountSocialNameSelf().then(row=>{

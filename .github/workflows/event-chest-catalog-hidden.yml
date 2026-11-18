@@ -10,6 +10,8 @@ on:
       - 'backend/tsconfig.event-chests.json'
       - 'backend/src/server/loot/event-chest-server-roll-v1.ts'
       - 'backend/src/server/loot/__tests__/event-chest-server-roll-v1.ts'
+      - 'backend/src/server/loot/event-chest-preview-v2.ts'
+      - 'backend/src/server/loot/__tests__/event-chest-preview-v2.ts'
       - 'docs/roadmap/event-chests-party-world-boss-v51-v58-20261118.md'
       - '.github/workflows/event-chest-catalog-hidden.yml'
   workflow_dispatch:
@@ -40,6 +42,8 @@ jobs:
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chests-v58.js
       - name: Verify server-only deterministic chest entropy and replay safety
         run: node .event-chest-tests/server/loot/__tests__/event-chest-server-roll-v1.js
+      - name: Verify non-paying read-only Party/World chest panel states and collection
+        run: node .event-chest-tests/server/loot/__tests__/event-chest-preview-v2.js
       - name: Reject accidental live server runtime import or reward enablement
         run: |
           set -euo pipefail
@@ -47,5 +51,6 @@ jobs:
           grep -q 'PARTY_EVENT_CHESTS_V51_RELEASED=false' src/server/party/weekly-party-event-chests-v51.ts
           grep -q 'WORLD_BOSS_CHESTS_V58_RELEASED=false' src/server/combat/world-boss-chests-v58.ts
           grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
+          grep -q 'EVENT_CHEST_REWARD_PANEL_V2_RELEASED=false' src/server/loot/event-chest-preview-v2.ts
           test ! -f supabase/migrations/20261118_event_chests_v51_v58.sql
           echo 'EVENT_CHESTS_HIDDEN_VALIDATION_OK'

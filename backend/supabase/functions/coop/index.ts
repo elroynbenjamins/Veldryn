@@ -51640,7 +51640,7 @@ var OnlineLiveRematch = class {
       if (!definition) throw new GameplayError("dungeon_unavailable");
       const records = source.members.map((member) => deriveOnlineCoopLoadout(member.accountId, member.state, member.version));
       source.members.forEach((member, index) => {
-        const issue = regularDungeonEntryError(definition, member.state, records[index].characterLevel);
+        const issue = regularDungeonEntryError(definition, member.state, records[index].characterLevel, records[index].combatPower, source.tier);
         if (issue) throw new GameplayError(issue);
       });
       frozen = freezeCoopRosterAtCommit({

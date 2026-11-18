@@ -20,6 +20,9 @@ const status:PartyEventReadOnlyStatusV33={
  canClaim:false,canContribute:false,canFight:false,
 };
 let authCalls=0,reads:string[]=[];
+// Read through a function: `check` is an assertion, so TypeScript would otherwise keep
+// authCalls narrowed to 0 after the first check even though callbacks increment it.
+const authCallCount=()=>authCalls;
 const adapter=createPrivatePartyEventReadHttpAdapterV39({
  auth:{getUser:async token=>{
   authCalls++;
@@ -45,7 +48,7 @@ async function run(){
   &&owner.body.donationsEnabled===false&&owner.body.combatEnabled===false,'no_write_unlock');
  const other=await adapter.handle({method:'GET',authorization:'Bearer '+jwtB});
  check(other.status===200&&'event' in other.body&&other.body.event===null,'other_account_empty');
- check(reads.join('|')===alice+'|'+bob&&authCalls===2,'fresh_auth_per_request');
+ check(reads.join('|')===alice+'|'+bob&&authCallCount()===2,'fresh_auth_per_request');
  const reject=await adapter.handle({method:'GET',authorization:'Bearer invalid-invalid-invalid'});
  check(reject.status===401&&JSON.stringify(reject).indexOf('sensitive')<0,'safe_auth_error');
  const backend=createPrivatePartyEventReadHttpAdapterV39({

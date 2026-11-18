@@ -401,5 +401,6 @@
   ".core-build/apps/mobile/tests/forge-system-announcements.js",
   ".core-build/apps/mobile/tests/equipment-resale-gate.js",
   ".core-build/apps/mobile/tests/equipment-disposal-guidance.js",
-  "tests/equipment-disposal-ui.cjs"
+  "tests/equipment-disposal-ui.cjs",
+  ".core-build/apps/mobile/tests/stored-json.js"
 ]

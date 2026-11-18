@@ -48,7 +48,9 @@ export class OnlineLiveRematch {
    const definition=EXPEDITIONS[source.dungeonId];
    if(!definition)throw new GameplayError('dungeon_unavailable');
    const records=source.members.map(member=>deriveOnlineCoopLoadout(member.accountId,member.state,member.version));
-   source.members.forEach((member,index)=>{const issue=regularDungeonEntryError(definition,member.state,records[index].characterLevel);if(issue)throw new GameplayError(issue);});
+   // Same gate as the live ready check: without Combat Power and the run's tier, every
+   // published dungeon's power requirement rejected each rematch acceptance.
+   source.members.forEach((member,index)=>{const issue=regularDungeonEntryError(definition,member.state,records[index].characterLevel,records[index].combatPower,source.tier);if(issue)throw new GameplayError(issue);});
    frozen=freezeCoopRosterAtCommit({
     minLevel:coopRequiredLevel(definition.minLevel,source.tier),syncLevel:definition.recommendedLevel,
     selections:source.members.map(member=>({accountId:member.accountId,characterId:member.characterId,loadoutId:member.loadoutId,expectedRevision:member.loadoutRevision})),

@@ -7,6 +7,8 @@ const assert=require('node:assert/strict');
 const src=fs.readFileSync(path.resolve(__dirname,
  '../supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'),'utf8');
 assert.match(src,/create\s+table\s+if\s+not\s+exists\s+private\.combat_v2_solo_snapshots_v1/i);
+assert.equal((src.match(/\bcommit\s*;/gi)||[]).length,1,'The migration must end in exactly one transaction commit');
+assert.match(src,/\bcommit\s*;\s*$/i,'No SQL may follow transaction commit');
 assert.match(src,/references\s+public\.characters\(id\)\s+on\s+delete\s+cascade/i);
 assert.match(src,/encounter_id\s+text\s+primary\s+key/i);
 assert.match(src,/snapshot_digest\s+text\s+not\s+null/i);

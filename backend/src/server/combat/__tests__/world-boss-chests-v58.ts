@@ -44,7 +44,7 @@ for(const bossId of bosses){
  check(all.every(x=>x.gearSetSkill===WORLD_BOSS_GATHERING_SET_POLICY_V58[bossId].skill),
   'boss_gear_specialization_preserved');
 }
-check(previewVerifiedWorldBossChestsV58({...e,committedAttempts:2}).length===2,
+check(previewVerifiedWorldBossChestsV58({...e,committedAttempts:2,personalProvenAttacks:2}).length===2,
  'not_all_three_attempts_done');
 check(previewVerifiedWorldBossChestsV58({...e,
  preparationGoalCompleted:true,personalCommittedDonations:0}).length===2,

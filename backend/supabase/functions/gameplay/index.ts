@@ -43031,32 +43031,58 @@ function huntActiveDamageEvents(events, input) {
       target2.damage += amount;
       return amount;
     };
-    let activation;
+    let activation, shiftedDamage = 0;
     switch (input.classId) {
       case "WAYFINDER": {
         const target2 = eligible.find((hit) => hit !== last);
-        if (target2 && shift(last, target2, 0.08 + 0.07 * scale) > 0) activation = target2;
+        if (target2) {
+          const moved = shift(last, target2, 0.08 + 0.07 * scale);
+          if (moved > 0) {
+            activation = target2;
+            shiftedDamage += moved;
+          }
+        }
         break;
       }
       case "RAVAGER": {
-        if (eligible.includes(last) && shift(first, last, 0.18 + 0.14 * scale) > 0) activation = last;
+        if (eligible.includes(last)) {
+          const moved = shift(first, last, 0.18 + 0.14 * scale);
+          if (moved > 0) {
+            activation = last;
+            shiftedDamage += moved;
+          }
+        }
         break;
       }
       case "HEXWEAVER": {
         if (eligible.includes(last)) {
           const middle = penultimate !== first && eligible.includes(penultimate) ? penultimate : void 0;
           const moved = middle ? shift(first, middle, 0.055 + 0.035 * scale) : 0;
-          if (shift(first, last, 0.11 + 0.07 * scale) > 0 || moved > 0) activation = last;
+          const final = shift(first, last, 0.11 + 0.07 * scale);
+          if (final > 0 || moved > 0) {
+            activation = last;
+            shiftedDamage += moved + final;
+          }
         }
         break;
       }
       case "KNIFE_DANCER": {
         const target2 = eligible.includes(penultimate) ? penultimate : eligible.find((hit) => hit !== last);
-        if (target2 && shift(last, target2, 0.1 + 0.1 * scale) > 0) activation = target2;
+        if (target2) {
+          const moved = shift(last, target2, 0.1 + 0.1 * scale);
+          if (moved > 0) {
+            activation = target2;
+            shiftedDamage += moved;
+          }
+        }
         break;
       }
     }
-    if (activation) activation.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: activation.damage };
+    if (activation) {
+      const multiplier = Math.max(0, Math.min(0.5, Number(input.abilityDamageBonus) || 0));
+      if (multiplier > 0) activation.damage += Number((shiftedDamage * multiplier).toFixed(5));
+      activation.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: activation.damage };
+    }
   }
   const companion = input.companion;
   if (landed.length >= 2 && companion?.role === "damage" && companion.contributionPct > 0) {
@@ -43119,7 +43145,7 @@ function huntClassSurvivalEvents(events, input) {
   if (pulse === void 0) return result;
   const rank = Math.min(100, Math.max(1, Math.floor(Number.isFinite(input.classSkillLevel) ? input.classSkillLevel : 1)));
   const scale = 1 + 0.3 * (rank - 1) / 99;
-  const healScale = Math.max(1, Math.min(1.2, input.classHealingMultiplier ?? 1));
+  const healScale = Math.max(1, Math.min(1.5, input.classHealingMultiplier ?? 1));
   const eligible = result.filter((event) => (event.actor === "enemy" || profile.mechanic === "sun_heal" && event.actor === "fatigue") && event.damage > 0 && input.encounterStartedAtMs + event.fraction * input.cycleSeconds * 1e3 >= pulse - 1e-3);
   const first = eligible[0];
   if (!first) return result;
@@ -51257,14 +51283,62 @@ function deterministicCraftRarityRoll(seed) {
   return hash3 % 1e6 / 1e6;
 }
 
+// ../apps/mobile/src/core/bonus-roll-rarity.ts
+var BONUS_ROLL_RARITY_MULTIPLIER = {
+  common: 0.85,
+  uncommon: 1,
+  rare: 1.2,
+  epic: 1.35,
+  legendary: 1.45,
+  mythic: 1.5
+};
+var STEP_BPS = 10;
+function rarityAdjustedBonusRange(base, rarity) {
+  const multiplier = BONUS_ROLL_RARITY_MULTIPLIER[rarity];
+  const min = Math.max(STEP_BPS, Math.round(base[0] * multiplier / STEP_BPS) * STEP_BPS);
+  const max = Math.max(min + STEP_BPS, Math.round(base[1] * multiplier / STEP_BPS) * STEP_BPS);
+  return [min, max];
+}
+
 // ../apps/mobile/src/core/weapon-bonus-rolls.ts
-var WEAPON_BONUS_ROLL_VERSION = 2;
-var ROLE_POOL = {
+var WEAPON_BONUS_ROLL_VERSION = 3;
+var WEAPON_BONUS_LABELS = {
+  maxHp: "Max HP",
+  armor: "Armor",
+  ward: "Ward",
+  tenacity: "Tenacity",
+  critRate: "Crit Rate",
+  haste: "Haste",
+  penetration: "Penetration",
+  accuracy: "Accuracy",
+  potency: "Potency",
+  evasion: "Evasion",
+  critDamage: "Crit Damage",
+  abilityDamage: "Ability Damage",
+  healingPower: "Healing Power"
+};
+var LEGACY_ROLE_POOL = {
   Tank: ["armor", "maxHp", "ward", "tenacity"],
   Damage: ["critRate", "haste", "penetration", "accuracy"],
   Support: ["potency", "haste", "ward", "maxHp"]
 };
+var ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "abilityDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
 var WEAPON_BONUS_BPS_BY_BAND = {
+  2: {
+    maxHp: [100, 250],
+    armor: [80, 180],
+    ward: [30, 90],
+    tenacity: [100, 240],
+    critRate: [30, 80],
+    haste: [40, 110],
+    penetration: [50, 130],
+    accuracy: [30, 90],
+    potency: [80, 200]
+  },
   3: {
     maxHp: [200, 400],
     armor: [150, 300],
@@ -51310,26 +51384,39 @@ var WEAPON_BONUS_BPS_BY_BAND = {
     potency: [400, 650]
   }
 };
+var V3_EXTRA_BPS_BY_BAND = {
+  2: { evasion: [20, 70], critDamage: [100, 280], abilityDamage: [80, 200], healingPower: [80, 200] },
+  3: { evasion: [40, 120], critDamage: [200, 450], abilityDamage: [120, 300], healingPower: [120, 300] },
+  5: { evasion: [60, 150], critDamage: [300, 700], abilityDamage: [200, 500], healingPower: [200, 500] },
+  7: { evasion: [80, 180], critDamage: [400, 850], abilityDamage: [260, 600], healingPower: [260, 600] },
+  9: { evasion: [100, 200], critDamage: [500, 1e3], abilityDamage: [320, 700], healingPower: [320, 700] }
+};
 var V1_RANGE_BY_BAND = {
   3: [100, 300],
   5: [200, 400],
   7: [300, 500],
   9: [400, 600]
 };
-function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
-  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : void 0;
+function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION, rarity = "uncommon") {
+  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : tier === 2 ? 2 : void 0;
   if (band === void 0) return void 0;
-  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
+  const legacy = WEAPON_BONUS_BPS_BY_BAND[band][stat];
+  if (version === 1) return V1_RANGE_BY_BAND[band];
+  if (version === 2) return legacy;
+  if (version !== 3) return void 0;
+  const baseline = legacy ?? V3_EXTRA_BPS_BY_BAND[band][stat];
+  return baseline ? rarityAdjustedBonusRange(baseline, rarity) : void 0;
 }
 var HIGH_RARITIES = ["epic", "legendary", "mythic"];
-var STEP_BPS = 10;
-function weaponBonusConfig(itemId, rarity) {
+var STEP_BPS2 = 10;
+function weaponBonusConfig(itemId, rarity, version = WEAPON_BONUS_ROLL_VERSION) {
   const item = itemDef(itemId);
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role = CLASSES.find((c) => c.id === item.classRestriction)?.role;
-  if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role) return void 0;
-  const count = tier >= 5 || HIGH_RARITIES.includes(rarity) ? 2 : 1;
-  return { tier, role, count, pool: ROLE_POOL[role] };
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < 2 || tier > 9 || !role) return void 0;
+  const count = tier >= 5 || tier >= 3 && HIGH_RARITIES.includes(rarity) ? 2 : 1;
+  const pool = version === 3 ? ROLE_POOL[role] : LEGACY_ROLE_POOL[role];
+  return { tier, role, count, pool };
 }
 function rollWeaponBonuses(itemId, rarity, receiptKey, trustedRoll) {
   if (!Number.isFinite(trustedRoll) || trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid trusted weapon roll");
@@ -51338,29 +51425,109 @@ function rollWeaponBonuses(itemId, rarity, receiptKey, trustedRoll) {
   const pool = [...cfg.pool], out = [];
   const seed = `${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for (let index = 0; index < cfg.count; index++) {
-    const statUnit = deterministicCraftRarityRoll(`weapon-affix:v2:stat:${seed}:${index}`);
+    const statUnit = deterministicCraftRarityRoll(`weapon-affix:v3:stat:${seed}:${index}`);
     const position = Math.min(pool.length - 1, Math.floor(statUnit * pool.length));
     const [stat] = pool.splice(position, 1);
-    const valueUnit = deterministicCraftRarityRoll(`weapon-affix:v2:value:${seed}:${index}`);
-    const range = weaponBonusRange(cfg.tier, stat);
-    const steps = (range[1] - range[0]) / STEP_BPS;
-    out.push({ stat, basisPoints: range[0] + STEP_BPS * Math.min(steps, Math.floor(valueUnit * (steps + 1))) });
+    const valueUnit = deterministicCraftRarityRoll(`weapon-affix:v3:value:${seed}:${index}`);
+    const range = weaponBonusRange(cfg.tier, stat, WEAPON_BONUS_ROLL_VERSION, rarity);
+    const steps = (range[1] - range[0]) / STEP_BPS2;
+    out.push({ stat, basisPoints: range[0] + STEP_BPS2 * Math.min(steps, Math.floor(valueUnit * (steps + 1))) });
   }
   return out;
 }
 function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROLL_VERSION) {
-  const cfg = weaponBonusConfig(itemId, rarity);
+  const cfg = weaponBonusConfig(itemId, rarity, version);
   if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
   const seen = /* @__PURE__ */ new Set(), out = [];
   for (const entry2 of raw2) {
     if (!entry2 || typeof entry2 !== "object") return void 0;
     const { stat, basisPoints } = entry2;
-    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version) : void 0;
-    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS !== 0) return void 0;
+    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version, rarity) : void 0;
+    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS2 !== 0) return void 0;
     seen.add(stat);
     out.push({ stat, basisPoints });
   }
   return out;
+}
+
+// ../apps/mobile/src/core/equipment-bonus-rolls.ts
+var EQUIPMENT_BONUS_ROLL_VERSION = 2;
+var HIGH_RARITIES2 = ["epic", "legendary", "mythic"];
+var LEGACY_ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "abilityDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var EXTRA_RANGES = {
+  2: { evasion: [20, 70], critDamage: [50, 160] },
+  3: { evasion: [40, 120], critDamage: [100, 300] },
+  5: { evasion: [60, 150], critDamage: [150, 400] },
+  7: { evasion: [80, 180], critDamage: [200, 450] },
+  9: { evasion: [100, 200], critDamage: [250, 500] }
+};
+var BONUS_LABELS = {
+  ...WEAPON_BONUS_LABELS
+};
+var STEP_BPS3 = 10;
+var ELIGIBLE_SLOTS = /* @__PURE__ */ new Set(["helmet", "chest", "gloves", "legs", "boots", "offhand", "cape", "amulet", "ring"]);
+function bandForTier(tier) {
+  return tier >= 9 ? 9 : tier >= 7 ? 7 : tier >= 5 ? 5 : tier >= 3 ? 3 : tier === 2 ? 2 : void 0;
+}
+function equipmentBonusConfig(itemId, rarity, version = EQUIPMENT_BONUS_ROLL_VERSION) {
+  const item = itemDef(itemId);
+  const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
+  const role = CLASSES.find((c) => c.id === item.classRestriction)?.role;
+  if (item.type !== "gear" || !item.slot || !ELIGIBLE_SLOTS.has(item.slot) || tier < 2 || tier > 9 || !role) return void 0;
+  const count = tier >= 5 || tier >= 3 && HIGH_RARITIES2.includes(rarity) ? 2 : 1;
+  const pool = version === 1 ? LEGACY_ROLE_POOL2[role] : ROLE_POOL2[role];
+  return { tier, role, slot: item.slot, count, pool };
+}
+function equipmentBonusRange(tier, stat, slot, rarity = "uncommon", version = EQUIPMENT_BONUS_ROLL_VERSION) {
+  const band = bandForTier(tier);
+  if (band === void 0 || !ELIGIBLE_SLOTS.has(slot)) return void 0;
+  const base = version === 1 ? stat === "evasion" || stat === "critDamage" ? EXTRA_RANGES[band][stat] : weaponBonusRange(tier, stat, 2) : weaponBonusRange(tier, stat, 3, "uncommon");
+  if (!base) return void 0;
+  const factor = slot === "offhand" ? 0.8 : slot === "amulet" || slot === "ring" ? 0.7 : 0.55;
+  const min = Math.max(STEP_BPS3, Math.ceil(base[0] * factor / STEP_BPS3) * STEP_BPS3);
+  const max = Math.max(min + STEP_BPS3, Math.floor(base[1] * factor / STEP_BPS3) * STEP_BPS3);
+  return version === 1 ? [min, max] : rarityAdjustedBonusRange([min, max], rarity);
+}
+function rollEquipmentBonuses(itemId, rarity, receiptKey, trustedRoll) {
+  if (!Number.isFinite(trustedRoll) || trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid trusted equipment roll");
+  const cfg = equipmentBonusConfig(itemId, rarity);
+  if (!cfg) return void 0;
+  const available = [...cfg.pool], result = [];
+  const seed = `${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
+  for (let index = 0; index < cfg.count; index++) {
+    const choice = deterministicCraftRarityRoll(`equipment-affix:v2:stat:${seed}:${index}`);
+    const [stat] = available.splice(Math.min(available.length - 1, Math.floor(choice * available.length)), 1);
+    const [minimum, maximum] = equipmentBonusRange(cfg.tier, stat, cfg.slot, rarity);
+    const steps = (maximum - minimum) / STEP_BPS3;
+    const roll = deterministicCraftRarityRoll(`equipment-affix:v2:value:${seed}:${index}`);
+    result.push({ stat, basisPoints: minimum + STEP_BPS3 * Math.min(steps, Math.floor(roll * (steps + 1))) });
+  }
+  return result;
+}
+function normalizeEquipmentBonuses(itemId, rarity, raw2, version) {
+  if (version !== 1 && version !== 2) return void 0;
+  const cfg = equipmentBonusConfig(itemId, rarity, version);
+  if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
+  const seen = /* @__PURE__ */ new Set(), result = [];
+  for (const entry2 of raw2) {
+    if (!entry2 || typeof entry2 !== "object") return void 0;
+    const { stat, basisPoints } = entry2;
+    if (!stat || !cfg.pool.includes(stat) || seen.has(stat)) return void 0;
+    const range = equipmentBonusRange(cfg.tier, stat, cfg.slot, rarity, version);
+    if (!range || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS3 !== 0) return void 0;
+    seen.add(stat);
+    result.push({ stat, basisPoints });
+  }
+  return result;
 }
 
 // ../apps/mobile/src/core/crafted-gear-instances.ts
@@ -51400,7 +51567,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
-      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,
@@ -51412,6 +51579,8 @@ function normalizeCraftedGearInstances(raw2) {
         statRoll: clampStatRoll(row.statRoll),
         weaponBonuses: version ? normalizeWeaponBonuses(item.id, rarity, row.weaponBonuses, version) : void 0,
         weaponBonusRollVersion: version,
+        equipmentBonuses: normalizeEquipmentBonuses(item.id, rarity, row.equipmentBonuses, row.equipmentBonusRollVersion),
+        equipmentBonusRollVersion: row.equipmentBonusRollVersion === 1 || row.equipmentBonusRollVersion === 2 ? row.equipmentBonusRollVersion : void 0,
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
@@ -51474,7 +51643,9 @@ function draftCraftedGearInstance(args) {
     rarity,
     quality: craftedGearQualityRoll(args.roll, args.jobId),
     weaponBonuses: rollWeaponBonuses(args.itemId, rarity, args.jobId, args.roll),
-    weaponBonusRollVersion: itemDef(args.itemId).slot === "weapon" && /^T[3-9]_/.test(itemDef(args.itemId).equipmentSetId ?? "") ? WEAPON_BONUS_ROLL_VERSION : void 0,
+    weaponBonusRollVersion: itemDef(args.itemId).slot === "weapon" && /^T[2-9]_/.test(itemDef(args.itemId).equipmentSetId ?? "") ? WEAPON_BONUS_ROLL_VERSION : void 0,
+    equipmentBonuses: rollEquipmentBonuses(args.itemId, rarity, args.jobId, args.roll),
+    equipmentBonusRollVersion: itemDef(args.itemId).slot !== "weapon" && /^T[2-9]_/.test(itemDef(args.itemId).equipmentSetId ?? "") ? EQUIPMENT_BONUS_ROLL_VERSION : void 0,
     locked: false,
     statRoll: deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),
     acquireSource: "craft",
@@ -51504,6 +51675,8 @@ function craftedInstanceResult(state, instance) {
     baseRarity,
     weaponBonuses: instance.weaponBonuses,
     weaponBonusRollVersion: instance.weaponBonusRollVersion,
+    equipmentBonuses: instance.equipmentBonuses,
+    equipmentBonusRollVersion: instance.equipmentBonusRollVersion,
     // Trusted command response metadata for read-only public forge announcements.
     itemName: itemDef(instance.itemId).name,
     crafterName: state.character?.id === instance.ownerCharacterId ? state.character.name : (state.otherCharacters ?? []).find((row) => row.character.id === instance.ownerCharacterId)?.character.name ?? "Adventurer",
@@ -52125,7 +52298,9 @@ var EMPTY_STATS = {
   potency: 0,
   critRate: 0,
   critDamage: 0,
-  evasion: 0
+  evasion: 0,
+  abilityDamage: 0,
+  healingPower: 0
 };
 var STAT_KEY_BY_LABEL = {
   "max hp": "maxHp",
@@ -52156,6 +52331,21 @@ function equippedWeaponBonusStats(state) {
   if (!copy?.weaponBonuses?.length) return {};
   const stats4 = {};
   for (const bonus of copy.weaponBonuses) stats4[bonus.stat] = (stats4[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  return stats4;
+}
+function equippedEquipmentBonusStats(state) {
+  const character = state.character;
+  if (!character) return {};
+  const stats4 = {};
+  for (const [slot, itemId] of Object.entries(character.equipment)) {
+    if (!itemId || slot === "weapon") continue;
+    const instanceId = character.equipmentInstanceIds?.[slot];
+    if (!instanceId) continue;
+    const raw2 = state.account.craftedGearInstances?.find((row) => row?.id === instanceId && row?.itemId === itemId);
+    const copy = raw2 ? normalizeCraftedGearInstances([raw2])[0] : void 0;
+    if (!copy?.equipmentBonuses?.length) continue;
+    for (const bonus of copy.equipmentBonuses) stats4[bonus.stat] = (stats4[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  }
   return stats4;
 }
 function parseEquipmentSetStaticBonus(text2) {
@@ -52211,21 +52401,25 @@ function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
   const weapon = equippedWeaponBonusStats(state);
+  const equipment = equippedEquipmentBonusStats(state);
+  const rolled = (stat) => (weapon[stat] ?? 0) + (equipment[stat] ?? 0);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
-    maxHp: multiplied(sets.maxHp, p.maxHp) + (weapon.maxHp ?? 0),
-    armor: multiplied(sets.armor, p.armor) + (weapon.armor ?? 0),
-    ward: multiplied(sets.ward, p.ward) + (weapon.ward ?? 0),
-    tenacity: multiplied(sets.tenacity, p.tenacity) + (weapon.tenacity ?? 0),
-    haste: multiplied(sets.haste, p.haste) + (weapon.haste ?? 0),
-    power: multiplied(sets.power, p.power),
-    accuracy: sets.accuracy + (pp.accuracy ?? 0) + (weapon.accuracy ?? 0),
-    penetration: sets.penetration + (pp.penetration ?? 0) + (weapon.penetration ?? 0),
-    potency: multiplied(sets.potency, p.potency) + (weapon.potency ?? 0),
-    critRate: sets.critRate + (pp.critRate ?? 0) + (weapon.critRate ?? 0),
-    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0)
+    maxHp: multiplied(sets.maxHp, p.maxHp) + rolled("maxHp"),
+    armor: multiplied(sets.armor, p.armor) + rolled("armor"),
+    ward: multiplied(sets.ward, p.ward) + rolled("ward"),
+    tenacity: multiplied(sets.tenacity, p.tenacity) + rolled("tenacity"),
+    haste: multiplied(sets.haste, p.haste) + rolled("haste"),
+    power: multiplied(sets.power, p.power) + rolled("power"),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0) + rolled("accuracy"),
+    penetration: sets.penetration + (pp.penetration ?? 0) + rolled("penetration"),
+    potency: multiplied(sets.potency, p.potency) + rolled("potency"),
+    critRate: sets.critRate + (pp.critRate ?? 0) + rolled("critRate"),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5 + rolled("critDamage"),
+    evasion: sets.evasion + (pp.evasion ?? 0) + rolled("evasion"),
+    abilityDamage: rolled("abilityDamage"),
+    healingPower: rolled("healingPower")
   };
 }
 function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy = 0.84) {
@@ -52244,6 +52438,8 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
     critExpectedMultiplier: setCritExpected / baseCritExpected,
     penetrationMultiplier: 1 + stats4.penetration,
     recoveryMultiplier: 1 + stats4.potency,
+    abilityDamageMultiplier: 1 + stats4.abilityDamage,
+    healingPowerMultiplier: 1 + stats4.healingPower,
     tenacity: stats4.tenacity,
     stats: stats4
   };
@@ -53910,7 +54106,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1, abilityDamage: 0, healingPower: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -53964,7 +54160,9 @@ function effectiveStats(state) {
     tenacity: setStats.tenacity,
     potency: setStats.potency + mastery.potency,
     penetration: setStats.penetration + mastery.penetration,
-    classHealing: mastery.classHealing
+    classHealing: mastery.classHealing * (1 + setStats.healingPower),
+    abilityDamage: setStats.abilityDamage,
+    healingPower: setStats.healingPower
   };
 }
 function settleOutOfCombatRecovery(state, nowMs) {
@@ -54259,7 +54457,7 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
   const incoming = runtime.huntOptions ? Math.max(fatigue, combatPressure) : combatPressure;
   const monsterDamage = runtime.huntOptions ? Math.max(0, incoming - fatigue) : combatPressure;
   const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - Math.max(floor, fatigue)));
-  const rawHealing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
+  const rawHealing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (1 + stats4.healingPower) * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
   const healing = runtime.huntOptions ? Math.min(rawHealing, monsterDamage + fatigue * 0.65) : rawHealing;
   return { damage: incoming, monsterDamage, fatigue, healing, onKillHealing, net: incoming - healing };
 }
@@ -54328,6 +54526,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     const offensive = huntActiveDamageEvents(hits, {
       ...classTechniqueInput,
       ...cooldownTiming,
+      abilityDamageBonus: runtime.stats.abilityDamage,
       companion: commonCompanion ? { ...commonCompanion, contributionPct: Math.max(0, 1 - 1 / runtime.companion.outputMultiplier) } : void 0
     });
     const heals = huntSupportHealEvents(offensive, {
@@ -56303,7 +56502,7 @@ function planCraftedGearRetention(existing, incoming, mode) {
     return { action: "manual_review", reason: "inconsistent_instances" };
   if (existing.length < TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "keep", reason: "under_limit" };
   if (mode === "off") return { action: "manual_review", reason: "disabled" };
-  if (incoming.weaponBonuses?.length || existing.some((row) => row.instance.weaponBonuses?.length))
+  if (incoming.weaponBonuses?.length || incoming.equipmentBonuses?.length || existing.some((row) => row.instance.weaponBonuses?.length || row.instance.equipmentBonuses?.length))
     return { action: "manual_review", reason: "weapon_bonus_choice" };
   const validQuality = isValidCraftedGearQuality;
   if (existing.some((row) => !validQuality(row.instance.quality)) || !validQuality(incoming.quality))
@@ -56715,7 +56914,7 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
         mode,
         committedReceiptKeys: []
       });
-      if (proposed.status === "blocked") throw new Error(proposed.retention.reason === "weapon_bonus_choice" ? "Weapon bonus rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe." : "Equipment requires manual review: " + proposed.retention.reason);
+      if (proposed.status === "blocked") throw new Error(proposed.retention.reason === "weapon_bonus_choice" ? "Bonus stat rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe." : "Equipment requires manual review: " + proposed.retention.reason);
       if (proposed.receipt.action === "sell_incoming") {
         const credit = proposed.receipt.credit;
         next = applyForgeSaleCredit(next, credit.amount, credit.destination, credit.characterId);

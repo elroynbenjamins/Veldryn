@@ -73,6 +73,12 @@ CREATE FUNCTION private.world_boss_v57_assert_write_open(p_account uuid)
 RETURNS void LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
 AS $guard$
 BEGIN
+ -- A transaction-scoped advisory lock serializes writers and blockers,
+ -- but REPEATABLE READ may retain a snapshot from before the fence INSERT.
+ -- Reject non-READ COMMITTED isolation until reviewed Serializable retry
+ -- semantics are tested end-to-end.
+ IF pg_catalog.current_setting('transaction_isolation')<>'read committed'
+ THEN RAISE EXCEPTION 'WB57_READ_COMMITTED_REQUIRED'; END IF;
  PERFORM private.world_boss_v57_account_lock(p_account);
  IF EXISTS (SELECT 1 FROM private.world_boss_erasure_fences_v57
    WHERE account_id=p_account)

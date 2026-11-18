@@ -1,6 +1,6 @@
 import {profileT,profileText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Switch,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileVisibilityV43} from '../../online/profile-extension-v43';
@@ -31,7 +31,8 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {value,busy,guest,identityDirty:dirty,error,notice}=draft;
- const nameStyleCard=<Panel style={s.card}><PlayerNameStyleEditor state={state} draft={nameStyle} onDraftChange={onNameStyleChange}
+ const [socialName,setSocialName]=useState('');
+ const nameStyleCard=<Panel style={s.card}><PlayerNameStyleEditor state={state} previewName={socialName} draft={nameStyle} onDraftChange={onNameStyleChange}
   onSaveNameStyle={onSaveNameStyle} onInputDirtyChange={onNameInputDirtyChange} resetVersion={nameResetVersion} active={active}/></Panel>;
 
  if(!draft.online)return <View style={s.root}>
@@ -47,7 +48,7 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
  </View>;
 
  return <View style={s.root}>
-  {active?<SocialNameEditor/>:null}
+  {active?<SocialNameEditor onNameChange={setSocialName}/>:null}
   {guest?<View style={s.warning}><Text style={s.warningTitle}>{profileT(language,"Secure this guest account first")}</Text>
    <Text style={s.copy}>{profileT(language,"Guest progress can continue normally, but public social-profile publishing is held until the account is linked.")}</Text></View>:null}
 

@@ -42,7 +42,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const refreshPublic=useCallback(async()=>{
   const version=++profileRequest.current,accountId=session?.user.id;
   if(!onlineConfigured||!accountId){setPublicSelf(null);setPublicError('');return;}
-  setLoadingPublic(true);setPublicError('');
+  setPublicSelf(null);setLoadingPublic(true);setPublicError('');
   try{
    const profile=await publicPlayerProfileV43(accountId);
    if(profileRequest.current===version)setPublicSelf(profile);

@@ -55,6 +55,11 @@ export interface AbilityEffect {
   criticalHitBonusVsMarked?:number;
   additionalExecuteBelowHpPct?:number;
   additionalExecuteBonus?:number;
+  /** V2-only: consume a current own DoT and convert part of its remaining
+   * authored strength into capped direct damage, without recursion. */
+  consumeOwnedDotFraction?:number;
+  /** V2-only: self-heal from real HP damage (not absorbed shields). */
+  lifestealPct?:number;
   /** Server-authored one-shot critical multiplier bonus for Combat 2.0. */
   critMultiplierBonus?:number;
   /** Only applied to v2 direct heals; no changes to legacy healing. */

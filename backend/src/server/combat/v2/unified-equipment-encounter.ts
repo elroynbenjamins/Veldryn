@@ -20,6 +20,7 @@ import {resolveVerifiedEquipmentBaseV2,
   type ApprovedEquipmentBasePolicyV2,type BaseEquipmentSourceV2} from './equipment-base-stats';
 import {applyVerifiedSetBonusesV2,
   type ApprovedSetPolicyV2,type ResolvedSetEffectV2} from './equipment-set-effects';
+import {assertApprovedEquipmentScalingV2,type ApprovedRarityLadderV2} from './equipment-scaling-policy';
 import {evaluatePowerCompositionV2,
   type ApprovedPowerCompositionPolicyV2,type PowerCompositionDiagnosticV2} from './power-composition';
 import {compileTrustedEquipmentAffixesV2,
@@ -37,6 +38,8 @@ export interface TrustedEquipmentRuntimeV2 {
  readonly definitionsByItemId:Readonly<Record<string,EquipmentBaseDefinitionV2>>;
  readonly affixesByInstanceId:Readonly<Record<string,TrustedEquipmentItemAffixesV2>>;
  readonly basePolicy:ApprovedEquipmentBasePolicyV2;
+ /** Server-approved rarity order + multipliers. Mandatory on v2. */
+ readonly rarityPolicy:ApprovedRarityLadderV2;
  readonly setsPolicy:ApprovedSetPolicyV2;
  readonly affixPolicy:ServerAffixPolicyV2;
  /** Optional until canonical CP weights are approved; no invented shares. */
@@ -106,6 +109,9 @@ function compileEquippedActor(
  // legacy gear. Only verified server class-level policy can issue the base.
  const classOnly=issueClassOnlyActorV2(actor,build.verified,runtime.classBaselinePolicy);
  const skills=compileServerSkillBuildV2(true,{...build,actor:classOnly});
+ // Gate every full encounter on the verified and deterministic 0–100
+ // quality curve and authored rarity ordering before changing stats.
+ assertApprovedEquipmentScalingV2(runtime.basePolicy,runtime.rarityPolicy);
  const base=resolveVerifiedEquipmentBaseV2(
   skills,build.verified.classId,runtime.characterId,requested,checked,
   runtime.instancesById,runtime.definitionsByItemId,runtime.basePolicy,true);

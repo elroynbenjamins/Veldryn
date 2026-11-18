@@ -308,6 +308,7 @@ test('Party Event optional V39 read stays account-scoped, lease-bound, and QA on
  assert.match(screen,/clearInterval\(refreshTimer\)/);
  assert.match(screen,/decodePartyEventReadOnlySnapshot\(partyEventStatus,nowMs\)/);
  assert.match(screen,/Refresh read-only Party Event/);
+ assert.match(screen,/if\(enrolled\)setStoryId\(enrolled\.family\)/);
  assert.match(screen,/No enrolled Party Event/);
  assert.match(screen,/Party Event status expired or rejected/);
  assert.match(adapter,/nowMs-Date\.parse\(raw\.serverTime as string\)>120000/);

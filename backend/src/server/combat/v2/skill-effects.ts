@@ -147,7 +147,7 @@ const variants:Readonly<Record<string,readonly [VariantRecipe,VariantRecipe,Vari
   {damage:.85,adds:[ward(.05)]},
  ],
  'Feintstep':[
-  {damage:.85,adds:[{kind:'buff',target:'self',tag:'evasion',value:.02,durationMs:4500}]},
+  {damage:.85,adds:[{kind:'buff',target:'self',tag:'evasion',value:28,durationMs:4500}]},
   {damage:1.25,cooldownDelta:900},
   {damage:.95,adds:[ward(.04)]},
  ],
@@ -250,6 +250,7 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
   });
   const s=actor.stats;
   return {...actor,
+    tags:[...new Set([...(actor.tags??[]),'combat-v2'])],
     stats:{
       ...s,maxHp:round(s.maxHp*(1+finite(mods.hp,-.1,.15))),
       attackPower:round(s.attackPower*(1+finite(mods.attack,-.1,.15))),

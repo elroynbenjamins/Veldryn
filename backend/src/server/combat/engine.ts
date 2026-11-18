@@ -205,7 +205,8 @@ export function simulateCombat(input: CombatInput): CombatResult {
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
     const absorbed=bypassShield?0:Math.min(target.shield,raw); target.shield-=absorbed;
-    const dealt=Math.max(0,Math.min(target.hp,raw-absorbed));
+    const dealt=Math.max(0,source.combatV2&&eventType==='damage'
+      ?Math.min(target.hp,raw-absorbed):raw-absorbed);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     // Lifesteal is based on real HP damage only: shielding, overkill and
     // reflected/self-generated procs can never inflate the heal.

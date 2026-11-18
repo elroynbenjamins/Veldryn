@@ -116,6 +116,17 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId))
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
+// The former characterLevel-3 rule silently raised T3 from its intended Level 20
+// floor to 23, creating a disproportionate T2 -> T3 training wall.
+ok(TIER_CRAFTING_LEVEL_FLOOR.T3===20,'T3 profession bridge must remain at Level 20');
+for(const profession of ['smithing','tailoring'] as const){
+  const t3Recipes=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3'&&row.skillId===profession);
+  ok(t3Recipes.length>0,profession+' must have T3 gear recipes');
+  ok(t3Recipes.every(row=>row.level===20),profession+' T3 gear must unlock at profession Level 20');
+}
+const t3Components=RECIPES.filter(row=>['FORGE_ARMOR_RIVETS','FORGE_RECLAIMED_ARMOR_RIVETS','STITCH_REINFORCED_STRAPS','STITCH_RECYCLED_REINFORCED_STRAPS'].includes(row.id));
+ok(t3Components.length===4&&t3Components.every(row=>row.level===20),'T3 cross-profession components must unlock alongside T3 gear');
+
 const infusionByTier={T1:'VERDANT_BINDING_RESIN',T2:'IRONWOOD_BINDING_RESIN',T3:'SUNSCAR_DUNE_BINDER',T4:'GLASSBOUND_BINDER',T5:'SUNFUSED_FIXATIVE',T6:'SUNFUSED_FIXATIVE',T7:'RIMEWARD_DISTILLATE',T8:'RIMEWARD_DISTILLATE',T9:'CINDERHEART_ELIXIR'} as const;
 ok(ALCHEMY_EQUIPMENT_INFUSIONS.every(infusion=>V33_EQUIPMENT_RECIPES.some(recipe=>recipe.inputs.some(input=>input.itemId===infusion.id))||RECIPES.some(refine=>refine.inputs.some(input=>input.itemId===infusion.id)&&V33_EQUIPMENT_RECIPES.some(gear=>gear.inputs.some(input=>input.itemId===refine.output.itemId)))),'Every crafted infusion must feed equipment directly or through a verified conversion');
 for(const [tier,infusionId] of Object.entries(infusionByTier))ok(V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier===tier).every(recipe=>recipe.inputs.some(input=>input.itemId===infusionId)),tier+' equipment must require its regional Alchemy infusion');

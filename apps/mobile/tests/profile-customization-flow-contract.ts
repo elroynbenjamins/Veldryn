@@ -65,6 +65,10 @@ ok(appearance.includes('style={s.petImage}')&&appearance.includes('petImage:{wid
 // Identity and Showcase are two tabs over one stored row.
 ok(draft.includes('export function useProfileExtensionDraft')&&screen.includes('const draft=useProfileExtensionDraft(')&&draft.includes('identitySnapshot(')&&draft.includes('showcaseSnapshot(')&&draft.includes('const dirty=identityDirty||showcaseDirty'),'Identity and Showcase must share one draft with independently tracked account and character changes');
 ok(draft.includes('masteryShowcaseActionIds:value.masteryShowcaseActionIds'),'Mastery showcase selections must participate in dirty/save state');
+const staleSaveGuards=(draft.match(/if\(!mounted\.current\|\|version!==requestVersion\.current\)return;/g)??[]).length;
+const scopedBusyReleases=(draft.match(/if\(mounted\.current&&version===requestVersion\.current\)setBusy\(false\)/g)??[]).length;
+ok(staleSaveGuards>=4&&scopedBusyReleases>=5,'Async identity, showcase and featured-hero saves must never overwrite a newer account or selection after a stale completion');
+ok(draft.includes('current?.selectedCharacterId===characterId'),'Character showcase saves must not update another selected hero');
 ok(identity.includes('accessibilityRole="radiogroup"')&&identity.includes("{id:'guild'")&&identity.includes("{id:'public'"),'Identity must expose the three profile audiences as a single-choice control');
 ok(identity.includes('<PlayerNameStyleEditor'),'Identity must host the player name-style editor');
 ok(identity.includes('draft.bio.length')&&identity.includes('/160'),'Biography must keep its visible character budget');

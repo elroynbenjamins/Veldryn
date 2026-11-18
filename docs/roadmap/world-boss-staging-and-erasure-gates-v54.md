@@ -32,7 +32,7 @@ The actual DDL, constraint creation, insert rejection and rollback test are **no
 
 `backend/online/world-boss-current-overview-v51.ts` now requires a **server-supplied** `accountPrivacy.allowRead(accountId)` check after verified Auth but before event selection or any private overview. If the trusted reader returns false, or the dependency is missing, read access is denied. Clients cannot select an account, a different boss, or an event ID. The injected function must ultimately check the real pending-deletion/suspension/erasure source (not `user_metadata` or an unverified claim).
 
-The V51 hidden test checks denial **before** querying events, attempts, War Camp, replay references or wallet information. The unmounted V52 GET handler returns a generic unavailable response to prevent leaking the erasure status of private accounts. There is no real Auth/erasure backend dependency implementation yet, and these paths remain unmounted.
+The V51 hidden test checks denial **before** querying events, attempts, War Camp, replay references or wallet information. It also rechecks the privacy fence **after** awaited private status reads, so an erasure hold that begins mid-read discards the completed result. This is defense in depth, **not a substitute for a shared transactional lock** between deletion, reservations and account-status reads. The unmounted V52 GET handler returns a generic unavailable response to prevent leaking the erasure status of private accounts. There is no real Auth/erasure backend dependency implementation yet, and these paths remain unmounted.
 
 This is **not a deletion policy** and does not clear issue #1348.
 

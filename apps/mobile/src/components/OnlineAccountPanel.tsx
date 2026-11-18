@@ -4,6 +4,7 @@ import {GameTextInput as TextInput} from './GameTextInput';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,Keyboard,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
+import {SocialNameEditor} from './SocialNameEditor';
 import {GoogleBrandButton} from './GoogleBrandButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {Panel} from './Panel';
@@ -82,6 +83,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
  const passwordInput=<><View style={s.passwordLabelRow}><Text style={s.passwordLabel}>{passwordLabel}</Text><Pressable accessibilityRole="button" accessibilityLabel={a(passwordVisible?"Hide password":"Show password")} accessibilityState={{selected:passwordVisible,disabled:busy}} disabled={busy} onPress={()=>setPasswordVisible(value=>!value)} style={({pressed})=>[s.passwordToggle,pressed&&{opacity:.76},busy&&{opacity:.45}]}><Text style={s.passwordToggleText}>{a(passwordVisible?"Hide password":"Show password")}</Text></Pressable></View><TextInput accessibilityLabel={passwordLabel} value={password} onChangeText={setPassword} editable={!busy} secureTextEntry={!passwordVisible} autoCorrect={false} autoCapitalize="none" autoComplete={showPasswordRules?'new-password':'current-password'} placeholder={showPasswordRules?a("Create a strong password"):a("Password")} placeholderTextColor={C.muted} style={[s.input,s.passwordInput]}/>{showPasswordRules&&<View accessibilityLabel={a("Password requirements")} style={s.passwordRules}><Text style={s.passwordRulesTitle}>{a("Password requirements")}</Text>{([[a("8–128 characters"),requirements.length],[a("One uppercase letter"),requirements.uppercase],[a("One lowercase letter"),requirements.lowercase],[a("One number"),requirements.number],[a("One special character"),requirements.symbol]] as const).map(([label,met])=><Text key={label} style={[s.passwordRule,met&&s.passwordRuleMet]}>{met?'✓':'○'} {a(label)}</Text>)}</View>}</>;
  if(!onlineConfigured)return <Panel><Text style={s.title}>{a("Online account unavailable")}</Text><Text style={s.text}>{a("This build has no online connection configured.")}</Text></Panel>;
   return <Panel key={`${generation}:${recoveryGeneration.current}`}>
+  {auth.session?<SocialNameEditor/>:null}
   {!auth.session&&!editingPassword?<View style={s.entryHeader}>
     <Text style={s.entryEyebrow}>{a(entryRecovery?"ACCOUNT RECOVERY":creating?"NEW ACCOUNT":"WELCOME TO VELDRYN")}</Text>
     <Text accessibilityRole="header" style={s.entryTitle}>{a(entryRecovery?"Recover your account":creating?"Begin with VELDRYN":"Continue your journey")}</Text>

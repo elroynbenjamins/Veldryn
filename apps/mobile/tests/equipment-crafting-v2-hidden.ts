@@ -1,3 +1,5 @@
+import {equipmentV2PreparationPlan} from '../src/core/equipment-crafting-v2-preparation';
+import type {Recipe} from '../src/content/skills';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
 import {itemDef} from '../src/content/items';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
@@ -180,4 +182,78 @@ for(const recipe of EQUIPMENT_V2_RECIPES){
   check(itemDef(input.itemId)?.type==='material','Unknown ingredient ID referenced by V2: '+input.itemId);
  }
 }
+
+/** Full-cost planner: owned materials, multi-batch components, shared
+ * prerequisite stock and locked/circular recipes must be handled without
+ * touching Inventory, Bank or generating a fake market purchase quote.
+ */
+const probeEquipment={gold:6000,xp:840,seconds:504,inputs:[
+ {itemId:'ARMOR_RIVETS',quantity:2,kind:'component' as const},
+]};
+const ownedReady={ARMOR_RIVETS:2};
+const beforeStock=JSON.stringify(ownedReady);
+const readyPreparation=equipmentV2PreparationPlan(probeEquipment,{
+ owned:ownedReady,professionLevels:{smithing:30,tailoring:30,alchemy:30},characterLevel:40,
+});
+check(readyPreparation.processingGold===0&&readyPreparation.steps.length===0
+ &&readyPreparation.shortages.length===0&&readyPreparation.knownGoldSubtotal===6000
+ &&readyPreparation.canPrepareWithOwned,'Already owned components never cause extra processing costs');
+check(JSON.stringify(ownedReady)===beforeStock,'The planner must never mutate owned material holdings');
+
+const craftRivets=equipmentV2PreparationPlan(probeEquipment,{
+ owned:{SUNSTONE_ORE:6,ASTER_IRON_INGOT:2},
+ professionLevels:{smithing:30,tailoring:30,alchemy:30},characterLevel:40,
+});
+check(craftRivets.steps.some(s=>s.recipeId==='FORGE_ARMOR_RIVETS'&&s.batches===2&&s.xp===960),
+ 'Missing rivets are calculated from the actual component recipe and awarded to Smithing only');
+check(craftRivets.processingGold>0&&craftRivets.shortages.length===0
+ &&craftRivets.xpBySkill.smithing===960,
+ 'Two possible rivets should be priced with their real manufacturing Gold and XP');
+check(craftRivets.knownGoldSubtotal===6000+craftRivets.processingGold,
+ 'Assembly and prerequisite Gold must remain visibly distinct');
+
+const lockedRivets=equipmentV2PreparationPlan(probeEquipment,{
+ owned:{SUNSTONE_ORE:6,ASTER_IRON_INGOT:2},
+ professionLevels:{smithing:1},characterLevel:40,
+});
+check(lockedRivets.shortages.some(i=>i.itemId==='ARMOR_RIVETS'&&i.reason==='recipe_locked')
+ &&!lockedRivets.canPrepareWithOwned,'Locked component recipes must never be represented as craftable');
+
+const syntheticProducer=(id:string,itemId:string,inputs:{itemId:string;quantity:number}[],gold:number,outputQty=1):Recipe=>({
+ id,name:id,skillId:'smithing',level:1,gold,xp:10,seconds:10,inputs,
+ output:{itemId,quantity:outputQty},
+});
+const overlapping=[syntheticProducer('PRODUCE_A','A',[{itemId:'RAW',quantity:1}],10),
+ syntheticProducer('PRODUCE_B','B',[{itemId:'RAW',quantity:1}],10)];
+const overlap=equipmentV2PreparationPlan({gold:100,xp:10,seconds:10,inputs:[
+ {itemId:'A',quantity:1,kind:'component'},{itemId:'B',quantity:1,kind:'component'},
+]},{
+ owned:{RAW:1},professionLevels:{smithing:10},characterLevel:10,recipeCatalog:overlapping,
+});
+check(overlap.shortages.length===1&&overlap.shortages[0].itemId==='RAW'
+ &&overlap.shortages[0].quantity===1&&overlap.steps.length===2,
+ 'Recursive paths must not spend the same raw material twice');
+
+const chooseActualBatch=equipmentV2PreparationPlan({
+ gold:100,xp:10,seconds:20,inputs:[{itemId:'A',quantity:1,kind:'component'}],
+},{
+ owned:{RAW:10},professionLevels:{smithing:10},characterLevel:10,
+ recipeCatalog:[
+  syntheticProducer('SMALL','A',[{itemId:'RAW',quantity:1}],10,1),
+  syntheticProducer('BULK','A',[{itemId:'RAW',quantity:5}],42,5),
+ ],
+});
+check(chooseActualBatch.steps.length===1&&chooseActualBatch.steps[0].recipeId==='SMALL',
+ 'For a one-item shortage, choose the cheapest actual batch, not cheapest price per unit');
+
+const dependencyCycle=equipmentV2PreparationPlan({
+ gold:100,xp:10,seconds:10,inputs:[{itemId:'A',quantity:1,kind:'component'}],
+},{
+ owned:{},professionLevels:{smithing:10},characterLevel:10,
+ recipeCatalog:[syntheticProducer('A_NEEDS_B','A',[{itemId:'B',quantity:1}],5),
+  syntheticProducer('B_NEEDS_A','B',[{itemId:'A',quantity:1}],5)],
+});
+check(dependencyCycle.shortages.some(row=>row.reason==='recipe_cycle')
+ &&!dependencyCycle.canPrepareWithOwned,'Cyclic prerequisite chains must be flagged, never looped');
+
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

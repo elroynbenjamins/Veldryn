@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/src/core/**'
+      - 'apps/mobile/src/content/equipment-v2-*.ts'
+      - 'apps/mobile/src/components/EquipmentCraftingV2*.tsx'
+      - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+      - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts'
+      - 'backend/sql/drafts/equipment_crafting_v2_*.sql'
+      - 'backend/tsconfig.equipment-v2.json'
       - 'backend/online/tests/gameplay.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
@@ -11,6 +17,7 @@ on:
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
       - 'apps/mobile/tests/weapon-bonus-rolls.ts'
       - 'apps/mobile/tests/equipment-crafting-v2-hidden.ts'
+      - 'apps/mobile/tests/equipment-crafting-v2-*.cjs'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'
   workflow_dispatch:

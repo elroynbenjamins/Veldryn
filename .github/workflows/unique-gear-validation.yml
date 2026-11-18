@@ -4,6 +4,8 @@ on:
     paths:
       - 'apps/mobile/src/core/**'
       - 'backend/online/tests/gameplay.ts'
+      - 'backend/online/coop-loadout.ts'
+      - 'backend/online/tests/coop-loadout.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
       - 'apps/mobile/src/components/ForgeOddsGuide.tsx'
@@ -43,3 +45,5 @@ jobs:
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity
         run: node ../../backend/dist/online/backend/online/tests/gameplay.js
+      - name: Verify exact-copy stat rolls in frozen dungeon combat snapshots
+        run: node ../../backend/dist/online/backend/online/tests/coop-loadout.js

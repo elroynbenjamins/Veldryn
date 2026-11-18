@@ -23,6 +23,7 @@ const runtimeRoots=[
 const allowedPrototypePaths=new Set([
   'backend/src/server/combat/enemy-v2-prototype.ts',
   'backend/src/server/combat/boss-v2-asterfall-prototype.ts',
+  'backend/src/server/combat/boss-v2-regional-prototype.ts',
 ]);
 const sourceExtensions=/\.(?:ts|tsx|js|jsx|mjs|cjs)$/;
 const patterns=[

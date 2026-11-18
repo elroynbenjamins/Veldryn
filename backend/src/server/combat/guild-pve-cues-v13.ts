@@ -103,7 +103,6 @@ export function projectGuildPveV13Receipt(receipt:GuildPveV9Receipt,
  if(receipt.kind!=='battle'||receipt.status!=='committed'||
   receipt.costSeals!==1||!receipt.combat||!def?.boss||
   receipt.combat.boss!==def.boss||
-  receipt.combat.phase!==receipt.combat.phase||
   !GUILD_PVE_V7_PHASES[def.boss].includes(receipt.combat.phase)||
   !Number.isFinite(receipt.creditedHp)||
   receipt.creditedHp<0||receipt.creditedHp>receipt.beforeHp||

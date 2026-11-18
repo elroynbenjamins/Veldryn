@@ -1,0 +1,234 @@
+import {randomUUID,randomInt} from 'node:crypto';
+import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import {v2ServerRecipeAndPiece,V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,type V2ServerProfession} from './equipment-crafting-v2-manifest';
+import {draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION,type V2DraftRollOutcome} from './equipment-crafting-v2-rolls';
+import {v2ServerCreateExactTemplate,type V2ExactEquipmentTemplate} from './equipment-crafting-v2-instances';
+
+/** Hidden, isolated, account-scoped TRANSACTION MODEL.
+ * NOT wired to live Inventory, server tables, online RPCs or the player UI.
+ * A production adapter must serialize each account and atomically persist the
+ * resulting inventory/Gold/queue/copy/XP/receipt changes as a single commit.
+ */
+export interface V2DraftCraftContract{
+ manifestVersion:typeof V2_SERVER_MANIFEST_VERSION;rulesVersion:typeof EQUIPMENT_V2_SERVER_RULES_VERSION;
+ recipeId:string;piece:V2ServerPiece;profession:V2ServerProfession;
+ assemblyGold:number;xpAwarded:number;craftSeconds:number;
+}
+export interface V2DraftJob {
+ id:string;accountId:string;ownerCharacterId:string;recipeId:string;pieceId:string;
+ startedAtMs:number;finishesAtMs:number;slotIndex:number;
+ goldReserved:number;materialsReserved:readonly {itemId:string;quantity:number;fromInventory:number;fromBank:number}[];
+ status:'queued'|'claimed';resultId?:string;
+ /** Unchangeable at claim: protects queued jobs against hot-reloaded prices/rules. */
+ craftContract:V2DraftCraftContract;
+}
+export interface V2DraftItem {
+ id:string;accountId:string;ownerCharacterId:string;
+ createdAtMs:number;jobId:string;outcome:V2DraftRollOutcome;
+ /** Final authoritative base stats, affixes, identity and gem-slot ownership. */
+ exactItem:V2ExactEquipmentTemplate;
+}
+export interface V2DraftSkillAward {
+ characterId:string;profession:V2ServerProfession;xp:number;jobId:string;
+}
+export type V2DraftReceiptResponse=
+ |{kind:'started';jobId:string;recipeId:string;pieceId:string;finishesAtMs:number;goldCharged:number;version:number}
+ |{kind:'claimed';jobId:string;instanceId:string;outcome:V2DraftRollOutcome;exactItem:V2ExactEquipmentTemplate;xpAwarded:number;profession:V2ServerProfession;version:number};
+export interface V2DraftReceipt {requestId:string;commandFingerprint:string;response:V2DraftReceiptResponse}
+export interface V2DraftCharacter {
+ level:number;professionLevels:Record<V2ServerProfession,number>;gold:number;
+ inventory:Record<string,number>;
+}
+export interface V2DraftSnapshot {
+ accountId:string;activeCharacterId:string;version:number;
+ /** Trusted existing Forge capacity: 3 base, up to 7 with entitlements. */
+ forgeSlotCapacity:number;
+ /** Only server-loaded owned characters may appear here; one wallet/pack each. */
+ characters:Record<string,V2DraftCharacter>;
+ /** Shared Bank and Forge queue; never confuse these with a character's pack. */
+ bank:Record<string,number>;
+ jobs:V2DraftJob[];equipment:V2DraftItem[];skillAwards:V2DraftSkillAward[];
+ receipts:V2DraftReceipt[];
+}
+export type V2DraftCommand=
+ |{kind:'start';requestId:string;expectedVersion:number;recipeId:string}
+ |{kind:'claim';requestId:string;expectedVersion:number;jobId:string};
+export interface V2DraftContext {
+ /** Only trusted server sources may inject these values. */
+ accountId:string;characterId:string;nowMs:number;
+ randomId?():string;randomInt?(exclusiveMax:number):number;
+}
+export class V2DraftCraftError extends Error {
+ constructor(readonly reason:string){super(reason);}
+}
+export interface V2DraftResolution {
+ next:V2DraftSnapshot;response:V2DraftReceiptResponse;replayed:boolean;
+}
+const MIN_EQUIPMENT_FORGE_SLOTS=3;
+const MAX_EQUIPMENT_FORGE_SLOTS=7;
+const MAX_WAITING_CRAFTS=5;
+const MAX_UNCLAIMED_READY=20;
+const MAX_CRAFTED_COPIES_PER_PIECE=25;
+const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
+const safeCount=(x:number)=>Number.isSafeInteger(x)&&x>=0;
+function verifyCommand(command:V2DraftCommand){
+ if(!command||typeof command!=='object')fail('invalid_command');
+ const keys=Object.keys(command),type=command.kind;
+ const expected=type==='start'?['expectedVersion','kind','recipeId','requestId']:
+  type==='claim'?['expectedVersion','jobId','kind','requestId']:fail('invalid_command_kind');
+ if(keys.length!==expected.length||!keys.slice().sort().every((key,i)=>key===expected[i]))fail('invalid_command_fields');
+ if(!/^[a-zA-Z0-9_-]{8,128}$/.test(command.requestId))fail('invalid_request_id');
+ if(!safeCount(command.expectedVersion))fail('invalid_expected_version');
+ if(type==='start'&&(!command.recipeId||typeof command.recipeId!=='string'))fail('invalid_recipe_id');
+ if(type==='claim'&&(!command.jobId||typeof command.jobId!=='string'))fail('invalid_job_id');
+}
+function verifyState(state:V2DraftSnapshot,ctx:V2DraftContext){
+ if(!state||state.accountId!==ctx.accountId||state.activeCharacterId!==ctx.characterId
+   ||!state.characters||!Object.prototype.hasOwnProperty.call(state.characters,ctx.characterId))fail('invalid_owner');
+ const active=state.characters[ctx.characterId];
+ if(!safeCount(state.version)||!safeCount(state.forgeSlotCapacity)
+   ||state.forgeSlotCapacity<MIN_EQUIPMENT_FORGE_SLOTS
+   ||state.forgeSlotCapacity>MAX_EQUIPMENT_FORGE_SLOTS
+   ||!safeCount(active.gold)||!safeCount(active.level)
+   ||!safeCount(active.professionLevels.smithing)||!safeCount(active.professionLevels.tailoring)
+   ||!Number.isSafeInteger(ctx.nowMs)||ctx.nowMs<0)fail('invalid_trusted_snapshot');
+ if(state.jobs.some(j=>j.accountId!==ctx.accountId)||state.equipment.some(i=>i.accountId!==ctx.accountId))fail('foreign_account_records');
+}
+function fingerprint(c:V2DraftCommand){
+ return c.kind==='start'?'start:'+c.recipeId:'claim:'+c.jobId;
+}
+function consumption(state:V2DraftSnapshot,owner:V2DraftCharacter,inputs:readonly {itemId:string;quantity:number}[]){
+ const plan:{itemId:string;quantity:number;fromInventory:number;fromBank:number}[]=[];
+ const seen=new Set<string>();
+ for(const input of inputs){
+  if(!input.itemId||!Number.isSafeInteger(input.quantity)||input.quantity<1
+   ||seen.has(input.itemId))fail('invalid_canonical_recipe');
+  seen.add(input.itemId);
+  const inv=owner.inventory[input.itemId]??0,bank=state.bank[input.itemId]??0;
+  if(!safeCount(inv)||!safeCount(bank)||!safeCount(inv+bank))fail('invalid_material_inventory');
+  if(inv+bank<input.quantity)fail('insufficient_materials');
+  const fromInventory=Math.min(inv,input.quantity);
+  plan.push({...input,fromInventory,fromBank:input.quantity-fromInventory});
+ }
+ return plan;
+}
+function nextSlot(jobs:readonly V2DraftJob[],nowMs:number,capacity:number){
+ const remaining=Array.from({length:capacity},()=>nowMs);
+ for(const job of jobs.filter(job=>job.status==='queued')){
+  const index=job.slotIndex;
+  if(!safeCount(index)||index>=MAX_EQUIPMENT_FORGE_SLOTS)fail('invalid_queue_slot');
+  // Previously scheduled jobs still finish if temporary entitlements expire.
+  if(index<capacity)remaining[index]=Math.max(remaining[index],job.finishesAtMs);
+ }
+ const min=Math.min(...remaining);
+ const slotIndex=remaining.indexOf(min);
+ return {slotIndex,startedAtMs:min};
+}
+function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'start'}>,ctx:V2DraftContext){
+ const match=v2ServerRecipeAndPiece(command.recipeId);
+ if(!match)fail('unknown_v2_recipe');
+ const {recipe,piece}=match;
+ const owner=state.characters[ctx.characterId];
+ if(piece.tier!==recipe.tier||piece.id!==recipe.pieceId)fail('inconsistent_canonical_manifest');
+ if(owner.level<recipe.characterLevel
+   ||owner.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
+ if(!safeCount(recipe.gold)||recipe.gold===0||!safeCount(recipe.seconds)||recipe.seconds===0||!safeCount(recipe.xp))fail('invalid_recipe_economy');
+ if(owner.gold<recipe.gold)fail('insufficient_gold');
+ const unclaimed=state.jobs.filter(j=>j.status==='queued');
+ const queue=unclaimed.filter(j=>j.finishesAtMs>ctx.nowMs);
+ const ready=unclaimed.filter(j=>j.finishesAtMs<=ctx.nowMs);
+ if(ready.length>=MAX_UNCLAIMED_READY)fail('ready_storage_full');
+ if(queue.length>=state.forgeSlotCapacity+MAX_WAITING_CRAFTS)fail('queue_full');
+ const material=consumption(state,owner,recipe.inputs);
+ const start=nextSlot(queue,ctx.nowMs,state.forgeSlotCapacity);
+ const jobId=(ctx.randomId??randomUUID)();
+ if(!jobId||state.jobs.some(j=>j.id===jobId)||state.equipment.some(i=>i.id===jobId))fail('invalid_job_id_generated');
+ const job:V2DraftJob={
+  id:jobId,accountId:ctx.accountId,ownerCharacterId:ctx.characterId,
+  recipeId:recipe.id,pieceId:piece.id,
+  startedAtMs:start.startedAtMs,finishesAtMs:start.startedAtMs+recipe.seconds*1000,
+  slotIndex:start.slotIndex,status:'queued',
+  goldReserved:recipe.gold,materialsReserved:material,
+  craftContract:{manifestVersion:V2_SERVER_MANIFEST_VERSION,rulesVersion:EQUIPMENT_V2_SERVER_RULES_VERSION,
+   recipeId:recipe.id,piece:structuredClone(piece),profession:recipe.profession,
+   assemblyGold:recipe.gold,xpAwarded:recipe.xp,craftSeconds:recipe.seconds},
+ };
+ if(!Number.isSafeInteger(job.finishesAtMs))fail('invalid_job_finish_time');
+ for(const row of material){
+  owner.inventory[row.itemId]=(owner.inventory[row.itemId]??0)-row.fromInventory;
+  state.bank[row.itemId]=(state.bank[row.itemId]??0)-row.fromBank;
+ }
+ owner.gold-=recipe.gold;
+ state.jobs.push(job);
+ const response:V2DraftReceiptResponse={kind:'started',jobId,recipeId:recipe.id,pieceId:piece.id,
+  finishesAtMs:job.finishesAtMs,goldCharged:recipe.gold,version:state.version+1};
+ return response;
+}
+function applyClaim(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'claim'}>,ctx:V2DraftContext){
+ const job=state.jobs.find(j=>j.id===command.jobId);
+ if(!job||job.accountId!==ctx.accountId||!Object.prototype.hasOwnProperty.call(state.characters,job.ownerCharacterId))fail('unknown_owned_job');
+ if(job.status==='claimed')fail('already_claimed');
+ if(ctx.nowMs<job.finishesAtMs)fail('job_not_finished');
+ const matched=v2ServerRecipeAndPiece(job.recipeId);
+ if(!matched||matched.recipe.pieceId!==job.pieceId)fail('unknown_job_recipe');
+ const {recipe,piece}=matched;
+ const contract=job.craftContract;
+ if(!contract||contract.manifestVersion!==V2_SERVER_MANIFEST_VERSION
+  ||contract.rulesVersion!==EQUIPMENT_V2_SERVER_RULES_VERSION
+  ||contract.recipeId!==job.recipeId||contract.piece.id!==job.pieceId
+  ||JSON.stringify(contract.piece)!==JSON.stringify(piece)
+  ||contract.profession!==recipe.profession
+  ||contract.assemblyGold!==recipe.gold||contract.xpAwarded!==recipe.xp
+  ||contract.craftSeconds!==recipe.seconds)fail('v2_queued_contract_version_mismatch');
+ if(state.equipment.filter(item=>item.outcome.pieceId===piece.id).length>=MAX_CRAFTED_COPIES_PER_PIECE)fail('copy_limit_reached');
+ const outcome=draftEquipmentV2Outcome({recipeId:recipe.id,pieceId:piece.id,slot:piece.slot,role:piece.role,tier:piece.tier},
+  ctx.randomInt??randomInt);
+ const exactItem=v2ServerCreateExactTemplate(piece,outcome);
+ const instanceId=(ctx.randomId??randomUUID)();
+ if(!instanceId||state.equipment.some(item=>item.id===instanceId))fail('invalid_item_id_generated');
+ const item:V2DraftItem={id:instanceId,accountId:ctx.accountId,ownerCharacterId:job.ownerCharacterId,
+  createdAtMs:ctx.nowMs,jobId:job.id,outcome,exactItem};
+ state.equipment.push(item);
+ state.skillAwards.push({characterId:job.ownerCharacterId,profession:contract.profession,xp:contract.xpAwarded,jobId:job.id});
+ job.status='claimed';job.resultId=instanceId;
+ const response:V2DraftReceiptResponse={kind:'claimed',jobId:job.id,instanceId,
+  outcome,exactItem,xpAwarded:contract.xpAwarded,profession:contract.profession,version:state.version+1};
+ return response;
+}
+/** Pure resolution against a TRUSTED account snapshot. Caller must execute
+ * this inside an account-scoped serializable database transaction.
+ * Returns a new aggregate, never mutates the input. All receipt replay happens
+ * BEFORE stale-version handling; duplicate claims cannot mint another copy.
+ */
+export function resolveEquipmentV2DraftCommand(
+ old:V2DraftSnapshot,command:V2DraftCommand,ctx:V2DraftContext,
+):V2DraftResolution{
+ verifyCommand(command);verifyState(old,ctx);
+ const key=fingerprint(command);
+ const stored=old.receipts.find(receipt=>receipt.requestId===command.requestId);
+ if(stored){
+  if(stored.commandFingerprint!==key)fail('request_id_conflict');
+  return {next:old,response:stored.response,replayed:true};
+ }
+ if(command.expectedVersion!==old.version)fail('stale_game_version');
+ const next:V2DraftSnapshot=structuredClone(old);
+ const response=command.kind==='start'?applyStart(next,command,ctx):applyClaim(next,command,ctx);
+ next.version=old.version+1;
+ next.receipts.push({requestId:command.requestId,commandFingerprint:key,response});
+ return {next,response,replayed:false};
+}
+/** Production entry: fail closed, and demand an authenticated, SERIALIZABLE
+ * account transaction implementation. No actual implementation is mounted.
+ */
+export interface V2CraftTransactionalStore {
+ withAccountTransaction<T>(accountId:string,fn:(read:V2DraftSnapshot)=>Promise<{next:V2DraftSnapshot;result:T}>):Promise<T>;
+}
+export function runEquipmentV2Command(
+ store:V2CraftTransactionalStore,ctx:V2DraftContext,command:V2DraftCommand,
+){
+ assertEquipmentCraftingV2Released();
+ return store.withAccountTransaction(ctx.accountId,async read=>{
+  const resolution=resolveEquipmentV2DraftCommand(read,command,ctx);
+  return {next:resolution.next,result:{response:resolution.response,replayed:resolution.replayed}};
+ });
+}

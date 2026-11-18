@@ -3,6 +3,14 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/src/core/**'
+      - 'apps/mobile/src/content/equipment-v2-*.ts'
+      - 'apps/mobile/src/components/EquipmentCraftingV2*.tsx'
+      - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+      - 'backend/src/server/combat/v2-integration/equipment-exact-copy-interop-v1.mjs'
+      - 'backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs'
+      - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts'
+      - 'backend/sql/drafts/equipment_crafting_v2_*.sql'
+      - 'backend/tsconfig.equipment-v2.json'
       - 'backend/online/tests/gameplay.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
@@ -10,6 +18,8 @@ on:
       - 'apps/mobile/src/components/SmithingCollection.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
       - 'apps/mobile/tests/weapon-bonus-rolls.ts'
+      - 'apps/mobile/tests/equipment-crafting-v2-hidden.ts'
+      - 'apps/mobile/tests/equipment-crafting-v2-*.cjs'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'
   workflow_dispatch:
@@ -38,6 +48,26 @@ jobs:
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
       - name: Verify dual weapon rolls and exact-copy combat bonuses
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/weapon-bonus-rolls.js
+      - name: Verify hidden Equipment 2.0 and Crafting 2.0 foundations
+        run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafting-v2-hidden.js
+      - name: Compile hidden Equipment/Crafting 2.0 server transaction model
+        run: pnpm --dir ../../backend exec tsc -p tsconfig.equipment-v2.json
+      - name: Test server-side Gold reservation, one-time claims and replay
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-transaction.test.js
+      - name: Validate exact-copy 2.0 stat snapshots, class and weapon-hand safety
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-instances.test.js
+      - name: Validate hidden exact-copy Bank, equip and cross-character custody policies
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-custody.test.js
+      - name: Verify hidden V2 atomic gameplay commit plan and Gold conservation
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-commit-plan.test.js
+      - name: Verify canonical Equipment 2.0 exact copies in Combat 2.0 evidence
+        run: node ../../backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs
+      - name: Rehearse V2 in the existing GameState with original Forge and wallet preserved
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-game-state.test.js
+      - name: Test shadow store compare-and-swap and crash recovery
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-shadow.test.js
+      - name: Audit shadow SQL security and safe rollout boundary
+        run: node tests/equipment-crafting-v2-shadow-sql.cjs
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity

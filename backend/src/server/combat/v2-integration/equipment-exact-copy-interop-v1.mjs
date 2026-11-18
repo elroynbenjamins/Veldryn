@@ -57,7 +57,12 @@ export function projectVerifiedCraftingV2BaseEvidence(request){
      !str(t.rarity))fail('invalid_exact_template');
   if(actor.level<levelByTier[t.tier])fail('tier_locked');
   if(t.classRestriction!=null&&t.classRestriction!==actor.classId)fail('wrong_class');
-  if(!['tank','damage','support'].includes(t.role)||t.role!==roles[actor.classId])fail('role_mismatch');
+  // Armor role is a build recommendation, not an equip restriction.
+  // Only class-specific armaments require matching class role; class checks
+  // remain enforced independently through classRestriction.
+  if(!['tank','damage','support'].includes(t.role)
+     ||((item.slot==='weapon'||item.slot==='offhand')&&t.role!==roles[actor.classId]))
+    fail('role_mismatch');
   if(t.hands!==undefined&&!['one','two','dual'].includes(t.hands))fail('invalid_hands');
   if(item.slot!=='weapon'&&t.hands!==undefined)fail('hands_on_nonweapon');
   if(t.enhancementRank!==0||!Array.isArray(t.gemSlots)||t.gemSlots.length!==0)

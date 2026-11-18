@@ -59,6 +59,8 @@ jobs:
         run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes
         run: pnpm test:feature-hubs
+      - name: Verify hidden Crafting 2.0 preview UX and release safety
+        run: node tests/equipment-crafting-v2-preview-ui.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate focused Home layout and queue/reward safety

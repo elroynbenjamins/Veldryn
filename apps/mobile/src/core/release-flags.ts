@@ -27,3 +27,8 @@ export const ONLINE_PLAYER_ROSTER_RELEASED=true;
 
 /** Vendor equipment resale uplift is source-prepared only. Gameplay Edge and staging payout parity must be proved before activation. */
 export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
+
+/** One release gate for Equipment 2.0 and Crafting 2.0; neither can ship alone. */
+export const EQUIPMENT_CRAFTING_V2_RELEASED=false;
+export const EQUIPMENT_V2_RELEASED=EQUIPMENT_CRAFTING_V2_RELEASED;
+export const CRAFTING_V2_RELEASED=EQUIPMENT_CRAFTING_V2_RELEASED;

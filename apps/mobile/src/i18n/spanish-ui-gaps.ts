@@ -50,6 +50,7 @@ export const SPANISH_UI_GAPS = {
   "Manage waiting activities": "Gestiona las actividades en espera",
   "Updates every 2 hours": "Se actualiza cada 2 horas",
   "Could not load roadmap.": "No se pudo cargar la hoja de ruta.",
+  "Votes help set priorities, but do not guarantee a release date. When an idea moves into development, its votes are returned.": "Los votos ayudan a establecer prioridades, pero no garantizan una fecha de lanzamiento. Cuando una idea pasa a desarrollo, se devuelven los votos.",
   "Could not save vote.": "No se pudo guardar el voto.",
   "SUPPORT THE ADVENTURE": "APOYA LA AVENTURA",
   "The Realm Store": "Tienda del Reino",

@@ -30,7 +30,7 @@ async function run(){
   &&PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41.includes('p.proconfig')
   &&PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41.includes('p.prosecdef'),
   'all_privilege_classes_audited');
- check(!/\\b(insert|update|delete|alter|create|drop|grant|revoke)\\s+(into|from|on|table|schema|function)\\b/i.test(
+ check(!/\b(insert|update|delete|alter|create|drop|grant|revoke)\s+(into|from|on|table|schema|function)\b/i.test(
   PARTY_EVENT_TABLE_PRIVILEGES_SQL_V41+PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41),
   'no_writes_in_audit');
  const valid=evaluatePartyEventSecuritySweepV41(tables,functions);
@@ -50,13 +50,15 @@ async function run(){
  denied(tables,[{...functions[0]!,settings:['search_path=public']},...functions.slice(1)],'definer_missing_empty_search_path:');
  denied(tables,[{...functions[0]!,settings:[]},...functions.slice(1)],'definer_missing_empty_search_path:');
  denied(tables,[{...functions[0]!,functionName:'unapproved_party_event_function'},...functions.slice(1)],'unreviewed_function:');
- const db={
-  query:async(sql:typeof PARTY_EVENT_TABLE_PRIVILEGES_SQL_V41|typeof PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41)=>{
-   if(sql===PARTY_EVENT_TABLE_PRIVILEGES_SQL_V41)return {rows:tables};
-   if(sql===PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41)return {rows:functions};
-   throw Error('unexpected audit query');
-  },
- };
+ function query(sql:typeof PARTY_EVENT_TABLE_PRIVILEGES_SQL_V41):Promise<{rows:readonly PartyEventPrivateTableAuditV41[]}>;
+ function query(sql:typeof PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41):Promise<{rows:readonly PartyEventPrivateFunctionAuditV41[]}>;
+ async function query(sql:typeof PARTY_EVENT_TABLE_PRIVILEGES_SQL_V41|typeof PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41):
+  Promise<{rows:readonly PartyEventPrivateTableAuditV41[]}|{rows:readonly PartyEventPrivateFunctionAuditV41[]}>{
+  if(sql===PARTY_EVENT_TABLE_PRIVILEGES_SQL_V41)return {rows:tables};
+  if(sql===PARTY_EVENT_FUNCTION_PRIVILEGES_SQL_V41)return {rows:functions};
+  throw Error('unexpected audit query');
+ }
+ const db={query};
  const loaded=await inspectPartyEventSecuritySweepV41(db);
  check(loaded.safe,'trusted_readonly_inspection');
  console.log('PARTY_EVENTS_V41_SECURITY_OK: 29 private tables, 47 definer functions, full grant sweeps, no player exposure or payout approval');

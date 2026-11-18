@@ -8,7 +8,7 @@ World Bosses, Party Events, Guild PvE, Rankings and the Player Market now have h
 - World Boss authenticated status route V52 and account-erasure runtime V56 remain unmounted/disabled. The erasure function must throw before work begins.
 - Party Event status route V39 remains unmounted. The V11–V30 rollback-only migration drafts must not appear in executable Supabase migrations.
 - Guild PvE V14 is nonpaying (`canClaim:false`, `proposedTokenAmount:null`).
-- All three immersive feature hubs render only behind the developer-only QA gate and do **not** receive a live World Boss/Party Event provider, account ID or status from the app. A separate reviewed integration is required before data binding.
+- All three immersive feature hubs require developer-only navigation and rendering guards; the app may not pass a live World Boss/Party Event provider, account ID or status, including through spread props. A separate reviewed integration is required before data binding.
 - Newly authored World Boss SQL drafts stay outside executable migrations.
 
 ## How to use

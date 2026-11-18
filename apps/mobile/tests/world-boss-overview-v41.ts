@@ -62,6 +62,7 @@ async function main(){
  assert.equal(verifyWorldBossOverviewV41({...battle,remainingHp:0},
   EVENT,ACCOUNT).canAttack,false);
  const tampered=[
+  {...baseline,schema:'unknown' as never},
   {...baseline,accountId:OTHER},
   {...baseline,attemptsUsed:3},
   {...baseline,donationsUsed:3},

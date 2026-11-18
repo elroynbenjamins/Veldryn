@@ -203,4 +203,15 @@ const finisher=abilityFor('RAVAGER','Overpower',0);
 assert.ok(finisher.effects.some(e=>e.executeBelowHpPct===.35&&e.executeBonus===.30));
 assert.ok(finisher.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
 
+const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
+assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),
+ 'Rupture must consume an already-active self-applied DoT');
+const bloodRend=abilityFor('DREADGUARD','Soul Rend',0);
+assert.ok(bloodRend.effects.some(e=>e.kind==='damage'&&e.lifestealPct===.12),
+ 'Dreadguard Blood Rend healing must come from actual damage');
+assert.ok(!bloodRend.effects.some(e=>e.kind==='heal'),
+ 'Flat heal must not duplicate authored lifesteal');
+const soulRend=abilityFor('HEXWEAVER','Hex Detonation',1);
+assert.ok(soulRend.effects.some(e=>e.kind==='damage'&&e.lifestealPct===.10),
+ 'Hexweaver Soul Rend must use damage-based lifesteal');
 console.log('PASS: all nine classes, 18 profiles, 162 variants across 54 skills, deterministic runtime, trust and legacy parity');

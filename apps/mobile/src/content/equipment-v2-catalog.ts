@@ -22,12 +22,14 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "steel",
     "pieces": [
       {
-        "id": "EQ2_FIELDBORN_GUARD_H",
-        "slot": "h"
+        "id": "EQ2_FIELDBORN_GUARD_HELMET",
+        "slot": "helmet",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_FIELDBORN_GUARD_C",
-        "slot": "c"
+        "id": "EQ2_FIELDBORN_GUARD_CHEST",
+        "slot": "chest",
+        "profile": "defense"
       }
     ],
     "bonuses": [
@@ -46,12 +48,14 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "leather",
     "pieces": [
       {
-        "id": "EQ2_FIELDBORN_TRAIL_G",
-        "slot": "g"
+        "id": "EQ2_FIELDBORN_TRAIL_GLOVES",
+        "slot": "gloves",
+        "profile": "attack"
       },
       {
-        "id": "EQ2_FIELDBORN_TRAIL_B",
-        "slot": "b"
+        "id": "EQ2_FIELDBORN_TRAIL_BOOTS",
+        "slot": "boots",
+        "profile": "attack_health"
       }
     ],
     "bonuses": [
@@ -70,12 +74,14 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "cloth",
     "pieces": [
       {
-        "id": "EQ2_FIELDBORN_ACOLYTE_C",
-        "slot": "c"
+        "id": "EQ2_FIELDBORN_ACOLYTE_CAPE",
+        "slot": "cape",
+        "profile": "health"
       },
       {
-        "id": "EQ2_FIELDBORN_ACOLYTE_A",
-        "slot": "a"
+        "id": "EQ2_FIELDBORN_ACOLYTE_AMULET",
+        "slot": "amulet",
+        "profile": "attack_health"
       }
     ],
     "bonuses": [
@@ -94,16 +100,19 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "steel",
     "pieces": [
       {
-        "id": "EQ2_IRONWOOD_SENTINEL_C",
-        "slot": "c"
+        "id": "EQ2_IRONWOOD_SENTINEL_CHEST",
+        "slot": "chest",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_IRONWOOD_SENTINEL_L",
-        "slot": "l"
+        "id": "EQ2_IRONWOOD_SENTINEL_LEGS",
+        "slot": "legs",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_IRONWOOD_SENTINEL_B",
-        "slot": "b"
+        "id": "EQ2_IRONWOOD_SENTINEL_BOOTS",
+        "slot": "boots",
+        "profile": "defense"
       }
     ],
     "bonuses": [
@@ -127,16 +136,19 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "leather",
     "pieces": [
       {
-        "id": "EQ2_IRONWOOD_STALKER_H",
-        "slot": "h"
+        "id": "EQ2_IRONWOOD_STALKER_HELMET",
+        "slot": "helmet",
+        "profile": "health"
       },
       {
-        "id": "EQ2_IRONWOOD_STALKER_G",
-        "slot": "g"
+        "id": "EQ2_IRONWOOD_STALKER_GLOVES",
+        "slot": "gloves",
+        "profile": "attack"
       },
       {
-        "id": "EQ2_IRONWOOD_STALKER_C",
-        "slot": "c"
+        "id": "EQ2_IRONWOOD_STALKER_CAPE",
+        "slot": "cape",
+        "profile": "attack_health"
       }
     ],
     "bonuses": [
@@ -160,16 +172,19 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "cloth",
     "pieces": [
       {
-        "id": "EQ2_IRONWOOD_MENDER_H",
-        "slot": "h"
+        "id": "EQ2_IRONWOOD_MENDER_HELMET",
+        "slot": "helmet",
+        "profile": "health"
       },
       {
-        "id": "EQ2_IRONWOOD_MENDER_G",
-        "slot": "g"
+        "id": "EQ2_IRONWOOD_MENDER_GLOVES",
+        "slot": "gloves",
+        "profile": "attack_defense"
       },
       {
-        "id": "EQ2_IRONWOOD_MENDER_A",
-        "slot": "a"
+        "id": "EQ2_IRONWOOD_MENDER_AMULET",
+        "slot": "amulet",
+        "profile": "health"
       }
     ],
     "bonuses": [
@@ -193,16 +208,19 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "leather",
     "pieces": [
       {
-        "id": "EQ2_SUNSCAR_THORNHIDE_C",
-        "slot": "c"
+        "id": "EQ2_SUNSCAR_THORNHIDE_CHEST",
+        "slot": "chest",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_SUNSCAR_THORNHIDE_G",
-        "slot": "g"
+        "id": "EQ2_SUNSCAR_THORNHIDE_GLOVES",
+        "slot": "gloves",
+        "profile": "attack_defense"
       },
       {
-        "id": "EQ2_SUNSCAR_THORNHIDE_C",
-        "slot": "c"
+        "id": "EQ2_SUNSCAR_THORNHIDE_CAPE",
+        "slot": "cape",
+        "profile": "health"
       }
     ],
     "bonuses": [
@@ -226,16 +244,19 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "steel",
     "pieces": [
       {
-        "id": "EQ2_SUNSCAR_BREAKSTEEL_C",
-        "slot": "c"
+        "id": "EQ2_SUNSCAR_BREAKSTEEL_CHEST",
+        "slot": "chest",
+        "profile": "defense"
       },
       {
-        "id": "EQ2_SUNSCAR_BREAKSTEEL_L",
-        "slot": "l"
+        "id": "EQ2_SUNSCAR_BREAKSTEEL_LEGS",
+        "slot": "legs",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_SUNSCAR_BREAKSTEEL_G",
-        "slot": "g"
+        "id": "EQ2_SUNSCAR_BREAKSTEEL_GLOVES",
+        "slot": "gloves",
+        "profile": "attack"
       }
     ],
     "bonuses": [
@@ -259,16 +280,19 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "leather",
     "pieces": [
       {
-        "id": "EQ2_SUNSCAR_WILDROOT_H",
-        "slot": "h"
+        "id": "EQ2_SUNSCAR_WILDROOT_HELMET",
+        "slot": "helmet",
+        "profile": "health"
       },
       {
-        "id": "EQ2_SUNSCAR_WILDROOT_B",
-        "slot": "b"
+        "id": "EQ2_SUNSCAR_WILDROOT_BOOTS",
+        "slot": "boots",
+        "profile": "attack_health"
       },
       {
-        "id": "EQ2_SUNSCAR_WILDROOT_C",
-        "slot": "c"
+        "id": "EQ2_SUNSCAR_WILDROOT_CAPE",
+        "slot": "cape",
+        "profile": "attack_health"
       }
     ],
     "bonuses": [
@@ -292,20 +316,24 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "steel",
     "pieces": [
       {
-        "id": "EQ2_GLASSBOUND_BULWARK_H",
-        "slot": "h"
+        "id": "EQ2_GLASSBOUND_BULWARK_HELMET",
+        "slot": "helmet",
+        "profile": "defense"
       },
       {
-        "id": "EQ2_GLASSBOUND_BULWARK_C",
-        "slot": "c"
+        "id": "EQ2_GLASSBOUND_BULWARK_CHEST",
+        "slot": "chest",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_GLASSBOUND_BULWARK_L",
-        "slot": "l"
+        "id": "EQ2_GLASSBOUND_BULWARK_LEGS",
+        "slot": "legs",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_GLASSBOUND_BULWARK_B",
-        "slot": "b"
+        "id": "EQ2_GLASSBOUND_BULWARK_BOOTS",
+        "slot": "boots",
+        "profile": "defense"
       }
     ],
     "bonuses": [
@@ -329,12 +357,14 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "mail",
     "pieces": [
       {
-        "id": "EQ2_GLASSBOUND_RETALIATOR_G",
-        "slot": "g"
+        "id": "EQ2_GLASSBOUND_RETALIATOR_GLOVES",
+        "slot": "gloves",
+        "profile": "attack_defense"
       },
       {
-        "id": "EQ2_GLASSBOUND_RETALIATOR_C",
-        "slot": "c"
+        "id": "EQ2_GLASSBOUND_RETALIATOR_CAPE",
+        "slot": "cape",
+        "profile": "defense_health"
       }
     ],
     "bonuses": [
@@ -353,20 +383,24 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "leather",
     "pieces": [
       {
-        "id": "EQ2_GLASSBOUND_SHADOWSTEP_H",
-        "slot": "h"
+        "id": "EQ2_GLASSBOUND_SHADOWSTEP_HELMET",
+        "slot": "helmet",
+        "profile": "health"
       },
       {
-        "id": "EQ2_GLASSBOUND_SHADOWSTEP_C",
-        "slot": "c"
+        "id": "EQ2_GLASSBOUND_SHADOWSTEP_CHEST",
+        "slot": "chest",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_GLASSBOUND_SHADOWSTEP_G",
-        "slot": "g"
+        "id": "EQ2_GLASSBOUND_SHADOWSTEP_GLOVES",
+        "slot": "gloves",
+        "profile": "attack"
       },
       {
-        "id": "EQ2_GLASSBOUND_SHADOWSTEP_B",
-        "slot": "b"
+        "id": "EQ2_GLASSBOUND_SHADOWSTEP_BOOTS",
+        "slot": "boots",
+        "profile": "attack_health"
       }
     ],
     "bonuses": [
@@ -390,12 +424,14 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "cloth",
     "pieces": [
       {
-        "id": "EQ2_GLASSBOUND_SPELLWEAVE_C",
-        "slot": "c"
+        "id": "EQ2_GLASSBOUND_SPELLWEAVE_CAPE",
+        "slot": "cape",
+        "profile": "attack_health"
       },
       {
-        "id": "EQ2_GLASSBOUND_SPELLWEAVE_A",
-        "slot": "a"
+        "id": "EQ2_GLASSBOUND_SPELLWEAVE_AMULET",
+        "slot": "amulet",
+        "profile": "attack"
       }
     ],
     "bonuses": [
@@ -414,20 +450,24 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "cloth",
     "pieces": [
       {
-        "id": "EQ2_GLASSBOUND_LIFEWOVEN_H",
-        "slot": "h"
+        "id": "EQ2_GLASSBOUND_LIFEWOVEN_HELMET",
+        "slot": "helmet",
+        "profile": "health"
       },
       {
-        "id": "EQ2_GLASSBOUND_LIFEWOVEN_C",
-        "slot": "c"
+        "id": "EQ2_GLASSBOUND_LIFEWOVEN_CHEST",
+        "slot": "chest",
+        "profile": "health"
       },
       {
-        "id": "EQ2_GLASSBOUND_LIFEWOVEN_L",
-        "slot": "l"
+        "id": "EQ2_GLASSBOUND_LIFEWOVEN_LEGS",
+        "slot": "legs",
+        "profile": "defense_health"
       },
       {
-        "id": "EQ2_GLASSBOUND_LIFEWOVEN_B",
-        "slot": "b"
+        "id": "EQ2_GLASSBOUND_LIFEWOVEN_BOOTS",
+        "slot": "boots",
+        "profile": "defense_health"
       }
     ],
     "bonuses": [
@@ -451,12 +491,14 @@ export const EQUIPMENT_V2_SETS:readonly EquipmentV2Set[]=[
     "material": "steel",
     "pieces": [
       {
-        "id": "EQ2_GLASSBOUND_DAWNSHIELD_G",
-        "slot": "g"
+        "id": "EQ2_GLASSBOUND_DAWNSHIELD_GLOVES",
+        "slot": "gloves",
+        "profile": "attack_defense"
       },
       {
-        "id": "EQ2_GLASSBOUND_DAWNSHIELD_C",
-        "slot": "c"
+        "id": "EQ2_GLASSBOUND_DAWNSHIELD_CAPE",
+        "slot": "cape",
+        "profile": "defense_health"
       }
     ],
     "bonuses": [

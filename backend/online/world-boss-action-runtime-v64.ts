@@ -74,12 +74,14 @@ export function createWorldBossActionDepsV64(
   randomSeed:input.randomSeed,
   workerId:input.workerId,
   nowUtcMs:input.serverNowUtcMs,
-  replayStore:{putImmutable:input.replayStore.putImmutable},
+  // Keep storage methods attached to their owning adapter. Some durable
+  // replay providers require their own state/receiver for authorization.
+  replayStore:{putImmutable:payload=>input.replayStore.putImmutable(payload)},
  };
  const runtime=createWorldBossPrivateRuntimeV28({
   executor:input.executor,
   service,rulesSource:input.rulesSource,
-  immutableReplayReader:{readImmutable:input.replayStore.readImmutable},
+  immutableReplayReader:{readImmutable:key=>input.replayStore.readImmutable(key)},
  });
  return {
   current:{

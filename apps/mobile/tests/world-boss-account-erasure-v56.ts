@@ -148,6 +148,32 @@ async function main(){
  assert.equal(auth.state.authDeletes,2);
  assert.equal(auth.state.finalizes,1);
 
+ // Concurrent privacy workers for one account must not acquire two
+ // leases or perform duplicate DB/Auth operations. The second sees pending.
+ const parallel=harness();
+ let entered!:()=>void,allowContinue!:()=>void;
+ const enteredPromise=new Promise<void>(resolve=>{entered=resolve;});
+ const continuePromise=new Promise<void>(resolve=>{allowContinue=resolve;});
+ const parallelDeps:WorldBossErasureDepsV56={
+  ...parallel.deps,
+  deleteReplayObject:async key=>{
+   entered();
+   await continuePromise;
+   await parallel.deps.deleteReplayObject(key);
+  },
+ };
+ const firstWorker=runWorldBossErasureV56({ticket:TICKET},parallelDeps);
+ await enteredPromise;
+ assert.deepEqual(await runWorldBossErasureV56({ticket:TICKET},parallelDeps),
+  {status:'in_progress'});
+ assert.equal(parallel.state.rowPurges,0);
+ assert.equal(parallel.state.authDeletes,0);
+ allowContinue();
+ assert.deepEqual(await firstWorker,{status:'completed'});
+ assert.equal(parallel.state.rowPurges,1);
+ assert.equal(parallel.state.authDeletes,1);
+ assert.equal(parallel.state.finalizes,1);
+
  // A forged or malformed privacy account identity is rejected BEFORE
  // acquiring a deletion lease or reading any personal World Boss records.
  let unauthorizedLeases=0;

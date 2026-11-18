@@ -91,4 +91,15 @@ assert.throws(()=>v2ServerCreateExactTemplate({...pieceById.get(ironSword.pieceI
  draftEquipmentV2Outcome({recipeId:recipeByPiece.get(ironSword.pieceId)!.id,
  pieceId:ironSword.pieceId,tier:2,slot:'weapon',role:'tank'},()=>0)),
  /uncanonical_v2_item_template/,'A forged copy of a canonical piece must not be treated as authority');
+const legitimateSource=pieceById.get(ironSword.pieceId)!;
+const sourceRoll=draftEquipmentV2Outcome({
+ recipeId:recipeByPiece.get(legitimateSource.id)!.id,
+ pieceId:legitimateSource.id,tier:legitimateSource.tier,
+ slot:legitimateSource.slot,role:legitimateSource.role,
+},()=>0);
+assert.throws(()=>v2ServerCreateExactTemplate(legitimateSource,{
+ ...sourceRoll,recipeId:'EQ2_WEAPON_T1_WAYFINDER_FOUNDATION',
+}),/uncanonical_v2_item_template/,
+ 'A mint must use the exact canonical recipe that produces the selected gear');
+
 console.log('PASS: 118 immutable Equipment V2 exact templates, stats, class/hand equip preflight and tamper rejection');

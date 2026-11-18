@@ -23,7 +23,7 @@ All tables have private-schema RLS and **no grants to `PUBLIC`, `anon`, `authent
 - An erasure job must already exist under an independently authorized privacy ticket **and** the account must already be fenced under V57. Calling `acquire` cannot create jobs or initiate deletion.
 - A second worker receives `busy` while a lease is valid. Following expiry, the new worker receives a larger generation. The stale worker cannot acknowledge objects, heartbeat, advance a stage or release the new worker's lease.
 - No replay ACK or stage change is allowed while `policy_review_approved=false` (the default). **No approved policy or credential is configured.**
-- No new replay keys can enter a sealed manifest. Changing a key's owner/path, reversing a previous ACK or deleting the manifest before approved finalization is rejected.
+- Every manifest key must first match an **already committed immutable V17 replay locator owned by that exact account**. This prevents a forged extra manifest entry from scheduling an unrelated Storage object for deletion. No new replay keys can enter a sealed manifest. Changing a key's owner/path, reversing a previous ACK or deleting the manifest before approved finalization is rejected.
 - Advancement to `replays_purged` requires a **sealed manifest**, every recorded object confirmed deleted, and coverage for **every non-null immutable V17 attempt replay locator** of the account. This avoids losing untracked external objects.
 - Advancement to `rows_purged` requires V36 to report no remaining account-bound **gameplay receipts**. V59 recovery records are acknowledged as a separate lifecycle and are not counted as cleared gameplay rows.
 - Advancement to `auth_deleted` requires the Auth user to be absent. An actual user deletion must still be performed via approved Supabase Admin Auth and handled as an idempotent lost-ACK operation.
@@ -48,7 +48,7 @@ All tables have private-schema RLS and **no grants to `PUBLIC`, `anon`, `authent
 - forged ticket denial, single lease holder and crashed-worker generation takeover;
 - refusal to advance with unapproved policy, unsealed manifest or unconfirmed replay objects;
 - no late/renamed/deleted manifest entries or stale-worker acknowledgements;
-- missing immutable V17 replay key detected even if known manifest objects were acknowledged (with the second account's probe rolled back);
+- **both directions** of replay ownership validation: foreign-account keys cannot be inserted, and a missing immutable V17 replay key is detected even when other owned keys were acknowledged (with the second account's probe rolled back);
 - orderly stage transitions, a synthetic removed Auth identity, completion retry and unchanged V57 fence;
 - untouched second-account job, Auth identity and replay manifest; new unreviewed identity table still rejected.
 

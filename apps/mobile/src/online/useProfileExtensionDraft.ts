@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useAuthSession} from './AuthSessionProvider';
 import {onlineConfigured} from './supabase';
-import {selfProfileExtensionV43,updateProfileExtensionV43,type ProfileExtensionSelfV43} from './profile-extension-v43';
+import {selfProfileExtensionV43,updateProfileExtensionV43,characterShowcaseSelfV1,type ProfileExtensionSelfV43} from './profile-extension-v43';
 
 /** Identity and Showcase are two tabs over one stored row. They share this draft so the
  * dirty flag, the save and the audience preview never disagree with each other. */
@@ -10,6 +10,7 @@ export interface ProfileExtensionDraft{
  value:ProfileExtensionSelfV43|null;bio:string;dirty:boolean;
  setBio:(text:string)=>void;
  patch:(next:Partial<ProfileExtensionSelfV43>)=>void;
+ selectCharacter:(characterId:string)=>Promise<boolean>;
  save:()=>Promise<void>;
  revert:()=>void;
  reload:()=>void;
@@ -27,23 +28,48 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
  const guest=!!session?.user.is_anonymous;
  const [value,setValue]=useState<ProfileExtensionSelfV43|null>(null),[savedValue,setSavedValue]=useState<ProfileExtensionSelfV43|null>(null);
  const [bio,setBioState]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const mounted=useRef(true);
+ const mounted=useRef(true),requestVersion=useRef(0);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[]);
 
  const reload=useCallback(async()=>{
   if(!onlineConfigured||!session)return;
+  const version=++requestVersion.current;
   setBusy(true);setError('');
-  try{const row=await selfProfileExtensionV43();if(!mounted.current)return;setValue(row);setSavedValue(row);setBioState(row.bio)}
-  catch{if(mounted.current)setError('Unable to load profile settings.')}
+  try{
+   const row=await selfProfileExtensionV43();
+   const selected=row.selectedCharacterId??fallbackCharacterId;
+   // Account privacy/bio are shared. The seven showcase slots belong to this hero.
+   const showcase=selected?await characterShowcaseSelfV1(selected):null;
+   if(!mounted.current||version!==requestVersion.current)return;
+   const resolved={...row,...showcase,selectedCharacterId:selected??null};
+   setValue(resolved);setSavedValue(resolved);setBioState(row.bio);
+  }
+  catch{if(mounted.current&&version===requestVersion.current)setError('Unable to load profile settings.')}
   finally{if(mounted.current)setBusy(false)}
- },[session]);
+ },[session,fallbackCharacterId]);
  useEffect(()=>{setValue(null);setSavedValue(null);setBioState('');setNotice('');setError('');void reload()},[session?.user.id,reload]);
 
  const setBio=useCallback((text:string)=>{setNotice('');setError('');setBioState(text.slice(0,160))},[]);
  const patch=useCallback((next:Partial<ProfileExtensionSelfV43>)=>{setNotice('');setError('');setValue(current=>current?{...current,...next}:current)},[]);
  const revert=useCallback(()=>{setNotice('');setError('');setValue(savedValue);setBioState(savedValue?.bio??'')},[savedValue]);
-
  const dirty=!!value&&!!savedValue&&JSON.stringify(editableSnapshot(value,bio))!==JSON.stringify(editableSnapshot(savedValue,savedValue.bio));
+ const selectCharacter=useCallback(async(characterId:string)=>{
+  if(!value||busy)return false;
+  if(dirty){setError('Save or revert your current profile changes before switching showcased characters.');return false;}
+  if(value.selectedCharacterId===characterId)return true;
+  const version=++requestVersion.current;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const fields=await characterShowcaseSelfV1(characterId);
+   if(!mounted.current||version!==requestVersion.current)return false;
+   setValue(current=>current?{...current,...fields,selectedCharacterId:characterId}:current);
+   return true;
+  }catch{
+   if(mounted.current&&version===requestVersion.current)setError('Unable to load this character showcase.');
+   return false;
+  }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
+ },[value,busy,dirty]);
+
  const save=useCallback(async()=>{
   if(!value||busy||guest)return;
   setBusy(true);setError('');setNotice('');
@@ -59,6 +85,6 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   finally{if(mounted.current)setBusy(false)}
  },[value,bio,busy,guest,fallbackCharacterId]);
 
- return useMemo(()=>({online:onlineConfigured&&!!session,guest,ready:!!value,busy,error,notice,value,bio,dirty,setBio,patch,save,revert,reload:()=>void reload()}),
-  [session,guest,value,busy,error,notice,bio,dirty,setBio,patch,save,revert,reload]);
+ return useMemo(()=>({online:onlineConfigured&&!!session,guest,ready:!!value,busy,error,notice,value,bio,dirty,setBio,patch,selectCharacter,save,revert,reload:()=>void reload()}),
+  [session,guest,value,busy,error,notice,bio,dirty,setBio,patch,selectCharacter,save,revert,reload]);
 }

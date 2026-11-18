@@ -1,4 +1,5 @@
-import type {CraftedGearInstance,GameState,GearSlot,ItemStack} from '../../apps/mobile/src/core/types';
+import {savedLoadoutReservesGearCopy} from '../../apps/mobile/src/core/player-market-readiness';
+import type {CraftedGearInstance,GameState,ItemStack} from '../../apps/mobile/src/core/types';
 import {auditCraftedGearOwnership} from '../../apps/mobile/src/core/crafted-gear-ownership';
 import {isValidCraftedGearQuality} from '../../apps/mobile/src/core/crafted-gear-instances';
 import {normalizeEnhancementGemSlots} from '../../apps/mobile/src/core/equipment-enhancement';
@@ -89,13 +90,6 @@ function hasLegacyItemEnhancement(state:GameState,itemId:string){
         ||!!legacy.effectGemId||(legacy.gemIds?.length??0)>0);
     });
 }
-function savedLoadoutReferences(state:GameState,record:CraftedGearInstance){
-  return [state.character,...(state.otherCharacters??[]).map(entry=>entry.character)]
-    .some(character=>(character?.savedLoadouts??[]).some(preset=>
-      Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId
-        &&(!preset.equipmentInstanceIds?.[slot as GearSlot]
-          ||preset.equipmentInstanceIds?.[slot as GearSlot]===record.id))));
-}
 function stacksForLocation(state:GameState,
   location:MarketGearStorageV7,holderId?:string):ItemStack[]|undefined{
   if(location==='bank')return state.bank.stacks;
@@ -149,7 +143,7 @@ export function inspectExactMarketGearV7(
     problems.push('locked_equipment');
   if(state.settings.favoriteItemIds?.includes(record.itemId))
     problems.push('favorite_equipment');
-  if(savedLoadoutReferences(state,record))
+  if(savedLoadoutReservesGearCopy(state,record.itemId,record.id))
     problems.push('saved_loadout_references_copy');
   if(hasLegacyItemEnhancement(state,record.itemId))
     problems.push('legacy_item_level_upgrades_unreconciled');
@@ -190,15 +184,15 @@ export function inspectMarketGearDeliveryV7(
     .filter((x):x is NonNullable<typeof x>=>!!x);
   const character=all.find(x=>x.id===destinationCharacterId);
   if(!character)problems.push('destination_character_not_owned');
-  if(!payload||payload.instanceId!==payload.exactReceipt.id
+  if(!payload||!payload.exactReceipt||payload.instanceId!==payload.exactReceipt.id
     ||payload.itemId!==payload.exactReceipt.itemId)
     problems.push('delivery_payload_mismatch');
   const recorded=buyer.account.craftedGearInstances??[];
-  if(recorded.some(x=>x.id===payload.instanceId)
-    ||auditCraftedGearOwnership(buyer).linked.some(x=>x.instanceId===payload.instanceId))
+  const buyerAudit=auditCraftedGearOwnership(buyer);
+  if(payload&&(recorded.some(x=>x.id===payload.instanceId)
+    ||buyerAudit.linked.some(x=>x.instanceId===payload.instanceId)))
     problems.push('duplicate_instance_id_in_destination');
-  if(!auditCraftedGearOwnership(buyer).consistent
-    &&recorded.length>0)problems.push('buyer_gear_ownership_unverified');
+  if(!buyerAudit.consistent&&recorded.length>0)problems.push('buyer_gear_ownership_unverified');
 
   const stacks=destination==='equipment_pouch'
     ?(character?equipmentPouchForCharacter(character).stacks:[])

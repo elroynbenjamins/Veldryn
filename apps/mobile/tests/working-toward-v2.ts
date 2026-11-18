@@ -95,6 +95,17 @@ ok(copperSources.some(source=>source.type==='gathering'&&source.typeLabel==='Gat
 ok(copperSources.some(source=>source.type==='monster_drop'&&source.typeLabel==='Monster Drop'),'Copper source presentation includes authored monster-drop alternatives');
 ok(copperSources.find(source=>source.type==='gathering')?.destination.detail.includes('/action'),'Gathering source detail exposes authored per-action yield');
 ok(copperSources.find(source=>source.type==='monster_drop')?.destination.detail.includes('% drop'),'Monster source detail exposes authored drop odds');
+const gemDustSources=workingTowardItemSourceEntries(state,'GEM_DUST');
+const gemDustDismantling=gemDustSources.find(source=>source.type==='dismantling');
+ok(gemDustDismantling,'Gem Dust must have a repeatable dismantling source in How to Get');
+equal(gemDustDismantling?.typeLabel,'Dismantling','Gem Dust has an accurate source label');
+equal(gemDustDismantling?.destination.kind,'inventory','Dismantling links to the account-wide inventory');
+if(gemDustDismantling?.destination.kind==='inventory'){
+ equal(gemDustDismantling.destination.section,'gem_pouch','Gem Dust navigates directly to the Gem Pouch');
+ ok(gemDustDismantling.destination.detail.includes('G1: 1')&&gemDustDismantling.destination.detail.includes('G5: 60'),
+  'Gem Dust source explains the real grade-dependent dismantling amounts');
+}
+ok(gemDustDismantling?.availability.status==='ready','Gem Pouch can be opened at any level; this does not promise the player owns dismantleable gems');
 const catalystSources=workingTowardItemSourceEntries(state,'REGIONAL_CATALYST');
 const catalystDungeons=catalystSources.filter(source=>source.type==='dungeon'),catalystCrafting=catalystSources.filter(source=>source.type==='crafting');
 equal(catalystDungeons.length,6,'Regional Catalyst retains all six authoritative live dungeon sources');

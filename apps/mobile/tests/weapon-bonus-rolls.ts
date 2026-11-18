@@ -247,4 +247,11 @@ ok(!salvagedSocketed.inventory.stacks.some(row=>row.itemId==='WARD_SHARD')
 ok(Object.keys(equippedWeaponBonusStats(salvagedSocketed)).length===0,
   'Destroyed rolled weapons must not leave active bonus stats');
 
+ok(normalizeCraftedGearInstances([{id:'gear:x:retired',itemId:'RETIRED_WEAPON_ID',ownerCharacterId:'x',weaponBonuses:[{stat:'armor',basisPoints:200}]}]).length===0,
+  'Receipts for retired catalog items must normalize away without throwing');
+for(const recipe of V33_EQUIPMENT_RECIPES.slice(0,60)){
+  const draft=draftCraftedGearInstance({itemId:recipe.output.itemId,ownerCharacterId:'c',jobId:'version-'+recipe.id,createdAtMs:1,roll:.5});
+  ok(Boolean(draft.weaponBonuses?.length)===(draft.weaponBonusRollVersion!==undefined),
+    'Roll version must be stamped exactly when bonuses exist: '+recipe.output.itemId);
+}
 console.log('PASS: T3+ weapon bonus rolls, two-stat eligibility, persistence, combat and legacy safety');

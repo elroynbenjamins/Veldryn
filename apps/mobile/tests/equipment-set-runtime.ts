@@ -88,4 +88,9 @@ for(const slot of ['gloves','amulet','boots'] as const){
     'T5 '+slot+' inspection must not advertise a retired fixed bonus');
 }
 
+{
+  const base=createCharacter(newGame(0),'BASTION','Retired Item');
+  const retired:GameState={...base,character:{...base.character!,equipment:{...base.character!.equipment,ring:'RETIRED_RING_ID'}}};
+  ok(Array.isArray(activeEquipmentSetRuntime(retired).activeSets),'Unknown equipped item ids must not break set runtime');
+}
 console.log('PASS: set bonuses reach combat, T5 fixed slot affixes are absent, and T5+ 6pc stays pending');

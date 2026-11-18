@@ -39,7 +39,8 @@ export async function routeSocialContributionV19(deps:V19SocialContributionRoute
   const regionalCrises:RegionalCrisisContributionResult[]=[];
   if(deps.recordRegionalCrisis&&envelope.regionalCrisisTargets){
     const snapshot:RegionalCrisisTargetSnapshot={...envelope.regionalCrisisTargets,partyIdAtSettlement:envelope.event.partyIdAtSettlement,partyNameAtSettlement:envelope.event.partyNameAtSettlement,guildIdAtSettlement:envelope.guildTargets?.guildIdAtSettlement,guildNameAtSettlement:envelope.guildTargets?.guildNameAtSettlement};
-    for(const crisisInstanceId of snapshot.crisisInstanceIds){
+    // A settlement may be snapshotted against the same crisis twice (e.g. region + tag match); credit it once.
+    for(const crisisInstanceId of new Set(snapshot.crisisInstanceIds)){
       regionalCrises.push(await deps.recordRegionalCrisis(crisisInstanceId,envelope.event,snapshot));
     }
   }

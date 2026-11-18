@@ -82,5 +82,27 @@ check(previewPlayerMarketListing(forgedStackInGemPouch,'gem_pouch',0,1).blockedB
 check(exact.character?.equipmentPouch?.stacks[0].instanceId===record.id
   &&record.quality===exact.account.craftedGearInstances?.[0]?.quality,
   'Market readiness checks must never consume or rewrite equipment');
+// Gear forged by another character on the account and moved through the Bank stays listable.
+const altCharacter={...clean.character!,id:'alt-character-1',name:'Alt Crafter',progressionGoals:[]};
+const altEntry={character:altCharacter,inventory:{...clean.inventory,stacks:[]},overflow:clean.overflow,
+  activity:null,skills:clean.skills,quests:clean.quests,currentRegionId:clean.currentRegionId};
+const altRecord={...record,id:record.id+'-alt',ownerCharacterId:altCharacter.id};
+const altBanked:GameState={...clean,otherCharacters:[altEntry],
+  bank:{...clean.bank,stacks:[{itemId:gearId,quantity:1,instanceId:altRecord.id}]},
+  account:{...clean.account,craftedGearInstances:[altRecord]}};
+const altPreview=previewPlayerMarketListing(altBanked,'bank',0,1);
+check(!altPreview.blockedBy.includes('equipment_not_owned'),
+  'Account-owned gear crafted by an alt character must not be reported as unowned: '+altPreview.blockedBy.join(','));
+const foreignRecord={...altRecord,ownerCharacterId:'someone-else'};
+check(previewPlayerMarketListing({...altBanked,account:{...altBanked.account,craftedGearInstances:[foreignRecord]}},'bank',0,1)
+  .blockedBy.includes('equipment_not_owned'),'Receipts owned outside the account stay blocked');
+// An alt character's Working Toward goal protects shared Bank stock.
+const altGoal:GameState={...clean,bank:{...clean.bank,stacks:[{itemId:'COPPER_ORE',quantity:40}]},
+  otherCharacters:[{...altEntry,character:{...altCharacter,progressionGoals:[{
+    id:'alt-goal',characterId:altCharacter.id,createdAtMs:0,pinnedAtMs:0,
+    kind:'item_quantity' as const,itemId:'COPPER_ORE',targetQuantity:25,title:'Alt copper',
+  }]}}]};
+check(previewPlayerMarketListing(altGoal,'bank',0,1).blockedBy.includes('working_toward_reserved'),
+  'Working Toward goals of inactive characters must protect shared Bank materials');
 check(!PLAYER_MARKET_RELEASED&&!MARKET_AUTHENTICATED_SERVICE_READY,'Both release and authenticated transport must remain off');
 console.log('PASS: player market remains disabled; stack, binding and exact-copy guards are read-only');

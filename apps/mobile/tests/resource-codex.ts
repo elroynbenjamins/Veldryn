@@ -32,6 +32,10 @@ assert(bondSources.some(source=>source.title==='Monthly Trial completion'),'Bond
 assert(bondSources.every(source=>source.kind==='companion'),'Companion currency sources should not navigate to inventory');
 assert(resourceCodexQuantity(state,bondstones)===(state.account.bondstones??0),'Bondstones quantity should use account wallet');
 assert(resourceCodexSources(state,byId('TRIAL_SANCTUARY_MATERIAL')!).length>0,'Trial Sanctuary Material should show confirmed sources');
+const dust=byId('GEM_DUST')!;
+const dustCodexSources=resourceCodexSources(state,dust);
+assert(dustCodexSources.some(source=>source.title==='Gem Pouch · Dismantle Gems'&&source.destination?.kind==='inventory'&&source.destination.section==='gem_pouch'),
+ 'Gem Dust Codex must explain dismantling and offer direct Gem Pouch navigation');
 const mineral=byId('ASTERFALL_MINERAL_ESSENCE')!;
 assert(mineral?.category==='Mining'&&mineral.rarity==='rare','New mineral essence must appear in the Mining Codex with Rare rarity');
 assert(resourceCodexSources(state,mineral).some(source=>source.title==='Copper Outcrop'&&source.status==='ready'),'Mining Essence source must navigate to immediately accessible Copper Outcrop');

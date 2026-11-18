@@ -18,7 +18,10 @@ export function skillAffinityModifiers(classId:unknown,skillId:unknown):SkillAff
  return validClass(classId)&&CLASS_SKILL_AFFINITIES[classId]===skillId?MATCHED:NEUTRAL;
 }
 export function classSkillAffinityLabel(classId:unknown):string{
- const skill=classSkillAffinity(classId);return skill?`${skill[0].toUpperCase()}${skill.slice(1)} · +5% XP · +3% speed`:'';
+ const skill=classSkillAffinity(classId);if(!skill)return '';
+ // Derived from the multipliers so the label can never drift from the applied bonus.
+ const percent=(multiplier:number)=>Math.round((multiplier-1)*1000)/10;
+ return `${skill[0].toUpperCase()}${skill.slice(1)} · +${percent(CLASS_AFFINITY_XP_MULTIPLIER)}% XP · +${percent(CLASS_AFFINITY_SPEED_MULTIPLIER)}% speed`;
 }
 
 export interface SkillAffinitySnapshot extends SkillAffinityMultipliers{

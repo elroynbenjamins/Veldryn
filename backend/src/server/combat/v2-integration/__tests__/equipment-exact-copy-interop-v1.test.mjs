@@ -38,6 +38,7 @@ rejects(f=>f.trusted.verifyOwnedReceipt=null,'trusted_receipt_verifier_required'
 rejects(f=>f.equipped[0].ownerCharacterId='hero-two','invalid_equipped_custody');
 rejects(f=>f.equipped[0].location='bank','invalid_equipped_custody');
 rejects(f=>f.equipped.push({...f.equipped[0]}),'invalid_equipped_custody');
+rejects(f=>f.equipped[1].receiptId=f.equipped[0].receiptId,'invalid_equipped_custody');
 rejects(f=>f.equipped[1].slot='weapon','invalid_equipped_custody');
 rejects(f=>f.equipped[0].template.pieceId='','invalid_exact_template');
 rejects(f=>f.equipped[0].template.manifestVersion='old','invalid_exact_template');
@@ -64,5 +65,19 @@ rejects(f=>{
 },'two_hand_offhand_conflict');
 rejects(f=>f.actor.classId='BARD','unverified_actor');
 rejects(f=>f.equipped[0].template.tier=5,'invalid_exact_template');
-assert.equal(denied,29);
-console.log('PASS: frozen exact-copy/Combat V2 stat mapping, 29 negative cases, no gameplay activation');
+const knownRoles={
+ IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
+ WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
+ DAWNKEEPER:'support',STONECALLER:'support'
+};
+for(const [classId,role] of Object.entries(knownRoles)){
+ const f=fixture();
+ f.actor.classId=classId;
+ for(const gear of f.equipped){
+  gear.template.role=role;
+  gear.template.classRestriction=classId;
+ }
+ assert.equal(project(f).role,role,'canonical class role must survive the exact-copy bridge');
+}
+assert.equal(denied,30);
+console.log('PASS: Equipment/Crafting V2 frozen copies, all 9 classes and 30 negative guards; combat remains off');

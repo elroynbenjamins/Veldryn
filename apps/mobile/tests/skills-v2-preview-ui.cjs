@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'..');
 const content=fs.readFileSync(path.join(root,'src/content/skills-v2-preview.ts'),'utf8');
 const screen=fs.readFileSync(path.join(root,'src/screens/SkillsV2PreviewScreen.tsx'),'utf8');
 const meter=fs.readFileSync(path.join(root,'src/components/ClassResourceMeterV2.tsx'),'utf8');
+const gear=fs.readFileSync(path.join(root,'src/components/EquipmentPowerBreakdownV2.tsx'),'utf8');
 const detail=fs.readFileSync(path.join(root,'src/content/skills-v2-preview-descriptions.ts'),'utf8');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
 assert.match(content,/SKILLS_V2_PUBLIC_ENABLED=false/,'Preview must default to private');
@@ -22,6 +23,12 @@ assert.match(screen,/ClassResourceMeterV2/,'Use one reusable read-only combat re
 assert.match(meter,/accessibilityRole="progressbar"/,'Resource meter must be accessible');
 assert.match(meter,/projectServerResourceV2/,'Resource meter must offer server-replay projection');
 assert.match(meter,/current<=value.max/,'Never render out-of-bounds resource meters');
+assert.match(gear,/evidence:GearEvidenceUiV2\|null/,'Gear UI must require server evidence');
+assert.match(gear,/Set thresholds/,'Read-only gear UI should distinguish set thresholds');
+assert.match(gear,/Roll:/,'Random affix must not be confused with base item stats');
+assert.match(gear,/Nothing is rerolled here/,'Preview must preserve existing items');
+assert.doesNotMatch(gear,/\bfetch\(|\bonCommand\b|\bAsyncStorage\b|supabase\./,
+ 'Read-only equipment UI must not send live commands');
 assert.match(screen,/Base .*cooldown/,'Cooldowns must not be presented as final variant values');
 assert.match(screen,/\[classId,characterLabel,level\]/,'Preview draft must reset for new level or character');
 

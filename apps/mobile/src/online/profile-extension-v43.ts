@@ -1,4 +1,5 @@
 import {supabase} from './supabase';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
 import {RequestSingleflight} from '../core/request-singleflight';
 import {normalizeProfileGear,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
@@ -94,8 +95,13 @@ export async function publicPlayerProfileV43(accountId:string,characterId?:strin
  // Sharing only an in-flight authorized read avoids duplicate public-profile,
  // guild-identity and guild-name lookups when multiple panels open together.
  // Do not cache the result: privacy, blocks and guild visibility can change.
- return pendingPublicProfiles.run(viewer+':'+accountId+':'+(characterId??'featured'),async()=>{
-  const {data,error}=await db.rpc('profile_character_public_v1',{p_target_account_id:accountId,p_character_id:characterId??null});if(error)throw error;
+ return pendingPublicProfiles.run(viewer+':'+accountId+':'+(ACCOUNT_SOCIAL_IDENTITY_RELEASED?(characterId??'featured'):'legacy'),async()=>{
+  // Default-off compatibility: older production servers only expose the v43
+  // account profile RPC. Never require the new per-character RPC before rollout.
+  const {data,error}=ACCOUNT_SOCIAL_IDENTITY_RELEASED
+   ?await db.rpc('profile_character_public_v1',{p_target_account_id:accountId,p_character_id:characterId??null})
+   :await db.rpc('profile_public_v43',{p_target_account_id:accountId});
+  if(error)throw error;
   const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
   // The companion RPC uses the same visibility/block gate, returning only equipped item facts.
   // Older servers that have not deployed it still render the public profile normally.
@@ -103,7 +109,9 @@ export async function publicPlayerProfileV43(accountId:string,characterId?:strin
   // another full network round trip to opening a player's profile.
   // Optional gear failures must not block the existing identity/profile surface.
   const [gearResult,identities]=await Promise.all([
-   (async()=>{try{return await db.rpc('profile_character_gear_v1',{p_target_account_id:accountId,p_character_id:characterId??null});}catch{return null;}})(),
+   (async()=>{try{return ACCOUNT_SOCIAL_IDENTITY_RELEASED
+    ?await db.rpc('profile_character_gear_v1',{p_target_account_id:accountId,p_character_id:characterId??null})
+    :await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});}catch{return null;}})(),
    guildIdentities([accountId]),
   ]);
   const gearRows=gearResult?.data;

@@ -134,7 +134,8 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const hc=hitChance(source.definition.stats.accuracy,target.definition.stats.evasion+v2Evasion,accuracyScale); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE'))runCapstone(target,'evade',now,source);}}return;}
     const v2Defense=v2Encounter?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
-    const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense,mitigationConstant);
+    const authoredPenetration=v2Encounter&&source.definition.combatV2?clamp(effect.penetrationPct??0,0,.20):0;
+    const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
@@ -147,12 +148,19 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const variance=qmodeStrike?.925+varianceRoll*.20:.95+varianceRoll*.10;
     const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)*2<.04;
     const roleAttack=roleAdjustedAttackPower({team:source.definition.team,role:source.definition.role,attackPower:source.definition.stats.attackPower,defense:source.definition.stats.defense,maxHp:source.definition.stats.maxHp,healingPower:source.definition.stats.healingPower});
-    let raw=damageAfterMitigation(roleAttack,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier+(v2Encounter?clamp(effect.critMultiplierBonus??0,0,.50):0))+(effect.flat??0);
+    const isMarked=v2Encounter&&Boolean(source.definition.combatV2)&&target.modifiers.some(m=>
+      m.kind==='debuff'&&m.sourceId===source.definition.id&&m.tag==='damage_taken'&&m.expiresAt>now);
+    const critBoost=v2Encounter&&Boolean(source.definition.combatV2)?clamp(effect.critMultiplierBonus??0,0,.50)+
+      (crit&&isMarked?clamp(effect.criticalDamageBonusVsMarked??0,0,.20):0):0;
+    let raw=damageAfterMitigation(roleAttack,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier+critBoost)+(effect.flat??0);
     if(heavyHit)raw*=1.10;
     raw*=source.definition.alchemyModifiers?.outgoing??1; raw*=target.definition.alchemyModifiers?.incoming??1;
     raw*=gemOutgoingDamageMultiplierV1(source,target,now,abilityId,eventType==='dot_tick'); raw*=Math.max(.1,1+modifier(source,'damage_done',now)); raw*=Math.max(.1,1+modifier(target,'damage_taken',now)); raw*=gemIncomingDamageMultiplierV1(target,now);
     if(hpPct(target)<clamp(effect.executeBelowHpPct??0,0,1))raw*=1+clamp(effect.executeBonus??0,0,1);
     if(effect.bonusVsDebuffed&&target.modifiers.some(m=>m.kind==='debuff'&&m.expiresAt>now))raw*=1+clamp(effect.bonusVsDebuffed,0,.20);
+    if(isMarked&&crit)raw*=1+clamp(effect.criticalHitBonusVsMarked??0,0,.15);
+    if(v2Encounter&&source.definition.combatV2&&hpPct(target)<clamp(effect.additionalExecuteBelowHpPct??0,0,.5))
+      raw*=1+clamp(effect.additionalExecuteBonus??0,0,target.definition.boss?.08:.15);
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_CAPSTONE')&&
        source.definition.combatV2?.capstoneId?.endsWith(':final_verdict')&&hpPct(target)<.30)
       raw*=target.definition.boss?1.08:1.18;

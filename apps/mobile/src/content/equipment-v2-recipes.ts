@@ -55,9 +55,9 @@ function recipeInputs(piece:EquipmentV2PieceDescriptor,profession:EquipmentV2Pro
  /** Alternate uses ~20% fewer primary resources and ~25% more secondary.
   * Choice changes material burden, never outcome probabilities.
   */
- const main=qty(regional.primary.quantity*(alt?.8:1));
+ const main=qty(regional.primary.quantity*(alt?0.8:1));
  const secondary=qty(regional.secondary.quantity*(alt?1.25:1));
- const cost:EQUIPMENTV2ReadonlyIngredient[]=[
+ const cost:EquipmentV2RecipeIngredient[]=[
   {itemId:regional.primary.itemId,quantity:main,kind:'gather'},
   {itemId:regional.secondary.itemId,quantity:secondary,kind:'gather'},
  ];
@@ -74,7 +74,6 @@ function recipeInputs(piece:EquipmentV2PieceDescriptor,profession:EquipmentV2Pro
  }
  return [...combined.values()];
 }
-type EQUIPMENTV2ReadonlyIngredient=EquipmentV2RecipeIngredient[];
 export function equipmentV2RecipeMethods(piece:EquipmentV2PieceDescriptor):readonly EquipmentV2Recipe[]{
  const main=firstProfession(piece);
  const other:EquipmentV2Profession=isJewelry(piece)?'tailoring':main;

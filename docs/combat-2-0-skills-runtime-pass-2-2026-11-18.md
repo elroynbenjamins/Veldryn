@@ -11,7 +11,7 @@ The caller MUST construct the actor, owned IDs and equipment catalogs from serve
 - **Full identity coverage:** 9 classes, 18 specialization IDs, 54 skill IDs, 162 variant IDs, 81 talent IDs, 18 capstone IDs.
 - **Executable first slice:** 18 existing named techniques (two per class) with three authored variants each = 54 variants. New variant combat effects include changed cooldowns and ability coefficients, taunts, shields, heals, HoTs, DoTs, defensive buffs and target-specific effects.
 - **Specializations:** all 18 provide bounded server-calculated differentiation (including damage, protection, haste, healing and/or other stats/ability modifiers).
-- **Passives:** 26 currently have numerical runtime effects defined. Remaining talents requiring resource stacks, reactive counters, conditional triggers and other bespoke mechanics fail closed.
+- **Passives:** 25 currently have numerical runtime effects defined. Remaining talents requiring resource stacks, reactive counters, conditional triggers and other bespoke mechanics fail closed.
 - **Capstones:** validated for eligibility and stored as IDs, but no combat capstone is executable in this pass; selecting one when the runtime is enabled fails closed.
 - Existing training skill XP, ordinary solo combat and dungeon behavior are not changed by any of these authored v2 files.
 

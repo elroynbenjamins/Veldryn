@@ -13,6 +13,7 @@ export interface EquipmentCraftingV2PreviewVariant extends EquipmentV2RecipePrev
 }
 type Tab='materials'|'outcomes';
 const format=(value:number)=>Math.round(value).toLocaleString('en-US');
+const duration=(seconds:number)=>{const minutes=Math.ceil(seconds/60);return minutes<60?minutes+'m':Math.floor(minutes/60)+'h '+minutes%60+'m';};
 function nextStep(action:ReturnType<typeof equipmentV2HiddenRecipeScreen>['action']){
  switch(action){
   case 'craft':return 'Materials ready — crafting unavailable in preview';
@@ -27,7 +28,7 @@ function nextStep(action:ReturnType<typeof equipmentV2HiddenRecipeScreen>['actio
 export function EquipmentCraftingV2Preview({variants}:{variants:readonly EquipmentCraftingV2PreviewVariant[]}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [methodId,setMethodId]=useState(''),[tab,setTab]=useState<Tab>('materials');
- const method=variants.find(row=>row.key===methodId)??variants[0];
+ const method=variants.find(row=>row.key===methodId)??variants.find(row=>(row as EquipmentCraftingV2PreviewVariant & {recommended?:boolean}).recommended)??variants[0];
  if(!method)return null;
  const preview=equipmentV2HiddenRecipeScreen(method);
  const stats=([['ATK',preview.baseStats.attack],['DEF',preview.baseStats.defense],['HP',preview.baseStats.hp]] as const).filter(([,n])=>n>0);
@@ -50,9 +51,9 @@ export function EquipmentCraftingV2Preview({variants}:{variants:readonly Equipme
   <View style={s.summary}>
    <View style={s.summaryCell}><Text style={s.statLabel}>ASSEMBLY GOLD</Text><Text style={s.summaryValue}>{format(preview.cost.assemblyGold)}</Text></View>
    <View style={s.summaryCell}><Text style={s.statLabel}>BASE XP</Text><Text style={s.summaryValue}>+{format(preview.draftXp)}</Text></View>
-   <View style={s.summaryCell}><Text style={s.statLabel}>GOLD SUBTOTAL</Text><Text style={s.summaryValue}>{format(preview.cost.knownGold)}</Text></View>
+   <View style={s.summaryCell}><Text style={s.statLabel}>CRAFT TIME</Text><Text style={s.summaryValue}>{method.craftSeconds?duration(method.craftSeconds):'—'}</Text></View>
   </View>
-  <Text style={s.note}>Known subtotal includes specified processing fees. Unpriced self-sourced material costs are not represented as market prices.</Text>
+  <Text style={s.note}>Known Gold subtotal: {format(preview.cost.knownGold)}. {method.profession?method.profession[0].toUpperCase()+method.profession.slice(1)+' · ':''}Processing not yet priced where missing. Market prices are never fabricated.</Text>
   {variants.length>1?<View style={s.section}>
    <Text style={s.sectionTitle}>Crafting method</Text>
    <View style={s.segmentRow}>

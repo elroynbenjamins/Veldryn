@@ -56,7 +56,6 @@ const keys:readonly EquipmentBaseStatKeyV2[]=[
 ];
 const round=(n:number)=>Math.round(n*1e6)/1e6;
 const validNumber=(x:unknown):x is number=>typeof x==='number'&&Number.isFinite(x);
-const has=(v:object,k:string)=>Object.prototype.hasOwnProperty.call(v,k);
 function allowedStats(record:Readonly<Partial<Record<EquipmentBaseStatKeyV2,number>>>):EquipmentBaseStatKeyV2[]{
   if(!record||typeof record!=='object'||Array.isArray(record))
     throw Error('combat_v2_invalid_item_primary_stats');

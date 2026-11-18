@@ -59,6 +59,7 @@ export interface PartyChestEntitlementPreviewV51{
  readonly kind:PartyEventChestKindV51;
  readonly name:string;
  readonly family:WeeklyPartyFamily;
+ readonly difficulty:WeeklyPartyDifficulty;
  readonly eligibleGearTier:PartyChestTierV51;
  readonly guaranteed:Readonly<{
   partySigils:number;gold:number;gemDust:number;companionEssence:number;
@@ -104,7 +105,7 @@ export function previewVerifiedPartyChestsV51(
  if(e.verifiedFinaleVictory)entitled.add('finale');
  return PARTY_EVENT_CHESTS_V51.filter(def=>entitled.has(def.kind)).map(def=>({
   chestId:'party-event:'+e.eventStartsAtUtcMs+':'+e.accountId.toLowerCase()+':'+def.kind,
-  kind:def.kind,name:def.name,family:e.family,
+  kind:def.kind,name:def.name,family:e.family,difficulty:e.difficulty,
   eligibleGearTier:e.eligibleGearTier,
   guaranteed:{partySigils:def.partySigils,gold:def.gold,
    gemDust:def.gemDust,companionEssence:def.companionEssence},
@@ -143,7 +144,8 @@ export function resolvePartyChestGearDraftV51(
  if(!preview||preview.claimable!==false||preview.granted!==false||
   !partyEventGearForFamilyV51(preview.family).length||
   !Number.isInteger(preview.gearChanceBps)||
-  preview.gearChanceBps<0||preview.gearChanceBps>10000||
+  preview.gearChanceBps!==partyChestGearChanceV51(preview.kind,preview.difficulty)||
+  preview.itemPoolVersion!==PARTY_EVENT_GEAR_V51_CATALOG_VERSION||
   ![1,2,3,4,5,6,7,8,9].includes(preview.eligibleGearTier)||
   !random||!Array.isArray(random.ownedPieceIds))
   throw Error('party_event_v51_invalid_chest_preview');

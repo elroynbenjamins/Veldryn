@@ -4,6 +4,26 @@ export type DamageType = 'physical' | 'fire' | 'ice' | 'shadow' | 'arcane' | 'na
 export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'lowest_hp_ally_with_dot' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
 export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interrupt' | 'taunt' | 'buff' | 'debuff' | 'cleanse';
 
+/** Server-owned, opt-in Combat 2.0 encounter resource state. */
+export type CombatV2Resource='guard'|'barrier'|'dread'|'focus'|'fury'|'threads'|'rhythm'|'radiance'|'resonance';
+export interface CombatV2LoadoutMeta {
+  version:2;
+  resource:CombatV2Resource;
+  specializationId:string;
+  capstoneId?:string;
+}
+export interface CombatV2State {
+  resource:CombatV2Resource;
+  stacks:number;
+  maxStacks:number;
+  lastEarnedAt:Record<string,number>;
+  spentTotal:number;
+}
+export interface CombatV2AbilityMeta {
+  spend?:'all'|number;
+  bonusPerStack?:number;
+}
+
 export interface CombatStats {
   maxHp: number;
   attackPower: number;
@@ -37,6 +57,8 @@ export interface AbilityEffect {
 }
 
 export interface AbilityDefinition {
+  /** Authored by the Combat 2.0 server adapter only. */
+  combatV2?:CombatV2AbilityMeta;
   id: string;
   name: string;
   cooldownMs: number;
@@ -70,6 +92,8 @@ export interface CombatGemEffect {
 }
 
 export interface CombatantDefinition {
+  /** Not accepted from clients or live routes; installed by verified v2 compiler. */
+  combatV2?:CombatV2LoadoutMeta;
   id: string;
   classId?: string;
   name: string;
@@ -112,6 +136,7 @@ export interface ActiveTimedModifier {
 }
 
 export interface CombatantState {
+  combatV2?:CombatV2State;
   reflectiveShields?:Array<{remaining:number;rate:number;sourceId:string}>;
   definition: CombatantDefinition;
   hp: number;
@@ -133,8 +158,11 @@ export interface CombatantState {
 
 export interface CombatGemStateSnapshot{ targetId:string; tag:string; expiriesAtMs:number[]; }
 
-export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
+export type CombatEventType = 'resource_gain'|'resource_spend'|'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
 export interface CombatEvent {
+  resource?:CombatV2Resource;
+  resourceBefore?:number;
+  resourceAfter?:number;
   atMs: number;
   type: CombatEventType;
   actorId?: string;

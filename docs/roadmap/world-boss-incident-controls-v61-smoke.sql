@@ -19,6 +19,7 @@ DECLARE
  f uuid:='a0000000-0000-4000-8000-000000000062'::uuid;
  action text;
  rows_seen bigint;
+ synthetic_account uuid:='10000000-0000-4000-8000-000000000061'::uuid;
 BEGIN
  -- All brand-new events are blocked, even before an operator inserts a
  -- control record. Error must be stable and action-agnostic.
@@ -48,22 +49,28 @@ BEGIN
   WHERE event_id=e AND (new_raids_open OR new_donations_open OR new_claims_open))
  THEN RAISE EXCEPTION 'WB61_UNSAFE_INITIAL_CONTROL'; END IF;
 
+ -- V57's account privacy fence runs before V61 alphabetically. Supply a
+ -- synthetic owner identity so it can validate first; V61 must then block
+ -- each receipt before any unrelated NOT NULL / FK constraints run.
  -- Trigger-level fail-closed guards must stop inserts BEFORE other
  -- constraints run. These intentionally incomplete rows never commit.
  BEGIN
-  INSERT INTO private.world_boss_attempts_v17(event_id) VALUES(e);
+  INSERT INTO private.world_boss_attempts_v17(event_id,account_id)
+  VALUES(e,synthetic_account);
   RAISE EXCEPTION 'WB61_UNEXPECTED_RAID_WRITE';
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM<>'WB61_NEW_ACTION_PAUSED' THEN RAISE; END IF;
  END;
  BEGIN
-  INSERT INTO private.world_boss_war_donations_v27(event_id) VALUES(e);
+  INSERT INTO private.world_boss_war_donations_v27(event_id,account_id)
+  VALUES(e,synthetic_account);
   RAISE EXCEPTION 'WB61_UNEXPECTED_DONATION_WRITE';
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM<>'WB61_NEW_ACTION_PAUSED' THEN RAISE; END IF;
  END;
  BEGIN
-  INSERT INTO private.world_boss_claim_receipts_v28(event_id) VALUES(e);
+  INSERT INTO private.world_boss_claim_receipts_v28(event_id,account_id)
+  VALUES(e,synthetic_account);
   RAISE EXCEPTION 'WB61_UNEXPECTED_CLAIM_WRITE';
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM<>'WB61_NEW_ACTION_PAUSED' THEN RAISE; END IF;
@@ -86,17 +93,20 @@ BEGIN
 
  -- A missing required field should now be the failure, not our stop gate.
  BEGIN
-  INSERT INTO private.world_boss_attempts_v17(event_id) VALUES(e);
+  INSERT INTO private.world_boss_attempts_v17(event_id,account_id)
+  VALUES(e,synthetic_account);
   RAISE EXCEPTION 'WB61_INVALID_ATTEMPT_INSERTED';
  EXCEPTION WHEN not_null_violation THEN NULL;
  END;
  BEGIN
-  INSERT INTO private.world_boss_war_donations_v27(event_id) VALUES(e);
+  INSERT INTO private.world_boss_war_donations_v27(event_id,account_id)
+  VALUES(e,synthetic_account);
   RAISE EXCEPTION 'WB61_INVALID_DONATION_INSERTED';
  EXCEPTION WHEN not_null_violation THEN NULL;
  END;
  BEGIN
-  INSERT INTO private.world_boss_claim_receipts_v28(event_id) VALUES(e);
+  INSERT INTO private.world_boss_claim_receipts_v28(event_id,account_id)
+  VALUES(e,synthetic_account);
   RAISE EXCEPTION 'WB61_INVALID_CLAIM_INSERTED';
  EXCEPTION WHEN not_null_violation THEN NULL;
  END;

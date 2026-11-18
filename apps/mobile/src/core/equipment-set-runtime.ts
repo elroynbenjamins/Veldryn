@@ -5,12 +5,12 @@ import {normalizeCraftedGearInstances} from './crafted-gear-instances';
 import type {GameState,GearSlot} from './types';
 
 export type EquipmentSetStatKey=
-  'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion';
+  'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion'|'abilityDamage'|'healingPower';
 
 export type EquipmentSetStats=Record<EquipmentSetStatKey,number>;
 
 const EMPTY_STATS:EquipmentSetStats={
-  maxHp:0,armor:0,ward:0,tenacity:0,haste:0,power:0,accuracy:0,penetration:0,potency:0,critRate:0,critDamage:0,evasion:0,
+  maxHp:0,armor:0,ward:0,tenacity:0,haste:0,power:0,accuracy:0,penetration:0,potency:0,critRate:0,critDamage:0,evasion:0,abilityDamage:0,healingPower:0,
 };
 const STAT_KEY_BY_LABEL:Record<string,EquipmentSetStatKey>={
   'max hp':'maxHp',armor:'armor',ward:'ward',tenacity:'tenacity',haste:'haste',power:'power',accuracy:'accuracy',
@@ -166,6 +166,8 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
     critRate:sets.critRate+(pp.critRate??0)+rolled('critRate'),
     critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5+rolled('critDamage'),
     evasion:sets.evasion+(pp.evasion??0)+rolled('evasion'),
+    abilityDamage:rolled('abilityDamage'),
+    healingPower:rolled('healingPower'),
   };
 }
 
@@ -190,6 +192,8 @@ export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,b
     critExpectedMultiplier:setCritExpected/baseCritExpected,
     penetrationMultiplier:1+stats.penetration,
     recoveryMultiplier:1+stats.potency,
+    abilityDamageMultiplier:1+stats.abilityDamage,
+    healingPowerMultiplier:1+stats.healingPower,
     tenacity:stats.tenacity,
     stats,
   };

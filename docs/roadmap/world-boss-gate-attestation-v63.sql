@@ -40,8 +40,8 @@ BEGIN
      AND t.tgname='world_boss_v61_claim_gate')
    )
    AND (t.tgtype::integer & 5)=5 -- ROW + INSERT
-   AND (t.tgtype::integer & 2)=2 -- BEFORE;
- ;
+   AND (t.tgtype::integer & 2)=2 -- BEFORE
+   AND t.tgfoid='private.world_boss_v61_gate_insert()'::pg_catalog.regprocedure;
  IF active_triggers<>3 THEN
   RAISE EXCEPTION 'WB63_EMERGENCY_GATES_UNAVAILABLE';
  END IF;

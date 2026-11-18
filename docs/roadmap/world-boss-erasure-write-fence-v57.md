@@ -49,6 +49,9 @@ The fence table has no FK to `auth.users` because it must survive that user's Au
 ## CI checks and release gates
 
 1. `world-boss-account-write-fence-v57.sql` installs the test-only schema **in GitHub Actions' disposable PostgreSQL service**, not Supabase.
+
+The V57 rollback-only fixture additionally performs the **V55-compatible child-before-parent cleanup while the erasure fence exists**, checks that V36 sees zero remaining personal World Boss receipts, then removes the synthetic Auth user and fence. This proves that the new INSERT/UPDATE guards do not inadvertently block the intended DELETE path. It again verifies unchanged shared boss HP/War Camp rows and untouched second-account records. It **does not** exercise real object-store replay deletion, real Auth Admin APIs, or an approved retention policy.
+
 2. `world-boss-account-write-fence-v57-smoke.sql` is a **BEGIN/ROLLBACK-only** test with synthetic accounts, all nine receipt types, the real `world_boss_v28_claim` path, forbidden reassignment, safe milestone redaction, other-account writes and shared HP/War Camp immutability. It separately tests rejection of `REPEATABLE READ` with a rollback.
 3. `world-boss-account-write-fence-v57-race-ci.sh` uses **two real PostgreSQL connections** to test writer-first vs fence-first races and cleans up its synthetic fixtures. It refuses any database host other than local disposable PostgreSQL.
 4. V57 SHA/source integration, branch reconciliation and exact-head GitHub Actions success must be verified. These tests are **not assumed green** while queued.

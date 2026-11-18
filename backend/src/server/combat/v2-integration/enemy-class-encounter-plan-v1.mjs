@@ -113,7 +113,7 @@ export function planHiddenEnemyClassEncounterV2(snapshot,authority){
   schema:COMBAT_V2_ENEMY_CLASS_GATE,encounterId:snapshot.encounterId,
   snapshotRevision:snapshot.snapshotRevision,mode:'new-v2-solo-only',
   region:snapshot.region,equipmentTier:snapshot.equipmentTier,
-  ruleset:ENEMY_V2_RULESET,characterId:actor.characterId,
+  ruleset:ENEMY_V2_RULESET,
   classId:actor.classId,classPolicyVersion:actor.classPolicyVersion,
   skillBuildVersion:actor.skillBuildVersion,
   equipmentSchema:actor.equipmentEvidence.schema,

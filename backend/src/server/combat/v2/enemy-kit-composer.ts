@@ -7,7 +7,7 @@
  * Candidates MUST be persisted atomically and verified again before use.
  * Existing dungeon/Live/Q-mode and World Boss code never imports this module.
  */
-import type {CombatantDefinition,CombatInput} from '../types';
+import type {CombatantDefinition} from '../types';
 import {
  ENEMY_V2_RULESET,prepareEnemyV2,
  type EnemyV2ServerOptions,type EnemyV2Region,type EnemyV2Tier,
@@ -55,9 +55,9 @@ const permittedBossIds:Readonly<Record<EnemyV2Region,readonly string[]>>={
  sunscar:['BOSS_EXP_SOLAR','BOSS_EXP_SPHINX'],
  frostmarch:['BOSS_EXP_BELLBEAST','BOSS_EXP_CANTOR'],
 };
-const assert=(condition:unknown,code:string):asserts condition=>{
+function assert(condition:unknown,code:string):asserts condition{
  if(!condition)throw Error('combat_v2_enemy_kit_'+code);
-};
+}
 const validId=(x:unknown):x is string=>
  typeof x==='string'&&x.length>0&&x.length<=128&&/^[A-Za-z0-9:_-]+$/.test(x);
 const distinct=(ids:readonly string[])=>new Set(ids).size===ids.length;

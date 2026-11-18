@@ -9,6 +9,7 @@ import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
 import {weaponBonusLine,weaponBonusCompactLine,weaponBonusRollGrade,weaponBonusStrength} from '../core/weapon-bonus-rolls';
+import {equipmentBonusLine,equipmentBonusCompactLine,equipmentBonusStrength} from '../core/equipment-bonus-rolls';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -75,16 +76,28 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
- const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>({
-  short:weaponBonusCompactLine(bonus),
-  detail:weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
-  strength:weaponBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
- }))??[];
- const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>({
-  short:weaponBonusCompactLine(bonus),
-  detail:weaponBonusLine(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
-  strength:weaponBonusStrength(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
- }))??[];
+ const currentRolls=slot==='weapon'
+  ?oldRecord?.weaponBonuses?.map(bonus=>({
+   short:weaponBonusCompactLine(bonus),
+   detail:weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
+   strength:weaponBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
+  }))??[]
+  :oldRecord?.equipmentBonuses?.map(bonus=>({
+   short:equipmentBonusCompactLine(bonus),
+   detail:equipmentBonusLine(oldRecord.itemId,oldRecord.rarity,bonus),
+   strength:equipmentBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus),
+  }))??[];
+ const newRolls=slot==='weapon'
+  ?instance?.weaponBonuses?.map(bonus=>({
+   short:weaponBonusCompactLine(bonus),
+   detail:weaponBonusLine(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
+   strength:weaponBonusStrength(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
+  }))??[]
+  :instance?.equipmentBonuses?.map(bonus=>({
+   short:equipmentBonusCompactLine(bonus),
+   detail:equipmentBonusLine(instance.itemId,instance.rarity,bonus),
+   strength:equipmentBonusStrength(instance.itemId,instance.rarity,bonus),
+  }))??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -138,16 +151,16 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
-   {slot==='weapon'&&(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.weaponRollPanel}>
-    <Text style={s.sectionTitle}>{gl('WEAPON BONUS ROLLS')}</Text>
+   {(currentRolls.length>0||newRolls.length>0)?<View style={s.weaponRollPanel}>
+    <Text style={s.sectionTitle}>{gl('BONUS STAT ROLLS')}</Text>
     <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
-    {currentWeaponRolls.length?currentWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
+    {currentRolls.length?currentRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
       <Text style={s.rollValue}>{roll.short}</Text>
       <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.muted}]}/></View>
       <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
     </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
     <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
-    {newWeaponRolls.length?newWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
+    {newRolls.length?newRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
       <View style={s.rollHead}><Text style={[s.rollValue,{color:C.good}]}>{roll.short}</Text>
         {roll.strength>=90?<Text style={[s.rollBadge,{color:C.good}]}>{gl(weaponBonusRollGrade(roll.strength))}</Text>:null}
       </View>

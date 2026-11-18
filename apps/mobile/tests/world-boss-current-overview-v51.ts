@@ -7,6 +7,8 @@ import {
  type WorldBossCurrentOverviewDepsV51,
 } from '../../../backend/online/world-boss-current-overview-v51';
 import type {WorldBossOverviewRowV41} from '../../../backend/online/world-boss-overview-v41';
+import {WORLD_BOSS_V52_READ_ROUTE_LIVE,handleWorldBossStatusReadV52} from
+ '../../../backend/online/world-boss-current-read-route-v52';
 
 const DAY=86400000;
 const LAUNCH=Date.UTC(2026,10,16);
@@ -134,6 +136,43 @@ async function main(){
  });
  await rejection(()=>duplicates.findByCycleStart(LAUNCH),'duplicate_global_event');
  await rejection(()=>database.findByCycleStart(LAUNCH+DAY),'invalid_cycle_start');
+
+
+ assert.equal(WORLD_BOSS_V52_READ_ROUTE_LIVE,false);
+ const good=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:'Bearer '+token,query:null},deps);
+ assert.equal(good.status,200);
+ assert.equal(good.body&&'bossId' in good.body?good.body.bossId:null,'hollowroot');
+ assert.equal(good.headers['Cache-Control'],'private, no-store, max-age=0');
+ assert.equal(good.headers.Vary,'Authorization');
+ assert.equal(Object.hasOwn(good.body??{},'canAttack'),false);
+ const noEvent=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:'Bearer '+token,query:null},{
+   ...deps,events:{findByCycleStart:async()=>null}});
+ assert.equal(noEvent.status,204);
+ assert.equal(noEvent.body,null);
+ const invalidLogin=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:'Bearer invalid-auth-credential',query:null},deps);
+ assert.equal(invalidLogin.status,401);
+ const emptyLogin=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:null,query:null},deps);
+ assert.equal(emptyLogin.status,401);
+ const wrongMethod=await handleWorldBossStatusReadV52(
+  {method:'POST',authorization:'Bearer '+token,query:null},deps);
+ assert.equal(wrongMethod.status,405);
+ const arbitraryEvent=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:'Bearer '+token,query:'eventId='+EVENT},deps);
+ assert.equal(arbitraryEvent.status,400);
+ const arbitraryAccount=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:'Bearer '+token,query:'accountId='+OTHER},deps);
+ assert.equal(arbitraryAccount.status,400);
+ const unavailable=await handleWorldBossStatusReadV52(
+  {method:'GET',authorization:'Bearer '+token,query:null},{
+   ...deps,events:{findByCycleStart:async()=>{throw Error('secret sql '+OTHER);}}});
+ assert.equal(unavailable.status,503);
+ assert.equal(JSON.stringify(unavailable).includes(OTHER),false);
+ assert.equal(JSON.stringify(unavailable).includes(token),false);
+ console.log('WORLD_BOSS_V52_UNMOUNTED_GET_READONLY_HANDLER=PASS');
 
  console.log('WORLD_BOSS_V51_OWNER_SCOPED_READONLY_CYCLE=PASS');
 }

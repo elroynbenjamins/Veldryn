@@ -52,6 +52,8 @@ jobs:
         run: pnpm --dir ../../backend exec tsc -p tsconfig.equipment-v2.json
       - name: Test server-side Gold reservation, one-time claims and replay
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-transaction.test.js
+      - name: Validate exact-copy 2.0 stat snapshots, class and weapon-hand safety
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-instances.test.js
       - name: Test shadow store compare-and-swap and crash recovery
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-shadow.test.js
       - name: Audit shadow SQL security and safe rollout boundary

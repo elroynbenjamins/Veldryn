@@ -33,6 +33,8 @@ export interface EquipmentInstanceV2 {
   eligibleRoles?:readonly RoleV2[];
   setFamilyId?:string;
   tier?:string;
+  /** Server-authored equip level; legacy and T1–T5 obey the same floor. */
+  requiredLevel?:number;
 }
 export interface SetFamilyV2 {
   id:string; role:RoleV2; slots:readonly GearSlotV2[]; thresholds:readonly number[];
@@ -123,6 +125,9 @@ export function validateBuildV2(
     const item=catalog.itemsByInstanceId[instanceId];
     if(!item||item.instanceId!==instanceId){issue('unknown_item',at);continue;}
     if(item.slot!==slot){issue('item_slot_mismatch',at);continue;}
+    if(item.requiredLevel!==undefined&&(
+      !Number.isSafeInteger(item.requiredLevel)||item.requiredLevel<1||level<item.requiredLevel
+    )){issue('item_level_ineligible',at);continue;}
     const classLocked=Boolean(item.eligibleClasses?.length);
     const roleLocked=Boolean(item.eligibleRoles?.length);
     // Both restrictions must pass when both are present. Nothing becomes universal.

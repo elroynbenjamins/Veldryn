@@ -95,7 +95,13 @@ export function auditPartyEventDay8ReadinessV36(
   issues.push('settlement_window_not_open');
  for(const stage of [1,2,3] as const){
   const orders=snapshot.orders.filter(o=>o.stage===stage&&o.kind==='required');
-  if(orders.length<3||orders.some(o=>o.donated!==o.target))
+  // The v22 deterministic starter plan freezes exactly one required
+  // wood, ore and herb order per stage. Merely having three completed
+  // orders is insufficient: duplicate woods must never impersonate herbs.
+  const categories=['wood','ore','herb'] as const;
+  const exactlyOnePerCategory=orders.length===3&&categories.every(category=>
+   orders.filter(o=>o.category===category).length===1);
+  if(!exactlyOnePerCategory||orders.some(o=>o.donated!==o.target))
    issues.push('stage_'+stage+'_supplies_not_verified');
  }
  if(!e.evidenceReconciled||e.payoutEnabled||e.claimed

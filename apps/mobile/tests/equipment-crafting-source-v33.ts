@@ -14,7 +14,6 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from '../src/content/crafting-gold-cost';
-import {isT5EquipmentAffixSlot,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -28,8 +27,8 @@ ok(roundEquipmentCraftingGoldCost(1286)===1300,'1286 Gold must round up to 1300'
 ok(roundEquipmentCraftingGoldCost(1249)===1200,'1249 Gold must round down to 1200');
 ok(roundEquipmentCraftingGoldCost(1250)===1300,'Halfway Gold amounts must round up');
 ok(roundEquipmentCraftingGoldCost(49)===100,'Positive gear crafts must not become free');
-// T5 was deliberately repriced (3500 → 6000 Gold, 1100 → 1200 XP) when the T5 affix
-// slots landed; every other tier stays pinned to its original baseline.
+// Preserve T5's broader tier baseline (6000 Gold, 1200 XP) independently of the retired
+// slot-specific affix surcharges; every other tier keeps its existing baseline.
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
@@ -58,8 +57,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const tier=recipe.v33EquipmentTier,skill=recipe.skillId;
   const primaryId=primaryByTier[tier][skill];
-  const affixMultiplier=tier==='T5'&&isT5EquipmentAffixSlot(slot)?T5_AFFIX_MATERIAL_MULTIPLIER:1;
-  const scale=materialTierMultiplier[tier]*originalSlotGold[slot]*affixMultiplier;
+  const scale=materialTierMultiplier[tier]*originalSlotGold[slot];
   const basicQuantity=Math.max(1,Math.round(primaryBase[tier][skill]*scale));
   const undiscountedQuantity=tier==='T3'&&skill==='smithing'
     ?Math.max(1,Math.round(basicQuantity*3*T3_SMITHING_DUNEWOOD_FINAL_FACTOR))
@@ -92,9 +90,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
   const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
-  // Three of the ten T5 slots carry a secondary stat and pay for it in profession XP.
-  const t5Affix=recipe.v33EquipmentTier==='T5'&&isT5EquipmentAffixSlot(slot);
-  ok(recipe.xp===(t5Affix?Math.round(improvedXp*T5_AFFIX_XP_MULTIPLIER):improvedXp),recipe.id+' must preserve the existing T2–T4 25% XP increase, the subsequent 20% T2–T4 increase, the T3/T4 flat +20 baseline, and the T5 affix-only bonus');
+  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
@@ -131,14 +127,8 @@ for(const skillId of ['smithing','tailoring'] as const){
   ok(fullSetGold('T5',skillId)<fullSetGold('T6',skillId),skillId+' full-set Gold must increase from T5 to T6');
 }
 for(const recipe of V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T5')){
-  const slot=itemDef(recipe.output.itemId).slot!;
   const fixative=recipe.inputs.find(input=>input.itemId==='SUNFUSED_FIXATIVE');
-  ok(fixative,'T5 '+recipe.id+' must require Sunfused Fixative');
-  if(isT5EquipmentAffixSlot(slot)){
-    ok(fixative!.quantity===2,recipe.id+' affix slot must require 2 Sunfused Fixative (base + extra)');
-  }else{
-    ok(fixative!.quantity===1,recipe.id+' non-affix slot must require exactly 1 Sunfused Fixative');
-  }
+  ok(fixative?.quantity===1,recipe.id+' must require only the ordinary T5 Sunfused Fixative, without a slot surcharge');
 }
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');

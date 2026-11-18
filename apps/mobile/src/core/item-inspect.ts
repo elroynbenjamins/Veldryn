@@ -19,7 +19,6 @@ import {craftedGearDisplayQuality,craftedGearInstances,craftedInstancesForItem,e
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
-import {t5EquipmentAffixForItem} from './t5-equipment-affixes';
 import {weaponBonusLine} from './weapon-bonus-rolls';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
@@ -175,11 +174,6 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
-    const t5Affix=t5EquipmentAffixForItem(itemId,selectedCopy);
-    if(t5Affix){
-      const label=t5Affix.stat==='critRate'?'Crit Rate':t5Affix.stat==='haste'?'Haste':'Evasion';
-      effectLines.push(`T5 forged affix · +${Math.round(t5Affix.percent*100)}% ${label} · ${t5Affix.rarity} Q${t5Affix.quality}`);
-    }
     if(selectedCopy?.weaponBonuses?.length){
       for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);
     }

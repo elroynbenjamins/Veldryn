@@ -184,10 +184,10 @@ healingGearState.character!.equipment.gloves=healingGlovesId;
 healingGearState.character!.equipmentInstanceIds={gloves:healingReceiptId};
 healingGearState.account.craftedGearInstances=[cleanHealingGloves];
 const unrolledHealingLoadout=deriveOnlineCoopLoadout('owner',healingGearState,20);
-const healingBps=equipmentBonusRange(2,'healingPower','gloves','uncommon',3)?.[0];
+const healingBps=equipmentBonusRange(2,'healingPower','gloves','uncommon',4)?.[0];
 assert.ok(Number.isInteger(healingBps)&&healingBps!==undefined&&healingBps>0,'T2 support equipment needs a valid release-safe Healing Power roll');
 const rolledHealingGloves:CraftedGearInstance={
- ...cleanHealingGloves,equipmentBonusRollVersion:3,
+ ...cleanHealingGloves,equipmentBonusRollVersion:4,
  equipmentBonuses:[{stat:'healingPower',basisPoints:healingBps!}],
 };
 healingGearState.account.craftedGearInstances=[rolledHealingGloves];

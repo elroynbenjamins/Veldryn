@@ -176,7 +176,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
     if(selectedCopy?.equipmentBonuses?.length){
-      for(const bonus of selectedCopy.equipmentBonuses)effectLines.push(`Equipment roll · ${equipmentBonusLine(itemId,selectedCopy.rarity,bonus)}`);
+      for(const bonus of selectedCopy.equipmentBonuses)effectLines.push(`Equipment roll · ${equipmentBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.equipmentBonusRollVersion)}`);
     }
     if(selectedCopy?.weaponBonuses?.length){
       for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);

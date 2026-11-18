@@ -10,6 +10,7 @@ on:
       - 'apps/mobile/src/components/SmithingCollection.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
       - 'apps/mobile/tests/weapon-bonus-rolls.ts'
+      - 'apps/mobile/tests/equipment-crafting-v2-hidden.ts'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'
   workflow_dispatch:
@@ -38,6 +39,8 @@ jobs:
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
       - name: Verify dual weapon rolls and exact-copy combat bonuses
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/weapon-bonus-rolls.js
+      - name: Verify hidden Equipment 2.0 and Crafting 2.0 foundations
+        run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafting-v2-hidden.js
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity

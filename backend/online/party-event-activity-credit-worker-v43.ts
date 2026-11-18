@@ -93,9 +93,11 @@ export interface TrustedPartyActivitySqlV43 {
  queryOne(sql:PartyEventCreditSqlV43,params:readonly string[]):Promise<{credit:unknown}|null>;
 }
 export type PartyEventCreditResultV43=
- |Readonly<{status:'not_enrolled';eventPointsGranted:0;credited:false}>
+ |Readonly<{status:'not_enrolled';eventPointsGranted:0;
+  pointsAddedThisInvocation:0;credited:false}>
  |Readonly<{status:'credited'|'replayed';eventPointsGranted:number;
-  totalMemberPoints:number;stage:1|2|3;credited:boolean}>;
+  pointsAddedThisInvocation:number;
+  totalMemberPoints:number;stage:1|2|3;credited:true}>;
 
 function invalid(reason:string):never{throw Error('party_event_v43_'+reason);}
 const record=(value:unknown):value is Record<string,unknown>=>value!==null
@@ -123,8 +125,11 @@ export function privatePartyActivityKeyV43(event:TrustedCommittedPartyActivityV4
 }
 
 function parseCredit(raw:unknown):PartyEventCreditResultV43{
- if(!record(raw)||!UUID.test(raw.creditId as string)
+ // V14 only returns creditId for REPLAY; a first credit returns no ID.
+ if(!record(raw)
   ||typeof raw.replayed!=='boolean'
+  ||(raw.replayed===true&&!UUID.test(raw.creditId as string))
+  ||(raw.replayed===false&&raw.creditId!==undefined)
   ||!safeInt(raw.eventPointsGranted,0,40)
   ||!safeInt(raw.totalMemberPoints,0,40)
   ||!safeInt(raw.stage,1,3))
@@ -132,6 +137,8 @@ function parseCredit(raw:unknown):PartyEventCreditResultV43{
  return {
   status:raw.replayed?'replayed':'credited',
   eventPointsGranted:raw.eventPointsGranted as number,
+  // The SQL replay reports the ORIGINAL credited points, not a fresh grant.
+  pointsAddedThisInvocation:raw.replayed?0:raw.eventPointsGranted as number,
   totalMemberPoints:raw.totalMemberPoints as number,
   stage:raw.stage as 1|2|3,credited:true,
  };
@@ -165,7 +172,7 @@ export function createPrivatePartyActivityCreditWorkerV43(db:TrustedPartyActivit
    try{row=await db.queryOne(sql,params);}
    catch{throw Error('party_event_v43_private_credit_unavailable');}
    return row===null
-    ?{status:'not_enrolled',eventPointsGranted:0,credited:false}
+    ?{status:'not_enrolled',eventPointsGranted:0,pointsAddedThisInvocation:0,credited:false}
     :parseCredit(row.credit);
   },
  };

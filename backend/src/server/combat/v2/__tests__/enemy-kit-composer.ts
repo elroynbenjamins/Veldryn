@@ -91,6 +91,13 @@ for(const {id,region,name} of bosses){
  assert.ok(plan.preparedEnemies[0].tags?.includes('enemy-v2:kit:v1'));
  const stored:PersistedEnemyKitV2={...plan,source:'server-persisted-v2',revision:3};
  assert.deepEqual(verifyPersistedEnemyKitsV2([boss],stored).enemies,plan.preparedEnemies);
+ const missingLegacy=plan.preparedEnemies.map(e=>({...e,
+   phases:e.phases?.filter(p=>p.id!=='LEGACY_PHASE'),
+ }));
+ rejects(()=>verifyPersistedEnemyKitsV2([boss],{
+  ...stored,preparedEnemies:missingLegacy,
+  preparedEnemyDigest:enemyV2SnapshotDigest(missingLegacy),
+ }),/original_enemy_kit_mutated/);
 }
 const unknown={...base('BOSS_EXP_UNLISTED'),boss:true};
 rejects(()=>prepareSoloEnemyKitsV2([unknown],{...options,eliteEnemyIds:[]}),/boss_requires_regional_profile/);
@@ -98,5 +105,8 @@ const wrongRegion={...base('BOSS_EXP_ROOT'),boss:true};
 rejects(()=>prepareSoloEnemyKitsV2([wrongRegion],{...options,eliteEnemyIds:[]}),/boss_requires_regional_profile/);
 const incorrectName={...base('BOSS_EXP_SOLAR'),name:'Forged Heliarch',boss:true};
 rejects(()=>prepareSoloEnemyKitsV2([incorrectName],{...options,eliteEnemyIds:[]}),/unrecognized_authored_boss/);
-assert.equal(failed,16);
-console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 16 fail-closed receipts');
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
+ ...persisted,preview:[null as never,...persisted.preview.slice(1)],
+}),/invalid_stored_preview/);
+assert.equal(failed,23);
+console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 23 fail-closed receipts');

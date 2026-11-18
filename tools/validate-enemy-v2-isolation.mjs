@@ -25,12 +25,14 @@ const allowedPrototypePaths=new Set([
   'backend/src/server/combat/enemy-v2-prototype.ts',
   'backend/src/server/combat/boss-v2-asterfall-prototype.ts',
   'backend/src/server/combat/boss-v2-regional-prototype.ts',
+  'backend/src/server/combat/enemy-v2-presentation.ts',
 ]);
 const sourceExtensions=/\.(?:ts|tsx|js|jsx|mjs|cjs)$/;
 const patterns=[
   /\bprepareEnemyV2\b/,
   /\bprepareAsterfallBossV2\b/,
   /\bprepareRegionalBossV2\b/,
+  /\benemyV2CombatCards\b/,
   /\bENEMY_V2_RULESET\b/,
   /['"]enemy-v2-prototype['"]/,
   /['"]boss-v2-asterfall-prototype['"]/,

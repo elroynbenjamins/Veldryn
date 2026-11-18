@@ -20,6 +20,7 @@ on:
       - 'backend/online/world-boss-impact-audit-v29.ts'
       - 'docs/roadmap/world-boss-impact-audit-v29.md'
       - 'backend/online/world-boss-rewards-v28.ts'
+      - 'backend/online/world-boss-gathering-loot-v64.ts'
       - 'backend/online/world-boss-rewards-pg-v28.ts'
       - 'backend/online/world-boss-reward-runtime-v28.ts'
       - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
@@ -125,7 +126,8 @@ jobs:
             world-boss-overview-v41 \
             world-boss-current-overview-v51 \
             world-boss-account-erasure-v56 \
-            world-boss-readiness-audit-v43
+            world-boss-readiness-audit-v43 \
+            world-boss-gathering-loot-v64
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done

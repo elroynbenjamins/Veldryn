@@ -153,6 +153,8 @@ export interface WorldBossGatheringChestEvidenceV65 {
   readonly accountId:string;
   readonly bossId:WorldBossGatheringBossV64;
   readonly committedDonations:number;
+  /** Number of the three shared War Camp tracks that reached Tier I. */
+  readonly warCampTracksAtLeastTier1:number;
   readonly completedProvenAttempts:number;
   readonly globalBossRemainingHpBps:number;
   readonly alreadyAwardedSources:readonly WorldBossGatheringChestSourceV65[];
@@ -173,6 +175,7 @@ export function eligibleWorldBossGatheringChestsV65(
   const set=worldBossGatheringSetV64(evidence.bossId);
   const countOk=(n:number)=>Number.isSafeInteger(n)&&n>=0&&n<=3;
   if(!countOk(evidence.committedDonations)||evidence.committedDonations>2||
+    !countOk(evidence.warCampTracksAtLeastTier1)||
     !countOk(evidence.completedProvenAttempts)||
     !Number.isSafeInteger(evidence.globalBossRemainingHpBps)||
     evidence.globalBossRemainingHpBps<0||evidence.globalBossRemainingHpBps>10_000||
@@ -181,7 +184,8 @@ export function eligibleWorldBossGatheringChestsV65(
     throw Error('world_boss_v65_invalid_proof_counts');
   const owned=new Set(evidence.alreadyAwardedSources);
   const eligible:WorldBossGatheringChestSourceV65[]=[];
-  if(evidence.committedDonations===2)eligible.push('donations');
+  if(evidence.committedDonations>=1&&evidence.warCampTracksAtLeastTier1>=2)
+    eligible.push('donations');
   if(evidence.completedProvenAttempts===3)eligible.push('three_attempts');
   if(evidence.completedProvenAttempts>=1&&
      evidence.globalBossRemainingHpBps<=WORLD_BOSS_GATHERING_COMMUNITY_HP_GOAL_BPS_V65)

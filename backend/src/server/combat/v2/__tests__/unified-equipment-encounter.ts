@@ -12,6 +12,7 @@ import {validateBuildV2} from '../build-contract';
 import {evaluatePowerCompositionV2} from '../power-composition';
 import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {serverBuildCatalogV2} from '../skill-catalog';
+import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
 import type {ApprovedEquipmentBasePolicyV2} from '../equipment-base-stats';
 import type {ApprovedSetPolicyV2} from '../equipment-set-effects';
 import type {ServerAffixPolicyV2} from '../equipment-affixes';
@@ -96,6 +97,7 @@ assert.throws(()=>simulateCombatWithSkillsV2(input,[build],true),
 const disabled=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],false);
 assert.equal(disabled.equipmentEvidence.length,0);
 const enabled=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true);
+const resolved=enabled.combat.players[0].definition;
 const repeat=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true);
 assert.deepEqual(enabled,repeat,'identical server snapshots must yield identical replays');
 assert.equal(enabled.equipmentEvidence.length,1);
@@ -142,7 +144,6 @@ const poisonedReplay=simulateUnifiedEquipmentCombatV2(
 assert.deepEqual(poisonedReplay.combat,enabled.combat,
  'Launch actor attack/defense and skill payload must not leak into class-only combat');
 
-const resolved=enabled.combat.players[0].definition;
 const rarityQuality=1.1*1.15;
 const round6=(n:number)=>Math.round(n*1e6)/1e6;
 const round5=(n:number)=>Math.round(n*1e5)/1e5;
@@ -212,4 +213,77 @@ assert.throws(()=>simulateUnifiedEquipmentCombatV2({
 },[build],[runtime],true),/persistent_state_adapter_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[],true),/complete_build_and_gear_snapshots_required/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build,build],[runtime],true),/complete_build_and_gear_snapshots_required/);
+
+// A separate, authenticated persistence reader may supply one fully prepared
+// Enemy 2.0 kit; this must bypass the generic Class V2 enemy kit compiler.
+const taggedEnemy={...foe,tags:['pve:archetype:assassin']};
+const authoredInput={...input,enemies:[taggedEnemy]};
+const authoredCandidate=prepareSoloEnemyKitsV2(authoredInput.enemies,{
+ ruleset:'enemy-v2-prototype-1',serverSeed:authoredInput.seed,
+ encounterId:'integrated-authored-1',region:'sunscar',equipmentTier:3,
+ eliteEnemyIds:[taggedEnemy.id],
+});
+const storedAuthored:PersistedEnemyKitV2={
+ ...authoredCandidate,source:'server-persisted-v2',revision:1,
+};
+const trustedAuthored={
+ snapshot:storedAuthored,
+ verifyPersisted:(_snapshot:PersistedEnemyKitV2,digest:string)=>{
+  assert.match(digest,/^[0-9a-f]{64}$/);
+  return true;
+ },
+};
+const v2Authored=simulateUnifiedEquipmentCombatV2(
+ authoredInput,[build],[runtime],true,trustedAuthored);
+const v2Repeat=simulateUnifiedEquipmentCombatV2(
+ authoredInput,[build],[runtime],true,trustedAuthored);
+assert.deepEqual(v2Authored,v2Repeat,'Frozen server-owned Enemy V2 kits must replay');
+assert.ok(v2Authored.combat.enemies[0].definition.tags?.includes('enemy-v2:kit:v1'));
+assert.ok(!v2Authored.combat.enemies[0].definition.tags?.includes('combat-v2-enemy'),
+ 'One Enemy 2.0 authored compiler; no generic double-kit');
+assert.ok(!v2Authored.combat.enemies[0].definition.abilities.some(a=>a.id.startsWith('V2_ENEMY_')),
+ 'Generic class enemy ability is excluded from the authored trait route');
+assert.equal(v2Authored.equipmentEvidence.length,1);
+assert.equal(v2Authored.combat.players[0].definition.stats.defense,expectedWithAffix,
+ 'Combining authored enemy kits does not modify verified equipment stats');
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ authoredInput,[build],[runtime],false,trustedAuthored),/requires_complete_v2/);
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ authoredInput,[build],[runtime],true,{...trustedAuthored,verifyPersisted:()=>false}),
+ /unverified_persisted_scope/);
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ {...authoredInput,seed:'altered-seed'},[build],[runtime],true,trustedAuthored),
+ /seed_mismatch/);
+const corruptKit={...storedAuthored,preparedEnemies:storedAuthored.preparedEnemies.map(
+ e=>({...e,stats:{...e.stats,attackPower:e.stats.attackPower+12}}))};
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ authoredInput,[build],[runtime],true,{...trustedAuthored,snapshot:corruptKit}),
+ /stored_kit_digest_mismatch/);
+
+// Verify handcrafted Asterfall solo boss can be issued a restricted authority
+// while its legacy phase is preserved. This is NOT a dungeon boss activation.
+const bossDef={...foe,id:'BOSS_EXP_ROOT',name:'Asterfall Root',
+ boss:true,tags:[],phases:[{
+  id:'LEGACY_PHASE',hpPct:.80,target:'self' as const,effects:[{kind:'shield' as const,flat:7}],
+ }]};
+const soloBossInput={...input,enemies:[bossDef]};
+const bossKit=prepareSoloEnemyKitsV2(soloBossInput.enemies,{
+ ruleset:'enemy-v2-prototype-1',serverSeed:soloBossInput.seed,
+ encounterId:'integrated-asterfall-boss',region:'asterfall',
+ equipmentTier:3,eliteEnemyIds:[],
+});
+const storedBoss:PersistedEnemyKitV2={...bossKit,source:'server-persisted-v2',revision:2};
+const bossFight=simulateUnifiedEquipmentCombatV2(
+ soloBossInput,[build],[runtime],true,{
+  snapshot:storedBoss,verifyPersisted:()=>true,
+ });
+assert.equal(bossFight.combat.enemies[0].definition.boss,true);
+assert.ok(bossFight.combat.enemies[0].definition.phases?.some(p=>p.id==='LEGACY_PHASE'));
+assert.ok(bossFight.combat.enemies[0].definition.phases?.some(p=>p.id==='ROOT_V2_PHASE_70'));
+assert.ok(!bossFight.combat.enemies[0].definition.phases?.some(p=>p.id.startsWith('V2_BOSS_PRESSURE_')),
+ 'Only the handcrafted boss profile may supply V2 boss phases');
+assert.deepEqual(bossFight,simulateUnifiedEquipmentCombatV2(
+ soloBossInput,[build],[runtime],true,{snapshot:storedBoss,verifyPersisted:()=>true}),
+ 'Handcrafted solo boss must deterministically replay without a second boss compiler');
+
 console.log('PASS: strict server gear ordering, provenance, no legacy double-counting, deterministic replays');

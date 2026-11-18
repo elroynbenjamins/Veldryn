@@ -27,6 +27,7 @@ on:
       - 'docs/roadmap/world-boss-overview-v41*.sql'
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
+      - 'backend/online/world-boss-current-read-route-v52.ts'
       - 'backend/online/world-boss-readiness-audit-v43.ts'
       - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
       - 'docs/roadmap/world-boss-character-lifecycle-v34.sql'

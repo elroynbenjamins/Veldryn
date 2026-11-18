@@ -40,6 +40,7 @@ const proof=plan(original(),verified);
 assert.equal(proof.schema,COMBAT_V2_ENEMY_CLASS_GATE);
 assert.equal(proof.runnable,false);
 assert.equal(proof.legacyRulesUntouched,true);
+assert.equal(proof.characterId,undefined,'Private character IDs must not enter the preview plan');
 assert.equal(proof.singleEnemyCompilerRequired,true);
 assert.equal(proof.enemies[0].archetype,'bulwark');
 assert.deepEqual(proof.enemies[0].traitIds,['stonehide']);

@@ -167,7 +167,7 @@ export function prepareEnemyV2(
     const count=kind==='elite'&&options.equipmentTier>=3?2:1;
     const chosen=pickTraits(rng,POOLS[archetype],count);
     if(!chosen.length)return enemy;
-    let next={...enemy,stats:{...enemy.stats},abilities:[...enemy.abilities],tags:[...(enemy.tags??[]),`${TAG_PREFIX}archetype:${archetype}`]};
+    let next:CombatantDefinition={...enemy,stats:{...enemy.stats},abilities:[...enemy.abilities],tags:[...(enemy.tags??[]),`${TAG_PREFIX}archetype:${archetype}`]};
     for(const id of chosen) {
       const spec=ENEMY_V2_TRAITS[id];
       const power=spec.min+(spec.max-spec.min)*unit(rng,`power:${id}`);

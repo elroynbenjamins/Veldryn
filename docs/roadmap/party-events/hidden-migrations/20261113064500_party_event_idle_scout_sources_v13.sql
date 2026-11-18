@@ -8,11 +8,13 @@ begin;
 -- rather than accepting arbitrary skill IDs supplied by a client.
 create table private.party_event_gathering_activities_v13 (
  activity_id text primary key,
- skill text not null check (skill in ('mining','woodcutting','fishing')),
+ skill text not null check (skill in ('mining','woodcutting','fishing','herbalism')),
  min_elapsed_sec integer not null default 60 check(min_elapsed_sec>=60),
  enabled boolean not null default true
 );
 insert into private.party_event_gathering_activities_v13(activity_id,skill) values
+ -- V44 verified beginner sources from current GATHERING/HERB_NODES:
+ ('GREENFIELDS_COPPER_OUTCROP','mining'),('DEWLEAF_PATCH','herbalism'),
  ('COPPER_VEIN','mining'),('ASTER_IRON_VEIN','mining'),('OATHSTONE_SEAM','mining'),
  ('GREENWOOD_TREE','woodcutting'),('IRONWOOD_TREE','woodcutting'),('CROWNWOOD_TREE','woodcutting'),
  ('SILVERBROOK_SHOAL','fishing'),('RIVER_EEL_POOL','fishing'),('OATHSCALE_POOL','fishing');

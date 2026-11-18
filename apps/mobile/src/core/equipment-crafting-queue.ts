@@ -370,7 +370,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
         mode,committedReceiptKeys:[],
       });
       if(proposed.status==='blocked')throw new Error(proposed.retention.reason==='weapon_bonus_choice'
-        ?'Weapon bonus rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe.'
+        ?'Bonus stat rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe.'
         :'Equipment requires manual review: '+proposed.retention.reason);
       if(proposed.receipt.action==='sell_incoming'){
         const credit=proposed.receipt.credit!;

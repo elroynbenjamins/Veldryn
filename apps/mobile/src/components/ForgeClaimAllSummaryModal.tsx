@@ -2,6 +2,8 @@ import {useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {equipmentRecipeForItem} from '../core/equipment-crafting-path';
+import {weaponBonusCompactLine} from '../core/weapon-bonus-rolls';
+import {equipmentBonusCompactLine} from '../core/equipment-bonus-rolls';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {rarityMeta,rarityNameColor,type ItemRarity} from '../core/item-rarity';
 import {useGameplayText} from '../i18n/gameplay';
@@ -38,7 +40,8 @@ function ForgeResultRow({result,sold=false}:{result:ForgeCraftResult;sold?:boole
   const tier=equipmentRecipeForItem(result.itemId)?.v33EquipmentTier
     ??result.itemId.match(/(?:^|[_-])(T[1-9])(?:[_-]|$)/i)?.[1];
   const name=item?.name??result.itemId.replace(/_/g,' ');
-  return <View accessible accessibilityLabel={[name,tier,rarity.label,result.quality===undefined?null:'Quality '+result.quality,gt(sold?'Auto-sold':'Collected')].filter(Boolean).join(', ')} style={[s.itemRow,sold&&s.soldRow]}>
+  const bonusLines=[...(result.weaponBonuses?.map(weaponBonusCompactLine)??[]),...(result.equipmentBonuses?.map(equipmentBonusCompactLine)??[])];
+  return <View accessible accessibilityLabel={[name,tier,rarity.label,result.quality===undefined?null:'Quality '+result.quality,...bonusLines,gt(sold?'Auto-sold':'Collected')].filter(Boolean).join(', ')} style={[s.itemRow,sold&&s.soldRow]}>
     <View style={[s.art,{borderWidth:rarity.borderWidth,borderColor:rarity.color,backgroundColor:rarity.surface}]}>
       {item?<EquipmentArtwork item={item} rarity={result.rarity} size={44} compact framed={false}/>:<ItemArtwork itemId={result.itemId} size={42}/> }
     </View>
@@ -49,6 +52,7 @@ function ForgeResultRow({result,sold=false}:{result:ForgeCraftResult;sold?:boole
         <Text style={[s.rarityChip,{color:C.dark?rarity.color:rarity.lightTextColor,borderColor:rarity.color}]}>{rarity.label}</Text>
         {result.quality!==undefined?<Text style={s.metaChip}>Q{result.quality}/100</Text>:null}
       </View>
+      {bonusLines.map((bonus,index)=><Text key={index} numberOfLines={1} style={s.rollNote}>{bonus}</Text>)}
       {sold?<Text style={s.saleNote}>{gt('Auto-sold new gear')} · +{result.saleGold.toLocaleString()} Gold</Text>
         :result.autoSold==='existing'?<Text style={s.saleNote}>{gt('Weaker copy sold')} · +{result.saleGold.toLocaleString()} Gold</Text>:null}
     </View>
@@ -104,6 +108,7 @@ function makeStyles(C:ThemeColors){
     metaChip:{fontSize:10,lineHeight:14,color:C.muted,fontWeight:'800'},
     rarityChip:{fontSize:10,lineHeight:14,fontWeight:'900',borderWidth:1,borderRadius:5,paddingHorizontal:5},
     saleNote:{...typography.caption,color:C.warning},
+    rollNote:{fontSize:10,lineHeight:13,color:C.good,fontWeight:'800'},
     sectionDivider:{paddingTop:6,borderTopWidth:1,borderTopColor:E.line},
     sectionLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.6},
     actions:{flexDirection:'row',gap:spacing.sm},

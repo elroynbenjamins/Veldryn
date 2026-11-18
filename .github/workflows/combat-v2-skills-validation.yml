@@ -8,6 +8,8 @@ on:
       - 'backend/src/server/combat/**'
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
+      - 'backend/online/combat-v2-build-auth-boundary.ts'
+      - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
       - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
@@ -18,6 +20,8 @@ on:
       - 'backend/src/server/combat/**'
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
+      - 'backend/online/combat-v2-build-auth-boundary.ts'
+      - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
       - '.github/workflows/combat-v2-skills-validation.yml'
   workflow_dispatch:
 
@@ -79,3 +83,22 @@ jobs:
         run: pnpm --dir apps/mobile typecheck
       - name: Verify preview catalogue, accessible interactions and isolation from production
         run: node apps/mobile/tests/skills-v2-preview-ui.cjs
+
+  build_api_boundary:
+    name: Hidden authenticated Combat 2.0 build transport
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile isolated online contracts
+        run: pnpm --dir backend exec tsc -p tsconfig.online.json
+      - name: Reject build spoofing and verify disabled transport
+        run: node backend/dist/online/backend/online/tests/combat-v2-build-auth-boundary.js

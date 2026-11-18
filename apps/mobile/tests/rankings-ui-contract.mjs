@@ -10,7 +10,7 @@ includes('request.current++','selection and unmount must invalidate in-flight re
 includes('version===request.current','outdated fetch responses must be discarded');
 includes('if(next===board)return;','reselecting a board must not erase current standings');
 includes('if(value===group)return;','reselecting a category must preserve the current board');
-includes('if(next.board!==board||!Array.isArray(next.entries))','reject mismatched server responses');
+includes('if(next.board!==board||!Array.isArray(next.entries)||next.entries.some(entry=>','reject mismatched or invalid server responses');
 includes('setError(st("Could not load Rankings."))','request errors must be localized and avoid raw backend details');
 includes('splitRankingDisplay(activeSnapshot?.entries??[],page)','podium and regular rows must use the tie-safe shared projector');
 assert.ok(pager.includes('entry.rank>=1&&entry.rank<=3')&&pager.includes('podium.length<3')&&pager.includes('remaining.push(entry)'),'podium must only highlight actual official top-three ranks without promoting privacy-filtered entries or dropping ties');

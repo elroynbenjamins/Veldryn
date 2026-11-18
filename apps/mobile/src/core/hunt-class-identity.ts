@@ -35,7 +35,7 @@ export function huntClassSurvivalEvents(events:readonly HuntHit[],input:{
  if(pulse===undefined)return result;
  const rank=Math.min(100,Math.max(1,Math.floor(Number.isFinite(input.classSkillLevel)?input.classSkillLevel:1)));
  const scale=1+.30*(rank-1)/99;
- const healScale=Math.max(1,Math.min(1.20,input.classHealingMultiplier??1));
+ const healScale=Math.max(1,Math.min(1.50,input.classHealingMultiplier??1));
  const eligible=result.filter(event=>(event.actor==='enemy'||(profile.mechanic==='sun_heal'&&event.actor==='fatigue'))
   &&event.damage>0
   &&input.encounterStartedAtMs+event.fraction*input.cycleSeconds*1000>=pulse-1e-3);

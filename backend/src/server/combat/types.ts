@@ -11,6 +11,8 @@ export interface CombatV2LoadoutMeta {
   resource:CombatV2Resource;
   specializationId:string;
   capstoneId?:string;
+  /** Sanitized rank map compiled only from a fully validated server loadout. */
+  passiveRanks?:Readonly<Record<string,number>>;
 }
 export interface CombatV2State {
   resource:CombatV2Resource;

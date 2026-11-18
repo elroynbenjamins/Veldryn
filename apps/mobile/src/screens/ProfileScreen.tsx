@@ -1,5 +1,6 @@
 import {profileT,profileText,profileBadge,profileRecordValue} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {socialIdentityT} from '../i18n/social-identity';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {Panel} from '../components/Panel';
@@ -70,7 +71,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
 
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>{profileT(language,"PLAYER IDENTITY")}</Text><Text accessibilityRole="header" style={s.heading}>{profileT(language,"Profile")}</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,publicError?s.syncIssue:online?s.online:s.local]}>{profileStateLabel}</Text>}</View>
-  {publicSelf?<Text style={s.socialLabel}>Social Name · {publicSelf.displayName}</Text>:null}
+  {publicSelf?<Text style={s.socialLabel}>{socialIdentityT(language,'Social name')} · {publicSelf.displayName}</Text>:null}
   <View style={s.quickActions}>
    <View style={s.customizeAction}><GameButton compact title={profileT(language,"Customize")} onPress={()=>onNavigate?.('Customize')}/></View>
   </View>

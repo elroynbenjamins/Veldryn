@@ -28,6 +28,7 @@ on:
       - 'docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql'
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
+      - 'backend/online/world-boss-account-privacy-v58.ts'
       - 'backend/online/world-boss-current-read-route-v52.ts'
       - 'backend/online/world-boss-account-erasure-v56.ts'
       - 'backend/online/world-boss-readiness-audit-v43.ts'

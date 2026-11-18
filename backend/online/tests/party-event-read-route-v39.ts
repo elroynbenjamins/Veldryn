@@ -27,7 +27,7 @@ const adapter=createPrivatePartyEventReadHttpAdapterV39({
   if(token===jwtB)return {data:{user:{id:bob}},error:null};
   throw Error('private auth failure with sensitive details');
  }},
-},{readForTrustedAccount:async account=>{reads.push(account);return account===alice?status:null;}});
+},{readForTrustedAccount:async account=>{reads.push(account);return account===alice?status:null;}},()=>Date.parse('2026-11-18T12:00:00Z'));
 async function run(){
  check(PARTY_EVENT_READ_ROUTE_V39_MOUNTED===false,'unmounted');
  const method=await adapter.handle({method:'POST',authorization:'Bearer '+jwtA});
@@ -50,10 +50,26 @@ async function run(){
  check(reject.status===401&&JSON.stringify(reject).indexOf('sensitive')<0,'safe_auth_error');
  const backend=createPrivatePartyEventReadHttpAdapterV39({
   auth:{getUser:async()=>({data:{user:{id:alice}},error:null})},
- },{readForTrustedAccount:async()=>{throw Error('private SQL customer secret');}});
+ },{readForTrustedAccount:async()=>{throw Error('private SQL customer secret');}},()=>Date.parse('2026-11-18T12:00:00Z'));
  const outage=await backend.handle({method:'GET',authorization:'Bearer '+jwtA});
  check(outage.status===503&&!JSON.stringify(outage).includes('customer secret'),'sql_error_sanitized');
  check(outage.headers['Cache-Control']==='private, no-store','error_never_cached');
+
+ const stale=createPrivatePartyEventReadHttpAdapterV39({
+  auth:{getUser:async()=>({data:{user:{id:alice}},error:null})},
+ },{readForTrustedAccount:async()=>({
+  ...status,serverTime:'2026-12-01T12:00:00Z'
+ })},()=>Date.parse('2026-12-01T12:00:00Z'));
+ const old=await stale.handle({method:'GET',authorization:'Bearer '+jwtA});
+ check(old.status===200&&'event' in old.body&&old.body.event===null,
+  'old_week_not_exposed_as_current');
+ const inconsistent=createPrivatePartyEventReadHttpAdapterV39({
+  auth:{getUser:async()=>({data:{user:{id:alice}},error:null})},
+ },{readForTrustedAccount:async()=>({...status,status:'settled'})},
+ ()=>Date.parse('2026-11-18T12:00:00Z'));
+ const malformed=await inconsistent.handle({method:'GET',authorization:'Bearer '+jwtA});
+ check(malformed.status===503,'premature_settlement_rejected');
+
  console.log('PARTY_EVENTS_V39_HTTP_OK: GET only, remote auth, owner isolation, no-store, sanitized errors, no writes');
 }
 void run().catch(e=>{console.error(e);process.exitCode=1});

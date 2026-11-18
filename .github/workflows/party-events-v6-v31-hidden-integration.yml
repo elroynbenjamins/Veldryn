@@ -74,6 +74,7 @@ jobs:
             party-event-read-route-v39 \
             party-event-current-read-v40 \
             party-event-security-sweep-v41 \
+            party-event-activity-credit-worker-v43 \
             party-event-schema-readiness-v35 \
             party-event-day8-audit-v36 \
             party-event-staging-assessment-v37

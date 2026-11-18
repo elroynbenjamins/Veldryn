@@ -13,6 +13,7 @@ import type {GearSlotV2} from './build-contract';
 import {validateBuildV2} from './build-contract';
 import {serverBuildCatalogV2} from './skill-catalog';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';
+import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
 import {compileEnemiesForCombatV2} from './enemy-bridge';
 import {resolveVerifiedEquipmentBaseV2,
   type StoredEquipmentInstanceV2,type EquipmentBaseDefinitionV2,
@@ -28,6 +29,8 @@ import {compileTrustedEquipmentAffixesV2,
 export interface TrustedEquipmentRuntimeV2 {
  readonly actorId:string;
  readonly characterId:string;
+ /** Mandatory, versioned class-only source; never trust launch actor stats. */
+ readonly classBaselinePolicy:ApprovedClassBaselinePolicyV2;
  /** Only from the server's currently owned/equipped instance ledger. */
  readonly instancesById:Readonly<Record<string,StoredEquipmentInstanceV2>>;
  /** Only from a versioned, approved server item catalogue. */
@@ -85,7 +88,10 @@ function compileEquippedActor(
  // accidentally giving a banked or another-character item hidden power.
  for(const key of Object.keys(runtime.affixesByInstanceId))
   if(!unique.has(key))throw Error('combat_v2_extra_equipment_affix_snapshot');
- const skills=compileServerSkillBuildV2(true,build);
+ // Strict boundary: the launch actor's stats/abilities may already contain
+ // legacy gear. Only verified server class-level policy can issue the base.
+ const classOnly=issueClassOnlyActorV2(actor,build.verified,runtime.classBaselinePolicy);
+ const skills=compileServerSkillBuildV2(true,{...build,actor:classOnly});
  const base=resolveVerifiedEquipmentBaseV2(
   skills,build.verified.classId,runtime.characterId,requested,checked,
   runtime.instancesById,runtime.definitionsByItemId,runtime.basePolicy,true);

@@ -20,6 +20,7 @@ const files={
  v45:'20261118143000_party_event_canonical_source_writer_v45.sql',
  v46:'20261118173000_party_event_source_outbox_v46.sql',
  v47:'20261118183000_party_event_source_leases_v47.sql',
+ v48:'20261118194500_party_event_server_gateway_v48.sql',
 };
 const sql=Object.fromEntries(Object.entries(files).map(([key,path])=>
  [key,read(base+path)]));
@@ -79,6 +80,8 @@ assert.match(sql.v30,/inspect_party_event_claim_lock_v30/i);
 assert.match(sql.v45,/private\.commit_online_game_party_sources_v45/i);
 assert.match(sql.v46,/private\.party_event_source_outbox_v46/i);
 assert.match(sql.v47,/private\.lease_party_event_sources_v47/i);
+assert.match(sql.v48,/public\.commit_online_game_party_sources_server_v48/i);
+assert.match(sql.v48,/grant execute on function public\.commit_online_game_party_sources_server_v48\([\s\S]*?\)\s*to service_role/i);
 const commitPreview=read('backend/online/party-event-gameplay-commit-v48.ts');
 const gameplay=read('backend/online/gameplay.ts');
 assert.match(commitPreview,/export const PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED=false;/,

@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatStats} from '../../types';
-import type {VerifiedSkillBuildV2} from '../skill-effects';
+import {simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
 import {TIERED_SETS_BY_ID_V2} from '../set-catalog';
 import {simulateUnifiedEquipmentCombatV2,type TrustedEquipmentRuntimeV2} from '../unified-equipment-encounter';
@@ -79,6 +79,8 @@ const foe={
 };
 const input={seed:'source-owned-equipment-integration',players:[classActor],enemies:[foe],maxDurationMs:8000};
 const before=JSON.stringify(classActor);
+assert.throws(()=>simulateCombatWithSkillsV2(input,[build],true),
+ /equipment_pipeline_required/,'Skills-only simulator must never silently skip equipped gear');
 const disabled=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],false);
 assert.equal(disabled.equipmentEvidence.length,0);
 const enabled=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true);

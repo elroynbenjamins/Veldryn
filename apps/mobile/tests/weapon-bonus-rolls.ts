@@ -92,9 +92,14 @@ const fullPool=new Set(CLASSES.flatMap(cls=>{
  const itemId=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.classId===cls.id&&itemDef(row.output.itemId).slot==='weapon')!.output.itemId;
  return [...weaponBonusConfig(itemId,'common')!.pool];
 }));
-for(const name of ['maxHp','armor','ward','tenacity','critRate','critDamage','abilityDamage','healingPower','haste','penetration','accuracy','potency','evasion'])
+for(const name of ['maxHp','armor','ward','tenacity','critRate','critDamage','healingPower','haste','penetration','accuracy','potency','evasion'])
   ok(fullPool.has(name as any),'Early equipment stat pool is missing '+name);
 ok(!fullPool.has('power' as any),'Generic Power cannot roll before the Weapon Power / Skill Power 2.0 split');
+ok(!fullPool.has('abilityDamage' as any),'Ability Damage cannot mint before real combat-result parity in 2.0');
+ok(weaponBonusConfig(t5,'uncommon',3)?.pool.includes('abilityDamage'),
+  'Previously minted weapon v3 rolls remain valid and inspectable');
+ok(!weaponBonusRange(5,'abilityDamage',4,'uncommon'),
+  'The deferred Ability Damage range cannot be minted in weapon v4');
 // Stat-specific balancing: high-value Crit Rate and Ward cap below broad HP / Tenacity.
 ok(weaponBonusRange(2,'critRate')?.join(',')==='30,80','T2 Crit Rate must have an especially low roll cap');
 ok(weaponBonusRange(3,'critRate')?.join(',')==='50,150','T3 Crit Rate is 0.5–1.5%, not the old global range');
@@ -132,7 +137,7 @@ for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){
   const bonuses=rollWeaponBonuses(id,'common','class-pool',.5)!;
   ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for its class role');
 }
-ok(WEAPON_BONUS_ROLL_VERSION===3,'New weapons use rarity-adjusted v3 tables; previous v1/v2 stay readable');
+ok(WEAPON_BONUS_ROLL_VERSION===4,'Early-release weapons mint v4 with 12 active stats; v1–v3 remain readable');
 ok(weaponBonusRange(3,'critRate',1)?.join(',')==='100,300','Older v1 receipts keep their original T3 1–3% range');
 ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:250}],1),
   'Already minted v1 high Crit Rate rolls must be preserved after rebalance');
@@ -159,7 +164,21 @@ const copy=draftCraftedGearInstance({itemId:t5,ownerCharacterId:owner,jobId:'wea
 ok(copy.weaponBonuses?.length===2,'New T5 forged copy must receive two attributes');
 const normalized=normalizeCraftedGearInstances([copy])[0];
 ok(JSON.stringify(normalized.weaponBonuses)===JSON.stringify(copy.weaponBonuses),'Saved attributes must survive round-trip');
-ok(normalized.weaponBonusRollVersion===3,'New copies retain their rarity-scaled version');
+ok(normalized.weaponBonusRollVersion===4,'New copies retain their deferred-stat safe version');
+ok(!copy.weaponBonuses?.some(b=>b.stat==='abilityDamage'),
+  'New weapon rolls must not include Ability Damage until the authoritative 2.0 combat update');
+const priorV3={
+  ...copy,id:'v3-ability-development-receipt',weaponBonusRollVersion:3 as const,
+  weaponBonuses:[
+    {stat:'abilityDamage' as const,basisPoints:weaponBonusRange(5,'abilityDamage',3,copy.rarity)![0]},
+    {stat:'critRate' as const,basisPoints:weaponBonusRange(5,'critRate',3,copy.rarity)![0]},
+  ],
+};
+const normalizedV3=normalizeCraftedGearInstances([priorV3])[0];
+ok(normalizedV3.weaponBonusRollVersion===3&&normalizedV3.weaponBonuses?.[0]?.stat==='abilityDamage',
+  'An older v3 development receipt must remain readable without a reroll');
+ok(!normalizeWeaponBonuses(t5,copy.rarity,priorV3.weaponBonuses,4),
+  'An old Ability Damage receipt cannot masquerade as a new v4 roll');
 const preRebalanceCopy={
   ...copy,id:'v1-legacy-draft',weaponBonusRollVersion:1 as const,
   weaponBonuses:[{stat:'critRate' as const,basisPoints:250},{stat:'haste' as const,basisPoints:290}],

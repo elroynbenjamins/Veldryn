@@ -95,3 +95,20 @@ export function equipmentV2AffixBounds(tier:EquipmentV2Tier,rarity:ItemRarity,af
 export const EQUIPMENT_V2_TARGET_POWER_SHARES={
  classAndLevel:.17,gearBase:.45,rarityAndQuality:.14,affixesGemsSetsUpgrades:.14,companionAndOther:.10,
 } as const;
+
+/** One-handed weapon + off-hand, two-handed weapon and dual-blade loadouts
+ * receive equivalent combined flat budgets. Off-hand remains unavailable
+ * when a two/dual-hand weapon occupies both hands.
+ */
+export type EquipmentV2WeaponHands='one'|'two'|'dual';
+export function equipmentV2WeaponAndOffhandBudget(tier:EquipmentV2Tier){
+ return equipmentV2Budget(tier,'weapon')+equipmentV2Budget(tier,'offhand');
+}
+export function equipmentV2PreviewArmamentStats(
+ tier:EquipmentV2Tier,profile:EquipmentV2Profile,hands:EquipmentV2WeaponHands,
+ quality=50,rarityMultiplier=1,
+):EquipmentV2BaseStats{
+ const normal=equipmentV2PreviewBaseStats(tier,'weapon',profile,quality,rarityMultiplier);
+ const multiplier=hands==='one'?1:equipmentV2WeaponAndOffhandBudget(tier)/equipmentV2Budget(tier,'weapon');
+ return {attack:normal.attack*multiplier,defense:normal.defense*multiplier,hp:normal.hp*multiplier};
+}

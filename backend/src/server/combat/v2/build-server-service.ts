@@ -60,6 +60,8 @@ export interface ServerBuildDependenciesV2 {
   readonly storage:BuildStoragePortV2;
   readonly equipment:EquipmentRegistryV2;
   readonly sets:Readonly<Record<string,SetFamilyV2>>;
+  /** Required trusted activity service. null means clear; never infer clear from missing data. */
+  readonly activityGuard?:(trustedAccountId:string,characterId:string)=>Promise<AuthorizedBuildContextV2['busyReason']|null>;
 }
 const failure=(code:string,at:string,current:CharacterBuildStateV2|null=null):ServerBuildResponseV2=>({
   ok:false,revision:current?.revision??null,state:current,issues:[{code,at}],
@@ -110,7 +112,10 @@ export class CharacterBuildServiceV2 {
   async read(trustedAccountId:string,characterId:string,serverEnabled=false):Promise<ServerBuildResponseV2>{
     if(!serverEnabled)return failure('feature_disabled','feature');
     if(!trustedAccountId||!characterId)return failure('auth_required','account');
-    const row=await this.deps.storage.load(trustedAccountId,characterId);
+    let row:TrustedBuildSnapshotV2;
+    try{row=await this.deps.storage.load(trustedAccountId,characterId);}
+    catch(e){if(e instanceof Error&&e.message.includes('combat_v2_character_mismatch'))
+      return failure('character_mismatch','characterId');throw e;}
     if(row.accountId!==trustedAccountId||row.characterId!==characterId)
       return failure('character_mismatch','characterId');
     const state=row.builds??emptyCharacterBuildStateV2(characterId);
@@ -122,13 +127,19 @@ export class CharacterBuildServiceV2 {
   ):Promise<ServerBuildResponseV2>{
     if(!serverEnabled)return failure('feature_disabled','feature');
     if(!trustedAccountId||!characterId)return failure('auth_required','account');
-    const row=await this.deps.storage.load(trustedAccountId,characterId);
+    let row:TrustedBuildSnapshotV2;
+    try{row=await this.deps.storage.load(trustedAccountId,characterId);}
+    catch(e){if(e instanceof Error&&e.message.includes('combat_v2_character_mismatch'))
+      return failure('character_mismatch','characterId');throw e;}
     if(row.accountId!==trustedAccountId||row.characterId!==characterId)
       return failure('character_mismatch','characterId');
     const current=row.builds??emptyCharacterBuildStateV2(characterId);
+    if(!this.deps.activityGuard)return failure('activity_guard_unavailable','activity',current);
+    const busyReason=await this.deps.activityGuard(trustedAccountId,characterId);
+    if(busyReason===undefined)return failure('activity_guard_unavailable','activity',current);
     const {verified,catalog}=trustedBuildContextV2(row,this.deps.equipment,this.deps.sets);
     const plan=planBuildMutationV2(current,{
-      authenticatedCharacterId:characterId,verified,catalog,busyReason:row.busyReason,
+      authenticatedCharacterId:characterId,verified,catalog,busyReason:busyReason??undefined,
     },request);
     if(!plan.ok)return {ok:false,revision:current.revision,state:current,issues:plan.issues};
     try{

@@ -11,15 +11,18 @@ CREATE UNIQUE INDEX world_boss_v53_one_global_start
   ON private.world_boss_events_v17(starts_at);
 
 -- A cycle lasts a fixed 14*86400 seconds in UTC, not 14 local civil days.
--- integer epoch seconds avoid timezone/DST-sensitive timestamptz+interval
--- expressions in an immutable GiST exclusion constraint. Any two overlapping
+-- Convert timestamptz to UTC timestamp WITHOUT time zone before extracting
+-- epoch seconds: extract(epoch FROM timestamptz) is marked STABLE, and would
+-- fail PostgreSQL's IMMUTABLE index-expression requirement. The explicit UTC
+-- timezone conversion + timestamp epoch extraction are both IMMUTABLE.
+-- This also avoids DST-sensitive timestamptz + interval '14 days'. Any two overlapping
 -- realm cycles conflict, including a different-boss or differently timed row.
 ALTER TABLE private.world_boss_events_v17
   ADD CONSTRAINT world_boss_v53_global_cycle_no_overlap
   EXCLUDE USING gist (
     int8range(
-      floor(extract(epoch FROM starts_at))::bigint,
-      floor(extract(epoch FROM starts_at))::bigint + 1209600,
+      floor(extract(epoch FROM (starts_at AT TIME ZONE 'UTC')))::bigint,
+      floor(extract(epoch FROM (starts_at AT TIME ZONE 'UTC')))::bigint + 1209600,
       '[)'
     ) WITH &&
   );

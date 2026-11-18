@@ -68,6 +68,16 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/build-server-service.js
       - name: Validate legacy gear and enemy integration
         run: node backend/dist/server/combat/v2/__tests__/cross-system-bridge.js
+      - name: Validate server-token Enemy 2.0 engine co-existence and legacy replay parity
+        run: node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js
+      - name: Verify Enemy 2.0 authority is not mounted in public service routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R 'issueEnemyV2EngineAuthority' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+            echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
+            exit 1
+          fi
       - name: Validate source-owned affix ranges and typed combat modifiers
         run: node backend/dist/server/combat/v2/__tests__/equipment-affixes.js
       - name: Validate approved quality and rarity scaling policy

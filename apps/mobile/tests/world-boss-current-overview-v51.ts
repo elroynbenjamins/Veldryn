@@ -42,9 +42,10 @@ const rejection=async(job:()=>Promise<unknown>,part:string)=>{
 };
 async function main(){
  assert.equal(WORLD_BOSS_V51_AUTHENTICATED_OVERVIEW_LIVE,false);
- let authCount=0,selectionCount=0,overviewCount=0;
+ let authCount=0,privacyCount=0,selectionCount=0,overviewCount=0;
  const deps:WorldBossCurrentOverviewDepsV51={
   authenticate:async(value)=>{authCount++;return value===token?ACCOUNT:null;},
+  accountPrivacy:{allowRead:async(accountId)=>{privacyCount++;assert.equal(accountId,ACCOUNT);return true;}},
   launchMondayUtcMs:LAUNCH,serverNowUtcMs:()=>NOW,
   events:{async findByCycleStart(start){
    selectionCount++;assert.equal(start,LAUNCH);return event();}},
@@ -64,7 +65,8 @@ async function main(){
  assert.equal(Object.hasOwn(result,'canDonate'),false);
  assert.equal(Object.hasOwn(result,'attemptsRemaining'),false);
  assert.equal(Object.hasOwn(result,'donationsRemaining'),false);
- assert.equal(authCount,1);assert.equal(selectionCount,1);assert.equal(overviewCount,1);
+ assert.equal(authCount,1);assert.equal(privacyCount,1);
+ assert.equal(selectionCount,1);assert.equal(overviewCount,1);
 
  await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token:'bad'},deps),
   'invalid_auth_reader');
@@ -72,6 +74,20 @@ async function main(){
   {token:'invalid-session-token'},deps),'auth_required');
  assert.equal(selectionCount,1,'authentication must precede event lookup');
  assert.equal(overviewCount,1);
+
+ // Even a valid session must not expose event, wallet or personal replay
+ // status after an erasure/deletion request has started.
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:{allowRead:async()=>false},
+ }), 'account_privacy_hold');
+ assert.equal(selectionCount,1,'privacy hold must precede event lookup');
+ assert.equal(overviewCount,1,'privacy hold must precede private overview');
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:undefined,
+ } as unknown as WorldBossCurrentOverviewDepsV51), 'invalid_auth_reader');
+ assert.equal(selectionCount,1,'missing privacy gate must fail closed');
+ // Invalid or unverified Auth must not probe the account privacy gate.
+ assert.equal(privacyCount,1);
 
  // Missing event and time before launch fail closed without claiming a boss.
  assert.equal(await readAuthenticatedCurrentWorldBossOverviewV51({token},{

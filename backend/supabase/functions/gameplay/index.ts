@@ -42377,9 +42377,15 @@ var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75;
 var TOOL_BLUEPRINT_DROP_ROUNDING_STEP = 1e-3;
 function roundDownToolBlueprintDropChance(chance) {
   if (!Number.isFinite(chance) || chance < 0 || chance > 1) throw new Error("invalid_tool_blueprint_chance");
-  return Math.floor(chance / TOOL_BLUEPRINT_DROP_ROUNDING_STEP + 1e-10) * TOOL_BLUEPRINT_DROP_ROUNDING_STEP;
+  const ticksPerUnit = Math.round(1 / TOOL_BLUEPRINT_DROP_ROUNDING_STEP);
+  return Math.floor(chance * ticksPerUnit + 1e-10) / ticksPerUnit;
 }
-var TOOL_CRAFT_COST_MULTIPLIER = 2;
+var TOOL_CRAFT_COST_MULTIPLIER_BY_TIER = {
+  1: 3,
+  2: 5,
+  3: 7,
+  4: 9
+};
 var TOOL_CRAFT_XP_BONUS = 3;
 var TOOL_CRAFT_XP_MULTIPLIER = 1.75;
 var TOOL_CRAFT_XP_ROUNDING_STEP = 10;
@@ -42393,8 +42399,8 @@ var tool = (definition) => ({
   recipe: {
     ...definition.recipe,
     xp: increasedToolCraftXp(definition.recipe.xp),
-    gold: increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER,
-    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER }))
+    gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER_BY_TIER[definition.tier]),
+    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER_BY_TIER[definition.tier] }))
   }
 });
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({
@@ -42409,17 +42415,17 @@ var GATHERING_TOOLS = [
   tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
   tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
   // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
-  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.05), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.05), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.05), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
+  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.017), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.016), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.015), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
   // Tier 3 is a genuine progression chase: higher gathering level, Level 20 and a rarer blueprint.
-  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.02), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
-  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.02), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
-  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.02), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
+  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.013), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
+  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.012), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
+  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.01), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
   // Tier 4 belongs to Frostmarch. It is deliberately a long-term efficiency upgrade, not required to enter the region.
-  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 0.01), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
-  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 0.01), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
-  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 0.01), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
+  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 9e-3), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
+  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 8e-3), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
+  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 8e-3), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
 ];
 var TOOL_ITEMS = GATHERING_TOOLS.map((entry2) => ({ id: entry2.id, name: entry2.name, type: "tool", value: entry2.value, rarity: entry2.rarity, toolSkillId: entry2.skillId, toolTier: entry2.tier, actionTimeMultiplier: entry2.actionTimeMultiplier }));
 var TOOL_BLUEPRINT_ITEMS = GATHERING_TOOLS.flatMap((entry2) => entry2.blueprint ? [{
@@ -44452,18 +44458,18 @@ var MONSTERS_RAW = [
   { id: "SILVERFIN_SWARM", name: "Silverfin Swarm", level: 5, hp: 66, attack: 9, defense: 4, xp: 34, gold: 2, secondsPerKill: 10, unlockLevel: 5, zone: "Silverbrook", drops: [{ itemId: "SILVERFIN", chance: 0.6, min: 1, max: 2 }, { itemId: "WISP_DUST", chance: 0.12, min: 1, max: 1 }] },
   { id: "IRONWOOD_WOLF", name: "Ironwood Wolf", level: 7, hp: 96, attack: 12, defense: 7, xp: 48, gold: 3, secondsPerKill: 12, unlockLevel: 7, zone: "Ironwood Forest", drops: [{ itemId: "WOLF_PELT", chance: 0.48, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.14, min: 1, max: 1 }, { itemId: "BOAR_HIDE", chance: 0.2, min: 1, max: 1 }] },
   { id: "VENOM_WEAVER", name: "Venom Weaver", level: 8, hp: 108, attack: 14, defense: 6, xp: 55, gold: 4, secondsPerKill: 13, unlockLevel: 8, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }] },
-  { id: "THORNLING", name: "Thornling", level: 10, hp: 138, attack: 16, defense: 9, xp: 72, gold: 4, secondsPerKill: 15, unlockLevel: 10, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.42, min: 1, max: 2 }, { itemId: "BP_ASTER_IRON_HATCHET", chance: 0.05, min: 1, max: 1 }] },
+  { id: "THORNLING", name: "Thornling", level: 10, hp: 138, attack: 16, defense: 9, xp: 72, gold: 4, secondsPerKill: 15, unlockLevel: 10, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.42, min: 1, max: 2 }, { itemId: "BP_ASTER_IRON_HATCHET", chance: 0.016, min: 1, max: 1 }] },
   { id: "BRIAR_HUSK", name: "Briar Husk", level: 11, hp: 154, attack: 18, defense: 10, xp: 82, gold: 5, secondsPerKill: 16, unlockLevel: 11, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.38, min: 1, max: 2 }, { itemId: "GREENWOOD_LOG", chance: 0.24, min: 1, max: 2 }] },
-  { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.05, min: 1, max: 1 }] },
+  { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.015, min: 1, max: 1 }] },
   { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.24, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.12, min: 1, max: 1 }] },
-  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.02, min: 1, max: 1 }] },
-  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
+  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.012, min: 1, max: 1 }] },
+  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.017, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
-  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.02, min: 1, max: 1 }] },
+  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.013, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
   { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
-  { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.02, min: 1, max: 1 }] },
+  { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.01, min: 1, max: 1 }] },
   { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.18, min: 1, max: 1 }] },
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
   { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }] },
@@ -44476,9 +44482,9 @@ var MONSTERS_RAW = [
   { id: "MIRAGE_SHADE", name: "Mirage Shade", level: 38, hp: 905, attack: 72, defense: 41, xp: 521, gold: 32, secondsPerKill: 39, unlockLevel: 36, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.09, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }] },
   { id: "OBSERVATORY_KEEPER", name: "Observatory Keeper", level: 42, hp: 1090, attack: 79, defense: 50, xp: 622, gold: 38, secondsPerKill: 43, unlockLevel: 41, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "GLASSBOUND_CORE", chance: 0.25, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.18, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.3, min: 1, max: 1 }] },
   { id: "ROYAL_SANDGUARD", name: "Royal Sandguard", level: 45, hp: 1240, attack: 87, defense: 58, xp: 705, gold: 43, secondsPerKill: 47, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "GLASSBOUND_CORE", chance: 0.3, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
-  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
-  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
-  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
+  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 8e-3, min: 1, max: 1 }] },
+  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 9e-3, min: 1, max: 1 }] },
+  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 8e-3, min: 1, max: 1 }] },
   { id: "ICEBOUND_RAIDER", name: "Icebound Raider", level: 50, hp: 1330, attack: 93, defense: 58, xp: 766, gold: 47, secondsPerKill: 46, unlockLevel: 49, zone: "Frostmarch", areaId: "ZONE_011", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.44, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.12, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }] },
   { id: "SNOW_TREANT", name: "Snow Treant", level: 53, hp: 1460, attack: 100, defense: 67, xp: 845, gold: 51, secondsPerKill: 48, unlockLevel: 51, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.22, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.1, min: 1, max: 1 }] },
   { id: "RIME_STALKER", name: "Rime Stalker", level: 59, hp: 1770, attack: 112, defense: 71, xp: 995, gold: 60, secondsPerKill: 53, unlockLevel: 57, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.4, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.11, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.2, min: 1, max: 1 }] },
@@ -51268,6 +51274,112 @@ function deterministicCraftRarityRoll(seed) {
   return hash3 % 1e6 / 1e6;
 }
 
+// ../apps/mobile/src/core/weapon-bonus-rolls.ts
+var WEAPON_BONUS_ROLL_VERSION = 2;
+var ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity"],
+  Damage: ["critRate", "haste", "penetration", "accuracy"],
+  Support: ["potency", "haste", "ward", "maxHp"]
+};
+var WEAPON_BONUS_BPS_BY_BAND = {
+  3: {
+    maxHp: [200, 400],
+    armor: [150, 300],
+    ward: [50, 150],
+    tenacity: [200, 400],
+    critRate: [50, 150],
+    haste: [80, 200],
+    penetration: [100, 250],
+    accuracy: [50, 150],
+    potency: [150, 350]
+  },
+  5: {
+    maxHp: [300, 550],
+    armor: [200, 400],
+    ward: [80, 200],
+    tenacity: [300, 500],
+    critRate: [80, 200],
+    haste: [120, 250],
+    penetration: [150, 300],
+    accuracy: [80, 200],
+    potency: [250, 450]
+  },
+  7: {
+    maxHp: [400, 700],
+    armor: [250, 450],
+    ward: [100, 250],
+    tenacity: [400, 600],
+    critRate: [100, 250],
+    haste: [150, 300],
+    penetration: [200, 350],
+    accuracy: [100, 250],
+    potency: [300, 550]
+  },
+  9: {
+    maxHp: [500, 800],
+    armor: [300, 500],
+    ward: [150, 300],
+    tenacity: [500, 700],
+    critRate: [150, 300],
+    haste: [200, 350],
+    penetration: [250, 400],
+    accuracy: [150, 300],
+    potency: [400, 650]
+  }
+};
+var V1_RANGE_BY_BAND = {
+  3: [100, 300],
+  5: [200, 400],
+  7: [300, 500],
+  9: [400, 600]
+};
+function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
+  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : void 0;
+  if (band === void 0) return void 0;
+  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
+}
+var HIGH_RARITIES = ["epic", "legendary", "mythic"];
+var STEP_BPS = 10;
+function weaponBonusConfig(itemId, rarity) {
+  const item = itemDef(itemId);
+  const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
+  const role = CLASSES.find((c) => c.id === item.classRestriction)?.role;
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role) return void 0;
+  const count = tier >= 5 || HIGH_RARITIES.includes(rarity) ? 2 : 1;
+  return { tier, role, count, pool: ROLE_POOL[role] };
+}
+function rollWeaponBonuses(itemId, rarity, receiptKey, trustedRoll) {
+  if (!Number.isFinite(trustedRoll) || trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid trusted weapon roll");
+  const cfg = weaponBonusConfig(itemId, rarity);
+  if (!cfg) return void 0;
+  const pool = [...cfg.pool], out = [];
+  const seed = `${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
+  for (let index = 0; index < cfg.count; index++) {
+    const statUnit = deterministicCraftRarityRoll(`weapon-affix:v2:stat:${seed}:${index}`);
+    const position = Math.min(pool.length - 1, Math.floor(statUnit * pool.length));
+    const [stat] = pool.splice(position, 1);
+    const valueUnit = deterministicCraftRarityRoll(`weapon-affix:v2:value:${seed}:${index}`);
+    const range = weaponBonusRange(cfg.tier, stat);
+    const steps = (range[1] - range[0]) / STEP_BPS;
+    out.push({ stat, basisPoints: range[0] + STEP_BPS * Math.min(steps, Math.floor(valueUnit * (steps + 1))) });
+  }
+  return out;
+}
+function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROLL_VERSION) {
+  const cfg = weaponBonusConfig(itemId, rarity);
+  if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
+  const seen = /* @__PURE__ */ new Set(), out = [];
+  for (const entry2 of raw2) {
+    if (!entry2 || typeof entry2 !== "object") return void 0;
+    const { stat, basisPoints } = entry2;
+    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version) : void 0;
+    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS !== 0) return void 0;
+    seen.add(stat);
+    out.push({ stat, basisPoints });
+  }
+  return out;
+}
+
 // ../apps/mobile/src/core/crafted-gear-instances.ts
 var MAX_CRAFTED_GEAR_INSTANCES = 500;
 var CRAFTED_GEAR_QUALITY_MIN = 0;
@@ -51305,6 +51417,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,
@@ -51314,6 +51427,8 @@ function normalizeCraftedGearInstances(raw2) {
         quality: isValidCraftedGearQuality(row.quality) ? row.quality : void 0,
         locked: row.locked === true,
         statRoll: clampStatRoll(row.statRoll),
+        weaponBonuses: version ? normalizeWeaponBonuses(item.id, rarity, row.weaponBonuses, version) : void 0,
+        weaponBonusRollVersion: version,
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
@@ -51368,12 +51483,15 @@ function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.charac
   return bestCraftedInstanceForItem(state, itemId, ownerCharacterId)?.rarity ?? itemRarity(itemDef(itemId));
 }
 function draftCraftedGearInstance(args) {
+  const rarity = craftedGearRarity(args.itemId, args.roll);
   return {
     id: `gear:${args.ownerCharacterId}:${args.jobId}`,
     itemId: args.itemId,
     ownerCharacterId: args.ownerCharacterId,
-    rarity: craftedGearRarity(args.itemId, args.roll),
+    rarity,
     quality: craftedGearQualityRoll(args.roll, args.jobId),
+    weaponBonuses: rollWeaponBonuses(args.itemId, rarity, args.jobId, args.roll),
+    weaponBonusRollVersion: itemDef(args.itemId).slot === "weapon" && /^T[3-9]_/.test(itemDef(args.itemId).equipmentSetId ?? "") ? WEAPON_BONUS_ROLL_VERSION : void 0,
     locked: false,
     statRoll: deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),
     acquireSource: "craft",
@@ -51401,6 +51519,8 @@ function craftedInstanceResult(state, instance) {
     rarity: instance.rarity,
     quality: instance.quality,
     baseRarity,
+    weaponBonuses: instance.weaponBonuses,
+    weaponBonusRollVersion: instance.weaponBonusRollVersion,
     // Trusted command response metadata for read-only public forge announcements.
     itemName: itemDef(instance.itemId).name,
     crafterName: state.character?.id === instance.ownerCharacterId ? state.character.name : (state.otherCharacters ?? []).find((row) => row.character.id === instance.ownerCharacterId)?.character.name ?? "Adventurer",
@@ -51435,20 +51555,7 @@ var GEM_REFINE_COSTS_V1 = {
   5: { level: 62, xp: 3620, gold: 9600, seconds: 2700, reagents: [{ itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RADIANT_CATALYST", quantity: 1 }] }
 };
 var GEM_DISMANTLE_DUST_V1 = { 1: 1, 2: 3, 3: 8, 4: 22, 5: 60 };
-var GEM_UNSOCKET_COST_V1 = {
-  1: { gold: 0, dust: 0 },
-  2: { gold: 0, dust: 0 },
-  3: { gold: 500, dust: 0 },
-  4: { gold: 1500, dust: 1 },
-  5: { gold: 5e3, dust: 3 }
-};
 var GEM_RESEARCH_V1 = { level: 25, dust: 10, gold: 2500, xp: 600 };
-var ENCHANTING_EXTRACTION_THRESHOLDS_V1 = [
-  { level: 30, goldMultiplier: 0.8, dustMode: "base", label: "Apprentice Extraction \xB7 -20% Gold" },
-  { level: 45, goldMultiplier: 0.6, dustMode: "minus_one", label: "Adept Extraction \xB7 -40% Gold \xB7 -1 Dust" },
-  { level: 65, goldMultiplier: 0.4, dustMode: "half", label: "Master Extraction \xB7 -60% Gold \xB7 half Dust" },
-  { level: 80, goldMultiplier: 0.25, dustMode: "free", label: "Perfect Extraction \xB7 -75% Gold \xB7 no Dust" }
-];
 function canonicalGemMetaV1(itemId) {
   let item;
   try {
@@ -51460,16 +51567,6 @@ function canonicalGemMetaV1(itemId) {
   const family = mobileGemFamilyV1(item.gemFamilyId);
   if (!family) return void 0;
   return { familyId: family.familyId, grade: item.gemGrade, kind: family.kind };
-}
-function gemUnsocketCostV1(itemId, enchantingLevel = 1) {
-  const meta = canonicalGemMetaV1(itemId), base = meta ? GEM_UNSOCKET_COST_V1[meta.grade] : { gold: (itemDef(itemId).gemTier ?? 1) * 500, dust: 0 };
-  const threshold = [...ENCHANTING_EXTRACTION_THRESHOLDS_V1].reverse().find((row) => enchantingLevel >= row.level);
-  if (!threshold) return base;
-  const dust = threshold.dustMode === "free" ? 0 : threshold.dustMode === "half" ? Math.ceil(base.dust / 2) : threshold.dustMode === "minus_one" ? Math.max(0, base.dust - 1) : base.dust;
-  return { gold: Math.floor(base.gold * threshold.goldMultiplier), dust };
-}
-function gemUnsocketCostForStateV1(state, itemId) {
-  return gemUnsocketCostV1(itemId, state.skills.find((row) => row.skillId === "enchanting")?.level ?? 1);
 }
 function consumeStackV1(stacks, itemId, amount) {
   let left = amount;
@@ -51841,33 +51938,8 @@ function socketGem(state, itemId, gemId, randomRoll = Math.random()) {
   });
   return next;
 }
-function addInventory(state, itemId) {
-  if (isGemPouchItemId(itemId)) return storePouchGem(state, itemId);
-  const existing = state.inventory.stacks.find((s) => s.itemId === itemId);
-  if (!existing && state.inventory.stacks.length >= state.inventory.capacity) throw new Error("Inventory is full");
-  const stacks = existing ? state.inventory.stacks.map((s) => s.itemId === itemId ? { ...s, quantity: s.quantity + 1 } : s) : [...state.inventory.stacks, { itemId, quantity: 1 }];
-  return { ...state, inventory: { ...state.inventory, stacks } };
-}
-function unsocketGem(state, itemId, index) {
-  requireEquipped(state, itemId);
-  if (index !== 0 && index !== 1) throw new Error("Unknown gem socket");
-  const enhancement = gearEnhancement(state, itemId), gemId = index === 0 ? enhancement.statGemId : enhancement.effectGemId;
-  if (!gemId) throw new Error(index === 0 ? "The Stat Gem socket is empty" : "The Effect Gem socket is empty");
-  const fee = gemUnsocketCostForStateV1(state, gemId);
-  if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to safely extract this gem`);
-  if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to safely extract this gem`);
-  let next = { ...state, character: { ...state.character, gold: state.character.gold - fee.gold } };
-  if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
-  next = addInventory(next, gemId);
-  next = setEnhancement(next, itemId, {
-    ...enhancement,
-    statGemId: index === 0 ? void 0 : enhancement.statGemId,
-    effectGemId: index === 1 ? void 0 : enhancement.effectGemId,
-    statGemRollPercent: index === 0 ? void 0 : enhancement.statGemRollPercent,
-    effectGemRollPercent: index === 1 ? void 0 : enhancement.effectGemRollPercent,
-    gemIds: []
-  });
-  return next;
+function unsocketGem(_state, _itemId, _index) {
+  throw new Error("Socketed gems cannot be extracted. Replace them with another gem instead.");
 }
 function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   requireEquipped(state, itemId);
@@ -51889,14 +51961,8 @@ function replaceGem(state, itemId, gemId, randomRoll = Math.random()) {
   }
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (combinedQuantity(state, gemId) < 1) throw new Error("You do not own this gem");
-  const fee = gemUnsocketCostForStateV1(state, currentId);
-  if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
-  if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
   const rollPercent = gemRollPercentFromUnitV1(randomRoll);
   let next = consumeAcross(state, gemId, 1);
-  next = { ...next, character: { ...next.character, gold: next.character.gold - fee.gold } };
-  if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
-  next = addInventory(next, currentId);
   next = setEnhancement(next, itemId, {
     ...enhancement,
     statGemId: kind === "stat" ? gemId : enhancement.statGemId,
@@ -52131,6 +52197,16 @@ function isLiveSixPieceBonus(set) {
 function emptyEquipmentSetStats() {
   return { ...EMPTY_STATS };
 }
+function equippedWeaponBonusStats(state) {
+  const character = state.character, itemId = character?.equipment.weapon, instanceId = character?.equipmentInstanceIds?.weapon;
+  if (!character || !itemId || !instanceId) return {};
+  const raw2 = state.account.craftedGearInstances?.find((row) => row?.id === instanceId && row?.itemId === itemId);
+  const copy = raw2 ? normalizeCraftedGearInstances([raw2])[0] : void 0;
+  if (!copy?.weaponBonuses?.length) return {};
+  const stats4 = {};
+  for (const bonus of copy.weaponBonuses) stats4[bonus.stat] = (stats4[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  return stats4;
+}
 function parseEquipmentSetStaticBonus(text2) {
   const result = {};
   for (const match of String(text2 ?? "").matchAll(STATIC_BONUS_RE)) {
@@ -52184,19 +52260,20 @@ function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
   const t5Affixes = equippedT5EquipmentAffixStats(state);
+  const weapon = equippedWeaponBonusStats(state);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
-    maxHp: multiplied(sets.maxHp, p.maxHp),
-    armor: multiplied(sets.armor, p.armor),
-    ward: multiplied(sets.ward, p.ward),
-    tenacity: multiplied(sets.tenacity, p.tenacity),
-    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste,
+    maxHp: multiplied(sets.maxHp, p.maxHp) + (weapon.maxHp ?? 0),
+    armor: multiplied(sets.armor, p.armor) + (weapon.armor ?? 0),
+    ward: multiplied(sets.ward, p.ward) + (weapon.ward ?? 0),
+    tenacity: multiplied(sets.tenacity, p.tenacity) + (weapon.tenacity ?? 0),
+    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste + (weapon.haste ?? 0),
     power: multiplied(sets.power, p.power),
-    accuracy: sets.accuracy + (pp.accuracy ?? 0),
-    penetration: sets.penetration + (pp.penetration ?? 0),
-    potency: multiplied(sets.potency, p.potency),
-    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate,
+    accuracy: sets.accuracy + (pp.accuracy ?? 0) + (weapon.accuracy ?? 0),
+    penetration: sets.penetration + (pp.penetration ?? 0) + (weapon.penetration ?? 0),
+    potency: multiplied(sets.potency, p.potency) + (weapon.potency ?? 0),
+    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate + (weapon.critRate ?? 0),
     critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
     evasion: sets.evasion + (pp.evasion ?? 0) + t5Affixes.evasion
   };
@@ -54995,7 +55072,7 @@ function sellItem(state, itemId, quantity2 = 1) {
   if (d.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (d.knowledgeUnlockId) throw new Error("Blueprints cannot be sold. Learn the recipe by crafting its tool.");
   if (d.type === "gear" && state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "inventory", quantity2))
-    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+    throw new Error("This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.");
   const proceeds = itemVendorSellGold(d) * quantity2, gold = state.character.gold + proceeds;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(gold)) throw new Error("Gold amount exceeds supported limit.");
   return { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold } };
@@ -55006,7 +55083,7 @@ function salvageItem(state, itemId) {
   const d = itemDef(itemId), reward3 = equipmentSalvageReward(itemId);
   if (d.type !== "gear" || !reward3) throw new Error("Cannot salvage");
   if (state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0) && !canDisposeLegacyEquipment(state, itemId, "inventory", 1))
-    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+    throw new Error("This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.");
   const remaining = consume2(state.inventory.stacks, itemId, 1);
   const existing = remaining.find((row) => row.itemId === reward3.itemId && row.instanceId === void 0);
   if (!existing && remaining.length >= entitlementStorageCapacity(state, "inventory")) throw new Error("Inventory is full; make space for salvage");
@@ -55036,7 +55113,7 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   const def = itemDef(itemId);
   if (def.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (def.knowledgeUnlockId) throw new Error("Blueprints cannot be sold.");
-  if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2)) throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+  if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2)) throw new Error("This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.");
   const stacks = consume2(state.bank.stacks, itemId, quantity2);
   const proceeds = itemVendorSellGold(def) * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
@@ -55051,7 +55128,7 @@ function salvageBankItem(state, itemId) {
   if (!state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0))
     throw new Error("Choose an individual equipment copy for salvage");
   if (!canDisposeLegacyEquipment(state, itemId, "bank", 1))
-    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+    throw new Error("This untracked legacy equipment has a reserved enhanced copy. Keep it until the exact copy can be identified.");
   const bankStacks = consume2(state.bank.stacks, itemId, 1);
   const inventory = inventoryWithSalvageRewards(state.inventory, [reward3], entitlementStorageCapacity(state, "inventory"));
   return { ...state, bank: { ...state.bank, stacks: bankStacks }, inventory };
@@ -55465,1228 +55542,6 @@ init_faith2();
 
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
-
-// ../apps/mobile/src/core/crafted-gear-ownership.ts
-var empty = () => ({ linked: [], unlocatedInstanceIds: [], unmarkedPhysicalCopies: 0, problems: [], consistent: false });
-function auditCraftedGearOwnership(state) {
-  const audit = empty();
-  const definitions2 = craftedGearInstances(state), byId = /* @__PURE__ */ new Map();
-  for (const record of definitions2) {
-    if (byId.has(record.id)) audit.problems.push(`Duplicate crafted record: ${record.id}`);
-    else byId.set(record.id, record);
-  }
-  const observed = /* @__PURE__ */ new Map();
-  const trackedItemIds = new Set(definitions2.map((row) => row.itemId));
-  const register = (instanceId, itemId, place, holderCharacterId, slot) => {
-    const record = byId.get(instanceId);
-    if (!record) {
-      audit.problems.push(`Unrecognized crafted instance marker: ${instanceId}`);
-      return;
-    }
-    if (record.itemId !== itemId) {
-      audit.problems.push(`Item definition mismatch for ${instanceId}`);
-      return;
-    }
-    if (observed.has(instanceId)) {
-      audit.problems.push(`Duplicate physical copy marker: ${instanceId}`);
-      return;
-    }
-    const location = { instanceId, itemId, place, holderCharacterId, slot };
-    observed.set(instanceId, location);
-    audit.linked.push(location);
-  };
-  const scanStacks = (stacks, place, holderCharacterId) => {
-    for (const stack of stacks ?? []) {
-      if (stack.instanceId === void 0) {
-        if (trackedItemIds.has(stack.itemId) && Number.isSafeInteger(stack.quantity) && stack.quantity > 0)
-          audit.unmarkedPhysicalCopies += stack.quantity;
-        continue;
-      }
-      if (typeof stack.instanceId !== "string" || !stack.instanceId.trim() || stack.quantity !== 1) {
-        audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
-        continue;
-      }
-      register(stack.instanceId, stack.itemId, place, holderCharacterId);
-    }
-  };
-  const scanCharacter = (character, inventory, overflow) => {
-    if (!character) return;
-    scanStacks(inventory.stacks, "inventory", character.id);
-    scanStacks(equipmentPouchForCharacter(character).stacks, "equipment_pouch", character.id);
-    scanStacks(overflow.stacks, "overflow", character.id);
-    for (const [slot, itemId] of Object.entries(character.equipment)) {
-      if (itemId && trackedItemIds.has(itemId) && !character.equipmentInstanceIds?.[slot])
-        audit.unmarkedPhysicalCopies += 1;
-    }
-    for (const [slot, instanceId] of Object.entries(character.equipmentInstanceIds ?? {})) {
-      if (typeof instanceId !== "string" || !instanceId.trim()) {
-        audit.problems.push(`Invalid equipped copy marker: ${slot}`);
-        continue;
-      }
-      const itemId = character.equipment[slot];
-      if (!itemId) {
-        audit.problems.push(`Equipped copy marker lacks equipment: ${instanceId}`);
-        continue;
-      }
-      register(instanceId, itemId, "equipped", character.id, slot);
-    }
-  };
-  scanCharacter(state.character, state.inventory, state.overflow);
-  for (const entry2 of state.otherCharacters ?? []) scanCharacter(entry2.character, entry2.inventory, entry2.overflow);
-  scanStacks(state.bank.stacks, "bank");
-  audit.unlocatedInstanceIds = [...byId.keys()].filter((id) => !observed.has(id));
-  audit.consistent = audit.problems.length === 0 && audit.unlocatedInstanceIds.length === 0 && audit.unmarkedPhysicalCopies === 0;
-  return audit;
-}
-function resolveTracked(state, instanceId) {
-  const audit = auditCraftedGearOwnership(state);
-  if (audit.problems.length) throw new Error("Equipment identity conflict; do not modify items until resolved");
-  const record = craftedGearInstances(state).find((row) => row.id === instanceId);
-  if (!record) throw new Error("Unknown equipment instance");
-  const locations = audit.linked.filter((row) => row.instanceId === instanceId);
-  if (locations.length !== 1) throw new Error("Equipment location is not verified; inspect legacy ownership first");
-  return { record, location: locations[0] };
-}
-function withoutInstance(stacks, instanceId) {
-  const index = stacks.findIndex((row) => row.instanceId === instanceId);
-  if (index < 0 || stacks[index].quantity !== 1) throw new Error("Exact equipment copy is missing from storage");
-  return [...stacks.slice(0, index), ...stacks.slice(index + 1)];
-}
-function appendInstance(stacks, instance, capacity) {
-  if (stacks.some((row) => row.instanceId === instance.id)) throw new Error("Equipment copy already exists in destination");
-  if (stacks.filter((row) => row.quantity > 0).length >= capacity) throw new Error("Destination storage is full");
-  return [...stacks, { itemId: instance.itemId, quantity: 1, instanceId: instance.id }];
-}
-function moveCraftedGearInstance(state, instanceId, to) {
-  if (!state.character) throw new Error("Create a character before moving equipment");
-  const { record, location } = resolveTracked(state, instanceId);
-  const from = location.place;
-  if (from !== "inventory" && from !== "bank" && from !== "equipment_pouch") throw new Error("Only stored equipment can be transferred");
-  if (from === to) return state;
-  if (from !== "bank" && location.holderCharacterId !== state.character.id) throw new Error("Another character is carrying this equipment");
-  const source = from === "equipment_pouch" ? equipmentPouch(state) : state[from];
-  const target2 = to === "equipment_pouch" ? equipmentPouch(state) : state[to];
-  const capacity = to === "equipment_pouch" ? target2.capacity : entitlementStorageCapacity(state, to);
-  const targetStacks = appendInstance(target2.stacks, record, capacity);
-  const sourceStacks = withoutInstance(source.stacks, instanceId);
-  let next = { ...state };
-  if (from === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...source, stacks: sourceStacks } } };
-  else next = { ...next, [from]: { ...source, stacks: sourceStacks } };
-  if (to === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...target2, stacks: targetStacks } } };
-  else next = { ...next, [to]: { ...target2, stacks: targetStacks } };
-  return next;
-}
-function setCraftedGearInstanceLock(state, instanceId, locked) {
-  if (typeof locked !== "boolean") throw new Error("Invalid equipment lock state");
-  if (!state.character) throw new Error("No character");
-  const { location } = resolveTracked(state, instanceId);
-  if (location.place !== "bank" && location.holderCharacterId !== state.character.id)
-    throw new Error("Cannot change another character's equipment protection");
-  const records = craftedGearInstances(state);
-  return { ...state, account: { ...state.account, craftedGearInstances: records.map((record) => record.id === instanceId ? { ...record, locked } : record) } };
-}
-function linkLegacyCraftedGearInstance(state, instanceId, from, stackIndex) {
-  if (!state.character) throw new Error("No active character");
-  if (!Number.isSafeInteger(stackIndex) || stackIndex < 0) throw new Error("Invalid physical equipment selection");
-  const audit = auditCraftedGearOwnership(state);
-  if (audit.problems.length) throw new Error("Existing equipment identity conflicts must be resolved before reconciliation");
-  const record = craftedGearInstances(state).find((row) => row.id === instanceId);
-  if (!record) throw new Error("Unknown Forge quality record");
-  if (!audit.unlocatedInstanceIds.includes(instanceId)) throw new Error("Forge quality record already linked to an equipment copy");
-  const physical = [state.inventory.stacks, state.character.equipmentPouch?.stacks ?? [], state.bank.stacks, state.overflow.stacks, ...(state.otherCharacters ?? []).flatMap((row) => [row.inventory.stacks, row.character.equipmentPouch?.stacks ?? [], row.overflow.stacks])].reduce((sum, stacks2) => sum + stacks2.reduce((n, row) => n + (row.itemId === record.itemId ? row.quantity : 0), 0), 0) + [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].reduce((n, character) => n + Object.values(character?.equipment ?? {}).filter((id) => id === record.itemId).length, 0);
-  const recorded = craftedGearInstances(state).filter((row) => row.itemId === record.itemId).length;
-  if (physical !== recorded) throw new Error("Legacy equipment count mismatch; inspect unmatched gear before associating Forge quality");
-  const container = state[from], source = container.stacks[stackIndex];
-  if (!source || source.itemId !== record.itemId || source.instanceId !== void 0 || !Number.isSafeInteger(source.quantity) || source.quantity < 1)
-    throw new Error("Select an unlinked physical copy of exactly the same equipment item");
-  const replacement = source.quantity === 1 ? [{ itemId: source.itemId, quantity: 1, instanceId: record.id }] : [{ itemId: source.itemId, quantity: source.quantity - 1 }, { itemId: source.itemId, quantity: 1, instanceId: record.id }];
-  if (source.quantity > 1 && container.stacks.length >= entitlementStorageCapacity(state, from))
-    throw new Error("Free one storage slot before separating a legacy equipment stack");
-  const stacks = [...container.stacks.slice(0, stackIndex), ...replacement, ...container.stacks.slice(stackIndex + 1)];
-  const next = { ...state, [from]: { ...container, stacks } };
-  if (auditCraftedGearOwnership(next).problems.length) throw new Error("Legacy equipment reconciliation would create duplicate copy identity");
-  return next;
-}
-function equipCraftedGearInstance(state, instanceId) {
-  if (!state.character) throw new Error("No active character");
-  const { record, location } = resolveTracked(state, instanceId);
-  if (!["inventory", "equipment_pouch"].includes(location.place) || location.holderCharacterId !== state.character.id)
-    throw new Error("Move this exact equipment copy into your character storage first");
-  const def = itemDef(record.itemId);
-  if (def.type !== "gear" || !def.slot) throw new Error("Not equipment");
-  if (state.activity?.kind === "combat" && def.slot !== "weapon") throw new Error("Stop combat before equipping");
-  if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This equipment belongs to another class");
-  if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires level ${def.requiredLevel}`);
-  const oldId = state.character.equipment[def.slot], oldInstanceId = state.character.equipmentInstanceIds?.[def.slot];
-  const returned = oldId ? [{ itemId: oldId, quantity: 1, ...oldInstanceId ? { instanceId: oldInstanceId } : {} }] : [];
-  const fromPouch = location.place === "equipment_pouch";
-  const source = fromPouch ? equipmentPouch(state) : state.inventory;
-  const remaining = withoutInstance(source.stacks, instanceId);
-  const capacity = fromPouch ? source.capacity : entitlementStorageCapacity(state, "inventory");
-  if (returned.length && remaining.filter((row) => row.quantity > 0).length >= capacity)
-    throw new Error(fromPouch ? "Equipment Pouch is full; make room before swapping" : "Inventory is full; make room before swapping");
-  const equipment = { ...state.character.equipment, [def.slot]: record.itemId };
-  const equipmentInstanceIds = { ...state.character.equipmentInstanceIds ?? {}, [def.slot]: record.id };
-  return fromPouch ? { ...state, character: { ...state.character, equipment, equipmentInstanceIds, equipmentPouch: { ...source, stacks: [...remaining, ...returned] } } } : { ...state, inventory: { ...state.inventory, stacks: [...remaining, ...returned] }, character: { ...state.character, equipment, equipmentInstanceIds } };
-}
-function unequipCraftedGearInstance(state, instanceId) {
-  if (!state.character) throw new Error("No active character");
-  if (state.activity?.kind === "combat") throw new Error("Stop combat before unequipping");
-  const { record, location } = resolveTracked(state, instanceId);
-  if (location.place !== "equipped" || location.holderCharacterId !== state.character.id || !location.slot)
-    throw new Error("This exact equipment copy is not equipped on the active character");
-  const pouch = equipmentPouch(state), space = pouch.stacks.length < pouch.capacity;
-  const stacks = space ? appendInstance(pouch.stacks, record, pouch.capacity) : appendInstance(state.inventory.stacks, record, entitlementStorageCapacity(state, "inventory"));
-  const equipment = { ...state.character.equipment }, equipmentInstanceIds = { ...state.character.equipmentInstanceIds ?? {} };
-  delete equipment[location.slot];
-  delete equipmentInstanceIds[location.slot];
-  return space ? { ...state, character: { ...state.character, equipment, equipmentInstanceIds, equipmentPouch: { ...pouch, stacks } } } : { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, equipment, equipmentInstanceIds } };
-}
-function protectedGear(state, record) {
-  const enhancement = record.enhancement;
-  if (record.locked === true) throw new Error("This equipment copy is locked");
-  if (state.settings.favoriteItemIds?.includes(record.itemId)) throw new Error("Favorite equipment cannot be sold or salvaged");
-  if (enhancement.rank > 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0)
-    throw new Error("Enhanced or socketed equipment cannot be sold or salvaged");
-  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
-  if (characters.some((character) => character?.savedLoadouts?.some((preset) => Object.values(preset.equipmentInstanceIds ?? {}).includes(record.id) || Object.entries(preset.equipment).some(([slot, id]) => id === record.itemId && !preset.equipmentInstanceIds?.[slot]))))
-    throw new Error("A saved loadout protects this equipment copy");
-  if (characters.some((character) => {
-    const old = character?.gearEnhancements?.[record.itemId];
-    return !!old && (old.rank > 0 || !!old.statGemId || !!old.effectGemId || (old.gemIds?.length ?? 0) > 0);
-  }))
-    throw new Error("Legacy equipment enhancements require manual review before disposal");
-}
-function disposeCraftedGearInstance(state, instanceId, method) {
-  if (!state.character) throw new Error("No active character");
-  const { record, location } = resolveTracked(state, instanceId);
-  if (location.place !== "inventory" && location.place !== "bank" && location.place !== "equipment_pouch") throw new Error("Unequip the exact equipment copy before disposal");
-  if (location.place !== "bank" && location.holderCharacterId !== state.character.id)
-    throw new Error("Cannot dispose equipment carried by another character");
-  protectedGear(state, record);
-  const def = itemDef(record.itemId);
-  if (def.type !== "gear" || def.knowledgeUnlockId) throw new Error("This equipment cannot be disposed");
-  if (method === "salvage" && !equipmentSalvageReward(def.id)) throw new Error("This equipment cannot be salvaged");
-  if (method === "sell" && (!Number.isSafeInteger(def.value) || def.value < 0)) throw new Error("Invalid equipment vendor value");
-  const source = location.place === "bank" ? state.bank.stacks : location.place === "equipment_pouch" ? equipmentPouch(state).stacks : state.inventory.stacks;
-  const removed = withoutInstance(source, record.id);
-  let next = { ...state, account: { ...state.account, craftedGearInstances: craftedGearInstances(state).filter((row) => row.id !== record.id) } };
-  if (location.place === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...equipmentPouch(next), stacks: removed } } };
-  else next = { ...next, [location.place]: { ...state[location.place], stacks: removed } };
-  if (method === "sell") {
-    const proceeds = itemVendorSellGold(def);
-    if (location.place === "bank") {
-      const gold = (next.bank.gold ?? 0) + proceeds;
-      if (!Number.isSafeInteger(gold)) throw new Error("Bank Gold overflow");
-      next = { ...next, bank: { ...next.bank, gold } };
-    } else {
-      const gold = next.character.gold + proceeds;
-      if (!Number.isSafeInteger(gold)) throw new Error("Character Gold overflow");
-      next = { ...next, character: { ...next.character, gold } };
-    }
-  } else {
-    if (!next.character) throw new Error("No active character");
-    const rewards = equipmentSalvageRewards(def.id, record);
-    next = { ...next, inventory: inventoryWithSalvageRewards(next.inventory, rewards, entitlementStorageCapacity(next, "inventory")) };
-  }
-  return next;
-}
-
-// ../apps/mobile/src/core/crafted-gear-retention.ts
-function craftedGearRetentionPower(instance) {
-  if (!isValidCraftedGearQuality(instance.quality)) throw new Error("Unrolled crafted quality");
-  return rarityMeta(instance.rarity).statMultiplier * craftedGearQualityMultiplier(instance.quality);
-}
-function compareCraftedGearRetentionPower(a, b) {
-  const delta = craftedGearRetentionPower(a) - craftedGearRetentionPower(b);
-  return Math.abs(delta) < 1e-9 ? 0 : delta < 0 ? -1 : 1;
-}
-function craftedGearCanAutoSell(entry2) {
-  const gear = entry2.instance, enhancement = gear.enhancement;
-  return (entry2.location === "inventory" || entry2.location === "bank" || entry2.location === "equipment_pouch") && (entry2.location === "bank" || typeof entry2.holderCharacterId === "string" && entry2.holderCharacterId.length > 0) && entry2.ownershipVerified === true && entry2.protectionsVerified === true && entry2.locked === false && gear.locked !== true && entry2.favorite === false && entry2.savedLoadout === false && !!enhancement && enhancement.rank === 0 && !enhancement.statGemId && !enhancement.effectGemId && Array.isArray(enhancement.gemIds) && enhancement.gemIds.length === 0;
-}
-function planCraftedGearRetention(existing, incoming, mode) {
-  if (existing.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "manual_review", reason: "over_limit" };
-  if (existing.some((row) => row.instance.itemId !== incoming.itemId) || (/* @__PURE__ */ new Set([...existing.map((row) => row.instance.id), incoming.id])).size !== existing.length + 1)
-    return { action: "manual_review", reason: "inconsistent_instances" };
-  if (existing.length < TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "keep", reason: "under_limit" };
-  if (mode === "off") return { action: "manual_review", reason: "disabled" };
-  const validQuality = isValidCraftedGearQuality;
-  if (existing.some((row) => !validQuality(row.instance.quality)) || !validQuality(incoming.quality))
-    return { action: "manual_review", reason: "legacy_unknown_quality" };
-  const enhancement = incoming.enhancement;
-  if (enhancement.rank !== 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0)
-    return { action: "manual_review", reason: "incoming_protected" };
-  const weakestOverall = existing.slice().sort((a, b) => compareCraftedGearRetentionPower(a.instance, b.instance) || a.instance.id.localeCompare(b.instance.id))[0];
-  if (compareCraftedGearRetentionPower(incoming, weakestOverall.instance) <= 0)
-    return { action: "sell_incoming", reason: "incoming_is_weakest", instanceId: incoming.id };
-  const eligible = existing.filter(craftedGearCanAutoSell).sort((a, b) => compareCraftedGearRetentionPower(a.instance, b.instance) || a.instance.id.localeCompare(b.instance.id));
-  if (!eligible.length) return { action: "manual_review", reason: "no_eligible_copy" };
-  const weakestEligible = eligible[0];
-  if (compareCraftedGearRetentionPower(incoming, weakestEligible.instance) <= 0)
-    return { action: "manual_review", reason: "no_eligible_copy" };
-  return { action: "sell_existing", reason: "replace_weaker_unprotected", instanceId: weakestEligible.instance.id };
-}
-
-// ../apps/mobile/src/core/crafted-gear-settlement.ts
-function proposeCraftedGearSettlement(args) {
-  const { existing, incoming, incomingStorage, mode, committedReceiptKeys } = args;
-  if (incomingStorage !== "bank" && (!args.incomingHolderCharacterId || !args.incomingHolderCharacterId.trim()))
-    throw new Error("Missing verified incoming inventory owner");
-  if (!incoming.id || !incoming.sourceReceiptKey || !incoming.ownerCharacterId)
-    throw new Error("Invalid Forge instance receipt");
-  if (committedReceiptKeys.includes(incoming.sourceReceiptKey) || existing.some((entry2) => entry2.instance.sourceReceiptKey === incoming.sourceReceiptKey))
-    throw new Error("Forge receipt already settled");
-  if (existing.some((entry2) => !entry2.instance.id || !entry2.instance.sourceReceiptKey) || new Set(existing.map((entry2) => entry2.instance.sourceReceiptKey)).size !== existing.length)
-    throw new Error("Duplicate or malformed owned Forge receipts");
-  if (existing.some((entry2) => entry2.instance.itemId !== incoming.itemId))
-    throw new Error("Cannot compare equipment from different item definitions");
-  if (!["inventory", "bank", "equipment_pouch"].includes(incomingStorage))
-    throw new Error("Unknown incoming item delivery location");
-  const owned = existing.map((entry2) => entry2.instance);
-  const retention = planCraftedGearRetention(existing, incoming, mode);
-  if (retention.action === "manual_review") return { status: "blocked", instances: owned, retention };
-  if (retention.action === "keep")
-    return { status: "ready", instances: [...owned, incoming], retention, receipt: { receiptKey: incoming.sourceReceiptKey, incomingInstanceId: incoming.id, action: "keep" } };
-  const sold = retention.action === "sell_incoming" ? incoming : existing.find((entry2) => entry2.instance.id === retention.instanceId)?.instance;
-  if (!sold) throw new Error("Selected auto-sale copy is missing");
-  if (retention.action === "sell_existing") {
-    const candidate = existing.find((entry2) => entry2.instance.id === sold.id);
-    if (!candidate || !craftedGearCanAutoSell(candidate)) throw new Error("Selected auto-sale copy is not verified or protected");
-  }
-  const def = itemDef(sold.itemId);
-  if (def.type !== "gear" || !Number.isSafeInteger(def.value) || def.value < 0) throw new Error("Invalid vendor value");
-  const location = retention.action === "sell_incoming" ? incomingStorage : existing.find((entry2) => entry2.instance.id === sold.id).location;
-  const currentHolder = retention.action === "sell_incoming" ? args.incomingHolderCharacterId : existing.find((entry2) => entry2.instance.id === sold.id)?.holderCharacterId;
-  if (location !== "bank" && !currentHolder) throw new Error("Missing verified sale recipient");
-  const credit = location === "bank" ? { amount: itemVendorSellGold(def), destination: "bank" } : { amount: itemVendorSellGold(def), destination: "character", characterId: currentHolder };
-  const instances = retention.action === "sell_incoming" ? owned : [...owned.filter((row) => row.id !== sold.id), incoming];
-  if (instances.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) throw new Error("Retention proposal exceeds crafted equipment limit");
-  return { status: "ready", instances, retention, receipt: {
-    receiptKey: incoming.sourceReceiptKey,
-    incomingInstanceId: incoming.id,
-    action: retention.action,
-    soldInstanceId: sold.id,
-    credit
-  } };
-}
-
-// ../apps/mobile/src/core/equipment-crafting-queue.ts
-var BASE_EQUIPMENT_CRAFT_SLOTS = 3;
-var MAX_EQUIPMENT_CRAFT_SLOTS = 7;
-var MAX_WAITING_EQUIPMENT_CRAFTS = 5;
-var MAX_READY_EQUIPMENT_CRAFTS = 20;
-function equipmentCraftSlotBreakdown(state) {
-  const unlocked = unlockedCharacterSlots(state);
-  const sources = [
-    { id: "base", label: "Base crafting slots", earned: true, slots: BASE_EQUIPMENT_CRAFT_SLOTS },
-    { id: "supporter", label: "Supporter", earned: accountEntitlementBenefits(state).supporter, slots: 1 },
-    { id: "vip_plus", label: "VIP+", earned: accountEntitlementBenefits(state).vipPlus, slots: 1 },
-    { id: "character_2", label: "Unlock character slot #2", earned: unlocked >= 2, slots: 1 },
-    { id: "account_skill_1050", label: "Reach 1,050 account skill levels", earned: accountSkillLevel(state) >= 1050 || state.account.forgeMastery1050Earned === true || Number(state.account.unlockedCharacterSlots ?? 0) >= 4, slots: 1 }
-  ];
-  const raw2 = sources.filter((row) => row.earned).reduce((sum, row) => sum + row.slots, 0);
-  return { base: BASE_EQUIPMENT_CRAFT_SLOTS, max: MAX_EQUIPMENT_CRAFT_SLOTS, capacity: Math.min(MAX_EQUIPMENT_CRAFT_SLOTS, raw2), raw: raw2, sources };
-}
-function normalizeEquipmentCraftingQueue(raw2) {
-  if (!Array.isArray(raw2)) return [];
-  return raw2.filter((row) => row && typeof row === "object" && typeof row.id === "string" && typeof row.recipeId === "string" && typeof row.ownerCharacterId === "string").map((row) => ({
-    id: String(row.id).slice(0, 160),
-    recipeId: String(row.recipeId).slice(0, 120),
-    ownerCharacterId: String(row.ownerCharacterId).slice(0, 120),
-    startedAtMs: Math.max(0, Math.floor(Number(row.startedAtMs) || 0)),
-    completesAtMs: Math.max(0, Math.floor(Number(row.completesAtMs) || 0)),
-    xpPerCraft: typeof row.xpPerCraft === "number" && Number.isFinite(row.xpPerCraft) && row.xpPerCraft >= 0 && row.xpPerCraft <= 1e6 ? row.xpPerCraft : void 0,
-    skillAffinity: normalizeSkillAffinitySnapshot(row.skillAffinity),
-    reservedGold: Number.isFinite(Number(row.reservedGold)) ? Math.max(0, Math.floor(Number(row.reservedGold))) : void 0,
-    reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0,
-    // A malformed odds field must not become a guaranteed legacy claim.
-    // Only jobs with no odds field at all retain the old 100% outcome.
-    combineSuccessChancePercent: row.combineSuccessChancePercent === void 0 ? void 0 : Number.isInteger(row.combineSuccessChancePercent) && row.combineSuccessChancePercent >= 1 && row.combineSuccessChancePercent <= 100 ? row.combineSuccessChancePercent : gemCombineRecipeV1(String(row.recipeId).slice(0, 120))?.successChancePercent
-  })).filter((row) => row.completesAtMs >= row.startedAtMs).slice(-(MAX_READY_EQUIPMENT_CRAFTS + MAX_EQUIPMENT_CRAFT_SLOTS + MAX_WAITING_EQUIPMENT_CRAFTS));
-}
-function equipmentCraftingQueue(state) {
-  return normalizeEquipmentCraftingQueue(state.account.equipmentCraftingQueue);
-}
-function isTimedEquipmentRecipe(recipe2) {
-  const output = itemDef(recipe2.output.itemId);
-  return output.type === "gear" && !recipe2.noviceSetId;
-}
-function timedEquipmentRecipe(recipeId) {
-  const recipe2 = recipeDef(recipeId);
-  return recipe2 && isTimedEquipmentRecipe(recipe2) ? recipe2 : void 0;
-}
-function combinedQuantity2(state, itemId) {
-  return gemStorageQuantity(state, itemId);
-}
-function consume3(stacks, itemId, amount) {
-  let left = amount;
-  const next = stacks.map((row) => {
-    if (row.itemId !== itemId || left <= 0 || row.instanceId !== void 0) return row;
-    const used = Math.min(left, row.quantity);
-    left -= used;
-    return { ...row, quantity: row.quantity - used };
-  }).filter((row) => row.quantity > 0);
-  return { stacks: next, used: amount - left };
-}
-function consumeAcross2(state, itemId, amount) {
-  if (isGemPouchItemId(itemId)) return consumeGemFromStorage(state, itemId, amount);
-  if (combinedQuantity2(state, itemId) < amount) throw new Error(`Need ${amount} ${itemDef(itemId).name}`);
-  const inv = consume3(state.inventory.stacks, itemId, amount);
-  const bank = consume3(state.bank.stacks, itemId, amount - inv.used);
-  return { ...state, inventory: { ...state.inventory, stacks: inv.stacks }, bank: { ...state.bank, stacks: bank.stacks } };
-}
-function validateStart(state, recipe2) {
-  if (!state.character) throw new Error("Create a character first");
-  if (!isTimedEquipmentRecipe(recipe2)) throw new Error("This recipe does not use the equipment crafting queue");
-  if (state.character.level < (recipe2.characterLevel ?? 1)) throw new Error(`Requires character level ${recipe2.characterLevel}`);
-  const skill2 = state.skills.find((row) => row.skillId === recipe2.skillId);
-  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires ${recipe2.skillId} level ${recipe2.level}`);
-  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
-  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
-}
-function validateGemCombineStart(state, recipeId) {
-  if (!state.character) throw new Error("Create a character first");
-  const recipe2 = gemCombineRecipeV1(recipeId);
-  if (!recipe2) throw new Error("Unknown gem combination");
-  const sourceGemId = recipe2.inputs[0].itemId;
-  if (state.settings.favoriteItemIds?.includes(sourceGemId) || state.settings.lockedItemIds?.includes(sourceGemId))
-    throw new Error("Unfavorite and unlock this gem before merging");
-  if (!isGemFamilyRecipeUnlockedV1(state, recipe2.familyId)) throw new Error("Discover this Effect Gem recipe first");
-  const skill2 = state.skills.find((row) => row.skillId === "enchanting");
-  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
-  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
-  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
-  return recipe2;
-}
-function validateGemRefineStart(state, recipeId) {
-  if (!state.character) throw new Error("Create a character first");
-  const recipe2 = gemRefineRecipeV1(recipeId);
-  if (!recipe2) throw new Error("Unknown gem refinement");
-  const skill2 = state.skills.find((row) => row.skillId === "enchanting");
-  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
-  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
-  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
-  return recipe2;
-}
-var jobDurationMs = (job) => Math.max(1e3, job.completesAtMs - job.startedAtMs);
-var isReady = (job, nowMs) => job.completesAtMs <= nowMs;
-var isWaiting = (job, nowMs) => job.startedAtMs > nowMs;
-var isActive = (job, nowMs) => job.startedAtMs <= nowMs && job.completesAtMs > nowMs;
-function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
-  const ready = queue.filter((job) => isReady(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
-  const active2 = queue.filter((job) => isActive(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
-  let waiting = queue.filter((job) => isWaiting(job, nowMs));
-  if (waitingOrder) {
-    const order = new Map(waitingOrder.map((id, index) => [id, index]));
-    waiting = waiting.slice().sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
-  }
-  const activeEnds = active2.map((job) => job.completesAtMs).sort((a, b) => a - b);
-  const slotTimes = activeEnds.length >= capacity ? activeEnds.slice(activeEnds.length - capacity) : [...activeEnds, ...Array(Math.max(0, capacity - activeEnds.length)).fill(nowMs)];
-  slotTimes.sort((a, b) => a - b);
-  const scheduled = waiting.map((job) => {
-    const duration = jobDurationMs(job), start = slotTimes[0] ?? nowMs, completes = start + duration;
-    slotTimes[0] = completes;
-    slotTimes.sort((a, b) => a - b);
-    return { ...job, startedAtMs: start, completesAtMs: completes };
-  });
-  return [...ready, ...active2, ...scheduled];
-}
-function projectedEquipmentCraftingQueue(state, nowMs) {
-  return scheduleWaiting(equipmentCraftingQueue(state), equipmentCraftSlotBreakdown(state).capacity, nowMs);
-}
-function withProjectedQueue(state, nowMs) {
-  return { ...state, account: { ...state.account, equipmentCraftingQueue: projectedEquipmentCraftingQueue(state, nowMs) } };
-}
-function equipmentCraftDurationSeconds(state, recipeId) {
-  const recipe2 = timedEquipmentRecipe(recipeId);
-  if (!recipe2) throw new Error("Unknown timed equipment recipe");
-  return professionActionPace(state, recipe2, "forge").cycleSeconds;
-}
-function startEquipmentCraft(state, recipeId, nowMs) {
-  const recipe2 = timedEquipmentRecipe(recipeId);
-  if (!recipe2) throw new Error("Unknown timed equipment recipe");
-  let projected = withProjectedQueue(state, nowMs);
-  validateStart(projected, recipe2);
-  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
-  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
-  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished equipment before starting more crafts");
-  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
-  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
-  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
-  const seconds = equipmentCraftDurationSeconds(projected, recipeId), durationMs = seconds * 1e3;
-  const existingQueue = equipmentCraftingQueue(projected);
-  const startsNow = active2.length < slots2.capacity && waiting.length === 0;
-  const job = {
-    id: `eqcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
-    recipeId,
-    ownerCharacterId: projected.character.id,
-    startedAtMs: startsNow ? nowMs : nowMs + 1,
-    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
-    reservedGold: recipe2.gold,
-    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
-    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
-    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
-  };
-  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
-  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
-  const finalJob = scheduled.find((row) => row.id === job.id);
-  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs };
-}
-function startGemCombine(state, recipeId, nowMs) {
-  let projected = withProjectedQueue(state, nowMs);
-  const recipe2 = validateGemCombineStart(projected, recipeId);
-  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
-  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
-  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished forge jobs before starting more crafts");
-  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
-  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
-  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
-  const seconds = professionActionPace(projected, recipe2, "forge").cycleSeconds, durationMs = seconds * 1e3;
-  const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
-  const job = {
-    id: `gemcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
-    recipeId,
-    ownerCharacterId: projected.character.id,
-    combineSuccessChancePercent: recipe2.successChancePercent,
-    startedAtMs: startsNow ? nowMs : nowMs + 1,
-    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
-    reservedGold: recipe2.gold,
-    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
-    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
-    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
-  };
-  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
-  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
-  const finalJob = scheduled.find((row) => row.id === job.id);
-  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs, recipe: recipe2 };
-}
-function startGemRefinement(state, recipeId, nowMs) {
-  let projected = withProjectedQueue(state, nowMs);
-  const recipe2 = validateGemRefineStart(projected, recipeId);
-  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
-  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
-  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished forge jobs before starting more crafts");
-  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
-  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
-  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
-  const seconds = professionActionPace(projected, recipe2, "forge").cycleSeconds, durationMs = seconds * 1e3;
-  const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
-  const job = {
-    id: `gemrefine:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
-    recipeId,
-    ownerCharacterId: projected.character.id,
-    startedAtMs: startsNow ? nowMs : nowMs + 1,
-    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
-    reservedGold: recipe2.gold,
-    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
-    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
-    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
-  };
-  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
-  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
-  const finalJob = scheduled.find((row) => row.id === job.id);
-  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs, recipe: recipe2 };
-}
-function addOutput(stacks, capacity, itemId, quantityToAdd) {
-  let remaining = quantityToAdd, next = stacks.map((row) => ({ ...row }));
-  while (remaining > 0 && next.filter((row) => row.quantity > 0).length < capacity) {
-    next.push({ itemId, quantity: 1 });
-    remaining--;
-  }
-  return { stacks: next, remaining };
-}
-function grantCraftOutput(state, recipe2, ownerCharacterId) {
-  if (isGemPouchItemId(recipe2.output.itemId)) return storePouchGem(state, recipe2.output.itemId, recipe2.output.quantity);
-  if (state.character?.id !== ownerCharacterId) {
-    const bank2 = addOutput(state.bank.stacks, state.bank.capacity, recipe2.output.itemId, recipe2.output.quantity);
-    if (bank2.remaining > 0) throw new Error("Bank is full; free Bank space before claiming this character's equipment");
-    return { ...state, bank: { ...state.bank, stacks: bank2.stacks } };
-  }
-  const inv = addOutput(state.inventory.stacks, state.inventory.capacity, recipe2.output.itemId, recipe2.output.quantity);
-  const bank = addOutput(state.bank.stacks, state.bank.capacity, recipe2.output.itemId, inv.remaining);
-  if (bank.remaining > 0) throw new Error("Inventory and Bank are full");
-  return { ...state, inventory: { ...state.inventory, stacks: inv.stacks }, bank: { ...state.bank, stacks: bank.stacks } };
-}
-function forgeOwnedCopyLocations(state, itemId) {
-  const audit = auditCraftedGearOwnership(state);
-  const records = craftedGearInstances(state).filter((row) => row.itemId === itemId);
-  const physical = craftGearPhysicalCopies(state, itemId);
-  if (audit.problems.length || audit.unmarkedPhysicalCopies > 0 || records.length !== physical) return null;
-  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
-  const rows2 = records.map((instance) => {
-    const loc = audit.linked.find((row) => row.instanceId === instance.id);
-    if (!loc) return null;
-    const savedLoadout = characters.some((c) => c?.savedLoadouts?.some((p) => Object.values(p.equipmentInstanceIds ?? {}).includes(instance.id) || Object.entries(p.equipment).some(([slot, id]) => id === itemId && !p.equipmentInstanceIds?.[slot])));
-    const legacyEnhanced = characters.some((c) => {
-      const value = c?.gearEnhancements?.[itemId];
-      return !!value && (value.rank > 0 || !!value.statGemId || !!value.effectGemId || (value.gemIds?.length ?? 0) > 0);
-    });
-    const accessible = loc.place === "bank" || ["inventory", "equipment_pouch"].includes(loc.place) && loc.holderCharacterId === state.character?.id;
-    return {
-      instance,
-      location: loc.place === "overflow" ? "unknown" : loc.place,
-      holderCharacterId: loc.holderCharacterId,
-      ownershipVerified: true,
-      protectionsVerified: accessible && !legacyEnhanced,
-      locked: instance.locked === true,
-      favorite: state.settings.favoriteItemIds?.includes(itemId) === true,
-      savedLoadout
-    };
-  });
-  return rows2.every(Boolean) ? rows2 : null;
-}
-function craftGearPhysicalCopies(state, itemId) {
-  const count = (rows2) => rows2.reduce((n, row) => n + (row.itemId === itemId ? row.quantity : 0), 0);
-  const equipped = (equipment) => Object.values(equipment).filter((id) => id === itemId).length;
-  return count(state.inventory.stacks) + count(state.bank.stacks) + count(state.overflow.stacks) + count(state.character?.equipmentPouch?.stacks ?? []) + equipped(state.character?.equipment ?? {}) + (state.otherCharacters ?? []).reduce((n, row) => n + count(row.inventory.stacks) + count(row.overflow.stacks) + count(row.character.equipmentPouch?.stacks ?? []) + equipped(row.character.equipment), 0);
-}
-function deliverExactForgeCopy(state, itemId, instanceId, ownerId) {
-  const stack = { itemId, quantity: 1, instanceId };
-  const stored = tryStoreEquipmentInPouch(state, stack, ownerId);
-  if (stored) return stored;
-  const invAllowed = state.character?.id === ownerId && state.inventory.stacks.length < state.inventory.capacity;
-  if (invAllowed) return { ...state, inventory: { ...state.inventory, stacks: [...state.inventory.stacks, stack] } };
-  if (state.bank.stacks.length < state.bank.capacity)
-    return { ...state, bank: { ...state.bank, stacks: [...state.bank.stacks, stack] } };
-  throw new Error(state.character?.id === ownerId ? "Equipment Pouch, Inventory and Bank are full" : "Equipment Pouch and Bank are full; free space before claiming this character's equipment");
-}
-function forgeIncomingDelivery(state, ownerId) {
-  const active2 = state.character?.id === ownerId;
-  const owner = active2 ? state.character : state.otherCharacters?.find((entry2) => entry2.character.id === ownerId)?.character;
-  if (!owner) throw new Error("Crafting owner is no longer available");
-  const pouch = equipmentPouchForCharacter(owner);
-  if (pouch.stacks.length < pouch.capacity)
-    return { incomingStorage: "equipment_pouch", incomingHolderCharacterId: ownerId };
-  if (active2 && state.inventory.stacks.length < state.inventory.capacity)
-    return { incomingStorage: "inventory", incomingHolderCharacterId: ownerId };
-  return { incomingStorage: "bank", incomingHolderCharacterId: void 0 };
-}
-function applyForgeSaleCredit(state, amount, destination, holder) {
-  if (!Number.isSafeInteger(amount) || amount < 0) throw new Error("Invalid Forge sale proceeds");
-  if (destination === "bank") {
-    const gold2 = (state.bank.gold ?? 0) + amount;
-    if (!Number.isSafeInteger(gold2)) throw new Error("Bank Gold exceeds supported limit");
-    return { ...state, bank: { ...state.bank, gold: gold2 } };
-  }
-  if (!holder) throw new Error("Sale owner is missing");
-  if (state.character?.id === holder) {
-    const gold2 = state.character.gold + amount;
-    if (!Number.isSafeInteger(gold2)) throw new Error("Carried Gold exceeds supported limit");
-    return { ...state, character: { ...state.character, gold: gold2 } };
-  }
-  const entry2 = state.otherCharacters?.find((row) => row.character.id === holder);
-  if (!entry2) throw new Error("Sale owner no longer has a character on this account");
-  const gold = entry2.character.gold + amount;
-  if (!Number.isSafeInteger(gold)) throw new Error("Character Gold exceeds supported limit");
-  return { ...state, otherCharacters: state.otherCharacters.map((row) => row.character.id === holder ? { ...row, character: { ...row.character, gold } } : row) };
-}
-function awardOwnerSkillXp(state, ownerCharacterId, recipe2, job) {
-  const ownerSkills = state.character?.id === ownerCharacterId ? state.skills : state.otherCharacters?.find((entry2) => entry2.character.id === ownerCharacterId)?.skills;
-  if (!ownerSkills) throw new Error("Crafting owner is no longer available");
-  const skill2 = ownerSkills.find((row) => row.skillId === recipe2.skillId);
-  if (!skill2) throw new Error("Crafting owner skill is missing");
-  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
-  const rawXp = job.xpPerCraft ?? Math.max(1, Math.floor(recipe2.xp * mastery.xp));
-  const key = affinityXpRemainderKey(ownerCharacterId, recipe2.skillId), gain = settleAffinitySkillXp(rawXp, state.rewardRemainders?.[key], totalXpAtLevel(100) - skill2.xp);
-  const next = { ...state, rewardRemainders: { ...state.rewardRemainders ?? {}, [key]: gain.remainder } };
-  const award = (skills) => skills.map((row) => {
-    if (row.skillId !== recipe2.skillId) return row;
-    const xp = row.xp + gain.xp;
-    return { ...row, xp, level: levelFromXp(xp) };
-  });
-  if (state.character?.id === ownerCharacterId) return { ...next, skills: award(state.skills) };
-  return { ...next, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, skills: award(entry2.skills) } : entry2) };
-}
-function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
-  const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
-  if (!job) throw new Error("Crafting job not found");
-  if (job.completesAtMs > nowMs) throw new Error(job.startedAtMs > nowMs ? "This forge job is still waiting for a slot" : "This forge job is still in progress");
-  const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemCombineRecipe = gemCombineRecipeV1(job.recipeId), gemRefineRecipe = gemRefineRecipeV1(job.recipeId), gemRecipe = gemCombineRecipe ?? gemRefineRecipe, recipe2 = equipmentRecipe ?? gemRecipe;
-  if (!recipe2) throw new Error("Crafting recipe is no longer available");
-  let next = projected;
-  if (equipmentRecipe) {
-    const itemId = equipmentRecipe.output.itemId, args = { itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll };
-    const draft = draftCraftedGearInstance(args), capacity = craftedGearCopyCapacity(next, itemId), mode = next.account.craftedGearAutoSellMode ?? "off";
-    let saleGold = 0, autoSold;
-    if (capacity.count >= capacity.limit) {
-      if (mode !== "keep_best_seven") throw new Error(`Equipment copy limit reached (${capacity.count}/${capacity.limit}); enable Keep Best ${capacity.limit} or manage copies`);
-      const entries = forgeOwnedCopyLocations(next, itemId);
-      if (!entries) throw new Error("Equipment copy ownership requires manual review before auto-selling");
-      const delivery = forgeIncomingDelivery(next, job.ownerCharacterId);
-      const proposed = proposeCraftedGearSettlement({
-        existing: entries,
-        incoming: draft,
-        ...delivery,
-        mode,
-        committedReceiptKeys: []
-      });
-      if (proposed.status === "blocked") throw new Error("Equipment requires manual review: " + proposed.retention.reason);
-      if (proposed.receipt.action === "sell_incoming") {
-        const credit = proposed.receipt.credit;
-        next = applyForgeSaleCredit(next, credit.amount, credit.destination, credit.characterId);
-        saleGold = credit.amount;
-        autoSold = "incoming";
-      } else if (proposed.receipt.action === "sell_existing") {
-        const victim = proposed.receipt.soldInstanceId;
-        next = disposeCraftedGearInstance(next, victim, "sell");
-        saleGold = proposed.receipt.credit?.amount ?? 0;
-        autoSold = "existing";
-      }
-    }
-    if (autoSold !== "incoming") {
-      next = deliverExactForgeCopy(next, itemId, draft.id, job.ownerCharacterId);
-      next = createCraftedGearInstance(next, args).state;
-    }
-    next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe, job);
-    next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
-    next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: equipmentRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
-    return {
-      state: next,
-      recipe: equipmentRecipe,
-      job,
-      kind: "equipment",
-      instance: draft,
-      result: { ...craftedInstanceResult(next, draft), autoSold, saleGold }
-    };
-  }
-  const gemSucceeded = !gemCombineRecipe || job.combineSuccessChancePercent === void 0 ? true : (() => {
-    if (!Number.isFinite(rarityRoll) || rarityRoll < 0 || rarityRoll >= 1) throw new Error("Invalid trusted gem combination roll");
-    return rarityRoll < job.combineSuccessChancePercent / 100;
-  })();
-  if (gemCombineRecipe && !gemSucceeded) {
-    const inputId = gemCombineRecipe.inputs[0].itemId;
-    next = storePouchGem(next, inputId, gemCombineRecipe.inputs[0].quantity - 1);
-  } else next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
-  next = awardOwnerSkillXp(next, job.ownerCharacterId, gemRecipe, job);
-  next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
-  next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: gemRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
-  return { state: next, recipe: gemRecipe, job, kind: "gem", gemSucceeded, gemAction: gemRefineRecipe ? "refine" : "combine" };
-}
-function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
-  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0, gemFailed = 0;
-  const blocked = [];
-  for (const job of equipmentCraftingQueue(next).filter((row) => isReady(row, nowMs))) {
-    try {
-      const result = claimForgeJob(next, job.id, nowMs, craftClaimSubRoll(trustedRoll, job.id));
-      next = result.state;
-      claimed.push(job.id);
-      if (result.kind === "equipment") results.push(result.result);
-      else {
-        gemClaims++;
-        if (!result.gemSucceeded) gemFailed++;
-      }
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "";
-      if (reason === "Gem Pouch, Inventory and Bank are full" || reason === "Equipment Pouch, Inventory and Bank are full" || reason.startsWith("Equipment Pouch and Bank are full") || reason === "Inventory and Bank are full" || reason.startsWith("Bank is full") || reason === "Crafting recipe is no longer available" || reason.startsWith("Crafted equipment storage is full") || reason.startsWith("Equipment copy limit reached") || reason.startsWith("Equipment copy ownership requires manual review") || reason.startsWith("Equipment requires manual review")) {
-        blocked.push({ jobId: job.id, reason });
-        continue;
-      }
-      throw error;
-    }
-  }
-  return { state: next, claimed, results, gemClaims, gemFailed, blocked };
-}
-var EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND = 0;
-function addStackable(stacks, capacity, itemId, quantityToAdd) {
-  const existing = stacks.find((row) => row.itemId === itemId);
-  if (existing) return { stacks: stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row), remaining: 0 };
-  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return { stacks, remaining: quantityToAdd };
-  return { stacks: [...stacks, { itemId, quantity: quantityToAdd }], remaining: 0 };
-}
-function refundOwnerGold(state, ownerCharacterId, gold) {
-  if (gold <= 0) return state;
-  if (state.character?.id === ownerCharacterId) return { ...state, character: { ...state.character, gold: state.character.gold + gold } };
-  return { ...state, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, character: { ...entry2.character, gold: entry2.character.gold + gold } } : entry2) };
-}
-function refundMaterialToOwner(state, ownerCharacterId, input) {
-  if (state.character?.id === ownerCharacterId) {
-    const inv = addStackable(state.inventory.stacks, state.inventory.capacity, input.itemId, input.quantity);
-    if (inv.remaining === 0) return { ...state, inventory: { ...state.inventory, stacks: inv.stacks } };
-  } else {
-    const index = (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === ownerCharacterId);
-    if (index >= 0) {
-      const target2 = state.otherCharacters[index], inv = addStackable(target2.inventory.stacks, target2.inventory.capacity, input.itemId, input.quantity);
-      if (inv.remaining === 0) {
-        const others = state.otherCharacters.slice();
-        others[index] = { ...target2, inventory: { ...target2.inventory, stacks: inv.stacks } };
-        return { ...state, otherCharacters: others };
-      }
-    }
-  }
-  const bank = addStackable(state.bank.stacks, state.bank.capacity, input.itemId, input.quantity);
-  if (bank.remaining > 0) throw new Error("Free Inventory or Bank space before cancelling this craft");
-  return { ...state, bank: { ...state.bank, stacks: bank.stacks } };
-}
-function cancelEquipmentCraft(state, jobId, nowMs) {
-  const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
-  if (!job) throw new Error("Crafting job not found");
-  if (job.completesAtMs <= nowMs) throw new Error("Finished equipment must be claimed instead of cancelled");
-  const recipe2 = timedEquipmentRecipe(job.recipeId) ?? gemCombineRecipeV1(job.recipeId) ?? gemRefineRecipeV1(job.recipeId);
-  if (!recipe2) throw new Error("Crafting recipe is no longer available");
-  const reservedInputs = job.reservedInputs?.length ? job.reservedInputs : recipe2.inputs, reservedGold = job.reservedGold ?? recipe2.gold;
-  const waiting = job.startedAtMs > nowMs;
-  const refundGold = Math.floor(reservedGold * EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND);
-  let next = refundOwnerGold(projected, job.ownerCharacterId, refundGold);
-  for (const input of reservedInputs) next = refundMaterialToOwner(next, job.ownerCharacterId, input);
-  const remaining = queue.filter((row) => row.id !== jobId);
-  next = { ...next, account: { ...next.account, equipmentCraftingQueue: scheduleWaiting(remaining, equipmentCraftSlotBreakdown(next).capacity, nowMs) } };
-  return { state: next, job, waiting, refundGold, feeGold: reservedGold - refundGold, refundedInputs: reservedInputs.map((row) => ({ ...row })) };
-}
-function moveWaitingEquipmentCraft(state, jobId, direction, nowMs) {
-  const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), waiting = queue.filter((row) => isWaiting(row, nowMs));
-  const index = waiting.findIndex((row) => row.id === jobId);
-  if (index < 0) throw new Error("Only waiting equipment crafts can be reordered");
-  const target2 = direction === "up" ? index - 1 : index + 1;
-  if (target2 < 0 || target2 >= waiting.length) return projected;
-  const reordered = waiting.slice(), temp = reordered[index];
-  reordered[index] = reordered[target2];
-  reordered[target2] = temp;
-  const scheduled = scheduleWaiting(queue, equipmentCraftSlotBreakdown(projected).capacity, nowMs, reordered.map((row) => row.id));
-  return { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
-}
-
-// ../apps/mobile/src/core/pet-collection.ts
-function normalizeOwnedPetIds(...sources) {
-  const ids2 = [];
-  for (const source of sources) {
-    if (!Array.isArray(source)) continue;
-    for (const value of source) {
-      if (typeof value !== "string") continue;
-      const id = value.trim();
-      if (id && !ids2.includes(id)) ids2.push(id);
-    }
-  }
-  return ids2;
-}
-
-// ../apps/mobile/src/core/profile-unlocks.ts
-init_progression();
-var PROFILE_BACKGROUNDS = [{ id: "asterfall-night", name: "Asterfall Night", requiredLevel: 1 }, { id: "ironwood-dawn", name: "Ironwood Dawn", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "silverbrook-mist", name: "Silverbrook Mist", requiredLevel: rebasedCombatLevelFromLegacyLevel(20) }, { id: "oathglass-hall", name: "Oathglass Hall", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }];
-var PROFILE_TITLES = [{ id: "new-adventurer", name: "New Adventurer", requiredLevel: 1 }, { id: "pathfinder", name: "Pathfinder", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "oathbound", name: "Oathbound", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }, { id: "bloomwarden", name: "Bloomwarden", requiredGuild: true }];
-
-// ../apps/mobile/src/core/account-collections.ts
-function union(existing, earned) {
-  const merged = [...existing ?? []];
-  const seen = new Set(merged);
-  for (const id of earned) if (id && !seen.has(id)) {
-    merged.push(id);
-    seen.add(id);
-  }
-  return merged;
-}
-function same(a, b) {
-  return (a ?? []).length === b.length && b.every((id, index) => (a ?? [])[index] === id);
-}
-function reconcileAccountCollections(state) {
-  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter((c) => !!c);
-  const highestLevel = characters.reduce((level, c) => Math.max(level, c.level || 0), 0);
-  const pets = normalizeOwnedPetIds(state.account.unlockedCosmeticPetIds, ...characters.map((c) => c.ownedPetIds));
-  const titles = union(state.account.unlockedTitleIds, PROFILE_TITLES.filter((t) => !t.requiredGuild && highestLevel >= (t.requiredLevel ?? 1)).map((t) => t.id));
-  const backgrounds = union(state.account.unlockedProfileBackgroundIds, PROFILE_BACKGROUNDS.filter((b) => highestLevel >= b.requiredLevel).map((b) => b.id));
-  const icons = union(state.account.unlockedProfileIconIds, PROFILE_ICON_CATALOG.filter(
-    (icon) => icon.bossId !== void 0 && state.defeatedBossIds.includes(icon.bossId) || icon.monsterId !== void 0 && characters.some((c) => (c.monsterMasteryPoints?.[icon.monsterId] ?? 0) >= 10)
-  ).map((icon) => icon.id));
-  const nextAccount = { ...state.account };
-  let changed = false;
-  if (!same(state.account.unlockedCosmeticPetIds, pets)) {
-    nextAccount.unlockedCosmeticPetIds = pets;
-    changed = true;
-  }
-  if (!same(state.account.unlockedTitleIds, titles)) {
-    nextAccount.unlockedTitleIds = titles;
-    changed = true;
-  }
-  if (!same(state.account.unlockedProfileBackgroundIds, backgrounds)) {
-    nextAccount.unlockedProfileBackgroundIds = backgrounds;
-    changed = true;
-  }
-  if (!same(state.account.unlockedProfileIconIds, icons)) {
-    nextAccount.unlockedProfileIconIds = icons;
-    changed = true;
-  }
-  return changed ? { ...state, account: nextAccount } : state;
-}
-
-// ../apps/mobile/src/core/account-actions.ts
-function snapshot(state) {
-  return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId, ...snapshotCharacterWorldProgress(state) };
-}
-function createAccountCharacter(state, classId, name, body, now) {
-  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
-  if (!state.character) return createCharacter(state, classId, name, body);
-  if (accountCharacters(state).length >= MAX_NEW_ACCOUNT_CHARACTERS) throw new Error("Maximum 3 characters: one Tank, one Damage and one Support.");
-  if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
-  const candidate = CLASSES.find((def) => def.id === classId);
-  if (!candidate) throw new Error("Invalid character class.");
-  if (occupiedCharacterRoles(state).includes(candidate.role)) throw new Error(`Your account already has a ${candidate.role} character. Choose a different role.`);
-  const next = createCharacter(newGame(now), classId, name, body);
-  const active2 = snapshot(state);
-  const sequence = Math.max(state.account.createdCharacterCount ?? 0, accountCharacters(state).length) + 1;
-  const id = `LOCAL_CHAR_${sequence}`;
-  next.character.id = id;
-  const account = { ...state.account, createdCharacterCount: sequence, unlockedCharacterSlots: Math.max(state.account.unlockedCharacterSlots ?? 1, unlockedCharacterSlots(state)) };
-  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] };
-}
-function switchAccountCharacter(state, id, now) {
-  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
-  if (!state.character) return state;
-  if (state.character.id === id) return state;
-  const target2 = state.otherCharacters?.find((x) => x.character.id === id);
-  if (!target2) throw new Error("Character is not owned.");
-  const remaining = (state.otherCharacters ?? []).filter((x) => x.character.id !== id);
-  const active2 = snapshot(state);
-  return { ...state, ...restoreCharacterWorldProgress(target2), character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2], account: personalSeasonalAccountView(state.account, target2.character) };
-}
-function stackCap(itemId) {
-  try {
-    const item = itemDef(itemId);
-    return item.type === "gear" || item.type === "tool" ? 1 : 9999;
-  } catch {
-    return 9999;
-  }
-}
-function mergeStacks(stacks) {
-  const merged = [];
-  for (const stack of stacks) {
-    if (!stack || typeof stack.itemId !== "string" || !Number.isFinite(stack.quantity) || stack.quantity <= 0) continue;
-    if (stack.instanceId) {
-      if (stack.quantity !== 1) throw new Error("Invalid crafted equipment stack during character deletion.");
-      merged.push({ ...stack, quantity: 1 });
-      continue;
-    }
-    const cap = stackCap(stack.itemId);
-    let remaining = Math.floor(stack.quantity);
-    while (remaining > 0) {
-      const existing = merged.find((row) => row.itemId === stack.itemId && !row.instanceId && row.quantity < cap);
-      if (existing) {
-        const moved2 = Math.min(cap - existing.quantity, remaining);
-        existing.quantity += moved2;
-        remaining -= moved2;
-        continue;
-      }
-      const moved = Math.min(cap, remaining);
-      merged.push({ ...stack, quantity: moved });
-      remaining -= moved;
-    }
-  }
-  return merged;
-}
-function routeToBank(bank, baseOverflow, incoming, now) {
-  const stacks = bank.stacks.map((row) => ({ ...row })), overflow = baseOverflow.stacks.map((row) => ({ ...row }));
-  for (const incomingStack of mergeStacks(incoming)) {
-    if (incomingStack.instanceId) {
-      if ([...stacks, ...overflow].some((row) => row.instanceId === incomingStack.instanceId))
-        throw new Error("Duplicate crafted equipment copy during character deletion.");
-      (stacks.length < bank.capacity ? stacks : overflow).push({ ...incomingStack });
-      continue;
-    }
-    let remaining = incomingStack.quantity, cap = stackCap(incomingStack.itemId);
-    for (const existing of stacks.filter((row) => row.itemId === incomingStack.itemId && !row.instanceId)) {
-      if (remaining <= 0) break;
-      const room = Math.max(0, cap - existing.quantity), moved = Math.min(room, remaining);
-      existing.quantity += moved;
-      remaining -= moved;
-    }
-    while (remaining > 0 && stacks.length < bank.capacity) {
-      const moved = Math.min(cap, remaining);
-      stacks.push({ itemId: incomingStack.itemId, quantity: moved });
-      remaining -= moved;
-    }
-    if (remaining > 0) overflow.push({ itemId: incomingStack.itemId, quantity: remaining });
-  }
-  const overflowStacks = mergeStacks(overflow);
-  return { bank: { ...bank, stacks }, overflow: { stacks: overflowStacks, expiresAtMs: overflowStacks.length ? Math.max(baseOverflow.expiresAtMs ?? 0, now + 72 * 60 * 60 * 1e3) : null } };
-}
-function deletionRecoveryItems(entry2, sharedBank) {
-  const equipped = Object.entries(entry2.character.equipment).filter((entry3) => typeof entry3[1] === "string" && !!entry3[1]).map(([slot, itemId]) => {
-    const instanceId = entry2.character.equipmentInstanceIds?.[slot];
-    return { itemId, quantity: 1, ...instanceId ? { instanceId } : {} };
-  });
-  const tools = [...new Set(Object.values(entry2.character.equippedToolIds ?? {}).filter((id) => typeof id === "string" && !!id))];
-  const held = [...equipped, ...tools.map((itemId) => ({ itemId, quantity: 1 }))];
-  const ownedGearIds = /* @__PURE__ */ new Set([
-    ...equipped.map((row) => row.itemId),
-    ...entry2.inventory.stacks.map((row) => row.itemId),
-    ...(entry2.character.equipmentPouch?.stacks ?? []).map((row) => row.itemId),
-    ...entry2.overflow.stacks.map((row) => row.itemId),
-    ...sharedBank.stacks.map((row) => row.itemId)
-  ]);
-  const socketed = Object.entries(entry2.character.gearEnhancements ?? {}).flatMap(([itemId, enhancement]) => ownedGearIds.has(itemId) ? [enhancement.statGemId, enhancement.effectGemId].filter((id) => Boolean(id)) : []);
-  return [...entry2.inventory.stacks, ...entry2.character.equipmentPouch?.stacks ?? [], ...entry2.overflow.stacks, ...held, ...socketed.map((itemId) => ({ itemId, quantity: 1 }))];
-}
-function accountAfterCharacterDelete(state, character) {
-  const earnedSlots = unlockedCharacterSlots(state);
-  const arena = state.account.arenaSquadCharacterIds?.filter((id) => id !== character.id);
-  const unlockedCosmeticPetIds = [.../* @__PURE__ */ new Set([...state.account.unlockedCosmeticPetIds ?? [], ...character.ownedPetIds ?? []])];
-  const ownedBoostIds = [.../* @__PURE__ */ new Set([...state.account.ownedBoostIds ?? [], ...character.ownedBoostIds ?? []])];
-  return {
-    ...state.account,
-    unlockedCharacterSlots: Math.max(state.account.unlockedCharacterSlots ?? 1, earnedSlots),
-    unlockedCosmeticPetIds,
-    ownedBoostIds,
-    ...state.account.arenaSquadCharacterIds ? { arenaSquadCharacterIds: arena } : {}
-  };
-}
-function characterDeleteConfirmation(name) {
-  return `DELETE ${name}`;
-}
-function characterDeleteBlockReason(state, id) {
-  if (!state.character) return "Create a character first.";
-  const active2 = state.character.id === id;
-  const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
-  if (!stored) return "Character is not owned.";
-  if (stored.activity) return "Stop or claim this character\u2019s current activity before deleting it.";
-  if (equipmentCraftingQueue(state).some((job) => job.ownerCharacterId === id)) return "Claim this character\u2019s queued equipment crafts before deleting it.";
-  if (auditCraftedGearOwnership(state).problems.length)
-    return "Equipment identity conflict. Contact support before deleting this character.";
-  return void 0;
-}
-function deleteAccountCharacter(state, id, confirmation, now) {
-  state = recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
-  if (!state.character) throw new Error("Create a character first.");
-  const active2 = state.character.id === id;
-  const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
-  if (!stored) throw new Error("Character is not owned.");
-  if (confirmation.trim() !== characterDeleteConfirmation(stored.character.name)) throw new Error(`Type "${characterDeleteConfirmation(stored.character.name)}" to confirm.`);
-  const blocked = characterDeleteBlockReason(state, id);
-  if (blocked) throw new Error(blocked);
-  const other = (state.otherCharacters ?? []).filter((entry2) => entry2.character.id !== id);
-  const account = accountAfterCharacterDelete(state, stored.character);
-  if (!active2) {
-    const recovery2 = routeToBank(state.bank, state.overflow, deletionRecoveryItems(stored, state.bank), now);
-    return { ...state, bank: recovery2.bank, overflow: recovery2.overflow, otherCharacters: other, account };
-  }
-  const replacement = other[0], remaining = replacement ? other.slice(1) : [];
-  const baseOverflow = replacement?.overflow ?? { stacks: [], expiresAtMs: null };
-  const recovery = routeToBank(state.bank, baseOverflow, deletionRecoveryItems(stored, state.bank), now);
-  if (replacement) return { ...state, ...restoreCharacterWorldProgress(replacement), character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account: personalSeasonalAccountView(account, replacement.character) };
-  const fresh = newGame(now);
-  return { ...state, ...snapshotCharacterWorldProgress(fresh), character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account: personalSeasonalAccountView(account, null) };
-}
-
-// ../apps/mobile/src/core/loadout-storage.ts
-var qty3 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
-var take3 = (stacks, id) => {
-  if (qty3(stacks, id) < 1) throw new Error(`MISSING:${id}`);
-  return stacks.map((entry2) => entry2.itemId === id ? { ...entry2, quantity: entry2.quantity - 1 } : { ...entry2 }).filter((entry2) => entry2.quantity > 0);
-};
-var put = (stacks, capacity, id) => {
-  const index = stacks.findIndex((entry2) => entry2.itemId === id);
-  if (index >= 0) {
-    const next = stacks.map((entry2) => ({ ...entry2 }));
-    next[index].quantity += 1;
-    return next;
-  }
-  if (stacks.length >= capacity) throw new Error("STORAGE_FULL");
-  return [...stacks.map((entry2) => ({ ...entry2 })), { itemId: id, quantity: 1 }];
-};
-function planLoadoutStorage(input) {
-  let inventory = input.inventory.map((entry2) => ({ ...entry2 })), bank = input.bank.map((entry2) => ({ ...entry2 }));
-  const slots2 = [.../* @__PURE__ */ new Set([...Object.keys(input.currentEquipment), ...Object.keys(input.desiredEquipment)])];
-  for (const slot of slots2) {
-    const wanted = input.desiredEquipment[slot], equipped = input.currentEquipment[slot];
-    if (!wanted || wanted === equipped) continue;
-    if (qty3(inventory, wanted) > 0) inventory = take3(inventory, wanted);
-    else if (qty3(bank, wanted) > 0) bank = take3(bank, wanted);
-    else throw new Error(`MISSING:${wanted}`);
-  }
-  for (const slot of slots2) {
-    const old = input.currentEquipment[slot], wanted = input.desiredEquipment[slot];
-    if (!old || old === wanted) continue;
-    try {
-      inventory = put(inventory, input.inventoryCapacity, old);
-    } catch (error) {
-      if (error instanceof Error && error.message === "STORAGE_FULL") bank = put(bank, input.bankCapacity, old);
-      else throw error;
-    }
-  }
-  return { inventory, bank };
-}
-
-// ../apps/mobile/src/core/character-loadouts.ts
-var CHARACTER_LOADOUT_SLOT_COUNT = 1;
-var MAX_CHARACTER_LOADOUT_SLOTS = 5;
-function characterLoadoutSlotCount(state) {
-  return Math.min(MAX_CHARACTER_LOADOUT_SLOTS, CHARACTER_LOADOUT_SLOT_COUNT + accountEntitlementBenefits(state).loadoutSlots);
-}
-var slots = ["weapon", "offhand", "helmet", "chest", "legs", "boots", "gloves", "cape", "amulet", "ring"];
-var cleanName = (value, fallback2) => typeof value === "string" && value.trim() ? value.trim().slice(0, 28) : fallback2;
-function normalizeCharacterLoadouts(value, classId, slotCount = CHARACTER_LOADOUT_SLOT_COUNT) {
-  if (!Array.isArray(value)) return [];
-  const limit = Math.max(CHARACTER_LOADOUT_SLOT_COUNT, Math.min(MAX_CHARACTER_LOADOUT_SLOTS, slotCount)), bySlot = /* @__PURE__ */ new Map();
-  value.slice(0, 12).forEach((raw2, index) => {
-    if (!raw2 || typeof raw2 !== "object" || raw2.classId !== classId) return;
-    const slotIndex = Number.isInteger(raw2.slotIndex) && raw2.slotIndex >= 0 && raw2.slotIndex < limit ? raw2.slotIndex : index;
-    if (slotIndex < 0 || slotIndex >= limit || bySlot.has(slotIndex)) return;
-    const equipment = {};
-    for (const slot of slots) {
-      const id = raw2.equipment?.[slot];
-      const def = typeof id === "string" ? ITEMS.find((item) => item.id === id) : void 0;
-      if (def?.type === "gear" && isReleasedEquipmentItemId(id) && def.slot === slot && (!def.classRestriction || def.classRestriction === classId)) equipment[slot] = id;
-    }
-    const foodId = typeof raw2.foodId === "string" && ITEMS.some((item) => item.id === raw2.foodId && item.type === "food") ? raw2.foodId : void 0;
-    const companionId = typeof raw2.companionId === "string" && COMBAT_COMPANIONS.some((def) => def.id === raw2.companionId) ? raw2.companionId : void 0;
-    const equipmentInstanceIds = {};
-    for (const slot of slots) {
-      const instanceId = raw2.equipmentInstanceIds?.[slot];
-      if (equipment[slot] && typeof instanceId === "string" && instanceId.trim() && instanceId.length <= 180) equipmentInstanceIds[slot] = instanceId;
-    }
-    bySlot.set(slotIndex, { equipmentInstanceIds, id: typeof raw2.id === "string" && raw2.id ? raw2.id : `loadout-${slotIndex + 1}`, slotIndex, name: cleanName(raw2.name, `Loadout ${slotIndex + 1}`), classId, equipment, foodId, companionId, createdAtMs: Number.isFinite(raw2.createdAtMs) ? raw2.createdAtMs : 0, updatedAtMs: Number.isFinite(raw2.updatedAtMs) ? raw2.updatedAtMs : 0 });
-  });
-  return [...bySlot.values()].sort((a, b) => a.slotIndex - b.slotIndex);
-}
-function saveCharacterLoadout(state, index, name, nowMs = Date.now()) {
-  if (!state.character) throw new Error("Create a character first.");
-  const capacity = characterLoadoutSlotCount(state);
-  if (index < 0 || index >= capacity) throw new Error("Invalid loadout slot.");
-  const current = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, capacity), existing = current.find((entry2) => entry2.slotIndex === index), preset = { id: existing?.id ?? `loadout-${index + 1}`, slotIndex: index, name: cleanName(name, existing?.name ?? `Loadout ${index + 1}`), classId: state.character.classId, equipment: { ...state.character.equipment }, equipmentInstanceIds: { ...state.character.equipmentInstanceIds ?? {} }, foodId: state.character.equippedFoodId, companionId: state.character.equippedCombatCompanionId, createdAtMs: existing?.createdAtMs ?? nowMs, updatedAtMs: nowMs };
-  return { ...state, character: { ...state.character, savedLoadouts: [...current.filter((entry2) => entry2.slotIndex !== index), preset].sort((a, b) => a.slotIndex - b.slotIndex) } };
-}
-function deleteCharacterLoadout(state, id) {
-  return !state.character ? state : { ...state, character: { ...state.character, savedLoadouts: normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).filter((entry2) => entry2.id !== id) } };
-}
-function applyExactCharacterLoadout(state, preset) {
-  if (!state.character) throw new Error("No active character");
-  const audit = auditCraftedGearOwnership(state);
-  if (audit.problems.length) throw new Error("Equipment identity conflict; resolve it before applying a loadout");
-  let next = state;
-  for (const slot of slots) {
-    const wanted = preset.equipment[slot], wantedCopy = preset.equipmentInstanceIds?.[slot];
-    const current = next.character.equipment[slot], currentCopy = next.character.equipmentInstanceIds?.[slot];
-    if (wantedCopy && currentCopy === wantedCopy && current === wanted) continue;
-    if (!wantedCopy && !currentCopy && wanted === current) continue;
-    if (!wanted) {
-      if (currentCopy) next = unequipCraftedGearInstance(next, currentCopy);
-      else if (current) next = unequipItem(next, slot);
-      continue;
-    }
-    if (wantedCopy) {
-      let loc = auditCraftedGearOwnership(next).linked.find((row) => row.instanceId === wantedCopy);
-      if (!loc) throw new Error("A saved equipment copy cannot be found. Review this loadout manually.");
-      if (loc.place === "bank") {
-        next = moveCraftedGearInstance(next, wantedCopy, "inventory");
-        loc = auditCraftedGearOwnership(next).linked.find((row) => row.instanceId === wantedCopy);
-      }
-      if (loc?.place !== "inventory" && loc?.place !== "equipment_pouch" || loc.holderCharacterId !== next.character?.id)
-        throw new Error("The saved equipment copy belongs to another character or cannot be equipped");
-      next = equipCraftedGearInstance(next, wantedCopy);
-    } else {
-      if (currentCopy) next = unequipCraftedGearInstance(next, currentCopy);
-      if (!next.inventory.stacks.some((row) => row.itemId === wanted && row.instanceId === void 0 && row.quantity > 0)) {
-        if (!next.bank.stacks.some((row) => row.itemId === wanted && row.instanceId === void 0 && row.quantity > 0))
-          throw new Error(`${itemDef(wanted).name} is not available as an unassigned equipment copy`);
-        next = withdrawFromBank(next, wanted, 1);
-      }
-      next = equipItem(next, wanted);
-    }
-  }
-  if (preset.foodId && !next.inventory.stacks.some((entry2) => entry2.itemId === preset.foodId && entry2.quantity > 0))
-    throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);
-  next = { ...next, character: { ...next.character, equippedFoodId: preset.foodId } };
-  next = preset.companionId ? equipCombatCompanion(next, preset.companionId) : unequipCombatCompanion(next);
-  next.character.currentHp = Math.min(next.character.currentHp, effectiveStats(next).hp);
-  return next;
-}
-function applyCharacterLoadout(state, id) {
-  if (!state.character) throw new Error("Create a character first.");
-  if (state.activity?.kind === "combat") throw new Error("Stop combat before changing loadouts.");
-  const preset = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).find((entry2) => entry2.id === id);
-  if (!preset) throw new Error("Loadout not found.");
-  const affected = new Set([...Object.values(state.character.equipment), ...Object.values(preset.equipment)].filter((id2) => !!id2));
-  if (Object.keys(state.character.equipmentInstanceIds ?? {}).length || Object.keys(preset.equipmentInstanceIds ?? {}).length || [...state.inventory.stacks, ...state.bank.stacks, ...state.character.equipmentPouch?.stacks ?? []].some((row) => row.instanceId && affected.has(row.itemId))) return applyExactCharacterLoadout(state, preset);
-  for (const slot of slots) {
-    const wanted = preset.equipment[slot];
-    if (!wanted) continue;
-    const def = itemDef(wanted);
-    if (def.type !== "gear" || !isReleasedEquipmentItemId(wanted) || def.slot !== slot || def.classRestriction && def.classRestriction !== state.character.classId) throw new Error(`${def.name} is not valid for this loadout.`);
-  }
-  let planned;
-  try {
-    planned = planLoadoutStorage({ inventory: state.inventory.stacks, bank: state.bank.stacks, inventoryCapacity: entitlementStorageCapacity(state, "inventory"), bankCapacity: entitlementStorageCapacity(state, "bank"), currentEquipment: state.character.equipment, desiredEquipment: preset.equipment });
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("MISSING:")) throw new Error(`${itemDef(error.message.slice(8)).name} is not equipped, in Inventory, or in Bank.`);
-    throw error;
-  }
-  if (preset.foodId && !planned.inventory.some((entry2) => entry2.itemId === preset.foodId && entry2.quantity > 0)) throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);
-  let next = { ...state, inventory: { ...state.inventory, stacks: planned.inventory }, bank: { ...state.bank, stacks: planned.bank }, character: { ...state.character, equipment: preset.equipment, equippedFoodId: preset.foodId } };
-  next = preset.companionId ? equipCombatCompanion(next, preset.companionId) : unequipCombatCompanion(next);
-  next.character.currentHp = Math.min(next.character.currentHp, effectiveStats(next).hp);
-  return next;
-}
-
-// ../apps/mobile/src/core/arena-squad.ts
-var ARENA_SQUAD_SIZE = 3;
-function arenaSquadIds(state) {
-  const owned = new Set(accountCharacters(state).map((entry2) => entry2.character.id));
-  const saved = state.account.arenaSquadCharacterIds ?? [];
-  const seen = /* @__PURE__ */ new Set();
-  return Array.from({ length: ARENA_SQUAD_SIZE }, (_, index) => {
-    const id = typeof saved[index] === "string" ? saved[index] : "";
-    if (!id || !owned.has(id) || seen.has(id)) return "";
-    seen.add(id);
-    return id;
-  });
-}
-function setArenaSquadSlot(state, slot, characterId) {
-  const owned = accountCharacters(state).map((entry2) => entry2.character.id);
-  if (characterId && !owned.includes(characterId)) throw new Error("That character does not belong to this account.");
-  const ids2 = arenaSquadIds(state);
-  if (characterId) {
-    const duplicate = ids2.findIndex((id, index) => index !== slot && id === characterId);
-    if (duplicate >= 0) ids2[duplicate] = "";
-  }
-  ids2[slot] = characterId ?? "";
-  return { ...state, account: { ...state.account, arenaSquadCharacterIds: ids2 } };
-}
-
-// ../apps/mobile/src/core/progression-goals-v40.ts
-var MAX_PINNED_GOALS = 3;
-function validateProgressionGoals(goals, characterId) {
-  if (goals.length > MAX_PINNED_GOALS) throw new Error("too_many_pinned_goals");
-  const ids2 = /* @__PURE__ */ new Set();
-  for (const goal of goals) {
-    if (goal.characterId !== characterId) throw new Error("goal_character_mismatch");
-    if (ids2.has(goal.id)) throw new Error("duplicate_goal_id");
-    ids2.add(goal.id);
-    if (!goal.id || !goal.title) throw new Error("invalid_goal");
-  }
-  return goals;
-}
-var GOAL_KINDS = ["skill_level", "item_quantity", "recipe", "recipe_preparation", "monster_kills", "pet_hunt", "equipment_set", "dungeon_clears", "mastery_rank", "weekly_order"];
-function normalizeProgressionGoals(value, characterId) {
-  if (!Array.isArray(value) || !characterId) return [];
-  const out = [];
-  for (const raw2 of value.slice(0, MAX_PINNED_GOALS)) {
-    if (!raw2 || typeof raw2 !== "object") continue;
-    const row = raw2, kind = row.kind;
-    if (!GOAL_KINDS.includes(kind)) continue;
-    const id = typeof row.id === "string" && row.id.trim() ? row.id.trim().slice(0, 80) : `goal-${out.length + 1}`;
-    const title2 = typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 80) : "Working Toward";
-    const createdAtMs = Number.isFinite(Number(row.createdAtMs)) ? Math.max(0, Math.floor(Number(row.createdAtMs))) : 0;
-    const pinnedAtMs = Number.isFinite(Number(row.pinnedAtMs)) ? Math.max(0, Math.floor(Number(row.pinnedAtMs))) : createdAtMs;
-    const base = { id, characterId, kind, title: title2, createdAtMs, pinnedAtMs };
-    const positive = (key, min = 1) => Number.isFinite(Number(row[key])) ? Math.max(min, Math.floor(Number(row[key]))) : void 0;
-    let goal;
-    if (kind === "skill_level" && typeof row.skillId === "string" && positive("targetLevel")) goal = { ...base, kind, skillId: row.skillId, targetLevel: positive("targetLevel") };
-    else if (kind === "item_quantity" && typeof row.itemId === "string" && positive("targetQuantity")) goal = { ...base, kind, itemId: row.itemId, targetQuantity: positive("targetQuantity") };
-    else if (kind === "recipe" && typeof row.recipeId === "string" && positive("targetQuantity")) goal = { ...base, kind, recipeId: row.recipeId, targetQuantity: positive("targetQuantity") };
-    else if (kind === "recipe_preparation" && typeof row.recipeId === "string" && typeof row.outputItemId === "string" && positive("batches") && positive("initialStepCount") && Number.isFinite(Number(row.baselineOutputQuantity)) && positive("targetOutputQuantity")) {
-      const baselineOutputQuantity = Math.max(0, Math.floor(Number(row.baselineOutputQuantity))), targetOutputQuantity = Math.max(baselineOutputQuantity + 1, positive("targetOutputQuantity"));
-      goal = { ...base, kind, recipeId: row.recipeId, batches: Math.min(100, positive("batches")), outputItemId: row.outputItemId, initialStepCount: Math.min(99, positive("initialStepCount")), baselineOutputQuantity, targetOutputQuantity };
-    } else if (kind === "monster_kills" && typeof row.monsterId === "string" && positive("targetKills")) goal = { ...base, kind, monsterId: row.monsterId, targetKills: positive("targetKills") };
-    else if (kind === "pet_hunt" && typeof row.petId === "string" && (row.sourceKind === "monster" || row.sourceKind === "dungeon") && typeof row.sourceId === "string") goal = { ...base, kind, petId: row.petId, sourceKind: row.sourceKind, sourceId: row.sourceId };
-    else if (kind === "equipment_set" && typeof row.setId === "string" && positive("targetPieces")) goal = { ...base, kind, setId: row.setId, targetPieces: positive("targetPieces") };
-    else if (kind === "dungeon_clears" && typeof row.dungeonId === "string" && positive("targetClears")) goal = { ...base, kind, dungeonId: row.dungeonId, targetClears: positive("targetClears") };
-    else if (kind === "mastery_rank" && typeof row.actionId === "string" && positive("targetRank")) goal = { ...base, kind, actionId: row.actionId, targetRank: Math.min(50, positive("targetRank")) };
-    else if (kind === "weekly_order" && typeof row.orderId === "string" && positive("targetProgress")) goal = { ...base, kind, orderId: row.orderId, targetProgress: positive("targetProgress") };
-    if (goal) out.push(goal);
-  }
-  return validateProgressionGoals(out, characterId);
-}
-
-// ../apps/mobile/src/core/inventory-bulk.ts
-init_faith();
 
 // ../apps/mobile/src/core/profession-mastery-presentation.ts
 function professionMasteryActiveBonusText(state, actionId, options = {}) {
@@ -57253,7 +56108,1229 @@ function workingTowardInventoryProtectionMap(state) {
   return new Map(workingTowardInventoryProtections(state).map((row) => [row.itemId, row]));
 }
 
+// ../apps/mobile/src/core/crafted-gear-ownership.ts
+var empty = () => ({ linked: [], unlocatedInstanceIds: [], unmarkedPhysicalCopies: 0, problems: [], consistent: false });
+function auditCraftedGearOwnership(state) {
+  const audit = empty();
+  const definitions2 = craftedGearInstances(state), byId = /* @__PURE__ */ new Map();
+  for (const record of definitions2) {
+    if (byId.has(record.id)) audit.problems.push(`Duplicate crafted record: ${record.id}`);
+    else byId.set(record.id, record);
+  }
+  const observed = /* @__PURE__ */ new Map();
+  const trackedItemIds = new Set(definitions2.map((row) => row.itemId));
+  const register = (instanceId, itemId, place, holderCharacterId, slot) => {
+    const record = byId.get(instanceId);
+    if (!record) {
+      audit.problems.push(`Unrecognized crafted instance marker: ${instanceId}`);
+      return;
+    }
+    if (record.itemId !== itemId) {
+      audit.problems.push(`Item definition mismatch for ${instanceId}`);
+      return;
+    }
+    if (observed.has(instanceId)) {
+      audit.problems.push(`Duplicate physical copy marker: ${instanceId}`);
+      return;
+    }
+    const location = { instanceId, itemId, place, holderCharacterId, slot };
+    observed.set(instanceId, location);
+    audit.linked.push(location);
+  };
+  const scanStacks = (stacks, place, holderCharacterId) => {
+    for (const stack of stacks ?? []) {
+      if (stack.instanceId === void 0) {
+        if (trackedItemIds.has(stack.itemId) && Number.isSafeInteger(stack.quantity) && stack.quantity > 0)
+          audit.unmarkedPhysicalCopies += stack.quantity;
+        continue;
+      }
+      if (typeof stack.instanceId !== "string" || !stack.instanceId.trim() || stack.quantity !== 1) {
+        audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
+        continue;
+      }
+      register(stack.instanceId, stack.itemId, place, holderCharacterId);
+    }
+  };
+  const scanCharacter = (character, inventory, overflow) => {
+    if (!character) return;
+    scanStacks(inventory.stacks, "inventory", character.id);
+    scanStacks(equipmentPouchForCharacter(character).stacks, "equipment_pouch", character.id);
+    scanStacks(overflow.stacks, "overflow", character.id);
+    for (const [slot, itemId] of Object.entries(character.equipment)) {
+      if (itemId && trackedItemIds.has(itemId) && !character.equipmentInstanceIds?.[slot])
+        audit.unmarkedPhysicalCopies += 1;
+    }
+    for (const [slot, instanceId] of Object.entries(character.equipmentInstanceIds ?? {})) {
+      if (typeof instanceId !== "string" || !instanceId.trim()) {
+        audit.problems.push(`Invalid equipped copy marker: ${slot}`);
+        continue;
+      }
+      const itemId = character.equipment[slot];
+      if (!itemId) {
+        audit.problems.push(`Equipped copy marker lacks equipment: ${instanceId}`);
+        continue;
+      }
+      register(instanceId, itemId, "equipped", character.id, slot);
+    }
+  };
+  scanCharacter(state.character, state.inventory, state.overflow);
+  for (const entry2 of state.otherCharacters ?? []) scanCharacter(entry2.character, entry2.inventory, entry2.overflow);
+  scanStacks(state.bank.stacks, "bank");
+  audit.unlocatedInstanceIds = [...byId.keys()].filter((id) => !observed.has(id));
+  audit.consistent = audit.problems.length === 0 && audit.unlocatedInstanceIds.length === 0 && audit.unmarkedPhysicalCopies === 0;
+  return audit;
+}
+function resolveTracked(state, instanceId) {
+  const audit = auditCraftedGearOwnership(state);
+  if (audit.problems.length) throw new Error("Equipment identity conflict; do not modify items until resolved");
+  const record = craftedGearInstances(state).find((row) => row.id === instanceId);
+  if (!record) throw new Error("Unknown equipment instance");
+  const locations = audit.linked.filter((row) => row.instanceId === instanceId);
+  if (locations.length !== 1) throw new Error("Equipment location is not verified; inspect legacy ownership first");
+  return { record, location: locations[0] };
+}
+function withoutInstance(stacks, instanceId) {
+  const index = stacks.findIndex((row) => row.instanceId === instanceId);
+  if (index < 0 || stacks[index].quantity !== 1) throw new Error("Exact equipment copy is missing from storage");
+  return [...stacks.slice(0, index), ...stacks.slice(index + 1)];
+}
+function appendInstance(stacks, instance, capacity) {
+  if (stacks.some((row) => row.instanceId === instance.id)) throw new Error("Equipment copy already exists in destination");
+  if (stacks.filter((row) => row.quantity > 0).length >= capacity) throw new Error("Destination storage is full");
+  return [...stacks, { itemId: instance.itemId, quantity: 1, instanceId: instance.id }];
+}
+function moveCraftedGearInstance(state, instanceId, to) {
+  if (!state.character) throw new Error("Create a character before moving equipment");
+  const { record, location } = resolveTracked(state, instanceId);
+  const from = location.place;
+  if (from !== "inventory" && from !== "bank" && from !== "equipment_pouch") throw new Error("Only stored equipment can be transferred");
+  if (from === to) return state;
+  if (from !== "bank" && location.holderCharacterId !== state.character.id) throw new Error("Another character is carrying this equipment");
+  const source = from === "equipment_pouch" ? equipmentPouch(state) : state[from];
+  const target2 = to === "equipment_pouch" ? equipmentPouch(state) : state[to];
+  const capacity = to === "equipment_pouch" ? target2.capacity : entitlementStorageCapacity(state, to);
+  const targetStacks = appendInstance(target2.stacks, record, capacity);
+  const sourceStacks = withoutInstance(source.stacks, instanceId);
+  let next = { ...state };
+  if (from === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...source, stacks: sourceStacks } } };
+  else next = { ...next, [from]: { ...source, stacks: sourceStacks } };
+  if (to === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...target2, stacks: targetStacks } } };
+  else next = { ...next, [to]: { ...target2, stacks: targetStacks } };
+  return next;
+}
+function setCraftedGearInstanceLock(state, instanceId, locked) {
+  if (typeof locked !== "boolean") throw new Error("Invalid equipment lock state");
+  if (!state.character) throw new Error("No character");
+  const { location } = resolveTracked(state, instanceId);
+  if (location.place !== "bank" && location.holderCharacterId !== state.character.id)
+    throw new Error("Cannot change another character's equipment protection");
+  const records = craftedGearInstances(state);
+  return { ...state, account: { ...state.account, craftedGearInstances: records.map((record) => record.id === instanceId ? { ...record, locked } : record) } };
+}
+function linkLegacyCraftedGearInstance(state, instanceId, from, stackIndex) {
+  if (!state.character) throw new Error("No active character");
+  if (!Number.isSafeInteger(stackIndex) || stackIndex < 0) throw new Error("Invalid physical equipment selection");
+  const audit = auditCraftedGearOwnership(state);
+  if (audit.problems.length) throw new Error("Existing equipment identity conflicts must be resolved before reconciliation");
+  const record = craftedGearInstances(state).find((row) => row.id === instanceId);
+  if (!record) throw new Error("Unknown Forge quality record");
+  if (!audit.unlocatedInstanceIds.includes(instanceId)) throw new Error("Forge quality record already linked to an equipment copy");
+  const physical = [state.inventory.stacks, state.character.equipmentPouch?.stacks ?? [], state.bank.stacks, state.overflow.stacks, ...(state.otherCharacters ?? []).flatMap((row) => [row.inventory.stacks, row.character.equipmentPouch?.stacks ?? [], row.overflow.stacks])].reduce((sum, stacks2) => sum + stacks2.reduce((n, row) => n + (row.itemId === record.itemId ? row.quantity : 0), 0), 0) + [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].reduce((n, character) => n + Object.values(character?.equipment ?? {}).filter((id) => id === record.itemId).length, 0);
+  const recorded = craftedGearInstances(state).filter((row) => row.itemId === record.itemId).length;
+  if (physical !== recorded) throw new Error("Legacy equipment count mismatch; inspect unmatched gear before associating Forge quality");
+  const container = state[from], source = container.stacks[stackIndex];
+  if (!source || source.itemId !== record.itemId || source.instanceId !== void 0 || !Number.isSafeInteger(source.quantity) || source.quantity < 1)
+    throw new Error("Select an unlinked physical copy of exactly the same equipment item");
+  const replacement = source.quantity === 1 ? [{ itemId: source.itemId, quantity: 1, instanceId: record.id }] : [{ itemId: source.itemId, quantity: source.quantity - 1 }, { itemId: source.itemId, quantity: 1, instanceId: record.id }];
+  if (source.quantity > 1 && container.stacks.length >= entitlementStorageCapacity(state, from))
+    throw new Error("Free one storage slot before separating a legacy equipment stack");
+  const stacks = [...container.stacks.slice(0, stackIndex), ...replacement, ...container.stacks.slice(stackIndex + 1)];
+  const next = { ...state, [from]: { ...container, stacks } };
+  if (auditCraftedGearOwnership(next).problems.length) throw new Error("Legacy equipment reconciliation would create duplicate copy identity");
+  return next;
+}
+function equipCraftedGearInstance(state, instanceId) {
+  if (!state.character) throw new Error("No active character");
+  const { record, location } = resolveTracked(state, instanceId);
+  if (!["inventory", "equipment_pouch"].includes(location.place) || location.holderCharacterId !== state.character.id)
+    throw new Error("Move this exact equipment copy into your character storage first");
+  const def = itemDef(record.itemId);
+  if (def.type !== "gear" || !def.slot) throw new Error("Not equipment");
+  if (state.activity?.kind === "combat" && def.slot !== "weapon") throw new Error("Stop combat before equipping");
+  if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This equipment belongs to another class");
+  if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires level ${def.requiredLevel}`);
+  const oldId = state.character.equipment[def.slot], oldInstanceId = state.character.equipmentInstanceIds?.[def.slot];
+  const returned = oldId ? [{ itemId: oldId, quantity: 1, ...oldInstanceId ? { instanceId: oldInstanceId } : {} }] : [];
+  const fromPouch = location.place === "equipment_pouch";
+  const source = fromPouch ? equipmentPouch(state) : state.inventory;
+  const remaining = withoutInstance(source.stacks, instanceId);
+  const capacity = fromPouch ? source.capacity : entitlementStorageCapacity(state, "inventory");
+  if (returned.length && remaining.filter((row) => row.quantity > 0).length >= capacity)
+    throw new Error(fromPouch ? "Equipment Pouch is full; make room before swapping" : "Inventory is full; make room before swapping");
+  const equipment = { ...state.character.equipment, [def.slot]: record.itemId };
+  const equipmentInstanceIds = { ...state.character.equipmentInstanceIds ?? {}, [def.slot]: record.id };
+  return fromPouch ? { ...state, character: { ...state.character, equipment, equipmentInstanceIds, equipmentPouch: { ...source, stacks: [...remaining, ...returned] } } } : { ...state, inventory: { ...state.inventory, stacks: [...remaining, ...returned] }, character: { ...state.character, equipment, equipmentInstanceIds } };
+}
+function unequipCraftedGearInstance(state, instanceId) {
+  if (!state.character) throw new Error("No active character");
+  if (state.activity?.kind === "combat") throw new Error("Stop combat before unequipping");
+  const { record, location } = resolveTracked(state, instanceId);
+  if (location.place !== "equipped" || location.holderCharacterId !== state.character.id || !location.slot)
+    throw new Error("This exact equipment copy is not equipped on the active character");
+  const pouch = equipmentPouch(state), space = pouch.stacks.length < pouch.capacity;
+  const stacks = space ? appendInstance(pouch.stacks, record, pouch.capacity) : appendInstance(state.inventory.stacks, record, entitlementStorageCapacity(state, "inventory"));
+  const equipment = { ...state.character.equipment }, equipmentInstanceIds = { ...state.character.equipmentInstanceIds ?? {} };
+  delete equipment[location.slot];
+  delete equipmentInstanceIds[location.slot];
+  return space ? { ...state, character: { ...state.character, equipment, equipmentInstanceIds, equipmentPouch: { ...pouch, stacks } } } : { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, equipment, equipmentInstanceIds } };
+}
+function protectedGear(state, record) {
+  if (record.locked === true) throw new Error("This equipment copy is locked");
+  if (state.settings.lockedItemIds?.includes(record.itemId)) throw new Error("This equipment type is locked");
+  if (workingTowardInventoryProtectionMap(state).has(record.itemId))
+    throw new Error("Equipment needed for a Working Toward goal is protected");
+  if (state.settings.favoriteItemIds?.includes(record.itemId)) throw new Error("Favorite equipment cannot be sold or salvaged");
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
+  if (characters.some((character) => character?.savedLoadouts?.some((preset) => Object.values(preset.equipmentInstanceIds ?? {}).includes(record.id) || Object.entries(preset.equipment).some(([slot, id]) => id === record.itemId && !preset.equipmentInstanceIds?.[slot]))))
+    throw new Error("A saved loadout protects this equipment copy");
+  if (characters.some((character) => {
+    const old = character?.gearEnhancements?.[record.itemId];
+    return !!old && (old.rank > 0 || !!old.statGemId || !!old.effectGemId || (old.gemIds?.length ?? 0) > 0);
+  }))
+    throw new Error("Legacy equipment enhancements require manual review before disposal");
+}
+function disposeCraftedGearInstance(state, instanceId, method) {
+  if (!state.character) throw new Error("No active character");
+  const { record, location } = resolveTracked(state, instanceId);
+  if (location.place !== "inventory" && location.place !== "bank" && location.place !== "equipment_pouch") throw new Error("Unequip the exact equipment copy before disposal");
+  if (location.place !== "bank" && location.holderCharacterId !== state.character.id)
+    throw new Error("Cannot dispose equipment carried by another character");
+  protectedGear(state, record);
+  const def = itemDef(record.itemId);
+  if (def.type !== "gear" || def.knowledgeUnlockId) throw new Error("This equipment cannot be disposed");
+  if (method === "salvage" && !equipmentSalvageReward(def.id)) throw new Error("This equipment cannot be salvaged");
+  if (method === "sell" && (!Number.isSafeInteger(def.value) || def.value < 0)) throw new Error("Invalid equipment vendor value");
+  const source = location.place === "bank" ? state.bank.stacks : location.place === "equipment_pouch" ? equipmentPouch(state).stacks : state.inventory.stacks;
+  const removed = withoutInstance(source, record.id);
+  let next = { ...state, account: { ...state.account, craftedGearInstances: craftedGearInstances(state).filter((row) => row.id !== record.id) } };
+  if (location.place === "equipment_pouch") next = { ...next, character: { ...next.character, equipmentPouch: { ...equipmentPouch(next), stacks: removed } } };
+  else next = { ...next, [location.place]: { ...state[location.place], stacks: removed } };
+  if (method === "sell") {
+    const proceeds = itemVendorSellGold(def);
+    if (location.place === "bank") {
+      const gold = (next.bank.gold ?? 0) + proceeds;
+      if (!Number.isSafeInteger(gold)) throw new Error("Bank Gold overflow");
+      next = { ...next, bank: { ...next.bank, gold } };
+    } else {
+      const gold = next.character.gold + proceeds;
+      if (!Number.isSafeInteger(gold)) throw new Error("Character Gold overflow");
+      next = { ...next, character: { ...next.character, gold } };
+    }
+  } else {
+    if (!next.character) throw new Error("No active character");
+    const rewards = equipmentSalvageRewards(def.id, record);
+    next = { ...next, inventory: inventoryWithSalvageRewards(next.inventory, rewards, entitlementStorageCapacity(next, "inventory")) };
+  }
+  return next;
+}
+
+// ../apps/mobile/src/core/crafted-gear-retention.ts
+function craftedGearRetentionPower(instance) {
+  if (!isValidCraftedGearQuality(instance.quality)) throw new Error("Unrolled crafted quality");
+  return rarityMeta(instance.rarity).statMultiplier * craftedGearQualityMultiplier(instance.quality);
+}
+function compareCraftedGearRetentionPower(a, b) {
+  const delta = craftedGearRetentionPower(a) - craftedGearRetentionPower(b);
+  return Math.abs(delta) < 1e-9 ? 0 : delta < 0 ? -1 : 1;
+}
+function craftedGearCanAutoSell(entry2) {
+  const gear = entry2.instance, enhancement = gear.enhancement;
+  return (entry2.location === "inventory" || entry2.location === "bank" || entry2.location === "equipment_pouch") && (entry2.location === "bank" || typeof entry2.holderCharacterId === "string" && entry2.holderCharacterId.length > 0) && entry2.ownershipVerified === true && entry2.protectionsVerified === true && entry2.locked === false && gear.locked !== true && entry2.favorite === false && entry2.savedLoadout === false && !!enhancement && enhancement.rank === 0 && !enhancement.statGemId && !enhancement.effectGemId && Array.isArray(enhancement.gemIds) && enhancement.gemIds.length === 0;
+}
+function planCraftedGearRetention(existing, incoming, mode) {
+  if (existing.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "manual_review", reason: "over_limit" };
+  if (existing.some((row) => row.instance.itemId !== incoming.itemId) || (/* @__PURE__ */ new Set([...existing.map((row) => row.instance.id), incoming.id])).size !== existing.length + 1)
+    return { action: "manual_review", reason: "inconsistent_instances" };
+  if (existing.length < TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "keep", reason: "under_limit" };
+  if (mode === "off") return { action: "manual_review", reason: "disabled" };
+  if (incoming.weaponBonuses?.length || existing.some((row) => row.instance.weaponBonuses?.length))
+    return { action: "manual_review", reason: "weapon_bonus_choice" };
+  const validQuality = isValidCraftedGearQuality;
+  if (existing.some((row) => !validQuality(row.instance.quality)) || !validQuality(incoming.quality))
+    return { action: "manual_review", reason: "legacy_unknown_quality" };
+  const enhancement = incoming.enhancement;
+  if (enhancement.rank !== 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0)
+    return { action: "manual_review", reason: "incoming_protected" };
+  const weakestOverall = existing.slice().sort((a, b) => compareCraftedGearRetentionPower(a.instance, b.instance) || a.instance.id.localeCompare(b.instance.id))[0];
+  if (compareCraftedGearRetentionPower(incoming, weakestOverall.instance) <= 0)
+    return { action: "sell_incoming", reason: "incoming_is_weakest", instanceId: incoming.id };
+  const eligible = existing.filter(craftedGearCanAutoSell).sort((a, b) => compareCraftedGearRetentionPower(a.instance, b.instance) || a.instance.id.localeCompare(b.instance.id));
+  if (!eligible.length) return { action: "manual_review", reason: "no_eligible_copy" };
+  const weakestEligible = eligible[0];
+  if (compareCraftedGearRetentionPower(incoming, weakestEligible.instance) <= 0)
+    return { action: "manual_review", reason: "no_eligible_copy" };
+  return { action: "sell_existing", reason: "replace_weaker_unprotected", instanceId: weakestEligible.instance.id };
+}
+
+// ../apps/mobile/src/core/crafted-gear-settlement.ts
+function proposeCraftedGearSettlement(args) {
+  const { existing, incoming, incomingStorage, mode, committedReceiptKeys } = args;
+  if (incomingStorage !== "bank" && (!args.incomingHolderCharacterId || !args.incomingHolderCharacterId.trim()))
+    throw new Error("Missing verified incoming inventory owner");
+  if (!incoming.id || !incoming.sourceReceiptKey || !incoming.ownerCharacterId)
+    throw new Error("Invalid Forge instance receipt");
+  if (committedReceiptKeys.includes(incoming.sourceReceiptKey) || existing.some((entry2) => entry2.instance.sourceReceiptKey === incoming.sourceReceiptKey))
+    throw new Error("Forge receipt already settled");
+  if (existing.some((entry2) => !entry2.instance.id || !entry2.instance.sourceReceiptKey) || new Set(existing.map((entry2) => entry2.instance.sourceReceiptKey)).size !== existing.length)
+    throw new Error("Duplicate or malformed owned Forge receipts");
+  if (existing.some((entry2) => entry2.instance.itemId !== incoming.itemId))
+    throw new Error("Cannot compare equipment from different item definitions");
+  if (!["inventory", "bank", "equipment_pouch"].includes(incomingStorage))
+    throw new Error("Unknown incoming item delivery location");
+  const owned = existing.map((entry2) => entry2.instance);
+  const retention = planCraftedGearRetention(existing, incoming, mode);
+  if (retention.action === "manual_review") return { status: "blocked", instances: owned, retention };
+  if (retention.action === "keep")
+    return { status: "ready", instances: [...owned, incoming], retention, receipt: { receiptKey: incoming.sourceReceiptKey, incomingInstanceId: incoming.id, action: "keep" } };
+  const sold = retention.action === "sell_incoming" ? incoming : existing.find((entry2) => entry2.instance.id === retention.instanceId)?.instance;
+  if (!sold) throw new Error("Selected auto-sale copy is missing");
+  if (retention.action === "sell_existing") {
+    const candidate = existing.find((entry2) => entry2.instance.id === sold.id);
+    if (!candidate || !craftedGearCanAutoSell(candidate)) throw new Error("Selected auto-sale copy is not verified or protected");
+  }
+  const def = itemDef(sold.itemId);
+  if (def.type !== "gear" || !Number.isSafeInteger(def.value) || def.value < 0) throw new Error("Invalid vendor value");
+  const location = retention.action === "sell_incoming" ? incomingStorage : existing.find((entry2) => entry2.instance.id === sold.id).location;
+  const currentHolder = retention.action === "sell_incoming" ? args.incomingHolderCharacterId : existing.find((entry2) => entry2.instance.id === sold.id)?.holderCharacterId;
+  if (location !== "bank" && !currentHolder) throw new Error("Missing verified sale recipient");
+  const credit = location === "bank" ? { amount: itemVendorSellGold(def), destination: "bank" } : { amount: itemVendorSellGold(def), destination: "character", characterId: currentHolder };
+  const instances = retention.action === "sell_incoming" ? owned : [...owned.filter((row) => row.id !== sold.id), incoming];
+  if (instances.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) throw new Error("Retention proposal exceeds crafted equipment limit");
+  return { status: "ready", instances, retention, receipt: {
+    receiptKey: incoming.sourceReceiptKey,
+    incomingInstanceId: incoming.id,
+    action: retention.action,
+    soldInstanceId: sold.id,
+    credit
+  } };
+}
+
+// ../apps/mobile/src/core/equipment-crafting-queue.ts
+var BASE_EQUIPMENT_CRAFT_SLOTS = 3;
+var MAX_EQUIPMENT_CRAFT_SLOTS = 7;
+var MAX_WAITING_EQUIPMENT_CRAFTS = 5;
+var MAX_READY_EQUIPMENT_CRAFTS = 20;
+function equipmentCraftSlotBreakdown(state) {
+  const unlocked = unlockedCharacterSlots(state);
+  const sources = [
+    { id: "base", label: "Base crafting slots", earned: true, slots: BASE_EQUIPMENT_CRAFT_SLOTS },
+    { id: "supporter", label: "Supporter", earned: accountEntitlementBenefits(state).supporter, slots: 1 },
+    { id: "vip_plus", label: "VIP+", earned: accountEntitlementBenefits(state).vipPlus, slots: 1 },
+    { id: "character_2", label: "Unlock character slot #2", earned: unlocked >= 2, slots: 1 },
+    { id: "account_skill_1050", label: "Reach 1,050 account skill levels", earned: accountSkillLevel(state) >= 1050 || state.account.forgeMastery1050Earned === true || Number(state.account.unlockedCharacterSlots ?? 0) >= 4, slots: 1 }
+  ];
+  const raw2 = sources.filter((row) => row.earned).reduce((sum, row) => sum + row.slots, 0);
+  return { base: BASE_EQUIPMENT_CRAFT_SLOTS, max: MAX_EQUIPMENT_CRAFT_SLOTS, capacity: Math.min(MAX_EQUIPMENT_CRAFT_SLOTS, raw2), raw: raw2, sources };
+}
+function normalizeEquipmentCraftingQueue(raw2) {
+  if (!Array.isArray(raw2)) return [];
+  return raw2.filter((row) => row && typeof row === "object" && typeof row.id === "string" && typeof row.recipeId === "string" && typeof row.ownerCharacterId === "string").map((row) => ({
+    id: String(row.id).slice(0, 160),
+    recipeId: String(row.recipeId).slice(0, 120),
+    ownerCharacterId: String(row.ownerCharacterId).slice(0, 120),
+    startedAtMs: Math.max(0, Math.floor(Number(row.startedAtMs) || 0)),
+    completesAtMs: Math.max(0, Math.floor(Number(row.completesAtMs) || 0)),
+    xpPerCraft: typeof row.xpPerCraft === "number" && Number.isFinite(row.xpPerCraft) && row.xpPerCraft >= 0 && row.xpPerCraft <= 1e6 ? row.xpPerCraft : void 0,
+    skillAffinity: normalizeSkillAffinitySnapshot(row.skillAffinity),
+    reservedGold: Number.isFinite(Number(row.reservedGold)) ? Math.max(0, Math.floor(Number(row.reservedGold))) : void 0,
+    reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0,
+    // A malformed odds field must not become a guaranteed legacy claim.
+    // Only jobs with no odds field at all retain the old 100% outcome.
+    combineSuccessChancePercent: row.combineSuccessChancePercent === void 0 ? void 0 : Number.isInteger(row.combineSuccessChancePercent) && row.combineSuccessChancePercent >= 1 && row.combineSuccessChancePercent <= 100 ? row.combineSuccessChancePercent : gemCombineRecipeV1(String(row.recipeId).slice(0, 120))?.successChancePercent
+  })).filter((row) => row.completesAtMs >= row.startedAtMs).slice(-(MAX_READY_EQUIPMENT_CRAFTS + MAX_EQUIPMENT_CRAFT_SLOTS + MAX_WAITING_EQUIPMENT_CRAFTS));
+}
+function equipmentCraftingQueue(state) {
+  return normalizeEquipmentCraftingQueue(state.account.equipmentCraftingQueue);
+}
+function isTimedEquipmentRecipe(recipe2) {
+  const output = itemDef(recipe2.output.itemId);
+  return output.type === "gear" && !recipe2.noviceSetId;
+}
+function timedEquipmentRecipe(recipeId) {
+  const recipe2 = recipeDef(recipeId);
+  return recipe2 && isTimedEquipmentRecipe(recipe2) ? recipe2 : void 0;
+}
+function combinedQuantity2(state, itemId) {
+  return gemStorageQuantity(state, itemId);
+}
+function consume3(stacks, itemId, amount) {
+  let left = amount;
+  const next = stacks.map((row) => {
+    if (row.itemId !== itemId || left <= 0 || row.instanceId !== void 0) return row;
+    const used = Math.min(left, row.quantity);
+    left -= used;
+    return { ...row, quantity: row.quantity - used };
+  }).filter((row) => row.quantity > 0);
+  return { stacks: next, used: amount - left };
+}
+function consumeAcross2(state, itemId, amount) {
+  if (isGemPouchItemId(itemId)) return consumeGemFromStorage(state, itemId, amount);
+  if (combinedQuantity2(state, itemId) < amount) throw new Error(`Need ${amount} ${itemDef(itemId).name}`);
+  const inv = consume3(state.inventory.stacks, itemId, amount);
+  const bank = consume3(state.bank.stacks, itemId, amount - inv.used);
+  return { ...state, inventory: { ...state.inventory, stacks: inv.stacks }, bank: { ...state.bank, stacks: bank.stacks } };
+}
+function validateStart(state, recipe2) {
+  if (!state.character) throw new Error("Create a character first");
+  if (!isTimedEquipmentRecipe(recipe2)) throw new Error("This recipe does not use the equipment crafting queue");
+  if (state.character.level < (recipe2.characterLevel ?? 1)) throw new Error(`Requires character level ${recipe2.characterLevel}`);
+  const skill2 = state.skills.find((row) => row.skillId === recipe2.skillId);
+  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires ${recipe2.skillId} level ${recipe2.level}`);
+  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
+  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
+}
+function validateGemCombineStart(state, recipeId) {
+  if (!state.character) throw new Error("Create a character first");
+  const recipe2 = gemCombineRecipeV1(recipeId);
+  if (!recipe2) throw new Error("Unknown gem combination");
+  const sourceGemId = recipe2.inputs[0].itemId;
+  if (state.settings.favoriteItemIds?.includes(sourceGemId) || state.settings.lockedItemIds?.includes(sourceGemId))
+    throw new Error("Unfavorite and unlock this gem before merging");
+  if (!isGemFamilyRecipeUnlockedV1(state, recipe2.familyId)) throw new Error("Discover this Effect Gem recipe first");
+  const skill2 = state.skills.find((row) => row.skillId === "enchanting");
+  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
+  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
+  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
+  return recipe2;
+}
+function validateGemRefineStart(state, recipeId) {
+  if (!state.character) throw new Error("Create a character first");
+  const recipe2 = gemRefineRecipeV1(recipeId);
+  if (!recipe2) throw new Error("Unknown gem refinement");
+  const skill2 = state.skills.find((row) => row.skillId === "enchanting");
+  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
+  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
+  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
+  return recipe2;
+}
+var jobDurationMs = (job) => Math.max(1e3, job.completesAtMs - job.startedAtMs);
+var isReady = (job, nowMs) => job.completesAtMs <= nowMs;
+var isWaiting = (job, nowMs) => job.startedAtMs > nowMs;
+var isActive = (job, nowMs) => job.startedAtMs <= nowMs && job.completesAtMs > nowMs;
+function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
+  const ready = queue.filter((job) => isReady(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
+  const active2 = queue.filter((job) => isActive(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
+  let waiting = queue.filter((job) => isWaiting(job, nowMs));
+  if (waitingOrder) {
+    const order = new Map(waitingOrder.map((id, index) => [id, index]));
+    waiting = waiting.slice().sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+  }
+  const activeEnds = active2.map((job) => job.completesAtMs).sort((a, b) => a - b);
+  const slotTimes = activeEnds.length >= capacity ? activeEnds.slice(activeEnds.length - capacity) : [...activeEnds, ...Array(Math.max(0, capacity - activeEnds.length)).fill(nowMs)];
+  slotTimes.sort((a, b) => a - b);
+  const scheduled = waiting.map((job) => {
+    const duration = jobDurationMs(job), start = slotTimes[0] ?? nowMs, completes = start + duration;
+    slotTimes[0] = completes;
+    slotTimes.sort((a, b) => a - b);
+    return { ...job, startedAtMs: start, completesAtMs: completes };
+  });
+  return [...ready, ...active2, ...scheduled];
+}
+function projectedEquipmentCraftingQueue(state, nowMs) {
+  return scheduleWaiting(equipmentCraftingQueue(state), equipmentCraftSlotBreakdown(state).capacity, nowMs);
+}
+function withProjectedQueue(state, nowMs) {
+  return { ...state, account: { ...state.account, equipmentCraftingQueue: projectedEquipmentCraftingQueue(state, nowMs) } };
+}
+function equipmentCraftDurationSeconds(state, recipeId) {
+  const recipe2 = timedEquipmentRecipe(recipeId);
+  if (!recipe2) throw new Error("Unknown timed equipment recipe");
+  return professionActionPace(state, recipe2, "forge").cycleSeconds;
+}
+function startEquipmentCraft(state, recipeId, nowMs) {
+  const recipe2 = timedEquipmentRecipe(recipeId);
+  if (!recipe2) throw new Error("Unknown timed equipment recipe");
+  let projected = withProjectedQueue(state, nowMs);
+  validateStart(projected, recipe2);
+  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
+  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
+  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished equipment before starting more crafts");
+  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
+  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
+  const seconds = equipmentCraftDurationSeconds(projected, recipeId), durationMs = seconds * 1e3;
+  const existingQueue = equipmentCraftingQueue(projected);
+  const startsNow = active2.length < slots2.capacity && waiting.length === 0;
+  const job = {
+    id: `eqcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,
+    ownerCharacterId: projected.character.id,
+    startedAtMs: startsNow ? nowMs : nowMs + 1,
+    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
+    reservedGold: recipe2.gold,
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
+    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
+    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
+  };
+  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
+  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
+  const finalJob = scheduled.find((row) => row.id === job.id);
+  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs };
+}
+function startGemCombine(state, recipeId, nowMs) {
+  let projected = withProjectedQueue(state, nowMs);
+  const recipe2 = validateGemCombineStart(projected, recipeId);
+  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
+  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
+  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished forge jobs before starting more crafts");
+  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
+  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
+  const seconds = professionActionPace(projected, recipe2, "forge").cycleSeconds, durationMs = seconds * 1e3;
+  const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
+  const job = {
+    id: `gemcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,
+    ownerCharacterId: projected.character.id,
+    combineSuccessChancePercent: recipe2.successChancePercent,
+    startedAtMs: startsNow ? nowMs : nowMs + 1,
+    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
+    reservedGold: recipe2.gold,
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
+    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
+    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
+  };
+  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
+  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
+  const finalJob = scheduled.find((row) => row.id === job.id);
+  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs, recipe: recipe2 };
+}
+function startGemRefinement(state, recipeId, nowMs) {
+  let projected = withProjectedQueue(state, nowMs);
+  const recipe2 = validateGemRefineStart(projected, recipeId);
+  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
+  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
+  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished forge jobs before starting more crafts");
+  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
+  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
+  const seconds = professionActionPace(projected, recipe2, "forge").cycleSeconds, durationMs = seconds * 1e3;
+  const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
+  const job = {
+    id: `gemrefine:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,
+    ownerCharacterId: projected.character.id,
+    startedAtMs: startsNow ? nowMs : nowMs + 1,
+    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
+    reservedGold: recipe2.gold,
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
+    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
+    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
+  };
+  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
+  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
+  const finalJob = scheduled.find((row) => row.id === job.id);
+  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs, recipe: recipe2 };
+}
+function addOutput(stacks, capacity, itemId, quantityToAdd) {
+  let remaining = quantityToAdd, next = stacks.map((row) => ({ ...row }));
+  while (remaining > 0 && next.filter((row) => row.quantity > 0).length < capacity) {
+    next.push({ itemId, quantity: 1 });
+    remaining--;
+  }
+  return { stacks: next, remaining };
+}
+function grantCraftOutput(state, recipe2, ownerCharacterId) {
+  if (isGemPouchItemId(recipe2.output.itemId)) return storePouchGem(state, recipe2.output.itemId, recipe2.output.quantity);
+  if (state.character?.id !== ownerCharacterId) {
+    const bank2 = addOutput(state.bank.stacks, state.bank.capacity, recipe2.output.itemId, recipe2.output.quantity);
+    if (bank2.remaining > 0) throw new Error("Bank is full; free Bank space before claiming this character's equipment");
+    return { ...state, bank: { ...state.bank, stacks: bank2.stacks } };
+  }
+  const inv = addOutput(state.inventory.stacks, state.inventory.capacity, recipe2.output.itemId, recipe2.output.quantity);
+  const bank = addOutput(state.bank.stacks, state.bank.capacity, recipe2.output.itemId, inv.remaining);
+  if (bank.remaining > 0) throw new Error("Inventory and Bank are full");
+  return { ...state, inventory: { ...state.inventory, stacks: inv.stacks }, bank: { ...state.bank, stacks: bank.stacks } };
+}
+function forgeOwnedCopyLocations(state, itemId) {
+  const audit = auditCraftedGearOwnership(state);
+  const records = craftedGearInstances(state).filter((row) => row.itemId === itemId);
+  const physical = craftGearPhysicalCopies(state, itemId);
+  if (audit.problems.length || audit.unmarkedPhysicalCopies > 0 || records.length !== physical) return null;
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
+  const rows2 = records.map((instance) => {
+    const loc = audit.linked.find((row) => row.instanceId === instance.id);
+    if (!loc) return null;
+    const savedLoadout = characters.some((c) => c?.savedLoadouts?.some((p) => Object.values(p.equipmentInstanceIds ?? {}).includes(instance.id) || Object.entries(p.equipment).some(([slot, id]) => id === itemId && !p.equipmentInstanceIds?.[slot])));
+    const legacyEnhanced = characters.some((c) => {
+      const value = c?.gearEnhancements?.[itemId];
+      return !!value && (value.rank > 0 || !!value.statGemId || !!value.effectGemId || (value.gemIds?.length ?? 0) > 0);
+    });
+    const accessible = loc.place === "bank" || ["inventory", "equipment_pouch"].includes(loc.place) && loc.holderCharacterId === state.character?.id;
+    return {
+      instance,
+      location: loc.place === "overflow" ? "unknown" : loc.place,
+      holderCharacterId: loc.holderCharacterId,
+      ownershipVerified: true,
+      protectionsVerified: accessible && !legacyEnhanced,
+      locked: instance.locked === true,
+      favorite: state.settings.favoriteItemIds?.includes(itemId) === true,
+      savedLoadout
+    };
+  });
+  return rows2.every(Boolean) ? rows2 : null;
+}
+function craftGearPhysicalCopies(state, itemId) {
+  const count = (rows2) => rows2.reduce((n, row) => n + (row.itemId === itemId ? row.quantity : 0), 0);
+  const equipped = (equipment) => Object.values(equipment).filter((id) => id === itemId).length;
+  return count(state.inventory.stacks) + count(state.bank.stacks) + count(state.overflow.stacks) + count(state.character?.equipmentPouch?.stacks ?? []) + equipped(state.character?.equipment ?? {}) + (state.otherCharacters ?? []).reduce((n, row) => n + count(row.inventory.stacks) + count(row.overflow.stacks) + count(row.character.equipmentPouch?.stacks ?? []) + equipped(row.character.equipment), 0);
+}
+function deliverExactForgeCopy(state, itemId, instanceId, ownerId) {
+  const stack = { itemId, quantity: 1, instanceId };
+  const stored = tryStoreEquipmentInPouch(state, stack, ownerId);
+  if (stored) return stored;
+  const invAllowed = state.character?.id === ownerId && state.inventory.stacks.length < state.inventory.capacity;
+  if (invAllowed) return { ...state, inventory: { ...state.inventory, stacks: [...state.inventory.stacks, stack] } };
+  if (state.bank.stacks.length < state.bank.capacity)
+    return { ...state, bank: { ...state.bank, stacks: [...state.bank.stacks, stack] } };
+  throw new Error(state.character?.id === ownerId ? "Equipment Pouch, Inventory and Bank are full" : "Equipment Pouch and Bank are full; free space before claiming this character's equipment");
+}
+function forgeIncomingDelivery(state, ownerId) {
+  const active2 = state.character?.id === ownerId;
+  const owner = active2 ? state.character : state.otherCharacters?.find((entry2) => entry2.character.id === ownerId)?.character;
+  if (!owner) throw new Error("Crafting owner is no longer available");
+  const pouch = equipmentPouchForCharacter(owner);
+  if (pouch.stacks.length < pouch.capacity)
+    return { incomingStorage: "equipment_pouch", incomingHolderCharacterId: ownerId };
+  if (active2 && state.inventory.stacks.length < state.inventory.capacity)
+    return { incomingStorage: "inventory", incomingHolderCharacterId: ownerId };
+  return { incomingStorage: "bank", incomingHolderCharacterId: void 0 };
+}
+function applyForgeSaleCredit(state, amount, destination, holder) {
+  if (!Number.isSafeInteger(amount) || amount < 0) throw new Error("Invalid Forge sale proceeds");
+  if (destination === "bank") {
+    const gold2 = (state.bank.gold ?? 0) + amount;
+    if (!Number.isSafeInteger(gold2)) throw new Error("Bank Gold exceeds supported limit");
+    return { ...state, bank: { ...state.bank, gold: gold2 } };
+  }
+  if (!holder) throw new Error("Sale owner is missing");
+  if (state.character?.id === holder) {
+    const gold2 = state.character.gold + amount;
+    if (!Number.isSafeInteger(gold2)) throw new Error("Carried Gold exceeds supported limit");
+    return { ...state, character: { ...state.character, gold: gold2 } };
+  }
+  const entry2 = state.otherCharacters?.find((row) => row.character.id === holder);
+  if (!entry2) throw new Error("Sale owner no longer has a character on this account");
+  const gold = entry2.character.gold + amount;
+  if (!Number.isSafeInteger(gold)) throw new Error("Character Gold exceeds supported limit");
+  return { ...state, otherCharacters: state.otherCharacters.map((row) => row.character.id === holder ? { ...row, character: { ...row.character, gold } } : row) };
+}
+function awardOwnerSkillXp(state, ownerCharacterId, recipe2, job) {
+  const ownerSkills = state.character?.id === ownerCharacterId ? state.skills : state.otherCharacters?.find((entry2) => entry2.character.id === ownerCharacterId)?.skills;
+  if (!ownerSkills) throw new Error("Crafting owner is no longer available");
+  const skill2 = ownerSkills.find((row) => row.skillId === recipe2.skillId);
+  if (!skill2) throw new Error("Crafting owner skill is missing");
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  const rawXp = job.xpPerCraft ?? Math.max(1, Math.floor(recipe2.xp * mastery.xp));
+  const key = affinityXpRemainderKey(ownerCharacterId, recipe2.skillId), gain = settleAffinitySkillXp(rawXp, state.rewardRemainders?.[key], totalXpAtLevel(100) - skill2.xp);
+  const next = { ...state, rewardRemainders: { ...state.rewardRemainders ?? {}, [key]: gain.remainder } };
+  const award = (skills) => skills.map((row) => {
+    if (row.skillId !== recipe2.skillId) return row;
+    const xp = row.xp + gain.xp;
+    return { ...row, xp, level: levelFromXp(xp) };
+  });
+  if (state.character?.id === ownerCharacterId) return { ...next, skills: award(state.skills) };
+  return { ...next, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, skills: award(entry2.skills) } : entry2) };
+}
+function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
+  const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
+  if (!job) throw new Error("Crafting job not found");
+  if (job.completesAtMs > nowMs) throw new Error(job.startedAtMs > nowMs ? "This forge job is still waiting for a slot" : "This forge job is still in progress");
+  const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemCombineRecipe = gemCombineRecipeV1(job.recipeId), gemRefineRecipe = gemRefineRecipeV1(job.recipeId), gemRecipe = gemCombineRecipe ?? gemRefineRecipe, recipe2 = equipmentRecipe ?? gemRecipe;
+  if (!recipe2) throw new Error("Crafting recipe is no longer available");
+  let next = projected;
+  if (equipmentRecipe) {
+    const itemId = equipmentRecipe.output.itemId, args = { itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll };
+    const draft = draftCraftedGearInstance(args), capacity = craftedGearCopyCapacity(next, itemId), mode = next.account.craftedGearAutoSellMode ?? "off";
+    let saleGold = 0, autoSold;
+    if (capacity.count >= capacity.limit) {
+      if (mode !== "keep_best_seven") throw new Error(`Equipment copy limit reached (${capacity.count}/${capacity.limit}); enable Keep Best ${capacity.limit} or manage copies`);
+      const entries = forgeOwnedCopyLocations(next, itemId);
+      if (!entries) throw new Error("Equipment copy ownership requires manual review before auto-selling");
+      const delivery = forgeIncomingDelivery(next, job.ownerCharacterId);
+      const proposed = proposeCraftedGearSettlement({
+        existing: entries,
+        incoming: draft,
+        ...delivery,
+        mode,
+        committedReceiptKeys: []
+      });
+      if (proposed.status === "blocked") throw new Error(proposed.retention.reason === "weapon_bonus_choice" ? "Weapon bonus rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe." : "Equipment requires manual review: " + proposed.retention.reason);
+      if (proposed.receipt.action === "sell_incoming") {
+        const credit = proposed.receipt.credit;
+        next = applyForgeSaleCredit(next, credit.amount, credit.destination, credit.characterId);
+        saleGold = credit.amount;
+        autoSold = "incoming";
+      } else if (proposed.receipt.action === "sell_existing") {
+        const victim = proposed.receipt.soldInstanceId;
+        next = disposeCraftedGearInstance(next, victim, "sell");
+        saleGold = proposed.receipt.credit?.amount ?? 0;
+        autoSold = "existing";
+      }
+    }
+    if (autoSold !== "incoming") {
+      next = deliverExactForgeCopy(next, itemId, draft.id, job.ownerCharacterId);
+      next = createCraftedGearInstance(next, args).state;
+    }
+    next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe, job);
+    next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
+    next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: equipmentRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
+    return {
+      state: next,
+      recipe: equipmentRecipe,
+      job,
+      kind: "equipment",
+      instance: draft,
+      result: { ...craftedInstanceResult(next, draft), autoSold, saleGold }
+    };
+  }
+  const gemSucceeded = !gemCombineRecipe || job.combineSuccessChancePercent === void 0 ? true : (() => {
+    if (!Number.isFinite(rarityRoll) || rarityRoll < 0 || rarityRoll >= 1) throw new Error("Invalid trusted gem combination roll");
+    return rarityRoll < job.combineSuccessChancePercent / 100;
+  })();
+  if (gemCombineRecipe && !gemSucceeded) {
+    const inputId = gemCombineRecipe.inputs[0].itemId;
+    next = storePouchGem(next, inputId, gemCombineRecipe.inputs[0].quantity - 1);
+  } else next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
+  next = awardOwnerSkillXp(next, job.ownerCharacterId, gemRecipe, job);
+  next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
+  next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: gemRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
+  return { state: next, recipe: gemRecipe, job, kind: "gem", gemSucceeded, gemAction: gemRefineRecipe ? "refine" : "combine" };
+}
+function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
+  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0, gemFailed = 0;
+  const blocked = [];
+  for (const job of equipmentCraftingQueue(next).filter((row) => isReady(row, nowMs))) {
+    try {
+      const result = claimForgeJob(next, job.id, nowMs, craftClaimSubRoll(trustedRoll, job.id));
+      next = result.state;
+      claimed.push(job.id);
+      if (result.kind === "equipment") results.push(result.result);
+      else {
+        gemClaims++;
+        if (!result.gemSucceeded) gemFailed++;
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "";
+      if (reason === "Gem Pouch, Inventory and Bank are full" || reason === "Equipment Pouch, Inventory and Bank are full" || reason.startsWith("Equipment Pouch and Bank are full") || reason === "Inventory and Bank are full" || reason.startsWith("Bank is full") || reason === "Crafting recipe is no longer available" || reason.startsWith("Crafted equipment storage is full") || reason.startsWith("Equipment copy limit reached") || reason.startsWith("Equipment copy ownership requires manual review") || reason.startsWith("Equipment requires manual review") || reason.startsWith("Weapon bonus rolls need your choice")) {
+        blocked.push({ jobId: job.id, reason });
+        continue;
+      }
+      throw error;
+    }
+  }
+  return { state: next, claimed, results, gemClaims, gemFailed, blocked };
+}
+var EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND = 0;
+function addStackable(stacks, capacity, itemId, quantityToAdd) {
+  const existing = stacks.find((row) => row.itemId === itemId);
+  if (existing) return { stacks: stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row), remaining: 0 };
+  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return { stacks, remaining: quantityToAdd };
+  return { stacks: [...stacks, { itemId, quantity: quantityToAdd }], remaining: 0 };
+}
+function refundOwnerGold(state, ownerCharacterId, gold) {
+  if (gold <= 0) return state;
+  if (state.character?.id === ownerCharacterId) return { ...state, character: { ...state.character, gold: state.character.gold + gold } };
+  return { ...state, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, character: { ...entry2.character, gold: entry2.character.gold + gold } } : entry2) };
+}
+function refundMaterialToOwner(state, ownerCharacterId, input) {
+  if (state.character?.id === ownerCharacterId) {
+    const inv = addStackable(state.inventory.stacks, state.inventory.capacity, input.itemId, input.quantity);
+    if (inv.remaining === 0) return { ...state, inventory: { ...state.inventory, stacks: inv.stacks } };
+  } else {
+    const index = (state.otherCharacters ?? []).findIndex((entry2) => entry2.character.id === ownerCharacterId);
+    if (index >= 0) {
+      const target2 = state.otherCharacters[index], inv = addStackable(target2.inventory.stacks, target2.inventory.capacity, input.itemId, input.quantity);
+      if (inv.remaining === 0) {
+        const others = state.otherCharacters.slice();
+        others[index] = { ...target2, inventory: { ...target2.inventory, stacks: inv.stacks } };
+        return { ...state, otherCharacters: others };
+      }
+    }
+  }
+  const bank = addStackable(state.bank.stacks, state.bank.capacity, input.itemId, input.quantity);
+  if (bank.remaining > 0) throw new Error("Free Inventory or Bank space before cancelling this craft");
+  return { ...state, bank: { ...state.bank, stacks: bank.stacks } };
+}
+function cancelEquipmentCraft(state, jobId, nowMs) {
+  const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
+  if (!job) throw new Error("Crafting job not found");
+  if (job.completesAtMs <= nowMs) throw new Error("Finished equipment must be claimed instead of cancelled");
+  const recipe2 = timedEquipmentRecipe(job.recipeId) ?? gemCombineRecipeV1(job.recipeId) ?? gemRefineRecipeV1(job.recipeId);
+  if (!recipe2) throw new Error("Crafting recipe is no longer available");
+  const reservedInputs = job.reservedInputs?.length ? job.reservedInputs : recipe2.inputs, reservedGold = job.reservedGold ?? recipe2.gold;
+  const waiting = job.startedAtMs > nowMs;
+  const refundGold = Math.floor(reservedGold * EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND);
+  let next = refundOwnerGold(projected, job.ownerCharacterId, refundGold);
+  for (const input of reservedInputs) next = refundMaterialToOwner(next, job.ownerCharacterId, input);
+  const remaining = queue.filter((row) => row.id !== jobId);
+  next = { ...next, account: { ...next.account, equipmentCraftingQueue: scheduleWaiting(remaining, equipmentCraftSlotBreakdown(next).capacity, nowMs) } };
+  return { state: next, job, waiting, refundGold, feeGold: reservedGold - refundGold, refundedInputs: reservedInputs.map((row) => ({ ...row })) };
+}
+function moveWaitingEquipmentCraft(state, jobId, direction, nowMs) {
+  const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), waiting = queue.filter((row) => isWaiting(row, nowMs));
+  const index = waiting.findIndex((row) => row.id === jobId);
+  if (index < 0) throw new Error("Only waiting equipment crafts can be reordered");
+  const target2 = direction === "up" ? index - 1 : index + 1;
+  if (target2 < 0 || target2 >= waiting.length) return projected;
+  const reordered = waiting.slice(), temp = reordered[index];
+  reordered[index] = reordered[target2];
+  reordered[target2] = temp;
+  const scheduled = scheduleWaiting(queue, equipmentCraftSlotBreakdown(projected).capacity, nowMs, reordered.map((row) => row.id));
+  return { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
+}
+
+// ../apps/mobile/src/core/pet-collection.ts
+function normalizeOwnedPetIds(...sources) {
+  const ids2 = [];
+  for (const source of sources) {
+    if (!Array.isArray(source)) continue;
+    for (const value of source) {
+      if (typeof value !== "string") continue;
+      const id = value.trim();
+      if (id && !ids2.includes(id)) ids2.push(id);
+    }
+  }
+  return ids2;
+}
+
+// ../apps/mobile/src/core/profile-unlocks.ts
+init_progression();
+var PROFILE_BACKGROUNDS = [{ id: "asterfall-night", name: "Asterfall Night", requiredLevel: 1 }, { id: "ironwood-dawn", name: "Ironwood Dawn", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "silverbrook-mist", name: "Silverbrook Mist", requiredLevel: rebasedCombatLevelFromLegacyLevel(20) }, { id: "oathglass-hall", name: "Oathglass Hall", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }];
+var PROFILE_TITLES = [{ id: "new-adventurer", name: "New Adventurer", requiredLevel: 1 }, { id: "pathfinder", name: "Pathfinder", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "oathbound", name: "Oathbound", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }, { id: "bloomwarden", name: "Bloomwarden", requiredGuild: true }];
+
+// ../apps/mobile/src/core/account-collections.ts
+function union(existing, earned) {
+  const merged = [...existing ?? []];
+  const seen = new Set(merged);
+  for (const id of earned) if (id && !seen.has(id)) {
+    merged.push(id);
+    seen.add(id);
+  }
+  return merged;
+}
+function same(a, b) {
+  return (a ?? []).length === b.length && b.every((id, index) => (a ?? [])[index] === id);
+}
+function reconcileAccountCollections(state) {
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter((c) => !!c);
+  const highestLevel = characters.reduce((level, c) => Math.max(level, c.level || 0), 0);
+  const pets = normalizeOwnedPetIds(state.account.unlockedCosmeticPetIds, ...characters.map((c) => c.ownedPetIds));
+  const titles = union(state.account.unlockedTitleIds, PROFILE_TITLES.filter((t) => !t.requiredGuild && highestLevel >= (t.requiredLevel ?? 1)).map((t) => t.id));
+  const backgrounds = union(state.account.unlockedProfileBackgroundIds, PROFILE_BACKGROUNDS.filter((b) => highestLevel >= b.requiredLevel).map((b) => b.id));
+  const icons = union(state.account.unlockedProfileIconIds, PROFILE_ICON_CATALOG.filter(
+    (icon) => icon.bossId !== void 0 && state.defeatedBossIds.includes(icon.bossId) || icon.monsterId !== void 0 && characters.some((c) => (c.monsterMasteryPoints?.[icon.monsterId] ?? 0) >= 10)
+  ).map((icon) => icon.id));
+  const nextAccount = { ...state.account };
+  let changed = false;
+  if (!same(state.account.unlockedCosmeticPetIds, pets)) {
+    nextAccount.unlockedCosmeticPetIds = pets;
+    changed = true;
+  }
+  if (!same(state.account.unlockedTitleIds, titles)) {
+    nextAccount.unlockedTitleIds = titles;
+    changed = true;
+  }
+  if (!same(state.account.unlockedProfileBackgroundIds, backgrounds)) {
+    nextAccount.unlockedProfileBackgroundIds = backgrounds;
+    changed = true;
+  }
+  if (!same(state.account.unlockedProfileIconIds, icons)) {
+    nextAccount.unlockedProfileIconIds = icons;
+    changed = true;
+  }
+  return changed ? { ...state, account: nextAccount } : state;
+}
+
+// ../apps/mobile/src/core/account-actions.ts
+function snapshot(state) {
+  return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId, ...snapshotCharacterWorldProgress(state) };
+}
+function createAccountCharacter(state, classId, name, body, now) {
+  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
+  if (!state.character) return createCharacter(state, classId, name, body);
+  if (accountCharacters(state).length >= MAX_NEW_ACCOUNT_CHARACTERS) throw new Error("Maximum 3 characters: one Tank, one Damage and one Support.");
+  if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
+  const candidate = CLASSES.find((def) => def.id === classId);
+  if (!candidate) throw new Error("Invalid character class.");
+  if (occupiedCharacterRoles(state).includes(candidate.role)) throw new Error(`Your account already has a ${candidate.role} character. Choose a different role.`);
+  const next = createCharacter(newGame(now), classId, name, body);
+  const active2 = snapshot(state);
+  const sequence = Math.max(state.account.createdCharacterCount ?? 0, accountCharacters(state).length) + 1;
+  const id = `LOCAL_CHAR_${sequence}`;
+  next.character.id = id;
+  const account = { ...state.account, createdCharacterCount: sequence, unlockedCharacterSlots: Math.max(state.account.unlockedCharacterSlots ?? 1, unlockedCharacterSlots(state)) };
+  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: personalSeasonalAccountView(account, next.character), otherCharacters: [...state.otherCharacters ?? [], active2] };
+}
+function switchAccountCharacter(state, id, now) {
+  state = ensurePersonalSeasonalState(reconcileAccountCollections(state));
+  if (!state.character) return state;
+  if (state.character.id === id) return state;
+  const target2 = state.otherCharacters?.find((x) => x.character.id === id);
+  if (!target2) throw new Error("Character is not owned.");
+  const remaining = (state.otherCharacters ?? []).filter((x) => x.character.id !== id);
+  const active2 = snapshot(state);
+  return { ...state, ...restoreCharacterWorldProgress(target2), character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2], account: personalSeasonalAccountView(state.account, target2.character) };
+}
+function stackCap(itemId) {
+  try {
+    const item = itemDef(itemId);
+    return item.type === "gear" || item.type === "tool" ? 1 : 9999;
+  } catch {
+    return 9999;
+  }
+}
+function mergeStacks(stacks) {
+  const merged = [];
+  for (const stack of stacks) {
+    if (!stack || typeof stack.itemId !== "string" || !Number.isFinite(stack.quantity) || stack.quantity <= 0) continue;
+    if (stack.instanceId) {
+      if (stack.quantity !== 1) throw new Error("Invalid crafted equipment stack during character deletion.");
+      merged.push({ ...stack, quantity: 1 });
+      continue;
+    }
+    const cap = stackCap(stack.itemId);
+    let remaining = Math.floor(stack.quantity);
+    while (remaining > 0) {
+      const existing = merged.find((row) => row.itemId === stack.itemId && !row.instanceId && row.quantity < cap);
+      if (existing) {
+        const moved2 = Math.min(cap - existing.quantity, remaining);
+        existing.quantity += moved2;
+        remaining -= moved2;
+        continue;
+      }
+      const moved = Math.min(cap, remaining);
+      merged.push({ ...stack, quantity: moved });
+      remaining -= moved;
+    }
+  }
+  return merged;
+}
+function routeToBank(bank, baseOverflow, incoming, now) {
+  const stacks = bank.stacks.map((row) => ({ ...row })), overflow = baseOverflow.stacks.map((row) => ({ ...row }));
+  for (const incomingStack of mergeStacks(incoming)) {
+    if (incomingStack.instanceId) {
+      if ([...stacks, ...overflow].some((row) => row.instanceId === incomingStack.instanceId))
+        throw new Error("Duplicate crafted equipment copy during character deletion.");
+      (stacks.length < bank.capacity ? stacks : overflow).push({ ...incomingStack });
+      continue;
+    }
+    let remaining = incomingStack.quantity, cap = stackCap(incomingStack.itemId);
+    for (const existing of stacks.filter((row) => row.itemId === incomingStack.itemId && !row.instanceId)) {
+      if (remaining <= 0) break;
+      const room = Math.max(0, cap - existing.quantity), moved = Math.min(room, remaining);
+      existing.quantity += moved;
+      remaining -= moved;
+    }
+    while (remaining > 0 && stacks.length < bank.capacity) {
+      const moved = Math.min(cap, remaining);
+      stacks.push({ itemId: incomingStack.itemId, quantity: moved });
+      remaining -= moved;
+    }
+    if (remaining > 0) overflow.push({ itemId: incomingStack.itemId, quantity: remaining });
+  }
+  const overflowStacks = mergeStacks(overflow);
+  return { bank: { ...bank, stacks }, overflow: { stacks: overflowStacks, expiresAtMs: overflowStacks.length ? Math.max(baseOverflow.expiresAtMs ?? 0, now + 72 * 60 * 60 * 1e3) : null } };
+}
+function deletionRecoveryItems(entry2, sharedBank) {
+  const equipped = Object.entries(entry2.character.equipment).filter((entry3) => typeof entry3[1] === "string" && !!entry3[1]).map(([slot, itemId]) => {
+    const instanceId = entry2.character.equipmentInstanceIds?.[slot];
+    return { itemId, quantity: 1, ...instanceId ? { instanceId } : {} };
+  });
+  const tools = [...new Set(Object.values(entry2.character.equippedToolIds ?? {}).filter((id) => typeof id === "string" && !!id))];
+  const held = [...equipped, ...tools.map((itemId) => ({ itemId, quantity: 1 }))];
+  const ownedGearIds = /* @__PURE__ */ new Set([
+    ...equipped.map((row) => row.itemId),
+    ...entry2.inventory.stacks.map((row) => row.itemId),
+    ...(entry2.character.equipmentPouch?.stacks ?? []).map((row) => row.itemId),
+    ...entry2.overflow.stacks.map((row) => row.itemId),
+    ...sharedBank.stacks.map((row) => row.itemId)
+  ]);
+  const socketed = Object.entries(entry2.character.gearEnhancements ?? {}).flatMap(([itemId, enhancement]) => ownedGearIds.has(itemId) ? [enhancement.statGemId, enhancement.effectGemId].filter((id) => Boolean(id)) : []);
+  return [...entry2.inventory.stacks, ...entry2.character.equipmentPouch?.stacks ?? [], ...entry2.overflow.stacks, ...held, ...socketed.map((itemId) => ({ itemId, quantity: 1 }))];
+}
+function accountAfterCharacterDelete(state, character) {
+  const earnedSlots = unlockedCharacterSlots(state);
+  const arena = state.account.arenaSquadCharacterIds?.filter((id) => id !== character.id);
+  const unlockedCosmeticPetIds = [.../* @__PURE__ */ new Set([...state.account.unlockedCosmeticPetIds ?? [], ...character.ownedPetIds ?? []])];
+  const ownedBoostIds = [.../* @__PURE__ */ new Set([...state.account.ownedBoostIds ?? [], ...character.ownedBoostIds ?? []])];
+  return {
+    ...state.account,
+    unlockedCharacterSlots: Math.max(state.account.unlockedCharacterSlots ?? 1, earnedSlots),
+    unlockedCosmeticPetIds,
+    ownedBoostIds,
+    ...state.account.arenaSquadCharacterIds ? { arenaSquadCharacterIds: arena } : {}
+  };
+}
+function characterDeleteConfirmation(name) {
+  return `DELETE ${name}`;
+}
+function characterDeleteBlockReason(state, id) {
+  if (!state.character) return "Create a character first.";
+  const active2 = state.character.id === id;
+  const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
+  if (!stored) return "Character is not owned.";
+  if (stored.activity) return "Stop or claim this character\u2019s current activity before deleting it.";
+  if (equipmentCraftingQueue(state).some((job) => job.ownerCharacterId === id)) return "Claim this character\u2019s queued equipment crafts before deleting it.";
+  if (auditCraftedGearOwnership(state).problems.length)
+    return "Equipment identity conflict. Contact support before deleting this character.";
+  return void 0;
+}
+function deleteAccountCharacter(state, id, confirmation, now) {
+  state = recordAccountProgress(ensurePersonalSeasonalState(reconcileAccountCollections(state)));
+  if (!state.character) throw new Error("Create a character first.");
+  const active2 = state.character.id === id;
+  const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
+  if (!stored) throw new Error("Character is not owned.");
+  if (confirmation.trim() !== characterDeleteConfirmation(stored.character.name)) throw new Error(`Type "${characterDeleteConfirmation(stored.character.name)}" to confirm.`);
+  const blocked = characterDeleteBlockReason(state, id);
+  if (blocked) throw new Error(blocked);
+  const other = (state.otherCharacters ?? []).filter((entry2) => entry2.character.id !== id);
+  const account = accountAfterCharacterDelete(state, stored.character);
+  if (!active2) {
+    const recovery2 = routeToBank(state.bank, state.overflow, deletionRecoveryItems(stored, state.bank), now);
+    return { ...state, bank: recovery2.bank, overflow: recovery2.overflow, otherCharacters: other, account };
+  }
+  const replacement = other[0], remaining = replacement ? other.slice(1) : [];
+  const baseOverflow = replacement?.overflow ?? { stacks: [], expiresAtMs: null };
+  const recovery = routeToBank(state.bank, baseOverflow, deletionRecoveryItems(stored, state.bank), now);
+  if (replacement) return { ...state, ...restoreCharacterWorldProgress(replacement), character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account: personalSeasonalAccountView(account, replacement.character) };
+  const fresh = newGame(now);
+  return { ...state, ...snapshotCharacterWorldProgress(fresh), character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account: personalSeasonalAccountView(account, null) };
+}
+
+// ../apps/mobile/src/core/loadout-storage.ts
+var qty3 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
+var take3 = (stacks, id) => {
+  if (qty3(stacks, id) < 1) throw new Error(`MISSING:${id}`);
+  return stacks.map((entry2) => entry2.itemId === id ? { ...entry2, quantity: entry2.quantity - 1 } : { ...entry2 }).filter((entry2) => entry2.quantity > 0);
+};
+var put = (stacks, capacity, id) => {
+  const index = stacks.findIndex((entry2) => entry2.itemId === id);
+  if (index >= 0) {
+    const next = stacks.map((entry2) => ({ ...entry2 }));
+    next[index].quantity += 1;
+    return next;
+  }
+  if (stacks.length >= capacity) throw new Error("STORAGE_FULL");
+  return [...stacks.map((entry2) => ({ ...entry2 })), { itemId: id, quantity: 1 }];
+};
+function planLoadoutStorage(input) {
+  let inventory = input.inventory.map((entry2) => ({ ...entry2 })), bank = input.bank.map((entry2) => ({ ...entry2 }));
+  const slots2 = [.../* @__PURE__ */ new Set([...Object.keys(input.currentEquipment), ...Object.keys(input.desiredEquipment)])];
+  for (const slot of slots2) {
+    const wanted = input.desiredEquipment[slot], equipped = input.currentEquipment[slot];
+    if (!wanted || wanted === equipped) continue;
+    if (qty3(inventory, wanted) > 0) inventory = take3(inventory, wanted);
+    else if (qty3(bank, wanted) > 0) bank = take3(bank, wanted);
+    else throw new Error(`MISSING:${wanted}`);
+  }
+  for (const slot of slots2) {
+    const old = input.currentEquipment[slot], wanted = input.desiredEquipment[slot];
+    if (!old || old === wanted) continue;
+    try {
+      inventory = put(inventory, input.inventoryCapacity, old);
+    } catch (error) {
+      if (error instanceof Error && error.message === "STORAGE_FULL") bank = put(bank, input.bankCapacity, old);
+      else throw error;
+    }
+  }
+  return { inventory, bank };
+}
+
+// ../apps/mobile/src/core/character-loadouts.ts
+var CHARACTER_LOADOUT_SLOT_COUNT = 1;
+var MAX_CHARACTER_LOADOUT_SLOTS = 5;
+function characterLoadoutSlotCount(state) {
+  return Math.min(MAX_CHARACTER_LOADOUT_SLOTS, CHARACTER_LOADOUT_SLOT_COUNT + accountEntitlementBenefits(state).loadoutSlots);
+}
+var slots = ["weapon", "offhand", "helmet", "chest", "legs", "boots", "gloves", "cape", "amulet", "ring"];
+var cleanName = (value, fallback2) => typeof value === "string" && value.trim() ? value.trim().slice(0, 28) : fallback2;
+function normalizeCharacterLoadouts(value, classId, slotCount = CHARACTER_LOADOUT_SLOT_COUNT) {
+  if (!Array.isArray(value)) return [];
+  const limit = Math.max(CHARACTER_LOADOUT_SLOT_COUNT, Math.min(MAX_CHARACTER_LOADOUT_SLOTS, slotCount)), bySlot = /* @__PURE__ */ new Map();
+  value.slice(0, 12).forEach((raw2, index) => {
+    if (!raw2 || typeof raw2 !== "object" || raw2.classId !== classId) return;
+    const slotIndex = Number.isInteger(raw2.slotIndex) && raw2.slotIndex >= 0 && raw2.slotIndex < limit ? raw2.slotIndex : index;
+    if (slotIndex < 0 || slotIndex >= limit || bySlot.has(slotIndex)) return;
+    const equipment = {};
+    for (const slot of slots) {
+      const id = raw2.equipment?.[slot];
+      const def = typeof id === "string" ? ITEMS.find((item) => item.id === id) : void 0;
+      if (def?.type === "gear" && isReleasedEquipmentItemId(id) && def.slot === slot && (!def.classRestriction || def.classRestriction === classId)) equipment[slot] = id;
+    }
+    const foodId = typeof raw2.foodId === "string" && ITEMS.some((item) => item.id === raw2.foodId && item.type === "food") ? raw2.foodId : void 0;
+    const companionId = typeof raw2.companionId === "string" && COMBAT_COMPANIONS.some((def) => def.id === raw2.companionId) ? raw2.companionId : void 0;
+    const equipmentInstanceIds = {};
+    for (const slot of slots) {
+      const instanceId = raw2.equipmentInstanceIds?.[slot];
+      if (equipment[slot] && typeof instanceId === "string" && instanceId.trim() && instanceId.length <= 180) equipmentInstanceIds[slot] = instanceId;
+    }
+    bySlot.set(slotIndex, { equipmentInstanceIds, id: typeof raw2.id === "string" && raw2.id ? raw2.id : `loadout-${slotIndex + 1}`, slotIndex, name: cleanName(raw2.name, `Loadout ${slotIndex + 1}`), classId, equipment, foodId, companionId, createdAtMs: Number.isFinite(raw2.createdAtMs) ? raw2.createdAtMs : 0, updatedAtMs: Number.isFinite(raw2.updatedAtMs) ? raw2.updatedAtMs : 0 });
+  });
+  return [...bySlot.values()].sort((a, b) => a.slotIndex - b.slotIndex);
+}
+function saveCharacterLoadout(state, index, name, nowMs = Date.now()) {
+  if (!state.character) throw new Error("Create a character first.");
+  const capacity = characterLoadoutSlotCount(state);
+  if (index < 0 || index >= capacity) throw new Error("Invalid loadout slot.");
+  const current = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, capacity), existing = current.find((entry2) => entry2.slotIndex === index), preset = { id: existing?.id ?? `loadout-${index + 1}`, slotIndex: index, name: cleanName(name, existing?.name ?? `Loadout ${index + 1}`), classId: state.character.classId, equipment: { ...state.character.equipment }, equipmentInstanceIds: { ...state.character.equipmentInstanceIds ?? {} }, foodId: state.character.equippedFoodId, companionId: state.character.equippedCombatCompanionId, createdAtMs: existing?.createdAtMs ?? nowMs, updatedAtMs: nowMs };
+  return { ...state, character: { ...state.character, savedLoadouts: [...current.filter((entry2) => entry2.slotIndex !== index), preset].sort((a, b) => a.slotIndex - b.slotIndex) } };
+}
+function deleteCharacterLoadout(state, id) {
+  return !state.character ? state : { ...state, character: { ...state.character, savedLoadouts: normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).filter((entry2) => entry2.id !== id) } };
+}
+function applyExactCharacterLoadout(state, preset) {
+  if (!state.character) throw new Error("No active character");
+  const audit = auditCraftedGearOwnership(state);
+  if (audit.problems.length) throw new Error("Equipment identity conflict; resolve it before applying a loadout");
+  let next = state;
+  for (const slot of slots) {
+    const wanted = preset.equipment[slot], wantedCopy = preset.equipmentInstanceIds?.[slot];
+    const current = next.character.equipment[slot], currentCopy = next.character.equipmentInstanceIds?.[slot];
+    if (wantedCopy && currentCopy === wantedCopy && current === wanted) continue;
+    if (!wantedCopy && !currentCopy && wanted === current) continue;
+    if (!wanted) {
+      if (currentCopy) next = unequipCraftedGearInstance(next, currentCopy);
+      else if (current) next = unequipItem(next, slot);
+      continue;
+    }
+    if (wantedCopy) {
+      let loc = auditCraftedGearOwnership(next).linked.find((row) => row.instanceId === wantedCopy);
+      if (!loc) throw new Error("A saved equipment copy cannot be found. Review this loadout manually.");
+      if (loc.place === "bank") {
+        next = moveCraftedGearInstance(next, wantedCopy, "inventory");
+        loc = auditCraftedGearOwnership(next).linked.find((row) => row.instanceId === wantedCopy);
+      }
+      if (loc?.place !== "inventory" && loc?.place !== "equipment_pouch" || loc.holderCharacterId !== next.character?.id)
+        throw new Error("The saved equipment copy belongs to another character or cannot be equipped");
+      next = equipCraftedGearInstance(next, wantedCopy);
+    } else {
+      if (currentCopy) next = unequipCraftedGearInstance(next, currentCopy);
+      if (!next.inventory.stacks.some((row) => row.itemId === wanted && row.instanceId === void 0 && row.quantity > 0)) {
+        if (!next.bank.stacks.some((row) => row.itemId === wanted && row.instanceId === void 0 && row.quantity > 0))
+          throw new Error(`${itemDef(wanted).name} is not available as an unassigned equipment copy`);
+        next = withdrawFromBank(next, wanted, 1);
+      }
+      next = equipItem(next, wanted);
+    }
+  }
+  if (preset.foodId && !next.inventory.stacks.some((entry2) => entry2.itemId === preset.foodId && entry2.quantity > 0))
+    throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);
+  next = { ...next, character: { ...next.character, equippedFoodId: preset.foodId } };
+  next = preset.companionId ? equipCombatCompanion(next, preset.companionId) : unequipCombatCompanion(next);
+  next.character.currentHp = Math.min(next.character.currentHp, effectiveStats(next).hp);
+  return next;
+}
+function applyCharacterLoadout(state, id) {
+  if (!state.character) throw new Error("Create a character first.");
+  if (state.activity?.kind === "combat") throw new Error("Stop combat before changing loadouts.");
+  const preset = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).find((entry2) => entry2.id === id);
+  if (!preset) throw new Error("Loadout not found.");
+  const affected = new Set([...Object.values(state.character.equipment), ...Object.values(preset.equipment)].filter((id2) => !!id2));
+  if (Object.keys(state.character.equipmentInstanceIds ?? {}).length || Object.keys(preset.equipmentInstanceIds ?? {}).length || [...state.inventory.stacks, ...state.bank.stacks, ...state.character.equipmentPouch?.stacks ?? []].some((row) => row.instanceId && affected.has(row.itemId))) return applyExactCharacterLoadout(state, preset);
+  for (const slot of slots) {
+    const wanted = preset.equipment[slot];
+    if (!wanted) continue;
+    const def = itemDef(wanted);
+    if (def.type !== "gear" || !isReleasedEquipmentItemId(wanted) || def.slot !== slot || def.classRestriction && def.classRestriction !== state.character.classId) throw new Error(`${def.name} is not valid for this loadout.`);
+  }
+  let planned;
+  try {
+    planned = planLoadoutStorage({ inventory: state.inventory.stacks, bank: state.bank.stacks, inventoryCapacity: entitlementStorageCapacity(state, "inventory"), bankCapacity: entitlementStorageCapacity(state, "bank"), currentEquipment: state.character.equipment, desiredEquipment: preset.equipment });
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("MISSING:")) throw new Error(`${itemDef(error.message.slice(8)).name} is not equipped, in Inventory, or in Bank.`);
+    throw error;
+  }
+  if (preset.foodId && !planned.inventory.some((entry2) => entry2.itemId === preset.foodId && entry2.quantity > 0)) throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);
+  let next = { ...state, inventory: { ...state.inventory, stacks: planned.inventory }, bank: { ...state.bank, stacks: planned.bank }, character: { ...state.character, equipment: preset.equipment, equippedFoodId: preset.foodId } };
+  next = preset.companionId ? equipCombatCompanion(next, preset.companionId) : unequipCombatCompanion(next);
+  next.character.currentHp = Math.min(next.character.currentHp, effectiveStats(next).hp);
+  return next;
+}
+
+// ../apps/mobile/src/core/arena-squad.ts
+var ARENA_SQUAD_SIZE = 3;
+function arenaSquadIds(state) {
+  const owned = new Set(accountCharacters(state).map((entry2) => entry2.character.id));
+  const saved = state.account.arenaSquadCharacterIds ?? [];
+  const seen = /* @__PURE__ */ new Set();
+  return Array.from({ length: ARENA_SQUAD_SIZE }, (_, index) => {
+    const id = typeof saved[index] === "string" ? saved[index] : "";
+    if (!id || !owned.has(id) || seen.has(id)) return "";
+    seen.add(id);
+    return id;
+  });
+}
+function setArenaSquadSlot(state, slot, characterId) {
+  const owned = accountCharacters(state).map((entry2) => entry2.character.id);
+  if (characterId && !owned.includes(characterId)) throw new Error("That character does not belong to this account.");
+  const ids2 = arenaSquadIds(state);
+  if (characterId) {
+    const duplicate = ids2.findIndex((id, index) => index !== slot && id === characterId);
+    if (duplicate >= 0) ids2[duplicate] = "";
+  }
+  ids2[slot] = characterId ?? "";
+  return { ...state, account: { ...state.account, arenaSquadCharacterIds: ids2 } };
+}
+
+// ../apps/mobile/src/core/progression-goals-v40.ts
+var MAX_PINNED_GOALS = 3;
+function validateProgressionGoals(goals, characterId) {
+  if (goals.length > MAX_PINNED_GOALS) throw new Error("too_many_pinned_goals");
+  const ids2 = /* @__PURE__ */ new Set();
+  for (const goal of goals) {
+    if (goal.characterId !== characterId) throw new Error("goal_character_mismatch");
+    if (ids2.has(goal.id)) throw new Error("duplicate_goal_id");
+    ids2.add(goal.id);
+    if (!goal.id || !goal.title) throw new Error("invalid_goal");
+  }
+  return goals;
+}
+var GOAL_KINDS = ["skill_level", "item_quantity", "recipe", "recipe_preparation", "monster_kills", "pet_hunt", "equipment_set", "dungeon_clears", "mastery_rank", "weekly_order"];
+function normalizeProgressionGoals(value, characterId) {
+  if (!Array.isArray(value) || !characterId) return [];
+  const out = [];
+  for (const raw2 of value.slice(0, MAX_PINNED_GOALS)) {
+    if (!raw2 || typeof raw2 !== "object") continue;
+    const row = raw2, kind = row.kind;
+    if (!GOAL_KINDS.includes(kind)) continue;
+    const id = typeof row.id === "string" && row.id.trim() ? row.id.trim().slice(0, 80) : `goal-${out.length + 1}`;
+    const title2 = typeof row.title === "string" && row.title.trim() ? row.title.trim().slice(0, 80) : "Working Toward";
+    const createdAtMs = Number.isFinite(Number(row.createdAtMs)) ? Math.max(0, Math.floor(Number(row.createdAtMs))) : 0;
+    const pinnedAtMs = Number.isFinite(Number(row.pinnedAtMs)) ? Math.max(0, Math.floor(Number(row.pinnedAtMs))) : createdAtMs;
+    const base = { id, characterId, kind, title: title2, createdAtMs, pinnedAtMs };
+    const positive = (key, min = 1) => Number.isFinite(Number(row[key])) ? Math.max(min, Math.floor(Number(row[key]))) : void 0;
+    let goal;
+    if (kind === "skill_level" && typeof row.skillId === "string" && positive("targetLevel")) goal = { ...base, kind, skillId: row.skillId, targetLevel: positive("targetLevel") };
+    else if (kind === "item_quantity" && typeof row.itemId === "string" && positive("targetQuantity")) goal = { ...base, kind, itemId: row.itemId, targetQuantity: positive("targetQuantity") };
+    else if (kind === "recipe" && typeof row.recipeId === "string" && positive("targetQuantity")) goal = { ...base, kind, recipeId: row.recipeId, targetQuantity: positive("targetQuantity") };
+    else if (kind === "recipe_preparation" && typeof row.recipeId === "string" && typeof row.outputItemId === "string" && positive("batches") && positive("initialStepCount") && Number.isFinite(Number(row.baselineOutputQuantity)) && positive("targetOutputQuantity")) {
+      const baselineOutputQuantity = Math.max(0, Math.floor(Number(row.baselineOutputQuantity))), targetOutputQuantity = Math.max(baselineOutputQuantity + 1, positive("targetOutputQuantity"));
+      goal = { ...base, kind, recipeId: row.recipeId, batches: Math.min(100, positive("batches")), outputItemId: row.outputItemId, initialStepCount: Math.min(99, positive("initialStepCount")), baselineOutputQuantity, targetOutputQuantity };
+    } else if (kind === "monster_kills" && typeof row.monsterId === "string" && positive("targetKills")) goal = { ...base, kind, monsterId: row.monsterId, targetKills: positive("targetKills") };
+    else if (kind === "pet_hunt" && typeof row.petId === "string" && (row.sourceKind === "monster" || row.sourceKind === "dungeon") && typeof row.sourceId === "string") goal = { ...base, kind, petId: row.petId, sourceKind: row.sourceKind, sourceId: row.sourceId };
+    else if (kind === "equipment_set" && typeof row.setId === "string" && positive("targetPieces")) goal = { ...base, kind, setId: row.setId, targetPieces: positive("targetPieces") };
+    else if (kind === "dungeon_clears" && typeof row.dungeonId === "string" && positive("targetClears")) goal = { ...base, kind, dungeonId: row.dungeonId, targetClears: positive("targetClears") };
+    else if (kind === "mastery_rank" && typeof row.actionId === "string" && positive("targetRank")) goal = { ...base, kind, actionId: row.actionId, targetRank: Math.min(50, positive("targetRank")) };
+    else if (kind === "weekly_order" && typeof row.orderId === "string" && positive("targetProgress")) goal = { ...base, kind, orderId: row.orderId, targetProgress: positive("targetProgress") };
+    if (goal) out.push(goal);
+  }
+  return validateProgressionGoals(out, characterId);
+}
+
 // ../apps/mobile/src/core/inventory-bulk.ts
+init_faith();
 function inventoryBulkSelectionId(stack) {
   return stack.instanceId ? `copy:${stack.instanceId}` : stack.itemId;
 }
@@ -57356,7 +57433,7 @@ function bulkTransferSelected(state, itemIds2, from) {
 }
 function bulkSellSelected(state, itemIds2, location = "inventory") {
   const summary = bulkSelectionSummary(state, itemIds2, location);
-  if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
+  if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, locked items, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
   for (const id of summary.sellableIds) {
     if (id.startsWith("copy:")) {
@@ -57370,7 +57447,7 @@ function bulkSellSelected(state, itemIds2, location = "inventory") {
 }
 function bulkSalvageSelected(state, itemIds2, location = "inventory") {
   const summary = bulkSelectionSummary(state, itemIds2, location);
-  if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.");
+  if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites, locked items stay protected.");
   let next = state;
   for (const id of summary.salvageableIds) {
     if (id.startsWith("copy:")) {

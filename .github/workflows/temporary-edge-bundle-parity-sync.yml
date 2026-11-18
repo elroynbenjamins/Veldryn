@@ -1,8 +1,7 @@
 # Temporary, review-only parity job; no deployment or production flags.
 name: Temporary canonical Edge bundle parity rebuild
 on:
-  push:
-    branches: [fix/edge-bundle-parity-20261118]
+  pull_request:
     paths:
       - '.github/workflows/temporary-edge-bundle-parity-sync.yml'
 permissions:

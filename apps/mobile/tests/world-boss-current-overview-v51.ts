@@ -120,8 +120,10 @@ async function main(){
    lookups.push(sql);
    assert.ok(sql.includes('FROM private.world_boss_events_v17'));
    assert.ok(sql.includes('LIMIT 2'));
-   assert.ok(sql.includes('WHERE starts_at=$1::timestamptz'));
-   assert.deepEqual(values,[new Date(LAUNCH).toISOString()]);
+   assert.ok(sql.includes('WHERE starts_at < $2::timestamptz'));
+   assert.ok(sql.includes('starts_at+interval'));
+   assert.deepEqual(values,[new Date(LAUNCH).toISOString(),
+    new Date(LAUNCH+14*DAY).toISOString()]);
    return {rows:[event() as unknown as T]};
   },
  });

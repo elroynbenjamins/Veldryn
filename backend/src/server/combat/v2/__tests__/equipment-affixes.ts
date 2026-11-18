@@ -57,7 +57,40 @@ assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',v
 }),/missing_approved_roll_count/);
 assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,[
  item('x','weapon',[{id:'penetration_pp',value:.02}]),
-],policy,true),/affix_effect_unimplemented/);
+],policy,true),/missing_approved_advanced_affix_caps/);
+const advancedCaps={
+ accuracyPp:.12,evasionPp:.10,penetrationPp:.10,
+ wardPp:.12,shieldStrengthPct:.15,hexPotencyPct:.12,
+};
+const advancedPolicy={...policy,maxAdvancedEffects:advancedCaps};
+const sourceItems=[
+ item('adv_weapon','weapon',[{id:'accuracy_pp',value:.04}]),
+ item('adv_boots','boots',[{id:'evasion_pp',value:.05}]),
+ item('adv_amulet','amulet',[{id:'penetration_pp',value:.03}]),
+ item('adv_chest','chest',[{id:'ward_pp',value:.06}]),
+ item('adv_offhand','offhand',[{id:'shield_strength_pct',value:.07}]),
+ item('adv_cape','cape',[{id:'hex_potency_pct',value:.08}]),
+];
+const advanced=compileTrustedEquipmentAffixesV2(ready,sourceItems,advancedPolicy,true);
+assert.equal(advanced.sources.length,6);
+assert.deepEqual(advanced.actor.combatV2?.equipmentEffects,{
+ accuracyPp:.04,evasionPp:.05,penetrationPp:.03,
+ wardPp:.06,shieldStrengthPct:.07,hexPotencyPct:.08,
+});
+assert.equal(JSON.stringify(ready),original,
+ 'Six advanced affixes must not mutate the raw equipment or actor');
+assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,sourceItems,{
+ ...advancedPolicy,maxAdvancedEffects:{...advancedCaps,wardPp:.04},
+},true),/advanced_affix_exceeds_approved_cap:wardPp/);
+assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,sourceItems,{
+ ...advancedPolicy,maxAdvancedEffects:{...advancedCaps,hexPotencyPct:NaN},
+},true),/invalid_approved_advanced_affix_cap:hexPotencyPct/);
+assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,[
+ item('adv_weapon','weapon',[{id:'accuracy_pp',value:.04}]),
+ item('adv_cape','cape',[{id:'accuracy_pp',value:.04}]),
+],{...advancedPolicy,maxAdvancedEffects:{...advancedCaps,accuracyPp:.06}},true),
+ /advanced_affix_exceeds_approved_cap:accuracyPp/);
+
 assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,items,{
  ...policy,maxFinalCritChance:ready.stats.critChance+.01,
 },true),/affix_exceeds_approved_stat_caps/);
@@ -73,4 +106,4 @@ assert.throws(()=>validateTrustedAffixesV2({...items[0],tier:'T6'},policy),
 assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',value:.02}]),{
  ...policy,limits:{...policy.limits,attack_pct:{min:.06,max:.05}},
 }),/missing_approved_roll_limit/);
-console.log('PASS: 13 affix definitions, 7 integrated stat types, slot and source gates, and no invented ranges/rolls');
+console.log('PASS: all 13 affix types, six bounded advanced effects, per-slot/per-rarity source guards');

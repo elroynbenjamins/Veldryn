@@ -1,3 +1,5 @@
+import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
+import {itemDef} from '../src/content/items';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
@@ -140,6 +142,28 @@ for(const tier of [1,2,3,4] as const){
   const total=armaments.reduce((sum,item)=>sum+equipmentV2StatBudget(equipmentV2ArmamentStats(item)),0);
   check(Math.abs(total-equipmentV2WeaponAndOffhandBudget(tier))<1e-7,
    'Two-handed, dual and one-handed/offhand loadouts must have the same weighted budget');
+ }
+}
+
+check(V2_SERVER_PIECES.length===EQUIPMENT_V2_PIECES.length,'Client and canonical server piece counts diverge');
+check(V2_SERVER_RECIPES.length===EQUIPMENT_V2_RECIPES.length,'Client and canonical server recipe counts diverge');
+check(V2_SERVER_MANIFEST_VERSION.startsWith('eq2-hidden-draft-'),'Manifest must remain clearly unreleased');
+for(const piece of EQUIPMENT_V2_PIECES){
+ const backend=V2_SERVER_PIECES.find(p=>p.id===piece.id);
+ check(backend&&backend.slot===piece.slot&&backend.tier===piece.tier
+  &&backend.role===piece.role&&backend.profile===piece.profile&&backend.material===piece.material
+  &&backend.setId===piece.setId,'Client/server equipment manifest mismatch: '+piece.id);
+}
+for(const recipe of EQUIPMENT_V2_RECIPES){
+ const backend=V2_SERVER_RECIPES.find(r=>r.id===recipe.id);
+ check(backend&&backend.pieceId===recipe.outputId&&backend.tier===recipe.tier
+  &&backend.profession===recipe.profession&&backend.route===recipe.route
+  &&backend.gold===recipe.gold&&backend.xp===recipe.xp&&backend.seconds===recipe.seconds
+  &&backend.characterLevel===recipe.characterLevel&&backend.professionLevel===recipe.professionLevel
+  &&JSON.stringify(backend.inputs)===JSON.stringify(recipe.inputs.map(i=>({itemId:i.itemId,quantity:i.quantity}))),
+  'Client/server recipe version drift: '+recipe.id);
+ for(const input of recipe.inputs){
+  check(itemDef(input.itemId)?.type==='material','Unknown ingredient ID referenced by V2: '+input.itemId);
  }
 }
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

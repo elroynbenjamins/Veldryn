@@ -1,0 +1,42 @@
+name: Hidden Guild PvE V12-V14 source, cue and proof QA
+
+# Test-only. No Supabase credentials, real users, migrations or payouts.
+on:
+  pull_request:
+    paths:
+      - 'backend/online/guild-pve-verified-loader-v12.ts'
+      - 'backend/src/server/combat/guild-pve-cues-v13.ts'
+      - 'backend/src/server/combat/guild-pve-reward-proof-v14.ts'
+      - 'apps/mobile/tests/guild-pve-v12-v14.ts'
+      - 'apps/mobile/tsconfig.guild-pve-v12-v14.json'
+      - '.github/workflows/guild-pve-v12-v14-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hidden-guild-pve-three-pass-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck actual saved loadout, cue safety and nonpaying proof
+        run: pnpm exec tsc -p tsconfig.guild-pve-v12-v14.json --noEmit
+      - name: Compile isolated tests
+        run: pnpm exec tsc -p tsconfig.guild-pve-v12-v14.json --outDir .core-build
+      - name: Run source/replay/claim safety regressions
+        run: node .core-build/apps/mobile/tests/guild-pve-v12-v14.js

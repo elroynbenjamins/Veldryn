@@ -11,7 +11,7 @@ const cases=[
 ];
 for(const entry of cases){
   const before=JSON.stringify(entry.base);
-  assert.strictEqual(prepareAsterfallBossV2(entry.base),entry.base,'legacy runs must keep their current boss');
+  assert.equal(prepareAsterfallBossV2(entry.base),entry.base,'legacy runs must keep their current boss');
   const tuned=prepareAsterfallBossV2(entry.base,ENEMY_V2_RULESET);
   assert.equal(tuned.id,entry.base.id);
   assert.equal(tuned.name,entry.base.name,'preserve canonical existing boss names');
@@ -19,7 +19,7 @@ for(const entry of cases){
   assert.deepEqual(tuned.abilities.slice(0,entry.ids.length).map(ability=>ability.id),entry.ids,'retain existing boss attacks');
   assert.ok(tuned.abilities.some(ability=>ability.id===entry.newAbility));
   assert.deepEqual(tuned.phases?.map(phase=>phase.hpPct),[.70,.35],'exactly two 2.0 transitions');
-  assert.strictEqual(prepareAsterfallBossV2(tuned,ENEMY_V2_RULESET),tuned,'reapplication must not multiply boss abilities');
+  assert.equal(prepareAsterfallBossV2(tuned,ENEMY_V2_RULESET),tuned,'reapplication must not multiply boss abilities');
   assert.equal(JSON.stringify(entry.base),before,'base content must never mutate');
   const telegraph=pveBossTelegraph([tuned])!;
   assert.equal(telegraph.bossName,entry.base.name);
@@ -31,5 +31,5 @@ for(const entry of cases){
   assert.ok(a.events.some(event=>event.abilityId===entry.newAbility || event.type==='phase'),'2.0 mechanic must execute during combat');
 }
 const unrelated=({...rootboundHeartBoss(),id:'OTHER_BOSS'});
-assert.strictEqual(prepareAsterfallBossV2(unrelated,ENEMY_V2_RULESET),unrelated,'other regional bosses stay unchanged');
+assert.equal(prepareAsterfallBossV2(unrelated,ENEMY_V2_RULESET),unrelated,'other regional bosses stay unchanged');
 console.log('PASS Asterfall Boss 2.0 opt-in kits, canonical names, phases and deterministic replay');

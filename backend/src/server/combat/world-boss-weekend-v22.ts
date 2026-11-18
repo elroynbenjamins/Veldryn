@@ -81,3 +81,68 @@ export function nextWorldBossCycleV22(startUtcMs:number){
  worldBossWindowsV22(startUtcMs);
  return startUtcMs+CYCLE;
 }
+
+/**
+ * V50 — pure, hidden global boss rotation contract.
+ *
+ * This computes one canonical boss identity per 14-day cycle from a trusted
+ * launch Monday. Never accept a player-provided epoch, cycle or boss ID.
+ * The eventual database must separately enforce uniqueness and non-overlap
+ * under a transaction; this helper does not create, activate or pay events.
+ */
+export const WORLD_BOSS_V50_ROTATION_LIVE=false as const;
+export const WORLD_BOSS_V50_ORDER=['hollowroot','sunscar','frostmarch'] as const;
+export type WorldBossRotatingIdV50=(typeof WORLD_BOSS_V50_ORDER)[number];
+export interface WorldBossGlobalCycleV50 {
+ readonly index:number;
+ readonly bossId:WorldBossRotatingIdV50;
+ readonly startsAtUtcMs:number;
+ readonly battleStartsAtUtcMs:number;
+ readonly battleEndsAtUtcMs:number;
+ readonly cycleEndsAtUtcMs:number;
+}
+/** Deterministic cycle index; zero is Hollowroot, then Solbrand, Rimewarden. */
+export function worldBossRotationForCycleV50(
+ launchMondayUtcMs:number,index:number,
+):WorldBossGlobalCycleV50{
+ worldBossWindowsV22(launchMondayUtcMs);
+ if(!Number.isSafeInteger(index)||index<0||
+  !safe(launchMondayUtcMs+index*CYCLE)||
+  !safe(launchMondayUtcMs+(index+1)*CYCLE))
+  throw Error('world_boss_v50_invalid_cycle_index');
+ const startsAtUtcMs=launchMondayUtcMs+index*CYCLE;
+ return {
+  index,
+  bossId:WORLD_BOSS_V50_ORDER[index%WORLD_BOSS_V50_ORDER.length],
+  startsAtUtcMs,
+  battleStartsAtUtcMs:startsAtUtcMs+PREPARATION,
+  battleEndsAtUtcMs:startsAtUtcMs+WEEK,
+  cycleEndsAtUtcMs:startsAtUtcMs+CYCLE,
+ };
+}
+/** Resolve exactly one current (or prelaunch upcoming) cycle, not three bosses. */
+export function worldBossRotationAtV50(
+ launchMondayUtcMs:number,nowUtcMs:number,
+):WorldBossGlobalCycleV50{
+ worldBossWindowsV22(launchMondayUtcMs);
+ if(!safe(nowUtcMs))throw Error('world_boss_v50_invalid_clock');
+ const index=nowUtcMs<launchMondayUtcMs?0:
+  Math.floor((nowUtcMs-launchMondayUtcMs)/CYCLE);
+ return worldBossRotationForCycleV50(launchMondayUtcMs,index);
+}
+/**
+ * Fail closed if a proposed authoritative event row disagrees with the
+ * launch epoch's canonical identity or dates. Call only on the trusted
+ * event provisioning path with values read from the database.
+ */
+export function assertWorldBossCanonicalEventV50(
+ launchMondayUtcMs:number,
+ proposed:Pick<WorldBossGlobalCycleV50,'index'|'bossId'|'startsAtUtcMs'|'cycleEndsAtUtcMs'>,
+):WorldBossGlobalCycleV50{
+ const expected=worldBossRotationForCycleV50(launchMondayUtcMs,proposed.index);
+ if(proposed.bossId!==expected.bossId||
+  proposed.startsAtUtcMs!==expected.startsAtUtcMs||
+  proposed.cycleEndsAtUtcMs!==expected.cycleEndsAtUtcMs)
+  throw Error('world_boss_v50_noncanonical_event');
+ return expected;
+}

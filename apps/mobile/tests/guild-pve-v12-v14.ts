@@ -1,5 +1,6 @@
 /** Hidden Guild PvE V12–V14 regressions. All identities and saves fictional. */
 import {assert} from './test-assert';
+import {readFileSync} from 'node:fs';
 import {CLASSES} from '../src/content/classes';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 import {GuildPveV12VerifiedActorLoader} from '../../../backend/online/guild-pve-verified-loader-v12';
@@ -35,6 +36,20 @@ function rejectSync(fn:()=>unknown,part:string){
 }
 async function main(){
  assert.equal(verifyGuildPveV13Scripts(),36);
+ // Compare the full ordered 36-beat runtime script with the authored V5 CSV.
+ const rawCues=readFileSync('../../docs/roadmap/spreadsheets/guild-pve-broken-forge-encounter-cues-v5.csv','utf8')
+  .trim().split(/\\r?\\n/).slice(1).map(row=>row.replace(/^"|"$/g,'').split('","'));
+ assert.equal(rawCues.length,36);
+ for(const fields of rawCues){
+  const [boss,phase,, ,position,cueId,,kind]=fields;
+  const authored=guildPveV13PhaseCues({
+   boss:boss as 'gatekeeper'|'seer'|'warden',
+   phase:phase as import('../../../backend/src/server/combat/guild-pve-broken-forge-v7').GuildPvePhaseV7,
+   difficulty:'Scout',
+  })[Number(position)-1];
+  assert.equal(authored.id,boss+'.'+phase+'.'+cueId);
+  assert.equal(authored.kind,kind);
+ }
  const actual=await loader(expected).resolveOwnedActor(OWNER,CHAR);
  assert.equal(actual.actor.id,CHAR);
  assert.equal(actual.gameRevision,7);

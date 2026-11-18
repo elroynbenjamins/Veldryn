@@ -84,8 +84,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   }))??[]
   :oldRecord?.equipmentBonuses?.map(bonus=>({
    short:equipmentBonusCompactLine(bonus),
-   detail:equipmentBonusLine(oldRecord.itemId,oldRecord.rarity,bonus),
-   strength:equipmentBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus),
+   detail:equipmentBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.equipmentBonusRollVersion),
+   strength:equipmentBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.equipmentBonusRollVersion),
   }))??[];
  const newRolls=slot==='weapon'
   ?instance?.weaponBonuses?.map(bonus=>({
@@ -95,8 +95,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   }))??[]
   :instance?.equipmentBonuses?.map(bonus=>({
    short:equipmentBonusCompactLine(bonus),
-   detail:equipmentBonusLine(instance.itemId,instance.rarity,bonus),
-   strength:equipmentBonusStrength(instance.itemId,instance.rarity,bonus),
+   detail:equipmentBonusLine(instance.itemId,instance.rarity,bonus,instance.equipmentBonusRollVersion),
+   strength:equipmentBonusStrength(instance.itemId,instance.rarity,bonus,instance.equipmentBonusRollVersion),
   }))??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;

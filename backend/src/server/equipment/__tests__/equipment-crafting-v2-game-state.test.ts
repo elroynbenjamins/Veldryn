@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
+import {ITEMS} from '../../../../../apps/mobile/src/content/items';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {runEquipmentV2InGameState,simulateEquipmentV2InGameState,
  type V2HiddenGameMetadata,type V2HiddenGameInput} from '../equipment-crafting-v2-game-state';
@@ -113,6 +114,27 @@ assert.equal(repeatedClaim.state,claimed.state);
 assert.equal((repeatedClaim.state.account.equipmentV2Hidden as V2HiddenGameMetadata).items.length,1);
 assert.throws(()=>runEquipmentV2InGameState(makeInput(base,start)),
  /equipment_crafting_v2_not_released/,'A normal runtime may not bypass the disabled server gate');
+
+const legacySafe=stateFixture();
+const oldGear=ITEMS.find(item=>item.type==='gear'&&!item.id.startsWith('EQ2_'));
+assert.ok(oldGear);
+legacySafe.account.craftedGearInstances=[{
+ id:'legacy-gemmed-copy',itemId:oldGear.id,ownerCharacterId:legacySafe.character!.id,
+ rarity:'rare',quality:91,locked:true,acquireSource:'craft',
+ sourceReceiptKey:'pre-v2-forge-claim',createdAtMs:now-10000,
+ enhancement:{rank:3,failures:0,statGemId:'old-stat-gem',gemIds:['old-stat-gem']},
+} as never];
+legacySafe.inventory.stacks.push({itemId:oldGear.id,instanceId:'legacy-gemmed-copy',quantity:1});
+const preserved=JSON.stringify(legacySafe.account.craftedGearInstances);
+const stagedWithOldGear=simulateEquipmentV2InGameState(makeInput(legacySafe,{
+ ...start,requestId:'legacy-safe-0001',
+}));
+assert.equal(JSON.stringify(stagedWithOldGear.state.account.craftedGearInstances),preserved,
+ 'Verified legacy rarities, quality, locks, permanent gems, upgrades and receipts must remain untouched');
+assert.ok(stagedWithOldGear.state.inventory.stacks.some(row=>row.instanceId==='legacy-gemmed-copy'),
+ 'A validated old physical item must remain in its original location');
+assert.equal((stagedWithOldGear.state.account.equipmentV2Hidden as V2HiddenGameMetadata).jobs.length,1,
+ 'Legacy gear alone does not block a hidden new Forge rehearsal once custody is verified');
 
 const blockedLegacy=stateFixture();
 blockedLegacy.account.equipmentCraftingQueue=[{id:'old-forge',recipeId:'legacy',ownerCharacterId:active} as never];

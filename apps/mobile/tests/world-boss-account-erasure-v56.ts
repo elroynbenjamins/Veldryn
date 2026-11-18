@@ -5,6 +5,7 @@
 import {assert} from './test-assert';
 import {
  WORLD_BOSS_V56_ERASURE_LIVE,runWorldBossErasureV56,
+ simulateWorldBossErasureV56ForTests,
  type WorldBossErasureDepsV56,type WorldBossErasureStageV56,
 } from '../../../backend/online/world-boss-account-erasure-v56';
 
@@ -91,13 +92,20 @@ function harness():Harness{
 async function main(){
  assert.equal(WORLD_BOSS_V56_ERASURE_LIVE,false);
  const test=harness();
- await reject(()=>runWorldBossErasureV56({ticket:'bad'},test.deps),
+ // The real runtime entry is hard-disabled independently of the simulated
+ // test executor, even if a legitimate internal ticket is provided.
+ await reject(()=>runWorldBossErasureV56({ticket:TICKET},test.deps),
+  'runtime_disabled');
+ assert.equal(test.state.replayDeletes,0);
+ assert.equal(test.state.rowPurges,0);
+ assert.equal(test.state.authDeletes,0);
+ await reject(()=>simulateWorldBossErasureV56ForTests({ticket:'bad'},test.deps),
   'invalid_private_eraser');
- await reject(()=>runWorldBossErasureV56({ticket:TICKET+'wrong'},test.deps),
+ await reject(()=>simulateWorldBossErasureV56ForTests({ticket:TICKET+'wrong'},test.deps),
   'private_authorization_required');
  assert.equal(test.state.locked,false);
 
- const output=await runWorldBossErasureV56({ticket:TICKET},test.deps);
+ const output=await simulateWorldBossErasureV56ForTests({ticket:TICKET},test.deps);
  assert.deepEqual(output,{status:'completed'});
  assert.equal(test.state.stage,'complete');
  assert.equal(test.state.locked,false);
@@ -109,7 +117,7 @@ async function main(){
  assert.ok(!JSON.stringify(output).includes(OWNER));
  assert.ok(!JSON.stringify(output).includes('private/replays/'));
  // A lost-ACK duplicate returns completion without duplicating any writes.
- assert.deepEqual(await runWorldBossErasureV56({ticket:TICKET},test.deps),
+ assert.deepEqual(await simulateWorldBossErasureV56ForTests({ticket:TICKET},test.deps),
   {status:'completed'});
  assert.equal(test.state.rowPurges,1);
  assert.equal(test.state.authDeletes,1);
@@ -117,7 +125,7 @@ async function main(){
 
  // Object store failure must leave durable fence and original rows untouched.
  const storage=harness();storage.state.permitReplayDeletion=false;
- await reject(()=>runWorldBossErasureV56({ticket:TICKET},storage.deps),
+ await reject(()=>simulateWorldBossErasureV56ForTests({ticket:TICKET},storage.deps),
   'WB56_SYNTHETIC_STORAGE_FAILURE');
  assert.equal(storage.state.stage,'fenced');
  assert.equal(storage.state.fenced,true);
@@ -125,7 +133,7 @@ async function main(){
  assert.equal(storage.state.rowPurges,0);
  assert.equal(storage.state.authDeletes,0);
  storage.state.permitReplayDeletion=true;
- assert.deepEqual(await runWorldBossErasureV56({ticket:TICKET},storage.deps),
+ assert.deepEqual(await simulateWorldBossErasureV56ForTests({ticket:TICKET},storage.deps),
   {status:'completed'});
  assert.equal(storage.state.rowPurges,1);
  assert.equal(storage.state.authDeletes,1);
@@ -133,7 +141,7 @@ async function main(){
  // Admin Auth fails after private rows have been removed: retry must not
  // duplicate replay/DB purge and must keep account actions fenced.
  const auth=harness();auth.state.permitAuthDelete=false;
- await reject(()=>runWorldBossErasureV56({ticket:TICKET},auth.deps),
+ await reject(()=>simulateWorldBossErasureV56ForTests({ticket:TICKET},auth.deps),
   'WB56_SYNTHETIC_AUTH_FAILURE');
  assert.equal(auth.state.stage,'rows_purged');
  assert.equal(auth.state.fenced,true);
@@ -141,7 +149,7 @@ async function main(){
  assert.equal(auth.state.rowPurges,1);
  assert.equal(auth.state.authDeletes,1);
  auth.state.permitAuthDelete=true;
- assert.deepEqual(await runWorldBossErasureV56({ticket:TICKET},auth.deps),
+ assert.deepEqual(await simulateWorldBossErasureV56ForTests({ticket:TICKET},auth.deps),
   {status:'completed'});
  assert.equal(auth.state.readKeyCalls,1);
  assert.equal(auth.state.rowPurges,1);
@@ -162,9 +170,9 @@ async function main(){
    await parallel.deps.deleteReplayObject(key);
   },
  };
- const firstWorker=runWorldBossErasureV56({ticket:TICKET},parallelDeps);
+ const firstWorker=simulateWorldBossErasureV56ForTests({ticket:TICKET},parallelDeps);
  await enteredPromise;
- assert.deepEqual(await runWorldBossErasureV56({ticket:TICKET},parallelDeps),
+ assert.deepEqual(await simulateWorldBossErasureV56ForTests({ticket:TICKET},parallelDeps),
   {status:'in_progress'});
  assert.equal(parallel.state.rowPurges,0);
  assert.equal(parallel.state.authDeletes,0);
@@ -177,7 +185,7 @@ async function main(){
  // A forged or malformed privacy account identity is rejected BEFORE
  // acquiring a deletion lease or reading any personal World Boss records.
  let unauthorizedLeases=0;
- await reject(()=>runWorldBossErasureV56({ticket:TICKET},{
+ await reject(()=>simulateWorldBossErasureV56ForTests({ticket:TICKET},{
   ...test.deps,authorizeTicket:async()=>({accountId:'not-a-uuid'}),
   beginOrResume:async()=>{unauthorizedLeases++;return {kind:'busy'};},
  }), 'private_authorization_required');

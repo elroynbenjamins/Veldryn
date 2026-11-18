@@ -180,12 +180,15 @@ export function SkillsV2PreviewScreen({
     <Text style={[s.stateText,{color:equipped?C.good:C.muted}]}>{equipped?'EQUIPPED':unlocked?'VIEW':'LOCKED'}</Text>
    </Pressable>
    {showDetail||expanded===index?<View style={s.detail}>
+    <Text style={s.helper}>{skill.description}</Text>
     <Text style={s.fieldLabel}>VARIANT</Text>
-    {skill.variants.map((variant,k)=><Chip key={variant} title={variant}
-      hint={level<20&&k>0?'Unlocks at level 20':undefined}
-      disabled={level<20&&k>0||!unlocked}
-      active={variantIndex===k} onPress={()=>chooseVariant(index,k)} C={C}/>)}
-    <Text style={s.helper}>Variant changes attack behavior and cooldowns. Exact effects are server-calculated.</Text>
+    {skill.variants.map((variant,k)=><View key={variant} style={s.variantChoice}>
+      <Chip title={variant} hint={level<20&&k>0?'Unlocks at level 20':undefined}
+        disabled={level<20&&k>0||!unlocked}
+        active={variantIndex===k} onPress={()=>chooseVariant(index,k)} C={C}/>
+      <Text style={s.mutedSmall}>{skill.variantEffects[k]}</Text>
+    </View>)}
+    <Text style={s.helper}>Preview values are design targets. Final effects are validated by the server.</Text>
     <GameButton title={equipped?'Choose a different skill':'Equip to selected slot'}
       disabled={!unlocked||equipped} onPress={()=>assign(index)} tone="secondary"/>
    </View>:null}
@@ -199,7 +202,7 @@ export function SkillsV2PreviewScreen({
     {data.specializations.map((spec,i)=><View key={spec.name} style={s.specCell}>
      <Chip title={spec.name} hint={'Capstone: '+spec.capstone} active={draft.specialization===i}
        onPress={()=>{setDraft(current=>({...current,specialization:i}));setNotice('Specialization changed in preview only.');}} C={C}/>
-     <Text style={s.mutedSmall}>Lv 50: {spec.capstone}</Text>
+     <Text style={s.helper}>{spec.theme}</Text><Text style={s.mutedSmall}>Lv 50: {spec.capstone}</Text>
     </View>)}
    </View>:<Text style={s.helper}>Choose one of two specializations at level 10.</Text>}
   </Panel>
@@ -254,6 +257,7 @@ export function SkillsV2PreviewScreen({
     const unlocked=level>=UNLOCK_NODE[index]&&prereq;
     return <View key={key} style={s.talentRow}>
      <View style={s.flex}><Text style={s.skillName}>{node}</Text>
+      <Text style={s.mutedSmall}>{branch.nodeDescriptions[index]}</Text>
       <Text style={s.mutedSmall}>Rank {rank}/3 · Lv {UNLOCK_NODE[index]}{prereq?'':' · Earlier node required'}</Text></View>
      <Chip title={draft.signatureIds.includes(key)?'Slotted':'Slot'}
        hint={level<30?'Unlocks at Lv 30':rank===0?'Invest first':undefined}
@@ -336,6 +340,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  iconText:{...typography.bodyStrong,color:C.accent},
  stateText:{...typography.caption,fontWeight:'800'},
  detail:{gap:6,borderTopWidth:1,borderColor:C.line,paddingTop:8},
+ variantChoice:{gap:4,paddingBottom:7,borderBottomWidth:1,borderColor:C.line},
  fieldLabel:{...typography.caption,fontWeight:'700',color:C.accent},
  row:{flexDirection:'row',gap:8,flexWrap:'wrap',alignItems:'center'},
  slotChip:{flex:1,minWidth:100},

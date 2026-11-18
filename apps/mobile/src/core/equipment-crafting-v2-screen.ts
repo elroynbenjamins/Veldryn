@@ -16,7 +16,8 @@ export interface EquipmentV2RecipePreviewInput {
 /** A presentation model; NO side effects, purchases, claim actions or live item rewrites. */
 export function equipmentV2HiddenRecipeScreen(input:EquipmentV2RecipePreviewInput){
  const draft=equipmentV2DraftAssembly(input.tier,input.slot,input.setPiece);
- const source=equipmentV2SourcePlan(input.ingredients,input.strategy,Boolean(input.marketReleased));
+ const actualMarketEnabled=Boolean(input.marketReleased)&&EQUIPMENT_CRAFTING_V2_RELEASED;
+ const source=equipmentV2SourcePlan(input.ingredients,input.strategy,actualMarketEnabled);
  const cost=equipmentV2CostSummary({assemblyGold:draft.gold,processingGold:input.processingGold??0,source});
  const requiredCharacter={1:2,2:12,3:26,4:40}[input.tier];
  const requiredProfession={1:1,2:8,3:20,4:34}[input.tier];
@@ -37,7 +38,7 @@ export function equipmentV2HiddenRecipeScreen(input:EquipmentV2RecipePreviewInpu
   baseStats:equipmentV2PreviewBaseStats(input.tier,input.slot,input.profile,input.quality??50,input.rarityMultiplier??1),
   draftXp:draft.xp,source,cost,
   requirements:{characterLevel:requiredCharacter,professionLevel:requiredProfession,locked},
-  action,canCraftNow,marketControlsEnabled:Boolean(input.marketReleased)&&EQUIPMENT_CRAFTING_V2_RELEASED,
+  action,canCraftNow,marketControlsEnabled:actualMarketEnabled,
   sections:['result','materials','potential_rolls','set','queue'] as const,
   rarityOutcomes:EQUIPMENT_V2_RARITIES.map(row=>({...row,affixes:equipmentV2AffixCount(input.tier,row.rarity)})),
  };

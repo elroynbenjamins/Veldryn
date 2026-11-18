@@ -15,6 +15,8 @@ import {serverBuildCatalogV2} from './skill-catalog';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
 import {compileEnemiesForCombatV2} from './enemy-bridge';
+import {verifyPersistedEnemyKitsV2,type PersistedEnemyKitV2} from './enemy-kit-composer';
+import {issueEnemyV2EngineAuthority} from './enemy-engine-authority';
 import {resolveVerifiedEquipmentBaseV2,
   type StoredEquipmentInstanceV2,type EquipmentBaseDefinitionV2,
   type ApprovedEquipmentBasePolicyV2,type BaseEquipmentSourceV2} from './equipment-base-stats';
@@ -60,6 +62,12 @@ export interface EquipmentEncounterEvidenceV2 {
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
  readonly composition?:PowerCompositionDiagnosticV2;
+}
+/** Trusted server-only storage dependency. Callbacks and snapshots must never
+ * be constructed from incoming client JSON or forwarded by a public route. */
+export interface TrustedPersistedEnemyKitV2 {
+ readonly snapshot:PersistedEnemyKitV2;
+ readonly verifyPersisted:(snapshot:PersistedEnemyKitV2,combatInputDigest:string)=>boolean;
 }
 export interface UnifiedEquipmentEncounterResultV2 {
  readonly combat:CombatResult;
@@ -139,9 +147,17 @@ export function simulateUnifiedEquipmentCombatV2(
  builds:readonly VerifiedSkillBuildV2[],
  runtime:readonly TrustedEquipmentRuntimeV2[],
  serverEnabled=false,
+ authoredEnemyKit?:TrustedPersistedEnemyKitV2,
 ):UnifiedEquipmentEncounterResultV2{
- if(!serverEnabled)
+ if(!serverEnabled){
+  if(authoredEnemyKit)throw Error('combat_v2_enemy_kit_requires_complete_v2');
   return {combat:simulateCombat(input),enemyMechanicLabels:[],equipmentEvidence:[]};
+ }
+ if(authoredEnemyKit&&(
+   input.players.length!==1||runtime.length!==1||builds.length!==1||
+   input.enemyDamageProfile!==undefined||
+   typeof authoredEnemyKit.verifyPersisted!=='function'))
+  throw Error('combat_v2_enemy_kit_solo_trust_required');
  // Persistent dungeon/party HP and cooldown snapshots from old combat use
  // a different stat budget. Never reuse them with new 2.0 max HP without a
  // verified, versioned state-conversion adapter.
@@ -167,6 +183,28 @@ export function simulateUnifiedEquipmentCombatV2(
   evidence.push(compiled.evidence);
   return compiled.actor;
  });
+ if(authoredEnemyKit){
+  const snapshot=authoredEnemyKit.snapshot;
+  const proof=verifyPersistedEnemyKitsV2(input.enemies,snapshot);
+  if(snapshot.seed!==input.seed)
+   throw Error('combat_v2_enemy_kit_seed_mismatch');
+  const finalInput:CombatInput={...input,players,enemies:[...proof.enemies]};
+  const authority=issueEnemyV2EngineAuthority({
+    source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,mode:'solo',
+    encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
+    playerIds:players.map(p=>p.id),enemyIds:snapshot.enemyIds,bossIds:snapshot.bossIds,
+  },finalInput,(_scope,combatDigest)=>
+    authoredEnemyKit.verifyPersisted(snapshot,combatDigest));
+  return {
+    combat:simulateCombat(finalInput,authority),
+    enemyMechanicLabels:proof.preview.flatMap(p=>[
+      ...p.abilityNames.map(name=>p.enemyId+': '+name),
+      ...p.phaseNames.map(name=>p.enemyId+': '+name),
+      ...p.traitIds.map(id=>p.enemyId+': '+id),
+    ]),
+    equipmentEvidence:evidence,
+  };
+ }
  const enemies=compileEnemiesForCombatV2(input.enemies,true);
  return {
   combat:simulateCombat({...input,players,enemies:[...enemies.enemies]}),

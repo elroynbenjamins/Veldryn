@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {v2ServerRecipeAndPiece,V2_SERVER_PIECES,V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
+import {V2_SERVER_MANIFEST_VERSION} from '../equipment-crafting-v2-manifest';
+import {v2ServerWeightedBaseBudget,V2_SERVER_SLOT_BUDGET} from '../equipment-crafting-v2-instances';
 import {assertEquipmentCraftingV2Released} from '../equipment-crafting-v2-gate';
 import {resolveEquipmentV2DraftCommand,runEquipmentV2Command,V2DraftCraftError,
  type V2DraftContext,type V2DraftSnapshot} from '../equipment-crafting-v2-transaction';
@@ -57,6 +59,8 @@ assert.equal(start.next.characters['character-alt'].gold,7777,'An unrelated char
 assert.equal(start.next.receipts.length,1);
 assert.equal(start.next.equipment.length,0,'No rarity/quality item may exist at queue start');
 assert.equal(start.next.jobs[0].goldReserved,recipe.gold);
+assert.equal(start.next.jobs[0].craftContract.manifestVersion,V2_SERVER_MANIFEST_VERSION);
+assert.equal(start.next.jobs[0].craftContract.xpAwarded,recipe.xp);
 assert.equal(start.next.jobs[0].materialsReserved.length,recipe.inputs.length);
 for(const ingredient of recipe.inputs){
  assert.equal((start.next.characters['character-test'].inventory[ingredient.itemId]??0)+(start.next.bank[ingredient.itemId]??0),0,
@@ -89,6 +93,15 @@ const otherCharacterContext={...makeContext(job.finishesAtMs),characterId:'chara
 const claim=resolveEquipmentV2DraftCommand(switched,claimRequest,otherCharacterContext);
 assert.equal(claim.response.kind,'claimed');
 assert.equal(claim.next.equipment.length,1);
+assert.deepEqual(claim.next.equipment[0].exactItem,claim.response.kind==='claimed'?claim.response.exactItem:null,
+ 'Claim receipt and persisted gear must contain the identical exact stat/affix snapshot');
+assert.equal(claim.next.equipment[0].exactItem.quality,claim.next.equipment[0].outcome.quality);
+assert.equal(claim.next.equipment[0].exactItem.rarity,claim.next.equipment[0].outcome.rarity);
+assert.equal(claim.next.equipment[0].exactItem.gemSlots.length,0,'New gear starts unsocketed');
+assert.equal(claim.next.equipment[0].exactItem.enhancementRank,0,'New gear starts unenhanced');
+assert.ok(Math.abs(v2ServerWeightedBaseBudget(claim.next.equipment[0].exactItem.baseStats)
+ -V2_SERVER_SLOT_BUDGET.helmet*1.08*1*.75*1.85)<.005,
+ 'Exact stat budget must reflect tier, slot, Q0 and Mythic rarity');
 assert.equal(claim.next.equipment[0].ownerCharacterId,'character-test',
  'Claiming on a second character must not transfer the first character\'s item');
 assert.equal(claim.next.skillAwards[0].characterId,'character-test',
@@ -115,10 +128,23 @@ const atCap=structuredClone(start.next);
 atCap.equipment=Array.from({length:25},(_,i)=>({
  id:'old-copy-'+i,accountId:atCap.accountId,ownerCharacterId:'character-test',
  createdAtMs:1,jobId:'old-job-'+i,outcome:claim.next.equipment[0].outcome,
+ exactItem:claim.next.equipment[0].exactItem,
 }));
 assert.throws(()=>resolveEquipmentV2DraftCommand(atCap,claimRequest,makeContext(job.finishesAtMs)),
  /copy_limit_reached/,'Full exact-copy equipment storage cannot mint or auto-sell a 26th piece');
 assert.equal(atCap.jobs[0].status,'queued','Blocked claim must preserve finished Forge job');
+const drift=structuredClone(start.next);
+drift.jobs[0].craftContract.xpAwarded++;
+assert.throws(()=>resolveEquipmentV2DraftCommand(drift,claimRequest,makeContext(job.finishesAtMs)),
+ /v2_queued_contract_version_mismatch/,
+ 'Craft receipt cannot be silently repriced or award a different XP amount after start');
+assert.equal(drift.jobs[0].status,'queued','A drifted contract cannot be claimed or discarded');
+const driftPiece=structuredClone(start.next);
+driftPiece.jobs[0].craftContract.piece.profile='attack';
+assert.throws(()=>resolveEquipmentV2DraftCommand(driftPiece,claimRequest,makeContext(job.finishesAtMs)),
+ /v2_queued_contract_version_mismatch/,
+ 'Changing a queued item profile must not alter the final outcome');
+
 const noGold=create();noGold.characters['character-test'].gold=recipe.gold-1;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noGold,startRequest,makeContext(1_000_000)),/insufficient_gold/);
 const noMaterial=create();noMaterial.bank[recipe.inputs[0].itemId]=0;
@@ -138,6 +164,7 @@ readyState.jobs=Array.from({length:8},(_,i)=>({
  id:'ready-'+i,accountId:readyState.accountId,ownerCharacterId:readyState.activeCharacterId,
  recipeId:recipe.id,pieceId:recipe.pieceId,startedAtMs:1,finishesAtMs:2,slotIndex:(i%3) as 0|1|2,
  goldReserved:recipe.gold,materialsReserved:[],status:'queued' as const,
+ craftContract:structuredClone(start.next.jobs[0].craftContract),
 }));
 const readyStart=resolveEquipmentV2DraftCommand(readyState,startRequest,makeContext(1_000_000));
 assert.equal(readyStart.next.jobs.length,9,'Finished unclaimed jobs do not exhaust the in-flight queue');

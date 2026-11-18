@@ -6,6 +6,8 @@ on:
       - feature/combat-v2-foundation-contract-20261118
     paths:
       - 'backend/src/server/combat/**'
+      - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
+      - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
@@ -14,6 +16,8 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/combat/**'
+      - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
+      - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - '.github/workflows/combat-v2-skills-validation.yml'
   workflow_dispatch:
 
@@ -48,6 +52,12 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/reactive-passive-runtime.js
       - name: Validate versioned build save and switch planner
         run: node backend/dist/server/combat/v2/__tests__/build-mutations.js
+      - name: Validate authenticated build storage adapter
+        run: node backend/dist/server/combat/v2/__tests__/build-server-service.js
+      - name: Validate legacy gear and enemy integration
+        run: node backend/dist/server/combat/v2/__tests__/cross-system-bridge.js
+      - name: Validate hidden database migration permissions
+        run: node backend/tests/combat-v2-build-sql-contract.cjs
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
 

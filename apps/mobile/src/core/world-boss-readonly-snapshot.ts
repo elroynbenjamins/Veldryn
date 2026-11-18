@@ -14,6 +14,9 @@ export interface WorldBossScreenSnapshotV46 {
  readonly status:'draft'|'active'|'closed';
  readonly phase:WorldBossPhaseV46;
  readonly readAtUtcMs:number;
+ /** Server-validated UTC event calendar; never inferred from a mock cycle. */
+ readonly startsAtUtcMs:number;
+ readonly endsAtUtcMs:number;
  readonly maxHp:number;
  readonly remainingHp:number;
  readonly attemptsUsed:number;
@@ -118,7 +121,8 @@ export function decodeWorldBossReadOnlyStatusV46(
   eventId:raw.eventId as string,
   bossId:raw.bossId as WorldBossRegionV46,
   status:raw.status as WorldBossScreenSnapshotV46['status'],
-  phase,readAtUtcMs:t,maxHp:raw.maxHp as number,
+  phase,readAtUtcMs:t,startsAtUtcMs:start,endsAtUtcMs:raw.endsAtUtcMs as number,
+  maxHp:raw.maxHp as number,
   remainingHp:raw.remainingHp as number,
   attemptsUsed:raw.attemptsUsed as number,
   attemptsRemaining:3-(raw.attemptsUsed as number),

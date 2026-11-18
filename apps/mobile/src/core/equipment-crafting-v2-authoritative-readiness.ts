@@ -2,6 +2,7 @@ import type {GameState,ItemStack,SkillState,CharacterState} from './types';
 import {ITEMS} from '../content/items';
 import {equipmentV2LegacyPreservationAudit} from './equipment-crafting-v2-legacy-audit';
 import {equipmentCraftSlotBreakdown} from './equipment-crafting-queue';
+import {auditCraftedGearOwnership} from './crafted-gear-ownership';
 import type {V2DraftSnapshot,V2DraftCharacter} from '../../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
 
 /** READ ONLY: design for adapting the ACTUAL GameState persisted by online
@@ -92,11 +93,13 @@ export function equipmentV2AuthoritativeReadiness(input:V2AuthoritativeReadiness
  const legacyCraftJobs=state.account.equipmentCraftingQueue?.length??0;
  if(legacyCraftJobs)blockers.add('legacy_forge_jobs_present');
  const legacy=equipmentV2LegacyPreservationAudit(state);
+ const exactLegacy=auditCraftedGearOwnership(state);
  if(legacy.reservedNamespaceCopies)blockers.add('reserved_v2_item_ids_present');
   // Existing V33 equipment remains fully owned and untouched. Only broken
   // custody, duplicate markers, reserved V2 IDs or overlapping Forge jobs
   // prevent an isolated hidden V2 rehearsal.
- if(legacy.unresolvedEquippedReferences||legacy.missingRecordForInstanceStacks||legacy.duplicatePhysicalLocations)
+ if(legacy.unresolvedEquippedReferences||legacy.missingRecordForInstanceStacks||legacy.duplicatePhysicalLocations
+   ||!exactLegacy.consistent)
   blockers.add('legacy_custody_conflict');
  const blocked=blockers.size>0;
  /** A projection is returned only for fully validated read-only diagnostics.

@@ -130,11 +130,7 @@ export function triggerReactivePassiveV2(
    break;
   }
   case 'hit':{
-   if(rank('Relentless Arrows')&&every(actor,'Relentless Arrows',5)){
-     // Counted after a successful hit; the bonus applies to the NEXT hit,
-     // not retroactively to the attack already calculated.
-     actor.combatV2.procCounters['passive_ready:relentless_arrows']=1;
-   }
+   if(rank('Relentless Arrows'))every(actor,'Relentless Arrows',5);
    if(rank('Vengeful Rhythm')&&ctx.abilityName==='Iron Riposte'&&every(actor,'Vengeful Rhythm',3))
      send('Vengeful Rhythm',buff('Vengeful Rhythm','haste',cap(.01*rank('Vengeful Rhythm')),5000));
    if(rank('Critical Tempo')&&ctx.critical)
@@ -183,10 +179,9 @@ export function outgoingReactiveMultiplierV2(
  const r=(node:string)=>passiveRankV2(actor,node);
  if(r('Endless Dance')&&actor.combatV2.stacks>=4)result*=1+.01*r('Endless Dance');
  if(r('Predator')&&(target.threat[actor.definition.id]??0)>0)result*=1+.015*r('Predator');
- if(r('Relentless Arrows')&&actor.combatV2.procCounters['passive_ready:relentless_arrows']){
-   result*=1+.03*r('Relentless Arrows');
-   actor.combatV2.procCounters['passive_ready:relentless_arrows']=0;
- }
+ if(r('Relentless Arrows')&&
+   ((actor.combatV2.procCounters['passive_count:relentless_arrows']??0)+1)%5===0)
+     result*=1+.03*r('Relentless Arrows');
  if(r('Exit Wound')&&actor.combatV2.procCounters['passive_ready:exit_wound']){
    result*=1+.02*r('Exit Wound');
    actor.combatV2.procCounters['passive_ready:exit_wound']=0;
@@ -232,7 +227,7 @@ export function reactiveHealingMultiplierV2(actor:CombatantState,target:Combatan
  */
 export function defensiveReactiveTriggerV2(target:CombatantState,now:number):ReactiveActionV2[]{
  const rank=passiveRankV2(target,'Last Bastion');
- if(!rank||pct(target)>=.35||!ready(target,'Last Bastion',now,30000))return [];
+ if(!rank||target.hp<=0||pct(target)>=.35||!ready(target,'Last Bastion',now,30000))return [];
  use(target,'Last Bastion',now);
  return [buff('Last Bastion','damage_taken',-cap(.02*rank),5000)];
 }

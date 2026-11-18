@@ -1,7 +1,7 @@
 # Hidden multiplayer release fences — consolidation QA (18 Nov 2026)
 
 ## Why this exists
-World Bosses, Party Events, Guild PvE, Rankings and the Player Market now have hidden foundations or developer previews on main. **Merged code is not the same as an approved release.** This tiny, package-free CI job checks the launch boundary whenever relevant routes, flags, migrations, or the preview host are edited. It runs without waiting for the expensive mobile/SQL suites.
+World Bosses, Party Events, Guild PvE, Rankings and the Player Market now have hidden foundations or developer previews on main. **Merged code is not the same as an approved release.** This tiny, package-free CI job checks the launch boundary whenever relevant routes, flags, migrations, or the preview host are edited. When a runner is available, it does not require the expensive mobile/SQL dependencies.
 
 ## Protected launch boundaries
 - Rankings and Player Market remain explicitly off. Market authenticated service readiness remains off.

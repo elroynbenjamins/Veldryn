@@ -18,7 +18,7 @@ begin
   (c2,owner_id,'Shade Two','KNIFE_DANCER'),
   (c3,owner_id,'Healer Three','DAWNKEEPER');
  insert into public.player_profiles(account_id,display_name,active_character_id)
- values(owner_id,'Warden One',c1) on conflict(account_id) do nothing;
+ values(owner_id,'Warden One',c1) on conflict(account_id) do update set active_character_id=excluded.active_character_id,display_name=excluded.display_name;
  insert into public.player_profiles(account_id,display_name)
  values(viewer_id,'Viewer') on conflict(account_id) do nothing;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);

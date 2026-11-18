@@ -1,4 +1,5 @@
 import type {GameState,ItemStack,CharacterState} from './types';
+import {ITEMS} from '../content/items';
 
 /** Hidden, read-only pre-migration audit.
  * Existing gear, gems, enhancements, roll versions and receipt IDs are NOT
@@ -16,6 +17,7 @@ export interface EquipmentV2LegacyAudit{
  issues:readonly string[];
 }
 const isV2=(itemId:string)=>itemId.startsWith('EQ2_');
+const legacyGearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id));
 export function equipmentV2LegacyPreservationAudit(state:GameState):EquipmentV2LegacyAudit{
  const records=state.account.craftedGearInstances??[];
  const idSet=new Set(records.map(row=>row.id));
@@ -32,7 +34,7 @@ export function equipmentV2LegacyPreservationAudit(state:GameState):EquipmentV2L
  const countByInstance=new Map<string,number>();
  let missingRecordForInstanceStacks=0,legacyStacksWithoutInstanceIds=0;
  for(const row of physicalWithBank){
-  if(isV2(row.itemId))continue;
+  if(isV2(row.itemId)||!legacyGearIds.has(row.itemId))continue;
   if(row.instanceId){
    countByInstance.set(row.instanceId,(countByInstance.get(row.instanceId)??0)+1);
    if(!idSet.has(row.instanceId))missingRecordForInstanceStacks++;
@@ -48,7 +50,8 @@ export function equipmentV2LegacyPreservationAudit(state:GameState):EquipmentV2L
  }
  const duplicatePhysicalLocations=[...countByInstance.values()].filter(q=>q>1).length;
  const legacyCopies=records.filter(row=>!isV2(row.itemId));
- const reservedNamespaceCopies=records.filter(row=>isV2(row.itemId)).length;
+ const reservedNamespaceCopies=records.filter(row=>isV2(row.itemId)).length
+  +physicalWithBank.filter(row=>isV2(row.itemId)).reduce((n,row)=>n+row.quantity,0);
  const issues:string[]=[];
  if(reservedNamespaceCopies)issues.push('Reserved EQ2 item IDs exist before the coordinated release');
  if(unresolvedEquippedReferences)issues.push('Some equipped instance IDs have no account record');

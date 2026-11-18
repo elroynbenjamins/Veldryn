@@ -20,6 +20,7 @@ import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {formatProfileRecordValue,profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
 import {PublicProfileScene} from './PublicProfileScene';
 import {ProfileCharacterSelector} from './ProfileCharacterSelector';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 import {friendRelationshipActionPresentation} from '../core/social-identity';

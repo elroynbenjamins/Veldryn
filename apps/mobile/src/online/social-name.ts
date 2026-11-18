@@ -20,6 +20,14 @@ export async function setAccountSocialName(name:string):Promise<AccountSocialNam
  if(error)throw error;
  return data as AccountSocialName;
 }
+/** Mirrors the backend's 2–20 letter-only identity contract for immediate UI feedback.
+ * The server remains authoritative for collision and moderation checks. */
+const VALID_SOCIAL_NAME=/^[A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+)*$/u;
+export function isValidSocialName(input:string){
+ const name=input.trim();
+ return name.length>=2&&name.length<=20&&VALID_SOCIAL_NAME.test(name);
+}
+
 /** Keep server error codes actionable without showing database internals. */
 export function socialNameError(error:unknown){
  const message=error instanceof Error?error.message:String(error??'');

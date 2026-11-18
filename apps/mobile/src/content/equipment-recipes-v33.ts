@@ -184,6 +184,8 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const standardCraftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
   const boostedCraftXp=tier==='T2'?Math.round(standardCraftXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :['T3','T4'].includes(tier)?Math.round(standardCraftXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardCraftXp;
+  const craftXp=boostedCraftXp;
+  const infusion={...infusionByTier[tier]};
   const baseSeconds=clamp(Math.round(range.base*multiplier),range.min,range.max);
   return {
     id:`CRAFT_V33_${String(piece['Piece ID'])}`,
@@ -192,8 +194,8 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     level,
     xp:boostedCraftXp,
     gold:roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1)),
-    seconds:baseSeconds,
-    inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier,skillId)),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusionByTier[tier]]),
+    seconds:clamp(Math.round(baseSeconds),range.min,range.max),
+    inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier,skillId)),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusion]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

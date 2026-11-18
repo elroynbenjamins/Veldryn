@@ -27,8 +27,8 @@ ok(roundEquipmentCraftingGoldCost(1286)===1300,'1286 Gold must round up to 1300'
 ok(roundEquipmentCraftingGoldCost(1249)===1200,'1249 Gold must round down to 1200');
 ok(roundEquipmentCraftingGoldCost(1250)===1300,'Halfway Gold amounts must round up');
 ok(roundEquipmentCraftingGoldCost(49)===100,'Positive gear crafts must not become free');
-// Preserve T5's broader tier baseline (6000 Gold, 1200 XP) independently of the retired
-// slot-specific affix surcharges; every other tier keeps its existing baseline.
+// T5 was deliberately repriced (3500 → 6000 Gold, 1100 → 1200 XP) when the T5 affix
+// slots landed; every other tier stays pinned to its original baseline.
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
@@ -90,7 +90,8 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
   const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
-  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
+  // All T5 slots can now roll two attributes: no three-slot XP surcharge remains.
+  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without obsolete fixed T5 affix premiums');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
@@ -127,8 +128,10 @@ for(const skillId of ['smithing','tailoring'] as const){
   ok(fullSetGold('T5',skillId)<fullSetGold('T6',skillId),skillId+' full-set Gold must increase from T5 to T6');
 }
 for(const recipe of V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T5')){
+  const slot=itemDef(recipe.output.itemId).slot!;
   const fixative=recipe.inputs.find(input=>input.itemId==='SUNFUSED_FIXATIVE');
-  ok(fixative?.quantity===1,recipe.id+' must require only the ordinary T5 Sunfused Fixative, without a slot surcharge');
+  ok(fixative,'T5 '+recipe.id+' must require Sunfused Fixative');
+  ok(fixative!.quantity===1,recipe.id+' must require one Sunfused Fixative with no retired fixed-affix surcharge');
 }
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');

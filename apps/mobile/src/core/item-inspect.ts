@@ -19,6 +19,7 @@ import {craftedGearDisplayQuality,craftedGearInstances,craftedInstancesForItem,e
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
+import {equipmentBonusLine} from './equipment-bonus-rolls';
 import {weaponBonusLine} from './weapon-bonus-rolls';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
@@ -174,6 +175,9 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
+    if(selectedCopy?.equipmentBonuses?.length){
+      for(const bonus of selectedCopy.equipmentBonuses)effectLines.push(`Equipment roll · ${equipmentBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.equipmentBonusRollVersion)}`);
+    }
     if(selectedCopy?.weaponBonuses?.length){
       for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);
     }

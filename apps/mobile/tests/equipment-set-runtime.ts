@@ -1,8 +1,8 @@
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
+import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equipmentSetBonusCoverage,isLiveSixPieceBonus,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
-import {itemInspectModel} from '../src/core/item-inspect';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -70,22 +70,28 @@ close(stats10.armor??0,.07,'Effective stats must surface live Armor');
 close(stats10.tenacity??0,.02,'Effective stats must surface live Tenacity');
 
 const t5Set=EQUIPMENT_SETS.find(row=>row.id==='T5_001');if(!t5Set)throw new Error('Missing T5_001 set');
-let t5State=createCharacter(newGame(0),'IRONWARDEN','No Fixed Affixes','male');
+let t5State=createCharacter(newGame(0),'IRONWARDEN','Affix Test','male');
 t5State=withSetPieces(t5State,'T5_001',10);
-const t5Runtime=activeEquipmentSetRuntime(t5State);
 const t5Build=activeEquipmentBuildStats(t5State);
-ok(t5Runtime.activeSets[0]?.sixPieceStatus==='trigger-hook-pending','T5 conditional 6pc remains pending');
-close(t5Build.haste,t5Runtime.stats.haste,'T5 Gloves must not add fixed Haste beyond set bonuses');
-close(t5Build.critRate,t5Runtime.stats.critRate,'T5 Amulet must not add fixed Crit Rate beyond set bonuses');
-close(t5Build.evasion,t5Runtime.stats.evasion,'T5 Boots must not add fixed Evasion beyond set bonuses');
-const t5Combat=equipmentSetCombatModifiers(t5State);
-close(t5Combat.speedMultiplier,1+t5Runtime.stats.haste,'T5 combat speed must derive only from legitimate build bonuses');
-close(t5Combat.incomingDamageMultiplier,Math.max(.5,(1-t5Runtime.stats.ward)*(1-t5Runtime.stats.evasion)),'T5 mitigation must not include a fixed Boots bonus');
-for(const slot of ['gloves','amulet','boots'] as const){
-  const itemId=t5Set.itemIds.find(id=>itemDef(id).slot===slot);
-  if(!itemId)throw new Error('Missing T5 '+slot);
-  ok(!itemInspectModel(t5State,itemId).effectLines.some(line=>line.includes('T5 forged affix')),
-    'T5 '+slot+' inspection must not advertise a retired fixed bonus');
-}
+const fixedSetStats=activeEquipmentSetRuntime(t5State).stats;
+close(t5Build.haste,fixedSetStats.haste,'Legacy T5 equipment no longer gets an invented Gloves Haste affix');
+close(t5Build.critRate,fixedSetStats.critRate,'Legacy T5 equipment no longer gets an invented Amulet Crit Rate affix');
+close(t5Build.evasion,fixedSetStats.evasion,'Legacy T5 equipment no longer gets an invented Boots Evasion affix');
+ok(activeEquipmentSetRuntime(t5State).activeSets[0]?.sixPieceStatus==='trigger-hook-pending','T5 conditional 6pc remains pending');
 
-console.log('PASS: set bonuses reach combat, T5 fixed slot affixes are absent, and T5+ 6pc stays pending');
+const glovesId=t5Set.itemIds.find(itemId=>itemDef(itemId).slot==='gloves');
+ok(glovesId,'Missing T5 gloves');
+const copy=draftCraftedGearInstance({itemId:glovesId!,ownerCharacterId:t5State.character!.id,jobId:'t5-set-random-gloves',createdAtMs:1,roll:.45});
+ok(copy.equipmentBonuses?.length===2,'T5 gloves now get two role-based rolls, not fixed Haste');
+const rolledState:GameState={...t5State,account:{...t5State.account,craftedGearInstances:[copy]},
+  character:{...t5State.character!,equipmentInstanceIds:{gloves:copy.id}}};
+const rolledStats=activeEquipmentBuildStats(rolledState);
+for(const bonus of copy.equipmentBonuses!)
+  close(rolledStats[bonus.stat]-t5Build[bonus.stat],bonus.basisPoints/10_000,
+    'Equipped exact T5 receipt must contribute only its genuine randomized stats');
+const t5Combat=equipmentSetCombatModifiers(rolledState);
+close(t5Combat.speedMultiplier,1+rolledStats.haste,'Random Haste must reach combat speed when rolled');
+close(t5Combat.stats.critRate,rolledStats.critRate,'Random Crit Rate must reach combat crit when rolled');
+close(t5Combat.stats.evasion,rolledStats.evasion,'Random Evasion must reach combat dodge when rolled');
+
+console.log('PASS: live set bonuses remain, retired T5 fixed affixes are absent and genuine copy rolls reach combat');

@@ -20,6 +20,7 @@ import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './ba
 import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 import {t5EquipmentAffixForItem} from './t5-equipment-affixes';
+import {weaponBonusLine} from './weapon-bonus-rolls';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
@@ -178,6 +179,9 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     if(t5Affix){
       const label=t5Affix.stat==='critRate'?'Crit Rate':t5Affix.stat==='haste'?'Haste':'Evasion';
       effectLines.push(`T5 forged affix · +${Math.round(t5Affix.percent*100)}% ${label} · ${t5Affix.rarity} Q${t5Affix.quality}`);
+    }
+    if(selectedCopy?.weaponBonuses?.length){
+      for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);
     }
     if(item.passive)effectLines.push(item.passive);
   }else if(item.type==='food'){

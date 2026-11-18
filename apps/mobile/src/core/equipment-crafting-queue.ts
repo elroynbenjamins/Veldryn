@@ -369,7 +369,9 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
         existing:entries,incoming:draft,...delivery,
         mode,committedReceiptKeys:[],
       });
-      if(proposed.status==='blocked')throw new Error('Equipment requires manual review: '+proposed.retention.reason);
+      if(proposed.status==='blocked')throw new Error(proposed.retention.reason==='weapon_bonus_choice'
+        ?'Weapon bonus rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe.'
+        :'Equipment requires manual review: '+proposed.retention.reason);
       if(proposed.receipt.action==='sell_incoming'){
         const credit=proposed.receipt.credit!;
         next=applyForgeSaleCredit(next,credit.amount,credit.destination,credit.characterId);
@@ -428,7 +430,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
       const reason=error instanceof Error?error.message:'';
       // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
       // or after an obsolete recipe is repaired; never silently delete their rewards.
-      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Equipment Pouch, Inventory and Bank are full'||reason.startsWith('Equipment Pouch and Bank are full')||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')){
+      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Equipment Pouch, Inventory and Bank are full'||reason.startsWith('Equipment Pouch and Bank are full')||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')||reason.startsWith('Weapon bonus rolls need your choice')){
         blocked.push({jobId:job.id,reason});
         continue;
       }

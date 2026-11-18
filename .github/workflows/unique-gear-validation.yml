@@ -35,6 +35,8 @@ jobs:
         run: node node_modules/typescript/lib/tsc.js -p tsconfig.unique-gear.json --outDir .unique-gear-build
       - name: Run exact-copy crafting and retention regressions
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
+      - name: Verify dual weapon rolls and exact-copy combat bonuses
+        run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/weapon-bonus-rolls.js
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity

@@ -72,6 +72,9 @@ export function EquipmentCraftingV2ResultPreview({receipt,equipped}:{
      {' '}this rarity {format(affix.minimum)}–{format(affix.maximum)}%</Text>
    </View>)}
    {!!view.setName&&<Text style={styles.note}>Set: {view.setName}. Equipping may change set bonuses.</Text>}
+   {view.lostAffixes.map(old=><Text key={old.stat} style={[styles.note,{color:colors.warning}]}>
+    Lost compared with equipped: +{format(old.percent)}% {names[old.stat]??old.stat}
+   </Text>)}
    <Text style={styles.note}>Roll grade compares this attribute against its full tier range, not the item's Quality score.</Text>
   </View>
   {view.hasComparison?<View style={styles.section}>

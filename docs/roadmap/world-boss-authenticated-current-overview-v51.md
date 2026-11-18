@@ -41,3 +41,16 @@ The callback is **not** an authorization mechanism. The future HTTP/Edge endpoin
 - Latest-head CI and native Android QA must pass; no staging write, migration or production activation is approved by V51.
 
 **No deployment or user-facing World Boss availability is claimed.**
+
+## V52 unmounted HTTP read handler — GET only
+
+`backend/online/world-boss-current-read-route-v52.ts` wraps the V51 service in a small **unmounted** transport-neutral GET handler. This is **not** an approved Edge Function, public API or registered HTTP route.
+
+- Requires exactly a bearer access token, to be verified by the injected Auth provider against the Auth service. Never authorize using decoded user metadata, unverified session objects or an API key.
+- Rejects non-GET methods and **all query strings** (including client-selected event, boss, account or cycle parameters).
+- On a verified event returns the existing V41 read-only status JSON, excluding computed attack/donation permissions; when no event row exists it returns **204 No Content**.
+- Uses `Cache-Control: private, no-store, max-age=0`, `Vary: Authorization` and `nosniff` to reduce private status caching risks.
+- Returns minimal public error codes only: 400 unsupported selector, 401 authentication required, 405 method not allowed, 503 status temporarily unavailable. Never reflects SQL errors, private account IDs or tokens.
+- The V51 focused test covers 200/204/400/401/405/503, parameterized event selection and non-disclosure. `WORLD_BOSS_V52_READ_ROUTE_LIVE=false` remains unchanged.
+
+**Next runtime steps remain gated:** implement the actual Supabase/Auth-hosted GET adapter with fresh verified `auth.getUser(jwt)`, make the private SQL reader available **only after** the staging schema/permissions are reviewed and deployed, inject the validated mobile callback, test cancellation/offline/reconnect and retries, then seek explicit release approval. The current runtime has no such route.

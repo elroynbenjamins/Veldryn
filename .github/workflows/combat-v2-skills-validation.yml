@@ -1,0 +1,38 @@
+name: Combat 2.0 skills validation
+
+on:
+  push:
+    branches:
+      - feature/combat-v2-foundation-contract-20261118
+    paths:
+      - 'backend/src/server/combat/**'
+      - '.github/workflows/combat-v2-skills-validation.yml'
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/**'
+      - '.github/workflows/combat-v2-skills-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Server skills, variants and legacy combat parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile authoritative backend
+        run: pnpm --dir backend build
+      - name: Validate Combat 2.0 build contract
+        run: node backend/dist/server/combat/v2/__tests__/build-contract.js
+      - name: Validate Combat 2.0 set catalogue
+        run: node backend/dist/server/combat/v2/__tests__/set-catalog.js
+      - name: Validate Combat 2.0 executable skills
+        run: node backend/dist/server/combat/v2/__tests__/skill-effects.js

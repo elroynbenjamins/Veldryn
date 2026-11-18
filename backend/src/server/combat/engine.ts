@@ -112,7 +112,8 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{
     if(!target.alive)return;
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
-    const hc=hitChance(source.definition.stats.accuracy,target.definition.stats.evasion,accuracyScale); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage')events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});return;}
+    const v2Evasion=target.definition.tags?.includes('combat-v2')?modifier(target,'evasion',now):0;
+    const hc=hitChance(source.definition.stats.accuracy,target.definition.stats.evasion+v2Evasion,accuracyScale); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage')events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});return;}
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now),mitigationConstant);
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';

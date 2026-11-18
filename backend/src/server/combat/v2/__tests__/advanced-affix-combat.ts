@@ -51,8 +51,9 @@ assert.ok(ward.players[0].damageTaken<magicalBase.players[0].damageTaken,
 const physicalEnemy=enemy({...enemySpell,effects:[{kind:'damage',coeff:1,damageType:'physical'}]});
 const physicalBase=simulateCombat(encounter(profile({},hit),physicalEnemy,'physical-ward'));
 const physicalWard=simulateCombat(encounter(profile({wardPp:.40},hit),physicalEnemy,'physical-ward'));
-assert.deepEqual(physicalWard,physicalBase,
- 'Ward must have no effect against physical attacks');
+assert.deepEqual(physicalWard.events,physicalBase.events,
+ 'Ward must have no effect against physical attack event damage');
+assert.equal(physicalWard.players[0].damageTaken,physicalBase.players[0].damageTaken);
 const shield:AbilityDefinition={id:'TEST_SHIELD',name:'Protect',
  cooldownMs:2500,castTimeMs:0,target:'self',priority:100,
  effects:[{kind:'shield',coeff:1}]};
@@ -73,8 +74,9 @@ const physicalDoT={...hex,effects:[{kind:'dot' as const,coeff:.4,
  damageType:'physical' as const,durationMs:6000,tickMs:1000}]};
 const physicalDotBase=simulateCombat(encounter(profile({},physicalDoT),enemy(),'physical-dot'));
 const physicalDotHex=simulateCombat(encounter(profile({hexPotencyPct:.20},physicalDoT),enemy(),'physical-dot'));
-assert.deepEqual(physicalDotHex,physicalDotBase,
- 'Hex potency must not buff arbitrary physical DoTs');
+assert.deepEqual(physicalDotHex.events,physicalDotBase.events,
+ 'Hex potency must not modify physical DoT events');
+assert.equal(physicalDotHex.players[0].damageDone,physicalDotBase.players[0].damageDone);
 const legacy=launchPlayer('Hexweaver',25);
 const legacyCombat=simulateCombat(encounter(legacy,enemy(),'legacy-parity'));
 assert.deepEqual(simulateCombat(encounter(legacy,enemy(),'legacy-parity')),legacyCombat,

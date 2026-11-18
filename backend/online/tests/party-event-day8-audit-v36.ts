@@ -94,9 +94,11 @@ async function run(){
   'reward_evidence_inconsistent');
  denies({...base,snapshot:{...base.snapshot,eventStartsAt:'2026-11-02T00:00:00Z'}},
   'event_window_identity_mismatch');
+ denies({...base,snapshot:null as unknown as typeof base.snapshot},
+  'invalid_event_snapshot');
  try{await settlePartyEventDay8V36();throw Error('unexpected_payout');}
  catch(e){must(String(e).includes('atomic_settlement_unreleased'),
   'explicitly_blocked_live_writer');}
- console.log('PARTY_EVENTS_V36_DAY8_OK: 14 negative cases, full-stage supplies, votes, account/revision/receipt gates; zero payout');
+ console.log('PARTY_EVENTS_V36_DAY8_OK: 15 negative cases, full-stage supplies, votes, account/revision/receipt gates; zero payout');
 }
 void run().catch(e=>{console.error(e);process.exitCode=1;});

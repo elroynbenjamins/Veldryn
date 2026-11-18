@@ -38,10 +38,10 @@ async function main(){
  assert.equal(verifyGuildPveV13Scripts(),36);
  // Compare the full ordered 36-beat runtime script with the authored V5 CSV.
  const rawCues=readFileSync('../../docs/roadmap/spreadsheets/guild-pve-broken-forge-encounter-cues-v5.csv','utf8')
-  .trim().split(/\\r?\\n/).slice(1).map(row=>row.replace(/^"|"$/g,'').split('","'));
+  .trim().split(/\r?\n/).slice(1).map(row=>row.replace(/^"|"$/g,'').split('","'));
  assert.equal(rawCues.length,36);
  for(const fields of rawCues){
-  const [boss,phase,, ,position,cueId,,kind]=fields;
+  const boss=fields[0],phase=fields[1],position=fields[4],cueId=fields[5],kind=fields[7];
   const authored=guildPveV13PhaseCues({
    boss:boss as 'gatekeeper'|'seer'|'warden',
    phase:phase as import('../../../backend/src/server/combat/guild-pve-broken-forge-v7').GuildPvePhaseV7,

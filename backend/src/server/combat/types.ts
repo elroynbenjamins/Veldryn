@@ -23,6 +23,8 @@ export interface AbilityEffect {
   bonusVsDebuffed?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
+  /** Optional per-effect target for Combat 2.0 compound abilities. Existing effects keep ability target. */
+  target?: TargetRule;
   coeff?: number;
   flat?: number;
   damageType?: DamageType;

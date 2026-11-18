@@ -70,6 +70,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
 
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>{profileT(language,"PLAYER IDENTITY")}</Text><Text accessibilityRole="header" style={s.heading}>{profileT(language,"Profile")}</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,publicError?s.syncIssue:online?s.online:s.local]}>{profileStateLabel}</Text>}</View>
+  {publicSelf?<Text style={s.socialLabel}>Social Name · {publicSelf.displayName}</Text>:null}
   <View style={s.quickActions}>
    <View style={s.customizeAction}><GameButton compact title={profileT(language,"Customize")} onPress={()=>onNavigate?.('Customize')}/></View>
   </View>
@@ -121,6 +122,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  headingRow:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
  heading:{...typography.hero,color:C.text},
+ socialLabel:{...typography.caption,color:C.muted,fontWeight:'800'},
  onlineBadge:{fontSize:9,fontWeight:'900',letterSpacing:.7,paddingHorizontal:8,paddingVertical:5,borderRadius:99,borderWidth:1},online:{color:C.good,borderColor:C.good,backgroundColor:C.goodSurface},local:{color:C.muted,borderColor:C.line,backgroundColor:C.panel2},syncIssue:{color:C.warning,borderColor:C.warning,backgroundColor:C.warningSurface},syncCard:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:C.warningSurface},syncTitle:{...typography.bodyStrong,color:C.warning},syncText:{...typography.caption,color:C.muted},syncButton:{width:82},
  aboutRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},copy:{...typography.body,color:C.muted,lineHeight:19},bio:{...typography.body,color:C.text,lineHeight:20},
  quickActions:{flexDirection:'row',flexWrap:'wrap',gap:5,marginTop:8},customizeAction:{flex:1.2,minWidth:94},action:{flex:1,minWidth:88},

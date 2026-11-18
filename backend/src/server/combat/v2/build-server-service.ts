@@ -38,6 +38,7 @@ export interface TrustedBuildSnapshotV2 {
   readonly characterClass:ClassIdV2;
   readonly characterLevel:number;
   readonly gameRevision:number;
+  readonly characterFingerprint:string;
   readonly craftedGearInstances:readonly PersistedGearInstanceV2[];
   readonly builds:CharacterBuildStateV2|null;
   readonly busyReason?:AuthorizedBuildContextV2['busyReason'];
@@ -46,6 +47,7 @@ export interface AtomicBuildCommitV2 {
   readonly next:CharacterBuildStateV2;
   readonly expectedBuildRevision:number;
   readonly expectedGameRevision:number;
+  readonly expectedCharacterFingerprint:string;
 }
 export interface BuildStoragePortV2 {
   /** Must check that character belongs to trusted account before returning. */
@@ -133,6 +135,7 @@ export class CharacterBuildServiceV2 {
       const committed=await this.deps.storage.compareAndSwap(trustedAccountId,characterId,{
         next:plan.next,expectedBuildRevision:current.revision,
         expectedGameRevision:row.gameRevision,
+        expectedCharacterFingerprint:row.characterFingerprint,
       });
       if(committed.revision!==plan.next.revision||committed.characterId!==characterId)
         throw Error('combat_v2_invalid_commit_readback');

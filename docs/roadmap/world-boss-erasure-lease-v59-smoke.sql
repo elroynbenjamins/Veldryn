@@ -106,8 +106,22 @@ BEGIN
  EXCEPTION WHEN raise_exception THEN
   blocked:=SQLERRM LIKE '%WB59_REPLAY_MANIFEST_NOT_SEALED%'; END;
  IF NOT blocked THEN RAISE EXCEPTION 'WB59_UNSEALED_MANIFEST_ADVANCED'; END IF;
+ blocked:=false;
+ BEGIN
+  PERFORM private.world_boss_v59_mark_object_deleted(
+   acct,'WB59_WORKER_NEW',gen,key);
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_OBJECT_ACK_BEFORE_MANIFEST_SEAL%'; END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_UNSEALED_OBJECT_ACKED'; END IF;
  UPDATE private.world_boss_erasure_jobs_v59
  SET manifest_sealed=true WHERE account_id=acct;
+ blocked:=false;
+ BEGIN
+  INSERT INTO private.world_boss_erasure_objects_v59(account_id,object_key)
+  VALUES(acct,'synthetic/private/replays/late-key');
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_MANIFEST_ALREADY_SEALED%'; END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_LATE_REPLAY_MANIFEST_WRITE_ALLOWED'; END IF;
  blocked:=false;
  BEGIN
   PERFORM private.world_boss_v59_advance(
@@ -134,6 +148,21 @@ BEGIN
  IF (SELECT deleted_at FROM private.world_boss_erasure_objects_v59
   WHERE account_id=acct AND object_key=key) IS DISTINCT FROM first_ack
  THEN RAISE EXCEPTION 'WB59_DUPLICATE_REPLAY_ACK_CHANGED'; END IF;
+ blocked:=false;
+ BEGIN
+  UPDATE private.world_boss_erasure_objects_v59
+  SET object_key='synthetic/private/replays/reassigned'
+  WHERE account_id=acct AND object_key=key;
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_IMMUTABLE_OBJECT_RECEIPT%'; END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_REPLAY_KEY_REASSIGNED'; END IF;
+ blocked:=false;
+ BEGIN
+  DELETE FROM private.world_boss_erasure_objects_v59
+  WHERE account_id=acct AND object_key=key;
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_OBJECT_DELETE_REQUIRES_PRIVACY_FINALIZER%'; END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_REPLAY_MANIFEST_ERASED_PREMATURELY'; END IF;
  blocked:=false;
  BEGIN
   PERFORM private.world_boss_v59_advance(

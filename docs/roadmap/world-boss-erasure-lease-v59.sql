@@ -194,6 +194,17 @@ BEGIN
   IF EXISTS(SELECT 1 FROM private.world_boss_erasure_objects_v59
    WHERE account_id=p_account AND deleted_at IS NULL)
   THEN RAISE EXCEPTION 'WB59_REPLAY_OBJECTS_NOT_CONFIRMED_DELETED'; END IF;
+  -- A sealed manifest is insufficient unless it covers EVERY replay
+  -- object key still referenced by this account's immutable V17 attempts.
+  -- Otherwise one untracked external object could survive SQL cleanup.
+  IF EXISTS(
+   SELECT 1 FROM private.world_boss_attempts_v17 a
+   WHERE a.account_id=p_account AND a.replay_object_key IS NOT NULL
+   AND NOT EXISTS(
+    SELECT 1 FROM private.world_boss_erasure_objects_v59 o
+    WHERE o.account_id=a.account_id
+      AND o.object_key=a.replay_object_key))
+  THEN RAISE EXCEPTION 'WB59_REPLAY_MANIFEST_INCOMPLETE'; END IF;
  ELSIF (p_from='replays_purged' AND p_to='rows_purged') THEN
   preflight:=private.world_boss_v36_erasure_preflight(p_account);
   IF (preflight->>'requiresReconciliation')::boolean IS DISTINCT FROM false

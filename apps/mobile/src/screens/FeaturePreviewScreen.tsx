@@ -8,6 +8,7 @@ import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
 import {decodePartyEventReadOnlySnapshot,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
 import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
+import {WORLD_BOSS_PRESENTATION} from '../core/world-boss-presentation';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
 import {UiIcon} from '../components/UiIcon';
 
@@ -153,15 +154,15 @@ function Progress({s,value,accent,label='Progress'}:{s:Shared['s'];value:number;
 function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){return <View style={[s.tag,accent&&{borderColor:accent}]}><Text style={[s.tagText,accent&&{color:accent}]}>{label}</Text></View>;}
 
 const bosses=[
- {id:'hollow',serverId:'hollowroot',name:'Hollowroot',region:'Asterfall',scene:'IRONWOOD',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387',
+ {id:'hollow',serverId:'hollowroot',...WORLD_BOSS_PRESENTATION.hollowroot,scene:'IRONWOOD',color:'#A4C387',
   supplies:['Cut timber for root barricades','Gather iron for reinforced shields','Prepare recovery supplies for the line'],
   mechanics:['Watch for the sweeping root warning','Protect allies through the heavy slam','Strike when the ancient exposes its heart'],
   threat:'Roots control the battlefield; watch the warning before committing damage.'},
- {id:'sunscar',serverId:'sunscar',name:'Solbrand',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73',
+ {id:'sunscar',serverId:'sunscar',...WORLD_BOSS_PRESENTATION.sunscar,scene:'SUNSCAR',color:'#E2AE73',
   supplies:['Stockpile ore for heatproof armor','Bring timber for shaded war shelters','Prepare cooling supplies for the camp'],
   mechanics:['Read the blazing ground markers','Guard against the titan’s heated strike','Exploit the cooling window between casts'],
   threat:'Heat builds between strikes; timing your defenses matters.'},
- {id:'frost',serverId:'frostmarch',name:'Rimewarden',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9',
+ {id:'frost',serverId:'frostmarch',...WORLD_BOSS_PRESENTATION.frostmarch,scene:'FROSTMARCH',color:'#98C8E9',
   supplies:['Reinforce the camp against the blizzard','Gather timber for warming fires','Prepare frost recovery provisions'],
   mechanics:['Identify the coming whiteout cast','Protect the squad through the freezing wave','Counterattack as the storm recedes'],
   threat:'Visibility and freezing attacks test the whole account squad.'},

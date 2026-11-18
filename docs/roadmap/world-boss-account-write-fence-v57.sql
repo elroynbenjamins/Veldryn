@@ -49,6 +49,11 @@ REVOKE ALL ON private.world_boss_erasure_fences_v57
 -- Only a PRIVILEGED erasure owner may insert/remove a fence. Gameplay
 -- service_role can read it but MUST NOT be allowed to clear/alter it.
 GRANT SELECT ON private.world_boss_erasure_fences_v57 TO service_role;
+-- Fixture roles may lack BYPASSRLS; do not accidentally make erasure
+-- invisible behind an empty RLS policy. Only the server role may SELECT.
+CREATE POLICY world_boss_v57_server_fence_read
+ ON private.world_boss_erasure_fences_v57
+ FOR SELECT TO service_role USING (true);
 
 -- Every account write and fence insertion competes on the exact same
 -- transaction-scoped advisory lock, including when no fence row yet exists.

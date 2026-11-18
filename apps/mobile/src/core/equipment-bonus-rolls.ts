@@ -19,9 +19,9 @@ const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly Equipm
   Support:['potency','haste','ward','maxHp','tenacity','critRate'],
 };
 const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly EquipmentBonusStat[]>>={
-  Tank:['maxHp','armor','ward','tenacity','evasion','power','haste'],
-  Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','evasion','power'],
-  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate','power'],
+  Tank:['maxHp','armor','ward','tenacity','evasion','haste'],
+  Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','evasion'],
+  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate'],
 };
 const EXTRA_RANGES:Readonly<Record<2|3|5|7|9,Readonly<Record<'evasion'|'critDamage',readonly [number,number]>>>>={
   2:{evasion:[20,70],critDamage:[50,160]},

@@ -75,6 +75,7 @@ jobs:
             party-event-current-read-v40 \
             party-event-security-sweep-v41 \
             party-event-activity-credit-worker-v43 \
+            party-event-canonical-source-packet-v44 \
             party-event-schema-readiness-v35 \
             party-event-day8-audit-v36 \
             party-event-staging-assessment-v37
@@ -89,6 +90,8 @@ jobs:
         run: node tests/party-event-readonly-sql-v33.mjs
       - name: Verify V38 account-locked reward / receipt / Inbox failure atomicity in disposable PGlite
         run: node tests/party-event-atomic-rollback-v38.mjs
+      - name: Verify V44 starter gathering SQL and packet source alignment
+        run: node tests/party-event-source-alignment-v44.mjs
       - name: Verify V43 canonical receipt/event matching and overlap denial in disposable PGlite
         run: node tests/party-event-activity-credit-sql-v43.mjs
       - name: Verify hidden SQL paid-receipt and locked claim contracts in disposable PGlite

@@ -144,7 +144,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
    </View>
    {focusedId&&draft.featuredCharacterId!==focusedId?
     <GameButton compact title={socialIdentityT(language,'Feature this hero')} tone="secondary"
-     disabled={guest||busy||draft.dirty} onPress={()=>void draft.setFeatured()}/>:null}
+     disabled={guest||busy||draft.showcaseDirty} onPress={()=>void draft.setFeatured()}/>:null}
   </View>
 
   <View style={s.pair}>

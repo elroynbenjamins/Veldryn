@@ -40,6 +40,40 @@ jobs:
         run: node tests/party-event-source-alignment-v44.mjs
       - name: Test V43 trusted source-to-week mapping and overlap denial
         run: node tests/party-event-activity-credit-sql-v43.mjs
+      - name: Ensure hidden migrations and disabled V48 gate are not promoted
+        run: node tests/party-event-hidden-migrations-v37.mjs
+  party-events-online-sources:
+    name: Party Events V43–V48 online source contracts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install mobile declarations used by trusted game simulation
+        run: pnpm --dir ../apps/mobile install --frozen-lockfile
+      - name: Typecheck private source adapters without unrelated shared-world suite
+        run: pnpm exec tsc -p tsconfig.online.json
+      - name: Verify canonical credit, packets, leases and default-off gameplay routing
+        run: |
+          set -euo pipefail
+          for suite in \
+            party-event-activity-credit-worker-v43 \
+            party-event-canonical-source-packet-v44 \
+            party-event-source-outbox-worker-v47 \
+            party-event-gameplay-commit-v48
+          do
+            node "dist/online/backend/online/tests/${suite}.js"
+          done
   party-events-deterministic:
     runs-on: ubuntu-latest
     defaults:

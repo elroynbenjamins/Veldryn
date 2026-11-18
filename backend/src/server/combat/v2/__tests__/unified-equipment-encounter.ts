@@ -39,7 +39,7 @@ const affixPolicy:ServerAffixPolicyV2={
  maxFinalHaste:10,maxFinalCritChance:10,maxFinalCritMultiplier:10,
 };
 const actor=launchPlayer('Ironwarden',25);
-const classActor={...actor,tags:[...(actor.tags??[]),'combat-v2-class-base-only']};
+const classActor=actor;
 const first=SKILL_IDENTITIES_V2.filter(s=>s.classId==='IRONWARDEN').slice(0,2);
 const spec=SPECIALIZATIONS_V2.find(s=>s.classId==='IRONWARDEN')!;
 const build:VerifiedSkillBuildV2={
@@ -55,8 +55,16 @@ const build:VerifiedSkillBuildV2={
   c:{instanceId:'c',slot:'chest',eligibleRoles:['tank'],setFamilyId:'eq2_t1_oathplate',tier:'T1',requiredLevel:1},
  },setsById:TIERED_SETS_BY_ID_V2,
 };
+const fixtureClassStats={...actor.stats};
 const runtime:TrustedEquipmentRuntimeV2={
  actorId:classActor.id,characterId:'CHAR_1',
+ // Approved stats are a separate server-only fixture, not the combat input.
+ classBaselinePolicy:{version:'synthetic-class-profile-v1',profiles:{
+  IRONWARDEN:{classId:'IRONWARDEN',minLevel:1,maxLevel:75,
+   statsAtLevel:()=>({...fixtureClassStats}),
+   basicAttackMs:actor.basicAttackMs,basicAttackCoeff:actor.basicAttackCoeff,
+   abilities:actor.abilities},
+ }},
  instancesById:{
   h:{id:'h',itemId:'oath_helm',ownerCharacterId:'CHAR_1',tier:'T1',rarity:'common',quality:80},
   c:{id:'c',itemId:'oath_chest',ownerCharacterId:'CHAR_1',tier:'T1',rarity:'common',quality:80},
@@ -126,6 +134,7 @@ const expectedWithAffix=round5(expectedWithSet*1.03);
 assert.equal(resolved.stats.defense,expectedWithAffix);
 
 assert.ok(resolved.tags?.includes('combat-v2-class-base-only'));
+assert.notEqual(resolved.stats,actor.stats,'Output must use a separately issued stat object');
 assert.ok(resolved.tags?.includes('combat-v2-gear-base-resolved'));
 assert.ok(resolved.tags?.includes('combat-v2-sets-applied'));
 assert.ok(resolved.tags?.includes('combat-v2-affixes-applied'));

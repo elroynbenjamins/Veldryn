@@ -176,4 +176,22 @@ export const RUSSIAN_RELEASE_POLISH_ROWS = {
   "Total Marks from this run": "Всего знаков за этот поход",
   "Combat Marks are already in your wallet. Completion Marks are added only when claimed.": "Боевые знаки уже на вашем счёте. Знаки за завершение начисляются только после получения награды.",
   "Total is estimated until the claim is complete.": "Сумма приблизительная, пока награда не получена.",
+
+  // Profile Combat Power explanation and equipment comparison, exact source keys.
+  "Show breakdown": "Показать расчёт",
+  "Hide breakdown": "Скрыть расчёт",
+  "Combat Power breakdown": "Расчёт боевой мощи",
+  "All stats": "Все характеристики",
+  "Class base": "Базовые характеристики класса",
+  "Gear, sets & gems": "Снаряжение, комплекты и самоцветы",
+  "Other character bonuses": "Другие бонусы персонажа",
+  "Level {level} base stats": "Базовые характеристики уровня {level}",
+  "Equipped stat gains and build effects": "Характеристики и эффекты надетого снаряжения",
+  "Class training, Faith, preparation and permanent boosts": "Тренировка класса, вера, подготовка и постоянные усиления",
+  "No combat companion equipped": "Боевой спутник не выбран",
+  "{name} · Lv. {level} · Bond {bond}": "{name} · ур. {level} · связь {bond}",
+  "Combat Power is a comparison score from your live stats and equipped build. Encounter mechanics, target traits, and temporary effects can still change actual results.": "Боевая мощь — сравнительная оценка текущих характеристик и снаряжения. Механика боя, особенности врага и временные эффекты могут изменить реальный результат.",
+  "Choose an equipped slot to compare its rarity and stats with gear you own.": "Выберите слот снаряжения, чтобы сравнить редкость и характеристики с предметами в инвентаре.",
+  "Compare & Swap": "Сравнить и заменить",
+  "No Combat Companion": "Без боевого спутника",
 } as const satisfies Record<string,string>;

@@ -103,10 +103,14 @@ ok(weaponBonusRange(5,'haste')?.join(',')==='120,250','T5 Haste is 1.2–2.5%');
 ok(weaponBonusRange(7,'potency')?.join(',')==='300,550','T7 Potency is 3.0–5.5%');
 ok(weaponBonusRange(9,'critRate')?.join(',')==='150,300','T9 Crit Rate is capped at 3.0%');
 ok(weaponBonusRange(9,'maxHp')?.join(',')==='500,800','T9 Max HP reaches 8.0%');
-ok(weaponBonusLine(t3,'common',{stat:'critRate',basisPoints:100}).includes('Range 0.5–1.5%'),
+ok(weaponBonusLine(t3,'uncommon',{stat:'critRate',basisPoints:100}).includes('Range 0.5–1.5%'),
   'Tooltip displays the Crit Rate-specific tier range');
-ok(weaponBonusLine(t5,'common',{stat:'haste',basisPoints:200}).includes('Range 1.2–2.5%'),
+ok(weaponBonusLine(t5,'uncommon',{stat:'haste',basisPoints:200}).includes('Range 1.2–2.5%'),
   'Tooltip displays the Haste-specific tier range');
+ok(weaponBonusLine(t3,'common',{stat:'critRate',basisPoints:100}).includes('Range 0.4–1.3%'),
+  'Common T3 tooltip must show the actual 15% weaker Crit Rate range');
+ok(weaponBonusLine(t5,'common',{stat:'haste',basisPoints:200}).includes('Range 1.0–2.1%'),
+  'Common T5 tooltip must show the actual weaker Haste range');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:200}]),
   'The former T3 2.0% Crit Rate value must be rejected under the new cap');
 ok(!!normalizeWeaponBonuses(t3,'uncommon',[{stat:'haste',basisPoints:200}]),

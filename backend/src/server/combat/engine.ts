@@ -211,7 +211,11 @@ export function simulateCombat(input: CombatInput): CombatResult {
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
     if(effect.kind==='shield'){const amt=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
       resource(source,'shield_granted',now,abilityId);
-      if(!abilityId.startsWith('V2_CAPSTONE'))runCapstone(source,'shield',now,target,{amount:amt});
+      if(!abilityId.startsWith('V2_CAPSTONE')){
+        const ability=source.definition.abilities.find(a=>a.id===abilityId);
+        const isPartyShield=effect.target==='all_allies'||ability?.target==='all_allies';
+        runCapstone(source,'shield',now,target,{amount:amt,isPartyShield});
+      }
     }return;}
     if(effect.kind==='dot'||effect.kind==='hot'){const expiresAt=now+(effect.durationMs??3000);target.periodic.push({sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,coeff:effect.coeff??0,flat:effect.flat??0,damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000});events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
@@ -236,8 +240,8 @@ export function simulateCombat(input: CombatInput): CombatResult {
   runCapstone=(actor,kind,now,target,ctx={})=>{
     if(!v2Encounter||!actor.alive||!actor.combatV2)return;
     const result=triggerCapstoneV2(actor,kind,now,ctx);
-    if(!result.event)return;
-    events.push(result.event);
+    if(!result.event&&!result.actions.length)return;
+    if(result.event)events.push(result.event);
     for(const action of result.actions){
       let targets:CombatantState[]=[];
       switch(action.target){

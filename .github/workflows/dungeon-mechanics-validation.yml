@@ -61,6 +61,9 @@ jobs:
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
         working-directory: backend
+      - name: Verify dedicated boon rooms and independent Camp / Treasure / Event rewards
+        run: node dist/online/backend/online/tests/room-boon-choices.js
+        working-directory: backend
       - name: Validate rebalanced Expedition Marks and unchanged tier multipliers
         run: pnpm test:dungeon-tier-balance
         working-directory: backend

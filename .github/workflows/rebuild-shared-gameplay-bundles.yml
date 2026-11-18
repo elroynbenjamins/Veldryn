@@ -33,6 +33,8 @@ on:
       - 'backend/src/server/coop/dungeon-entry-policy.ts'
       - 'backend/src/server/coop/regional-power-balance.ts'
       - 'backend/src/server/coop/qmode.ts'
+      - 'backend/src/server/coop/room-boon-choices.ts'
+      - 'backend/src/server/expeditions/node-resolution.ts'
       - 'backend/src/server/coop/loadout-snapshots.ts'
       - 'backend/src/server/coop/echo-recruitment.ts'
       - 'backend/src/server/coop/qmode-npc-allies.ts'

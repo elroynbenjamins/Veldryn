@@ -11,7 +11,9 @@ export const ROOM_BOON_CHOICES=[
 ] as const;
 export type RoomBoonId=(typeof ROOM_BOON_CHOICES)[number]['id'];
 export type RoomBoonOffer=(typeof ROOM_BOON_CHOICES)[number];
-const CHOICE_ROOM_KINDS=new Set(['shrine','forge','echo','event','treasure','secret','camp']);
+// Only purpose-built boon rooms prompt a second-stage choice. Treasure, camp,
+// secret and event rooms retain their own rewards without bonus buffs.
+const CHOICE_ROOM_KINDS=new Set(['shrine','forge','echo']);
 export function roomBoonOffers(run:QModeRun,secret:string):RoomBoonOffer[]{
  // Live dungeons use group-voted routes; the owner-only Q-Mode choice does
  // not silently apply to teammates or bypass their voting authority.
@@ -20,7 +22,7 @@ export function roomBoonOffers(run:QModeRun,secret:string):RoomBoonOffer[]{
  if(!last||last.nodeId!==run.currentNodeId||!last.result.success||!CHOICE_ROOM_KINDS.has(String(last.result.summary.kind)))return [];
  if(run.chosenRoomBoons?.[last.nodeId])return [];
  const current=run.graph.nodes.find(node=>node.nodeId===last.nodeId);
- if(!current)return [];
+ if(!current||current.kind!==last.result.summary.kind)return [];
  const ids=generateBoonOffer({secret,runId:run.id,characterId:run.players[0].id,nodeIndex:current.depth,contentVersion:run.graph.contentVersion,ownedBoonIds:[],eligibleBoonIds:ROOM_BOON_CHOICES.filter(choice=>choice.id!=='ROOM_BOON_SUPPLY').map(choice=>choice.id),choiceCount:3});
  return ids.map(id=>ROOM_BOON_CHOICES.find(choice=>choice.id===id)!).filter(Boolean);
 }

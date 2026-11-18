@@ -34,7 +34,7 @@ export const SPECIALIZATIONS_V2:readonly SpecializationV2[]=Object.entries(CLASS
   }))
 );
 export const SKILLS_V2:readonly ActiveSkillV2[]=SKILL_IDENTITIES_V2.map((s)=>{
-  const index=SKILL_CONCEPT_IDENTITY_V2[CLASS_NAMES_V2[s.classId]].a.findIndex(a=>a[0]===s.name);
+  const index=SKILL_CONCEPT_IDENTITY_V2[CLASS_NAMES_V2[s.classId] as keyof typeof SKILL_CONCEPT_IDENTITY_V2].a.findIndex(a=>a[0]===s.name);
   const unlockLevel=[1,1,10,20,30,40][index];
   return {id:s.id,classId:s.classId,unlockLevel,defaultVariantId:s.variants[0].id,variantIds:s.variants.map(v=>v.id)};
 });

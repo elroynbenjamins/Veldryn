@@ -14,7 +14,7 @@ import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;worldBossStatus?:unknown;worldBossAccountId?:string};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -34,7 +34,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,worldBossStatus=null,worldBossAccountId=''}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const defaultTab=tabs[0].id;
@@ -53,12 +53,39 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  // A private status is a short lease, not persistent presence. Expire it
  // while the QA screen stays open; no network request or action is mounted.
  const [statusNowMs,setStatusNowMs]=useState(()=>Date.now());
+ const [bossRetry,setBossRetry]=useState(0);
+ const [loadedBoss,setLoadedBoss]=useState<{accountId:string;raw:unknown}|null>(null);
+ const [bossReadState,setBossReadState]=useState<'idle'|'loading'|'ready'|'empty'|'error'>('idle');
+ // A host-approved, authenticated READ endpoint may be injected in QA.
+ // No endpoint, service-role key, account selector or token is constructed here.
  useEffect(()=>{
-  if(feature!=='boss'||!worldBossAccountId||worldBossStatus==null)return;
+  if(feature!=='boss'||!worldBossAccountId||!worldBossReadCurrent){
+   setLoadedBoss(null);setBossReadState('idle');return;
+  }
+  let alive=true;
+  setBossReadState('loading');setLoadedBoss(null);
+  // A slow response from another account/route must never overwrite this view.
+  Promise.resolve().then(()=>worldBossReadCurrent()).then(raw=>{
+   if(!alive)return;
+   setLoadedBoss(raw==null?null:{accountId:worldBossAccountId,raw});
+   setBossReadState(raw==null?'empty':'ready');
+   setStatusNowMs(Date.now());
+  }).catch(()=>{
+   if(!alive)return;
+   setLoadedBoss(null);setBossReadState('error');
+  });
+  const refreshTimer=setInterval(()=>setBossRetry(v=>v+1),60000);
+  return ()=>{alive=false;clearInterval(refreshTimer)};
+ },[feature,worldBossAccountId,worldBossReadCurrent,bossRetry]);
+ const bossProviderReady=feature==='boss'&&Boolean(worldBossAccountId)&&Boolean(worldBossReadCurrent);
+ const displayBossStatus=bossProviderReady?
+  (loadedBoss?.accountId===worldBossAccountId?loadedBoss.raw:null):worldBossStatus;
+ useEffect(()=>{
+  if(feature!=='boss'||!worldBossAccountId||displayBossStatus==null)return;
   setStatusNowMs(Date.now());
   const leaseTimer=setInterval(()=>setStatusNowMs(Date.now()),15000);
   return ()=>clearInterval(leaseTimer);
- },[feature,worldBossAccountId,worldBossStatus]);
+ },[feature,worldBossAccountId,displayBossStatus]);
  const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
  const C=useGameTheme(),{width,fontScale}=useWindowDimensions();
  const compact=width<360||fontScale>=1.25;
@@ -68,7 +95,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  // A future authenticated host may inject the private V41 result. No RPC
  // is mounted here and no account selector is accepted from player input.
  const bossStatus=feature==='boss'&&worldBossAccountId?
-  decodeWorldBossReadOnlyStatusV46(worldBossStatus,worldBossAccountId,statusNowMs):null;
+  decodeWorldBossReadOnlyStatusV46(displayBossStatus,worldBossAccountId,statusNowMs):null;
  // One realm-wide event: boss identity comes from the validated server status.
  // There is no client-selected boss, and an absent status uses neutral art.
  const cycleBoss=bosses.find(entry=>entry.serverId===bossStatus?.bossId)??unverifiedBoss;
@@ -108,6 +135,11 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       </View>
     </ImageBackground>
     <View style={s.qaNote}><Text style={[s.qaSymbol,{color:accent}]}>◇</Text><Text style={s.qaText}>Developer-only UI preview. All example data is illustrative. No game resources, attempts, votes, listings or rewards are changed.</Text></View>
+    {feature==='boss'&&bossProviderReady?<View style={s.warning} accessibilityLiveRegion="polite">
+      <Text style={s.warningTitle}>{bossReadState==='loading'?'Reading the realm event…':bossReadState==='error'?'World Boss read failed':bossReadState==='empty'?'No announced boss in this cycle':bossReadState==='ready'&&!bossStatus?'World Boss status expired or rejected':'Private account status · Read only'}</Text>
+      <Text style={s.bodyText}>{bossReadState==='loading'?'Checking the server-owned current cycle and this account.':bossReadState==='error'?'No previous data is displayed. You can try the authenticated read again.':bossReadState==='empty'?'The server has not supplied an event row for the current cycle.':'No raid, donation, claim or reward permission is available from this QA screen.'}</Text>
+      {bossReadState!=='loading'?<Action label="Refresh read-only status" s={s} secondary onPress={()=>setBossRetry(v=>v+1)}/>:null}
+     </View>:null}
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>

@@ -70,6 +70,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/cross-system-bridge.js
       - name: Validate source-owned affix ranges and typed combat modifiers
         run: node backend/dist/server/combat/v2/__tests__/equipment-affixes.js
+      - name: Reject legacy stat contamination in nine class-only baselines
+        run: node backend/dist/server/combat/v2/__tests__/class-baseline.js
       - name: Validate full class, approved gear base, set and affix pipeline
         run: node backend/dist/server/combat/v2/__tests__/unified-equipment-encounter.js
       - name: Validate all nine class roles through the full gear pipeline

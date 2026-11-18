@@ -37,6 +37,24 @@ export async function updateProfileExtensionV43(input:{
   p_achievement_showcase_ids:input.achievementShowcaseIds,p_collection_showcase:input.collectionShowcase,p_record_showcase_ids:input.recordShowcaseIds,p_mastery_showcase_action_ids:input.masteryShowcaseActionIds,
  });if(error)throw error;return data as ProfileExtensionSelfV43;
 }
+/** Values persisted for one specific character, independent of the account bio/privacy. */
+export type CharacterShowcaseFieldsV1=Pick<ProfileExtensionSelfV43,
+ 'favoriteSkillId'|'favoriteCompanionId'|'achievementShowcaseIds'|
+ 'collectionShowcase'|'recordShowcaseIds'|'masteryShowcaseActionIds'>;
+export async function characterShowcaseSelfV1(characterId:string):Promise<CharacterShowcaseFieldsV1>{
+ const {data,error}=await client().rpc('character_showcase_self_v1',{p_character_id:characterId});
+ if(error)throw error;
+ const row=data as CharacterShowcaseFieldsV1;
+ return {
+  favoriteSkillId:row.favoriteSkillId??null,
+  favoriteCompanionId:row.favoriteCompanionId??null,
+  achievementShowcaseIds:Array.isArray(row.achievementShowcaseIds)?row.achievementShowcaseIds:[],
+  collectionShowcase:Array.isArray(row.collectionShowcase)?row.collectionShowcase:[],
+  recordShowcaseIds:Array.isArray(row.recordShowcaseIds)?row.recordShowcaseIds:[],
+  masteryShowcaseActionIds:Array.isArray(row.masteryShowcaseActionIds)?row.masteryShowcaseActionIds:[],
+ };
+}
+
 const pendingPublicProfiles=new RequestSingleflight<PublicPlayerProfileV43|null>();
 export async function publicPlayerProfileV43(accountId:string):Promise<PublicPlayerProfileV43|null>{
  const db=client(),{data:{session},error:sessionError}=await db.auth.getSession();

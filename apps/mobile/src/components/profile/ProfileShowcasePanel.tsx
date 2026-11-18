@@ -1,6 +1,7 @@
 import {profileT,profileText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {socialIdentityT} from '../../i18n/social-identity';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../core/release-flags';
 import {useMemo,useState,type ReactNode} from 'react';
 import {Image,Keyboard,Pressable,ScrollView,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import type {GameState} from '../../core/types';
@@ -119,7 +120,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   <View style={s.head}><Text style={s.eyebrow}>{socialIdentityT(language,'CHARACTER SHOWCASE')}</Text><Text style={s.hint}>{socialIdentityT(language,'This hero’s own display')}</Text></View>
   <View style={s.headlineWrap}>
   <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Showcase character: {name} ▾',{name:character?.name??profileT(language,'Current character')})}
-    disabled={guest||busy||characters.length<2} onPress={()=>openPicker('character')} style={({pressed})=>[s.headline,pressed&&s.pressed]}>
+    disabled={guest||busy||!ACCOUNT_SOCIAL_IDENTITY_RELEASED||characters.length<2} onPress={()=>openPicker('character')} style={({pressed})=>[s.headline,pressed&&s.pressed]}>
    {scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.headlineScrim}/>
    {character?<ProfileIcon id={character.profileIconId} classId={character.classId} size={58} style={s.headlineIcon}/>:null}
@@ -130,13 +131,13 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
     </View>
     <Text numberOfLines={1} style={s.headlineMeta}>{character?profileT(language,'Lv. {level}',{level:character.level})+' · '+className:''}</Text>
     <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
-    {characters.length>1?<Text style={s.headlineAction}>{socialIdentityT(language,'Tap to edit another hero')} ›</Text>:null}
+    {ACCOUNT_SOCIAL_IDENTITY_RELEASED&&characters.length>1?<Text style={s.headlineAction}>{socialIdentityT(language,'Tap to edit another hero')} ›</Text>:null}
    </View>
   </Pressable>
   {headlineFrame?<ProfileFrameOverlay source={headlineFrame}/>:null}
   </View>
 
-  <View style={s.featuredRow}>
+  {ACCOUNT_SOCIAL_IDENTITY_RELEASED?<View style={s.featuredRow}>
    <View style={s.flex}>
     <Text style={s.featuredTitle}>{draft.featuredCharacterId===focusedId?
       socialIdentityT(language,'Featured public hero'):socialIdentityT(language,'Editing another hero')}</Text>
@@ -145,7 +146,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
    {focusedId&&draft.featuredCharacterId!==focusedId?
     <GameButton compact title={socialIdentityT(language,'Feature this hero')} tone="secondary"
      disabled={guest||busy||draft.showcaseDirty} loading={busy} onPress={()=>void draft.setFeatured()}/>:null}
-  </View>
+  </View>:null}
 
   <View style={s.pair}>
    <SlotCard label={profileT(language,"Favorite skill")} value={skill?.label} art={value.favoriteSkillId?skillIcons[value.favoriteSkillId as ActivityIconId]:undefined}

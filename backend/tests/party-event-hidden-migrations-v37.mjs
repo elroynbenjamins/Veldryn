@@ -23,6 +23,7 @@ const files={
  v48:'20261118194500_party_event_server_gateway_v48.sql',
  v49Source:'20261118212000_party_event_coop_node_attestation_v49.sql',
  v49Credit:'20261118213000_party_event_v14_coop_attestation_patch_v49.sql',
+ v50:'20261118220000_party_event_coop_actor_outbox_v50.sql',
 };
 const sql=Object.fromEntries(Object.entries(files).map(([key,path])=>
  [key,read(base+path)]));
@@ -95,6 +96,15 @@ assert.doesNotMatch(sql.v49Credit,/join public\.coop_run_access_memberships acce
  'Co-op credit must never depend on mutable live access status');
 assert.doesNotMatch(sql.v49Credit,/join public\.expedition_run_members/i,
  'Co-op credit must use committed human witnesses, not live roster');
+assert.match(sql.v50,/create table private\.party_event_coop_actor_outbox_v50/i);
+assert.match(sql.v50,/after insert on private\.party_event_coop_node_actors_v49/i);
+assert.match(sql.v50,/count\(distinct cohort\.account_id\)/i);
+assert.match(sql.v50,/for update of q skip locked/i);
+assert.match(sql.v50,/grant execute on function private\.lease_party_event_coop_actors_v50\([\s\S]*?\)\s*to service_role/i);
+const hiddenCoopWorker=read('backend/online/party-event-coop-source-dispatcher-v50.ts');
+assert.match(hiddenCoopWorker,/export const PARTY_EVENT_COOP_SOURCE_DISPATCH_V50_RELEASED=false;/);
+assert.doesNotMatch(hiddenCoopWorker,/fetch\(|\/rest\/v1\//i,
+ 'Server-only V50 worker must not become an HTTP endpoint');
 
 const commitPreview=read('backend/online/party-event-gameplay-commit-v48.ts');
 const gameplay=read('backend/online/gameplay.ts');
@@ -111,4 +121,4 @@ for(const filename of executable){
  assert.ok(!/20261113|20261115|20261118/.test(filename)||!filename.includes('party_event_'),
   'draft hidden Party Event migration mistakenly added to live migration path '+filename);
 }
-console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: schema/RLS, V45–V49 unpromoted, immutable co-op witness, V48 runtime OFF, source content aligned');
+console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: V45–V50 drafts unpromoted, source-time human/queue trust, V48/V50 OFF, RLS and source content aligned');

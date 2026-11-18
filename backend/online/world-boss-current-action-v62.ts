@@ -19,6 +19,7 @@ import {
 import {
  claimAuthenticatedWorldBossSigilsV28,type WorldBossRewardDepsV28,
 } from './world-boss-rewards-v28';
+import type {WorldBossGateAttestationV63} from './world-boss-gate-attestation-v63';
 
 export const WORLD_BOSS_V62_ACTION_HTTP_LIVE=false as const;
 export interface WorldBossActionRequestV62 {
@@ -31,6 +32,8 @@ export interface WorldBossActionRequestV62 {
 }
 export interface WorldBossActionDepsV62 {
  current:WorldBossCurrentOverviewDepsV51;
+ /** Fail closed unless V61 operator gate triggers are installed and active. */
+ ops:WorldBossGateAttestationV63;
  raid:WorldBossDepsV26;
  donations:WorldBossWarCampDepsV27;
  rewards:WorldBossRewardDepsV28;
@@ -110,7 +113,9 @@ export async function handleWorldBossActionV62(
  if(!match)return reply(401,{error:'authentication_required'});
  const selection=parseSelection(request.body);
  if(!selection)return reply(400,{error:'invalid_action'});
- if(!deps||!deps.current||!deps.raid||!deps.donations||!deps.rewards)
+ if(!deps||!deps.current||!deps.ops||
+  typeof deps.ops.assertGates!=='function'||!deps.raid||
+  !deps.donations||!deps.rewards)
   return reply(503,{error:'temporarily_unavailable'});
  const token=match[1];
  try{
@@ -122,6 +127,10 @@ export async function handleWorldBossActionV62(
   if(current.status==='draft'||current.phase==='upcoming'||
    current.phase==='expired')
    return reply(409,{error:'event_unavailable'});
+  // V63 verifies all three V61 emergency controls are installed and the
+  // operator row exists for THIS server-selected event. Absent controls
+  // mean no actions, even if the host accidentally mounts this adapter.
+  await deps.ops.assertGates(current.eventId);
   // Re-use the trusted V51 principal for each downstream service, with a
   // fresh provider verification so Auth changes mid-request fail closed.
   const authenticate=async(credential:string)=>{

@@ -60,6 +60,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/build-server-service.js
       - name: Validate legacy gear and enemy integration
         run: node backend/dist/server/combat/v2/__tests__/cross-system-bridge.js
+      - name: Validate source-owned affix ranges and typed combat modifiers
+        run: node backend/dist/server/combat/v2/__tests__/equipment-affixes.js
       - name: Validate hidden database migration permissions
         run: node backend/tests/combat-v2-build-sql-contract.cjs
       - name: Validate Combat 2.0 executable skills

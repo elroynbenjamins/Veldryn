@@ -26,9 +26,13 @@ export interface WorldBossErasureDepsV56{
   */
  authorizeTicket(ticket:string):Promise<{accountId:string}|null>;
  /**
-  * Atomic durable BEGIN/RESUME: fence world boss writes before any returns,
+  * Atomic durable BEGIN/RESUME: fence World Boss writes before any returns,
   * acquire a single-account lease, and reject other concurrent executors.
-  * The service must also fence V18/V22/V27/V28 worker and claim writes.
+  * V57 requires the account fence INSERT to COMMIT in its OWN short
+  * transaction using the same advisory key as all V57 account triggers.
+  * Never hold that advisory lock while acquiring event-row locks or
+  * purging receipts, or event-first gameplay writers can deadlock.
+  * The real service must also fence other cross-feature write paths.
   */
  beginOrResume(accountId:string):Promise<WorldBossErasureResumeV56>;
  /** Read only keys owned by the verified account; never return to client. */

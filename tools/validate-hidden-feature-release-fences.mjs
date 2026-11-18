@@ -18,6 +18,10 @@ const paths={
   routes:'apps/mobile/src/core/feature-hub-routes.ts',
   app:'apps/mobile/App.tsx',
   worldRead:'backend/online/world-boss-current-read-route-v52.ts',
+  worldAction:'backend/online/world-boss-current-action-v62.ts',
+  worldGate:'backend/online/world-boss-gate-attestation-v63.ts',
+  worldRuntime:'backend/online/world-boss-action-runtime-v64.ts',
+  worldMobile:'apps/mobile/src/core/world-boss-action-request-v65.ts',
   worldErasure:'backend/online/world-boss-account-erasure-v56.ts',
   partyRead:'backend/online/party-event-read-route-v39.ts',
   guildProof:'backend/src/server/combat/guild-pve-reward-proof-v14.ts',
@@ -45,6 +49,10 @@ function check(read,migrations){
   if(source('flags').includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED'))
     requireExportFalse('flags','ACCOUNT_SOCIAL_IDENTITY_RELEASED');
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
+  requireExportFalse('worldAction','WORLD_BOSS_V62_ACTION_HTTP_LIVE');
+  requireExportFalse('worldGate','WORLD_BOSS_V63_GATE_ATTESTATION_LIVE');
+  requireExportFalse('worldRuntime','WORLD_BOSS_V64_PRIVATE_COMPOSITION_LIVE');
+  requireExportFalse('worldMobile','WORLD_BOSS_V65_MOBILE_ACTIONS_LIVE');
   requireExportFalse('worldErasure','WORLD_BOSS_V56_ERASURE_LIVE');
   requireExportFalse('partyRead','PARTY_EVENT_READ_ROUTE_V39_MOUNTED');
   requireExportFalse('guildProof','GUILD_PVE_V14_LIVE');
@@ -87,6 +95,10 @@ function selfTest(){
     ['preview-release',paths.routes,"typeof __DEV__!=='undefined'&&__DEV__===true",'true'],
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],
     ['read-endpoint-release',paths.worldRead,'WORLD_BOSS_V52_READ_ROUTE_LIVE=false','WORLD_BOSS_V52_READ_ROUTE_LIVE=true'],
+    ['world-action-release',paths.worldAction,'WORLD_BOSS_V62_ACTION_HTTP_LIVE=false','WORLD_BOSS_V62_ACTION_HTTP_LIVE=true'],
+    ['world-gate-release',paths.worldGate,'WORLD_BOSS_V63_GATE_ATTESTATION_LIVE=false','WORLD_BOSS_V63_GATE_ATTESTATION_LIVE=true'],
+    ['world-runtime-release',paths.worldRuntime,'WORLD_BOSS_V64_PRIVATE_COMPOSITION_LIVE=false','WORLD_BOSS_V64_PRIVATE_COMPOSITION_LIVE=true'],
+    ['world-mobile-release',paths.worldMobile,'WORLD_BOSS_V65_MOBILE_ACTIONS_LIVE=false','WORLD_BOSS_V65_MOBILE_ACTIONS_LIVE=true'],
     ['guild-claim-release',paths.guildProof,'canClaim:false,proposedTokenAmount:null','canClaim:true,proposedTokenAmount:5'],
     ['provider-wiring',paths.app,'<FeaturePreviewScreen key={tab}','<FeaturePreviewScreen worldBossReadCurrent={readWorldBoss} key={tab}'],
     ['spread-wiring',paths.app,'<FeaturePreviewScreen key={tab}','<FeaturePreviewScreen {...provider} key={tab}'],
@@ -103,7 +115,7 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects eleven unsafe release regressions plus baseline');
+  console.log('PASS: hidden feature fence detects fifteen unsafe release regressions plus baseline');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){

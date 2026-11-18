@@ -101,6 +101,15 @@ assert.equal(evidence.baseSources.length,2);
 assert.equal(evidence.setEffects.length,1);
 assert.equal(evidence.setEffects[0].thresholdId,'eq2_t1_oathplate:2');
 assert.equal(evidence.affixSources.length,1);
+assert.equal(evidence.classPolicyVersion,'synthetic-class-profile-v1');
+assert.deepEqual(evidence.statStages.afterAffixes,resolved.stats);
+assert.equal(evidence.statStages.afterSkills.defense,
+ compileServerSkillBuildV2(true,build).stats.defense);
+assert.ok(evidence.statStages.afterItemBase.maxHp>evidence.statStages.afterSkills.maxHp);
+assert.equal(evidence.statStages.afterSets.defense,
+ Math.round(evidence.statStages.afterItemBase.defense*1.02*1e6)/1e6);
+assert.equal(evidence.statStages.classOnly.attackPower,fixtureClassStats.attackPower);
+
 assert.equal(evidence.composition,undefined,'No unapproved CP weighting may be assumed');
 const weights=Object.fromEntries(keys.map(x=>[x,x==='attackPower'?1:0])) as Record<keyof CombatStats,number>;
 const policy={

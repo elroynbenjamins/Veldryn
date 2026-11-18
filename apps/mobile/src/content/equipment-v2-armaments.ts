@@ -1,6 +1,7 @@
-import type {ClassId,GearSlot} from '../core/types';
+import type {ClassId} from '../core/types';
 import type {EquipmentV2Profile,EquipmentV2Tier,EquipmentV2WeaponHands} from '../core/equipment-crafting-v2-foundation';
 import {equipmentV2PreviewArmamentStats,equipmentV2PreviewBaseStats} from '../core/equipment-crafting-v2-foundation';
+import {EQUIPMENT_V2_CLASS_WEAPONS} from './equipment-v2-catalog';
 
 /** HIDDEN class-compatible weapon and off-hand archetype templates for all four
  * early tiers. They do not spawn items or change current equip restrictions.
@@ -13,17 +14,21 @@ export interface V2ClassArmamentSpec{
  classId:ClassId;weaponName:string;weaponProfile:EquipmentV2Profile;hands:EquipmentV2WeaponHands;
  material:'steel'|'leather'|'cloth';offhandName?:string;offhandProfile?:EquipmentV2Profile;
 }
-export const V2_CLASS_ARMAMENT_SPECS:readonly V2ClassArmamentSpec[]=[
- {classId:'IRONWARDEN',weaponName:'Oathbound Sword',weaponProfile:'attack_defense',hands:'one',material:'steel',offhandName:'Guardian Shield',offhandProfile:'defense_health'},
- {classId:'BASTION',weaponName:'Citadel Shieldblade',weaponProfile:'attack_defense',hands:'one',material:'steel',offhandName:'Tower Shield',offhandProfile:'defense_health'},
- {classId:'DREADGUARD',weaponName:'Chained Scourge',weaponProfile:'attack_health',hands:'two',material:'steel'},
- {classId:'WAYFINDER',weaponName:'Wayfinder Bow',weaponProfile:'attack',hands:'two',material:'leather'},
- {classId:'RAVAGER',weaponName:'Ravager Greatblade',weaponProfile:'attack',hands:'two',material:'steel'},
- {classId:'HEXWEAVER',weaponName:'Hexweaver Wand',weaponProfile:'attack_health',hands:'one',material:'cloth',offhandName:'Hex Focus',offhandProfile:'attack_defense'},
- {classId:'KNIFE_DANCER',weaponName:'Knife Dancer Twin Blades',weaponProfile:'attack',hands:'dual',material:'leather'},
- {classId:'DAWNKEEPER',weaponName:'Dawnkeeper Mace',weaponProfile:'attack_defense',hands:'one',material:'steel',offhandName:'Dawn Aegis',offhandProfile:'defense_health'},
- {classId:'STONECALLER',weaponName:'Stonecaller Staff',weaponProfile:'attack_health',hands:'two',material:'cloth'},
-];
+const V2_CLASS_OFFHAND_DESIGN:Readonly<Record<ClassId,{material:'steel'|'leather'|'cloth';offhandName?:string;offhandProfile?:EquipmentV2Profile}>>={
+ IRONWARDEN:{material:'steel',offhandName:'Guardian Shield',offhandProfile:'defense_health'},
+ BASTION:{material:'steel',offhandName:'Tower Shield',offhandProfile:'defense_health'},
+ DREADGUARD:{material:'steel'},
+ WAYFINDER:{material:'leather'},
+ RAVAGER:{material:'steel'},
+ HEXWEAVER:{material:'cloth',offhandName:'Hex Focus',offhandProfile:'attack_defense'},
+ KNIFE_DANCER:{material:'leather'},
+ DAWNKEEPER:{material:'steel',offhandName:'Dawn Aegis',offhandProfile:'defense_health'},
+ STONECALLER:{material:'cloth'},
+};
+export const V2_CLASS_ARMAMENT_SPECS:readonly V2ClassArmamentSpec[]=EQUIPMENT_V2_CLASS_WEAPONS.map(weapon=>({
+ classId:weapon.classId,weaponName:weapon.name,weaponProfile:weapon.profile,hands:weapon.hands,
+ ...V2_CLASS_OFFHAND_DESIGN[weapon.classId],
+}));
 const TIER_NAMES:Readonly<Record<EquipmentV2Tier,string>>={
  1:'Fieldborn',2:'Ironwood',3:'Sunscar',4:'Glassbound',
 };

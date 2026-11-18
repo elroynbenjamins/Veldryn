@@ -92,3 +92,30 @@ Replaces the earlier ordinary heading with a compact thematic Hall of Renown her
 
 ### Limitations
 This is a source-level implementation. **No unverified claims of passing CI, Android QA, production rollout, migration or activated feature gates.**
+
+## Three follow-up development passes — 18 November 2026
+
+### Pass 1 — regression and focused CI repair
+- Reconciled legacy feedback contract: the icon-based Refresh button now exposes its localized accessible busy/disabled state instead of an old text-only loading prop.
+- Updated the responsive score-wrap contract to the new accessible stacked score container, retaining the 44px minimum tab targets and adapting to increased font scale.
+- Restored both hidden scroll-indicator props in the Rankings guide modal.
+- Updated the existing Rankings contract to recognize stricter server-entry validation while still checking stale response rejection, official ties and bounded pagination.
+- These are test-contract maintenance changes for *implemented* behavior, not removal of safety assertions.
+
+### Pass 2 — pixel-art visual consistency
+- Reuse the game's authored **Account, Skills, Training/Arena, Dungeon and Guild** artwork in the board selector rather than inconsistent Unicode glyphs.
+- Remove repetitive normal-row "PLAYER"/"GUILD" labels. Keep the important "YOU" identifier on the authenticated player's row.
+- Use app-selected language for the authoritative leaderboard generation time.
+- Add a regression check for every referenced pixel-art asset and compact identity behavior.
+
+### Pass 3 — reliable refresh, pagination continuity and privacy
+- Single-flight per board+page for manual, polling and foreground reads. A different board/page is allowed immediately; a request stalled beyond 30 seconds can be replaced.
+- Ownership/version guards ensure older in-flight responses cannot clear a newer spinner or overwrite a new board after switching.
+- Extracted `rankingCanStartRead` pure policy with fixtures for duplicate suppression, board/page switch, expiry, clock skew and initial load.
+- On failed refresh, keep valid existing standings and display the translated, accessible **"Showing last verified standings. Retry to update."** note.
+- Preserve read-only server authority, 50-row paging, all 19 existing boards, top-three official rank/privacy rules and the global release gate `RANKINGS_RELEASED=false`.
+
+### Verification distinction
+- Source/flag/static contracts were audited. Automated GitHub workflows have been queued after the final implementation commits; they must finish successfully before merging.
+- Earlier CI exposed additional failures in roadmap localization, tool-blueprint balancing and Expo package expectations. These are outside the Rankings-specific changes and require separate ownership/reconciliation; do not bypass those release checks.
+- No production release, event scoring finalization, SQL migration or player-visible navigation enabled.

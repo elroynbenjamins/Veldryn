@@ -143,3 +143,16 @@ RPC or paid claim exists here.
 - Expanded the snapshot decoder and feature-hub source regressions for UTC calendar presentation, lease expiry, phase-aware UI, region selection, tier thresholds, accessibility and no fabricated War Camp percentage.
 
 **Review gates remain:** latest-head CI, TalkBack and Android small-screen inspection, updated mainline reconciliation, approved private staging schema and Auth status route, 3–5-character staging fixtures, economic/retention review (issue #1348), and a separate explicit feature launch decision. This draft is **not** a release authorization.
+
+## V48 single globally rotating boss correction (18 November 2026) — supersedes the V47 codex switcher
+
+**Product decision:** exactly **one shared World Boss event per 14-day cycle**. Hollowroot, Sunscar and Frostmarch rotate in sequence. The previous V47 persistent boss selection UI was incorrect and has been removed; the five remaining tabs represent workflows for the same one event, not selectable bosses.
+
+- The world-boss title, hero panorama, regional briefing, War Camp tasks and battle mechanics all derive from **one** private, validated, owner-matched V41 event snapshot's `bossId`. Players cannot switch to another region to see or act upon a separate event.
+- When no fresh authenticated event snapshot is available, the hero displays a neutral Kings Road background with `World Boss` and no claimed regional identity, date, combat HP, reward balance or upcoming boss prediction. The local QA screen retains instructional content with a clear unverified-data notice.
+- The static rotation order is informational only; the *specific active/next event* must be selected by the server. Future schedule creation must enforce one globally shared event per cycle, non-overlapping event windows, a trusted server-owned launch epoch and the ordered Hollowroot → Sunscar → Frostmarch rotation, with no per-region claim or attempt multiplication.
+- Existing 14-day timing stays unchanged: five days War Camp preparation, Saturday–Sunday continuous 48h combat, then seven days recovery. Three attacks and two donations remain account-wide per event.
+- The screen's existing authenticated read decoder, 2-minute status lease, QA-only route and disabled donate/raid/claim actions are preserved. No production route, migration, schedule, game economy, reward or release flag was activated.
+- Changed regression coverage to reject reintroducing a regional boss picker or default Hollowroot art when data is missing.
+
+**Validation still required:** dedicated latest-head CI, Android device and accessibility QA, server-enforced rotation/uniqueness checks, approved authenticated event reader and staging deployment, account erasure #1348 and complete battle/reward testing. Keep the feature PR draft, unmerged and hidden.

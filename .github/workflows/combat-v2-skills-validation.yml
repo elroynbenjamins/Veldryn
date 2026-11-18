@@ -8,6 +8,7 @@ on:
       - 'backend/src/server/combat/**'
       - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
       - 'apps/mobile/src/content/skills-v2-preview.ts'
+      - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
       - '.github/workflows/combat-v2-skills-validation.yml'
   pull_request:

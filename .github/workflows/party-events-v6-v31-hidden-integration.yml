@@ -90,6 +90,8 @@ jobs:
         run: node tests/party-event-readonly-sql-v33.mjs
       - name: Verify V38 account-locked reward / receipt / Inbox failure atomicity in disposable PGlite
         run: node tests/party-event-atomic-rollback-v38.mjs
+      - name: Verify V45 atomic receipt writer and injected rollback in disposable PGlite
+        run: node tests/party-event-canonical-source-writer-v45.mjs
       - name: Verify V44 starter gathering SQL and packet source alignment
         run: node tests/party-event-source-alignment-v44.mjs
       - name: Verify V43 canonical receipt/event matching and overlap denial in disposable PGlite

@@ -18,7 +18,7 @@ const fail=async(fn:()=>Promise<unknown>,fragment:string)=>{
  assert.ok(message.includes(fragment),'expected '+fragment+' got '+message);
 };
 const baseline:WorldBossOverviewRowV41={
- eventId:EVENT,accountId:ACCOUNT,bossId:'hollowroot',
+ schema:'world-boss-overview-v41',eventId:EVENT,accountId:ACCOUNT,bossId:'hollowroot',
  status:'active',phase:'preparation',startsAtUtcMs:START,
  endsAtUtcMs:START+7*DAY,readAtUtcMs:TODAY,
  maxHp:100000,remainingHp:91000,eventRevision:4,

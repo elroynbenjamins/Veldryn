@@ -3,6 +3,9 @@ import {CLASSES} from '../src/content/classes';
 import {itemDef} from '../src/content/items';
 import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedEquipmentBonusStats} from '../src/core/equipment-set-runtime';
+import {moveCraftedGearInstance,equipCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
+import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {draftCraftedGearInstance,normalizeCraftedGearInstances} from '../src/core/crafted-gear-instances';
 import {equipmentBonusConfig,equipmentBonusLine,equipmentBonusRange,normalizeEquipmentBonuses,rollEquipmentBonuses,EQUIPMENT_BONUS_ROLL_VERSION} from '../src/core/equipment-bonus-rolls';
 import type {CraftedGearInstance,GameState,GearSlot} from '../src/core/types';
@@ -104,4 +107,32 @@ ok(!cleanStats.haste&&!cleanStats.critRate&&!cleanStats.evasion,
 const tampered={...high,equipmentBonuses:[{stat:'critRate' as const,basisPoints:9999},{stat:'haste' as const,basisPoints:9999}]};
 ok(Object.keys(equippedEquipmentBonusStats(withEquipped(tampered))).length===0,
   'Invalid stored bonuses must not grant combat stats');
-console.log('PASS: T2–T5 role-based armor/accessory rolls, exact-copy persistence and combat safety');
+// Cross-character Bank transfers keep the original Forge receipt and its bonuses.
+const recipient:GameState={...active,
+  character:{...active.character!,id:'SECOND_CHARACTER_ON_ACCOUNT',level:999,
+    equipment:{...initial.character!.equipment},equipmentInstanceIds:{},equipmentPouch:{capacity:30,stacks:[]}},
+  bank:{...active.bank,stacks:[{itemId:t2,quantity:1,instanceId:loaded.id}]},
+};
+const fromBank=moveCraftedGearInstance(recipient,loaded.id,'equipment_pouch');
+const equipped=equipCraftedGearInstance(fromBank,loaded.id);
+ok(equipped.character?.equipmentInstanceIds?.gloves===loaded.id,
+  'Bank transfer must equip the exact T2 glove receipt');
+for(const roll of loaded.equipmentBonuses!)
+  close(equippedEquipmentBonusStats(equipped)[roll.stat]??0,roll.basisPoints/10_000,
+    'Transferred T2 gear retains its original stat roll');
+const unequipped=unequipCraftedGearInstance(equipped,loaded.id);
+ok(Object.keys(equippedEquipmentBonusStats(unequipped)).length===0,
+  'Unequipping rolled armor must immediately remove its bonus');
+const restored=normalizeCraftedGearInstances(JSON.parse(JSON.stringify(unequipped.account.craftedGearInstances)))[0];
+ok(JSON.stringify(restored.equipmentBonuses)===JSON.stringify(loaded.equipmentBonuses),
+  'Bank and pouch movement must preserve rolls through a save round-trip');
+
+// The Keep Best policy cannot silently sell a better-playstyle rolled armor copy.
+const existing=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,index)=>({
+  instance:{...high,id:`saved-rolled-gloves-${index}`,sourceReceiptKey:`saved-roll-${index}`},
+  location:'inventory' as const,holderCharacterId:initial.character!.id,
+  ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
+}));
+const keepBest=planCraftedGearRetention(existing,{...high,id:'incoming-rolled-gloves'},'keep_best_seven');
+ok(keepBest.action==='manual_review','Rolled non-weapon bonuses must require manual choice at the copy cap');
+console.log('PASS: T2–T5 role-based equipment rolls, transfers, retention and exact-copy combat safety');

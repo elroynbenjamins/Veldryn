@@ -29,7 +29,8 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  assert.equal(skills.length,2);
  for(const spec of SPECIALIZATIONS_V2.filter(s=>s.classId===classId)){
   const actor=launchPlayer(CLASS_NAMES_V2[classId],25);
-  const classOnly={...actor,tags:[...(actor.tags??[]),'combat-v2-class-base-only']};
+  const classOnly=actor;
+  const fixtureClassStats={...actor.stats};
   const instanceId='SYNTHETIC_HELMET_'+classId,characterId='SYNTHETIC_'+classId;
   const itemId='V2_HELMET_'+classId;
   const build:VerifiedSkillBuildV2={
@@ -49,6 +50,12 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
   };
   const runtime:TrustedEquipmentRuntimeV2={
    actorId:classOnly.id,characterId,
+   classBaselinePolicy:{version:'synthetic-full-role-matrix',profiles:{
+    [classId]:{classId,minLevel:1,maxLevel:75,
+      statsAtLevel:()=>({...fixtureClassStats}),
+      basicAttackMs:actor.basicAttackMs,basicAttackCoeff:actor.basicAttackCoeff,
+      abilities:actor.abilities},
+   }},
    instancesById:{[instanceId]:{id:instanceId,itemId,tier:'T1',
      ownerCharacterId:characterId,rarity:'common',quality:50}},
    definitionsByItemId:{[itemId]:{

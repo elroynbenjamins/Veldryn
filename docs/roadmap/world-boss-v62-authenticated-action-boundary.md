@@ -26,6 +26,12 @@ closes that selection gap without touching the live gameplay API:
   math with the existing transactionally validated DB routines.
 - Uses V61 transaction triggers to reject NEW writes when operators pause an
   action. A valid idempotent retry may still retrieve its existing receipt.
+- **V63 mandatory private gate attestation** requires an operator-controls row
+  for the server-selected event, all three V61 receipt triggers enabled and
+  no unsafe client/operator grants. No V63 attestation dependency means a
+  generic 503 before calling any raid/donation/claim service. It is a
+  source/SQL readiness check, not a staged gameplay rehearsal or a substitute
+  for the final transaction-level V61 gates.
 - Returns only a no-store response and generic 400/401/405/409/503 errors;
   never returns SQL details, account selectors, token or a private stack trace.
 - Does not create a server route, mobile action button, network client,

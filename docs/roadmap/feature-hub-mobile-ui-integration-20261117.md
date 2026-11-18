@@ -185,3 +185,14 @@ The previous V49 naming and V48 single-boss decisions remain in force.
 The sibling hidden backend V50 rotation contract on World Boss PR #1346 is a pure server-side calculator, **not connected** to any runtime service. One-event-per-cycle database uniqueness, account erasure (#1348), staging migrations, Auth, real squad and wallet data, and Android/localization validation still block release.
 
 **Do not merge to main or open gameplay permissions solely based on this UI pass.**
+
+## V52 optional authenticated status-source UX (18 November 2026) — hidden/unconnected
+
+- The existing developer-only World Boss `FeaturePreviewScreen` now accepts a future trusted `worldBossReadCurrent():Promise<unknown>` prop, plus the already supported host-owned account ID. The callback receives **no client-controlled account, event, boss or cycle selection**, and it is never created by a player input.
+- The mobile host **does not pass this prop**, and `App.tsx` still does not mount any World Boss network route. This is a socket for future integration, **not real current production data**. The V51/V52 backend read service remains unmounted and the private staging schema is not installed.
+- When a future authenticated source is injected, the screen requests the current account status, shows Loading / No event / Error / Expired or invalid states, offers a read-only Refresh action, and retries once per 60 seconds while the preview stays active. The existing two-minute lease decoder checks every returned V41 payload again.
+- Cross-account and route-change races are canceled; if the host account ID changes, a late response for the old account cannot overwrite the current view. Errors clear old results rather than showing stale HP, War Camp donations or wallet values.
+- All combat, donate, claim and shop actions remain disabled; no client-supplied JWT, service key, Supabase RPC, release flag, private SQL or write API is added to the screen. The private overview cannot be used to infer a playable event.
+- Added source-level regression coverage in `world-boss-readonly-snapshot.cjs` and `feature-hub-preview-ui.cjs`. These verify source boundaries but are **not** a live device test.
+
+**Still required:** approved server-side Supabase Auth GET endpoint, real staging migrations and private permissions, proper launch epoch and globally unique event row, account erasure #1348, known 1–5 character fixture tests, CI and Android/TalkBack QA. Do not connect to production or claim real World Boss availability.

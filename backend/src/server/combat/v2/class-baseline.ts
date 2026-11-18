@@ -50,7 +50,7 @@ export function issueClassOnlyActorV2(
  policy:ApprovedClassBaselinePolicyV2,
 ):CombatantDefinition{
  const classId=verified.classId;
- if(!policy.version||!policy.version.trim())reject('policy_version_missing');
+ if(!policy||typeof policy.version!=='string'||!policy.version.trim())reject('policy_version_missing');
  if(!Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,classId)||
     source.team!=='players'||source.role!==CLASS_ROLES_V2[classId]||
     (source.classId!==classId&&source.classId!==CLASS_NAMES_V2[classId])||
@@ -92,7 +92,8 @@ export function issueClassOnlyActorV2(
   id:source.id,name:source.name,
   classId:CLASS_NAMES_V2[classId],
   team:'players',role:CLASS_ROLES_V2[classId],level:verified.level,
-  stats:{...stats},
+  // Explicit allowlist, no unknown additional profile payload fields.
+  stats:Object.fromEntries(statKeys.map(key=>[key,stats[key]])) as CombatStats,
   basicAttackMs:profile.basicAttackMs,
   basicAttackCoeff:profile.basicAttackCoeff,
   abilities:profile.abilities.map(cloneAbility),

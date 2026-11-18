@@ -64,7 +64,7 @@ export function purchaseMerchantOffer(input:{runId:string;node:CoopRouteNode;act
 
 function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinition[]):PersistentRunState{
  const actors={...state.actors}; let revived=false;
- for(const player of players){const current=actors[player.id];if(!current)continue;if(current.downed&&!revived){actors[player.id]={...current,downed:false,hp:Math.max(1,player.stats.maxHp*.25)};revived=true;}else actors[player.id]={...current,hp:Math.min(player.stats.maxHp,current.hp+player.stats.maxHp*.45)};}
+ for(const player of players){const current=actors[player.id];if(!current)continue;if(current.downed&&!revived){actors[player.id]={...current,downed:false,hp:Math.max(1,player.stats.maxHp*.25)};revived=true;}else actors[player.id]={...current,hp:Math.min(player.stats.maxHp,current.hp+player.stats.maxHp*.30)};}
  return {...state,actors};
 }
 

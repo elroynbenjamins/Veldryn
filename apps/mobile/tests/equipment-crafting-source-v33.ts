@@ -4,6 +4,7 @@ import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
 import {itemDef} from '../src/content/items';
+import {equipmentCraftAvailability} from '../src/core/equipment-crafting-queue';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
@@ -123,6 +124,30 @@ for(const profession of ['smithing','tailoring'] as const){
   const t3Recipes=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3'&&row.skillId===profession);
   ok(t3Recipes.length>0,profession+' must have T3 gear recipes');
   ok(t3Recipes.every(row=>row.level===22),profession+' T3 gear must unlock at profession Level 22');
+  const expectedClasses=profession==='smithing'?4:5;
+  ok(t3Recipes.length===expectedClasses*2*10,profession+' must have T3 recipes for every class, path, and slot');
+  for(const classId of new Set(t3Recipes.map(row=>row.classId))){
+    const classRecipes=t3Recipes.filter(row=>row.classId===classId);
+    ok(classRecipes.length===20,profession+' '+classId+' T3 must have ten pieces in both paths');
+    for(const path of ['Foundation','Alternate'])
+      ok(classRecipes.filter(row=>row.v33Path===path).length===10,profession+' '+classId+' '+path+' T3 must have ten pieces');
+  }
+  for(const path of ['Foundation','Alternate']){
+    const sample=t3Recipes.find(row=>row.v33Path===path)!;
+    const base=createCharacter(newGame(0),sample.classId,'T3 Skill Gate');
+    const readyAt=(level:number)=>{
+      const state={
+        ...base,
+        character:{...base.character!,level:sample.characterLevel,gold:sample.gold},
+        skills:base.skills.map(row=>row.skillId===profession?{...row,level}:row),
+        inventory:{...base.inventory,stacks:sample.inputs.map(input=>({...input}))},
+      };
+      return equipmentCraftAvailability(state,sample.id,1000);
+    };
+    const locked=readyAt(21),unlocked=readyAt(22);
+    ok(!locked.ready&&locked.reason.includes('level 22'),profession+' '+path+' must reject Level 21 with a clear level requirement');
+    ok(unlocked.ready,profession+' '+path+' must accept Level 22 with exact gold and inputs: '+unlocked.reason);
+  }
 }
 const t3Components=RECIPES.filter(row=>['FORGE_ARMOR_RIVETS','FORGE_RECLAIMED_ARMOR_RIVETS','STITCH_REINFORCED_STRAPS','STITCH_RECYCLED_REINFORCED_STRAPS'].includes(row.id));
 ok(t3Components.length===4&&t3Components.every(row=>row.level===20),'T3 cross-profession components must unlock before T3 gear');

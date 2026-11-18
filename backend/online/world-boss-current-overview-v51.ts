@@ -27,6 +27,12 @@ const integer=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0;
 export interface WorldBossCurrentOverviewDepsV51 {
  /** Auth must verify token at the provider and return only its owner account ID. */
  authenticate(token:string):Promise<string|null>;
+ /**
+  * V54 privacy fence: server-owned account deletion/erasure state.
+  * A valid JWT alone does NOT authorize reading an account whose deletion
+  * has begun. No default-allow fallback; missing gate rejects the request.
+  */
+ accountPrivacy:{allowRead(accountId:string):Promise<boolean>};
  /** Must be private server configuration, NOT a request argument. */
  launchMondayUtcMs:number;
  /** Must use server UTC time, NOT a user/client device clock. */
@@ -46,6 +52,7 @@ export async function readAuthenticatedCurrentWorldBossOverviewV51(
  input:{token:string},deps:WorldBossCurrentOverviewDepsV51,
 ):Promise<WorldBossOverviewRowV41|null>{
  if(!deps||typeof deps.authenticate!=='function'||
+  !deps.accountPrivacy||typeof deps.accountPrivacy.allowRead!=='function'||
   typeof deps.serverNowUtcMs!=='function'||
   !deps.events||typeof deps.events.findByCycleStart!=='function'||
   !deps.overview||typeof deps.overview.read!=='function'||
@@ -55,6 +62,10 @@ export async function readAuthenticatedCurrentWorldBossOverviewV51(
 
  const accountId=await deps.authenticate(input.token);
  if(!validId(accountId))throw Error('world_boss_v51_auth_required');
+ // Check pending erasure and suspended ownership before revealing event,
+ // receipt, wallet or replay metadata. Only a trusted server reader can decide.
+ if(await deps.accountPrivacy.allowRead(accountId)!==true)
+  throw Error('world_boss_v54_account_privacy_hold');
  const now=deps.serverNowUtcMs();
  if(!integer(now))throw Error('world_boss_v51_invalid_server_clock');
  const cycle=worldBossRotationAtV50(deps.launchMondayUtcMs,now);

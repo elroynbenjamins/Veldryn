@@ -9,7 +9,7 @@ const source=fs.readFileSync(path.join(__dirname,'../src/core/party-event-readon
 const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
 const sandbox={exports:{},Date,Math,Set};
 vm.runInNewContext(js,sandbox);
-const {decodePartyEventReadOnlySnapshot:decode,partyEventSupplyProgress:progress,PARTY_EVENT_STATUS_MOBILE_RELEASED}=sandbox.exports;
+const {decodePartyEventReadOnlySnapshot:rawDecode,decodePartyEventReadTransportV39:transport,partyEventSupplyProgress:progress,PARTY_EVENT_STATUS_MOBILE_RELEASED}=sandbox.exports;
 const base={
  schema:'party-event-readonly-status-v33',
  eventStartsAt:'2026-11-09T00:00:00Z',eventEndsAt:'2026-11-16T00:00:00Z',serverTime:'2026-11-10T00:00:00Z',
@@ -24,6 +24,8 @@ const base={
  votes:{stage2:'safe_pass',stage3:null,myStage2Ballot:true,myStage3Ballot:false},
  canClaim:false,canContribute:false,canFight:false,
 };
+const fixtureNow=Date.parse(base.serverTime);
+const decode=(raw,nowMs=fixtureNow)=>rawDecode(raw,nowMs);
 test('private status decoder accepts an enrolled flexible four-player party only without write grants',()=>{
  assert.equal(PARTY_EVENT_STATUS_MOBILE_RELEASED,false);
  const status=decode(base);
@@ -55,4 +57,26 @@ test('no snapshot or forged unlocks, wrong stages, duplicate evidence or invalid
   {...base,eventEndsAt:'2026-11-15T00:00:00Z'},
   {...base,orders:[{...base.orders[0],kind:'injected'}]},
  ])assert.equal(decode(data),null,JSON.stringify(data));
+});
+
+test('verified V39 response accepts only a fresh read-only private event, never an unlock',()=>{
+ const envelope={schema:'party-event-status-http-v39',event:base,
+  claimsEnabled:false,donationsEnabled:false,combatEnabled:false};
+ assert.equal(transport(envelope,fixtureNow).kind,'ready');
+ assert.equal(transport({...envelope,event:null},fixtureNow).kind,'empty');
+ for(const bad of [
+  {...envelope,claimsEnabled:true},
+  {...envelope,donationsEnabled:true},
+  {...envelope,combatEnabled:true},
+  {...envelope,schema:'party-event-status-http-other'},
+  {...envelope,event:{...base,canFight:true}},
+  {...envelope,error:'unavailable'},
+ ])assert.equal(transport(bad,fixtureNow).kind,'invalid');
+});
+test('expired, future, or temporally inconsistent status is not displayed',()=>{
+ assert.equal(decode(base,fixtureNow+120001),null);
+ assert.equal(decode(base,fixtureNow-30001),null);
+ assert.equal(decode({...base,status:'closed'}),null);
+ assert.equal(decode({...base,status:'settled'}),null);
+ assert.equal(decode({...base,serverTime:'2026-11-18T00:00:00Z'},fixtureNow),null);
 });

@@ -13,6 +13,11 @@ import {
   type WorldBossGatheringBossV64,
 } from '../../../backend/online/world-boss-gathering-loot-v64';
 
+function expectThrow(fn:()=>unknown,fragment:string){
+ let error='';
+ try{fn()}catch(e){error=String(e)}
+ assert.ok(error.includes(fragment),'Expected '+fragment+' in '+error);
+}
 assert.equal(WORLD_BOSS_GATHERING_LOOT_V64_LIVE,false);
 assert.equal(WORLD_BOSS_GATHERING_CHEST_CHANCE_BPS,100);
 assert.equal(WORLD_BOSS_GATHERING_SETS_V64.length,3);
@@ -86,12 +91,12 @@ const unlucky=planWorldBossGatheringLootV64({
 });
 assert.equal(unlucky.chestId,undefined);
 for(const bad of [NaN,-1,1.5,10_000]){
-  assert.throws(()=>planWorldBossGatheringLootV64({
+  expectThrow(()=>planWorldBossGatheringLootV64({
     bossId:'sunscar',outcome:'victory',nextInt:()=>bad,
-  }),/invalid_server_entropy/);
+  }),'invalid_server_entropy');
 }
-assert.throws(()=>previewOpenWorldBossGatheringChestV64('forged',()=>0),/unknown_chest/);
-assert.throws(()=>planWorldBossGatheringLootV64({
+expectThrow(()=>previewOpenWorldBossGatheringChestV64('forged',()=>0),'unknown_chest');
+expectThrow(()=>planWorldBossGatheringLootV64({
   bossId:'forged' as WorldBossGatheringBossV64,outcome:'victory',nextInt:()=>0,
-}),/unknown_boss/);
+}),'unknown_boss');
 console.log('World Boss V64 hidden gathering loot contract passed');

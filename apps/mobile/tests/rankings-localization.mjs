@@ -27,6 +27,7 @@ const keys=[
   'Previous','Next','Page',
   'Entries {first}–{last}',
   'Live rankings can change while players progress.',
+  'Showing last verified standings. Retry to update.',
   'Rankings guide','HALL OF RENOWN','LEADER','GLOBAL','Current rank',
   'Verified score','RANKED PLAYERS','Server-ranked · Privacy protected',
   'Updated {time}','Privacy and tied ranks',

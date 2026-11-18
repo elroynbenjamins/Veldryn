@@ -73,6 +73,24 @@ const changedSkill=combat('dot'),skillToken=issueEnemyV2EngineAuthority(snapshot
 changedSkill.enemies[0].abilities[0].effects[0].coeff=.5;
 denied(()=>simulateCombat(changedSkill,skillToken),/scope_does_not_match_combat_input/);
 assert.equal(checked,15);
+const nineClasses:Readonly<Record<string,NonNullable<CombatantDefinition['combatV2']>['resource']>>={
+ Ironwarden:'guard',Bastion:'barrier',Dreadguard:'dread',
+ Wayfinder:'focus',Ravager:'fury',Hexweaver:'threads',
+ 'Knife Dancer':'rhythm',Dawnkeeper:'radiance',Stonecaller:'resonance',
+};
+for(const [classId,resource] of Object.entries(nineClasses)){
+ const input=combat('dot');
+ input.players[0].classId=classId;
+ input.players[0].combatV2={version:2,resource,specializationId:'verified-test-only'};
+ const trusted=issueEnemyV2EngineAuthority(snapshot,input,(_saved,digest)=>{
+  assert.match(digest,/^[a-f0-9]{64}$/);
+  return true;
+ });
+ const result=simulateCombat(input,trusted);
+ assert.equal(result.players[0].combatV2?.resource,resource);
+ assert.ok((result.players[0].combatV2?.stacks??0)>=0);
+ assert.ok((result.players[0].combatV2?.stacks??0)<=(result.players[0].combatV2?.maxStacks??0));
+}
 
 for(const effect of ['dot','buff','shield'] as const){
  const input=combat(effect);
@@ -107,4 +125,4 @@ for(const effect of ['dot','buff','shield'] as const){
 // create a token; the engine never reads the field from a JSON CombatInput.
 const injected={...combat('shield'),experimentalRuleset:'enemy-v2-prototype-1'};
 assert.deepEqual(simulateCombat(injected),simulateCombat(combat('shield')));
-console.log('PASS: Class/Enemy engine conflict resolved; 15 untrusted-authority cases, deterministic shield/DoT/debuff and legacy replay isolation');
+console.log('PASS: Class/Enemy engine conflict resolved; nine resources, 15 untrusted-authority cases, deterministic shield/DoT/debuff and legacy replay isolation');

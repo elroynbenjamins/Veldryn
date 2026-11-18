@@ -80,7 +80,7 @@ assert(Number(risk.summary.damagedHp)>0,'Risk must hurt the party, not only add 
 assert(players.every(player=>(risk.state.actors[player.id]?.hp??Infinity)<player.stats.maxHp),'Real HP loss on risk path');
 const event=resolveCoopNode({runId:'event-test',serverSecret:'event-secret',node:node('event','ROOT_EVENT_WHISPER'),players,state:starting});
 assert.equal(event.state.resources,1);
-assert.equal(event.state.boons.length,1,'Event grants a lasting run boon, not only shop resources');
+assert.equal(event.state.boons.length,0,'Event grants resources without an additional combat boon');
 const cache=resolveCoopNode({runId:'cache-test',serverSecret:'cache-secret',node:node('treasure','ROOT_CACHE_BURIED'),players,state:starting});
 assert.equal(cache.state.artifacts.length,1);
 

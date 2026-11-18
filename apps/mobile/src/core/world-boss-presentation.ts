@@ -24,3 +24,24 @@ export function worldBossPresentationFor(
   return null;
  return WORLD_BOSS_PRESENTATION[id as WorldBossPresentationId];
 }
+
+/**
+ * The authored V6/V25 combat engine stores legacy uppercase actor keys in
+ * immutable battle events. Convert keys only at the UI presentation boundary;
+ * rewriting an actorId inside a replay would invalidate historical integrity.
+ */
+const replayActorBossIds={
+ HOLLOWROOT:'hollowroot',
+ SUNSCAR:'sunscar',
+ FROSTMARCH:'frostmarch',
+} as const;
+export function worldBossReplayActorDisplayName(
+ actorId:unknown,
+):string|null{
+ if(typeof actorId!=='string'||
+  !Object.prototype.hasOwnProperty.call(replayActorBossIds,actorId))
+  return null;
+ return WORLD_BOSS_PRESENTATION[
+  replayActorBossIds[actorId as keyof typeof replayActorBossIds]
+ ].name;
+}

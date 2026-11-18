@@ -27,7 +27,7 @@ export function SocialNameEditor(){
  if(!accountId)return null;
  const ready=!!data&&!loading;
  const proposed=name.trim();
- const changed=ready&&proposed!==data.socialName;
+ const changed=ready&&(proposed!==data.socialName||!data.selected);
  const nextChange=Date.parse(data?.nextChangeAt??'');
  const locked=!!data?.selected&&Number.isFinite(nextChange)&&nextChange>Date.now();
  const save=async()=>{

@@ -1,3 +1,7 @@
+import {newGame,createCharacter} from '../src/core/game';
+import {equipmentV2PreviewRoutesForItem,equipmentV2HiddenCatalogueSummary} from '../src/core/equipment-crafting-v2-adapter';
+import {draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,V2_SERVER_AFFIX_RANGES,V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
+import {EQUIPMENT_V2_AFFIX_RANGES} from '../src/core/equipment-crafting-v2-foundation';
 import {EQUIPMENT_V2_SETS,EQUIPMENT_V2_PIECES,EQUIPMENT_V2_STANDALONE,EQUIPMENT_V2_CLASS_WEAPONS,equipmentV2CatalogAudit,equipmentV2SetProgress} from '../src/content/equipment-v2-catalog';
 import {EQUIPMENT_V2_RECIPES,equipmentV2RecipesForItem} from '../src/content/equipment-v2-recipes';
 import {EQUIPMENT_V2_RELEASED,CRAFTING_V2_RELEASED,EQUIPMENT_CRAFTING_V2_RELEASED} from '../src/core/release-flags';
@@ -73,4 +77,53 @@ const two=equipmentV2SetProgress(t4Set.id,[t4Set.pieces[0].id,t4Set.pieces[1].id
 check(two.owned===2&&two.bonuses[0].active&&!two.bonuses[1].active,'Deduplicate equipped copies for set bonus counting');
 check(EQUIPMENT_V2_CLASS_WEAPONS.some(w=>w.classId==='KNIFE_DANCER'&&w.hands==='dual'),
  'Weapon archetypes keep Knife Dancer identity separate from armor stat profiles');
+
+const model=equipmentV2HiddenCatalogueSummary();
+check(model.count===66&&model.t1===12&&model.t2===15&&model.t3===15&&model.t4===24,
+ 'Hidden catalogue tier counts include set pieces plus standalones');
+const hero=createCharacter(newGame(2000000000000),'IRONWARDEN');
+const t1Piece=EQUIPMENT_V2_PIECES.find(p=>p.tier===1)!;
+const sourceRoutes=equipmentV2PreviewRoutesForItem(hero,t1Piece.id,'gather',2000000000000);
+check(sourceRoutes.length===2&&sourceRoutes.every(r=>r.marketReleased===false&&!r.ingredients.some(i=>i.owned>0)),
+ 'Preview routes are derived from real read-only ownership and never query Market');
+const possibleReady=equipmentV2HiddenRecipeScreen({...sourceRoutes[0],
+ ingredients:sourceRoutes[0].ingredients.map(i=>({...i,owned:i.required})),goldAvailable:100000,professionLevel:100,characterLevel:100,queueHasCapacity:true});
+check(possibleReady.previewMaterialsReady&&!possibleReady.canCraftNow,
+ 'Even fully supplied internal previews cannot initiate a public V2 craft');
+check(V2_SERVER_RARITY_BANDS.reduce((sum,r)=>sum+r.buckets,0)===1000000,
+ 'Server cryptographic rarity buckets add to one million');
+for(const client of EQUIPMENT_V2_RARITIES){
+ const server=V2_SERVER_RARITY_BANDS.find(r=>r.rarity===client.rarity)!;
+ check(Math.abs(server.buckets/1000000-client.chance)<1e-10,
+  'V2 client and server rarity odds must agree: '+client.rarity);
+ check(Math.abs(server.low-client.rollBand[0])<1e-10&&Math.abs(server.high-client.rollBand[1])<1e-10,
+  'V2 client and server rarity bands must agree: '+client.rarity);
+ check(server.affixesLowTier===equipmentV2AffixCount(1,client.rarity)
+   &&server.affixesHighTier===equipmentV2AffixCount(4,client.rarity),
+  'V2 client and server affix counts must agree: '+client.rarity);
+ check(V2_SERVER_RARITY_BASE_MULTIPLIER[client.rarity]>=1,'Rarity base multipliers must not reduce base stats');
+}
+for(const affix of Object.keys(EQUIPMENT_V2_AFFIX_RANGES) as Array<keyof typeof EQUIPMENT_V2_AFFIX_RANGES>){
+ check(JSON.stringify(V2_SERVER_AFFIX_RANGES[affix])===JSON.stringify(EQUIPMENT_V2_AFFIX_RANGES[affix]),
+  'V2 client/server affix range drift: '+affix);
+}
+const trusted={pieceId:'EQ2_SUNSCAR_THORNHIDE_CHEST',recipeId:'EQ2_SUNSCAR_THORNHIDE_CHEST_FOUNDATION',tier:3 as const,slot:'chest' as const,role:'tank' as const};
+const top=draftEquipmentV2Outcome(trusted,()=>0);
+check(top.rarity==='mythic'&&top.quality===0&&top.affixes.length===3,
+ 'Top rarity selection, Q0 and 3 Mythic affixes are independent server draws');
+check(new Set(top.affixes.map(a=>a.stat)).size===3,'All random affix types must be unique on the same equipment');
+const bottom=draftEquipmentV2Outcome(trusted,max=>max-1);
+check(bottom.rarity==='common'&&bottom.quality===100&&bottom.affixes.length===1,
+ 'Low rarity may still independently roll maximum quality');
+let badRollRejected=false;
+try{draftEquipmentV2Outcome(trusted,()=>-1)}catch{badRollRejected=true}
+check(badRollRejected,'Out-of-range server RNG samples must fail closed');
+let randomSeed=77;
+const deterministic=max=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
+for(let n=0;n<50;n++){
+ const roll=draftEquipmentV2Outcome(trusted,deterministic);
+ check(new Set(roll.affixes.map(x=>x.stat)).size===roll.affixes.length
+  &&roll.affixes.every(x=>x.percent>=0&&x.grade>=0&&x.grade<=100),
+  'Server rolls must have distinct legal affix types and nonnegative magnitudes');
+}
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

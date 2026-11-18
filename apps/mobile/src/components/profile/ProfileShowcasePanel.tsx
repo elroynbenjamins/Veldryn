@@ -161,7 +161,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   <SlotTrio label={profileT(language,"Personal records")} slots={recordSlots} disabled={guest||busy} onPress={()=>openPicker('records')}/>
 
   <View style={s.saveBar}>
-   <View style={s.revert}><GameButton compact title={profileT(language,"Revert")} tone="secondary" disabled={!dirty||busy} onPress={draft.revert}/></View>
+   <View style={s.revert}><GameButton compact title={profileT(language,"Revert")} tone="secondary" disabled={!dirty||busy} onPress={draft.revertShowcase}/></View>
    <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save showcase"):profileT(language,"Showcase saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.saveShowcase()}/></View>
   </View>
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{profileText(language,notice)}</Text>:null}

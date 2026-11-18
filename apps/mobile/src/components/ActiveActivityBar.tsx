@@ -19,6 +19,7 @@ import {FAITH_TIERS} from '../content/faith';
 import {normalizeFaith} from '../core/faith';
 import {mealSpeedFactor} from '../core/meal-buffs';
 import {activityTargetLabel} from '../core/activity-target-label';
+import {activityIconId} from '../core/activity-icon';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
@@ -34,7 +35,7 @@ export function ActiveActivityBar(props:ActiveActivityBarProps){
   const monster=MONSTERS.find(entry=>entry.id===props.state.activity?.targetId);
   const isCombat=props.state.activity?.kind==='combat';
   return <Pressable accessibilityRole="button" accessibilityLabel={gl(stop.title)+'. '+gl(reward.stoppedReason)+'. '+gt('Open Home to collect rewards.')} onPress={props.onOpen} style={({pressed})=>[s.root,isCombat?s.combat:s.skilling,pressed&&s.pressed]}>
-   <View style={[s.art,isCombat&&s.combatArt]}>{isCombat&&monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id={(props.state.activity?.kind==='processing'?'cooking':props.state.activity?.kind??'combat') as any} size={28}/>}</View>
+   <View style={[s.art,isCombat&&s.combatArt]}>{isCombat&&monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id={props.state.activity?activityIconId(props.state.activity):'combat'} size={28}/>}</View>
    <View style={s.copy}><Text style={s.combatName}>{gl(stop.title)}</Text><Text style={s.combatMeta} numberOfLines={1}>{gl(reward.stoppedReason)} · {gt('Collect rewards on Home')}</Text></View>{stop.category==='recovery'&&props.onRecoverCombat?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open food and gear')} onPress={props.onRecoverCombat} style={s.recoverButton}><Text style={s.recover}>{gt('Food')}</Text></Pressable>:null}<Text style={s.chevron}>›</Text>
   </Pressable>;
  }
@@ -81,7 +82,7 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills,compact=false}:Activ
   <View pointerEvents="none" style={s.combatTrack}><View style={[s.fill,s.combatFill,{width:progress}]}/></View>
  </Pressable>;
  return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
-  <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={32} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={(crafting?.skillId??activity.kind) as any} size={30}/>}</View>
+  <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={32} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={activityIconId(activity)} size={30}/>}</View>
   <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,displayNowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,s.skillText]}>{gl(labels[activity.kind])}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View><View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View></View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;

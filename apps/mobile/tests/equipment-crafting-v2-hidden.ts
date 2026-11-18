@@ -7,6 +7,7 @@ import {V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equi
 import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
 import {itemDef,ITEMS} from '../src/content/items';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
+import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-v2-authoritative-readiness';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
@@ -365,5 +366,68 @@ const reservedLegacy=structuredClone(legacyFixture);
 reservedLegacy.inventory.stacks.push({itemId:'EQ2_WEAPON_T3_RAVAGER',quantity:1});
 check(equipmentV2LegacyPreservationAudit(reservedLegacy).reservedNamespaceCopies===1,
  'EQ2 item IDs in pre-release inventory must be flagged, never automatically migrated');
+
+
+const liveProjectionFixture=createCharacter(newGame(2000000000100),'IRONWARDEN');
+check(Boolean(liveProjectionFixture.character),'Live projection fixture needs an active character');
+liveProjectionFixture.inventory.stacks=[{itemId:'GREENWOOD_LOG',quantity:21}];
+liveProjectionFixture.bank.stacks=[{itemId:'MOSS_FIBER',quantity:11}];
+const alternateFixture=createCharacter(newGame(2000000000200),'WAYFINDER');
+alternateFixture.character!.id='alt-character-safe';
+liveProjectionFixture.otherCharacters=[{
+ character:alternateFixture.character!,inventory:{...alternateFixture.inventory,
+  stacks:[{itemId:'IRONWOOD_LOG',quantity:9}]},
+ overflow:alternateFixture.overflow,activity:alternateFixture.activity,
+ skills:alternateFixture.skills,quests:alternateFixture.quests,
+ currentRegionId:alternateFixture.currentRegionId,
+ unlockedMonsterIds:alternateFixture.unlockedMonsterIds,
+ defeatedBossIds:alternateFixture.defeatedBossIds,
+}];
+const projectionBefore=JSON.stringify(liveProjectionFixture);
+const projectionInput={state:liveProjectionFixture,accountId:'account-v2-test',
+ onlineVersion:17,onlineCharacterId:liveProjectionFixture.character!.id,authoritativeWalletGold:22222};
+const safeProjection=equipmentV2AuthoritativeReadiness(projectionInput);
+check(!safeProjection.blocked&&safeProjection.projection?.version===17,
+ 'Read-only gameplay projection must retain authenticated online version');
+check(safeProjection.projection?.characters[liveProjectionFixture.character!.id]?.gold===22222,
+ 'Active Gold must be taken from authenticated online wallet, not a possibly stale client save');
+check(safeProjection.projection?.characters['alt-character-safe'].inventory.IRONWOOD_LOG===9
+ &&safeProjection.projection.bank.MOSS_FIBER===11
+ &&safeProjection.projection.characters[liveProjectionFixture.character!.id]?.inventory.GREENWOOD_LOG===21,
+ 'Other characters have separate packs, but the Bank remains account-wide');
+check(safeProjection.projection?.equipment.length===0&&safeProjection.projection?.jobs.length===0,
+ 'A readiness projection must not invent a production instance or Forge job');
+check(JSON.stringify(liveProjectionFixture)===projectionBefore,
+ 'The authoritative readiness adapter must not mutate GameState');
+const mismatchedActive=equipmentV2AuthoritativeReadiness({...projectionInput,onlineCharacterId:'impostor'});
+check(mismatchedActive.blocked&&mismatchedActive.projection===null
+ &&mismatchedActive.blockers.includes('active_character_mismatch'),
+ 'A request cannot substitute a client-selected active character');
+const missingWallet=equipmentV2AuthoritativeReadiness({...projectionInput,authoritativeWalletGold:null});
+check(missingWallet.blocked&&missingWallet.blockers.includes('missing_authoritative_wallet'),
+ 'No V2 state may be projected for a missing trusted online wallet');
+const duplicateCharacter=structuredClone(liveProjectionFixture);
+duplicateCharacter.otherCharacters![0].character.id=duplicateCharacter.character!.id;
+check(equipmentV2AuthoritativeReadiness({...projectionInput,state:duplicateCharacter}).blockers.includes('duplicate_character_id'),
+ 'Cross-character ID collisions must stop V2 readiness');
+const openLegacyForge=structuredClone(liveProjectionFixture);
+openLegacyForge.account.equipmentCraftingQueue=[{
+ id:'legacy-forge-1',recipeId:'legacy-craft',ownerCharacterId:openLegacyForge.character!.id,
+ startedAtMs:0,completesAtMs:1000000,
+}];
+check(equipmentV2AuthoritativeReadiness({...projectionInput,state:openLegacyForge}).blockers.includes('legacy_forge_jobs_present'),
+ 'The V2 draft may not start a second ledger alongside an existing Forge queue');
+const legacyOwner=structuredClone(liveProjectionFixture);
+legacyOwner.account.craftedGearInstances=[{
+ id:'old-owned',itemId:oldItem.id,ownerCharacterId:legacyOwner.character!.id,
+ rarity:'rare',quality:78,acquireSource:'craft',sourceReceiptKey:'old-receipt',
+ createdAtMs:1,enhancement:{rank:1,failures:0,gemIds:[]},
+}];
+check(equipmentV2AuthoritativeReadiness({...projectionInput,state:legacyOwner}).blockers.includes('legacy_gear_present'),
+ 'Any legacy equipment must be preserved by the real online commit before V2 write integration');
+const injectedV2=structuredClone(liveProjectionFixture);
+injectedV2.inventory.stacks.push({itemId:'EQ2_WEAPON_T1_WAYFINDER',quantity:1});
+check(equipmentV2AuthoritativeReadiness({...projectionInput,state:injectedV2}).blockers.includes('reserved_v2_item_ids_present'),
+ 'Unreleased EQ2 inventory entries must be rejected');
 
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

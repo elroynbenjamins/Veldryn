@@ -51,6 +51,19 @@ for(const cls of classIds){
   assert.ok(spender.combatV2?.bonusPerStack!>0);
   const style=styles.find(x=>spec.id===specializationIdV2(cls,x.name))!;
   assert.ok(style);
+  // Ensure the actual compiled technique, not just the isolated style helper,
+  // differs between the class's two specialization identities.
+  const otherSpec=specs.find(x=>x.id!==spec.id)!;
+  const other=compileServerSkillBuildV2(true,{
+    ...build,selected:{...build.selected,specializationId:otherSpec.id},
+  });
+  const mine=combat.abilities.find(x=>x.name===style.skill);
+  const theirs=other.abilities.find(x=>x.name===style.skill);
+  assert.ok(mine&&theirs,style.name+' identity ability must be available in early loadout');
+  assert.notDeepEqual(
+    {cooldown:mine!.cooldownMs,effects:mine!.effects},
+    {cooldown:theirs!.cooldownMs,effects:theirs!.effects},
+    cls+':'+style.name+' needs a distinct server-calculated signature ability');
  }
 }
 // Validate all styles against a complete synthetic technique rather than

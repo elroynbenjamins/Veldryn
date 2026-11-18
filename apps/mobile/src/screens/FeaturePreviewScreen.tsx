@@ -28,7 +28,7 @@ const marketTabs:TabItem[]=[
 ];
 const marketArtwork=require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp');
 const meta={
- boss:{eyebrow:'WORLD ENCOUNTER',title:'World Bosses',subtitle:'One realm. One enormous threat.',accent:'#E8B66B'},
+ boss:{eyebrow:'ROTATING WORLD EVENT',title:'World Boss',subtitle:'One shared boss every 14 days.',accent:'#E8B66B'},
  party:{eyebrow:'CO-OP ADVENTURES',title:'Party Events',subtitle:'Shape the expedition together.',accent:'#91CFC4'},
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
@@ -49,7 +49,6 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
   scrollRef.current?.scrollTo({y:0,animated:false});
  },[route,defaultTab]);
  const changeTab=(next:string)=>{if(!tabs.some(item=>item.id===next))return;setTab(next);scrollRef.current?.scrollTo({y:0,animated:false});};
- const [bossId,setBossId]=useState<(typeof bosses)[number]['id']>('hollow');
  // A private status is a short lease, not persistent presence. Expire it
  // while the QA screen stays open; no network request or action is mounted.
  const [statusNowMs,setStatusNowMs]=useState(()=>Date.now());
@@ -64,14 +63,18 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  const compact=width<360||fontScale>=1.25;
  const s=useMemo(()=>makeStyles(C,compact),[C,compact]);
  const title=meta[feature];
- const selectedBoss=bosses.find(item=>item.id===bossId)??bosses[0];
  const selectedStory=stories.find(item=>item.id===storyId)??stories[0];
  // A future authenticated host may inject the private V41 result. No RPC
  // is mounted here and no account selector is accepted from player input.
  const bossStatus=feature==='boss'&&worldBossAccountId?
   decodeWorldBossReadOnlyStatusV46(worldBossStatus,worldBossAccountId,statusNowMs):null;
- const accent=feature==='boss'?selectedBoss.color:feature==='party'?selectedStory.accent:title.accent;
- const heroSceneId=feature==='boss'?selectedBoss.scene:feature==='party'?selectedStory.scene:null;
+ // One realm-wide event: boss identity comes from the validated server status.
+ // There is no client-selected boss, and an absent status uses neutral art.
+ const cycleBoss=bosses.find(entry=>entry.serverId===bossStatus?.bossId)??unverifiedBoss;
+ const accent=feature==='boss'?cycleBoss.color:feature==='party'?selectedStory.accent:title.accent;
+ const heroSceneId=feature==='boss'?cycleBoss.scene:feature==='party'?selectedStory.scene:null;
+ const heroTitle=feature==='boss'&&bossStatus?cycleBoss.name:title.title;
+ const heroSubtitle=feature==='boss'&&bossStatus?cycleBoss.region+' · One realm-wide encounter':title.subtitle;
  const guideTopics=feature==='boss'?[
   ['War Camp','Prepare during the five-day Monday–Friday window. Each account can donate at most twice.'],
   ['Battle','The boss is available for the full Saturday–Sunday battle window. Three attacks are shared across your account, not granted per character.'],
@@ -98,16 +101,15 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       <View style={s.heroShade}/>
       <View style={s.heroCopy}>
         <Text style={[s.eyebrow,{color:accent}]}>{title.eyebrow}</Text>
-        <Text accessibilityRole="header" style={s.heroTitle}>{title.title}</Text>
-        <Text style={s.heroSub}>{title.subtitle}</Text>
+        <Text accessibilityRole="header" style={s.heroTitle}>{heroTitle}</Text>
+        <Text style={s.heroSub}>{heroSubtitle}</Text>
       </View>
     </ImageBackground>
     <View style={s.qaNote}><Text style={[s.qaSymbol,{color:accent}]}>◇</Text><Text style={s.qaText}>Developer-only UI preview. All example data is illustrative. No game resources, attempts, votes, listings or rewards are changed.</Text></View>
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
-    {feature==='boss'?<BossRegionPicker s={s} C={C} selected={bossId} onSelect={setBossId}/>:null}
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} status={bossStatus}/>:null}
+    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
     {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={partyEventStatus}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
@@ -151,37 +153,32 @@ function Progress({s,value,accent,label='Progress'}:{s:Shared['s'];value:number;
 function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){return <View style={[s.tag,accent&&{borderColor:accent}]}><Text style={[s.tagText,accent&&{color:accent}]}>{label}</Text></View>;}
 
 const bosses=[
- {id:'hollow',name:'Hollowroot',region:'Asterfall',scene:'IRONWOOD',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387',
+ {id:'hollow',serverId:'hollowroot',name:'Hollowroot',region:'Asterfall',scene:'IRONWOOD',motif:'THE ROOTBOUND ANCIENT',color:'#A4C387',
   supplies:['Cut timber for root barricades','Gather iron for reinforced shields','Prepare recovery supplies for the line'],
   mechanics:['Watch for the sweeping root warning','Protect allies through the heavy slam','Strike when the ancient exposes its heart'],
   threat:'Roots control the battlefield; watch the warning before committing damage.'},
- {id:'sunscar',name:'Sunscar',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73',
+ {id:'sunscar',serverId:'sunscar',name:'Sunscar',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73',
   supplies:['Stockpile ore for heatproof armor','Bring timber for shaded war shelters','Prepare cooling supplies for the camp'],
   mechanics:['Read the blazing ground markers','Guard against the titan’s heated strike','Exploit the cooling window between casts'],
   threat:'Heat builds between strikes; timing your defenses matters.'},
- {id:'frost',name:'Frostmarch',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9',
+ {id:'frost',serverId:'frostmarch',name:'Frostmarch',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9',
   supplies:['Reinforce the camp against the blizzard','Gather timber for warming fires','Prepare frost recovery provisions'],
   mechanics:['Identify the coming whiteout cast','Protect the squad through the freezing wave','Counterattack as the storm recedes'],
   threat:'Visibility and freezing attacks test the whole account squad.'},
 ] as const;
-/** Inspecting a boss never selects a live event or changes the account. */
-function BossRegionPicker({s,C,selected,onSelect}:{s:Shared['s'];C:ThemeColors;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void}){
- return <View style={s.bossRegionPanel}>
-  <View style={s.detailRow}><Text style={s.detailLabel}>BOSS CODEX</Text><Text style={s.finePrint}>Preview regions · No availability implied</Text></View>
-  <View style={s.bossRegionButtons}>{bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button"
-   accessibilityLabel={'Inspect '+entry.name+' in '+entry.region}
-   accessibilityState={{selected:selected===entry.id}}
-   onPress={()=>onSelect(entry.id)}
-   style={[s.bossRegionButton,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
-    <Text style={[s.bossRegionName,selected===entry.id&&{color:entry.color}]}>{entry.name}</Text>
-   </Pressable>)}</View>
- </View>;
-}
+/** Neutral scene until the authoritative event identifies the cycle's boss. */
+const unverifiedBoss={
+ name:'World Boss',region:'Realm',scene:'KINGS_ROAD',
+ motif:'ONE GLOBAL BOSS PER CYCLE',color:'#E8B66B',
+ supplies:['Prepare the War Camp when an event is announced','Gather resources for the server-published donation recipes','Coordinate the realm-wide preparation effort'],
+ mechanics:['Read the boss warning before committing damage','Use each owned character’s verified abilities','Counter the active boss mechanics once announced'],
+ threat:'The event service has not announced a verified regional boss for this cycle.',
+} as const;
 const phaseTitles={upcoming:'Upcoming',preparation:'War Camp',raid:'Battle',cooldown:'Recovery',expired:'Ended'} as const;
 const bossTracks=['fortifications','fieldProvisions','siegecraft'] as const;
-function BossContents({s,accent,tab,onTab,selected,status}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];status:WorldBossScreenSnapshotV46|null}){
- const boss=bosses.find(item=>item.id===selected)??bosses[0];
- const active=status?.bossId===(selected==='hollow'?'hollowroot':selected==='frost'?'frostmarch':'sunscar')?status:null;
+function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(value:string)=>void;status:WorldBossScreenSnapshotV46|null}){
+ const boss=bosses.find(item=>item.serverId===status?.bossId)??unverifiedBoss;
+ const active=status;
  const phaseEnd=active?(active.phase==='upcoming'?active.startsAtUtcMs:active.phase==='preparation'?active.startsAtUtcMs+5*86400000:active.phase==='raid'?active.endsAtUtcMs:active.phase==='cooldown'?active.startsAtUtcMs+14*86400000:null):null;
  const phaseNext=active?(active.phase==='upcoming'?'Preparation opens':active.phase==='preparation'?'Weekend battle opens':active.phase==='raid'?'Battle closes':active.phase==='cooldown'?'Cycle completes':'Event ended'):null;
  const phaseDate=phaseEnd==null?null:new Date(phaseEnd).toISOString().slice(0,16).replace('T',' ')+' UTC';
@@ -189,6 +186,7 @@ function BossContents({s,accent,tab,onTab,selected,status}:Shared&{tab:string;on
   <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="Prepare together. Fight on the weekend." sub="Five days of War Camp preparation, one continuous 48-hour battle, then seven days of recovery."/>
    <View style={s.statRow}><Stat s={s} label="PREPARATION" value="Mon–Fri"/><Stat s={s} label="BATTLE" value="Sat–Sun"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
    <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={active?.phase==='preparation'?accent:undefined}/><Tag s={s} label="02 Battle" accent={active?.phase==='raid'?accent:undefined}/><Tag s={s} label="03 Recovery" accent={active?.phase==='cooldown'?accent:undefined}/></View>
+   <Text style={s.finePrint}>One boss for the whole realm per cycle. Rotation: Hollowroot → Sunscar → Frostmarch → repeat. Players cannot choose another boss.</Text>
   </Card>
   {active?<Card s={s}><SectionHeading s={s} kicker="PRIVATE READ-ONLY SNAPSHOT" title={boss.name+' · '+phaseTitles[active.phase]} sub="This validated-format snapshot is for QA only. It does not enable gameplay or verify that the event is released."/>
    <View style={s.detailRow}><Tag s={s} label={active.status.toUpperCase()+' · '+phaseTitles[active.phase]} accent={accent}/><Text style={s.finePrint}>Read {new Date(active.readAtUtcMs).toISOString().slice(0,16).replace('T',' ')} UTC</Text></View>
@@ -197,9 +195,9 @@ function BossContents({s,accent,tab,onTab,selected,status}:Shared&{tab:string;on
    {phaseDate?<View style={s.nextStep}><Text style={s.detailLabel}>NEXT CALENDAR BOUNDARY</Text><Text style={s.choiceTitle}>{phaseNext} · {phaseDate}</Text></View>:<Text style={s.finePrint}>This event's cycle has ended; a new event requires another verified snapshot.</Text>}
    <Text style={s.finePrint}>Snapshot expires after two minutes. Combat, spending and rewards remain unavailable in Design QA.</Text>
   </Card>:<Card s={s}><SectionHeading s={s} kicker="ACCOUNT STATUS" title="No verified World Boss loaded" sub="The event service is not connected. No real boss HP, event date, donation count, attempts or rewards can be shown."/>
-   <View style={s.empty}><UiIcon name="world" size={30}/><Text style={s.choiceTitle}>Encounter preview only</Text><Text style={s.bodyText}>Explore each regional boss below. Their artwork and mechanics are not proof that an event is open.</Text></View>
+   <View style={s.empty}><UiIcon name="world" size={30}/><Text style={s.choiceTitle}>Encounter preview only</Text><Text style={s.bodyText}>The current boss and next event date are unknown until the server announces the global cycle. No boss can be manually selected.</Text></View>
   </Card>}
-  <Card s={s}><SectionHeading s={s} kicker={'ENCOUNTER BRIEFING · '+boss.region.toUpperCase()} title={boss.name} sub={boss.motif}/>
+  <Card s={s}><SectionHeading s={s} kicker={'ENCOUNTER BRIEFING · '+boss.region.toUpperCase()} title={active?boss.name:'Boss details pending'} sub={boss.motif}/>
    <Text style={s.bodyText}>{boss.threat}</Text>
    <View style={s.twoActions}><View style={s.flex}><Action label="Inspect War Camp" s={s} onPress={()=>onTab('camp')} secondary/></View><View style={s.flex}><Action label="Battle briefing" s={s} onPress={()=>onTab('battle')}/></View></View>
   </Card>
@@ -487,7 +485,7 @@ function makeStyles(C:ThemeColors,compact=false){
   tabs:{gap:7,paddingVertical:2},tab:{minHeight:44,justifyContent:'center',paddingHorizontal:13,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},tabText:{color:C.muted,fontSize:12,fontWeight:'800'},
   card:{gap:12,padding:spacing.md,borderRadius:radii.md,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},sectionHead:{gap:4},kicker:{color:C.accent,fontSize:10,fontWeight:'900',letterSpacing:1.5},cardTitle:{...typography.title,color:C.text},bodyText:{...typography.body,color:C.muted,fontSize:12,lineHeight:18},finePrint:{color:C.muted,fontSize:11,lineHeight:16},
   statRow:{flexDirection:'row',gap:8,flexWrap:'wrap'},stat:{flexGrow:1,flexBasis:compact?'46%':'29%',minWidth:compact?110:0,padding:9,borderRadius:radii.sm,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.line,gap:3},statLabel:{fontSize:9,fontWeight:'900',letterSpacing:.7,color:C.muted},statValue:{fontSize:15,lineHeight:21,fontWeight:'900',color:C.text},statHint:{color:C.muted,fontSize:10},
-  bossRegionPanel:{gap:7},bossRegionButtons:{flexDirection:'row',gap:6},bossRegionButton:{flex:1,minHeight:46,paddingHorizontal:4,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:radii.sm,borderColor:C.lineStrong,backgroundColor:C.panel},bossRegionName:{fontSize:compact?10:11,fontWeight:'900',color:C.muted,textAlign:'center'},twoActions:{flexDirection:'row',gap:8},campTrack:{gap:5,paddingVertical:6},nextStep:{gap:3,paddingVertical:8,paddingHorizontal:10,backgroundColor:C.panelRaised,borderRadius:radii.sm},
+  twoActions:{flexDirection:'row',gap:8},campTrack:{gap:5,paddingVertical:6},nextStep:{gap:3,paddingVertical:8,paddingHorizontal:10,backgroundColor:C.panelRaised,borderRadius:radii.sm},
   stepRow:{flexDirection:'row',gap:6,flexWrap:'wrap'},tag:{paddingHorizontal:9,paddingVertical:5,borderRadius:radii.sm,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,alignSelf:'flex-start'},tagText:{color:C.muted,fontSize:10,fontWeight:'800'},choice:{flexDirection:'row',alignItems:'center',gap:10,padding:10,minHeight:60,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},choiceTitle:{color:C.text,fontSize:13,lineHeight:19,fontWeight:'800'},choiceSub:{fontSize:11,lineHeight:16,color:C.muted},choiceArrow:{fontSize:20,fontWeight:'900'},motif:{width:43,height:43,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:radii.sm},motifGlyph:{fontSize:27,fontWeight:'900'},flex:{flex:1,minWidth:0},action:{minHeight:46,paddingHorizontal:14,paddingVertical:11,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,backgroundColor:C.primaryButton,borderColor:C.primaryButtonBorder,borderWidth:1},actionText:{color:C.primaryButtonText,fontWeight:'900',fontSize:12,textAlign:'center'},secondaryAction:{backgroundColor:C.secondaryButton,borderColor:C.secondaryButtonBorder},secondaryActionText:{color:C.secondaryButtonText},disabledAction:{opacity:.56},disabledText:{color:C.muted},
   detailLabel:{color:C.muted,fontSize:10,fontWeight:'900',letterSpacing:.8},detailRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},index:{color:C.muted,fontSize:15,fontWeight:'900',width:28},track:{height:9,borderRadius:radii.sm,backgroundColor:C.line,overflow:'hidden'},progress:{height:'100%',borderRadius:radii.sm},warning:{gap:4,padding:11,borderRadius:radii.sm,borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface},warningTitle:{color:C.warning,fontSize:12,fontWeight:'900'},
   rewardPanel:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:radii.sm,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.line},rewardGlyph:{fontSize:30},timelineRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:5},timelineDot:{width:30,height:30,alignItems:'center',justifyContent:'center',borderRadius:15,borderWidth:1},timelineNumber:{fontSize:12,fontWeight:'900'},

@@ -97,6 +97,15 @@ assert.equal(claimReplay.next.equipment.length,1,'Replay must never mint a secon
 assert.throws(()=>resolveEquipmentV2DraftCommand(claim.next,
  {kind:'claim',requestId:'claim-00002',expectedVersion:12,jobId:job.id},
  {...makeContext(job.finishesAtMs+999),characterId:'character-alt'}),/already_claimed/,'A distinct claim request cannot mint again');
+
+const atCap=structuredClone(start.next);
+atCap.equipment=Array.from({length:25},(_,i)=>({
+ id:'old-copy-'+i,accountId:atCap.accountId,ownerCharacterId:'character-test',
+ createdAtMs:1,jobId:'old-job-'+i,outcome:claim.next.equipment[0].outcome,
+}));
+assert.throws(()=>resolveEquipmentV2DraftCommand(atCap,claimRequest,makeContext(job.finishesAtMs)),
+ /copy_limit_reached/,'Full exact-copy equipment storage cannot mint or auto-sell a 26th piece');
+assert.equal(atCap.jobs[0].status,'queued','Blocked claim must preserve finished Forge job');
 const noGold=create();noGold.gold=recipe.gold-1;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noGold,startRequest,makeContext(1_000_000)),/insufficient_gold/);
 const noMaterial=create();noMaterial.bank[recipe.inputs[0].itemId]=0;

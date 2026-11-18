@@ -53,8 +53,10 @@ export function auditApprovedClassBaselinesV2(
      issues.push({classId,code:'invalid_class_profile'});continue;
    }
    const abilities=new Set(profile.abilities.map(a=>a.id));
+   const names=new Set(profile.abilities.map(a=>a.name));
    if(abilities.size!==profile.abilities.length||
-      profile.abilities.some(a=>!a.name||!Array.isArray(a.effects)||a.effects.length===0)){
+      names.size!==profile.abilities.length||
+      profile.abilities.some(a=>!a.id||!a.name||!Array.isArray(a.effects)||a.effects.length===0)){
      issues.push({classId,code:'invalid_class_abilities'});continue;
    }
    for(const level of requiredLevels){

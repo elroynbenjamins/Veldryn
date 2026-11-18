@@ -2,6 +2,13 @@
 -- No live battle, event scheduling, player accounts, staging or production.
 -- Source V17/V27/V28/V61 schema must already exist in disposable CI.
 BEGIN;
+-- V34 character-ownership guards run before V57 privacy and V61 stop gates.
+-- Use a synthetic owned character to reach the intended V61 assertions.
+INSERT INTO auth.users(id) VALUES
+ ('10000000-0000-4000-8000-000000000061');
+INSERT INTO public.characters(id,account_id) VALUES
+ ('20000000-0000-4000-8000-000000000061',
+  '10000000-0000-4000-8000-000000000061');
 INSERT INTO private.world_boss_events_v17(
  id,boss_id,status,starts_at,ends_at,rules_version,max_hp,remaining_hp)
 VALUES (
@@ -20,6 +27,7 @@ DECLARE
  action text;
  rows_seen bigint;
  synthetic_account uuid:='10000000-0000-4000-8000-000000000061'::uuid;
+ synthetic_character uuid:='20000000-0000-4000-8000-000000000061'::uuid;
 BEGIN
  -- All brand-new events are blocked, even before an operator inserts a
  -- control record. Error must be stable and action-agnostic.
@@ -49,21 +57,22 @@ BEGIN
   WHERE event_id=e AND (new_raids_open OR new_donations_open OR new_claims_open))
  THEN RAISE EXCEPTION 'WB61_UNSAFE_INITIAL_CONTROL'; END IF;
 
- -- V57's account privacy fence runs before V61 alphabetically. Supply a
- -- synthetic owner identity so it can validate first; V61 must then block
+ -- V34 validates character ownership, then V57 validates account privacy,
+ -- then V61's stop gate runs. Valid fixture identities must be supplied
+ -- before asserting V61 blocks
  -- each receipt before any unrelated NOT NULL / FK constraints run.
  -- Trigger-level fail-closed guards must stop inserts BEFORE other
  -- constraints run. These intentionally incomplete rows never commit.
  BEGIN
-  INSERT INTO private.world_boss_attempts_v17(event_id,account_id)
-  VALUES(e,synthetic_account);
+  INSERT INTO private.world_boss_attempts_v17(event_id,account_id,character_id)
+  VALUES(e,synthetic_account,synthetic_character);
   RAISE EXCEPTION 'WB61_UNEXPECTED_RAID_WRITE';
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM<>'WB61_NEW_ACTION_PAUSED' THEN RAISE; END IF;
  END;
  BEGIN
-  INSERT INTO private.world_boss_war_donations_v27(event_id,account_id)
-  VALUES(e,synthetic_account);
+  INSERT INTO private.world_boss_war_donations_v27(event_id,account_id,character_id)
+  VALUES(e,synthetic_account,synthetic_character);
   RAISE EXCEPTION 'WB61_UNEXPECTED_DONATION_WRITE';
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM<>'WB61_NEW_ACTION_PAUSED' THEN RAISE; END IF;
@@ -93,14 +102,14 @@ BEGIN
 
  -- A missing required field should now be the failure, not our stop gate.
  BEGIN
-  INSERT INTO private.world_boss_attempts_v17(event_id,account_id)
-  VALUES(e,synthetic_account);
+  INSERT INTO private.world_boss_attempts_v17(event_id,account_id,character_id)
+  VALUES(e,synthetic_account,synthetic_character);
   RAISE EXCEPTION 'WB61_INVALID_ATTEMPT_INSERTED';
  EXCEPTION WHEN not_null_violation THEN NULL;
  END;
  BEGIN
-  INSERT INTO private.world_boss_war_donations_v27(event_id,account_id)
-  VALUES(e,synthetic_account);
+  INSERT INTO private.world_boss_war_donations_v27(event_id,account_id,character_id)
+  VALUES(e,synthetic_account,synthetic_character);
   RAISE EXCEPTION 'WB61_INVALID_DONATION_INSERTED';
  EXCEPTION WHEN not_null_violation THEN NULL;
  END;

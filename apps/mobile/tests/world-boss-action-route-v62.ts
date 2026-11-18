@@ -109,7 +109,7 @@ async function main(){
    recipeId:'T1_FORTIFICATIONS',quantity:9999},
   {action:'claim',requestId,damage:999999},
   {action:'claim',requestId:'short'},
-  {action:'claim',requestId,__proto__:'unsafe'},
+  JSON.parse('{"action":"claim","requestId":"'+requestId+'","__proto__":"unsafe"}'),
   [],
   null,
  ]){

@@ -1,3 +1,5 @@
+import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
+import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
 import {equipmentV2PreviewRoutesForItem,equipmentV2HiddenCatalogueSummary} from '../src/core/equipment-crafting-v2-adapter';
 import {draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,V2_SERVER_AFFIX_RANGES,V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
@@ -125,5 +127,19 @@ for(let n=0;n<50;n++){
  check(new Set(roll.affixes.map(x=>x.stat)).size===roll.affixes.length
   &&roll.affixes.every(x=>x.percent>=0&&x.grade>=0&&x.grade<=100),
   'Server rolls must have distinct legal affix types and nonnegative magnitudes');
+}
+
+check(EQUIPMENT_V2_ARMAMENTS.length===52,'All nine class weapons and four optional offhands must exist at each of four tiers');
+for(const tier of [1,2,3,4] as const){
+ for(const character of V2_CLASS_ARMAMENT_SPECS){
+  const armaments=equipmentV2ClassLoadoutArmaments(tier,character.classId);
+  check(armaments.length===(character.hands==='one'?2:1),
+   'Hand allocation must be class-correct at T'+tier+': '+character.classId);
+  check(armaments.every(row=>row.classId===character.classId&&row.tier===tier),
+   'Class weapon restrictions must not leak to another class');
+  const total=armaments.reduce((sum,item)=>sum+equipmentV2StatBudget(equipmentV2ArmamentStats(item)),0);
+  check(Math.abs(total-equipmentV2WeaponAndOffhandBudget(tier))<1e-7,
+   'Two-handed, dual and one-handed/offhand loadouts must have the same weighted budget');
+ }
 }
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

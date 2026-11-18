@@ -198,14 +198,14 @@ export const equipmentPouchUiRows={
     "{count} экземпляров · {gold} золота",
     "{count} kopya · {gold} altın"
   ],
-  "This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.": [
-    "Dies ist endgültig. Gesperrte, favorisierte, verbesserte, mit Edelsteinen bestückte sowie durch Sets oder Ziele geschützte Ausrüstung bleibt erhalten.",
-    "Esto no se puede deshacer. El equipo bloqueado, favorito, mejorado, engastado, de conjuntos guardados o necesario para objetivos está protegido.",
-    "Dit kan niet ongedaan worden gemaakt. Vergrendelde, favoriete, verbeterde, met edelstenen uitgeruste, opgeslagen en voor doelen benodigde uitrusting blijft beschermd.",
-    "L'operazione è irreversibile. Gli oggetti bloccati, preferiti, potenziati, con gemme, nei set salvati o necessari agli obiettivi restano protetti.",
-    "Cette action est irréversible. L'équipement verrouillé, favori, amélioré, serti, inclus dans une configuration ou requis pour un objectif reste protégé.",
-    "Отменить продажу нельзя. Заблокированное, избранное, улучшенное, со вставками, из комплектов и нужное для целей снаряжение защищено.",
-    "Bu işlem geri alınamaz. Kilitli, favori, güçlendirilmiş, taşlı, kayıtlı dizilimdeki veya hedefler için gerekli ekipman korunur."
+  "Locked, favorited, loadout and Working Toward gear stays protected. Selling destroys installed gems and upgrades.": [
+    "Gesperrte, favorisierte, in Ausrüstungssets oder für Ziele benötigte Gegenstände bleiben geschützt. Beim Verkauf werden eingesetzte Edelsteine und Verbesserungen zerstört.",
+    "El equipo bloqueado, favorito, usado en configuraciones o reservado para objetivos sigue protegido. Al venderlo se destruyen las gemas y mejoras instaladas.",
+    "Vergrendelde, favoriete, voor uitrustingssets of doelen gereserveerde voorwerpen blijven beschermd. Bij verkoop worden geplaatste edelstenen en upgrades vernietigd.",
+    "L'equipaggiamento bloccato, preferito, presente nei set o necessario agli obiettivi resta protetto. La vendita distrugge gemme e potenziamenti inseriti.",
+    "L'équipement verrouillé, favori, inclus dans une configuration ou réservé à un objectif reste protégé. La vente détruit les gemmes et améliorations installées.",
+    "Заблокированное, избранное, сохранённое в комплекте или нужное для цели снаряжение защищено. При продаже вставленные камни и улучшения уничтожаются.",
+    "Kilitli, favori, kayıtlı dizilimlerdeki veya hedefler için gerekli ekipman korunur. Satış, takılı taşları ve yükseltmeleri yok eder.",
   ],
   "Selection has changed. Close and review the equipment.": [
     "Auswahl geändert. Schließe das Fenster und prüfe die Ausrüstung erneut.",
@@ -543,14 +543,14 @@ export const equipmentPouchUiRows={
   "EQUIPMENT POUCH · SALVAGE": ["AUSRÜSTUNGSBEUTEL · ZERLEGEN","BOLSA DE EQUIPO · DESGUACE","UITRUSTINGSZAK · ONTMANTELEN","SACCA EQUIPAGGIAMENTO · SMONTAGGIO","SAC D'ÉQUIPEMENT · RECYCLAGE","СУМКА СНАРЯЖЕНИЯ · РАЗБОРКА","EKİPMAN KESESİ · SÖKÜM"],
   "Salvage selected equipment?": ["Ausgewählte Ausrüstung zerlegen?","¿Desguazar el equipo seleccionado?","Geselecteerde uitrusting ontmantelen?","Smontare l'equipaggiamento selezionato?","Recycler l'équipement sélectionné ?","Разобрать выбранное снаряжение?","Seçilen ekipmanı sökmek istiyor musun?"],
   "{count} copies to salvage": ["{count} Stücke zum Zerlegen","{count} piezas para desguazar","{count} exemplaren om te ontmantelen","{count} copie da smontare","{count} exemplaires à recycler","Экземпляров для разборки: {count}","Sökülecek {count} kopya"],
-  "Materials go to Inventory. This cannot be undone; protected gear is excluded.": [
-    "Materialien kommen ins Inventar. Dies ist endgültig; geschützte Ausrüstung wird ausgeschlossen.",
-    "Los materiales van al Inventario. Esto no se puede deshacer; el equipo protegido queda excluido.",
-    "Materialen gaan naar je Inventaris. Dit kan niet ongedaan worden gemaakt; beschermde uitrusting blijft buiten de selectie.",
-    "I materiali vanno nell'Inventario. L'operazione è irreversibile; l'equipaggiamento protetto è escluso.",
-    "Les matériaux vont dans l'inventaire. Cette action est irréversible ; l'équipement protégé est exclu.",
-    "Материалы поступят в инвентарь. Действие нельзя отменить; защищённое снаряжение исключено.",
-    "Malzemeler Envantere gider. İşlem geri alınamaz; korumalı ekipman hariç tutulur."
+  "Materials go to Inventory. Installed gems and upgrades are destroyed, not recovered. Locked, favorited and loadout gear stays protected.": [
+    "Materialien landen im Inventar. Eingesetzte Edelsteine und Verbesserungen werden zerstört, nicht zurückgewonnen. Gesperrte, favorisierte und in Ausrüstungssets gespeicherte Gegenstände bleiben geschützt.",
+    "Los materiales van al Inventario. Las gemas y mejoras instaladas se destruyen y no se recuperan. El equipo bloqueado, favorito o de configuraciones guardadas sigue protegido.",
+    "Materialen gaan naar je Inventaris. Geplaatste edelstenen en upgrades worden vernietigd en niet teruggewonnen. Vergrendelde, favoriete en in sets bewaarde uitrusting blijft beschermd.",
+    "I materiali vanno nell'Inventario. Le gemme e i potenziamenti inseriti vengono distrutti, non recuperati. Gli oggetti bloccati, preferiti o nei set salvati restano protetti.",
+    "Les matériaux vont dans l'inventaire. Les gemmes et améliorations installées sont détruites, non récupérées. L'équipement verrouillé, favori ou inclus dans une configuration reste protégé.",
+    "Материалы поступят в инвентарь. Вставленные камни и улучшения будут уничтожены без возврата. Заблокированное, избранное и сохранённое в комплекте снаряжение защищено.",
+    "Malzemeler Envantere gider. Takılı taşlar ve yükseltmeler iade edilmeden yok edilir. Kilitli, favori ve kayıtlı dizilimlerdeki ekipman korunur.",
   ],
   "Confirm salvage": ["Zerlegen bestätigen","Confirmar desguace","Ontmantelen bevestigen","Conferma smontaggio","Confirmer le recyclage","Подтвердить разборку","Sökümü onayla"],
   "Salvage · {count}× {name}": ["Zerlegen · {count}× {name}","Desguazar · {count}× {name}","Ontmantelen · {count}× {name}","Smonta · {count}× {name}","Recycler · {count}× {name}","Разобрать · {count}× {name}","Sök · {count}× {name}"],

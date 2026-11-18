@@ -5,6 +5,7 @@ import {entitlementStorageCapacity} from './account-entitlements';
 import {itemDef} from '../content/items';
 import {equipmentSalvageReward,equipmentSalvageRewards,inventoryWithSalvageRewards} from './equipment-salvage';
 import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
+import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
 export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
 export interface VerifiedGearLocation{
@@ -229,11 +230,11 @@ export function unequipCraftedGearInstance(state:GameState,instanceId:string):Ga
 }
 
 function protectedGear(state:GameState,record:CraftedGearInstance){
-  const enhancement=record.enhancement;
   if(record.locked===true)throw new Error('This equipment copy is locked');
+  if(state.settings.lockedItemIds?.includes(record.itemId))throw new Error('This equipment type is locked');
+  if(workingTowardInventoryProtectionMap(state).has(record.itemId))
+    throw new Error('Equipment needed for a Working Toward goal is protected');
   if(state.settings.favoriteItemIds?.includes(record.itemId))throw new Error('Favorite equipment cannot be sold or salvaged');
-  if(enhancement.rank>0||enhancement.statGemId||enhancement.effectGemId||enhancement.gemIds.length>0)
-    throw new Error('Enhanced or socketed equipment cannot be sold or salvaged');
   const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
   if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))
     throw new Error('A saved loadout protects this equipment copy');
@@ -268,7 +269,7 @@ export function disposeCraftedGearInstance(state:GameState,instanceId:string,met
       next={...next,character:{...next.character!,gold}};
     }
   }else{
-    // Salvage never eats a protected gem; the received material is carried by
+    // Socketed gems and upgrades are lost with the disposed copy; only authored salvage materials return.
     // the active character, independent of whether equipment was in Bank.
     if(!next.character)throw new Error('No active character');
     const rewards=equipmentSalvageRewards(def.id,record);

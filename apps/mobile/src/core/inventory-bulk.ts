@@ -100,7 +100,7 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
 
 export function bulkSellSelected(state:GameState,itemIds:readonly string[],location:BulkStorageLocation='inventory'):GameState{
   const summary=bulkSelectionSummary(state,itemIds,location);
-  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
+  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Working Toward items, favorites, locked items, auto-eat food, Holy Water and zero-value items stay protected.');
   let next=state;
   for(const id of summary.sellableIds){
     if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'sell');continue;}
@@ -112,7 +112,7 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[],locat
 
 export function bulkSalvageSelected(state:GameState,itemIds:readonly string[],location:BulkStorageLocation='inventory'):GameState{
   const summary=bulkSelectionSummary(state,itemIds,location);
-  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.');
+  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites, locked items stay protected.');
   let next=state;
   for(const id of summary.salvageableIds){
     if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'salvage');continue;}

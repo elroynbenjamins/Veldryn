@@ -2,7 +2,7 @@ import {itemDef} from '../content/items';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {craftedGearInstances} from './crafted-gear-instances';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
-import type {CraftedGearInstance,GameState} from './types';
+import type {GameState} from './types';
 
 export type EquipmentDisposalMethod='sell'|'salvage';
 export interface EquipmentDisposalDecision {allowed:boolean;reason?:string;}
@@ -28,9 +28,6 @@ export function equipmentCopyDisposalDecision(
  if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))
    return {allowed:false,reason:'This equipment has no vendor value'};
  if(record.locked)return {allowed:false,reason:'This equipment copy is locked'};
- const specific=specificGearProtectionReason(record,'Enhanced or socketed equipment cannot be sold or salvaged');
- if(record.enhancement.rank>0||record.enhancement.statGemId||record.enhancement.effectGemId||record.enhancement.gemIds.length>0)
-   return {allowed:false,reason:specific};
  try{
    disposeCraftedGearInstance(state,instanceId,method);
    return {allowed:true};
@@ -42,15 +39,11 @@ export function equipmentCopyDisposalDecision(
 /** Consistent, actionable explanations used by Inventory, Gear and confirmations. */
 export function equipmentDisposalExplanation(reason:string):EquipmentDisposalExplanation{
  const value=reason.toLowerCase();
- if(/socket|gem/.test(value))
-   return {title:'Gem socketed',nextStep:'Equip this exact copy, open Character > Gear > Gems, then extract its gem. Extraction may cost Gold or Gem Dust.',canExtractGem:true};
- if(/upgrad|enhanc/.test(value))
-   return {title:'Enhanced gear',nextStep:'Enhanced equipment is protected. Keep it in Gear storage or use it in a loadout.',canExtractGem:false};
  if(/inventory is full|make space|storage is full/.test(value))
    return {title:'Inventory space needed',nextStep:'Free an Inventory slot before salvaging. Recovered materials must fit in Inventory.',canExtractGem:false};
  if(/saved loadout|loadout/.test(value))
    return {title:'Saved loadout',nextStep:'Remove or replace this copy in the saved loadout before disposing of it.',canExtractGem:false};
- if(/legacy equipment enhancement|legacy enhancement|last copy reserved/.test(value))
+ if(/legacy equipment enhancement|legacy enhancement|last copy reserved|reserved enhanced copy/.test(value))
    return {title:'Older enhancement',nextStep:'An older enhancement still protects this gear. Keep the copy until its enhancement is reviewed.',canExtractGem:false};
  if(/locked|favorite/.test(value))
    return {title:'Manually protected',nextStep:'Unlock this copy or remove its Favorite marker to enable disposal.',canExtractGem:false};
@@ -61,14 +54,3 @@ export function equipmentDisposalExplanation(reason:string):EquipmentDisposalExp
  return {title:'Cannot dispose',nextStep:reason||'Review this equipment before trying again.',canExtractGem:false};
 }
 
-/** A UI-only refinement of the shared engine's generic safety error.
- * Must not mutate equipment or change any authoritative disposal rule. */
-export function specificGearProtectionReason(
- record:Pick<CraftedGearInstance,'enhancement'>|undefined,reason?:string,
-):string|undefined{
- if(!record||!reason||!/Enhanced or socketed equipment cannot be sold or salvaged/i.test(reason))return reason;
- if(record.enhancement.rank>0)return 'Enhanced (upgraded) equipment cannot be sold or salvaged';
- if(record.enhancement.statGemId||record.enhancement.effectGemId||record.enhancement.gemIds.length>0)
-   return 'Socketed gems must be extracted before selling or salvaging';
- return reason;
-}

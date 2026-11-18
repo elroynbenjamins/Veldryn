@@ -102,3 +102,15 @@ This is a coordinated future update. Both Equipment 2.0 and Crafting 2.0 are hel
 - Hardened `equipment-crafting-v2-transaction.ts` so a future invalid canonical recipe with duplicate ingredient IDs or overflowing totals cannot double-debit a shared stack.
 
 **Next engineering step:** implement a single server-authoritative gameplay command executor that carries this validated settlement into the *existing* account state, maintaining the original V33 Forge and legacy ownership, then persist by the existing account CAS commit. This must remain gated behind paired Equipment/Skills/Enemies 2.0 staging tests, receipt replay and rollback coverage.
+
+
+## Combat 2.0 exact-copy interoperability — consolidation follow-up
+
+A new `main` Combat 2.0 evidence adapter exposed three integration differences. They have been resolved in this hidden branch:
+1. **Stonecaller is Support**, consistently in the class equipment manifest and Combat 2.0 role taxonomy.
+2. **Off-hand items are not weapons**: weapon-hand metadata is present only on actual weapon templates, and omitted from off-hand receipts. Two-handed/off-hand clashes still fail closed.
+3. Armor roles describe **recommended builds**, not hard class equip restrictions. Combat 2.0 now checks role alignment for class-specific weapons/off-hands while allowing general armor with different role recommendations; explicit `classRestriction` remains authoritative.
+
+The hidden branch was synced with the new Combat 2.0 exact-copy interoperability and hidden-feature activation fence commits from `main` without changing their release settings. The new integration test `equipment-crafting-v2-real-manifest-interop.test.mjs` compiles the actual server manifest/rolls/exact-item model and verifies nine class weapons, four off-hand combinations, general cross-role armor, immutable frozen base stats, rarity/quality pre-scaling, invalid custody and tamper rejection. It is registered in the Unique forged equipment CI workflow.
+
+The evidence projection remains `combatReady:false`: it is **not live combat**, does not apply affixes/sets/gems, does not produce damage outcomes and must not treat a base stat contribution as a complete combat score. End-to-end Skills/Enemies/Equipment 2.0 integration is still a launch blocker.

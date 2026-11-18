@@ -17,7 +17,7 @@ const presentationJs=ts.transpileModule(read('src/core/world-boss-presentation.t
 }).outputText;
 const presentationExports={};
 new Function('exports',presentationJs)(presentationExports);
-const {WORLD_BOSS_PRESENTATION,worldBossPresentationFor}=presentationExports;
+const {WORLD_BOSS_PRESENTATION,worldBossPresentationFor,worldBossReplayActorDisplayName}=presentationExports;
 test('proper boss names are distinct from stable region/protocol IDs',()=>{
  assert.deepEqual(Object.keys(WORLD_BOSS_PRESENTATION).sort(),['frostmarch','hollowroot','sunscar']);
  assert.equal(worldBossPresentationFor('hollowroot')?.name,'Hollowroot');
@@ -25,6 +25,12 @@ test('proper boss names are distinct from stable region/protocol IDs',()=>{
  assert.equal(worldBossPresentationFor('sunscar')?.region,'Sunscar');
  assert.equal(worldBossPresentationFor('frostmarch')?.name,'Rimewarden');
  assert.equal(worldBossPresentationFor('frostmarch')?.region,'Frostmarch');
+ assert.equal(worldBossReplayActorDisplayName('HOLLOWROOT'),'Hollowroot');
+ assert.equal(worldBossReplayActorDisplayName('SUNSCAR'),'Solbrand');
+ assert.equal(worldBossReplayActorDisplayName('FROSTMARCH'),'Rimewarden');
+ assert.equal(worldBossReplayActorDisplayName('sunscar'),null);
+ assert.equal(worldBossReplayActorDisplayName('constructor'),null);
+ assert.equal(worldBossReplayActorDisplayName('PLAYER_CHARACTER_1'),null);
  for(const value of [null,undefined,'Sunscar','Frostmarch','constructor','__proto__',{},0]){
   assert.equal(worldBossPresentationFor(value),null);
  }

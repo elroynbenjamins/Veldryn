@@ -41,6 +41,10 @@ export interface AuthoredRollLimitV2{readonly min:number;readonly max:number}
 export interface ServerAffixPolicyV2{
  readonly limits:Readonly<Record<EquipmentAffixIdV2,AuthoredRollLimitV2>>;
  readonly countsByTierRarity:Readonly<Record<string,number>>;
+ /** Approved server caps, NEVER arbitrary transport defaults. */
+ readonly maxFinalHaste:number;
+ readonly maxFinalCritChance:number;
+ readonly maxFinalCritMultiplier:number;
 }
 export interface TrustedPersistedAffixV2{
  readonly id:EquipmentAffixIdV2;
@@ -130,16 +134,23 @@ export function compileTrustedEquipmentAffixesV2(
  // final authoritative base+equipment stats ONCE (not repeated per item).
  const get=(id:EquipmentAffixIdV2)=>all.filter(a=>a.id===id).reduce((n,a)=>n+a.value,0);
  const source=actor.stats;
+ if(!finite(policy.maxFinalHaste)||!finite(policy.maxFinalCritChance)||
+   !finite(policy.maxFinalCritMultiplier)||policy.maxFinalHaste<0||
+   policy.maxFinalCritChance<0||policy.maxFinalCritMultiplier<1)
+   throw Error('combat_v2_missing_approved_stat_caps');
  const stats:CombatStats={
    ...source,
    attackPower:percent(source.attackPower*(1+get('attack_pct'))),
    defense:percent(source.defense*(1+get('defense_pct'))),
    maxHp:percent(source.maxHp*(1+get('max_hp_pct'))),
    healingPower:percent(source.healingPower*(1+get('class_healing_pct'))),
-   haste:Math.min(.75,percent(source.haste+get('haste_pp'))),
-   critChance:Math.min(.85,percent(source.critChance+get('crit_rate_pp'))),
-   critMultiplier:Math.min(3.5,percent(source.critMultiplier*(1+get('crit_damage_pct')))),
+   haste:percent(source.haste+get('haste_pp')),
+   critChance:percent(source.critChance+get('crit_rate_pp')),
+   critMultiplier:percent(source.critMultiplier*(1+get('crit_damage_pct'))),
  };
+ if(stats.haste>policy.maxFinalHaste||stats.critChance>policy.maxFinalCritChance||
+   stats.critMultiplier>policy.maxFinalCritMultiplier)
+   throw Error('combat_v2_affix_exceeds_approved_stat_caps');
  if(!Object.values(stats).every(finite)||stats.maxHp<=0||stats.attackPower<0||stats.defense<0)
    throw Error('combat_v2_affix_invalid_computed_stats');
  return {

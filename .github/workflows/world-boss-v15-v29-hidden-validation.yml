@@ -30,6 +30,7 @@ on:
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
       - 'backend/online/world-boss-current-read-route-v52.ts'
+      - 'backend/online/world-boss-current-action-v62.ts'
       - 'backend/online/world-boss-account-erasure-v56.ts'
       - 'backend/online/world-boss-readiness-audit-v43.ts'
       - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
@@ -125,6 +126,7 @@ jobs:
             world-boss-account-state-v33 \
             world-boss-overview-v41 \
             world-boss-current-overview-v51 \
+            world-boss-action-route-v62 \
             world-boss-account-erasure-v56 \
             world-boss-readiness-audit-v43
           do

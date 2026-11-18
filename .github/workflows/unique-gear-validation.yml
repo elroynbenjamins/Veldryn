@@ -45,6 +45,8 @@ jobs:
         run: pnpm --dir ../../backend exec tsc -p tsconfig.equipment-v2.json
       - name: Test server-side Gold reservation, one-time claims and replay
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-transaction.test.js
+      - name: Test shadow store compare-and-swap and crash recovery
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-shadow.test.js
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
       - name: Verify concurrent copy writes, replay and Gold integrity

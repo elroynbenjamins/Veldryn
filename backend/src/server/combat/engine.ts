@@ -182,10 +182,41 @@ export function simulateCombat(input: CombatInput): CombatResult {
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
       }
     }
+    // V2 Rupture consumes one own applied DoT and converts a bounded portion of
+    // its remaining strength to this direct hit. The consumed effect cannot
+    // tick again, and a boss has an additional cap.
+    if(eventType==='damage'&&source.combatV2&&
+       !abilityId.startsWith('V2_')&&(effect.consumeOwnedDotFraction??0)>0){
+      const i=target.periodic.findIndex(p=>p.kind==='dot'&&p.sourceId===source.definition.id&&
+        p.expiresAt>now&&p.nextTickAt<=p.expiresAt);
+      if(i>=0){
+        const [dot]=target.periodic.splice(i,1);
+        const ticks=Math.max(0,Math.floor((dot.expiresAt-dot.nextTickAt)/Math.max(1,dot.tickMs))+1);
+        const fraction=clamp(effect.consumeOwnedDotFraction??0,0,.5);
+        const rupture=Math.min(source.definition.stats.attackPower*(target.definition.boss?.35:.65),
+          source.definition.stats.attackPower*Math.max(0,dot.coeff)*ticks*fraction);
+        raw+=rupture;
+        events.push({atMs:now,type:'status_remove',actorId:source.definition.id,
+          targetId:target.definition.id,abilityId,statusKind:'dot',
+          statusTag:dot.tag??'dot',detail:'combat_v2_rupture'});
+      }
+    }
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
-    const absorbed=bypassShield?0:Math.min(target.shield,raw); target.shield-=absorbed; const dealt=Math.max(0,raw-absorbed); target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
+    const absorbed=bypassShield?0:Math.min(target.shield,raw); target.shield-=absorbed;
+    const dealt=Math.max(0,Math.min(target.hp,raw-absorbed));
+    target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
+    // Lifesteal is based on real HP damage only: shielding, overkill and
+    // reflected/self-generated procs can never inflate the heal.
+    if(eventType==='damage'&&source.combatV2&&!abilityId.startsWith('V2_')&&
+      (effect.lifestealPct??0)>0&&dealt>0&&source.alive){
+      const healed=Math.min(source.definition.stats.maxHp-source.hp,
+        dealt*clamp(effect.lifestealPct??0,0,.20));
+      if(healed>0){source.hp+=healed;source.healingDone+=healed;
+        events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,
+          abilityId:'V2_LIFESTEAL:'+abilityId,amount:Number(healed.toFixed(2))});}
+    }
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
     if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});

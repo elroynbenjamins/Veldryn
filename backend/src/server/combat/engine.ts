@@ -2,6 +2,12 @@ import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjuste
 import { CombatRng } from './deterministic-rng';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
 import {triggerCapstoneV2,type CapstoneContextV2,type CapstoneTriggerV2} from './v2/capstone-runtime';
+import {
+ triggerReactivePassiveV2,defensiveReactiveTriggerV2,outgoingReactiveMultiplierV2,
+ incomingReactiveMultiplierV2,reactiveDamageFlatReductionV2,reactiveHasteV2,
+ reactiveHealingMultiplierV2,reactiveShieldMultiplierV2,
+ type ReactiveContextV2,type ReactiveTriggerV2,
+} from './v2/reactive-passive-runtime';
 import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatGemStateSnapshot, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState, TargetRule } from './types';
 import {gemConsumeSupportChargeV1,gemEffectiveDefenseV1,gemEffectiveHasteV1,gemHealingMultiplierV1,gemIncomingDamageMultiplierV1,gemOnAbilityUsedV1,gemOnBossPhaseV1,gemOnBuffAppliedV1,gemOnDamageTakenV1,gemOnDebuffAppliedV1,gemOnDirectHealV1,gemOnDirectHitV1,gemOnKillV1,gemOnShieldAppliedV1,gemOutgoingDamageMultiplierV1,gemShieldMultiplierV1} from './gem-effects-v1';
 
@@ -88,15 +94,17 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
   let runCapstone:(actor:CombatantState,kind:CapstoneTriggerV2,now:number,target?:CombatantState,ctx?:CapstoneContextV2)=>void=()=>{};
+  let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
   const resource=(actor:CombatantState,kind:Parameters<typeof awardCombatResourceV2>[1],now:number,id:string)=>{
     const event=awardCombatResourceV2(actor,kind,now,id);
-    if(event){events.push(event);runCapstone(actor,'gain',now);}
+    if(event){events.push(event);runCapstone(actor,'gain',now);runReactive(actor,'gain',now);}
   };
   const spend=(actor:CombatantState,ability:AbilityDefinition,now:number)=>{
     const queued=consumeQueuedCombatBonusV2(actor,ability);
     const resolved=spendCombatResourceV2(actor,queued,now);
     if(resolved.event){events.push(resolved.event);
-      runCapstone(actor,'spend',now,undefined,{spent:Math.max(0,(resolved.event.resourceBefore??0)-(resolved.event.resourceAfter??0))});}
+      const spent=Math.max(0,(resolved.event.resourceBefore??0)-(resolved.event.resourceAfter??0));
+      runCapstone(actor,'spend',now,undefined,{spent});runReactive(actor,'spend',now,undefined,{spent});}
     if(actor.definition.combatV2?.capstoneId?.endsWith(':ritual_surge')&&ability.name==='Thunder Totem')
       actor.combatV2?.scheduledTotemAt.push(now+4000);
     return resolved.ability;
@@ -132,7 +140,9 @@ export function simulateCombat(input: CombatInput): CombatResult {
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
     const v2Evasion=target.definition.tags?.includes('combat-v2')?modifier(target,'evasion',now):0;
     const hc=hitChance(source.definition.stats.accuracy,target.definition.stats.evasion+v2Evasion,accuracyScale); if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
-      if(!abilityId.startsWith('V2_CAPSTONE'))runCapstone(target,'evade',now,source);}}return;}
+      if(!abilityId.startsWith('V2_')){
+        runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
+      }}}return;}
     const v2Defense=v2Encounter?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
     const authoredPenetration=v2Encounter&&source.definition.combatV2?clamp(effect.penetrationPct??0,0,.20):0;
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);
@@ -164,6 +174,14 @@ export function simulateCombat(input: CombatInput): CombatResult {
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_CAPSTONE')&&
        source.definition.combatV2?.capstoneId?.endsWith(':final_verdict')&&hpPct(target)<.30)
       raw*=target.definition.boss?1.08:1.18;
+    const hpBeforeReactive=hpPct(target);
+    if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
+      if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
+      if(target.combatV2){
+        raw*=incomingReactiveMultiplierV2(target,source,now);
+        raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
+      }
+    }
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
@@ -174,8 +192,10 @@ export function simulateCombat(input: CombatInput): CombatResult {
     if(dealt>0){
       if(source.definition.team==='players'){
         resource(source,eventType==='dot_tick'?'periodic_hit':'direct_hit',now,abilityId);
-        if(eventType==='damage'&&!abilityId.startsWith('V2_CAPSTONE')){
+        if(eventType==='damage'&&!abilityId.startsWith('V2_')){
           runCapstone(source,'hit',now,target);
+          runReactive(source,'hit',now,target,{critical:crit,
+            abilityName:source.definition.abilities.find(a=>a.id===abilityId)?.name??'BASIC'});
           const v2=source.combatV2;
           if(source.definition.combatV2?.capstoneId?.endsWith(':endless_weave')&&v2&&abilityId!=='BASIC'){
             v2.procCounters.spell_hits=(v2.procCounters.spell_hits??0)+1;
@@ -188,7 +208,11 @@ export function simulateCombat(input: CombatInput): CombatResult {
           }
         }
       }
-      if(target.definition.team==='players')resource(target,'damage_taken',now,abilityId);
+      if(target.definition.team==='players'){
+        resource(target,'damage_taken',now,abilityId);
+        if(eventType==='damage'&&!abilityId.startsWith('V2_'))
+          runReactive(target,'damage_taken',now,source,{amount:dealt,previousHpPct:hpBeforeReactive});
+      }
     }
     if(absorbed>0&&target.definition.team==='players')resource(target,'shield_absorb',now,abilityId);
     // Reflect only damage absorbed by the shield that granted this effect. Direct
@@ -202,11 +226,15 @@ export function simulateCombat(input: CombatInput): CombatResult {
       if(source.hp<=0){source.alive=false;source.downed=source.definition.team==='players';events.push({atMs:now,type:source.downed?'down':'death',targetId:source.definition.id,actorId:owner.definition.id,abilityId:'COMPANION_REFLECT'});}
     }
     if(target.reflectiveShields)target.reflectiveShields=target.reflectiveShields.filter(s=>s.remaining>0);
-    if(target.hp<=0&&target.alive){gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});}
+    if(target.hp<=0&&target.alive){gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});
+      if(source.combatV2&&target.definition.team==='enemies'&&!abilityId.startsWith('V2_'))
+        runReactive(source,'kill',now,target);
+    }
   };
   const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=v2Encounter&&effect.healBelowHpPct!==undefined&&hpPct(target)<effect.healBelowHpPct
       ?1+clamp(effect.healBonus??0,0,.40):1;
-    const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
+    const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
+      (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
     if(actual>0&&direct&&source.definition.team==='players'){
       resource(source,'effective_heal',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE'))runCapstone(source,'heal',now,target,{amount:actual,healedAlly:source!==target});
@@ -217,7 +245,8 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
-    if(effect.kind==='shield'){const amt=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
+    if(effect.kind==='shield'){const amt=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+      (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
       resource(source,'shield_granted',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE')){
         const ability=source.definition.abilities.find(a=>a.id===abilityId);
@@ -232,14 +261,22 @@ export function simulateCombat(input: CombatInput): CombatResult {
       const removed=target.periodic.filter(p=>p.kind==='dot');
       target.periodic=target.periodic.filter(p=>p.kind!=='dot');
       for(const p of removed)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'dot',statusTag:p.tag??'dot'});
+      if(removed.length&&source.combatV2&&!abilityId.startsWith('V2_'))
+        runReactive(source,'cleanse',now,target);
       return;
     }
     if(effect.kind==='interrupt'){ if(target.casting){ const interruptedAbilityId=target.casting.abilityId,def=target.definition.abilities.find(a=>a.id===interruptedAbilityId); if(def?.interruptible){target.casting=undefined;source.interrupts++;events.push({atMs:now,type:'interrupt',actorId:source.definition.id,targetId:target.definition.id,abilityId,interruptedAbilityId});if(source.definition.team==='players'){
         resource(source,'interrupt',now,abilityId);
-        if(!abilityId.startsWith('V2_CAPSTONE'))runCapstone(source,'interrupt',now,target);
+        if(!abilityId.startsWith('V2_')){
+          runCapstone(source,'interrupt',now,target);
+          runReactive(source,'interrupt',now,target);
+        }
       }}} return; }
-    if(effect.kind==='taunt'){ if(target.definition.team==='enemies'){const top=Math.max(1,...Object.values(target.threat));target.threat[source.definition.id]=top+Math.max(100,effect.value??100);if(source.definition.team==='players')resource(source,'taunt',now,abilityId);}return;}
-    if(effect.kind==='buff'||effect.kind==='debuff'){const tag=effect.tag??'generic',expiresAt=now+(effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')?abilityId:undefined;
+    if(effect.kind==='taunt'){ if(target.definition.team==='enemies'){const top=Math.max(1,...Object.values(target.threat));target.threat[source.definition.id]=top+Math.max(100,effect.value??100);if(source.definition.team==='players'){
+        resource(source,'taunt',now,abilityId);
+        if(!abilityId.startsWith('V2_'))runReactive(source,'taunt',now,target);
+      }}return;}
+    if(effect.kind==='buff'||effect.kind==='debuff'){const tag=effect.tag??'generic',expiresAt=now+(effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
       target.modifiers.push({sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
         ...(capstoneId?{v2CapstoneId:capstoneId}:{})});events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:tag,expiresAtMs:expiresAt});if(effect.kind==='debuff')gemOnDebuffAppliedV1(now,source,target);else gemOnBuffAppliedV1(now,source,target);emitGemState(now);return;}
@@ -266,6 +303,21 @@ export function simulateCombat(input: CombatInput): CombatResult {
       }
       for(const destination of targets){
         if(destination.alive)applyEffect(now,actor,destination,action.effect,'V2_CAPSTONE:'+actor.definition.combatV2?.capstoneId);
+      }
+    }
+  };
+
+  runReactive=(actor,kind,now,target,ctx={})=>{
+    if(!actor.alive||!actor.combatV2||!v2Encounter)return;
+    const actions=triggerReactivePassiveV2(actor,kind,now,ctx);
+    if(kind==='damage_taken')actions.push(...defensiveReactiveTriggerV2(actor,now));
+    for(const action of actions){
+      events.push({atMs:now,type:'passive_trigger',actorId:actor.definition.id,
+        targetId:target?.definition.id,abilityId:'V2_PASSIVE:'+action.node,detail:kind});
+      const affected=action.target==='all_allies'?living(players):
+        action.target==='self'?[actor]:target?.alive?[target]:[];
+      for(const recipient of affected){
+        if(recipient.alive)applyEffect(now,actor,recipient,action.effect,'V2_PASSIVE:'+action.node);
       }
     }
   };
@@ -299,7 +351,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
       if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; if(ab&&target?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:target.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
       const ab=abilitiesByActor.get(actor)?.find(a=>(actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes));
-      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0)));} }
     }
   }

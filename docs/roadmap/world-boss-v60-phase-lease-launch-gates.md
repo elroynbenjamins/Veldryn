@@ -44,25 +44,32 @@ until refresh and must never be used for the server's authoritative windows.
 ## What this does not prove
 
 A green synthetic CI fixture is not a real 48-hour weekend raid, server
-Auth integration or device validation. Before launch:
+Auth integration or device validation. The product decision is **first real
+battle in production, no staged gameplay rehearsal**. Before that live event:
 
 1. Resolve privacy/retention and account-erasure policy in issue #1348.
    V56 deletion runtime remains hard-disabled, V58 and V59 draft only.
-2. Approve and install the reviewed private World Boss schema in staging
-   (the latest read-only check found no World Boss tables).
+2. Approve the reviewed private World Boss schema, Auth privileges and
+   operator emergency-stop controls for controlled deployment. The latest
+   read-only environment review found no installed World Boss tables;
+   isolated schema/privilege tests are not a gameplay rehearsal.
 3. Mount an Auth-derived, privacy-fenced **read-only** overview transport
    with a trusted server launch Monday and request bounds; test failure,
    revoked Auth and race behavior.
 4. Validate 1–3 current characters **plus grandfathered 4/5**, one
    account-wide three-attempt budget, two account-wide War Camp donations,
    immutable replays, frozen bonuses, idempotent claims and replay erasure,
-   against approved synthetic multi-account staging fixtures.
+   through isolated source and disposable database contract tests, without
+   staging a full raid or using real players as test fixtures.
 5. Finish role/Combat Power fairness and World Sigil payout review, localized
-   pixel-art UI, Android accessibility, background/resume and post-weekend
-   reward reconciliation; check exact branch-head CI and document rollback.
+   pixel-art UI, Android accessibility, background/resume, emergency-stop
+   lock ordering and reward reconciliation controls; check exact branch-head
+   CI and establish a real-event hotfix and pause procedure.
 6. After explicit approval, schedule exactly one canonical global boss per
-   14-day cycle (Hollowroot → Solbrand → Rimewarden). Do not launch from
-   local time, device-derived boss selection or a client-provided event ID.
+   14-day cycle (Hollowroot → Solbrand → Rimewarden). The first encounter
+   is real and live, with pausable new actions and preserved existing
+   receipts. Do not launch from local time, device-derived boss selection
+   or a client-provided event ID.
 
 **This PR is safe to review as hidden code, but not sufficient to enable
 World Bosses in the next public build.**

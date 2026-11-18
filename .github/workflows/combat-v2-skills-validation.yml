@@ -8,6 +8,8 @@ on:
       - 'backend/src/server/combat/**'
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
+      - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
+      - 'backend/supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'
       - 'backend/online/combat-v2-build-auth-boundary.ts'
       - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
       - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
@@ -22,6 +24,8 @@ on:
       - 'backend/src/server/combat/**'
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
+      - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
+      - 'backend/supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'
       - 'backend/online/combat-v2-build-auth-boundary.ts'
       - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
       - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
@@ -74,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -88,12 +92,16 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/class-baseline.js
       - name: Validate deterministic Enemy/Boss 2.0 kit composition and six profiles
         run: node backend/dist/server/combat/v2/__tests__/enemy-kit-composer.js
+      - name: Validate private solo V2 encounter reservation, RPC adapter and replay
+        run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
       - name: Validate full class, approved gear base, set and affix pipeline
         run: node backend/dist/server/combat/v2/__tests__/unified-equipment-encounter.js
       - name: Validate all nine class roles through the full gear pipeline
         run: node backend/dist/server/combat/v2/__tests__/full-equipment-role-matrix.js
       - name: Validate hidden database migration permissions
         run: node backend/tests/combat-v2-build-sql-contract.cjs
+      - name: Validate hidden solo encounter persistence SQL, RLS and CAS isolation
+        run: node backend/tests/combat-v2-solo-snapshot-sql-contract.cjs
       - name: Validate class identity, 18 styles and nine early resource loops
         run: node backend/dist/server/combat/v2/__tests__/class-identity-v2.js
       - name: Capture deterministic 18-spec balance baseline

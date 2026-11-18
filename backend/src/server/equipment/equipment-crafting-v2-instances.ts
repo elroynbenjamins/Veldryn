@@ -1,4 +1,4 @@
-import {V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,v2ServerPiece} from './equipment-crafting-v2-manifest';
+import {V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,v2ServerPiece,v2ServerRecipeAndPiece} from './equipment-crafting-v2-manifest';
 import {
  EQUIPMENT_V2_SERVER_RULES_VERSION,V2_SERVER_RARITY_BANDS,V2_SERVER_RARITY_BASE_MULTIPLIER,V2_SERVER_AFFIX_RANGES,
  type V2DraftRollOutcome,type V2Affix,type V2Slot,type V2Tier,
@@ -84,7 +84,9 @@ function validateRolledOutcome(piece:V2ServerPiece,roll:V2DraftRollOutcome){
  */
 export function v2ServerCreateExactTemplate(piece:V2ServerPiece,roll:V2DraftRollOutcome):V2ExactEquipmentTemplate{
  const canonical=v2ServerPiece(piece.id);
- if(!canonical||canonical!==piece)throw new Error('uncanonical_v2_item_template');
+ const boundRecipe=v2ServerRecipeAndPiece(roll.recipeId);
+ if(!canonical||canonical!==piece||!boundRecipe||boundRecipe.piece!==piece)
+  throw new Error('uncanonical_v2_item_template');
  validateRolledOutcome(piece,roll);
  return {
   manifestVersion:V2_SERVER_MANIFEST_VERSION,rulesVersion:EQUIPMENT_V2_SERVER_RULES_VERSION,

@@ -31,6 +31,8 @@ on:
       - 'backend/online/world-boss-current-overview-v51.ts'
       - 'backend/online/world-boss-current-read-route-v52.ts'
       - 'backend/online/world-boss-current-action-v62.ts'
+      - 'backend/online/world-boss-gate-attestation-v63.ts'
+      - 'docs/roadmap/world-boss-gate-attestation-v63*.sql'
       - 'backend/online/world-boss-account-erasure-v56.ts'
       - 'backend/online/world-boss-readiness-audit-v43.ts'
       - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
@@ -211,3 +213,7 @@ jobs:
           # contract checks. No World Boss event is scheduled or played here.
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61-smoke.sql
+          # Preflight checks that V61 receipt triggers/privileges are installed
+          # before a future World Boss action host may accept real requests.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-gate-attestation-v63.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-gate-attestation-v63-smoke.sql

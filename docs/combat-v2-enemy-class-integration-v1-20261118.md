@@ -27,7 +27,7 @@ Only implemented traits are eligible: stonehide, fortified, savage, rending, swi
 - Validates nine canonical class/role pairs, pinned class/skill versions and the exact frozen Equipment 2.0 evidence schema merged in PR #1390. Rarity and quality remain pre-applied to the frozen physical copy.
 - T1 Enemy 2.0 trait rolls are ineligible. The hidden prototype only allows T2–T5. Normal enemies may have at most one trait; elites may use two at T3+ if authored group constraints allow it.
 - Fails on duplicate enemies, unsupported archetypes/traits, two major offensive/defensive traits, and enemy kits tagged as compiled by another V2 system.
-- Returns frozen, sanitised preview evidence with no random seed, raw rolls, underlying damage coefficients or privileged actor stats. It returns runnable:false. It does not construct a CombatInput or execute, settle or persist a battle.
+- Returns frozen, sanitised preview evidence with no private character ID, random seed, raw rolls, underlying damage coefficients or privileged actor stats. It returns runnable:false. It does not construct a CombatInput or execute, settle or persist a battle. The trusted snapshot verifier must also validate original seeded trait provenance; the presentation plan does not re-roll traits.
 
 ## Experimental status semantics
 - Per enemy source: poison/bleed DoTs cap at 3; regeneration HoTs cap at 1. Reapplying after the cap refreshes the earliest-expiring effect in its original array position.

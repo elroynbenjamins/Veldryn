@@ -17,6 +17,16 @@ assert.ok(pager.includes('entry.rank>=1&&entry.rank<=3')&&pager.includes('podium
 includes('accessibilityLabel={st("Rankings guide")}','rankings guide must be accessible by screen reader');
 includes('setGuideOpen(true)','rankings guide must be reachable from the header');
 includes('firstPlaceCard','official first place needs a distinct visual treatment');
+for(const asset of [
+  '../../assets/ui-icons-v2/small/account.webp',
+  '../../assets/ui-icons-v2/small/skills.webp',
+  '../../assets/navigation-icons-v4/training.webp',
+  '../../assets/navigation-icons-v4/dungeon.webp',
+  '../../assets/navigation-icons-v4/guild.webp',
+])includes(asset,'Rankings must use existing pixel-art navigation sprites: '+asset);
+includes('source={RANKING_GROUP_ART[group]}','board picker must display the canonical group sprite');
+includes('status={entry.isSelf?st("YOU"):undefined}','do not clutter all leaderboard names with redundant PLAYER or GUILD labels');
+includes('toLocaleTimeString(language)','snapshot time must use the player-selected language');
 includes('HALL OF RENOWN','Rankings hero must use the approved Hall of Renown identity');
 includes("value==='Professions'?'Skills':value==='Competitive'?'Arena':value",'display tabs must use understandable Skills and Arena names without changing backend groups');
 includes('accessibilityLabel={loading?st("Loading rankings"):st("Refresh")}','refresh icon must announce its busy state');

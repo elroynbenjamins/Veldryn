@@ -121,6 +121,15 @@ assert.throws(()=>evaluatePowerCompositionV2(syntheticClass,syntheticFull,10,{
 }),/missing_approved_cp_weight/);
 
 assert.equal(JSON.stringify(classActor),before,'base actor must not be mutated');
+const poisonedActor={...classActor,
+ stats:{...classActor.stats,attackPower:9999999,defense:9999999},
+ abilities:[]};
+const poisonedBuild={...build,actor:poisonedActor};
+const poisonedReplay=simulateUnifiedEquipmentCombatV2(
+ {...input,players:[poisonedActor]},[poisonedBuild],[runtime],true);
+assert.deepEqual(poisonedReplay.combat,enabled.combat,
+ 'Launch actor attack/defense and skill payload must not leak into class-only combat');
+
 const resolved=enabled.combat.players[0].definition;
 const rarityQuality=1.1*1.05;
 const round6=(n:number)=>Math.round(n*1e6)/1e6;

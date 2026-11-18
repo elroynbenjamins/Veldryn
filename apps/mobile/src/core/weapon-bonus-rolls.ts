@@ -20,8 +20,12 @@ const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusSt
 };
 /** Stat-sensitive ranges in basis points, grouped by weapon tier.
  * HP and Tenacity have wider budgets than combat tempo/crit/avoidance stats. */
-type WeaponTierBand=3|5|7|9;
+type WeaponTierBand=2|3|5|7|9;
 export const WEAPON_BONUS_BPS_BY_BAND:Readonly<Record<WeaponTierBand,Readonly<Record<WeaponBonusStat,readonly [number,number]>>>>={
+  2:{
+    maxHp:[100,250],armor:[80,180],ward:[30,90],tenacity:[100,240],
+    critRate:[30,80],haste:[40,110],penetration:[50,130],accuracy:[30,90],potency:[80,200],
+  },
   3:{
     maxHp:[200,400],armor:[150,300],ward:[50,150],tenacity:[200,400],
     critRate:[50,150],haste:[80,200],penetration:[100,250],accuracy:[50,150],potency:[150,350],
@@ -41,14 +45,14 @@ export const WEAPON_BONUS_BPS_BY_BAND:Readonly<Record<WeaponTierBand,Readonly<Re
 };
 /** Version 1 is retained for any older test/staging receipts. Never reinterpret a
  * previously minted percentage under a newly tuned range. */
-const V1_RANGE_BY_BAND:Readonly<Record<WeaponTierBand,readonly [number,number]>>={
+const V1_RANGE_BY_BAND:Readonly<Partial<Record<WeaponTierBand,readonly [number,number]>>>={
   3:[100,300],5:[200,400],7:[300,500],9:[400,600],
 };
 /** The maximum of a stat is independent of the other stat on a dual-roll weapon. */
 export function weaponBonusRange(
   tier:number,stat:WeaponBonusStat,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION,
 ):readonly [number,number]|undefined{
-  const band:WeaponTierBand|undefined=tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:undefined;
+  const band:WeaponTierBand|undefined=tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:tier===2?2:undefined;
   if(band===undefined)return undefined;
   return version===1?V1_RANGE_BY_BAND[band]:version===2?WEAPON_BONUS_BPS_BY_BAND[band][stat]:undefined;
 }
@@ -59,8 +63,8 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity){
   const item=itemDef(itemId);
   const tier=Number(/^T([1-9])_/.exec(item.equipmentSetId??'')?.[1]??0);
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
-  if(item.type!=='gear'||item.slot!=='weapon'||tier<3||tier>9||!role)return undefined;
-  const count=tier>=5||HIGH_RARITIES.includes(rarity)?2:1;
+  if(item.type!=='gear'||item.slot!=='weapon'||tier<2||tier>9||!role)return undefined;
+  const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
   return {tier,role,count,pool:ROLE_POOL[role]};
 }
 

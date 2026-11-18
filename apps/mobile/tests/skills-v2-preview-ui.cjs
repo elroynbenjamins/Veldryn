@@ -13,6 +13,8 @@ assert.match(screen,/useGameTheme/);
 assert.match(screen,/accessibilityRole="tablist"/);
 assert.match(screen,/minHeight:44/);
 assert.match(screen,/signatureIds/,'Signature slots must be represented');
+assert.match(screen,/GEAR_GUIDANCE_V2/,'The build overview should explain class weapon and role-set choices');
+assert.match(screen,/Actual gear eligibility and owned item instances are checked by the server/);
 assert.match(screen,/talentRanks/);
 assert.match(screen,/skill\.variantEffects/);
 assert.match(screen,/branch\.nodeDescriptions/);

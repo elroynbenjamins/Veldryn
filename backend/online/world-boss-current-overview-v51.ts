@@ -98,16 +98,19 @@ export function createWorldBossCurrentEventPgV51(pg:WorldBossPgExecutorV19):
   if(!integer(cycleStartUtcMs)||new Date(cycleStartUtcMs).getUTCDay()!==1||
    cycleStartUtcMs%86400000!==0)
    throw Error('world_boss_v51_invalid_cycle_start');
+  const cycleMs=14*86400000;
+  // Test overlap using exact elapsed UTC milliseconds, not `interval '14
+  // days'` in the connection's session timezone (DST can shift that).
   const sql='SELECT id::text AS "eventId",boss_id AS "bossId",'+
    'floor(extract(epoch FROM starts_at)*1000)::double precision AS "startsAtUtcMs",'+
-   'floor(extract(epoch FROM starts_at+interval \'14 days\')*1000)::double precision AS "cycleEndsAtUtcMs" '+
-   'FROM private.world_boss_events_v17 WHERE starts_at < $2::timestamptz '+
-   'AND starts_at+interval \'14 days\' > $1::timestamptz LIMIT 2';
-  // Catch any overlapping event (including a mistimed older/second row),
-  // then require the ONE returned row to match the canonical exact start.
+   'floor(extract(epoch FROM starts_at)*1000)::double precision + $3::double precision AS "cycleEndsAtUtcMs" '+
+   'FROM private.world_boss_events_v17 WHERE starts_at > $1::timestamptz '+
+   'AND starts_at < $2::timestamptz LIMIT 2';
+  // Any start strictly within 14 days before/after the selected start
+  // overlaps the selected 14-day interval. Exact adjacent cycles do not.
   const result=await pg.query<Omit<EventSelection,'index'>>(
-   sql,[new Date(cycleStartUtcMs).toISOString(),
-    new Date(cycleStartUtcMs+14*86400000).toISOString()]);
+   sql,[new Date(cycleStartUtcMs-cycleMs).toISOString(),
+    new Date(cycleStartUtcMs+cycleMs).toISOString(),cycleMs]);
   if(result.rows.length>1)
    throw Error('world_boss_v51_duplicate_global_event');
   return result.rows[0]??null;

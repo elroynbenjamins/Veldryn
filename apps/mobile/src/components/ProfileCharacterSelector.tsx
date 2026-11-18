@@ -1,5 +1,9 @@
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {socialIdentityT} from '../i18n/social-identity';
+import {profileT} from '../i18n/profile';
+import {CLASSES} from '../content/classes';
 import type {PublicProfileCharacterChoice} from '../online/profile-extension-v43';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -8,18 +12,19 @@ import {useGameTheme} from '../theme/ThemeContext';
 export function ProfileCharacterSelector({choices,selectedId,onSelect,disabled=false}:{
  choices?:PublicProfileCharacterChoice[];selectedId:string;onSelect:(characterId:string)=>void;disabled?:boolean;
 }){
+ const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  if(!choices||choices.length<2)return null;
  return <View style={s.root}>
-  <Text style={s.kicker}>CHARACTER SHOWCASES</Text>
-  <View style={s.row}>
+  <Text style={s.kicker}>{socialIdentityT(language,"CHARACTER SHOWCASES")}</Text>
+  <View style={s.row} accessibilityRole="tablist">
    {choices.map(hero=>{
     const selected=hero.id===selectedId;
-    return <Pressable key={hero.id} accessibilityRole="button" accessibilityLabel={'Show '+hero.name+' profile'}
+    return <Pressable key={hero.id} accessibilityRole="tab" accessibilityLabel={socialIdentityT(language,"Show {name} profile",{name:hero.name})}
      accessibilityState={{selected,disabled:disabled||selected}} disabled={disabled||selected}
      onPress={()=>onSelect(hero.id)} style={({pressed})=>[s.choice,selected&&s.chosen,pressed&&s.pressed]}>
       <Text numberOfLines={1} style={[s.name,selected&&s.nameChosen]}>{hero.name}</Text>
-      <Text numberOfLines={1} style={s.meta}>Lv. {hero.level} · {hero.classId.replace(/_/g,' ')}</Text>
+      <Text numberOfLines={1} style={s.meta}>{profileT(language,"Lv. {level}",{level:hero.level})} · {CLASSES.find(row=>row.id===hero.classId)?.name??hero.classId.replace(/_/g," ")}</Text>
     </Pressable>;
    })}
   </View>

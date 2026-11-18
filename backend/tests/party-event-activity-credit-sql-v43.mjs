@@ -89,6 +89,18 @@ try{
  const coop=await get(coopSql,[runId,'NODE_A',accountA,key]);
  must(coop.rows.length===1&&coop.rows[0].credit.eventParty===partyA
   &&coop.rows[0].credit.actorAccount===accountA,'coop_verified_source_time_attested_actor');
+ // The attested source is bound to immutable committed node provenance.
+ // Tampering with the underlying success/hash can never pass the selection.
+ await db.query(`update public.coop_node_results set start_state_hash='CHANGED'
+  where run_id=$1::uuid`,[runId]);
+ must((await get(coopSql,[runId,'NODE_A',accountA,key])).rows.length===0,
+  'node_hash_mismatch_denied');
+ await db.query(`update public.coop_node_results set start_state_hash='HASH_A',success=false
+  where run_id=$1::uuid`,[runId]);
+ must((await get(coopSql,[runId,'NODE_A',accountA,key])).rows.length===0,
+  'failed_node_cannot_match_persisted_witness');
+ await db.query(`update public.coop_node_results set success=true
+  where run_id=$1::uuid`,[runId]);
  const forgedActor=await get(coopSql,[runId,'NODE_A',accountB,key]);
  must(forgedActor.rows.length===0,'coop_wrong_actor_denied');
  const fakeNode=await get(coopSql,[runId,'FAKE_NODE',accountA,key]);

@@ -180,6 +180,12 @@ assert.ok(Math.abs((dreadguard[0].classHealAbility?.amount??0)-(dreadguard[0].cl
 const dawn=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER'});
 assert.ok(dawn[0].classHealAbility?.amount&&dawn[0].healing>enemyHits[0].healing,'Sun Smite gains real bounded restoration, not a free attack');
 assert.equal(dawn[0].damage,enemyHits[0].damage,'Dawnkeeper must not secretly block a hit');
+const empoweredDawn=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER',classHealingMultiplier:1.3});
+assert.ok((empoweredDawn[0].classHealingBudget??0)>(dawn[0].classHealingBudget??0),
+  'Forged Healing Power must strengthen a real class healing skill');
+assert.equal(empoweredDawn[0].damage,dawn[0].damage,
+  'Healing Power cannot alter enemy attacks or invent a defensive reduction');
+
 const stonecaller=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'STONECALLER'});
 assert.ok(stonecaller[0].classGuardAbility?.amount&&stonecaller[0].classHealingBudget,'Thunder Totem blocks damage and restores a small portion');
 assert.equal(stonecaller[0].classHealAbility?.name,'Thunder Totem','Stonecaller must show real totem restoration alongside absorption');

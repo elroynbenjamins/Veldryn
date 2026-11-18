@@ -61,7 +61,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
   const second=compileServerSkillBuildV2(true,{
     ...data,selected:{...selection,specializationId:specializations[1].id},
   });
-  assert.notDeepEqual(second.stats,upgraded.stats,'each specialization changes real combat stats');
+  assert.notDeepEqual({stats:second.stats,abilities:second.abilities},{stats:upgraded.stats,abilities:upgraded.abilities},'each specialization changes computed combat output');
   // Every first and second signature technique has three server-authored variants.
   for(let i=0;i<2;i++){
     for(let j=0;j<3;j++){

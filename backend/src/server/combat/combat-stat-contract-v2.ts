@@ -25,15 +25,20 @@ export type CombatActionV2 =
 /** A class skill cannot scale with both weapon and skill budgets.
  * A weapon technique can receive an Ability Damage bonus but does not
  * secretly also take the Skill Power contribution. */
-export function validateCombatActionV2(input:CombatActionV2):string[]{
+export function validateCombatActionV2(input:unknown):string[]{
+  if(!input||typeof input!=='object')return ['missing_action'];
+  const action=input as {kind?:unknown;purpose?:unknown;powerSource?:unknown;coefficient?:unknown};
   const errors:string[]=[];
-  if(!Number.isFinite(input.coefficient)||input.coefficient<0||input.coefficient>100)errors.push('invalid_action_coefficient');
-  if(input.kind==='basic_weapon'&&
-    (input.powerSource!=='weapon'||input.purpose!=='damage'))errors.push('invalid_basic_weapon_tag');
-  if(input.kind==='weapon_technique'&&
-    (input.powerSource!=='weapon'||input.purpose!=='damage'))errors.push('invalid_weapon_technique_tag');
-  if(input.kind==='class_skill'&&input.powerSource!=='skill')errors.push('invalid_class_skill_tag');
-  if(!['damage','heal','shield'].includes(input.purpose))errors.push('invalid_action_purpose');
+  if(typeof action.coefficient!=='number'||!Number.isFinite(action.coefficient)
+    ||action.coefficient<0||action.coefficient>100)errors.push('invalid_action_coefficient');
+  if(action.kind==='basic_weapon'){
+    if(action.powerSource!=='weapon'||action.purpose!=='damage')errors.push('invalid_basic_weapon_tag');
+  }else if(action.kind==='weapon_technique'){
+    if(action.powerSource!=='weapon'||action.purpose!=='damage')errors.push('invalid_weapon_technique_tag');
+  }else if(action.kind==='class_skill'){
+    if(action.powerSource!=='skill')errors.push('invalid_class_skill_tag');
+  }else errors.push('invalid_action_kind');
+  if(!['damage','heal','shield'].includes(action.purpose as string))errors.push('invalid_action_purpose');
   return errors;
 }
 

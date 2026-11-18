@@ -20,6 +20,7 @@
     "src/server/combat/__tests__/boss-v2-asterfall-prototype.ts",
     "src/server/combat/__tests__/enemy-v2-legacy-dungeons.ts",
     "src/server/combat/__tests__/boss-v2-regional-prototype.ts",
-    "src/server/combat/__tests__/enemy-v2-effect-safety.ts"
+    "src/server/combat/__tests__/enemy-v2-effect-safety.ts",
+    "src/server/combat/__tests__/enemy-v2-balance-matrix.ts"
   ]
 }

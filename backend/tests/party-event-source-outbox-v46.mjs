@@ -97,9 +97,9 @@ try{
  select o.source_type,o.source_ref::text as source_id,o.state,o.attempt_count,
    o.source_occurred_at,
    case when o.source_type='craft' then
-    (select count(*) from public.craft_receipts c
+    (select count(*)::int from public.craft_receipts c
       where c.receipt_id=o.source_ref and c.created_at=o.source_occurred_at)
-   else (select count(*) from public.idle_claim_receipts i
+   else (select count(*)::int from public.idle_claim_receipts i
       where i.claim_id=o.source_ref and i.created_at=o.source_occurred_at) end as matches
  from private.party_event_source_outbox_v46 o order by source_type`);
  assert.deepEqual(sources.rows.map(x=>x.source_type),['craft','idle']);

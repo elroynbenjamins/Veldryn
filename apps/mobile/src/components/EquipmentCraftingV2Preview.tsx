@@ -37,7 +37,8 @@ export function EquipmentCraftingV2Preview({variants}:{variants:readonly Equipme
    <View style={s.heading}>
     <Text style={s.eyebrow}>INTERNAL DESIGN PREVIEW · T{method.tier}</Text>
     <Text style={s.title}>{method.name}</Text>
-    <Text style={s.subtle}>{method.slot.toUpperCase()} · {method.setPiece?'SET PIECE':'STANDALONE'}</Text>
+    <Text style={s.subtle}>{method.slot.toUpperCase()} · {method.setPiece?'SET PIECE':method.equipClass?'CLASS ARMAMENT':'STANDALONE'}</Text>
+    {method.equipClass?<Text style={s.subtle}>Equippable: {method.equipClass.replace(/_/g,' ')}</Text>:null}
    </View>
    <View style={s.itemBadge}><Text style={s.itemBadgeText}>T{method.tier}</Text></View>
   </View>

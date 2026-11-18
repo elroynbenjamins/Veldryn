@@ -70,7 +70,7 @@ export interface SoloEncounterServiceDependenciesV2 {
 }
 const id=(s:unknown)=>typeof s==='string'&&s.length>0&&s.length<=128&&
  /^[A-Za-z0-9:_-]+$/.test(s);
-const fail=(reason:string):never=>{throw Error('combat_v2_solo_'+reason);};
+function fail(reason:string):never{throw Error('combat_v2_solo_'+reason);}
 const unsigned=(x:unknown)=>Number.isSafeInteger(x)&&(x as number)>=0;
 const same=(a:unknown,b:unknown)=>enemyV2SnapshotDigest(a)===enemyV2SnapshotDigest(b);
 /** DB JSONB canonicalization removes undefined values and normalizes keys.

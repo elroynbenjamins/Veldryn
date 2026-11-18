@@ -6,6 +6,7 @@ import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
+import {ProfileCharacterSelector} from '../components/ProfileCharacterSelector';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from '../components/ProfileFavoriteHighlights';
 import {ProfileEquippedGearShowcase} from '../components/ProfileEquippedGearShowcase';
@@ -38,6 +39,16 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const summary=useMemo(()=>localProfileSummary(state),[state]);
  const refreshPublic=useCallback(async()=>{if(!onlineConfigured||!session){setPublicSelf(null);setPublicError('');return;}setLoadingPublic(true);setPublicError('');try{setPublicSelf(await publicPlayerProfileV43(session.user.id));}catch(error){setPublicSelf(null);setPublicError('Online profile could not refresh');}finally{setLoadingPublic(false)}},[session?.user.id]);
  useEffect(()=>{void refreshPublic()},[refreshPublic]);
+ const selectPublicHero=useCallback(async(characterId:string)=>{
+  if(!session||!publicSelf||publicSelf.character.id===characterId)return;
+  setLoadingPublic(true);setPublicError('');
+  try{
+   const chosen=await publicPlayerProfileV43(session.user.id,characterId);
+   if(chosen)setPublicSelf(chosen);
+   else setPublicError('This character profile is unavailable.');
+  }catch{setPublicError('Unable to load character profile.')}
+  finally{setLoadingPublic(false)}
+ },[session?.user.id,publicSelf]);
  if(!c)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={s.heading}>{profileT(language,"Profile")}</Text><Panel><Text style={s.copy}>{profileT(language,"Create a character to build your profile.")}</Text></Panel></ScrollView>;
 
  const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf),masteryIds=publicSelf?.masteryShowcaseActionIds?.length?publicSelf.masteryShowcaseActionIds:professionMasteryMasteredRecords(state).slice(0,3).map(row=>row.actionId);
@@ -52,7 +63,8 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const selectedLocally=selectedProfileCharacterId===c.id||(state.otherCharacters??[]).some(row=>row.character.id===selectedProfileCharacterId);
  const displayedGear=selectedLocally?localProfileGear(state,selectedProfileCharacterId):publicSelf?.equippedGear??[];
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
- const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
+ const profileHero=selectedProfileCharacterId===c.id?c:(state.otherCharacters??[]).find(row=>row.character.id===selectedProfileCharacterId)?.character;
+ const favoriteCompanionId=publicSelf?.favoriteCompanionId??profileHero?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',profileStateLabel=publicError?profileT(language,"SYNC ISSUE"):publicSelf?.visibility==='public'?profileT(language,"PUBLIC PROFILE"):publicSelf?.visibility==='guild'?profileT(language,"GUILD PROFILE"):publicSelf?.visibility==='private'?profileT(language,"PRIVATE PROFILE"):profileT(language,"LOCAL PROFILE");
  const bioGuidance=onlineConfigured&&session?(session.user.is_anonymous?profileT(language,"Link this guest account before publishing biography and showcase changes."):profileT(language,"Add a short biography from Customize Profile to tell other players about your character or play style.")):profileT(language,"This local profile is fully usable on-device. Sign in when you want to publish social profile details.");
 
@@ -62,7 +74,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    <View style={s.customizeAction}><GameButton compact title={profileT(language,"Customize")} onPress={()=>onNavigate?.('Customize')}/></View>
   </View>
 
-  {publicSelf?<PublicProfileScene profile={publicSelf} showGuild={false}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
+  {publicSelf?<><PublicProfileScene profile={publicSelf} showGuild={false}/><ProfileCharacterSelector choices={publicSelf.characterChoices} selectedId={publicSelf.character.id} onSelect={id=>void selectPublicHero(id)} disabled={loadingPublic}/></>:<ProfileScenePreview state={state} backgroundId={background}/>}
   {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>{profileT(language,"Online profile could not refresh")}</Text><Text style={s.syncText}>{profileT(language,"Your local identity is still shown safely. Retry to refresh privacy and showcase selections.")}</Text></View><View style={s.syncButton}><GameButton compact title={profileT(language,"Retry")} tone="secondary" onPress={()=>refreshPublic()}/></View></View>:null}
 
   <Panel>

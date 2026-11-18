@@ -168,10 +168,10 @@ console.log('PASS: both V33 equipment paths alter real server-owned dungeon load
 const healingGearState=createCharacter(newGame(0),'DAWNKEEPER','Dungeon Healing Roll');
 healingGearState.character!.level=25;
 healingGearState.character!.xp=legacyCharacterTotalXpAtLevel(25);
-const healingT2Set=EQUIPMENT_SETS.find(set=>set.classId==='DAWNKEEPER'&&set.tier==='T2'&&set.path==='Foundation');
-assert.ok(healingT2Set,'The T2 healer fixture must be a legitimate full support equipment set');
+// A legal, mixed novice/T2 loadout stays below the dungeon's intentional
+// hard healing cap, proving the affix changes resolved healing in real play.
 healingGearState.character!.equipment=Object.fromEntries(
- healingT2Set!.itemIds.map(itemId=>[itemDef(itemId).slot,itemId]));
+ noviceSetFor('DAWNKEEPER').slots.map(slot=>[slot,noviceItemId('DAWNKEEPER',slot)]));
 const healingGlovesId=V33_EQUIPMENT_RECIPES.find(row=>
  row.classId==='DAWNKEEPER'&&row.v33EquipmentTier==='T2'&&itemDef(row.output.itemId).slot==='gloves')!.output.itemId;
 const healingReceiptId='t2-support-healing-gloves';

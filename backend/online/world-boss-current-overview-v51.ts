@@ -93,6 +93,11 @@ export async function readAuthenticatedCurrentWorldBossOverviewV51(
   validated.startsAtUtcMs!==cycle.startsAtUtcMs||
   validated.readAtUtcMs<now-120000||validated.readAtUtcMs>now+30000)
   throw Error('world_boss_v51_stale_or_foreign_cycle');
+ // Recheck after awaited private reads: an erasure hold may have started
+ // while the event/overview query was in flight. Transactional fencing with
+ // the future account-erasure worker is STILL required before activation.
+ if(await deps.accountPrivacy.allowRead(accountId)!==true)
+  throw Error('world_boss_v54_account_privacy_hold');
  // Re-verify the selected event against the private projection, not merely
  // against the catalogue label. Do not leak action recommendations.
  const {attemptsRemaining:_attemptsRemaining,donationsRemaining:_donationsRemaining,

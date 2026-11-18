@@ -53,6 +53,7 @@ export function equipmentV2ResultPresentation(
   };
  });
  if(equipped)validateStats(equipped.baseStats);
+ const lostAffixes=(equipped?.affixes??[]).filter(old=>!seen.has(old.stat));
  const compare=(stat:keyof EquipmentV2BaseStats)=>result.baseStats[stat]-(equipped?.baseStats[stat]??0);
  return {
   instanceId:result.instanceId,pieceId:item.id,itemName:item.name,
@@ -62,7 +63,7 @@ export function equipmentV2ResultPresentation(
   baseStats:result.baseStats,statDifference:equipped?{
    attack:compare('attack'),defense:compare('defense'),hp:compare('hp'),
   }:undefined,
-  affixes,rarityChance:rarity.chance,
+  affixes,lostAffixes,rarityChance:rarity.chance,
   setName:item.setId?equipmentV2Set(item.setId)?.name:undefined,
   classRestriction:'classRestriction' in item?item.classRestriction:undefined,
   /** An equipped item's actual utility depends on skills, resistances and set

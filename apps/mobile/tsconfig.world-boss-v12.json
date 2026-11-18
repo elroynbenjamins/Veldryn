@@ -31,7 +31,8 @@
     "tests/world-boss-overview-v41.ts",
     "tests/world-boss-current-overview-v51.ts",
     "tests/world-boss-account-erasure-v56.ts",
-    "tests/world-boss-readiness-audit-v43.ts"
+    "tests/world-boss-readiness-audit-v43.ts",
+    "tests/world-boss-gathering-loot-v64.ts"
   ],
   "exclude": []
 }

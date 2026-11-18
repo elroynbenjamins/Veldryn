@@ -100,7 +100,7 @@ function validateStored(
     typeof row.snapshotDigest!=='string'||!/^[0-9a-f]{64}$/.test(row.snapshotDigest))
    fail('invalid_persisted_snapshot_scope');
  const {snapshotDigest,...payload}=row;
- if(!same(snapshotDigest,digestPayload(payload)))fail('persisted_snapshot_digest_mismatch');
+ if(snapshotDigest!==digestPayload(payload))fail('persisted_snapshot_digest_mismatch');
  const input=row.combatInput,kit=row.preparedKit;
  if(!input||!Array.isArray(input.players)||input.players.length!==1||
     !Array.isArray(input.enemies)||input.enemies.length<1||input.enemies.length>4||

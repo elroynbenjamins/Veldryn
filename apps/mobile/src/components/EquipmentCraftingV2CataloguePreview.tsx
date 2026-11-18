@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react';
 import {FlatList,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {EquipmentV2Role,EquipmentV2PieceDescriptor} from '../content/equipment-v2-catalog';
-import {EQUIPMENT_V2_PIECES} from '../content/equipment-v2-catalog';
+import {EQUIPMENT_V2_ALL_CRAFTABLE_PIECES} from '../content/equipment-v2-recipes';
 import {equipmentV2PreviewRoutesForItem} from '../core/equipment-crafting-v2-adapter';
 import {equipmentV2DraftAssembly} from '../core/equipment-crafting-v2-economy';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -26,9 +26,9 @@ export function EquipmentCraftingV2CataloguePreview({state,onInspect}:{state:Gam
  const [search,setSearch]=useState('');
  const entries=useMemo(()=>{
   const text=search.trim().toLocaleLowerCase();
-  return EQUIPMENT_V2_PIECES.filter(piece=>(tier==='all'||piece.tier===tier)
+  return EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>(tier==='all'||piece.tier===tier)
    &&(role==='all'||piece.role===role)
-   &&(!text||(piece.name+' '+piece.slot+' '+piece.role).toLocaleLowerCase().includes(text)))
+   &&(!text||(piece.name+' '+piece.slot+' '+piece.role+('classRestriction' in piece?' '+piece.classRestriction:'')).toLocaleLowerCase().includes(text)))
    .map(piece=>{
     const routes=equipmentV2PreviewRoutesForItem(state,piece.id,'gather');
     const requiredGold=equipmentV2DraftAssembly(piece.tier,piece.slot,Boolean(piece.setId)).gold;

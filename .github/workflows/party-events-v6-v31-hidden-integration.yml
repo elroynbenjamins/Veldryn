@@ -77,6 +77,7 @@ jobs:
             party-event-activity-credit-worker-v43 \
             party-event-canonical-source-packet-v44 \
             party-event-source-outbox-worker-v47 \
+            party-event-gameplay-commit-v48 \
             party-event-schema-readiness-v35 \
             party-event-day8-audit-v36 \
             party-event-staging-assessment-v37

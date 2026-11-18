@@ -306,6 +306,11 @@ export function simulateCombatWithSkillsV2(
  input:CombatInput,builds:readonly VerifiedSkillBuildV2[],serverEnabled=false,
 ):CombatResult {
   if(!serverEnabled)return simulateCombat(input);
+  // Once a build carries gear, the full Equipment+Skills pipeline is
+  // mandatory. This skills-only test helper must never silently ignore
+  // class-owned equipment or grant combat with missing item coefficients.
+  if(builds.some(b=>Object.keys(b.selected.equipment).length>0))
+    throw Error('combat_v2_equipment_pipeline_required');
   const byId=new Map(builds.map(b=>[b.actor.id,b]));
   if(byId.size!==builds.length)throw Error('combat_v2_duplicate_build_actor');
   const found=new Set<string>();

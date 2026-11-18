@@ -1,7 +1,7 @@
 export type CombatTeam = 'players' | 'enemies';
 export type CombatRole = 'tank' | 'damage' | 'support' | 'enemy';
 export type DamageType = 'physical' | 'fire' | 'ice' | 'shadow' | 'arcane' | 'nature' | 'true';
-export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'lowest_hp_ally_with_dot' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
+export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'lowest_hp_ally_with_dot' | 'two_lowest_hp_allies' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
 export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interrupt' | 'taunt' | 'buff' | 'debuff' | 'cleanse';
 
 /** Server-owned, opt-in Combat 2.0 encounter resource state. */
@@ -49,6 +49,9 @@ export interface AbilityEffect {
   bonusVsDebuffed?:number;
   /** Server-authored one-shot critical multiplier bonus for Combat 2.0. */
   critMultiplierBonus?:number;
+  /** Only applied to v2 direct heals; no changes to legacy healing. */
+  healBelowHpPct?:number;
+  healBonus?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
   /** Optional per-effect target for Combat 2.0 compound abilities. Existing effects keep ability target. */
@@ -142,6 +145,7 @@ export interface ActiveTimedModifier {
   expiresAt: number;
   createdAt?: number;
   kind?: 'buff'|'debuff'|'gem';
+  v2CapstoneId?:string;
 }
 
 export interface CombatantState {

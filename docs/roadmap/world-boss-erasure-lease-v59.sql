@@ -45,11 +45,14 @@ REVOKE ALL ON private.world_boss_erasure_jobs_v59,
 CREATE FUNCTION private.world_boss_v59_object_manifest_guard()
 RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
 AS $manifest$
-DECLARE j private.world_boss_erasure_jobs_v59%ROWTYPE;
+DECLARE
+ j private.world_boss_erasure_jobs_v59%ROWTYPE;
+ owner_key uuid;
 BEGIN
+ IF TG_OP='DELETE' THEN owner_key:=OLD.account_id;
+ ELSE owner_key:=NEW.account_id; END IF;
  SELECT * INTO j FROM private.world_boss_erasure_jobs_v59
- WHERE account_id=CASE WHEN TG_OP='DELETE' THEN OLD.account_id
-  ELSE NEW.account_id END FOR UPDATE;
+ WHERE account_id=owner_key FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'WB59_JOB_MISSING_FOR_OBJECT'; END IF;
  IF TG_OP='INSERT' THEN
   IF j.manifest_sealed OR j.stage<>'fenced'

@@ -157,11 +157,11 @@ const bosses=[
   supplies:['Cut timber for root barricades','Gather iron for reinforced shields','Prepare recovery supplies for the line'],
   mechanics:['Watch for the sweeping root warning','Protect allies through the heavy slam','Strike when the ancient exposes its heart'],
   threat:'Roots control the battlefield; watch the warning before committing damage.'},
- {id:'sunscar',serverId:'sunscar',name:'Sunscar',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73',
+ {id:'sunscar',serverId:'sunscar',name:'Solbrand',region:'Sunscar',scene:'SUNSCAR',motif:'THE SUN-FORGED TITAN',color:'#E2AE73',
   supplies:['Stockpile ore for heatproof armor','Bring timber for shaded war shelters','Prepare cooling supplies for the camp'],
   mechanics:['Read the blazing ground markers','Guard against the titan’s heated strike','Exploit the cooling window between casts'],
   threat:'Heat builds between strikes; timing your defenses matters.'},
- {id:'frost',serverId:'frostmarch',name:'Frostmarch',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9',
+ {id:'frost',serverId:'frostmarch',name:'Rimewarden',region:'Frostmarch',scene:'FROSTMARCH',motif:'THE WHITEOUT SENTINEL',color:'#98C8E9',
   supplies:['Reinforce the camp against the blizzard','Gather timber for warming fires','Prepare frost recovery provisions'],
   mechanics:['Identify the coming whiteout cast','Protect the squad through the freezing wave','Counterattack as the storm recedes'],
   threat:'Visibility and freezing attacks test the whole account squad.'},
@@ -186,7 +186,7 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
   <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="Prepare together. Fight on the weekend." sub="Five days of War Camp preparation, one continuous 48-hour battle, then seven days of recovery."/>
    <View style={s.statRow}><Stat s={s} label="PREPARATION" value="Mon–Fri"/><Stat s={s} label="BATTLE" value="Sat–Sun"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
    <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={active?.phase==='preparation'?accent:undefined}/><Tag s={s} label="02 Battle" accent={active?.phase==='raid'?accent:undefined}/><Tag s={s} label="03 Recovery" accent={active?.phase==='cooldown'?accent:undefined}/></View>
-   <Text style={s.finePrint}>One boss for the whole realm per cycle. Rotation: Hollowroot → Sunscar → Frostmarch → repeat. Players cannot choose another boss.</Text>
+   <Text style={s.finePrint}>One boss for the whole realm per cycle. Rotation: Hollowroot → Solbrand → Rimewarden → repeat. Players cannot choose another boss.</Text>
   </Card>
   {active?<Card s={s}><SectionHeading s={s} kicker="PRIVATE READ-ONLY SNAPSHOT" title={boss.name+' · '+phaseTitles[active.phase]} sub="This validated-format snapshot is for QA only. It does not enable gameplay or verify that the event is released."/>
    <View style={s.detailRow}><Tag s={s} label={active.status.toUpperCase()+' · '+phaseTitles[active.phase]} accent={accent}/><Text style={s.finePrint}>Read {new Date(active.readAtUtcMs).toISOString().slice(0,16).replace('T',' ')} UTC</Text></View>

@@ -10,13 +10,14 @@ import {ITEMS} from '../content/items';
 import {DUNGEON_MATERIAL_SOURCES,dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 import {recipeOutputOwnedQuantity} from './recipe-preparation-goals';
 import {gatheringToolDef} from '../content/gathering-tools';
+import {GEM_DISMANTLE_DUST_V1} from './gem-progression-v1';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
  |{kind:'skills';skillId?:SkillId;mode?:'gathering'|'crafting'|'faith';actionId?:string;recipeId?:string;regionId?:string;button:string;detail:string}
  |{kind:'contracts';button:string;detail:string}
- |{kind:'inventory';button:string;detail:string}
+ |{kind:'inventory';section?:'gem_pouch';button:string;detail:string}
  |{kind:'world';regionId:string;button:string;detail:string}
  |{kind:'dungeon';dungeonId?:string;button:string;detail:string}
  |{kind:'info';button:string;detail:string};
@@ -90,10 +91,10 @@ export function workingTowardDestinationAvailability(state:GameState,source:Work
  return {status:'ready',label:recipeSource?'AVAILABLE':'READY',detail:recipeSource?'Recipe unlocked.':'Available now.',canNavigate:true};
 }
 
-export type WorkingTowardItemSourceType='gathering'|'crafting'|'monster_drop'|'dungeon';
+export type WorkingTowardItemSourceType='gathering'|'crafting'|'monster_drop'|'dungeon'|'dismantling';
 export interface WorkingTowardItemSourceEntry{
  type:WorkingTowardItemSourceType;
- typeLabel:'Gathering'|'Crafting'|'Monster Drop'|'Dungeon';
+ typeLabel:'Gathering'|'Crafting'|'Monster Drop'|'Dungeon'|'Dismantling';
  title:string;
  destination:WorkingTowardDestination;
  availability:WorkingTowardDestinationAvailability;
@@ -106,6 +107,19 @@ const sourceStatusPriority:Record<WorkingTowardAvailabilityStatus,number>={ready
 
 export function workingTowardItemSourceEntries(state:GameState,itemId:string):WorkingTowardItemSourceEntry[]{
  const candidates:RankedItemSource[]=[];
+ // Gem Dust is not a monster/gathering drop: dismantling owned refined gems
+ // in the account-wide Gem Pouch is its repeatable source. Use the same
+ // authoritative yield table as the dismantle command; never invent odds.
+ if(itemId==='GEM_DUST'){
+  const yields=Object.entries(GEM_DISMANTLE_DUST_V1)
+   .map(([grade,dust])=>`G${grade}: ${dust}`).join(' · ');
+  const destination:WorkingTowardDestination={
+   kind:'inventory',section:'gem_pouch',button:'Open Gem Pouch',
+   detail:`Dismantle spare refined gems in Inventory → Gem Pouch to obtain Gem Dust (${yields} Dust per gem). Socketed gems cannot be dismantled.`,
+  };
+  candidates.push({type:'dismantling',typeLabel:'Dismantling',title:'Gem Pouch · Dismantle Gems',
+   destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:1});
+ }
  for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} · ${yieldText}.`};
   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});

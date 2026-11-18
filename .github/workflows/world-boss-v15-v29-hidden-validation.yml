@@ -114,8 +114,8 @@ jobs:
             world-boss-reward-ledger-v28 \
             world-boss-impact-audit-v29 \
             world-boss-roster-compatibility-v30 \
-            world-boss-account-state-v33 \\
-            world-boss-overview-v41 \\
+            world-boss-account-state-v33 \
+            world-boss-overview-v41 \
             world-boss-readiness-audit-v43
           do
             node ".core-build/apps/mobile/tests/${suite}.js"

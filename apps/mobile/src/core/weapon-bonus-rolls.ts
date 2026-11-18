@@ -9,8 +9,8 @@ type LegacyWeaponBonusStat='maxHp'|'armor'|'ward'|'tenacity'|'critRate'|'haste'|
 export type WeaponBonusStat=LegacyWeaponBonusStat|'evasion'|'critDamage'|'abilityDamage'|'healingPower';
 type NewBonusStat=Exclude<WeaponBonusStat,LegacyWeaponBonusStat>;
 export interface WeaponBonusRoll{stat:WeaponBonusStat;basisPoints:number;}
-export const WEAPON_BONUS_ROLL_VERSION=3;
-export type WeaponBonusRollVersion=1|2|3;
+export const WEAPON_BONUS_ROLL_VERSION=4;
+export type WeaponBonusRollVersion=1|2|3|4;
 export const WEAPON_BONUS_LABELS:Readonly<Record<WeaponBonusStat,string>>={
   maxHp:'Max HP',armor:'Armor',ward:'Ward',tenacity:'Tenacity',
   critRate:'Crit Rate',haste:'Haste',penetration:'Penetration',
@@ -22,9 +22,16 @@ const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly Legacy
   Damage:['critRate','haste','penetration','accuracy'],
   Support:['potency','haste','ward','maxHp'],
 };
-const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusStat[]>>={
+/** Minted v3 receipts retain their original full pool; never silently reroll them. */
+const V3_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusStat[]>>={
   Tank:['armor','maxHp','ward','tenacity','evasion','haste'],
   Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','evasion'],
+  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate'],
+};
+/** Early release: Ability Damage awaits authoritative hunt and co-op parity in Combat 2.0. */
+const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusStat[]>>={
+  Tank:['armor','maxHp','ward','tenacity','evasion','haste'],
+  Damage:['critRate','critDamage','haste','penetration','accuracy','evasion'],
   Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate'],
 };
 /** Stat-sensitive ranges in basis points, grouped by weapon tier.
@@ -75,7 +82,9 @@ export function weaponBonusRange(
   const legacy=(WEAPON_BONUS_BPS_BY_BAND[band] as Partial<Record<WeaponBonusStat,readonly [number,number]>>)[stat];
   if(version===1)return V1_RANGE_BY_BAND[band];
   if(version===2)return legacy;
-  if(version!==3)return undefined;
+  if(version!==3&&version!==4)return undefined;
+  // Ability Damage remains readable on legacy v3 receipts but is not mintable in v4.
+  if(version===4&&stat==='abilityDamage')return undefined;
   const baseline=legacy??V3_EXTRA_BPS_BY_BAND[band][stat as NewBonusStat];
   return baseline?rarityAdjustedBonusRange(baseline,rarity):undefined;
 }
@@ -88,7 +97,7 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity,version:Weapon
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
   if(item.type!=='gear'||item.slot!=='weapon'||tier<2||tier>9||!role)return undefined;
   const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
-  const pool:readonly WeaponBonusStat[]=version===3?ROLE_POOL[role]:LEGACY_ROLE_POOL[role];
+  const pool:readonly WeaponBonusStat[]=version===4?ROLE_POOL[role]:version===3?V3_ROLE_POOL[role]:LEGACY_ROLE_POOL[role];
   return {tier,role,count,pool};
 }
 
@@ -100,10 +109,10 @@ export function rollWeaponBonuses(itemId:string,rarity:ItemRarity,receiptKey:str
   const pool=[...cfg.pool],out:WeaponBonusRoll[]=[];
   const seed=`${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for(let index=0;index<cfg.count;index++){
-    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v3:stat:${seed}:${index}`);
+    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v4:stat:${seed}:${index}`);
     const position=Math.min(pool.length-1,Math.floor(statUnit*pool.length));
     const [stat]=pool.splice(position,1); // Two bonuses must have different stat types.
-    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v3:value:${seed}:${index}`);
+    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v4:value:${seed}:${index}`);
     const range=weaponBonusRange(cfg.tier,stat,WEAPON_BONUS_ROLL_VERSION,rarity)!;
     const steps=(range[1]-range[0])/STEP_BPS;
     out.push({stat,basisPoints:range[0]+STEP_BPS*Math.min(steps,Math.floor(valueUnit*(steps+1)))});

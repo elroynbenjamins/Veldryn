@@ -188,12 +188,6 @@ export function simulateCombat(input: CombatInput): CombatResult {
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
       }
     }
-    // A server-authored magical Ward applies to all non-physical,
-    // non-true damage, including DoT ticks. Physical and true bypass it.
-    if(v2Encounter&&targetGear&&effect.damageType&&
-       effect.damageType!=='physical'&&effect.damageType!=='true'){
-      raw*=1-clamp(targetGear.wardPp,0,1);
-    }
     // V2 Rupture consumes one own applied DoT and converts a bounded portion of
     // its remaining strength to this direct hit. The consumed effect cannot
     // tick again, and a boss has an additional cap.
@@ -212,6 +206,12 @@ export function simulateCombat(input: CombatInput): CombatResult {
           targetId:target.definition.id,abilityId,statusKind:'dot',
           statusTag:dot.tag??'dot',detail:'combat_v2_rupture'});
       }
+    }
+    // A server-authored magical Ward applies to all non-physical,
+    // non-true damage, including DoT ticks. Physical and true bypass it.
+    if(v2Encounter&&targetGear&&effect.damageType&&
+       effect.damageType!=='physical'&&effect.damageType!=='true'){
+      raw*=1-clamp(targetGear.wardPp,0,1);
     }
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.

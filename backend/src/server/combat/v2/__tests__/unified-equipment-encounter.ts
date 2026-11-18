@@ -10,6 +10,7 @@ import {applyVerifiedSetBonusesV2} from '../equipment-set-effects';
 import {compileTrustedEquipmentAffixesV2} from '../equipment-affixes';
 import {validateBuildV2} from '../build-contract';
 import {evaluatePowerCompositionV2} from '../power-composition';
+import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {serverBuildCatalogV2} from '../skill-catalog';
 import type {ApprovedEquipmentBasePolicyV2} from '../equipment-base-stats';
 import type {ApprovedSetPolicyV2} from '../equipment-set-effects';
@@ -20,8 +21,8 @@ const keys:readonly (keyof CombatStats)[]=[
 ];
 const ceilings=Object.fromEntries(keys.map(k=>[k,1e8])) as Record<keyof CombatStats,number>;
 const basePolicy:ApprovedEquipmentBasePolicyV2={
- rarityMultipliers:{common:1.1},
- qualityMultiplier:quality=>quality===80?1.05:NaN,
+ rarityMultipliers:{common:1.1,rare:1.17},
+ qualityMultiplier:equipmentQualityMultiplierV2,
  ceilings,
 };
 const setPolicy:ApprovedSetPolicyV2={
@@ -65,6 +66,8 @@ const runtime:TrustedEquipmentRuntimeV2={
    basicAttackMs:actor.basicAttackMs,basicAttackCoeff:actor.basicAttackCoeff,
    abilities:actor.abilities},
  }},
+ rarityPolicy:{version:'synthetic-rarity-test-v1',order:['common','rare'],
+  multipliers:{common:1.1,rare:1.17}},
  instancesById:{
   h:{id:'h',itemId:'oath_helm',ownerCharacterId:'CHAR_1',tier:'T1',rarity:'common',quality:80},
   c:{id:'c',itemId:'oath_chest',ownerCharacterId:'CHAR_1',tier:'T1',rarity:'common',quality:80},
@@ -140,7 +143,7 @@ assert.deepEqual(poisonedReplay.combat,enabled.combat,
  'Launch actor attack/defense and skill payload must not leak into class-only combat');
 
 const resolved=enabled.combat.players[0].definition;
-const rarityQuality=1.1*1.05;
+const rarityQuality=1.1*1.15;
 const round6=(n:number)=>Math.round(n*1e6)/1e6;
 const round5=(n:number)=>Math.round(n*1e5)/1e5;
 const classDefense=compileServerSkillBuildV2(true,build).stats.defense;
@@ -176,7 +179,7 @@ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
 ],true),/set_effect_unimplemented/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
  {...runtime,basePolicy:{...basePolicy,rarityMultipliers:{}}},
-],true),/missing_approved_rarity_quality_multiplier/);
+],true),/equipment_scaling_policy_rejected/);
 assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
  {...runtime,affixesByInstanceId:{...runtime.affixesByInstanceId,
   banked:{...runtime.affixesByInstanceId.h,instanceId:'banked'},

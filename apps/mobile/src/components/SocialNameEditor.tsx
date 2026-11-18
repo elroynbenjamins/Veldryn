@@ -11,7 +11,7 @@ import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 /** Small account-wide identity editor: local validation, clear cooldown and resilient account switches. */
-export function SocialNameEditor(){
+export function SocialNameEditor({onNameChange}:{onNameChange?:(name:string)=>void}={}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{session}=useAuthSession();
  const accountId=session?.user.id??'';
@@ -21,11 +21,11 @@ export function SocialNameEditor(){
 
  useEffect(()=>{
   let active=true;
-  setData(null);setName('');setError('');setNotice('');setBusy(false);
+  setData(null);setName('');setError('');setNotice('');setBusy(false);onNameChange?.('');
   if(!accountId){setLoading(false);return()=>{active=false};}
   setLoading(true);
   void accountSocialNameSelf().then(row=>{
-   if(active&&activeAccountRef.current===accountId){setData(row);setName(row.socialName);}
+   if(active&&activeAccountRef.current===accountId){setData(row);setName(row.socialName);onNameChange?.(row.socialName);}
   }).catch(()=>{
    if(active&&activeAccountRef.current===accountId)setError(socialIdentityT(language,'Unable to load your social name.'));
   }).finally(()=>{if(active&&activeAccountRef.current===accountId)setLoading(false)});
@@ -48,7 +48,7 @@ export function SocialNameEditor(){
   try{
    const saved=await setAccountSocialName(proposed);
    if(activeAccountRef.current!==owner)return;
-   setData(saved);setName(saved.socialName);
+   setData(saved);setName(saved.socialName);onNameChange?.(saved.socialName);
    invalidatePlayerIdentity(owner);
    setNotice(socialIdentityT(language,'Social name updated.'));
   }catch(e){

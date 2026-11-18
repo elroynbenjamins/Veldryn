@@ -87,6 +87,8 @@ export interface WorldBossDamageApplication {
 }
 
 function clamp(v:number,min:number,max:number):number{return Math.min(max,Math.max(min,v));}
+function finiteOrZero(v:number):number{return Number.isFinite(v)?v:0;}
+function nonNegative(v:number):number{return Math.max(0,finiteOrZero(v));}
 
 export function validateWorldBossDefinition(definition:WorldBossDefinition):string[]{
   const errors:string[]=[];
@@ -104,9 +106,11 @@ export function validateWorldBossDefinition(definition:WorldBossDefinition):stri
     previous=phase.startsAtHpFraction;
   }
   if(Math.abs((definition.phases[0]?.startsAtHpFraction??0)-1)>0.000001) errors.push('first_phase_must_start_at_full_hp');
+  if(new Set(definition.phases.map(phase=>phase.id)).size!==definition.phases.length) errors.push('phase_ids_not_unique');
+  if(!Number.isInteger(definition.minimumParticipationAttemptsForVictoryReward)||definition.minimumParticipationAttemptsForVictoryReward<1||definition.minimumParticipationAttemptsForVictoryReward>definition.dailyScoredAttempts) errors.push('victory_participation_attempts_invalid');
   for(const [role,weights] of Object.entries(definition.roleWeights)){
     const total=weights.directDamage+weights.damagePrevented+weights.effectiveHealing+weights.utilityPerSecond+weights.survivalBonusPerSecond;
-    if(total<=0||!Number.isFinite(total)) errors.push(`role_weights_invalid:${role}`);
+    if(total<=0||!Number.isFinite(total)||Object.values(weights).some(weight=>weight<0)) errors.push(`role_weights_invalid:${role}`);
   }
   let milestone=0; for(const p of definition.personalImpactMilestones){if(p<=milestone) errors.push('milestones_not_increasing'); milestone=p;}
   return [...new Set(errors)];
@@ -141,12 +145,14 @@ export function phaseForHp(definition:WorldBossDefinition,remainingHp:number,max
 export function computeWorldBossImpact(definition:WorldBossDefinition,result:WorldBossCombatResult):WorldBossImpactResult {
   const w=definition.roleWeights[result.roleProfile];
   if(!w) throw new Error('world_boss_role_profile_not_configured');
-  const duration=clamp(result.durationSeconds,0,definition.attemptDurationSeconds);
-  const direct=Math.max(0,result.directDamage)*w.directDamage;
-  const mitigation=Math.max(0,result.damagePrevented)*w.damagePrevented;
-  const healing=Math.max(0,result.effectiveHealing)*w.effectiveHealing;
-  const utility=clamp(result.utilityUptimeSeconds,0,duration)*w.utilityPerSecond;
-  const survival=(result.survived?duration:Math.min(duration,Math.max(0,result.durationSeconds)))*w.survivalBonusPerSecond;
+  // Time actually spent in the encounter. A defeated player reports a shorter duration, so survival
+  // credit naturally stops at the moment of defeat; it can never exceed the configured attempt window.
+  const duration=clamp(finiteOrZero(result.durationSeconds),0,definition.attemptDurationSeconds);
+  const direct=nonNegative(result.directDamage)*w.directDamage;
+  const mitigation=nonNegative(result.damagePrevented)*w.damagePrevented;
+  const healing=nonNegative(result.effectiveHealing)*w.effectiveHealing;
+  const utility=clamp(finiteOrZero(result.utilityUptimeSeconds),0,duration)*w.utilityPerSecond;
+  const survival=duration*w.survivalBonusPerSecond;
   const raidImpact=Math.max(0,Math.round(direct+mitigation+healing+utility+survival));
   return {raidImpact,globalDamage:raidImpact,performanceBreakdown:{direct:Math.round(direct),mitigation:Math.round(mitigation),healing:Math.round(healing),utility:Math.round(utility),survival:Math.round(survival)}};
 }
@@ -159,18 +165,23 @@ export function applyWorldBossDamage(remainingHp:number,requestedDamage:number):
   return {previousHp:previous,remainingHp:remaining,requestedDamage:requested,appliedDamage:applied,defeated:remaining===0};
 }
 
+/** The Echo window closes at whichever comes first: the configured post-defeat window or the boss end time. */
+export function worldBossEchoWindowEndsAtMs(definition:WorldBossDefinition,defeatedAtMs:number,endsAtMs:number):number{
+  return Math.min(endsAtMs,defeatedAtMs+clamp(definition.postDefeatEchoWindowHours,0,24)*3_600_000);
+}
+
 export function canStartScoredBossAttempt(input:{state:WorldBossState;attemptsToday:number;validAttemptsTotal?:number;echoAttemptsTotal?:number;definition:WorldBossDefinition;nowMs:number;endsAtMs:number;defeatedAtMs?:number}):{allowed:boolean;echoOnly:boolean;reason?:string}{
   if(input.state==='active'&&input.nowMs<input.endsAtMs){
     if(input.attemptsToday>=input.definition.dailyScoredAttempts) return {allowed:false,echoOnly:false,reason:'daily_attempt_limit'};
     return {allowed:true,echoOnly:false};
   }
   if(input.state==='defeated'&&input.defeatedAtMs!=null){
-    const echoEnds=input.defeatedAtMs+input.definition.postDefeatEchoWindowHours*3_600_000;
-    if(input.nowMs<echoEnds && input.nowMs<input.endsAtMs){
+    if(input.nowMs<worldBossEchoWindowEndsAtMs(input.definition,input.defeatedAtMs,input.endsAtMs)){
       if((input.validAttemptsTotal??0)>0) return {allowed:false,echoOnly:false,reason:'already_participated_before_defeat'};
       if((input.echoAttemptsTotal??0)>0) return {allowed:false,echoOnly:false,reason:'echo_attempt_already_used'};
       return {allowed:true,echoOnly:true};
     }
+    return {allowed:false,echoOnly:false,reason:'echo_window_closed'};
   }
   return {allowed:false,echoOnly:false,reason:'boss_not_available'};
 }

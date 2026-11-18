@@ -55,8 +55,84 @@ const ranks=rankWorldBossCandidates([
  {accountId:'c',raidImpact:900,appliedGlobalDamage:900,validAttempts:1,bestAttemptImpact:900,lastScoredAttemptAtMs:5},
 ]);
 assert.equal(ranks[0].accountId,'a'); assert.equal(ranks[0].finalRank,1); assert.equal(worldBossPrestigeTier(1,1000),'top10'); assert.equal(worldBossPrestigeTier(80,1000),'top100');
-const fin=finalizeWorldBossRanks({nowMs:700000,endsAtMs:999999,defeatedAtMs:0,inFlightScoredAttempts:0,definition:boss,rankCandidates:ranks}); assert.equal(fin.ready,true); assert.equal(fin.finalRanks.length,3);
+const echoClosedMs=boss.postDefeatEchoWindowHours*3_600_000;
+const fin=finalizeWorldBossRanks({nowMs:echoClosedMs,endsAtMs:echoClosedMs*2,defeatedAtMs:0,inFlightScoredAttempts:0,definition:boss,rankCandidates:ranks}); assert.equal(fin.ready,true); assert.equal(fin.finalRanks.length,3);
 const crisisRewards=crisisRewardIntents({state:'secured',totalPersonalPoints:800,claimedRewardKeys:[],definition:crisis}); assert.ok(crisisRewards.some(x=>x.rewardKey==='participation')); assert.ok(crisisRewards.some(x=>x.rewardKey==='success'));
 const bossRewards=worldBossRewardIntents({state:'defeated',validAttempts:1,echoAttempts:0,scoredRaidImpact:2100,finalRank:5,qualifyingPopulation:500,claimedRewardKeys:[],definition:boss}); assert.ok(bossRewards.some(x=>x.rewardKey==='victory')); assert.ok(bossRewards.some(x=>x.rewardKey==='prestige'));
 assert.equal(bossUnlockForReachedStages('crisis-1',crisis,['response','turning_point','secured'])?.worldBossTemplateId,'world_boss_rift_colossus');
 console.log('v19 finalization/reward/ranking tests passed');
+
+// --- Refinement regressions ---
+import { crisisFinalState } from './shared-world-finalization';
+import { worldBossEchoWindowEndsAtMs } from './world-bosses';
+import { executeSharedWorldAdminCommand } from './shared-world-admin-v19';
+import { runSharedWorldWorker } from './shared-world-worker';
+import { crisisStageNotification, regionDisplayName, worldBossSpawnedNotification } from './shared-world-notifications';
+import { recordRegionalCrisisContribution } from './regional-crisis-service';
+import { settleWorldBossAttempt } from './world-boss-service';
+
+void (async()=>{
+  // Finalization must not close the Echo window at the moment of defeat.
+  const early=finalizeWorldBossRanks({nowMs:60_000,endsAtMs:100*3_600_000,defeatedAtMs:0,inFlightScoredAttempts:0,definition:boss,rankCandidates:ranks});
+  assert.equal(early.ready,false); assert.equal(early.reason,'echo_window_open');
+  // ...but an Echo window that would outlast the boss closes with the boss.
+  assert.equal(worldBossEchoWindowEndsAtMs(boss,1000,5000),5000);
+  assert.equal(finalizeWorldBossRanks({nowMs:5000,endsAtMs:5000,defeatedAtMs:1000,inFlightScoredAttempts:0,definition:boss,rankCandidates:ranks}).ready,true);
+  assert.equal(finalizeWorldBossRanks({nowMs:5000,endsAtMs:5000,defeatedAtMs:1000,inFlightScoredAttempts:0,inFlightEchoAttempts:1,definition:boss,rankCandidates:ranks}).reason,'in_flight_attempts');
+  assert.equal(canStartScoredBossAttempt({state:'defeated',attemptsToday:0,definition:boss,nowMs:echoClosedMs+1,endsAtMs:echoClosedMs*3,defeatedAtMs:0}).reason,'echo_window_closed');
+
+  // Echo-only players get participation, never victory or prestige.
+  const echoRewards=worldBossRewardIntents({state:'defeated',validAttempts:0,echoAttempts:1,scoredRaidImpact:0,finalRank:1,qualifyingPopulation:10,claimedRewardKeys:[],definition:boss});
+  assert.deepEqual(echoRewards.map(x=>x.rewardKey),['participation']);
+  // A finalized boss that expired undefeated pays no victory; a finalized defeated one does.
+  assert.ok(!worldBossRewardIntents({state:'finalized',validAttempts:2,echoAttempts:0,scoredRaidImpact:10,claimedRewardKeys:[],definition:boss}).some(x=>x.rewardKey==='victory'));
+  assert.ok(worldBossRewardIntents({state:'finalized',defeatedAtMs:1,validAttempts:2,echoAttempts:0,scoredRaidImpact:10,claimedRewardKeys:[],definition:boss}).some(x=>x.rewardKey==='victory'));
+  // Prestige follows worldBossPrestigeTier: outside the top 100 and top 10% earns nothing.
+  assert.ok(!worldBossRewardIntents({state:'defeated',validAttempts:1,echoAttempts:0,scoredRaidImpact:10,finalRank:400,qualifyingPopulation:1000,claimedRewardKeys:[],definition:boss}).some(x=>x.rewardKey==='prestige'));
+  assert.ok(worldBossRewardIntents({state:'defeated',validAttempts:1,echoAttempts:0,scoredRaidImpact:10,finalRank:900,qualifyingPopulation:10000,claimedRewardKeys:[],definition:boss}).some(x=>x.rewardKey==='prestige'));
+
+  // A failed-then-finalized crisis pays no success reward.
+  assert.ok(!crisisRewardIntents({state:'finalized',outcome:'failed',totalPersonalPoints:800,claimedRewardKeys:[],definition:crisis}).some(x=>x.rewardKey==='success'));
+  assert.ok(crisisRewardIntents({state:'finalized',outcome:'secured',totalPersonalPoints:800,claimedRewardKeys:[],definition:crisis}).some(x=>x.rewardKey==='success'));
+  // Mixed crises need their category share, not just the total.
+  assert.equal(crisisFinalState({nowMs:10,endsAtMs:5,definition:crisis,creditedPoints:10000,targetPoints:10000,combatPoints:9000,skillingPoints:1000}),'failed');
+  assert.equal(crisisFinalState({nowMs:1,endsAtMs:5,definition:crisis,creditedPoints:10000,targetPoints:10000,combatPoints:9000,skillingPoints:1000}),null);
+  assert.equal(crisisFinalState({nowMs:1,endsAtMs:5,definition:crisis,creditedPoints:10000,targetPoints:10000,combatPoints:5000,skillingPoints:5000}),'secured');
+
+  // Impact: survival credit stops at defeat, and corrupt metrics never produce NaN.
+  const alive=computeWorldBossImpact(boss,{encounterId:'s',accountId:'a',characterId:'c',roleProfile:'tank',durationSeconds:90,directDamage:0,damagePrevented:0,effectiveHealing:0,utilityUptimeSeconds:0,survived:true,defeatedPlayer:false});
+  const fell=computeWorldBossImpact(boss,{encounterId:'f',accountId:'a',characterId:'c',roleProfile:'tank',durationSeconds:30,directDamage:0,damagePrevented:0,effectiveHealing:0,utilityUptimeSeconds:0,survived:false,defeatedPlayer:false});
+  assert.ok(fell.performanceBreakdown.survival<alive.performanceBreakdown.survival);
+  const corrupt=computeWorldBossImpact(boss,{encounterId:'n',accountId:'a',characterId:'c',roleProfile:'damage',durationSeconds:Number.NaN,directDamage:Number.NaN,damagePrevented:Number.POSITIVE_INFINITY,effectiveHealing:-5,utilityUptimeSeconds:Number.NaN,survived:true,defeatedPlayer:false});
+  assert.equal(corrupt.raidImpact,0);
+
+  // Admin commands reject blank ids and unaudited destructive actions.
+  const calls:string[]=[];
+  const deps={cancelCrisis:async(id:string)=>calls.push('cc:'+id),recalculateCrisis:async(id:string)=>calls.push('rc:'+id),cancelWorldBoss:async(id:string)=>calls.push('cb:'+id),recalculateWorldBossHp:async(id:string)=>calls.push('rb:'+id),repairWorldBossAttempt:async(id:string)=>calls.push('ra:'+id),finalizeWorldBoss:async(id:string)=>calls.push('fb:'+id)};
+  await assert.rejects(executeSharedWorldAdminCommand(deps,'shared_world.crisis_recalculate',{},''),/instance_id_required/);
+  await assert.rejects(executeSharedWorldAdminCommand(deps,'shared_world.world_boss_cancel',{instanceId:'b1'},'  '),/reason_required/);
+  await executeSharedWorldAdminCommand(deps,'shared_world.world_boss_repair_attempt',{encounterId:' e1 '},'stuck reservation');
+  await executeSharedWorldAdminCommand(deps,'shared_world.crisis_recalculate',{instanceId:'c1'},'');
+  assert.deepEqual(calls,['ra:e1','rc:c1']);
+
+  // Worker: a failing step is reported and does not stop later lifecycle steps.
+  let heartbeat:Record<string,unknown>={};
+  const worker=await runSharedWorldWorker({activateDueCrises:async()=>1,failExpiredCrises:async()=>{throw new Error('db_timeout');},finalizeResolvedCrises:async()=>2,spawnUnlockedWorldBosses:async()=>0,activateDueWorldBosses:async()=>0,expireStaleBossAttempts:async()=>3,expireWorldBosses:async()=>0,finalizeWorldBosses:async()=>4,heartbeat:async(_k,d)=>{heartbeat=d;}},{nowMs:()=>1});
+  assert.equal(worker.finalizedBosses,4); assert.equal(worker.expiredAttempts,3); assert.deepEqual(worker.errors,[{step:'failExpiredCrises',message:'db_timeout'}]); assert.equal(heartbeat.ok,false);
+
+  // Notifications dedupe on stable ids and show readable region names.
+  assert.equal(crisisStageNotification({instanceId:'i',crisisName:'Rift Breach',stageId:'turning_point',stageName:'Wendepunkt'}).dedupeKey,'crisis-stage:i:turning_point');
+  assert.equal(regionDisplayName('kings_road'),'Kings Road');
+  assert.ok(worldBossSpawnedNotification({instanceId:'i',bossName:'Cindermaw',regionId:'sunscar'}).body.includes('Sunscar'));
+
+  // Crisis service reports real progress even when a contribution is not credited.
+  const securedInstance={instanceId:'c',definition:crisis,state:'secured' as const,startsAtMs:0,endsAtMs:10,targetPoints:100,creditedPoints:120,combatPoints:60,skillingPoints:60};
+  const late=await recordRegionalCrisisContribution({getInstance:async()=>securedInstance,getAccountDailyPoints:async()=>0,recordContribution:async()=>{throw new Error('must not record');}},'c',{...event,occurredAtMs:50});
+  assert.deepEqual(late,{crisisInstanceId:'c',creditedPoints:0,globalCreditedPoints:120,secured:true});
+
+  // Settlement fails fast once the reservation has expired.
+  const reservation={encounterId:'e',instanceId:'b',accountId:'a',characterId:'c',dateKey:'2026-09-14',echoOnly:false,phaseId:'phase_1',expiresAtMs:100};
+  await assert.rejects(settleWorldBossAttempt({store:{loadAttempt:async()=>reservation} as never},{encounterId:'e',accountId:'a',nowMs:101,combatResult:{encounterId:'e',accountId:'a',characterId:'c',roleProfile:'damage',durationSeconds:90,directDamage:1,damagePrevented:0,effectiveHealing:0,utilityUptimeSeconds:0,survived:true,defeatedPlayer:false}}),/world_boss_attempt_expired/);
+
+  console.log('v19 shared-world refinement tests passed');
+})().catch(error=>{console.error(error);process.exit(1);});

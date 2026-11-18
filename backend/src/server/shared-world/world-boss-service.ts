@@ -1,4 +1,4 @@
-import { applyWorldBossDamage, canStartScoredBossAttempt, computeWorldBossImpact, type WorldBossCombatResult, type WorldBossDefinition, type WorldBossImpactResult, type WorldBossState } from './world-bosses';
+import { applyWorldBossDamage, canStartScoredBossAttempt, computeWorldBossImpact, phaseForHp, type WorldBossCombatResult, type WorldBossDefinition, type WorldBossImpactResult, type WorldBossState } from './world-bosses';
 
 export interface WorldBossInstanceSnapshot {
   instanceId:string;
@@ -48,28 +48,30 @@ export interface WorldBossCombatAuthorizer {
 
 export function utcDateKey(nowMs:number):string{return new Date(nowMs).toISOString().slice(0,10);}
 
-function resolvePhaseId(instance:WorldBossInstanceSnapshot):string{
-  const fraction=instance.maxHp<=0?0:Math.max(0,Math.min(1,instance.remainingHp/instance.maxHp));
-  for(let i=instance.definition.phases.length-1;i>=0;i--){ const p=instance.definition.phases[i]; if(fraction<=p.startsAtHpFraction) return p.id; }
-  return instance.definition.phases[0].id;
-}
+/** Grace period on top of the attempt window for client replay and network round trips. */
+export const WORLD_BOSS_SETTLEMENT_GRACE_SECONDS=120;
 
 export async function startWorldBossAttempt(deps:{store:WorldBossStore;authorizer:WorldBossCombatAuthorizer},input:{instanceId:string;accountId:string;characterId:string;sourceRequestId:string;nowMs:number;partyIdAtStart?:string;partyNameAtStart?:string;guildIdAtStart?:string;guildNameAtStart?:string}):Promise<WorldBossAttemptReservation>{
   const instance=await deps.store.getInstance(input.instanceId);
   if(input.nowMs<instance.startsAtMs) throw new Error('world_boss_not_started');
   const dateKey=utcDateKey(input.nowMs);
-  const attemptsToday=await deps.store.countScoredAttempts(instance.instanceId,input.accountId,dateKey);
-  const lifetime=await deps.store.getLifetimeAttemptCounts(instance.instanceId,input.accountId);
+  const [attemptsToday,lifetime,hasOpenAttempt]=await Promise.all([
+    deps.store.countScoredAttempts(instance.instanceId,input.accountId,dateKey),
+    deps.store.getLifetimeAttemptCounts(instance.instanceId,input.accountId),
+    deps.store.hasOpenAttempt(instance.instanceId,input.accountId),
+  ]);
   const availability=canStartScoredBossAttempt({state:instance.state,attemptsToday,validAttemptsTotal:lifetime.validAttempts,echoAttemptsTotal:lifetime.echoAttempts,definition:instance.definition,nowMs:input.nowMs,endsAtMs:instance.endsAtMs,defeatedAtMs:instance.defeatedAtMs});
   if(!availability.allowed) throw new Error(availability.reason??'world_boss_not_available');
-  if(await deps.store.hasOpenAttempt(instance.instanceId,input.accountId)) throw new Error('world_boss_attempt_already_open');
+  if(hasOpenAttempt) throw new Error('world_boss_attempt_already_open');
   await deps.authorizer.verifyEligibleCharacter({accountId:input.accountId,characterId:input.characterId,definition:instance.definition});
-  return deps.store.reserveAttempt({instanceId:instance.instanceId,accountId:input.accountId,characterId:input.characterId,dateKey,echoOnly:availability.echoOnly,phaseId:resolvePhaseId(instance),expiresAtMs:input.nowMs+(instance.definition.attemptDurationSeconds+120)*1000,sourceRequestId:input.sourceRequestId,partyIdAtStart:input.partyIdAtStart,partyNameAtStart:input.partyNameAtStart,guildIdAtStart:input.guildIdAtStart,guildNameAtStart:input.guildNameAtStart});
+  return deps.store.reserveAttempt({instanceId:instance.instanceId,accountId:input.accountId,characterId:input.characterId,dateKey,echoOnly:availability.echoOnly,phaseId:phaseForHp(instance.definition,instance.remainingHp,instance.maxHp).id,expiresAtMs:input.nowMs+(instance.definition.attemptDurationSeconds+WORLD_BOSS_SETTLEMENT_GRACE_SECONDS)*1000,sourceRequestId:input.sourceRequestId,partyIdAtStart:input.partyIdAtStart,partyNameAtStart:input.partyNameAtStart,guildIdAtStart:input.guildIdAtStart,guildNameAtStart:input.guildNameAtStart});
 }
 
-export async function settleWorldBossAttempt(deps:{store:WorldBossStore},input:{encounterId:string;accountId:string;combatResult:WorldBossCombatResult}):Promise<WorldBossAttemptSettlement>{
+export async function settleWorldBossAttempt(deps:{store:WorldBossStore},input:{encounterId:string;accountId:string;combatResult:WorldBossCombatResult;nowMs?:number}):Promise<WorldBossAttemptSettlement>{
   const reservation=await deps.store.loadAttempt(input.encounterId);
   if(reservation.accountId!==input.accountId) throw new Error('world_boss_attempt_owner_mismatch');
+  // Fail fast with the same reason the atomic RPC would raise; the database remains the final authority.
+  if(input.nowMs!=null&&input.nowMs>reservation.expiresAtMs) throw new Error('world_boss_attempt_expired');
   if(input.combatResult.encounterId!==reservation.encounterId||input.combatResult.accountId!==reservation.accountId||input.combatResult.characterId!==reservation.characterId) throw new Error('world_boss_combat_receipt_mismatch');
   const instance=await deps.store.getInstance(reservation.instanceId);
   const impact=computeWorldBossImpact(instance.definition,input.combatResult);

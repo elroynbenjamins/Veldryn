@@ -7,6 +7,9 @@ import {
 import {EQUIPMENT_PIECES_V33} from '../../../equipment/equipment-catalog-v33';
 import {compileEnemiesForCombatV2,ENEMY_ARCHETYPES_V2} from '../enemy-bridge';
 import type {CombatantDefinition} from '../../types';
+import {simulateCombat} from '../../engine';
+import {launchPlayer} from '../../content/launch-combat';
+import {simulateUnifiedCombatV2} from '../unified-encounter';
 
 const legacy=legacyEquipmentRegistryV2();
 assert.ok(Object.keys(legacy).length>0);
@@ -71,4 +74,15 @@ assert.equal(again.enemies[0].phases?.length,1);
 assert.throws(()=>compileEnemiesForCombatV2([
  {...baseline('guardian'),team:'players'},
 ],true),/invalid_enemy_team/);
+const hero=launchPlayer('Ironwarden',25);
+const input={seed:'v2-unified-bridge',players:[hero],enemies:[baseline('guardian')],
+  maxDurationMs:3000};
+const oldReplay=simulateCombat(input);
+const isolated=simulateUnifiedCombatV2(input,[],false);
+assert.deepEqual(isolated.combat,oldReplay,'V2 disabled must be byte-for-byte legacy replay parity');
+assert.deepEqual(isolated.enemyMechanicLabels,[]);
+const enabled=simulateUnifiedCombatV2(input,[],true);
+const repeated=simulateUnifiedCombatV2(input,[],true);
+assert.deepEqual(enabled,repeated,'Integrated opt-in encounter must remain deterministic');
+assert.equal(enabled.enemyMechanicLabels.length,1);
 console.log('PASS: legacy/class gear, 60 future role sets, eight enemy archetypes and gated boss phases');

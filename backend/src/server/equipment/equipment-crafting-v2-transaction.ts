@@ -1,29 +1,39 @@
 import {randomUUID,randomInt} from 'node:crypto';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
-import {v2ServerRecipeAndPiece,type V2ServerProfession} from './equipment-crafting-v2-manifest';
-import {draftEquipmentV2Outcome,type V2DraftRollOutcome} from './equipment-crafting-v2-rolls';
+import {v2ServerRecipeAndPiece,V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,type V2ServerProfession} from './equipment-crafting-v2-manifest';
+import {draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION,type V2DraftRollOutcome} from './equipment-crafting-v2-rolls';
+import {v2ServerCreateExactTemplate,type V2ExactEquipmentTemplate} from './equipment-crafting-v2-instances';
 
 /** Hidden, isolated, account-scoped TRANSACTION MODEL.
  * NOT wired to live Inventory, server tables, online RPCs or the player UI.
  * A production adapter must serialize each account and atomically persist the
  * resulting inventory/Gold/queue/copy/XP/receipt changes as a single commit.
  */
+export interface V2DraftCraftContract{
+ manifestVersion:typeof V2_SERVER_MANIFEST_VERSION;rulesVersion:typeof EQUIPMENT_V2_SERVER_RULES_VERSION;
+ recipeId:string;piece:V2ServerPiece;profession:V2ServerProfession;
+ assemblyGold:number;xpAwarded:number;craftSeconds:number;
+}
 export interface V2DraftJob {
  id:string;accountId:string;ownerCharacterId:string;recipeId:string;pieceId:string;
  startedAtMs:number;finishesAtMs:number;slotIndex:0|1|2;
  goldReserved:number;materialsReserved:readonly {itemId:string;quantity:number;fromInventory:number;fromBank:number}[];
  status:'queued'|'claimed';resultId?:string;
+ /** Unchangeable at claim: protects queued jobs against hot-reloaded prices/rules. */
+ craftContract:V2DraftCraftContract;
 }
 export interface V2DraftItem {
  id:string;accountId:string;ownerCharacterId:string;
  createdAtMs:number;jobId:string;outcome:V2DraftRollOutcome;
+ /** Final authoritative base stats, affixes, identity and gem-slot ownership. */
+ exactItem:V2ExactEquipmentTemplate;
 }
 export interface V2DraftSkillAward {
  characterId:string;profession:V2ServerProfession;xp:number;jobId:string;
 }
 export type V2DraftReceiptResponse=
  |{kind:'started';jobId:string;recipeId:string;pieceId:string;finishesAtMs:number;goldCharged:number;version:number}
- |{kind:'claimed';jobId:string;instanceId:string;outcome:V2DraftRollOutcome;xpAwarded:number;profession:V2ServerProfession;version:number};
+ |{kind:'claimed';jobId:string;instanceId:string;outcome:V2DraftRollOutcome;exactItem:V2ExactEquipmentTemplate;xpAwarded:number;profession:V2ServerProfession;version:number};
 export interface V2DraftReceipt {requestId:string;commandFingerprint:string;response:V2DraftReceiptResponse}
 export interface V2DraftCharacter {
  level:number;professionLevels:Record<V2ServerProfession,number>;gold:number;
@@ -128,6 +138,9 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
   startedAtMs:start.startedAtMs,finishesAtMs:start.startedAtMs+recipe.seconds*1000,
   slotIndex:start.slotIndex,status:'queued',
   goldReserved:recipe.gold,materialsReserved:material,
+  craftContract:{manifestVersion:V2_SERVER_MANIFEST_VERSION,rulesVersion:EQUIPMENT_V2_SERVER_RULES_VERSION,
+   recipeId:recipe.id,piece:structuredClone(piece),profession:recipe.profession,
+   assemblyGold:recipe.gold,xpAwarded:recipe.xp,craftSeconds:recipe.seconds},
  };
  if(!Number.isSafeInteger(job.finishesAtMs))fail('invalid_job_finish_time');
  for(const row of material){
@@ -148,18 +161,27 @@ function applyClaim(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  const matched=v2ServerRecipeAndPiece(job.recipeId);
  if(!matched||matched.recipe.pieceId!==job.pieceId)fail('unknown_job_recipe');
  const {recipe,piece}=matched;
+ const contract=job.craftContract;
+ if(!contract||contract.manifestVersion!==V2_SERVER_MANIFEST_VERSION
+  ||contract.rulesVersion!==EQUIPMENT_V2_SERVER_RULES_VERSION
+  ||contract.recipeId!==job.recipeId||contract.piece.id!==job.pieceId
+  ||JSON.stringify(contract.piece)!==JSON.stringify(piece)
+  ||contract.profession!==recipe.profession
+  ||contract.assemblyGold!==recipe.gold||contract.xpAwarded!==recipe.xp
+  ||contract.craftSeconds!==recipe.seconds)fail('v2_queued_contract_version_mismatch');
  if(state.equipment.filter(item=>item.outcome.pieceId===piece.id).length>=MAX_CRAFTED_COPIES_PER_PIECE)fail('copy_limit_reached');
  const outcome=draftEquipmentV2Outcome({recipeId:recipe.id,pieceId:piece.id,slot:piece.slot,role:piece.role,tier:piece.tier},
   ctx.randomInt??randomInt);
+ const exactItem=v2ServerCreateExactTemplate(piece,outcome);
  const instanceId=(ctx.randomId??randomUUID)();
  if(!instanceId||state.equipment.some(item=>item.id===instanceId))fail('invalid_item_id_generated');
  const item:V2DraftItem={id:instanceId,accountId:ctx.accountId,ownerCharacterId:job.ownerCharacterId,
-  createdAtMs:ctx.nowMs,jobId:job.id,outcome};
+  createdAtMs:ctx.nowMs,jobId:job.id,outcome,exactItem};
  state.equipment.push(item);
- state.skillAwards.push({characterId:job.ownerCharacterId,profession:recipe.profession,xp:recipe.xp,jobId:job.id});
+ state.skillAwards.push({characterId:job.ownerCharacterId,profession:contract.profession,xp:contract.xpAwarded,jobId:job.id});
  job.status='claimed';job.resultId=instanceId;
  const response:V2DraftReceiptResponse={kind:'claimed',jobId:job.id,instanceId,
-  outcome,xpAwarded:recipe.xp,profession:recipe.profession,version:state.version+1};
+  outcome,exactItem,xpAwarded:contract.xpAwarded,profession:contract.profession,version:state.version+1};
  return response;
 }
 /** Pure resolution against a TRUSTED account snapshot. Caller must execute

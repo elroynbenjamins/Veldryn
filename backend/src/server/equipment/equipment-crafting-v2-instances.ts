@@ -97,6 +97,34 @@ export function v2ServerCreateExactTemplate(piece:V2ServerPiece,roll:V2DraftRoll
   affixes:roll.affixes.map(a=>({...a})),gemSlots:[],enhancementRank:0,
  };
 }
+/** Structural consistency check for a server-loaded, not client-submitted,
+ * exact item. Ownership/trade/lock/equipped state must be checked separately.
+ */
+export function v2ServerExactTemplateConsistent(item:V2ExactEquipmentTemplate){
+ const piece=item&&v2ServerPiece(item.pieceId);
+ if(!piece||item.manifestVersion!==V2_SERVER_MANIFEST_VERSION
+  ||item.rulesVersion!==EQUIPMENT_V2_SERVER_RULES_VERSION
+  ||item.slot!==piece.slot||item.tier!==piece.tier||item.profile!==piece.profile
+  ||item.role!==piece.role||item.material!==piece.material||item.name!==piece.name
+  ||item.setId!==piece.setId||item.classRestriction!==piece.classRestriction
+  ||item.hands!==piece.hands
+  ||!Number.isInteger(item.quality)||item.quality<0||item.quality>100
+  ||!Object.prototype.hasOwnProperty.call(V2_SERVER_RARITY_BASE_MULTIPLIER,item.rarity))
+  return false;
+ const multiplier=V2_SERVER_RARITY_BASE_MULTIPLIER[item.rarity]*(.75+item.quality*.005);
+ const expected=v2ServerBaseStatProjection(piece,multiplier);
+ if(!Object.entries(expected).every(([key,v])=>Number.isFinite(item.baseStats?.[key as keyof V2ExactBaseStats])
+   &&Math.abs(item.baseStats[key as keyof V2ExactBaseStats]-v)<.005))return false;
+ try{
+  validateRolledOutcome(piece,{
+   rulesVersion:item.rulesVersion,recipeId:'inspection-only',pieceId:piece.id,
+   tier:item.tier,rarity:item.rarity,quality:item.quality,
+   baseStatMultiplier:multiplier,affixes:item.affixes,
+  });
+  return true;
+ }catch{return false;}
+}
+
 export interface V2EquipIntent{
  characterClass:string;characterLevel:number;
  newItem:V2ExactEquipmentTemplate;
@@ -107,6 +135,8 @@ export interface V2EquipIntent{
  */
 export function v2ServerEquipPreview(input:V2EquipIntent){
  const {newItem,characterClass,characterLevel,equipped}=input;
+ if(!v2ServerExactTemplateConsistent(newItem))
+  return {allowed:false,reason:'unverified_template',replace:[] as string[]};
  if(!Number.isSafeInteger(characterLevel)||characterLevel<1)return {allowed:false,reason:'invalid_character_level',replace:[] as string[]};
  if(newItem.classRestriction&&newItem.classRestriction!==characterClass)
   return {allowed:false,reason:'wrong_class',replace:[] as string[]};

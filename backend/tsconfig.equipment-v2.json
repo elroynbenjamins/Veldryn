@@ -5,6 +5,6 @@
   },
   "include": [
     "src/server/equipment/equipment-crafting-v2-*.ts",
-    "src/server/equipment/__tests__/equipment-crafting-v2-transaction.test.ts"
+    "src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts"
   ]
 }

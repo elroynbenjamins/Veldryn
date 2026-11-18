@@ -43,6 +43,12 @@ includes('Server-ranked · Privacy protected','trust note must remain visible wi
 const flags=readFileSync(new URL('../src/core/release-flags.ts',import.meta.url),'utf8');
 assert.ok(flags.includes('export const RANKINGS_RELEASED=false;'),'Rankings must remain hidden from all player navigation');
 includes('setLoadedPage(page)','a response must be bound to its source page');
+includes('const inFlight=useRef<','Rankings must retain a request-ownership slot');
+includes("const scope=board+':'+page",'request dedupe must be scoped to the selected board and page');
+includes('Date.now()-inFlight.current.startedAt<30000','background polling must not overlap active reads indefinitely');
+includes('if(inFlight.current?.version===version)inFlight.current=null','only the owned request may release the single-flight slot');
+includes('if(version===request.current)setLoading(false)','stale reads must never clear a newer spinner');
+includes('Showing last verified standings. Retry to update.','failed refresh must distinguish stale but valid standings from a successful update');
 includes('scrollRef.current?.scrollTo({y:0,animated:false})','page/board navigation resets scroll');
 includes('accessibilityLiveRegion="polite"','pagination announces page changes accessibly');
 includes('Entries {first}–{last}','pagination displays an entry range');

@@ -9,6 +9,7 @@ const economy=read('src/core/equipment-crafting-v2-economy.ts');
 const source=read('src/core/equipment-crafting-v2-screen.ts');
 const catalogue=read('src/components/EquipmentCraftingV2CataloguePreview.tsx');
 const workshop=read('src/components/EquipmentCraftingV2WorkshopPreview.tsx');
+const reveal=read('src/components/EquipmentCraftingV2ResultPreview.tsx');
 assert.match(ui,/INTERNAL DESIGN PREVIEW/,'Internal-only UX must be explicitly labeled');
 assert.match(ui,/minHeight:44/,'Variant and tab controls need accessible tap targets');
 assert.match(ui,/accessibilityRole="tab"/,'Potential results and materials need semantic tabs');
@@ -34,4 +35,12 @@ assert.match(workshop,/EquipmentCraftingV2Preview/,'Internal workshop needs a de
 assert.match(workshop,/setInspecting\(null\)/,'Back navigation must return to catalogue');
 assert.doesNotMatch(workshop,/startEquipmentCraft|executeGameCommand|claimEquipmentCraft/,
  'Internal workshop must not expose gameplay write commands');
+assert.match(reveal,/equipmentV2ResultPresentation/,'Result reveal must be based on a validated server result presentation');
+assert.match(reveal,/QUALITY/,'The item result must display its independent Q0–Q100 quality');
+assert.match(reveal,/Random attributes/,'Players must be able to inspect the individual random rolls');
+assert.match(reveal,/Roll.*\/100/,'Each affix needs a grade against its full roll range');
+assert.match(reveal,/Lost compared with equipped/,'Replacement comparison must show lost equipped bonuses');
+assert.match(reveal,/Set bonuses, skill synergy, resistances/,'Comparison may not silently imply overall power superiority');
+assert.doesNotMatch(reveal,/Math\.random|draftEquipmentV2Outcome|startEquipmentCraft|executeGameCommand|claimEquipmentCraft|GenUI\./,
+ 'Result preview must never roll, claim, equip, buy or mutate');
 console.log('PASS: hidden crafting 2.0 native UI preview retains accessible controls, costing detail and no public writes');

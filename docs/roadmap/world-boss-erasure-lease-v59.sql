@@ -38,6 +38,45 @@ REVOKE ALL ON private.world_boss_erasure_jobs_v59,
  private.world_boss_erasure_objects_v59
  FROM PUBLIC,anon,authenticated,service_role;
 
+-- Prevent a late replay key from appearing after the manifest is sealed,
+-- and prevent a replay key from being silently reassigned to another user.
+-- Each manifest edit locks the parent job, so stage-advance and edits
+-- cannot interleave inside independent PostgreSQL transactions.
+CREATE FUNCTION private.world_boss_v59_object_manifest_guard()
+RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
+AS $manifest$
+DECLARE j private.world_boss_erasure_jobs_v59%ROWTYPE;
+BEGIN
+ SELECT * INTO j FROM private.world_boss_erasure_jobs_v59
+ WHERE account_id=CASE WHEN TG_OP='DELETE' THEN OLD.account_id
+  ELSE NEW.account_id END FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WB59_JOB_MISSING_FOR_OBJECT'; END IF;
+ IF TG_OP='INSERT' THEN
+  IF j.manifest_sealed OR j.stage<>'fenced'
+  THEN RAISE EXCEPTION 'WB59_MANIFEST_ALREADY_SEALED'; END IF;
+  RETURN NEW;
+ ELSIF TG_OP='UPDATE' THEN
+  IF NEW.account_id IS DISTINCT FROM OLD.account_id OR
+    NEW.object_key IS DISTINCT FROM OLD.object_key OR
+    (OLD.deleted_at IS NOT NULL AND
+     NEW.deleted_at IS DISTINCT FROM OLD.deleted_at)
+  THEN RAISE EXCEPTION 'WB59_IMMUTABLE_OBJECT_RECEIPT'; END IF;
+  IF j.stage<>'fenced'
+  THEN RAISE EXCEPTION 'WB59_OBJECT_ACK_AFTER_STAGE_ADVANCE'; END IF;
+  IF NEW.deleted_at IS NOT NULL AND NOT j.manifest_sealed
+  THEN RAISE EXCEPTION 'WB59_OBJECT_ACK_BEFORE_MANIFEST_SEAL'; END IF;
+  RETURN NEW;
+ END IF;
+ -- Purging durable object references during a stage transition would make
+ -- lost-ACK retries unsafe. Final retention cleanup is a separate approval.
+ RAISE EXCEPTION 'WB59_OBJECT_DELETE_REQUIRES_PRIVACY_FINALIZER';
+END
+$manifest$;
+CREATE TRIGGER world_boss_v59_object_manifest_guard
+ BEFORE INSERT OR UPDATE OR DELETE
+ ON private.world_boss_erasure_objects_v59
+ FOR EACH ROW EXECUTE FUNCTION private.world_boss_v59_object_manifest_guard();
+
 -- Acquire a GENERATION-FENCED, 90-second worker lease on an EXISTING,
 -- privately authorized job. This routine NEVER initiates a deletion.
 -- Ticket authorization and the V57 deletion fence must already exist.
@@ -189,7 +228,8 @@ BEGIN
 END
 $release$;
 
-REVOKE ALL ON FUNCTION private.world_boss_v59_acquire(uuid,text,text),
+REVOKE ALL ON FUNCTION private.world_boss_v59_object_manifest_guard(),
+ private.world_boss_v59_acquire(uuid,text,text),
  private.world_boss_v59_assert_lease(uuid,text,bigint,text),
  private.world_boss_v59_heartbeat(uuid,text,bigint,text),
  private.world_boss_v59_mark_object_deleted(uuid,text,bigint,text),

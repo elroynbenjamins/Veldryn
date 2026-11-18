@@ -17,8 +17,6 @@ export type WorldBossGatheringChestSourceV65=
  (typeof WORLD_BOSS_GATHERING_CHEST_SOURCES_V65)[number];
 /** Exact approved V28 global HP milestone at 30% remaining = 70% dealt. */
 export const WORLD_BOSS_GATHERING_COMMUNITY_HP_GOAL_BPS_V65=3_000 as const;
-/** Pure policy only. No purchases or targeted piece sales are registered. */
-export const WORLD_BOSS_GATHERING_TARGETED_PIECE_PRICE_SIGILS=90 as const;
 export const WORLD_BOSS_GATHERING_SLOTS=[
   'helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring',
 ] as const;

@@ -4,6 +4,7 @@ import type {GameState} from '../core/types';
 import type {EquipmentV2Role,EquipmentV2PieceDescriptor} from '../content/equipment-v2-catalog';
 import {EQUIPMENT_V2_PIECES} from '../content/equipment-v2-catalog';
 import {equipmentV2PreviewRoutesForItem} from '../core/equipment-crafting-v2-adapter';
+import {equipmentV2DraftAssembly} from '../core/equipment-crafting-v2-economy';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
@@ -30,16 +31,18 @@ export function EquipmentCraftingV2CataloguePreview({state,onInspect}:{state:Gam
    &&(!text||(piece.name+' '+piece.slot+' '+piece.role).toLocaleLowerCase().includes(text)))
    .map(piece=>{
     const routes=equipmentV2PreviewRoutesForItem(state,piece.id,'gather');
-    const ready=routes.some(route=>route.ingredients.every(i=>i.owned>=i.required)
+    const requiredGold=equipmentV2DraftAssembly(piece.tier,piece.slot,Boolean(piece.setId)).gold;
+   const ready=routes.some(route=>route.ingredients.every(i=>i.owned>=i.required)
      &&route.characterLevel>=({1:2,2:12,3:26,4:40} as const)[route.tier]
      &&route.professionLevel>=({1:1,2:8,3:20,4:34} as const)[route.tier]
-     &&route.goldAvailable>=({1:400,2:1500,3:6000,4:12000} as const)[route.tier]*.3);
+     &&route.goldAvailable>=requiredGold&&route.queueHasCapacity);
     const smallest=routes.length?Math.min(...routes.map(route=>route.ingredients.filter(x=>x.owned<x.required).length)):0;
-    return {piece,ready,missingTypes:smallest};
+    const locked=routes.every(route=>route.characterLevel<({1:2,2:12,3:26,4:40} as const)[route.tier]||route.professionLevel<({1:1,2:8,3:20,4:34} as const)[route.tier]);
+    return {piece,ready,missingTypes:smallest,locked};
    }).filter(entry=>!readyOnly||entry.ready)
    .sort((a,b)=>Number(b.ready)-Number(a.ready)||a.piece.tier-b.piece.tier||a.piece.name.localeCompare(b.piece.name));
  },[search,tier,role,readyOnly,state]);
- const renderRow=({item}:{item:{piece:EquipmentV2PieceDescriptor;ready:boolean;missingTypes:number}})=>
+ const renderRow=({item}:{item:{piece:EquipmentV2PieceDescriptor;ready:boolean;missingTypes:number;locked:boolean}})=>
   <Pressable onPress={()=>onInspect(item.piece.id)} accessibilityRole="button"
     accessibilityLabel={'Inspect '+item.piece.name+', tier '+item.piece.tier}
     style={({pressed})=>[s.item,pressed&&s.pressed]}>
@@ -48,7 +51,7 @@ export function EquipmentCraftingV2CataloguePreview({state,onInspect}:{state:Gam
     <Text numberOfLines={2} style={s.itemName}>{item.piece.name}</Text>
     <Text style={s.itemSub}>T{item.piece.tier} · {ROLE_NAMES[item.piece.role]} · {item.piece.slot}{item.piece.setId?' · Set':''}</Text>
     <Text style={[s.itemStatus,{color:item.ready?C.good:C.muted}]}>
-     {item.ready?'Materials available · preview':item.missingTypes+' material types still needed'}
+     {item.ready?'Ready for preview':item.locked?'Requires character or profession level':item.missingTypes?item.missingTypes+' material types still needed':'Check Gold or Forge queue'}
     </Text>
    </View>
    <Text style={s.chevron}>›</Text>

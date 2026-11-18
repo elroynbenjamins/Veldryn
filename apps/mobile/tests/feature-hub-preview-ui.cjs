@@ -8,6 +8,7 @@ const app=read('App.tsx');
 const route=read('src/core/feature-hub-routes.ts');
 const screen=read('src/screens/FeaturePreviewScreen.tsx');
 const marketFilter=read('src/core/market-preview-filter.ts');
+const worldBossPresentation=read('src/core/world-boss-presentation.ts');
 const more=read('src/screens/MoreScreen.tsx');
 const chat=read('src/components/ChatOverlay.tsx');
 const flags=read('src/core/release-flags.ts');
@@ -158,9 +159,13 @@ test('World Boss displays only the server-selected rotating event, never a manua
  assert.match(screen,/serverId:'hollowroot'/);
  assert.match(screen,/serverId:'sunscar'/);
  assert.match(screen,/serverId:'frostmarch'/);
- assert.match(screen,/serverId:'sunscar',name:'Solbrand',region:'Sunscar'/);
- assert.match(screen,/serverId:'frostmarch',name:'Rimewarden',region:'Frostmarch'/);
- assert.match(screen,/serverId:'hollowroot',name:'Hollowroot',region:'Asterfall'/);
+ assert.match(worldBossPresentation,/sunscar:\{name:'Solbrand',region:'Sunscar'/);
+ assert.match(worldBossPresentation,/frostmarch:\{name:'Rimewarden',region:'Frostmarch'/);
+ assert.match(worldBossPresentation,/hollowroot:\{name:'Hollowroot',region:'Asterfall'/);
+ for(const id of ['hollowroot','sunscar','frostmarch']){
+  assert.ok(screen.includes('...WORLD_BOSS_PRESENTATION.'+id),'UI missing canonical boss identity '+id);
+ }
+ assert.match(screen,/import \{WORLD_BOSS_PRESENTATION\} from '\.\.\/core\/world-boss-presentation'/);
  assert.match(screen,/One shared boss every 14 days/);
  assert.match(screen,/const cycleBoss=bosses\.find\(entry=>entry\.serverId===bossStatus\?\.bossId\)\?\?unverifiedBoss/);
  assert.match(screen,/const boss=bosses\.find\(item=>item\.serverId===status\?\.bossId\)\?\?unverifiedBoss/);

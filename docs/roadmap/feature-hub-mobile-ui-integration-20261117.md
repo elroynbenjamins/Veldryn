@@ -156,3 +156,17 @@ RPC or paid claim exists here.
 - Changed regression coverage to reject reintroducing a regional boss picker or default Hollowroot art when data is missing.
 
 **Validation still required:** dedicated latest-head CI, Android device and accessibility QA, server-enforced rotation/uniqueness checks, approved authenticated event reader and staging deployment, account erasure #1348 and complete battle/reward testing. Keep the feature PR draft, unmerged and hidden.
+
+## V49 unique World Boss display names (18 November 2026)
+
+The rotating boss **display names** now distinguish the individual encounter from its geographic region:
+
+| Stable private boss ID (do not migrate) | Region | Player-facing boss name | Subtitle |
+| --- | --- | --- | --- |
+| `hollowroot` | Asterfall | Hollowroot | The Rootbound Ancient |
+| `sunscar` | Sunscar | Solbrand | The Sun-Forged Titan |
+| `frostmarch` | Frostmarch | Rimewarden | The Whiteout Sentinel |
+
+The three-boss sequence is **Hollowroot → Solbrand → Rimewarden**, still a single realm-wide boss per 14-day cycle. Only the mobile, private preview's UI strings have changed; existing boss IDs, regions, encounter kits, database references, receipts, reward keys, replay formats and scheduling contracts remain byte-for-byte compatible. Stable IDs are intentionally *not* renamed because they encode server contracts and historic analytics. Regional background art still follows the verified event identity.
+
+Before player release, reconcile these labels across localized strings, player-facing summaries, boss-specific portrait assets, announcements and eventual history/leaderboard views; do not expose inconsistent old display labels. No production migration, combat activation or rewards change is authorized by this naming pass.

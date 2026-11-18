@@ -162,7 +162,7 @@ export function RankingsScreen(){
  </ScrollView>
  <GameModalSurface visible={guideOpen} onClose={()=>setGuideOpen(false)} reduceMotion={true}>
    <GameModalHeader title={st("Rankings guide")} onClose={()=>setGuideOpen(false)}/>
-   <ScrollView style={s.guideScroll} contentContainerStyle={s.guideContent} showsVerticalScrollIndicator={false}>
+   <ScrollView style={s.guideScroll} contentContainerStyle={s.guideContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      <Text style={s.guideSection}>{socialLabel(language,definition.name)}</Text>
      <Text style={s.guideCopy}>{definition.group==='Professions'?st('Highest {profession} level on one account character.',{profession:socialLabel(language,definition.name)}):socialLabel(language,definition.description)}</Text>
      <View style={s.guideRule}/>

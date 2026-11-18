@@ -36,7 +36,9 @@ const TRIGGERS_V2:Readonly<Record<CombatV2Resource,readonly ResourceTriggerV2[]>
 export function initCombatResourceV2(def:CombatantDefinition):CombatV2State|undefined{
   const resource=def.combatV2?.resource;
   if(def.team!=='players'||!resource||!RESOURCE_CAP_V2[resource])return undefined;
-  return {resource,stacks:0,maxStacks:RESOURCE_CAP_V2[resource],lastEarnedAt:{},spentTotal:0};
+  return {resource,stacks:0,maxStacks:RESOURCE_CAP_V2[resource],lastEarnedAt:{},spentTotal:0,
+    procCounters:{},procCooldownAt:{},pendingDamageBonus:0,pendingCritMultiplierBonus:0,
+    pendingHealingBonus:0,scheduledTotemAt:[]};
 }
 /** At most one stack per (trigger, event source, tick), avoiding multi-target / multi-hit farming. */
 export function awardCombatResourceV2(

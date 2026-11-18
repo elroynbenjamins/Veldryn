@@ -1,3 +1,5 @@
+import {EQUIPMENT_V2_SETS,EQUIPMENT_V2_PIECES,EQUIPMENT_V2_STANDALONE,EQUIPMENT_V2_CLASS_WEAPONS,equipmentV2CatalogAudit,equipmentV2SetProgress} from '../src/content/equipment-v2-catalog';
+import {EQUIPMENT_V2_RECIPES,equipmentV2RecipesForItem} from '../src/content/equipment-v2-recipes';
 import {EQUIPMENT_V2_RELEASED,CRAFTING_V2_RELEASED,EQUIPMENT_CRAFTING_V2_RELEASED} from '../src/core/release-flags';
 import {equipmentV2PreviewBaseStats,equipmentV2StatBudget,equipmentV2Budget,
  EQUIPMENT_V2_PROFILES,EQUIPMENT_V2_RARITIES,equipmentV2AffixBounds,equipmentV2AffixCount,equipmentV2QualityMultiplier} from '../src/core/equipment-crafting-v2-foundation';
@@ -41,4 +43,34 @@ const purchasePreview=equipmentV2HiddenRecipeScreen({name:'Sunscar Thornhide Ves
  ingredients:inputs,strategy:'market',marketReleased:true,characterLevel:30,professionLevel:25,goldAvailable:10000,queueHasCapacity:true});
 check(purchasePreview.action==='prepare_components'&&!purchasePreview.canCraftNow&&!purchasePreview.marketControlsEnabled&&purchasePreview.cost.marketGold===0,
  'A hidden market never quotes or unlocks a purchase even if a preview asks for it');
+
+const catalogAudit=equipmentV2CatalogAudit();
+check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.standaloneCount===24&&catalogAudit.weaponArchetypes===9,
+ 'Approved V2 catalogue should retain 15 sets, 42 set pieces, 24 standalone and nine weapon archetypes');
+check(catalogAudit.uniqueIds&&!catalogAudit.invalidProfiles.length&&!catalogAudit.badSets.length,
+ 'V2 catalogue IDs, slots, allowed 1-2 stat profiles and set thresholds are valid');
+check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_RECIPES.length===132,'Each piece must have exactly two hidden crafting methods');
+check(EQUIPMENT_V2_PIECES.every(p=>p.id.startsWith('EQ2_')&&!p.id.startsWith('T1P_')),
+ 'V2 IDs must not alias legacy V33 item IDs');
+for(const piece of EQUIPMENT_V2_PIECES){
+ const routes=equipmentV2RecipesForItem(piece.id);
+ check(routes.length===2&&routes[0].route==='foundation'&&routes[1].route==='alternate',
+  'Each piece must have exactly Foundation and Alternate');
+ check(routes[0].gold===routes[1].gold&&routes[0].xp===routes[1].xp&&routes[0].seconds===routes[1].seconds,
+  'Recipe variants cannot grant price, XP or speed advantages over the same item');
+ check(routes.every(r=>r.inputs.length>=4&&r.inputs.some(i=>i.kind==='binder')
+  &&r.inputs.some(i=>i.kind==='component')&&r.inputs.every(i=>i.quantity>0)),
+  'Every method needs gatherable regional resources, a component and a binder');
+ check(JSON.stringify(routes[0].inputs)!==JSON.stringify(routes[1].inputs),
+  'Alternative route must meaningfully change required materials');
+ if(piece.material==='jewelry'){
+  check(routes[0].profession==='smithing'&&routes[1].profession==='tailoring',
+   'Accessories must support cross-profession alternative routes');
+ }
+}
+const t4Set=EQUIPMENT_V2_SETS.find(s=>s.name==='Glassbound Shadowstep')!;
+const two=equipmentV2SetProgress(t4Set.id,[t4Set.pieces[0].id,t4Set.pieces[1].id,t4Set.pieces[1].id]);
+check(two.owned===2&&two.bonuses[0].active&&!two.bonuses[1].active,'Deduplicate equipped copies for set bonus counting');
+check(EQUIPMENT_V2_CLASS_WEAPONS.some(w=>w.classId==='KNIFE_DANCER'&&w.hands==='dual'),
+ 'Weapon archetypes keep Knife Dancer identity separate from armor stat profiles');
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

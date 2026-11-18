@@ -45,10 +45,11 @@ try{
  create table public.craft_receipts(
   receipt_id uuid primary key,character_id uuid not null,created_at timestamptz not null);
  create table public.coop_node_results(
-  run_id uuid,node_id text,success boolean,committed_at timestamptz);
- create table public.expedition_run_members(
-  run_id uuid,account_id uuid,active_participant_account_id uuid,
-  character_id uuid,member_kind text,echo_profile_version integer);
+  run_id uuid,node_id text,success boolean,committed_at timestamptz,
+  fencing_generation bigint,start_state_hash text);
+ create table private.party_event_coop_node_actors_v49(
+  run_id uuid,node_id text,account_id uuid,character_id uuid,
+  node_committed_at timestamptz,fencing_generation bigint,start_state_hash text);
  create table private.party_event_weeks_v11(
   party_id uuid,event_starts_at timestamptz,event_ends_at timestamptz);
  create table private.party_event_roster_v11(
@@ -74,10 +75,11 @@ try{
   [sourceClaim,characterA,sourceAt]);
  await db.query('insert into public.craft_receipts values ($1::uuid,$2::uuid,$3::timestamptz)',
   [sourceCraft,characterA,sourceAt]);
- await db.query('insert into public.coop_node_results values ($1::uuid,$2::text,true,$3::timestamptz)',
+ await db.query('insert into public.coop_node_results values ($1::uuid,$2::text,true,$3::timestamptz,1,\'HASH_A\')',
   [runId,'NODE_A',sourceAt]);
- await db.query(`insert into public.expedition_run_members values
- ($1::uuid,$2::uuid,$2::uuid,$3::uuid,'human',null)`,[runId,accountA,characterA]);
+ await db.query(`insert into private.party_event_coop_node_actors_v49 values
+ ($1::uuid,$2::text,$3::uuid,$4::uuid,$5::timestamptz,1,'HASH_A')`,
+ [runId,'NODE_A',accountA,characterA,sourceAt]);
  const get=async(sql,params)=>db.query(sql,params);
  const idle=await get(idleSql,[sourceClaim,key]);
  must(idle.rows.length===1&&idle.rows[0].credit.eventParty===partyA,'idle_owned_party');
@@ -86,7 +88,7 @@ try{
  must(craft.rows.length===1&&craft.rows[0].credit.eventParty===partyA,'craft_owned_party');
  const coop=await get(coopSql,[runId,'NODE_A',accountA,key]);
  must(coop.rows.length===1&&coop.rows[0].credit.eventParty===partyA
-  &&coop.rows[0].credit.actorAccount===accountA,'coop_verified_human_actor');
+  &&coop.rows[0].credit.actorAccount===accountA,'coop_verified_source_time_attested_actor');
  const forgedActor=await get(coopSql,[runId,'NODE_A',accountB,key]);
  must(forgedActor.rows.length===0,'coop_wrong_actor_denied');
  const fakeNode=await get(coopSql,[runId,'FAKE_NODE',accountA,key]);

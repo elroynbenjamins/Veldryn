@@ -26,7 +26,10 @@
   authenticated direct SELECT grant, and no player-callable private event
   functions. The audit is separate from any release approval.
 - Verified **read-only** on `Veldryn Staging 20260924` on 18 Nov 2026:
-  the private `party_event_*` tables/functions are **not installed**. Real
+  the private `party_event_*` tables/functions are **not installed**.
+  A metadata-only schema probe against the V35 requirements found **28 expected
+  column definitions, 0 matching and 28 missing**. No personal or player data
+  was accessed in the probe. Real
   `public.characters`, `public.character_wallets`,
   `public.online_game_states`, and
   `public.guild_project_supply_catalogue_v1` exist.
@@ -50,7 +53,7 @@
   *even for a passing fixture*. A malformed snapshot fails closed.
 - The actual `settlePartyEventDay8V36` entry point always throws an explicit
   unreleased error. No wallet, resource, XP, Renown, Inbox, ledger or receipt
-  writes are provided. Test cases cover 15 negative security/consistency paths.
+  writes are provided. Test cases cover 17 negative security/consistency paths.
 
 ## Independent blockers and next work
 

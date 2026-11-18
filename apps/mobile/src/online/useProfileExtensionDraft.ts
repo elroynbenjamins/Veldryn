@@ -109,34 +109,36 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
 
  const saveIdentity=useCallback(async()=>{
   if(!value||busy||guest||!identityDirty)return;
+  const version=requestVersion.current;
   setBusy(true);setError('');setNotice('');
   try{
    const row=await updateProfileIdentityV2({
     visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,bio,
    });
-   if(!mounted.current)return;
+   if(!mounted.current||version!==requestVersion.current)return;
    const identity={visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,bio:row.bio};
    setValue(current=>current?{...current,...identity}:current);
    setSavedValue(current=>current?{...current,...identity}:current);
    setBioState(row.bio);setNotice('Profile identity saved.');
   }catch{
-   if(mounted.current)setError('Unable to save your profile identity.');
-  }finally{if(mounted.current)setBusy(false)}
+   if(mounted.current&&version===requestVersion.current)setError('Unable to save your profile identity.');
+  }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
  },[value,bio,busy,guest,identityDirty]);
 
  const saveShowcase=useCallback(async()=>{
   const characterId=value?.selectedCharacterId;
   if(!value||!characterId||busy||guest||!showcaseDirty)return;
+  const version=requestVersion.current;
   setBusy(true);setError('');setNotice('');
   try{
    const result=await updateCharacterShowcaseV2(characterId,showcaseSnapshot(value));
-   if(!mounted.current)return;
-   setValue(current=>current?{...current,...result}:current);
-   setSavedValue(current=>current?{...current,...result}:current);
+   if(!mounted.current||version!==requestVersion.current)return;
+   setValue(current=>current?.selectedCharacterId===characterId?{...current,...result}:current);
+   setSavedValue(current=>current?.selectedCharacterId===characterId?{...current,...result}:current);
    setNotice('Character showcase saved.');
   }catch{
-   if(mounted.current)setError('Unable to save this character showcase.');
-  }finally{if(mounted.current)setBusy(false)}
+   if(mounted.current&&version===requestVersion.current)setError('Unable to save this character showcase.');
+  }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
  },[value,busy,guest,showcaseDirty]);
 
  const setFeatured=useCallback(async()=>{
@@ -146,15 +148,16 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
    setError('Save or revert this hero’s showcase before featuring it.');
    return;
   }
+  const version=requestVersion.current;
   setBusy(true);setError('');setNotice('');
   try{
    const row=await setFeaturedProfileCharacterV2(characterId);
-   if(!mounted.current)return;
+   if(!mounted.current||version!==requestVersion.current)return;
    setFeaturedCharacterId(row.selectedCharacterId??null);
    setNotice('Featured character updated. Your active hero was not switched.');
   }catch{
-   if(mounted.current)setError('Unable to change your featured character.');
-  }finally{if(mounted.current)setBusy(false)}
+   if(mounted.current&&version===requestVersion.current)setError('Unable to change your featured character.');
+  }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
  },[value,busy,guest,featuredCharacterId,showcaseDirty]);
 
  return useMemo(()=>({

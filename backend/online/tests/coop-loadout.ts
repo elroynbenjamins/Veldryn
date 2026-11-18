@@ -168,8 +168,10 @@ console.log('PASS: both V33 equipment paths alter real server-owned dungeon load
 const healingGearState=createCharacter(newGame(0),'DAWNKEEPER','Dungeon Healing Roll');
 healingGearState.character!.level=25;
 healingGearState.character!.xp=legacyCharacterTotalXpAtLevel(25);
+const healingT2Set=EQUIPMENT_SETS.find(set=>set.classId==='DAWNKEEPER'&&set.tier==='T2'&&set.path==='Foundation');
+assert.ok(healingT2Set,'The T2 healer fixture must be a legitimate full support equipment set');
 healingGearState.character!.equipment=Object.fromEntries(
- noviceSetFor('DAWNKEEPER').slots.map(slot=>[slot,noviceItemId('DAWNKEEPER',slot)]));
+ healingT2Set!.itemIds.map(itemId=>[itemDef(itemId).slot,itemId]));
 const healingGlovesId=V33_EQUIPMENT_RECIPES.find(row=>
  row.classId==='DAWNKEEPER'&&row.v33EquipmentTier==='T2'&&itemDef(row.output.itemId).slot==='gloves')!.output.itemId;
 const healingReceiptId='t2-support-healing-gloves';
@@ -183,7 +185,7 @@ healingGearState.character!.equipmentInstanceIds={gloves:healingReceiptId};
 healingGearState.account.craftedGearInstances=[cleanHealingGloves];
 const unrolledHealingLoadout=deriveOnlineCoopLoadout('owner',healingGearState,20);
 const healingBps=equipmentBonusRange(2,'healingPower','gloves','uncommon',3)?.[0];
-assert.ok(Number.isInteger(healingBps)&&healingBps!>0,'T2 support equipment needs a valid release-safe Healing Power roll');
+assert.ok(Number.isInteger(healingBps)&&healingBps!==undefined&&healingBps>0,'T2 support equipment needs a valid release-safe Healing Power roll');
 const rolledHealingGloves:CraftedGearInstance={
  ...cleanHealingGloves,equipmentBonusRollVersion:3,
  equipmentBonuses:[{stat:'healingPower',basisPoints:healingBps!}],

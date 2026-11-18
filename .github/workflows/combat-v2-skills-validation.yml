@@ -6,6 +6,9 @@ on:
       - feature/combat-v2-foundation-contract-20261118
     paths:
       - 'backend/src/server/combat/**'
+      - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
+      - 'apps/mobile/src/content/skills-v2-preview.ts'
+      - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
       - '.github/workflows/combat-v2-skills-validation.yml'
   pull_request:
     paths:
@@ -38,5 +41,26 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/resource-runtime.js
       - name: Validate all 18 capstone trigger contracts
         run: node backend/dist/server/combat/v2/__tests__/capstone-runtime.js
+      - name: Validate additional 25 passive-to-ability rules
+        run: node backend/dist/server/combat/v2/__tests__/passive-ability-rules.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
+
+  mobile_preview:
+    name: Hidden Skills 2.0 preview typecheck and UX contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Typecheck the React Native mobile app including the hidden Skills 2.0 screen
+        run: pnpm --dir apps/mobile typecheck
+      - name: Verify preview catalogue, accessible interactions and isolation from production
+        run: node apps/mobile/tests/skills-v2-preview-ui.cjs

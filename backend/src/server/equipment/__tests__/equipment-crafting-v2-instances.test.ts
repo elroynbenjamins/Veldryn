@@ -78,6 +78,8 @@ const invalid=[
  {...ironSword,affixes:[ironSword.affixes[0],ironSword.affixes[0]]},
  {...ironSword,manifestVersion:'old'},
  {...ironSword,hands:'two'},
+ {...ironSword,enhancementRank:1},
+ {...ironSword,gemSlots:[{socketId:'stat',gemInstanceId:'forged-gem',gemId:'FREE_POWER'}]},
 ];
 for(const forged of invalid){
  assert.equal(v2ServerExactTemplateConsistent(forged as never),false,

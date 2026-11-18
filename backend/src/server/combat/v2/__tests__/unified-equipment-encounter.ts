@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatStats} from '../../types';
-import {simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
+import {compileServerSkillBuildV2,simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
 import {TIERED_SETS_BY_ID_V2} from '../set-catalog';
 import {simulateUnifiedEquipmentCombatV2,type TrustedEquipmentRuntimeV2} from '../unified-equipment-encounter';
@@ -9,6 +9,7 @@ import {resolveVerifiedEquipmentBaseV2} from '../equipment-base-stats';
 import {applyVerifiedSetBonusesV2} from '../equipment-set-effects';
 import {compileTrustedEquipmentAffixesV2} from '../equipment-affixes';
 import {validateBuildV2} from '../build-contract';
+import {evaluatePowerCompositionV2} from '../power-composition';
 import {serverBuildCatalogV2} from '../skill-catalog';
 import type {ApprovedEquipmentBasePolicyV2} from '../equipment-base-stats';
 import type {ApprovedSetPolicyV2} from '../equipment-set-effects';
@@ -92,15 +93,38 @@ assert.equal(evidence.baseSources.length,2);
 assert.equal(evidence.setEffects.length,1);
 assert.equal(evidence.setEffects[0].thresholdId,'eq2_t1_oathplate:2');
 assert.equal(evidence.affixSources.length,1);
+assert.equal(evidence.composition,undefined,'No unapproved CP weighting may be assumed');
+const weights=Object.fromEntries(keys.map(x=>[x,x==='attackPower'?1:0])) as Record<keyof CombatStats,number>;
+const policy={
+ targetClassShare:{min:.15,max:.18},weights,requiredEquipmentSlots:10,
+};
+const syntheticClass={...actor.stats,attackPower:16};
+const syntheticFull={...actor.stats,attackPower:100};
+const good=evaluatePowerCompositionV2(syntheticClass,syntheticFull,10,policy);
+assert.equal(good.classShare,.16);
+assert.equal(good.withinTarget,true);
+assert.equal(good.otherShare,.84);
+assert.equal(evaluatePowerCompositionV2(syntheticClass,syntheticFull,9,policy).withinTarget,null,
+ 'Partly equipped characters must not be judged against full-gear targets');
+assert.equal(evaluatePowerCompositionV2(syntheticClass,
+ {...syntheticFull,attackPower:200},10,policy).withinTarget,false);
+assert.throws(()=>evaluatePowerCompositionV2(syntheticClass,syntheticFull,10,{
+ ...policy,weights:{...weights,critChance:NaN},
+}),/missing_approved_cp_weight/);
+
 assert.equal(JSON.stringify(classActor),before,'base actor must not be mutated');
 const resolved=enabled.combat.players[0].definition;
-const previewStats=actor.stats;
 const rarityQuality=1.1*1.05;
-const expectedDefenseBase=previewStats.defense+
-  Math.round(30*rarityQuality*1e6)/1e6+Math.round(10*rarityQuality*1e6)/1e6;
-// Skill-only Sentinel gains 4% base defense before the equipment resolver.
-// Set +2% then random affix +3% must not be calculated in reverse order.
-assert.ok(resolved.stats.defense>expectedDefenseBase);
+const round6=(n:number)=>Math.round(n*1e6)/1e6;
+const round5=(n:number)=>Math.round(n*1e5)/1e5;
+const classDefense=compileServerSkillBuildV2(true,build).stats.defense;
+const expectedDefenseBase=round6(classDefense+
+  round6(30*rarityQuality)+round6(10*rarityQuality));
+const expectedWithSet=round6(expectedDefenseBase*1.02);
+const expectedWithAffix=round5(expectedWithSet*1.03);
+// Class/spec first, then quality/rarity, set, and finally the random roll.
+assert.equal(resolved.stats.defense,expectedWithAffix);
+
 assert.ok(resolved.tags?.includes('combat-v2-class-base-only'));
 assert.ok(resolved.tags?.includes('combat-v2-gear-base-resolved'));
 assert.ok(resolved.tags?.includes('combat-v2-sets-applied'));

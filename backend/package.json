@@ -85,7 +85,8 @@
     "test:release-economy": "tsc && node dist/server/__tests__/release-economy.js",
     "test:live-rematch": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-rematch.js",
     "test:qmode-pressure": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/qmode-hit-variance.js && node dist/online/backend/online/tests/qmode-pressure-baseline.js && node dist/online/backend/online/tests/coop-published-balance.js",
-    "test:enemy-v2-isolation": "node ../tools/validate-enemy-v2-isolation.mjs"
+    "test:enemy-v2-isolation": "node ../tools/validate-enemy-v2-isolation.mjs",
+    "test:enemy-v2-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/__tests__/enemy-v2-balance-matrix.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

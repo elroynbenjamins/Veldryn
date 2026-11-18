@@ -57,6 +57,14 @@ BEGIN
  IF TG_OP='INSERT' THEN
   IF j.manifest_sealed OR j.stage<>'fenced'
   THEN RAISE EXCEPTION 'WB59_MANIFEST_ALREADY_SEALED'; END IF;
+  -- Never enqueue a foreign/arbitrary Storage key for deletion. Immutable
+  -- V17 replay receipts provide the server-owned exact-account inventory.
+  IF NOT EXISTS(
+    SELECT 1 FROM private.world_boss_attempts_v17 a
+    WHERE a.account_id=NEW.account_id
+      AND a.replay_object_key=NEW.object_key
+      AND a.status='committed')
+  THEN RAISE EXCEPTION 'WB59_MANIFEST_KEY_NOT_OWNED'; END IF;
   RETURN NEW;
  ELSIF TG_OP='UPDATE' THEN
   IF NEW.account_id IS DISTINCT FROM OLD.account_id OR

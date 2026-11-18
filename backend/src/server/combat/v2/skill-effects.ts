@@ -141,7 +141,7 @@ const variants:Readonly<Record<string,readonly [VariantRecipe,VariantRecipe,Vari
  ],
  'Black Thread':[
   {damage:.85,dot:1.15,adds:[weakening(.03,6500)]},
-  {replaces:[{kind:'damage',coeff:1.25,damageType:'shadow'}]},
+  {replaces:[{kind:'damage',coeff:1.25,damageType:'shadow',consumeOwnedDotFraction:.35}]},
   {damage:.85,dot:1.2},
  ],
  'Null Script':[

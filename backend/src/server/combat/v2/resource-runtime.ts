@@ -46,7 +46,7 @@ export function awardCombatResourceV2(
 ):CombatEvent|undefined{
   const v2=state.combatV2;
   if(!v2||!TRIGGERS_V2[v2.resource].includes(trigger)||!Number.isFinite(now)||now<0)return;
-  if(!sourceId||/^(GEM_|COMPANION_)/.test(sourceId))return;
+  if(!sourceId||/^(GEM_|COMPANION_|V2_CAPSTONE)/.test(sourceId))return;
   // Source ID dedup prevents multi-target, two-hit and repeated intercepts per tick.
   const dedup=trigger+':'+sourceId;
   if(v2.lastEarnedAt[dedup]===now)return;

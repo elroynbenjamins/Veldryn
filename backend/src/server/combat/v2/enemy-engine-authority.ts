@@ -53,19 +53,49 @@ const utf8=(value:string):Uint8Array=>{
  }
  return new Uint8Array(bytes);
 };
-/** Hash the full post-compilation encounter input, not just actor IDs. A
- * persisted verifier must match this against the original sealed snapshot. */
-const fingerprint=(input:CombatInput):string=>{
- try{
-  const value=JSON.stringify(input,(_key,field)=>{
-    if(typeof field==='number'&&!Number.isFinite(field))invalid('nonfinite_combat_input');
-    if(typeof field==='function'||typeof field==='bigint')invalid('invalid_combat_input');
-    return field;
-  });
-  if(!value)invalid('invalid_combat_input');
-  return bytesToHex(sha256(utf8(value)));
- }catch{invalid('invalid_combat_input');}
-};
+/** Canonical digest over *all* post-compilation actor, skill and enemy fields.
+ * Key sorting makes JSONB/persistence reorder safe. Reject hidden executable
+ * values, cycles and nonfinite numeric state instead of omitting them. */
+export function enemyV2SnapshotDigest(value:unknown):string{
+ const visited=new WeakSet<object>();
+ const canonical=(entry:unknown,depth:number):unknown=>{
+  if(depth>24)invalid('invalid_combat_input');
+  if(entry===null||typeof entry==='string'||typeof entry==='boolean')return entry;
+  if(typeof entry==='number'){
+   if(!Number.isFinite(entry))invalid('nonfinite_combat_input');
+   return entry;
+  }
+  if(Array.isArray(entry)){
+   if(visited.has(entry)||entry.length>1024)invalid('invalid_combat_input');
+   visited.add(entry);
+   const result=entry.map(child=>{
+    if(child===undefined)invalid('invalid_combat_input');
+    return canonical(child,depth+1);
+   });
+   visited.delete(entry);
+   return result;
+  }
+  if(entry&&typeof entry==='object'){
+   if(visited.has(entry)||Object.keys(entry).length>256||
+      (Object.getPrototypeOf(entry)!==Object.prototype&&Object.getPrototypeOf(entry)!==null))
+     invalid('invalid_combat_input');
+   visited.add(entry);
+   const result:Record<string,unknown>={};
+   for(const key of Object.keys(entry).sort()){
+    if(key==='__proto__'||key==='prototype'||key==='constructor')invalid('invalid_combat_input');
+    const child=(entry as Record<string,unknown>)[key];
+    if(child!==undefined)result[key]=canonical(child,depth+1);
+   }
+   visited.delete(entry);
+   return result;
+  }
+  invalid('invalid_combat_input');
+ };
+ const serialized=JSON.stringify(canonical(value,0));
+ if(!serialized||serialized.length>1000000)invalid('invalid_combat_input');
+ return bytesToHex(sha256(utf8(serialized)));
+}
+const fingerprint=(input:CombatInput):string=>enemyV2SnapshotDigest(input);
 
 export function issueEnemyV2EngineAuthority(
  snapshot:ServerEnemyV2Snapshot,

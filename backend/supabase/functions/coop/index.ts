@@ -42329,7 +42329,7 @@ var infusionByTier = {
 };
 var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 1.5, T5: 1.2, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
 var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 40, T5: 55, T6: 70, T7: 82, T8: 92, T9: 100 };
-var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
+var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 22, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
 var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
   IRONWARDEN: "smithing",
   BASTION: "smithing",
@@ -42447,7 +42447,8 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
   const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
-  const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
+  const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1);
+  const level = tier === "T3" ? TIER_CRAFTING_LEVEL_FLOOR.T3 : Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;

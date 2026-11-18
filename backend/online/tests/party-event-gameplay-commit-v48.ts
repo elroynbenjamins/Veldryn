@@ -46,7 +46,7 @@ function run(){
   &&disabled.sourceCount===0&&!(Object.hasOwn(disabled.args,'p_packet')),
   'production_default_exact_same_commit_args');
  const eligible=planHiddenPartyGameCommitV48({...input,enableDraftBridge:true});
- check(eligible.rpc==='commit_online_game_party_sources_v45'
+ check(eligible.rpc==='commit_online_game_party_sources_server_v48'
   &&eligible.sourceCount===2
   &&eligible.args.p_packet?.kind==='party-event-canonical-source-packet-v44'
   &&eligible.args.p_packet.writesAuthorized===false

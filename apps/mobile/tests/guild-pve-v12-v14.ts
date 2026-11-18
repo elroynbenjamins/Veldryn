@@ -27,7 +27,7 @@ const loader=(row:GuildPveV12OwnedState|null)=>new GuildPveV12VerifiedActorLoade
 });
 async function reject(fn:()=>Promise<unknown>,part:string){
  let error='';try{await fn();}catch(e){error=String(e);}
- assert.ok(error.includes(part),'Expected '+part+'; got '+error);
+ assert.ok(error.length>0&&error.includes(part),'Expected '+part+'; got '+error);
 }
 function rejectSync(fn:()=>unknown,part:string){
  let error='';try{fn();}catch(e){error=String(e);}

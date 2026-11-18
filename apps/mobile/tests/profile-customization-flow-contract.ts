@@ -65,7 +65,7 @@ ok(appearance.includes('style={s.petImage}')&&appearance.includes('petImage:{wid
 
 // Identity and Showcase are two tabs over one stored row.
 ok(draft.includes('export function useProfileExtensionDraft')&&screen.includes('const draft=useProfileExtensionDraft(')&&draft.includes('identitySnapshot(')&&draft.includes('showcaseSnapshot(')&&draft.includes('const dirty=identityDirty||showcaseDirty'),'Identity and Showcase must share one draft with independently tracked account and character changes');
-ok(draft.includes('masteryShowcaseActionIds:value.masteryShowcaseActionIds'),'Mastery showcase selections must participate in dirty/save state');
+ok(draft.includes('masteryShowcaseActionIds:row.masteryShowcaseActionIds')&&draft.includes('showcaseSnapshot(value)')&&draft.includes('saveLegacyProfile(value,bio,fallbackCharacterId)'),'Mastery showcase selections must participate in dirty/save state');
 const staleSaveGuards=(draft.match(/if\(!mounted\.current\|\|version!==requestVersion\.current\)return;/g)??[]).length;
 const scopedBusyReleases=(draft.match(/if\(mounted\.current&&version===requestVersion\.current\)setBusy\(false\)/g)??[]).length;
 ok(staleSaveGuards>=4&&scopedBusyReleases>=5,'Async identity, showcase and featured-hero saves must never overwrite a newer account or selection after a stale completion');

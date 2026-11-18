@@ -14,6 +14,19 @@ const TOKEN='private-v64-verified-session';
 const privateStatements:string[]=[];
 const auth=async(token:string)=>token===TOKEN?ACCOUNT:null;
 const readNow=()=>MONDAY+DAY;
+let replayCalls=0;
+const replayAdapter={
+ marker:'private-method-receiver',
+ async putImmutable(_payload:{key:string;digest:string;content:string}){
+  assert.equal(this.marker,'private-method-receiver');
+  replayCalls++;
+ },
+ async readImmutable(_key:string){
+  assert.equal(this.marker,'private-method-receiver');
+  replayCalls++;
+  return 'synthetic-private-replay';
+ },
+};
 const config:WorldBossActionRuntimeConfigV64={
  executor:{
   async query<T extends object>(sql:string,args:readonly unknown[]){
@@ -42,10 +55,7 @@ const config:WorldBossActionRuntimeConfigV64={
  minimumCharacterLevel:10,
  randomSeed:()=>{throw Error('no combat entropy in wiring test');},
  workerId:'v64_private_worker',
- replayStore:{
-  putImmutable:async()=>{throw Error('no replay write');},
-  readImmutable:async()=>{throw Error('no replay read');},
- },
+ replayStore:replayAdapter,
 };
 const rejection=(make:()=>unknown)=>{
  let threw=false;try{make();}catch{threw=true;}
@@ -72,6 +82,15 @@ async function main(){
  assert.equal(await deps.current.events.findByCycleStart(MONDAY),null);
  await deps.ops.assertGates(EVENT);
  assert.equal(privateStatements.length,2);
+ // No replay happens during composition or status lookup. Adapter methods
+ // must retain the provider's receiver when invoked by a trusted worker.
+ assert.equal(replayCalls,0);
+ await deps.raid.replayStore.putImmutable({
+  key:'synthetic',digest:'a'.repeat(64),content:'synthetic-only',
+ });
+ assert.equal(await deps.rewards.replayStore.readImmutable('synthetic'),
+  'synthetic-private-replay');
+ assert.equal(replayCalls,2);
  assert.equal(privateStatements.some(x=>x.includes('world_boss_v27_reserve_frozen')),false);
  assert.equal(privateStatements.some(x=>x.includes('world_boss_v28_claim')),false);
  rejection(()=>createWorldBossActionDepsV64({...config,accountPrivacy:undefined}

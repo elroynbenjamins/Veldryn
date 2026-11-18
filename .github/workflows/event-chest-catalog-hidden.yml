@@ -1,0 +1,46 @@
+name: Hidden Party and World Boss chest catalog validation
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/party/weekly-party-event-gear-v51.ts'
+      - 'backend/src/server/party/weekly-party-event-chests-v51.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-chests-v51.ts'
+      - 'backend/src/server/combat/world-boss-chests-v58.ts'
+      - 'backend/src/server/combat/__tests__/world-boss-chests-v58.ts'
+      - 'backend/tsconfig.event-chests.json'
+      - 'docs/roadmap/event-chests-party-world-boss-v51-v58-20261118.md'
+      - '.github/workflows/event-chest-catalog-hidden.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chest-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Compile the hidden chest catalogs and focused scenarios
+        run: pnpm exec tsc -p tsconfig.event-chests.json
+      - name: Verify equal Party Event gear and three chest sources
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-chests-v51.js
+      - name: Verify original World Boss gathering gear, 1 percent odds, source caps
+        run: node .event-chest-tests/server/combat/__tests__/world-boss-chests-v58.js
+      - name: Reject accidental live server runtime import or reward enablement
+        run: |
+          set -euo pipefail
+          grep -q 'PARTY_EVENT_GEAR_V51_RELEASED=false' src/server/party/weekly-party-event-gear-v51.ts
+          grep -q 'PARTY_EVENT_CHESTS_V51_RELEASED=false' src/server/party/weekly-party-event-chests-v51.ts
+          grep -q 'WORLD_BOSS_CHESTS_V58_RELEASED=false' src/server/combat/world-boss-chests-v58.ts
+          test ! -f supabase/migrations/20261118_event_chests_v51_v58.sql
+          echo 'EVENT_CHESTS_HIDDEN_VALIDATION_OK'

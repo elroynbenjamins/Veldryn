@@ -35,6 +35,9 @@ const STAT_LABELS:Readonly<Record<string,string>>={
  attack_pct:'Attack',defense_pct:'Defense',max_hp_pct:'Maximum HP',
  haste_pp:'Haste',crit_rate_pp:'Critical Rate',crit_damage_pct:'Critical Damage',
  class_healing_pct:'Healing',
+ accuracy_pp:'Accuracy',evasion_pp:'Evasion',
+ penetration_pp:'Armor Penetration',ward_pp:'Elemental Ward',
+ shield_strength_pct:'Shield Strength',hex_potency_pct:'Hex DoT Power',
 };
 const pretty=(key:string)=>STAT_LABELS[key]??key.replace(/_/g,' ');
 const num=(n:number)=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{
@@ -68,6 +71,12 @@ export function EquipmentPowerBreakdownV2({
    <Text style={[typography.caption,{color:C.muted}]}>
     Verified base stats, rarity, quality and random rolls. Nothing is rerolled here.
    </Text>
+   {affixes.some(a=>['accuracy_pp','evasion_pp','penetration_pp','ward_pp',
+     'shield_strength_pct','hex_potency_pct'].includes(a.id))?
+     <Text style={[typography.caption,{color:C.muted}]}>
+       Advanced rolls alter hit chance, evasion, armor mitigation, elemental damage,
+       shields or magical damage-over-time. pp means percentage points.
+     </Text>:null}
    {evidence.baseSources.length===0?
      <Text style={[typography.caption,{color:C.muted}]}>No Equipment 2.0 gear selected.</Text>:
      evidence.baseSources.map(item=><View key={item.instanceId}

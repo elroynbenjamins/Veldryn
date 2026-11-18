@@ -19,6 +19,8 @@ export interface ProfileExtensionDraft{
  setFeatured:()=>Promise<void>;
  saveIdentity:()=>Promise<void>;
  saveShowcase:()=>Promise<void>;
+ revertIdentity:()=>void;
+ revertShowcase:()=>void;
  revert:()=>void;
  reload:()=>void;
 }
@@ -75,6 +77,21 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
  },[]);
  const revert=useCallback(()=>{
   setNotice('');setError('');setValue(savedValue);setBioState(savedValue?.bio??'');
+ },[savedValue]);
+ // Each tab only discards its own changes. A pending showcase remains intact
+ // when reverting privacy/bio, and an unsaved bio survives a showcase revert.
+ const revertIdentity=useCallback(()=>{
+  setNotice('');setError('');
+  setValue(current=>current&&savedValue?{
+   ...current,visibility:savedValue.visibility,worldFeedOptOut:savedValue.worldFeedOptOut,
+  }:current);
+  if(savedValue)setBioState(savedValue.bio);
+ },[savedValue]);
+ const revertShowcase=useCallback(()=>{
+  setNotice('');setError('');
+  setValue(current=>current&&savedValue?{
+   ...current,...showcaseSnapshot(savedValue),
+  }:current);
  },[savedValue]);
 
  const identityDirty=!!value&&!!savedValue&&
@@ -163,7 +180,7 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
  return useMemo(()=>({
   online:onlineConfigured&&!!accountId,guest,ready:!!value,busy,error,notice,value,bio,
   dirty,identityDirty,showcaseDirty,featuredCharacterId,
-  setBio,patch,selectCharacter,setFeatured,saveIdentity,saveShowcase,revert,reload:()=>void reload(),
+  setBio,patch,selectCharacter,setFeatured,saveIdentity,saveShowcase,revertIdentity,revertShowcase,revert,reload:()=>void reload(),
  }),[accountId,guest,value,busy,error,notice,bio,dirty,identityDirty,showcaseDirty,featuredCharacterId,
-     setBio,patch,selectCharacter,setFeatured,saveIdentity,saveShowcase,revert,reload]);
+     setBio,patch,selectCharacter,setFeatured,saveIdentity,saveShowcase,revertIdentity,revertShowcase,revert,reload]);
 }

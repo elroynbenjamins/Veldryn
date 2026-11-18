@@ -1,4 +1,6 @@
--- Shared World (v19) boss refinement: stale attempt reservations. Not part of the hidden World Boss V15+ program.
+-- DRAFT / NOT DEPLOYABLE. The live World Boss release fence requires this
+-- proposal to remain outside backend/supabase/migrations until approved.
+-- World Boss v19 refinement: stale attempt reservations.
 --
 -- A reservation that is never settled (app closed mid-fight, lost connection, crashed combat worker)
 -- stayed in state 'reserved' forever. Because reserve_shared_world_boss_attempt refuses to open a new

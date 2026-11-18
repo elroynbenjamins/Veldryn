@@ -55674,6 +55674,24 @@ function workingTowardDestinationAvailability(state, source) {
 var sourceStatusPriority = { ready: 0, travel: 1, locked: 2, info: 3 };
 function workingTowardItemSourceEntries(state, itemId) {
   const candidates = [];
+  if (itemId === "GEM_DUST") {
+    const yields = Object.entries(GEM_DISMANTLE_DUST_V1).map(([grade, dust]) => `G${grade}: ${dust}`).join(" \xB7 ");
+    const destination = {
+      kind: "inventory",
+      section: "gem_pouch",
+      button: "Open Gem Pouch",
+      detail: `Dismantle spare refined gems in Inventory \u2192 Gem Pouch to obtain Gem Dust (${yields} Dust per gem). Socketed gems cannot be dismantled.`
+    };
+    candidates.push({
+      type: "dismantling",
+      typeLabel: "Dismantling",
+      title: "Gem Pouch \xB7 Dismantle Gems",
+      destination,
+      availability: workingTowardDestinationAvailability(state, destination),
+      typePriority: 0,
+      progressionLevel: 1
+    });
+  }
   for (const gather of gatherDefs.filter((row) => row.itemId === itemId)) {
     const zone = WORLD_ZONES.find((row) => row.id === gather.zoneId), yieldText = gather.min === gather.max ? `${gather.min}/action` : `${gather.min}\u2013${gather.max}/action`, destination = { kind: "skills", skillId: gather.skillId, mode: "gathering", actionId: gather.id, regionId: gather.zoneId, button: `Gather ${gather.name}`, detail: `${gather.name} in ${zone?.name ?? gather.zoneId} \xB7 ${yieldText}.` };
     candidates.push({ type: "gathering", typeLabel: "Gathering", title: gather.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 0, progressionLevel: gather.unlockLevel });

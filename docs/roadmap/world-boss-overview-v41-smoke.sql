@@ -79,7 +79,8 @@ BEGIN
  expected_phase:=CASE
   WHEN extract(isodow FROM statement_timestamp() AT TIME ZONE 'UTC')<6
    THEN 'preparation' ELSE 'raid' END;
- IF mine->>'accountId' IS DISTINCT FROM a::text OR
+ IF mine->>'schema' IS DISTINCT FROM 'world-boss-overview-v41' OR
+    mine->>'accountId' IS DISTINCT FROM a::text OR
     mine->>'phase' IS DISTINCT FROM expected_phase OR
     (mine->>'attemptsUsed')::integer<>1 OR
     (mine->>'attemptsReserved')::integer<>1 OR

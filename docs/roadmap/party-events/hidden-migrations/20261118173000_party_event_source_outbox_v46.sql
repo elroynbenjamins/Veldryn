@@ -11,7 +11,7 @@ create table private.party_event_source_outbox_v46 (
  queued_at timestamptz not null default now(),
  state text not null default 'pending'
   check (state in ('pending','leased','complete','terminal')),
- attempt_count integer not null default 0 check (attempt_count between 0 and 100),
+ attempt_count integer not null default 0 check (attempt_count >= 0),
  next_attempt_at timestamptz not null default now(),
  lease_expires_at timestamptz,
  completed_at timestamptz,

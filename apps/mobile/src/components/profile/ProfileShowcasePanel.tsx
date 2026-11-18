@@ -43,7 +43,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
  const [picker,setPicker]=useState<Picker>(null);
  const badges=usePlayerBadges();
  const openPicker=(next:Exclude<Picker,null>)=>{Keyboard.dismiss();setPicker(next)};
- const {value,busy,guest,dirty,error,notice}=draft;
+ const {value,busy,guest,showcaseDirty:dirty,error,notice}=draft;
 
  const characters=[...(state.character?[state.character]:[]),...(state.otherCharacters??[]).map(row=>row.character)];
  const skills=state.skills.map(row=>({id:row.skillId,label:profileText(language,row.skillId)}));
@@ -141,7 +141,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
 
   <View style={s.saveBar}>
    <View style={s.revert}><GameButton compact title={profileT(language,"Revert")} tone="secondary" disabled={!dirty||busy} onPress={draft.revert}/></View>
-   <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save showcase"):profileT(language,"Showcase saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.save()}/></View>
+   <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save showcase"):profileT(language,"Showcase saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.saveShowcase()}/></View>
   </View>
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{profileText(language,notice)}</Text>:null}
   {error?<Text accessibilityRole="alert" style={s.error}>{profileText(language,error)}</Text>:null}

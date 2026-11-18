@@ -43,3 +43,18 @@ The test asserts feature secrecy, budget conservation, one/two stats, rarity odd
 - Client/server rarity odds, tier-specific affix counts and affix ranges are parity-tested. Unique gear CI also compiles and runs the new model test. Mobile UX CI checks hidden UI safety.
 
 **Open requirements**: transactional server-side receipt persistence and replay, signed/verified recipe and character authorization, authoritative economy validation and market escrow, finished class weapon recipes, full migration audit, native player-facing screens with translation, combat simulations and staging parity. The independent market release flag remains off. Do not merge or enable any 2.0 release gate until these are complete.
+
+## Transaction and mobile UX follow-up (November 18)
+
+- Fixed a catalog import bug that collapsed full slot names to one-letter keys. Set-piece IDs are now unique with valid slots/profiles. This is guarded by catalogue and client/server parity tests.
+- Server-owned pinned manifest: `equipment-crafting-v2-manifest.ts` stores 66 canonical templates and 132 recipes, including output, profession, inputs, Gold, XP, timing and level requirements. No caller-provided materials/prices/stats are accepted.
+- Isolated transaction model: `equipment-crafting-v2-transaction.ts` validates trusted account/character state, level and profession, debit-on-start reservation across Inventory/Bank, exact queue slot scheduling, claim-after-finish, secret server RNG on claim, original-crafter XP/item ownership, 25-copy cap, request-ID replay and conflict handling. Input state remains immutable until an atomic commit.
+- Server-only tests cover Gold and material conservation, forged command rejection, stale version, cross-character claims, early claim, duplicate claim, max-copy refusal, queue capacity and gate refusal.
+- Focused backend TypeScript target `tsconfig.equipment-v2.json` and equipment CI step added to compile and execute transactional tests.
+- Mobile catalogue `EquipmentCraftingV2CataloguePreview.tsx`: virtualized searchable 66-item list, tier and role filters, materials-ready view and 44px touch targets.
+- Internal workshop `EquipmentCraftingV2WorkshopPreview.tsx` connects the catalogue and read-only detail screen, without any gameplay write actions. Mobile UX CI includes static safety/interaction checks.
+- Explicit cross-catalogue parity check rejects drift in item profile, slot, tier, role, profession, required materials, Gold, XP, time and level floors. Input ingredient IDs must exist in live resource definitions.
+
+**Not implemented yet**: PostgreSQL-backed SERIALIZABLE/row-locking adapter, persistence of reservation & exact item instances, server-route authorization and authenticated account binding, legacy inventory migration, complete class-specific weapon crafting, release combat calculations and skill/monster integration, real market purchase/escrow, translated production UI, art, and successful CI/staging verification.
+
+All changes are source-only on a draft branch. No production DB changes; do not activate either V2 release gate or merge the draft as a release until blockers close.

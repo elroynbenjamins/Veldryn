@@ -129,6 +129,8 @@ jobs:
           do
             node ".core-build/apps/mobile/tests/${suite}.js"
           done
+      - name: Validate V60 mobile UTC phase leases and read-only preview boundary
+        run: node --test tests/world-boss-readonly-snapshot.cjs
 
   world-boss-postgres-schema-dryrun:
     # Real PostgreSQL in a disposable CI service, never a Supabase project.

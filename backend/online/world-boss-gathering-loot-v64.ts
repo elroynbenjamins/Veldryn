@@ -1,5 +1,5 @@
 /**
- * V64 hidden proposal: themed World Boss gathering loot and 10-piece sets.
+ * V64/V65 hidden proposal: themed World Boss gathering loot and 10-piece sets.
  *
  * NOT a live reward source. This module intentionally cannot debit attempts,
  * open inventory, award Sigils/Gold/Essence or mint equipment. Only a trusted
@@ -8,8 +8,17 @@
  * Never accept a boss ID, victory, random seed or receipt from a mobile client.
  */
 export const WORLD_BOSS_GATHERING_LOOT_V64_LIVE=false as const;
-export const WORLD_BOSS_GATHERING_CHEST_CHANCE_BPS=100 as const; // 1% per proven victorious account attack
-export const WORLD_BOSS_GATHERING_TARGETED_PIECE_PRICE_SIGILS=90 as const; // proposed shop source, NOT on sale
+/** Exactly three chest earning sources per account/event; no more per-attack RNG. */
+export const WORLD_BOSS_GATHERING_CHEST_MAX_V65=3 as const;
+export const WORLD_BOSS_GATHERING_CHEST_SOURCES_V65=[
+ 'donations','three_attempts','community_damage',
+] as const;
+export type WorldBossGatheringChestSourceV65=
+ (typeof WORLD_BOSS_GATHERING_CHEST_SOURCES_V65)[number];
+/** Exact approved V28 global HP milestone at 30% remaining = 70% dealt. */
+export const WORLD_BOSS_GATHERING_COMMUNITY_HP_GOAL_BPS_V65=3_000 as const;
+/** Pure policy only. No purchases or targeted piece sales are registered. */
+export const WORLD_BOSS_GATHERING_TARGETED_PIECE_PRICE_SIGILS=90 as const;
 export const WORLD_BOSS_GATHERING_SLOTS=[
   'helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring',
 ] as const;
@@ -40,8 +49,8 @@ export interface WorldBossGatheringPieceV64 {
   readonly slot:GatheringGearSlotV64;
   readonly setId:string;
   readonly skill:WorldBossGatheringSkillV64;
-  readonly rarity:'epic';
-  readonly gatheringXpBonusFraction:number;
+  /** V65 rolled copies get rarity/quality/affixes, never a static Epic rarity. */
+  readonly primaryStat:'gathering_speed';
   readonly combatPowerBonus:0;
 }
 const SETS:Readonly<Record<WorldBossGatheringBossV64,WorldBossGatheringSetV64>>={
@@ -76,8 +85,8 @@ export const WORLD_BOSS_GATHERING_PIECES_V64:readonly WorldBossGatheringPieceV64
   WORLD_BOSS_GATHERING_SETS_V64.flatMap(set=>WORLD_BOSS_GATHERING_SLOTS.map(slot=>({
     itemId:`${set.setId}_${slot.toUpperCase()}`,
     name:`${set.prefix} ${SLOT_TITLE[slot]}`,
-    slot,setId:set.setId,skill:set.skill,rarity:'epic' as const,
-    gatheringXpBonusFraction:.005,combatPowerBonus:0 as const,
+    slot,setId:set.setId,skill:set.skill,primaryStat:'gathering_speed' as const,
+    combatPowerBonus:0 as const,
   })));
 const PIECES_BY_ID=new Map(WORLD_BOSS_GATHERING_PIECES_V64.map(piece=>[piece.itemId,piece]));
 export function worldBossGatheringSetV64(bossId:WorldBossGatheringBossV64){
@@ -105,8 +114,7 @@ export interface WorldBossGatheringLootPlanV64 {
   readonly gold:number;
   readonly materials:readonly {itemId:string;quantity:number}[];
   readonly companionEssence:number;
-  /** A chest is a SEPARATE inventory source; its piece is rolled once upon authenticated opening. */
-  readonly chestId?:string;
+  /** No chest in the per-attempt loot plan. Chests are earned by milestone receipts. */
 }
 /** Pure preview only. No loot writes, receipt proof, auth or wallet access here. */
 export function planWorldBossGatheringLootV64(input:{
@@ -125,7 +133,6 @@ export function planWorldBossGatheringLootV64(input:{
   const secondaryQuantity=secondary?range(input.nextInt,set.secondaryMaterial.min,set.secondaryMaterial.max):0;
   const essence=integerDraw(input.nextInt,10_000)<3_500; // 35% Companion Essence
   const essenceQuantity=essence?range(input.nextInt,2,4):0;
-  const chest=won&&integerDraw(input.nextInt,10_000)<WORLD_BOSS_GATHERING_CHEST_CHANCE_BPS;
   const materials=[
     {itemId:set.primaryMaterial.itemId,quantity:won?baseQuantity:Math.max(1,Math.floor(baseQuantity/2))},
     ...(secondaryQuantity>0?[{itemId:set.secondaryMaterial.itemId,quantity:secondaryQuantity}]:[]),
@@ -134,8 +141,196 @@ export function planWorldBossGatheringLootV64(input:{
     bossId:set.bossId,outcome:input.outcome,
     gold:won?gold:Math.floor(gold/2),
     materials,companionEssence:essenceQuantity,
-    ...(chest?{chestId:set.chestId}:{}),
   };
+}
+/**
+ * The eventual private claim service must bind these counts to committed
+ * V27 donations, V26/V28 completed/proven attempts and V18 global-HP state.
+ * This pure planner never grants chest inventory and does not trust clients.
+ */
+export interface WorldBossGatheringChestEvidenceV65 {
+  readonly eventId:string;
+  readonly accountId:string;
+  readonly bossId:WorldBossGatheringBossV64;
+  readonly committedDonations:number;
+  readonly completedProvenAttempts:number;
+  readonly globalBossRemainingHpBps:number;
+  readonly alreadyAwardedSources:readonly WorldBossGatheringChestSourceV65[];
+}
+export interface WorldBossGatheringChestUnlockV65{
+  readonly eventId:string;readonly accountId:string;
+  readonly chestId:string;readonly bossId:WorldBossGatheringBossV64;
+  readonly source:WorldBossGatheringChestSourceV65;
+  /** Stable private source, unique(account,event,boss,source), never a request ID. */
+  readonly rewardSourceKey:string;
+}
+const receiptIdPattern=/^[A-Za-z0-9][A-Za-z0-9:_-]{0,159}$/;
+export function eligibleWorldBossGatheringChestsV65(
+  evidence:WorldBossGatheringChestEvidenceV65,
+):readonly WorldBossGatheringChestUnlockV65[]{
+  if(!evidence||!receiptIdPattern.test(evidence.accountId)||
+    !receiptIdPattern.test(evidence.eventId))throw Error('world_boss_v65_invalid_identity');
+  const set=worldBossGatheringSetV64(evidence.bossId);
+  const countOk=(n:number)=>Number.isSafeInteger(n)&&n>=0&&n<=3;
+  if(!countOk(evidence.committedDonations)||evidence.committedDonations>2||
+    !countOk(evidence.completedProvenAttempts)||
+    !Number.isSafeInteger(evidence.globalBossRemainingHpBps)||
+    evidence.globalBossRemainingHpBps<0||evidence.globalBossRemainingHpBps>10_000||
+    !Array.isArray(evidence.alreadyAwardedSources)||
+    evidence.alreadyAwardedSources.some(s=>!WORLD_BOSS_GATHERING_CHEST_SOURCES_V65.includes(s)))
+    throw Error('world_boss_v65_invalid_proof_counts');
+  const owned=new Set(evidence.alreadyAwardedSources);
+  const eligible:WorldBossGatheringChestSourceV65[]=[];
+  if(evidence.committedDonations===2)eligible.push('donations');
+  if(evidence.completedProvenAttempts===3)eligible.push('three_attempts');
+  if(evidence.completedProvenAttempts>=1&&
+     evidence.globalBossRemainingHpBps<=WORLD_BOSS_GATHERING_COMMUNITY_HP_GOAL_BPS_V65)
+    eligible.push('community_damage');
+  return eligible.filter(source=>!owned.has(source)).map(source=>({
+    eventId:evidence.eventId,accountId:evidence.accountId,
+    bossId:evidence.bossId,chestId:set.chestId,source,
+    rewardSourceKey:`wb_gather_chest:v65:${evidence.eventId}:${evidence.accountId}:${set.bossId}:${source}`,
+  }));
+}
+
+export type WorldBossGatheringRarityV65=
+  'common'|'uncommon'|'rare'|'epic'|'legendary'|'mythic';
+export type WorldBossGatheringAffixV65='gathering_xp'|'extra_yield'|'rare_material_find';
+export interface WorldBossGatheringRolledAffixV65{
+  readonly stat:WorldBossGatheringAffixV65;
+  /** 100 basis points = +1%, rare_material_find is RELATIVE chance increase. */
+  readonly bonusBasisPoints:number;
+}
+export interface WorldBossGatheringRolledGearV65{
+  readonly rollVersion:65;
+  readonly itemId:string;
+  readonly setId:string;
+  readonly slot:GatheringGearSlotV64;
+  readonly skill:WorldBossGatheringSkillV64;
+  readonly rarity:WorldBossGatheringRarityV65;
+  readonly quality:number;
+  readonly primaryStat:'gathering_speed';
+  /** Gather speed is the only base stat. One/two gathering-only random affixes. */
+  readonly gatheringSpeedBasisPoints:number;
+  readonly bonusStats:readonly WorldBossGatheringRolledAffixV65[];
+  readonly combatPowerBonus:0;
+}
+/**
+ * Matches the existing crafted-gear rarity probability buckets rather than
+ * applying a new boss-exclusive rarity advantage. Quality Q0–Q100 follows
+ * the crafted 1.25 power curve; it affects base speed, not affixes.
+ */
+export const WORLD_BOSS_GATHERING_RARITY_V65:readonly {
+ readonly rarity:WorldBossGatheringRarityV65;readonly weightPerMillion:number;
+ readonly multiplier:number;readonly affixScale:number;
+}[]=[
+  {rarity:'mythic',weightPerMillion:1_000,multiplier:2,affixScale:1.5},
+  {rarity:'legendary',weightPerMillion:2_000,multiplier:1.8,affixScale:1.45},
+  {rarity:'epic',weightPerMillion:6_000,multiplier:1.5,affixScale:1.35},
+  {rarity:'rare',weightPerMillion:30_000,multiplier:1.28,affixScale:1.2},
+  {rarity:'uncommon',weightPerMillion:70_000,multiplier:1.12,affixScale:1},
+  {rarity:'common',weightPerMillion:891_000,multiplier:1,affixScale:.85},
+];
+const AFFIX_POOL:readonly {
+ readonly stat:WorldBossGatheringAffixV65;readonly minBps:number;readonly maxBps:number;
+}[]=[
+ {stat:'gathering_xp',minBps:80,maxBps:220},
+ {stat:'extra_yield',minBps:40,maxBps:130},
+ {stat:'rare_material_find',minBps:200,maxBps:550},
+];
+/**
+ * PREVIEW ONLY: actual opening must be one atomic, trusted transaction
+ * authenticating the chest's owned and unconsumed source receipt, then
+ * persisting the entire exact roll before marking the chest opened.
+ */
+export function previewOpenWorldBossGatheringChestV65(
+ chestId:string,nextInt:WorldBossGatheringRandomV64,
+):WorldBossGatheringRolledGearV65{
+ const piece=previewOpenWorldBossGatheringChestV64(chestId,nextInt);
+ let raritySample=integerDraw(nextInt,1_000_000);
+ let rarityRow=(WORLD_BOSS_GATHERING_RARITY_V65[WORLD_BOSS_GATHERING_RARITY_V65.length-1]);
+ for(const row of WORLD_BOSS_GATHERING_RARITY_V65){
+   if(raritySample<row.weightPerMillion){rarityRow=row;break}
+   raritySample-=row.weightPerMillion;
+ }
+ const qualitySample=integerDraw(nextInt,1_000_000)/1_000_000;
+ const quality=Math.min(100,Math.floor(Math.pow(qualitySample,1.25)*101));
+ const qualityMultiplier=.75+quality*.005;
+ const gatheringSpeedBasisPoints=Math.round(80*rarityRow.multiplier*qualityMultiplier);
+ const available=[...AFFIX_POOL];
+ const bonusStats:WorldBossGatheringRolledAffixV65[]=[];
+ const affixCount=['epic','legendary','mythic'].includes(rarityRow.rarity)?2:1;
+ for(let i=0;i<affixCount;i++){
+   const index=integerDraw(nextInt,available.length);
+   const affix=available.splice(index,1)[0];
+   const low=Math.round(affix.minBps*rarityRow.affixScale);
+   const high=Math.round(affix.maxBps*rarityRow.affixScale);
+   bonusStats.push({
+     stat:affix.stat,
+     bonusBasisPoints:range(nextInt,low,high),
+   });
+ }
+ return {
+   rollVersion:65,itemId:piece.itemId,setId:piece.setId,
+   slot:piece.slot,skill:piece.skill,rarity:rarityRow.rarity,quality,
+   primaryStat:'gathering_speed',gatheringSpeedBasisPoints,
+   bonusStats,combatPowerBonus:0,
+ };
+}
+/** Read-model guard; true instance provenance still requires private DB custody. */
+export function validateWorldBossGatheringRollV65(roll:WorldBossGatheringRolledGearV65):boolean{
+ if(!roll||roll.rollVersion!==65||
+   roll.primaryStat!=='gathering_speed'||roll.combatPowerBonus!==0||
+   !Number.isInteger(roll.quality)||roll.quality<0||roll.quality>100||
+   !Number.isInteger(roll.gatheringSpeedBasisPoints))return false;
+ const piece=PIECES_BY_ID.get(roll.itemId);
+ const rarity=WORLD_BOSS_GATHERING_RARITY_V65.find(row=>row.rarity===roll.rarity);
+ if(!piece||!rarity||roll.setId!==piece.setId||roll.slot!==piece.slot||
+   roll.skill!==piece.skill||
+   roll.gatheringSpeedBasisPoints!==Math.round(80*rarity.multiplier*(.75+roll.quality*.005))||
+   !Array.isArray(roll.bonusStats)||
+   roll.bonusStats.length!==(['epic','legendary','mythic'].includes(roll.rarity)?2:1))return false;
+ const seen=new Set<WorldBossGatheringAffixV65>();
+ for(const stat of roll.bonusStats){
+   const allowed=AFFIX_POOL.find(x=>x.stat===stat?.stat);
+   if(!allowed||seen.has(stat.stat)||!Number.isInteger(stat.bonusBasisPoints)||
+     stat.bonusBasisPoints<Math.round(allowed.minBps*rarity.affixScale)||
+     stat.bonusBasisPoints>Math.round(allowed.maxBps*rarity.affixScale))return false;
+   seen.add(stat.stat);
+ }
+ return true;
+}
+export interface WorldBossGatheringRolledStatsV65{
+ readonly pieces:number;readonly skill:WorldBossGatheringSkillV64;
+ readonly gatheringSpeedBasisPoints:number;
+ readonly gatheringXpBasisPoints:number;
+ readonly extraYieldBasisPoints:number;
+ readonly rareMaterialFindRelativeBasisPoints:number;
+}
+/**
+ * Display-only roll totals. Server applies verified, slot-matched instances,
+ * not item IDs or mobile-provided roll payloads. Caller must ensure distinct
+ * exact owned instance receipts and slots; duplicates are excluded here too.
+ */
+export function previewEquippedWorldBossGatheringStatsV65(
+ skill:WorldBossGatheringSkillV64,rolls:readonly WorldBossGatheringRolledGearV65[],
+):WorldBossGatheringRolledStatsV65{
+ const seenSlots=new Set<GatheringGearSlotV64>();
+ let gatheringSpeedBasisPoints=0,gatheringXpBasisPoints=0;
+ let extraYieldBasisPoints=0,rareMaterialFindRelativeBasisPoints=0;
+ for(const gear of rolls){
+  if(!validateWorldBossGatheringRollV65(gear)||gear.skill!==skill||
+    seenSlots.has(gear.slot))continue;
+  seenSlots.add(gear.slot);
+  gatheringSpeedBasisPoints+=gear.gatheringSpeedBasisPoints;
+  for(const affix of gear.bonusStats){
+   if(affix.stat==='gathering_xp')gatheringXpBasisPoints+=affix.bonusBasisPoints;
+   if(affix.stat==='extra_yield')extraYieldBasisPoints+=affix.bonusBasisPoints;
+   if(affix.stat==='rare_material_find')rareMaterialFindRelativeBasisPoints+=affix.bonusBasisPoints;
+  }
+ }
+ return {skill,pieces:seenSlots.size,gatheringSpeedBasisPoints,
+   gatheringXpBasisPoints,extraYieldBasisPoints,rareMaterialFindRelativeBasisPoints};
 }
 /** Call ONLY when consuming an owned, unused, immutable chest receipt exactly once in a transaction. */
 export function previewOpenWorldBossGatheringChestV64(
@@ -173,7 +368,7 @@ export function previewWorldBossGatheringBonusV64(
   return {
     pieces,
     thresholds:[2,4,6,8,10].filter(n=>pieces>=n),
-    xpBonusFraction:pieces*.005+(pieces>=2?.03:0)+(pieces>=10?.05:0),
+    xpBonusFraction:(pieces>=2?.03:0)+(pieces>=10?.05:0),
     yieldBonusFraction:(pieces>=4?.04:0)+(pieces>=10?.03:0),
     rareDropRelativeBonusFraction:pieces>=6?.10:0,
     actionTimeMultiplier:pieces>=8?.96:1,

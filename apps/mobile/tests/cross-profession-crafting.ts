@@ -6,6 +6,7 @@ import {newGame,createCharacter} from '../src/core/game';
 import {startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {processingAvailability,startProcessingBatch} from '../src/core/processing';
 import {marketCatalogCandidate} from '../src/core/player-market-readiness';
+import {groupTwoVariantCraftingRecipes} from '../src/core/crafting-recipe-variants';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+' (expected '+expected+', got '+actual+')');}
@@ -19,20 +20,36 @@ const strapRecycled=CROSS_PROFESSION_COMPONENT_RECIPES.find(recipe=>recipe.id===
 equal(strapStandard.inputs.map(input=>input.itemId+':'+input.quantity).join(','),'SUNSCALE:3,DUNEWOOD:4','Standard straps must use only Sunscale and Dunewood');
 equal(strapRecycled.inputs.map(input=>input.itemId+':'+input.quantity).join(','),'TORN_OATHCLOTH:2,SUNSCALE:2,DUNEWOOD:2','Recycled straps must use Torn Oathcloth as their alternate source');
 
+const grouped=groupTwoVariantCraftingRecipes(CROSS_PROFESSION_COMPONENT_RECIPES);
+equal(grouped.length,6,'Two alternative component pairs must display as six craftable cards, not eight');
+for(const outputId of ['REINFORCED_STRAPS','ARMOR_RIVETS']){
+ const group=grouped.find(group=>group.recipes[0].output.itemId===outputId)!;
+ equal(group.recipes.length,2,outputId+' should have a selectable recipe pair');
+ equal(group.recipes[0].output.itemId,group.recipes[1].output.itemId,'Variants must yield the same material');
+}
+const noMerge=groupTwoVariantCraftingRecipes([strapStandard,{...strapRecycled,gold:strapRecycled.gold+1}]);
+equal(noMerge.length,2,'Recipes with different gold costs must remain separate cards');
+const threeWays=groupTwoVariantCraftingRecipes([strapStandard,strapRecycled,{...strapRecycled,id:'ANOTHER_STRAPS_ROUTE'}]);
+equal(threeWays.length,3,'Three-route crafts must not be forced into the two-route switcher');
+const unrelated=groupTwoVariantCraftingRecipes([strapStandard,{...strapRecycled,output:{itemId:'ARMOR_RIVETS',quantity:1}}]);
+equal(unrelated.length,2,'Different crafting outputs must not merge');
+
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const recipeCardSource=fs.readFileSync('src/components/RecipeCard.tsx','utf8');
+const browserSource=fs.readFileSync('src/components/CraftingRecipeBrowser.tsx','utf8');
 const craftingDetailSource=fs.readFileSync('src/i18n/crafting-details.ts','utf8');
-for(const [recipeId,label] of [
- ['STITCH_REINFORCED_STRAPS','Standard recipe'],
- ['STITCH_RECYCLED_REINFORCED_STRAPS','Recycled recipe'],
- ['FORGE_ARMOR_RIVETS','Standard recipe'],
- ['FORGE_RECLAIMED_ARMOR_RIVETS','Reclaimed recipe'],
-] as const){
- ok(recipeCardSource.includes("recipe.id==='"+recipeId+"'"),'Component route must have a distinct card label: '+recipeId);
- ok(craftingDetailSource.includes("'"+label+"':["),'Component route label must be localized: '+label);
+for(const label of ['Standard','Recycled','Reclaimed','CRAFTING METHOD','Same item, different materials']){
+ ok(craftingDetailSource.includes("'"+label+"':["),'Each recipe method must have translations: '+label);
 }
-ok(recipeCardSource.includes('componentRoute?<Text style={s.componentRoute}>{ct(componentRoute)}</Text>'),'The crafting card must render the route label next to each shared output');
-
+ok(browserSource.includes('groupTwoVariantCraftingRecipes(recipes)'),'Crafting browser must group the two-recipe materials');
+ok(browserSource.includes('selected.status')&&browserSource.includes('recipe={selected.recipe}'),'Selected method must supply its own status and ingredients');
+ok(browserSource.includes('group.rows.some(row=>row.status.ready)'),'Ready Only must show outputs if either crafting route is available');
+ok(browserSource.includes('setSelectedVariants(current=>({...current,[recipeGroup.key]:id}))'),'Method choice must be stored for the output, not globally');
+ok(recipeCardSource.includes('variantRecipes?.length===2'),'Switcher must appear only for genuine two-route craftables');
+ok(recipeCardSource.includes('onSelectVariant(candidate.id)'),'Recipe selection must update the active recipe ID');
+ok(recipeCardSource.includes('accessibilityState={{selected,disabled:starting}}'),'Selected crafting route must be announced accessibly');
+ok(recipeCardSource.includes('onProcessingStart(recipe.id)'),'Selected recipe ID must reach authoritative processing');
+ok(!recipeCardSource.includes('componentRoute?<Text'),'Do not show redundant per-card labels above the new switcher');
 
 for(const item of CROSS_PROFESSION_COMPONENT_ITEMS){
  equal(itemDef(item.id).type,'material','Every component must be a registered material');

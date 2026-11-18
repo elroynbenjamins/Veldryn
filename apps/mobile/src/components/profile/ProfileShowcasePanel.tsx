@@ -153,7 +153,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   <ScrollView style={s.pickerList} contentContainerStyle={s.pickerContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {pickerEmpty?<Text style={s.pickerEmpty}>{profileT(language,"No entries unlocked for this showcase yet.")}</Text>:null}
    {picker==='character'?characters.map(row=>{const selected=(value.selectedCharacterId??state.character?.id)===row.id;
-    return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>{patch({selectedCharacterId:row.id});setPicker(null)}} style={[s.option,selected&&s.optionActive]}>
+    return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>{void draft.selectCharacter(row.id).then(switched=>{if(switched)setPicker(null)})}} style={[s.option,selected&&s.optionActive]}>
      <Text style={s.optionText}>{selected?'✓ ':''}{row.name}</Text>
      <Text style={s.optionSub}>{row.classId.replace(/_/g,' ')} · {profileT(language,'Level {level}',{level:row.level})}{row.id===state.character?.id?' · '+profileT(language,'currently active'):''}</Text></Pressable>}):null}
    {picker==='skill'?<><Pressable accessibilityRole="button" accessibilityState={{selected:!value.favoriteSkillId}} onPress={()=>{patch({favoriteSkillId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteSkillId?'✓ ':''}{profileT(language,"None")}</Text></Pressable>

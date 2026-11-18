@@ -85,7 +85,7 @@ for(const boss of Object.keys(expected) as WorldBossGatheringBossV64[]){
 
   const evidence=(overrides:Partial<WorldBossGatheringChestEvidenceV65>={}):WorldBossGatheringChestEvidenceV65=>({
     eventId:EVENT,accountId:ACCOUNT,bossId:boss,
-    committedDonations:2,completedProvenAttempts:3,globalBossRemainingHpBps:3_000,
+    committedDonations:2,warCampTracksAtLeastTier1:2,completedProvenAttempts:3,globalBossRemainingHpBps:3_000,
     alreadyAwardedSources:[],...overrides,
   });
   const eligible=eligibleWorldBossGatheringChestsV65(evidence());
@@ -93,7 +93,9 @@ for(const boss of Object.keys(expected) as WorldBossGatheringBossV64[]){
   assert.deepEqual(eligible.map(e=>e.source),WORLD_BOSS_GATHERING_CHEST_SOURCES_V65);
   assert.equal(new Set(eligible.map(e=>e.rewardSourceKey)).size,3);
   assert.ok(eligible.every(e=>e.chestId===set.chestId&&e.bossId===boss));
-  assert.equal(eligibleWorldBossGatheringChestsV65(evidence({committedDonations:1})).length,2);
+  assert.equal(eligibleWorldBossGatheringChestsV65(evidence({committedDonations:0})).length,2);
+  assert.equal(eligibleWorldBossGatheringChestsV65(evidence({warCampTracksAtLeastTier1:1})).length,2);
+  assert.equal(eligibleWorldBossGatheringChestsV65(evidence({committedDonations:1})).length,3);
   assert.equal(eligibleWorldBossGatheringChestsV65(evidence({completedProvenAttempts:2})).length,2);
   assert.equal(eligibleWorldBossGatheringChestsV65(evidence({globalBossRemainingHpBps:3001})).length,2);
   assert.equal(eligibleWorldBossGatheringChestsV65(evidence({
@@ -106,8 +108,11 @@ for(const boss of Object.keys(expected) as WorldBossGatheringBossV64[]){
     alreadyAwardedSources:['donations','three_attempts'],
   })).map(e=>e.source),['community_damage']);
   assert.equal(eligibleWorldBossGatheringChestsV65(evidence({
-    committedDonations:0,completedProvenAttempts:0,globalBossRemainingHpBps:10_000,
+    committedDonations:0,warCampTracksAtLeastTier1:0,
+    completedProvenAttempts:0,globalBossRemainingHpBps:10_000,
   })).length,0);
+  expectThrow(()=>eligibleWorldBossGatheringChestsV65(evidence({warCampTracksAtLeastTier1:4})),
+    'invalid_proof_counts');
   expectThrow(()=>eligibleWorldBossGatheringChestsV65(evidence({committedDonations:3})),
     'invalid_proof_counts');
   expectThrow(()=>eligibleWorldBossGatheringChestsV65(evidence({globalBossRemainingHpBps:10_001})),

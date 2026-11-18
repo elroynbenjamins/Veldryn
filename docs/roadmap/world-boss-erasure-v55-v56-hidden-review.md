@@ -38,7 +38,7 @@ The temporary `pg_temp.wb55_fixture_purge` function is **not a deployed erasure 
 | `auth_deleted` | Finalize the privacy ticket according to the approved minimal-retention policy. |
 | `complete` | Repeated processing returns completion without performing another deletion. |
 
-The coordinator never returns replay object keys, account identifiers, wallet data or Auth secrets to the caller. It releases only its per-worker lease on a failure; the persistent account write fence must remain active until the authorized workflow is resolved. A second worker that cannot acquire the lease reports `in_progress`.
+The **runtime** entry `runWorldBossErasureV56` throws `world_boss_v56_runtime_disabled` before reading a ticket or invoking any backend dependency while the release flag is false. All offline tests instead call a separately named `simulateWorldBossErasureV56ForTests` runner with synthetic adapters. This test runner must never be imported into a production route/worker. The coordinator never returns replay object keys, account identifiers, wallet data or Auth secrets to the caller. It releases only its per-worker lease on a failure; the persistent account write fence must remain active until the authorized workflow is resolved. A second worker that cannot acquire the lease reports `in_progress`.
 
 `apps/mobile/tests/world-boss-account-erasure-v56.ts` uses a **purely in-memory** synthetic store to check stage ordering, object-store failures, Admin Auth failures after SQL cleanup, idempotent retries, concurrent workers and forged tickets. The file is included in the focused TypeScript config and World Boss CI workflow.
 

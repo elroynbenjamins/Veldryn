@@ -1,4 +1,4 @@
-import type {AbilityDefinition,BossPhaseDefinition,CombatantDefinition,DamageType} from './types';
+import type {AbilityDefinition,BossPhaseDefinition,CombatantDefinition} from './types';
 import {ENEMY_V2_RULESET} from './enemy-v2-prototype';
 
 /**
@@ -22,8 +22,10 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
     case 'BOSS_EXP_SOLAR':return {
       id:boss.id,name:'The Buried Heliarch',
       abilities:[
-        cast('SOLAR_V2_PRISM_WARD','Prism Ward',24000,700,75,'self',[{kind:'shield',flat:ward(boss,.035)}]),
-        cast('SOLAR_V2_SUNFALL','Sunfall',19000,1800,91,'all_enemies',[{kind:'damage',coeff:.66,damageType:'fire'}],true),
+        cast('SOLAR_V2_SUNFALL','Sunfall',19000,1800,91,'all_enemies',[
+          {kind:'damage',coeff:.48,damageType:'fire'},
+          {kind:'dot',coeff:.06,damageType:'fire',tag:'burn',durationMs:4000,tickMs:2000},
+        ],true),
       ],
       phases:[
         v2Phase('SOLAR_V2_PHASE_70','Solar Ascendance',.70,'self',[{kind:'shield',flat:ward(boss,.04)}]),
@@ -37,10 +39,6 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
       id:boss.id,name:'The Veiled Sphinx',
       abilities:[
         cast('SPHINX_V2_MIRAGE','Mirage Veil',23000,650,74,'self',[{kind:'shield',flat:ward(boss,.035)}]),
-        cast('SPHINX_V2_RIDDLE','Sphinx Riddle',18000,1250,90,'current_target',[
-          {kind:'damage',coeff:.70,damageType:'arcane'},
-          {kind:'debuff',tag:'damage_done',value:-.07,durationMs:5000},
-        ],true),
       ],
       phases:[
         v2Phase('SPHINX_V2_PHASE_70','Three Reflections',.70,'self',[{kind:'shield',flat:ward(boss,.03)}]),
@@ -52,9 +50,8 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
     case 'BOSS_EXP_BELLBEAST':return{
       id:boss.id,name:'The Bellbeast of Shiverlake',
       abilities:[
-        cast('BELLBEAST_V2_FROST_HIDE','Rimeplate Hide',24500,650,73,'self',[{kind:'shield',flat:ward(boss,.035)}]),
         cast('BELLBEAST_V2_SHATTER','Glacial Shatter',20000,2000,92,'current_target',[
-          {kind:'damage',coeff:1.38,damageType:'ice'},
+          {kind:'damage',coeff:1.30,damageType:'ice',executeBelowHpPct:.40,executeBonus:.15},
         ],true),
       ],
       phases:[
@@ -72,9 +69,6 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
           {kind:'damage',coeff:.56,damageType:'ice'},
           {kind:'debuff',tag:'damage_done',value:-.07,durationMs:4500},
         ],true),
-        cast('CANTOR_V2_RESONANCE','Resonance Ward',25000,600,72,'self',[
-          {kind:'shield',flat:ward(boss,.03)},
-        ]),
       ],
       phases:[
         v2Phase('CANTOR_V2_PHASE_70','Broken Harmony',.70,'all_enemies',[

@@ -17,13 +17,13 @@ assert.equal(Object.keys(ENEMY_V2_TRAITS).length,18,'the entire planned trait ca
 assert.equal(Object.values(ENEMY_V2_TRAITS).filter(trait=>trait.implemented).length,9,'only engine-backed traits are eligible');
 
 const disabled=prepareEnemyV2([enemy]);
-assert.strictEqual(disabled.enemies[0],enemy,'legacy rules must be a strict no-op');
+assert.equal(disabled.enemies[0],enemy,'legacy rules must be a strict no-op');
 assert.deepEqual(disabled.preview,[]);
 const t1=prepareEnemyV2([enemy],{...options,equipmentTier:1});
-assert.strictEqual(t1.enemies[0],enemy,'Tier 1 encounters cannot receive extra traits');
+assert.equal(t1.enemies[0],enemy,'Tier 1 encounters cannot receive extra traits');
 const boss={...enemy,boss:true};
-assert.strictEqual(prepareEnemyV2([boss],{...options,equipmentTier:5}).enemies[0],boss,'bosses retain handcrafted kits');
-assert.strictEqual(prepareEnemyV2([{...enemy,tags:[]}],options).preview.length,0,'unknown enemy families remain unchanged');
+assert.equal(prepareEnemyV2([boss],{...options,equipmentTier:5}).enemies[0],boss,'bosses retain handcrafted kits');
+assert.equal(prepareEnemyV2([{...enemy,tags:[]}],options).preview.length,0,'unknown enemy families remain unchanged');
 assert.throws(()=>prepareEnemyV2([enemy],{...options,serverSeed:''}),/server_seed/);
 
 const repeated1=prepareEnemyV2([enemy],options);

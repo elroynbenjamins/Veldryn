@@ -68,6 +68,32 @@ begin
  perform pg_temp.assert_social(
   (select count(*)=2 from public.character_profile_showcases_v1 where account_id=owner_id),
   'two independently stored showcases');
+ -- Distinct skill inventories for active and inactive heroes.
+ insert into public.online_game_states(account_id,character_id,state) values(
+  owner_id,c1,
+  jsonb_build_object(
+   'character',jsonb_build_object('id',c1,'name','Warden One'),
+   'skills',jsonb_build_array(jsonb_build_object('skillId','mining','level',10)),
+   'otherCharacters',jsonb_build_array(
+    jsonb_build_object('character',jsonb_build_object('id',c2,'name','Shade Two'),
+     'skills',jsonb_build_array(jsonb_build_object('skillId','fishing','level',10))),
+    jsonb_build_object('character',jsonb_build_object('id',c3,'name','Healer Three'),
+     'skills',jsonb_build_array(jsonb_build_object('skillId','woodcutting','level',10)))),
+   'account',jsonb_build_object('unlockedCombatCompanionIds','[]'::jsonb)));
+ perform public.profile_character_showcase_update_v2(c3,'woodcutting',null,
+  '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+ perform pg_temp.assert_social(
+  (select favorite_skill_id='woodcutting' from public.character_profile_showcases_v1
+   where character_id=c3),
+  'inactive hero can save own skill');
+ begin
+  perform public.profile_character_showcase_update_v2(c3,'mining',null,
+   '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+  raise exception 'expected cross-hero skill rejected';
+ exception when others then
+  if sqlerrm not like '%SKILL_NOT_AVAILABLE%' then raise;end if;
+ end;
+
  -- The legacy profile save used to switch active gameplay characters: no longer allowed.
  perform pg_temp.assert_social(
   (select active_character_id=c2 from public.player_profiles where account_id=owner_id) is false,

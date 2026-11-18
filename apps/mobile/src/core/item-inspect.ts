@@ -21,7 +21,7 @@ import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 import {weaponBonusLine} from './weapon-bonus-rolls';
 
-export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
+export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'dismantling'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
 export interface ItemRecipeUse{recipeId:string;name:string;outputItemId:string;outputName:string;skill:string;level:number;quantity:number;isRecipeUnlock:boolean;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{

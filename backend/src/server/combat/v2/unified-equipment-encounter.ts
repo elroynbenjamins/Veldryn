@@ -61,6 +61,11 @@ function compileEquippedActor(
 ):{actor:CombatantDefinition;evidence:EquipmentEncounterEvidenceV2}{
  if(runtime.actorId!==actor.id||!runtime.characterId||build.actor!==actor)
    throw Error('combat_v2_equipment_actor_not_verified');
+ // Legacy gems and alchemy must not disappear silently. Their full 2.0
+ // source-owned adapters are required before enabling this encounter.
+ if((actor.effectGems?.length??0)>0||actor.alchemyModifiers)
+   throw Error('combat_v2_legacy_modifiers_require_migration');
+
  // Every selected instance must have a corroborating source ledger row and
  // stored affix state. Banked and other-character instances never count.
  const requested=build.selected.equipment;
@@ -116,6 +121,11 @@ export function simulateUnifiedEquipmentCombatV2(
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled)
   return {combat:simulateCombat(input),enemyMechanicLabels:[],equipmentEvidence:[]};
+ // Persistent dungeon/party HP and cooldown snapshots from old combat use
+ // a different stat budget. Never reuse them with new 2.0 max HP without a
+ // verified, versioned state-conversion adapter.
+ if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0)
+   throw Error('combat_v2_persistent_state_adapter_required');
  if(builds.length!==input.players.length||runtime.length!==input.players.length)
    throw Error('combat_v2_complete_build_and_gear_snapshots_required');
  const byId=new Map<string,VerifiedSkillBuildV2>();

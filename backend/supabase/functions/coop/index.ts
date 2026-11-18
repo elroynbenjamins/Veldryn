@@ -46457,14 +46457,72 @@ function craftedRarityStatMultiplier(itemId, rarity) {
   return beforeRecentBuff + (rolled - beforeRecentBuff) * CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION;
 }
 
+// ../apps/mobile/src/core/bonus-roll-rarity.ts
+var BONUS_ROLL_RARITY_MULTIPLIER = {
+  common: 0.85,
+  uncommon: 1,
+  rare: 1.2,
+  epic: 1.35,
+  legendary: 1.45,
+  mythic: 1.5
+};
+var STEP_BPS = 10;
+function rarityAdjustedBonusRange(base, rarity) {
+  const multiplier = BONUS_ROLL_RARITY_MULTIPLIER[rarity];
+  const min = Math.max(STEP_BPS, Math.round(base[0] * multiplier / STEP_BPS) * STEP_BPS);
+  const max = Math.max(min + STEP_BPS, Math.round(base[1] * multiplier / STEP_BPS) * STEP_BPS);
+  return [min, max];
+}
+
 // ../apps/mobile/src/core/weapon-bonus-rolls.ts
-var WEAPON_BONUS_ROLL_VERSION = 2;
-var ROLE_POOL = {
+var WEAPON_BONUS_ROLL_VERSION = 5;
+var WEAPON_BONUS_LABELS = {
+  maxHp: "Max HP",
+  armor: "Armor",
+  ward: "Ward",
+  tenacity: "Tenacity",
+  critRate: "Crit Rate",
+  haste: "Haste",
+  penetration: "Penetration",
+  accuracy: "Accuracy",
+  potency: "Potency",
+  evasion: "Evasion",
+  critDamage: "Crit Damage",
+  abilityDamage: "Ability Damage",
+  healingPower: "Healing Power"
+};
+var LEGACY_ROLE_POOL = {
   Tank: ["armor", "maxHp", "ward", "tenacity"],
   Damage: ["critRate", "haste", "penetration", "accuracy"],
   Support: ["potency", "haste", "ward", "maxHp"]
 };
+var V3_ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "abilityDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var V4_ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "critRate"]
+};
 var WEAPON_BONUS_BPS_BY_BAND = {
+  2: {
+    maxHp: [100, 250],
+    armor: [80, 180],
+    ward: [30, 90],
+    tenacity: [100, 240],
+    critRate: [30, 80],
+    haste: [40, 110],
+    penetration: [50, 130],
+    accuracy: [30, 90],
+    potency: [80, 200]
+  },
   3: {
     maxHp: [200, 400],
     armor: [150, 300],
@@ -46510,20 +46568,34 @@ var WEAPON_BONUS_BPS_BY_BAND = {
     potency: [400, 650]
   }
 };
+var V3_EXTRA_BPS_BY_BAND = {
+  2: { evasion: [20, 70], critDamage: [100, 280], abilityDamage: [80, 200], healingPower: [80, 200] },
+  3: { evasion: [40, 120], critDamage: [200, 450], abilityDamage: [120, 300], healingPower: [120, 300] },
+  5: { evasion: [60, 150], critDamage: [300, 700], abilityDamage: [200, 500], healingPower: [200, 500] },
+  7: { evasion: [80, 180], critDamage: [400, 850], abilityDamage: [260, 600], healingPower: [260, 600] },
+  9: { evasion: [100, 200], critDamage: [500, 1e3], abilityDamage: [320, 700], healingPower: [320, 700] }
+};
 var V1_RANGE_BY_BAND = {
   3: [100, 300],
   5: [200, 400],
   7: [300, 500],
   9: [400, 600]
 };
-function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
-  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : void 0;
+function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION, rarity = "uncommon") {
+  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : tier === 2 ? 2 : void 0;
   if (band === void 0) return void 0;
-  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
+  const legacy = WEAPON_BONUS_BPS_BY_BAND[band][stat];
+  if (version === 1) return V1_RANGE_BY_BAND[band];
+  if (version === 2) return legacy;
+  if (version !== 3 && version !== 4 && version !== 5) return void 0;
+  if ((version === 4 || version === 5) && stat === "abilityDamage") return void 0;
+  if (version === 5 && stat === "tenacity") return void 0;
+  const baseline = legacy ?? V3_EXTRA_BPS_BY_BAND[band][stat];
+  return baseline ? rarityAdjustedBonusRange(baseline, rarity) : void 0;
 }
 var HIGH_RARITIES = ["epic", "legendary", "mythic"];
-var STEP_BPS = 10;
-function weaponBonusConfig(itemId, rarity) {
+var STEP_BPS2 = 10;
+function weaponBonusConfig(itemId, rarity, version = WEAPON_BONUS_ROLL_VERSION) {
   let item;
   try {
     item = itemDef(itemId);
@@ -46532,23 +46604,100 @@ function weaponBonusConfig(itemId, rarity) {
   }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
-  if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role2) return void 0;
-  const count = tier >= 5 || HIGH_RARITIES.includes(rarity) ? 2 : 1;
-  return { tier, role: role2, count, pool: ROLE_POOL[role2] };
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < 2 || tier > 9 || !role2) return void 0;
+  const count = tier >= 5 || tier >= 3 && HIGH_RARITIES.includes(rarity) ? 2 : 1;
+  const pool = version === 5 ? ROLE_POOL[role2] : version === 4 ? V4_ROLE_POOL[role2] : version === 3 ? V3_ROLE_POOL[role2] : LEGACY_ROLE_POOL[role2];
+  return { tier, role: role2, count, pool };
 }
 function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROLL_VERSION) {
-  const cfg = weaponBonusConfig(itemId, rarity);
+  const cfg = weaponBonusConfig(itemId, rarity, version);
   if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
   const seen = /* @__PURE__ */ new Set(), out = [];
   for (const entry2 of raw2) {
     if (!entry2 || typeof entry2 !== "object") return void 0;
     const { stat, basisPoints } = entry2;
-    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version) : void 0;
-    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS !== 0) return void 0;
+    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version, rarity) : void 0;
+    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS2 !== 0) return void 0;
     seen.add(stat);
     out.push({ stat, basisPoints });
   }
   return out;
+}
+
+// ../apps/mobile/src/core/equipment-bonus-rolls.ts
+var EQUIPMENT_BONUS_ROLL_VERSION = 4;
+var HIGH_RARITIES2 = ["epic", "legendary", "mythic"];
+var LEGACY_ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var V2_ROLE_POOL = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "abilityDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var V3_ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "critRate"]
+};
+var EXTRA_RANGES = {
+  2: { evasion: [20, 70], critDamage: [50, 160] },
+  3: { evasion: [40, 120], critDamage: [100, 300] },
+  5: { evasion: [60, 150], critDamage: [150, 400] },
+  7: { evasion: [80, 180], critDamage: [200, 450] },
+  9: { evasion: [100, 200], critDamage: [250, 500] }
+};
+var BONUS_LABELS = {
+  ...WEAPON_BONUS_LABELS
+};
+var STEP_BPS3 = 10;
+var ELIGIBLE_SLOTS = /* @__PURE__ */ new Set(["helmet", "chest", "gloves", "legs", "boots", "offhand", "cape", "amulet", "ring"]);
+function bandForTier(tier) {
+  return tier >= 9 ? 9 : tier >= 7 ? 7 : tier >= 5 ? 5 : tier >= 3 ? 3 : tier === 2 ? 2 : void 0;
+}
+function equipmentBonusConfig(itemId, rarity, version = EQUIPMENT_BONUS_ROLL_VERSION) {
+  const item = itemDef(itemId);
+  const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
+  const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
+  if (item.type !== "gear" || !item.slot || !ELIGIBLE_SLOTS.has(item.slot) || tier < 2 || tier > 9 || !role2) return void 0;
+  const count = tier >= 5 || tier >= 3 && HIGH_RARITIES2.includes(rarity) ? 2 : 1;
+  const pool = version === 1 ? LEGACY_ROLE_POOL2[role2] : version === 2 ? V2_ROLE_POOL[role2] : version === 3 ? V3_ROLE_POOL2[role2] : ROLE_POOL2[role2];
+  return { tier, role: role2, slot: item.slot, count, pool };
+}
+function equipmentBonusRange(tier, stat, slot, rarity = "uncommon", version = EQUIPMENT_BONUS_ROLL_VERSION) {
+  const band = bandForTier(tier);
+  if (band === void 0 || !ELIGIBLE_SLOTS.has(slot) || version !== 1 && version !== 2 && version !== 3 && version !== 4) return void 0;
+  if ((version === 3 || version === 4) && stat === "abilityDamage") return void 0;
+  if (version === 4 && stat === "tenacity") return void 0;
+  const base = version === 1 ? stat === "evasion" || stat === "critDamage" ? EXTRA_RANGES[band][stat] : weaponBonusRange(tier, stat, 2) : weaponBonusRange(tier, stat, 3, "uncommon");
+  if (!base) return void 0;
+  const factor = slot === "offhand" ? 0.8 : slot === "amulet" || slot === "ring" ? 0.7 : 0.55;
+  const min = Math.max(STEP_BPS3, Math.ceil(base[0] * factor / STEP_BPS3) * STEP_BPS3);
+  const max = Math.max(min + STEP_BPS3, Math.floor(base[1] * factor / STEP_BPS3) * STEP_BPS3);
+  return version === 1 ? [min, max] : rarityAdjustedBonusRange([min, max], rarity);
+}
+function normalizeEquipmentBonuses(itemId, rarity, raw2, version) {
+  if (version !== 1 && version !== 2 && version !== 3 && version !== 4) return void 0;
+  const cfg = equipmentBonusConfig(itemId, rarity, version);
+  if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
+  const seen = /* @__PURE__ */ new Set(), result = [];
+  for (const entry2 of raw2) {
+    if (!entry2 || typeof entry2 !== "object") return void 0;
+    const { stat, basisPoints } = entry2;
+    if (!stat || !cfg.pool.includes(stat) || seen.has(stat)) return void 0;
+    const range = equipmentBonusRange(cfg.tier, stat, cfg.slot, rarity, version);
+    if (!range || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS3 !== 0) return void 0;
+    seen.add(stat);
+    result.push({ stat, basisPoints });
+  }
+  return result;
 }
 
 // ../apps/mobile/src/core/crafted-gear-instances.ts
@@ -46576,7 +46725,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
-      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 || row.weaponBonusRollVersion === 4 || row.weaponBonusRollVersion === 5 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,
@@ -46588,6 +46737,8 @@ function normalizeCraftedGearInstances(raw2) {
         statRoll: clampStatRoll(row.statRoll),
         weaponBonuses: version ? normalizeWeaponBonuses(item.id, rarity, row.weaponBonuses, version) : void 0,
         weaponBonusRollVersion: version,
+        equipmentBonuses: normalizeEquipmentBonuses(item.id, rarity, row.equipmentBonuses, row.equipmentBonusRollVersion),
+        equipmentBonusRollVersion: row.equipmentBonusRollVersion === 1 || row.equipmentBonusRollVersion === 2 || row.equipmentBonusRollVersion === 3 || row.equipmentBonusRollVersion === 4 ? row.equipmentBonusRollVersion : void 0,
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
@@ -46869,7 +47020,9 @@ var EMPTY_STATS = {
   potency: 0,
   critRate: 0,
   critDamage: 0,
-  evasion: 0
+  evasion: 0,
+  abilityDamage: 0,
+  healingPower: 0
 };
 var STAT_KEY_BY_LABEL = {
   "max hp": "maxHp",
@@ -46900,6 +47053,21 @@ function equippedWeaponBonusStats(state) {
   if (!copy?.weaponBonuses?.length) return {};
   const stats6 = {};
   for (const bonus of copy.weaponBonuses) stats6[bonus.stat] = (stats6[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  return stats6;
+}
+function equippedEquipmentBonusStats(state) {
+  const character = state.character;
+  if (!character) return {};
+  const stats6 = {};
+  for (const [slot, itemId] of Object.entries(character.equipment)) {
+    if (!itemId || slot === "weapon") continue;
+    const instanceId = character.equipmentInstanceIds?.[slot];
+    if (!instanceId) continue;
+    const raw2 = state.account.craftedGearInstances?.find((row) => row?.id === instanceId && row?.itemId === itemId);
+    const copy = raw2 ? normalizeCraftedGearInstances([raw2])[0] : void 0;
+    if (!copy?.equipmentBonuses?.length) continue;
+    for (const bonus of copy.equipmentBonuses) stats6[bonus.stat] = (stats6[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  }
   return stats6;
 }
 function parseEquipmentSetStaticBonus(text3) {
@@ -46960,21 +47128,25 @@ function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
   const weapon = equippedWeaponBonusStats(state);
+  const equipment = equippedEquipmentBonusStats(state);
+  const rolled = (stat) => (weapon[stat] ?? 0) + (equipment[stat] ?? 0);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
-    maxHp: multiplied(sets.maxHp, p.maxHp) + (weapon.maxHp ?? 0),
-    armor: multiplied(sets.armor, p.armor) + (weapon.armor ?? 0),
-    ward: multiplied(sets.ward, p.ward) + (weapon.ward ?? 0),
-    tenacity: multiplied(sets.tenacity, p.tenacity) + (weapon.tenacity ?? 0),
-    haste: multiplied(sets.haste, p.haste) + (weapon.haste ?? 0),
-    power: multiplied(sets.power, p.power),
-    accuracy: sets.accuracy + (pp.accuracy ?? 0) + (weapon.accuracy ?? 0),
-    penetration: sets.penetration + (pp.penetration ?? 0) + (weapon.penetration ?? 0),
-    potency: multiplied(sets.potency, p.potency) + (weapon.potency ?? 0),
-    critRate: sets.critRate + (pp.critRate ?? 0) + (weapon.critRate ?? 0),
-    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0)
+    maxHp: multiplied(sets.maxHp, p.maxHp) + rolled("maxHp"),
+    armor: multiplied(sets.armor, p.armor) + rolled("armor"),
+    ward: multiplied(sets.ward, p.ward) + rolled("ward"),
+    tenacity: multiplied(sets.tenacity, p.tenacity) + rolled("tenacity"),
+    haste: multiplied(sets.haste, p.haste) + rolled("haste"),
+    power: multiplied(sets.power, p.power) + rolled("power"),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0) + rolled("accuracy"),
+    penetration: sets.penetration + (pp.penetration ?? 0) + rolled("penetration"),
+    potency: multiplied(sets.potency, p.potency) + rolled("potency"),
+    critRate: sets.critRate + (pp.critRate ?? 0) + rolled("critRate"),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5 + rolled("critDamage"),
+    evasion: sets.evasion + (pp.evasion ?? 0) + rolled("evasion"),
+    abilityDamage: rolled("abilityDamage"),
+    healingPower: rolled("healingPower")
   };
 }
 
@@ -47107,7 +47279,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1, abilityDamage: 0, healingPower: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -47161,7 +47333,9 @@ function effectiveStats(state) {
     tenacity: setStats.tenacity,
     potency: setStats.potency + mastery.potency,
     penetration: setStats.penetration + mastery.penetration,
-    classHealing: mastery.classHealing
+    classHealing: mastery.classHealing * (1 + setStats.healingPower),
+    abilityDamage: setStats.abilityDamage,
+    healingPower: setStats.healingPower
   };
 }
 
@@ -47863,7 +48037,9 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
       ...combatCompanion ? { combatCompanion: structuredClone(combatCompanion) } : {},
       maxHp: kit.stats.maxHp * actual.hp / reference.hp * levelScale,
       attackPower: kit.stats.attackPower * actual.attack / reference.attack * levelScale * (1 + bonus.power),
-      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale * (1 + bonus.potency),
+      // The bonus is derived from the exact saved equipped copy. Apply only to
+      // dungeon healing output; attack Power, consumables and basic strikes stay separate.
+      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale * (1 + bonus.potency) * (1 + bonus.healingPower),
       defense: kit.stats.defense * actual.defense / reference.defense * levelScale,
       accuracy: kit.stats.accuracy * actual.accuracy / reference.accuracy * levelScale,
       evasion: kit.stats.evasion * actual.evasion / reference.evasion * levelScale,

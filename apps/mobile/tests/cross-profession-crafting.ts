@@ -14,6 +14,26 @@ const ids=new Set(CROSS_PROFESSION_COMPONENT_ITEMS.map(item=>item.id));
 equal(ids.size,6,'Cross-profession item IDs must be unique');
 equal(CROSS_PROFESSION_COMPONENT_RECIPES.length,8,'Six core recipes plus two optional recycling routes must be registered');
 
+const strapStandard=CROSS_PROFESSION_COMPONENT_RECIPES.find(recipe=>recipe.id==='STITCH_REINFORCED_STRAPS')!;
+const strapRecycled=CROSS_PROFESSION_COMPONENT_RECIPES.find(recipe=>recipe.id==='STITCH_RECYCLED_REINFORCED_STRAPS')!;
+equal(strapStandard.inputs.map(input=>input.itemId+':'+input.quantity).join(','),'SUNSCALE:3,DUNEWOOD:4','Standard straps must use only Sunscale and Dunewood');
+equal(strapRecycled.inputs.map(input=>input.itemId+':'+input.quantity).join(','),'TORN_OATHCLOTH:2,SUNSCALE:2,DUNEWOOD:2','Recycled straps must use Torn Oathcloth as their alternate source');
+
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const recipeCardSource=fs.readFileSync('src/components/RecipeCard.tsx','utf8');
+const craftingDetailSource=fs.readFileSync('src/i18n/crafting-details.ts','utf8');
+for(const [recipeId,label] of [
+ ['STITCH_REINFORCED_STRAPS','Standard recipe'],
+ ['STITCH_RECYCLED_REINFORCED_STRAPS','Recycled recipe'],
+ ['FORGE_ARMOR_RIVETS','Standard recipe'],
+ ['FORGE_RECLAIMED_ARMOR_RIVETS','Reclaimed recipe'],
+] as const){
+ ok(recipeCardSource.includes("recipe.id==='"+recipeId+"'"),'Component route must have a distinct card label: '+recipeId);
+ ok(craftingDetailSource.includes("'"+label+"':["),'Component route label must be localized: '+label);
+}
+ok(recipeCardSource.includes('componentRoute?<Text style={s.componentRoute}>{ct(componentRoute)}</Text>'),'The crafting card must render the route label next to each shared output');
+
+
 for(const item of CROSS_PROFESSION_COMPONENT_ITEMS){
  equal(itemDef(item.id).type,'material','Every component must be a registered material');
  ok(marketCatalogCandidate(item.id),'Shared components must be eligible for future player trading');

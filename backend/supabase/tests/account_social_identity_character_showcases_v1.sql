@@ -35,6 +35,22 @@ begin
  exception when others then
   if sqlerrm not like '%SOCIAL_NAME_COOLDOWN%' then raise;end if;
  end;
+ -- Direct row writes must not bypass the validated rename cooldown.
+ perform set_config('veldryn.social_name_write','',true);
+ begin
+  update public.player_profiles set social_name_changed_at=now()-interval '31 days'
+    where account_id=owner_id;
+  raise exception 'expected direct timestamp write denied';
+ exception when others then
+  if sqlerrm not like '%SOCIAL_NAME_RPC_REQUIRED%' then raise;end if;
+ end;
+ begin
+  update public.player_profiles set social_name='Bypass'
+    where account_id=owner_id;
+  raise exception 'expected direct rename denied';
+ exception when others then
+  if sqlerrm not like '%SOCIAL_NAME_RPC_REQUIRED%' then raise;end if;
+ end;
  perform set_config('request.jwt.claim.sub',viewer_id::text,true);
  begin
   perform public.set_account_social_name_v1('Realm Hero');
@@ -60,6 +76,12 @@ begin
  perform pg_temp.assert_social(row#>>'{character,name}'='Warden One','first character name');
  perform pg_temp.assert_social(row2#>>'{character,name}'='Shade Two','second character name');
  perform pg_temp.assert_social(jsonb_array_length(row->'characterChoices')=3,'three-character gallery');
+ begin
+  perform public.character_showcase_self_v1(c1);
+  raise exception 'expected cross-account showcase lookup denied';
+ exception when others then
+  if sqlerrm not like '%CHARACTER_NOT_OWNED%' then raise;end if;
+ end;
  perform pg_temp.assert_social(row->>'favoriteSkillId'='mining'
     and row2->>'favoriteSkillId' is null,'showcase preferences stay separate');
  row:=public.profile_character_gear_v1(owner_id,c2);

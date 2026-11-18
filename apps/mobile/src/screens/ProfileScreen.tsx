@@ -1,7 +1,7 @@
 import {profileT,profileText,profileBadge,profileRecordValue} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialIdentityT} from '../i18n/social-identity';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
@@ -37,18 +37,36 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const c=state.character,account=state.account,{session}=useAuthSession();
  const [publicSelf,setPublicSelf]=useState<PublicPlayerProfileV43|null>(null),[loadingPublic,setLoadingPublic]=useState(false),[publicError,setPublicError]=useState('');
+ const profileRequest=useRef(0);
  const summary=useMemo(()=>localProfileSummary(state),[state]);
- const refreshPublic=useCallback(async()=>{if(!onlineConfigured||!session){setPublicSelf(null);setPublicError('');return;}setLoadingPublic(true);setPublicError('');try{setPublicSelf(await publicPlayerProfileV43(session.user.id));}catch(error){setPublicSelf(null);setPublicError('Online profile could not refresh');}finally{setLoadingPublic(false)}},[session?.user.id]);
- useEffect(()=>{void refreshPublic()},[refreshPublic]);
+ const refreshPublic=useCallback(async()=>{
+  const version=++profileRequest.current,accountId=session?.user.id;
+  if(!onlineConfigured||!accountId){setPublicSelf(null);setPublicError('');return;}
+  setLoadingPublic(true);setPublicError('');
+  try{
+   const profile=await publicPlayerProfileV43(accountId);
+   if(profileRequest.current===version)setPublicSelf(profile);
+  }catch{
+   if(profileRequest.current===version){setPublicSelf(null);setPublicError('Online profile could not refresh');}
+  }finally{
+   if(profileRequest.current===version)setLoadingPublic(false);
+  }
+ },[session?.user.id]);
+ useEffect(()=>{void refreshPublic();return()=>{profileRequest.current++}},[refreshPublic]);
  const selectPublicHero=useCallback(async(characterId:string)=>{
   if(!session||!publicSelf||publicSelf.character.id===characterId)return;
+  const version=++profileRequest.current;
   setLoadingPublic(true);setPublicError('');
   try{
    const chosen=await publicPlayerProfileV43(session.user.id,characterId);
+   if(profileRequest.current!==version)return;
    if(chosen)setPublicSelf(chosen);
    else setPublicError('This character profile is unavailable.');
-  }catch{setPublicError('Unable to load character profile.')}
-  finally{setLoadingPublic(false)}
+  }catch{
+   if(profileRequest.current===version)setPublicError('Unable to load character profile.');
+  }finally{
+   if(profileRequest.current===version)setLoadingPublic(false);
+  }
  },[session?.user.id,publicSelf]);
  if(!c)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={s.heading}>{profileT(language,"Profile")}</Text><Panel><Text style={s.copy}>{profileT(language,"Create a character to build your profile.")}</Text></Panel></ScrollView>;
 
@@ -105,7 +123,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
 
   <View style={s.highlights}>
    <View style={s.sectionHead}><Text style={s.section}>{profileT(language,"FAVORITES")}</Text><Text style={s.sectionMeta}>{profileT(language,"Showcased by player")}</Text></View>
-   <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?profileT(language,'Highest current skill · Lv. {level}',{level:summary.highestSkill.level}):favoriteSkillId?profileT(language,'Showcased by player'):undefined} favoriteCompanionId={favoriteCompanionId}/>
+   <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={!publicSelf&&summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?profileT(language,'Highest current skill · Lv. {level}',{level:summary.highestSkill.level}):favoriteSkillId?profileT(language,'Showcased by player'):undefined} favoriteCompanionId={favoriteCompanionId}/>
   </View>
 
   <ProfileEquippedGearShowcase key={publicSelf?publicSelf.accountId+':'+publicSelf.character.id:c.id} gear={displayedGear} reduceMotion={state.settings.reduceMotion}/>

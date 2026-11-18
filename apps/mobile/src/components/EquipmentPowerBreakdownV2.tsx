@@ -9,7 +9,7 @@ import React from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
-import {radii,spacing,typography} from '../theme/theme';
+import {spacing,typography} from '../theme/theme';
 export interface GearBaseRowV2 {
  readonly instanceId:string;readonly itemId:string;readonly tier:string;
  readonly rarity:string;readonly quality:number;

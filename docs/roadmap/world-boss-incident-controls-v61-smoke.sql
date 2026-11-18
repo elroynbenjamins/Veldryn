@@ -132,6 +132,26 @@ BEGIN
   IF SQLERRM<>'WB61_AUDIT_IMMUTABLE' THEN RAISE; END IF;
  END;
 
+ -- Aggregate operator view must expose the live event's operational
+ -- health without returning any account or replay identities.
+ IF NOT EXISTS(SELECT 1 FROM private.world_boss_ops_status_v61
+  WHERE event_id=e AND new_raids_open=false
+    AND new_donations_open=true AND new_claims_open=true
+    AND controls_revision=3 AND reserved_attempts=0
+    AND committed_attempts=0 AND voided_attempts=0
+    AND committed_without_replay_proof=0
+    AND accepted_donations=0 AND accepted_claims=0
+    AND reward_ledger_rows=0)
+ THEN RAISE EXCEPTION 'WB61_INCORRECT_OPERATOR_STATUS'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_attribute
+  WHERE attrelid='private.world_boss_ops_status_v61'::regclass
+    AND attnum>0 AND NOT attisdropped
+    AND (attname LIKE '%account%' OR attname LIKE '%character%'
+      OR attname LIKE '%replay_key%'))
+ THEN RAISE EXCEPTION 'WB61_OPERATOR_STATUS_LEAKS_IDENTITY'; END IF;
+ IF has_table_privilege('service_role','private.world_boss_ops_status_v61','SELECT')
+ THEN RAISE EXCEPTION 'WB61_OPERATOR_STATUS_PUBLIC_GRANT'; END IF;
+
  IF has_table_privilege('service_role','private.world_boss_ops_v61','UPDATE')
   OR has_table_privilege('authenticated','private.world_boss_ops_v61','UPDATE')
   OR has_table_privilege('anon','private.world_boss_ops_v61','UPDATE')

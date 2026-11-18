@@ -14,6 +14,7 @@ import {RESOURCE_BY_CLASS_V2} from './resource-runtime';
 import {extraAbilityDefinitionV2,extraVariantRecipesV2} from './extra-active-skills';
 import {applyPassiveAbilityRulesV2,passiveAbilityRuleIdsV2} from './passive-ability-rules';
 import {REACTIVE_PASSIVES_V2} from './reactive-passive-runtime';
+import {applySpecializationStyleV2} from './specialization-styles';
 import type {AbilityDefinition,AbilityEffect,CombatInput,CombatResult,CombatantDefinition} from '../types';
 import {
   CLASS_ROLES_V2,validateBuildV2,buildMayAffectCombatV2,
@@ -257,8 +258,10 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
     if(index<0||index>=recipes.length)throw Error('combat_v2_variant_effect_unimplemented');
     const base=actor.abilities.find(a=>a.name===record.name)??extraAbilityDefinitionV2(record.name,verified.classId);
     if(!base)throw Error('combat_v2_missing_authoritative_technique:'+record.name);
-    const upgraded=applyPassiveAbilityRulesV2(verified.classId,record.name,
-      applyRecipe(base,recipes[index],mods),selected.talentRanks);
+    const upgraded=applySpecializationStyleV2(verified.classId,
+      selected.specializationId!,record.name,
+      applyPassiveAbilityRulesV2(verified.classId,record.name,
+        applyRecipe(base,recipes[index],mods),selected.talentRanks));
     // Every class has an L1 combat loop: one basic spender works even before
     // specialization, variants or capstones unlock. Strong finishers stay at
     // their original later level gates. All spends occur BEFORE cast effects.

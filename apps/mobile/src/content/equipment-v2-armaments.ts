@@ -8,7 +8,7 @@ import {EQUIPMENT_V2_CLASS_WEAPONS} from './equipment-v2-catalog';
  */
 export interface V2Armament{
  id:string;name:string;tier:EquipmentV2Tier;classId:ClassId;slot:'weapon'|'offhand';
- profile:EquipmentV2Profile;hands:EquipmentV2WeaponHands;material:'steel'|'leather'|'cloth';
+ profile:EquipmentV2Profile;hands?:EquipmentV2WeaponHands;material:'steel'|'leather'|'cloth';
 }
 export interface V2ClassArmamentSpec{
  classId:ClassId;weaponName:string;weaponProfile:EquipmentV2Profile;hands:EquipmentV2WeaponHands;
@@ -38,7 +38,7 @@ export const EQUIPMENT_V2_ARMAMENTS:readonly V2Armament[]=
   const weapon:V2Armament={...base,slot:'weapon',profile:spec.weaponProfile,hands:spec.hands,
    id:'EQ2_WEAPON_T'+tier+'_'+spec.classId,name:TIER_NAMES[tier]+' '+spec.weaponName};
   if(!spec.offhandName||!spec.offhandProfile)return [weapon];
-  const offhand:V2Armament={...base,slot:'offhand',profile:spec.offhandProfile,hands:'one',
+  const offhand:V2Armament={...base,slot:'offhand',profile:spec.offhandProfile,
    id:'EQ2_OFFHAND_T'+tier+'_'+spec.classId,name:TIER_NAMES[tier]+' '+spec.offhandName};
   return [weapon,offhand];
  }));
@@ -49,7 +49,7 @@ export type V2CraftableArmament=V2Armament & {role:'tank'|'damage'|'support';cla
 const V2_WEAPON_ROLE_BY_CLASS:Readonly<Record<ClassId,'tank'|'damage'|'support'>>={
  IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
  WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
- DAWNKEEPER:'support',STONECALLER:'damage',
+ DAWNKEEPER:'support',STONECALLER:'support',
 };
 export const EQUIPMENT_V2_CRAFTABLE_ARMAMENTS:readonly V2CraftableArmament[]=
  EQUIPMENT_V2_ARMAMENTS.map(item=>({
@@ -57,7 +57,7 @@ export const EQUIPMENT_V2_CRAFTABLE_ARMAMENTS:readonly V2CraftableArmament[]=
  }));
 export function equipmentV2ArmamentStats(item:V2Armament,quality=50,rarityMultiplier=1){
  return item.slot==='weapon'
-  ?equipmentV2PreviewArmamentStats(item.tier,item.profile,item.hands,quality,rarityMultiplier)
+  ?equipmentV2PreviewArmamentStats(item.tier,item.profile,item.hands??'one',quality,rarityMultiplier)
   :equipmentV2PreviewBaseStats(item.tier,'offhand',item.profile,quality,rarityMultiplier);
 }
 export function equipmentV2ClassLoadoutArmaments(tier:EquipmentV2Tier,classId:ClassId){

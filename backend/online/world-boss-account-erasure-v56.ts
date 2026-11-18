@@ -73,6 +73,22 @@ const stages:readonly WorldBossErasureStageV56[]=[
 export async function runWorldBossErasureV56(
  input:{ticket:string},deps:WorldBossErasureDepsV56,
 ):Promise<WorldBossErasureOutcomeV56>{
+ // This is the ONLY candidate production entry point. Remain fail-closed
+ // even if a future developer accidentally imports and calls this module.
+ if(!WORLD_BOSS_V56_ERASURE_LIVE)
+  throw Error('world_boss_v56_runtime_disabled');
+ return simulateWorldBossErasureV56ForTests(input,deps);
+}
+
+/**
+ * TEST-ONLY executor. This is deliberately separate from the always-disabled
+ * runtime entry point so all regression scenarios can run against injected
+ * *synthetic* adapters without authorizing real deletion.
+ * Do not import from routes, workers, Supabase Edge or production services.
+ */
+export async function simulateWorldBossErasureV56ForTests(
+ input:{ticket:string},deps:WorldBossErasureDepsV56,
+):Promise<WorldBossErasureOutcomeV56>{
  if(!deps||typeof input?.ticket!=='string'||
   input.ticket.length<24||input.ticket.length>4096||
   typeof deps.authorizeTicket!=='function'||

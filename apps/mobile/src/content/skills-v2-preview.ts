@@ -22,6 +22,13 @@ const RESOURCES:Readonly<Record<ClassId,{name:string;cap:number}>>={
  KNIFE_DANCER:{name:'Rhythm',cap:5},DAWNKEEPER:{name:'Radiance',cap:5},
  STONECALLER:{name:'Resonance',cap:5},
 };
+const BRANCHES:Readonly<Record<ClassId,readonly [string,string,string]>>={
+ IRONWARDEN:['Bulwark','Command','Retribution'],BASTION:['Foundation','Shelter','Control'],
+ DREADGUARD:['Blood','Dread','Dominion'],WAYFINDER:['Precision','Momentum','Survival'],
+ RAVAGER:['Execution','Fury','Survival'],HEXWEAVER:['Affliction','Void','Veil'],
+ KNIFE_DANCER:['Tempo','Precision','Shadows'],DAWNKEEPER:['Restoration','Sanctity','Radiance'],
+ STONECALLER:['Geomancy','Resonance','Stormcraft'],
+};
 export function skillsV2PreviewFor(classId:ClassId):ClassV2Preview{
  const name=SKILLS_V2_CLASS_NAMES[classId],c=SKILLS_V2_DESIGN_CATALOGUE[name as keyof typeof SKILLS_V2_DESIGN_CATALOGUE];
  const resource=RESOURCES[classId];
@@ -29,6 +36,6 @@ export function skillsV2PreviewFor(classId:ClassId):ClassV2Preview{
   name,resource:resource.name,cap:resource.cap,
   specializations:c.s.map(([spec,capstone])=>({name:spec,capstone})),
   skills:c.a.map(([skill,cooldownSeconds,variants])=>({name:skill,cooldownSeconds,variants})),
-  branches:c.p.map((nodes,index)=>({name:(['Core','Mastery','Utility'][index]),nodes})),
+  branches:c.p.map((nodes,index)=>({name:BRANCHES[classId][index],nodes})),
  };
 }

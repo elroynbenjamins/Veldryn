@@ -3,6 +3,7 @@ import {assert} from './test-assert';
 import {handleWorldBossActionV62,WORLD_BOSS_V62_ACTION_HTTP_LIVE,
  type WorldBossActionDepsV62} from '../../../backend/online/world-boss-current-action-v62';
 import type {WorldBossOverviewRowV41} from '../../../backend/online/world-boss-overview-v41';
+import {createWorldBossGateAttestationPgV63,WORLD_BOSS_V63_GATE_ATTESTATION_LIVE} from '../../../backend/online/world-boss-gate-attestation-v63';
 
 const DAY=86400000,START=Date.UTC(2026,10,16),NOW=START+DAY;
 const EVENT='30000000-0000-4000-8000-000000000062';
@@ -25,8 +26,9 @@ const row=():WorldBossOverviewRowV41=>({
   frozen:false,snapshot:null},
  rewards:{balance:5,walletRevision:1,claimedThisEvent:5,eventCap:100},
 });
-let claimCalls=0,donationCalls=0,priorCalls=0;
+let claimCalls=0,donationCalls=0,priorCalls=0,gateChecks=0;
 const base:WorldBossActionDepsV62={
+ ops:{assertGates:async eventId=>{gateChecks++;assert.equal(eventId,EVENT);}},
  current:{
   authenticate:async t=>t===TOKEN?OWNER:null,
   accountPrivacy:{allowRead:async who=>who===OWNER},
@@ -97,6 +99,26 @@ const mk=(body:unknown,authorization:string|null='Bearer '+TOKEN)=>({
 });
 async function main(){
  assert.equal(WORLD_BOSS_V62_ACTION_HTTP_LIVE,false);
+ assert.equal(WORLD_BOSS_V63_GATE_ATTESTATION_LIVE,false);
+ const privateGate=createWorldBossGateAttestationPgV63({
+  async query<T extends object>(sql:string,params:readonly unknown[]){
+   assert.equal(sql,'SELECT private.world_boss_v63_assert_gates($1::uuid) AS ok');
+   assert.deepEqual(params,[EVENT]);
+   return {rows:[{ok:true} as unknown as T]};
+  },
+ });
+ await privateGate.assertGates(EVENT);
+ await assert.rejects(async()=>privateGate.assertGates('malicious event'));
+ await assert.rejects(async()=>createWorldBossGateAttestationPgV63({
+  async query<T extends object>(){
+   return {rows:[{ok:false} as unknown as T]};
+  },
+ }).assertGates(EVENT));
+ await assert.rejects(async()=>createWorldBossGateAttestationPgV63({
+  async query<T extends object>(){
+   return {rows:[] as T[]};
+  },
+ }).assertGates(EVENT));
  const forge={action:'claim',requestId,eventId:EVENT,accountId:OTHER};
  const denied=await handleWorldBossActionV62(mk(forge),base);
  assert.equal(denied.status,400);
@@ -134,6 +156,19 @@ async function main(){
  })).status,503);
  assert.equal(claimCalls,0);
 
+ // A missing, incorrectly configured or disabled V61 operator attestation
+ // must never route a player write. The SQL INSERT triggers remain the
+ // final authority; this startup check protects against accidental mounting.
+ assert.equal((await handleWorldBossActionV62(
+  mk({action:'claim',requestId}),{
+   ...base,ops:undefined,
+  } as unknown as WorldBossActionDepsV62)).status,503);
+ assert.equal((await handleWorldBossActionV62(
+  mk({action:'claim',requestId}),{
+   ...base,ops:{assertGates:async()=>{throw Error('WB63_MISSING_OPERATOR_CONTROLS');}},
+  })).status,503);
+ assert.equal(claimCalls,0);
+
  const claim=await handleWorldBossActionV62(
   mk({action:'claim',requestId}),base);
  assert.equal(claim.status,200);
@@ -151,6 +186,7 @@ async function main(){
   mk({action:'raid',requestId,order:'steady_assault'}),base);
  assert.equal(retry.status,200);
  assert.equal(priorCalls,1);
+ assert.ok(gateChecks>=3,'real actions must attest installed controls');
 
  // A token that changes principal between the status read and the action
  // must not reach a wallet or donation write.

@@ -10,6 +10,7 @@ on:
       - 'apps/mobile/src/components/SmithingCollection.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
       - 'apps/mobile/tests/weapon-bonus-rolls.ts'
+      - 'apps/mobile/tests/equipment-bonus-rolls.ts'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'
   workflow_dispatch:
@@ -36,7 +37,7 @@ jobs:
         run: node node_modules/typescript/lib/tsc.js -p tsconfig.unique-gear.json --outDir .unique-gear-build
       - name: Run exact-copy crafting and retention regressions
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
-      - name: Verify dual weapon rolls and exact-copy combat bonuses
+      - name: Verify role-based rarity-scaled rolls and exact-copy combat bonuses
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/weapon-bonus-rolls.js && NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-bonus-rolls.js
       - name: Compile authoritative online gameplay
         run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json

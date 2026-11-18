@@ -62,6 +62,8 @@ jobs:
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-commit-plan.test.js
       - name: Verify canonical Equipment 2.0 exact copies in Combat 2.0 evidence
         run: node ../../backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs
+      - name: Rehearse V2 in the existing GameState with original Forge and wallet preserved
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-game-state.test.js
       - name: Test shadow store compare-and-swap and crash recovery
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-shadow.test.js
       - name: Audit shadow SQL security and safe rollout boundary

@@ -3,7 +3,7 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel,socialText} from '../i18n/social';
 import {formatLocalizedNumber} from '../i18n/translator';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,Pressable,ScrollView,type ScrollViewInstance,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {AppState,Image,Pressable,ScrollView,type ImageSourcePropType,type ScrollViewInstance,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {EmptyState} from '../components/EmptyState';
@@ -16,6 +16,16 @@ import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDispl
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {rankingPositionPresentation} from '../core/social-identity';
+
+// Use the same authored pixel-art navigation sprites as the rest of VELDRYN.
+// These are presentation-only; group IDs and ranking scores never change.
+const RANKING_GROUP_ART:Record<RankingGroup,ImageSourcePropType>={
+  Account:require('../../assets/ui-icons-v2/small/account.webp'),
+  Professions:require('../../assets/ui-icons-v2/small/skills.webp'),
+  Competitive:require('../../assets/navigation-icons-v4/training.webp'),
+  Dungeons:require('../../assets/navigation-icons-v4/dungeon.webp'),
+  Guilds:require('../../assets/navigation-icons-v4/guild.webp'),
+};
 export function RankingsScreen(){
  const st=useSocialText();
  const language=useGameLanguage();
@@ -86,7 +96,7 @@ export function RankingsScreen(){
          <Text style={[s.rank,position.tone==='podium_gold'&&s.rankGoldText]}>{position.label}</Text>
        </View>
        <View style={s.flex}>
-         <CompactPlayerIdentity badges={entry.playerBadges} name={entry.displayName} guildTag={entry.guildTag} guildTagColorId={entry.guildTagColorId} guild={entry.entityType==='guild'} avatarSize={top&&!stackRows?32:36} status={entry.isSelf?st("YOU"):entry.entityType==='guild'?st("GUILD"):st("PLAYER")} statusTone={entry.isSelf?'good':'muted'}/>
+         <CompactPlayerIdentity badges={entry.playerBadges} name={entry.displayName} guildTag={entry.guildTag} guildTagColorId={entry.guildTagColorId} guild={entry.entityType==='guild'} avatarSize={top?36:32} status={entry.isSelf?st("YOU"):undefined} statusTone={entry.isSelf?'good':'muted'}/>
          {entry.subtitle?<Text style={s.rankMeta} numberOfLines={top?1:2}>{entry.subtitle}</Text>:null}
          {entry.detail&&!top?<Text style={s.detail}>{entry.detail}</Text>:null}
        </View>
@@ -118,13 +128,13 @@ export function RankingsScreen(){
     {RANKING_GROUPS.map(value=><ChoiceChip key={value} label={socialLabel(language,value==='Professions'?'Skills':value==='Competitive'?'Arena':value)} selected={group===value} onPress={()=>selectGroup(value)}/>)}
   </ScrollView>
   <Pressable accessibilityRole="button" accessibilityState={{expanded:boardPickerOpen}} accessibilityLabel={st("BOARD")+' · '+socialLabel(language,definition.name)} onPress={()=>setBoardPickerOpen(true)} style={({pressed})=>[s.boardPicker,pressed&&s.pressed]}>
-    <View style={s.boardGlyph} accessible={false}><Text style={s.boardGlyphText}>{group==='Professions'?'✥':group==='Competitive'?'⚔':group==='Dungeons'?'◆':group==='Guilds'?'⚑':'✦'}</Text></View>
+    <View style={s.boardGlyph} accessible={false}><Image source={RANKING_GROUP_ART[group]} resizeMode="contain" style={s.boardArt}/></View>
     <View style={s.flex}><Text style={s.filterLabel}>{st("BOARD")}</Text><Text numberOfLines={1} style={s.boardName}>{socialLabel(language,definition.name)}</Text></View><Text style={s.selectorArrow}>⌄</Text>
   </Pressable>
   <View style={s.boardIntro}>
     <Text style={s.copy}>{definition.group==='Professions'?st('Highest {profession} level on one account character.',{profession:socialLabel(language,definition.name)}):socialLabel(language,definition.description)}</Text>
     {activeSnapshot&&Number.isFinite(activeSnapshot.generatedAtMs)&&activeSnapshot.generatedAtMs>0
-      ?<Text style={s.lastUpdated}>{st("Updated {time}",{time:new Date(activeSnapshot.generatedAtMs).toLocaleTimeString()})}</Text>
+      ?<Text style={s.lastUpdated}>{st("Updated {time}",{time:new Date(activeSnapshot.generatedAtMs).toLocaleTimeString(language)})}</Text>
       :null}
   </View>
   {activeSnapshot?.self?<View style={s.selfCard}>
@@ -202,7 +212,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  chipText:{fontSize:12,color:C.muted,fontWeight:'800'},chipTextSelected:{color:C.text},pressed:{opacity:.65},
  boardPicker:{minHeight:64,padding:10,borderRadius:radii.md,backgroundColor:C.panel,borderWidth:1,borderColor:C.lineStrong,flexDirection:'row',alignItems:'center',gap:10},
  boardGlyph:{width:38,height:38,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2},
- boardGlyphText:{fontSize:20,color:C.accent},boardName:{...typography.bodyStrong,color:C.text,marginTop:3},selectorArrow:{fontSize:22,color:C.accent},
+ boardArt:{width:30,height:30},boardName:{...typography.bodyStrong,color:C.text,marginTop:3},selectorArrow:{fontSize:22,color:C.accent},
  boardIntro:{paddingHorizontal:3,minHeight:18,gap:4},lastUpdated:{fontSize:10,lineHeight:14,color:C.muted},errorPanel:{gap:6},
  flex:{flex:1,minWidth:0},
  selfCard:{padding:12,borderRadius:radii.lg,backgroundColor:C.accentSurface,borderWidth:1,borderColor:C.selectionLine,gap:7},

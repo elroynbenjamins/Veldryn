@@ -29,6 +29,7 @@
     "tests/world-boss-roster-compatibility-v30.ts",
     "tests/world-boss-account-state-v33.ts",
     "tests/world-boss-overview-v41.ts",
+    "tests/world-boss-current-overview-v51.ts",
     "tests/world-boss-readiness-audit-v43.ts"
   ],
   "exclude": []

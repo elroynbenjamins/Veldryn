@@ -95,7 +95,7 @@ export function planCraftedGearRetention(
   if(!eligible.length)return {action:'manual_review',reason:'no_eligible_copy'};
   const weakestEligible=eligible[0];
   // The new item beat the weakest owned copy. If that copy is protected,
-  // selling the new item would violate Keep Best 7, so defer to manual review
+  // selling the new item would violate the keep-best copy cap, so defer to manual review
   // rather than disposing of an earned upgrade without the player's consent.
   if(compareCraftedGearRetentionPower(incoming,weakestEligible.instance)<=0)
     return {action:'manual_review',reason:'no_eligible_copy'};

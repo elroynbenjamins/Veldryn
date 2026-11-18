@@ -1,11 +1,10 @@
-import type {CharacterState,GameState,GearSlot,ItemStack} from '../../apps/mobile/src/core/types';
+import type {CharacterState,GameState,ItemStack} from '../../apps/mobile/src/core/types';
 import {itemDef} from '../../apps/mobile/src/content/items';
 import {auditCraftedGearOwnership} from '../../apps/mobile/src/core/crafted-gear-ownership';
 import {craftedGearInstances,isValidCraftedGearQuality} from '../../apps/mobile/src/core/crafted-gear-instances';
 import {equipmentPouchForCharacter} from '../../apps/mobile/src/core/equipment-pouch';
 import {gemPouch} from '../../apps/mobile/src/core/gem-pouch';
-import {marketCatalogCandidate} from '../../apps/mobile/src/core/player-market-readiness';
-import {workingTowardInventoryProtectionMap} from '../../apps/mobile/src/core/working-toward-inventory';
+import {accountWorkingTowardReservations,marketCatalogCandidate,savedLoadoutReservesGearCopy} from '../../apps/mobile/src/core/player-market-readiness';
 
 /**
  * Internal server-only inspection. Never import into gameplay routes or mobile
@@ -67,23 +66,10 @@ export function inspectPlayerMarketCustodySnapshotV1(
   if(audit.unlocatedInstanceIds.length)blocked.ownershipProblems.push('unlocated_forged_copies');
   if(audit.unmarkedPhysicalCopies>0)blocked.ownershipProblems.push('unmarked_legacy_copies');
   const records=new Map(craftedGearInstances(state).map(row=>[row.id,row]));
-  const savedLoadouts=[state.character,...(state.otherCharacters??[]).map(row=>row.character)]
-    .flatMap(character=>character?.savedLoadouts??[]);
-  const heldInLoadout=(itemId:string,instanceId:string)=>
-    savedLoadouts.some(loadout=>Object.entries(loadout.equipment).some(([slot,id])=>
-      id===itemId&&(loadout.equipmentInstanceIds?.[slot as GearSlot]===instanceId
-        ||!loadout.equipmentInstanceIds?.[slot as GearSlot])));
   // Protect all active + inactive characters' goals before projecting resources.
-  const goals=new Set<string>();
-  for(const character of [state.character,...(state.otherCharacters??[]).map(row=>row.character)]){
-    if(!character)continue;
-    try{
-      const projection={...state,character};
-      for(const id of workingTowardInventoryProtectionMap(projection).keys())goals.add(id);
-    }catch{
-      blocked.ownershipProblems.push('goal_reservation_unverified');
-    }
-  }
+  const reservations=accountWorkingTowardReservations(state);
+  const goals=reservations.itemIds;
+  if(!reservations.verified)blocked.ownershipProblems.push('goal_reservation_unverified');
 
   const add=(location:MarketCustodyStorageV1,stacks:readonly ItemStack[],
              character:CharacterState|undefined)=>{
@@ -115,13 +101,13 @@ export function inspectPlayerMarketCustodySnapshotV1(
           const located=audit.linked.filter(row=>row.instanceId===stack.instanceId);
           if(!audit.consistent||located.length!==1
             ||located[0].place!==location
-            ||located[0].holderCharacterId!==character?.id && location!=='bank')
+            ||(location!=='bank'&&located[0].holderCharacterId!==character?.id))
             problems.push('equipment_ownership_conflict');
           if(!receipt||receipt.itemId!==stack.itemId)
             problems.push('missing_exact_equipment_receipt');
           else{
             if(receipt.locked)problems.push('equipment_locked');
-            if(heldInLoadout(stack.itemId,stack.instanceId))
+            if(savedLoadoutReservesGearCopy(state,stack.itemId,stack.instanceId))
               problems.push('saved_loadout_reserved');
             if(!isValidCraftedGearQuality(receipt.quality))
               problems.push('legacy_quality_unverified');

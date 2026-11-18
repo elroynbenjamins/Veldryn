@@ -111,6 +111,11 @@ async function main(){
     method:'POST',headers:{authorization:'Bearer valid','content-type':'application/json'},
     body:'x'.repeat(2500),
   }),'market_request_too_large');
+  // 1,000 characters but 3,000 UTF-8 bytes: the cap is measured in bytes.
+  await denied(()=>new Request(path+'&action=buy',{
+    method:'POST',headers:{authorization:'Bearer valid','content-type':'application/json'},
+    body:JSON.stringify({pad:'€'.repeat(1000)}),
+  }),'market_request_too_large');
   assert(authenticationCalls>=10);
   console.log('PASS: hidden market auth boundary never mounts or calls RPC; strict request binding rejects actor spoofing');
 }

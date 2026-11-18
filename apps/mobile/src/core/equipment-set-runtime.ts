@@ -86,7 +86,10 @@ export function activeEquipmentSetRuntime(state:GameState):EquipmentSetRuntimeSu
   const setIds=new Set<string>();
   for(const itemId of Object.values(state.character.equipment)){
     if(!itemId)continue;
-    const setId=itemDef(itemId).equipmentSetId;if(setId)setIds.add(setId);
+    // A retired or unknown item id in an old save must not break every combat stat read.
+    let setId:string|undefined;
+    try{setId=itemDef(itemId).equipmentSetId;}catch{continue;}
+    if(setId)setIds.add(setId);
   }
   const activeSets:ActiveEquipmentSetRuntime[]=[];
   for(const setId of setIds){
@@ -160,7 +163,9 @@ export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,b
   const baseCritDamage=0.50;
   const accuracyMultiplier=Math.min(.99,baseAccuracy+stats.accuracy)/baseAccuracy;
   const baseCritExpected=1+baseCritChance*baseCritDamage;
-  const setCritExpected=1+(baseCritChance+stats.critRate)*(baseCritDamage+stats.critDamage);
+  // Crit chance is a probability: stacked set, gem and weapon bonuses cannot exceed 100%.
+  const critChance=Math.max(0,Math.min(1,baseCritChance+stats.critRate));
+  const setCritExpected=1+critChance*(baseCritDamage+stats.critDamage);
   return {
     maxHpMultiplier:1+stats.maxHp,
     defenseMultiplier:1+stats.armor,

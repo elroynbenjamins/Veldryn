@@ -56,7 +56,9 @@ const HIGH_RARITIES:readonly ItemRarity[]=['epic','legendary','mythic'];
 const STEP_BPS=10;
 
 export function weaponBonusConfig(itemId:string,rarity:ItemRarity){
-  const item=itemDef(itemId);
+  // Saves can outlive catalog entries; an unknown item simply has no rolled bonuses.
+  let item:ReturnType<typeof itemDef>;
+  try{item=itemDef(itemId);}catch{return undefined;}
   const tier=Number(/^T([1-9])_/.exec(item.equipmentSetId??'')?.[1]??0);
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
   if(item.type!=='gear'||item.slot!=='weapon'||tier<3||tier>9||!role)return undefined;
@@ -107,6 +109,7 @@ export function weaponBonusStrength(itemId:string,rarity:ItemRarity,bonus:Weapon
   const cfg=weaponBonusConfig(itemId,rarity);
   const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat,version):undefined;
   if(!range)return 0;
+  if(range[1]<=range[0])return 100;
   return Math.max(0,Math.min(100,Math.round(100*(bonus.basisPoints-range[0])/(range[1]-range[0]))));
 }
 /** Quick, glanceable equipment label; explanatory range lives in the detailed tooltip. */

@@ -41,14 +41,14 @@ export function projectVerifiedCraftingV2BaseEvidence(request){
  if(!str(trusted.manifestVersion)||!str(trusted.rulesVersion)||
     typeof trusted.verifyOwnedReceipt!=='function')fail('trusted_receipt_verifier_required');
  if(equipped.length>slots.length)fail('too_many_equipped_items');
- const usedIds=new Set(),usedSlots=new Set(),evidence=[],totals={attackPower:0,defense:0,maxHp:0};
+ const usedIds=new Set(),usedReceipts=new Set(),usedSlots=new Set(),evidence=[],totals={attackPower:0,defense:0,maxHp:0};
  let twoHanded=false;
  for(const item of equipped){
   if(!obj(item)||!str(item.instanceId)||!str(item.receiptId)||!str(item.ownerCharacterId)||
      item.ownerCharacterId!==actor.characterId||item.location!=='equipped'||
-     !slots.includes(item.slot)||usedIds.has(item.instanceId)||usedSlots.has(item.slot))
+     !slots.includes(item.slot)||usedIds.has(item.instanceId)||usedReceipts.has(item.receiptId)||usedSlots.has(item.slot))
     fail('invalid_equipped_custody');
-  usedIds.add(item.instanceId);usedSlots.add(item.slot);
+  usedIds.add(item.instanceId);usedReceipts.add(item.receiptId);usedSlots.add(item.slot);
   const t=item.template;
   if(!obj(t)||!str(t.pieceId)||t.slot!==item.slot||
      t.manifestVersion!==trusted.manifestVersion||t.rulesVersion!==trusted.rulesVersion||

@@ -51,3 +51,13 @@ Release activation prerequisites:
 5. Only then replace the isolation guard with tests that prove the version gate and legacy receipt replay. Enable the new ruleset deliberately, with an immediate rollback switch for **new** runs.
 
 Current status: development-only, no gameplay route references, no migrations, no deployment.
+
+## Development Pass 4: isolated regional boss prototypes
+
+Four more **canonical** regional bosses now have opt-in skill/phase prototypes in `boss-v2-regional-prototype.ts`:
+- Sunscar: **The Buried Heliarch** (`BOSS_EXP_SOLAR`), **The Veiled Sphinx** (`BOSS_EXP_SPHINX`).
+- Frostmarch: **The Bellbeast of Shiverlake** (`BOSS_EXP_BELLBEAST`), **The Frozen Cantor** (`BOSS_EXP_CANTOR`).
+
+A separate test verifies canonical IDs/names/levels/stats/legacy skills, 70%/35% phase thresholds, deterministic replay and legacy no-op behavior. All six regional boss 2.0 prototypes are authored *beside* live dungeons, not imported by their content factories.
+
+The release lock remains in force: **no changes to existing dungeon boss rotations, loot, difficulty tiers, combat or rewards until the coordinated 2.0 launch**. The prototypes are not yet balanced for production and are not integrated into an encounter-reservation path.

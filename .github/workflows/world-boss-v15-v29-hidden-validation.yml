@@ -36,6 +36,7 @@ on:
       - 'docs/roadmap/world-boss-retired-consent-lifecycle-v35-smoke.sql'
       - 'docs/roadmap/world-boss-account-erasure-preflight-v36.sql'
       - 'docs/roadmap/world-boss-account-erasure-v55-smoke.sql'
+      - 'docs/roadmap/world-boss-account-write-fence-v57*.sql'
       - 'docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql'
       - 'docs/roadmap/world-boss-account-save-donation-v37-smoke.sql'
       - 'docs/roadmap/world-boss-preparation-calendar-v38-smoke.sql'
@@ -195,3 +196,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql
           # V55 two-account FK/ledger/community-preserving erase dry-run; ROLLBACK.
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-v55-smoke.sql
+          # V57 is installed only in this disposable PostgreSQL CI service.
+          # ALL future staging/production schema changes require approval.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57-smoke.sql

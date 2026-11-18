@@ -1,5 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {RECIPES} from '../src/content/skills';
+import {groupTwoVariantCraftingRecipes} from '../src/core/crafting-recipe-variants';
 import {isReleasedEquipmentItemId,isReleasedEquipmentTier} from '../src/content/equipment-release';
 import {recipeCodexDestination,recipeCodexEntries,recipeCodexEntryById,recipeCodexFilter,recipeCodexIngredients,recipeCodexRequirements,recipeCodexSkillEntries,recipeCodexUsesIngredient,RECIPE_CODEX_SKILLS} from '../src/core/recipe-codex';
 function check(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
@@ -33,4 +34,26 @@ check(locked,'Missing high-level released catalyst recipe.');
 check(recipeCodexRequirements(state,locked).status==='locked','Unavailable crafting skills must be labeled locked.');
 check(recipeCodexRequirements(state,silverfin).skillLevel>=1,'Current skill level must derive from live state.');
 check(entries.every(row=>RECIPES.some(recipe=>recipe.id===row.id)),'Every Codex entry must exist in the authoritative recipe catalog.');
+// The two-method crafting UX is deliberately limited to recipes with the
+// same output, level, Gold, XP, time and quantity but different real inputs.
+const groups=groupTwoVariantCraftingRecipes(RECIPES.filter(recipe=>recipe.skillId==='smithing'||recipe.skillId==='tailoring'));
+const twoMethodGroups=groups.filter(group=>group.recipes.length===2);
+check(twoMethodGroups.length===2,'Exactly two authored two-method materials are currently shipped');
+const expectedMethods=[
+ {output:'ARMOR_RIVETS',ids:['FORGE_ARMOR_RIVETS','FORGE_RECLAIMED_ARMOR_RIVETS']},
+ {output:'REINFORCED_STRAPS',ids:['STITCH_REINFORCED_STRAPS','STITCH_RECYCLED_REINFORCED_STRAPS']},
+];
+for(const expected of expectedMethods){
+ const group=twoMethodGroups.find(row=>row.recipes[0].output.itemId===expected.output);
+ check(group,'Missing two-method group for '+expected.output);
+ check(expected.ids.every(id=>group.recipes.some(recipe=>recipe.id===id)),'Both distinct recipe IDs must remain available for '+expected.output);
+ const [regular,alternative]=group.recipes;
+ check(JSON.stringify(regular.inputs)!==JSON.stringify(alternative.inputs),'Crafting methods must actually consume different ingredients for '+expected.output);
+ check(regular.gold===alternative.gold&&regular.xp===alternative.xp&&regular.level===alternative.level&&regular.seconds===alternative.seconds&&regular.output.quantity===alternative.output.quantity,'Alternative material methods must keep output and progression balanced for '+expected.output);
+ check(group.recipes.every(recipe=>recipeCodexEntryById(recipe.id)),'Both crafting methods must remain independently inspectable in Recipe Codex for '+expected.output);
+}
+// A different downstream use does not mean Gem Dust itself has two production methods.
+const dustUses=RECIPES.filter(recipe=>recipe.inputs.some(input=>input.itemId==='GEM_DUST')&&recipe.id.startsWith('ENCHANT_'));
+check(dustUses.some(recipe=>recipe.id==='ENCHANT_REGIONAL_CATALYST'&&recipe.inputs.find(input=>input.itemId==='GEM_DUST')?.quantity===25),'Regional Catalyst uses 25 Gem Dust');
+check(dustUses.some(recipe=>recipe.id==='ENCHANT_RADIANT_CATALYST'&&recipe.inputs.find(input=>input.itemId==='GEM_DUST')?.quantity===80),'Radiant Catalyst uses 80 Gem Dust');
 console.log('PASS: Recipe Codex published catalog, cached search, reverse ingredient links, and live requirements');

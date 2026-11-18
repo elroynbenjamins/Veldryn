@@ -11,7 +11,7 @@
 
 - Production database `public.app_release_policy` reported `latest_version=1.0.10`, `minimum_version=1.0.10`, `force_after=null` on 2026-11-18. Release notes for 1.0.10 were published 2026-11-17. **Do not describe 1.0.10 as unreleased.**
 - Read-only aggregate of `public.online_game_states.state.account.craftedGearInstances` found **245 existing crafted-copy records in production**, none with Weapon/Equipment Bonuses and none with Ability Damage. This is a scoped snapshot, *not* a claim about other legacy inventory records. The same path contained **0 records in staging**; seed isolated QA copies with an authorized staging test account for proper integration testing.
-- Production `gameplay` and `coop` functions last updated 2026-11-17; no 12-stat changes deployed.
+- Production `gameplay` and `coop` functions last updated 2026-11-17; no new early-release roll versions deployed.
 - GitHub reported a high repository Actions queue (>1,800 queued at review). Exact-head PR tests must finish; queued is not green.
 
 ## The player-facing update (candidate)
@@ -24,6 +24,12 @@ New **forged** equipment only, by class/role:
 - Generic `Power` no longer mints as a random affix. **Ability Damage** and **Tenacity** also do not mint until combat-result and status-resistance parity arrive in Combat 2.0. Previous development receipts with Ability Damage or Tenacity stay readable under their original version (never silently reminted).
 - Inspect, Compare, Forge result and bulk claim clearly display saved stat, rarity-scaled range and roll strength. Conservative copy retention does not auto-sell rolled gear merely for lower Quality.
 - New Healing Power rolls are also projected into a server-derived co-op `healingPower` snapshot (PR #1374), with regression test for frozen combatant and exactly one multiplicative application. This is NOT a claim that all secondary stats have identical effects in every mode.
+
+## Integration checkpoint (Nov 18)
+
+- Source PR #1374 synced to main at commit `b9f6a393` through `487207f3`; comparison confirms **0 commits behind** and 29 scoped files with no overlapping changes in the prior integration base.
+- `backend/online/coop-loadout.ts` now applies exact-copy Healing Power once to the server-owned co-op healing snapshot. `backend/online/tests/coop-loadout.ts` validates a legal Dawnkeeper mixed novice/T2 outfit, same saved glove with/without a valid version-4 healing roll, snapshot/hash invalidation and wrong-receipt rejection; the unique-gear CI workflow runs the test.
+- The regenerated Edge bundles remain a **required and unverified** gate after these source changes. A source-level merge is not a passing build.
 
 ## Version deferral QA (Nov 18)
 
